@@ -1,6 +1,6 @@
 # PixelDoll manifest spec — `pixeldoll/1`
 
-Author: A1 · Date: 2026-10-20 · Status: v1.3 (updated after S3, S4, D8). Pipeline and rationale: [`architecture.md`](architecture.md).
+Author: A1 · Date: 2026-10-20 · Status: v1.3.1 (v1.3 after S3, S4, D8; v1.3.1 = per-layer cell + pivot for oversize layers, S5/B8). Pipeline and rationale: [`architecture.md`](architecture.md).
 
 One schema serves two files:
 
@@ -60,7 +60,7 @@ export interface Rig {
   animations: Clip[];                    // order = export order
   baseItem: string;                      // id of the item in slot "body"
   baseHash: Sha256;                      // hash over all base cell hashes (anim, dir, cell order)
-  pad?: { x: number; y: number };        // translation applied at freeze (48 px base padded to 64: {x: 8, y: 16})
+  pad?: { x: number; y: number };        // translation applied at freeze (48 px base padded to 64: {x: 8, y: 12}, 4 px floor)
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 export interface RigDirection {
@@ -146,6 +146,9 @@ export interface Layer {
   z: number;                              // resolved static z (slot ladder or item override)
   cells?: Record<string, Partial<Record<DirectionName, (Sha256 | null)[]>>>; // project.json; null = transparent cell
   sheets?: Record<string, string>;        // manifest.json; anim id -> path of the sheet PNG
+  cell?: { w: number; h: number };        // v1.3.1: this layer's cell; default rig.cell. Held items: {w: 96, h: 96} [S5]
+  pivot?: { x: number; y: number };       // v1.3.1: the SAME body point in this layer's cell; default rig.pivot.
+                                          //   96 held layer: rig.pivot + (16, 16). manifest.json always writes both.
 }
 
 export interface Provenance {
@@ -196,8 +199,27 @@ export interface ExportInfo {
   engines: ('generic' | 'godot' | 'unity' | 'phaser' | 'aseprite')[];
   pixelsPerUnit: number;                  // Unity; default = rig.cell.w
   baked?: string[];                       // preset ids with baked composites
+  bakedCell?: { w: number; h: number };   // v1.3.1: cell of every baked sheet = union of all exported layers around the pivot
+  bakedPivot?: { x: number; y: number };  //   (64 rig + 96 sword -> 96x96, pivot rig.pivot + 16); = rig cell/pivot without oversize
 }
 ```
+
+### 2.1 Oversize layers (v1.3.1)
+
+Held items need room outside the 64 cell (8 px above it in an overhead slash, 5 px below it in a walk [S5]), so a layer may
+have its own `cell` and `pivot`. Layers line up **by pivot**: a layer's cell sits at `rig.pivot − layer.pivot` in rig-cell
+coordinates (the 96 sword at (−16, −16)). Grid, frame names, playlists and the clock are unchanged, so engines still sync by
+frame index or name; only each layer's rect and pivot differ. Conventions:
+
+- **Preview** (`composeCell` default) clips oversize layers to the rig cell. **Baked composites** use `export.bakedCell` /
+  `bakedPivot` = the smallest frame holding every exported layer around the shared pivot, one size per export (all presets),
+  so an engine reads one fixed cell for all baked sheets. Engine node positions do not change: every layer's pivot lands on the
+  node origin.
+- **Mirrored directions** flip the whole layer cell, so an oversize cell must be centred on the rig cell
+  (`2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w = rig.cell.w`; inv. 10).
+- **World scale** stays the base's: Unity PPU = `export.pixelsPerUnit` (default `rig.cell.w`) for every layer, never the
+  layer's width, or a 96 sword renders at 2/3 scale.
+- `Slot` defaults (held 96, back 96 optional, others 64) are an item-pipeline choice; the manifest only stores the layer's.
 
 ---
 
@@ -205,8 +227,9 @@ export interface ExportInfo {
 
 1. Every layer of every exported item has a sheet for **every** rig animation. A cell where the item is absent is a
    **transparent cell**, never a missing one (engines desync silently otherwise [R3, R4 R-6]).
-2. Sheet size = `cells × cell.w` by `directions.length × cell.h`. Rows follow `rig.directions`, columns follow cell index.
-   Sheets are untrimmed.
+2. Sheet size **per layer** = `cells × layer.cell.w` by `directions.length × layer.cell.h` (`layer.cell` defaults to
+   `rig.cell`; v1.3.1). Rows follow `rig.directions`, columns follow cell index. Sheets are untrimmed. Every cell image of a
+   layer has exactly the layer's cell size; cell and pivot are integers.
 3. Every `frames[].cell < cells`. Every `frames[].ms` is a positive integer.
 4. `item.baseHash === rig.baseHash` for exported items (stale items are excluded with a warning).
 5. Material ramps are pairwise disjoint; `variants[*].length === ramp.length`.
@@ -215,6 +238,8 @@ export interface ExportInfo {
 8. Resolved z for a cell = the most specific matching `zOverride` (cell > anim > dir > none; on equal specificity the later entry
    wins), else `layer.z`.
 9. A visible item hides every layer of each slot in `item.hides ?? slot.hides` (hidden layers are not drawn; their cells still exist).
+10. If any direction is mirrored, every layer cell is centred on the rig cell: `2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w
+    = rig.cell.w` (v1.3.1; a flip of an off-centre cell would move the item).
 
 ---
 
@@ -228,7 +253,7 @@ export interface ExportInfo {
   "rig": {
     "cell": { "w": 64, "h": 64 },
     "pivot": { "x": 32, "y": 59 },
-    "pad": { "x": 8, "y": 16 },
+    "pad": { "x": 8, "y": 12 },
     "directions": [
       { "id": "south" }, { "id": "east" }, { "id": "north" }, { "id": "west", "mirrorOf": "east" }
     ],
@@ -365,7 +390,7 @@ export interface ExportInfo {
   CREDITS.csv                                     # one row per PixelLab call: job id, endpoint, seed, prompt
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells
-  baked/<preset>/<anim>.png                       # optional composites, same grid (RPG Maker, crowds)
+  baked/<preset>/<anim>.png                       # optional composites, same grid on export.bakedCell (RPG Maker, crowds)
   godot/      <item>_<layer>.tres, Paperdoll.tscn, paperdoll.gd
   unity/      Editor/PixelDollImporter.cs, Runtime/Paperdoll.cs, Runtime/PaperdollLayer.cs
   phaser/     <item>_<layer>_<anim>.json, PaperdollContainer.js
@@ -381,7 +406,7 @@ at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Fram
 
 ## 6. Per-engine mapping
 
-### 6.1 Pivot conversion (from `pivot {x, y}` in a `w × h` cell)
+### 6.1 Pivot conversion (from `pivot {x, y}` in a `w × h` cell; per LAYER since v1.3.1: its own `cell` + `pivot`)
 
 | Target | Value |
 |---|---|
@@ -389,7 +414,8 @@ at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Fram
 | Unity | normalized from **bottom-left**: `pivot = (x / w, 1 − y / h)`; sprite rect `y_unity = texH − (row + 1) · h` |
 | Phaser 3/4 | atlas frame `"pivot": {"x": x / w, "y": y / h}` (auto `setOrigin` [R3]) |
 | Aseprite | slice `"pivot"` (pixels, relative to the slice bounds = the cell) |
-| Mirrored direction | already baked into pixels; the pivot is unchanged because `x = w/2` |
+| Mirrored direction | already baked into pixels; the pivot is unchanged because the cell is centred (inv. 10) |
+| Oversize layer | same formulas with the layer's `w, h, x, y`; Unity PPU stays the base's |
 
 ### 6.2 Godot 4 — `SpriteFrames` `.tres` + scene + sync script
 
@@ -399,9 +425,10 @@ z override, and renders 0 differing px vs `baked/`.
 
 - One `SpriteFrames` per (item, layer). Animation name `<anim>_<dir>`, `loop` from the rig, `speed = 1000 / msBase` where
   `msBase` = smallest `ms` in the playlist; each playlist entry → frame `{texture: AtlasTexture(region = cell rect), duration:
-  ms / msBase}`. AtlasTexture `filter_clip = true`. No `.import` files shipped.
+  ms / msBase}`. AtlasTexture `filter_clip = true`, region = the layer's own cell rect. No `.import` files shipped.
 - `Paperdoll.tscn`: `Node2D` root with `paperdoll.gd`; one `AnimatedSprite2D` per (slot, role) named `<slot>_<role>`,
-  `centered = false`, `offset = -pivot`, `z_index = layer z`, `texture_filter = NEAREST`. `body_fg` is the master clock.
+  `centered = false`, `offset = -layer.pivot` (of the equipped layer; `equip` re-sets it, so a 96 sword and a 64 item can share a
+  slot), `z_index = layer z`, `texture_filter = NEAREST`. `body_fg` is the master clock. Verified with a 96 sword [B8].
 - `paperdoll.gd` (~60 lines): master `frame_changed`/`animation_changed` → every other layer `set_frame_and_progress`;
   `equip(slot, item_id)` swaps `sprite_frames` for the slot's fg/bg nodes and applies `hides`; `play(anim, dir)` sets the
   animation on all layers and applies `zOverrides` (per-cell overrides re-applied in the sync callback). The manifest is
@@ -417,7 +444,8 @@ flattened for `JsonUtility`) and two asmdefs.
 
 - `PixelDollImporter.cs` (`AssetPostprocessor` + a menu command reading `manifest.json`): for each sheet sets Sprite Mode
   Multiple, Filter Point, Compression None, PPU = `export.pixelsPerUnit`; slices via `ISpriteEditorDataProvider.SetSpriteRects`
-  with names `<anim>_<dir>_<cell>`, custom pivot (§6.1), new `GUID` per rect. Builds body `AnimationClip`s `<anim>_<dir>`
+  with names `<anim>_<dir>_<cell>`, each layer by its own cell + custom pivot (§6.1, `pixeldoll_unity.json` layer
+  `cellW/cellH/pivotX/pivotY`), new `GUID` per rect. Builds body `AnimationClip`s `<anim>_<dir>`
   with `ObjectReferenceKeyframe`s on `SpriteRenderer.sprite` from the playlist (cumulative ms), an Animator Controller, and a
   prefab: root with **Sorting Group** + `Paperdoll.cs`, one child `SpriteRenderer` per (slot, role), `sortingOrder = z`.
 - `PaperdollLayer.cs`: `LateUpdate` name-match — each layer shows its own sprite with the body's current sprite name, from a
@@ -432,7 +460,8 @@ Verified [M5]: Phaser 3.80, 3.90 and 4.2.1 render 0 differing px vs `baked/`; la
 
 
 - One TexturePacker **JSON-Hash** atlas per sheet (`<item>_<layer>_<anim>.json` → `layers/.../<anim>.png`): frames
-  `<anim>_<dir>_<cell>` with `frame` rect, `rotated:false`, `trimmed:false`, `sourceSize`, `pivot` (§6.1). Extra top-level key
+  `<anim>_<dir>_<cell>` with `frame` rect (the layer's cell), `rotated:false`, `trimmed:false`, `sourceSize`, `pivot` (§6.1, per
+  layer: sprites at the same container position line up by pivot because `setFrame` applies each frame's custom pivot [B8]). Extra top-level key
   `"pixeldoll": {"item", "layer", "slot", "role", "z", "anim"}` lands in `texture.customData` [R3].
 - `PaperdollContainer.js`: loads `manifest.json` and atlases; creates body animations `body:<anim>_<dir>` from playlists
   (per-frame `duration` = ms); layers follow the body via `animationupdate` → `setTexture(<layer atlas for anim>,
@@ -451,6 +480,8 @@ Verified [M5]: Phaser 3.80, 3.90 and 4.2.1 render 0 differing px vs `baked/`; la
 
 ### 6.6 Generic
 
-- `generic/<item>_<layer>/<anim>_<dir>_strip<N>.png` (GameMaker `_stripN` auto-split) plus `manifest.json`.
+- `generic/<item>_<layer>/<anim>_<dir>_strip<N>.png` (GameMaker `_stripN` auto-split; strip height = the layer's cell) plus
+  `manifest.json`.
   Any engine: one sprite per layer, same frame index per tick from the body, draw in resolved-z order.
-- `baked/<preset>/<anim>.png`: the compositor's output on the same grid, for engines without layering (RPG Maker style).
+- `baked/<preset>/<anim>.png`: the compositor's output on the same grid with `export.bakedCell` / `bakedPivot` (§2.1), for
+  engines without layering (RPG Maker style).

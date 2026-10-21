@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PixelDoll Phaser oversize test</title>
+<style>body { background: #222; color: #ddd; font: 14px monospace; } canvas { image-rendering: pixelated; }</style>
+</head>
+<body>
+<div id="game"></div>
+<pre id="out">loading…</pre>
+<script type="module">
+// B8: ?v=<phaser version>&ex=<export folder>. One doll per direction, each at the baked pivot of its baked cell
+// (manifest export.bakedCell/bakedPivot). Phase 1, per preset and animation: freeze every playlist frame and compare the canvas
+// pixel-exactly with PixelDoll's baked/<preset>/<anim>.png. Phase 2: play every animation in all directions; every step each
+// visible layer must show the body's frame name, the anim's atlas, and its display origin must equal ITS layer's pivot
+// (96x96 sword at (48, 80) vs 64x64 body at (32, 64)). Results in window.__pd and #out.
+const q = new URLSearchParams(location.search), v = q.get('v') ?? '3.90.0', ex = q.get('ex') ?? 's5_sword';
+await new Promise((ok, err) => document.head.append(Object.assign(document.createElement('script'), { src: `https://cdn.jsdelivr.net/npm/phaser@${v}/dist/phaser.min.js`, onload: ok, onerror: err })));
+const { loadPaperdoll, Paperdoll } = await import(`./${ex}/phaser/PaperdollContainer.js`);
+const out = document.getElementById('out');
+const R = (window.__pd = { version: Phaser.VERSION, pixelDiff: {}, pixels: 0, steps: 0, checks: 0, mismatches: 0, originMismatches: 0, oversizeChecks: 0, framesSeen: {}, done: false });
+const log = () => (out.textContent = JSON.stringify(R, null, 1));
+const m0 = await (await fetch(`${ex}/manifest.json`)).json();
+const BW = m0.export.bakedCell.w, BH = m0.export.bakedCell.h, DIRS = m0.rig.directions.map((d) => d.id);
+
+async function imageData(src) {
+  const img = src instanceof HTMLImageElement ? src : await new Promise((ok) => Object.assign(new Image(), { onload() { ok(this); }, src }));
+  const c = new OffscreenCanvas(img.width, img.height), g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  return g.getImageData(0, 0, img.width, img.height);
+}
+
+class Test extends Phaser.Scene {
+  create() { this.run().catch((e) => { R.error = String(e.stack ?? e); log(); }); }
+  async run() {
+    const m = await loadPaperdoll(this, `${ex}/`);
+    const { x: px, y: py } = m.export.bakedPivot;
+    const dolls = DIRS.map((d, i) => new Paperdoll(this, i * BW + px, py, m));
+    for (const preset of m.presets) {
+      dolls.forEach((doll) => { for (const [slot, id] of Object.entries(preset.items)) if (slot !== 'body') doll.equip(slot, id); });
+      for (const a of m.rig.animations) {
+        dolls.forEach((doll, i) => { doll.play(a.id, DIRS[i]); doll.body.anims.pause(); });
+        const baked = await imageData(`${ex}/baked/${preset.id}/${a.id}.png`);
+        let diff = 0;
+        for (let f = 0; f < a.frames.length; f++) {
+          const cell = a.frames[f].cell;
+          dolls.forEach((doll) => { doll.body.anims.setCurrentFrame(doll.body.anims.currentAnim.frames[f]); doll.sync(); });
+          const shot = await imageData(await new Promise((ok) => this.game.renderer.snapshot(ok)));
+          for (let i = 0; i < DIRS.length; i++)
+            for (let y = 0; y < BH; y++)
+              for (let x = 0; x < BW; x++) {
+                const b = ((i * BH + y) * baked.width + cell * BW + x) * 4, s = (y * shot.width + i * BW + x) * 4;
+                const want = baked.data[b + 3] ? [baked.data[b], baked.data[b + 1], baked.data[b + 2]] : [0, 0, 0];
+                R.pixels++;
+                if (want.some((c, k) => c !== shot.data[s + k])) diff++;
+              }
+        }
+        R.pixelDiff[`${preset.id}/${a.id}`] = diff;
+        log();
+      }
+    }
+    dolls.forEach((doll) => { for (const [slot, id] of Object.entries(m.presets[0].items)) if (slot !== 'body') doll.equip(slot, id); });
+    let ai = 0;
+    const playAll = () => dolls.forEach((doll, i) => doll.play(m.rig.animations[ai].id, DIRS[i]));
+    playAll();
+    this.events.on('postupdate', () => {
+      if (ai >= m.rig.animations.length) return;
+      R.steps++;
+      const anim = m.rig.animations[ai].id;
+      for (const doll of dolls) {
+        const name = doll.body.frame.name, key = `${anim}_${doll.dir}`;
+        R.framesSeen[key] = [...new Set([...(R.framesSeen[key] ?? []), name.split('_').pop()])].sort();
+        for (const n of doll.nodes) {
+          if (!n.sprite.visible) continue;
+          const l = doll.layerOf(n).layer;
+          R.checks++;
+          if (l.cell.w !== m.rig.cell.w) R.oversizeChecks++;
+          if (n.sprite.displayOriginX !== l.pivot.x || n.sprite.displayOriginY !== l.pivot.y || n.sprite.frame.width !== l.cell.w) R.originMismatches++;
+          if (n.sprite !== doll.body && (n.sprite.frame.name !== name || !n.sprite.texture.key.endsWith(`:${anim}`))) R.mismatches++;
+        }
+      }
+      if (R.steps % 120 === 0 && ++ai < m.rig.animations.length) playAll();
+      if (R.steps === 120 * m.rig.animations.length) {
+        this.game.renderer.snapshot(async (img) => {
+          const c = new OffscreenCanvas(img.width * 2, img.height * 2), g = c.getContext('2d');
+          g.imageSmoothingEnabled = false;
+          g.drawImage(img, 0, 0, c.width, c.height);
+          await fetch(`/shot/oversize_${ex}_${Phaser.VERSION}.png`, { method: 'POST', body: await c.convertToBlob() });
+          R.done = true; log();
+        });
+      }
+    });
+    log();
+  }
+}
+
+window.__game = new Phaser.Game({ type: Phaser.WEBGL, parent: 'game', width: DIRS.length * BW, height: BH, zoom: 2, backgroundColor: '#000000', pixelArt: true, roundPixels: true, scene: Test, preserveDrawingBuffer: true, fps: { forceSetTimeOut: true, target: 60 } });
+</script>
+</body>
+</html>
