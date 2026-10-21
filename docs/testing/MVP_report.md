@@ -38,13 +38,17 @@ autosaved 400 ms later through `lib/dress/project.ts saveDress` (re-reads the re
 | 4 | `node app/scripts/e2e-studio.mjs` (Playwright, demo, no key) | wear swaps the slot item · undo/redo (button + Ctrl+Shift+Z) · recolour changes stage pixels · save outfit marked Current · keys `2` / `0` · theme switch · **outfit, colours, presets and theme survive a reload** · export downloads `adventurer-godot.pixeldoll.zip` (192 KB, has `manifest.json`, `godot/`, `layers/head/hat_wizard/`) · no page errors |
 | 5 | `node app/scripts/shoot-mvp.mjs` | 110 screenshots: 11 screens × 5 devices × dark/light (below) |
 | 6 | Live create-character in the built-in browser (isolated origin, see §4) | **done end-to-end**: "a sturdy young dwarf with a friendly face", tan, stocky → base 2 gens + 6 skeleton-v3 calls (3 gens each) + 34 skeletons (3.4 gens) ≈ 23.4 gens, ~11 min wall time (PixelLab was busy with B4's 20+ jobs); 0 rig warnings; frozen as `rig-1e5fa1d4809a`, opened in the Studio |
-| 7 | Live New item | ITEM_RESULT |
+| 7 | Live New item on that character | **done end-to-end**: Head → "iron knight helmet" → Make · 28 gens (B4's skeleton route: 1 dress call + 6 pose calls) → design call passed → B4's gates re-rolled call 3 (G2 key kept 0.94–0.96) and calls 5/6 (G10 misregistered 1 px) automatically → review (worn in 4 directions, "Needs a look: some body pixels were changed") → Keep it → auto-worn, recoloured to gold in all directions → Export Godot `Download zip · 68 KB` |
+| 8 | Live spend (ledger of the isolated origin) | character 23.4 gens (base 2 + 6 × 3 + 34 × 0.1); helmet 49 gens instead of 28: ≈ 9 from legitimate auto re-rolls, ≈ 12–15 from the duplicate-runner bug (§3 #12), the rest from re-rolls that the duplicates triggered. Total ≈ 72 gens. Timings: base 185 s, skeleton-v3 per direction 93–282 s, pose calls 70–184 s |
+| 9 | Dev routes after the change | `#/dev`, `#/m1`, `#/m4`, `#/m5`, `#/selftest` render; browser self-tests "all self-tests passed"; no page errors |
 
 Screenshot judging (every PNG looked at): desktop 1440 × 900 and 1024 × 768 @1.25 DPR, tablet 768 × 1024 @2, phone
 375 × 812 @2, phone landscape 812 × 375 @2, dark and light. Files: `docs/testing/img/mvp_<theme>_<screen>_<device>.png`
 with screens `welcome, studio, alldirs, colours, moves, item, export, create, newitem, connect, activity`.
 Live run: `mvp_live_1_creating.png`, `mvp_live_2_created_review.jpg`, `mvp_live_3_studio_new_character.jpg`,
-`mvp_live_4_new_item_28gens.jpg`, `mvp_live_5_item_generating.jpg` LIVE_MORE (the browser pane captures at 800 × 500, so these are low-res).
+`mvp_live_4_new_item_28gens.jpg`, `mvp_live_5_item_generating.jpg`,
+`mvp_live_6_phone_generating_before_fix.jpg`, `mvp_live_7_item_review.jpg`, `mvp_live_8_item_kept.jpg`, `mvp_live_9_gold_alldirs.jpg`,
+`mvp_live_10_export.jpg` (the browser pane captures at 800 × 500, so these are low-res).
 
 ## 3. Bugs found and fixed while testing
 
@@ -62,6 +66,17 @@ Live run: `mvp_live_1_creating.png`, `mvp_live_2_created_review.jpg`, `mvp_live_
 9. After connecting a key from "Create", the sheet closed and hid the progress; it now returns to the progress view.
 10. The New item price used a flat 10 gens/call; it now asks B4's `planItem`/`planGens` (skeleton route: 28 gens, not 70).
 11. Export file name used the fixture's internal name (`s2_adventurer`); it now uses the character name.
+12. **Duplicate item runners (cost real gens).** Re-mounting the Studio (HMR during development, but any remount) called
+    `loadGens()` again, which replaced the drafts with their stored copies and started a second `runItem` on the same draft;
+    the runners re-rolled the same calls independently (call 3 ran 7×) and one switched the key to magenta. I cancelled the
+    strays, re-pointed the draft at the green results by hand (logged in the draft) and accepted it. Fix: drafts load once per
+    page and a module-level set allows one runner per draft id; `resumeCreate()` is guarded the same way.
+13. The review said "Every frame passed the checks" before any QA existed (after a reload); it now says "Checking the frames…"
+    and Keep it waits for QA.
+14. Phone: the generating tile looked selected like "None", and the job accessory duplicated the progress card right above it;
+    the tile now has its own selection style and the accessory hides while that card is on screen.
+15. Default character name was the first two words ("Sturdy young"); it is now the noun of the first phrase ("Dwarf").
+16. A brand-new character showed "Nothing selected"; the inspector now says "Your character is ready" with "Add your first item".
 
 ## 4. Known gaps and risks
 
@@ -71,10 +86,12 @@ Live run: `mvp_live_1_creating.png`, `mvp_live_2_created_review.jpg`, `mvp_live_
   Fix: Web Locks leader + periodic ledger sync for followers.
 - Undo covers the dress state only. Generations cannot be undone; Remove is permanent (with a confirm), no 8 s undo toast yet.
   "Try again" opens New item prefilled; it does not keep versions of one item.
-- Character names come from the first two words of the description ("Sturdy young"); rename is not built.
+- Character names are guessed from the description ("Dwarf"); rename is not built. The live test character is still called "Sturdy young" (made before the fix).
 - No "Add a move" (run/attack need the base and every item animated again; S3/S4 route exists in the libs).
 - Time estimates are fixed formulas, not ledger medians; no "Notify me when done"; no offline banner.
 - Colour material names are hue words from k-means ("Orange", "Yellow"), sometimes odd (a dark outline ramp named Yellow).
 - Thumbnails/sprites recompute per frame on the main thread; fine for ≤ 8 items, not profiled beyond.
 - Phone landscape is tight (as in D2); sheets become a trailing panel and need scrolling for Create.
 - The browser-pane screenshots of the live run are 800 × 500 captures; the Playwright set is full resolution but uses the demo.
+- The live character ("Sturdy young", `rig-1e5fa1d4809a`, with the gold iron helmet) lives in the built-in browser's IndexedDB
+  for origin `http://localhost:5174` (the isolated test server, now stopped), not in the shared `:5173` origin.
