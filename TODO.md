@@ -41,6 +41,13 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 - [x] End-to-end: Studio Ranger → helmet + sword → slash → Godot export pixel-identical (B7/B9)
 - [x] Godot 4.7.1 + Phaser 3.80/3.90/4.2.1 verified pixel-identical incl. oversize layers (M5/B8/B9)
 
+## Phase 7 — Hardening (2026-10-21)
+- [~] T3 full item coverage: hair, cape, chest, boots, legs × idle/walk/slash/hurt × S/E/N/W (≤220 gens, user-approved)
+- [~] B11 layered .aseprite export (verified with Aseprite CLI) + Godot CREDITS.csv warning fix
+- [~] B12 root README, docs index, user guide, GitHub Pages workflow (no push), repo hygiene
+- [~] R6 code/security/over-engineering review (report only)
+- [ ] After T3/R6: offline banner, 4/8-direction + 48/56 px options in Create, shirt/shorts colour regions, R6 fixes
+
 ## Deferred
 - [ ] Unity export live verification (needs Unity Hub sign-in; C# compiles) — deferred by user 2026-10-20
 
