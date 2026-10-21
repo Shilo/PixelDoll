@@ -1,0 +1,139 @@
+{
+  "all": {
+    "s1_novel2_grow1": {
+      "P": 0.937,
+      "R": 0.947,
+      "F1": 0.942,
+      "fpPerCell": 11.9,
+      "fnPerCell": 9.8
+    },
+    "s1_novel2_grow1+temporal": {
+      "P": 0.938,
+      "R": 0.914,
+      "F1": 0.926,
+      "fpPerCell": 11.1,
+      "fnPerCell": 15.9
+    },
+    "s1_auto": {
+      "P": 0.934,
+      "R": 0.97,
+      "F1": 0.952,
+      "fpPerCell": 12.7,
+      "fnPerCell": 5.5
+    },
+    "s1_auto+temporal": {
+      "P": 0.934,
+      "R": 0.931,
+      "F1": 0.933,
+      "fpPerCell": 12.1,
+      "fnPerCell": 12.7
+    },
+    "s1_auto_skinrej": {
+      "P": 0.951,
+      "R": 0.97,
+      "F1": 0.961,
+      "fpPerCell": 9.2,
+      "fnPerCell": 5.5
+    },
+    "s1_auto_skinrej+temporal": {
+      "P": 0.948,
+      "R": 0.931,
+      "F1": 0.939,
+      "fpPerCell": 9.5,
+      "fnPerCell": 12.8
+    },
+    "s1_auto_skinrej6": {
+      "P": 0.945,
+      "R": 0.97,
+      "F1": 0.957,
+      "fpPerCell": 10.5,
+      "fnPerCell": 5.5
+    },
+    "s1_auto_skinrej6+temporal": {
+      "P": 0.942,
+      "R": 0.931,
+      "F1": 0.936,
+      "fpPerCell": 10.6,
+      "fnPerCell": 12.8
+    },
+    "nbr_grow_fill": {
+      "P": 0.814,
+      "R": 0.917,
+      "F1": 0.862,
+      "fpPerCell": 38.8,
+      "fnPerCell": 15.3
+    },
+    "nbr_grow_fill+temporal": {
+      "P": 0.828,
+      "R": 0.894,
+      "F1": 0.86,
+      "fpPerCell": 34.2,
+      "fnPerCell": 19.6
+    },
+    "nbr_rej_grow_fill": {
+      "P": 0.937,
+      "R": 0.912,
+      "F1": 0.924,
+      "fpPerCell": 11.4,
+      "fnPerCell": 16.3
+    },
+    "nbr_rej_grow_fill+temporal": {
+      "P": 0.937,
+      "R": 0.887,
+      "F1": 0.911,
+      "fpPerCell": 11.1,
+      "fnPerCell": 20.8
+    },
+    "nbr_and_novel2_grow_fill": {
+      "P": 0.945,
+      "R": 0.912,
+      "F1": 0.928,
+      "fpPerCell": 9.9,
+      "fnPerCell": 16.3
+    },
+    "nbr_and_novel2_grow_fill+temporal": {
+      "P": 0.944,
+      "R": 0.884,
+      "F1": 0.913,
+      "fpPerCell": 9.7,
+      "fnPerCell": 21.4
+    }
+  },
+  "byItem": {
+    "helmet": {
+      "s1_novel2_grow1": 0.962,
+      "s1_auto": 0.962,
+      "s1_auto_skinrej": 0.969,
+      "nbr_and_novel2_grow_fill": 0.955,
+      "nbr_and_novel2_grow_fill+temporal": 0.951
+    },
+    "chest": {
+      "s1_novel2_grow1": 0.829,
+      "s1_auto": 0.898,
+      "s1_auto_skinrej": 0.901,
+      "nbr_and_novel2_grow_fill": 0.902,
+      "nbr_and_novel2_grow_fill+temporal": 0.89
+    },
+    "boots": {
+      "s1_novel2_grow1": 0.985,
+      "s1_auto": 0.985,
+      "s1_auto_skinrej": 0.994,
+      "nbr_and_novel2_grow_fill": 0.821,
+      "nbr_and_novel2_grow_fill+temporal": 0.72
+    },
+    "cape": {
+      "s1_novel2_grow1": 0.957,
+      "s1_auto": 0.957,
+      "s1_auto_skinrej": 0.968,
+      "nbr_and_novel2_grow_fill": 0.96,
+      "nbr_and_novel2_grow_fill+temporal": 0.959
+    },
+    "sword": {
+      "s1_novel2_grow1": 0.952,
+      "s1_auto": 0.952,
+      "s1_auto_skinrej": 0.962,
+      "nbr_and_novel2_grow_fill": 0.945,
+      "nbr_and_novel2_grow_fill+temporal": 0.945
+    }
+  }
+}

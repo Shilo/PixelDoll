@@ -1,0 +1,120 @@
+{
+  "usage": {
+    "type": "usd",
+    "usd": 0.043442581839031644
+  },
+  "id": "fafa9ed1-7405-4191-bd6c-1326265e7376",
+  "status": "completed",
+  "created_at": "2026-10-21T05:04:35.275574+00:00",
+  "last_response": {
+    "seed": 1418599194,
+    "type": "message_done",
+    "usage": {
+      "seconds": 345.9832365512848
+    },
+    "images": [
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3276 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3304 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3324 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3200 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3040 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2988 chars>",
+        "height": 64
+      }
+    ],
+    "progress": 1.2105263157894737,
+    "direction": "south",
+    "frame_count": 6,
+    "animation_id": "10b782b0-9c9c-4e2b-b67c-c72fd0cad1e7",
+    "character_id": "8b885ed1-8d79-430c-9419-497796a03ca0",
+    "storage_urls": {
+      "frames": [
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/8b885ed1-8d79-430c-9419-497796a03ca0/animations/10b782b0-9c9c-4e2b-b67c-c72fd0cad1e7/south/0.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/8b885ed1-8d79-430c-9419-497796a03ca0/animations/10b782b0-9c9c-4e2b-b67c-c72fd0cad1e7/south/1.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/8b885ed1-8d79-430c-9419-497796a03ca0/animations/10b782b0-9c9c-4e2b-b67c-c72fd0cad1e7/south/2.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/8b885ed1-8d79-430c-9419-497796a03ca0/animations/10b782b0-9c9c-4e2b-b67c-c72fd0cad1e7/south/3.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/8b885ed1-8d79-430c-9419-497796a03ca0/animations/10b782b0-9c9c-4e2b-b67c-c72fd0cad1e7/south/4.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/8b885ed1-8d79-430c-9419-497796a03ca0/animations/10b782b0-9c9c-4e2b-b67c-c72fd0cad1e7/south/5.png"
+      ]
+    },
+    "generation_id": "a5e5ce46-1c82-4945-920d-5dd89e4ad8aa",
+    "animation_name": null,
+    "queue_position": 0,
+    "generation_model": "template",
+    "number_of_frames": 1,
+    "quantized_images": [
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3276 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3304 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3324 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3200 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3040 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2988 chars>",
+        "height": 64
+      }
+    ],
+    "saved_to_storage": true,
+    "animation_group_id": "ed233a70-f1a1-4de7-88df-8c28f335339f",
+    "animation_description": "cross punch attack",
+    "generation_started_at": "2026-10-21T05:04:35.660698+00:00",
+    "template_animation_id": "cross-punch",
+    "estimated_wait_seconds": 0,
+    "original_image_n_colors": 191,
+    "quantized_image_n_colors": 51
+  }
+}

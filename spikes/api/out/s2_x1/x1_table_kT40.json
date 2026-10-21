@@ -1,0 +1,631 @@
+[
+  {
+    "tag": "boots_green_ea2",
+    "dir": "south",
+    "areaMean": 150,
+    "areaCV": 0.06,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.1,
+      5.2
+    ],
+    "specks": 3,
+    "speckPx": 6,
+    "pinholes": 0,
+    "comps": 1.5,
+    "skinLeak": 0,
+    "keyKept": 0.951,
+    "keyErased": 0.004,
+    "spill": 0.034
+  },
+  {
+    "tag": "boots_green_ea2",
+    "dir": "east",
+    "areaMean": 153,
+    "areaCV": 0.1,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      22,
+      2.8
+    ],
+    "specks": 1,
+    "speckPx": 2,
+    "pinholes": 0,
+    "comps": 1.6,
+    "skinLeak": 0,
+    "keyKept": 0.955,
+    "keyErased": 0.003,
+    "spill": 0.024
+  },
+  {
+    "tag": "boots_magenta_ea2",
+    "dir": "south",
+    "areaMean": 132,
+    "areaCV": 0.07,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.4,
+      5
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 0,
+    "comps": 1.9,
+    "skinLeak": 0,
+    "keyKept": 0.996,
+    "keyErased": 0.004,
+    "spill": 0
+  },
+  {
+    "tag": "boots_magenta_ea2",
+    "dir": "east",
+    "areaMean": 135,
+    "areaCV": 0.11,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      21.8,
+      2.7
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 0,
+    "comps": 1.5,
+    "skinLeak": 0,
+    "keyKept": 0.999,
+    "keyErased": 0.001,
+    "spill": 0
+  },
+  {
+    "tag": "cape_green_ea2",
+    "dir": "south",
+    "areaMean": 422,
+    "areaCV": 0.07,
+    "adjPaletteJ": 0.93,
+    "centroidSpread": [
+      1.9,
+      1.6
+    ],
+    "specks": 1,
+    "speckPx": 2,
+    "pinholes": 0,
+    "comps": 8.4,
+    "skinLeak": 0.016,
+    "keyKept": 0.969,
+    "keyErased": 0,
+    "spill": 0.137
+  },
+  {
+    "tag": "cape_green_ea2",
+    "dir": "east",
+    "areaMean": 443,
+    "areaCV": 0.03,
+    "adjPaletteJ": 0.93,
+    "centroidSpread": [
+      1.5,
+      1
+    ],
+    "specks": 4,
+    "speckPx": 8,
+    "pinholes": 0,
+    "comps": 6.9,
+    "skinLeak": 0.01,
+    "keyKept": 0.944,
+    "keyErased": 0.005,
+    "spill": 0.155
+  },
+  {
+    "tag": "cape_magenta_ea2",
+    "dir": "south",
+    "areaMean": 389,
+    "areaCV": 0.01,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.9,
+      2.2
+    ],
+    "specks": 7,
+    "speckPx": 14,
+    "pinholes": 0,
+    "comps": 7.1,
+    "skinLeak": 0,
+    "keyKept": 0.991,
+    "keyErased": 0,
+    "spill": 0.533
+  },
+  {
+    "tag": "cape_magenta_ea2",
+    "dir": "east",
+    "areaMean": 433,
+    "areaCV": 0.07,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      2.8,
+      2.4
+    ],
+    "specks": 15,
+    "speckPx": 30,
+    "pinholes": 1,
+    "comps": 5.9,
+    "skinLeak": 0,
+    "keyKept": 0.985,
+    "keyErased": 0.001,
+    "spill": 0.415
+  },
+  {
+    "tag": "chest_green_ea2",
+    "dir": "south",
+    "areaMean": 251,
+    "areaCV": 0.04,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      0.7,
+      1.2
+    ],
+    "specks": 10,
+    "speckPx": 20,
+    "pinholes": 0,
+    "comps": 4.5,
+    "skinLeak": 0,
+    "keyKept": 0.917,
+    "keyErased": 0,
+    "spill": 0.134
+  },
+  {
+    "tag": "chest_green_ea2",
+    "dir": "east",
+    "areaMean": 140,
+    "areaCV": 0.09,
+    "adjPaletteJ": 0.96,
+    "centroidSpread": [
+      1.9,
+      1.6
+    ],
+    "specks": 5,
+    "speckPx": 10,
+    "pinholes": 0,
+    "comps": 2.8,
+    "skinLeak": 0,
+    "keyKept": 0.866,
+    "keyErased": 0.001,
+    "spill": 0.178
+  },
+  {
+    "tag": "chest_green_to2",
+    "dir": "south",
+    "areaMean": 270,
+    "areaCV": 0.03,
+    "adjPaletteJ": 0.99,
+    "centroidSpread": [
+      1,
+      1.5
+    ],
+    "specks": 3,
+    "speckPx": 6,
+    "pinholes": 0,
+    "comps": 2.3,
+    "skinLeak": 0,
+    "keyKept": 0.973,
+    "keyErased": 0,
+    "spill": 0.059
+  },
+  {
+    "tag": "chest_magenta_ea2",
+    "dir": "south",
+    "areaMean": 243,
+    "areaCV": 0.02,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      0.4,
+      0.4
+    ],
+    "specks": 3,
+    "speckPx": 6,
+    "pinholes": 0,
+    "comps": 1.4,
+    "skinLeak": 0,
+    "keyKept": 0.987,
+    "keyErased": 0,
+    "spill": 0.05
+  },
+  {
+    "tag": "chest_magenta_ea2",
+    "dir": "east",
+    "areaMean": 134,
+    "areaCV": 0.07,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.2,
+      2.1
+    ],
+    "specks": 3,
+    "speckPx": 6,
+    "pinholes": 0,
+    "comps": 1.8,
+    "skinLeak": 0,
+    "keyKept": 0.966,
+    "keyErased": 0.001,
+    "spill": 0.098
+  },
+  {
+    "tag": "helmet_green_ea2",
+    "dir": "south",
+    "areaMean": 155,
+    "areaCV": 0.02,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.1,
+      1.2
+    ],
+    "specks": 6,
+    "speckPx": 12,
+    "pinholes": 0,
+    "comps": 2.4,
+    "skinLeak": 0,
+    "keyKept": 0.946,
+    "keyErased": 0,
+    "spill": 0.157
+  },
+  {
+    "tag": "helmet_green_ea2",
+    "dir": "east",
+    "areaMean": 153,
+    "areaCV": 0.01,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.6,
+      0.5
+    ],
+    "specks": 3,
+    "speckPx": 6,
+    "pinholes": 0,
+    "comps": 3,
+    "skinLeak": 0,
+    "keyKept": 0.888,
+    "keyErased": 0,
+    "spill": 0.114
+  },
+  {
+    "tag": "helmet_green_to2",
+    "dir": "south",
+    "areaMean": 171,
+    "areaCV": 0.02,
+    "adjPaletteJ": 0.95,
+    "centroidSpread": [
+      1.8,
+      1.1
+    ],
+    "specks": 1,
+    "speckPx": 2,
+    "pinholes": 12,
+    "comps": 1.3,
+    "skinLeak": 0,
+    "keyKept": 0.961,
+    "keyErased": 0.001,
+    "spill": 0.131
+  },
+  {
+    "tag": "helmet_grey_ea2",
+    "dir": "south",
+    "areaMean": 104,
+    "areaCV": 0.02,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.3,
+      0.8
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 36,
+    "comps": 1,
+    "skinLeak": 0,
+    "keyKept": 0.998,
+    "keyErased": 0.001,
+    "spill": 0
+  },
+  {
+    "tag": "helmet_grey_ea2",
+    "dir": "east",
+    "areaMean": 157,
+    "areaCV": 0.02,
+    "adjPaletteJ": 0.96,
+    "centroidSpread": [
+      1.6,
+      0.7
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 70,
+    "comps": 1,
+    "skinLeak": 0,
+    "keyKept": 0.992,
+    "keyErased": 0,
+    "spill": 0
+  },
+  {
+    "tag": "helmet_magenta_ea2",
+    "dir": "south",
+    "areaMean": 155,
+    "areaCV": 0.04,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.4,
+      1
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 0,
+    "comps": 1,
+    "skinLeak": 0,
+    "keyKept": 0.999,
+    "keyErased": 0.001,
+    "spill": 0.115
+  },
+  {
+    "tag": "helmet_magenta_ea2",
+    "dir": "east",
+    "areaMean": 146,
+    "areaCV": 0.01,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      1.6,
+      0.8
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 0,
+    "comps": 1,
+    "skinLeak": 0,
+    "keyKept": 0.997,
+    "keyErased": 0,
+    "spill": 0.055
+  },
+  {
+    "tag": "sword_green_ea2",
+    "dir": "south",
+    "areaMean": 177,
+    "areaCV": 0.05,
+    "adjPaletteJ": 1,
+    "centroidSpread": [
+      2.2,
+      4.6
+    ],
+    "specks": 31,
+    "speckPx": 62,
+    "pinholes": 0,
+    "comps": 13,
+    "skinLeak": 0,
+    "keyKept": 0.987,
+    "keyErased": 0.003,
+    "spill": 0.304
+  },
+  {
+    "tag": "sword_green_ea2",
+    "dir": "east",
+    "areaMean": 178,
+    "areaCV": 0.13,
+    "adjPaletteJ": 0.98,
+    "centroidSpread": [
+      6.8,
+      2.7
+    ],
+    "specks": 36,
+    "speckPx": 72,
+    "pinholes": 2,
+    "comps": 12.5,
+    "skinLeak": 0,
+    "keyKept": 0.985,
+    "keyErased": 0,
+    "spill": 0.427
+  },
+  {
+    "tag": "sword_green_to2",
+    "dir": "south",
+    "areaMean": 211,
+    "areaCV": 0.05,
+    "adjPaletteJ": 0.91,
+    "centroidSpread": [
+      3,
+      3.9
+    ],
+    "specks": 21,
+    "speckPx": 42,
+    "pinholes": 2,
+    "comps": 14,
+    "skinLeak": 0,
+    "keyKept": 0.989,
+    "keyErased": 0.001,
+    "spill": 0.407
+  },
+  {
+    "tag": "S1:chest_south__ea2",
+    "dir": "south",
+    "areaMean": 228,
+    "areaCV": 0.07,
+    "adjPaletteJ": 0.65,
+    "centroidSpread": [
+      0.3,
+      0.8
+    ],
+    "specks": 1,
+    "speckPx": 1,
+    "pinholes": 12,
+    "comps": 2.8,
+    "skinLeak": 0.006
+  },
+  {
+    "tag": "S1:chest_south__to2",
+    "dir": "south",
+    "areaMean": 220,
+    "areaCV": 0.1,
+    "adjPaletteJ": 0.74,
+    "centroidSpread": [
+      1,
+      1.2
+    ],
+    "specks": 4,
+    "speckPx": 8,
+    "pinholes": 23,
+    "comps": 4.4,
+    "skinLeak": 0.005
+  },
+  {
+    "tag": "S1:helmet_east__ea2",
+    "dir": "east",
+    "areaMean": 118,
+    "areaCV": 0.01,
+    "adjPaletteJ": 0.85,
+    "centroidSpread": [
+      1.6,
+      0.7
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 23,
+    "comps": 1,
+    "skinLeak": 0.002
+  },
+  {
+    "tag": "S1:helmet_east__to2",
+    "dir": "east",
+    "areaMean": 163,
+    "areaCV": 0.06,
+    "adjPaletteJ": 0.81,
+    "centroidSpread": [
+      1.7,
+      2.1
+    ],
+    "specks": 1,
+    "speckPx": 2,
+    "pinholes": 38,
+    "comps": 1.5,
+    "skinLeak": 0.01
+  },
+  {
+    "tag": "S1:helmet_south__ea2",
+    "dir": "south",
+    "areaMean": 122,
+    "areaCV": 0.08,
+    "adjPaletteJ": 0.74,
+    "centroidSpread": [
+      2.2,
+      1.6
+    ],
+    "specks": 1,
+    "speckPx": 2,
+    "pinholes": 11,
+    "comps": 1.9,
+    "skinLeak": 0.01
+  },
+  {
+    "tag": "S1:helmet_south__iv3",
+    "dir": "south",
+    "areaMean": 130,
+    "areaCV": 0.38,
+    "adjPaletteJ": 0.13,
+    "centroidSpread": [
+      0.9,
+      11.9
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 17,
+    "comps": 1,
+    "skinLeak": 0.024
+  },
+  {
+    "tag": "S1:helmet_south__pfe-ref",
+    "dir": "south",
+    "areaMean": 97,
+    "areaCV": 0.18,
+    "adjPaletteJ": 0.06,
+    "centroidSpread": [
+      1.4,
+      1.2
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 4,
+    "comps": 1.5,
+    "skinLeak": 0.01
+  },
+  {
+    "tag": "S1:helmet_south__pfi",
+    "dir": "south",
+    "areaMean": 134,
+    "areaCV": 0.14,
+    "adjPaletteJ": 0.2,
+    "centroidSpread": [
+      1.6,
+      1.9
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 25,
+    "comps": 1.4,
+    "skinLeak": 0.037
+  },
+  {
+    "tag": "S1:helmet_south__to2",
+    "dir": "south",
+    "areaMean": 139,
+    "areaCV": 0.09,
+    "adjPaletteJ": 0.73,
+    "centroidSpread": [
+      2.2,
+      1.4
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 18,
+    "comps": 1.6,
+    "skinLeak": 0.005
+  },
+  {
+    "tag": "S1:sword_south__ea2",
+    "dir": "south",
+    "areaMean": 135,
+    "areaCV": 0.04,
+    "adjPaletteJ": 0.65,
+    "centroidSpread": [
+      2,
+      2.2
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 4,
+    "comps": 1.1,
+    "skinLeak": 0
+  },
+  {
+    "tag": "S1:sword_south__pfi",
+    "dir": "south",
+    "areaMean": 120,
+    "areaCV": 0.15,
+    "adjPaletteJ": 0.19,
+    "centroidSpread": [
+      3.6,
+      5.7
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 6,
+    "comps": 2.5,
+    "skinLeak": 0.098
+  },
+  {
+    "tag": "S1:sword_south__to2",
+    "dir": "south",
+    "areaMean": 137,
+    "areaCV": 0.05,
+    "adjPaletteJ": 0.72,
+    "centroidSpread": [
+      1.8,
+      2.9
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 3,
+    "comps": 1,
+    "skinLeak": 0.003
+  }
+]

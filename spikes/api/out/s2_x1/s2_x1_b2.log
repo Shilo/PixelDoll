@@ -1,0 +1,3 @@
+COST {"tag":"helmet_grey_ea2","route":"ea2","ms":166242,"usage":{"type":"generations","generations":10},"nOut":16}
+COST {"tag":"chest_grey_ea2","route":"ea2","ms":174226,"usage":{"type":"generations","generations":10},"nOut":16}
+COST {"batch":"helmet,chest grey ea2","generationsDelta":120}

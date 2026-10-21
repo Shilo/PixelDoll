@@ -1,0 +1,4 @@
+COST {"tag":"helmet_green_to2","route":"to2","ms":96085,"usage":{"type":"generations","generations":10},"nOut":8}
+COST {"tag":"sword_green_to2","route":"to2","ms":123632,"usage":{"type":"generations","generations":10},"nOut":8}
+COST {"tag":"chest_green_to2","route":"to2","ms":127542,"usage":{"type":"generations","generations":10},"nOut":8}
+COST {"batch":"helmet,chest,sword green to2","generationsDelta":80}

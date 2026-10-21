@@ -1,0 +1,10 @@
+COST {"label":"b48 create-character-v3 48","ms":197570,"usd":0,"generations":2,"reported":[{"type":"generations","generations":2}]}
+south 48 48 bbox {"x":13,"y":1,"w":22,"h":46} opaque 636 colors 30
+west 48 48 bbox {"x":18,"y":1,"w":12,"h":46} opaque 388 colors 29
+east 48 48 bbox {"x":18,"y":1,"w":12,"h":46} opaque 383 colors 28
+north 48 48 bbox {"x":13,"y":1,"w":22,"h":46} opaque 636 colors 23
+south-east 48 48 bbox {"x":14,"y":1,"w":20,"h":46} opaque 585 colors 30
+north-east 48 48 bbox {"x":15,"y":1,"w":19,"h":46} opaque 592 colors 30
+north-west 48 48 bbox {"x":15,"y":1,"w":18,"h":46} opaque 573 colors 28
+south-west 48 48 bbox {"x":14,"y":1,"w":20,"h":46} opaque 585 colors 28
+{"tag":"b48","cid":"5352683c-54aa-4617-b303-e942e472c66d","totalMs":197382,"size":{"width":48,"height":48}}

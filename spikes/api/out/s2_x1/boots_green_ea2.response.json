@@ -1,0 +1,239 @@
+{
+  "keys": [
+    "seed",
+    "type",
+    "action",
+    "images",
+    "progress",
+    "billing_usage",
+    "generation_id",
+    "usage_cost_usd",
+    "billing_charged",
+    "quantized_images",
+    "generation_started_at",
+    "original_image_n_colors",
+    "quantized_image_n_colors"
+  ],
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 10
+    },
+    "id": "139c3810-0733-40f6-bed3-4ed4fc3d6b7f",
+    "status": "completed",
+    "created_at": "2026-10-21T04:59:39.612509+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "done",
+      "action": "Touching up pixels",
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2644 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2676 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2612 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2640 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2672 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2636 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2544 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2624 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1920 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2076 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2284 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1912 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1976 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2252 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2416 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1988 chars>",
+          "height": 64
+        }
+      ],
+      "progress": 0.85,
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 10
+      },
+      "generation_id": "50c220ee-cd18-4956-bc76-d6458ca397c6",
+      "usage_cost_usd": 0.08,
+      "billing_charged": true,
+      "quantized_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2644 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2676 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2612 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2640 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2672 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2636 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2544 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2624 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1920 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2076 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2284 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1912 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1976 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2252 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2416 chars>",
+          "height": 64
+        },
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1988 chars>",
+          "height": 64
+        }
+      ],
+      "generation_started_at": "2026-10-21T04:59:45.877027+00:00",
+      "original_image_n_colors": 92,
+      "quantized_image_n_colors": 21
+    }
+  }
+}

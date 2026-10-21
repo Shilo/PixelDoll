@@ -1,0 +1,162 @@
+[
+  {
+    "tag": "helmet_south__ea2",
+    "variant": "s1_auto",
+    "areaMean": 122,
+    "areaCV": 0.08,
+    "adjPaletteJ": 0.74,
+    "centroidSpread": [
+      2.2,
+      1.6
+    ],
+    "specks": 1,
+    "speckPx": 2,
+    "pinholes": 11,
+    "comps": 1.9,
+    "skinLeak": 0.01
+  },
+  {
+    "tag": "helmet_south__ea2",
+    "variant": "s1_auto_skinrej",
+    "areaMean": 122,
+    "areaCV": 0.08,
+    "adjPaletteJ": 0.79,
+    "centroidSpread": [
+      2.3,
+      1.7
+    ],
+    "specks": 2,
+    "speckPx": 4,
+    "pinholes": 0,
+    "comps": 2,
+    "skinLeak": 0.004
+  },
+  {
+    "tag": "helmet_east__ea2",
+    "variant": "s1_auto",
+    "areaMean": 118,
+    "areaCV": 0.01,
+    "adjPaletteJ": 0.85,
+    "centroidSpread": [
+      1.6,
+      0.7
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 23,
+    "comps": 1,
+    "skinLeak": 0.002
+  },
+  {
+    "tag": "helmet_east__ea2",
+    "variant": "s1_auto_skinrej",
+    "areaMean": 121,
+    "areaCV": 0.01,
+    "adjPaletteJ": 0.85,
+    "centroidSpread": [
+      1.7,
+      0.7
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 0,
+    "comps": 1,
+    "skinLeak": 0.002
+  },
+  {
+    "tag": "chest_south__ea2",
+    "variant": "s1_auto",
+    "areaMean": 228,
+    "areaCV": 0.07,
+    "adjPaletteJ": 0.65,
+    "centroidSpread": [
+      0.3,
+      0.8
+    ],
+    "specks": 1,
+    "speckPx": 1,
+    "pinholes": 12,
+    "comps": 2.8,
+    "skinLeak": 0.006
+  },
+  {
+    "tag": "chest_south__ea2",
+    "variant": "s1_auto_skinrej",
+    "areaMean": 227,
+    "areaCV": 0.07,
+    "adjPaletteJ": 0.75,
+    "centroidSpread": [
+      0.3,
+      0.8
+    ],
+    "specks": 1,
+    "speckPx": 2,
+    "pinholes": 0,
+    "comps": 2.8,
+    "skinLeak": 0.001
+  },
+  {
+    "tag": "chest_south__to2",
+    "variant": "s1_auto",
+    "areaMean": 220,
+    "areaCV": 0.1,
+    "adjPaletteJ": 0.74,
+    "centroidSpread": [
+      1,
+      1.2
+    ],
+    "specks": 4,
+    "speckPx": 8,
+    "pinholes": 23,
+    "comps": 4.4,
+    "skinLeak": 0.005
+  },
+  {
+    "tag": "chest_south__to2",
+    "variant": "s1_auto_skinrej",
+    "areaMean": 202,
+    "areaCV": 0.14,
+    "adjPaletteJ": 0.85,
+    "centroidSpread": [
+      1,
+      1.4
+    ],
+    "specks": 5,
+    "speckPx": 10,
+    "pinholes": 0,
+    "comps": 4.4,
+    "skinLeak": 0.001
+  },
+  {
+    "tag": "sword_south__to2",
+    "variant": "s1_auto",
+    "areaMean": 137,
+    "areaCV": 0.05,
+    "adjPaletteJ": 0.72,
+    "centroidSpread": [
+      1.8,
+      2.9
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 3,
+    "comps": 1,
+    "skinLeak": 0.003
+  },
+  {
+    "tag": "sword_south__to2",
+    "variant": "s1_auto_skinrej",
+    "areaMean": 136,
+    "areaCV": 0.04,
+    "adjPaletteJ": 0.8,
+    "centroidSpread": [
+      1.7,
+      2.8
+    ],
+    "specks": 0,
+    "speckPx": 0,
+    "pinholes": 0,
+    "comps": 1,
+    "skinLeak": 0
+  }
+]

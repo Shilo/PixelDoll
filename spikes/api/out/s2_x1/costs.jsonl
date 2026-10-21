@@ -1,0 +1,19 @@
+{"tag":"helmet_magenta_ea2","route":"ea2","ms":146024,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"helmet_green_ea2","route":"ea2","ms":156117,"usage":{"type":"generations","generations":10},"nOut":16}
+{"batch":"helmet green,magenta ea2","generationsDelta":24}
+{"tag":"helmet_green_to2","route":"to2","ms":96085,"usage":{"type":"generations","generations":10},"nOut":8}
+{"tag":"chest_green_ea2","route":"ea2","ms":107799,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"boots_magenta_ea2","route":"ea2","ms":112364,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"cape_magenta_ea2","route":"ea2","ms":114276,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"sword_green_ea2","route":"ea2","ms":114741,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"sword_green_to2","route":"to2","ms":123632,"usage":{"type":"generations","generations":10},"nOut":8}
+{"tag":"boots_green_ea2","route":"ea2","ms":125114,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"chest_green_to2","route":"to2","ms":127542,"usage":{"type":"generations","generations":10},"nOut":8}
+{"batch":"helmet,chest,sword green to2","generationsDelta":80}
+{"tag":"cape_green_ea2","route":"ea2","ms":154000,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"chest_magenta_ea2","route":"ea2","ms":160860,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"helmet_grey_ea2","route":"ea2","ms":166242,"usage":{"type":"generations","generations":10},"nOut":16}
+{"tag":"chest_grey_ea2","route":"ea2","ms":174226,"usage":{"type":"generations","generations":10},"nOut":16}
+{"batch":"helmet,chest grey ea2","generationsDelta":120}
+{"tag":"sword_magenta_ea2","route":"ea2","ms":196413,"usage":{"type":"generations","generations":10},"nOut":16}
+{"batch":"chest,boots,cape,sword green,magenta ea2","generationsDelta":130}
