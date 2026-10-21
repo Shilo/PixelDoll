@@ -2,9 +2,9 @@
   // Export (M5): one engine at a time; the zip is built when the sheet opens so the button can name its size.
   import Sheet from './Sheet.svelte'
   import { exportZip } from '../lib/export/export.ts'
-  import { storeVariants } from '../lib/dress/dress.ts'
+  import { coverageGaps, moveDirs, storeVariants } from '../lib/dress/dress.ts'
   import type { Engine, Manifest, Preset } from '../lib/store/manifest.ts'
-  import { ui, doc, store } from './state.svelte.ts'
+  import { ui, doc, store, toast } from './state.svelte.ts'
   import { ChevronRight, Download, TriangleAlert } from './icons.ts'
 
   const ENGINES: { id: Engine; name: string; sub: string }[] = [
@@ -20,6 +20,15 @@
   let busy = $state(false)
   const m = $derived(store.project?.manifest)
   const items = $derived(m ? m.items.filter((i) => i.slot !== 'body') : [])
+  const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
+  // B10 (T1 P1-1): views a move or an item doesn't have are empty in the sheets; say so before the download
+  const gaps = $derived.by(() => {
+    if (!m) return []
+    const out: string[] = []
+    for (const a of m.rig.animations) { const d = moveDirs(m, a.id); if (d.length < m.rig.directions.length) out.push(`${nice(a.id)} has ${d.join(' and ')} only`) }
+    for (const it of items) { const g = coverageGaps(m, it); if (g.length) out.push(`${it.name} has no ${g.map((x) => x.replace('-', ' ').replace('/', ' ')).join(', ')} frames`) }
+    return out
+  })
 
   $effect(() => {
     const e = engine, b = baked, p = store.project
@@ -47,6 +56,8 @@
     a.download = `${(store.projects.find((p) => p.id === doc.id)?.name ?? m.name).replace(/\s*\(demo\)/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${engine}.pixeldoll.zip`
     a.click()
     setTimeout(() => URL.revokeObjectURL(a.href), 10_000)
+    toast(`Downloaded ${a.download}`) // T1 P3: confirm, and get out of the way
+    ui.sheet = null
   }
 </script>
 
@@ -63,7 +74,8 @@
     </div>
   </div>
   {#if m}
-    <p class="muted">Includes {n(m.rig.directions.length, 'direction')} · {n(m.rig.animations.length, 'move')} · {n(items.length, 'item')} · {n(m.presets.length + 1, 'outfit')}, each item on its own layer sheet.</p>
+    <p class="muted">Includes {n(m.rig.directions.length, 'direction')} · {n(m.rig.animations.length, 'move')} · {n(items.length, 'item')} · {m.presets.filter((x) => x.id !== 'current').length ? `${n(m.presets.filter((x) => x.id !== 'current').length, 'outfit')} + your current look` : 'your current look'}, each item on its own layer sheet.</p>
+    {#if gaps.length}<p class="notice small"><TriangleAlert size={14} /><span>{gaps.join(' · ')}. Those frames stay empty in the sheets; manifest.json lists the directions of each move.</span></p>{/if}
   {/if}
   {#if result?.errors.length}
     {#each result.errors as e (e)}<p class="notice bad small"><TriangleAlert size={14} />{e}</p>{/each}

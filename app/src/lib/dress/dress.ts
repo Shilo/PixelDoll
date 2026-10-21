@@ -37,12 +37,14 @@ export function materialNames(it: Pick<Item, 'slot' | 'prompt' | 'name'>, ramps:
   const words = WORDS.map(([re, w]) => [text.search(re), w] as const).filter(([i]) => i >= 0).sort((a, b) => a[0] - b[0]).map(([, w]) => w);
   const pairs = [...text.matchAll(/\b(\w+)\s+(\w+)/g)].filter((m) => COLOUR_HUE[m[1]]).map((m) => ({ hues: COLOUR_HUE[m[1]], noun: m[2] }));
   const free = (w?: string) => (w && !used.has(w) ? w : undefined);
-  const names = ramps.map((_, i) => {
+  // B10 (T1 P2-10): a near-black ramp is the outline, and an unexplained ramp is a "Detail" (a hue word misnames it)
+  const lum = (h: Hex) => { const n = fromHex(h); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
+  const names = ramps.map((r, i) => {
     const pair = pairs.find((p) => p.hues.includes(hues[i]));
-    const n = it.slot === 'body'
+    const n = it.slot !== 'body' && Math.max(...r.map(lum)) < 0.22 ? 'Outline' : it.slot === 'body'
       ? (hues[i] === 'grey' ? free('Clothes') : ['red', 'orange', 'yellow', 'pink'].includes(hues[i]) ? free('Skin') : undefined) ?? title(hues[i])
       : (pair && free(wordOf(pair.noun) ?? title(pair.noun))) ?? (hues[i] === 'grey' ? free(words.includes('Metal') ? 'Metal' : undefined) : undefined)
-        ?? free(words.find((w) => !used.has(w))) ?? free(SLOT_WORD[it.slot]) ?? title(hues[i]);
+        ?? free(words.find((w) => !used.has(w))) ?? free(SLOT_WORD[it.slot]) ?? 'Detail';
     used.add(n);
     return n;
   });
@@ -203,7 +205,8 @@ export function selfTest() {
   console.assert(missingAt(m, { back: 'cape' }, 'walk', 'west')[0] === cape && missingAt(m, { back: 'cape' }, 'walk', 'south').length === 0, 'missingAt follows mirrors');
   const red = ['#4a0d12', '#7d1820', '#b02832'] as Hex[], grey = ['#2b2f36', '#4d535d', '#7a828e'] as Hex[];
   console.assert(materialNames({ slot: 'head', name: 'Iron helmet', prompt: 'iron knight helmet with a red plume' }, [grey, red]).join() === 'Metal,Feather', `names ${materialNames({ slot: 'head', name: 'Iron helmet', prompt: 'iron knight helmet with a red plume' }, [grey, red])}`);
-  console.assert(materialNames({ slot: 'feet', name: 'Boots', prompt: 'tall boots' }, [red, grey]).join() === 'Leather,Grey' && materialNames({ slot: 'body', name: 'Base', prompt: '' }, [red, grey]).join() === 'Skin,Clothes', 'slot + base names');
-  console.assert(materialNames({ slot: 'back', name: 'Cape', prompt: 'cape' }, [red, red]).join() === 'Cloth,Red', 'no duplicate words');
+  console.assert(materialNames({ slot: 'feet', name: 'Boots', prompt: 'tall boots' }, [red, grey]).join() === 'Leather,Detail' && materialNames({ slot: 'body', name: 'Base', prompt: '' }, [red, grey]).join() === 'Skin,Clothes', 'slot + base names');
+  console.assert(materialNames({ slot: 'back', name: 'Cape', prompt: 'cape' }, [red, red, red]).join() === 'Cloth,Detail,Detail 2', 'no duplicate words');
+  console.assert(materialNames({ slot: 'torso_inner', name: 'Vest', prompt: 'leather armor vest' }, [red, ['#101012', '#1c1c20'] as Hex[]]).join() === 'Leather,Outline', 'dark ramp = outline');
   console.assert(edges({ w: 3, h: 3, data: new Uint8ClampedArray(36).fill(255) }).join() === '0,1,2,3,5,6,7,8', 'edges');
 }

@@ -533,7 +533,7 @@
       "variants": {}
     },
     {
-      "id": "bare",
+      "id": "base-only",
       "name": "Base only",
       "items": {
         "body": "base",

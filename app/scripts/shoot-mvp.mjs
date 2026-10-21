@@ -13,9 +13,10 @@ const DEVICES = {
   tablet: { viewport: { width: 768, height: 1024 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
   phone: { viewport: { width: 375, height: 812 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
   landscape: { viewport: { width: 812, height: 375 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
+  narrow: { viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true },
 }
 const menu = async (p, name) => { await p.locator('.project-btn').first().click(); await p.getByRole('menuitem', { name }).click() }
-const phoneLike = (d) => d === 'phone' || d === 'landscape'
+const phoneLike = (d) => d === 'phone' || d === 'landscape' || d === 'tablet' || d === 'narrow' // tablet portrait stacks like a phone (B10)
 const SCREENS = {
   welcome: null,
   studio: async () => {},
@@ -25,7 +26,10 @@ const SCREENS = {
   item: async (p, d) => { if (phoneLike(d)) await p.getByRole('button', { name: /details$/ }).first().click() },
   export: async (p) => p.getByRole('button', { name: 'Export' }).first().click(),
   create: async (p) => menu(p, 'New character…'),
-  newitem: async (p, d) => (phoneLike(d) ? p.getByRole('button', { name: 'New', exact: true }).click() : (d === 'tablet' ? p.getByRole('button', { name: 'Wardrobe', exact: true }).click() : Promise.resolve()).then(() => p.getByRole('button', { name: 'New head item' }).click())),
+  newitem: async (p, d) => (phoneLike(d) ? p.getByRole('button', { name: 'New', exact: true }).click() : p.getByRole('button', { name: 'New head item' }).click()),
+  // B10: the "not made for this view yet" note (wizard hat has no walk north) and the phone Outfits chip
+  notmade: async (p) => p.evaluate(() => { const s = window.__studio; s.doc.items.head = 'hat_wizard'; s.ui.dir = 'north' }),
+  outfits: async (p, d) => { if (phoneLike(d)) await p.getByRole('tab', { name: 'Outfits' }).click() },
   connect: async (p) => menu(p, /PixelLab/),
   activity: async (p) => menu(p, /Activity/),
 }

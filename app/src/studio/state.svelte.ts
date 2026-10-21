@@ -6,7 +6,7 @@ import { deriveMaterials, randomOutfit, recolour, storeVariants } from '../lib/d
 import { drawList } from '../lib/compose/compose.ts';
 import { deleteItem, listProjects, loadProject } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
-import type { DirectionName, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
+import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
 import { evaluateItem, type Draft, type ItemResult } from '../lib/items/run.ts';
 import { app } from '../lib/app.svelte.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
@@ -279,10 +279,28 @@ export async function removeItem(itemId: string) {
 
 /** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. */
 export async function copyDemo(): Promise<string> {
-  const id = await saveCopy(store.project!, 'Adventurer');
+  const id = await saveCopy(store.project!, 'Adventurer copy');
   await refreshProjects();
   await openProject(id);
   return id;
+}
+
+/** Rename the open (own) character: the manifest name is also the exported name. */
+export async function renameProject(name: string) {
+  const rec = await db.get<{ manifest?: Manifest }>('projects', doc.id);
+  if (!rec?.manifest || isDemo()) return;
+  rec.manifest.name = name;
+  await db.put('projects', doc.id, rec);
+  store.project!.manifest.name = name;
+  bump();
+  await refreshProjects();
+}
+
+/** Wardrobe tap: wear an item that is off; a worn item is only selected (take it off with its check or "None"). */
+export function pick(id: string) {
+  const it = itemById(id);
+  if (it && doc.items[it.slot] !== id) wear(id);
+  else ui.selected = id;
 }
 
 // ---------- item generations ----------

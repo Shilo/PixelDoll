@@ -28,7 +28,7 @@
   const cols = $derived(ui.all ? Math.max(1, Math.min(dirs.length, w > h * 1.6 ? dirs.length : 2)) : 1)
   const rows = $derived(ui.all ? Math.ceil(dirs.length / cols) : 1)
   // integer device px per sprite px: largest that fits ("fit"), or the user's zoom
-  const fit = $derived(Math.max(1, Math.floor(Math.min((w - 24 - (cols - 1) * 12) / cols, (h - barH - 24 - (rows - 1) * 30) / rows) * ui.dpr / cellH, 10 * ui.dpr)))
+  const fit = $derived(Math.max(1, Math.min(Math.floor(Math.min((w - 24 - (cols - 1) * 12) / cols, (h - barH - 24 - (rows - 1) * 30) / rows) * ui.dpr / cellH), Math.round(10 * ui.dpr))))
   const k = $derived(Math.max(1, Math.min(fit, ui.zoom || fit)))
   const zoomLabel = $derived(`${+(k / ui.dpr).toFixed(1)}×`)
   const step = $derived(Math.max(1, Math.round(ui.dpr)))

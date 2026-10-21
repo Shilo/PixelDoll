@@ -3,7 +3,7 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
   import { ui, doc, store, creating, gens, openProject, undo, redo, toggleTheme, refreshProjects, isDemo } from './state.svelte.ts'
-  import { Check, ChevronDown, Coins, Download, Ellipsis, KeyRound, PanelLeft, PanelRight, Plus, Redo2, Sun, Moon, Undo2, House, Activity } from './icons.ts'
+  import { Check, ChevronDown, Coins, Download, Ellipsis, KeyRound, PanelLeft, PanelRight, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil } from './icons.ts'
 
   let { phone = false }: { phone?: boolean } = $props()
   const m = $derived(store.project?.manifest)
@@ -40,16 +40,17 @@
   <div class="tb-trail">
     {#if phone}
       <button class="btn icon plain" aria-label={undoLabel ? `Undo ${undoLabel}` : 'Undo'} disabled={!undoLabel} onclick={undo}><Undo2 size={20} /></button>
+      <button class="btn icon plain" aria-label={redoLabel ? `Redo ${redoLabel}` : 'Redo'} disabled={!redoLabel} onclick={redo}><Redo2 size={20} /></button>
     {:else}
       {#if $queue.role === 'follower'}
-        <button class="btn plain balance faint small" onclick={() => (ui.sheet = 'activity')} title="Another PixelDoll tab runs the PixelLab jobs">Running in another tab</button>
+        <button class="btn plain balance faint small" onclick={() => (ui.sheet = 'activity')} title="Another PixelDoll tab runs the PixelLab jobs">Working in another tab</button>
       {/if}
       {#if busy}
         <button class="btn plain balance" onclick={() => (ui.sheet = 'activity')} title="Activity"><span class="ring spin" aria-hidden="true"></span><span class="num">{active || ''}</span><span class="sr">jobs running</span></button>
       {/if}
       <button class="btn plain balance" onclick={() => (ui.sheet = app.key ? 'activity' : 'connect')} title={app.key ? 'Generations left on your PixelLab account' : 'Connect PixelLab'}>
         {#if !app.key}<KeyRound size={15} /><span>Connect</span>
-        {:else if app.keyRejected}<KeyRound size={15} /><span style="color:var(--bad)">Key rejected</span>
+        {:else if app.keyRejected}<KeyRound size={15} /><span style="color:var(--bad)">Key not accepted</span>
         {:else}<Coins size={15} /><span class="num">{app.balance ? `${fmtNum(app.balance.subscription.generations)} gens` : '…'}</span>{/if}
       </button>
     {/if}
@@ -70,15 +71,16 @@
 <div id="project-menu" class="menu" popover bind:this={menu} role="menu" aria-label="Characters">
   <p class="menu-sec">Characters</p>
   {#each store.projects as p (p.id)}
-    <button class="row" role="menuitemradio" aria-checked={p.id === doc.id} onclick={() => pick(p.id)}>
+    <button class="row" role="menuitemradio" aria-checked={p.id === doc.id} aria-label={p.name} onclick={() => pick(p.id)}>
       <span class="row-name">{p.name}</span>{#if p.id === doc.id}<Check size={14} />{/if}
     </button>
   {/each}
-  <button class="row" role="menuitem" onclick={() => sheet('create')}><Plus size={16} /><span class="row-name">New character…</span></button>
+  <button class="row" role="menuitem" aria-label="New character…" onclick={() => sheet('create')}><Plus size={16} /><span class="row-name">New character…</span></button>
+  {#if !isDemo()}<button class="row" role="menuitem" aria-label="Rename character…" onclick={() => sheet('rename')}><Pencil size={16} /><span class="row-name">Rename…</span></button>{/if}
   <hr />
-  <button class="row" role="menuitem" onclick={() => sheet('connect')}><KeyRound size={16} /><span class="row-name">{app.key ? 'PixelLab key' : 'Connect PixelLab…'}</span>
+  <button class="row" role="menuitem" aria-label={app.key ? 'PixelLab key' : 'Connect PixelLab…'} onclick={() => sheet('connect')}><KeyRound size={16} /><span class="row-name">{app.key ? 'PixelLab key' : 'Connect PixelLab…'}</span>
     {#if app.balance}<span class="faint small num">{fmtNum(app.balance.subscription.generations)} gens</span>{/if}</button>
-  <button class="row" role="menuitem" onclick={() => sheet('activity')}><Activity size={16} /><span class="row-name">Activity</span>{#if active}<span class="badge accent">{active}</span>{/if}</button>
-  <button class="row" role="menuitem" onclick={() => { close(); ui.welcome = true }}><House size={16} /><span class="row-name">Welcome screen</span></button>
-  <a class="row" role="menuitem" href="#/dev" onclick={close} style="text-decoration:none"><Ellipsis size={16} /><span class="row-name">Developer pages (M1–M5)</span></a>
+  <button class="row" role="menuitem" aria-label="Activity" onclick={() => sheet('activity')}><Activity size={16} /><span class="row-name">Activity</span>{#if active}<span class="badge accent">{active}</span>{/if}</button>
+  <button class="row" role="menuitem" aria-label="Welcome screen" onclick={() => { close(); ui.welcome = true }}><House size={16} /><span class="row-name">Welcome screen</span></button>
+  <a class="row" role="menuitem" aria-label="Developer pages" href="#/dev" onclick={close} style="text-decoration:none"><Ellipsis size={16} /><span class="row-name">Developer pages (M1–M5)</span></a>
 </div>

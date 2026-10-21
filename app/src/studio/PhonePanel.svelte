@@ -1,17 +1,20 @@
 <script lang="ts">
   // Phone content (portrait under the canvas, landscape in the side column): Wardrobe / Colours / Moves.
   import { GROUPS, HEALTH_LABEL, healthOf } from './model.ts'
-  import { ui, doc, store, view, gens, wear, clearSlots, genOf, genProgress, openNewItem } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, pick, clearSlots, genOf, genProgress, openNewItem, randomize, isDemo } from './state.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import Thumb from './Thumb.svelte'
   import GroupIcon from './GroupIcon.svelte'
   import Colours from './Colours.svelte'
   import Moves from './Moves.svelte'
   import GenCard from './GenCard.svelte'
-  import { Info, Plus, X } from './icons.ts'
+  import Outfits from './Outfits.svelte'
+  import { Bookmark, Info, Plus, Shuffle, X } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
-  const g = $derived(GROUPS.find((x) => x.id === ui.group)!)
+  // B10 (T1 P1-2): "Outfits" is a chip after the slot groups on phones
+  const outfits = $derived(ui.group === 'Outfits')
+  const g = $derived(GROUPS.find((x) => x.id === ui.group) ?? GROUPS[0])
   const items = $derived(m ? m.items.filter((i) => g.slots.includes(i.slot)) : [])
   const pending = $derived(gens.filter((x) => x.draft.rigId === doc.id && g.slots.includes(x.input.slot)))
   const sel = $derived(items.find((i) => i.id === ui.selected))
@@ -21,22 +24,28 @@
 
 <div class="panel">
   {#if ui.tab === 'wardrobe'}
-    <div class="slot-chips" role="tablist" aria-label="Slots">
-      {#each GROUPS as s (s.id)}
-        <button role="tab" class="slot-chip" aria-selected={ui.group === s.id} onclick={() => (ui.group = s.id)}>
-          <GroupIcon group={s.id} size={18} /><span>{s.id}</span>
-        </button>
-      {/each}
+    <div class="chip-row">
+      <div class="slot-chips" role="tablist" aria-label="Slots">
+        {#each GROUPS as s (s.id)}
+          <button role="tab" class="slot-chip" aria-selected={ui.group === s.id} onclick={() => (ui.group = s.id)}>
+            <GroupIcon group={s.id} size={18} /><span>{s.id}</span>
+          </button>
+        {/each}
+        <button role="tab" class="slot-chip" aria-selected={outfits} onclick={() => (ui.group = 'Outfits')}><Bookmark size={18} /><span>Outfits</span></button>
+      </div>
+      <button class="btn icon plain" aria-label="Random look" title="Random look" onclick={randomize} disabled={!m}><Shuffle size={20} /></button>
     </div>
-    {#if m && view.project}
+    {#if outfits}
+      <Outfits />
+    {:else if m && view.project}
       {#if items.length || pending.length}
         <div class="tiles" role="group" aria-label="{g.id} items">
           <button class="tile" aria-pressed={!items.some((i) => doc.items[i.slot] === i.id)} onclick={() => clearSlots(g.slots)}>
             <span class="tile-art none"><X size={18} /></span><span class="tile-name">None</span>
           </button>
           {#each items as it (it.id)}
-            <button class="tile" aria-pressed={doc.items[it.slot] === it.id} onclick={() => wear(it.id)}>
-              <span class="tile-art"><Thumb project={view.project} item={it} size={tileK} /></span><span class="tile-name">{it.name}</span>
+            <button class="tile" class:sel={ui.selected === it.id} aria-pressed={doc.items[it.slot] === it.id} onclick={() => pick(it.id)}>
+              <span class="tile-art" aria-hidden="true"><Thumb project={view.project} item={it} size={tileK} /></span><span class="tile-name">{it.name}</span>
             </button>
           {/each}
           {#each pending as x (x.draft.spec.id)}
@@ -55,7 +64,7 @@
           {@const h = healthOf(m, sel)}
           <div class="sel-row">
             <span class="sel-name">{sel.name}</span>
-            <span class="badge {h}">{HEALTH_LABEL[h]}</span>
+            {#if h !== 'demo' || isDemo()}<span class="badge {h}">{HEALTH_LABEL[h]}</span>{/if}
             <button class="btn icon plain" aria-label="{sel.name} details" onclick={() => (ui.sheet = 'item')}><Info size={20} /></button>
           </div>
           <Colours only={sel.id} heading={false} />

@@ -23,9 +23,10 @@
       {#each m.rig.animations as a (a.id)}
         {@const base = m.items.find((i) => i.id === m.rig.baseItem)}
         {@const dirs = m.rig.directions.filter((d) => !d.mirrorOf && base?.layers[0].cells?.[a.id]?.[d.id]?.some(Boolean))}
+        {@const nDirs = dirs.length + m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf)).length}
         <button class="move-row" aria-pressed={ui.anim === a.id} onclick={() => { ui.anim = a.id; ui.frame = 0; ui.playing = true }}>
           <span class="move-thumb"><Sprite img={win(composeCell(view.project, doc.items, a.id, dirs[0]?.id ?? 'south', a.frames[ui.frame % a.frames.length].cell))} {k} w={56} h={56} label="{nice(a.id)} preview" /></span>
-          <span class="move-text"><b>{nice(a.id)}</b><span class="muted small">{a.cells} frames · {dirs.length + m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf)).length} directions</span></span>
+          <span class="move-text"><b>{nice(a.id)}</b><span class="muted small">{a.cells} frames · {nDirs === 1 ? `${dirs[0]?.id ?? 'one'} only` : `${nDirs} directions`}</span></span>
         </button>
       {/each}
     </div>
@@ -45,6 +46,8 @@
     {#if moving.spec && moving.projectId === doc.id && !moving.done}
       <button class="move-row" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
     {/if}
-    {#if !isDemo()}<button class="btn" onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button>{/if}
+    <!-- T1 P2-11: rigs from before skeleton rigs (no rest views) cannot take new moves; say it plainly instead of offering it -->
+    {#if !isDemo() && m.rig.rest}<button class="btn" onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button>
+    {:else if !isDemo()}<p class="faint small">Moves can be added to characters made from now on.</p>{/if}
   {/if}
 </div>

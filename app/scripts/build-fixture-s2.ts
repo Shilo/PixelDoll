@@ -129,7 +129,7 @@ const fixture = {
   ],
   presets: [
     { id: 'adventurer', name: 'Adventurer', items: { body: 'base', torso_inner: 'vest_leather', back: 'cape_red', hair: 'hair_brown', head: 'helmet_steel', main_hand: 'sword_steel' }, variants: {} },
-    { id: 'bare', name: 'Base only', items: { body: 'base', torso_inner: null, back: null, hair: null, head: null, main_hand: null }, variants: {} },
+    { id: 'base-only', name: 'Base only', items: { body: 'base', torso_inner: null, back: null, hair: null, head: null, main_hand: null }, variants: {} },
   ],
 };
 writeFileSync(new URL('fixture.json', OUT), JSON.stringify(fixture, null, 2) + '\n');

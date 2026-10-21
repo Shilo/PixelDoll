@@ -4,7 +4,7 @@ import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
 import type { Engine, Manifest, Project } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
-import { recolour } from '../dress/dress.ts';
+import { moveDirs, recolour } from '../dress/dress.ts';
 import { bakedFrame, layerFrame } from '../compose/compose.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
@@ -64,6 +64,8 @@ export function exportManifest(p: Project, o: ManifestOptions): { manifest: Mani
       Object.assign(l, { cell: { w: f.w, h: f.h }, pivot: { x: f.x, y: f.y } }); // explicit in manifest.json: readers never default
     }
   for (const pr of m.presets) for (const s in pr.items) if (pr.items[s] && !ids.has(pr.items[s]!)) pr.items[s] = null;
+  // B10: the views each move has (the base has frames there); the other rows of its sheets are empty
+  for (const a of m.rig.animations) Object.assign(a, { directions: moveDirs(src, a.id) });
   m.export = {
     exportedAt: o.exportedAt ?? new Date().toISOString(),
     layout: 'pixeldoll-sheets/1',
@@ -84,12 +86,43 @@ export function creditsCsv(m: Manifest): string {
     for (const pv of it.provenance.length ? it.provenance : [undefined])
       rows.push([it.id, it.name, it.slot, sheets, pv?.endpoint ?? '', pv?.jobId ?? '', String(pv?.seed ?? ''), pv?.createdAt ?? '', it.prompt, 'PixelLab (https://pixellab.ai)']);
   }
-  return rows.map((r) => r.map(csv).join(',')).join('\n') + '\n';
+  return [...new Set(rows.map((r) => r.map(csv).join(',')))].join('\n') + '\n'; // identical provenance steps once (T1 P2-7)
 }
 
-/** Layer sheets (all engines need them) + manifest + credits. */
+const ENGINE_START: Record<string, string> = {
+  godot: 'Godot 4: copy this folder into your project and instance godot/Paperdoll.tscn (see godot/README.txt).',
+  unity: 'Unity 6: copy this folder under Assets/; the importer builds a prefab in unity/Generated/ (see unity/README.txt).',
+  phaser: 'Phaser 3.80+ / 4: copy this folder into your assets and use phaser/PaperdollContainer.js (see phaser/README.txt).',
+  generic: 'Any engine: one PNG strip per layer, move and direction in generic/ (see generic/README.txt).',
+};
+
+/** Root README.txt: what is in the folder and how to start (T1 P2-6). */
+export function readme(m: Manifest): string {
+  const moves = m.rig.animations.map((a) => {
+    const d = (a as { directions?: string[] }).directions;
+    return `${a.id} (${a.cells} frames${d && d.length < m.rig.directions.length ? `, ${d.join(' + ')} only` : ''})`;
+  });
+  return `${m.name}: a paperdoll character exported by PixelDoll (${m.format}).
+
+Quick start
+${(m.export?.engines ?? []).map((e) => `  ${ENGINE_START[e] ?? e}`).join('\n')}
+
+What is inside
+  manifest.json   rig (cell ${m.rig.cell.w}x${m.rig.cell.h}, pivot ${m.rig.pivot.x},${m.rig.pivot.y}), moves, slots, items, colours and outfits
+  layers/         one sheet per item layer and move: layers/<slot>/<item>/<layer>/<move>.png
+                  rows = directions (${m.rig.directions.map((d) => d.id).join(', ')}), columns = frames${m.export?.baked ? `
+  baked/          the finished character per outfit: baked/<outfit>/<move>.png` : ''}
+  CREDITS.csv     where each item came from (PixelLab calls)
+
+Moves: ${moves.join(', ')}.
+A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.
+Pixel art: use nearest-neighbour filtering and whole-pixel positions.
+`;
+}
+
+/** Layer sheets (all engines need them) + README + manifest + credits. */
 export function coreFiles(p: Project, m: Manifest): OutFile[] {
-  const files: OutFile[] = [{ name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' }, { name: 'CREDITS.csv', data: creditsCsv(m) }];
+  const files: OutFile[] = [{ name: 'README.txt', data: readme(m) }, { name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' }, { name: 'CREDITS.csv', data: creditsCsv(m) }];
   const byId = new Map(p.manifest.items.map((i) => [i.id, i]));
   for (const it of m.items)
     for (const l of it.layers) {
@@ -107,8 +140,15 @@ export function genericFiles(p: Project, m: Manifest, sheets: Map<string, Img>, 
   if (o.strips) for (const it of m.items)
     for (const l of it.layers)
       for (const a of rig.animations)
-        rig.directions.forEach((d, r) =>
-          files.push({ name: `generic/${it.id}_${l.id}/${a.id}_${d.id}_strip${a.cells}.png`, data: sheetRow(sheets.get(l.sheets![a.id])!, r, layerFrame(rig, l).h) }));
+        rig.directions.forEach((d, r) => {
+          const strip = sheetRow(sheets.get(l.sheets![a.id])!, r, layerFrame(rig, l).h);
+          if (strip.data.some((v, i) => i % 4 === 3 && v)) files.push({ name: `generic/${it.id}_${l.id}/${a.id}_${d.id}_strip${a.cells}.png`, data: strip }); // no empty strips
+        });
+  if (o.strips) files.push({ name: 'generic/README.txt', data: `One PNG strip per item layer, move and direction: <item>_<layer>/<move>_<direction>_strip<frames>.png.
+Frames sit left to right, each one cell of the layer (manifest.json items[].layers[].cell); the feet (pivot) are at layers[].pivot.
+Draw the layers of the worn items in z order (layers[].z, slots[].zOverrides) to rebuild the character. A strip a move does
+not have (rig.animations[].directions) or an item has no frames for is left out.
+` });
   const bf = bakedFrame(m);
   if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(recolour(p, pr.variants), pr.items, a.id, bf) });
   return files;
@@ -136,6 +176,9 @@ export function selfTest() {
   console.assert(!m.items[0].layers[0].cells && m.items[0].layers[0].sheets!.walk === 'layers/body/base/main/walk.png', 'cells -> sheets');
   console.assert(m.export!.pixelsPerUnit === 64 && m.export!.baked![0] === 'default' && !!p.manifest.items[0].layers[0].cells, 'export info, source untouched');
   console.assert(creditsCsv(m).split('\n')[1].includes('"p, ""q"""'), 'csv quoting');
+  const pv = { endpoint: '/x', seed: 7, createdAt: 'T' };
+  console.assert(creditsCsv({ ...m, items: [{ ...m.items[0], provenance: [pv, pv] }] } as Manifest).trim().split('\n').length === 2, 'credits: identical steps once');
+  console.assert((m.rig.animations[0] as { directions?: string[] }).directions!.length === 0 && readme(m).includes('Quick start'), 'move directions (empty base = none) + README');
   console.assert(m.items[0].layers[0].cell!.w === 64 && m.items[0].layers[0].pivot!.y === 60 && m.export!.bakedCell!.w === 64, 'cell/pivot explicit per layer, baked cell');
 
   // oversize layer (S5 held item): 96 cell, pivot = rig pivot + 16

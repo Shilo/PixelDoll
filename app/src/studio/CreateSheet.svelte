@@ -18,6 +18,8 @@
   let name = $state('')
   let seed = $state(1 + Math.floor(Math.random() * 1_000_000))
   const est = estimate()
+  // T1 P2-13: the estimate is the no-re-roll price; a real create measured 45.45 (B7), so show a range up to +30 %
+  const lo = Math.round(est.gens), hi = Math.ceil((est.gens * 1.3) / 5) * 5
   const full = $derived([desc.trim() || 'a human adventurer', build !== 'average' ? `${build} build` : '', skin >= 0 ? `${SKIN_WORDS[skin]} skin` : ''].filter(Boolean).join(', '))
 
   const running = $derived(!!creating.spec && !creating.projectId && !creating.error)
@@ -95,7 +97,7 @@
           {#each BUILDS as b (b)}<button role="radio" aria-checked={build === b} onclick={() => (build = b)}>{b[0].toUpperCase() + b.slice(1)}</button>{/each}
         </div>
       </div>
-      <p class="muted small">You get idle and walk, facing south, east, north and west (west is mirrored), on a 64 × 64 grid.</p>
+      <p class="muted small">You get idle and walk, facing south, east, north and west (west is mirrored), as 64 × 64 pixel sprites.</p>
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
@@ -115,11 +117,11 @@
       <button class="btn plain" onclick={cancelCreate}>Start over</button>
       <button class="btn primary" onclick={() => creating.spec && withKey(() => void startCreate($state.snapshot(creating.spec!)))}>Try again</button>
     {:else if running}
-      <span class="foot-note">Spending ≈ {est.gens.toFixed(0)} gens</span>
+      <span class="foot-note">Spending {lo}–{hi} gens</span>
       <button class="btn" onclick={() => (ui.sheet = null)}>Keep working</button>
     {:else}
-      <span class="foot-note">About {est.minutes} min · ≈ {est.gens.toFixed(0)} gens</span>
-      <button class="btn primary lg" onclick={go}>Create <span class="cost">{est.gens.toFixed(0)} gens</span></button>
+      <span class="foot-note">About {est.minutes} min · {lo}–{hi} gens (failed checks re-roll)</span>
+      <button class="btn primary lg" onclick={go}>Create <span class="cost">{lo}–{hi} gens</span></button>
     {/if}
   {/snippet}
 </Sheet>

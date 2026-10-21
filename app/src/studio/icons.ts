@@ -47,3 +47,4 @@ export { default as RotateCcw } from '@lucide/svelte/icons/rotate-ccw';
 export { default as WandSparkles } from '@lucide/svelte/icons/wand-sparkles';
 export { default as ArrowUp } from '@lucide/svelte/icons/arrow-up';
 export { default as ArrowDown } from '@lucide/svelte/icons/arrow-down';
+export { default as Pencil } from '@lucide/svelte/icons/pencil';

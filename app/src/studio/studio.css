@@ -90,7 +90,7 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .btn.danger { color: var(--bad); }
 .btn:disabled { opacity: .45; cursor: default; }
 .btn .cost { font-weight: 400; opacity: .9; }
-.btn .cost::before { content: "·"; margin-right: 6px; }
+.btn .cost::before { content: "· "; margin-right: 2px; }
 
 /* ---------- segmented, chips, badges ---------- */
 .seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: calc(var(--r-ctl) + 2px); background: var(--bg-hover); }
@@ -187,7 +187,7 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .swatch[aria-checked="true"] { outline: 2px solid var(--text); outline-offset: 2px; }
 .swatch.pick { width: 28px; display: grid; place-items: center; color: var(--text-2); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .swatch.pick input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; border: 0; padding: 0; }
-@media (pointer: coarse) { .swatch { width: 48px; height: 32px; } .swatch.pick { width: 36px; } }
+@media (pointer: coarse) { .swatch { width: 48px; height: 44px; } .swatch.pick { width: 44px; } }
 
 /* ---------- sprite canvas ---------- */
 .sprite { display: block; image-rendering: pixelated; image-rendering: crisp-edges; }
@@ -204,7 +204,7 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .tb-lead, .tb-trail, .tb-center { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .tb-trail { justify-content: flex-end; gap: 4px; }
 .tb-sep { width: 1px; height: 18px; background: var(--line-strong); margin: 0 6px; flex: none; }
-.project-btn { color: var(--text) !important; font-weight: 600; gap: 4px; padding: 0 8px; min-width: 0; max-width: 260px; }
+.project-btn { color: var(--text) !important; font-weight: 600; gap: 4px; padding: 0 8px; min-width: 0; max-width: 260px; flex: 0 1 auto; }
 .project-btn span { overflow: hidden; text-overflow: ellipsis; }
 .balance { gap: 6px; padding: 0 8px; color: var(--text-2); }
 .main { flex: 1; display: flex; min-height: 0; position: relative; }
@@ -250,7 +250,9 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .rows li { display: flex; align-items: center; gap: 2px; }
 .thumb-box { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: calc(var(--r-ctl) - 1px); background: var(--thumb-bg); overflow: hidden; }
 .thumb-box.pending { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
-.wear { width: 18px; height: 18px; display: grid; place-items: center; color: var(--accent-text); flex: none; }
+.rows .wear { color: var(--text-3); opacity: 0; }
+.rows li:hover .wear, .rows .wear:focus-visible, .rows .wear.on { opacity: 1; }
+.rows .wear.on { color: var(--accent-text); }
 .row-del { opacity: 0; }
 .rows li:hover .row-del, .row-del:focus-visible { opacity: 1; }
 .inline-form { display: flex; gap: 6px; padding: 4px 0 4px 28px; }
@@ -433,7 +435,7 @@ dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
   .how { display: none; }
 }
 .canvas-bar .select { min-width: 84px; }
-@media (pointer: coarse), (max-width: 599px) { .canvas-bar .seg > button { width: 36px; min-width: 36px; } .canvas-bar { gap: 2px; } }
+
 
 /* ---------- B10 (T1 UX fixes) ---------- */
 .sheet-head > .btn.done { justify-self: end; font-weight: 600; }
@@ -444,3 +446,39 @@ dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
   background: var(--bg-raised); border: 1px solid var(--line); border-radius: calc(var(--r-ctl) + 6px); box-shadow: var(--shadow-pop); }
 .stage-note > svg { color: var(--warn); }
 .stage-note > span { flex: 1; min-width: 0; }
+@media (pointer: coarse) { .rows .wear, .row-del { opacity: 1; } }
+.chip-row { display: flex; align-items: center; gap: 4px; margin-right: -8px; }
+.chip-row .slot-chips { flex: 1; min-width: 0; margin-right: 0; padding-right: 4px; }
+
+/* touch targets >= 44 px on touch screens (T1 P2-4) */
+@media (pointer: coarse) {
+  .canvas-bar .seg > button { width: 44px; min-width: 44px; height: 44px; }
+  .btn.sm, .chip, .slot-chip, .land-col .slot-chip, .land-col > .seg > button, .seg > button { height: 44px; }
+  .btn.link { min-height: 44px; }
+  .check { min-height: 44px; }
+  .dot-swatch { width: 44px; height: 44px; }
+  .dot-swatch.none { border-radius: 22px; }
+  .welcome a { padding: 12px 2px; }
+}
+/* small stages (phones, the landscape stage column): the preview bar must fit 375 px, and 320 px without the all-directions toggle */
+.stage-wrap { container-type: inline-size; }
+@container (max-width: 419px) {
+  .canvas-bar { gap: 0; }
+  .canvas-bar .bar-sep { display: none; }
+  .canvas-bar .seg > button { width: 40px; min-width: 40px; }
+  .canvas-bar .select-wrap { flex: none; }
+  .canvas-bar .select { max-width: 96px; min-width: 0; }
+}
+@container (max-width: 339px) {
+  .canvas-bar [aria-label="All directions"] { display: none; }
+  .canvas-bar .select { max-width: 84px; }
+}
+/* narrow phones: the buttons come right after the title so they are above the fold at 320 x 568 (T1 P2-5) */
+@media (max-width: 599px) {
+  .hero-copy { gap: 12px; }
+  .hero-actions { order: 1; margin-top: 0; }
+  .hero-sub, .hero-copy > .faint { order: 2; }
+}
+.chip:disabled { opacity: .55; cursor: default; }
+dialog.sheet.bottom { max-width: 640px; margin: auto auto 0; }
+.panel .group.outfits { margin-top: 0; padding-top: 0; border-top: 0; }

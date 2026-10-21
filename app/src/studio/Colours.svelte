@@ -16,7 +16,8 @@
     const mat = m?.materials.find((x) => x.id === id), it = m?.items.find((i) => i.id === mat?.owner)
     return mat && it ? `${it.name} ${namesOf(it, matsOf(it.id))[matsOf(it.id).indexOf(mat)].toLowerCase()}` : mat?.label
   }
-  const custom = (mat: Material) => { const v = doc.variants[mat.id]; return v?.startsWith('#') ? v : '#808080' }
+  // the picker opens on the colour in use (T1 P3), not a fixed grey
+  const custom = (mat: Material) => { const v = doc.variants[mat.id]; return v?.startsWith('#') ? v : (variantRampOf(mat, v ?? '') ?? mat.ramp)[Math.floor(mat.ramp.length / 2)] }
 </script>
 
 <div class="colours">

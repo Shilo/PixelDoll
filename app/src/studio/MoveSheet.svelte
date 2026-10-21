@@ -44,12 +44,12 @@
     <span class="foot-note">You can keep working.</span>
     <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
-    <span class="foot-note">{est ? `About ${est.minutes} min` : ''}</span>
+    <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
     <button class="btn primary lg" disabled={!id || have.has(id) || !!moving.spec} onclick={go}>Add {id ? nice(id) : 'move'} <span class="cost">{est ? Math.ceil(est.gens) : '–'} gens</span></button>
   {/if}
 {/snippet}
 
-<Sheet title="Add a move" cancel={mine && !moving.done ? 'Hide' : 'Cancel'} onclose={() => (ui.sheet = null)} footer={isDemo() ? undefined : foot}>
+<Sheet title="Add a move" cancel={mine && !moving.done ? 'Hide' : 'Cancel'} onclose={() => (ui.sheet = null)} footer={isDemo() || (!ok && !mine) ? undefined : foot}>
   {#if mine}
     <div class="form">
       <p style="font-weight:600">{nice(moving.spec!.id)}</p>
@@ -65,14 +65,14 @@
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
     </div>
   {:else if isDemo() || !ok}
-    <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'This character was made before skeleton rigs (v1.3). Create a new character to add moves to it.'}</p>
+    <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'Moves can be added to characters made from now on. Create a new character to add moves.'}</p>
   {:else}
     <div class="form">
       <div class="field">
         <span class="label" id="act">Move</span>
         <div class="chips" role="radiogroup" aria-labelledby="act">
           {#each AUTHORED as a (a)}
-            <button class="chip" role="radio" aria-checked={!text.trim() && action === a} disabled={have.has(a)} onclick={() => { action = a; text = '' }}>{nice(a)}</button>
+            <button class="chip" role="radio" aria-checked={!text.trim() && action === a} disabled={have.has(a)} onclick={() => { action = a; text = '' }}>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a) ? ' · added' : ''}</button>
           {/each}
         </div>
       </div>

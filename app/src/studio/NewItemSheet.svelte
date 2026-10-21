@@ -1,7 +1,7 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
   import GroupIcon from './GroupIcon.svelte'
-  import { GROUPS, slotLabel, titleCase } from './model.ts'
+  import { GROUPS, slotLabel, itemNameFrom } from './model.ts'
   import { itemRoute } from './itemRoute.ts'
   import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts'
   import * as db from '../lib/store/db.ts'
@@ -20,7 +20,7 @@
 
   const m = $derived(store.project?.manifest)
   const fullPrompt = $derived(`${prompt.trim()}${colour ? `, ${colour} coloured` : ''}`)
-  const itemName = $derived(name.trim() || titleCase(prompt.trim().split(/[,.]/)[0].split(/\s+/).slice(0, 3).join(' ')) || 'New item')
+  const itemName = $derived(name.trim() || itemNameFrom(prompt) || 'New item')
   const input = $derived({ name: itemName, slot, prompt: fullPrompt })
   // the project record (skeletons decide the route); pixels are not needed for the plan
   let rec = $state.raw<RigCtx['rec'] | null>(null)

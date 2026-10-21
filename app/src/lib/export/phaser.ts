@@ -118,6 +118,22 @@ export function phaserFiles(m: Manifest): OutFile[] {
     for (const l of it.layers)
       for (const a of m.rig.animations) files.push({ name: `phaser/${it.id}_${l.id}_${a.id}.json`, data: JSON.stringify(atlasJson(m, it.id, l.id, a.id), null, 1) + '\n' });
   files.push({ name: 'phaser/PaperdollContainer.js', data: PAPERDOLL_JS });
+  const dir = `assets/${m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
+  files.push({
+    name: 'phaser/README.txt',
+    data: `1. Copy the whole export folder into your game's assets, e.g. ${dir}
+2. Game config: pixelArt: true, roundPixels: true (Phaser 4 defaults roundPixels to false).
+3. In a scene (Phaser 3.80+ or 4):
+     import { loadPaperdoll, Paperdoll } from './${dir}phaser/PaperdollContainer.js'
+     async create() {
+       const m = await loadPaperdoll(this, '${dir}')   // the folder with manifest.json
+       const doll = new Paperdoll(this, 200, 150, m)
+       doll.play('${m.rig.animations[0]?.id ?? 'walk'}', '${m.rig.directions[0]?.id ?? 'south'}'); doll.equip('head', null)
+     }
+PaperdollContainer.js is an ES module and fetches manifest.json: serve the game over http (a dev server), not file://.
+Atlases: phaser/<item>_<layer>_<move>.json (TexturePacker hash), frames named <move>_<direction>_<frame>.
+`,
+  });
   return files;
 }
 

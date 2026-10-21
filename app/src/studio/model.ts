@@ -83,6 +83,13 @@ export function nameFrom(desc: string): string {
   return w ? w[0].toUpperCase() + w.slice(1) : 'My character';
 }
 
+/** Item name from its description, sentence case like the demo: "a straw farmer hat, frayed" -> "Straw farmer hat" (T1 P2-15). */
+export function itemNameFrom(desc: string): string {
+  const head = desc.trim().split(/\s+(?:with|that|which|for|made|in|on|and)\s+|[,.;:]/i)[0].replace(/^(?:a|an|the|some|two|pair of)\s+/i, '');
+  const w = head.split(/\s+/).filter(Boolean).slice(-4).join(' ');
+  return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
+}
+
 export type Health = 'clean' | 'look' | 'stale' | 'demo';
 export function healthOf(m: Manifest, it: Item): Health {
   if (it.baseHash !== m.rig.baseHash) return 'stale';
@@ -112,6 +119,7 @@ export function selfTest() {
   const s = makeImg(48, 48);
   s.data.set([9, 9, 9, 255], 0);
   console.assert(nameFrom('a stocky dwarf, tan skin') === 'Dwarf' && nameFrom('a sturdy young dwarf with a friendly face') === 'Dwarf' && nameFrom('') === 'My character', 'nameFrom');
+  console.assert(itemNameFrom('a straw farmer hat') === 'Straw farmer hat' && itemNameFrom('Iron Knight Helmet with a red plume') === 'Iron knight helmet' && itemNameFrom('') === '', `itemNameFrom ${itemNameFrom('a straw farmer hat')}`);
   console.assert(groupOf('off_hand').id === 'Hands' && groupOf('waist').id === 'Legs', 'groupOf');
   console.assert(crop(s)!.w === 1 && crop(makeImg(2, 2)) === null, 'crop');
   console.assert(plainReason('G4 walk/south: item missing').includes('missing'), 'plainReason');

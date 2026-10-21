@@ -59,7 +59,7 @@
         {/each}</ul>
       </section>
     {/if}
-    <p class="faint small">This session: {+$queue.sessionGens.toFixed(2)} gens{$queue.sessionUsd ? ` + $${$queue.sessionUsd.toFixed(3)}` : ''}. Some animation jobs report dollars; your balance shows the real total.</p>
+    <p class="faint small">This session: {+$queue.sessionGens.toFixed(2)} gens{$queue.sessionUsd ? ` + $${$queue.sessionUsd.toFixed(3)}` : ''}. Some moves are billed in dollars instead of gens; your balance above is the real total.</p>
     <details class="disclosure">
       <summary><ChevronRight size={14} />Details</summary>
       <div>

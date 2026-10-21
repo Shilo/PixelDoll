@@ -4,15 +4,16 @@
   import { ui, doc, view, dismissWelcome, toggleTheme } from './state.svelte.ts'
   import { Moon, Sun, Sparkles } from './icons.ts'
 
-  let vw = $state(innerWidth)
-  const heroPx = $derived(ui.size === 'landscape' ? 192 : vw < 900 ? Math.min(256, Math.floor(vw * 0.7)) : 384)
+  let vw = $state(innerWidth), vh = $state(innerHeight)
+  // short phones (320 x 568): the hero gives way so the buttons stay above the fold
+  const heroPx = $derived(ui.size === 'landscape' ? 192 : vw < 900 ? Math.min(256, Math.floor(vw * 0.7), Math.floor(vh * 0.3)) : 384)
   const k = $derived(Math.max(1, Math.floor((heroPx * ui.dpr) / 64)))
   const img = $derived(view.project && view.anim ? composeCell(view.project, doc.items, ui.anim, 'south', view.cell) : null)
   function create() { dismissWelcome(); ui.sheet = 'create' }
   const STEPS = [['Create', 'Describe the body'], ['Add items', 'Hats, tops, weapons'], ['Dress up', 'Wear, recolour, play'], ['Export', 'Godot, Unity, Phaser']]
 </script>
 
-<svelte:window bind:innerWidth={vw} />
+<svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
 
 <div class="welcome">
   <div class="welcome-bar">
