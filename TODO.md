@@ -36,6 +36,15 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 - [ ] End-to-end browser test: base → 5 items → dress-up → export
 - [ ] Load export in Godot 4 / Phaser page; verify sync + pivots
 
+## Phase 6 — Design & MVP (after Phases 2–5 are done)
+- [ ] Design brainstorm with agents (user flows for casual users, information architecture, Apple-style simplicity)
+- [ ] Theme brainstorm: minimalistic, modern, professional, intuitive candidates
+- [ ] Evaluate GlassKit (https://glasskit.jungherz.com/, https://github.com/JUNGHERZ/GlassKit) as one theme option
+- [ ] Build multiple design/theme/interface mockups and deliver screenshots to user (desktop + mobile)
+- [ ] Choose + document recommended framework (Svelte, not SvelteKit; Vite/Vite+; TS), theme and design
+- [ ] Implement first real MVP app: Apple-like ease of use, minimal, responsive for all resolutions/orientations (desktop + mobile)
+- [ ] Test MVP thoroughly: design, layout, functionality, intuitiveness for casual users (desktop + mobile, portrait + landscape)
+
 ## Risks
 - [!] Extracted layers not yet production-clean (face/eye pixels, skin slivers, holes) → S2
 - [!] Only 2 px headroom above head at 64 px → S2
