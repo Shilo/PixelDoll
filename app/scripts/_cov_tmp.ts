@@ -1,0 +1,13 @@
+import { readFileSync, writeFileSync } from 'node:fs';
+import { loadFixture } from '../src/lib/compose/fixture.ts';
+import { bakedSheet, layerSheet } from '../src/lib/export/sheets.ts';
+import { encodePngBytes } from '../src/lib/image/pngraw.ts';
+import { makeImg } from '../src/lib/image/png.ts';
+const p = await loadFixture(async (f) => new Uint8Array(readFileSync(new URL(`../public/fixtures/s2/${f}`, import.meta.url))));
+const up = (im, k) => { const o = makeImg(im.w * k, im.h * k); for (let y = 0; y < o.h; y++) for (let x = 0; x < o.w; x++) o.data.set(im.data.subarray(((y / k | 0) * im.w + (x / k | 0)) * 4, ((y / k | 0) * im.w + (x / k | 0)) * 4 + 4), (y * o.w + x) * 4); return o; };
+const S = process.env.OUT;
+writeFileSync(S + '/baked_cp.png', await encodePngBytes(up(bakedSheet(p, p.manifest.presets[0].items, 'cross-punch'), 3)));
+const sw = p.manifest.items.find((i) => i.id === 'sword_steel');
+for (const l of sw.layers) writeFileSync(S + `/sword_${l.id}.png`, await encodePngBytes(up(layerSheet(p, l, 'cross-punch'), 3)));
+const raw = await import('../src/lib/image/pngraw.ts').then((m) => m.decodePngBytes(readFileSync('public/fixtures/s2/layers/main_hand/sword_steel/main/cross-punch.png')));
+writeFileSync(S + '/sword_raw.png', await encodePngBytes(up(raw, 3)));

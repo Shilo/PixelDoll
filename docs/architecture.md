@@ -102,6 +102,16 @@ rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE
 - One design everywhere: palette distance to the reference ≤ 3 (edited batches 6–15); held items follow the hand in every
   direction; capes swing [S4].
 - Adding a clip later = one pose call per item-direction, same design, no re-dress.
+- **Held items (`main_hand`, `off_hand`) [S5, B9]:** rest views and base frames are padded 64 → 96 around the same pivot
+  (+16, +16; keypoints `(x·64 + 16)/96`); the dress prompt says "in the right hand, pointing down and slightly outward; exactly
+  one weapon …; the arms stay exactly as they are"; poses run at 96 with **frame 0 sent last** when it is within 1 px of the rest
+  pose (outputs reordered); a frame that still lost the item (area < 50 % of the clip median on a near-rest pose) gets the
+  dressed keyframe layer pasted at the wrist move (free `repair`, `CellQa.repaired`); layers are stored with
+  `cell 96×96`, `pivot = rig.pivot + 16` (spec §2.1). Same price: pose calls bill by frame count, not canvas.
+- **Clip cleanup after extraction [B9]:** held = largest component + components attached to it or to the gripping wrist
+  (≤ 3 px); head items (`slot.band`) = trim px outside the aligned, 2 px-dilated dressed keyframe unless at least half of the
+  direction's other frames have item px there (temporal consensus), skipped on frames whose aligned overlap is < 50 %.
+  Worn items keep the component filter only (consensus trim would eat cape swings).
 - Cost: dress 10 + 12 clip-directions × 3 = **≈ 46 gens per item** (3 dirs × 4 clips).
 - Weak spots: more specks from motion smears (largest-component filter removes most), north slash cape vanished on 2 frames,
   vest thin in east [S4] → QA re-roll, then the alternative route.
@@ -143,7 +153,8 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 | Registration | best integer shift = 0 on every frame |
 | Area | each cell ≥ 50 % of the clip median; CV ≤ 0.15 |
 | Design lock | palette distance to the dressed keyframe ≤ 15 |
-| Grip side (held) | `gripSide` from wrist keypoints: no frame on the wrong hand; > 25 % ambiguous in a front/back view → review (side views are often ambiguous) |
+| Grip side (held) | `gripSide` from the clip's requested wrist keypoints: a clip held mostly in the wrong hand fails (G8); > 25 % ambiguous in a front/back view → review (side views are often ambiguous) |
+| Shape (held, locomotion) | G9 adjacent-frame aligned IoU ≥ 0.3 (S5: 0.4 false-fails a 96 axe walk E at 0.38) |
 | Anchor spread (head items) | layer centroid − head keypoint ≤ 3 px in front/back views |
 | Clip | no layer pixel on the cell border |
 | Stray px | removed and logged |

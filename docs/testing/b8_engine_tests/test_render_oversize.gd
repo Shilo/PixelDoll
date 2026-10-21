@@ -26,8 +26,9 @@ func _run() -> void:
 	await process_frame
 	for preset in m.presets:
 		for doll in dolls:
-			for slot in preset.items:
-				if slot != "body": doll.equip(slot, preset.items[slot] if preset.items[slot] != null else "")
+			# B9: a preset that omits a slot means "nothing there" (the Studio's default preset is {body} only)
+			for slot in m.slots.map(func(x): return x.id):
+				if slot != "body": doll.equip(slot, preset.items[slot] if preset.items.get(slot) != null else "")
 		for a in m.rig.animations:
 			for i in dirs.size():
 				dolls[i].play_anim(a.id, dirs[i])

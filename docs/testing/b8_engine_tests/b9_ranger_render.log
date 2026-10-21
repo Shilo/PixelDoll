@@ -1,0 +1,9 @@
+
+current/idle: 0 differing px
+current/walk: 0 differing px
+current/slash: 0 differing px
+default/idle: 0 differing px
+default/walk: 0 differing px
+default/slash: 0 differing px
+render vs PixelDoll compose: 0 differing px of 1474560
+RESULT: PASS

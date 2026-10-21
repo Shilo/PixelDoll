@@ -81,6 +81,7 @@ export interface CellQa {
   area: number;
   keyKept?: number;
   offset?: [number, number];
+  repaired?: boolean; // held (S5): item lost by the pose, dressed keyframe pasted at the wrist move
   snappedPct?: number; // no palette snap yet
 }
 export interface Layer {

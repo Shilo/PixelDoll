@@ -183,6 +183,8 @@ export interface CellQa {
   provenance?: number;                    // index into item.provenance (source call)
   area: number;                           // layer px
   keyKept?: number;
+  offset?: [number, number];              // posed cells: 1 px re-registration applied to the PixelLab output
+  repaired?: boolean;                     // B9 held: item lost on a near-rest pose frame, dressed keyframe pasted at the wrist move
   snappedPct: number;                     // 0..100 of layer px within the item's ramps
 }
 
@@ -220,6 +222,8 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
 - **World scale** stays the base's: Unity PPU = `export.pixelsPerUnit` (default `rig.cell.w`) for every layer, never the
   layer's width, or a 96 sword renders at 2/3 scale.
 - `Slot` defaults (held 96, back 96 optional, others 64) are an item-pipeline choice; the manifest only stores the layer's.
+  Since B9 the item pipeline gives every `skeleton-pose` held item (`main_hand`, `off_hand`) `cell {96, 96}` and
+  `pivot = rig.pivot + (16, 16)` automatically (`lib/items` `padOf`); anchor-route held items stay on the rig cell.
 
 ---
 

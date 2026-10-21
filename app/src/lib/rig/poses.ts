@@ -50,6 +50,9 @@ function armSeq(rest: Skeleton, dir: string, frames: Frame[]): Skeleton[] {
 
 /** S3 K1 tables (adherence 0.4-1.1 px, right hand moved in 100 % of slash frames). */
 export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]> = {
+  // B9: base idle authored from the rest pose (B7: the managed breathing-idle copied a hunched forward lean into the side
+  // view). Breathing = head, shoulders and arms sink up to 1 px and come back; hips and legs never move (feet drift 0).
+  idle: (rest) => [0, 0.5, 1, 0.5].map((dy) => shift(rest, UPPER, 0, dy)),
   // one-handed overhead slash with the character's RIGHT arm: wind-up -> overhead -> diagonal down across -> recover
   slash: (rest, dir) => dir === 'east'
     ? armSeq(rest, dir, [[[95, 80], null], [[-120, -150], null], [[-80, -60], null, { dx: 1 }], [[-20, 0], null, { dx: 1, dy: 1, lean: 6 }],
@@ -92,7 +95,8 @@ export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]
     return out;
   },
 };
-export const AUTHORED = Object.keys(ACTIONS);
+/** Moves the user can add (idle is part of every base). */
+export const AUTHORED = Object.keys(ACTIONS).filter((a) => a !== 'idle');
 
 /** Mean px distance of `labels` between requested and measured poses (pose adherence, rig QA §3.2). */
 export function adherence(req: Skeleton[], got: (Skeleton | undefined)[], labels = ARMS): number {
@@ -116,6 +120,8 @@ export function selfTest() {
     }
   const sl = ACTIONS.slash(rest, 'south'), moved = (l: string) => Math.max(...sl.map((s) => Math.hypot(s[l].x - rest[l].x, s[l].y - rest[l].y)));
   console.assert(moved('RIGHT ARM') > 2 * moved('LEFT ARM'), 'slash swings the right hand');
+  const idle = ACTIONS.idle(rest, 'east'), still = ['RIGHT HIP', 'LEFT HIP', 'RIGHT KNEE', 'LEFT KNEE', 'RIGHT LEG', 'LEFT LEG'];
+  console.assert(idle.length === 4 && idle.every((p) => still.every((l) => p[l].x === rest[l].x && p[l].y === rest[l].y)) && idle[2].NOSE.y - rest.NOSE.y === 1 && idle[2].NOSE.x === rest.NOSE.x && !AUTHORED.includes('idle'), 'idle: upper body bobs 1 px, legs still, no lean');
   const north = ACTIONS.slash(rest, 'north');
   console.assert(Math.sign(north[1]['RIGHT ARM'].x - rest['RIGHT SHOULDER'].x) === -Math.sign(sl[1]['RIGHT ARM'].x - rest['RIGHT SHOULDER'].x), 'north mirrors south');
   const back = fromApi(toApi(rest, { w: 64, h: 64 }), { w: 64, h: 64 });

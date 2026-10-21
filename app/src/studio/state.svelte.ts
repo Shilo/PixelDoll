@@ -22,11 +22,11 @@ export const DEMO = 'fixture:s2';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
-export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move';
+export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename';
 const sizeNow = (): Size => {
   const w = innerWidth, h = innerHeight;
   if (h < 500 && w > h) return 'landscape';
-  if (w < 600) return 'compact';
+  if (w < 600 || (w < 1024 && h > w)) return 'compact'; // B10: portrait tablets stack stage over wardrobe (T1 P1-3)
   if (w < 1024) return 'medium';
   return 'expanded';
 };
@@ -38,7 +38,7 @@ export const ui = $state({
   welcome: !lsGet(K.welcomed),
   sidebar: true,
   inspector: true,
-  drawer: false, // medium size: wardrobe as an overlay drawer
+  drawer: innerWidth >= 900, // medium size: wardrobe pane, pushes the stage
   tab: 'wardrobe' as 'wardrobe' | 'colours' | 'moves', // phone
   inspTab: 'item' as 'item' | 'colours' | 'moves',
   group: 'Head',
@@ -48,7 +48,7 @@ export const ui = $state({
   anim: '',
   dir: 'south' as DirectionName,
   all: false,
-  playing: true,
+  playing: !matchMedia('(prefers-reduced-motion: reduce)').matches, // reduced motion: start paused, Play is one tap
   frame: 0,
   zoom: 0, // device px per sprite px; 0 = fit
   bg: 'checker' as 'checker' | 'solid',

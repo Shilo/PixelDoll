@@ -17,6 +17,9 @@
   import ExportSheet from './ExportSheet.svelte'
   import ActivitySheet from './ActivitySheet.svelte'
   import MoveSheet from './MoveSheet.svelte'
+  import RenameSheet from './RenameSheet.svelte'
+  import StageNote from './StageNote.svelte'
+  import { moveDirs } from '../lib/dress/dress.ts'
   import { ui, doc, store, view, gens, creating, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, undo, redo, genProgress } from './state.svelte.ts'
   import { Palette, PersonStanding, Shirt } from './icons.ts'
 
@@ -43,6 +46,23 @@
     return () => clearTimeout(t)
   })
 
+  // a move without the current view (demo cross punch: south only) switches to one it has
+  $effect(() => {
+    const m = store.project?.manifest
+    const made = m ? moveDirs(m, ui.anim) : []
+    if (made.length && !made.includes(ui.dir)) ui.dir = made[0]
+  })
+
+  // Back (browser button, Android gesture) closes an open sheet first: one history entry while any sheet is open.
+  // ponytail: not reactive on purpose (plain flag); a sheet -> sheet switch keeps the same entry.
+  let sheetEntry = false
+  $effect(() => {
+    const open = !!ui.sheet
+    if (open && !sheetEntry) { history.pushState({ pixeldollSheet: 1 }, ''); sheetEntry = true }
+    else if (!open && sheetEntry) { sheetEntry = false; history.back() }
+  })
+  const onpop = () => { if (sheetEntry) { sheetEntry = false; ui.sheet = null } }
+
   // balance after every settled job (like TopBar)
   const settled = $derived($queue.counts.done + $queue.counts.failed)
   $effect(() => { void settled; if (app.key) void refreshBalance() })
@@ -62,7 +82,7 @@
     if (e.key === ' ' && !t.closest('button, a')) { e.preventDefault(); ui.playing = !ui.playing }
     else if (e.key === ',' || e.key === '.') { ui.playing = false; ui.frame += e.key === '.' ? 1 : (view.anim?.frames.length ?? 1) - 1 }
     else if (e.key === '0') ui.all = !ui.all
-    else if (/^[1-8]$/.test(e.key) && m.rig.directions[+e.key - 1]) { ui.dir = m.rig.directions[+e.key - 1].id; ui.all = false }
+    else if (/^[1-8]$/.test(e.key) && m.rig.directions[+e.key - 1] && moveDirs(m, ui.anim).includes(m.rig.directions[+e.key - 1].id)) { ui.dir = m.rig.directions[+e.key - 1].id; ui.all = false }
   }
 
   const desk = $derived(ui.size === 'expanded' || ui.size === 'medium')
@@ -71,7 +91,7 @@
   const TABS = [['wardrobe', 'Wardrobe', Shirt], ['colours', 'Colours', Palette], ['moves', 'Moves', PersonStanding]] as const
 </script>
 
-<svelte:window onkeydown={onkey} />
+<svelte:window onkeydown={onkey} onpopstate={onpop} />
 
 <div class="studio-app">
   {#if ui.welcome}
@@ -80,12 +100,9 @@
     <div class="studio {ui.size}">
       {#if ui.size !== 'landscape'}<Toolbar phone={ui.size === 'compact'} />{/if}
       <div class="main">
-        {#if ui.size === 'expanded' && ui.sidebar}<aside class="side pane" aria-label="Wardrobe"><Wardrobe /></aside>{/if}
-        {#if ui.size === 'medium' && ui.drawer}
-          <button class="drawer-scrim" aria-label="Close wardrobe" onclick={() => (ui.drawer = false)}></button>
-          <aside class="side pane drawer" aria-label="Wardrobe"><Wardrobe /></aside>
-        {/if}
-        <main class="stage-wrap" aria-label="Preview"><Stage /></main>
+        <!-- B10 (T1 P1-3): medium width pushes the stage instead of covering it; portrait tablets use the stacked layout -->
+        {#if (ui.size === 'expanded' && ui.sidebar) || (ui.size === 'medium' && ui.drawer)}<aside class="side pane" aria-label="Wardrobe"><Wardrobe /></aside>{/if}
+        <main class="stage-wrap" aria-label="Preview"><Stage /><StageNote /></main>
         {#if desk && ui.inspector}<aside class="insp pane" aria-label="Inspector"><Inspector /></aside>{/if}
         {#if ui.size === 'compact'}<section class="phone-panel" aria-label={ui.tab}><PhonePanel /></section>{/if}
         {#if ui.size === 'landscape'}
@@ -124,6 +141,7 @@
   {#if ui.sheet === 'export'}<ExportSheet />{/if}
   {#if ui.sheet === 'activity'}<ActivitySheet />{/if}
   {#if ui.sheet === 'move'}<MoveSheet />{/if}
+  {#if ui.sheet === 'rename'}<RenameSheet />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
     <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><ItemPane id={ui.selected} /></Sheet>
   {/if}

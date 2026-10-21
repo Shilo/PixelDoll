@@ -3,14 +3,14 @@
 // keyframe posed with skeleton-v3 per clip (or anchor-cell edit-animation-v2 without joints), extraction, QA gates, re-rolls.
 import { pickKey } from '../lib/image/chroma.ts';
 import { acceptItem, defaultMethod, gensOf, newDraft, runItem, type Draft, type ItemResult, type RigCtx, type RunHooks } from '../lib/items/run.ts';
-import { itemRoute as libRoute, planGens, planItem, type ItemSpec } from '../lib/items/items.ts';
+import { itemRoute as libRoute, padOf, planGens, planItem, type ItemSpec } from '../lib/items/items.ts';
 import type { Item, Rig } from '../lib/store/manifest.ts';
 
 export interface NewItemInput { name: string; slot: string; prompt: string }
 export interface ItemRoute {
   label: string;
   /** Calls and cost before anything is spent ("Make · N gens"). */
-  plan(rig: Rig, ctx: RigCtx, input: NewItemInput): { calls: number; cells: number; gens: number; minutes: number };
+  plan(rig: Rig, ctx: RigCtx, input: NewItemInput): { calls: number; cells: number; gens: number; minutes: number; cell?: number };
   /** New persisted job description (not started). */
   draft(ctx: RigCtx, input: NewItemInput, taken: string[]): Draft;
   /** Generate + QA (+ automatic re-rolls). Resumable from the ledger with the same draft. */
@@ -32,8 +32,9 @@ const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({ name: i.
 export const chromaEdit: ItemRoute = {
   label: `chroma mannequin + ${libRoute.name}`,
   plan(rig, ctx, input) {
-    const s = spec(ctx, input), p = planItem(rig, { ...s, method: defaultMethod(ctx, s) });
-    return { calls: p.length, cells: p.reduce((n, c) => n + c.cells.length, 0), gens: planGens(p), minutes: 3 + Math.ceil(p.length / 3) * 2 };
+    const s = spec(ctx, input), method = defaultMethod(ctx, s), p = planItem(rig, { ...s, method }), pad = padOf(s.slot, method);
+    // held slots route to S5's 96 px oversize canvas automatically (same price: pose calls bill by frames, not canvas)
+    return { calls: p.length, cells: p.reduce((n, c) => n + c.cells.length, 0), gens: planGens(p), minutes: 3 + Math.ceil(p.length / 3) * 2, ...(pad ? { cell: rig.cell.w + 2 * pad } : {}) };
   },
   draft: (ctx, input, taken) => newDraft(ctx, spec(ctx, input), taken),
   run: (d, ctx, hooks) => runItem(d, ctx, hooks),

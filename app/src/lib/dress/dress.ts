@@ -139,12 +139,28 @@ export function randomOutfit(m: Manifest, rnd = Math.random): Pick<Preset, 'item
   return { items, variants };
 }
 
+/** The item has pixels in (anim, dir); a mirrored direction without its own cells follows its source. */
+export function hasCells(m: Manifest, it: Item | undefined, anim: string, dir: DirectionName): boolean {
+  const src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf;
+  return !!it?.layers.some((l) => (l.cells?.[anim]?.[dir] ?? (src ? l.cells?.[anim]?.[src] : undefined))?.some(Boolean));
+}
+
 /** "anim/dir" pairs where the base has cells but the item has none (mirrored directions follow their source). */
 export function coverageGaps(m: Manifest, it: Item): string[] {
-  const has = (x: Item | undefined, a: string, d: DirectionName) => !!x?.layers.some((l) => l.cells?.[a]?.[d]?.some(Boolean));
   const base = m.items.find((i) => i.id === m.rig.baseItem);
   return m.rig.animations.flatMap((a) =>
-    m.rig.directions.filter((d) => !d.mirrorOf && has(base, a.id, d.id) && !has(it, a.id, d.id)).map((d) => `${a.id}/${d.id}`));
+    m.rig.directions.filter((d) => !d.mirrorOf && hasCells(m, base, a.id, d.id) && !hasCells(m, it, a.id, d.id)).map((d) => `${a.id}/${d.id}`));
+}
+
+/** Directions a move has: the base body has frames there (B10: the demo's cross punch is south only). */
+export const moveDirs = (m: Manifest, anim: string): DirectionName[] =>
+  m.rig.directions.filter((d) => hasCells(m, m.items.find((i) => i.id === m.rig.baseItem), anim, d.id)).map((d) => d.id);
+
+/** Worn, visible items with no frames in a view the move has: they would silently vanish there. */
+export function missingAt(m: Manifest, worn: Preset['items'], anim: string, dir: DirectionName): Item[] {
+  const on = m.items.filter((it) => it.id !== m.rig.baseItem && worn[it.slot] === it.id);
+  const hidden = new Set(on.flatMap((it) => it.hides ?? m.slots.find((s) => s.id === it.slot)?.hides ?? []));
+  return moveDirs(m, anim).includes(dir) ? on.filter((it) => !hidden.has(it.slot) && !hasCells(m, it, anim, dir)) : [];
 }
 
 /** Edge pixels of an image's opaque area (opaque with a transparent or out-of-bounds 4-neighbour). */
@@ -183,6 +199,8 @@ export function selfTest() {
   const r = randomOutfit(m, () => 0.99);
   console.assert(r.items.back === 'cape' && !('body' in r.items), 'random outfit');
   console.assert(coverageGaps(m, cape).join() === 'walk/east', `coverage gaps ${coverageGaps(m, cape)}`);
+  console.assert(moveDirs(m, 'walk').join() === 'south,east,west' && moveDirs(m, 'run').length === 0, `moveDirs ${moveDirs(m, 'walk')}`);
+  console.assert(missingAt(m, { back: 'cape' }, 'walk', 'west')[0] === cape && missingAt(m, { back: 'cape' }, 'walk', 'south').length === 0, 'missingAt follows mirrors');
   const red = ['#4a0d12', '#7d1820', '#b02832'] as Hex[], grey = ['#2b2f36', '#4d535d', '#7a828e'] as Hex[];
   console.assert(materialNames({ slot: 'head', name: 'Iron helmet', prompt: 'iron knight helmet with a red plume' }, [grey, red]).join() === 'Metal,Feather', `names ${materialNames({ slot: 'head', name: 'Iron helmet', prompt: 'iron knight helmet with a red plume' }, [grey, red])}`);
   console.assert(materialNames({ slot: 'feet', name: 'Boots', prompt: 'tall boots' }, [red, grey]).join() === 'Leather,Grey' && materialNames({ slot: 'body', name: 'Base', prompt: '' }, [red, grey]).join() === 'Skin,Clothes', 'slot + base names');

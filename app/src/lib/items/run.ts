@@ -11,7 +11,7 @@ import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifes
 import type { DirectionName } from '../rig/rig.ts';
 import { fromApi } from '../rig/poses.ts';
 import { chromaLayer } from '../image/chroma.ts';
-import { GATES, SLOTS, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, inputCell, itemPrompt, itemQa, itemRoute, planItem, restKey, slotOf, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { GATES, SLOTS, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind }
@@ -77,7 +77,7 @@ const skelOf = (ctx: RigCtx, k: string) => {
 // ---------- calls ----------
 const blobB64 = async (sha: string) => bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
 async function submit(d: Draft, k: number, ctx: RigCtx) {
-  const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest;
+  const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method);
   const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${c.cells[0].split('/').slice(0, 2).join('/')}` : ''})`;
   let req;
   if (c.kind === 'pose') { // the direction's dressed keyframe (from the dress call) posed through the base clip's STORED keypoints
@@ -86,7 +86,7 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
     if (a?.state !== 'done') throw new Error('dress call not done');
     const kf = outputsOf(a)[dress.cells.indexOf(restKey(dir))], poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
     if (!poses || !rest) throw new Error(`${anim}/${dir}: the rig has no stored keypoints (rig v1.3)`);
-    req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest, poses, item: d.spec.prompt, held: slotOf(d.spec.slot).class === 'held', key: route, anim, dir, seed: c.seed });
+    req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest, poses, item: d.spec.prompt, slot: d.spec.slot, key: route, anim, dir, seed: c.seed, cell: rig.cell, pad });
   } else {
     const frames: string[] = [];
     if (k > 0) { // anchor cell: the design call's dressed cell 0 (cross-call design lock, S2)
@@ -94,8 +94,9 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
       if (a?.state !== 'done') throw new Error('design call not done');
       frames.push(await blobB64(outputsOf(a)[0].sha));
     }
-    for (const key of c.cells) frames.push(bytesToBase64(await encodePngBytes(inputCell(baseCell(ctx, key), route))));
-    req = itemRoute.edit(frames, itemPrompt(d.spec.prompt, route, c.cells, k > 0 ? d.calls[0].cells[0] : undefined), c.seed, rig.cell);
+    for (const key of c.cells) frames.push(bytesToBase64(await encodePngBytes(padImg(inputCell(baseCell(ctx, key), route), pad))));
+    // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
+    req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, k > 0 ? d.calls[0].cells[0] : undefined), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
   c.recId = (await queue.enqueue(req, { label, tag: 'm3' })).id;
 }
@@ -181,19 +182,22 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
   type Out = { k: number; key: string; out: Img; posed: boolean };
   const { rig } = ctx.rec.manifest, route = d.spec.key, g1 = new Map<number, string>(), outs: Out[] = [], dressOuts: Out[] = [];
+  const pad = padOf(d.spec.slot, d.spec.method), slot = slotOf(d.spec.slot), W = rig.cell.w + 2 * pad, H = rig.cell.h + 2 * pad;
   for (const [k, c] of d.calls.entries()) {
     const r = recOf(c.recId);
     if (r?.state !== 'done') continue;
-    const o = outputsOf(r).slice(k > 0 && (c.kind ?? 'edit') === 'edit' ? 1 : 0);
+    let o = outputsOf(r).slice(k > 0 && (c.kind ?? 'edit') === 'edit' ? 1 : 0);
     if (o.length !== c.cells.length) { g1.set(k, `G1 ${o.length} outputs for ${c.cells.length} cells`); continue; }
+    if (c.kind === 'pose') { const [a, dir] = c.cells[0].split('/') as [string, DirectionName]; o = unrotate(o, f0Last(d.spec.slot, rig.rest?.[dir]?.keypoints ?? [], clipKeypoints(rig, a, dir) ?? [], rig.cell)); }
     for (const [i, key] of c.cells.entries()) {
       const im = await img(o[i].sha);
-      if (im.w !== rig.cell.w || im.h !== rig.cell.h) { g1.set(k, `G1 output ${im.w}x${im.h}`); break; }
+      if (im.w !== W || im.h !== H) { g1.set(k, `G1 output ${im.w}x${im.h}`); break; }
       (c.kind === 'dress' ? dressOuts : outs).push({ k, key, out: im, posed: c.kind === 'pose' });
     }
   }
   const ex = (o: Out, useCc?: boolean) =>
-    extractCell({ key: o.key, call: o.k, base: baseCell(ctx, o.key), out: o.out, route, band: bandOf(d.spec.slot, skelOf(ctx, o.key), rig.cell.h), useCc, posed: o.posed, clip: slotOf(d.spec.slot).band });
+    // ponytail: padded (held) slots have no keypoint band, so the rig-cell skeleton is not shifted
+    extractCell({ key: o.key, call: o.k, base: padImg(baseCell(ctx, o.key), pad), out: o.out, route, band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key), H), useCc, posed: o.posed, clip: slot.band });
   // the dress call only makes keyframes: gate them (G2, G3, presence); they are not item cells themselves
   const keys: Partial<Record<DirectionName, Img>> = {}; // dressed keyframe layers per direction (H4)
   for (const o of dressOuts) {
@@ -210,8 +214,9 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
     const cc = run(true);
     if (cc.reduce((s, c) => s + c.area, 0) * 0.75 > cells.reduce((s, c) => s + c.area, 0)) cells = cc;
   }
+  postProcess(rig, slot, cells, keys, pad);
   const kOut = d.spec.method === 'skel' ? GATES.keyOutsidePosed : GATES.keyOutside;
-  const qa = cells.length ? withH4(itemQa(rig, slotOf(d.spec.slot), route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut), slotOf(d.spec.slot), cells, keys) : null;
+  const qa = cells.length ? withH4(itemQa(rig, slot, route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut, pad), slot, cells, keys) : null;
   return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa) : null };
 }
 /** itemQa + the H4 keyframe-consistency gate (posed cells only). */
@@ -225,7 +230,7 @@ function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<
 }
 /** The rig project with this draft equipped (for compose previews in every direction, mirrored ones included). */
 async function previewProject(d: Draft, ctx: RigCtx, cells: CellOut[], qa: QaResult): Promise<Project> {
-  const { item, images } = await buildItem({ spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells, route: d.spec.key, provenance: [], qa: qa.qa });
+  const { item, images } = await buildItem({ spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells, route: d.spec.key, provenance: [], qa: qa.qa, pad: padOf(d.spec.slot, d.spec.method) });
   const m: Manifest = structuredClone(ctx.rec.manifest);
   m.items = [...m.items.filter((i) => i.id !== item.id), item];
   if (!m.slots.some((s) => s.id === item.slot)) m.slots = [...m.slots, slotOf(item.slot)];
@@ -248,7 +253,7 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
   const dress = d.calls[0].kind === 'dress' ? recOf(d.calls[0].recId) : undefined, dressed: Partial<Record<DirectionName, Img>> = {};
   if (dress) for (const [i, k] of d.calls[0].cells.entries()) dressed[k.split('/')[1] as DirectionName] = await img(outputsOf(dress)[i].sha);
   const { item, images } = await buildItem({
-    spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(dress ? { dressed } : {}),
+    spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(dress ? { dressed } : {}), pad: padOf(d.spec.slot, d.spec.method),
     provenance: d.calls.map((c) => toProv(recOf(c.recId)!, c)), anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined,
   });
   await saveItem(d.rigId, item, images, SLOTS);
@@ -269,10 +274,10 @@ const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeA
  * reload re-attaches to the ledger. Returns the clip QA.
  */
 export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}): Promise<QaResult> {
-  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!;
+  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const dirs = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
-  for (const d of dirs) keys[d] = chromaLayer(await img(item.dressed![d]!.slice(7)), key, baseCell(ctx, restKey(d))).layer;
+  for (const d of dirs) keys[d] = chromaLayer(await img(item.dressed![d]!.slice(7)), key, padImg(baseCell(ctx, restKey(d)), pad)).layer;
   const perDir = await Promise.all(dirs.map(async (dir, k) => {
     const poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
     if (!poses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
@@ -280,24 +285,25 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     let last: CellOut[] = [];
     for (let attempt = 0; attempt < 2; attempt++) {
       const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}`);
-      const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, held: slot.class === 'held', key, anim, dir, seed });
+      const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad });
       const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
       const r = terminal(rec) ? rec : await settled(rec.id);
       onCall();
       if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
-      const outs = outputsOf(r);
+      const outs = unrotate(outputsOf(r), f0Last(item.slot, rest, poses, rig.cell));
       if (outs.length !== cells.length) continue; // G1: re-roll
-      last = await Promise.all(cells.map(async (c, i) => extractCell({ key: c, call: k, base: baseCell(ctx, c), out: await img(outs[i].sha), route: key, band: bandOf(item.slot, skelOf(ctx, c), rig.cell.h), posed: true, clip: slot.band })));
-      const pass = !withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed), slot, last, keys).failCalls.size;
+      last = await Promise.all(cells.map(async (c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: await img(outs[i].sha), route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band })));
+      postProcess(rig, slot, last, keys, pad);
+      const pass = !withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed, pad), slot, last, keys).failCalls.size;
       if (pass || attempt) { prov.push(toProv(r, { cells, seed, rerolls: attempt, old: [] })); break; }
     }
     return last;
   }));
   const cells = perDir.flat();
   if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
-  const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed), slot, cells, keys);
+  const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad), slot, cells, keys);
   const spec: ItemSpec = { id: item.id, name: item.name, slot: item.slot, prompt: item.prompt, key, anims: [anim], dirs, method: 'skel' };
-  const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa });
+  const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa, pad });
   const out: Item = structuredClone(item);
   out.layers.forEach((l, j) => { l.cells = { ...l.cells, [anim]: built.item.layers[j].cells![anim] }; });
   out.provenance = [...out.provenance, ...prov];

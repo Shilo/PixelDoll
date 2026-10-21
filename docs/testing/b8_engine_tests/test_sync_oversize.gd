@@ -2,13 +2,26 @@ extends SceneTree
 # B8 headless sync test for oversize layers. Usage: godot --headless --fixed-fps 60 -s test_sync_oversize.gd -- <export dir under res://>
 # Plays every anim x dir; every tick each visible layer must show the body's animation + frame, its AtlasTexture region must be
 # that LAYER's cell (96x96 for the sword, 64x64 for the body) and its offset must be -layer.pivot, so all pivots meet at the
-# node origin. Also checks the fixture's z overrides (bg z1 on north; fg z45 on walk/south/4) and unequip/re-equip.
+# node origin. Also checks every equipped layer's z (layer z + the slot's zOverrides, resolved like lib/compose resolveZ) and
+# unequip/re-equip of each oversize item. B9: z and items come from the manifest, so any export runs (s5_sword, B9 Ranger).
 var fails := 0
 
 func check(cond: bool, msg: String) -> void:
 	if not cond:
 		fails += 1
 		if fails < 30: printerr("FAIL: ", msg)
+
+# lib/compose resolveZ: most specific matching zOverride (cell > anim > dir > none; later wins on ties), else layer.z
+func want_z(slot: Dictionary, layer: Dictionary, a: String, d: String, cell: int) -> int:
+	var z := int(layer.z)
+	var best := -1
+	for o in slot.get("zOverrides", []):
+		if o.layer != layer.role or (o.has("dir") and o.dir != d) or (o.has("anim") and o.anim != a) or (o.has("cell") and int(o.cell) != cell): continue
+		var rank := 3 if o.has("cell") else (2 if o.has("anim") else (1 if o.has("dir") else 0))
+		if rank >= best:
+			best = rank
+			z = int(o.z)
+	return z
 
 func _initialize() -> void:
 	_run.call_deferred()
@@ -46,16 +59,20 @@ func _run() -> void:
 					var reg: Rect2 = n.sprite_frames.get_frame_texture(n.animation, n.frame).region
 					var want := Rect2(cell * w, dirs.find(d) * h, w, h)
 					check(reg == want, "%s region %s != %s" % [n.name, reg, want])
-				var fg: AnimatedSprite2D = doll.get_node("main_hand_fg")
-				var bg: AnimatedSprite2D = doll.get_node("main_hand_bg")
-				check(fg.z_index == (45 if (a.id == "walk" and d == "south" and cell == 4) else 150), "main_hand_fg z %d at %s/%s/%d" % [fg.z_index, a.id, d, cell])
-				check(bg.z_index == (1 if d == "north" else 6), "main_hand_bg z %d at %s/%s" % [bg.z_index, a.id, d])
+				for n in layers:
+					if not n.visible or n.name.begins_with("body"): continue
+					var slot_id: String = n.name.rsplit("_", true, 1)[0]
+					var slot: Dictionary = m.slots.filter(func(s): return s.id == slot_id)[0]
+					var want := want_z(slot, doll._layer_of(n), a.id, d, cell)
+					check(n.z_index == want, "%s z %d != %d at %s/%s/%d" % [n.name, n.z_index, want, a.id, d, cell])
 			check(seen.size() == int(a.cells), "%s_%s: body visited %d/%d frames" % [a.id, d, seen.size(), a.cells])
-	doll.equip("main_hand", "")
-	check(not doll.get_node("main_hand_fg").visible and not doll.get_node("main_hand_bg").visible, "unequip sword hides fg+bg")
-	doll.equip("main_hand", "sword_fsw")
-	var fg2: AnimatedSprite2D = doll.get_node("main_hand_fg")
-	check(fg2.visible and fg2.frame == body.frame and fg2.offset == Vector2(-48, -80), "re-equip syncs frame + oversize offset")
+	for it in m.items.filter(func(i): return i.layers[0].cell.w != m.rig.cell.w):
+		var nodes: Array = it.layers.map(func(l): return doll.get_node("%s_%s" % [it.slot, l.role]))
+		doll.equip(it.slot, "")
+		check(nodes.all(func(n): return not n.visible), "unequip %s hides every layer" % it.id)
+		doll.equip(it.slot, it.id)
+		var p := Vector2(it.layers[0].pivot.x, it.layers[0].pivot.y)
+		check(nodes.all(func(n): return n.visible and n.frame == body.frame and n.offset == -p), "re-equip %s syncs frame + oversize offset %s" % [it.id, -p])
 	print("ticks checked: ", ticks, ", oversize layer-ticks: ", oversize, ", failures: ", fails)
 	print("RESULT: ", "PASS" if fails == 0 else "FAIL")
 	quit(1 if fails else 0)

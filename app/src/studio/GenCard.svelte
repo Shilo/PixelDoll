@@ -1,6 +1,6 @@
 <script lang="ts">
   // A generating item: progress from the ledger, then the review (auto-finish with accept / try again at the end, PLAN D7).
-  import { composeCell } from '../lib/compose/compose.ts'
+  import { bakedFrame, composeCell } from '../lib/compose/compose.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import { failsOf } from '../lib/items/run.ts'
   import { itemRoute } from './itemRoute.ts'
@@ -17,6 +17,7 @@
   const prev = $derived(res?.preview)
   const anim = $derived(prev?.manifest.rig.animations.find((a) => a.id === g.draft.spec.anims[0]))
   const k = $derived(Math.max(1, Math.floor(ui.dpr)))
+  const frame = $derived(prev ? bakedFrame(prev.manifest) : undefined) // a 96 px held item shows whole
   const reasons = $derived(res ? [...new Set(g.draft.calls.flatMap((_, i) => failsOf(res, i)).map(plainReason))] : [])
   const warns = $derived(res?.qa?.warnings.map(plainReason) ?? [])
   let busy = $state(false)
@@ -51,7 +52,7 @@
     <div class="review-grid" aria-label="Preview in every direction">
       {#each prev.manifest.rig.directions as d (d.id)}
         <figure>
-          <Sprite img={composeCell(prev, outfit, anim.id, d.id, anim.frames[ui.frame % anim.frames.length].cell)} {k} checker label="{g.input.name} facing {d.id}" />
+          <Sprite img={composeCell(prev, outfit, anim.id, d.id, anim.frames[ui.frame % anim.frames.length].cell, frame)} {k} w={frame?.w} h={frame?.h} checker label="{g.input.name} facing {d.id}" />
           {d.id[0].toUpperCase() + d.id.slice(1)}
         </figure>
       {/each}

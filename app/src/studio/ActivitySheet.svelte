@@ -18,7 +18,7 @@
   const cost = (r: JobRec) => [r.gens ? `${+r.gens.toFixed(2)} gens` : '', r.usd ? `$${r.usd.toFixed(3)}` : ''].filter(Boolean).join(' + ')
 </script>
 
-<Sheet title="Activity" cancel="Close" onclose={() => (ui.sheet = null)}>
+<Sheet title="Activity" cancel="Done" onclose={() => (ui.sheet = null)}>
   <div class="act-list">
     <div class="field-row">
       <span class="balance" style="display:flex;gap:6px;align-items:center"><Coins size={16} />

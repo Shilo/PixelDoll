@@ -13,7 +13,8 @@ const SPIKE = new URL('../../spikes/api/out/', import.meta.url);
 const OUT = new URL('../public/fixtures/s2/', import.meta.url);
 const load = (p: string) => decodePngBytes(readFileSync(new URL(p, SPIKE)));
 const DIRS = ['south', 'east', 'north'];
-const ANIMS = { walk: { cells: 8, src: 'b48walk', ms: 100, template: 'walking-8-frames' }, 'cross-punch': { cells: 6, src: 'b48punch', ms: 100, template: 'cross-punch' } };
+// B10: the S2 items only have cross-punch SOUTH (east was body + a doubled sword, north none), so the demo ships it south only.
+const ANIMS = { walk: { cells: 8, src: 'b48walk', ms: 100, template: 'walking-8-frames', dirs: DIRS }, 'cross-punch': { cells: 6, src: 'b48punch', ms: 100, template: 'cross-punch', dirs: ['south'] } };
 type Anim = keyof typeof ANIMS;
 
 const pad = (im: Img) => { const o = makeImg(64, 64); over(o, im, 8, 16); return o; };
@@ -65,9 +66,9 @@ function claim(imgs: Img[]) {
   return [...mine].filter(([a, b]) => a !== b).length;
 }
 
-async function writeSheet(name: string, cells: number, get: (dir: string, i: number) => Img | null | undefined) {
-  const out = makeImg(cells * 64, DIRS.length * 64);
-  DIRS.forEach((d, r) => { for (let i = 0; i < cells; i++) { const im = get(d, i); if (im) over(out, im, i * 64, r * 64); } });
+async function writeSheet(name: string, a: Anim, get: (dir: string, i: number) => Img | null | undefined) {
+  const cells = ANIMS[a].cells, out = makeImg(cells * 64, DIRS.length * 64);
+  DIRS.forEach((d, r) => { if (ANIMS[a].dirs.includes(d)) for (let i = 0; i < cells; i++) { const im = get(d, i); if (im) over(out, im, i * 64, r * 64); } });
   mkdirSync(new URL(name.replace(/[^/]+$/, ''), OUT), { recursive: true });
   writeFileSync(new URL(name, OUT), await encodePngBytes(out));
   return name;
@@ -84,7 +85,7 @@ for (const it of ITEMS) {
   for (const r of it.runs) for (const [k, v] of Object.entries(await runCells(r))) cells[k] ??= v; // first run wins per anim/dir
   const nudged = claim(Object.values(cells).flat());
   const sheets: Record<string, string> = {};
-  for (const a of anims) if (DIRS.some((d) => cells[`${a}/${d}`])) sheets[a] = await writeSheet(`layers/${it.slot}/${it.id}/main/${a}.png`, ANIMS[a].cells, (d, i) => cells[`${a}/${d}`]?.[i]);
+  for (const a of anims) if (DIRS.some((d) => cells[`${a}/${d}`])) sheets[a] = await writeSheet(`layers/${it.slot}/${it.id}/main/${a}.png`, a, (d, i) => cells[`${a}/${d}`]?.[i]);
   const mtime = statSync(new URL(`s2_x4/${it.runs[0]}.layer0.png`, SPIKE)).mtime.toISOString();
   items.push({
     id: it.id, name: it.name, slot: it.slot, status: 'accepted', mirror: 'flip', materials: [], prompt: it.what, baseHash: '',
@@ -108,7 +109,7 @@ for (const it of items) it.layers[0].z = SLOTS.find((s) => s.id === it.slot)!.z;
 
 const fixture = {
   format: 'pixeldoll/1',
-  name: 's2_adventurer',
+  name: 'Adventurer',
   app: 'PixelDoll 0.1.0 (fixture from S2 chroma-mannequin outputs)',
   rig: {
     cell: { w: 64, h: 64 },
@@ -122,7 +123,7 @@ const fixture = {
   slots: SLOTS,
   items: [
     { id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'flip', materials: [], prompt: 'plain grey t-shirt and plain grey shorts, bald, barefoot (S2 b48, padded to 64)', baseHash: '',
-      layers: [{ id: 'main', role: 'fg', z: 10, sheets: Object.fromEntries(await Promise.all(anims.map(async (a) => [a, await writeSheet(`layers/body/base/main/${a}.png`, ANIMS[a].cells, (d, i) => base[`${a}/${d}`][i])]))) }],
+      layers: [{ id: 'main', role: 'fg', z: 10, sheets: Object.fromEntries(await Promise.all(anims.map(async (a) => [a, await writeSheet(`layers/body/base/main/${a}.png`, a, (d, i) => base[`${a}/${d}`][i])]))) }],
       provenance: [{ endpoint: '/create-character-v3', params: { image_size: 48, seed: 4321 }, seed: 4321, requestHash: '', createdAt: '2026-10-21T05:00:00Z', produced: [] }] },
     ...items,
   ],

@@ -33,10 +33,13 @@ export const STEPS: { id: CreateStep; label: string }[] = [
 const DIRS: Direction[] = ['south', 'east', 'north']; // west = mirror of east (architecture §2)
 const CELL = 64, RAW_GENS = 3, EST = 0.1;
 
-/** Cost from measured prices: base 2 + import 0.25, per clip-direction managed 3 + raw 3, joints 0.1 per motion + raw frame. */
+/** Base clips whose keypoints are authored from the rest pose (B9: idle) instead of a managed skeleton-v3 motion source. */
+const authoredBase = (anim: string) => (anim in ACTIONS ? ACTIONS[anim] : undefined);
+/** Cost from measured prices: base 2 + import 0.25, per clip-direction raw 3 (+ managed motion 3 unless authored), joints 0.1
+ * per raw frame (+ per managed motion frame). */
 export function estimate() {
-  const frames = BASE_ANIMS.reduce((s, a) => s + a.frames, 0) * DIRS.length;
-  return { gens: 2.25 + BASE_ANIMS.length * DIRS.length * (3 + RAW_GENS) + frames * 2 * EST, minutes: 12 };
+  const per = (a: (typeof BASE_ANIMS)[number]) => RAW_GENS + a.frames * EST + (authoredBase(a.name) ? 0 : 3 + a.frames * EST);
+  return { gens: 2.25 + DIRS.length * BASE_ANIMS.reduce((s, a) => s + per(a), 0), minutes: 12 };
 }
 
 // ---------- queue helpers ----------
@@ -159,15 +162,20 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
   // 3. per (clip, direction): managed skeleton-v3 motion -> keypoints -> raw re-render on the rest view
   const pairs = BASE_ANIMS.flatMap((a) => DIRS.map((d) => ({ a, d })));
-  const total = pairs.reduce((s, { a }) => s + 2 + a.frames * 2, 0);
+  const total = pairs.reduce((s, { a }) => s + (authoredBase(a.name) ? 1 + a.frames : 2 + a.frames * 2), 0);
   let done = 0;
   const tick = () => onProgress({ step: 'animate', done: Math.min(total, ++done), total, recIds: [] });
   onProgress({ step: 'animate', done: 0, total, recIds: [] });
   const motions = new Map<string, JobRec>();
   const clips = await Promise.all(pairs.map(async ({ a, d }) => {
-    const req = routes.animateCharacter(baseAnimation('skeleton-v3', charId, a, [d], spec.seed));
-    const keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, tick);
-    motions.set(`${a.name}/${d}`, (await queue.enqueue(req)) as JobRec); // cache hit: the record for provenance
+    const authored = authoredBase(a.name);
+    let keypoints: Keypoint[][];
+    if (authored) keypoints = authored(fromApi(restKps[d], { w: CELL, h: CELL }), d).map((p) => toApi(p, { w: CELL, h: CELL }));
+    else {
+      const req = routes.animateCharacter(baseAnimation('skeleton-v3', charId, a, [d], spec.seed));
+      keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, tick);
+      motions.set(`${a.name}/${d}`, (await queue.enqueue(req)) as JobRec); // cache hit: the record for provenance
+    }
     return { a, d, keypoints, out: await renderClip({ anim: a.name, dir: d, rest: rest[d], restKps: restKps[d], keypoints, looks, seed: spec.seed + 101, name: spec.name, tick }) };
   }));
 
@@ -187,8 +195,8 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     anim.loop = loops(anim.id);
     const produced = c.out.frames.map((_, i) => cellKey(anim.id, c.d, i) as CellKey);
     (anim.sources ??= {})[c.d] = {
-      route: 'skeleton-v3', reference: rig.rest[c.d]!.image, keypoints: c.keypoints, motion: `managed-skeleton-v3:${c.a.template}`, measured: c.out.measured.map((k) => k ?? []),
-      provenance: [at(motions.get(`${c.a.name}/${c.d}`)!), ...c.out.recs.map((r) => at(r, produced))],
+      route: 'skeleton-v3', reference: rig.rest[c.d]!.image, keypoints: c.keypoints, motion: authoredBase(c.a.name) ? `authored:${c.a.name}` : `managed-skeleton-v3:${c.a.template}`, measured: c.out.measured.map((k) => k ?? []),
+      provenance: [...(motions.has(`${c.a.name}/${c.d}`) ? [at(motions.get(`${c.a.name}/${c.d}`)!)] : []), ...c.out.recs.map((r) => at(r, produced))],
     };
     built.warnings.push(...warn(`${anim.id}/${c.d}`, c.out.qa));
   }
@@ -224,7 +232,8 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 }
 
 // ---------- add a move ----------
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; seed: number }
+/** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; seed: number; replace?: boolean }
 export const MOVE_STEPS = [
   { id: 'animate', label: 'Animating the body' },
   { id: 'items', label: 'Posing your items' },
@@ -250,14 +259,14 @@ export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' 
 export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<void> {
   const { rec } = await loadProject(projectId);
   if (!isV13(rec)) throw new Error('This character was made before rig v1.3. Create a new character to add moves.');
-  if (!rec.manifest.rig.animations.some((a) => a.id === spec.id)) await addBodyClip(projectId, spec, onProgress);
+  if (spec.replace || !rec.manifest.rig.animations.some((a) => a.id === spec.id)) await addBodyClip(projectId, spec, onProgress);
   // items: one pose call per item x direction with the clip's stored keypoints (sequential saves; the record is re-read each time)
   const dirs = genDirs(rec.manifest).length, itemTotal = spec.items.length * dirs;
   let posed = 0;
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
   for (const id of spec.items) {
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find((i) => i.id === id);
-    if (it && !it.layers.some((l) => l.cells?.[spec.id])) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: ++posed, total: itemTotal, recIds: [] }));
+    if (it && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: ++posed, total: itemTotal, recIds: [] }));
   }
 }
 
@@ -283,7 +292,8 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
 
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
   const fresh = (await db.get<StoredProject>('projects', projectId))!, fm = fresh.manifest, frig = fm.rig, baseIt = fm.items.find((i) => i.id === frig.baseItem)!;
-  const anim: RigAnimation = { id: spec.id, cells: n, loop: loops(spec.id), frames: playlist(n, 100), sources: {} };
+  const old = frig.animations.find((a) => a.id === spec.id);
+  const anim: RigAnimation = { id: spec.id, cells: n, loop: loops(spec.id), frames: old?.cells === n ? old.frames : playlist(n, 100), sources: {} };
   const layer = baseIt.layers[0], cellMap: Partial<Record<DirectionName, Sha256[]>> = {};
   const skeletons = (fresh.skeletons ??= {}), warnings: string[] = [];
   for (const [k, c] of clips.entries()) {
@@ -305,14 +315,15 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
     const track = ((frig.anchors ??= {})[id] ??= {});
     for (const d of frig.directions) { const p = pts(d.id); if (p.every(Boolean)) (track[spec.id] ??= {})[d.id] = p as [number, number][]; }
   }
-  frig.animations = [...frig.animations, anim];
+  frig.animations = old ? frig.animations.map((a) => (a === old ? anim : a)) : [...frig.animations, anim];
   (layer.cells ??= {})[spec.id] = cellMap;
   // adding a clip changes baseHash; items made against the old base keep every old cell, so they move to the new hash
   const hashes: Record<string, Sha256> = {};
   for (const k of cellKeys(frig)) { const [a, d, i] = k.split('/') as [string, DirectionName, string]; const h = layer.cells[a]?.[d]?.[+i]; if (h) hashes[k] = h; }
-  const old = frig.baseHash;
+  const oldHash = frig.baseHash;
   frig.baseHash = await baseHashOf(frig, hashes);
-  for (const it of fm.items) if (it.baseHash === old) it.baseHash = frig.baseHash;
+  // ponytail: on `replace`, items keep their old cells of that clip until addMove re-poses the chosen ones
+  for (const it of fm.items) if (it.baseHash === oldHash) it.baseHash = frig.baseHash;
   const errs = validateRig(frig, hashes);
   if (errs.length) throw new Error(`rig not valid: ${errs.join('; ')}`);
   const qa = (fresh.rigQa ?? {}) as { warnings?: string[]; clips?: Record<string, ClipQa> };
