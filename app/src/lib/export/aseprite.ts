@@ -10,7 +10,7 @@
 //    composeCell on the baked frame. Pixels come from the layer sheets (source ramps; preset variants are not applied).
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Item, Layer, Manifest, Slot } from '../store/manifest.ts';
-import { bakedFrame, equipped, hiddenSlots, layerFrame, resolveZ } from '../compose/compose.ts';
+import { bakedFrame, equipped, hiddenSlots, layerFrame, resolveZ, shownItems } from '../compose/compose.ts';
 import type { OutFile } from './generic.ts';
 
 type Bytes = ArrayLike<number>;
@@ -34,7 +34,7 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
   const { rig } = m, bf = bakedFrame(m);
   const all: L[] = m.items.flatMap((item) => item.layers.map((layer) => ({ item, layer, slotIx: m.slots.findIndex((s) => s.id === item.slot), slot: m.slots.find((s) => s.id === item.slot) })));
   const stack = sortLayers(all, (l) => l.layer.z);
-  const on = equipped(m, m.presets[0]?.items ?? {}), hidden = hiddenSlots(m, on);
+  const worn = equipped(m, m.presets[0]?.items ?? {}), hidden = hiddenSlots(m, worn), on = shownItems(m, worn); // B14: a tucked variant replaces its item
   const visible = (l: L) => on.includes(l.item) && !hidden.has(l.item.slot);
   const layerChunks = stack.map((l) => chunk(0x2004, w16(visible(l) ? 3 : 2), w16(0), w16(0), w16(0), w16(0), w16(0), [255, 0, 0, 0],
     str(`${l.item.slot}.${l.item.id}${l.item.layers.length > 1 ? `.${l.layer.id}` : ''}`)));

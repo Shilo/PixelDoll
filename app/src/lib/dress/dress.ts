@@ -2,7 +2,8 @@
 // random outfits, coverage and layer outlines. Pure over Project; the M4 UI and the baked export share recolour().
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Hex, Item, Manifest, Material, Preset, Project } from '../store/manifest.ts';
-import { applyIndex, autoRamps, colourCounts, deriveRamps, fromHex, hueName, indexImg, tintRamp, variantRamp } from './palette.ts';
+import { applyIndex, autoRamps, colourCounts, deriveRamps, fromHex, hueName, indexImg, lab, tintRamp, toHex, variantRamp } from './palette.ts';
+import { isGarment, isShorts } from './regions.ts';
 
 export const SWATCHES: Record<string, Hex> = {
   crimson: '#b02832', ember: '#d9622b', gold: '#d9a92b', moss: '#5c8a2e', teal: '#2a9c8f', azure: '#2a63c4',
@@ -61,8 +62,18 @@ export function deriveMaterials(p: Project, items = p.manifest.items.filter((i) 
   const claimed = new Set(m.materials.flatMap((x) => x.ramp.map(fromHex)));
   for (const it of [...items].sort((a, b) => +(b.id === m.rig.baseItem) - +(a.id === m.rig.baseItem))) {
     const counts = colourCounts(itemImgs(p, it));
-    const ramps = k[it.id] ? deriveRamps(counts, k[it.id], claimed) : autoRamps(counts, claimed);
-    const names = materialNames(it, ramps);
+    let ramps: Hex[][], names: string[];
+    if (it.regions === 'shirt-shorts') { // B15: garment greys by region bit (lib/dress/regions.ts), the rest as usual (Skin)
+      const by = (pick: (c: number) => boolean) => [...counts.keys()].filter((c) => pick(c) && !claimed.has(c)).sort((x, y) => lab(x)[0] - lab(y)[0]).map(toHex);
+      const rest = new Map([...counts].filter(([c]) => !isGarment(c)));
+      const garments = ([['Shirt', by((c) => isGarment(c) && !isShorts(c))], ['Shorts', by((c) => isGarment(c) && isShorts(c))]] as [string, Hex[]][]).filter(([, r]) => r.length);
+      const others = k[it.id] ? deriveRamps(rest, k[it.id], claimed) : autoRamps(rest, claimed);
+      ramps = [...garments.map(([, r]) => r), ...others];
+      names = [...garments.map(([n]) => n), ...materialNames(it, others)];
+    } else {
+      ramps = k[it.id] ? deriveRamps(counts, k[it.id], claimed) : autoRamps(counts, claimed);
+      names = materialNames(it, ramps);
+    }
     it.materials = ramps.map((ramp, i) => {
       ramp.forEach((h) => claimed.add(fromHex(h)));
       const id = `${it.id}_${i + 1}`;
@@ -208,5 +219,10 @@ export function selfTest() {
   console.assert(materialNames({ slot: 'feet', name: 'Boots', prompt: 'tall boots' }, [red, grey]).join() === 'Leather,Detail' && materialNames({ slot: 'body', name: 'Base', prompt: '' }, [red, grey]).join() === 'Skin,Clothes', 'slot + base names');
   console.assert(materialNames({ slot: 'back', name: 'Cape', prompt: 'cape' }, [red, red, red]).join() === 'Cloth,Detail,Detail 2', 'no duplicate words');
   console.assert(materialNames({ slot: 'torso_inner', name: 'Vest', prompt: 'leather armor vest' }, [red, ['#101012', '#1c1c20'] as Hex[]]).join() === 'Leather,Outline', 'dark ramp = outline');
+  // B15: a region-split base -> Shirt (even-blue garment greys), Shorts (odd), Skin (the rest)
+  const rb = { manifest: { rig: { baseItem: 'b' }, materials: [], items: [{ id: 'b', name: 'Base', slot: 'body', prompt: '', regions: 'shirt-shorts', materials: [], layers: L('sha256:r') }] } as unknown as Manifest,
+    images: new Map([['sha256:r', px(0x9eacb0, 0x6d7c86, 0x9eacb1, 0x6d7c87, 0xc96e4e, 0xe4976e, 0x000000)]]) } as Project;
+  deriveMaterials(rb);
+  console.assert(rb.manifest.materials.map((x) => `${x.label}:${x.ramp.join('+')}`).join() === 'Shirt:#6d7c86+#9eacb0,Shorts:#6d7c87+#9eacb1,Skin:#c96e4e+#e4976e', `region materials ${rb.manifest.materials.map((x) => x.label + ':' + x.ramp.join('+'))}`);
   console.assert(edges({ w: 3, h: 3, data: new Uint8ClampedArray(36).fill(255) }).join() === '0,1,2,3,5,6,7,8', 'edges');
 }

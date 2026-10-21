@@ -5,19 +5,21 @@ import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
 
 const q = JSON.stringify;
+/** Resource ids: Godot allows letters, digits and _ only (B15: "walk_south-east_0" logged an error per sub_resource). */
+const rid = (s: string) => q(s.replace(/[^A-Za-z0-9_]/g, '_'));
 const num = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
 export function spriteFramesTres(m: Manifest, itemId: string, layerId: string): string {
   const { rig } = m;
   const layer = m.items.find((i) => i.id === itemId)!.layers.find((l) => l.id === layerId)!, { w, h } = layerFrame(rig, layer);
-  const ext = rig.animations.map((a) => `[ext_resource type="Texture2D" path=${q('../' + layer.sheets![a.id])} id=${q(a.id)}]`);
+  const ext = rig.animations.map((a) => `[ext_resource type="Texture2D" path=${q('../' + layer.sheets![a.id])} id=${rid(a.id)}]`);
   const subs: string[] = [], anims: string[] = [];
   for (const a of rig.animations) {
     const msBase = Math.min(...a.frames.map((f) => f.ms));
     rig.directions.forEach((d, r) => {
       for (let c = 0; c < a.cells; c++)
-        subs.push(`[sub_resource type="AtlasTexture" id=${q(`${a.id}_${d.id}_${c}`)}]\natlas = ExtResource(${q(a.id)})\nregion = Rect2(${c * w}, ${r * h}, ${w}, ${h})\nfilter_clip = true\n`);
-      const frames = a.frames.map((f) => `{\n"duration": ${num(f.ms / msBase)},\n"texture": SubResource(${q(`${a.id}_${d.id}_${f.cell}`)})\n}`);
+        subs.push(`[sub_resource type="AtlasTexture" id=${rid(`${a.id}_${d.id}_${c}`)}]\natlas = ExtResource(${rid(a.id)})\nregion = Rect2(${c * w}, ${r * h}, ${w}, ${h})\nfilter_clip = true\n`);
+      const frames = a.frames.map((f) => `{\n"duration": ${num(f.ms / msBase)},\n"texture": SubResource(${rid(`${a.id}_${d.id}_${f.cell}`)})\n}`);
       anims.push(`{\n"frames": [${frames.join(', ')}],\n"loop": ${a.loop},\n"name": &${q(`${a.id}_${d.id}`)},\n"speed": ${num(1000 / msBase)}\n}`);
     });
   }
@@ -42,16 +44,19 @@ export function paperdollTscn(m: Manifest): string {
   const out = [
     '[gd_scene format=3]\n',
     '[ext_resource type="Script" path="paperdoll.gd" id="script"]',
-    ...res.map((r) => `[ext_resource type="SpriteFrames" path=${q(r + '.tres')} id=${q(r)}]`),
+    ...res.map((r) => `[ext_resource type="SpriteFrames" path=${q(r + '.tres')} id=${rid(r)}]`),
     '',
     `[node name=${q(m.name.replace(/[^A-Za-z0-9_]/g, '_') || 'Paperdoll')} type="Node2D"]\ntexture_filter = 1\nscript = ExtResource("script")\n`,
   ];
-  for (const [name, n] of [...nodes].sort((a, b) => a[1].z - b[1].z))
+  // B14: equal z_index draws in tree order, so the tree follows compose's tie-break (slot order, bg before fg): hair bg and a
+  // held bg both at z 5 (south) drew the hair over the blade in Godot, the blade over the hair in PixelDoll (4 px, Ranger)
+  const ix = (n: { slot: string; role: string }) => m.slots.findIndex((s) => s.id === n.slot) * 2 + (n.role === 'bg' ? 0 : 1);
+  for (const [name, n] of [...nodes].sort((a, b) => ix(a[1]) - ix(b[1])))
     out.push([
       `[node name=${q(name)} type="AnimatedSprite2D" parent="."]`,
       ...(n.res ? [] : ['visible = false']),
       `z_index = ${n.z}`,
-      ...(n.res ? [`sprite_frames = ExtResource(${q(n.res)})`, `animation = &${q(first)}`] : []),
+      ...(n.res ? [`sprite_frames = ExtResource(${rid(n.res)})`, `animation = &${q(first)}`] : []),
       'centered = false',
       `offset = Vector2(${-n.pivot.x}, ${-n.pivot.y})`,
       `metadata/slot = ${q(n.slot)}`,
@@ -114,7 +119,7 @@ func _refresh() -> void:
 		var layer := _layer_of(node)
 		node.visible = not layer.is_empty() and not hidden.has(node.get_meta("slot"))
 		if not layer.is_empty():
-			var frames: SpriteFrames = load(_here.path_join("%s_%s.tres" % [equipped[node.get_meta("slot")], layer["id"]]))
+			var frames: SpriteFrames = load(_here.path_join("%s_%s.tres" % [_shown(node.get_meta("slot")), layer["id"]]))
 			if node.sprite_frames != frames:
 				node.sprite_frames = frames
 			var pv: Dictionary = layer.get("pivot", manifest["rig"]["pivot"])
@@ -158,8 +163,19 @@ func _layers() -> Array:
 
 
 func _layer_of(node: Node) -> Dictionary:
-	var it := _find(manifest["items"], equipped.get(node.get_meta("slot"), ""))
+	var it := _find(manifest["items"], _shown(node.get_meta("slot")))
 	return _find(it.get("layers", []), node.get_meta("role"), "role")
+
+
+## The item drawn in slot: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists.
+func _shown(slot: String) -> String:
+	var id: String = equipped.get(slot, "")
+	if not id.is_empty():
+		for s in equipped:
+			var v := "%s~%s" % [id, equipped[s]]
+			if not _find(manifest["items"], v).is_empty():
+				return v
+	return id
 
 
 func _find(list: Array, id: String, key := "id") -> Dictionary:
@@ -198,10 +214,14 @@ export function selfTest() {
   console.assert(t.includes('"speed": 10.0') && t.includes('"duration": 2.0') && (t.match(/"duration"/g) ?? []).length === 6, 'tres: msBase speed, relative durations, playlist frames x dirs');
   const s = paperdollTscn(m);
   console.assert(s.includes('[node name="body_fg" type="AnimatedSprite2D" parent="."]') && s.includes('offset = Vector2(-32, -60)'), 'tscn: body node + pivot offset');
-  console.assert(s.indexOf('"back_bg"') < s.indexOf('"body_fg"') && s.includes('visible = false\nz_index = 4'), 'tscn: z-sorted, unequipped slot hidden');
+  console.assert(s.indexOf('"body_fg"') < s.indexOf('"back_bg"') && s.indexOf('"back_bg"') < s.indexOf('"back_fg"') &&s.includes('visible = false\nz_index = 4'), 'tscn: tree in compose tie-break order (slot, bg before fg), unequipped slot hidden');
   // oversize layer: own region size and node offset
   Object.assign(m.items[1].layers[0], { cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } });
   m.presets[0].items.back = 'cape';
   console.assert(spriteFramesTres(m, 'cape', 'fg').includes('region = Rect2(96, 96, 96, 96)'), 'tres: oversize region');
   console.assert(paperdollTscn(m).includes('offset = Vector2(-48, -76)') && PAPERDOLL_GD.includes('node.offset = -Vector2(pv["x"], pv["y"])'), 'tscn/gd: oversize offset');
+  // B15: 8 directions -> ids without '-', animation names keep the direction id
+  m.rig.directions = [{ id: 'south-east' }];
+  const t8 = spriteFramesTres(m, 'base', 'main');
+  console.assert(t8.includes('id="walk_south_east_0"') && t8.includes('SubResource("walk_south_east_1")') && t8.includes('&"walk_south-east"') && !/id="[^"]*-/.test(t8), 'tres: resource ids letters/digits/_ only');
 }

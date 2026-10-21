@@ -53,6 +53,8 @@ export const baseAnimation = (mode: BaseAnimMode, character_id: string, a: BaseA
   mode === 'skeleton-v3'
     ? { character_id, mode, template_animation_id: a.template, animation_name: a.name, directions, seed }
     : { character_id, mode, action_description: a.action, frame_count: a.frames, keep_first_frame: false, animation_name: a.name, directions, seed };
+/** Pro inpaint (B14 grid fallback, S4/S5): white mask = generate, black = keep; result in last_response.image. */
+export interface InpaintV3 { description: string; inpainting_image: SizedImage; mask_image: SizedImage; seed?: number; no_background?: boolean }
 export interface EditAnimationV2 { description: string; frames: SizedImage[]; image_size: Size; seed?: number; no_background?: boolean; target_palette?: TargetPalette }
 /** Raw skeleton-v3: pose `first_frame` (in pose first_frame_keypoints) into one frame per keypoints entry (3-15), same size. */
 export interface ApiKeypoint { label: string; x: number; y: number; z_index?: number } // x/y = 0-1 fractions of the image
@@ -76,6 +78,7 @@ export const routes = {
   estimateSkeleton: (image: B64Image) => post('/estimate-skeleton', { image }),
   editAnimationV2: (b: EditAnimationV2) => post('/edit-animation-v2', b),
   animateWithSkeletonV3: (b: AnimateSkeletonV3) => post('/animate-with-skeleton-v3', b),
+  inpaintV3: (b: InpaintV3) => post('/inpaint-v3', b),
 };
 
 // ---- responses ----
@@ -123,6 +126,8 @@ export type JobImage = { label: string; b64?: string; rgba?: { b64: string; w: n
 export function jobImages(lr: JobLastResponse | null | undefined): JobImage[] {
   if (!lr) return [];
   const prefix = lr.direction ? `${lr.direction}/` : '';
+  const one = lr.image as { base64?: string } | undefined; // inpaint-v3: one image (S5 live)
+  if (!lr.images?.length && one?.base64) return [{ label: prefix + '0', b64: one.base64 }];
   if (lr.images?.length)
     return lr.images.map((im, i) =>
       im.type === 'rgba_bytes' ? { label: prefix + i, rgba: { b64: im.base64, w: im.width ?? 0, h: im.height ?? 0 } } : { label: prefix + i, b64: im.base64 },
@@ -139,6 +144,7 @@ export function selfTest() {
   console.assert(jobIdsOf({ background_job_ids: ['a', 'b'] }).join() === 'a,b' && jobIdsOf({ background_job_id: 'c' }).join() === 'c' && jobIdsOf({}).length === 0, 'jobIdsOf');
   const anim = jobImages({ direction: 'east', images: [{ type: 'base64', base64: 'x' }], storage_urls: { frames: ['u0'] } });
   console.assert(anim.length === 1 && anim[0].label === 'east/0' && anim[0].b64 === 'x', 'jobImages prefers inline images');
+  console.assert(jobImages({ image: { type: 'base64', base64: 'g' } })[0].b64 === 'g', 'jobImages: inpaint-v3 single image');
   const ch = jobImages({ storage_urls: { south: 'https://s', east: 'https://e' } });
   console.assert(ch.map((i) => i.label).join() === 'south,east' && ch[1].url === 'https://e', 'jobImages storage_urls');
   console.assert(baseAnimation('skeleton-v3', 'c', BASE_ANIMS[1], ['south']).template_animation_id === 'walking-8-frames' && baseAnimation('v3', 'c', BASE_ANIMS[0], ['south']).frame_count === 4, 'baseAnimation');

@@ -57,8 +57,9 @@ export class Paperdoll {
     this.nodes = []; // one sprite per (slot, role) any item uses
     for (const s of manifest.slots) {
       const roles = new Set(manifest.items.filter((i) => i.slot === s.id).flatMap((i) => i.layers.map((l) => l.role)));
-      for (const role of roles) {
+      for (const role of [...roles].sort((a, b) => (a === 'bg' ? -1 : 0) - (b === 'bg' ? -1 : 0))) { // bg before fg (compose tie-break)
         const sprite = scene.add.sprite(0, 0, '__DEFAULT').setName(\`\${s.id}_\${role}\`);
+        sprite.pdOrder = this.nodes.length; // B14: equal depth keeps compose's order (slot, bg before fg), never the last frame's
         this.nodes.push({ slot: s, role, sprite });
         this.container.add(sprite);
       }
@@ -75,8 +76,15 @@ export class Paperdoll {
 
   equip(slot, itemId) { this.equipped[slot] = itemId; this.sync(); }
 
+  /** The item drawn in a slot: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists. */
+  shown(slot) {
+    const id = this.equipped[slot];
+    if (id) for (const o of Object.values(this.equipped)) if (this.m.items.some((i) => i.id === \`\${id}~\${o}\`)) return \`\${id}~\${o}\`;
+    return id;
+  }
+
   layerOf(n) {
-    const it = this.m.items.find((i) => i.id === this.equipped[n.slot.id]);
+    const it = this.m.items.find((i) => i.id === this.shown(n.slot.id));
     return it && { item: it, layer: it.layers.find((l) => l.role === n.role) };
   }
 
@@ -107,7 +115,7 @@ export class Paperdoll {
       n.sprite.depth = this.z(n.slot, hit.layer, cell);
       if (n.sprite !== this.body) n.sprite.setTexture(texKey(this.m, hit.item.id, hit.layer.id, this.anim), name);
     }
-    this.container.sort('depth');
+    this.container.sort('depth', (a, b) => a.depth - b.depth || a.pdOrder - b.pdOrder);
   }
 }
 `;

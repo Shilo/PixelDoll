@@ -27,6 +27,9 @@ export const listProjects = async () =>
 export async function loadProject(id: string): Promise<{ rec: StoredProject; project: Project }> {
   const rec = await db.get<StoredProject>('projects', id);
   if (!rec) throw new Error(`project ${id} not found`);
+  // B14: the head slot's old default hid hair (long hair vanished under a helmet); it now tucks it under (slot.clips). Slot-level
+  // hides are always the ladder default (the UI edits item.hides), so old records take the new one.
+  for (const s of rec.manifest.slots) if (s.id === 'head' && !s.clips && s.hides?.join() === 'hair') { delete s.hides; s.clips = ['hair']; }
   const images = new Map<string, Img>();
   const add = async (h: Sha256 | null | undefined, owner: string) => {
     if (!h || images.has(h)) return;

@@ -387,6 +387,11 @@ dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
 .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; padding: 10px 16px; border-radius: 20px;
   background: var(--text); color: var(--bg); font-weight: 500; box-shadow: var(--shadow-pop); max-width: calc(100vw - 32px); }
 .studio.compact .toast { bottom: calc(140px + env(safe-area-inset-bottom)); }
+/* B15: offline banner, under the toolbar, never in the way (no pointer events) */
+.offline-banner { position: fixed; left: 50%; top: calc(60px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 29; display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 16px; font-size: var(--fs-sm); font-weight: 500; pointer-events: none; max-width: calc(100vw - 32px);
+  background: color-mix(in srgb, var(--warn) 18%, var(--bg-raised)); color: var(--text); border: 1px solid color-mix(in srgb, var(--warn) 40%, transparent); box-shadow: var(--shadow-pop); }
+.offline-banner > svg { flex: none; color: var(--warn); }
 
 /* ---------- phone: landscape ---------- */
 .studio.landscape .main { flex-direction: row; }
@@ -474,6 +479,7 @@ dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
   .canvas-bar .seg > button { width: 40px; min-width: 40px; }
   .canvas-bar .select-wrap { flex: none; }
   .canvas-bar .select { max-width: 96px; min-width: 0; }
+  .canvas-bar .select.dir-select { min-width: 124px; max-width: 132px; } /* B15: "North-east" in full */
 }
 @container (max-width: 339px) {
   .canvas-bar [aria-label="All directions"] { display: none; }

@@ -21,7 +21,7 @@ import { png, routes, type Req } from '../pixellab/routes.ts';
  * - `anchor` (S2): edit-animation-v2 on ≤16 packed chroma cells per call, later calls carry one dressed anchor cell.
  */
 export type Method = 'skel' | 'anchor';
-export type CallKind = 'edit' | 'dress' | 'pose';
+export type CallKind = 'edit' | 'dress' | 'pose' | 'grid'; // grid: B14 per clip-direction fallback (inpaint-v3)
 export const itemRoute = {
   name: 'skeleton-posed keyframe / edit-animation-v2',
   maxFrames: 16, // edit-animation-v2 frames per call at ≤ 64 px, anchor cell included
@@ -45,6 +45,41 @@ export const itemRoute = {
     });
   },
 };
+
+// ---------- B14 fallback: one clip-direction as a Pro inpaint-v3 packed masked grid (S4 inv3, S5 H3) ----------
+export const GRID_COLS = 4;
+/** Pack cells into one grid (row-major, `cols` wide) plus its mask: white = generate (the cell's mask px), black = keep. */
+export function packGrid(cells: Img[], masks: (Uint8Array | null)[], cols = GRID_COLS): { image: Img; mask: Img } {
+  const { w, h } = cells[0], rows = Math.ceil(cells.length / cols), image = makeImg(cols * w, rows * h), mask = makeImg(cols * w, rows * h);
+  for (let i = 0; i < mask.data.length; i += 4) mask.data.set([0, 0, 0, 255], i);
+  cells.forEach((c, k) => {
+    const ox = (k % cols) * w, oy = ((k / cols) | 0) * h, m = masks[k];
+    over(image, c, ox, oy);
+    if (m) for (let p = 0; p < m.length; p++) if (m[p]) mask.data.set([255, 255, 255, 255], ((oy + ((p / w) | 0)) * mask.w + ox + (p % w)) * 4);
+  });
+  return { image, mask };
+}
+/** The first `n` cells of a grid made by packGrid. */
+export function cutGrid(g: Img, n: number, w: number, h: number, cols = GRID_COLS): Img[] {
+  return Array.from({ length: n }, (_, k) => {
+    const o = makeImg(w, h), ox = (k % cols) * w, oy = ((k / cols) | 0) * h;
+    for (let y = 0; y < h; y++) o.data.set(g.data.subarray(((oy + y) * g.w + ox) * 4, ((oy + y) * g.w + ox + w) * 4), y * w * 4);
+    return o;
+  });
+}
+/** Mask of a slot band (full width) for one cell. */
+export const bandMask = (r: Rect, w: number, h: number) => { const m = new Uint8Array(w * h); for (let y = Math.max(0, r.y); y < Math.min(h, r.y + r.h); y++) m.fill(1, y * w, y * w + w); return m; };
+/** S5 H3 wording: what the grid is, which cells are the reference design, one design everywhere; back items hang behind the arms. */
+export function gridPrompt(o: { item: string; slot: string; key: Key; anim: string; dir: DirectionName; n: number; refs: DirectionName[]; cell: { w: number; h: number } }): string {
+  const cols = GRID_COLS, rows = Math.ceil((o.n + o.refs.length) / cols), colour = o.key === 'green' ? 'bright green' : 'magenta';
+  const hint = o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : '';
+  return `This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${colour} mannequin. ` +
+    `The first ${o.n} frames (left to right, top to bottom) are a ${o.n}-frame ${actionOf(o.anim)} animation ${facing(o.dir)}. ` +
+    `The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${o.item}. ` +
+    `The ${colour} colour is intentional (a chroma key) and must stay exactly the same ${colour}. ` +
+    `Draw the identical ${o.item} on every animation frame, following each frame's pose${hint}; empty hands, no weapon, no effects. ` +
+    `Keep every other pixel, the poses, the outlines, the grid layout and the transparent background unchanged.`;
+}
 
 // ---------- S5 held route: oversize canvas, held wording, frame 0 last ----------
 /** S5: held items are generated on a 96 px canvas around the same pivot (64 + 2 × 16): no blade px on the border, no flips. */
@@ -87,7 +122,7 @@ export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>) =>
 
 /** M4/T3: a held item's bg (blade outside the body) sits above the cape's bg (z 4) in S/E/W, else the cape hides the hilt and
  * blade (T3 Ranger: 220 sword px hidden over walk S); from behind (north) the cape stays over it (bg z as built). */
-const heldBgOverCape = (): Slot['zOverrides'] => (['south', 'east', 'west'] as const).map((dir) => ({ layer: 'bg', z: 5, dir }));
+const heldBgOverCape = (): Slot['zOverrides'] => (['south', 'south-east', 'east', 'west', 'south-west'] as const).map((dir) => ({ layer: 'bg', z: 5, dir })); // B15: + the front 3/4 views of 8-dir rigs
 /** Default slot ladder (architecture §4). Array order = tie-break for equal z. */
 export const SLOTS: Slot[] = [
   { id: 'body', z: 10, class: 'base', required: true },
@@ -103,7 +138,9 @@ export const SLOTS: Slot[] = [
   { id: 'facial_hair', z: 100, class: 'rigid', anchor: 'head' },
   { id: 'hair', z: 110, bgZ: 3, class: 'rigid', anchor: 'head', zOverrides: [{ layer: 'bg', z: 5 }] }, // T3: long hair lies over the cape (bg 4) in every view: 359 hair px hidden over walk E
   { id: 'face_acc', z: 120, class: 'rigid', anchor: 'head', band: true },
-  { id: 'head', z: 130, class: 'rigid', anchor: 'head', hides: ['hair'], band: true },
+  // B14: hair is tucked under a helmet (only what hangs below the brim shows) instead of hidden (T3: hides erased long hair);
+  // a hood or full mask ticks "hide hair" (item.hides)
+  { id: 'head', z: 130, class: 'rigid', anchor: 'head', clips: ['hair'], band: true },
   { id: 'off_hand', z: 140, bgZ: 2, class: 'held', anchor: 'hand_l', zOverrides: heldBgOverCape() },
   { id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r', zOverrides: heldBgOverCape() },
 ];
@@ -136,7 +173,7 @@ export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>): str
   return bins.map((b) => b.clips.flatMap((c) => Array.from({ length: c.n }, (_, i) => cellKey(c.a, c.d, i))));
 }
 
-const facing = (d: string) => `facing ${d}${d === 'south' ? ' (front view)' : d === 'north' ? ' (back view)' : ' (side view)'}`;
+const facing = (d: string) => `facing ${d}${d === 'south' ? ' (front view)' : d === 'north' ? ' (back view)' : d.includes('-') ? ` (${d.startsWith('south') ? 'front' : 'back'} three-quarter view)` : ' (side view)'}`;
 /** "Cells in order: 8 cells walk facing south (front view), …" */
 export function cellsNote(cells: string[], anchor?: string): string {
   const groups: [string, number][] = [];
@@ -506,7 +543,7 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
   let clipPx = 0, minKept = 1, maxOut = 0, splitExact = true;
   for (const c of cells) {
     if (c.shifted) flag(c.call, `G10 ${c.key}: misregistered (fits the base better 1 px off)`);
-    if (c.repaired) warnings.push(`${c.key}: item lost by the pose, repaired from the dressed keyframe`);
+    // B14: a repaired frame (S5 frame-0 repair) is the designed fix, recorded in cells[].repaired, not a review warning
     cellsQa[c.key as CellKey] = { route: route === 'none' ? 'diff' : c.posed ? 'posed' : 'ea2', provenance: c.call, area: c.area, ...(c.repaired ? { repaired: true } : {}), ...(c.offset[0] || c.offset[1] ? { offset: c.offset } : {}), ...(c.keyKept != null ? { keyKept: +c.keyKept.toFixed(3) } : {}) };
     if (g2Fails(c)) flag(c.call, `G2 ${c.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`);
     if (c.keyOutside != null && c.keyOutside > keyOutsideMax) flag(c.call, `G3 ${c.key} key outside ${c.keyOutside.toFixed(3)}`);
@@ -546,7 +583,7 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
     const minRatio = med ? Math.min(...areas) / med : 0;
     if (!med) flag(cs[0].call, `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
-    else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d === 'north' && isAction(clip) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
+    else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
     if (cv > cvMax && !isAction(clip)) flag(cs[0].call, `G5 ${clip}: area CV ${cv.toFixed(2)} > ${cvMax.toFixed(2)}`);
     // placement: centroid spread relative to the slot anchor (info)
     const anc = slot.anchor ? rig.anchors?.[slot.anchor as 'head']?.[a]?.[d as DirectionName] : undefined;
@@ -562,7 +599,8 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
         else if (dl + 2 < dr) l++;
         grip[Math.min(dr, dl) > 6 ? 'none' : dr + 2 < dl ? 'R' : dl + 2 < dr ? 'L' : 'amb']++; // S3 gripSide
       }
-      hand = r > l ? 'r' : l > r ? 'l' : '?';
+      // B14: one decided frame of six (sword hurt E: 0 R / 1 L) is not a hand switch; a clip decides with half its frames
+      hand = (r + l) * 2 < cs.length ? '?' : r > l ? 'r' : l > r ? 'l' : '?';
       const want = slot.anchor === 'hand_l' ? 'l' : 'r';
       if (hand !== '?' && hand !== want) flag(cs[0].call, `G8 ${clip}: held in the ${hand === 'r' ? 'right' : 'left'} hand (${r} R / ${l} L frames)`);
     }
@@ -609,6 +647,18 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
   };
 }
 
+// ---------- B14 dress design check (0 gens): grey smudges in a colourful keyframe ----------
+/** Share of near-grey px (HSV saturation < 0.25) in a colourful layer (median saturation ≥ 0.4), else 0. T3 Ranger keyframes:
+ *  the red cape's smudged north hem 0.113; every clean view of hair, chest, trousers and cape ≤ 0.022 (grey items: median < 0.4). */
+export function greyShare(L: Img): number {
+  const sat: number[] = [];
+  for (let i = 0; i < L.data.length; i += 4) if (L.data[i + 3]) { const mx = Math.max(L.data[i], L.data[i + 1], L.data[i + 2]), mn = Math.min(L.data[i], L.data[i + 1], L.data[i + 2]); sat.push(mx ? (mx - mn) / mx : 0); }
+  return sat.length && median(sat) >= 0.4 ? sat.filter((v) => v < 0.25).length / sat.length : 0;
+}
+export const DESIGN = { grey: 0.05 };
+/** Prompts that ask for grey/black/white parts: the grey check does not apply. */
+export const GREYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|fur|stone|ash/i;
+
 // ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------
 const maskOf = (im: Img) => { const m = new Uint8Array(im.w * im.h); for (let p = 0; p < m.length; p++) m[p] = im.data[p * 4 + 3] ? 1 : 0; return m; };
 const despeck = (im: Img) => {
@@ -639,26 +689,38 @@ export function simAligned(A: Img, K: Img, occ?: Uint8Array): number {
   return best;
 }
 const OPP: Partial<Record<DirectionName, DirectionName>> = { south: 'north', north: 'south' };
-export const H4 = { own: 0.75, oppMargin: 0.1 };
+/** cover: B14, soft items (cloth, hair) are only judged in a view where the item covers at least half of the body (a cape from
+ *  behind, not the cape edges from the front); soft: their own-similarity floor there. */
+export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5 };
 /**
  * H4: a posed layer must look like its own direction's dressed keyframe layer. Band items (helmet, face): own < 0.75 fails in every
- * view (S5: a visor on a back view; B7 live: a blade drawn into a helmet's slash frames); worn items (torso, back): front/back
- * review warning only (cloth deforms); hair: warning in every view (T3). Off for feet and held items. Thresholds from S5's labelled helmet run (good ≥ 0.93).
+ * view (S5: a visor on a back view; B7 live: a blade drawn into a helmet's slash frames). Soft items (worn torso/back, hair) only
+ * warn, and only where the item covers ≥ 50 % of the body in some frame of the clip and own < 0.5 (B14 on the Ranger's stored
+ * frames: hair, chest and the cape's front view scored 0.20–0.74 on 31 frames that look right; the cape wrapping the raised arm
+ * from behind scored 0.31–0.46). Off for legs, feet (S and N look alike: trousers own ≈ opposite on 13 good frames) and held items.
  */
 export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>): { fails: Map<number, string[]>; warnings: string[] } {
   const fails = new Map<number, string[]>(), warnings: string[] = [];
-  if (slot.class === 'held' || slot.id === 'feet') return { fails, warnings };
+  if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return { fails, warnings };
+  // soft items: the clip's best body coverage (item px on the base silhouette / base px)
+  const cover = new Map<string, number>();
+  if (!slot.band)
+    for (const c of cells) {
+      let on = 0, body = 0;
+      for (let p = 0; p < c.mask.length; p++) if (c.base.data[p * 4 + 3]) { body++; if (c.mask[p]) on++; }
+      const k = c.key.split('/').slice(0, 2).join('/');
+      cover.set(k, Math.max(cover.get(k) ?? 0, body ? on / body : 0));
+    }
   for (const c of cells) {
     const dir = c.key.split('/')[1] as DirectionName, opp = OPP[dir];
     if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp)) continue;
+    if (!slot.band && (cover.get(c.key.split('/').slice(0, 2).join('/')) ?? 0) < H4.cover) continue;
     const L = despeck(c.layer), occ = new Uint8Array(c.mask.length);
     for (let p = 0; p < occ.length; p++) occ[p] = c.out.data[p * 4 + 3] && !c.mask[p] ? 1 : 0;
     const own = simAligned(L, despeck(keys[dir]!), occ);
-    if (own >= H4.own) continue;
+    if (own >= (slot.band ? H4.own : H4.soft)) continue;
     const other = opp && keys[opp] ? simAligned(L, despeck(keys[opp]!), occ) : 0;
     const why = `H4 ${c.key}: ${other >= own - H4.oppMargin ? 'looks like the opposite view' : 'does not match its keyframe (extra or missing parts)'} (own ${own.toFixed(2)}${opp ? `, opposite ${other.toFixed(2)}` : ''})`;
-    // T3: only band items (helmets, face accessories) are truly rigid; long hair swings and hides behind a raised forearm
-    // (live: own 0.36–0.74 on 9 slash/hurt frames that look right) -> review warning, like cloth
     if (slot.band) (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);
     else warnings.push(why);
   }
@@ -773,9 +835,22 @@ export async function selfTest() {
   blade.layer.data.set(block.data);
   for (const p of [0, 1, 2, 8, 9, 10, 16]) blade.layer.data.set([200, 200, 210, 255], p * 4); // a foreign object attached to the item
   console.assert(dirGate(slotOf('head'), [blade], { south: block }).fails.get(0)?.[0].startsWith('H4') === true && !dirGate(slotOf('main_hand'), [blade], { south: block }).fails.size, 'H4: extra parts fail rigid items, held items are skipped');
-  const hairH4 = dirGate(slotOf('hair'), [blade], { south: block });
-  console.assert(!hairH4.fails.size && hairH4.warnings.length === 1, 'H4: hair swings -> warning, not a re-roll (T3)');
+  // B14: soft items (hair, cloth) warn only where they cover >= half the body and own < 0.5; never fail
+  const red = makeImg(8, 8);
+  for (let y = 2; y < 8; y++) for (let x = 2; x < 6; x++) red.data.set([250, 10, 10, 255], (y * 8 + x) * 4);
+  const cloak = { ...cell, layer: red, mask: maskOf(red), area: 24, out: red }, edge = { ...blade, mask: maskOf(blade.layer), area: 16 };
+  const hairH4 = dirGate(slotOf('hair'), [cloak], { south: block }), backH4 = dirGate(slotOf('back'), [edge], { south: block });
+  console.assert(!hairH4.fails.size && hairH4.warnings.length === 1 && !backH4.warnings.length && !dirGate(slotOf('legs'), [cloak], { south: block }).warnings.length, 'H4: soft items warn only when covering the body (T3/B14), legs off');
+  const smudged = makeImg(10, 10);
+  for (let p = 0; p < 100; p++) smudged.data.set(p < 8 ? [90, 85, 80, 255] : [200, 30, 40, 255], p * 4);
+  console.assert(greyShare(smudged) === 0.08 && greyShare(block) === 0 && GREYISH.test('an iron helmet'), 'D1: grey share of a colourful design');
   console.assert(!g2Fails({ keyKept: 0.952, keyLost: 6 }) && g2Fails({ keyKept: 0.952, keyLost: 30 }) && !g2Fails({ keyKept: 0.99, keyLost: 30 }), 'G2: a nearly covered body needs > 8 lost px (T3 cape north)');
+
+  // B14 grid fallback: pack + cut round-trips, mask white only on the cells' band rows, references kept
+  const gm = bandMask({ x: 0, y: 4, w: 1e3, h: 4 }, 8, 8), pg = packGrid([base, block, base], [gm, null, gm]);
+  console.assert(pg.image.w === 32 && pg.image.h === 8 && cutGrid(pg.image, 2, 8, 8)[1].data.join() === block.data.join(), 'packGrid/cutGrid');
+  console.assert(pg.mask.data[(5 * 32 + 1) * 4] === 255 && pg.mask.data[(1 * 32 + 1) * 4] === 0 && pg.mask.data[(5 * 32 + 9) * 4] === 0 && pg.mask.data[(5 * 32 + 17) * 4] === 255, 'grid mask: band rows of posed cells only');
+  console.assert(gridPrompt({ item: 'a red cape', slot: 'back', key: 'green', anim: 'slash', dir: 'north', n: 8, refs: ['south', 'east', 'north'], cell: { w: 64, h: 64 } }).includes('4x3 grid') , 'gridPrompt');
 
   // B9 held route: pad, keypoints, frame 0 last, oversize layer
   const c64 = { w: 64, h: 64 }, kp = (x: number, y: number) => [{ label: 'RIGHT ARM', x, y }, { label: 'NOSE', x: 0.5, y: 0.3 }];

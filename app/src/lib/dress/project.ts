@@ -4,6 +4,8 @@ import { loadFixture } from '../compose/fixture.ts';
 import { loadProject } from '../store/project.ts';
 import * as db from '../store/db.ts';
 import type { Manifest, Material, Preset, Project, ZOverride } from '../store/manifest.ts';
+import type { Img } from '../image/png.ts';
+import { encodePngBytes } from '../image/pngraw.ts';
 
 export interface Outfit { items: Preset['items']; variants: Preset['variants'] }
 export interface DressState { materials: Material[]; presets: Preset[]; zOverrides: Record<string, ZOverride[]>; hides: Record<string, string[] | null>; current?: Outfit }
@@ -50,6 +52,26 @@ export function applyDress(m: Manifest, d: DressState) {
     const h = d.hides?.[it.id];
     if (h !== undefined) h ? (it.hides = [...h]) : delete it.hides;
   }
+}
+
+/** B15: persist a base region split (splitBase + deriveMaterials ran on `m`): new cell blobs, then one atomic update of the
+ * base cells, regions mark, base materials, baseHash and the items moved from the old hash. */
+export async function saveSplit(id: string, m: Manifest, split: { oldHash: string; images: Map<string, Img> }) {
+  for (const [h, im] of split.images) if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  const base = m.items.find((i) => i.id === m.rig.baseItem)!;
+  await db.update<ProjectRecord>('projects', id, (rec) => {
+    if (!rec?.manifest) throw new Error(`project ${id} vanished`);
+    const cur = rec.manifest, cb = cur.items.find((i) => i.id === cur.rig.baseItem)!;
+    cb.layers = structuredClone(base.layers);
+    cb.regions = base.regions;
+    cb.materials = [...base.materials];
+    cur.materials = [...cur.materials.filter((x) => x.owner !== cb.id), ...structuredClone(m.materials.filter((x) => x.owner === cb.id))];
+    if (cur.rig.baseHash === split.oldHash) {
+      cur.rig.baseHash = m.rig.baseHash;
+      for (const it of cur.items) if (it.baseHash === split.oldHash) it.baseHash = m.rig.baseHash;
+    }
+    return rec;
+  });
 }
 
 /** Save. For IndexedDB projects: one atomic read-modify-write (db.update), so concurrent item writes are kept (R6 P1-5). */

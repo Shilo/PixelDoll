@@ -27,6 +27,7 @@ import * as diff from './image/diff.ts';
 import * as items from './items/items.ts';
 import * as palette from './dress/palette.ts';
 import * as dress from './dress/dress.ts';
+import * as regions from './dress/regions.ts';
 import * as studio from '../studio/model.ts';
 
 type Test = [string, () => unknown];
@@ -56,6 +57,7 @@ const shared: Test[] = [
   ['image/diff', diff.selfTest],
   ['items', items.selfTest],
   ['dress/palette', palette.selfTest],
+  ['dress/regions', regions.selfTest],
   ['dress', dress.selfTest],
   ['studio/model', studio.selfTest],
 ];

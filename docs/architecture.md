@@ -48,7 +48,7 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 | Cell | **64×64** square. | Pro editors fit 16 frames at ≤64 px [S1]. |
 | Base character | `create-character-v3` text at **48 px**, clothed (plain grey t-shirt + grey shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded to 64 (x+8, y+12: 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
 | Rest views | The padded S/E/N rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
-| Directions | `south, east, north` generated; `west.mirrorOf = east` (8-dir: 5 + 3 mirrored). Mirroring flips pixels and puts held items in the other hand: accepted for `mirror: "flip"`, else `mirror: "generate"`. | [M2, S3] |
+| Directions | `south, east, north` generated; `west.mirrorOf = east`. **8-dir (B15, Create → More options):** `south, south-east, east, north-east, north` generated; `west ← east`, `south-west ← south-east`, `north-west ← north-east`; the re-import sends all 8 views (`n_directions: 8`). Authored actions: south-east uses the south tables, north-east the mirrored (north) ones. Mirroring flips pixels and puts held items in the other hand: accepted for `mirror: "flip"`, else `mirror: "generate"`. | [M2, S3, B15] |
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalised 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
 | Clips | Default rig: **`idle` (4), `walk` (8), `slash` (8), `hurt` (6)**; optional `run`, `cast`, `death`. Playlist `frames[{cell, ms}]`. | [S3, S4] |
 | Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of the south rest view. Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
@@ -124,7 +124,10 @@ whole cell for held items): 16 cells, 10 gens per call → 6 calls ≈ **60 gens
 outside ≤ 0.003 on helmet/vest), design varies slightly per call (palDist 4–10, no anchor-cell option). Used for:
 
 - clips without a keypoint sequence (text-animated or imported);
-- items that fail §4.1 QA twice.
+- items that fail §4.1 QA twice: **live since B14** per clip-direction. A pose call still failing after its 2 re-rolls (best
+  roll kept) is redone once as a grid of that clip-direction's chroma cells (slot-band mask) plus the 3 dressed keyframes as
+  kept reference cells (64 px rig: 4×3 = 256×192); the grid stays only with fewer failed checks. Also in `poseItemClip` (Add a
+  move) and `regridClip` (an accepted item's clip-direction). Back items get "hangs down the back, never wraps the arms".
 
 For capes on text clips, `edit-animation-v2` with S2's anchor cell is the second choice.
 
@@ -162,7 +165,13 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 
 Fail → re-roll the call once (new seed), then switch to the alternative route, then the user decides. When a call is out of
 re-rolls it keeps its roll with the fewest failed checks, not the last one (free ledger re-evaluation; same inputs only) [T3].
-H4 (keyframe consistency) fails only band items (helmet, face); hair and cloth get a review warning (they swing) [T3]. Handedness is set by the
+H4 (keyframe consistency) fails only band items (helmet, face) [T3]. B14: soft items (hair, worn torso/back) warn only in a
+clip-direction where the item covers ≥ 50 % of the body in some frame and own < 0.5 (the cape from behind, not its edges from the
+front); off for legs and feet (S and N look alike). On the Ranger: 6 of the 7 real cape-north frames still flag (the 7th clip fails G4 anyway), 43 false flags are gone.
+G8 decides a clip's hand only with half its frames decided. A held frame repaired from the keyframe (S5) is not a warning.
+D1 (dress, 0 gens): a colourful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-grey px fails the dress call, so the
+design is re-rolled before 36 gens of poses copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks
+for grey/metal/black/white parts. Handedness is set by the
 motion: authored weapon-hand actions and dressed keyframes keep it; prompts and hand marks do not [S3].
 
 ### 4.6 fg/bg split, compose, export
@@ -189,7 +198,7 @@ draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg be
 | `facial_hair` | head | head | 100 | — | — |
 | `hair` | head | head | 110 | 3 (5 via `zOverrides`: over the cape's bg, T3) | — |
 | `face_acc` | head | head | 120 | — | — |
-| `head` | head | head | 130 | — | `hair` (per item) |
+| `head` | head | head | 130 | — | none; tucks `hair` under it (`clips`, B14); a hood ticks hide hair (`item.hides`) |
 | `off_hand` | held | hand_l | 140 | 2 (5 in S/E/W) | — |
 | `main_hand` | held | hand_r | 150 | 1 (5 in S/E/W) | — |
 
@@ -198,13 +207,24 @@ draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg be
   cape covers the weapon in north) [M4]. T3: the Studio ladder lacked them (Ranger: 220 sword px hidden by the cape over walk S);
   `saveItem` now copies ladder overrides into stored slots that have none, and Reset restores them.
 - Class drives QA (head: anchor spread; held: grip side) and the inpaint-grid mask band.
+- Tuck-under (B14): `slot.clips` drops the clipped slot's px at or above the cover's lowest opaque row per column (beside the
+  cover: the nearest covered column), so long hair hangs below a helmet and short hair never pokes through; compose does it on
+  the fly, exports bake `"<hair>~<helmet>"` variant items that the engine runtimes swap in (manifest-spec inv. 11). Old records
+  with the head slot's former `hides: [hair]` default are migrated on load.
 - Hides and overrides are data (`slot.hides`, `item.hides`, sparse `zOverrides`) [R4]. Items are always generated against the
   bare base; no dress-order generation.
 
 ## 6. Colour model [M4]
 
 Materials = indexed ramps, shadow → highlight, unique across materials; derived per item from its layers (OKLab k-means,
-k ≤ 4 auto) and from the base. Recolour = exact index swap (`variantRamp`), `linkTo` for linked materials; grayscale × tint
+k ≤ 4 auto) and from the base. **Base regions (B15):** the base's shirt and shorts share one grey ramp (M4), so
+`lib/dress/regions.ts` splits them by position: garment greys (C < 0.04, L ≥ 0.18) form 4-connected components (outlines and
+skin separate the garments), each component goes to the shorts when ≥ 75 % of it lies at or below hip − 1.5 px along the
+neck → hip axis (anchor tracks; fixtures: 60 % of the figure height), a straddling component is cut px by px. The region is
+written into the pixel: blue LSB even = shirt, odd = shorts (a 1/255 nudge). Base materials are then Shirt / Shorts / Skin,
+still exact-colour and disjoint, so export and engine swap shaders are unchanged. Idempotent; runs when a project opens
+(existing rigs are migrated once, `baseHash` and the items made for it move to the new hash). New bases are prompted with
+"light grey t-shirt and dark grey shorts". Recolour = exact index swap (`variantRamp`), `linkTo` for linked materials; grayscale × tint
 only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ swap shader), baked variants per preset.
 
 ## 7. Storage, queue, key [M1, M2]
@@ -218,6 +238,11 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
   resent automatically [B13]. **Re-poll** the same job id on network errors and timeouts; result downloads back off and give up
   after 10 tries (URLs kept). Server 502/504/CUDA asserts happen [S3, S4]; whether they are charged is unknown. 401/402 pause; 422 and policy `code 5000` terminal. Verify
   `res.directions` on managed animation calls.
+- **Offline (B15):** `navigator.onLine` false or a request that got no answer (network error, not a timeout) pauses the queue
+  (`paused: 'offline'`): nothing is submitted or polled, so no paid call can be lost to a dead connection. The leader probes a
+  free `GET /balance` every 15 s and resumes on any answer; the Studio shows a non-blocking banner.
+- A paid POST answered `500 "Failed to start any animation jobs"` (B15 live, 6 parallel jobs on a busy account) is a refusal
+  in words: re-queued with backoff like 429/503, not marked lost.
 - Key: memory by default, opt-in `localStorage`, never serialized; CSP `connect-src` limited to PixelLab hosts.
 
 ## 8. UI [D9]

@@ -4,7 +4,7 @@
   import { composeCell } from '../lib/compose/compose.ts'
   import { loadProject } from '../lib/store/project.ts'
   import type { Project } from '../lib/store/manifest.ts'
-  import { STEPS, estimate } from './create.ts'
+  import { SIZES, STEPS, estimate } from './create.ts'
   import { nameFrom } from './model.ts'
   import { ui, creating, startCreate, cancelCreate, openProject, withKey } from './state.svelte.ts'
   import { Check, ChevronRight, CircleAlert, TriangleAlert } from './icons.ts'
@@ -17,9 +17,14 @@
   let build = $state('average')
   let name = $state('')
   let seed = $state(1 + Math.floor(Math.random() * 1_000_000))
-  const est = estimate()
+  // B15: More options. 4 directions (S/E/N + W mirrored) or 8 (S/SE/E/NE/N + SW/W/NW mirrored); body 48 or 56 px in the 64 cell
+  let dirs = $state<4 | 8>(4)
+  let size = $state<(typeof SIZES)[number]>(48)
+  // a running create shows the price of what it is making, the form the price of the current choice
+  const est = $derived(estimate(creating.spec?.dirs ?? dirs))
   // T1 P2-13: the estimate is the no-re-roll price; a real create measured 45.45 (B7), so show a range up to +30 %
-  const lo = Math.round(est.gens), hi = Math.ceil((est.gens * 1.3) / 5) * 5
+  const lo = $derived(Math.round(est.gens)), hi = $derived(Math.ceil((est.gens * 1.3) / 5) * 5)
+  const facing = $derived(dirs === 8 ? 'all 8 directions (the 3 facing west are mirrored)' : 'south, east, north and west (west is mirrored)')
   const full = $derived([desc.trim() || 'a human adventurer', build !== 'average' ? `${build} build` : '', skin >= 0 ? `${SKIN_WORDS[skin]} skin` : ''].filter(Boolean).join(', '))
 
   const running = $derived(!!creating.spec && !creating.projectId && !creating.error)
@@ -31,7 +36,7 @@
   const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1.25 : 2))))
 
   function go() {
-    const spec = { description: full, name: name.trim() || nameFrom(desc || 'Adventurer'), seed, size: 48 }
+    const spec = { description: full, name: name.trim() || nameFrom(desc || 'Adventurer'), seed, size, dirs }
     withKey(() => { void startCreate(spec); ui.sheet = 'create' }) // back to the progress after Connect
   }
   async function open() {
@@ -97,13 +102,27 @@
           {#each BUILDS as b (b)}<button role="radio" aria-checked={build === b} onclick={() => (build = b)}>{b[0].toUpperCase() + b.slice(1)}</button>{/each}
         </div>
       </div>
-      <p class="muted small">You get idle and walk, facing south, east, north and west (west is mirrored), as 64 × 64 pixel sprites.</p>
+      <p class="muted small">You get idle and walk, facing {facing}, as 64 × 64 pixel sprites.</p>
       <details class="disclosure">
-        <summary><ChevronRight size={14} />Details</summary>
+        <summary><ChevronRight size={14} />More options</summary>
         <div>
+          <div class="field">
+            <span class="label small" id="c-dirs">Directions</span>
+            <div class="seg" role="radiogroup" aria-labelledby="c-dirs" style="align-self:flex-start">
+              {#each [4, 8] as const as n (n)}<button role="radio" aria-checked={dirs === n} onclick={() => (dirs = n)}>{n}</button>{/each}
+            </div>
+            <span class="faint small">{dirs === 8 ? 'Diagonals too, for 8-way movement. Costs more and takes longer.' : 'Up, down, left and right. Enough for most games.'}</span>
+          </div>
+          <div class="field">
+            <span class="label small" id="c-size">Body size</span>
+            <div class="seg" role="radiogroup" aria-labelledby="c-size" style="align-self:flex-start">
+              {#each SIZES as n (n)}<button role="radio" aria-checked={size === n} onclick={() => (size = n)}>{n} px</button>{/each}
+            </div>
+            <span class="faint small">{size === 56 ? 'A bigger figure with less room above the head for tall hats.' : 'Leaves room above the head for hats and helmets.'} The sprite cell stays 64 × 64.</span>
+          </div>
           <label class="field"><span class="label small">Name</span><input class="input" bind:value={name} placeholder={nameFrom(desc || 'Adventurer')} /></label>
           <label class="field"><span class="label small">Seed</span><input class="input" type="number" bind:value={seed} /></label>
-          <p class="faint small">create-character-v3 at 48 px, padded to 64 (x+8, y+12: 4 px floor) · rest views re-imported for their joints · managed skeleton-v3 idle + walk as motion → joints → raw skeleton-v3 on the rest view per direction · ≈ {est.gens.toFixed(1)} gens</p>
+          <p class="faint small">create-character-v3 at {size} px, padded to 64 ({size === 48 ? 'x+8, y+12' : 'x+4, y+4'}: 4 px floor) · rest views re-imported for their joints · managed skeleton-v3 walk as motion and an authored idle → joints → raw skeleton-v3 on the rest view in {dirs === 8 ? 5 : 3} directions · ≈ {est.gens.toFixed(1)} gens</p>
         </div>
       </details>
     </div>

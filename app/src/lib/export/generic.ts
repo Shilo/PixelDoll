@@ -81,7 +81,7 @@ const csv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 /** CREDITS.txt (CSV text; not .csv, which Godot imports as a translation table): one row per generating call (LPC credits spirit: every shipped sheet traceable to its source). */
 export function creditsCsv(m: Manifest): string {
   const rows = [['item', 'name', 'slot', 'sheets', 'endpoint', 'jobId', 'seed', 'createdAt', 'prompt', 'source']];
-  for (const it of m.items) {
+  for (const it of m.items.filter((x) => !x.variantOf)) { // a tucked variant comes from its item's calls
     const sheets = it.layers.flatMap((l) => Object.values(l.sheets ?? {})).join(' ');
     for (const pv of it.provenance.length ? it.provenance : [undefined])
       rows.push([it.id, it.name, it.slot, sheets, pv?.endpoint ?? '', pv?.jobId ?? '', String(pv?.seed ?? ''), pv?.createdAt ?? '', it.prompt, 'PixelLab (https://pixellab.ai)']);

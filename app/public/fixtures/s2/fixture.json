@@ -144,7 +144,7 @@
       "z": 130,
       "class": "rigid",
       "anchor": "head",
-      "hides": [
+      "clips": [
         "hair"
       ]
     },
@@ -380,9 +380,6 @@
             "cross-punch": "layers/head/helmet_steel/main/cross-punch.png"
           }
         }
-      ],
-      "hides": [
-        "hair"
       ],
       "provenance": [
         {

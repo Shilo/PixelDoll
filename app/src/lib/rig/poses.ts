@@ -1,7 +1,8 @@
 // Authored keypoint sequences for raw skeleton-v3 actions (port of S3 spikes/api/lib/skel.mjs + s3_poses.mjs). A pose is a
 // Skeleton in pixels; labels are the CHARACTER's left/right, "ARM" = wrist, "LEG" = ankle. Angles are screen degrees
 // (0 = +x, 90 = down). Tables are written for south/east; north mirrors south (a -> 180 - a): in a back view the right arm is
-// on the viewer's right.
+// on the viewer's right. 8 directions (B15): south-east uses the south table, north-east the mirrored one (front / back 3/4
+// views keep the arm on the same side of the screen as south / north); only the pure side view uses the east table.
 import type { Keypoint } from './rig.ts';
 import type { Kp, Skeleton } from './skeleton.ts';
 
@@ -36,12 +37,14 @@ export const shift = (p: Skeleton, labels: string[], dx: number, dy: number): Sk
 
 type Arm = [number, number] | null;
 type Frame = [Arm, Arm, { dx?: number; dy?: number; lean?: number }?];
+/** Back views (north, north-east): the south tables mirrored. */
+export const backView = (dir: string) => dir.startsWith('north');
 function armSeq(rest: Skeleton, dir: string, frames: Frame[]): Skeleton[] {
-  const m = dir === 'north' ? (a: number) => 180 - a : (a: number) => a;
+  const m = backView(dir) ? (a: number) => 180 - a : (a: number) => a;
   return frames.map(([r, l, o = {}]) => {
     let p = clone(rest);
     if (o.dy || o.dx) p = shift(p, UPPER, o.dx ?? 0, o.dy ?? 0);
-    if (o.lean) p = rotate(p, mid(p, HIPS), UPPER, dir === 'north' ? -o.lean : o.lean);
+    if (o.lean) p = rotate(p, mid(p, HIPS), UPPER, backView(dir) ? -o.lean : o.lean);
     if (r) p = setArm(p, 'RIGHT', m(r[0]), m(r[1]));
     if (l) p = setArm(p, 'LEFT', m(l[0]), m(l[1]));
     return p;
@@ -79,7 +82,7 @@ export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]
       for (const k of ['RIGHT LEG', 'LEFT LEG']) p[k].y = Math.min(rest[k].y, 60);
       return p;
     };
-    const n = dir === 'north', limp = (p: Skeleton) => setArm(setArm(p, 'RIGHT', n ? 80 : 100, n ? 85 : 95), 'LEFT', n ? 100 : 80, n ? 95 : 85);
+    const n = backView(dir), limp = (p: Skeleton) => setArm(setArm(p, 'RIGHT', n ? 80 : 100, n ? 85 : 95), 'LEFT', n ? 100 : 80, n ? 95 : 85);
     const out = [clone(rest), rotate(limp(rest), mid(rest, HIPS), UPPER, -6), limp(kneel(4)), limp(kneel(9))];
     for (const [up, lg, dy] of [[-35, null, 10], [-65, 25, 11], [-90, 5, 12]] as [number, number | null, number][]) {
       const p = limp(kneel(dy));
@@ -114,7 +117,7 @@ export function selfTest() {
   // a plausible rest pose: every action gives 3-15 frames, all 18 labels inside the cell, the right hand moves most on slash
   const rest: Skeleton = Object.fromEntries(LABELS.map((l, i) => [l, kp(32 + (l.startsWith('RIGHT') ? -5 : l.startsWith('LEFT') ? 5 : 0), 14 + i * 2.4)]));
   for (const [id, f] of Object.entries(ACTIONS))
-    for (const dir of ['south', 'east', 'north']) {
+    for (const dir of ['south', 'south-east', 'east', 'north-east', 'north']) {
       const seq = f(rest, dir), api = seq.map((s) => toApi(s, { w: 64, h: 64 }));
       console.assert(seq.length >= 3 && seq.length <= 15 && api.every(hasAll), `${id}/${dir}: ${seq.length} frames`);
     }
@@ -123,6 +126,7 @@ export function selfTest() {
   const idle = ACTIONS.idle(rest, 'east'), still = ['RIGHT HIP', 'LEFT HIP', 'RIGHT KNEE', 'LEFT KNEE', 'RIGHT LEG', 'LEFT LEG'];
   console.assert(idle.length === 4 && idle.every((p) => still.every((l) => p[l].x === rest[l].x && p[l].y === rest[l].y)) && idle[2].NOSE.y - rest.NOSE.y === 1 && idle[2].NOSE.x === rest.NOSE.x && !AUTHORED.includes('idle'), 'idle: upper body bobs 1 px, legs still, no lean');
   const north = ACTIONS.slash(rest, 'north');
+  console.assert(JSON.stringify(ACTIONS.slash(rest, 'north-east')) === JSON.stringify(north) && JSON.stringify(ACTIONS.slash(rest, 'south-east')) === JSON.stringify(sl), '8 dirs: NE = north table, SE = south table');
   console.assert(Math.sign(north[1]['RIGHT ARM'].x - rest['RIGHT SHOULDER'].x) === -Math.sign(sl[1]['RIGHT ARM'].x - rest['RIGHT SHOULDER'].x), 'north mirrors south');
   const back = fromApi(toApi(rest, { w: 64, h: 64 }), { w: 64, h: 64 });
   console.assert(adherence([rest], [back]) < 0.01 && adherence([rest], [undefined]) === Infinity, 'api round trip + adherence');

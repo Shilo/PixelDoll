@@ -11,8 +11,8 @@ import { bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
-import { anchorTracks, buildRig, type SourceAnim } from '../lib/rig/freeze.ts';
-import { normalize } from '../lib/rig/normalize.ts';
+import { HEADROOM_MIN, anchorTracks, buildRig, type SourceAnim } from '../lib/rig/freeze.ts';
+import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
 import { ANCHORS, baseHashOf, cellHash, cellKey, cellKeys, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type Sha256 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
@@ -22,7 +22,9 @@ import { poseGens, poseItemClip } from '../lib/items/run.ts';
 import type { CellKey, Manifest, Provenance } from '../lib/store/manifest.ts';
 import { basePrompt, looksOf } from './model.ts';
 
-export interface CreateSpec { description: string; name: string; seed: number; size: number }
+/** `size`: base 48 (default) or 56 px in the 64 cell (D4/O14). `dirs`: 4 = S/E/N + W mirrored (default), 8 = S/SE/E/NE/N +
+ * SW/W/NW mirrored (architecture §3). Specs saved before B15 have no `dirs` (= 4). */
+export interface CreateSpec { description: string; name: string; seed: number; size: number; dirs?: 4 | 8 }
 export type CreateStep = 'draw' | 'rest' | 'animate' | 'save';
 export const STEPS: { id: CreateStep; label: string }[] = [
   { id: 'draw', label: 'Drawing your character' },
@@ -30,16 +32,22 @@ export const STEPS: { id: CreateStep; label: string }[] = [
   { id: 'animate', label: 'Animating idle and walk' },
   { id: 'save', label: 'Checking and saving' },
 ];
-const DIRS: Direction[] = ['south', 'east', 'north']; // west = mirror of east (architecture §2)
+/** Generated directions; the others are flips (west = east, south-west = south-east, north-west = north-east). */
+export const genDirsOf = (n: 4 | 8 = 4): Direction[] => (n === 8 ? ['south', 'south-east', 'east', 'north-east', 'north'] : ['south', 'east', 'north']);
+const MIRRORS: [Direction, Direction][] = [['west', 'east'], ['south-west', 'south-east'], ['north-west', 'north-east']];
 const CELL = 64, RAW_GENS = 3, EST = 0.1;
+/** Base sizes in the 64 cell (D4): the 4 px floor stays, so 56 px leaves 4 px of canvas above the character's own canvas
+ * and the rest views are checked for HEADROOM_MIN free px above the head. */
+export const SIZES = [48, 56] as const;
 
 /** Base clips whose keypoints are authored from the rest pose (B9: idle) instead of a managed skeleton-v3 motion source. */
 const authoredBase = (anim: string) => (anim in ACTIONS ? ACTIONS[anim] : undefined);
 /** Cost from measured prices: base 2 + import 0.25, per clip-direction raw 3 (+ managed motion 3 unless authored), joints 0.1
  * per raw frame (+ per managed motion frame). */
-export function estimate() {
+export function estimate(dirs: 4 | 8 = 4) {
   const per = (a: (typeof BASE_ANIMS)[number]) => RAW_GENS + a.frames * EST + (authoredBase(a.name) ? 0 : 3 + a.frames * EST);
-  return { gens: 2.25 + DIRS.length * BASE_ANIMS.reduce((s, a) => s + per(a), 0), minutes: 12 };
+  const n = genDirsOf(dirs).length; // base: 1 + ceil(s*s*8/65536) = 2 for 48 and 56 px (OpenAPI); the pixel-exact re-import 0.25
+  return { gens: 2.25 + n * BASE_ANIMS.reduce((s, a) => s + per(a), 0), minutes: dirs === 8 ? 18 : 12 };
 }
 
 // ---------- queue helpers ----------
@@ -119,12 +127,12 @@ const warn = (clip: string, qa: ClipQa) => qa.fails.map((f) => `${clip}: ${f}`);
 export interface Progress { step: string; done: number; total: number; recIds: string[] }
 
 export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress) => void = () => {}): Promise<string> {
-  const looks = looksOf(spec.description), view = 'low top-down' as const;
+  const looks = looksOf(spec.description), view = 'low top-down' as const, DIRS = genDirsOf(spec.dirs);
   // 1. base character, text only (8 rotations)
   onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
   const base = await run(routes.createCharacterV3({ description: basePrompt(spec.description), image_size: { width: spec.size, height: spec.size }, view, template_id: 'mannequin', seed: spec.seed, no_background: true }), `${spec.name} · drawing`, 'studio-base');
 
-  // 2. rest views: rotations on the 64 cell with the floor pad, west = flip(east); re-import for the rest keypoints
+  // 2. rest views: rotations on the 64 cell with the floor pad, mirrored directions = flips; re-import for the rest keypoints
   onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
   const rots = await imagesOf(base), rest = {} as Record<DirectionName, Img>;
   let pad: [number, number] = [0, 0];
@@ -133,11 +141,14 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     if (!r) throw new Error(`PixelLab returned no ${d} view`);
     const n = normalize(r.img, CELL, CELL);
     if (n.cutPx) throw new Error(`the ${d} view does not fit the 64 px cell`);
+    const top = opaqueBox(n.img)?.y0 ?? CELL;
+    if (top < HEADROOM_MIN) throw new Error(`${spec.name} is too tall for the 64 px cell at ${spec.size} px (${top} px above the head, hats need ${HEADROOM_MIN}). Try again with 48 px or another seed.`);
     rest[d] = n.img;
     pad = n.offset;
   }
-  rest.west = flipH(rest.east);
-  const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(rest.south)), direction_images: { east: png(await b64(rest.east)), north: png(await b64(rest.north)), west: png(await b64(rest.west)) }, n_directions: 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base');
+  for (const [m, src] of MIRRORS) if (DIRS.includes(src)) rest[m] = flipH(rest[src]);
+  const others = Object.fromEntries(await Promise.all((Object.keys(rest) as Direction[]).filter((d) => d !== 'south').map(async (d) => [d, png(await b64(rest[d]))])));
+  const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(rest.south)), direction_images: others, n_directions: spec.dirs === 8 ? 8 : 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base');
   const charId = (imp.response as { character_id?: string })?.character_id;
   if (!charId) throw new Error('PixelLab did not return a character id');
   const ch = await run(routes.getCharacter(charId), `${spec.name} · skeleton`, 'studio-base', true);
@@ -172,7 +183,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   // 4. freeze
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
   const anims: SourceAnim[] = BASE_ANIMS.map((a) => ({ id: a.name, dirs: Object.fromEntries(clips.filter((c) => c.a === a).map((c) => [c.d, c.out.frames])) }));
-  const built = await buildRig(anims, { size: CELL, mode: '4' });
+  const built = await buildRig(anims, { size: CELL, mode: spec.dirs === 8 ? '8' : '4' });
   if (built.errors.length) throw new Error(`The animation frames do not fit together: ${built.errors.slice(0, 3).join('; ')}`);
   const rig = built.rig;
   rig.pad = { x: pad[0], y: pad[1] };

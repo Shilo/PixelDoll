@@ -1,0 +1,5 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+layers: ["main_hand_bg z6 offset (-48.0, -80.0) visible", "body_fg z10 offset (-32.0, -64.0) visible", "main_hand_fg z150 offset (-48.0, -80.0) visible"]
+ticks checked: 1440, oversize layer-ticks: 2880, failures: 0
+RESULT: PASS

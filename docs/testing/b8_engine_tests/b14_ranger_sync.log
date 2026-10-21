@@ -1,0 +1,5 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+layers: ["body_fg z10 offset (-32.0, -59.0) visible", "feet_fg z20 offset (-32.0, -59.0) visible", "legs_fg z30 offset (-32.0, -59.0) visible", "torso_outer_fg z60 offset (-32.0, -59.0) visible", "back_bg z4 offset (-32.0, -59.0) visible", "back_fg z90 offset (-32.0, -59.0) visible", "hair_bg z5 offset (-32.0, -59.0) visible", "hair_fg z110 offset (-32.0, -59.0) visible", "head_fg z130 offset (-32.0, -59.0) visible", "main_hand_bg z5 offset (-48.0, -75.0) visible", "main_hand_fg z150 offset (-48.0, -75.0) visible"]
+ticks checked: 1440, oversize layer-ticks: 2880, failures: 0
+RESULT: PASS

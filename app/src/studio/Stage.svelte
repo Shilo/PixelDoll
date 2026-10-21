@@ -25,7 +25,12 @@
   // B10: views the move has (the base has frames there); the others are disabled, not silently empty
   const made = $derived(m ? moveDirs(m, ui.anim) : [])
   const dirs = $derived(allDirs.filter((d) => made.includes(d.id)))
-  const cols = $derived(ui.all ? Math.max(1, Math.min(dirs.length, w > h * 1.6 ? dirs.length : 2)) : 1)
+  // all directions: the column count with the biggest whole-pixel zoom; ties go to a full grid (B15: 8 directions as 4 x 2,
+  // not 3 + 3 + 2), then to the larger box
+  const room = (c: number) => Math.min((w - 24 - (c - 1) * 12) / c, (h - barH - 24 - (Math.ceil(dirs.length / c) - 1) * 30) / Math.ceil(dirs.length / c))
+  const score = (c: number) => [Math.floor((room(c) * ui.dpr) / cellH), -(c * Math.ceil(dirs.length / c) - dirs.length), room(c)]
+  const better = (a: number[], b: number[]) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]
+  const cols = $derived(ui.all ? Array.from({ length: Math.max(1, dirs.length) }, (_, i) => i + 1).reduce((b, c) => (better(score(c), score(b)) > 0 ? c : b), 1) : 1)
   const rows = $derived(ui.all ? Math.ceil(dirs.length / cols) : 1)
   // integer device px per sprite px: largest that fits ("fit"), or the user's zoom
   const fit = $derived(Math.max(1, Math.min(Math.floor(Math.min((w - 24 - (cols - 1) * 12) / cols, (h - barH - 24 - (rows - 1) * 30) / rows) * ui.dpr / cellH), Math.round(10 * ui.dpr))))
@@ -72,11 +77,22 @@
         <ChevronDown size={12} />
       </label>
       <span class="bar-sep" aria-hidden="true"></span>
-      <div class="seg" role="group" aria-label="Direction">
-        {#each allDirs as d, i (d.id)}
-          <button aria-pressed={!ui.all && ui.dir === d.id} aria-label="Face {d.id}" disabled={!made.includes(d.id)} title={made.includes(d.id) ? `Face ${d.id} (${i + 1})` : `This move has no ${d.id} view`} onclick={() => { ui.all = false; ui.dir = d.id }}>{d.id.split('-').map((x) => x[0].toUpperCase()).join('')}</button>
-        {/each}
-      </div>
+      {#if phone && allDirs.length > 4}
+        <!-- B15: 8 buttons do not fit a phone bar; a menu instead -->
+        <label class="select-wrap">
+          <span class="sr">Direction</span>
+          <select class="select dir-select" value={ui.dir} onchange={(e) => { ui.all = false; ui.dir = e.currentTarget.value as DirectionName }}>
+            {#each allDirs as d (d.id)}<option value={d.id} disabled={!made.includes(d.id)}>{name(d.id)}</option>{/each}
+          </select>
+          <ChevronDown size={12} />
+        </label>
+      {:else}
+        <div class="seg" role="group" aria-label="Direction">
+          {#each allDirs as d, i (d.id)}
+            <button aria-pressed={!ui.all && ui.dir === d.id} aria-label="Face {d.id}" disabled={!made.includes(d.id)} title={made.includes(d.id) ? `Face ${d.id} (${i + 1})` : `This move has no ${d.id} view`} onclick={() => { ui.all = false; ui.dir = d.id }}>{d.id.split('-').map((x) => x[0].toUpperCase()).join('')}</button>
+          {/each}
+        </div>
+      {/if}
       <button class="btn icon plain" aria-pressed={ui.all} aria-label="All directions" title="All directions (0)" onclick={() => (ui.all = !ui.all)}><Grid2x2 size={16} /></button>
       {#if !phone}
         <span class="bar-sep" aria-hidden="true"></span>

@@ -26,6 +26,7 @@
   const k = $derived(strip.length ? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 72 / strip[0].h, 6) * ui.dpr)) : 1)
   const others = $derived(m && it ? m.slots.filter((s) => s.id !== 'body' && s.id !== it.slot && m.items.some((x) => x.slot === s.id)) : [])
   const hides = $derived(it ? it.hides ?? m?.slots.find((s) => s.id === it.slot)?.hides ?? [] : [])
+  const tucks = $derived(it ? (m?.slots.find((s) => s.id === it.slot)?.clips ?? []).filter((s) => others.some((o) => o.id === s) && !hides.includes(s)) : [])
   const gaps = $derived(m && it ? coverageGaps(m, it) : [])
   // B10: views of the shown move this item has no frames for (it would vanish there)
   const moveGaps = $derived(gaps.filter((g) => g.startsWith(`${ui.anim}/`)).map((g) => g.split('/')[1]))
@@ -109,7 +110,7 @@
             <button class="chip" aria-pressed={on} onclick={() => toggleHide(it.id, s.id)}>{#if on}<Check size={12} strokeWidth={2.5} />{/if}{slotLabel(s.id)}</button>
           {/each}
         </div>
-        <p class="faint small">Checked items are hidden while {it.name} is worn (e.g. a helmet hides hair).</p>
+        <p class="faint small">Checked items are hidden while {it.name} is worn.{#if tucks.length}{" "}Unchecked {tucks.map(slotLabel).join(', ').toLowerCase()} is tucked under it: only what hangs below the brim shows. Check it for hoods and full masks.{/if}</p>
       </div>
     {/if}
 

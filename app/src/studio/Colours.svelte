@@ -11,7 +11,8 @@
   const matsOf = (id: string) => (m ? m.materials.filter((x) => x.owner === id) : [])
   const chosen = (mat: Material) => (m ? variantOf(m, doc.variants, mat.id) : undefined)
   // names from the item's description/slot ("Metal", "Leather"), also for projects saved with the old hue labels
-  const namesOf = (it: (typeof items)[number], mats: Material[]) => materialNames(it, mats.map((x) => x.ramp))
+  // B15: a region-split base names its own materials (Shirt, Shorts, then Skin)
+  const namesOf = (it: (typeof items)[number], mats: Material[]) => (it.regions ? mats.map((x) => x.label) : materialNames(it, mats.map((x) => x.ramp)))
   const nameOf = (id?: string) => {
     const mat = m?.materials.find((x) => x.id === id), it = m?.items.find((i) => i.id === mat?.owner)
     return mat && it ? `${it.name} ${namesOf(it, matsOf(it.id))[matsOf(it.id).indexOf(mat)].toLowerCase()}` : mat?.label

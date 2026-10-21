@@ -115,7 +115,7 @@ namespace PixelDoll
             }
             foreach (var n in nodes)
             {
-                var it = Item(n.slot == "body" ? data.baseItem : equipped.Find(x => x.slot == n.slot)?.item);
+                var it = Item(n.slot == "body" ? data.baseItem : Shown(equipped.Find(x => x.slot == n.slot)?.item));
                 var layer = it == null ? null : Array.Find(it.layers, l => l.role == n.role);
                 n.renderer.enabled = layer != null && !hidden.Contains(n.slot);
                 if (layer == null) continue;
@@ -141,6 +141,12 @@ namespace PixelDoll
         }
 
         PdItem Item(string id) => string.IsNullOrEmpty(id) ? null : Array.Find(data.items, i => i.id == id);
+        /// The item drawn for an equipped id: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists.
+        string Shown(string id)
+        {
+            if (!string.IsNullOrEmpty(id)) foreach (var e in equipped) if (Item(id + "~" + e.item) != null) return id + "~" + e.item;
+            return id;
+        }
         PdSlot Slot(string id) => Array.Find(data.slots, s => s.id == id);
     }
 }

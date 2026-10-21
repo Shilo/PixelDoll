@@ -34,8 +34,8 @@
       <p class="notice small"><CircleAlert size={14} />Running in another tab. PixelDoll is open twice: the other tab sends and checks the jobs (also the ones you start here). Keep it open, or close it to run them here.</p>
     {/if}
     {#if $queue.paused}
-      <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn't accept the key. Jobs wait until you connect again." : 'Out of generations. Jobs wait until you top up.'}
-        <button class="btn sm" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button></p>
+      <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn't accept the key. Jobs wait until you connect again." : $queue.paused === 'offline' ? "You're offline. Jobs wait and continue by themselves when the connection is back." : 'Out of generations. Jobs wait until you top up.'}
+        {#if $queue.paused !== 'offline'}<button class="btn sm" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button>{/if}</p>
     {/if}
     {#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
     {#if running.length}

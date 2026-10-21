@@ -76,8 +76,8 @@ export function dropKeyOutline(mask: Uint8Array, B: Img, C: Img, key: Key, kT = 
   return o;
 }
 
-/** 8-connected components of a mask. */
-export function components(m: Uint8Array, w: number, h: number): number[][] {
+/** 8-connected (or, with `four`, 4-connected) components of a mask. */
+export function components(m: Uint8Array, w: number, h: number, four = false): number[][] {
   const seen = new Uint8Array(m.length), out: number[][] = [];
   for (let s = 0; s < m.length; s++) {
     if (!m[s] || seen[s]) continue;
@@ -89,6 +89,7 @@ export function components(m: Uint8Array, w: number, h: number): number[][] {
       for (let dy = -1; dy <= 1; dy++)
         for (let dx = -1; dx <= 1; dx++) {
           const X = x + dx, Y = y + dy, k = Y * w + X;
+          if (four && dx && dy) continue;
           if (X >= 0 && Y >= 0 && X < w && Y < h && m[k] && !seen[k]) { seen[k] = 1; st.push(k); }
         }
     }

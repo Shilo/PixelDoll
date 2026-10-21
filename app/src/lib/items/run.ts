@@ -10,11 +10,13 @@ import { saveItem, type StoredProject } from '../store/project.ts';
 import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifest.ts';
 import type { DirectionName } from '../rig/rig.ts';
 import { fromApi } from '../rig/poses.ts';
-import { chromaLayer } from '../image/chroma.ts';
-import { GATES, SLOTS, g2Fails, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { chromaLayer, type Key } from '../image/chroma.ts';
+import { png, routes, type Req } from '../pixellab/routes.ts';
+import { DESIGN, GATES, GREYISH, SLOTS, bandMask, cutGrid, g2Fails, greyShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
-export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind }
+/** fallback: B14, a pose call redone as an inpaint-v3 grid keeps its best pose roll (and that roll's failed-check count). */
+export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; fallback?: { recId: string; fails: number } }
 export interface Draft { spec: ItemSpec; rigId: string; calls: CallState[]; keySwitched: boolean; log: string[]; acceptedAt?: string }
 export interface ItemResult { cells: CellOut[]; qa: QaResult | null; g1: Map<number, string>; preview: Project | null }
 /** A frozen rig opened with store/project.ts loadProject(). */
@@ -75,12 +77,30 @@ const skelOf = (ctx: RigCtx, k: string) => {
 };
 
 // ---------- calls ----------
+/** B14 grid request (S4 inv3 / S5 H3): the clip-direction's chroma cells masked to the slot band, then the dressed keyframes
+ *  (kept, black mask) as the reference design. Rig cell only (held items keep their oversize S5 route). */
+async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>, cells: string[], refs: { dir: DirectionName; im: Img }[], seed: number): Promise<Req> {
+  const { rig } = ctx.rec.manifest, { w, h } = rig.cell, [anim, dir] = cells[0].split('/') as [string, DirectionName];
+  const g = packGrid([...cells.map((k) => inputCell(baseCell(ctx, k), spec.key)), ...refs.map((r) => r.im)], [...cells.map((k) => bandMask(bandOf(spec.slot, skelOf(ctx, k), h), w, h)), ...refs.map(() => null)]);
+  const b64 = async (im: Img) => png(bytesToBase64(await encodePngBytes(im)));
+  return routes.inpaintV3({
+    description: gridPrompt({ item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim, dir, n: cells.length, refs: refs.map((r) => r.dir), cell: rig.cell }),
+    inpainting_image: { image: await b64(g.image), size: { width: g.image.w, height: g.image.h } }, mask_image: { image: await b64(g.mask), size: { width: g.mask.w, height: g.mask.h } }, no_background: true, seed,
+  });
+}
+/** Can a failing pose call fall back to the grid? Worn/rigid items on a chroma key (held items stay on their S5 route). */
+const gridable = (spec: { slot: string; key?: ItemSpec['key'] }) => !!spec.key && spec.key !== 'none' && slotOf(spec.slot).class !== 'held';
+
 const blobB64 = async (sha: string) => bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
 async function submit(d: Draft, k: number, ctx: RigCtx) {
   const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method);
   const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${c.cells[0].split('/').slice(0, 2).join('/')}` : ''})`;
   let req;
-  if (c.kind === 'pose') { // the direction's dressed keyframe (from the dress call) posed through the base clip's STORED keypoints
+  if (c.kind === 'grid') { // B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
+    const dress = d.calls[0], a = recOf(dress.recId);
+    if (a?.state !== 'done') throw new Error('dress call not done');
+    req = await gridReq(ctx, d.spec, c.cells, await Promise.all(dress.cells.map(async (k, i) => ({ dir: k.split('/')[1] as DirectionName, im: await img(outputsOf(a)[i].sha) }))), c.seed);
+  } else if (c.kind === 'pose') { // the direction's dressed keyframe (from the dress call) posed through the base clip's STORED keypoints
     if (route === 'none') throw new Error('posing needs a chroma key');
     const dress = d.calls[0], a = recOf(dress.recId), [anim, dir] = c.cells[0].split('/') as [string, DirectionName];
     if (a?.state !== 'done') throw new Error('dress call not done');
@@ -127,7 +147,7 @@ export const failsOf = (res: ItemResult, k: number) => [...(res.g1.has(k) ? [res
 function retry(d: Draft, k: number, why: string[]): boolean {
   if (d.calls[k].rerolls < MAX_REROLLS) rerollCall(d, k, why.join('; '));
   // the other key only helps a key/item colour collision (G2); moved arms, missing or clipped items are generation problems
-  else if (!d.keySwitched && d.spec.key !== 'none' && why.some((w) => w.startsWith('G2')) && keyAllowed(d.spec.prompt, other(d.spec.key))) switchKey(d);
+  else if (!d.keySwitched && d.calls[k].kind !== 'grid' && d.spec.key !== 'none' && why.some((w) => w.startsWith('G2')) && keyAllowed(d.spec.prompt, other(d.spec.key))) switchKey(d);
   else { d.log.push(`call ${k + 1} still fails after re-rolls and key switch: ${why.join('; ')} -> needs review`); return false; }
   return true;
 }
@@ -145,6 +165,31 @@ export async function keepBestRoll(d: Draft, k: number, ctx: RigCtx) {
   c.recId = best;
   c.old = all.filter((id) => id !== best); // every paid roll stays in `old` (gensOf counts them)
   d.log.push(`call ${k + 1}: kept roll ${rolls.indexOf(best) + 1} of ${rolls.length} (fewest failed checks: ${n})`);
+}
+
+/**
+ * B14 per clip-direction fallback: a pose call still failing after its re-rolls (its best roll already kept) is redone ONCE as a
+ * Pro inpaint-v3 packed masked grid (S4/S5). When the grid comes back, it stays only if it has fewer failed checks than the
+ * kept pose roll; otherwise the pose roll returns (both paid rolls stay in the ledger counts). Returns true when a grid was queued.
+ */
+async function gridFallback(d: Draft, k: number, ctx: RigCtx): Promise<boolean> {
+  const c = d.calls[k];
+  if (c.kind === 'pose' && !c.fallback && c.recId && gridable(d.spec)) {
+    c.fallback = { recId: c.recId, fails: failsOf(await evaluateItem(d, ctx), k).length };
+    c.old.push(c.recId);
+    Object.assign(c, { recId: undefined, kind: 'grid', seed: seed(), rerolls: MAX_REROLLS }); // one grid, no re-rolls (~10 gens)
+    d.log.push(`call ${k + 1}: still failing after ${MAX_REROLLS} re-rolls, redo as an inpaint-v3 grid`);
+    return true;
+  }
+  if (c.kind === 'grid' && c.fallback && c.recId && recOf(c.recId)?.state === 'done') {
+    const n = failsOf(await evaluateItem(d, ctx), k).length, f = c.fallback;
+    if (n >= f.fails) {
+      c.old = [...c.old.filter((id) => id !== f.recId), c.recId];
+      Object.assign(c, { recId: f.recId, kind: 'pose' });
+      d.log.push(`call ${k + 1}: the grid was no better (${n} vs ${f.fails} failed checks), kept the pose roll`);
+    } else d.log.push(`call ${k + 1}: kept the grid (${n} vs ${f.fails} failed checks)`);
+  }
+  return false;
 }
 
 export interface RunHooks { status?: (s: string) => void; persist?: () => Promise<unknown>; result?: (r: ItemResult) => void }
@@ -176,9 +221,10 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
       if (!bad.length && !soft.length) { d.log.push(`gates passed (${r.qa?.qa.status})`); break; }
       const retried = bad.map((k) => retry(d, k, failsOf(r, k))); // every failing call decides on its own
       // out of re-rolls: keep the call's least-bad roll, not the last one (T3: cape slash N roll 1 had 1 failed check, roll 3 two)
-      for (const [i, k] of bad.entries()) if (!retried[i]) await keepBestRoll(d, k, ctx);
+      let grid = false;
+      for (const [i, k] of bad.entries()) if (!retried[i]) { await keepBestRoll(d, k, ctx); if (await gridFallback(d, k, ctx)) grid = true; }
       await persist();
-      if (!soft.length && !retried.some(Boolean)) { res = await evalItem(); break; } // nothing left to re-roll: needs review
+      if (!soft.length && !retried.some(Boolean) && !grid) { res = await evalItem(); break; } // nothing left to re-roll: needs review
     }
   } catch (e) {
     d.log.push(`error: ${(e as Error).message}`);
@@ -203,6 +249,12 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   for (const [k, c] of d.calls.entries()) {
     const r = recOf(c.recId);
     if (r?.state !== 'done') continue;
+    if (c.kind === 'grid') { // B14: cut the cells out of the returned grid
+      const g = await img(outputsOf(r)[0].sha), cut = cutGrid(g, c.cells.length, W, H);
+      if (g.w % W || g.h % H) { g1.set(k, `G1 grid ${g.w}x${g.h}`); continue; }
+      c.cells.forEach((key, i) => outs.push({ k, key, out: cut[i], posed: true }));
+      continue;
+    }
     let o = outputsOf(r).slice(k > 0 && (c.kind ?? 'edit') === 'edit' ? 1 : 0);
     if (o.length !== c.cells.length) { g1.set(k, `G1 ${o.length} outputs for ${c.cells.length} cells`); continue; }
     if (c.kind === 'pose') { const [a, dir] = c.cells[0].split('/') as [string, DirectionName]; o = unrotate(o, f0Last(d.spec.slot, rig.rest?.[dir]?.keypoints ?? [], clipKeypoints(rig, a, dir) ?? [], rig.cell)); }
@@ -222,7 +274,9 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
     keys[o.key.split('/')[1] as DirectionName] = c.layer;
     const bad = [g2Fails(c) && `G2 keyframe ${o.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`,
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
-      !c.area && `G4 keyframe ${o.key}: item missing`].filter(Boolean);
+      !c.area && `G4 keyframe ${o.key}: item missing`,
+      // B14: re-roll a smudged design (10 gens) before 36 gens of poses copy it (T3: red cape north hem)
+      !GREYISH.test(d.spec.prompt) && greyShare(c.layer) > DESIGN.grey && `D1 keyframe ${o.key}: ${(greyShare(c.layer) * 100).toFixed(0)} % grey smudges in a colourful design`].filter(Boolean);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
   }
   const run = (useCc?: boolean) => outs.filter((o) => !g1.has(o.k)).map((o) => ex(o, useCc));
@@ -300,7 +354,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     const poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
     if (!poses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
     const cells = poses.map((_, i) => `${anim}/${dir}/${i}`);
-    let last: CellOut[] = [];
+    let last: CellOut[] = [], lastProv: Provenance | undefined, lastFails = 0;
     for (let attempt = 0; attempt < 2; attempt++) {
       const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}${moveSeed ? `/${moveSeed}` : ''}`);
       const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad });
@@ -312,21 +366,62 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
       if (outs.length !== cells.length) continue; // G1: re-roll
       last = await Promise.all(cells.map(async (c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: await img(outs[i].sha), route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band })));
       postProcess(rig, slot, last, keys, pad);
-      const pass = !withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed, pad), slot, last, keys).failCalls.size;
-      if (pass || attempt) { prov.push(toProv(r, { cells, seed, rerolls: attempt, old: [] })); break; }
+      lastFails = failCount(withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed, pad), slot, last, keys));
+      lastProv = toProv(r, { cells, seed, rerolls: attempt, old: [] });
+      if (!lastFails) break;
     }
     if (!last.length) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned the wrong number of frames twice. Try again.`); // R6 P2-13: never save a direction with empty cells
+    if (lastFails && gridable(item)) { // B14: still failing after the re-roll -> one inpaint-v3 grid, kept only if it is better
+      const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid${moveSeed ? `/${moveSeed}` : ''}`));
+      onCall();
+      if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys)) < lastFails) { last = g.cells; lastProv = g.prov; }
+    }
+    prov.push(lastProv!);
     return last;
   }));
   const cells = perDir.flat();
   if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
   const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad), slot, cells, keys);
+  await mergeClip(ctx, item, anim, dirs, cells, prov, q, pad);
+  return q;
+}
+const failCount = (q: QaResult) => [...q.failCalls.values()].flat().length;
+/** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
+async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
+  const { rig } = ctx.rec.manifest, key = item.key!;
   const spec: ItemSpec = { id: item.id, name: item.name, slot: item.slot, prompt: item.prompt, key, anims: [anim], dirs, method: 'skel' };
   const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa, pad });
   const out: Item = structuredClone(item);
-  out.layers.forEach((l, j) => { l.cells = { ...l.cells, [anim]: built.item.layers[j].cells![anim] }; });
+  out.layers.forEach((l, j) => { l.cells = { ...l.cells, [anim]: { ...l.cells?.[anim], ...built.item.layers[j].cells![anim] } }; });
   out.provenance = [...out.provenance, ...prov];
   if (out.qa) out.qa = { ...out.qa, cells: { ...out.qa.cells, ...q.qa.cells }, status: q.qa.status === 'pass' || out.qa.status !== 'pass' ? out.qa.status : 'warn' };
   await saveItem(ctx.rec.id, out, built.images, SLOTS);
-  return q;
+}
+/** B14: one clip-direction of an accepted item as an inpaint-v3 grid (its dressed keyframes as the reference cells). */
+async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number): Promise<{ cells: CellOut[]; prov: Provenance }> {
+  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), n = clipKeypoints(rig, anim, dir)?.length ?? rig.animations.find((a) => a.id === anim)!.cells;
+  const cells = Array.from({ length: n }, (_, i) => `${anim}/${dir}/${i}`);
+  const refs = await Promise.all((Object.entries(item.dressed ?? {}) as [DirectionName, string][]).map(async ([d, h]) => ({ dir: d, im: await img(h.slice(7)) })));
+  const rec = await queue.enqueue(await gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key! }, cells, refs, seed), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
+  const r = terminal(rec) ? rec : await settled(rec.id);
+  if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
+  const cut = cutGrid(await img(outputsOf(r)[0].sha), n, rig.cell.w, rig.cell.h);
+  const out = cells.map((c, i) => extractCell({ key: c, call, base: baseCell(ctx, c), out: cut[i], route: item.key!, band: bandOf(item.slot, skelOf(ctx, c), rig.cell.h), posed: true, clip: slot.band }));
+  postProcess(rig, slot, out, keys, 0);
+  return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };
+}
+/**
+ * B14: redo one clip-direction of an accepted (rig-cell) item as an inpaint-v3 grid and keep it when it passes every gate
+ * (the stored clip failed QA after its re-rolls, e.g. T3's cape wrapping the raised arm in slash north). Returns the grid's QA.
+ */
+export async function regridClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, seedN = seed()): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[] }> {
+  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!;
+  if (!gridable(item) || !item.dressed?.[dir]) throw new Error(`${item.name}: no grid fallback for this item`);
+  const keys: Partial<Record<DirectionName, Img>> = {};
+  for (const [d, h] of Object.entries(item.dressed) as [DirectionName, string][]) keys[d] = chromaLayer(await img(h.slice(7)), key, baseCell(ctx, restKey(d))).layer;
+  const g = await gridItemClip(ctx, item, anim, dir, 0, keys, seedN);
+  const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed), slot, g.cells, keys);
+  const saved = !qa.failCalls.size;
+  if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa);
+  return { qa, saved, cells: g.cells };
 }

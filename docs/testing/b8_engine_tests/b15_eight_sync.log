@@ -1,0 +1,5 @@
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+
+layers: ["body_fg z10 offset (-32.0, -59.0) visible"]
+ticks checked: 1440, oversize layer-ticks: 0, failures: 0
+RESULT: PASS

@@ -110,6 +110,7 @@ export interface Slot {
   anchor?: AnchorId;                     // anchor for placement/handedness QA
   required?: boolean;                    // true only for "body"
   hides?: string[];                      // default: slots whose layers are hidden while this slot has a visible item
+  clips?: string[];                      // B14: slots tucked under this slot's item (head: ["hair"]); see invariant 11
   zOverrides?: ZOverride[];              // sparse exceptions
   band?: boolean;                        // project only: clip extraction to the slot's keypoint y-band (held: false)
 }
@@ -129,7 +130,10 @@ export interface Item {
   status: 'draft' | 'accepted' | 'stale';     // stale = baseHash != rig.baseHash
   mirror: 'flip' | 'generate';
   hides?: string[];                       // replaces slot.hides when present
+  variantOf?: string;                     // B14, export only: this item is the baked "<variantOf>~<under>" copy of item variantOf,
+  under?: string;                         //   tucked under item `under` (invariant 11)
   materials: string[];                    // recolor regions present in this item's pixels
+  regions?: 'shirt-shorts';               // base only (B15): garment greys carry their region in the blue LSB (even = shirt, odd = shorts)
   prompt: string;                         // the user's item description
   layers: Layer[];                        // 1 layer ("main", role fg) or 2 ("fg" + "bg")
   baseHash: Sha256;                       // base the layers were extracted against
@@ -244,6 +248,10 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
 9. A visible item hides every layer of each slot in `item.hides ?? slot.hides` (hidden layers are not drawn; their cells still exist).
 10. If any direction is mirrored, every layer cell is centred on the rig cell: `2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w
     = rig.cell.w` (v1.3.1; a flip of an off-centre cell would move the item).
+11. Tuck-under (B14): while an item of slot S is worn, the layers of every item in `slots[S].clips` drop their px at or above the
+    covering item's lowest opaque row, per column (columns beside the cover use the nearest covered column); `hides` wins.
+    Exports bake one item `"<item>~<cover>"` (`variantOf`, `under`) per pair; a runtime draws that item instead of `<item>`
+    whenever `<cover>` is equipped (Godot `_shown`, Phaser `shown`, Unity `Shown`). Mirrored rows stay flips (tucking commutes).
 
 ---
 

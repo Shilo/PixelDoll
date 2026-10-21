@@ -8,7 +8,7 @@
 // Only a leader marks orphaned `submitting` records lost, so another live tab's in-flight jobs are never touched.
 // The key stays in memory. It crosses tabs only when the user types it (or forgets it) in a follower tab: that tab posts it
 // to the leader. Nobody answers "ask for the key" messages, so another page on the same origin cannot pull it (R6 P1-4).
-import { api as realApi, ApiError, errorText, isPolicy, rejected } from './client.ts';
+import { api as realApi, ApiError, errorText, isNetwork, isPolicy, rejected } from './client.ts';
 import { jobIdsOf, jobImages, type Job, type Req, type SubmitResponse, type Usage } from './routes.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { base64ToBytes, bytesToBase64, pngSize } from '../image/png.ts';
@@ -57,7 +57,7 @@ export type Role = 'solo' | 'leader' | 'follower';
 export interface QueueSnapshot {
   jobs: JobRec[];
   role: Role;
-  paused: null | 'auth' | 'credits';
+  paused: null | 'auth' | 'credits' | 'offline'; // offline (B15): browser offline or a request got no answer; nothing is sent
   concurrency: number;
   current: number;
   sessionGens: number;
@@ -76,10 +76,13 @@ export interface Deps {
   fetchBytes: (url: string) => Promise<Uint8Array>;
   now: () => number;
   locks: Pick<LockManager, 'request'> | null; // Web Locks (null = single tab)
+  online: () => boolean; // navigator.onLine
 }
 
 const POLL_MS = 5000, SYNC_MS = 1500, FULL_SYNC_MS = 30_000, MAX_TRIES = 10, MAX_PX = 2048, LOCK = 'pixeldoll-queue';
-const LOST_AFTER_MS = 120_000; // 404 on a job never seen completed, this long after submit -> lost
+const LOST_AFTER_MS = 120_000;
+const PROBE_MS = 15_000;
+const NOT_STARTED = /failed to start any/i; // offline: a free GET /balance this often until PixelLab answers again // 404 on a job never seen completed, this long after submit -> lost
 
 export const live = (r?: JobRec) => !!r && (r.state === 'queued' || r.state === 'submitting' || r.state === 'running');
 const seededOf = (r: JobRec) => typeof (r.params as { seed?: unknown } | null)?.seed === 'number';
@@ -131,6 +134,7 @@ export class Queue {
   private follower: (() => void) | null = null;
   private release: (() => void) | null = null;
   private merged = 0;
+  private probeAt = 0;
   private chan: BroadcastChannel | null = null;
   role: Role = 'solo';
   key = '';
@@ -156,6 +160,7 @@ export class Queue {
       },
       now: Date.now,
       locks: globalThis.navigator?.locks ?? null,
+      online: () => globalThis.navigator?.onLine ?? true,
       ...deps,
     };
   }
@@ -352,9 +357,28 @@ export class Queue {
   }
 
   // ---- the loop ----
+  /** B15: offline -> pause (nothing is sent, so no paid call can be lost to a dead connection); a request that got no
+   * answer pauses too. Resume when the browser is online again and, for the leader, a free GET /balance gets through. */
+  goOffline() {
+    if (this.paused) return; // auth / credits stay the stronger reason
+    this.paused = 'offline';
+    this.probeAt = this.deps.now() + 3000;
+    this.emit();
+  }
+  private async network(now: number): Promise<boolean> {
+    if (!this.deps.online()) { this.goOffline(); return false; }
+    if (this.paused !== 'offline') return true;
+    if (this.role === 'follower' || !this.key) { this.resume(); return true; } // nothing to probe with: trust the browser
+    if (now < this.probeAt) return false;
+    this.probeAt = now + PROBE_MS;
+    try { await this.deps.api(this.key, 'GET', '/balance'); } catch (e) { if (isNetwork(e)) return false; } // any answer = back online
+    if (this.paused === 'offline') this.resume();
+    return true;
+  }
   async tick(): Promise<void> {
-    if (this.role === 'follower') return; // the leader tab submits and polls
     const now = this.deps.now();
+    if (!(await this.network(now))) return;
+    if (this.role === 'follower') return; // the leader tab submits and polls
     if (this.role === 'leader' && now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS)) { this.merged = now; await this.merge(); }
     const ops: Promise<void>[] = [];
     if (this.key && !this.paused) {
@@ -408,7 +432,8 @@ export class Queue {
       const err = e instanceof ApiError ? e : new ApiError(-1, 'other', (e as Error)?.message ?? String(e));
       r.error = err.message;
       this.streak = 0;
-      if (err.kind === 'retry' && (r.method !== 'POST' || rejected(err.status))) { // refused before any job existed
+      // refused before any job existed; B15 live: a 500 "Failed to start any animation jobs" (busy account) said so in words
+      if (err.kind === 'retry' && (r.method !== 'POST' || rejected(err.status) || NOT_STARTED.test(err.message))) {
         if (err.status === 429) this.current = Math.max(1, this.current - 1);
         r.state = 'queued';
         r.nextAt = this.deps.now() + backoff(r.attempts);
@@ -416,6 +441,7 @@ export class Queue {
         r.state = 'lost';
         r.error = `no clear answer from PixelLab (${err.message}). The job may have run and been charged (check pixellab.ai); not resent.`;
         r.finishedAt = this.deps.now();
+        if (isNetwork(err)) this.goOffline(); // B15: stop here instead of losing the next queued job too
       } else if (err.kind === 'auth' || err.kind === 'credits') {
         this.paused = err.kind;
         r.state = 'queued';
@@ -435,6 +461,7 @@ export class Queue {
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
       if (e.kind === 'auth') this.paused = 'auth';
+      else if (isNetwork(e)) { s.error = e.message; this.goOffline(); } // B15
       else if (e.kind === 'notfound' && this.deps.now() - (r.submittedAt ?? 0) > LOST_AFTER_MS) {
         s.done = true;
         s.status = 'lost';
@@ -495,6 +522,7 @@ export class Queue {
         await this.save(r);
       }
     } catch (e) { // storage CDN error or bad bytes: back off (tick), give up after MAX_TRIES with the URLs kept (R6 P2-9)
+      if (e instanceof TypeError || !this.deps.online()) { s.lastPoll = this.deps.now(); this.goOffline(); return this.save(r); } // B15: no connection is not a failed try
       s.tries = (s.tries ?? 0) + 1;
       s.lastPoll = this.deps.now();
       s.error = `result download failed ${s.tries}x: ${(e as Error).message}`;
@@ -628,7 +656,67 @@ export async function selfTest() {
   console.assert(again.id === rec.id && submits === 1, 'request-hash cache hit');
   console.assert(backoff(1, 1) === 2000 && backoff(10, 1) === 60000 && backoff(2, 0) === 2000, 'backoff');
   await robustTest();
+  await offlineTest();
+  await notStartedTest();
   await lockTest();
+}
+
+// B15 live: POST /characters/animations -> 500 "Failed to start any animation jobs" is a refusal: resent, not lost.
+async function notStartedTest() {
+  const store = new Map<string, JobRec>();
+  let t = 1000, posts = 0;
+  const q = new Queue({
+    now: () => t, online: () => true,
+    put: async (k, r) => void store.set(k, structuredClone(r)), get: async (k) => structuredClone(store.get(k)), del: async (k) => store.delete(k),
+    all: async () => [...store.values()].map((r) => structuredClone(r)), putBlob: async () => 'x', getBlob: async () => undefined, fetchBytes: async () => new Uint8Array(),
+    api: async <T>(_k: string, method: string): Promise<T> => {
+      if (method === 'POST' && ++posts === 1) throw new ApiError(500, 'retry', 'POST /characters/animations -> 500: Failed to start any animation jobs');
+      return (method === 'POST' ? { background_job_ids: ['j'] } : { id: 'j', status: 'processing', created_at: '' }) as T;
+    },
+  });
+  q.key = 'k';
+  const r = await q.enqueue({ method: 'POST', path: '/characters/animations', body: { seed: 1 } });
+  await q.tick();
+  console.assert(store.get(r.id)?.state === 'queued', `not started: requeued (${store.get(r.id)?.state})`);
+  t += 60_000; await q.tick();
+  console.assert(store.get(r.id)?.state === 'running' && posts === 2, `then resent once (${store.get(r.id)?.state} ${posts})`);
+}
+
+// B15: offline -> nothing is sent (no paid POST can be lost), a request with no answer pauses the queue, a free GET /balance
+// probe resumes it once PixelLab answers again.
+async function offlineTest() {
+  const store = new Map<string, JobRec>();
+  let t = 1000, online = false, net = false, posts = 0, probes = 0;
+  const q = new Queue({
+    now: () => t, online: () => online,
+    put: async (k, r) => void store.set(k, structuredClone(r)), get: async (k) => structuredClone(store.get(k)), del: async (k) => store.delete(k),
+    all: async () => [...store.values()].map((r) => structuredClone(r)), putBlob: async () => 'x', getBlob: async () => undefined, fetchBytes: async () => new Uint8Array(),
+    api: async <T>(_k: string, method: string, path: string): Promise<T> => {
+      if (net) throw new ApiError(0, 'retry', 'network error: Failed to fetch', { network: true });
+      if (path === '/balance') { probes++; return {} as T; }
+      if (method === 'POST') { posts++; return { background_job_id: `j${posts}` } as T; }
+      return { id: 'j', status: 'processing', created_at: '' } as T;
+    },
+  });
+  q.key = 'k';
+  const a = await q.enqueue({ method: 'POST', path: '/a', body: { seed: 1 } });
+  await q.tick();
+  console.assert(q.paused === 'offline' && posts === 0 && store.get(a.id)?.state === 'queued', 'browser offline: paused, nothing sent');
+  online = true; t += 1000;
+  await q.tick();
+  console.assert(q.paused === 'offline' && probes === 0, 'probe waits a few seconds');
+  t += 3000;
+  await q.tick();
+  console.assert(!q.paused && probes === 1 && posts === 1 && store.get(a.id)?.state === 'running', `online again: probe, resume, submit (${q.paused} ${probes} ${posts})`);
+  net = true; t += POLL_MS;
+  await q.tick(); // the poll gets no answer
+  const b = await q.enqueue({ method: 'POST', path: '/b', body: { seed: 2 } });
+  t += 1000; await q.tick();
+  console.assert(q.paused === 'offline' && posts === 1 && store.get(b.id)?.state === 'queued' && store.get(a.id)?.state === 'running', 'no answer: paused, next job kept queued, running job kept');
+  t += PROBE_MS; await q.tick();
+  console.assert(q.paused === 'offline', 'a probe without an answer stays offline');
+  net = false; t += PROBE_MS; await q.tick();
+  console.assert(!q.paused && posts === 2, `answer again: resumed (${q.paused} ${posts})`);
 }
 
 // B13 (R6 P1-2, P1-3, P2-9, P2-10, P2-11): uncertain POSTs are never resent, refusals are; a missing input fails at once;

@@ -25,6 +25,7 @@ shows its price, for example **Create 35–50 gens** or **Make 28 gens**. Typica
 | Action | About |
 |---|---|
 | Create a character (idle + walk, 4 directions) | 35–50 gens, about 12 minutes |
+| Create a character with 8 directions | 57–75 gens, about 18 minutes |
 | Make an item | about 28 gens |
 | Add a move | 30–40 gens |
 | Try again on an item | shown on the button |
@@ -43,6 +44,18 @@ Character menu → **New character…**
 2. Pick **Skin** and **Build** (slim, average, stocky) if you like.
 3. Press **Create**. You get idle and walk, facing south, east, north and west, as 64 × 64 pixel sprites. West is a mirror of
    east.
+
+**More options** (folded away; the defaults suit most games):
+
+- **Directions**: **4** (default) or **8**. With 8 you also get the diagonals: south-east, north-east and north-west,
+  south-west, west are mirrors of their east-facing twins. The price on **Create** updates as you choose (8 directions costs
+  about 60 % more).
+- **Body size**: **48 px** (default) or **56 px** tall inside the same 64 × 64 sprite. 56 px gives a bigger figure but less room
+  above the head for tall hats. If a 56 px character comes out too tall to leave 6 px above its head, PixelDoll stops after the
+  first drawing (2 gens) and asks you to try again with 48 px or another seed.
+- **Name** and **Seed** (same seed + same description = the same first drawing).
+
+New characters wear a light grey shirt and dark grey shorts, so you can tell them apart and recolour them separately.
 
 You can keep working or close the tab while it runs. It picks up where it left off. When it is done, press
 **Start dressing up**.
@@ -84,6 +97,8 @@ Everything saves on this device automatically.
 ## Recolour
 
 Open the **Colours** tab. Pick a swatch for each colour of the item (or of **Everything you wear**), or **Pick any colour**.
+The body has three: **Shirt**, **Shorts** and **Skin** (characters made before this came with one shared grey; PixelDoll
+splits it into shirt and shorts the next time you open them, nothing is regenerated).
 **Original** restores one colour and **Reset** restores them all. Recolouring swaps exact colours,
 so pixel art stays crisp, and it is free.
 
@@ -107,5 +122,9 @@ Each zip has a `README.txt` with a quick start for that engine. Copy the whole f
 
 - **Activity** (toolbar) lists running jobs with **Stop** and **Cancel**, and your balance.
 - With PixelDoll open in two tabs, one tab runs the jobs ("Working in another tab"). Keep it open.
-- Keys: Space play/pause · 1–4 face south/east/north/west · 0 all directions · , and . step one frame.
+- Keys: Space play/pause · 1–4 face south/east/north/west (1–8 on 8-direction characters, in the order of the direction
+  buttons) · 0 all directions · , and . step one frame.
+- **Offline?** A small banner says "You're offline — generation paused; everything else works". Running and queued jobs wait
+  (nothing is sent, so no gens are spent on a dead connection) and continue by themselves when you are back online.
+  Dressing up, recolouring, outfits and export keep working.
 - PixelLab may decline some descriptions. Try different words.

@@ -29,6 +29,9 @@ export function classify(status: number, body?: unknown): ErrorKind {
   return 'other';
 }
 
+/** No connection at all (fetch never got an answer, not a timeout): the queue pauses instead of trying the next job (B15). */
+export const isNetwork = (e: unknown) => e instanceof ApiError && e.status === 0 && !!(e.body as { network?: boolean } | undefined)?.network;
+
 /** The server refused before creating a job (OpenAPI: 429/529 rate limit, 503 renderer busy; 423 locked): safe to resubmit.
  * Any other 5xx or a network error (status 0) may come after the job was created, so a paid POST is never resent on those. */
 export const rejected = (status: number) => status === 423 || status === 429 || status === 503 || status === 529;
@@ -56,7 +59,9 @@ export async function api<T>(key: string, method: string, path: string, body?: u
       signal: signal ?? AbortSignal.timeout(TIMEOUT_MS), // a hung request never holds a queue slot forever
     });
   } catch (e) {
-    throw new ApiError(0, 'retry', `network error: ${(e as Error).message}`);
+    // B15: `network` = no connection (offline banner, queue pauses); a timeout or abort is not one
+    const name = (e as Error)?.name;
+    throw new ApiError(0, 'retry', `network error: ${(e as Error).message}`, { network: name !== 'TimeoutError' && name !== 'AbortError' });
   }
   const text = await r.text();
   let json: unknown;

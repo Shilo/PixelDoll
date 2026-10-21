@@ -21,7 +21,7 @@
   import StageNote from './StageNote.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
   import { ui, doc, store, view, gens, creating, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, undo, redo, genProgress } from './state.svelte.ts'
-  import { Palette, PersonStanding, Shirt } from './icons.ts'
+  import { Palette, PersonStanding, Shirt, WifiOff } from './icons.ts'
 
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
   onMount(() => {
@@ -99,13 +99,17 @@
     else if (/^[1-8]$/.test(e.key) && m.rig.directions[+e.key - 1] && moveDirs(m, ui.anim).includes(m.rig.directions[+e.key - 1].id)) { ui.dir = m.rig.directions[+e.key - 1].id; ui.all = false }
   }
 
+  // B15: offline (browser says so, or PixelLab got no answer and the queue paused): a small banner, never a blocker
+  let online = $state(navigator.onLine)
+  const offline = $derived(!online || $queue.paused === 'offline')
+
   const desk = $derived(ui.size === 'expanded' || ui.size === 'medium')
   const firstGen = $derived(gens.find((g) => g.draft.rigId === doc.id && g.phase !== 'failed'))
   const creatingNow = $derived(!!creating.spec && !creating.projectId)
   const TABS = [['wardrobe', 'Wardrobe', Shirt], ['colours', 'Colours', Palette], ['moves', 'Moves', PersonStanding]] as const
 </script>
 
-<svelte:window onkeydown={onkey} onpopstate={onpop} />
+<svelte:window onkeydown={onkey} onpopstate={onpop} ononline={() => (online = true)} onoffline={() => (online = false)} />
 
 <div class="studio-app">
   {#if ui.welcome}
@@ -145,6 +149,7 @@
           </div>
         </div>
       {/if}
+      {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You're offline — generation paused; everything else works</div>{/if}
       {#if ui.toast}<div class="toast" role="status">{ui.toast}</div>{/if}
     </div>
   {/if}

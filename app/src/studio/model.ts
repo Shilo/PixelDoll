@@ -68,12 +68,13 @@ export function cropAll(ims: Img[]): Img[] {
   });
 }
 
-/** Base prompt (S2 winner): the user's words + a plain clothed mannequin so items have a clean body to sit on. */
+/** Base prompt (S2 winner): the user's words + a plain clothed mannequin so items have a clean body to sit on. B15: a light
+ * shirt over dark shorts, so the two garments get their own shades (lib/dress/regions.ts splits them into Shirt and Shorts). */
 export const basePrompt = (desc: string) =>
-  `${desc.trim().replace(/[.\s]+$/, '')}, plain bald paperdoll base body, wearing a plain grey t-shirt and plain grey shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
+  `${desc.trim().replace(/[.\s]+$/, '')}, plain bald paperdoll base body, wearing a plain light grey t-shirt and plain dark grey shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
 /** What the base LOOKS like (raw skeleton-v3 `description`, S3): no pose words, empty hands. */
 export const looksOf = (desc: string) =>
-  `${desc.trim().replace(/[.\s]+$/, '')}, bald, wearing a plain grey t-shirt and plain grey shorts, barefoot, empty hands, no weapon`;
+  `${desc.trim().replace(/[.\s]+$/, '')}, bald, wearing a plain light grey t-shirt and plain dark grey shorts, barefoot, empty hands, no weapon`;
 
 export const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 /** The noun of the description's first phrase: "a sturdy young dwarf with a friendly face" -> "Dwarf". */
@@ -108,7 +109,8 @@ export function plainReason(s: string): string {
   if (s.startsWith('G7')) return 'The item touches the frame edge (may be cut off)';
   if (s.startsWith('G8')) return 'The item switches hands';
   if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
-  if (s.startsWith('H4')) return 'The item does not match its design in some frames';
+  if (s.startsWith('H4')) return 'Some frames do not look like the design (e.g. a cape wrapped around an arm)';
+  if (s.startsWith('D1')) return 'The design has grey smudges';
   return s;
 }
 

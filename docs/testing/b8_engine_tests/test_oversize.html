@@ -37,7 +37,7 @@ class Test extends Phaser.Scene {
     const { x: px, y: py } = m.export.bakedPivot;
     const dolls = DIRS.map((d, i) => new Paperdoll(this, i * BW + px, py, m));
     for (const preset of m.presets) {
-      dolls.forEach((doll) => { for (const [slot, id] of Object.entries(preset.items)) if (slot !== 'body') doll.equip(slot, id); });
+      dolls.forEach((doll) => { for (const s of m.slots) if (s.id !== 'body') doll.equip(s.id, preset.items[s.id] ?? null); }); // B14: an omitted slot is empty (as the Godot harness, B9)
       for (const a of m.rig.animations) {
         dolls.forEach((doll, i) => { doll.play(a.id, DIRS[i]); doll.body.anims.pause(); });
         const baked = await imageData(`${ex}/baked/${preset.id}/${a.id}.png`);

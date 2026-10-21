@@ -2,9 +2,11 @@
 // Pure over Img, so the preview, baked export and node scripts share one code path.
 import { makeImg, type Img } from '../image/png.ts';
 import { flipH } from '../rig/mirror.ts';
-import type { DirectionName, Item, Layer, Manifest, Preset, Project, Rig, Slot } from '../store/manifest.ts';
+import { cellHash } from '../rig/rig.ts';
+import type { DirectionName, Item, Layer, Manifest, Preset, Project, Rig, Sha256, Slot } from '../store/manifest.ts';
 
-export interface Draw { item: Item; layer: Layer; slot: Slot; z: number }
+/** `under`: equipped items this item is tucked under (slot.clips, B14); compose clips its cells on the fly. */
+export interface Draw { item: Item; layer: Layer; slot: Slot; z: number; under: Item[] }
 
 /** A cell size plus the pivot inside it (pixel-edge coords). Layers line up by pivot: a layer's cell sits at
  *  (frame.x - layer.x, frame.y - layer.y) in a frame (manifest-spec v1.3.1 oversize layers). */
@@ -32,6 +34,67 @@ export function hiddenSlots(m: Manifest, items: Item[]): Set<string> {
   return out;
 }
 
+// ---------- B14 tuck-under (slot.clips): hair under a helmet keeps only what hangs below the brim ----------
+/** Equipped items whose slot tucks `slot` under them (slot.clips). Hidden or not: every engine runtime uses the same rule. */
+export const tuckers = (m: Manifest, on: Item[], slot: string) => on.filter((c) => c.slot !== slot && (m.slots.find((s) => s.id === c.slot)?.clips ?? []).includes(slot));
+/** Variant id of `item` tucked under `over` (exports bake these: engines swap sheets, they never mask). */
+export const tuckedId = (item: string, over: string) => `${item}~${over}`;
+/** The equipped items as drawn: an item tucked under another uses its baked variant when the project has one. */
+export const shownItems = (m: Manifest, on: Item[]): Item[] =>
+  on.map((it) => tuckers(m, on, it.slot).map((c) => m.items.find((v) => v.id === tuckedId(it.id, c.id))).find(Boolean) ?? it);
+
+/**
+ * Drop the px of `im` (frame `f`) that sit under the covering layers' silhouette: per column, everything at or above the
+ * cover's lowest opaque row (inside the helmet and hair poking out of its top); columns beside the cover use the nearest
+ * covered column (hair cannot stick out sideways above the brim). Px below the brim stay (long hair). Idempotent.
+ * ponytail: the cover is the whole item silhouette; a circlet or a hat with a hole would clip everything above its lowest row
+ * (per-item clip masks if such items appear).
+ */
+export function tuck(im: Img, f: Frame, covers: [Img | null, Frame][]): Img {
+  const brim = new Array<number>(im.w).fill(-1);
+  for (const [c, g] of covers) {
+    if (!c) continue;
+    for (let y = 0; y < c.h; y++)
+      for (let x = 0; x < c.w; x++) {
+        if (!c.data[(y * c.w + x) * 4 + 3]) continue;
+        const X = x - g.x + f.x, Y = y - g.y + f.y; // same body point (layers align by pivot)
+        if (X >= 0 && X < im.w) brim[X] = Math.max(brim[X], Y);
+      }
+  }
+  if (brim.every((b) => b < 0)) return im;
+  for (let x = 1; x < im.w; x++) if (brim[x] < 0) brim[x] = brim[x - 1]; // beside the cover: nearest covered column
+  for (let x = im.w - 2; x >= 0; x--) if (brim[x] < 0) brim[x] = brim[x + 1];
+  const o: Img = { w: im.w, h: im.h, data: im.data.slice() };
+  for (let y = 0; y < im.h; y++) for (let x = 0; x < im.w; x++) if (y <= brim[x]) o.data.fill(0, (y * im.w + x) * 4, (y * im.w + x) * 4 + 4);
+  return o;
+}
+const tucked = (p: Project, im: Img | null, l: Layer, under: Item[], anim: string, dir: DirectionName, cell: number): Img | null =>
+  im && under.length ? tuck(im, layerFrame(p.manifest.rig, l), under.flatMap((c) => c.layers.map((cl) => [cellImg(p, cl, anim, dir, cell), layerFrame(p.manifest.rig, cl)] as [Img | null, Frame]))) : im;
+
+/** Export copy of `p` with a baked "<item>~<over>" variant per (tucked item, covering item) pair: engines swap to it when both
+ *  are worn (stored directions only; a mirrored view is the flip of its source, and tucking commutes with the flip). */
+export async function withTuckVariants(p: Project): Promise<Project> {
+  const m = p.manifest, images = new Map(p.images), add: Item[] = [];
+  for (const over of m.items)
+    for (const slot of m.slots.find((s) => s.id === over.slot)?.clips ?? [])
+      for (const it of m.items.filter((x) => x.slot === slot && !x.variantOf)) {
+        const v: Item = { ...structuredClone(it), id: tuckedId(it.id, over.id), name: `${it.name} under ${over.name}`, variantOf: it.id, under: over.id };
+        delete v.qa;
+        for (const l of v.layers)
+          for (const [anim, dirs] of Object.entries(l.cells ?? {}))
+            for (const [dir, cells] of Object.entries(dirs ?? {}) as [DirectionName, (Sha256 | null)[]][])
+              dirs![dir] = await Promise.all(cells.map(async (h, i) => {
+                const t = tucked(p, h ? p.images.get(h) ?? null : null, l, [over], anim, dir, i);
+                if (!t?.data.some((x, j) => j % 4 === 3 && x)) return null;
+                const k = await cellHash(t);
+                images.set(k, t);
+                return k;
+              }));
+        add.push(v);
+      }
+  return add.length ? { manifest: { ...m, items: [...m.items, ...add] }, images } : p;
+}
+
 /** Most specific matching zOverride (cell > anim > dir > none; later wins on ties), else layer.z. */
 export function resolveZ(slot: Slot | undefined, layer: Pick<Layer, 'role' | 'z'>, anim: string, dir: DirectionName, cell: number): number {
   let z = layer.z, best = -1;
@@ -48,10 +111,10 @@ export function drawList(m: Manifest, items: Preset['items'], anim: string, dir:
   const on = equipped(m, items), hidden = hiddenSlots(m, on);
   const slotIx = (id: string) => m.slots.findIndex((s) => s.id === id);
   const list: Draw[] = [];
-  for (const item of on) {
+  for (const item of shownItems(m, on)) {
     if (hidden.has(item.slot)) continue;
-    const slot = m.slots.find((s) => s.id === item.slot)!;
-    for (const layer of item.layers) list.push({ item, layer, slot, z: resolveZ(slot, layer, anim, dir, cell) });
+    const slot = m.slots.find((s) => s.id === item.slot)!, under = item.under ? [] : tuckers(m, on, item.slot); // a baked variant is already tucked
+    for (const layer of item.layers) list.push({ item, layer, slot, z: resolveZ(slot, layer, anim, dir, cell), under });
   }
   return list.sort((a, b) => a.z - b.z || slotIx(a.item.slot) - slotIx(b.item.slot) || (a.layer.role === b.layer.role ? 0 : a.layer.role === 'bg' ? -1 : 1) || a.item.id.localeCompare(b.item.id));
 }
@@ -86,7 +149,7 @@ export function over(dst: Img, src: Img, x = 0, y = 0) {
 export function composeCell(p: Project, items: Preset['items'], anim: string, dir: DirectionName, cell: number, frame = rigFrame(p.manifest.rig)): Img {
   const out = makeImg(frame.w, frame.h);
   for (const d of drawList(p.manifest, items, anim, dir, cell)) {
-    const im = cellImg(p, d.layer, anim, dir, cell), f = layerFrame(p.manifest.rig, d.layer);
+    const im = tucked(p, cellImg(p, d.layer, anim, dir, cell), d.layer, d.under, anim, dir, cell), f = layerFrame(p.manifest.rig, d.layer);
     if (im) over(out, im, frame.x - f.x, frame.y - f.y);
   }
   return out;
@@ -146,6 +209,14 @@ export function selfTest() {
   console.assert(baked.data.filter((_, i) => i % 4 === 0).join() === '10,11,12,13,14,15,16,17,18', 'oversize: whole layer on the baked frame');
   const u = unionFrame([{ w: 64, h: 64, x: 32, y: 60 }, { w: 96, h: 96, x: 48, y: 76 }, { w: 64, h: 80, x: 32, y: 60 }]);
   console.assert(u.w === 96 && u.h === 96 && u.x === 48 && u.y === 76, 'unionFrame');
+  // B14 tuck: hair 4x4 under a 2x2 helmet at columns 1-2, rows 0-1 -> rows 0-1 go everywhere (sides: nearest column), rows 2-3 stay
+  const hair4 = makeImg(4, 4); hair4.data.fill(255);
+  const helm4 = makeImg(4, 4); for (const q of [1, 2, 5, 6]) helm4.data.set([9, 9, 9, 255], q * 4);
+  const f4 = { w: 4, h: 4, x: 2, y: 4 }, t4 = tuck(hair4, f4, [[helm4, f4]]), op = (im: Img) => im.data.filter((_, i) => i % 4 === 3 && _).length;
+  console.assert(op(t4) === 8 && t4.data[(2 * 4) * 4 + 3] === 255 && !t4.data[3] && op(tuck(t4, f4, [[helm4, f4]])) === 8, 'tuck: drops px at/above the brim, keeps what hangs below, idempotent');
+  console.assert(op(tuck(hair4, f4, [[helm4, { ...f4, y: 3 }]])) === 4 && tuck(hair4, f4, [[null, f4]]) === hair4, 'tuck: covers align by pivot; no cover = untouched');
+  const tm = { slots: [{ id: 'hair', z: 110 }, { id: 'head', z: 130, clips: ['hair'] }], items: [{ id: 'h', slot: 'hair' }, { id: 'k', slot: 'head' }, { id: 'h~k', slot: 'hair', variantOf: 'h', under: 'k' }] } as unknown as Manifest;
+  console.assert(shownItems(tm, [tm.items[0], tm.items[1]]).map((i) => i.id).join() === 'h~k,k' && shownItems(tm, [tm.items[0]])[0].id === 'h', 'tuck: the baked variant replaces its item only under its cover');
   const clip = makeImg(2, 2); over(clip, big, -1, -1);
   console.assert(clip.data[0] === 14 && clip.data[12] === 18, 'over clips negative offsets');
 }

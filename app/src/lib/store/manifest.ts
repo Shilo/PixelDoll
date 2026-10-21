@@ -35,6 +35,7 @@ export interface Slot {
   anchor?: string;
   required?: boolean;
   hides?: string[];
+  clips?: string[]; // B14: slots tucked under this slot's item (hair under a helmet: only what hangs below the brim shows); hides wins
   zOverrides?: ZOverride[];
   band?: boolean;
 }
@@ -47,7 +48,10 @@ export interface Item {
   status: 'draft' | 'accepted' | 'stale';
   mirror: 'flip' | 'generate';
   hides?: string[];
+  variantOf?: string; // B14 export only: baked "<item>~<under>" copy of item `variantOf` tucked under item `under` (slot.clips)
+  under?: string;
   materials: string[];
+  regions?: 'shirt-shorts'; // B15 base only: garment greys carry their region in the blue LSB (even = shirt, odd = shorts)
   prompt: string;
   layers: Layer[];
   baseHash: Sha256;

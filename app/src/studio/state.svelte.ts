@@ -1,7 +1,8 @@
 // Studio state: UI (size class, theme, tabs, sheets, playback), the open project + outfit with undo/redo and autosave,
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
 // made recolour/compose take seconds, B5); manifest edits bump doc.rev.
-import { applyDress, dressOf, openSource, saveDress, type DressState } from '../lib/dress/project.ts';
+import { applyDress, dressOf, openSource, saveDress, saveSplit, type DressState } from '../lib/dress/project.ts';
+import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, randomOutfit, recolour, storeVariants } from '../lib/dress/dress.ts';
 import { drawList } from '../lib/compose/compose.ts';
 import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
@@ -129,7 +130,9 @@ export async function openProject(id: string, keep?: { wear?: string }) {
   doc.error = '';
   try {
     const r = await openSource(id);
+    const split = await splitBase(r.project); // B15: shirt / shorts colour regions on the base (idempotent; fixtures in memory)
     deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
+    if (split.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
     const m = r.project.manifest;
     const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
     doc.items = { ...pr.items };
