@@ -6,14 +6,16 @@
     title: string; children: Snippet; footer?: Snippet; onclose: () => void; cancel?: string; wide?: boolean
   } = $props()
   let dlg: HTMLDialogElement
+  // The native `close` event from our own unmount fires after a replacement sheet is already set; ignore it.
+  let unmounting = false
   $effect(() => {
     dlg.showModal()
-    return () => dlg.close()
+    return () => { unmounting = true; dlg.close() }
   })
   const kind = $derived(ui.size === 'compact' ? 'bottom' : ui.size === 'landscape' ? 'side' : 'center')
 </script>
 
-<dialog bind:this={dlg} class="sheet {kind}" class:wide aria-labelledby="sheet-title" onclose={onclose} oncancel={(e) => { e.preventDefault(); onclose() }}
+<dialog bind:this={dlg} class="sheet {kind}" class:wide aria-labelledby="sheet-title" onclose={() => { if (!unmounting) onclose() }} oncancel={(e) => { e.preventDefault(); onclose() }}
   onclick={(e) => { if (e.target === dlg) onclose() }}>
   {#if kind === 'bottom'}<div class="grabber" aria-hidden="true"></div>{/if}
   <header class="sheet-head">
