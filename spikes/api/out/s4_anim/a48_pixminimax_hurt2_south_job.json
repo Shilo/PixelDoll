@@ -1,0 +1,53 @@
+{
+  "res": {
+    "background_job_ids": [
+      "becad827-e5c7-4c99-9ccc-6bb3739dc241"
+    ],
+    "directions": [
+      "south"
+    ],
+    "animation_group_id": "2063b587-0ae4-431b-87c1-f10f0829d943",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "id": "becad827-e5c7-4c99-9ccc-6bb3739dc241",
+      "status": "completed",
+      "created_at": "2026-10-21T06:19:48.107664+00:00",
+      "last_response": {
+        "seed": 3143721436,
+        "type": "message_progress",
+        "action": "the character alone recoils: torso and head jerk backward, knees bend slightly, arms flinch up, then the character recovers to the starting stance. Only this one character, no other people, no fists, no impact effects",
+        "status": "initializing",
+        "progress": 1,
+        "direction": "south",
+        "frame_count": 4,
+        "animation_id": "1ce74505-e8db-44af-859d-f6f4aea7f966",
+        "character_id": "5352683c-54aa-4617-b303-e942e472c66d",
+        "billing_usage": {
+          "usd": 0,
+          "type": "generations",
+          "generations": 1
+        },
+        "generation_id": "a43ad527-9e10-4f7d-bc1a-4071b77c3c0f",
+        "animation_name": "custom-the character alone recoils: t",
+        "queue_position": 0,
+        "billing_charged": true,
+        "generation_model": "pixminimax",
+        "keep_first_frame": false,
+        "saved_to_storage": true,
+        "animation_group_id": "2063b587-0ae4-431b-87c1-f10f0829d943",
+        "input_frames_digest": null,
+        "generation_started_at": "2026-10-21T06:19:48.348696+00:00",
+        "requested_frame_count": 4,
+        "estimated_wait_seconds": 0
+      }
+    }
+  ]
+}

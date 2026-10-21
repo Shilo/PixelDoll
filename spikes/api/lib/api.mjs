@@ -9,10 +9,11 @@ export function client({ key, log = null, base = BASE }) {
   async function req(method, path, body) {
     const t0 = Date.now();
     for (let attempt = 0; ; attempt++) {
-      const r = await fetch(base + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+      let r; try { r = await fetch(base + path, { method, headers, body: body ? JSON.stringify(body) : undefined }); }
+      catch (e) { if (method === "GET" && attempt < 40) { await sleep(5000); continue; } throw e; } // S4: network blips; never auto-resubmit a paid POST
       const text = await r.text();
       let json; try { json = JSON.parse(text); } catch { json = { raw: text.slice(0, 2000) }; }
-      if ((r.status === 429 || r.status === 529) && attempt < 6) {
+      if ((r.status === 429 || r.status === 529) && attempt < 40) { // S4: 22-job Tier 3 cap shared by parallel spikes
         const wait = Number(r.headers.get('retry-after')) * 1000 || 5000 * (attempt + 1);
         log?.event({ path, status: r.status, retry_in_ms: wait, body: json });
         await sleep(wait); continue;

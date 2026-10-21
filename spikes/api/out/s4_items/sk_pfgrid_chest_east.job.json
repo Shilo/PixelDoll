@@ -1,0 +1,50 @@
+{
+  "usage": {
+    "type": "generations",
+    "generations": 9
+  },
+  "id": "7054db8e-0220-4ee6-b674-6ad642291a53",
+  "status": "completed",
+  "created_at": "2026-10-21T06:30:19.523592+00:00",
+  "last_response": {
+    "seed": 7,
+    "type": "message_done",
+    "model": "edit_image_pro_flash",
+    "width": 256,
+    "action": "Removing background",
+    "height": 256,
+    "images": [
+      {
+        "type": "base64",
+        "width": 256,
+        "base64": "<20340 chars>",
+        "height": 256
+      }
+    ],
+    "prompt": "<741 chars>",
+    "status": "completed",
+    "asset_id": "a4ed5a2c-1d31-559c-a028-1108242e1b6a",
+    "image_id": "a4ed5a2c-1d31-559c-a028-1108242e1b6a",
+    "job_kind": "creator-image",
+    "progress": 1,
+    "image_url": "<439 chars>",
+    "billing_usage": {
+      "usd": 0,
+      "type": "generations",
+      "generations": 9
+    },
+    "generation_id": "2cb4aa88-6be9-41c0-b141-453c74a37f18",
+    "billing_charged": true,
+    "original_images": [
+      {
+        "type": "base64",
+        "width": 256,
+        "base64": "<25092 chars>",
+        "height": 256
+      }
+    ],
+    "source_image_id": "a4ed5a2c-1d31-559c-a028-1108242e1b6a",
+    "creator_image_saved": true,
+    "generation_started_at": "2026-10-21T06:30:19.583822+00:00"
+  }
+}

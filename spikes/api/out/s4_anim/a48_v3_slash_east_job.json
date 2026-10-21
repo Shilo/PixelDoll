@@ -1,0 +1,53 @@
+{
+  "res": {
+    "background_job_ids": [
+      "572bac54-eca9-4f3a-a093-50660b33e8f3"
+    ],
+    "directions": [
+      "east"
+    ],
+    "animation_group_id": "4d787ad8-33bc-4b33-949f-c47c9d7805bb",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "id": "572bac54-eca9-4f3a-a093-50660b33e8f3",
+      "status": "completed",
+      "created_at": "2026-10-21T06:12:45.210226+00:00",
+      "last_response": {
+        "seed": 3495179491,
+        "type": "done",
+        "action": "one-handed sword slash with the right arm (empty fist as if gripping a sword): raise the arm, swing it down and across in front of the body, then return to the starting stance",
+        "status": "initializing",
+        "progress": 1,
+        "direction": "east",
+        "frame_count": 8,
+        "animation_id": "d72e3e62-5617-48b4-a9eb-3d2855ddf077",
+        "character_id": "5352683c-54aa-4617-b303-e942e472c66d",
+        "billing_usage": {
+          "usd": 0,
+          "type": "generations",
+          "generations": 1
+        },
+        "generation_id": "6862709f-fc99-4680-affd-dd0680fd20be",
+        "animation_name": "custom-one-handed sword slash with th",
+        "queue_position": 0,
+        "billing_charged": true,
+        "generation_model": "v3",
+        "keep_first_frame": false,
+        "saved_to_storage": true,
+        "animation_group_id": "4d787ad8-33bc-4b33-949f-c47c9d7805bb",
+        "input_frames_digest": null,
+        "generation_started_at": "2026-10-21T06:12:46.061812+00:00",
+        "requested_frame_count": 8,
+        "estimated_wait_seconds": 0
+      }
+    }
+  ]
+}

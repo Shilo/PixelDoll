@@ -1,0 +1,53 @@
+{
+  "res": {
+    "background_job_ids": [
+      "f7e9959f-6474-448c-bb4a-f7e24fa02f4a"
+    ],
+    "directions": [
+      "south"
+    ],
+    "animation_group_id": "cf382af7-7aff-4a4f-8ff9-53107a403c17",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "id": "f7e9959f-6474-448c-bb4a-f7e24fa02f4a",
+      "status": "completed",
+      "created_at": "2026-10-21T06:10:51.879538+00:00",
+      "last_response": {
+        "seed": 3040898112,
+        "type": "done",
+        "action": "walking in place, a natural looping walk cycle with alternating arm and leg swings",
+        "status": "initializing",
+        "progress": 1,
+        "direction": "south",
+        "frame_count": 8,
+        "animation_id": "8a64f27e-7eb8-4360-96eb-8c93fac70daf",
+        "character_id": "5352683c-54aa-4617-b303-e942e472c66d",
+        "billing_usage": {
+          "usd": 0,
+          "type": "generations",
+          "generations": 1
+        },
+        "generation_id": "6b9caab0-c96b-4366-8eb8-73bbe16ee762",
+        "animation_name": "custom-walking in place, a natural lo",
+        "queue_position": 0,
+        "billing_charged": true,
+        "generation_model": "v3",
+        "keep_first_frame": false,
+        "saved_to_storage": true,
+        "animation_group_id": "cf382af7-7aff-4a4f-8ff9-53107a403c17",
+        "input_frames_digest": null,
+        "generation_started_at": "2026-10-21T06:10:52.240907+00:00",
+        "requested_frame_count": 8,
+        "estimated_wait_seconds": 0
+      }
+    }
+  ]
+}

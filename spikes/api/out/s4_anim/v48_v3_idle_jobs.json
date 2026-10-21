@@ -1,0 +1,51 @@
+{
+  "res": {
+    "background_job_ids": [
+      "98f541c2-816f-4ee2-ab1a-95931aaa84d5"
+    ],
+    "directions": [
+      "south"
+    ],
+    "animation_group_id": "26c29ca1-f7b1-4e64-9b2a-e029ceeb6b07",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "id": "98f541c2-816f-4ee2-ab1a-95931aaa84d5",
+      "status": "completed",
+      "created_at": "2026-10-21T06:03:44.894657+00:00",
+      "lr_keys": [
+        "seed",
+        "type",
+        "action",
+        "images",
+        "status",
+        "progress",
+        "direction",
+        "frame_count",
+        "animation_id",
+        "character_id",
+        "storage_urls",
+        "billing_usage",
+        "generation_id",
+        "animation_name",
+        "queue_position",
+        "billing_charged",
+        "generation_model",
+        "keep_first_frame",
+        "saved_to_storage",
+        "animation_group_id",
+        "input_frames_digest",
+        "generation_started_at",
+        "requested_frame_count",
+        "estimated_wait_seconds"
+      ]
+    }
+  ]
+}

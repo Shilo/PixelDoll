@@ -1,0 +1,42 @@
+{
+  "usage": {
+    "type": "generations",
+    "generations": 1
+  },
+  "id": "24bb8b90-9379-4a3f-8708-5b5f4a952395",
+  "status": "completed",
+  "created_at": "2026-10-21T06:28:39.005047+00:00",
+  "last_response": {
+    "seed": 7,
+    "type": "message_done",
+    "image": {
+      "type": "base64",
+      "width": 256,
+      "base64": "<28044 chars>",
+      "height": 256
+    },
+    "usage": {
+      "seconds": 27.80841374397278
+    },
+    "progress": 1,
+    "billing_usage": {
+      "usd": 0,
+      "type": "generations",
+      "generations": 1
+    },
+    "generation_id": "fa4bffd7-5591-4b11-8b5c-7ce687fba226",
+    "queue_position": 0,
+    "billing_charged": true,
+    "generation_mode": "edit_image_pixen",
+    "quantized_image": {
+      "type": "base64",
+      "width": 256,
+      "base64": "<28044 chars>",
+      "height": 256
+    },
+    "generation_started_at": "2026-10-21T06:28:53.881714+00:00",
+    "estimated_wait_seconds": 0,
+    "original_image_n_colors": 6407,
+    "quantized_image_n_colors": 54
+  }
+}

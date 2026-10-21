@@ -1,0 +1,2 @@
+{"tag":"v48_v3_slash","base":"s2b48","route":"v3","action":"slash","dir":"south","requested":8,"n":8,"canvases":"68x68","rotFeetY":46,"feetY":[36,36],"cx":[24,24.5],"rotCx":24,"top":[-9,-8],"rotTop":1,"opaqueRange":[526,649],"colorsMax":39,"rotColors":30,"palDist":0.3,"offPal":0.006,"f0ExactVsRot":null,"f0IouVsRot":null,"usage":[{"type":"generations","generations":1}],"ms":123968}
+total ms 129495

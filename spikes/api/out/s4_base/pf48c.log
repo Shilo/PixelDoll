@@ -1,0 +1,155 @@
+{
+ "tag": "pf48c",
+ "route": "pf",
+ "size": 48,
+ "seed": 4321,
+ "cid": "e691dbbe-c815-46ba-a3ae-7476ee567169",
+ "ms": 192675,
+ "usage": [
+  {
+   "type": "generations",
+   "generations": 6
+  }
+ ],
+ "billing": [
+  [
+   {
+    "stage": "first_direction",
+    "usage": {
+     "usd": 0,
+     "type": "generations",
+     "generations": 5
+    },
+    "generation_id": "55f29a23-623f-4a5d-953f-e3868b09ef81"
+   },
+   {
+    "stage": "rotations",
+    "usage": {
+     "usd": 0,
+     "type": "generations",
+     "generations": 1,
+     "cost_if_paid": 0.027680402855078376
+    },
+    "generation_id": "ec199ff7-8d6b-4ff7-8ef6-a0e869d50819"
+   }
+  ]
+ ],
+ "storedSize": {
+  "width": 48,
+  "height": 48
+ },
+ "dirs": {
+  "south": {
+   "size": "48x48",
+   "bbox": {
+    "x": 16,
+    "y": 10,
+    "w": 17,
+    "h": 29
+   },
+   "headroom": 10,
+   "feetY": 38,
+   "height": 29,
+   "opaque": 320,
+   "colors": 35
+  },
+  "west": {
+   "size": "48x48",
+   "bbox": {
+    "x": 19,
+    "y": 10,
+    "w": 10,
+    "h": 29
+   },
+   "headroom": 10,
+   "feetY": 38,
+   "height": 29,
+   "opaque": 215,
+   "colors": 26
+  },
+  "east": {
+   "size": "48x48",
+   "bbox": {
+    "x": 19,
+    "y": 10,
+    "w": 10,
+    "h": 29
+   },
+   "headroom": 10,
+   "feetY": 38,
+   "height": 29,
+   "opaque": 214,
+   "colors": 25
+  },
+  "north": {
+   "size": "48x48",
+   "bbox": {
+    "x": 16,
+    "y": 10,
+    "w": 16,
+    "h": 29
+   },
+   "headroom": 10,
+   "feetY": 38,
+   "height": 29,
+   "opaque": 314,
+   "colors": 24
+  },
+  "south-east": {
+   "size": "48x48",
+   "bbox": {
+    "x": 16,
+    "y": 10,
+    "w": 16,
+    "h": 29
+   },
+   "headroom": 10,
+   "feetY": 38,
+   "height": 29,
+   "opaque": 308,
+   "colors": 29
+  },
+  "north-east": {
+   "size": "48x48",
+   "bbox": {
+    "x": 18,
+    "y": 10,
+    "w": 13,
+    "h": 29
+   },
+   "headroom": 10,
+   "feetY": 38,
+   "height": 29,
+   "opaque": 271,
+   "colors": 25
+  },
+  "north-west": {
+   "size": "48x48",
+   "bbox": {
+    "x": 17,
+    "y": 10,
+    "w": 13,
+    "h": 29
+   },
+   "headroom": 10,
+   "feetY": 38,
+   "height": 29,
+   "opaque": 271,
+   "colors": 27
+  },
+  "south-west": {
+   "size": "48x48",
+   "bbox": {
+    "x": 17,
+    "y": 10,
+    "w": 15,
+    "h": 29
+   },
+   "headroom": 10,
+   "feetY": 38,
+   "height": 29,
+   "opaque": 309,
+   "colors": 30
+  }
+ }
+}

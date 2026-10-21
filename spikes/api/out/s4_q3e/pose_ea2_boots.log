@@ -1,0 +1,7 @@
+COST {"cmd":"pose","v":"ea2","item":"boots","clip":"walk","d":"south","n":8,"size":"64x64","ms":126564,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"boots","clip":"walk","d":"east","n":8,"size":"64x64","ms":133114,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"boots","clip":"walk","d":"north","n":8,"size":"64x64","ms":135267,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"boots","clip":"slash","d":"south","n":8,"size":"64x64","ms":147917,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"boots","clip":"slash","d":"north","n":8,"size":"64x64","ms":207809,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"boots","clip":"slash","d":"east","n":8,"size":"64x64","ms":221356,"usage":{"type":"generations","generations":3}}
+total ms 221378

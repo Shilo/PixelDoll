@@ -1,0 +1,53 @@
+{
+  "res": {
+    "background_job_ids": [
+      "c6fab2b0-ce22-445e-9bea-070ad8d915f8"
+    ],
+    "directions": [
+      "north"
+    ],
+    "animation_group_id": "1e01b0f1-517f-4e02-a95b-d3edf46d5481",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "id": "c6fab2b0-ce22-445e-9bea-070ad8d915f8",
+      "status": "completed",
+      "created_at": "2026-10-21T06:14:09.748413+00:00",
+      "last_response": {
+        "seed": 22198852,
+        "type": "done",
+        "action": "getting hit: flinch backward from a blow to the chest, then recover to the starting stance",
+        "status": "initializing",
+        "progress": 1,
+        "direction": "north",
+        "frame_count": 4,
+        "animation_id": "aaded559-5ff4-4b96-8a1f-a78a6db884c9",
+        "character_id": "5352683c-54aa-4617-b303-e942e472c66d",
+        "billing_usage": {
+          "usd": 0,
+          "type": "generations",
+          "generations": 1
+        },
+        "generation_id": "66f8c46f-42aa-4c30-8bdd-c5e330594c7d",
+        "animation_name": "custom-getting hit: flinch backward f",
+        "queue_position": 0,
+        "billing_charged": true,
+        "generation_model": "pixminimax",
+        "keep_first_frame": false,
+        "saved_to_storage": true,
+        "animation_group_id": "1e01b0f1-517f-4e02-a95b-d3edf46d5481",
+        "input_frames_digest": null,
+        "generation_started_at": "2026-10-21T06:14:09.82957+00:00",
+        "requested_frame_count": 4,
+        "estimated_wait_seconds": 0
+      }
+    }
+  ]
+}

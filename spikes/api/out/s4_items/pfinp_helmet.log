@@ -1,0 +1,37 @@
+file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/lib/api.mjs:37
+      if (job.status === 'failed') { const e = new Error(`job ${id} failed: ${JSON.stringify(job.last_response).slice(0, 800)}`); e.job = job; throw e; }
+                                               ^
+
+Error: job 24a8c02e-6c16-4ef4-82dc-8066e7e6627d failed: {"code":5000,"type":"message_progress","error":"Generation failed due to heavy load. Please try again in a moment.","model":"inpaint_pro_flash","width":256,"action":"Generating image","height":256,"prompt":"This image is a sprite sheet: a 4x4 grid of 16 animation frames (each 64x64 px) of the same pixel art character, a solid bright green mannequin. Frames, left to right then top to bottom, in order: 8 cells walking facing south, 8 cells walking facing east. The bright green colour is intentional (a chroma key) and must stay exactly the same bright green in every frame. Add only a simple grey steel knight helmet covering the top and sides of the head, face visible to the character in EVERY frame, drawn in its own natural colours (no bright green on the item), with the identical design, siz
+    at waitJob (file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/lib/api.mjs:37:48)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Promise.all (index 0)
+    at async Object.run (file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/lib/api.mjs:48:18)
+    at async job (file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/s4_items.mjs:52:47)
+    at async file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/s4_items.mjs:64:103 {
+  job: {
+    usage: { type: 'usd', usd: 0 },
+    id: '24a8c02e-6c16-4ef4-82dc-8066e7e6627d',
+    status: 'failed',
+    created_at: '2026-10-21T06:03:21.022698+00:00',
+    last_response: {
+      code: 5000,
+      type: 'message_progress',
+      error: 'Generation failed due to heavy load. Please try again in a moment.',
+      model: 'inpaint_pro_flash',
+      width: 256,
+      action: 'Generating image',
+      height: 256,
+      prompt: "This image is a sprite sheet: a 4x4 grid of 16 animation frames (each 64x64 px) of the same pixel art character, a solid bright green mannequin. Frames, left to right then top to bottom, in order: 8 cells walking facing south, 8 cells walking facing east. The bright green colour is intentional (a chroma key) and must stay exactly the same bright green in every frame. Add only a simple grey steel knight helmet covering the top and sides of the head, face visible to the character in EVERY frame, drawn in its own natural colours (no bright green on the item), with the identical design, size and colours in all frames, following each frame's pose. Keep every other pixel, the poses, the outlines, the grid layout and the transparent background unchanged.",
+      status: 'failed',
+      image_id: '4e748ac1-0071-5ae9-9646-fc3288c4db84',
+      job_kind: 'creator-image',
+      progress: 0.05,
+      limit_type: null,
+      generation_started_at: '2026-10-21T06:03:21.05608+00:00'
+    }
+  }
+}
+
+Node.js v25.0.0
+────┴────────────────┴────────────┴───────────────────┘

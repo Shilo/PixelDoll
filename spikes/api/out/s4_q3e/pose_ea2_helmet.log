@@ -1,0 +1,7 @@
+COST {"cmd":"pose","v":"ea2","item":"helmet","clip":"walk","d":"east","n":8,"size":"64x64","ms":138739,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"helmet","clip":"slash","d":"south","n":8,"size":"64x64","ms":150947,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"helmet","clip":"slash","d":"east","n":8,"size":"64x64","ms":158156,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"helmet","clip":"walk","d":"north","n":8,"size":"64x64","ms":167149,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"helmet","clip":"slash","d":"north","n":8,"size":"64x64","ms":179036,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"ea2","item":"helmet","clip":"walk","d":"south","n":8,"size":"64x64","ms":186776,"usage":{"type":"generations","generations":3}}
+total ms 186779

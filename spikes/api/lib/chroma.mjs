@@ -88,6 +88,7 @@ export const WHAT = {
   wizardhat: "a tall pointed blue wizard hat with a wide brim",
   helmet: 'a simple grey steel knight helmet covering the top and sides of the head, face visible',
   chest: 'a brown leather chest armor vest covering the torso',
+  hair: 'short messy dark brown hair covering the top, back and sides of the head, face visible, no hat',
   boots: 'a pair of brown leather boots on the feet, reaching up to just below the knees',
   cape: 'a long red cloth cape hanging from the shoulders behind the back, visible at both sides of the figure',
   sword: "a steel longsword held in the character's right hand, blade pointing down and slightly outward",

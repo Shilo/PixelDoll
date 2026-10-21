@@ -1,0 +1,7 @@
+COST {"cmd":"pose","v":"pfg","item":"cape","clip":"slash","d":"south","n":8,"size":"64x64","ms":107912,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"pfg","item":"cape","clip":"slash","d":"north","n":8,"size":"64x64","ms":117444,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"pfg","item":"cape","clip":"walk","d":"south","n":8,"size":"64x64","ms":126637,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"pfg","item":"cape","clip":"walk","d":"east","n":8,"size":"64x64","ms":135776,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"pfg","item":"cape","clip":"walk","d":"north","n":8,"size":"64x64","ms":165546,"usage":{"type":"generations","generations":3}}
+COST {"cmd":"pose","v":"pfg","item":"cape","clip":"slash","d":"east","n":8,"size":"64x64","ms":293587,"usage":{"type":"generations","generations":3}}
+total ms 293609

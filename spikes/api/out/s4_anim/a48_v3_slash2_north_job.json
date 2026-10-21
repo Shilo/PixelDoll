@@ -1,0 +1,53 @@
+{
+  "res": {
+    "background_job_ids": [
+      "1098b5c8-d26f-414d-8392-a1e5e315864a"
+    ],
+    "directions": [
+      "north"
+    ],
+    "animation_group_id": "373229d4-63a6-4a61-9cfc-29a15a275dae",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "id": "1098b5c8-d26f-414d-8392-a1e5e315864a",
+      "status": "completed",
+      "created_at": "2026-10-21T06:31:21.701914+00:00",
+      "last_response": {
+        "seed": 2400001605,
+        "type": "message_progress",
+        "action": "unarmed overhead chop with the right arm: raise the empty right fist above the head, swing it down and across in front of the body, then return to the starting stance. No weapon, no sword, no props, no effects; the hands stay empty",
+        "status": "initializing",
+        "progress": 1,
+        "direction": "north",
+        "frame_count": 8,
+        "animation_id": "b05d43b8-6e7f-4f16-aa44-813ae0e4fb87",
+        "character_id": "5352683c-54aa-4617-b303-e942e472c66d",
+        "billing_usage": {
+          "usd": 0,
+          "type": "generations",
+          "generations": 1
+        },
+        "generation_id": "d7645242-8956-4f59-8085-d54187030d74",
+        "animation_name": "custom-unarmed overhead chop with the",
+        "queue_position": 0,
+        "billing_charged": true,
+        "generation_model": "v3",
+        "keep_first_frame": false,
+        "saved_to_storage": true,
+        "animation_group_id": "373229d4-63a6-4a61-9cfc-29a15a275dae",
+        "input_frames_digest": null,
+        "generation_started_at": "2026-10-21T06:31:21.864018+00:00",
+        "requested_frame_count": 8,
+        "estimated_wait_seconds": 0
+      }
+    }
+  ]
+}

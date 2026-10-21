@@ -1,0 +1,53 @@
+{
+  "res": {
+    "background_job_ids": [
+      "f142d912-ba34-4d96-95b0-3624815c54e8"
+    ],
+    "directions": [
+      "north"
+    ],
+    "animation_group_id": "a96b635b-e9cd-45fe-a09b-b9b6ca9bc5cb",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "id": "f142d912-ba34-4d96-95b0-3624815c54e8",
+      "status": "completed",
+      "created_at": "2026-10-21T06:14:03.644814+00:00",
+      "last_response": {
+        "seed": 3243581506,
+        "type": "done",
+        "action": "breathing idle, standing still in place with subtle breathing, arms relaxed",
+        "status": "initializing",
+        "progress": 1,
+        "direction": "north",
+        "frame_count": 4,
+        "animation_id": "b41c49a5-d14b-483c-ac8f-a3ea8f451e29",
+        "character_id": "5352683c-54aa-4617-b303-e942e472c66d",
+        "billing_usage": {
+          "usd": 0,
+          "type": "generations",
+          "generations": 1
+        },
+        "generation_id": "7723f52d-6349-4bbe-a3db-1dbbf78b3698",
+        "animation_name": "custom-breathing idle, standing still",
+        "queue_position": 0,
+        "billing_charged": true,
+        "generation_model": "v3",
+        "keep_first_frame": false,
+        "saved_to_storage": true,
+        "animation_group_id": "a96b635b-e9cd-45fe-a09b-b9b6ca9bc5cb",
+        "input_frames_digest": null,
+        "generation_started_at": "2026-10-21T06:14:03.841779+00:00",
+        "requested_frame_count": 4,
+        "estimated_wait_seconds": 0
+      }
+    }
+  ]
+}

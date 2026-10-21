@@ -1,0 +1,54 @@
+{
+  "usage": {
+    "type": "generations",
+    "generations": 9
+  },
+  "id": "c721a5e4-b5e2-4284-be8d-d95bdbd5d04d",
+  "status": "completed",
+  "created_at": "2026-10-21T06:15:10.975047+00:00",
+  "last_response": {
+    "seed": 7,
+    "type": "message_done",
+    "model": "inpaint_pro_flash",
+    "width": 256,
+    "action": "Removing background",
+    "height": 256,
+    "images": [
+      {
+        "type": "base64",
+        "width": 256,
+        "base64": "<29548 chars>",
+        "height": 256
+      }
+    ],
+    "prompt": "<722 chars>",
+    "status": "completed",
+    "paste_x": 0,
+    "paste_y": 0,
+    "asset_id": "1963bb17-70c8-5df2-89ee-c1c97b2db25c",
+    "image_id": "1963bb17-70c8-5df2-89ee-c1c97b2db25c",
+    "job_kind": "creator-image",
+    "progress": 1,
+    "image_url": "<439 chars>",
+    "billing_usage": {
+      "usd": 0,
+      "type": "generations",
+      "generations": 9
+    },
+    "canvas_growth": false,
+    "generation_id": "6d553c25-8b97-4469-9fdb-4412409e595b",
+    "output_method": "Modify current layer",
+    "billing_charged": true,
+    "original_images": [
+      {
+        "type": "base64",
+        "width": 256,
+        "base64": "<30684 chars>",
+        "height": 256
+      }
+    ],
+    "source_image_id": "1963bb17-70c8-5df2-89ee-c1c97b2db25c",
+    "creator_image_saved": true,
+    "generation_started_at": "2026-10-21T06:15:11.50432+00:00"
+  }
+}

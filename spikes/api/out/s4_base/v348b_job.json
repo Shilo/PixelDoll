@@ -1,0 +1,44 @@
+{
+  "res": {
+    "usage": null,
+    "background_job_id": "f3453ded-701e-4f28-bf81-9ebf9de47e74",
+    "character_id": "96541702-8b3c-46ae-b363-df9403a1c528",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 2
+      },
+      "id": "f3453ded-701e-4f28-bf81-9ebf9de47e74",
+      "status": "completed",
+      "created_at": "2026-10-21T06:00:07.105607+00:00",
+      "last_response": {
+        "status": "completed",
+        "character_id": "96541702-8b3c-46ae-b363-df9403a1c528",
+        "storage_urls": {
+          "east": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/96541702-8b3c-46ae-b363-df9403a1c528/rotations/east.png",
+          "west": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/96541702-8b3c-46ae-b363-df9403a1c528/rotations/west.png",
+          "north": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/96541702-8b3c-46ae-b363-df9403a1c528/rotations/north.png",
+          "south": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/96541702-8b3c-46ae-b363-df9403a1c528/rotations/south.png",
+          "north-east": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/96541702-8b3c-46ae-b363-df9403a1c528/rotations/north-east.png",
+          "north-west": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/96541702-8b3c-46ae-b363-df9403a1c528/rotations/north-west.png",
+          "south-east": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/96541702-8b3c-46ae-b363-df9403a1c528/rotations/south-east.png",
+          "south-west": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/96541702-8b3c-46ae-b363-df9403a1c528/rotations/south-west.png"
+        },
+        "billing_usage": {
+          "type": "generations",
+          "generations": 2
+        },
+        "character_name": "plain bald human mannequin for a paperdoll base, l",
+        "directions_type": "8-directions",
+        "generation_mode": "pixen_v3",
+        "directions_count": 8,
+        "character_description": "plain bald human mannequin for a paperdoll base, light skin tone, wearing a plain grey t-shirt and plain grey shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso"
+      }
+    }
+  ]
+}

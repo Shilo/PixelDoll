@@ -1,0 +1,53 @@
+{
+  "res": {
+    "background_job_ids": [
+      "5f243877-16f0-4270-9013-d3b28160d283"
+    ],
+    "directions": [
+      "east"
+    ],
+    "animation_group_id": "443cb1a8-0f68-4cf1-98e3-ad1d5617b523",
+    "status": "processing",
+    "enhanced_prompt": null,
+    "enhance_usage": null
+  },
+  "jobs": [
+    {
+      "usage": {
+        "type": "generations",
+        "generations": 1
+      },
+      "id": "5f243877-16f0-4270-9013-d3b28160d283",
+      "status": "completed",
+      "created_at": "2026-10-21T06:12:47.695044+00:00",
+      "last_response": {
+        "seed": 2248987193,
+        "type": "message_progress",
+        "action": "running in place, a looping run cycle with strong arm pumps",
+        "status": "initializing",
+        "progress": 1,
+        "direction": "east",
+        "frame_count": 8,
+        "animation_id": "4ea61f68-9db0-4326-bfbf-58b49f04b903",
+        "character_id": "5352683c-54aa-4617-b303-e942e472c66d",
+        "billing_usage": {
+          "usd": 0,
+          "type": "generations",
+          "generations": 1
+        },
+        "generation_id": "f48d6b09-48e7-4ea8-9a97-66aedad39370",
+        "animation_name": "custom-running in place, a looping ru",
+        "queue_position": 0,
+        "billing_charged": true,
+        "generation_model": "pixminimax",
+        "keep_first_frame": false,
+        "saved_to_storage": true,
+        "animation_group_id": "443cb1a8-0f68-4cf1-98e3-ad1d5617b523",
+        "input_frames_digest": null,
+        "generation_started_at": "2026-10-21T06:12:47.781847+00:00",
+        "requested_frame_count": 8,
+        "estimated_wait_seconds": 0
+      }
+    }
+  ]
+}
