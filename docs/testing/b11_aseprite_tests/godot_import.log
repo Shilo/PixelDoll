@@ -1,0 +1,7 @@
+Godot 4.7.1 --headless --import of b9_ranger, s1_knight, s5_sword (B11 exports, CREDITS.txt)
+WARNING/ERROR lines: 0
+control (CREDITS.txt copied back to CREDITS.csv in s5_sword): WARNING lines: 4
+WARNING: Locale 'endpoint' does not contain any translation. This locale will be ignored.
+WARNING: Locale 'jobId' does not contain any translation. This locale will be ignored.
+WARNING: Locale 'seed' does not contain any translation. This locale will be ignored.
+WARNING: Locale 'createdAt' does not contain any translation. This locale will be ignored.

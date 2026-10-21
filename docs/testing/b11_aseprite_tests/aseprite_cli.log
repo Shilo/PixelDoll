@@ -1,0 +1,105 @@
+== s1
+{
+ "tag": "main",
+ "tags": "ok 6",
+ "repeat": "ok",
+ "layers": "main_hand.sword_steel.bg < body.base < torso_inner.chest_leather < head.helmet_iron < main_hand.sword_steel.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":64,\"h\":64},{\"x\":32,\"y\":63}]]",
+ "listing": "4 lines",
+ "frames": "36 (expected 36), durations ok",
+ "composite": "0 / 147456 px differ vs baked/knight",
+ "perLayer": "0 / 737280 px differ over 180 layer-frames (expected 180)"
+}
+== s2
+{
+ "tag": "main",
+ "tags": "ok 5",
+ "repeat": "ok",
+ "layers": "main_hand.sword_steel.bg < back.cape_red.bg < body.base < torso_inner.vest_leather < back.cape_red.fg < head.helmet_steel < main_hand.sword_steel.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":64,\"h\":64},{\"x\":32,\"y\":64}]]",
+ "listing": "4 lines",
+ "frames": "38 (expected 38), durations ok",
+ "composite": "0 / 155648 px differ vs baked/adventurer",
+ "perLayer": "0 / 1556480 px differ over 380 layer-frames (expected 380)"
+}
+== s5
+{
+ "tag": "main",
+ "tags": "ok 8",
+ "repeat": "ok",
+ "layers": "main_hand.sword_fsw.bg < body.base < main_hand.sword_fsw.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":96,\"h\":96},{\"x\":48,\"y\":80}]]",
+ "listing": "4 lines",
+ "frames": "64 (expected 64), durations ok",
+ "composite": "0 / 589824 px differ vs baked/armed",
+ "perLayer": "0 / 1769472 px differ over 192 layer-frames (expected 192)"
+}
+== s1 zmut
+{
+ "tag": "main",
+ "tags": "ok 6",
+ "repeat": "ok",
+ "layers": "main_hand.sword_steel.bg < body.base < torso_inner.chest_leather < head.helmet_iron < main_hand.sword_steel.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":64,\"h\":64},{\"x\":32,\"y\":63}]]",
+ "listing": "4 lines",
+ "frames": "36 (expected 36), durations ok",
+ "composite": "0 / 147456 px differ vs baked/knight",
+ "perLayer": "0 / 737280 px differ over 180 layer-frames (expected 180)"
+}
+zeroed 36 cel z-indexes -> {
+ "tag": "z0",
+ "tags": "ok 6",
+ "repeat": "ok",
+ "layers": "main_hand.sword_steel.bg < body.base < torso_inner.chest_leather < head.helmet_iron < main_hand.sword_steel.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":64,\"h\":64},{\"x\":32,\"y\":63}]]",
+ "listing": "4 lines",
+ "frames": "36 (expected 36), durations ok",
+ "composite": "626 / 147456 px differ vs baked/knight",
+ "perLayer": "0 / 737280 px differ over 180 layer-frames (expected 180)"
+}
+== s2 zmut
+{
+ "tag": "main",
+ "tags": "ok 5",
+ "repeat": "ok",
+ "layers": "main_hand.sword_steel.bg < back.cape_red.bg < body.base < torso_inner.vest_leather < back.cape_red.fg < head.helmet_steel < main_hand.sword_steel.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":64,\"h\":64},{\"x\":32,\"y\":64}]]",
+ "listing": "4 lines",
+ "frames": "38 (expected 38), durations ok",
+ "composite": "0 / 155648 px differ vs baked/adventurer",
+ "perLayer": "0 / 1556480 px differ over 380 layer-frames (expected 380)"
+}
+zeroed 168 cel z-indexes -> {
+ "tag": "z0",
+ "tags": "ok 5",
+ "repeat": "ok",
+ "layers": "main_hand.sword_steel.bg < back.cape_red.bg < body.base < torso_inner.vest_leather < back.cape_red.fg < head.helmet_steel < main_hand.sword_steel.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":64,\"h\":64},{\"x\":32,\"y\":64}]]",
+ "listing": "4 lines",
+ "frames": "38 (expected 38), durations ok",
+ "composite": "1594 / 155648 px differ vs baked/adventurer",
+ "perLayer": "0 / 1556480 px differ over 380 layer-frames (expected 380)"
+}
+== s5 zmut
+{
+ "tag": "main",
+ "tags": "ok 8",
+ "repeat": "ok",
+ "layers": "main_hand.sword_fsw.bg < body.base < main_hand.sword_fsw.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":96,\"h\":96},{\"x\":48,\"y\":80}]]",
+ "listing": "4 lines",
+ "frames": "64 (expected 64), durations ok",
+ "composite": "0 / 589824 px differ vs baked/armed",
+ "perLayer": "0 / 1769472 px differ over 192 layer-frames (expected 192)"
+}
+zeroed 44 cel z-indexes -> {
+ "tag": "z0",
+ "tags": "ok 8",
+ "repeat": "ok",
+ "layers": "main_hand.sword_fsw.bg < body.base < main_hand.sword_fsw.fg",
+ "slices": "[[\"pivot\",{\"x\":0,\"y\":0,\"w\":96,\"h\":96},{\"x\":48,\"y\":80}]]",
+ "listing": "4 lines",
+ "frames": "64 (expected 64), durations ok",
+ "composite": "148 / 589824 px differ vs baked/armed",
+ "perLayer": "0 / 1769472 px differ over 192 layer-frames (expected 192)"
+}

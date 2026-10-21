@@ -21,6 +21,7 @@ import * as generic from './export/generic.ts';
 import * as godot from './export/godot.ts';
 import * as phaser from './export/phaser.ts';
 import * as unity from './export/unity.ts';
+import * as aseprite from './export/aseprite.ts';
 import * as chroma from './image/chroma.ts';
 import * as diff from './image/diff.ts';
 import * as items from './items/items.ts';
@@ -50,6 +51,7 @@ const shared: Test[] = [
   ['export/godot', godot.selfTest],
   ['export/phaser', phaser.selfTest],
   ['export/unity', unity.selfTest],
+  ['export/aseprite', aseprite.selfTest],
   ['image/chroma', chroma.selfTest],
   ['image/diff', diff.selfTest],
   ['items', items.selfTest],

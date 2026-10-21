@@ -1,0 +1,10 @@
+== s5_sword
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+layers: ["main_hand_bg z6 offset (-48.0, -80.0) visible", "body_fg z10 offset (-32.0, -64.0) visible", "main_hand_fg z150 offset (-48.0, -80.0) visible"]
+ticks checked: 720, oversize layer-ticks: 1440, failures: 0
+RESULT: PASS
+== s1_knight
+Godot Engine v4.7.1.stable.official.a13da4feb - https://godotengine.org
+layers: ["main_hand_bg z1 offset (-32.0, -63.0) visible", "body_fg z10 offset (-32.0, -63.0) visible", "torso_inner_fg z40 offset (-32.0, -63.0) visible", "head_fg z130 offset (-32.0, -63.0) visible", "main_hand_fg z150 offset (-32.0, -63.0) visible"]
+ticks checked: 540, oversize layer-ticks: 0, failures: 0
+RESULT: PASS

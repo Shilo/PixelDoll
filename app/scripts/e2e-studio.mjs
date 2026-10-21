@@ -82,7 +82,7 @@ for (const f of ['manifest.json', 'godot/', 'layers/head/hat_wizard/']) assert.o
 step(`export ${download.suggestedFilename()} ${Math.round(bytes.length / 1024)} KB`)
 
 // zip names (stored uncompressed in the zip headers)
-for (const f of ['README.txt', 'CREDITS.csv', 'godot/README.txt']) assert.ok(bytes.includes(Buffer.from(f)), `zip has ${f}`)
+for (const f of ['README.txt', 'CREDITS.txt', 'godot/README.txt']) assert.ok(bytes.includes(Buffer.from(f)), `zip has ${f}`)
 assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename())
 await page.waitForFunction(() => !document.querySelector('dialog[open]') && document.querySelector('.toast')?.textContent.startsWith('Downloaded'))
 

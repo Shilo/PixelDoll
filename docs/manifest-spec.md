@@ -391,7 +391,9 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
 ```
 <name>.pixeldoll.zip
   manifest.json                                   # authoritative; everything below is derived from it
-  CREDITS.csv                                     # one row per PixelLab call: job id, endpoint, seed, prompt
+  README.txt                                      # what is inside + quick start per engine
+  CREDITS.txt                                     # CSV text, one row per PixelLab call: job id, endpoint, seed, prompt
+                                                  #   (B11: not .csv, which Godot imports as a translation table)
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells
   baked/<preset>/<anim>.png                       # optional composites, same grid on export.bakedCell (RPG Maker, crowds)
@@ -399,7 +401,7 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
   unity/      Editor/PixelDollImporter.cs, Runtime/Paperdoll.cs, Runtime/PaperdollLayer.cs
   phaser/     <item>_<layer>_<anim>.json, PaperdollContainer.js
   generic/    <item>_<layer>/<anim>_<dir>_strip<N>.png
-  aseprite/   <preset>.aseprite                    # second wave, zero-code path
+  aseprite/   <name>.aseprite, README.txt          # B11: layered, zero-code path (§6.5)
 ```
 
 Why per-animation sheets: an all-animation sheet passes 4096 px quickly (8 dirs × 12 anims × 64 px [R3]); per-animation sheets are
@@ -472,15 +474,26 @@ Verified [M5]: Phaser 3.80, 3.90 and 4.2.1 render 0 differing px vs `baked/`; la
   frameName)`; `setDir` assigns `depth` from resolved z and `container.sort('depth')`; `equip/hides` toggle visibility.
   Game config `pixelArt: true`, `roundPixels: true` (Phaser 4 defaults to false); Phaser 4 tint uses `setTintMode`.
 
-### 6.5 Aseprite — layered `.aseprite` as the zero-code alternative (second wave)
+### 6.5 Aseprite — layered `.aseprite` as the zero-code alternative (B11)
 
-- One file per preset: one Aseprite layer per visible (item, layer), stacked by static z (bottom = lowest); frames = all
-  playlists expanded in rig order (`anim`, then `dir`), each with its `ms` duration; one tag per `<anim>_<dir>`; one slice
-  `pivot` covering the cell with the pivot point. Written in-browser from the documented `.ase` spec (zlib cels via
-  `CompressionStream('deflate')`).
+Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames match `layers/` and the flattened frames match
+`baked/<presets[0]>` with 0 differing px (S1, S2, S5 fixtures). Writer: `lib/export/aseprite.ts`, from the ase spec.
+
+- **One file per character** (`aseprite/<name>.aseprite`, RGBA): one Aseprite layer per exported (item, layer), named
+  `<slot>.<item>` (`<slot>.<item>.fg` / `.bg` for split items), stacked in draw order by static z (inv. 7 tie-breaks; bottom =
+  lowest, so bg layers sit below the base). Every item is in the file; **visible** = equipped in `presets[0]` and not hidden
+  (inv. 9). Pixels are the layer sheets' (source ramps; preset variants are not applied).
+- **Timeline**: frames = every playlist entry of every move × each direction the move has (`rig.animations[].directions`), in
+  rig order, each with its `ms`; one tag `<anim>_<dir>` per move-direction (forward; repeat 1 when `loop` is false). A cell that
+  repeats inside a playlist is a linked cel; a transparent cell has no cel.
+- **Canvas / pivot convention**: canvas = `export.bakedCell`; a layer's cel sits at `bakedPivot − layer.pivot`, so oversize
+  (96) layers and 64 layers line up by pivot exactly as in `baked/`. One slice `pivot` = the whole canvas with pivot
+  `bakedPivot` (frame 0, valid for all frames).
+- **zOverrides** become cel z-indexes (Aseprite ≥ 1.3 draws by layer index + z-index): each cel's z-index is its position in
+  that frame's resolved draw order minus its layer index, so the flattened frame equals `composeCell` on the baked frame.
+  Per-layer importers (Godot Aseprite Wizard) ignore z-index; Unity's importer applies it (Order in Layer).
 - Unity: Aseprite Importer → Individual Layers, Generate Model Prefab, Pivot Space Canvas. Godot: Aseprite Wizard, one
-  `SpriteFrames` per layer. **Limitation**: static z only — `zOverrides` are not representable; the exporter lists affected
-  cells.
+  `SpriteFrames` per layer. Not verified in those importers yet (Unity is license-blocked; the Wizard needs a plugin install).
 
 ### 6.6 Generic
 

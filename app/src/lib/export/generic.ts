@@ -78,7 +78,7 @@ export function exportManifest(p: Project, o: ManifestOptions): { manifest: Mani
 
 const csv = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
 
-/** CREDITS.csv: one row per generating call (LPC credits spirit: every shipped sheet traceable to its source). */
+/** CREDITS.txt (CSV text; not .csv, which Godot imports as a translation table): one row per generating call (LPC credits spirit: every shipped sheet traceable to its source). */
 export function creditsCsv(m: Manifest): string {
   const rows = [['item', 'name', 'slot', 'sheets', 'endpoint', 'jobId', 'seed', 'createdAt', 'prompt', 'source']];
   for (const it of m.items) {
@@ -93,6 +93,7 @@ const ENGINE_START: Record<string, string> = {
   godot: 'Godot 4: copy this folder into your project and instance godot/Paperdoll.tscn (see godot/README.txt).',
   unity: 'Unity 6: copy this folder under Assets/; the importer builds a prefab in unity/Generated/ (see unity/README.txt).',
   phaser: 'Phaser 3.80+ / 4: copy this folder into your assets and use phaser/PaperdollContainer.js (see phaser/README.txt).',
+  aseprite: 'Aseprite 1.3+ / zero code: open aseprite/<name>.aseprite, one layer per item (see aseprite/README.txt).',
   generic: 'Any engine: one PNG strip per layer, move and direction in generic/ (see generic/README.txt).',
 };
 
@@ -112,7 +113,7 @@ What is inside
   layers/         one sheet per item layer and move: layers/<slot>/<item>/<layer>/<move>.png
                   rows = directions (${m.rig.directions.map((d) => d.id).join(', ')}), columns = frames${m.export?.baked ? `
   baked/          the finished character per outfit: baked/<outfit>/<move>.png` : ''}
-  CREDITS.csv     where each item came from (PixelLab calls)
+  CREDITS.txt     where each item came from (PixelLab calls), CSV
 
 Moves: ${moves.join(', ')}.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.
@@ -122,7 +123,7 @@ Pixel art: use nearest-neighbour filtering and whole-pixel positions.
 
 /** Layer sheets (all engines need them) + README + manifest + credits. */
 export function coreFiles(p: Project, m: Manifest): OutFile[] {
-  const files: OutFile[] = [{ name: 'README.txt', data: readme(m) }, { name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' }, { name: 'CREDITS.csv', data: creditsCsv(m) }];
+  const files: OutFile[] = [{ name: 'README.txt', data: readme(m) }, { name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' }, { name: 'CREDITS.txt', data: creditsCsv(m) }];
   const byId = new Map(p.manifest.items.map((i) => [i.id, i]));
   for (const it of m.items)
     for (const l of it.layers) {

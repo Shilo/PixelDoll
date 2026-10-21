@@ -12,6 +12,7 @@
     { id: 'unity', name: 'Unity', sub: '6 importer' },
     { id: 'phaser', name: 'Phaser', sub: '3 / 4 atlases' },
     { id: 'generic', name: 'PNG + JSON', sub: 'any engine' },
+    { id: 'aseprite', name: 'Aseprite', sub: '.aseprite layers' },
   ]
   const LS = 'pixeldoll.export.engine'
   let engine = $state<Engine>((() => { try { return (localStorage.getItem(LS) as Engine) || 'godot' } catch { return 'godot' } })())
@@ -93,3 +94,7 @@
     <button class="btn primary lg" onclick={download} disabled={busy || !result?.zip}><Download size={16} />{busy ? 'Preparing…' : `Download zip · ${kb} KB`}</button>
   {/snippet}
 </Sheet>
+
+<style>
+  @media (min-width: 600px) { .engines { grid-template-columns: repeat(5, 1fr); } } /* B11: 5 targets in one row */
+</style>
