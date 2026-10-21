@@ -25,6 +25,7 @@ import * as aseprite from './export/aseprite.ts';
 import * as chroma from './image/chroma.ts';
 import * as diff from './image/diff.ts';
 import * as items from './items/items.ts';
+import * as itemRun from './items/run.ts';
 import * as palette from './dress/palette.ts';
 import * as dress from './dress/dress.ts';
 import * as regions from './dress/regions.ts';
@@ -56,6 +57,7 @@ const shared: Test[] = [
   ['image/chroma', chroma.selfTest],
   ['image/diff', diff.selfTest],
   ['items', items.selfTest],
+  ['items/run', itemRun.selfTest],
   ['dress/palette', palette.selfTest],
   ['dress/regions', regions.selfTest],
   ['dress', dress.selfTest],

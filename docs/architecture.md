@@ -102,6 +102,10 @@ rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE
 - One design everywhere: palette distance to the reference ≤ 3 (edited batches 6–15); held items follow the hand in every
   direction; capes swing [S4].
 - Adding a clip later = one pose call per item-direction, same design, no re-dress.
+- **Dress frame cap [B16]:** edit-animation-v2 takes 16 / 9 / 4 frames at ≤ 64 / 65–80 / 81–256 px (`editFrameCap`). The dress
+  is split into chunks under that cap (`anchorChunks`): the first takes `cap` rest views, later ones `cap − 1` plus the first
+  chunk's dressed cell 0 as an anchor (its output dropped, S2). An 8-direction held item (5 rest views at 96 px) = 4 + (1 + 1)
+  frames, 2 dress calls (20 gens). The anchor route's `planCalls` uses the same cap.
 - **Held items (`main_hand`, `off_hand`) [S5, B9]:** rest views and base frames are padded 64 → 96 around the same pivot
   (+16, +16; keypoints `(x·64 + 16)/96`); the dress prompt says "in the right hand, pointing down and slightly outward; exactly
   one weapon …; the arms stay exactly as they are"; poses run at 96 with **frame 0 sent last** when it is within 1 px of the rest

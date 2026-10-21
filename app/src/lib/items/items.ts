@@ -10,7 +10,7 @@ import type { Skeleton } from '../rig/skeleton.ts';
 import { hasAll } from '../rig/poses.ts';
 import { actionOf, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
-import { png, routes, type Req } from '../pixellab/routes.ts';
+import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 
 /**
  * Item routes (S4 §Q4), swappable without touching extraction, QA or the UI:
@@ -24,7 +24,6 @@ export type Method = 'skel' | 'anchor';
 export type CallKind = 'edit' | 'dress' | 'pose' | 'grid'; // grid: B14 per clip-direction fallback (inpaint-v3)
 export const itemRoute = {
   name: 'skeleton-posed keyframe / edit-animation-v2',
-  maxFrames: 16, // edit-animation-v2 frames per call at ≤ 64 px, anchor cell included
   edit: (framesPngB64: string[], description: string, seed: number, cell: { w: number; h: number }): Req => {
     const size = { width: cell.w, height: cell.h };
     return routes.editAnimationV2({ description, frames: framesPngB64.map((b) => ({ image: png(b), size })), image_size: size, no_background: true, seed });
@@ -149,23 +148,28 @@ export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
 export interface ItemSpec { id: string; name: string; slot: string; prompt: string; key: Route; anims: string[]; dirs: DirectionName[]; method?: Method }
 
-/** Calls of an item. skel: [dress the rest cells, pose clip × dir ...]; anchor: packed edit calls (planCalls). */
-export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'method' | 'key'>): { kind: CallKind; cells: string[] }[] {
+/** Calls of an item. skel: [dress the rest cells (chunked to the frame cap), pose clip × dir ...]; anchor: packed edit calls (planCalls). */
+export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'method' | 'key'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
   if (spec.method !== 'skel' || spec.key === 'none') return planCalls(rig, spec).map((cells) => ({ kind: 'edit', cells }));
+  // B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
+  const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method) : 0));
   return [
-    { kind: 'dress', cells: spec.dirs.map(restKey) },
+    ...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({ kind: 'dress' as const, cells })),
     ...spec.anims.flatMap((a) => spec.dirs.map((d) => ({ kind: 'pose' as const, cells: Array.from({ length: rig.animations.find((x) => x.id === a)!.cells }, (_, i) => cellKey(a, d, i)) }))),
   ];
 }
+/** Split cells for a capped multi-frame call: the first call takes `cap`, later ones `cap − 1` plus the anchor cell (S2). */
+export const anchorChunks = <T>(cells: T[], cap: number): T[][] => [cells.slice(0, cap), ...Array.from({ length: Math.ceil(Math.max(0, cells.length - cap) / (cap - 1)) }, (_, i) => cells.slice(cap + i * (cap - 1), cap + (i + 1) * (cap - 1)))];
+/** Does call k lead with the anchor cell (edit-animation-v2 after the first call)? Its first output is then dropped. */
+export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind === 'edit' || kind === 'dress');
 export const planGens = (p: { kind: CallKind; cells: string[] }[]) => p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 8 ? 3 : 4) : 10), 0);
 
-/** Clips (anim × generated dir) packed whole into calls: design call ≤ maxFrames cells, later calls ≤ maxFrames − 1 + 1 anchor cell. */
+/** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
 export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>): string[][] {
   const clips = spec.anims.flatMap((a) => spec.dirs.map((d) => ({ a, d, n: rig.animations.find((x) => x.id === a)?.cells ?? 0 }))).filter((c) => c.n);
   clips.sort((x, y) => y.n - x.n); // stable: walk S, E, N before idle
-  const bins: { cap: number; clips: typeof clips }[] = [];
+  const bins: { cap: number; clips: typeof clips }[] = [], max = editFrameCap(Math.max(rig.cell.w, rig.cell.h));
   for (const c of clips) {
-    const max = itemRoute.maxFrames;
     if (c.n > max - 1) throw new Error(`${c.a}/${c.d}: ${c.n} cells do not fit one call`);
     const bin = bins.find((b) => b.cap - b.clips.reduce((s, x) => s + x.n, 0) >= c.n) ?? (bins.push({ cap: bins.length ? max - 1 : max, clips: [] }), bins.at(-1)!);
     bin.clips.push(c);

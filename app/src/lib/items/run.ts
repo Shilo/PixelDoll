@@ -11,8 +11,8 @@ import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifes
 import type { DirectionName } from '../rig/rig.ts';
 import { fromApi } from '../rig/poses.ts';
 import { chromaLayer, type Key } from '../image/chroma.ts';
-import { png, routes, type Req } from '../pixellab/routes.ts';
-import { DESIGN, GATES, GREYISH, SLOTS, bandMask, cutGrid, g2Fails, greyShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
+import { DESIGN, GATES, anchored, planGens, GREYISH, SLOTS, bandMask, cutGrid, g2Fails, greyShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 /** fallback: B14, a pose call redone as an inpaint-v3 grid keeps its best pose roll (and that roll's failed-check count). */
@@ -58,6 +58,19 @@ const settled = (id: string) =>
     });
   });
 const outputsOf = (r: JobRec) => [...(r.jobs[0]?.results ?? [])].sort((a, b) => +a.label - +b.label);
+/** Outputs of call k in cell order (an anchored call's first output is the anchor's: dropped). */
+const cellOuts = (k: number, c: CallState, r: JobRec) => outputsOf(r).slice(anchored(k, c.kind) ? 1 : 0);
+/** B16: the dressed keyframe output per rest cell over every dress chunk (all must be done). */
+export function dressedOf(calls: CallState[], rec: (id?: string) => JobRec | undefined = recOf): Map<string, { sha: string }> {
+  const m = new Map<string, { sha: string }>();
+  for (const [k, c] of calls.entries()) {
+    if (c.kind !== 'dress') continue;
+    const r = rec(c.recId);
+    if (r?.state !== 'done') throw new Error('dress call not done');
+    cellOuts(k, c, r).forEach((o, i) => c.cells[i] && m.set(c.cells[i], o));
+  }
+  return m;
+}
 /** Generations spent on a draft, re-rolls included. */
 export const gensOf = (d: Draft, list = jobs) => d.calls.flatMap((c) => [c.recId, ...c.old]).reduce((s, id) => s + (recIn(list, id)?.gens ?? 0), 0);
 export const callState = (c: CallState, list = jobs) => recIn(list, c.recId)?.state ?? 'not submitted';
@@ -97,26 +110,24 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
   const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${c.cells[0].split('/').slice(0, 2).join('/')}` : ''})`;
   let req;
   if (c.kind === 'grid') { // B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
-    const dress = d.calls[0], a = recOf(dress.recId);
-    if (a?.state !== 'done') throw new Error('dress call not done');
-    req = await gridReq(ctx, d.spec, c.cells, await Promise.all(dress.cells.map(async (k, i) => ({ dir: k.split('/')[1] as DirectionName, im: await img(outputsOf(a)[i].sha) }))), c.seed);
+    req = await gridReq(ctx, d.spec, c.cells, await Promise.all([...dressedOf(d.calls)].map(async ([k, o]) => ({ dir: k.split('/')[1] as DirectionName, im: await img(o.sha) }))), c.seed);
   } else if (c.kind === 'pose') { // the direction's dressed keyframe (from the dress call) posed through the base clip's STORED keypoints
     if (route === 'none') throw new Error('posing needs a chroma key');
-    const dress = d.calls[0], a = recOf(dress.recId), [anim, dir] = c.cells[0].split('/') as [string, DirectionName];
-    if (a?.state !== 'done') throw new Error('dress call not done');
-    const kf = outputsOf(a)[dress.cells.indexOf(restKey(dir))], poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
+    const [anim, dir] = c.cells[0].split('/') as [string, DirectionName], kf = dressedOf(d.calls).get(restKey(dir));
+    if (!kf) throw new Error(`${dir}: no dressed keyframe`);
+    const poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
     if (!poses || !rest) throw new Error(`${anim}/${dir}: the rig has no stored keypoints (rig v1.3)`);
     req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest, poses, item: d.spec.prompt, slot: d.spec.slot, key: route, anim, dir, seed: c.seed, cell: rig.cell, pad });
   } else {
     const frames: string[] = [];
-    if (k > 0) { // anchor cell: the design call's dressed cell 0 (cross-call design lock, S2)
+    if (anchored(k, c.kind)) { // anchor cell: the design call's dressed cell 0 (cross-call design lock, S2; B16: dress chunks too)
       const a = recOf(d.calls[0].recId);
       if (a?.state !== 'done') throw new Error('design call not done');
       frames.push(await blobB64(outputsOf(a)[0].sha));
     }
     for (const key of c.cells) frames.push(bytesToBase64(await encodePngBytes(padImg(inputCell(baseCell(ctx, key), route), pad))));
     // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
-    req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, k > 0 ? d.calls[0].cells[0] : undefined), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
+    req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, anchored(k, c.kind) ? d.calls[0].cells[0] : undefined), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
   c.recId = (await queue.enqueue(req, { label, tag: 'm3' })).id;
 }
@@ -134,7 +145,9 @@ export function rerollCall(d: Draft, k: number, why: string) {
   c.seed = seed();
   c.rerolls++;
   d.log.push(`re-roll call ${k + 1} (${why})`);
-  if (k === 0) for (const l of d.calls.slice(1)) { if (l.recId) l.old.push(l.recId); l.recId = undefined; }
+  // k = 0 drops every later call (their anchor / keyframes came from the old design); a later dress chunk drops its directions' poses
+  const dirs = c.cells.map((x) => x.split('/')[1]), stale = k === 0 ? d.calls.slice(1) : c.kind === 'dress' ? d.calls.filter((l) => l.kind === 'pose' || l.kind === 'grid' ? dirs.includes(l.cells[0].split('/')[1]) : false) : [];
+  for (const l of stale) { if (l.recId) l.old.push(l.recId); l.recId = undefined; }
 }
 function switchKey(d: Draft) {
   if (d.spec.key === 'none') return;
@@ -158,7 +171,7 @@ function retry(d: Draft, k: number, why: string[]): boolean {
 export async function keepBestRoll(d: Draft, k: number, ctx: RigCtx) {
   const c = d.calls[k], same = JSON.stringify(recOf(c.recId)?.inputs);
   const rolls = [...c.old, c.recId].filter((id): id is string => recOf(id)?.state === 'done' && JSON.stringify(recOf(id)!.inputs) === same);
-  if (!k || rolls.length < 2) return;
+  if (!k || c.kind === 'dress' || rolls.length < 2) return;
   const all = [...c.old, c.recId!];
   let best = c.recId!, n = Infinity;
   for (const id of rolls) { c.recId = id; const f = failsOf(await evaluateItem(d, ctx), k).length; if (f < n) { best = id; n = f; } }
@@ -202,16 +215,21 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
   let res: ItemResult | null = null;
   try {
     for (let guard = 0; guard < 20; guard++) {
+      // design calls: call 1, then the other dress chunks (B16: they carry call 1's dressed cell 0 as their anchor)
+      const nd = Math.max(1, d.calls.filter((c) => c.kind === 'dress').length);
       status('design call');
       const r0 = await runCall(d, 0, ctx, persist);
       if (r0.state !== 'done') { d.log.push(`call 1 ${r0.state}: ${r0.error ?? ''}`); break; }
+      const rd = await Promise.all(d.calls.slice(1, nd).map((_, i) => runCall(d, i + 1, ctx, persist)));
+      const bd = rd.findIndex((r) => r.state !== 'done');
+      if (bd >= 0) { d.log.push(`call ${bd + 2} ${rd[bd].state}: ${rd[bd].error ?? ''}`); break; }
       res = await evalItem();
-      const f0 = failsOf(res, 0);
-      if (f0.length && retry(d, 0, f0)) { await persist(); continue; } // out of re-rolls: keep the design (flagged), finish coverage
-      status(`calls 2–${d.calls.length}`);
-      const rs = await Promise.all(d.calls.slice(1).map((_, i) => runCall(d, i + 1, ctx, persist)));
+      const r1 = res, fd = d.calls.slice(0, nd).map((_, k) => k).filter((k) => failsOf(r1, k).length);
+      if (fd.map((k) => retry(d, k, failsOf(r1, k))).some(Boolean)) { await persist(); continue; } // out of re-rolls: keep the design (flagged), finish coverage
+      status(`calls ${nd + 1}–${d.calls.length}`);
+      const rs = await Promise.all(d.calls.slice(nd).map((_, i) => runCall(d, i + nd, ctx, persist)));
       const broken = rs.findIndex((r) => r.state !== 'done');
-      if (broken >= 0) { d.log.push(`call ${broken + 2} ${rs[broken].state}: ${rs[broken].error ?? ''}`); break; }
+      if (broken >= 0) { d.log.push(`call ${broken + nd + 1} ${rs[broken].state}: ${rs[broken].error ?? ''}`); break; }
       res = await evalItem();
       const r = res;
       // soft gate (G6 palette drift): re-roll while re-rolls are left, then keep with a warning
@@ -255,7 +273,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
       c.cells.forEach((key, i) => outs.push({ k, key, out: cut[i], posed: true }));
       continue;
     }
-    let o = outputsOf(r).slice(k > 0 && (c.kind ?? 'edit') === 'edit' ? 1 : 0);
+    let o = cellOuts(k, c, r);
     if (o.length !== c.cells.length) { g1.set(k, `G1 ${o.length} outputs for ${c.cells.length} cells`); continue; }
     if (c.kind === 'pose') { const [a, dir] = c.cells[0].split('/') as [string, DirectionName]; o = unrotate(o, f0Last(d.spec.slot, rig.rest?.[dir]?.keypoints ?? [], clipKeypoints(rig, a, dir) ?? [], rig.cell)); }
     for (const [i, key] of c.cells.entries()) {
@@ -321,8 +339,8 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
   const r = res ?? (await evaluateItem(d, ctx));
   if (!r.qa || d.calls.some((c) => recOf(c.recId)?.state !== 'done')) throw new Error(`${d.spec.id}: not all calls are done`);
   const qa = { ...r.qa.qa, status: r.qa.qa.status === 'pass' ? 'pass' : 'accepted' } as const;
-  const dress = d.calls[0].kind === 'dress' ? recOf(d.calls[0].recId) : undefined, dressed: Partial<Record<DirectionName, Img>> = {};
-  if (dress) for (const [i, k] of d.calls[0].cells.entries()) dressed[k.split('/')[1] as DirectionName] = await img(outputsOf(dress)[i].sha);
+  const dress = d.calls[0].kind === 'dress', dressed: Partial<Record<DirectionName, Img>> = {};
+  if (dress) for (const [k, o] of dressedOf(d.calls)) dressed[k.split('/')[1] as DirectionName] = await img(o.sha);
   const { item, images } = await buildItem({
     spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(dress ? { dressed } : {}), pad: padOf(d.spec.slot, d.spec.method),
     provenance: d.calls.map((c) => toProv(recOf(c.recId)!, c)), anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined,
@@ -424,4 +442,28 @@ export async function regridClip(ctx: RigCtx, item: Item, anim: string, dir: Dir
   const saved = !qa.failCalls.size;
   if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa);
   return { qa, saved, cells: g.cells };
+}
+
+/** B16 fake-API check: an 8-direction held dress never sends edit-animation-v2 more frames than its size takes, every direction
+ *  gets its own dressed keyframe back (the anchor's output is dropped), and re-rolling a later chunk only redoes its poses. */
+export function selfTest() {
+  const rig = { cell: { w: 64, h: 64 }, animations: [{ id: 'idle', cells: 4 }, { id: 'walk', cells: 8 }] } as unknown as Manifest['rig'];
+  const dirs: DirectionName[] = ['south', 'south-east', 'east', 'north-east', 'north'], pad = padOf('main_hand', 'skel');
+  const plan = planItem(rig, { anims: ['idle', 'walk'], dirs, method: 'skel', key: 'green', slot: 'main_hand' });
+  const calls: CallState[] = plan.map((c, i) => ({ ...c, seed: i, rerolls: 0, old: [], recId: `r${i}` }));
+  const recs = new Map<string, JobRec>();
+  for (const [k, c] of calls.entries()) {
+    if (c.kind !== 'dress') continue;
+    // the frames submit() sends: [anchor], then the chunk's padded rest cells; the fake API answers one output per frame
+    const frames = [...(anchored(k, c.kind) ? ['anchor'] : []), ...c.cells];
+    const req = itemRoute.edit(frames, 'x', 1, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad }), body = req.body as { frames: unknown[]; image_size: { width: number } };
+    console.assert(body.frames.length >= 2 && body.frames.length <= editFrameCap(body.image_size.width), `dress call ${k + 1}: ${body.frames.length} frames at ${body.image_size.width} px (cap ${editFrameCap(body.image_size.width)})`);
+    recs.set(c.recId!, { id: c.recId, state: 'done', jobs: [{ results: frames.map((f, i) => ({ label: String(i), sha: f })) }] } as unknown as JobRec);
+  }
+  const m = dressedOf(calls, (id) => recs.get(id!));
+  console.assert(calls.filter((c) => c.kind === 'dress').length === 2 && dirs.every((d) => m.get(restKey(d))?.sha === restKey(d)), `8-dir held dress: every direction dressed once (${[...m.keys()]})`);
+  console.assert(planGens(plan) === 2 * 10 + 10 * 3, `8-dir held cost ${planGens(plan)}`);
+  const d = { spec: {}, calls, log: [] } as unknown as Draft;
+  rerollCall(d, 1, 'test');
+  console.assert(calls.filter((c) => !c.recId).map((c) => c.cells[0].split('/').slice(0, 2).join('/')).join() === 'rest/north,idle/north,walk/north', 'a later dress chunk re-roll redoes only its poses');
 }

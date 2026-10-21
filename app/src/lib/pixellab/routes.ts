@@ -55,6 +55,8 @@ export const baseAnimation = (mode: BaseAnimMode, character_id: string, a: BaseA
     : { character_id, mode, action_description: a.action, frame_count: a.frames, keep_first_frame: false, animation_name: a.name, directions, seed };
 /** Pro inpaint (B14 grid fallback, S4/S5): white mask = generate, black = keep; result in last_response.image. */
 export interface InpaintV3 { description: string; inpainting_image: SizedImage; mask_image: SizedImage; seed?: number; no_background?: boolean }
+/** edit-animation-v2 frames per call by image_size (all frames share one grid; OpenAPI): ≤64 px 16, 65–80 px 9, 81–256 px 4. */
+export const editFrameCap = (px: number) => (px <= 64 ? 16 : px <= 80 ? 9 : 4);
 export interface EditAnimationV2 { description: string; frames: SizedImage[]; image_size: Size; seed?: number; no_background?: boolean; target_palette?: TargetPalette }
 /** Raw skeleton-v3: pose `first_frame` (in pose first_frame_keypoints) into one frame per keypoints entry (3-15), same size. */
 export interface ApiKeypoint { label: string; x: number; y: number; z_index?: number } // x/y = 0-1 fractions of the image
@@ -148,5 +150,6 @@ export function selfTest() {
   const ch = jobImages({ storage_urls: { south: 'https://s', east: 'https://e' } });
   console.assert(ch.map((i) => i.label).join() === 'south,east' && ch[1].url === 'https://e', 'jobImages storage_urls');
   console.assert(baseAnimation('skeleton-v3', 'c', BASE_ANIMS[1], ['south']).template_animation_id === 'walking-8-frames' && baseAnimation('v3', 'c', BASE_ANIMS[0], ['south']).frame_count === 4, 'baseAnimation');
+  console.assert(editFrameCap(64) === 16 && editFrameCap(80) === 9 && editFrameCap(96) === 4, 'editFrameCap');
   console.assert(routes.getCharacter('x/y').path === '/characters/x%2Fy', 'path encoding');
 }
