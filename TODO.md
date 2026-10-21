@@ -42,12 +42,13 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 - [x] Godot 4.7.1 + Phaser 3.80/3.90/4.2.1 verified pixel-identical incl. oversize layers (M5/B8/B9)
 
 ## Phase 7 — Hardening (2026-10-21)
-- [~] T3 full item coverage: hair, cape, chest, boots, legs × idle/walk/slash/hurt × S/E/N/W (≤220 gens, user-approved)
+- [x] T3 full item coverage: hair, cape, chest, trousers × idle/walk/slash/hurt × S/E/N/W (215 gens); 7 fixes; Godot pixel-identical
 - [x] B11 layered .aseprite export (verified with Aseprite CLI) + Godot CREDITS.csv warning fix
 - [x] B12 root README, docs index, user guide, GitHub Pages workflow (no push), repo hygiene
 - [x] R6 code/security/over-engineering review (report only)
 - [x] B13 R6 fixes: leader-only resume, no paid resend, atomic saves, key not broadcast, dev pages out of prod (432→317 kB)
-- [ ] After T3/R6: offline banner, 4/8-direction + 48/56 px options in Create, shirt/shorts colour regions, R6 fixes
+- [~] B14: cape north-slash fallback (inpaint-v3 per clip-dir), clip hair under helmet, fewer false 'Needs a look', boots (≤90 gens)
+- [~] B15: 4/8 directions + 48/56 px in Create, shirt/shorts colour regions, offline banner (≤60 gens)
 
 ## Deferred
 - [ ] Unity export live verification (needs Unity Hub sign-in; C# compiles) — deferred by user 2026-10-20
