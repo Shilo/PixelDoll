@@ -208,9 +208,10 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
   zip and pure PNG encoder, no dependencies. Store **every** generated frame, reference, keypoint sequence and request: they
   cannot be reproduced.
 - Queue: persisted ledger; Pro/skeleton-v3 jobs default concurrency 8 (Tier 3 cap observed at 22 jobs [S4]),
-  `estimate-skeleton` 3. Backoff 2 → 60 s on 429/423/5xx/network submit errors. **Re-poll** the same job id on network errors
-  and timeouts (up to 40×); **resubmit a paid POST only when the job reports `failed`** (server 502/504/CUDA asserts happen
-  [S3, S4]; whether they are charged is unknown). 401/402 pause; 422 and policy `code 5000` terminal. Verify
+  `estimate-skeleton` 3 (code default 3, max 8). Backoff 2 → 60 s and resubmit only on refusals (423/429/503/529); a paid POST
+  that gets a network error, timeout (120 s) or another 5xx is marked `lost` ("may have run, check pixellab.ai") and never
+  resent automatically [B13]. **Re-poll** the same job id on network errors and timeouts; result downloads back off and give up
+  after 10 tries (URLs kept). Server 502/504/CUDA asserts happen [S3, S4]; whether they are charged is unknown. 401/402 pause; 422 and policy `code 5000` terminal. Verify
   `res.directions` on managed animation calls.
 - Key: memory by default, opt-in `localStorage`, never serialized; CSP `connect-src` limited to PixelLab hosts.
 

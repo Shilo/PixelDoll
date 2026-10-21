@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { cleanUp } from '../studio/state.svelte.ts' // keeps records drafts/creates/moves still need (R6 P1-2)
   import { app, setKey, forgetKey } from '../lib/app.svelte.ts'
   import { queue, type JobRec } from '../lib/pixellab/queue.ts'
   import { routes, baseAnimation, BASE_ANIMS, type BaseAnimMode, type Direction } from '../lib/pixellab/routes.ts'
@@ -105,7 +106,7 @@
 </section>
 
 <section>
-  <h2>Ledger <button onclick={() => queue.clearFinished()}>clear finished</button></h2>
+  <h2>Ledger <button onclick={() => cleanUp()}>clear finished</button></h2>
   <table data-testid="ledger">
     <thead><tr><th>label</th><th>endpoint</th><th>state</th><th>jobs (id · status · queue pos · progress)</th><th>cost</th><th>duration</th><th></th></tr></thead>
     <tbody>

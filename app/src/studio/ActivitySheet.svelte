@@ -3,7 +3,11 @@
   import { queue, type JobRec } from '../lib/pixellab/queue.ts'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { fmtNum } from './model.ts'
-  import { ui } from './state.svelte.ts'
+  import { ui, cleanUp, toast } from './state.svelte.ts'
+  async function clear() {
+    const n = await cleanUp()
+    toast(`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused images` : ''}. Jobs your drafts or a running create or move still use are kept.`)
+  }
   import { ChevronRight, CircleAlert, CircleCheck, Coins, RefreshCw } from './icons.ts'
 
   let now = $state(Date.now())
@@ -54,7 +58,7 @@
       <section class="act-group"><span class="sec-title">Recent</span>
         <ul>{#each done as r (r.id)}
           <li>{#if r.state === 'done'}<CircleCheck size={16} style="color:var(--ok)" />{:else}<CircleAlert size={16} style="color:var(--bad)" />{/if}
-            <span class="act-main"><b>{nice(r)}</b><span class="muted small">{r.state === 'done' ? (r.finishedAt && r.submittedAt ? mins(r.finishedAt - r.submittedAt) : 'done') : r.state}</span></span>
+            <span class="act-main"><b>{nice(r)}</b><span class="muted small">{r.state === 'done' ? (r.finishedAt && r.submittedAt ? mins(r.finishedAt - r.submittedAt) : 'done') : r.state === 'lost' ? 'unknown: may have run, check pixellab.ai' : r.state}</span></span>
             <span class="act-meta num muted">{cost(r)}</span></li>
         {/each}</ul>
       </section>
@@ -65,7 +69,7 @@
       <div>
         <div class="field-row small">
           <label class="check">Parallel calls <input class="input" style="width:64px" type="number" min="1" max="8" value={$queue.concurrency} onchange={(e) => queue.setConcurrency(+e.currentTarget.value)} /></label>
-          <button class="btn sm" onclick={() => queue.clearFinished()}>Clear finished</button>
+          <button class="btn sm" onclick={clear} disabled={$queue.role === 'follower'} title={$queue.role === 'follower' ? 'Clear it in the PixelDoll tab that runs the jobs' : undefined}>Clear finished</button>
         </div>
         <div style="overflow:auto;max-height:240px">
           <table class="ledger">

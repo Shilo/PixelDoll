@@ -9,6 +9,8 @@
   let remember = $state(false)
   let msg = $state('')
   let checking = $state(false)
+  // R6 P1-4: a *.github.io project path (user.github.io/PixelDoll/) shares its origin, and so localStorage, with every other Pages project of that account
+  const sharedOrigin = location.hostname.endsWith('.github.io') && location.pathname.split('/').filter(Boolean).length > 0
   async function use(k: string, rem: boolean) {
     checking = true
     msg = ''
@@ -36,7 +38,7 @@
       <ul class="facts small">
         <li><Check size={14} />Generations come from your PixelLab account.</li>
         <li><Check size={14} />Sent only to api.pixellab.ai.</li>
-        <li><Check size={14} />Kept in memory (shared with your other open PixelDoll tabs), unless you choose Remember.</li>
+        <li><Check size={14} />Kept in memory for this tab (passed to the PixelDoll tab that runs your jobs when you connect here), unless you choose Remember.</li>
       </ul>
     </div>
   </div>
@@ -50,6 +52,7 @@
       <input class="input" type="password" bind:value={key} autocomplete="off" spellcheck="false" placeholder="Paste your key" />
     </label>
     <label class="toggle-row"><span>Remember on this device</span><input class="switch" type="checkbox" bind:checked={remember} /></label>
+    {#if remember && sharedOrigin}<p class="notice warn small">This copy of PixelDoll runs in a folder of {location.host}, a site other GitHub Pages projects share. Any of their pages could read a remembered key. Leave Remember off here, or use PixelDoll from its own address.</p>{/if}
     {#if msg}<p class="notice bad small">{msg}</p>{/if}
     <div class="field-row">
       <a class="small" href="https://pixellab.ai/account" target="_blank" rel="noreferrer">Get a key <ExternalLink size={12} style="display:inline" /></a>

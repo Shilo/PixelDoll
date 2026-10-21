@@ -39,7 +39,7 @@
     <button class="btn primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
   {:else if mine && moving.error}
     <button class="btn plain" onclick={dismissMove}>Start over</button>
-    <button class="btn primary" onclick={() => moving.spec && withKey(() => void startMove(moving.projectId, $state.snapshot(moving.spec!)))}>Try again</button>
+    <button class="btn primary" onclick={() => moving.spec && withKey(() => void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }))}>Try again</button><!-- new seed re-rolls body + item poses (R6 P2-7) -->
   {:else if mine}
     <span class="foot-note">You can keep working.</span>
     <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>

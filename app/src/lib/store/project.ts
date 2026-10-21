@@ -45,25 +45,27 @@ export async function loadProject(id: string): Promise<{ rec: StoredProject; pro
 
 /**
  * Add or replace an item (same id) in the project record, store its cell PNGs, and insert its slot (ladder order) if missing.
- * Re-reads the record right before writing so concurrent edits by other pages (M4 presets) survive.
+ * Blobs first, then one atomic read-modify-write (db.update), so concurrent edits (autosave, another accept, a new move) survive.
  */
 export async function saveItem(id: string, item: Item, images: Map<Sha256, Img>, ladder: Slot[]): Promise<void> {
   for (const [h, im] of images) if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
-  const rec = await db.get<StoredProject>('projects', id);
-  if (!rec) throw new Error(`project ${id} not found`);
-  const m = rec.manifest;
-  m.items = [...m.items.filter((i) => i.id !== item.id), item];
-  if (!m.slots.some((s) => s.id === item.slot)) {
-    const order = (s: string) => ladder.findIndex((x) => x.id === s);
-    m.slots = [...m.slots, ladder.find((s) => s.id === item.slot)!].sort((a, b) => order(a.id) - order(b.id));
-  }
-  rec.savedAt = new Date().toISOString();
-  await db.put('projects', id, rec);
+  await db.update<StoredProject>('projects', id, (rec) => {
+    if (!rec) throw new Error(`project ${id} not found`);
+    const m = rec.manifest;
+    m.items = [...m.items.filter((i) => i.id !== item.id), item];
+    if (!m.slots.some((s) => s.id === item.slot)) {
+      const order = (s: string) => ladder.findIndex((x) => x.id === s);
+      m.slots = [...m.slots, ladder.find((s) => s.id === item.slot)!].sort((a, b) => order(a.id) - order(b.id));
+    }
+    rec.savedAt = new Date().toISOString();
+    return rec;
+  });
 }
 
 export async function deleteItem(id: string, itemId: string): Promise<void> {
-  const rec = await db.get<StoredProject>('projects', id);
-  if (!rec) return;
-  rec.manifest.items = rec.manifest.items.filter((i) => i.id !== itemId || i.slot === 'body');
-  await db.put('projects', id, rec);
+  await db.update<StoredProject>('projects', id, (rec) => {
+    if (!rec) throw new Error(`project ${id} not found`);
+    rec.manifest.items = rec.manifest.items.filter((i) => i.id !== itemId || i.slot === 'body');
+    return rec;
+  });
 }

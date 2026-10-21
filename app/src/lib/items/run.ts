@@ -11,7 +11,7 @@ import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifes
 import type { DirectionName } from '../rig/rig.ts';
 import { fromApi } from '../rig/poses.ts';
 import { chromaLayer } from '../image/chroma.ts';
-import { GATES, SLOTS, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { GATES, SLOTS, g2Fails, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind }
@@ -203,7 +203,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   for (const o of dressOuts) {
     const c = ex(o);
     keys[o.key.split('/')[1] as DirectionName] = c.layer;
-    const bad = [c.keyKept != null && c.keyKept < GATES.keyKept && `G2 keyframe ${o.key} key kept ${c.keyKept.toFixed(3)}`,
+    const bad = [g2Fails(c) && `G2 keyframe ${o.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`,
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
       !c.area && `G4 keyframe ${o.key}: item missing`].filter(Boolean);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
@@ -271,9 +271,10 @@ const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeA
 /**
  * Pose an accepted item's dressed keyframes through a clip's stored keypoints (one call per generated direction, one re-roll
  * on a failed gate), extract the layer and write the clip's cells into the item. Seeds derive from item/clip/direction, so a
- * reload re-attaches to the ledger. Returns the clip QA.
+ * reload re-attaches to the ledger. `moveSeed` (the move's seed) joins the seed, so a move's "Try again" re-rolls the poses
+ * instead of re-reading the cached ones (R6 P2-7). Returns the clip QA.
  */
-export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}): Promise<QaResult> {
+export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number): Promise<QaResult> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const dirs = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
@@ -284,7 +285,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     const cells = poses.map((_, i) => `${anim}/${dir}/${i}`);
     let last: CellOut[] = [];
     for (let attempt = 0; attempt < 2; attempt++) {
-      const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}`);
+      const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}${moveSeed ? `/${moveSeed}` : ''}`);
       const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad });
       const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
       const r = terminal(rec) ? rec : await settled(rec.id);
@@ -297,6 +298,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
       const pass = !withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed, pad), slot, last, keys).failCalls.size;
       if (pass || attempt) { prov.push(toProv(r, { cells, seed, rerolls: attempt, old: [] })); break; }
     }
+    if (!last.length) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned the wrong number of frames twice. Try again.`); // R6 P2-13: never save a direction with empty cells
     return last;
   }));
   const cells = perDir.flat();

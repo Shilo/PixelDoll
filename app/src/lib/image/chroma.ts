@@ -191,7 +191,7 @@ export function keyKept(B: Img, C: Img, key: Key, mask: Uint8Array, kT = KT, tol
     if (tol ? near(w, h, x, y, tol, (q) => isKey(C, q, key, kT)) : isKey(C, p, key, kT)) kept++;
     else if (C.data[p * 4 + 3] < 128) gone++;
   }
-  return { kept: n ? kept / n : 1, erased: n ? gone / n : 0 };
+  return { kept: n ? kept / n : 1, erased: n ? gone / n : 0, lost: n - kept };
 }
 
 /** Share of the composite's key px outside the base silhouette (G3: the mannequin did not move). Item px (mask) excluded. */

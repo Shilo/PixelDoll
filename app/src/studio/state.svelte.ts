@@ -7,12 +7,12 @@ import { drawList } from '../lib/compose/compose.ts';
 import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
-import { evaluateItem, type Draft, type ItemResult } from '../lib/items/run.ts';
+import { evaluateItem, loadDrafts, type Draft, type ItemResult } from '../lib/items/run.ts';
 import { app } from '../lib/app.svelte.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
 import { addMove, createCharacter, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
-import { GROUPS, groupOf } from './model.ts';
-import type { JobRec } from '../lib/pixellab/queue.ts';
+import { GROUPS, groupOf, uniqueBy } from './model.ts';
+import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 
 // ---------- small persistence helpers (every storage access can throw: private mode, blocked site data) ----------
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -68,8 +68,12 @@ export function dismissWelcome() { ui.welcome = false; lsSet(K.welcomed, '1'); }
 let toastT: ReturnType<typeof setTimeout> | undefined;
 export function toast(s: string) { ui.toast = s; clearTimeout(toastT); toastT = setTimeout(() => (ui.toast = ''), 4000); }
 
+/** Only the queue-leader tab drives generations (R6 P1-1). True (with a toast) in a second PixelDoll tab, which only mirrors. */
+const follower = () => queue.role === 'follower' && (toast('PixelDoll is open in another tab. Generate there, or close it to generate here.'), true);
+
 /** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. */
 export function withKey(fn: () => void) {
+  if (follower()) return;
   if (app.key && !app.keyRejected) return fn();
   afterConnect = fn;
   ui.sheet = 'connect';
@@ -287,10 +291,13 @@ export async function copyDemo(): Promise<string> {
 
 /** Rename the open (own) character: the manifest name is also the exported name. */
 export async function renameProject(name: string) {
-  const rec = await db.get<{ manifest?: Manifest }>('projects', doc.id);
-  if (!rec?.manifest || isDemo()) return;
-  rec.manifest.name = name;
-  await db.put('projects', doc.id, rec);
+  if (isDemo()) return;
+  const ok = await db.update<{ manifest?: Manifest }>('projects', doc.id, (rec) => {
+    if (!rec?.manifest) throw new Error('gone');
+    rec.manifest.name = name;
+    return rec;
+  }).then(() => true, () => false);
+  if (!ok) return;
   store.project!.manifest.name = name;
   bump();
   await refreshProjects();
@@ -311,15 +318,56 @@ const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state
 
 // One runner per draft: a second runItem on the same draft (e.g. the Studio remounting and loading the drafts again)
 // re-rolls calls twice and pays twice (seen live). Drafts load once per page.
+// Only the queue leader runs drafts, creates and moves (R6 P1-1: two tabs re-rolled the same draft and overwrote each
+// other's studio-drafts). A follower tab shows the leader's drafts, re-read when the ledger changes, and takes over when
+// the leader's tab closes.
 const runningGens = new Set<string>();
-let gensLoaded = false;
-export async function loadGens() {
-  if (gensLoaded) return;
-  gensLoaded = true;
-  const r = await db.get<{ gens: Gen[] }>('projects', GENS_KEY).catch(() => undefined);
-  gens.splice(0, gens.length, ...(r?.gens ?? []));
+let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, mirrored = '', mirrorAt = 0;
+const readGens = async () => uniqueBy((await db.get<{ gens: Gen[] }>('projects', GENS_KEY).catch(() => undefined))?.gens ?? [], (g) => g.draft.spec.id);
+/** The ONLY way the list is replaced: one entry per draft id (already-persisted duplicates heal on the next save). Synchronous,
+ * so no caller can splice with a length read before an await (the B13 regression that doubled every draft). */
+function setGens(list: Gen[]) {
+  const uniq = uniqueBy(list, (g) => g.draft.spec.id);
+  mirrored = JSON.stringify(uniq);
+  gens.splice(0, gens.length, ...uniq);
+}
+/** Once per page (a second call, e.g. a Studio remount, returns the same promise). */
+export function loadGens(): Promise<void> {
+  return (loading ??= (async () => {
+    setGens(await readGens());
+    gensReady = true;
+    if (queue.role !== 'follower') drive();
+    else for (const g of gens) if (g.phase === 'review') void evalGen(g);
+  })());
+}
+function drive() {
+  if (driving) return;
+  driving = true;
   for (const g of gens) if (g.phase === 'running') void runGen(g);
     else if (g.phase === 'review') void evalGen(g);
+  void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
+}
+queue.subscribe((s) => {
+  if (!gensReady || driving) return;
+  if (s.role !== 'follower') { void takeOver(); return; }
+  if (Date.now() - mirrorAt < 2000) return;
+  mirrorAt = Date.now();
+  void readGens().then((list) => {
+    if (driving || JSON.stringify(list) === mirrored) return;
+    setGens(list);
+    for (const g of gens) if (g.phase === 'review' && !store.results[g.draft.spec.id]) void evalGen(g);
+  });
+});
+/** This follower tab just became the leader: continue the old leader's drafts, create and move. */
+async function takeOver() {
+  if (driving || takingOver) return;
+  takingOver = true;
+  const list = await readGens();
+  if (driving) return;
+  setGens(list);
+  drive();
+  await resumeCreate();
+  await resumeMove();
 }
 
 export async function startItem(input: NewItemInput) {
@@ -365,22 +413,61 @@ async function evalGen(g: Gen) {
 }
 export const genOf = (sel: string) => gens.find((g) => `gen:${g.draft.spec.id}` === sel);
 
+// Keep it / Discard in flight for a draft: the other click is ignored (R6 P1-6: Discard during Keep it, then
+// splice(indexOf(g) = -1) removed an unrelated, still-running draft).
+const settling = new Set<string>();
+const drop = (g: Gen) => { const i = gens.findIndex((x) => x.draft.spec.id === g.draft.spec.id); if (i >= 0) gens.splice(i, 1); };
 export async function acceptGen(g: Gen) {
-  const ctx = await loadProject(g.draft.rigId);
-  const item = await itemRoute.accept(g.draft, ctx, store.results[g.draft.spec.id] ?? undefined);
-  gens.splice(gens.indexOf(g), 1);
-  await saveGens();
-  if (doc.id === g.draft.rigId) await openProject(doc.id, { wear: item.id });
-  toast(`${item.name} added`);
+  const id = g.draft.spec.id;
+  if (follower() || settling.has(id)) return;
+  settling.add(id);
+  try {
+    const ctx = await loadProject(g.draft.rigId);
+    const item = await itemRoute.accept(g.draft, ctx, store.results[id] ?? undefined);
+    drop(g);
+    await saveGens();
+    if (doc.id === g.draft.rigId) await openProject(doc.id, { wear: item.id });
+    toast(`${item.name} added`);
+  } finally {
+    settling.delete(id);
+  }
 }
-export async function discardGen(g: Gen) {
-  gens.splice(gens.indexOf(g), 1);
-  ui.selected = '';
-  await saveGens();
+export async function discardGen(g: Gen): Promise<boolean> {
+  const id = g.draft.spec.id;
+  if (follower() || settling.has(id)) return false;
+  settling.add(id);
+  try {
+    drop(g);
+    ui.selected = '';
+    await saveGens();
+    return true;
+  } finally {
+    settling.delete(id);
+  }
 }
 export function retryGen(g: Gen) {
   const input = g.input;
-  void discardGen(g).then(() => withKey(() => void startItem(input)));
+  void discardGen(g).then((ok) => ok && withKey(() => void startItem(input)));
+}
+
+const WEEK = 7 * 86_400_000;
+const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'm2-skel']; // create/move calls, re-attached by request hash
+/**
+ * Activity "Clear finished" (maxAge 0, sweeps blobs) and the leader's start-up prune (a week, records only). Deletes finished ledger records that no draft
+ * references and no pending create/move may re-attach to (R6 P1-2), then, only while nothing is generating or being saved
+ * in this tab, the blobs nothing references any more (R6 P2-15).
+ * ponytail: a follower tab's copyDemo/M-page writes its blobs one transaction before its record; a sweep exactly in between
+ * would drop them. Followers cannot generate, so the window is a demo copy; add a "recent blobs" grace list if that bites.
+ */
+export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number; blobs: number }> {
+  if (queue.role === 'follower') return { jobs: 0, blobs: 0 };
+  const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts().catch(() => []))];
+  const refs = new Set(drafts.flatMap((d) => d.calls.flatMap((c) => [c.recId, ...c.old])));
+  const flow = !!(creating.spec || moving.spec || (await db.get('projects', CREATE_KEY)) || (await db.get('projects', MOVE_KEY)));
+  const cutoff = Date.now() - maxAge;
+  const jobs = await queue.clearFinished((r) => refs.has(r.id) || (flow && FLOW_TAGS.includes(r.tag ?? '')) || (r.finishedAt ?? r.createdAt) > cutoff);
+  const idle = sweep && !flow && queue.idle() && !runningGens.size && !settling.size;
+  return { jobs, blobs: idle ? await db.gcBlobs() : 0 };
 }
 
 
@@ -422,7 +509,7 @@ export async function startCreate(spec: CreateSpec) {
 }
 let createResumed = false;
 export async function resumeCreate() {
-  if (createResumed) return;
+  if (createResumed || queue.role === 'follower') return; // the leader resumes it (takeOver)
   createResumed = true;
   const r = await db.get<{ spec: CreateSpec }>('projects', CREATE_KEY).catch(() => undefined);
   if (r?.spec && !creating.spec) void startCreate(r.spec);
@@ -458,7 +545,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
 }
 let moveResumed = false;
 export async function resumeMove() {
-  if (moveResumed) return;
+  if (moveResumed || queue.role === 'follower') return;
   moveResumed = true;
   const r = await db.get<{ spec: MoveSpec; projectId: string }>('projects', MOVE_KEY).catch(() => undefined);
   if (r?.spec && !moving.spec) void startMove(r.projectId, r.spec);

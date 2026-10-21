@@ -116,7 +116,12 @@ export const fmtGens = (n: number) => `${Math.round(n * 10) / 10} gens`;
 export const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US');
 export const fmtTime = (s: number) => (s >= 90 ? `${Math.round(s / 60)} min` : `${Math.max(5, Math.round(s / 5) * 5)} s`);
 
+/** First entry per key, order kept (drafts by spec.id: a list persisted twice heals on read). */
+export const uniqueBy = <T>(xs: T[], key: (x: T) => string): T[] => { const seen = new Set<string>(); return xs.filter((x) => !seen.has(key(x)) && !!seen.add(key(x))); };
+
 export function selfTest() {
+  const ids = uniqueBy([{ id: 'a' }, { id: 'b' }, { id: 'a' }, { id: 'b' }, { id: 'c' }], (x) => x.id).map((x) => x.id).join();
+  console.assert(ids === 'a,b,c', `uniqueBy keeps one entry per id (${ids})`);
   const s = makeImg(48, 48);
   s.data.set([9, 9, 9, 255], 0);
   console.assert(nameFrom('a stocky dwarf, tan skin') === 'Dwarf' && nameFrom('a sturdy young dwarf with a friendly face') === 'Dwarf' && nameFrom('') === 'My character', 'nameFrom');

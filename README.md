@@ -96,6 +96,19 @@ Vite's `base` is `./` and the router uses `#/` hashes.
 GitHub Pages cannot set response headers, so the Content-Security-Policy is a `<meta>` tag in `app/index.html`. It allows
 scripts from `'self'` only and network calls to `api.pixellab.ai` and PixelLab's image hosts. Add any new origin there.
 
+**Serve PixelDoll from its own origin.** Browsers isolate storage per origin (scheme + host + port), not per path. Every
+project site of an account (`https://<user>.github.io/<repo>/`) shares the origin `https://<user>.github.io`. Any page on it
+(another repo, a demo with third-party scripts, an XSS anywhere) can read PixelDoll's IndexedDB (projects, prompts, job
+ledger), a key saved with "Remember on this device" (`localStorage`), and its same-origin `BroadcastChannel`. So deploy to
+either:
+
+- a custom domain (Settings → Pages → Custom domain), or
+- a user or organisation root site (`<name>.github.io`) that hosts nothing else.
+
+Never deploy it as a project path next to pages you do not control. PixelDoll keeps the key in memory by default and never
+answers "send me the key" messages from other tabs. The Connect sheet warns when "Remember" is turned on at a `*.github.io`
+project path.
+
 ## Repo layout
 
 | Path | What |

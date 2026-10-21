@@ -18,7 +18,7 @@ export function crc32(b: Uint8Array): number {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-async function pipe(data: Uint8Array, t: CompressionStream | DecompressionStream): Promise<Uint8Array> {
+async function pipe(data: Uint8Array, t: CompressionStream): Promise<Uint8Array> {
   return new Uint8Array(await new Response(new Blob([data as Uint8Array<ArrayBuffer>]).stream().pipeThrough(t)).arrayBuffer());
 }
 
@@ -81,41 +81,14 @@ export async function zip(entries: ZipEntry[], { deflate = false } = {}): Promis
   return out;
 }
 
-export async function unzip(buf: Uint8Array): Promise<ZipEntry[]> {
-  const v = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
-  let eocd = buf.length - 22;
-  while (eocd >= 0 && v.getUint32(eocd, true) !== 0x06054b50) eocd--;
-  if (eocd < 0) throw new Error('zip: no end of central directory');
-  const count = v.getUint16(eocd + 10, true);
-  let p = v.getUint32(eocd + 16, true);
-  const dec = new TextDecoder();
-  const out: ZipEntry[] = [];
-  for (let i = 0; i < count; i++) {
-    if (v.getUint32(p, true) !== 0x02014b50) throw new Error('zip: bad central header');
-    const method = v.getUint16(p + 10, true);
-    const crc = v.getUint32(p + 16, true);
-    const csize = v.getUint32(p + 20, true);
-    const nlen = v.getUint16(p + 28, true), xlen = v.getUint16(p + 30, true), clen = v.getUint16(p + 32, true);
-    const lho = v.getUint32(p + 42, true);
-    const name = dec.decode(buf.subarray(p + 46, p + 46 + nlen));
-    const start = lho + 30 + v.getUint16(lho + 26, true) + v.getUint16(lho + 28, true);
-    const raw = buf.subarray(start, start + csize);
-    const data = method === 0 ? raw.slice() : method === 8 ? await pipe(raw, new DecompressionStream('deflate-raw')) : null;
-    if (!data) throw new Error(`zip: unsupported method ${method} (${name})`);
-    if (crc32(data) !== crc) throw new Error(`zip: crc mismatch (${name})`);
-    out.push({ name, data });
-    p += 46 + nlen + xlen + clen;
-  }
-  return out;
-}
-
 export async function selfTest() {
   const enc = new TextEncoder();
   console.assert(crc32(enc.encode('123456789')) === 0xcbf43926, 'crc32 check value');
   const files = [{ name: 'a.txt', data: enc.encode('hello hello hello hello') }, { name: 'dir/ü.bin', data: new Uint8Array([0, 1, 2, 255]) }];
+  // ponytail: no unzip (project import does not exist; R6). Check the archive structure; engines/Aseprite read the real exports.
   for (const deflate of [false, true]) {
-    const back = await unzip(await zip(files, { deflate }));
-    console.assert(back.length === 2 && back[0].name === 'a.txt' && back[1].name === 'dir/ü.bin', `unzip names (deflate=${deflate})`);
-    console.assert(new TextDecoder().decode(back[0].data) === 'hello hello hello hello' && back[1].data.join() === '0,1,2,255', `unzip data (deflate=${deflate})`);
+    const z = await zip(files, { deflate }), v = new DataView(z.buffer, z.byteOffset, z.byteLength), e = z.length - 22;
+    console.assert(v.getUint32(0, true) === 0x04034b50 && v.getUint32(e, true) === 0x06054b50 && v.getUint16(e + 10, true) === 2, `zip headers (deflate=${deflate})`);
+    console.assert(v.getUint32(14, true) === crc32(files[0].data) && v.getUint16(8, true) === (deflate ? 8 : 0), `zip entry crc + method (deflate=${deflate})`);
   }
 }

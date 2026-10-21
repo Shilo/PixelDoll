@@ -30,8 +30,8 @@ export interface CreateCharacterV3 {
 }
 export interface CharacterAnimation {
   character_id: string;
-  mode?: 'template' | 'skeleton-v3' | 'v3' | 'pixminimax' | 'pro'; // template/pro = legacy, not used by the app (user rule 2026-10-21)
-  template_animation_id?: string; // mode template, e.g. "walking-8-frames", "breathing-idle"
+  mode?: BaseAnimMode; // newer models only: legacy template/pro modes do not type-check (D8, user rule 2026-10-21)
+  template_animation_id?: string; // mode skeleton-v3, e.g. "walking-8-frames", "breathing-idle"
   action_description?: string;
   animation_name?: string;
   animation_group_id?: string;
@@ -53,33 +53,7 @@ export const baseAnimation = (mode: BaseAnimMode, character_id: string, a: BaseA
   mode === 'skeleton-v3'
     ? { character_id, mode, template_animation_id: a.template, animation_name: a.name, directions, seed }
     : { character_id, mode, action_description: a.action, frame_count: a.frames, keep_first_frame: false, animation_name: a.name, directions, seed };
-export interface InpaintProFlash {
-  image: B64Image;
-  mask_image: B64Image; // white = generate
-  description: string;
-  no_background?: boolean;
-  output_method?: 'New layer with changes' | 'Modify current layer, only changes' | 'Modify current layer';
-  crop_to_mask?: boolean;
-  seed?: number;
-}
-export interface InpaintV3 {
-  description: string;
-  inpainting_image: SizedImage;
-  mask_image: SizedImage;
-  seed?: number;
-  no_background?: boolean;
-  crop_to_mask?: boolean;
-}
 export interface EditAnimationV2 { description: string; frames: SizedImage[]; image_size: Size; seed?: number; no_background?: boolean; target_palette?: TargetPalette }
-export interface EditImagesV2 {
-  method?: 'edit_with_text' | 'edit_with_reference';
-  edit_images: { image: B64Image; width: number; height: number }[];
-  image_size: Size;
-  description?: string;
-  reference_image?: { image: B64Image; width: number; height: number };
-  seed?: number;
-  no_background?: boolean;
-}
 /** Raw skeleton-v3: pose `first_frame` (in pose first_frame_keypoints) into one frame per keypoints entry (3-15), same size. */
 export interface ApiKeypoint { label: string; x: number; y: number; z_index?: number } // x/y = 0-1 fractions of the image
 export interface AnimateSkeletonV3 {
@@ -94,22 +68,14 @@ export interface AnimateSkeletonV3 {
   seed?: number;
   no_background?: boolean;
 }
-export interface TransferOutfitV2 { reference_image: SizedImage; frames: SizedImage[]; image_size: Size; seed?: number; no_background?: boolean; additional_instructions?: string; target_palette?: TargetPalette }
 
 export const routes = {
   createCharacterV3: (b: CreateCharacterV3) => post('/create-character-v3', b),
   animateCharacter: (b: CharacterAnimation) => post('/characters/animations', b),
   getCharacter: (id: string) => get(`/characters/${encodeURIComponent(id)}`),
   estimateSkeleton: (image: B64Image) => post('/estimate-skeleton', { image }),
-  inpaintProFlash: (b: InpaintProFlash) => post('/inpaint-image-pro-flash', b),
-  inpaintV3: (b: InpaintV3) => post('/inpaint-v3', b),
   editAnimationV2: (b: EditAnimationV2) => post('/edit-animation-v2', b),
   animateWithSkeletonV3: (b: AnimateSkeletonV3) => post('/animate-with-skeleton-v3', b),
-  editImagesV2: (b: EditImagesV2) => post('/edit-images-v2', b),
-  transferOutfitV2: (b: TransferOutfitV2) => post('/transfer-outfit-v2', b),
-  balance: () => get('/balance'),
-  job: (id: string) => get(`/background-jobs/${encodeURIComponent(id)}`),
-  cancelJob: (id: string): Req => ({ method: 'DELETE', path: `/background-jobs/${encodeURIComponent(id)}` }),
 };
 
 // ---- responses ----
@@ -149,8 +115,6 @@ export interface Balance {
   credits: { type: 'usd'; usd: number };
   subscription: { type: 'generations'; status: string; plan?: string | null; generations: number; total: number };
 }
-export interface Keypoint { x: number; y: number; label: string; z_index: number }
-export interface SkeletonResponse { keypoints: Keypoint[]; usage?: Usage | null }
 
 export const jobIdsOf = (r: SubmitResponse): string[] => r.background_job_ids ?? (r.background_job_id ? [r.background_job_id] : []);
 
@@ -178,5 +142,5 @@ export function selfTest() {
   const ch = jobImages({ storage_urls: { south: 'https://s', east: 'https://e' } });
   console.assert(ch.map((i) => i.label).join() === 'south,east' && ch[1].url === 'https://e', 'jobImages storage_urls');
   console.assert(baseAnimation('skeleton-v3', 'c', BASE_ANIMS[1], ['south']).template_animation_id === 'walking-8-frames' && baseAnimation('v3', 'c', BASE_ANIMS[0], ['south']).frame_count === 4, 'baseAnimation');
-  console.assert(routes.cancelJob('x/y').path === '/background-jobs/x%2Fy', 'path encoding');
+  console.assert(routes.getCharacter('x/y').path === '/characters/x%2Fy', 'path encoding');
 }

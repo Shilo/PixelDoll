@@ -16,6 +16,8 @@ export const app = $state({
   balanceAt: 0,
 });
 queue.setKey(stored);
+// The leader tab can get (or lose) its key from a follower tab where the user typed it or pressed Forget key (queue.ts).
+queue.subscribe(() => { if (queue.key !== app.key) Object.assign(app, { key: queue.key, keyRejected: false, balance: null, balanceError: '' }); });
 
 export function setKey(key: string, remember: boolean) {
   app.key = key.trim();

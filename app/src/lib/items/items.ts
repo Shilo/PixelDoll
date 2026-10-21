@@ -187,6 +187,7 @@ export interface CellOut {
   mask: Uint8Array;
   area: number;
   keyKept?: number;
+  keyLost?: number; // body px no longer key (G2 counts them too: a nearly covered body has few px left)
   erased?: number;
   keyOutside?: number;
   outBand: number; // layer px outside the slot band (info)
@@ -398,7 +399,7 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
   const tol = o.posed ? 1 : 0, kk = route === 'none' ? null : keyKept(base, out, route, r.mask, undefined, tol);
   return {
     key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
-    ...(kk && route !== 'none' ? { keyKept: kk.kept, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, r.mask, tol) } : {}),
+    ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, r.mask, tol) } : {}),
     ...cleanliness(r.mask, w, h), shifted: bestShift(base, out).some(Boolean), offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
   };
 }
@@ -414,7 +415,10 @@ export function recompose(c: Pick<CellOut, 'base' | 'layer'>): Img {
 // ---------- QA (gates G1–G8, architecture §3.3) ----------
 /** Action clips (slash, cast, punch...) legitimately change an item's area and shape; G5/G9 apply to locomotion only. */
 export const isAction = (key: string) => !/idle|walk|run/.test(key.split('/')[0]);
-export const GATES = { keyKept: 0.97, keyOutside: 0.02, keyOutsidePosed: 0.05, areaRatio: 0.5, areaCV: 0.15, paletteDist: 15, heldIoU: 0.3, heldTurn: 30 }; // heldIoU: S5 (0.4 false-fails a 96 px axe walk E at 0.38); heldTurn: deg, B9
+export const GATES = { keyKept: 0.97, keyLostPx: 8, keyOutside: 0.02, keyOutsidePosed: 0.05, areaRatio: 0.5, areaCV: 0.15, paletteDist: 15, heldIoU: 0.3, heldTurn: 30 }; // heldIoU: S5 (0.4 false-fails a 96 px axe walk E at 0.38); heldTurn: deg, B9
+/** G2: the body was redrawn. T3: a cape covering the back leaves ~126 body px in north, so 6 olive outline px (27,40,4: key
+ * score 32 < 35) read as 0.952 kept and re-rolled a clean keyframe (10 gens) -> also require more than 8 lost px. */
+export const g2Fails = (c: Pick<CellOut, 'keyKept' | 'keyLost'>) => c.keyKept != null && c.keyKept < GATES.keyKept && (c.keyLost ?? Infinity) > GATES.keyLostPx;
 export interface ClipQa { clip: string; call: number; median: number; cv: number; baseCv: number; minRatio: number; hand?: 'r' | 'l' | '?'; spread: number; minIoU: number }
 export interface QaResult { qa: ItemQa; clips: ClipQa[]; failCalls: Map<number, string[]>; softCalls: Map<number, string[]>; warnings: string[]; paletteDist: number[]; splitExact: boolean }
 
@@ -485,7 +489,7 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
     if (c.shifted) flag(c.call, `G10 ${c.key}: misregistered (fits the base better 1 px off)`);
     if (c.repaired) warnings.push(`${c.key}: item lost by the pose, repaired from the dressed keyframe`);
     cellsQa[c.key as CellKey] = { route: route === 'none' ? 'diff' : c.posed ? 'posed' : 'ea2', provenance: c.call, area: c.area, ...(c.repaired ? { repaired: true } : {}), ...(c.offset[0] || c.offset[1] ? { offset: c.offset } : {}), ...(c.keyKept != null ? { keyKept: +c.keyKept.toFixed(3) } : {}) };
-    if (c.keyKept != null && c.keyKept < GATES.keyKept) flag(c.call, `G2 ${c.key} key kept ${c.keyKept.toFixed(3)}`);
+    if (g2Fails(c)) flag(c.call, `G2 ${c.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`);
     if (c.keyOutside != null && c.keyOutside > keyOutsideMax) flag(c.call, `G3 ${c.key} key outside ${c.keyOutside.toFixed(3)}`);
     minKept = Math.min(minKept, c.keyKept ?? 1);
     maxOut = Math.max(maxOut, c.keyOutside ?? 0);
@@ -616,9 +620,9 @@ export function simAligned(A: Img, K: Img, occ?: Uint8Array): number {
 const OPP: Partial<Record<DirectionName, DirectionName>> = { south: 'north', north: 'south' };
 export const H4 = { own: 0.75, oppMargin: 0.1 };
 /**
- * H4: a posed layer must look like its own direction's dressed keyframe layer. Rigid (head) items: own < 0.75 fails in every
+ * H4: a posed layer must look like its own direction's dressed keyframe layer. Band items (helmet, face): own < 0.75 fails in every
  * view (S5: a visor on a back view; B7 live: a blade drawn into a helmet's slash frames); worn items (torso, back): front/back
- * review warning only (cloth deforms). Off for feet and held items. Thresholds from S5's labelled helmet run (good ≥ 0.93).
+ * review warning only (cloth deforms); hair: warning in every view (T3). Off for feet and held items. Thresholds from S5's labelled helmet run (good ≥ 0.93).
  */
 export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>): { fails: Map<number, string[]>; warnings: string[] } {
   const fails = new Map<number, string[]>(), warnings: string[] = [];
@@ -632,7 +636,9 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     if (own >= H4.own) continue;
     const other = opp && keys[opp] ? simAligned(L, despeck(keys[opp]!), occ) : 0;
     const why = `H4 ${c.key}: ${other >= own - H4.oppMargin ? 'looks like the opposite view' : 'does not match its keyframe (extra or missing parts)'} (own ${own.toFixed(2)}${opp ? `, opposite ${other.toFixed(2)}` : ''})`;
-    if (slot.class === 'rigid') (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);
+    // T3: only band items (helmets, face accessories) are truly rigid; long hair swings and hides behind a raised forearm
+    // (live: own 0.36–0.74 on 9 slash/hurt frames that look right) -> review warning, like cloth
+    if (slot.band) (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);
     else warnings.push(why);
   }
   return { fails, warnings };
@@ -746,6 +752,9 @@ export async function selfTest() {
   blade.layer.data.set(block.data);
   for (const p of [0, 1, 2, 8, 9, 10, 16]) blade.layer.data.set([200, 200, 210, 255], p * 4); // a foreign object attached to the item
   console.assert(dirGate(slotOf('head'), [blade], { south: block }).fails.get(0)?.[0].startsWith('H4') === true && !dirGate(slotOf('main_hand'), [blade], { south: block }).fails.size, 'H4: extra parts fail rigid items, held items are skipped');
+  const hairH4 = dirGate(slotOf('hair'), [blade], { south: block });
+  console.assert(!hairH4.fails.size && hairH4.warnings.length === 1, 'H4: hair swings -> warning, not a re-roll (T3)');
+  console.assert(!g2Fails({ keyKept: 0.952, keyLost: 6 }) && g2Fails({ keyKept: 0.952, keyLost: 30 }) && !g2Fails({ keyKept: 0.99, keyLost: 30 }), 'G2: a nearly covered body needs > 8 lost px (T3 cape north)');
 
   // B9 held route: pad, keypoints, frame 0 last, oversize layer
   const c64 = { w: 64, h: 64 }, kp = (x: number, y: number) => [{ label: 'RIGHT ARM', x, y }, { label: 'NOSE', x: 0.5, y: 0.3 }];

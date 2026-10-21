@@ -35,7 +35,9 @@ export async function encodePngBytes(im: Img): Promise<Uint8Array> {
 
 export async function decodePngBytes(b: Uint8Array): Promise<Img> {
   const v = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  if (b.length < 33 || v.getUint32(0) !== 0x89504e47 || v.getUint32(12) !== 0x49484452) throw new Error('png: not a PNG');
   const w = v.getUint32(16), h = v.getUint32(20), depth = b[24], type = b[25];
+  if (!w || !h || w > 4096 || h > 4096) throw new Error(`png: size ${w}x${h} out of range`); // never allocate w*h*4 from junk bytes
   if (depth !== 8 || (type !== 6 && type !== 2) || b[28]) throw new Error(`png: only 8-bit RGB/RGBA non-interlaced (depth ${depth}, type ${type})`);
   const idat: Uint8Array[] = [];
   for (let p = 8; p < b.length; ) {

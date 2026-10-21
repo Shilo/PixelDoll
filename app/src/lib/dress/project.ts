@@ -52,13 +52,14 @@ export function applyDress(m: Manifest, d: DressState) {
   }
 }
 
-/** Save. For IndexedDB projects the record is re-read first so concurrent item writes (M3) are kept. */
+/** Save. For IndexedDB projects: one atomic read-modify-write (db.update), so concurrent item writes are kept (R6 P1-5). */
 export async function saveDress(id: string, m: Manifest, current: Outfit) {
   const d = structuredClone(dressOf(m, current));
   if (id.startsWith('fixture:')) return db.put('projects', `dress-${id}`, { id: `dress-${id}`, kind: 'dress', ...d });
-  const rec = await db.get<ProjectRecord>('projects', id);
-  if (!rec?.manifest) throw new Error(`project ${id} vanished`);
-  applyDress(rec.manifest, d);
-  rec.dress = { current: d.current };
-  await db.put('projects', id, rec);
+  await db.update<ProjectRecord>('projects', id, (rec) => {
+    if (!rec?.manifest) throw new Error(`project ${id} vanished`);
+    applyDress(rec.manifest, d);
+    rec.dress = { current: d.current };
+    return rec;
+  });
 }

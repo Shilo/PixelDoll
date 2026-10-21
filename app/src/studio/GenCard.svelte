@@ -63,14 +63,14 @@
     {#if !res?.qa}
       <p class="muted small">Checking the frames…</p>
     {:else if reasons.length || warns.length}
-      <ul class="reasons small">{#each [...reasons, ...warns] as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
+      <ul class="reasons small">{#each [...new Set([...reasons, ...warns])] as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
     {:else}
       <p class="muted small">Every frame passed the checks.</p>
     {/if}
     <div class="actions">
       <button class="btn primary" onclick={accept} disabled={busy || !res?.qa}>Keep it</button>
-      <button class="btn" onclick={() => retryGen(g)}>Try again <span class="cost">{planGens(g.draft.calls.map((c) => ({ kind: c.kind ?? 'edit', cells: c.cells })))} gens</span></button>
-      <button class="btn plain danger" onclick={() => discardGen(g)}>Discard</button>
+      <button class="btn" onclick={() => retryGen(g)} disabled={busy}>Try again <span class="cost">{planGens(g.draft.calls.map((c) => ({ kind: c.kind ?? 'edit', cells: c.cells })))} gens</span></button>
+      <button class="btn plain danger" onclick={() => discardGen(g)} disabled={busy}>Discard</button>
     </div>
   {:else if g.phase === 'failed'}
     <p class="notice bad small"><CircleAlert size={14} />{g.error?.includes('5000') || g.error?.toLowerCase().includes('policy') ? 'PixelLab declined this prompt. Try different words.' : 'This item could not be made.'}</p>

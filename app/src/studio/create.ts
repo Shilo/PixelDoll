@@ -5,7 +5,7 @@
 // rest view (the request shape items are posed with) -> largest component -> re-estimate -> freeze gate (1 re-roll) -> stored
 // frames + reference + keypoints + route + provenance. Every paid call is seeded and every free one cached, so re-running the
 // same spec after a reload re-attaches to the ledger instead of paying again.
-import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import { live, queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { BASE_ANIMS, baseAnimation, png, routes, type Direction, type Req, type SubmitResponse } from '../lib/pixellab/routes.ts';
 import { bytesToBase64, decodePng, type Img } from '../lib/image/png.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
@@ -43,19 +43,9 @@ export function estimate() {
 }
 
 // ---------- queue helpers ----------
-const terminal = (r?: JobRec) => !!r && !['queued', 'submitting', 'running'].includes(r.state);
-export function settled(id: string): Promise<JobRec> {
-  return new Promise((res) => {
-    let done = false;
-    const un = queue.subscribe((s) => {
-      const r = s.jobs.find((j) => j.id === id);
-      if (!done && terminal(r)) { done = true; res(r!); queueMicrotask(() => un()); }
-    });
-  });
-}
 async function run(req: Req, label: string, tag: string, cache = false): Promise<JobRec> {
   const rec = await queue.enqueue(req, { label, tag, cache });
-  const r = terminal(rec) ? rec : await settled(rec.id);
+  const r = live(rec) ? await queue.settled(rec.id) : rec;
   if (r.state !== 'done') throw new Error(`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}`);
   return r;
 }
@@ -266,7 +256,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
   for (const id of spec.items) {
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find((i) => i.id === id);
-    if (it && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] }));
+    if (it && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] }), spec.seed);
   }
 }
 
@@ -328,8 +318,20 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
   if (errs.length) throw new Error(`rig not valid: ${errs.join('; ')}`);
   const qa = (fresh.rigQa ?? {}) as { warnings?: string[]; clips?: Record<string, ClipQa> };
   fresh.rigQa = { ...qa, warnings: [...(qa.warnings ?? []), ...warnings], clips: { ...qa.clips, ...Object.fromEntries(clips.map((c) => [`${spec.id}/${c.d}`, c.out.qa])) } };
-  fresh.savedAt = new Date().toISOString();
-  await db.put('projects', projectId, fresh);
+  // R6 P1-5: `fresh` was read before ~30 cell writes; graft only what this clip changed onto the CURRENT record in one
+  // transaction, so an item accepted or an outfit autosaved meanwhile survives.
+  await db.update<StoredProject>('projects', projectId, (cur) => {
+    if (!cur) throw new Error(`project ${projectId} vanished`);
+    const cb = cur.manifest.items.find((i) => i.id === frig.baseItem)!;
+    cur.manifest.rig = frig;
+    cb.provenance = baseIt.provenance;
+    cb.layers[0].cells = layer.cells;
+    for (const it of cur.manifest.items) if (it.baseHash === oldHash) it.baseHash = frig.baseHash;
+    cur.skeletons = { ...cur.skeletons, ...skeletons };
+    cur.rigQa = fresh.rigQa;
+    cur.savedAt = new Date().toISOString();
+    return cur;
+  });
 
 }
 

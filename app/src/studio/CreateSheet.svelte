@@ -115,7 +115,7 @@
       <button class="btn primary lg" onclick={open}>Start dressing up</button>
     {:else if creating.error}
       <button class="btn plain" onclick={cancelCreate}>Start over</button>
-      <button class="btn primary" onclick={() => creating.spec && withKey(() => void startCreate($state.snapshot(creating.spec!)))}>Try again</button>
+      <button class="btn primary" onclick={() => creating.spec && withKey(() => void startCreate({ ...$state.snapshot(creating.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }))}>Try again</button><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
     {:else if running}
       <span class="foot-note">Spending {lo}–{hi} gens</span>
       <button class="btn" onclick={() => (ui.sheet = null)}>Keep working</button>
