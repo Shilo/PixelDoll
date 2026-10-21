@@ -70,4 +70,8 @@ Cross-agent channel: `docs/research/SHARED_NOTES.md` (append-only, short bullets
 - D4 (2026-10-21): Base generated at 48 px, padded to 64 px cell (never rescaled) for 16–20 px headroom. 56 px allowed as an
   advanced option; default stays 48→64 (O14).
 - D5 (2026-10-21): Unity live verification deferred (user). Godot + Phaser verified pixel-identical.
+- D7 (2026-10-21, PM on D1 §9): mock up looks A+E (native minimal + pixel accents, recommended), B (GlassKit glass), D (soft
+  playful) and C (pro dark, as A's dark mode) → screenshots to user. Item flow default = auto-finish with an accept/re-roll
+  review at the end (minimal human work). Bundled demo = team's own S1/S2 PixelLab outputs (private mockup phase; revisit before
+  public release). Name stays PixelDoll; accent per D1 look E (blue + gold).
 - D6 (2026-10-21): Skeleton v3 is the preferred skeleton route; legacy skeleton only as baseline (user) — S3 validating.
