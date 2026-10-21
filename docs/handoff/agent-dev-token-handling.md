@@ -168,6 +168,43 @@ server-side read of `.env`, a compile-time guard on the client code, a refused a
 12. [ ] Add an "Agent testing" section to `AGENTS.md`/`CLAUDE.md` and agent launch configs (human config + agent config).
 13. [ ] Verify (section 5) and record the evidence.
 
+## 4a. Target project: `C:\Programming_Files\Shilocity\PixelLab\pixellab-gallery`
+
+State on 2026-10-21 (read-only survey by the PixelDoll PM; verify before editing):
+
+- **Stack:** Svelte 5.57 + Vite 8.3 + TypeScript, `vitest` unit tests, Playwright e2e. Package name `pixellab-backpack`.
+  Production CSP comes from `public/_headers` (`vite.config.ts` reuses it for `vite preview`).
+- **Current env token:** `API_KEY_OVERRIDE` in the git-ignored `.env`. Nothing reads it any more: phase 4 task R17
+  (`docs/plan/phase4-plan.md`) removed the old `?devkey` URL flag, the `__DEV_API_KEY__` `define` and `loadEnv`.
+  That old design inlined the token into the bundle, which this contract forbids. Don't bring it back.
+- **Key code:** `src/lib/api/http.ts` `setKey()` (per-mode stores) and `src/lib/data/library.svelte.ts`, which verifies a
+  key before keeping it (`setKey(null)` on failure). Unit tests are in `tests/unit/http.test.ts`.
+- **Missing:** no `.github/` CI, no git remote, no root `AGENTS.md`/`CLAUDE.md`, no agent dev script.
+
+Concrete changes for pixellab-gallery:
+
+1. Ask the human to rename `API_KEY_OVERRIDE` → `PIXELLAB_TOKEN_AGENT_DEV` in `.env`. Don't open or print `.env`.
+2. `package.json`: add `"dev:agent": "vite --mode agent --port <free port> --strictPort"`. Keep `"dev": "vite"` unchanged.
+3. `vite.config.ts`: switch to `defineConfig(({ command, mode }) => …)`. Keep `define: { __APP_VERSION__ }`, `build`,
+   `preview.headers` and `test` exactly as they are. Add `envDir: false`, throw on `command === 'build' && mode === 'agent'`,
+   and register the agent-key middleware (section 3) only for `serve` + `agent`, reading `PIXELLAB_TOKEN_AGENT_DEV`
+   server-side.
+4. `src/main.ts`: a gated block `if (import.meta.env.DEV && import.meta.env.MODE === 'agent')` that fetches the token and
+   passes it through the **same verify-then-keep path a human uses** (`library.svelte.ts`), in the memory/session store,
+   never "remembered". Honour a kill switch (e.g. `localStorage['backpack.agentKey'] = 'off'`).
+5. Add an "Agent mode" badge in `App.svelte` behind the same guard.
+6. Confirm the dev CSP allows the same-origin fetch (`connect-src 'self'`), so `public/_headers` needs no change for production.
+7. Playwright: existing e2e specs run against mocks and must stay keyless. If a real-token smoke test is wanted, add a
+   separate opt-in Playwright project whose `webServer` runs `dev:agent`, and never make it the default.
+8. Add a dist-guard script (e.g. `scripts/dist-guard.mjs`, run after `npm run build`) that fails on `__dev`, the endpoint
+   path, `PIXELLAB_TOKEN_AGENT_DEV`, `API_KEY_OVERRIDE`, `DEV_API_KEY`, `devkey`, the badge class, `.env*` files or `*.map`.
+   Wire it into CI when CI is added.
+9. Extend the phase-4 "Done when" grep to the new names. Make sure `grep -r "API_KEY_OVERRIDE\|DEV_API_KEY\|devkey" src
+   vite.config.ts` stays empty, and that the agent code exists only behind the guard.
+10. Add an "Agent testing" section to a root `AGENTS.md` (and `CLAUDE.md` → `@AGENTS.md`), mirroring PixelDoll's.
+11. Add a `vitest` unit test that the agent block can't run outside `MODE === 'agent'`, or rely on the dist guard. Add one
+    manual verification run per section 5.
+
 ## 5. Verification (what PixelDoll checked)
 
 - `npm run dev` → `GET /__dev/pixellab-key` is not handled (normal SPA fallback, no token). Connect shows only paste +
