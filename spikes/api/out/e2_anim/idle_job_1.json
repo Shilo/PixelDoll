@@ -1,0 +1,95 @@
+{
+  "usage": {
+    "type": "usd",
+    "usd": 0.012310585339864096
+  },
+  "id": "bd705dfa-fe31-4573-8c89-903def2e5a2e",
+  "status": "completed",
+  "created_at": "2026-10-21T04:19:42.924726+00:00",
+  "last_response": {
+    "seed": 522607461,
+    "type": "done",
+    "usage": {
+      "seconds": 65.79526805877686
+    },
+    "images": [
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<1812 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<1920 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<1860 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<1856 chars>",
+        "height": 64
+      }
+    ],
+    "progress": 1.1333333333333333,
+    "direction": "east",
+    "frame_count": 4,
+    "animation_id": "92626f2e-1468-4023-8617-e4ad059a782d",
+    "character_id": "f6a0bdc5-354e-4682-8df3-55fc3d118737",
+    "storage_urls": {
+      "frames": [
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/92626f2e-1468-4023-8617-e4ad059a782d/east/0.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/92626f2e-1468-4023-8617-e4ad059a782d/east/1.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/92626f2e-1468-4023-8617-e4ad059a782d/east/2.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/92626f2e-1468-4023-8617-e4ad059a782d/east/3.png"
+      ]
+    },
+    "generation_id": "b461b096-4de0-4c62-adfd-33295e9e0ae3",
+    "animation_name": null,
+    "queue_position": 0,
+    "generation_model": "template",
+    "number_of_frames": 1,
+    "quantized_images": [
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<1812 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<1920 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<1860 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<1856 chars>",
+        "height": 64
+      }
+    ],
+    "saved_to_storage": true,
+    "animation_group_id": "c9dc5b34-84a4-4c4d-96af-d4426b661de9",
+    "animation_description": "breathing idle",
+    "generation_started_at": "2026-10-21T04:19:51.650134+00:00",
+    "template_animation_id": "breathing-idle",
+    "estimated_wait_seconds": 0,
+    "original_image_n_colors": 77,
+    "quantized_image_n_colors": 30,
+    "billing_charged": true
+  }
+}

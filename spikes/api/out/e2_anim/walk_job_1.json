@@ -1,0 +1,147 @@
+{
+  "usage": {
+    "type": "usd",
+    "usd": 0.016337150308820936
+  },
+  "id": "6ec4980a-49e8-4020-a93d-ff0fc6cac82f",
+  "status": "completed",
+  "created_at": "2026-10-21T04:16:52.027766+00:00",
+  "last_response": {
+    "seed": 2441708570,
+    "type": "done",
+    "usage": {
+      "seconds": 102.03435277938843
+    },
+    "images": [
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2084 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2404 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2484 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2124 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2136 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2440 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2716 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2224 chars>",
+        "height": 64
+      }
+    ],
+    "progress": 1,
+    "direction": "east",
+    "frame_count": 8,
+    "animation_id": "18c4d177-5ddb-41e6-b84b-ec6bfc768446",
+    "character_id": "f6a0bdc5-354e-4682-8df3-55fc3d118737",
+    "storage_urls": {
+      "frames": [
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/18c4d177-5ddb-41e6-b84b-ec6bfc768446/east/0.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/18c4d177-5ddb-41e6-b84b-ec6bfc768446/east/1.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/18c4d177-5ddb-41e6-b84b-ec6bfc768446/east/2.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/18c4d177-5ddb-41e6-b84b-ec6bfc768446/east/3.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/18c4d177-5ddb-41e6-b84b-ec6bfc768446/east/4.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/18c4d177-5ddb-41e6-b84b-ec6bfc768446/east/5.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/18c4d177-5ddb-41e6-b84b-ec6bfc768446/east/6.png",
+        "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/f6a0bdc5-354e-4682-8df3-55fc3d118737/animations/18c4d177-5ddb-41e6-b84b-ec6bfc768446/east/7.png"
+      ]
+    },
+    "generation_id": "ca5a2945-60cd-4226-a12f-db5b181a58d7",
+    "animation_name": null,
+    "queue_position": 0,
+    "generation_model": "template",
+    "number_of_frames": 1,
+    "quantized_images": [
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2084 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2404 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2484 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2124 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2136 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2440 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2716 chars>",
+        "height": 64
+      },
+      {
+        "type": "base64",
+        "width": 64,
+        "base64": "<2224 chars>",
+        "height": 64
+      }
+    ],
+    "saved_to_storage": true,
+    "animation_group_id": "079d3de3-3a6c-4fc1-9308-90f089ab0d90",
+    "animation_description": "walking",
+    "generation_started_at": "2026-10-21T04:16:54.835546+00:00",
+    "template_animation_id": "walking-8-frames",
+    "estimated_wait_seconds": 0,
+    "original_image_n_colors": 146,
+    "quantized_image_n_colors": 33,
+    "billing_charged": true
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "res": {
+    "usage": null,
+    "background_job_id": "464210cb-3b6a-4619-a36b-5e134c397312",
+    "status": "processing"
+  },
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 10
+    },
+    "id": "464210cb-3b6a-4619-a36b-5e134c397312",
+    "status": "completed",
+    "created_at": "2026-10-21T04:25:14.724894+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "action": "Touching up pixels",
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2872 chars>",
+          "height": 64
+        }
+      ],
+      "progress": 0.85,
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 10
+      },
+      "generation_id": "6a403942-5973-4f1f-9dfe-4b15a57d84b4",
+      "usage_cost_usd": 0.08,
+      "billing_charged": true,
+      "generation_mode": "edit_images",
+      "quantized_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2872 chars>",
+          "height": 64
+        }
+      ],
+      "generation_started_at": "2026-10-21T04:25:20.921601+00:00",
+      "original_image_n_colors": 87,
+      "quantized_image_n_colors": 39
+    }
+  }
+}

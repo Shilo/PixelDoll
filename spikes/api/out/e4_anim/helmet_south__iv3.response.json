@@ -1,0 +1,57 @@
+{
+  "keys": [
+    "seed",
+    "type",
+    "image",
+    "action",
+    "progress",
+    "billing_usage",
+    "generation_id",
+    "usage_cost_usd",
+    "billing_charged",
+    "generation_mode",
+    "quantized_image",
+    "generation_started_at",
+    "original_image_n_colors",
+    "quantized_image_n_colors"
+  ],
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 10
+    },
+    "id": "b5429ba5-463c-4c55-80e7-8bf9d66038ad",
+    "status": "completed",
+    "created_at": "2026-10-21T04:29:24.031578+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "image": {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3428 chars>",
+        "height": 64
+      },
+      "action": "Touching up pixels",
+      "progress": 0.85,
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 10
+      },
+      "generation_id": "1bffe995-aaaf-4b89-978f-f1011e6fe4b7",
+      "usage_cost_usd": 0.08,
+      "billing_charged": true,
+      "generation_mode": "inpainting_v3",
+      "quantized_image": {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3428 chars>",
+        "height": 64
+      },
+      "generation_started_at": "2026-10-21T04:29:30.342555+00:00",
+      "original_image_n_colors": 289,
+      "quantized_image_n_colors": 60
+    }
+  }
+}

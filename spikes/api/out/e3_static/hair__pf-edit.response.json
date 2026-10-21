@@ -1,0 +1,68 @@
+{
+  "res": {
+    "usage": null,
+    "background_job_id": "67b1f0da-6b8b-4a8f-8e5c-0d0aaba16ac0",
+    "image_id": "07130303-f9b6-5986-b905-4257982aa4ae",
+    "source_image_id": "07130303-f9b6-5986-b905-4257982aa4ae",
+    "status": "processing",
+    "output_count": 1,
+    "image_size": {
+      "width": 64,
+      "height": 64
+    },
+    "estimated_generations": 5,
+    "pricing_provisional": true
+  },
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 5
+    },
+    "id": "67b1f0da-6b8b-4a8f-8e5c-0d0aaba16ac0",
+    "status": "completed",
+    "created_at": "2026-10-21T04:25:14.830694+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "model": "edit_image_pro_flash",
+      "width": 64,
+      "action": "Removing background",
+      "height": 64,
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3156 chars>",
+          "height": 64
+        }
+      ],
+      "prompt": "Add only long straight black hair falling down to the shoulders to this south-facing pixel art character. Keep every other pixel of the body, face, limbs, outline, pose and the transparent background exactly unchanged. Do not redraw or move the character.",
+      "status": "completed",
+      "asset_id": "07130303-f9b6-5986-b905-4257982aa4ae",
+      "image_id": "07130303-f9b6-5986-b905-4257982aa4ae",
+      "job_kind": "creator-image",
+      "progress": 1,
+      "image_url": "<439 chars>",
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 5
+      },
+      "generation_id": "f6c92290-bf40-49a2-a8b5-f3c022dbb00b",
+      "queue_position": 0,
+      "billing_charged": true,
+      "original_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3380 chars>",
+          "height": 64
+        }
+      ],
+      "source_image_id": "07130303-f9b6-5986-b905-4257982aa4ae",
+      "creator_image_saved": true,
+      "generation_started_at": "2026-10-21T04:25:17.561626+00:00",
+      "estimated_wait_seconds": 0
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "res": {
+    "usage": null,
+    "background_job_id": "8b218c66-d7f2-4da4-8776-02a8c34a0ae2",
+    "image_id": "c74363f4-9a74-5dc1-871e-2ce52489607d",
+    "source_image_id": "c74363f4-9a74-5dc1-871e-2ce52489607d",
+    "status": "processing",
+    "output_count": 1,
+    "image_size": {
+      "width": 64,
+      "height": 64
+    },
+    "estimated_generations": 5,
+    "pricing_provisional": true
+  },
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 5
+    },
+    "id": "8b218c66-d7f2-4da4-8776-02a8c34a0ae2",
+    "status": "completed",
+    "created_at": "2026-10-21T04:22:43.662001+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "model": "inpaint_pro_flash",
+      "width": 64,
+      "action": "Removing background",
+      "height": 64,
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1204 chars>",
+          "height": 64
+        }
+      ],
+      "prompt": "a simple grey steel knight helmet covering the top and sides of the head, face visible",
+      "status": "completed",
+      "paste_x": 0,
+      "paste_y": 0,
+      "asset_id": "c74363f4-9a74-5dc1-871e-2ce52489607d",
+      "image_id": "c74363f4-9a74-5dc1-871e-2ce52489607d",
+      "job_kind": "creator-image",
+      "progress": 1,
+      "image_url": "<439 chars>",
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 5
+      },
+      "canvas_growth": false,
+      "generation_id": "d9f72fe0-451f-43c7-b988-752217a49d01",
+      "output_method": "Modify current layer, only changes",
+      "billing_charged": true,
+      "original_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<1276 chars>",
+          "height": 64
+        }
+      ],
+      "source_image_id": "c74363f4-9a74-5dc1-871e-2ce52489607d",
+      "creator_image_saved": true,
+      "generation_started_at": "2026-10-21T04:22:43.705052+00:00"
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "res": {
+    "usage": null,
+    "background_job_id": "d99f761f-28ec-40fb-b391-f0e884c518ff",
+    "image_id": "19d99393-9741-5401-bf93-c7892ba7f748",
+    "source_image_id": "19d99393-9741-5401-bf93-c7892ba7f748",
+    "status": "processing",
+    "output_count": 1,
+    "image_size": {
+      "width": 64,
+      "height": 64
+    },
+    "estimated_generations": 5,
+    "pricing_provisional": true
+  },
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 5
+    },
+    "id": "d99f761f-28ec-40fb-b391-f0e884c518ff",
+    "status": "completed",
+    "created_at": "2026-10-21T04:22:44.046228+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "model": "inpaint_pro_flash",
+      "width": 64,
+      "action": "Removing background",
+      "height": 64,
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3472 chars>",
+          "height": 64
+        }
+      ],
+      "prompt": "a simple grey steel knight helmet covering the top and sides of the head, face visible",
+      "status": "completed",
+      "paste_x": 0,
+      "paste_y": 0,
+      "asset_id": "19d99393-9741-5401-bf93-c7892ba7f748",
+      "image_id": "19d99393-9741-5401-bf93-c7892ba7f748",
+      "job_kind": "creator-image",
+      "progress": 1,
+      "image_url": "<439 chars>",
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 5
+      },
+      "canvas_growth": false,
+      "generation_id": "231e7a8c-2c3f-4353-b287-590dcf8219a1",
+      "output_method": "Modify current layer",
+      "billing_charged": true,
+      "original_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3544 chars>",
+          "height": 64
+        }
+      ],
+      "source_image_id": "19d99393-9741-5401-bf93-c7892ba7f748",
+      "creator_image_saved": true,
+      "generation_started_at": "2026-10-21T04:22:44.260335+00:00"
+    }
+  }
+}

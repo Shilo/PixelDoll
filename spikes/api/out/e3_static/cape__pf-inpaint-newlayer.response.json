@@ -1,0 +1,72 @@
+{
+  "res": {
+    "usage": null,
+    "background_job_id": "d613a403-76a2-443f-a2e8-6a7f18457f10",
+    "image_id": "816d3f34-149d-5acf-812b-fe97459c176f",
+    "source_image_id": "816d3f34-149d-5acf-812b-fe97459c176f",
+    "status": "processing",
+    "output_count": 1,
+    "image_size": {
+      "width": 64,
+      "height": 64
+    },
+    "estimated_generations": 5,
+    "pricing_provisional": true
+  },
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 5
+    },
+    "id": "d613a403-76a2-443f-a2e8-6a7f18457f10",
+    "status": "completed",
+    "created_at": "2026-10-21T04:25:31.467270+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "model": "inpaint_pro_flash",
+      "width": 64,
+      "action": "Removing background",
+      "height": 64,
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<2876 chars>",
+          "height": 64
+        }
+      ],
+      "prompt": "a long red cloth cape hanging from the shoulders behind the back, visible at both sides of the body",
+      "status": "completed",
+      "paste_x": 0,
+      "paste_y": 0,
+      "asset_id": "816d3f34-149d-5acf-812b-fe97459c176f",
+      "image_id": "816d3f34-149d-5acf-812b-fe97459c176f",
+      "job_kind": "creator-image",
+      "progress": 1,
+      "image_url": "<439 chars>",
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 5
+      },
+      "canvas_growth": false,
+      "generation_id": "270a0195-8738-45df-8cc2-bf505cb7e712",
+      "output_method": "New layer with changes",
+      "queue_position": 0,
+      "billing_charged": true,
+      "original_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3300 chars>",
+          "height": 64
+        }
+      ],
+      "source_image_id": "816d3f34-149d-5acf-812b-fe97459c176f",
+      "creator_image_saved": true,
+      "generation_started_at": "2026-10-21T04:25:31.504874+00:00",
+      "estimated_wait_seconds": 0
+    }
+  }
+}

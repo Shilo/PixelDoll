@@ -1,0 +1,74 @@
+{
+  "id": "16b9f4ff-0d79-405e-9d5e-ded6d97440fd",
+  "name": "plain bald human base body for a paperdoll, light ...",
+  "state_name": "Idle",
+  "prompt": "plain bald human base body for a paperdoll, light skin, simple plain grey underwear shorts, barefoot, no hair, no clothing, no accessories, standing straight in a neutral pose with arms slightly away from the body",
+  "size": {
+    "width": 92,
+    "height": 92
+  },
+  "directions": 4,
+  "created_at": "2026-10-21T04:16:52.470718+00:00",
+  "updated_at": "2026-10-21T04:17:37.772722+00:00",
+  "animation_count": 2,
+  "template_id": "mannequin",
+  "view": "low top-down",
+  "status": "completed",
+  "rotation_urls": {
+    "south": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/rotations/south.png?t=1792556257",
+    "west": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/rotations/west.png?t=1792556257",
+    "east": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/rotations/east.png?t=1792556257",
+    "north": "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/rotations/north.png?t=1792556257",
+    "south-east": null,
+    "north-east": null,
+    "north-west": null,
+    "south-west": null
+  },
+  "style_settings": {
+    "detail": "medium detail",
+    "outline": "single color black outline",
+    "shading": "basic shading"
+  },
+  "guidance": null,
+  "ai_freedom": null,
+  "tags": [],
+  "group_id": "3ae5be51-7811-4959-938c-173039bffc59",
+  "skeletons": null,
+  "animations": [
+    {
+      "animation_type": "walking-8-frames",
+      "display_name": null,
+      "animation_group_id": "95824634-1489-462f-8f80-8723503bbb57",
+      "directions": [
+        {
+          "direction": "south",
+          "frame_count": 8,
+          "frames": [
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/017ce77f-b404-4b4c-8888-8faeb8e1c85e/south/0.png?t=1792556478",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/017ce77f-b404-4b4c-8888-8faeb8e1c85e/south/1.png?t=1792556478",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/017ce77f-b404-4b4c-8888-8faeb8e1c85e/south/2.png?t=1792556478",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/017ce77f-b404-4b4c-8888-8faeb8e1c85e/south/3.png?t=1792556478",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/017ce77f-b404-4b4c-8888-8faeb8e1c85e/south/4.png?t=1792556478",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/017ce77f-b404-4b4c-8888-8faeb8e1c85e/south/5.png?t=1792556478",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/017ce77f-b404-4b4c-8888-8faeb8e1c85e/south/6.png?t=1792556478",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/017ce77f-b404-4b4c-8888-8faeb8e1c85e/south/7.png?t=1792556478"
+          ]
+        },
+        {
+          "direction": "east",
+          "frame_count": 8,
+          "frames": [
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/7b2de469-9f76-4028-a8b3-ae1dd33b4d1b/east/0.png?t=1792556503",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/7b2de469-9f76-4028-a8b3-ae1dd33b4d1b/east/1.png?t=1792556503",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/7b2de469-9f76-4028-a8b3-ae1dd33b4d1b/east/2.png?t=1792556503",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/7b2de469-9f76-4028-a8b3-ae1dd33b4d1b/east/3.png?t=1792556503",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/7b2de469-9f76-4028-a8b3-ae1dd33b4d1b/east/4.png?t=1792556503",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/7b2de469-9f76-4028-a8b3-ae1dd33b4d1b/east/5.png?t=1792556503",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/7b2de469-9f76-4028-a8b3-ae1dd33b4d1b/east/6.png?t=1792556503",
+            "https://backblaze.pixellab.ai/file/pixellab-characters/e8415aa6-7677-47ee-8778-071350f54d78/16b9f4ff-0d79-405e-9d5e-ded6d97440fd/animations/7b2de469-9f76-4028-a8b3-ae1dd33b4d1b/east/7.png?t=1792556503"
+          ]
+        }
+      ]
+    }
+  ]
+}

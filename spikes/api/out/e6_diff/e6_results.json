@@ -1,0 +1,696 @@
+{
+  "synth": {
+    "exact": {
+      "precision": 0.45,
+      "recall": 1,
+      "f1": 0.621
+    },
+    "thr8": {
+      "precision": 0.567,
+      "recall": 1,
+      "f1": 0.723
+    },
+    "thr18": {
+      "precision": 0.672,
+      "recall": 1,
+      "f1": 0.804
+    },
+    "thr32": {
+      "precision": 0.713,
+      "recall": 0.934,
+      "f1": 0.809
+    },
+    "hyst40_8": {
+      "precision": 0.616,
+      "recall": 1,
+      "f1": 0.762
+    },
+    "thr18_cc": {
+      "precision": 0.692,
+      "recall": 0.994,
+      "f1": 0.816
+    },
+    "thr18_regioncc": {
+      "precision": 0.712,
+      "recall": 1,
+      "f1": 0.832
+    },
+    "hyst_regioncc_close": {
+      "precision": 0.603,
+      "recall": 1,
+      "f1": 0.753
+    },
+    "novel": {
+      "precision": 0.736,
+      "recall": 0.936,
+      "f1": 0.824
+    },
+    "novel_cc": {
+      "precision": 0.756,
+      "recall": 0.934,
+      "f1": 0.836
+    },
+    "slot_novel_cc": {
+      "precision": 0.848,
+      "recall": 0.934,
+      "f1": 0.889
+    },
+    "slot_novel2_cc": {
+      "precision": 0.984,
+      "recall": 0.794,
+      "f1": 0.879
+    },
+    "slot_novel2_grow1": {
+      "precision": 0.945,
+      "recall": 0.977,
+      "f1": 0.961
+    },
+    "slot_novel2_grow2": {
+      "precision": 0.905,
+      "recall": 0.996,
+      "f1": 0.948
+    },
+    "auto": {
+      "precision": 0.871,
+      "recall": 0.971,
+      "f1": 0.918
+    },
+    "slot_thr18": {
+      "precision": 0.805,
+      "recall": 1,
+      "f1": 0.892
+    },
+    "slot_hyst_cc": {
+      "precision": 0.75,
+      "recall": 1,
+      "f1": 0.857
+    }
+  },
+  "real": {
+    "inpaint-v3": {
+      "exact": {
+        "layerPx": 1700,
+        "leakPct": 64.8,
+        "meanComps": 11.6,
+        "residualInRegion": 0,
+        "layerOutsideRegion": 0
+      },
+      "thr8": {
+        "layerPx": 1543,
+        "leakPct": 61.4,
+        "meanComps": 10.8,
+        "residualInRegion": 157,
+        "layerOutsideRegion": 0
+      },
+      "thr18": {
+        "layerPx": 1323,
+        "leakPct": 56.9,
+        "meanComps": 2.2,
+        "residualInRegion": 377,
+        "layerOutsideRegion": 0
+      },
+      "thr32": {
+        "layerPx": 1236,
+        "leakPct": 55,
+        "meanComps": 2,
+        "residualInRegion": 464,
+        "layerOutsideRegion": 0
+      },
+      "hyst40_8": {
+        "layerPx": 1388,
+        "leakPct": 58,
+        "meanComps": 2,
+        "residualInRegion": 312,
+        "layerOutsideRegion": 0
+      },
+      "thr18_cc": {
+        "layerPx": 1307,
+        "leakPct": 56.9,
+        "meanComps": 1.2,
+        "residualInRegion": 393,
+        "layerOutsideRegion": 0
+      },
+      "thr18_regioncc": {
+        "layerPx": 1322,
+        "leakPct": 56.9,
+        "meanComps": 2,
+        "residualInRegion": 378,
+        "layerOutsideRegion": 0
+      },
+      "hyst_regioncc_close": {
+        "layerPx": 1402,
+        "leakPct": 58.4,
+        "meanComps": 2,
+        "residualInRegion": 298,
+        "layerOutsideRegion": 0
+      },
+      "novel": {
+        "layerPx": 1238,
+        "leakPct": 54.3,
+        "meanComps": 2.4,
+        "residualInRegion": 462,
+        "layerOutsideRegion": 0
+      },
+      "novel_cc": {
+        "layerPx": 1236,
+        "leakPct": 54.5,
+        "meanComps": 2,
+        "residualInRegion": 464,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel_cc": {
+        "layerPx": 1236,
+        "leakPct": 54.5,
+        "meanComps": 2,
+        "residualInRegion": 464,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_cc": {
+        "layerPx": 1054,
+        "leakPct": 44.6,
+        "meanComps": 3.4,
+        "residualInRegion": 646,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow1": {
+        "layerPx": 1305,
+        "leakPct": 56.7,
+        "meanComps": 2.4,
+        "residualInRegion": 395,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow2": {
+        "layerPx": 1330,
+        "leakPct": 56.8,
+        "meanComps": 2.4,
+        "residualInRegion": 370,
+        "layerOutsideRegion": 0
+      },
+      "auto": {
+        "layerPx": 1305,
+        "leakPct": 56.7,
+        "meanComps": 2.4,
+        "residualInRegion": 395,
+        "layerOutsideRegion": 0
+      },
+      "slot_thr18": {
+        "layerPx": 1323,
+        "leakPct": 56.9,
+        "meanComps": 2.2,
+        "residualInRegion": 377,
+        "layerOutsideRegion": 0
+      },
+      "slot_hyst_cc": {
+        "layerPx": 1388,
+        "leakPct": 58,
+        "meanComps": 2,
+        "residualInRegion": 312,
+        "layerOutsideRegion": 0
+      }
+    },
+    "pf-inpaint": {
+      "exact": {
+        "layerPx": 1999,
+        "leakPct": 54.7,
+        "meanComps": 1.8,
+        "residualInRegion": 9,
+        "layerOutsideRegion": 0
+      },
+      "thr8": {
+        "layerPx": 1703,
+        "leakPct": 50.7,
+        "meanComps": 3,
+        "residualInRegion": 305,
+        "layerOutsideRegion": 0
+      },
+      "thr18": {
+        "layerPx": 1197,
+        "leakPct": 47.5,
+        "meanComps": 13.2,
+        "residualInRegion": 811,
+        "layerOutsideRegion": 0
+      },
+      "thr32": {
+        "layerPx": 930,
+        "leakPct": 42.2,
+        "meanComps": 10.4,
+        "residualInRegion": 1078,
+        "layerOutsideRegion": 0
+      },
+      "hyst40_8": {
+        "layerPx": 1543,
+        "leakPct": 49.3,
+        "meanComps": 1.4,
+        "residualInRegion": 465,
+        "layerOutsideRegion": 0
+      },
+      "thr18_cc": {
+        "layerPx": 1104,
+        "leakPct": 45.7,
+        "meanComps": 3.2,
+        "residualInRegion": 904,
+        "layerOutsideRegion": 0
+      },
+      "thr18_regioncc": {
+        "layerPx": 1150,
+        "leakPct": 46.7,
+        "meanComps": 5.8,
+        "residualInRegion": 858,
+        "layerOutsideRegion": 0
+      },
+      "hyst_regioncc_close": {
+        "layerPx": 1645,
+        "leakPct": 51.1,
+        "meanComps": 1.2,
+        "residualInRegion": 363,
+        "layerOutsideRegion": 0
+      },
+      "novel": {
+        "layerPx": 869,
+        "leakPct": 37.2,
+        "meanComps": 7.2,
+        "residualInRegion": 1130,
+        "layerOutsideRegion": 0
+      },
+      "novel_cc": {
+        "layerPx": 849,
+        "leakPct": 37.5,
+        "meanComps": 3.6,
+        "residualInRegion": 1150,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel_cc": {
+        "layerPx": 849,
+        "leakPct": 37.5,
+        "meanComps": 3.6,
+        "residualInRegion": 1150,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_cc": {
+        "layerPx": 815,
+        "leakPct": 26,
+        "meanComps": 5,
+        "residualInRegion": 1184,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow1": {
+        "layerPx": 1082,
+        "leakPct": 43.4,
+        "meanComps": 3.4,
+        "residualInRegion": 917,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow2": {
+        "layerPx": 1138,
+        "leakPct": 44.8,
+        "meanComps": 3.2,
+        "residualInRegion": 861,
+        "layerOutsideRegion": 0
+      },
+      "auto": {
+        "layerPx": 1082,
+        "leakPct": 43.4,
+        "meanComps": 3.4,
+        "residualInRegion": 917,
+        "layerOutsideRegion": 0
+      },
+      "slot_thr18": {
+        "layerPx": 1197,
+        "leakPct": 47.5,
+        "meanComps": 13.2,
+        "residualInRegion": 811,
+        "layerOutsideRegion": 0
+      },
+      "slot_hyst_cc": {
+        "layerPx": 1543,
+        "leakPct": 49.3,
+        "meanComps": 1.4,
+        "residualInRegion": 465,
+        "layerOutsideRegion": 0
+      }
+    },
+    "pf-edit": {
+      "exact": {
+        "layerPx": 4586,
+        "leakPct": 62.2,
+        "meanComps": 1,
+        "residualInRegion": 0,
+        "layerOutsideRegion": 2254
+      },
+      "thr8": {
+        "layerPx": 2462,
+        "leakPct": 45.8,
+        "meanComps": 17.2,
+        "residualInRegion": 928,
+        "layerOutsideRegion": 1058
+      },
+      "thr18": {
+        "layerPx": 1240,
+        "leakPct": 39.7,
+        "meanComps": 45.2,
+        "residualInRegion": 1424,
+        "layerOutsideRegion": 332
+      },
+      "thr32": {
+        "layerPx": 748,
+        "leakPct": 26.3,
+        "meanComps": 15,
+        "residualInRegion": 1649,
+        "layerOutsideRegion": 65
+      },
+      "hyst40_8": {
+        "layerPx": 1627,
+        "leakPct": 40.4,
+        "meanComps": 5.2,
+        "residualInRegion": 1219,
+        "layerOutsideRegion": 514
+      },
+      "thr18_cc": {
+        "layerPx": 903,
+        "leakPct": 30.8,
+        "meanComps": 6,
+        "residualInRegion": 1557,
+        "layerOutsideRegion": 128
+      },
+      "thr18_regioncc": {
+        "layerPx": 839,
+        "leakPct": 29.1,
+        "meanComps": 5.6,
+        "residualInRegion": 1510,
+        "layerOutsideRegion": 17
+      },
+      "hyst_regioncc_close": {
+        "layerPx": 1761,
+        "leakPct": 46.6,
+        "meanComps": 2,
+        "residualInRegion": 1005,
+        "layerOutsideRegion": 434
+      },
+      "novel": {
+        "layerPx": 764,
+        "leakPct": 19.4,
+        "meanComps": 13.8,
+        "residualInRegion": 1636,
+        "layerOutsideRegion": 68
+      },
+      "novel_cc": {
+        "layerPx": 679,
+        "leakPct": 20.7,
+        "meanComps": 2.2,
+        "residualInRegion": 1656,
+        "layerOutsideRegion": 3
+      },
+      "slot_novel_cc": {
+        "layerPx": 676,
+        "leakPct": 20.8,
+        "meanComps": 2.2,
+        "residualInRegion": 1656,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_cc": {
+        "layerPx": 413,
+        "leakPct": 14.4,
+        "meanComps": 3,
+        "residualInRegion": 1919,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow1": {
+        "layerPx": 572,
+        "leakPct": 21.3,
+        "meanComps": 2,
+        "residualInRegion": 1760,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow2": {
+        "layerPx": 651,
+        "leakPct": 23,
+        "meanComps": 1.8,
+        "residualInRegion": 1681,
+        "layerOutsideRegion": 0
+      },
+      "auto": {
+        "layerPx": 657,
+        "leakPct": 22.3,
+        "meanComps": 1.8,
+        "residualInRegion": 1675,
+        "layerOutsideRegion": 0
+      },
+      "slot_thr18": {
+        "layerPx": 908,
+        "leakPct": 31.6,
+        "meanComps": 19.4,
+        "residualInRegion": 1424,
+        "layerOutsideRegion": 0
+      },
+      "slot_hyst_cc": {
+        "layerPx": 1112,
+        "leakPct": 34.4,
+        "meanComps": 2.4,
+        "residualInRegion": 1220,
+        "layerOutsideRegion": 0
+      }
+    },
+    "edit-images-v2": {
+      "exact": {
+        "layerPx": 6023,
+        "leakPct": 47.7,
+        "meanComps": 1,
+        "residualInRegion": 407,
+        "layerOutsideRegion": 3381
+      },
+      "thr8": {
+        "layerPx": 5355,
+        "leakPct": 40.5,
+        "meanComps": 1.6,
+        "residualInRegion": 661,
+        "layerOutsideRegion": 2967
+      },
+      "thr18": {
+        "layerPx": 4889,
+        "leakPct": 40.9,
+        "meanComps": 8,
+        "residualInRegion": 809,
+        "layerOutsideRegion": 2649
+      },
+      "thr32": {
+        "layerPx": 4368,
+        "leakPct": 39,
+        "meanComps": 7,
+        "residualInRegion": 1057,
+        "layerOutsideRegion": 2376
+      },
+      "hyst40_8": {
+        "layerPx": 5298,
+        "leakPct": 40.1,
+        "meanComps": 1.2,
+        "residualInRegion": 662,
+        "layerOutsideRegion": 2911
+      },
+      "thr18_cc": {
+        "layerPx": 4847,
+        "leakPct": 41,
+        "meanComps": 3.8,
+        "residualInRegion": 813,
+        "layerOutsideRegion": 2611
+      },
+      "thr18_regioncc": {
+        "layerPx": 4715,
+        "leakPct": 40.9,
+        "meanComps": 1.8,
+        "residualInRegion": 813,
+        "layerOutsideRegion": 2479
+      },
+      "hyst_regioncc_close": {
+        "layerPx": 5729,
+        "leakPct": 44.5,
+        "meanComps": 1,
+        "residualInRegion": 478,
+        "layerOutsideRegion": 3158
+      },
+      "novel": {
+        "layerPx": 3289,
+        "leakPct": 36.7,
+        "meanComps": 10.2,
+        "residualInRegion": 1092,
+        "layerOutsideRegion": 1739
+      },
+      "novel_cc": {
+        "layerPx": 3138,
+        "leakPct": 38.5,
+        "meanComps": 2.2,
+        "residualInRegion": 1102,
+        "layerOutsideRegion": 1598
+      },
+      "slot_novel_cc": {
+        "layerPx": 1540,
+        "leakPct": 43.1,
+        "meanComps": 2.2,
+        "residualInRegion": 1102,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_cc": {
+        "layerPx": 940,
+        "leakPct": 46.8,
+        "meanComps": 3.4,
+        "residualInRegion": 1702,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow1": {
+        "layerPx": 1298,
+        "leakPct": 45.1,
+        "meanComps": 1.4,
+        "residualInRegion": 1344,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow2": {
+        "layerPx": 1507,
+        "leakPct": 44.4,
+        "meanComps": 1.4,
+        "residualInRegion": 1135,
+        "layerOutsideRegion": 0
+      },
+      "auto": {
+        "layerPx": 1573,
+        "leakPct": 43.1,
+        "meanComps": 1.8,
+        "residualInRegion": 1069,
+        "layerOutsideRegion": 0
+      },
+      "slot_thr18": {
+        "layerPx": 2240,
+        "leakPct": 45.4,
+        "meanComps": 2.6,
+        "residualInRegion": 809,
+        "layerOutsideRegion": 0
+      },
+      "slot_hyst_cc": {
+        "layerPx": 2387,
+        "leakPct": 45.7,
+        "meanComps": 1.2,
+        "residualInRegion": 662,
+        "layerOutsideRegion": 0
+      }
+    },
+    "edit-image": {
+      "exact": {
+        "layerPx": 4720,
+        "leakPct": 37.5,
+        "meanComps": 1,
+        "residualInRegion": 36,
+        "layerOutsideRegion": 2333
+      },
+      "thr8": {
+        "layerPx": 4123,
+        "leakPct": 31.1,
+        "meanComps": 2.4,
+        "residualInRegion": 236,
+        "layerOutsideRegion": 1936
+      },
+      "thr18": {
+        "layerPx": 3752,
+        "leakPct": 34.9,
+        "meanComps": 6.4,
+        "residualInRegion": 376,
+        "layerOutsideRegion": 1705
+      },
+      "thr32": {
+        "layerPx": 3406,
+        "leakPct": 39.1,
+        "meanComps": 6.4,
+        "residualInRegion": 536,
+        "layerOutsideRegion": 1519
+      },
+      "hyst40_8": {
+        "layerPx": 3983,
+        "leakPct": 33,
+        "meanComps": 1.2,
+        "residualInRegion": 253,
+        "layerOutsideRegion": 1813
+      },
+      "thr18_cc": {
+        "layerPx": 3701,
+        "leakPct": 36.4,
+        "meanComps": 1.8,
+        "residualInRegion": 389,
+        "layerOutsideRegion": 1667
+      },
+      "thr18_regioncc": {
+        "layerPx": 3685,
+        "leakPct": 36.2,
+        "meanComps": 2,
+        "residualInRegion": 379,
+        "layerOutsideRegion": 1641
+      },
+      "hyst_regioncc_close": {
+        "layerPx": 4218,
+        "leakPct": 35.6,
+        "meanComps": 1,
+        "residualInRegion": 116,
+        "layerOutsideRegion": 1911
+      },
+      "novel": {
+        "layerPx": 3103,
+        "leakPct": 35.6,
+        "meanComps": 9.8,
+        "residualInRegion": 584,
+        "layerOutsideRegion": 1300
+      },
+      "novel_cc": {
+        "layerPx": 3027,
+        "leakPct": 38.9,
+        "meanComps": 1.8,
+        "residualInRegion": 598,
+        "layerOutsideRegion": 1238
+      },
+      "slot_novel_cc": {
+        "layerPx": 1789,
+        "leakPct": 34.4,
+        "meanComps": 2,
+        "residualInRegion": 598,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_cc": {
+        "layerPx": 561,
+        "leakPct": 53.6,
+        "meanComps": 4.8,
+        "residualInRegion": 1826,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow1": {
+        "layerPx": 1004,
+        "leakPct": 39.3,
+        "meanComps": 3.2,
+        "residualInRegion": 1383,
+        "layerOutsideRegion": 0
+      },
+      "slot_novel2_grow2": {
+        "layerPx": 1347,
+        "leakPct": 33.2,
+        "meanComps": 1.6,
+        "residualInRegion": 1040,
+        "layerOutsideRegion": 0
+      },
+      "auto": {
+        "layerPx": 1789,
+        "leakPct": 34.4,
+        "meanComps": 2,
+        "residualInRegion": 598,
+        "layerOutsideRegion": 0
+      },
+      "slot_thr18": {
+        "layerPx": 2047,
+        "leakPct": 32.4,
+        "meanComps": 2.6,
+        "residualInRegion": 376,
+        "layerOutsideRegion": 0
+      },
+      "slot_hyst_cc": {
+        "layerPx": 2170,
+        "leakPct": 29.8,
+        "meanComps": 1,
+        "residualInRegion": 253,
+        "layerOutsideRegion": 0
+      }
+    }
+  }
+}

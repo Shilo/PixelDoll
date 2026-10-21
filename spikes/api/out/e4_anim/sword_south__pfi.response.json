@@ -1,0 +1,83 @@
+{
+  "keys": [
+    "seed",
+    "type",
+    "model",
+    "width",
+    "action",
+    "height",
+    "images",
+    "prompt",
+    "status",
+    "paste_x",
+    "paste_y",
+    "asset_id",
+    "image_id",
+    "job_kind",
+    "progress",
+    "image_url",
+    "billing_usage",
+    "canvas_growth",
+    "generation_id",
+    "output_method",
+    "billing_charged",
+    "original_images",
+    "source_image_id",
+    "creator_image_saved",
+    "generation_started_at"
+  ],
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 5
+    },
+    "id": "96d167df-86c8-47d7-aaf2-2e40132ee89f",
+    "status": "completed",
+    "created_at": "2026-10-21T04:32:19.119825+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "model": "inpaint_pro_flash",
+      "width": 64,
+      "action": "Removing background",
+      "height": 64,
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3680 chars>",
+          "height": 64
+        }
+      ],
+      "prompt": "a steel longsword held in the character's right hand, blade pointing down and slightly outward",
+      "status": "completed",
+      "paste_x": 0,
+      "paste_y": 0,
+      "asset_id": "e6333cb8-f5fd-5bb0-8e68-1fe687756a1c",
+      "image_id": "e6333cb8-f5fd-5bb0-8e68-1fe687756a1c",
+      "job_kind": "creator-image",
+      "progress": 1,
+      "image_url": "<439 chars>",
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 5
+      },
+      "canvas_growth": false,
+      "generation_id": "ed326bf8-c6da-43e9-a3bf-29d48f1f7482",
+      "output_method": "Modify current layer",
+      "billing_charged": true,
+      "original_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3776 chars>",
+          "height": 64
+        }
+      ],
+      "source_image_id": "e6333cb8-f5fd-5bb0-8e68-1fe687756a1c",
+      "creator_image_saved": true,
+      "generation_started_at": "2026-10-21T04:32:19.484302+00:00"
+    }
+  }
+}

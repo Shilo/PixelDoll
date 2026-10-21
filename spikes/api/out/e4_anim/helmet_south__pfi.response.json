@@ -1,0 +1,83 @@
+{
+  "keys": [
+    "seed",
+    "type",
+    "model",
+    "width",
+    "action",
+    "height",
+    "images",
+    "prompt",
+    "status",
+    "paste_x",
+    "paste_y",
+    "asset_id",
+    "image_id",
+    "job_kind",
+    "progress",
+    "image_url",
+    "billing_usage",
+    "canvas_growth",
+    "generation_id",
+    "output_method",
+    "billing_charged",
+    "original_images",
+    "source_image_id",
+    "creator_image_saved",
+    "generation_started_at"
+  ],
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 5
+    },
+    "id": "f934f4f5-c228-4cdd-b52a-8e748f7984f9",
+    "status": "completed",
+    "created_at": "2026-10-21T04:29:24.304774+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "model": "inpaint_pro_flash",
+      "width": 64,
+      "action": "Removing background",
+      "height": 64,
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3388 chars>",
+          "height": 64
+        }
+      ],
+      "prompt": "a simple grey steel knight helmet covering the top and sides of the head, face visible",
+      "status": "completed",
+      "paste_x": 0,
+      "paste_y": 0,
+      "asset_id": "cccb07f1-4cfc-5d80-96c1-3c9f0f3942ab",
+      "image_id": "cccb07f1-4cfc-5d80-96c1-3c9f0f3942ab",
+      "job_kind": "creator-image",
+      "progress": 1,
+      "image_url": "<439 chars>",
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 5
+      },
+      "canvas_growth": false,
+      "generation_id": "e4b9f4f1-28e8-4a5c-a71a-e268c8fcfdc6",
+      "output_method": "Modify current layer",
+      "billing_charged": true,
+      "original_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3464 chars>",
+          "height": 64
+        }
+      ],
+      "source_image_id": "cccb07f1-4cfc-5d80-96c1-3c9f0f3942ab",
+      "creator_image_saved": true,
+      "generation_started_at": "2026-10-21T04:29:25.141682+00:00"
+    }
+  }
+}

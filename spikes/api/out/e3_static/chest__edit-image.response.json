@@ -1,0 +1,48 @@
+{
+  "res": {
+    "usage": null,
+    "background_job_id": "68b619a8-2ec5-4ad0-a8a3-5303415eb652",
+    "status": "processing"
+  },
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 1
+    },
+    "id": "68b619a8-2ec5-4ad0-a8a3-5303415eb652",
+    "status": "completed",
+    "created_at": "2026-10-21T04:25:16.165901+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "image": {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3144 chars>",
+        "height": 64
+      },
+      "usage": {
+        "seconds": 6.822532653808594
+      },
+      "progress": 0.639,
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 1
+      },
+      "generation_id": "c80551a9-9927-422d-985e-6918e8933b63",
+      "queue_position": 0,
+      "billing_charged": true,
+      "quantized_image": {
+        "type": "base64",
+        "width": 64,
+        "base64": "<3144 chars>",
+        "height": 64
+      },
+      "generation_started_at": "2026-10-21T04:25:21.361885+00:00",
+      "estimated_wait_seconds": 0,
+      "original_image_n_colors": 676,
+      "quantized_image_n_colors": 70
+    }
+  }
+}

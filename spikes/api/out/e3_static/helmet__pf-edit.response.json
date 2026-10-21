@@ -1,0 +1,66 @@
+{
+  "res": {
+    "usage": null,
+    "background_job_id": "574158af-375f-4bbb-8fa0-34c220ced571",
+    "image_id": "c827f07e-700c-5f06-9ac1-ff346e31e453",
+    "source_image_id": "c827f07e-700c-5f06-9ac1-ff346e31e453",
+    "status": "processing",
+    "output_count": 1,
+    "image_size": {
+      "width": 64,
+      "height": 64
+    },
+    "estimated_generations": 5,
+    "pricing_provisional": true
+  },
+  "job": {
+    "usage": {
+      "type": "generations",
+      "generations": 5
+    },
+    "id": "574158af-375f-4bbb-8fa0-34c220ced571",
+    "status": "completed",
+    "created_at": "2026-10-21T04:22:44.158582+00:00",
+    "last_response": {
+      "seed": 7,
+      "type": "message_done",
+      "model": "edit_image_pro_flash",
+      "width": 64,
+      "action": "Removing background",
+      "height": 64,
+      "images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3204 chars>",
+          "height": 64
+        }
+      ],
+      "prompt": "Add only a simple grey steel knight helmet covering the top and sides of the head, face visible to this south-facing pixel art character. Keep every other pixel of the body, face, limbs, outline, pose and the transparent background exactly unchanged. Do not redraw or move the character.",
+      "status": "completed",
+      "asset_id": "c827f07e-700c-5f06-9ac1-ff346e31e453",
+      "image_id": "c827f07e-700c-5f06-9ac1-ff346e31e453",
+      "job_kind": "creator-image",
+      "progress": 1,
+      "image_url": "<439 chars>",
+      "billing_usage": {
+        "usd": 0,
+        "type": "generations",
+        "generations": 5
+      },
+      "generation_id": "9392b66b-b555-4e18-9a56-69e6d9d60a6c",
+      "billing_charged": true,
+      "original_images": [
+        {
+          "type": "base64",
+          "width": 64,
+          "base64": "<3576 chars>",
+          "height": 64
+        }
+      ],
+      "source_image_id": "c827f07e-700c-5f06-9ac1-ff346e31e453",
+      "creator_image_saved": true,
+      "generation_started_at": "2026-10-21T04:22:44.381323+00:00"
+    }
+  }
+}
