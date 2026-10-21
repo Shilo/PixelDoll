@@ -76,6 +76,8 @@ Cross-agent channel: `docs/research/SHARED_NOTES.md` (append-only, short bullets
   public release). Name stays PixelDoll; accent per D1 look E (blue + gold).
 - D8 (2026-10-21, user): **Allowed models only** — characters: `create-character-v3` (or `create-character-pro-flash`);
   animations: `pixminimax` or `v3` (+ `skeleton-v3` mode); skeleton: `estimate-skeleton` + v3 skeleton. Banned: animation mode
-  `template`, mode `pro`, `create-character-pro`, 4/8-dir standard routes, legacy `animate-with-skeleton`. Item route
-  `edit-animation-v2` ("Edit animation (Pro)") under challenge in S4 vs Pro Flash packed-grid editing.
+  `template`, mode `pro`, `create-character-pro`, 4/8-dir standard routes, legacy `animate-with-skeleton`.
+  **Clarified (user):** "Pro" is banned only for creating from scratch. Pro is ALLOWED (and usually noticeably best) for
+  editing images/frames/references/spritesheets (`edit-animation-v2`, `edit-images-v2`, `inpaint-v3`, …). Editing candidates
+  to benchmark: Pro vs Pro Flash vs Pixen (`edit-image-pixen`) — S4.
 - D6 (2026-10-21): Skeleton v3 is the preferred skeleton route; legacy skeleton only as baseline (user) — S3 validating.
