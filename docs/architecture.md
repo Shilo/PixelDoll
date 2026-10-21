@@ -1,11 +1,10 @@
 # PixelDoll — Architecture (A1)
 
-Author: A1 (architect) · Date: 2026-10-20 · Status: **Phase 3 synthesis, v1 draft**. Inputs: R1–R5 reports, SHARED_NOTES,
-S1 interim outputs in `spikes/api/out/` (e0 probe, e1 base, e2 anim, e3 static helmet). The S1 report
-(`docs/spikes/S1_api_feasibility.md`) did not exist yet, so decisions that depend on it are listed in §15 with the measurement
-S1 must provide. Data model and export format: [`manifest-spec.md`](manifest-spec.md).
+Author: A1 (architect) · Date: 2026-10-20 · Status: **Phase 3 synthesis, v1.1** (updated with the final S1 report
+[`spikes/S1_api_feasibility.md`](spikes/S1_api_feasibility.md)). Inputs: R1–R5 reports, SHARED_NOTES, S1. Spike S2 is running
+(§15). Data model and export format: [`manifest-spec.md`](manifest-spec.md).
 
-Evidence tags: **[S1]** measured in the live spike (interim), **[R1]–[R5]** research report, **[A1]** decision taken here.
+Evidence tags: **[S1]** measured live, **[R1]–[R5]** research report, **[A1]** decision taken here.
 
 ---
 
@@ -18,389 +17,338 @@ Evidence tags: **[S1]** measured in the live spike (interim), **[R1]–[R5]** re
    base's grid. Transparent cells are emitted, never omitted.
 2. **Every pixel comes from PixelLab.** PixelDoll only crops, pads, masks, diffs, snaps colours, translates and composes. It
    never draws or resamples.
-3. **Minimal human work.** One prompt per item. Masks, routes, extraction thresholds, QA and re-rolls run automatically.
-   The human accepts, re-rolls or nudges a calibration knob.
+3. **Minimal human work.** One prompt per item, one optional design approval. Slot regions, routes, extraction, QA and
+   re-rolls run automatically. The human accepts, re-rolls or nudges a calibration knob.
 4. **Correct output for Godot 4, Unity, Phaser 3/4 and generic engines**: per-layer sheets, a manifest, and per-engine glue.
 5. **Fully client-side** on GitHub Pages. The browser calls `https://api.pixellab.ai/v2` directly with the user's key (CORS
    verified [R2]).
 
 **Non-goals (v1)**
 
-- Semantic segmentation of arbitrary composites, or "remove the body" two-pass AI extraction [R1 §6].
-- Body-shape axis (male/female/child variants of one item). One base per project. An item is bound to its base by `baseHash`.
-- Full-body outfit swaps presented as layers. `transfer-outfit-v2` output redraws the whole body (0 identical pixels, 76–98 %
-  coverage [R1]). It is not used in v1.
-- Oversize cells for weapon swings (LPC 128/192). Pixels outside the cell are clipped and QA warns.
-- Bones, IK, anchor graphs (MapleStory/RO) [R4 R-3]. Semi-transparent VFX layers.
-- Backend, accounts, sharing service. A packed multi-layer atlas export. Undo history beyond the session.
+- Semantic segmentation of arbitrary composites. Body-shape axis (one base per project; items bound to it by `baseHash`).
+- Layers made from **character states** (`create-character-state` + animate): same poses but not pixel-aligned (815–891 px
+  changed per frame) [S1]. States are only previews or transfer-outfit references.
+- Full-body outfit swaps presented as a base replacement. Oversize cells for weapon swings (clipped, QA warns).
+- Bones, IK, anchor graphs [R4 R-3]. Semi-transparent VFX layers. Backend, accounts, packed atlases.
 
 ---
 
 ## 2. The rig contract
 
-The rig is frozen once per project. Every PixelLab call that produces item pixels targets the **frozen base cells**, never a
-previous composite (pip rule [R1]).
+The rig is frozen once per project. Every PixelLab call that produces item pixels targets the **frozen base animation
+cells**, never a previous composite and **never the rotation images**.
 
 | Property | Decision | Rationale |
 |---|---|---|
-| Cell | **64×64** (allowed: 32×32). Square, no other sizes. | Pro grid routes fit **16 frames per call at ≤64 px** (9 at 65–80, 4 above) and bill per grid [R2]. `estimate-skeleton` accepts only 16/32/64/128/256 squares [R2]. Pro Flash edit/inpaint native sizes include 32×32 and 64×64 [S1 e0]. `create-character-v3` at `image_size` 64 returned a 64×64 canvas and template animations stayed 64×64 [S1 e1/e2]. The legacy 4-dir route returned **92×92** for size 64 [S1 e1] and must be cropped. A ~52 px tall character fits in 64 with room for a hat. |
-| Directions | **4**: `south, east, north, west` with `west.mirrorOf = east` (3 generated). Option **8**: `south, south-east, east, north-east, north` generated; `south-west←south-east`, `west←east`, `north-west←north-east` mirrored. PixelLab `Direction` enum names everywhere. | UO/Habbo/RSC store 5 and show 8 [R4]. Mirroring saves 25–37 % of every generation. |
-| Mirroring | A mirrored direction is a **horizontal flip of the source direction's frozen cells**: `x' = w−1−x` for pixels, `px' = w − px` for the pivot. An item has `mirror: "flip"` (default; flip its source-direction layer) or `"generate"` (generate real frames against the mirrored base cells: emblems, text, handed details). Exported sheets always contain **real pixels for every direction** (mirrored rows baked), so engines need no flip logic. | Handedness: a flipped right-hand sword becomes left-handed. That is accepted for `flip`; use `generate` when it matters. Habbo-style hand-slot swapping is skipped (add if a user needs strict handedness). |
-| Animations | Default **`idle`** (template `breathing-idle`, 4 cells) and **`walk`** (template `walking-8-frames`, 8 cells) [S1 e2]. More (run, attack, hurt, death) are added from the **live template list**, stored as data, never hard-coded [R2]. | 4 + 8 = **12 cells per direction ≤ 16**, so a whole direction fits into one Pro grid call (§5.4). |
-| Frame count | Whatever the base generation returned, **frozen per animation, identical across directions** (normalize or fail). Playback is a **playlist** `frames[{cell, ms}]` (LPC `cycle`): repeats and holds cost no generation. Default 100 ms per frame (idle 150 ms). | R3/R4/R5. |
-| Pivot | One integer point per rig, **top-left origin, pixel-edge coordinates** (0..w). `x = w/2`; `y` = bottom edge of the lowest opaque row of `idle/south` cell 0 (ground contact). Same for every cell and layer. | Every engine converts from this (manifest-spec §6). Integer only (fralonra float bug [R5]). |
-| Frozen base PNGs | After normalization (§5.2) each base cell is stored as a PixelDoll-owned PNG with **binary alpha** (0/255), hashed (SHA-256 of RGBA bytes). `baseHash` = SHA-256 over all base cell hashes in canonical order (animation, direction, cell). Any base change = new rig; items with another `baseHash` are flagged **stale**. | PixelLab "echo" frames are never exact [R1 F5]; layers are pre-occluded against one exact base [R3]. |
-| Base body look | Neutral, clothed in plain underwear, bald, barefoot, arms slightly away from the body. | Nude south views are policy-rejected [R1 F9]. Bald + arms apart keeps hair/sleeve regions free. S1 base prompt passed. |
+| Cell | **64×64** (allowed: 32×32). Square. | Pro batch routes fit 16 frames (edit-animation-v2) / 15 + reference (transfer-outfit-v2) at ≤64 px, 4 above 80 px, **same cost for 8 or 16 frames** (10 gens) [S1, server limit messages]. `create-character-v3` at 64 keeps a 64×64 canvas; the 4-direction route gives 92×92 → only 4 frames per call → rejected [S1]. |
+| Directions | **4**: `south, east, north, west` with `west.mirrorOf = east` (3 generated). Option **8**: 5 generated + 3 mirrored. PixelLab `Direction` names. | UO/Habbo/RSC store 5, show 8 [R4]. Only south/east measured so far; north/west in S2. |
+| Mirroring | A mirrored direction is a horizontal flip of the source direction's frozen cells (`x' = w−1−x`, pivot `px' = w − px`). Item `mirror: "flip"` (default) or `"generate"` (asymmetric details; generate against the mirrored base cells). Exported sheets always contain real pixels for every direction. | Handedness flips with `flip`; accepted. |
+| Animations | Default **`idle`** (template `breathing-idle`, 4 cells) and **`walk`** (`walking-8-frames`, 8 cells) [S1]. More from the live template list (data, never hard-coded; the spec list is truncated [S1]). | 12 cells per direction. |
+| Cells come from animations | **Template animations re-render the whole body every frame** (<5 % of pixels stable even in idle) and **frame 0 ≠ the rotation image** (body 3–4 px shorter) [S1]. So the canonical rig = the returned animation frames; layers are produced per animation frame; rotations are only used to start animations. | [S1 E2] |
+| Frame count | As returned, frozen per animation, identical across directions. Playback is a **playlist** `frames[{cell, ms}]` (LPC `cycle`). Defaults 100 ms (walk), 150 ms (idle). | R3/R4/R5. |
+| Pivot | Integer, top-left origin, pixel-edge coordinates. `x = w/2`; `y` = bottom edge of the lowest opaque row of `idle/south` cell 0. | Engine conversions in manifest-spec §6. |
+| Headroom | **≥ 6 px** free above the head in every cell, else hats and hair clip. Rotations came back with only **2 px** headroom; animation frames had 5–7 px [S1]. Base prompt asks for "a small character with space above the head"; G8 checks it at freeze. S2 measures the fix. | [S1 E1/E2] |
+| Frozen base PNGs | Normalized (centre-align, crop/pad, never rescale), binary alpha, SHA-256 per cell; `baseHash` over all cells. A new base = new rig; items with another `baseHash` are **stale** (two characters animated with the same template align only to ±1–3 px [S1]). | |
+| Base body look | Bald, barefoot, **neutral tight top (tank top/bodysuit) + shorts**, arms slightly away from the body. Prompts never say "body"/"skin". | A shirtless base got a `code 5000` policy block on 1/8 frames; nude bases fail on south [S1, R1]. |
 
 ---
 
 ## 3. End-to-end pipeline
 
 ```
- A. Base     create-character-v3 (64, 4|8 dirs) ─▶ /characters/animations (templates) ─▶ download every frame immediately
-             (or import user PNGs via direction_images)
- B. Freeze   normalize (crop/pad, never rescale) ─▶ binary alpha ─▶ pivot ─▶ estimate-skeleton per cell ─▶ anchors
-             ─▶ hash ─▶ RIG FROZEN (baseHash)
- C. Item     slot + prompt ─▶ per-frame slot masks ─▶ route by item class (rigid | worn) ─▶ PixelLab calls (job queue)
- D. Extract  normalize ─▶ clamp outside mask to base ─▶ palette snap ─▶ diff (hysteresis) ─▶ components ─▶ body-material
-             rejection ─▶ layer cell
- E. QA       gates per cell + temporal per direction ─▶ auto re-roll failing cells (max 2) ─▶ human accept/re-roll
- F. Split    wrap items: fg = layer ∩ base silhouette, bg = rest
+ A. Base     create-character-v3 (64) ─▶ /characters/animations (template, ~1 gen/dir) ─▶ download frames immediately
+ B. Freeze   normalize ─▶ binary alpha ─▶ pivot + headroom check ─▶ estimate-skeleton per cell (free) ─▶ slot rects,
+             anchors ─▶ hash ─▶ RIG FROZEN
+ C. Item     slot + prompt ─▶ route by item class (§5): batch edit (default) | keyframe + propagate (rigid)
+ D. Extract  slot rect ∩ palette-novelty diff ─▶ components ─▶ 1-px ring ─▶ per-item fallback ─▶ layer over frozen base
+ E. QA       per-item temporal gates over all cells ─▶ re-roll the whole batch call, never patch one cell
+ F. Split    wrap items: fg = layer ∩ base alpha, bg = rest
  G. Compose  z ladder + sparse overrides + hides ─▶ live preview (same code bakes composites)
  H. Export   per-layer per-animation sheets + manifest.json + engine glue ─▶ zip
 ```
 
-### 3.1 Base creation (A)
+### 3.1 Base (A) and freeze (B)
 
-- Default route: `POST /create-character-v3` with `image_size {64,64}`, `view` (user choice, default `low top-down`),
-  `template_id: mannequin`, `no_background: true`, explicit `seed`. S1: 2 generations, ~5 min [S1 e1].
-- Base animation: `POST /characters/animations` `mode: template`, one call per animation with all stored directions.
-  S1: walk ≈ 1.5 generations per direction, ~2 min; idle 4 frames [S1 e2]. Template vs `skeleton-v3` mode is open (§15 O6).
-- Import path: user PNGs per direction via `direction_images` (0.25 generations, frames used as drawn [R1]) or raw PNG cells
-  dropped into the rig editor. Same freeze step applies.
-- Download every frame as soon as a job completes (jobs auto-delete [R2]). Storage CDN is CORS `*` [R2].
+- `POST /create-character-v3`, `image_size {64,64}`, `template_id: mannequin`, `no_background: true`, explicit seed: 2 gens,
+  ~290 s [S1]. Import path: user PNGs via `direction_images` (0.25 gens) or dropped cells; same freeze.
+- `POST /characters/animations` `mode: template`, all stored directions: ~1 gen per direction, 70–140 s [S1]. The south template
+  walk has a weak stride; acceptable for v1.
+- Download every frame as soon as the job completes (jobs auto-delete [R2]). For Pro Flash results use base64 `images[0]`,
+  not `image_url` (differs inside the mask) [S1].
+- `POST /estimate-skeleton` per stored cell: synchronous, ~6 s, ~0 gens, 18 labels, normalized x/y, `z_index` (far arm on
+  east = −4) [S1]. 16 concurrent calls were fine. Keypoints give slot rects (§5.4) and anchors (`head`, `neck`, `hand_r`,
+  `hand_l`, `hip`, `foot_r`, `foot_l`; RIGHT = the character's right).
 
-### 3.2 Freeze (B)
+### 3.2 Extraction (D) — S1 extractor (`slot_novel2_grow1` + `auto`), per cell
 
-1. **Normalize** each returned frame to the cell: centre-align (PixelLab centres frames [R2]), then crop/pad. Never rescale.
-   Fail if crop would cut opaque pixels. Record the offset.
-2. **Binary alpha**: alpha ≥ 128 → 255 with RGB kept, else 0/0/0/0. Count semi-alpha pixels as a QA note.
-3. **Pivot** from `idle/south` cell 0 (§2). Check every animation's south cell 0 has its lowest opaque row within ±1 px of the
-   pivot; warn otherwise (feet drift).
-4. **Skeleton**: `POST /estimate-skeleton` per stored cell (sync, 0.1 generation, 18 labels with normalized 0–1 `x,y` and
-   `z_index` [S1 e3]). 3 dirs × 12 cells = 36 calls ≈ 3.6 generations. Managed `GET /characters/{id}.skeletons` gives only one
-   3D pose, not per frame [S1].
-5. **Anchors** per cell (used for item propagation and masks): `head` (mean of eyes/ears/nose), `neck`, `hand_r`/`hand_l`
-   (`RIGHT ARM`/`LEFT ARM` = wrist), `hip`, `foot_r`/`foot_l` (`*_LEG` = ankle). Character-relative names (RIGHT = the
-   character's right). Refined by **patch tracking** (§5.3).
-6. **Base palette**: count colours; build/snap the `skin` ramp and other base materials (§7). Hash, freeze.
+Inputs: frozen base `B`, normalized composite `C`, slot rect `S` for this cell. Port of `spikes/api/lib/{diff,extract}.mjs`.
 
-### 3.3 Items, masks, routes (C) — see §4 and §5.
+1. **Changed** = premultiplied max-channel Δ > 8 or Δalpha > 16.
+2. **Item colour test**, a changed pixel is item if: base is empty there, **or** its colour is within ±6 of the item **core
+   palette** (colours added on empty canvas inside `S`), **or** it is > 12 from both the base palette and the composite's
+   **redrawn-body palette** (learned from changed pixels outside `S`).
+3. **Components**: 8-connected, min area 3, must overlap `S`.
+4. **Ring**: grow 1 px into pixels with Δ > 18, then clip to `S`.
+5. **Per-item fallback**: if step 2 removes > 25 % of the area that `S ∩ novel_cc` would keep, use `S ∩ novel_cc` for **all cells
+   of the item** (decided per item, not per cell; per-cell choice made a holey chest frame [S1]).
+6. **Layer** = `C` pixels under the final mask. Output is always `over(B, layer)`; the composite's body is never used, which is
+   what makes batch-route body drift harmless.
 
-### 3.4 Extraction (D)
+Semi-synthetic benchmark: precision 0.945, recall 0.977, F1 0.961 (global thr18 alone: F1 0.80) [S1 E6]. Known weakness: item
+colours close to skin shading (leather) lose pixels → holes. **Not yet production-clean** (§13). τ values (8/16/±6/12/18,
+25 %) are the user-visible calibration knob, with the S1 heatmap (green added, red body changed, blue drift, magenta erased).
 
-Per cell, inputs: frozen base `B`, normalized composite `C`, slot mask `M`. Port of `spikes/api/lib/diff.mjs` (browser-portable).
+### 3.3 QA gates (E) — per item over all its cells
 
-1. **Shape gate**: `C` size = cell after normalization; alpha binarized.
-2. **Clamp**: outside `M`, `C := B`. Masked routes are already byte-exact outside the mask [S1 e3: 0 changed pixels for
-   `inpaint-image-pro-flash` and `inpaint-v3`; R1: 43/43]; this makes unmasked routes safe too.
-3. **Palette snap** of `C` inside `M` to (base materials ∪ item materials) in OKLab, max distance τ_snap (§7).
-4. **Diff**: premultiplied max-channel ΔRGB and Δalpha. **Hysteresis**: seed Δ > τ_hi (40), grow 4-connected into Δ > τ_lo (8),
-   any Δalpha > 16 seeds [S1 `maskHysteresis`].
-5. **Components**: 8-connected, keep components ≥ 3 px that overlap `M`; clip to `M` (`slot_hyst_cc` variant: residual
-   16 px on the masked helmet [S1]).
-6. **Body-material rejection** (default on): drop layer pixels that sit on base-opaque pixels and whose snapped colour belongs
-   to a body material (skin). This removes the redrawn face/neck that masked inpaint bakes into a helmet layer [S1 e3 visual:
-   face and shoulders inside the rect mask were redrawn]. Off for items that intentionally recolour skin (none in v1).
-7. **Layer** = `C` pixels where the final mask is 1. **Erasures** (base opaque → composite transparent) cannot be represented by an
-   over-layer: count them for QA (helmet masked: 0 [S1]).
-
-τ_hi, τ_lo and τ_snap are the user-visible **calibration knob** (one slider "strict ↔ tolerant" mapping to presets) with a
-diff heatmap (green added, red body changed, blue small drift, magenta erased; as `spikes/api/lib/diff.mjs heatmap`).
-
-### 3.5 QA gates and metrics (E)
-
-All metrics are stored per cell in `item.qa` (manifest-spec §2). Defaults are starting values to calibrate in
-Phase 5.
-
-| Gate | Metric | Default threshold | On fail |
+| Gate | Metric | Threshold [S1] | On fail |
 |---|---|---|---|
-| G1 Shape | canvas = cell after normalize; frame count = rig | exact | job failed, re-roll |
-| G2 Locality | `outsideDrift` = pixels changed outside `M` before clamp | masked routes: 0 (else route broken, stop + report); unmasked: info only | masked: stop route |
-| G3 Recompose | `residualPct` = pixels where `over(B, layer) ≠ C` inside `M` / layer area | ≤ 10 % | warn ≥ 10 %, fail ≥ 25 % |
-| G4 Presence | `area` = layer pixels | ≥ 12 px (and ≥ 30 % of the direction's median area) | fail (item missing) |
-| G5 Erasure | `erasures` inside `M` | ≤ 8 px | warn |
-| G6 Temporal (per direction) | area vs direction median; centroid jump vs anchor motion; palette Jaccard vs keyframe | area ratio 0.6–1.6; jump ≤ 3 px after anchor compensation; Jaccard ≥ 0.4 | fail cell |
-| G7 Palette | share of layer pixels snapped within τ_snap; colours per material | ≥ 90 %; ≤ ramp length | warn |
-| G8 Clip | opaque layer pixels on the cell border | 0 | warn (oversize) |
+| G1 Shape | frame count, order (alpha-IoU argmax), canvas | exact (100 % pass in S1) | re-roll call |
+| G2 Area stability | layer area coefficient of variation | ≤ 0.15 | re-roll |
+| G3 Design stability | adjacent-cell palette Jaccard | ≥ 0.6 | re-roll |
+| G4 Placement | spread of layer centroid relative to the slot anchor | ≤ 2 px | re-roll |
+| G5 Presence | min cell area / median area | ≥ 0.5 (catches deleted heads) | re-roll |
+| G6 Overlap | pixels shared with items it does not `hides` | info, shown per pair | user sets hides/z |
+| G7 Clip | opaque layer pixels on the cell border (headroom) | 0 | warn |
+| — | out-of-slot body drift | info only | — |
 
-Failing cells are re-rolled automatically (new seed, same route, **only those cells**), at most 2 times, then shown to the user as
-`fail` with "accept anyway / re-roll / switch route". Rigid-class items pass G6 by construction.
+A failing item **re-runs the whole batch call** (new seed). A single cell is never patched with a different route: per-frame
+routes change the design (§6). Two automatic re-rolls max, then the user decides. Metrics land in `item.qa` (manifest-spec §2).
 
-### 3.6 fg/bg split for wrap-around items (F)
+### 3.4 fg/bg split for wrap-around items (F)
 
-For slots with `split: true` (back, hair), after extraction, per cell:
-`fg = layer ∩ baseOpaque`, `bg = layer − fg`. The fg part covered the body (cape on north, hair over the forehead, collar on
-south); the bg part lies outside the silhouette (cape sides on south, hair beside the shoulders) and draws behind every other
-item. Deterministic, free, no extra generation. Diff layers are already occluded against the base [R3], so this only matters
-item-vs-item. Precision on capes and long hair is measured in Phase 5 (§15 O9).
+Slots with `split: true` (back, hair, held items): `fg = layer ∩ baseOpaque`, `bg = layer − fg`. Verified on the south cape:
+fg 45 px (straps), bg 454 px; drawing bg → base → fg **reproduces base+layer exactly** [S1 E5]. Held items may refine with the
+hand keypoint `z_index` (far hand behind) — later, only if needed. When occluded pixels matter (cape on north, sway), the
+**two-pass fallback** runs `edit-image-pro-flash` "remove the character" on the composite (5 gens): it produced a full cape incl.
+667 occluded px, 32 px mismatch outside the silhouette [S1]. Batch two-pass is in S2.
 
-### 3.7 Compose (G) and export (H)
+### 3.5 Compose (G) and export (H)
 
-The compositor builds a draw list per (animation, direction, playlist frame): visible layers (respecting `hides`), sorted by
-resolved z (slot ladder → item override → sparse `zOverrides`), drawn with Canvas2D `drawImage` (nearest, no smoothing) at the
-same origin. The preview and the optional `baked/` composites use the same function. Export: manifest-spec §5–§6.
+Draw list per (animation, direction, playlist frame): visible layers (respecting `hides`), sorted by resolved z, Canvas2D
+`drawImage` without smoothing at one origin. Preview and `baked/` composites share it. Independent extraction stacks
+coherently: animated helmet + chest overlap 0–7 px per frame [S1 E5]. Export: manifest-spec §5–§6.
 
 ---
 
 ## 4. Slot taxonomy, z ladder, hides
 
-**Equip slot vs drawn layer.** A slot is what can be equipped (one item per slot, mutual exclusion). An item emits 1..n drawn
-layers (`main`, or `fg` + `bg`), each with its own z [R4 R-1, LPC `layer_N`].
+A slot is what can be equipped (one item per slot). An item emits 1..n drawn layers (`main`, or `fg` + `bg`), each with its own z.
 
-Default slots (16; data, user-editable). z ladder with gaps of 10; bg layers sit below the body.
-
-| Slot | Class | Anchor | fg z | bg z | Default hides | Typical items |
+| Slot | Class | Anchor | fg z | bg z | Default hides | Slot rect (from keypoints) |
 |---|---|---|---|---|---|---|
-| `body` | base (required) | — | 10 | — | — | the frozen base |
-| `feet` | worn | foot | 20 | — | — | boots, shoes |
-| `legs` | worn | hip | 30 | — | — | pants, skirt |
-| `torso_inner` | worn | neck | 40 | — | — | shirt, tunic |
-| `waist` | worn | hip | 50 | — | — | belt, sash |
-| `torso_outer` | worn | neck | 60 | — | — | armour, robe, coat |
-| `shoulders` | rigid | neck | 65 | — | — | pauldrons, mantle |
-| `arms` | worn | hand | 70 | — | — | gloves, bracers |
-| `neck` | rigid | neck | 80 | — | — | amulet, scarf |
-| `back` | worn, split | neck | 90 | 4 | — | cape, backpack, quiver |
-| `facial_hair` | rigid | head | 100 | — | — | beard, moustache |
-| `hair` | rigid, split | head | 110 | 3 | — | hair (long hair: worn) |
-| `face_acc` | rigid | head | 120 | — | — | glasses, mask |
-| `head` | rigid | head | 130 | — | `hair` (per item, off by default) | hat, helmet, hood |
-| `off_hand` | held | hand_l | 140 | 2 | — | shield, torch |
-| `main_hand` | held | hand_r | 150 | 1 | — | sword, staff |
+| `body` | base | — | 10 | — | — | — |
+| `feet` | worn | foot | 20 | — | — | ankles ± 4 → cell bottom |
+| `legs` | worn | hip | 30 | — | — | hips → ankles, ± 4 |
+| `torso_inner` | worn | neck | 40 | — | — | shoulders → hips, **excluding arm capsules** |
+| `waist` | worn | hip | 50 | — | — | hip line ± 3 |
+| `torso_outer` | worn | neck | 60 | — | — | as torso_inner, ± 5, to knees with `item.rectExtend` |
+| `shoulders` | worn | neck | 65 | — | — | shoulder line ± 4 |
+| `arms` | worn | hand | 70 | — | — | capsules shoulder → wrist, r 3 |
+| `neck` | rigid | neck | 80 | — | — | neck → shoulders, ± 3 |
+| `back` | worn, split | neck | 90 | 4 | — | torso + 8 px sideways, to knees |
+| `facial_hair` | rigid | head | 100 | — | — | nose → chin |
+| `hair` | rigid, split | head | 110 | 3 | — | head box above the **brow**, + sides to shoulders |
+| `face_acc` | rigid | head | 120 | — | — | eyes ± 3 |
+| `head` | rigid | head | 130 | — | `hair` (per item) | head box above the **brow** − 6 px |
+| `off_hand` | held, split | hand_l | 140 | 2 | — | **whole hand-side half of the cell** |
+| `main_hand` | held, split | hand_r | 150 | 1 | — | **whole hand-side half of the cell** |
 
-- **Sparse overrides** `{layer, z, dir?, anim?, cell?}` on a slot cover the classic exceptions (UO cloak-by-direction, RO
-  shield-behind [R4 R-2]), e.g. `main_hand` fg z 85 on `north` so the cape covers the weapon arm. Per-cell entries are allowed
-  but should be rare; prefer the fg/bg split [R3, R4].
-- **Hides as data**: `slot.hides` (default) and `item.hides` (override). A visible item hides all layers of the listed slots
-  (full helmet → `hair`; robe → `legs`). No hard-coded rules (UO anti-pattern [R4 R-7]).
-- `required`: only `body`. Every other slot may be empty.
-
-**Item-vs-item order policy [A1]**: every item is generated **against the bare frozen base**, never against base + other items.
-Items stay independent and freely combinable; order between items comes only from the z ladder, overrides, split and hides.
-"Dress order" generation (outer item on top of inner items) is rejected: it makes every item depend on a specific inner item
-(combinatorial regeneration). Known artefact: an inner item wider than an outer item shows at its edges, as in every layered game.
+- Rects stop at the brow and exclude arms because inside-rect body redraw becomes layer pixels (S1 face-in-helmet, arm
+  speckle in the chest). Weapon rects are generous because a tight rect cuts blades [S1]. Missing keypoints → silhouette
+  bounding-box fractions. The user may repaint the rect on one cell per direction; it is translated to the others.
+- **Sparse overrides** `{layer, z, dir?, anim?, cell?}`, e.g. `main_hand` fg z 85 on `north` so the cape covers the weapon arm.
+  Prefer the fg/bg split [R3, R4].
+- **Hides as data**: `slot.hides` default, `item.hides` override. S1 measured large semantic overlaps (hair+helmet 94 px,
+  chest+hair 65, cape+sword 64) that need hides/z rules, not pixel tricks.
+- **Item-vs-item order policy [A1, confirmed by S1]**: every item is generated against the **bare frozen base**; order between
+  items comes only from z, split, overrides and hides. No dress-order generation.
 
 ---
 
 ## 5. Item generation strategy
 
-### 5.1 Item classes
+### 5.1 Route per class
 
-| Class | Slots | Route | Cost per item (3 stored dirs, 12 cells/dir) |
+| Class | Route | Cells per call | Cost per item (3 dirs × 12 cells = 36) |
 |---|---|---|---|
-| **rigid** | head, face_acc, facial_hair, hair, neck, shoulders | **Keyframe + propagate**: one masked call on `idle` cell 0 per stored direction → extract → copy the layer into every other cell, translated by the anchor delta (§5.3). Zero AI calls per frame. | 3 × `inpaint-image-pro-flash` = **15 gens** |
-| **held** | main_hand, off_hand | Same as rigid with the hand anchor for animations marked `rigidOk` (idle, walk). Animations where the held item rotates (attack) use the worn route for that animation only. | 15 gens + worn route per action animation |
-| **worn** | feet, legs, torso_inner, waist, torso_outer, arms, back, long hair | **Per-frame generation** with clamp + extraction. Route A (default until S1 says otherwise): one `edit-animation-v2` call per stored direction with all ≤16 cells packed, `target_palette` = materials, then clamp outside `M` (§3.4). Route B (repair): per-cell `inpaint-image-pro-flash` with mask. | A: 3 × 10 = **30 gens**; B: 36 × 5 = 180 gens |
+| **rigid** (head, face_acc, facial_hair, hair, neck) | **Keyframe + propagate**: one batch call (`edit-animation-v2`) on the `idle/0` cell of every stored direction → one design across directions [S1: S+E in one call = one design] → extract → copy into every other cell, translated by the anchor delta (§5.3). | 3 (+ optional extra cells) | **10** |
+| **worn** (feet, legs, torso_*, waist, shoulders, arms, back) | **Approved keyframe + reference batches**: masked `inpaint-v3` on `idle/south/0` (user approves the design) → `transfer-outfit-v2` with that composite as reference, ≤15 cells per call, cells of all directions packed [S1: cross-direction reference works]. If all cells fit one call, `edit-animation-v2` (16 cells, text only) is equivalent. | 15 | 10 + 3 × 10 = **40** |
+| **held** (main_hand, off_hand) | Same as worn. Propagation only for low-motion clips (idle; south walk passed with offsets ≤ 3 px); never for attacks or side-view arm swings. | 15 | **40** |
 
-Rigid propagation is the cheapest route and gives perfect temporal consistency (LPC/lpctools `distribute`, Terraria/Stardew
-per-frame offsets [R4, R5]). Its ceiling is head/hand rotation; cells that fail G3/G4 after propagation are escalated to route B.
+Why a shared reference for worn items: an item with 36 cells needs ≥ 3 batch calls, and only a shared reference keeps the design
+identical **between calls** (palette Jaccard 0.73–0.81 with reference, sword cleanest on transfer-outfit) [S1 E4].
 
-### 5.2 Normalizing returns
+Always pass `target_palette` (item ramps + base ramps): it raises exact body pixels only to 26–34 % [S1], but it locks the item
+palette. `edit-animation-v2` output is quantized to 16 colours [S1]. Always send `no_background: true`.
 
-Every PixelLab image is normalized like base frames: crop/pad, never rescale, binary alpha, verify size. Read `paste_x`,
-`paste_y`, `canvas_growth` from Pro Flash jobs [R1] (S1: 0/0/false at 64×64). Always send `no_background: true` explicitly
-(defaults differ per route [R1 F8]). Multi-frame routes: frame order in = frame order out, else G1 fails.
+### 5.2 Rejected routes [S1]
 
-### 5.3 Anchors and propagation
-
-Anchor delta between the keyframe cell and cell *k* = integer translation (search ±4 px) that minimizes the sum of absolute
-differences between the **base** patch around the keyframe anchor (head: the head mask region; hand: 9×9 around the wrist) and
-the base cell *k*. Keypoints only seed the search. This uses the exact frozen base pixels, so it is free and does not jitter
-like keypoint estimates. The propagated layer is clipped to the cell; pixels that would land on base-transparent area where the
-keyframe had base-opaque support are kept (hats overhang).
-
-### 5.4 Grid packing (route A)
-
-At 64 px one `edit-animation-v2` call takes 2–16 frames and bills one grid (10 gens) [R2]. Pack **all cells of one stored
-direction** (idle 4 + walk 8 = 12). Prompt template (pip, ≤500 chars [R1 §6.12]): identity + direction + item + body region +
-placement + "keep every other pixel unchanged". Whether mixing animations in one grid hurts consistency is §15 O8. More than 16
-cells per direction → split by animation.
-
-### 5.5 Slot region masks
-
-Masks serve three purposes: the `mask_image` of masked routes (white = generate, black = keep [R2]), the clamp region for unmasked
-routes, and the extraction region. One mask per (item, cell), derived automatically:
-
-```
-M = grow( shape(slot, keypoints of the cell), slot.grow ) ∩ (slot.worn ? grow(baseOpaque, 2) : everything)
-```
-
-| Slot | Shape (keypoint-relative, character-right = image-left on south) |
+| Route | Why |
 |---|---|
-| head / hair / face_acc / facial_hair | box: x = ears ± 0.6·earDist, y = top of silhouette in that column band − 6 … nose + 0.5·earDist (hair: … shoulder y + 4) |
-| neck / shoulders | box shoulders ± 3, y = neck − 3 … shoulder + 4 |
-| torso_inner / torso_outer | polygon shoulders → hips, ± 3 px (outer: ± 5, down to knees for robes via `item.maskExtend`) |
-| arms | capsules shoulder → elbow → wrist, r = 3 |
-| waist | box hips ± 4, y = hip − 3 … hip + 3 |
-| legs | capsules hip → knee → ankle, r = 4 |
-| feet | box ankles ± 4, y = ankle − 2 … cell bottom |
-| back | torso polygon + 8 px sideways, down to knees |
-| main_hand / off_hand | circle at the wrist r = 6 + item `reach` box outward (default 20 px) |
+| Per-frame masked inpaint (`inpaint-v3`, `inpaint-image-pro-flash`) for animations | Exact outside the mask, but a different item every frame (palette Jaccard 0.13–0.20, area CV 0.14–0.38; inpaint-v3 deleted the head on 1/8; Pro Flash hit a policy block on 1/8). **Not a repair route either.** Used only for single keyframes. |
+| `edit-image` | Ignores "add only" (helmet → full plate armour). |
+| `edit-images-v2` | Redraws and shifts the body; two-pass shifted the cape 13 px. |
+| `create-character-state` + animate | Not pixel-aligned with the base (§1). |
+| Pro Flash changes-only `output_method` | A crop of the inpaint result to the mask, still with redrawn body pixels; no gain over local diff. |
 
-Masks are rendered pixel-exact in the UI (overlay) and can be repainted on the keyframe of each direction; the edit is translated
-to the other cells like a rigid layer. Missing keypoints → fallback to silhouette bounding-box fractions (head = top 28 % …).
-S1 interim lesson: the rect helmet mask included neck and shoulders, which were redrawn; templates must stop at the neck.
+Masked keyframes use **`inpaint-v3`** (10 gens, 66–105 s): far less redraw inside the mask than Pro Flash (small-drift px 25–159
+vs 42–329) → cleaner layers. Pro Flash inpaint (5 gens, ~31–59 s) is the cheap draft option. Both changed 0 px outside the
+mask over 10 calls; the July inpaint-v3 bug did not reproduce [S1 E3].
 
----
+### 5.3 Rigid propagation
 
-## 6. Masked route choice
+Anchor delta between the keyframe and cell *k* = integer translation (search ±4 px) minimizing the sum of absolute differences
+between the **frozen base** patch around the anchor (head mask / 9×9 hand) in both cells; keypoints only seed the search.
+S1: helmet offsets on the south walk were (−1,−1), (0,−1)×5, (1,−1); batch-route helmets also stay within ±1 px of NECK, so the
+head is rigid in idle/walk [S1 E8]. A propagated layer copies the keyframe's redrawn face pixels into every cell, so the head
+rect must stop at the brow and skin rejection (S2) applies.
 
-| Route | Locality [S1] | Cost/latency at 64² [S1] | Use |
-|---|---|---|---|
-| `inpaint-image-pro-flash` (default `output_method`) | **exact outside mask** (0 px), border clean | 5 gens, ~31 s | **default masked route** |
-| `inpaint-v3` | exact outside mask (bug seen in July looks fixed) | 10 gens, ~105 s | fallback if Pro Flash rejects a size |
-| `output_method` "New layer with changes" / "…only changes" | transparent outside mask, but **still contains redrawn body pixels** inside it (~30 of ~200 identical to base, face redrawn) | 5 gens | not used: no extra information vs the composite, and local diff is still required. One code path. |
-| `edit-image`, `edit-images-v2`, `edit-image-pro-flash` (unmasked) | whole body redrawn (670–728 px changed outside the helmet box) | 1 / 10 / 5 gens | only via clamp; `edit-image` turned the whole body into armour once [S1 e3] |
+### 5.4 Prompt
+
+Pip template, ≤ 500 chars [R1]: "Add only {item} to this {direction}-facing pixel art character. Keep every other pixel … exactly
+unchanged." No "body"/"skin" wording (policy). `transfer-outfit-v2` uses `additional_instructions` for direction hints.
 
 ---
 
-## 7. Colour model
+## 6. Colour model
 
-- **Materials** = indexed source ramps, ordered shadow → highlight, colours **unique across materials** (LPC/Vitruvian [R5]):
-  base: `skin` (6), `eyes` (3), `underwear` (4); per item ≤ 3 materials of 3–6 colours (`cloth_1`, `leather`, `metal`, `hair`…).
-- **Getting AI output into ramps**: pass the item's ramps plus the base ramps as `target_palette` (edit-animation-v2,
-  transfer-outfit-v2, characters/animations, states) or `color_image` + `force_colors` (legacy routes) [spec]. Masked inpaint
-  routes have no palette field, so all outputs are **snapped locally**: nearest ramp colour in OKLab within τ_snap (default ΔE
-  0.08); pixels beyond τ_snap keep their colour and count against G7. `/reduce-colors` with `palette_image` (0.1 gen) is the
-  fallback if local snap proves too weak.
-- **Ramp creation**: the first accepted keyframe of an item defines its ramps: k-means (k = material count × ramp length) on the
-  layer in OKLab, sorted by lightness per cluster group. The user can rename/merge materials. Base ramps come from the frozen base.
-- **Recolor regions = materials.** Recolor is exact-match index swap source ramp → variant ramp. `linkTo` makes a material follow
-  another (beard → hair, ears → skin) [R5]. No masks needed because ramps are disjoint. Multiply tint only as an engine option.
-- **Export**: sheets in source ramps + `materials` in the manifest (+ tiny per-engine swap shader); optional baked variants.
+- **Materials** = indexed source ramps, shadow → highlight, colours **unique across materials** (LPC/Vitruvian [R5]): base `skin`
+  (6), `eyes` (3), `top`/`shorts` (4 each); per item ≤ 3 materials of 3–6 colours.
+- **Into ramps**: `target_palette` on batch routes; then local snap of layer pixels to the item's ramps in OKLab (ΔE ≤ 0.08).
+  Pixels beyond keep their colour and lower `snappedPct`. `/reduce-colors` with `palette_image` is the fallback.
+- **Ramp creation**: from the approved keyframe layer (k-means in OKLab, sorted by lightness). User can rename/merge.
+- **Recolor regions = materials**; exact index swap source → variant ramp; `linkTo` (beard → hair). Multiply tint only as an
+  engine option. Export: source-ramp sheets + `materials` in the manifest (+ tiny swap shader); optional baked variants.
 
 ---
 
-## 8. Project storage (browser)
+## 7. Project storage (browser)
 
-- **IndexedDB** (one DB `pixeldoll`), three stores: `projects` (manifest JSON + QA), `blobs` (PNG `Blob`, key = SHA-256,
-  content-addressed, so re-rolls and identical cells dedupe), `jobs` (ledger, §9). OPFS is skipped: IndexedDB stores blobs fine at
-  this scale (one project ≈ 16 slots × 3 dirs × 12 cells × 64² ≈ a few MB). Call `navigator.storage.persist()` on first save.
-- Cells are stored individually; sheets are assembled only at export.
-- **Project zip** (export/import, the backup and share format): `project.json` (manifest + QA + provenance, never the key) +
-  `cells/<sha256>.png`. Import verifies every hash. Zip writer/reader in ~100 lines over native `CompressionStream`/
-  `DecompressionStream('deflate-raw')` + CRC32 (store mode for PNGs). No dependency; swap to `fflate` if bugs appear.
-- PNG decode: `createImageBitmap(blob, {premultiplyAlpha: 'none', colorSpaceConversion: 'none'})` → `OffscreenCanvas`
-  `getImageData`. Encode: `OffscreenCanvas.convertToBlob({type: 'image/png'})`. Safe because alpha is binary.
+- **IndexedDB** `pixeldoll`: `projects` (manifest + QA), `blobs` (PNG `Blob` keyed by SHA-256 of RGBA, deduped), `jobs`
+  (ledger). OPFS skipped (a project is a few MB). `navigator.storage.persist()` on first save. Cells stored individually;
+  sheets assembled at export.
+- **Project zip**: `project.json` (manifest with `cells`, QA, provenance; never the key) + `cells/<sha256>.png`; import verifies
+  hashes. Zip reader/writer ~100 lines over native `CompressionStream`/`DecompressionStream('deflate-raw')` + CRC32; swap to
+  `fflate` if it misbehaves.
+- PNG: `createImageBitmap(blob, {premultiplyAlpha: 'none', colorSpaceConversion: 'none'})` → `OffscreenCanvas.getImageData`;
+  encode with `convertToBlob`. Safe because alpha is binary. PixelLab returns PNG only, never raw RGBA [S1].
 
-## 9. Job queue
+## 8. Job queue
 
-- **One queue** for all PixelLab calls. Concurrency user-set 1–8, default **3**; on 429 drop to `max(1, n−1)` and retry later.
-- **Backoff** (`Retry-After` is not readable from JS [R2]): exponential with jitter, 2 s → 60 s, on 429/529/5xx/network errors
-  **of the submit**. 423 on export routes: same. 401 → stop queue, ask for key. 402 → stop queue (out of credits). 422 → terminal
-  (free [R1]). `last_response.code 5000` (policy) → terminal, never retried [R1 F9].
-- **Polling** every 5 s (status words are open-ended; completion = result present [R1]); show `queue_position` /
-  `estimated_wait_seconds`.
-- **Persist first**: the ledger entry (endpoint, params without images and key, input hashes, request hash, seed) is written before
-  submit; `background_job_id` right after submit; result PNGs to `blobs` the moment the job completes, before extraction.
-  On reload, pending jobs resume polling. **A job with an id is never resubmitted** because a poll failed. A 404 after completion
-  with no saved result → `lost` (warn; cost spent).
-- **Request-hash cache**: identical endpoint + params + input hashes + seed → reuse the stored result instead of paying again.
-- **Cost**: per-job `usage` from the completed job (S1: Pro Flash 5 gens, inpaint-v3 10, edit-images-v2 10, edit-image 1,
-  estimate-skeleton 0.1, template animation reported in USD). `/balance` snapshot before and after each batch for
-  reconciliation; a static estimate table (data, from observed usage, refreshed by `/pro-flash/cost`) drives a pre-flight
-  "this will cost ~N generations" confirm when N > user threshold (default 20). Never hard-code prices [R1 F16].
-- **Cancel** = `DELETE /background-jobs/{id}`, user-initiated only.
+- One queue. Concurrency default **8** (user-set 1–16); S1 submitted 24 Pro jobs at once on Tier 3 and got two 429s that a 5 s
+  backoff cleared [S1]. On 429 drop to `max(1, n−2)`, recover +1 per success. Sync `estimate-skeleton` runs up to 16 at once.
+- **Backoff** (`Retry-After` unreadable [R2]): exponential with jitter 2 → 60 s on 429/529/5xx/network errors of the submit.
+  401 → stop, ask for the key. 402 → stop. 422/400 → terminal (free [S1]). `code 5000` policy → terminal, never auto-retried;
+  show the message (whether it is charged is untested [S1]).
+- Poll `/background-jobs/{id}` every 5 s until a result is present; submit returns 202 in 0.8–3 s; batch jobs take 78–170 s [S1].
+- **Persist first**: ledger entry before submit, `background_job_id` right after, result PNGs to `blobs` on completion before
+  extraction. On reload, pending jobs resume. A job with an id is never resubmitted because a poll failed.
+- **Request-hash cache**: same endpoint + params + input hashes + seed → reuse the stored result.
+- **Cost**: per-job `usage` (template animations report USD but deduct generations [S1]); `/balance` snapshot before/after each
+  batch; static estimate table as data (§12); confirm before a batch above a user threshold (default 20 gens).
 
-## 10. API key handling
+## 9. API key handling
 
-- Held in memory by default. Opt-in checkbox "remember on this device" → `localStorage` (cleared by "forget key").
-  Never in URLs, never in the project zip, ledger, provenance or logs.
-- Sent only as `Authorization: Bearer` to `https://api.pixellab.ai`. A `<meta http-equiv="Content-Security-Policy">` restricts
-  `connect-src` to `api.pixellab.ai` and `*.pixellab.ai` storage, so a compromised dependency cannot exfiltrate it.
-- UI warning: the API accepts any origin, so a leaked key is usable anywhere [R2]; rotate at pixellab.ai/account.
+- In memory by default; opt-in "remember on this device" → `localStorage`; "forget key". Never in URLs, project zip, ledger,
+  provenance or logs. Sent only as `Authorization: Bearer` to `api.pixellab.ai`.
+- CSP meta `connect-src` limited to `api.pixellab.ai` and the `*.pixellab.ai` storage host.
+- Warn: the API accepts any origin, so a leaked key is usable anywhere [R2].
 
 ---
 
-## 11. Module breakdown (`app/src/lib`)
+## 10. Module breakdown (`app/src/lib`)
 
 | Module | Files | Responsibility |
 |---|---|---|
-| `pixellab/` | `client.ts` (fetch, auth header, error classes), `routes.ts` (typed builders for the ~10 routes used: create-character-v3, characters/animations, GET characters/{id}, estimate-skeleton, inpaint-image-pro-flash, inpaint-v3, edit-animation-v2, balance, background-jobs), `queue.ts` (§9) | No SDK [R2]. Types hand-written from `pixellab-openapi-v2.json` for used routes only. |
-| `image/` | `png.ts` (decode/encode, binary alpha), `diff.ts` (deltas, hysteresis, components, heatmap — port of spike `diff.mjs` + its self-test), `masks.ts` (slot shapes, grow, rasterize), `extract.ts` (§3.4), `palette.ts` (OKLab, snap, k-means ramps, recolor), `qa.ts` (§3.5), `hash.ts` (SHA-256 via `crypto.subtle`) | Pure functions over `{w, h, data: Uint8ClampedArray}`. Main thread (36 cells × 64² is trivial); move to a Worker only if profiling says so. |
-| `rig/` | `rig.ts` (contract, validation), `normalize.ts` (crop/pad, pivot), `skeleton.ts` (keypoints → anchors, patch tracking), `mirror.ts` | Owns the frozen base. |
-| `compose/` | `compose.ts` (resolve z, hides, draw list, Canvas2D render), `split.ts` (fg/bg) | Shared by preview and baked export. |
-| `export/` | `sheets.ts` (cells → per-layer per-animation PNG), `generic.ts` (manifest, strips), `godot.ts` (.tres/.tscn/.gd text), `unity.ts` (importer C# + runtime C# as template strings), `phaser.ts` (JSON-Hash atlas + container JS), `aseprite.ts` (layered .aseprite writer; second wave) | Pure "manifest + cells → files" functions; zip via `store/zip.ts`. |
-| `store/` | `db.ts` (IndexedDB), `project.ts` (Svelte 5 runes store, command-based edits), `zip.ts` | Single source of truth = manifest + blobs. |
-| UI (`app/src/ui/`) | Key/balance bar, Rig editor (grid dirs × anims), Item lab (mask overlay, heatmap, QA table, knob), Dress-up (slot carousel, preview, palette), Export dialog | Three-pane builder [R5]. |
-
-Each pure module keeps one runnable self-check (the spike pattern: `selfTest()` with `console.assert`).
+| `pixellab/` | `client.ts`, `routes.ts` (typed builders for: create-character-v3, characters/animations, GET characters/{id}, estimate-skeleton, inpaint-v3, inpaint-image-pro-flash, edit-animation-v2, transfer-outfit-v2, edit-image-pro-flash (two-pass), balance, background-jobs), `queue.ts` | Plain `fetch`, no SDK; port of `spikes/api/lib/api.mjs`. |
+| `image/` | `png.ts`, `diff.ts` + `extract.ts` (port of spike `diff.mjs`/`extract.mjs` incl. `selfTest()`), `slots.ts` (keypoints → slot rects), `palette.ts` (OKLab, snap, ramps, recolor), `qa.ts`, `hash.ts` | Pure functions over `{w, h, d: Uint8ClampedArray}` (= `ImageData` layout). Main thread until profiling says otherwise. |
+| `rig/` | `rig.ts`, `normalize.ts`, `skeleton.ts` (anchors, patch tracking), `mirror.ts` | Owns the frozen base. |
+| `compose/` | `compose.ts` (z, hides, draw list, render), `split.ts` | Preview + baked export. |
+| `export/` | `sheets.ts`, `generic.ts`, `godot.ts`, `unity.ts`, `phaser.ts`, `aseprite.ts` (second wave) | Manifest + cells → files. |
+| `store/` | `manifest.ts` (types), `db.ts`, `project.ts` (Svelte 5 runes, command-based edits), `zip.ts` | |
+| UI (`app/src/ui/`) | Key/balance bar, rig editor, item lab, dress-up, export dialog | Three-pane builder [R5]. |
 
 ---
 
-## 12. Cost model (64 px, 4 dirs → 3 generated, idle+walk)
+## 11. Item lifecycle (what the user sees)
 
-| Step | Generations (S1 interim) |
+1. Pick slot, type the item → (worn/held) one keyframe on south idle → approve or re-roll (10 gens each).
+2. Batch calls run; extraction + QA run automatically; failing items re-roll the batch up to 2×.
+3. Item card shows coverage (dirs × anims), QA badges, heatmap per cell; accept, re-roll, or adjust the knob.
+
+## 12. Cost model (64 px, 3 generated dirs, idle + walk = 36 cells) [S1 prices]
+
+| Step | Generations |
 |---|---|
 | Base character v3 | 2 |
-| Base animations (2 templates × 3 dirs) | ≈ 9 |
-| Skeleton (36 cells) | 3.6 |
-| **Base total** | **≈ 15** |
-| Rigid item | 15 |
-| Worn item, route A / route B | 30 / 180 |
-| 10-item character (6 rigid, 4 worn A) | ≈ 225 |
+| Base animations (2 templates × 3 dirs) | ≈ 6 |
+| Skeleton (36 cells) | ≈ 0 |
+| **Base total** | **≈ 8** |
+| Rigid item | 10 |
+| Worn / held item | 40 (30 without a keyframe when ≤ 16 cells) |
+| 10-item character (5 rigid, 5 worn/held) | ≈ 260 |
 
-Tier 2 ≈ 2000 generations/month [R2], so route B for every worn item is not affordable as the default; it stays a per-cell repair.
+S1 spent ~568 gens on a Tier 3 account; Tier 2 ≈ 2000/month [R2]. Per-frame inpaint (5–10 gens per cell) is unaffordable and
+inconsistent anyway.
 
 ---
 
 ## 13. Risks and mitigations
 
-| Risk | Mitigation |
+| Risk | Status / mitigation |
 |---|---|
-| Body redraw inside the mask baked into layers | Tight masks stopping at the neck; body-material rejection (§3.4.6); G3. |
-| Temporal inconsistency of worn items | Grid route (one call per direction, PixelLab's own frame consistency); G6; per-cell re-roll; rigid propagation wherever possible. |
-| Masked route drifts outside the mask (regression) | G2 is a hard gate for masked routes; inpaint-v3 as fallback. |
-| Grid route redraws the body (no preservation promise) | Clamp outside `M` is a local copy of frozen base pixels; inside `M`, hysteresis + body-material rejection; route B repair. |
-| Wrong item-vs-item order | Static ladder + split + sparse overrides + hides; preview every direction before export. |
-| Base change invalidates items | `baseHash` on every item; stale badge; "regenerate for new base" re-runs stored prompts/seeds. |
-| Palette noise (hundreds of colours) | `target_palette` where possible; local OKLab snap; G7. |
-| Template list / prices change | Data files refreshed from live API; usage read from jobs. |
-| Concurrency limits, stuck jobs, policy rejects | Adaptive concurrency, backoff, persisted ledger, terminal policy state. |
-| Key leakage | Memory default, CSP `connect-src`, never serialized. |
-| Oversize items clip at 64 px | G8 warning; document; oversize cells are a later feature. |
-| Handedness on mirrored directions | `mirror: "generate"` per item. |
+| **Extraction not production-clean.** PM review of S1 sheets: layers still contain redrawn face/eye pixels, skin slivers along arms, and holes (leather close to skin shading). | Item-shaped slot rects (brow line, torso without arms), per-item fallback, skin-material rejection + neighbourhood-tolerant diff + temporal consensus (**S2**), chroma mannequin (**S2**). Until then every item passes human review in the item lab. |
+| Batch routes redraw the whole body (0 % exact, ~78 % within Δ18) | Harmless by construction: only item pixels inside the slot are kept and composited over the frozen base. |
+| Design differs between batch calls | Shared approved reference (transfer-outfit-v2); pack cells of several directions per call. |
+| Headroom: hats clip at the top | ≥ 6 px rule at freeze, base prompt, G7 (**S2**). |
+| Coverage untested: north/west, 8 dirs, attack animations (does the weapon stay in hand?) | **S2**; held items on attacks may need their own animation-specific batches. |
+| Content-policy blocks | Clothed base (top + shorts), no "body/skin" in prompts, terminal state with a clear message. |
+| Occluded back-item pixels missing (cape north/sway) | Two-pass `edit-image-pro-flash` fallback; batch two-pass in **S2**. |
+| Wrong item-vs-item order | z ladder + split + overrides + hides; preview all directions before export. |
+| Base change invalidates items | `baseHash`, stale badge, "regenerate for new base" re-runs stored prompts/seeds/reference. |
+| Template list / prices change | Data files; usage read from jobs. |
+| Key leakage | Memory default, CSP, never serialized. |
 
 ---
 
-## 14. Mockup plan (Phase 4, functional, ugly is fine)
+## 14. Mockup plan (Phase 4)
 
 | # | Mockup | Must prove |
 |---|---|---|
-| M1 | **Key + queue** | Browser-direct calls with a pasted key; `/balance`; submit a base (v3) + 2 template animations; ledger in IndexedDB survives reload mid-job; cost per job shown; key never in storage unless opted in. |
-| M2 | **Rig freeze** | Frames downloaded, normalized to 64×64, pivot computed, skeleton per cell, anchors via patch tracking, `baseHash`; grid view dirs × anims with playlist playback; west mirrored. |
-| M3 | **Item lab** | Slot masks per cell (overlay), rigid route (keyframe + propagate) and worn route A with clamp, extraction with knob + heatmap, QA table per cell, auto re-roll of failing cells, fg/bg split. Measures §15 O1/O2/O9 on real items (helmet, hair, chest, cape, sword). |
-| M4 | **Dress-up** | 4–6 items composed with z ladder, overrides, hides; recolor via material ramps; animated preview in all directions; stale detection on base swap. |
-| M5 | **Export round-trip** | Zip with manifest + sheets + Godot `.tres/.tscn/.gd` + Phaser atlas JSON; loaded in a minimal Godot 4 project and a Phaser page; layers stay in sync and pivots match (Phase 5 verifies Unity importer and `.aseprite`). |
+| M1 | **Key + queue** | Browser-direct calls; `/balance`; base v3 + 2 templates; ledger survives reload mid-job; adaptive concurrency at 8; per-job cost. |
+| M2 | **Rig freeze** | Animation frames normalized to 64×64, pivot, headroom check, skeleton per cell, slot rects drawn, anchors by patch tracking, `baseHash`; dirs × anims grid with playlist playback; west mirrored. |
+| M3 | **Item lab** | Rigid route (one batch + propagate) and worn route (keyframe approval + transfer-outfit-v2 batches); S1 extractor + knob + heatmap; per-item QA gates; whole-batch re-roll; fg/bg split. Uses S2's extractor improvements. |
+| M4 | **Dress-up** | 4–6 items composed with z ladder, overrides, hides; recolor via ramps; animated preview in all directions; stale detection. |
+| M5 | **Export round-trip** | Zip with manifest + sheets + Godot `.tres/.tscn/.gd` + Phaser atlas JSON, loaded in minimal Godot 4 and Phaser projects; layers in sync, pivots match. |
 
 ---
 
-## 15. Open decisions waiting on S1 (and Phase 5)
+## 15. Decisions
 
-| # | Decision | Options | Criterion S1 must answer | Default until then |
+**Settled by S1**
+
+| # | Decision | Result |
+|---|---|---|
+| O1 | Worn-item route | Batch routes (`transfer-outfit-v2` with approved reference, or `edit-animation-v2`). Per-frame masked inpaint rejected, also as repair (palette Jaccard 0.13–0.20). Re-roll = whole batch. |
+| O2 | Rigid propagation | Valid for head/face/hair in idle/walk (offsets ≤ 1 px on the south walk) and low-motion held items; not for attacks or side-view arm swings. |
+| O3 | Masked keyframe route | `inpaint-v3` (cleaner); Pro Flash inpaint as cheap draft. Both 0 px outside the mask. |
+| O4 | Base route | `create-character-v3` at 64. 4-direction route rejected at 64 (92 px canvas). |
+| O5 | Packing | Mixing directions in one 16-frame call gives one design across them; 8 and 16 frames cost the same → pack. |
+| O8 | Skeleton | `estimate-skeleton` per cell, free, sync; keypoints seed slot rects; patch tracking decides propagation offsets. |
+| O9 | fg/bg split | Silhouette rule reproduces base+layer exactly (south cape). |
+| O10 | Concurrency | Default 8, adaptive; 24 concurrent → two 429s, all completed. |
+| — | Changes-only `output_method`, state route, `edit-image`, `edit-images-v2` | Rejected (§5.2). |
+
+**Still open**
+
+| # | Decision | Options | Criterion | Default |
 |---|---|---|---|---|
-| O1 | Worn-item route | A: `edit-animation-v2` per direction (≤16 cells) + clamp + diff · B: per-cell masked Pro Flash inpaint, fixed seed · C: masked keyframe, then `edit-images-v2 edit_with_reference` with the dressed keyframe | Per route on chest, pants, boots, cape over 8 walk cells: G3 residual, G6 pass rate (area ratio, centroid jump, palette Jaccard), drift inside the mask after hysteresis, gens per *accepted* cell | A, B as repair |
-| O2 | Rigid propagation validity | translate-only by anchor patch tracking vs per-cell generation | On helmet/hair over idle+walk: G3/G4 pass rate of propagated cells; visual head-bob match | propagate |
-| O3 | Masked route | Pro Flash inpaint vs inpaint-v3 | Locality repeatability over ≥ 5 items/dirs (sword reaching outside the silhouette, cape) | Pro Flash |
-| O4 | Base creation route | v3 (64→64, 2 gens) vs legacy 4/8-dir (64→92, 1 gen) vs Pro | South passes policy; identity; canvas behaviour on all dirs; 8-dir cost | v3 |
-| O5 | Mixed-animation packing in one grid | pack idle+walk per direction vs one call per animation | Consistency of the item between the two animations inside one grid vs separate calls | pack |
-| O6 | Base animation mode | template vs `skeleton-v3` | Frame-to-frame body stability (identical pixels across frames, palette), feet line drift | template |
-| O7 | Palette forcing | `target_palette` strictness on edit-animation-v2; local snap ΔE | % of layer pixels inside ramps before/after snap | local snap always |
-| O8 | Skeleton accuracy | estimate-skeleton per cell vs patch tracking only | Keypoint jitter on static parts across idle cells (px) | keypoints seed, patch tracking decides |
-| O9 | fg/bg split rule | silhouette rule vs keypoint `z_index`-assisted | On cape/long hair (S1 already has `cape`/`hair` edit-image runs): visual correctness against `torso_outer` and `main_hand` in all dirs | silhouette rule |
-| O10 | Concurrency default | 3 vs tier-dependent | Observed 429 threshold and latency under parallel load | 3, adaptive |
+| O6 | Base animation mode | template vs `skeleton-v3` | body stability across frames, feet drift | template |
+| O7 | Palette lock | `target_palette` + local OKLab snap vs `/reduce-colors` | % layer pixels inside ramps; recolor quality | target_palette + local snap |
+| O11 | Extraction cleanliness | S1 extractor vs + skin rejection / neighbourhood-tolerant diff / temporal consensus vs chroma mannequin | face/eye pixels, arm slivers, holes on helmet/chest/hair over all cells | S1 extractor + human review |
+| O12 | Rigid keyframe route | one 3-cell `edit-animation-v2` across directions (untested at 3 cells) vs `inpaint-v3` per direction (30 gens) | design match across directions, in-rect redraw | batch |
+| O13 | Coverage | north/west, 8 dirs, attack animations; headroom fix | G1–G7 pass rates per direction/animation | 4 dirs, idle + walk |
 
-Already settled by S1 interim data: canvas 64 (v3 keeps 64×64); estimate-skeleton coordinates are normalized 0–1 with 18
-labels; masked Pro Flash and inpaint-v3 are byte-exact outside the mask; changes-only `output_method` adds nothing over local
-diff; unmasked edits redraw the whole body.
+**Spike S2 (running)** tests: chroma-mannequin generation (recolour the base to a key colour before edits so items separate by
+colour), two-pass batch "remove the character", neighbourhood-tolerant diff + skin rejection + temporal consensus, north/west +
+attack coverage, and headroom. Its results decide O11–O13 and may replace §3.2 steps 2–5.

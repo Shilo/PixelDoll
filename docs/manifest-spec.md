@@ -1,6 +1,6 @@
 # PixelDoll manifest spec — `pixeldoll/1`
 
-Author: A1 · Date: 2026-10-20 · Status: v1 draft. Pipeline and rationale: [`architecture.md`](architecture.md).
+Author: A1 · Date: 2026-10-20 · Status: v1.1 (updated after S1). Pipeline and rationale: [`architecture.md`](architecture.md).
 
 One schema serves two files:
 
@@ -96,7 +96,7 @@ export interface Slot {
   required?: boolean;                    // true only for "body"
   hides?: string[];                      // default: slots whose layers are hidden while this slot has a visible item
   zOverrides?: ZOverride[];              // sparse exceptions
-  mask?: { shape: string; grow: number; worn: boolean }; // project only (architecture §5.5)
+  rect?: { shape: string; grow: number }; // project only: slot rect from keypoints (architecture §4)
 }
 export interface ZOverride {
   layer: 'fg' | 'bg';
@@ -118,8 +118,10 @@ export interface Item {
   prompt: string;                         // the user's item description
   layers: Layer[];                        // 1 layer ("main", role fg) or 2 ("fg" + "bg")
   baseHash: Sha256;                       // base the layers were extracted against
+  reference?: Sha256;                     // approved keyframe composite used as transfer-outfit-v2 reference
+  extractor?: 'novel2_grow1' | 'novel_cc'; // chosen once per item (architecture §3.2 step 5); absent on the base
   provenance: Provenance[];
-  qa: Record<CellKey, CellQa>;            // one entry per generated or derived cell
+  qa?: ItemQa;                            // absent on the base
 }
 export interface Layer {
   id: 'main' | 'fg' | 'bg';
@@ -139,18 +141,23 @@ export interface Provenance {
   createdAt: string;                      // ISO 8601
   produced: CellKey[];                    // cells this call produced directly
 }
+/** Gates G1–G7 (architecture §3.3) are evaluated per item over all its cells. */
+export interface ItemQa {
+  areaCV: number;                         // G2, <= 0.15
+  minAdjPaletteJaccard: number;           // G3, >= 0.6
+  centroidSpread: number;                 // G4, px relative to slot anchor, <= 2
+  minAreaRatio: number;                   // G5, min cell area / median, >= 0.5
+  clipPx: number;                         // G7, opaque px on cell borders, 0
+  rerolls: number;
+  status: 'pass' | 'warn' | 'fail' | 'accepted'; // accepted = human override
+  cells: Record<CellKey, CellQa>;
+}
 export interface CellQa {
-  route: 'masked' | 'grid' | 'unmasked' | 'propagated' | 'mirrored' | 'import';
+  route: 'masked' | 'batch' | 'propagated' | 'mirrored' | 'two-pass' | 'import';
   provenance?: number;                    // index into item.provenance (source call)
-  outsideDrift: number;                   // px changed outside the mask before clamp
-  residualPct: number;                    // 0..100
   area: number;                           // layer px
-  erasures: number;
-  snappedPct: number;                     // 0..100 of layer px within tau_snap of a ramp colour
-  clipPx: number;                         // opaque px on the cell border
-  centroidJump?: number;                  // px vs previous cell after anchor compensation
-  paletteJaccard?: number;                // vs the direction keyframe
-  status: 'pass' | 'warn' | 'fail' | 'accepted'; // accepted = human override of warn/fail
+  offset?: [number, number];              // propagated: translation from the keyframe
+  snappedPct: number;                     // 0..100 of layer px within the item's ramps
 }
 
 // ---------- presets / export ----------
@@ -218,6 +225,7 @@ export interface ExportInfo {
     { "id": "skin", "label": "Skin", "owner": "base",
       "ramp": ["#3b1f1a","#7a3e2e","#b56a4c","#d98f6b","#f2b896","#fbdcc4"],
       "variants": { "tan": ["#2e1913","#5f3121","#8e5236","#b0704f","#cf9572","#e8b99a"] } },
+    // shortened: "top" and "shorts" base materials
     { "id": "hair", "label": "Hair", "owner": "hair_short",
       "ramp": ["#1a1410","#3a2a1e","#5c4430","#80603f"], "variants": { "blond": ["#5a4220","#9a7535","#c9a24e","#ecd27a"] } },
     { "id": "iron", "label": "Iron", "owner": "helmet_iron",
@@ -236,52 +244,65 @@ export interface ExportInfo {
   ],
   "items": [
     { "id": "base", "name": "Base body", "slot": "body", "status": "accepted", "mirror": "flip",
-      "materials": ["skin"], "prompt": "plain bald human base body, grey underwear shorts, barefoot",
+      "materials": ["skin", "top", "shorts"],
+      "prompt": "small bald human character with space above the head, plain grey tank top and shorts, barefoot",
       "baseHash": "sha256:5f1c…",
       "layers": [ { "id": "main", "role": "fg", "z": 10,
         "sheets": { "idle": "layers/body/base/main/idle.png", "walk": "layers/body/base/main/walk.png" } } ],
       "provenance": [
         { "endpoint": "/create-character-v3", "seed": 1234, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "description": "plain bald human base body…", "image_size": {"width":64,"height":64},
+          "params": { "description": "small bald human character…", "image_size": {"width":64,"height":64},
                       "view": "low top-down", "template_id": "mannequin", "no_background": true },
-          "usage": { "generations": 2 }, "createdAt": "2026-10-20T19:05:00Z", "produced": [] }
-      ],
-      "qa": {} },
+          "usage": { "generations": 2 }, "createdAt": "2026-10-20T19:05:00Z", "produced": [] },
+        { "endpoint": "/characters/animations", "seed": 1234, "jobId": "…", "requestHash": "sha256:…",
+          "params": { "character_id": "…", "mode": "template", "template_animation_id": "walking-8-frames",
+                      "directions": ["south", "east", "north"] },
+          "usage": { "generations": 3 }, "createdAt": "2026-10-20T19:12:00Z",
+          "produced": ["walk/south/0", "walk/south/1"] } // shortened
+      ] },
     { "id": "helmet_iron", "name": "Iron helmet", "slot": "head", "status": "accepted", "mirror": "flip",
       "hides": ["hair"], "materials": ["iron"], "prompt": "a simple grey steel knight helmet, face visible",
-      "baseHash": "sha256:5f1c…",
+      "baseHash": "sha256:5f1c…", "extractor": "novel2_grow1",
       "layers": [ { "id": "main", "role": "fg", "z": 130,
         "sheets": { "idle": "layers/head/helmet_iron/main/idle.png", "walk": "layers/head/helmet_iron/main/walk.png" } } ],
       "provenance": [
-        { "endpoint": "/inpaint-image-pro-flash", "seed": 7, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "image": {"sha256": "…"}, "mask_image": {"sha256": "…"},
-                      "description": "a simple grey steel knight helmet…", "no_background": true },
-          "usage": { "generations": 5 }, "createdAt": "2026-10-20T19:40:00Z", "produced": ["idle/south/0"] }
-        // + one entry per stored direction
+        { "endpoint": "/edit-animation-v2", "seed": 7, "jobId": "…", "requestHash": "sha256:…",
+          "params": { "description": "Add only a simple grey steel knight helmet…",
+                      "frames": [ {"sha256": "…"}, {"sha256": "…"}, {"sha256": "…"} ],
+                      "image_size": {"width":64,"height":64}, "no_background": true,
+                      "target_palette": {"colors": ["#2b2f36","#4d535d","#7a828e","#b3bac4"]} },
+          "usage": { "generations": 10 }, "createdAt": "2026-10-20T19:40:00Z",
+          "produced": ["idle/south/0", "idle/east/0", "idle/north/0"] }
       ],
-      "qa": {
-        "idle/south/0": { "route": "masked", "provenance": 0, "outsideDrift": 0, "residualPct": 2.1, "area": 176,
-                          "erasures": 0, "snappedPct": 97, "clipPx": 0, "status": "pass" },
-        "walk/south/3": { "route": "propagated", "provenance": 0, "outsideDrift": 0, "residualPct": 0, "area": 176,
-                          "erasures": 0, "snappedPct": 97, "clipPx": 0, "centroidJump": 0, "status": "pass" },
-        "walk/west/3":  { "route": "mirrored", "provenance": 1, "outsideDrift": 0, "residualPct": 0, "area": 171,
-                          "erasures": 0, "snappedPct": 97, "clipPx": 0, "status": "pass" }
-        // shortened: one entry per cell
-      } },
+      "qa": { "areaCV": 0.0, "minAdjPaletteJaccard": 1.0, "centroidSpread": 0, "minAreaRatio": 0.97, "clipPx": 0,
+              "rerolls": 0, "status": "pass",
+              "cells": {
+                "idle/south/0": { "route": "batch", "provenance": 0, "area": 176, "snappedPct": 97 },
+                "walk/south/3": { "route": "propagated", "provenance": 0, "area": 176, "offset": [0, -1], "snappedPct": 97 },
+                "walk/west/3":  { "route": "mirrored", "provenance": 0, "area": 171, "offset": [1, -1], "snappedPct": 97 }
+                // shortened: one entry per cell
+              } } },
     { "id": "cape_red", "name": "Red cape", "slot": "back", "status": "accepted", "mirror": "flip",
-      "materials": ["cape_cloth"], "prompt": "a long red cloth cape hanging from the shoulders", "baseHash": "sha256:5f1c…",
+      "materials": ["cape_cloth"], "prompt": "a long red cloth cape hanging from the shoulders",
+      "baseHash": "sha256:5f1c…", "reference": "sha256:9a0e…", "extractor": "novel_cc",
       "layers": [
         { "id": "fg", "role": "fg", "z": 90, "sheets": { "idle": "layers/back/cape_red/fg/idle.png", "walk": "layers/back/cape_red/fg/walk.png" } },
         { "id": "bg", "role": "bg", "z": 4,  "sheets": { "idle": "layers/back/cape_red/bg/idle.png", "walk": "layers/back/cape_red/bg/walk.png" } }
       ],
       "provenance": [
-        { "endpoint": "/edit-animation-v2", "seed": 11, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "description": "…", "frames": [{"sha256": "…"}], "image_size": {"width":64,"height":64},
-                      "no_background": true, "target_palette": {"colors": ["#4a0d12","#7d1820","#b02832","#d9514f"]} },
+        { "endpoint": "/inpaint-v3", "seed": 11, "jobId": "…", "requestHash": "sha256:…",
+          "params": { "description": "a long red cloth cape…", "inpainting_image": {"sha256": "…"},
+                      "mask_image": {"sha256": "…"}, "no_background": true },
+          "usage": { "generations": 10 }, "createdAt": "2026-10-20T20:02:00Z", "produced": [] },
+        { "endpoint": "/transfer-outfit-v2", "seed": 11, "jobId": "…", "requestHash": "sha256:…",
+          "params": { "reference_image": {"sha256": "9a0e…"}, "frames": [{"sha256": "…"}], // 15 cells, shortened
+                      "image_size": {"width":64,"height":64}, "no_background": true,
+                      "target_palette": {"colors": ["#4a0d12","#7d1820","#b02832","#d9514f"]} },
           "usage": { "generations": 10 }, "createdAt": "2026-10-20T20:10:00Z",
-          "produced": ["idle/south/0","idle/south/1","idle/south/2","idle/south/3","walk/south/0"] } // shortened
+          "produced": ["idle/south/0", "idle/south/1", "walk/east/0"] } // shortened; + 2 more calls
       ],
-      "qa": {} }
+      "qa": { "areaCV": 0.07, "minAdjPaletteJaccard": 0.72, "centroidSpread": 1.5, "minAreaRatio": 0.81, "clipPx": 0,
+              "rerolls": 1, "status": "pass", "cells": {} } }
   ],
   "presets": [
     { "id": "default", "name": "Knight",
