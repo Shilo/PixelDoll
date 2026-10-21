@@ -4,7 +4,7 @@
 import { applyDress, dressOf, openSource, saveDress, type DressState } from '../lib/dress/project.ts';
 import { deriveMaterials, randomOutfit, recolour, storeVariants } from '../lib/dress/dress.ts';
 import { drawList } from '../lib/compose/compose.ts';
-import { deleteItem, listProjects, loadProject } from '../lib/store/project.ts';
+import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
 import { evaluateItem, type Draft, type ItemResult } from '../lib/items/run.ts';
@@ -82,7 +82,7 @@ export function connected() {
 }
 
 // ---------- project + outfit ----------
-export interface ProjectRef { id: string; name: string; demo: boolean; savedAt: string }
+export interface ProjectRef { id: string; name: string; demo: boolean; dev: boolean; savedAt: string }
 class Store {
   project = $state.raw<Project | null>(null);
   projects = $state.raw<ProjectRef[]>([]);
@@ -116,7 +116,7 @@ export const view = new View();
 
 export async function refreshProjects() {
   const own = (await listProjects().catch(() => [])).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
-  store.projects = [{ id: DEMO, name: 'Adventurer (demo)', demo: true, savedAt: '' }, ...own.map((p) => ({ id: p.id, name: p.manifest.name, demo: false, savedAt: p.savedAt }))];
+  store.projects = [{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' }, ...own.map((p) => ({ id: p.id, name: p.manifest.name, demo: false, dev: originOf(p) === 'dev', savedAt: p.savedAt }))];
 }
 
 export async function openProject(id: string, keep?: { wear?: string }) {

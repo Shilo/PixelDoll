@@ -221,7 +221,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }],
   };
   const rec: StoredProject = {
-    id: `rig-${rig.baseHash.slice(7, 19)}`, savedAt: new Date().toISOString(), manifest, skeletons, character: { id: charId, looks },
+    id: `rig-${rig.baseHash.slice(7, 19)}`, savedAt: new Date().toISOString(), manifest, skeletons, character: { id: charId, looks }, origin: 'studio',
     rigQa: { warnings: built.warnings, pivotFrom: built.pivotFrom, clips: Object.fromEntries(clips.map((c) => [`${c.a.name}/${c.d}`, c.out.qa])), tracks: tracks.stats.map(({ points: _, ...t }) => t) },
   };
   for (const d of DIRS) await putCell(rig.rest[d]!.image, rest[d]);
@@ -266,7 +266,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
   for (const id of spec.items) {
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find((i) => i.id === id);
-    if (it && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: ++posed, total: itemTotal, recIds: [] }));
+    if (it && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] }));
   }
 }
 
@@ -340,6 +340,6 @@ export async function saveCopy(p: { manifest: Manifest; images: Map<string, Img>
   const id = `rig-${m.rig.baseHash.slice(7, 19)}`;
   if (await db.get('projects', id)) return id;
   for (const [h, im] of p.images) await putCell(h as Sha256, im);
-  await db.put('projects', id, { id, savedAt: new Date().toISOString(), manifest: m, skeletons: {}, rigQa: { warnings: [], pivotFrom: '', tracks: [] } });
+  await db.put('projects', id, { id, savedAt: new Date().toISOString(), manifest: m, skeletons: {}, rigQa: { warnings: [], pivotFrom: '', tracks: [] }, origin: 'studio' });
   return id;
 }

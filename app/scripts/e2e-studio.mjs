@@ -1,5 +1,5 @@
 // Studio smoke test on the bundled demo (no key, no spend): wear, undo/redo, recolour, outfit save, autosave across reload,
-// keyboard, theme, export zip; B10: sheet chaining without a key (T1 P0), back closes a sheet, focus return, move views and the
+// keyboard, theme, export zip; T2: arrow keys, dev rigs hidden; B10: sheet chaining without a key (T1 P0), back closes a sheet, focus return, move views and the
 // "not made yet" note (P1-1), phone/landscape Outfits + Random + Redo (P1-2), tablet portrait layout (P1-3).
 // Needs the dev server (launch config "app-dev"). Usage: node app/scripts/e2e-studio.mjs   env BASE=http://localhost:5173
 import { chromium } from '../../design-mockups/node_modules/playwright/index.mjs'
@@ -117,6 +117,22 @@ assert.ok(await page.locator('.stage-note').getByRole('button', { name: 'Make yo
 await page.getByRole('button', { name: 'Face south' }).click()
 assert.equal(await page.locator('.stage-note').count(), 0)
 step('cross punch is south only; a worn item without north frames is called out (P1-1)')
+
+// ---- T2: arrow keys in segmented controls; dev rigs out of the character list ----
+await page.getByRole('button', { name: 'Face south' }).focus()
+await page.keyboard.press('ArrowRight')
+assert.equal(await page.getByRole('button', { name: 'Face east' }).getAttribute('aria-pressed'), 'true')
+assert.ok(await page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Face east'))
+step('arrow keys move the direction segmented control')
+const idb = (put) => page.evaluate(async (put) => { const q = indexedDB.open('pixeldoll'); const db = await new Promise((r) => (q.onsuccess = () => r(q.result))); const t = db.transaction('projects', 'readwrite'); if (put) t.objectStore('projects').put(put, put.id); else t.objectStore('projects').delete('rig-e2edevrig00'); await new Promise((r) => (t.oncomplete = r)) }, put)
+await idb({ id: 'rig-e2edevrig00', savedAt: '', manifest: { format: 'pixeldoll/1', name: 'E2E dev rig' }, rigQa: { pivotFrom: 'idle/south/0' } })
+await page.locator('.project-btn').click()
+await page.locator('#project-menu summary', { hasText: 'Developer rigs' }).waitFor()
+assert.equal(await page.locator('#project-menu > .row', { hasText: 'E2E dev rig' }).count(), 0)
+assert.equal(await page.locator('#project-menu .dev-rigs .row', { hasText: 'E2E dev rig' }).isVisible(), false)
+await page.keyboard.press('Escape')
+await idb(null)
+step('dev rigs (no Studio origin) sit in a closed "Developer rigs" group, not in the character list')
 
 // clean up the side record so the next run starts from the fixture defaults
 await page.evaluate(async () => { await new Promise((r) => { const q = indexedDB.open('pixeldoll'); q.onsuccess = () => { const t = q.result.transaction('projects', 'readwrite'); t.objectStore('projects').delete('dress-fixture:s2'); t.oncomplete = r } }) })

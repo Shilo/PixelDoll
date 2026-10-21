@@ -20,12 +20,15 @@
   const sel = $derived(items.find((i) => i.id === ui.selected))
   const gen = $derived(genOf(ui.selected))
   const tileK = $derived(44)
+  // T2: keep the selected slot chip in view (Body was half under the Random button on a 375 px phone)
+  let chips = $state<HTMLElement>()
+  $effect(() => { void ui.group; chips?.querySelector('[aria-selected="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' }) })
 </script>
 
 <div class="panel">
   {#if ui.tab === 'wardrobe'}
     <div class="chip-row">
-      <div class="slot-chips" role="tablist" aria-label="Slots">
+      <div class="slot-chips" role="tablist" aria-label="Slots" bind:this={chips}>
         {#each GROUPS as s (s.id)}
           <button role="tab" class="slot-chip" aria-selected={ui.group === s.id} onclick={() => (ui.group = s.id)}>
             <GroupIcon group={s.id} size={18} /><span>{s.id}</span>

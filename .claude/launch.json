@@ -32,6 +32,21 @@
       "port": 5176
     },
     {
+      "name": "app-dev-b9",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "app",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5175",
+        "--strictPort"
+      ],
+      "port": 5175
+    },
+    {
       "name": "app-preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

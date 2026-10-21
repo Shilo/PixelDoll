@@ -291,6 +291,10 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .menu-sec { padding: 6px 8px 2px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-3); }
 .menu .row { min-height: var(--ctl-h); }
 .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+.dev-rigs > summary { list-style: none; cursor: pointer; color: var(--text-2); }
+.dev-rigs > summary::-webkit-details-marker { display: none; }
+.dev-rigs[open] > summary svg { transform: rotate(90deg); }
+.dev-rigs > .row { padding-left: 32px; }
 
 /* activity */
 .act-list { display: flex; flex-direction: column; gap: 16px; }
@@ -458,7 +462,9 @@ dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
   .check { min-height: 44px; }
   .dot-swatch { width: 44px; height: 44px; }
   .dot-swatch.none { border-radius: 22px; }
-  .welcome a { padding: 12px 2px; }
+  .welcome a { padding: 14px 2px; }
+  .disclosure > summary, .dev-rigs > summary { min-height: 44px; } /* T2: Details rows were 29 px */
+  dialog a.small { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; } /* T2: Connect "Get a key" was 18 px */
 }
 /* small stages (phones, the landscape stage column): the preview bar must fit 375 px, and 320 px without the all-directions toggle */
 .stage-wrap { container-type: inline-size; }

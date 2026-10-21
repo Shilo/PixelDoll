@@ -72,6 +72,20 @@
 
   function onkey(e: KeyboardEvent) {
     const t = e.target as HTMLElement
+    // T2: arrow keys (Home/End) move between the options of a segmented control, tab list or radio group (selection follows
+    // focus, WAI-ARIA) and between the rows of the character menu (focus only)
+    const group = t.closest?.('[role=tablist], [role=radiogroup], .seg[role=group], [role=menu]')
+    if (group && /^(Arrow(Left|Right|Up|Down)|Home|End)$/.test(e.key)) {
+      const menu = group.getAttribute('role') === 'menu'
+      const opts = [...group.querySelectorAll<HTMLElement>(menu ? '.row' : 'button')].filter((o) => !(o as HTMLButtonElement).disabled && o.getClientRects().length)
+      const i = opts.indexOf(t)
+      if (i < 0) return
+      e.preventDefault()
+      const n = e.key === 'Home' ? 0 : e.key === 'End' ? opts.length - 1 : (i + (/Right|Down/.test(e.key) ? 1 : -1) + opts.length) % opts.length
+      opts[n].focus()
+      if (!menu) opts[n].click()
+      return
+    }
     if (ui.sheet || ui.welcome || t.closest('input, textarea, select, [contenteditable]')) return
     const mod = e.ctrlKey || e.metaKey
     const m = store.project?.manifest

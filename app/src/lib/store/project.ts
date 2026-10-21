@@ -13,7 +13,12 @@ export interface StoredProject {
   skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
   rigQa?: unknown;
   character?: { id: string; looks: string }; // v1.3: managed rest character (motion source) + the base's looks description
+  origin?: 'studio' | 'dev'; // T2: who made it; the Studio's character menu lists only 'studio' rigs (dev rigs: M2 pages)
 }
+
+/** Records from before `origin`: v1.3 creates (`character`) and demo copies (empty `pivotFrom`) came from the Studio. */
+export const originOf = (p: StoredProject): 'studio' | 'dev' =>
+  p.origin ?? (p.character || (p.rigQa as { pivotFrom?: string } | undefined)?.pivotFrom === '' ? 'studio' : 'dev');
 
 export const listProjects = async () =>
   (await db.all<StoredProject>('projects')).filter((p) => p?.manifest?.format === 'pixeldoll/1' && p.id?.startsWith('rig-'));

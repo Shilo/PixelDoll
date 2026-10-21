@@ -3,6 +3,7 @@
 import { makeImg, type Img } from '../lib/image/png.ts';
 import { cellImg, layerFrame, over, unionFrame } from '../lib/compose/compose.ts';
 import type { DirectionName, Item, Manifest, Project } from '../lib/store/manifest.ts';
+import { originOf, type StoredProject } from '../lib/store/project.ts';
 
 export interface Group { id: string; slots: string[]; empty: string; ideas: { label: string; slot?: string }[] }
 /** 16 architecture slots in 8 groups; slots[0] = default slot for a new item. */
@@ -121,6 +122,10 @@ export function selfTest() {
   console.assert(nameFrom('a stocky dwarf, tan skin') === 'Dwarf' && nameFrom('a sturdy young dwarf with a friendly face') === 'Dwarf' && nameFrom('') === 'My character', 'nameFrom');
   console.assert(itemNameFrom('a straw farmer hat') === 'Straw farmer hat' && itemNameFrom('Iron Knight Helmet with a red plume') === 'Iron knight helmet' && itemNameFrom('') === '', `itemNameFrom ${itemNameFrom('a straw farmer hat')}`);
   console.assert(groupOf('off_hand').id === 'Hands' && groupOf('waist').id === 'Legs', 'groupOf');
+  // T2: character menu marker; records from before `origin` are migrated by shape (v1.3 create / demo copy = Studio)
+  const rec = (x: Partial<StoredProject>) => x as StoredProject;
+  console.assert(originOf(rec({ origin: 'dev', character: { id: 'c', looks: '' } })) === 'dev' && originOf(rec({ character: { id: 'c', looks: '' } })) === 'studio'
+    && originOf(rec({ rigQa: { pivotFrom: '' } })) === 'studio' && originOf(rec({ rigQa: { pivotFrom: 'idle/south/0' } })) === 'dev', 'originOf');
   console.assert(crop(s)!.w === 1 && crop(makeImg(2, 2)) === null, 'crop');
   console.assert(plainReason('G4 walk/south: item missing').includes('missing'), 'plainReason');
 }
