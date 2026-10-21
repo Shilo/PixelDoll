@@ -43,12 +43,17 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 Paperdoll output must be accurate, consistent, high quality, using proper PixelLab tooling, proper skeleton rigging,
 proper post-processing and proper layering — frontier-standard paperdolling workflow.
 
+## Deferred — theming (user, 2026-10-21)
+- [ ] Theming support (token-based themes switchable at runtime)
+- [ ] "Paper" theme inspired by look D: modern, clean, paper-like surfaces; may be playful but must read as paper (brand)
+
 ## Phase 6 — Design & MVP (after Phases 2–5 are done)
-- [ ] Design brainstorm with agents (user flows for casual users, information architecture, Apple-style simplicity)
-- [ ] Theme brainstorm: minimalistic, modern, professional, intuitive candidates
-- [ ] Evaluate GlassKit (https://glasskit.jungherz.com/, https://github.com/JUNGHERZ/GlassKit) as one theme option
-- [ ] Build multiple design/theme/interface mockups and deliver screenshots to user (desktop + mobile)
-- [ ] Choose + document recommended framework (Svelte, not SvelteKit; Vite/Vite+; TS), theme and design
+- [x] Design brainstorm with agents (user flows for casual users, information architecture, Apple-style simplicity)
+- [x] Theme brainstorm: minimalistic, modern, professional, intuitive candidates
+- [x] Evaluate GlassKit (https://glasskit.jungherz.com/, https://github.com/JUNGHERZ/GlassKit) as one theme option
+- [x] Build multiple design/theme/interface mockups and deliver screenshots to user (desktop + mobile)
+- [x] Choose framework (Svelte 5, not SvelteKit; Vite 8; TS) — user chose look **A only** (not A+E), dark default + light
+      switcher, mature icon library (Lucide), no pixel fonts/icons
 - [ ] Implement first real MVP app: Apple-like ease of use, minimal, responsive for all resolutions/orientations (desktop + mobile)
 - [ ] Test MVP thoroughly: design, layout, functionality, intuitiveness for casual users (desktop + mobile, portrait + landscape)
 

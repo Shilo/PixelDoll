@@ -80,4 +80,8 @@ Cross-agent channel: `docs/research/SHARED_NOTES.md` (append-only, short bullets
   **Clarified (user):** "Pro" is banned only for creating from scratch. Pro is ALLOWED (and usually noticeably best) for
   editing images/frames/references/spritesheets (`edit-animation-v2`, `edit-images-v2`, `inpaint-v3`, …). Editing candidates
   to benchmark: Pro vs Pro Flash vs Pixen (`edit-image-pixen`) — S4.
+- D9 (2026-10-21, user): MVP look = **A (native minimal) only**, NOT A+E — no pixel fonts, no pixel icons (inconsistent, less
+  readable/professional). **Dark mode by default** with a visible dark/light switcher (persisted). Use a standard, mature,
+  modern icon library everywhere (Lucide via `@lucide/svelte`) and the system UI font stack. Future (deferred): theming
+  support + a "Paper" theme inspired by look D — modern, clean, paper-like surfaces (the brand is *paper*dolling).
 - D6 (2026-10-21): Skeleton v3 is the preferred skeleton route; legacy skeleton only as baseline (user) — S3 validating.
