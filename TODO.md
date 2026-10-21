@@ -43,9 +43,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 
 ## Phase 7 — Hardening (2026-10-21)
 - [~] T3 full item coverage: hair, cape, chest, boots, legs × idle/walk/slash/hurt × S/E/N/W (≤220 gens, user-approved)
-- [~] B11 layered .aseprite export (verified with Aseprite CLI) + Godot CREDITS.csv warning fix
-- [~] B12 root README, docs index, user guide, GitHub Pages workflow (no push), repo hygiene
-- [~] R6 code/security/over-engineering review (report only)
+- [x] B11 layered .aseprite export (verified with Aseprite CLI) + Godot CREDITS.csv warning fix
+- [x] B12 root README, docs index, user guide, GitHub Pages workflow (no push), repo hygiene
+- [x] R6 code/security/over-engineering review (report only)
+- [x] B13 R6 fixes: leader-only resume, no paid resend, atomic saves, key not broadcast, dev pages out of prod (432→317 kB)
 - [ ] After T3/R6: offline banner, 4/8-direction + 48/56 px options in Create, shirt/shorts colour regions, R6 fixes
 
 ## Deferred
