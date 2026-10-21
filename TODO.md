@@ -61,10 +61,15 @@ proper post-processing and proper layering — frontier-standard paperdolling wo
       switcher, mature icon library (Lucide), no pixel fonts/icons
 - [x] Implement first real MVP Studio (look A, dark default, Lucide, responsive) — B6, fixes B10
 - [x] Independent UX QA T1 (P0 fixed by PM, P1/P2 by B10)
-- [~] Final regression T2 (re-verify, live add-a-move, hide dev rigs, a11y)
+- [x] Final regression T2 (all T1 items pass, live add-a-move, dev rigs hidden, keyboard nav) — score 8.5/10
+- [x] Background-tab throttling: queue ticks from a Worker timer
 
 ## Risks
-- [!] PixelLab balance ≈950 gens (2026-10-21) — spend economically
+- [!] PixelLab balance ≈923 gens (2026-10-21) — spend economically
 - [!] Shields (off_hand) untested; helmet south-slash frame flagged when forearm covers visor
 - [!] Base body swap invalidates layers (`baseHash` stale detection)
-- [ ] Next: hair/cape/chest/boots on skeleton-pose across full 3-dir × 4-clip set (O11); 48 vs 56 base (O14); offline banner
+- [ ] Next: hair/cape/chest/boots/legs on skeleton-pose across a full 3-dir × 4-clip set (O11)
+- [ ] Next: shields (off_hand) live test; reduce 'Needs a look' rate on action moves (smear on hurt/slash frames)
+- [ ] Next: separate base colour regions (shirt vs shorts) for independent recolour
+- [ ] Next: offline banner; 48 vs 56 px base option (O14); 4/8-direction choice in Create
+- [ ] Next: GitHub Pages deploy workflow

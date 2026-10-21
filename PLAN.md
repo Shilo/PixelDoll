@@ -1,6 +1,21 @@
 # PixelDoll — Plan
 
-Status: **Research spike + mockup phase** (started 2026-10-20). Living document; updated as phases complete.
+Status: **First MVP built and tested** (2026-10-21). Research, spikes S1–S5, architecture v1.3, mockups M1–M5 and the
+theme-A Studio MVP are done and committed. Living document.
+
+## Current state (2026-10-21)
+
+- **Pipeline (proven live):** create-character-v3 48 px → pad 64 (x+8, y+12) → skeleton-v3 clips with stored keypoints
+  (idle authored from rest pose, walk via managed skeleton-v3 motion re-rendered raw, attacks/hurt/death authored) →
+  items: chroma mannequin rest views dressed in one Pro `edit-animation-v2` call → posed per clip with
+  `animate-with-skeleton-v3` → chroma extraction + cleanup → QA gates (G1–G10, grip side, direction check) → layers.
+  Held items on a 96 px oversize canvas (shared pivot). Fallback: Pro `inpaint-v3` packed masked grid.
+- **Studio MVP** (`app/`, default route `#/`): look A, dark default + light switch, Lucide, responsive desktop/tablet/
+  phone/landscape; wardrobe, stage, inspector, exact recolour, outfits, undo/redo, create character, new item, add a move,
+  export (Godot/Phaser/Unity/PNG+JSON), activity, cross-tab queue lock, worker-driven polling. Dev harnesses `#/m1…#/m5`.
+- **Verified:** Godot 4.7.1 and Phaser 3.80/3.90/4.2.1 render exports pixel-identical to PixelDoll's compositor (incl.
+  oversize layers). Unity: compile-only (deferred). Independent UX QA: 6/10 → 8.5/10 after fixes (T1 → T2).
+- **Spend:** ≈4,000+ PixelLab generations across spikes/tests; balance ≈923 (2026-10-21).
 
 ## Goal
 
