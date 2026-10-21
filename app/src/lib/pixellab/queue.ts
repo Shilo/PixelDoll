@@ -93,14 +93,32 @@ async function mapDeep(v: unknown, fn: (o: Record<string, unknown>) => Promise<u
   return out;
 }
 
+/** setInterval that keeps ticking in background tabs (worker-driven); plain setInterval where Worker is missing (node). */
+let ticker: Worker | null | undefined
+const ticks = new Map<number, () => void>()
+let nextTick = 0
+function every(ms: number, fn: () => void): () => void {
+  if (ticker === undefined) {
+    try {
+      ticker = new Worker(new URL('./ticker.worker.ts', import.meta.url), { type: 'module' })
+      ticker.onmessage = (e: MessageEvent<number>) => ticks.get(e.data)?.()
+    } catch { ticker = null }
+  }
+  if (!ticker) { const t = setInterval(fn, ms); return () => clearInterval(t) }
+  const id = ++nextTick, w = ticker
+  ticks.set(id, fn)
+  w.postMessage({ id, ms })
+  return () => { ticks.delete(id); w.postMessage({ id }) }
+}
+
 export class Queue {
   private recs = new Map<string, JobRec>();
   private busy = new Set<string>(); // rec ids / subjob ids with an op in flight
   private listeners = new Set<(s: QueueSnapshot) => void>();
-  private timer: ReturnType<typeof setInterval> | null = null;
+  private timer: (() => void) | null = null;
   private streak = 0;
   private deps: Deps;
-  private follower: ReturnType<typeof setInterval> | null = null;
+  private follower: (() => void) | null = null;
   private release: (() => void) | null = null;
   private merged = 0;
   private chan: BroadcastChannel | null = null;
@@ -174,12 +192,12 @@ export class Queue {
     if (got) return this.lead();
     this.role = 'follower';
     if (this.key) this.chan?.postMessage({ key: this.key });
-    this.follower = setInterval(() => void this.sync(), SYNC_MS);
+    this.follower = every(SYNC_MS, () => void this.sync());
     this.emit();
     void locks.request(LOCK, async () => { await this.lead(); return hold(); });
   }
   private async lead() {
-    if (this.follower) clearInterval(this.follower);
+    this.follower?.();
     this.follower = null;
     this.role = 'leader';
     this.recs.clear();
@@ -190,7 +208,7 @@ export class Queue {
   /** Stop working and hand the lock to the next tab (tests, HMR). */
   disconnect() {
     this.stop();
-    if (this.follower) clearInterval(this.follower);
+    this.follower?.();
     this.follower = null;
     this.release?.();
     this.release = null;
@@ -225,10 +243,10 @@ export class Queue {
     this.emit();
   }
   start() {
-    this.timer ??= setInterval(() => void this.tick(), 1000);
+    this.timer ??= every(1000, () => void this.tick());
   }
   stop() {
-    if (this.timer) clearInterval(this.timer);
+    this.timer?.();
     this.timer = null;
   }
   setKey(key: string, share = true) {
