@@ -1,0 +1,90 @@
+{
+ "intraClip": {
+  "template walk south (S2)": {
+   "stable": 0.347,
+   "colors": 37
+  },
+  "template walk east (S2)": {
+   "stable": 0.23,
+   "colors": 27
+  },
+  "raw v3 slash_south_v3_s7 (K1)": {
+   "stable": 0.67
+  },
+  "raw v3 slash_east_v3_s7 (K1)": {
+   "stable": 0.543
+  },
+  "raw v3 walk_south_v3tpl_s7 (K1)": {
+   "stable": 0.58
+  },
+  "raw v3 walk_east_v3tpl_s7 (K1)": {
+   "stable": 0.389
+  },
+  "managed skeleton-v3 walking-8-frames_south_charsk_s7 (K1, b48 char)": {
+   "stable": 0.637
+  },
+  "managed skeleton-v3 walking-8-frames_east_charsk_s7 (K1, b48 char)": {
+   "stable": 0.365
+  }
+ },
+ "align": {
+  "walking-8-frames_south_s7": {
+   "n": 8,
+   "intraStable": 0.699,
+   "repIoU": 0.954,
+   "repExact": 0.598,
+   "chromaIoU": 0.949,
+   "chromaIoUmin": 0.912,
+   "chromaBestShift": "0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0",
+   "dressedKeyOutside": 0.042,
+   "dressedIoU": 0.748
+  },
+  "walking-8-frames_east_s7": {
+   "n": 8,
+   "intraStable": 0.378,
+   "repIoU": 0.928,
+   "repExact": 0.49,
+   "chromaIoU": 0.93,
+   "chromaIoUmin": 0.895,
+   "chromaBestShift": "0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0",
+   "dressedKeyOutside": 0.064,
+   "dressedIoU": 0.729
+  },
+  "cross-punch_south_s7": {
+   "n": 6,
+   "intraStable": 0.301,
+   "chromaIoU": 0.895,
+   "chromaIoUmin": 0.867,
+   "chromaBestShift": "0,0 0,0 0,0 0,0 0,0 -1,0",
+   "dressedKeyOutside": 0.042,
+   "dressedIoU": 0.794
+  },
+  "cross-punch_east_s7": {
+   "n": 6,
+   "intraStable": 0.235,
+   "chromaIoU": 0.873,
+   "chromaIoUmin": 0.779,
+   "chromaBestShift": "0,0 0,0 0,0 0,0 0,0 0,0",
+   "dressedKeyOutside": 0.083,
+   "dressedIoU": 0.793
+  },
+  "raw_slash_south_s7": {
+   "n": 8,
+   "intraStable": 0.661,
+   "chromaIoU": 0.988,
+   "chromaIoUmin": 0.974,
+   "chromaBestShift": "0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0",
+   "dressedKeyOutside": 0.013,
+   "dressedIoU": 0.793
+  },
+  "raw_slash_east_s7": {
+   "n": 8,
+   "intraStable": 0.544,
+   "chromaIoU": 0.977,
+   "chromaIoUmin": 0.957,
+   "chromaBestShift": "0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0",
+   "dressedKeyOutside": 0.007,
+   "dressedIoU": 0.726
+  }
+ }
+}

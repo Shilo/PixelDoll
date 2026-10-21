@@ -1,0 +1,52 @@
+file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/lib/api.mjs:22
+      if (!r.ok) { const e = new Error(`${method} ${path} -> ${r.status}: ${JSON.stringify(json).slice(0, 800)}`); e.status = r.status; e.body = json; throw e; }
+                             ^
+
+Error: POST /animate-with-skeleton -> 422: {"detail":[{"type":"int_from_float","loc":["body","skeleton_keypoints",0,16,"z_index"],"msg":"Input should be a valid integer, got a number with a fractional part","input":-0.5},{"type":"int_from_float","loc":["body","skeleton_keypoints",0,17,"z_index"],"msg":"Input should be a valid integer, got a number with a fractional part","input":-3.5},{"type":"int_from_float","loc":["body","skeleton_keypoints",1,16,"z_index"],"msg":"Input should be a valid integer, got a number with a fractional part","input":-0.5},{"type":"int_from_float","loc":["body","skeleton_keypoints",1,17,"z_index"],"msg":"Input should be a valid integer, got a number with a fractional part","input":-3.5},{"type":"int_from_float","loc":["body","skeleton_keypoints",2,16,"z_index"],"msg":"Input should be a valid integer, got a
+    at req (file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/lib/api.mjs:22:30)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/s3_k1.mjs:43:14 {
+  status: 422,
+  body: {
+    detail: [
+      {
+        type: 'int_from_float',
+        loc: [ 'body', 'skeleton_keypoints', 0, 16, 'z_index' ],
+        msg: 'Input should be a valid integer, got a number with a fractional part',
+        input: -0.5
+      },
+      {
+        type: 'int_from_float',
+        loc: [ 'body', 'skeleton_keypoints', 0, 17, 'z_index' ],
+        msg: 'Input should be a valid integer, got a number with a fractional part',
+        input: -3.5
+      },
+      {
+        type: 'int_from_float',
+        loc: [ 'body', 'skeleton_keypoints', 1, 16, 'z_index' ],
+        msg: 'Input should be a valid integer, got a number with a fractional part',
+        input: -0.5
+      },
+      {
+        type: 'int_from_float',
+        loc: [ 'body', 'skeleton_keypoints', 1, 17, 'z_index' ],
+        msg: 'Input should be a valid integer, got a number with a fractional part',
+        input: -3.5
+      },
+      {
+        type: 'int_from_float',
+        loc: [ 'body', 'skeleton_keypoints', 2, 16, 'z_index' ],
+        msg: 'Input should be a valid integer, got a number with a fractional part',
+        input: -0.5
+      },
+      {
+        type: 'int_from_float',
+        loc: [ 'body', 'skeleton_keypoints', 2, 17, 'z_index' ],
+        msg: 'Input should be a valid integer, got a number with a fractional part',
+        input: -3.5
+      }
+    ]
+  }
+}
+
+Node.js v25.0.0

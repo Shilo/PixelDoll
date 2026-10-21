@@ -1,0 +1,1 @@
+COST {"ms":56310,"nFrames":3,"sizes":["64x64"],"usage":{"type":"generations","generations":1}}

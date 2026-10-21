@@ -1,0 +1,27 @@
+file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/lib/api.mjs:37
+      if (job.status === 'failed') { const e = new Error(`job ${id} failed: ${JSON.stringify(job.last_response).slice(0, 800)}`); e.job = job; throw e; }
+                                               ^
+
+Error: job 2be12a56-798c-4d02-a01a-2522f1e16b6e failed: {"type":"error","error":"Generation failed","detail":"!handles_.at(i) INTERNAL ASSERT FAILED at \"/pytorch/c10/cuda/CUDACachingAllocator.cpp\":400, please report a bug to PyTorch. ","status":"failed","flow_kind":"animation","queue_position":0}
+    at waitJob (file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/lib/api.mjs:37:48)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async Promise.all (index 0)
+    at async Object.run (file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/lib/api.mjs:48:18)
+    at async file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/spikes/api/s3_k1.mjs:46:7 {
+  job: {
+    usage: { type: 'usd', usd: 0 },
+    id: '2be12a56-798c-4d02-a01a-2522f1e16b6e',
+    status: 'failed',
+    created_at: '2026-10-21T05:37:03.316628+00:00',
+    last_response: {
+      type: 'error',
+      error: 'Generation failed',
+      detail: '!handles_.at(i) INTERNAL ASSERT FAILED at "/pytorch/c10/cuda/CUDACachingAllocator.cpp":400, please report a bug to PyTorch. ',
+      status: 'failed',
+      flow_kind: 'animation',
+      queue_position: 0
+    }
+  }
+}
+
+Node.js v25.0.0

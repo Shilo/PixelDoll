@@ -1,0 +1,1 @@
+COST {"cmd":"anim","name":"chroma_cross-punch_east_s7","tag":"chroma","tpl":"cross-punch","dir":"east","seed":7,"ms":156323,"nFrames":6,"size":"96x96","usage":{"type":"generations","generations":3},"job":"90e685a3-742a-4ca2-9506-36ad15193bbd"}

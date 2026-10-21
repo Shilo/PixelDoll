@@ -1,0 +1,12 @@
+done sword_v3_N 0
+done sword_v0_N 0
+done sword_v0_E 0
+done helmet_v0_E 0
+done helmet_v0_S 0
+done sword_v1_E 0
+done sword_v2_E 0
+done sword_v1_S 0
+done sword_v0_S 0
+done sword_v3_E 0
+done sword_v3_S 0
+done sword_v2_S 0

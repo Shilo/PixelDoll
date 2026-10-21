@@ -1,0 +1,1 @@
+COST {"cmd":"anim","name":"base_cross-punch_south_s7","tag":"base","tpl":"cross-punch","dir":"south","seed":7,"ms":119777,"nFrames":6,"size":"96x96","usage":{"type":"generations","generations":3},"job":"8380f6e9-4784-401e-ba75-785899e9eac8"}

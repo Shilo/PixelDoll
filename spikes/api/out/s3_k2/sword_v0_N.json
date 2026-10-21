@@ -1,0 +1,79 @@
+{
+ "run": "sword_v0_N",
+ "item": "sword",
+ "variant": "v0",
+ "dir": "north",
+ "desc": "This pixel art character is a solid bright green mannequin. The bright green colour is intentional (a chroma key) and must stay exactly the same bright green in every frame. Frame 1 already wears a steel longsword with a brown leather grip: copy exactly that design, colours and size onto the other frames. Add only a steel longsword with a brown leather grip, drawn in its own natural colours (no bright green on the item), identical design in all frames. Frames 2 onward, all facing north: 8 frames of a slash animation, then 6 frames of a hurt animation. Keep every other pixel, the pose, the outline and the transparent background unchanged.",
+ "cells": [
+  {
+   "id": "slash_north_v3_s7_0",
+   "clip": "slash",
+   "sk": "s3_k1/slash_north_v3_s7_0"
+  },
+  {
+   "id": "slash_north_v3_s7_1",
+   "clip": "slash",
+   "sk": "s3_k1/slash_north_v3_s7_1"
+  },
+  {
+   "id": "slash_north_v3_s7_2",
+   "clip": "slash",
+   "sk": "s3_k1/slash_north_v3_s7_2"
+  },
+  {
+   "id": "slash_north_v3_s7_3",
+   "clip": "slash",
+   "sk": "s3_k1/slash_north_v3_s7_3"
+  },
+  {
+   "id": "slash_north_v3_s7_4",
+   "clip": "slash",
+   "sk": "s3_k1/slash_north_v3_s7_4"
+  },
+  {
+   "id": "slash_north_v3_s7_5",
+   "clip": "slash",
+   "sk": "s3_k1/slash_north_v3_s7_5"
+  },
+  {
+   "id": "slash_north_v3_s7_6",
+   "clip": "slash",
+   "sk": "s3_k1/slash_north_v3_s7_6"
+  },
+  {
+   "id": "slash_north_v3_s7_7",
+   "clip": "slash",
+   "sk": "s3_k1/slash_north_v3_s7_7"
+  },
+  {
+   "id": "hurt_north_v3_s7_0",
+   "clip": "hurt",
+   "sk": "s3_k1/hurt_north_v3_s7_0"
+  },
+  {
+   "id": "hurt_north_v3_s7_1",
+   "clip": "hurt",
+   "sk": "s3_k1/hurt_north_v3_s7_1"
+  },
+  {
+   "id": "hurt_north_v3_s7_2",
+   "clip": "hurt",
+   "sk": "s3_k1/hurt_north_v3_s7_2"
+  },
+  {
+   "id": "hurt_north_v3_s7_3",
+   "clip": "hurt",
+   "sk": "s3_k1/hurt_north_v3_s7_3"
+  },
+  {
+   "id": "hurt_north_v3_s7_4",
+   "clip": "hurt",
+   "sk": "s3_k1/hurt_north_v3_s7_4"
+  },
+  {
+   "id": "hurt_north_v3_s7_5",
+   "clip": "hurt",
+   "sk": "s3_k1/hurt_north_v3_s7_5"
+  }
+ ]
+}

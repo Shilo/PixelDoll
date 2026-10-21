@@ -1,0 +1,149 @@
+{
+ "run": "sword_v3_E",
+ "item": "sword",
+ "variant": "v3",
+ "dir": "east",
+ "desc": "This pixel art character is a solid bright green mannequin. The bright green colour is intentional (a chroma key) and must stay exactly the same bright green in every frame. Frame 1 already wears a steel longsword with a brown leather grip, gripped in the character's RIGHT hand (the swinging hand): copy exactly that design, colours and size onto the other frames. Add only a steel longsword with a brown leather grip, gripped in the character's RIGHT hand (the swinging hand), drawn in its own natural colours (no bright green on the item), identical design in all frames. Facing east (side view) the character's right hand is the near hand, in front of the body. The sword stays in that same right hand in every frame and follows it as the arm swings. In frames 2 and later a small bright magenta patch marks the right hand: that hand grips the sword. Draw the grip over the magenta patch; magenta is never part of the sword. Frames 2 onward, all facing east: 8 frames of a slash animation, then 6 frames of a cross-punch animation. Keep every other pixel, the pose, the outline and the transparent background unchanged.",
+ "cells": [
+  {
+   "id": "slash_east_v3_s7_0",
+   "clip": "slash",
+   "sk": "s3_k1/slash_east_v3_s7_0",
+   "hand": {
+    "x": 29.743489583333332,
+    "y": 44.4921875,
+    "z": 0
+   }
+  },
+  {
+   "id": "slash_east_v3_s7_1",
+   "clip": "slash",
+   "sk": "s3_k1/slash_east_v3_s7_1",
+   "hand": {
+    "x": 20.867513020833332,
+    "y": 22.03125,
+    "z": 0
+   }
+  },
+  {
+   "id": "slash_east_v3_s7_2",
+   "clip": "slash",
+   "sk": "s3_k1/slash_east_v3_s7_2",
+   "hand": {
+    "x": 34.93791961669922,
+    "y": 20.200663248697918,
+    "z": 0
+   }
+  },
+  {
+   "id": "slash_east_v3_s7_3",
+   "clip": "slash",
+   "sk": "s3_k1/slash_east_v3_s7_3",
+   "hand": {
+    "x": 44.6806640625,
+    "y": 30.28271484375,
+    "z": 0
+   }
+  },
+  {
+   "id": "slash_east_v3_s7_4",
+   "clip": "slash",
+   "sk": "s3_k1/slash_east_v3_s7_4",
+   "hand": {
+    "x": 41.50927734375,
+    "y": 40.17041015625,
+    "z": 0
+   }
+  },
+  {
+   "id": "slash_east_v3_s7_5",
+   "clip": "slash",
+   "sk": "s3_k1/slash_east_v3_s7_5",
+   "hand": {
+    "x": 32.652669270833336,
+    "y": 44.4921875,
+    "z": 0
+   }
+  },
+  {
+   "id": "slash_east_v3_s7_6",
+   "clip": "slash",
+   "sk": "s3_k1/slash_east_v3_s7_6",
+   "hand": {
+    "x": 29.743489583333332,
+    "y": 44.8291015625,
+    "z": 0
+   }
+  },
+  {
+   "id": "slash_east_v3_s7_7",
+   "clip": "slash",
+   "sk": "s3_k1/slash_east_v3_s7_7",
+   "hand": {
+    "x": 29.968098958333332,
+    "y": 45.0537109375,
+    "z": 0
+   }
+  },
+  {
+   "id": "punch_east_0",
+   "clip": "cross-punch",
+   "sk": "punch_east_0",
+   "hand": {
+    "x": 34.897298177083336,
+    "y": 40.697265625,
+    "z": 0
+   }
+  },
+  {
+   "id": "punch_east_1",
+   "clip": "cross-punch",
+   "sk": "punch_east_1",
+   "hand": {
+    "x": 34.587890625,
+    "y": 40.97705078125,
+    "z": 0
+   }
+  },
+  {
+   "id": "punch_east_2",
+   "clip": "cross-punch",
+   "sk": "punch_east_2",
+   "hand": {
+    "x": 32.29296875,
+    "y": 43.0234375,
+    "z": 0
+   }
+  },
+  {
+   "id": "punch_east_3",
+   "clip": "cross-punch",
+   "sk": "punch_east_3",
+   "hand": {
+    "x": 24.892415364583336,
+    "y": 43.099609375,
+    "z": 0
+   }
+  },
+  {
+   "id": "punch_east_4",
+   "clip": "cross-punch",
+   "sk": "punch_east_4",
+   "hand": {
+    "x": 24.876953125,
+    "y": 38.455078125,
+    "z": 0
+   }
+  },
+  {
+   "id": "punch_east_5",
+   "clip": "cross-punch",
+   "sk": "punch_east_5",
+   "hand": {
+    "x": 50.692586263020836,
+    "y": 35.79265737533569,
+    "z": 0
+   }
+  }
+ ]
+}

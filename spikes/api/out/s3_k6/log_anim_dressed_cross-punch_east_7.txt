@@ -1,0 +1,1 @@
+COST {"cmd":"anim","name":"dressed_cross-punch_east_s7","tag":"dressed","tpl":"cross-punch","dir":"east","seed":7,"ms":135675,"nFrames":6,"size":"96x96","usage":{"type":"generations","generations":3},"job":"2f887656-3096-4598-9652-c278b8295b15"}

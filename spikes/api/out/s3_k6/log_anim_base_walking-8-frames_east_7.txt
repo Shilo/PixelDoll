@@ -1,0 +1,1 @@
+COST {"cmd":"anim","name":"base_walking-8-frames_east_s7","tag":"base","tpl":"walking-8-frames","dir":"east","seed":7,"ms":104963,"nFrames":8,"size":"96x96","usage":{"type":"generations","generations":3},"job":"4670dc5e-7614-4297-b92e-319eef4fe8ca"}
