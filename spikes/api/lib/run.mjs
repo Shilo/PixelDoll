@@ -14,7 +14,7 @@ export function experiment(name) {
     call: (c) => fs.appendFileSync(logFile, JSON.stringify({ t: new Date().toISOString(), ...strip(c) }) + '\n'),
     event: (e) => fs.appendFileSync(logFile, JSON.stringify({ t: new Date().toISOString(), event: strip(e) }) + '\n'),
   };
-  const api = process.env.PIXELLAB_API_KEY ? client({ key: process.env.PIXELLAB_API_KEY, log }) : null; // offline scripts need no key
+  const api = process.env.PIXELLAB_TOKEN_AGENT_DEV ? client({ key: process.env.PIXELLAB_TOKEN_AGENT_DEV, log }) : null; // offline scripts need no key
   const save = (file, im) => { fs.writeFileSync(path.join(dir, file), encode(im)); return im; };
   const saveJson = (file, obj) => fs.writeFileSync(path.join(dir, file), JSON.stringify(strip(obj), null, 2));
   const load = (file) => decode(fs.readFileSync(path.isAbsolute(file) ? file : path.join(dir, file)));

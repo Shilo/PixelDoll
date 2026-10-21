@@ -11,7 +11,7 @@ To test what is possible with creating a proper modern paperdolling system power
 ## Agent testing (PixelLab key)
 
 - AI agents (Claude, Codex, others) that need the PixelLab key run the agent dev server: `npm --prefix app run dev:agent`
-  (launch config `app-dev-agent`, http://localhost:5199). It serves `PIXELLAB_API_KEY` from the repo-root `.env` to
+  (launch config `app-dev-agent`, http://localhost:5199). It serves `PIXELLAB_TOKEN_AGENT_DEV` from the repo-root `.env` to
   same-origin localhost requests, and the app auto-connects and shows an "Agent mode" badge.
 - Humans never use it. `npm run dev` (launch config `app-dev`, :5173) has no key endpoint and no key option: paste the key
   in Connect, as in production. Builds never contain any of this (`vite build --mode agent` refuses to run; CI greps `dist`).

@@ -41,7 +41,7 @@ Open `#/` for the Studio. **Try the demo** needs no key. To generate, open **Con
 npm --prefix app run dev:agent   # http://localhost:5199, Vite mode "agent" (launch config "app-dev-agent")
 ```
 
-It reads `PIXELLAB_API_KEY` from a git-ignored `.env` at the repo root, server-side, and serves it at `/__dev/pixellab-key`
+It reads `PIXELLAB_TOKEN_AGENT_DEV` from a git-ignored `.env` at the repo root, server-side, and serves it at `/__dev/pixellab-key`
 only to same-origin requests from localhost (`cache-control: no-store`). The app connects automatically and shows an
 **Agent mode** badge. Humans don't use it. None of it exists outside `vite --mode agent`: Vite loads no `.env` files at all
 (`envDir: false`, no `VITE_` variables), `vite build --mode agent` refuses to run, and CI fails if `dist/` mentions it. Never
@@ -95,7 +95,7 @@ Use nearest-neighbour filtering and whole-pixel positions in every engine.
 
 [.github/workflows/pages.yml](.github/workflows/pages.yml) runs on every push and pull request: `npm ci`, `npm run check`,
 `npm run selftest`, `npm run build` in `app/`, then a **dist guard** that fails the run if `app/dist` contains `__dev`,
-`pixellab-key`, `PIXELLAB_API_KEY`, agent-mode code, any `.env*` file or any source map. On a push to `main` it also deploys
+`pixellab-key`, `PIXELLAB_TOKEN_AGENT_DEV`, agent-mode code, any `.env*` file or any source map. On a push to `main` it also deploys
 `app/dist` to GitHub Pages (or run it by hand from the Actions tab). The workflow uses no secrets and no environment
 variables: the PixelLab key never reaches CI. Enable Pages once: **Settings → Pages → Build and deployment → Source: GitHub
 Actions**. The site is served at <https://shilo.github.io/PixelDoll/>; it works under that sub-path because Vite's `base` is

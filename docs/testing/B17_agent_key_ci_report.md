@@ -22,7 +22,7 @@ No PixelLab generations. The only API call was `GET /balance` (free) from the ag
 | 1 | Built-in browser on :5173 | No "Agent mode" badge, toolbar shows **Connect**, Connect sheet buttons = `Cancel`, `Connect` only, no `[data-testid=dev-key]`, no remembered key |
 | 2 | `npm run dev:agent` (:5199) `GET /__dev/pixellab-key` | same-origin: `200`, 36 B, `cache-control: no-store` (value not printed); `Sec-Fetch-Site: cross-site`: `403`; `Host: evil.test`: `403` |
 | 2 | Built-in browser on :5199 | Badge "Agent mode" bottom-left (desktop 1280×800 and phone 375×812), toolbar shows "N gens" (auto-connected, `/balance` only), key not in localStorage, tab = leader |
-| 3 | `npm run build` + guard (`grep -rlE '__dev\|pixellab-key\|PIXELLAB_API_KEY\|pixeldoll\.agentKey\|agent-badge'`, `.env*`, `*.map`) | exit 0, 0 hits; also 0 hits for `Agent mode`/`agentKey`/`.env`; only "agent" substrings are `userAgent` and `magenta`. Key value: 0 files in `app/dist`, `app/src`, `.github`, docs |
+| 3 | `npm run build` + guard (`grep -rlE '__dev\|pixellab-key\|PIXELLAB_TOKEN_AGENT_DEV\|pixeldoll\.agentKey\|agent-badge'`, `.env*`, `*.map`) | exit 0, 0 hits; also 0 hits for `Agent mode`/`agentKey`/`.env`; only "agent" substrings are `userAgent` and `magenta`. Key value: 0 files in `app/dist`, `app/src`, `.github`, docs |
 | 3 | Guard negative test (dist copy + planted `.env` and `fetch('/__dev/pixellab-key')`) | guard = 1 (fails as intended) |
 | 3 | `npx vite build --mode agent` | refuses: `mode "agent" is dev-server only; never build with it` |
 | B | `pages.yml` parsed with PyYAML | triggers push/pull_request/workflow_dispatch; jobs build, deploy; deploy perms pages:write + id-token:write |

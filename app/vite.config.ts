@@ -32,7 +32,7 @@ function devTools(): Plugin {
   }
 }
 
-// AI-agent automation only (`npm run dev:agent` = `vite --mode agent`): serves PIXELLAB_API_KEY from ../.env at
+// AI-agent automation only (`npm run dev:agent` = `vite --mode agent`): serves PIXELLAB_TOKEN_AGENT_DEV from ../.env at
 // /__dev/pixellab-key. Not registered at all for `npm run dev` (humans paste their key like in production) or any build.
 // The key is read server-side per request, never through Vite's env (no VITE_ prefix, nothing inlined).
 function agentKey(): Plugin {
@@ -42,7 +42,7 @@ function agentKey(): Plugin {
       server.middlewares.use('/__dev/pixellab-key', (req, res) => {
         if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
         let key = ''
-        try { key = readFileSync(new URL('../.env', import.meta.url), 'utf8').match(/^PIXELLAB_API_KEY=(.*)$/m)?.[1]?.trim() ?? '' } catch {}
+        try { key = readFileSync(new URL('../.env', import.meta.url), 'utf8').match(/^PIXELLAB_TOKEN_AGENT_DEV=(.*)$/m)?.[1]?.trim() ?? '' } catch {}
         res.setHeader('cache-control', 'no-store')
         res.statusCode = key ? 200 : 404
         res.end(key)

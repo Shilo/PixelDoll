@@ -105,7 +105,7 @@ Cross-agent channel: `docs/research/SHARED_NOTES.md` (append-only, short bullets
 - D10 (2026-10-21, PM): Base garment regions (shirt vs shorts) are made exact-colour-disjoint by a 1/255 blue-channel
   parity nudge assigned by hip line (B15). Imperceptible change to PixelLab pixels, chosen so engine palette-swap stays a pure
   exact-colour lookup with no extra mask files. Upgrade path: per-layer region mask in the manifest if a user objects.
-- D11 (2026-10-21, user): The `.env` `PIXELLAB_API_KEY` is for **AI-agent automation only**: `npm run dev:agent`
+- D11 (2026-10-21, user): The `.env` `PIXELLAB_TOKEN_AGENT_DEV` is for **AI-agent automation only**: `npm run dev:agent`
   (`vite --mode agent`, :5199) serves it and the app auto-connects with an "Agent mode" badge. `npm run dev` and every build
   have no key endpoint, no key option and no env loading (`envDir: false`); humans paste the key like production users. CI
   (`.github/workflows/pages.yml`) runs check, selftest, build and a dist guard on every push/PR, and deploys Pages from `main`.

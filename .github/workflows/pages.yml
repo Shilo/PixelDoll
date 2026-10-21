@@ -33,7 +33,7 @@ jobs:
         shell: bash
         run: |
           bad=0
-          if grep -rlE '__dev|pixellab-key|PIXELLAB_API_KEY|pixeldoll\.agentKey|agent-badge' dist; then echo '::error::dev or agent-key code in dist'; bad=1; fi
+          if grep -rlE '__dev|pixellab-key|PIXELLAB_TOKEN_AGENT_DEV|pixeldoll\.agentKey|agent-badge' dist; then echo '::error::dev or agent-key code in dist'; bad=1; fi
           if find dist -name '.env*' | grep .; then echo '::error::.env file in dist'; bad=1; fi
           if find dist -name '*.map' | grep .; then echo '::error::source map in dist (could carry env or source)'; bad=1; fi
           exit $bad
