@@ -132,6 +132,21 @@ function retry(d: Draft, k: number, why: string[]): boolean {
   return true;
 }
 
+/** A pose/edit call that still fails after its re-rolls keeps the roll with the fewest failed checks (free: ledger re-evaluation).
+ * Not the dress call (the poses were made from its keyframes); only rolls with the same input images (same dressed keyframe and
+ * key: a re-dressed design or a key switch leaves older rolls behind). */
+export async function keepBestRoll(d: Draft, k: number, ctx: RigCtx) {
+  const c = d.calls[k], same = JSON.stringify(recOf(c.recId)?.inputs);
+  const rolls = [...c.old, c.recId].filter((id): id is string => recOf(id)?.state === 'done' && JSON.stringify(recOf(id)!.inputs) === same);
+  if (!k || rolls.length < 2) return;
+  const all = [...c.old, c.recId!];
+  let best = c.recId!, n = Infinity;
+  for (const id of rolls) { c.recId = id; const f = failsOf(await evaluateItem(d, ctx), k).length; if (f < n) { best = id; n = f; } }
+  c.recId = best;
+  c.old = all.filter((id) => id !== best); // every paid roll stays in `old` (gensOf counts them)
+  d.log.push(`call ${k + 1}: kept roll ${rolls.indexOf(best) + 1} of ${rolls.length} (fewest failed checks: ${n})`);
+}
+
 export interface RunHooks { status?: (s: string) => void; persist?: () => Promise<unknown>; result?: (r: ItemResult) => void }
 
 /** Auto loop: design call -> later calls (anchor cell) -> gates; failing calls re-roll (2×), then the other key, then the user. */
@@ -160,8 +175,10 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
       const bad = d.calls.map((_, k) => k).filter((k) => failsOf(r, k).length);
       if (!bad.length && !soft.length) { d.log.push(`gates passed (${r.qa?.qa.status})`); break; }
       const retried = bad.map((k) => retry(d, k, failsOf(r, k))); // every failing call decides on its own
+      // out of re-rolls: keep the call's least-bad roll, not the last one (T3: cape slash N roll 1 had 1 failed check, roll 3 two)
+      for (const [i, k] of bad.entries()) if (!retried[i]) await keepBestRoll(d, k, ctx);
       await persist();
-      if (!soft.length && !retried.some(Boolean)) break; // nothing left to re-roll: needs review
+      if (!soft.length && !retried.some(Boolean)) { res = await evalItem(); break; } // nothing left to re-roll: needs review
     }
   } catch (e) {
     d.log.push(`error: ${(e as Error).message}`);

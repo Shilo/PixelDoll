@@ -111,7 +111,8 @@ rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE
 - **Clip cleanup after extraction [B9]:** held = largest component + components attached to it or to the gripping wrist
   (≤ 3 px); head items (`slot.band`) = trim px outside the aligned, 2 px-dilated dressed keyframe unless at least half of the
   direction's other frames have item px there (temporal consensus), skipped on frames whose aligned overlap is < 50 %.
-  Worn items keep the component filter only (consensus trim would eat cape swings).
+  Body-hugging worn items (torso, legs, feet, arms; not `back`/`hair`) drop detached components with < 50 % of their px on
+  the body silhouette (motion smears; T3). Capes and hair keep the component filter only (consensus trim would eat swings).
 - Cost: dress 10 + 12 clip-directions × 3 = **≈ 46 gens per item** (3 dirs × 4 clips).
 - Weak spots: more specks from motion smears (largest-component filter removes most), north slash cape vanished on 2 frames,
   vest thin in east [S4] → QA re-roll, then the alternative route.
@@ -148,10 +149,10 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 
 | Gate | Pass |
 |---|---|
-| Key kept | ≥ 0.97 |
+| Key kept | ≥ 0.97, or ≤ 8 body px lost (a cape covering the back leaves ~126 body px; T3) |
 | Key outside base alpha | ≤ 0.03 (`skeleton-pose`), ≤ 0.05 (other routes) |
 | Registration | best integer shift = 0 on every frame |
-| Area | each cell ≥ 50 % of the clip median; CV ≤ 0.15 |
+| Area | each cell ≥ 50 % of the clip median; CV ≤ max(0.15, 2 × the CV of the body band it covers) (T3: trousers walk E) |
 | Design lock | palette distance to the dressed keyframe ≤ 15 |
 | Grip side (held) | `gripSide` from the clip's requested wrist keypoints: a clip held mostly in the wrong hand fails (G8); > 25 % ambiguous in a front/back view → review (side views are often ambiguous) |
 | Shape (held, locomotion) | G9 adjacent-frame aligned IoU ≥ 0.3 (S5: 0.4 false-fails a 96 axe walk E at 0.38) |
@@ -159,7 +160,9 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 | Clip | no layer pixel on the cell border |
 | Stray px | removed and logged |
 
-Fail → re-roll the call once (new seed), then switch to the alternative route, then the user decides. Handedness is set by the
+Fail → re-roll the call once (new seed), then switch to the alternative route, then the user decides. When a call is out of
+re-rolls it keeps its roll with the fewest failed checks, not the last one (free ledger re-evaluation; same inputs only) [T3].
+H4 (keyframe consistency) fails only band items (helmet, face); hair and cloth get a review warning (they swing) [T3]. Handedness is set by the
 motion: authored weapon-hand actions and dressed keyframes keep it; prompts and hand marks do not [S3].
 
 ### 4.6 fg/bg split, compose, export
@@ -184,14 +187,16 @@ draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg be
 | `neck` | worn | neck | 80 | — | — |
 | `back` | worn | neck | 90 | 4 | — |
 | `facial_hair` | head | head | 100 | — | — |
-| `hair` | head | head | 110 | 3 | — |
+| `hair` | head | head | 110 | 3 (5 via `zOverrides`: over the cape's bg, T3) | — |
 | `face_acc` | head | head | 120 | — | — |
 | `head` | head | head | 130 | — | `hair` (per item) |
-| `off_hand` | held | hand_l | 140 | 5 | — |
-| `main_hand` | held | hand_r | 150 | 6 | — |
+| `off_hand` | held | hand_l | 140 | 2 (5 in S/E/W) | — |
+| `main_hand` | held | hand_r | 150 | 1 (5 in S/E/W) | — |
 
 - Held bg layers (blade outside the silhouette) sit **above** `back.bg`, otherwise the cape hides 44–60 blade px in south
-  walk; default override `{layer: bg, dir: north, z: 1}` for both hand slots keeps the cape over the weapon from behind [M4].
+  walk; the ladder ships `zOverrides` `{layer: bg, z: 5}` for south/east/west on both hand slots (bg z 1/2 from behind, so the
+  cape covers the weapon in north) [M4]. T3: the Studio ladder lacked them (Ranger: 220 sword px hidden by the cape over walk S);
+  `saveItem` now copies ladder overrides into stored slots that have none, and Reset restores them.
 - Class drives QA (head: anchor spread; held: grip side) and the inpaint-grid mask band.
 - Hides and overrides are data (`slot.hides`, `item.hides`, sparse `zOverrides`) [R4]. Items are always generated against the
   bare base; no dress-order generation.

@@ -8,6 +8,7 @@ import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/pr
 import * as db from '../lib/store/db.ts';
 import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
 import { evaluateItem, loadDrafts, type Draft, type ItemResult } from '../lib/items/run.ts';
+import { SLOTS } from '../lib/items/items.ts';
 import { app } from '../lib/app.svelte.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
 import { addMove, createCharacter, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
@@ -270,7 +271,7 @@ export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
 }
 export function resetLayer(itemId: string) {
   const m = store.project!.manifest, slot = m.slots.find((s) => s.id === itemById(itemId)!.slot)!;
-  commit('Reset layer order', () => { slot.zOverrides = []; });
+  commit('Reset layer order', () => { slot.zOverrides = structuredClone(SLOTS.find((s) => s.id === slot.id)?.zOverrides ?? []); }); // ladder default (T3)
 }
 
 export async function removeItem(itemId: string) {

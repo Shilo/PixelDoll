@@ -53,6 +53,8 @@ export async function saveItem(id: string, item: Item, images: Map<Sha256, Img>,
     if (!rec) throw new Error(`project ${id} not found`);
     const m = rec.manifest;
     m.items = [...m.items.filter((i) => i.id !== item.id), item];
+    // T3: slots stored before the ladder had default z overrides (held bg over the cape) get them; a user's own overrides stay
+    for (const s of m.slots) { const d = ladder.find((x) => x.id === s.id)?.zOverrides; if (d?.length && !s.zOverrides?.length) s.zOverrides = structuredClone(d); }
     if (!m.slots.some((s) => s.id === item.slot)) {
       const order = (s: string) => ladder.findIndex((x) => x.id === s);
       m.slots = [...m.slots, ladder.find((s) => s.id === item.slot)!].sort((a, b) => order(a.id) - order(b.id));

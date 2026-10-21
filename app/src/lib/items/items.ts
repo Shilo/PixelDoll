@@ -85,6 +85,9 @@ export const clipKeypoints = (rig: Rig, anim: string, dir: DirectionName) => {
 export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>) =>
   spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints) && spec.anims.every((a) => !!clipKeypoints(rig, a, d)));
 
+/** M4/T3: a held item's bg (blade outside the body) sits above the cape's bg (z 4) in S/E/W, else the cape hides the hilt and
+ * blade (T3 Ranger: 220 sword px hidden over walk S); from behind (north) the cape stays over it (bg z as built). */
+const heldBgOverCape = (): Slot['zOverrides'] => (['south', 'east', 'west'] as const).map((dir) => ({ layer: 'bg', z: 5, dir }));
 /** Default slot ladder (architecture §4). Array order = tie-break for equal z. */
 export const SLOTS: Slot[] = [
   { id: 'body', z: 10, class: 'base', required: true },
@@ -98,11 +101,11 @@ export const SLOTS: Slot[] = [
   { id: 'neck', z: 80, class: 'rigid', anchor: 'neck' },
   { id: 'back', z: 90, bgZ: 4, class: 'worn', anchor: 'neck' },
   { id: 'facial_hair', z: 100, class: 'rigid', anchor: 'head' },
-  { id: 'hair', z: 110, bgZ: 3, class: 'rigid', anchor: 'head' },
+  { id: 'hair', z: 110, bgZ: 3, class: 'rigid', anchor: 'head', zOverrides: [{ layer: 'bg', z: 5 }] }, // T3: long hair lies over the cape (bg 4) in every view: 359 hair px hidden over walk E
   { id: 'face_acc', z: 120, class: 'rigid', anchor: 'head', band: true },
   { id: 'head', z: 130, class: 'rigid', anchor: 'head', hides: ['hair'], band: true },
-  { id: 'off_hand', z: 140, bgZ: 2, class: 'held', anchor: 'hand_l' },
-  { id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r' },
+  { id: 'off_hand', z: 140, bgZ: 2, class: 'held', anchor: 'hand_l', zOverrides: heldBgOverCape() },
+  { id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r', zOverrides: heldBgOverCape() },
 ];
 export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
 
@@ -349,7 +352,23 @@ export function repairDropped(rig: Rig, slot: Slot, cells: CellOut[], keys: Part
 /** Clip-level cleanup after extraction (posed cells): streak trim for head items, attachment + repair for held items. */
 export function postProcess(rig: Rig, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): { removed: number; repaired: string[] } {
   if (slot.class === 'held') { const removed = attachHeld(rig, slot, cells, pad); return { removed, repaired: repairDropped(rig, slot, cells, keys, pad) }; }
-  return { removed: slot.band ? trimToKeyframe(rig, cells, keys, pad) : 0, repaired: [] };
+  return { removed: slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0, repaired: [] };
+}
+
+/**
+ * Body-hugging worn items (torso, legs, feet, arms; not capes or hair, which swing away from the body): a detached component
+ * with fewer than half its px on the body silhouette is a motion smear the pose drew (T3 live: chest armour slash E grey swoosh
+ * and brown hand streaks, 13–30 px, 0 px on the body; real parts split off by a forearm lie 90–100 % on the body). Returns px removed.
+ */
+export function dropOffBody(cells: CellOut[]): number {
+  let removed = 0;
+  for (const c of cells) {
+    if (!c.posed || !c.area) continue;
+    const comps = components(c.mask, c.layer.w, c.mask.length / c.layer.w).sort((a, b) => b.length - a.length), keep = new Uint8Array(c.mask.length);
+    for (const [i, comp] of comps.entries()) if (!i || comp.filter((p) => c.base.data[p * 4 + 3]).length * 2 >= comp.length) for (const p of comp) keep[p] = 1;
+    removed += setMask(c, keep);
+  }
+  return removed;
 }
 
 /** Best 1-px shift (dx, dy) of C against B by silhouette IoU; [0, 0] unless a shift beats no shift by > 0.02. */
@@ -520,8 +539,10 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
   for (const [clip, cs] of byClip) {
     const [a, d] = clip.split('/'), areas = cs.map((c) => c.area), med = median(areas);
     const cvOf = (v: number[]) => { const m = v.reduce((s, x) => s + x, 0) / v.length; return m ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) / m : 0; };
-    // G5 allows the item area to vary as much as the body region it covers (legs crossing in a side walk: boots/pants)
-    const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, baseCv + 0.05);
+    // G5 allows the item area to vary with the body region it covers (legs crossing in a side walk: boots/pants). T3: the
+    // far trouser leg hides behind the near one, so the visible item varies ~2x the body band (walk E: CV 0.20-0.22 vs band
+    // 0.11 on 3 seeds, frames visually consistent); a lost item is G4's job
+    const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, 2 * baseCv);
     const minRatio = med ? Math.min(...areas) / med : 0;
     if (!med) flag(cs[0].call, `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
@@ -785,5 +806,12 @@ export async function selfTest() {
   const streak = [13 * 16 + 1, 14 * 16 + 1, 15 * 16 + 1], plume = [3 * 16 + 11, 2 * 16 + 11];
   const t = [cell16([...streak, ...plume]), cell16(plume, true), cell16(plume)].map((c, i) => ({ ...c, key: `walk/south/${i}` }));
   const gone = trimToKeyframe(kr, t, { south: K });
+  // T3: worn items drop detached off-body smears, keep a part split off on the body
+  const wb = makeImg(16, 16);
+  for (let y = 4; y < 12; y++) for (let x = 4; x < 10; x++) wb.data.set([150, 150, 150, 255], (y * 16 + x) * 4);
+  const wl = makeImg(16, 16);
+  for (const p of [4 * 16 + 4, 4 * 16 + 5, 5 * 16 + 4, 5 * 16 + 5, 5 * 16 + 6, 9 * 16 + 8, 9 * 16 + 9, 10 * 16 + 8, 1 * 16 + 13, 2 * 16 + 13, 2 * 16 + 14]) wl.data.set([120, 70, 30, 255], p * 4);
+  const wc = { ...cs[0], key: 'slash/east/0', posed: true, base: wb, layer: wl, mask: maskOf(wl), area: 11, stray: 0 } as CellOut;
+  console.assert(dropOffBody([wc]) === 3 && wc.area === 8 && wc.mask[9 * 16 + 8] === 1 && !wc.mask[1 * 16 + 13], 'dropOffBody: off-body smear removed, on-body split part kept');
   console.assert(gone === 3 && t[0].area === 16 + 2 && t[1].area === 8 + 2 && !t[0].mask[13 * 16 + 1] && t[0].mask[3 * 16 + 11] === 1, `trimToKeyframe ${gone} ${t.map((c) => c.area)}`);
 }

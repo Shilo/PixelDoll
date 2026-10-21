@@ -2,6 +2,7 @@
   import { coverageGaps, moveDirs } from '../lib/dress/dress.ts'
   import { hiddenSlots, equipped } from '../lib/compose/compose.ts'
   import { itemRoute } from './itemRoute.ts'
+  import { SLOTS } from '../lib/items/items.ts'
   import Sprite from './Sprite.svelte'
   import Colours from './Colours.svelte'
   import { HEALTH_LABEL, cropAll, groupOf, healthOf, itemCell, slotLabel, plainReason } from './model.ts'
@@ -94,7 +95,7 @@
       <div class="actions">
         <button class="btn sm" onclick={() => moveLayer(it.id, 1, onlyDir)} title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button>
         <button class="btn sm" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
-        {#if m.slots.find((s) => s.id === it.slot)?.zOverrides?.length}<button class="btn sm plain" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
+        {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(SLOTS.find((s) => s.id === it.slot)?.zOverrides ?? [])}<button class="btn sm plain" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
       </div>
       <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir}</label>
     </div>
