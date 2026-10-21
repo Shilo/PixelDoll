@@ -17,7 +17,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 
 ## Phase 2 — Live API spikes
 - [x] S1 feasibility: base → animation → item edit → diff extraction → QA (`docs/spikes/S1_api_feasibility.md`)
-- [~] S2 clean layers: chroma mannequin, two-pass remove, better diff, N/W + attack coverage, headroom
+- [x] S2 clean layers: chroma mannequin (`docs/spikes/S2_clean_layers.md`)
+- [x] S3 skeleton-v3 rigging + skeleton-posed items (`docs/spikes/S3_skeleton_rigging.md`)
+- [x] S4 allowed-model routing + editor benchmark (`docs/spikes/S4_model_routing.md`)
+- [~] S5 held items: oversize canvas, grip anchoring, direction-consistency gate (≤200 gens)
 
 ## Phase 3 — Synthesis
 - [x] Architecture v1.1 (`docs/architecture.md`)
@@ -27,10 +30,11 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 ## Phase 4 — Mockups (`app/`, Svelte 5 + Vite 8 + TS)
 - [x] Scaffold + foundation (PixelLab client, job queue, IndexedDB, zip, png, hash)
 - [x] M1 Key + queue (live-tested, `docs/testing/M1_report.md`)
-- [~] M2 Rig freeze (normalize, pivot, mirror, skeleton, anchors, baseHash)
-- [ ] M3 Item lab (masks, routes, extraction, QA, fg/bg split) — waits on S2 winner
-- [ ] M4 Dress-up (z ladder, hides, recolor ramps, animated preview)
-- [ ] M5 Export round-trip (manifest + sheets + Godot/Phaser/Unity glue)
+- [x] M2 Rig freeze (normalize, pivot, mirror, skeleton, anchors, baseHash)
+- [ ] M2 v1.3: build skeleton-v3 clips (rest views + keypoints stored, raw re-render), floor padding x+8/y+12
+- [x] M3 Item lab (chroma extraction, ea2-anchor + skeleton-pose routes, QA G1–G10, fg/bg split)
+- [x] M4 Dress-up (z ladder, hides, exact ramp recolour, presets)
+- [x] M5 Export round-trip (Godot + Phaser pixel-identical; Unity compile-only)
 
 ## Phase 5 — Testing
 - [ ] End-to-end browser test: base → 5 items → dress-up → export
@@ -58,8 +62,8 @@ proper post-processing and proper layering — frontier-standard paperdolling wo
 - [ ] Test MVP thoroughly: design, layout, functionality, intuitiveness for casual users (desktop + mobile, portrait + landscape)
 
 ## Risks
-- [!] Extracted layers not yet production-clean (face/eye pixels, skin slivers, holes) → S2
-- [!] Only 2 px headroom above head at 64 px → S2
-- [!] North/west + attack animations untested → S2
+- [!] Held items (sword) fail QA: clipping at cell bottom, arm drift, east flips → S5
+- [!] Direction-consistency: helmet visor drawn on a back view (north slash) — no gate catches it → S5 H4
+- [!] PixelLab balance ~1265 gens (2026-10-21) — spend economically
 - [!] Base body swap invalidates layers (`baseHash` stale detection)
 - [!] Template-animation jobs report USD cost only; per-job cost may understate
