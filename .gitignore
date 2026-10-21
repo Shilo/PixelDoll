@@ -1,3 +1,25 @@
+# secrets (PIXELLAB_API_KEY lives in .env; never commit it)
 .env
+.env.*
+!.env.example
+
+# build / deps (any depth)
 node_modules/
 dist/
+dist-ssr/
+*.local
+
+# test + scratch artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+coverage/
+_cov_tmp*
+*.tmp
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
