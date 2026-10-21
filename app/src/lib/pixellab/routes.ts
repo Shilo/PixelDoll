@@ -28,16 +28,29 @@ export interface CreateCharacterV3 {
 }
 export interface CharacterAnimation {
   character_id: string;
-  mode?: 'template' | 'skeleton-v3' | 'v3' | 'pixminimax' | 'pro';
+  mode?: 'template' | 'skeleton-v3' | 'v3' | 'pixminimax' | 'pro'; // template/pro = legacy, not used by the app (user rule 2026-10-21)
   template_animation_id?: string; // mode template, e.g. "walking-8-frames", "breathing-idle"
   action_description?: string;
   animation_name?: string;
   animation_group_id?: string;
   directions?: Direction[];
   frame_count?: number;
+  keep_first_frame?: boolean; // v3/pixminimax: false = exactly frame_count frames
   target_palette?: TargetPalette;
   seed?: number;
 }
+
+// Base animations with the newer models only: skeleton-v3 (template poses), v3 / pixminimax (action text).
+export type BaseAnimMode = 'skeleton-v3' | 'v3' | 'pixminimax';
+export interface BaseAnim { name: string; template: string; action: string; frames: number }
+export const BASE_ANIMS: BaseAnim[] = [
+  { name: 'idle', template: 'breathing-idle', action: 'breathing idle, standing still', frames: 4 },
+  { name: 'walk', template: 'walking-8-frames', action: 'walking', frames: 8 },
+];
+export const baseAnimation = (mode: BaseAnimMode, character_id: string, a: BaseAnim, directions: Direction[], seed?: number): CharacterAnimation =>
+  mode === 'skeleton-v3'
+    ? { character_id, mode, template_animation_id: a.template, animation_name: a.name, directions, seed }
+    : { character_id, mode, action_description: a.action, frame_count: a.frames, keep_first_frame: false, animation_name: a.name, directions, seed };
 export interface InpaintProFlash {
   image: B64Image;
   mask_image: B64Image; // white = generate
@@ -65,6 +78,20 @@ export interface EditImagesV2 {
   seed?: number;
   no_background?: boolean;
 }
+/** Raw skeleton-v3: pose `first_frame` (in pose first_frame_keypoints) into one frame per keypoints entry (3-15), same size. */
+export interface ApiKeypoint { label: string; x: number; y: number; z_index?: number } // x/y = 0-1 fractions of the image
+export interface AnimateSkeletonV3 {
+  description: string; // what the character looks like (noun phrase)
+  action: string;
+  direction: Direction;
+  view?: 'low top-down' | 'high top-down' | 'side';
+  first_frame: B64Image;
+  first_frame_keypoints: ApiKeypoint[];
+  keypoints: ApiKeypoint[][];
+  template_id?: string;
+  seed?: number;
+  no_background?: boolean;
+}
 export interface TransferOutfitV2 { reference_image: SizedImage; frames: SizedImage[]; image_size: Size; seed?: number; no_background?: boolean; additional_instructions?: string; target_palette?: TargetPalette }
 
 export const routes = {
@@ -75,6 +102,7 @@ export const routes = {
   inpaintProFlash: (b: InpaintProFlash) => post('/inpaint-image-pro-flash', b),
   inpaintV3: (b: InpaintV3) => post('/inpaint-v3', b),
   editAnimationV2: (b: EditAnimationV2) => post('/edit-animation-v2', b),
+  animateWithSkeletonV3: (b: AnimateSkeletonV3) => post('/animate-with-skeleton-v3', b),
   editImagesV2: (b: EditImagesV2) => post('/edit-images-v2', b),
   transferOutfitV2: (b: TransferOutfitV2) => post('/transfer-outfit-v2', b),
   balance: () => get('/balance'),
@@ -147,5 +175,6 @@ export function selfTest() {
   console.assert(anim.length === 1 && anim[0].label === 'east/0' && anim[0].b64 === 'x', 'jobImages prefers inline images');
   const ch = jobImages({ storage_urls: { south: 'https://s', east: 'https://e' } });
   console.assert(ch.map((i) => i.label).join() === 'south,east' && ch[1].url === 'https://e', 'jobImages storage_urls');
+  console.assert(baseAnimation('skeleton-v3', 'c', BASE_ANIMS[1], ['south']).template_animation_id === 'walking-8-frames' && baseAnimation('v3', 'c', BASE_ANIMS[0], ['south']).frame_count === 4, 'baseAnimation');
   console.assert(routes.cancelJob('x/y').path === '/background-jobs/x%2Fy', 'path encoding');
 }

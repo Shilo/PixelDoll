@@ -1,0 +1,549 @@
+{
+  "format": "pixeldoll/1",
+  "name": "s2_adventurer",
+  "app": "PixelDoll 0.1.0 (fixture from S2 chroma-mannequin outputs)",
+  "rig": {
+    "cell": {
+      "w": 64,
+      "h": 64
+    },
+    "pivot": {
+      "x": 32,
+      "y": 64
+    },
+    "directions": [
+      {
+        "id": "south"
+      },
+      {
+        "id": "east"
+      },
+      {
+        "id": "north"
+      },
+      {
+        "id": "west",
+        "mirrorOf": "east"
+      }
+    ],
+    "animations": [
+      {
+        "id": "walk",
+        "cells": 8,
+        "loop": true,
+        "frames": [
+          {
+            "cell": 0,
+            "ms": 100
+          },
+          {
+            "cell": 1,
+            "ms": 100
+          },
+          {
+            "cell": 2,
+            "ms": 100
+          },
+          {
+            "cell": 3,
+            "ms": 100
+          },
+          {
+            "cell": 4,
+            "ms": 100
+          },
+          {
+            "cell": 5,
+            "ms": 100
+          },
+          {
+            "cell": 6,
+            "ms": 100
+          },
+          {
+            "cell": 7,
+            "ms": 100
+          }
+        ],
+        "source": {
+          "endpoint": "/characters/animations",
+          "mode": "template",
+          "template_animation_id": "walking-8-frames"
+        }
+      },
+      {
+        "id": "cross-punch",
+        "cells": 6,
+        "loop": true,
+        "frames": [
+          {
+            "cell": 0,
+            "ms": 100
+          },
+          {
+            "cell": 1,
+            "ms": 100
+          },
+          {
+            "cell": 2,
+            "ms": 100
+          },
+          {
+            "cell": 3,
+            "ms": 100
+          },
+          {
+            "cell": 4,
+            "ms": 100
+          },
+          {
+            "cell": 5,
+            "ms": 100
+          }
+        ],
+        "source": {
+          "endpoint": "/characters/animations",
+          "mode": "template",
+          "template_animation_id": "cross-punch"
+        }
+      }
+    ],
+    "baseItem": "base",
+    "baseHash": ""
+  },
+  "materials": [],
+  "slots": [
+    {
+      "id": "body",
+      "z": 10,
+      "class": "base",
+      "required": true
+    },
+    {
+      "id": "torso_inner",
+      "z": 40,
+      "class": "worn",
+      "anchor": "neck"
+    },
+    {
+      "id": "back",
+      "z": 90,
+      "bgZ": 4,
+      "class": "worn",
+      "anchor": "neck"
+    },
+    {
+      "id": "hair",
+      "z": 110,
+      "bgZ": 3,
+      "class": "rigid",
+      "anchor": "head"
+    },
+    {
+      "id": "head",
+      "z": 130,
+      "class": "rigid",
+      "anchor": "head",
+      "hides": [
+        "hair"
+      ]
+    },
+    {
+      "id": "main_hand",
+      "z": 150,
+      "bgZ": 1,
+      "class": "held",
+      "anchor": "hand_r",
+      "zOverrides": [
+        {
+          "layer": "bg",
+          "z": 5,
+          "dir": "south"
+        },
+        {
+          "layer": "bg",
+          "z": 5,
+          "dir": "east"
+        },
+        {
+          "layer": "bg",
+          "z": 5,
+          "dir": "west"
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "base",
+      "name": "Base body",
+      "slot": "body",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "plain grey t-shirt and plain grey shorts, bald, barefoot (S2 b48, padded to 64)",
+      "baseHash": "",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 10,
+          "sheets": {
+            "walk": "layers/body/base/main/walk.png",
+            "cross-punch": "layers/body/base/main/cross-punch.png"
+          }
+        }
+      ],
+      "provenance": [
+        {
+          "endpoint": "/create-character-v3",
+          "params": {
+            "image_size": 48,
+            "seed": 4321
+          },
+          "seed": 4321,
+          "requestHash": "",
+          "createdAt": "2026-10-21T05:00:00Z",
+          "produced": []
+        }
+      ]
+    },
+    {
+      "id": "vest_leather",
+      "name": "Leather vest",
+      "slot": "torso_inner",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "a brown leather chest armor vest covering the torso",
+      "baseHash": "",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 40,
+          "sheets": {
+            "walk": "layers/torso_inner/vest_leather/main/walk.png",
+            "cross-punch": "layers/torso_inner/vest_leather/main/cross-punch.png"
+          }
+        }
+      ],
+      "provenance": [
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "b5_chest48_A",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:34:46.170Z",
+          "produced": []
+        },
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "b5_chest48_Ba",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:34:46.170Z",
+          "produced": []
+        }
+      ]
+    },
+    {
+      "id": "cape_red",
+      "name": "Red cape",
+      "slot": "back",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "a long red cloth cape hanging from the shoulders behind the back, visible at both sides of the figure",
+      "baseHash": "",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 90,
+          "sheets": {
+            "walk": "layers/back/cape_red/main/walk.png",
+            "cross-punch": "layers/back/cape_red/main/cross-punch.png"
+          }
+        }
+      ],
+      "provenance": [
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "cape48_A",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:17:29.994Z",
+          "produced": []
+        },
+        {
+          "endpoint": "/transfer-outfit-v2",
+          "params": {
+            "s2Run": "cape48_B",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:17:29.994Z",
+          "produced": []
+        }
+      ]
+    },
+    {
+      "id": "hair_brown",
+      "name": "Messy brown hair",
+      "slot": "hair",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "short messy dark brown hair covering the top, back and sides of the head, face visible, no hat",
+      "baseHash": "",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 110,
+          "sheets": {
+            "walk": "layers/hair/hair_brown/main/walk.png",
+            "cross-punch": "layers/hair/hair_brown/main/cross-punch.png"
+          }
+        }
+      ],
+      "provenance": [
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "b5_hair48_A",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:32:28.302Z",
+          "produced": []
+        },
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "b5_hair48_Ba",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:32:28.302Z",
+          "produced": []
+        }
+      ]
+    },
+    {
+      "id": "helmet_steel",
+      "name": "Steel helmet",
+      "slot": "head",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "a simple grey steel knight helmet covering the top and sides of the head, face visible",
+      "baseHash": "",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 130,
+          "sheets": {
+            "walk": "layers/head/helmet_steel/main/walk.png",
+            "cross-punch": "layers/head/helmet_steel/main/cross-punch.png"
+          }
+        }
+      ],
+      "hides": [
+        "hair"
+      ],
+      "provenance": [
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "helmet48_A",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:17:28.966Z",
+          "produced": []
+        },
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "helmet48_Ba",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:17:28.966Z",
+          "produced": []
+        }
+      ]
+    },
+    {
+      "id": "hat_wizard",
+      "name": "Wizard hat",
+      "slot": "head",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "a tall pointed blue wizard hat with a wide brim",
+      "baseHash": "",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 130,
+          "sheets": {
+            "walk": "layers/head/hat_wizard/main/walk.png"
+          }
+        }
+      ],
+      "hides": [],
+      "provenance": [
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "wizardhat48_A",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:17:30.516Z",
+          "produced": []
+        }
+      ]
+    },
+    {
+      "id": "sword_steel",
+      "name": "Steel longsword",
+      "slot": "main_hand",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "a steel longsword held in the character's right hand, blade pointing down and slightly outward",
+      "baseHash": "",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 150,
+          "sheets": {
+            "walk": "layers/main_hand/sword_steel/main/walk.png",
+            "cross-punch": "layers/main_hand/sword_steel/main/cross-punch.png"
+          }
+        }
+      ],
+      "provenance": [
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "sword48_A",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:17:29.481Z",
+          "produced": []
+        },
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "s2Run": "sword48_Ba",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:17:29.481Z",
+          "produced": []
+        },
+        {
+          "endpoint": "/transfer-outfit-v2",
+          "params": {
+            "s2Run": "sword48_C",
+            "chromaKey": "green"
+          },
+          "seed": 7,
+          "requestHash": "",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T05:17:29.481Z",
+          "produced": []
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "id": "adventurer",
+      "name": "Adventurer",
+      "items": {
+        "body": "base",
+        "torso_inner": "vest_leather",
+        "back": "cape_red",
+        "hair": "hair_brown",
+        "head": "helmet_steel",
+        "main_hand": "sword_steel"
+      },
+      "variants": {}
+    },
+    {
+      "id": "bare",
+      "name": "Base only",
+      "items": {
+        "body": "base",
+        "torso_inner": null,
+        "back": null,
+        "hair": null,
+        "head": null,
+        "main_hand": null
+      },
+      "variants": {}
+    }
+  ]
+}

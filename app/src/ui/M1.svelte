@@ -1,21 +1,22 @@
 <script lang="ts">
   import { app, setKey, forgetKey } from '../lib/app.svelte.ts'
   import { queue, type JobRec } from '../lib/pixellab/queue.ts'
-  import { routes, type Direction } from '../lib/pixellab/routes.ts'
+  import { routes, baseAnimation, BASE_ANIMS, type BaseAnimMode, type Direction } from '../lib/pixellab/routes.ts'
   import BlobImg from './BlobImg.svelte'
 
-  // S1 e1 base prompt/params (spikes/api/e1_base.mjs). v3 text-only always makes 8 dirs: n_directions 4 needs reference_image (422).
-  const BASE_DESC =
-    'plain bald human base body for a paperdoll, light skin, simple plain grey underwear shorts, barefoot, no hair, no clothing, no accessories, standing straight in a neutral pose with arms slightly away from the body'
+  // Base presets. S2 winner: clothed, generated at 48 and padded to 64 at freeze (16-20 px headroom). S1: bare 64 px.
+  // v3 text-only always makes 8 dirs: n_directions 4 needs reference_image (422).
+  const PRESETS = {
+    s2: { size: 48, seed: 4321, desc: 'plain bald human mannequin for a paperdoll base, light skin tone, wearing a plain grey t-shirt and plain grey shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso' },
+    s1: { size: 64, seed: 1234, desc: 'plain bald human base body for a paperdoll, light skin, simple plain grey underwear shorts, barefoot, no hair, no clothing, no accessories, standing straight in a neutral pose with arms slightly away from the body' },
+  }
+  let preset = $state<keyof typeof PRESETS>('s2')
   const DIRS: Direction[] = ['south', 'east', 'north'] // west = mirror of east (architecture §2)
-  const ANIMS = [
-    { name: 'idle', template: 'breathing-idle' },
-    { name: 'walk', template: 'walking-8-frames' },
-  ]
+  let animMode = $state<BaseAnimMode>('skeleton-v3') // newer models only; legacy "template"/"pro" modes are not offered
 
   let keyInput = $state('')
   let remember = $state(false)
-  let seed = $state(1234)
+  let seed = $state(4321)
   let msg = $state('')
   let now = $state(Date.now())
   $effect(() => {
@@ -40,20 +41,20 @@
   }
   async function createBase() {
     const req = routes.createCharacterV3({
-      description: BASE_DESC,
-      image_size: { width: 64, height: 64 },
+      description: PRESETS[preset].desc,
+      image_size: { width: PRESETS[preset].size, height: PRESETS[preset].size },
       view: 'low top-down',
       template_id: 'mannequin',
       seed,
       no_background: true,
     })
-    const r = await queue.enqueue(req, { label: `base v3 seed ${seed}`, tag: 'm1-base' })
+    const r = await queue.enqueue(req, { label: `base v3 ${PRESETS[preset].size}px seed ${seed}`, tag: 'm1-base' })
     msg = r.state === 'done' ? `cache hit: reused ${r.id.slice(0, 8)} (same params + seed)` : `queued ${r.id.slice(0, 8)}`
   }
   async function animate() {
-    for (const a of ANIMS) {
-      const req = routes.animateCharacter({ character_id: characterId, mode: 'template', template_animation_id: a.template, animation_name: a.name, directions: DIRS, seed })
-      await queue.enqueue(req, { label: `${a.name} (${a.template})`, tag: 'm1-anim' })
+    for (const a of BASE_ANIMS) {
+      const req = routes.animateCharacter(baseAnimation(animMode, characterId, a, DIRS, seed))
+      await queue.enqueue(req, { label: `${a.name} (${animMode}: ${animMode === 'skeleton-v3' ? a.template : a.action})`, tag: 'm1-anim' })
     }
   }
 
@@ -90,8 +91,14 @@
 
 <section>
   <h2>Base</h2>
+  <label>preset <select bind:value={preset} onchange={() => (seed = PRESETS[preset].seed)} data-testid="preset">
+    <option value="s2">S2 clothed 48 px (padded to 64 at freeze)</option><option value="s1">S1 bare 64 px</option>
+  </select></label>
   <label>seed <input type="number" bind:value={seed} style="width:6rem" /></label>
   <button onclick={createBase} disabled={!app.key} data-testid="create-base">Create test base</button>
+  <select bind:value={animMode} data-testid="anim-mode">
+    <option value="skeleton-v3">skeleton-v3 (template poses)</option><option value="v3">v3 (action text)</option><option value="pixminimax">pixminimax (action text, beta)</option>
+  </select>
   <button onclick={animate} disabled={!app.key || !characterId} data-testid="animate">Animate (idle + walk × {DIRS.join(', ')})</button>
   <span>{characterId ? `character ${short(characterId)}` : 'no base yet'}</span>
   {#if msg}<p class="note">{msg}</p>{/if}

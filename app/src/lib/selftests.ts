@@ -19,6 +19,12 @@ import * as generic from './export/generic.ts';
 import * as godot from './export/godot.ts';
 import * as phaser from './export/phaser.ts';
 import * as unity from './export/unity.ts';
+import * as chroma from './image/chroma.ts';
+import * as diff from './image/diff.ts';
+import * as items from './items/items.ts';
+import * as palette from './dress/palette.ts';
+import * as dress from './dress/dress.ts';
+import * as studio from '../studio/model.ts';
 
 type Test = [string, () => unknown];
 const shared: Test[] = [
@@ -40,6 +46,12 @@ const shared: Test[] = [
   ['export/godot', godot.selfTest],
   ['export/phaser', phaser.selfTest],
   ['export/unity', unity.selfTest],
+  ['image/chroma', chroma.selfTest],
+  ['image/diff', diff.selfTest],
+  ['items', items.selfTest],
+  ['dress/palette', palette.selfTest],
+  ['dress', dress.selfTest],
+  ['studio/model', studio.selfTest],
 ];
 const node: Test[] = [...shared, ['png (pure)', png.selfTestNode]];
 const browser: Test[] = [...shared, ['png', png.selfTest], ['db', db.selfTest]];

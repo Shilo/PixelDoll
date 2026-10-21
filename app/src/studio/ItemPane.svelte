@@ -1,0 +1,133 @@
+<script lang="ts">
+  import { coverageGaps } from '../lib/dress/dress.ts'
+  import { hiddenSlots, equipped } from '../lib/compose/compose.ts'
+  import { itemRoute } from './itemRoute.ts'
+  import Sprite from './Sprite.svelte'
+  import Colours from './Colours.svelte'
+  import { HEALTH_LABEL, cropAll, groupOf, healthOf, itemCell, slotLabel, plainReason } from './model.ts'
+  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey } from './state.svelte.ts'
+  import { ArrowUp, ArrowDown, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
+
+  let { id }: { id: string } = $props()
+  const m = $derived(store.project?.manifest)
+  const it = $derived(m?.items.find((i) => i.id === id))
+  const on = $derived(!!it && doc.items[it.slot] === it.id)
+  const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false)
+  const health = $derived(m && it ? healthOf(m, it) : 'demo')
+  const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim))
+  // the item alone in every direction, cropped to a shared box and scaled up to fill the strip
+  const strip = $derived.by(() => {
+    if (!m || !it || !view.project) return []
+    const ims = cropAll(m.rig.directions.map((d) => itemCell(view.project!, it, ui.anim, d.id, view.cell)))
+    return ims
+  })
+  const k = $derived(strip.length ? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 72 / strip[0].h, 6) * ui.dpr)) : 1)
+  const others = $derived(m && it ? m.slots.filter((s) => s.id !== 'body' && s.id !== it.slot && m.items.some((x) => x.slot === s.id)) : [])
+  const hides = $derived(it ? it.hides ?? m?.slots.find((s) => s.id === it.slot)?.hides ?? [] : [])
+  const gaps = $derived(m && it ? coverageGaps(m, it) : [])
+  const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
+  const reasons = $derived.by(() => {
+    const q = it?.qa
+    if (!q) return []
+    const r: string[] = []
+    if (q.minKeyKept < 0.97) r.push('G2')
+    if (q.maxKeyOutside > 0.02) r.push('G3')
+    if (q.minAreaRatio < 0.5) r.push('G4')
+    if (q.maxAreaCV > 0.15) r.push('G5')
+    if (q.maxPaletteDist > 15) r.push('G6')
+    if (q.clipPx) r.push('G7')
+    if (q.handedness === 'switched') r.push('G8')
+    return r.map(plainReason)
+  })
+  let confirmRemove = $state(false)
+  let onlyDir = $state(false)
+</script>
+
+{#if m && it && view.project}
+  <div class="insp-body">
+    <header class="insp-head">
+      <h2 class="insp-title">{it.name}</h2>
+      <p class="insp-sub">
+        <span>{groupOf(it.slot).id}{groupOf(it.slot).slots.length > 1 ? ` · ${slotLabel(it.slot)}` : ''}</span>
+        <span class="badge {health}">{#if health === 'clean'}<CircleCheck size={12} />{:else if health !== 'demo'}<TriangleAlert size={12} />{/if}{HEALTH_LABEL[health]}</span>
+        {#if hiddenNow}<span class="badge">Hidden by another item</span>{/if}
+      </p>
+    </header>
+
+    {#if anim}
+      <div class="dir-strip" aria-label="{it.name} in every direction">
+        {#each m.rig.directions as d, i (d.id)}
+          {#if strip[i]}<figure><Sprite img={strip[i]} {k} w={strip[i].w} h={strip[i].h} label="{it.name} facing {d.id}" />{d.id[0].toUpperCase()}</figure>{/if}
+        {/each}
+      </div>
+    {/if}
+
+    <div class="actions">
+      <button class="btn {on ? '' : 'primary'}" onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button>
+      {#if !isDemo() && it.prompt}
+        <button class="btn" onclick={() => withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}><RefreshCw size={14} />Try again</button>
+      {/if}
+      {#if !isDemo()}
+        {#if confirmRemove}
+          <button class="btn danger" onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button>
+          <button class="btn plain" onclick={() => (confirmRemove = false)}>Keep</button>
+        {:else}
+          <button class="btn plain danger" onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button>
+        {/if}
+      {/if}
+    </div>
+
+    {#if health === 'look' && reasons.length}
+      <ul class="reasons small">{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
+    {/if}
+    {#if health === 'stale'}<p class="notice warn small"><TriangleAlert size={14} />Made for another body. It may not line up.</p>{/if}
+
+    <Colours only={it.id} />
+
+    <div class="field">
+      <span class="sec-title">Layer order</span>
+      <div class="actions">
+        <button class="btn sm" onclick={() => moveLayer(it.id, 1, onlyDir)} title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button>
+        <button class="btn sm" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
+        {#if m.slots.find((s) => s.id === it.slot)?.zOverrides?.length}<button class="btn sm plain" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
+      </div>
+      <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir}</label>
+    </div>
+
+    {#if others.length}
+      <div class="field">
+        <span class="sec-title">When worn, hide</span>
+        <div class="chips">
+          {#each others as s (s.id)}
+            <button class="chip" aria-pressed={hides.includes(s.id)} onclick={() => toggleHide(it.id, s.id)}>{slotLabel(s.id)}</button>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    <details class="disclosure">
+      <summary><ChevronRight size={14} />Details</summary>
+      <div>
+        <dl class="kv">
+          <dt>Id</dt><dd class="mono">{it.id}</dd>
+          <dt>Slot</dt><dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
+          {#if it.prompt}<dt>Prompt</dt><dd>{it.prompt}</dd>{/if}
+          {#if it.extractor}<dt>Extractor</dt><dd>{it.extractor}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
+          {#if it.qa}
+            <dt>QA</dt><dd>{it.qa.status}</dd>
+            <dt>Key kept</dt><dd>{it.qa.minKeyKept} (≥ 0.97)</dd>
+            <dt>Key outside</dt><dd>{it.qa.maxKeyOutside} (≤ 0.02)</dd>
+            <dt>Area</dt><dd>min {it.qa.minAreaRatio} of median · CV {it.qa.maxAreaCV}</dd>
+            <dt>Palette drift</dt><dd>{it.qa.maxPaletteDist} (≤ 15)</dd>
+            <dt>Edge px</dt><dd>{it.qa.clipPx}</dd>
+            {#if it.qa.handedness}<dt>Hands</dt><dd>{it.qa.handedness}</dd>{/if}
+            <dt>Re-rolls</dt><dd>{it.qa.rerolls}</dd>
+          {/if}
+          <dt>Cost</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{it.provenance.length} PixelLab calls</dd>
+          {#if gaps.length}<dt>No frames for</dt><dd>{gaps.join(', ')}</dd>{/if}
+          <dt>Route</dt><dd>{itemRoute.label}</dd>
+        </dl>
+      </div>
+    </details>
+  </div>
+{/if}

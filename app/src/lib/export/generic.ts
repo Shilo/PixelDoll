@@ -4,6 +4,7 @@ import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
 import type { Engine, Manifest, Project } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
+import { recolour } from '../dress/dress.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
 
@@ -89,7 +90,8 @@ export function coreFiles(p: Project, m: Manifest): OutFile[] {
   return files;
 }
 
-/** generic/<item>_<layer>/<anim>_<dir>_strip<N>.png and baked/<preset>/<anim>.png (reuses the layer sheets already built). */
+/** generic/<item>_<layer>/<anim>_<dir>_strip<N>.png and baked/<preset>/<anim>.png (reuses the layer sheets already built).
+ *  Layer sheets keep source ramps (materials + preset variants are in the manifest); baked sheets apply the preset's variants. */
 export function genericFiles(p: Project, m: Manifest, sheets: Map<string, Img>, o: { strips: boolean; baked: boolean }): OutFile[] {
   const files: OutFile[] = [];
   const { rig } = m;
@@ -98,7 +100,7 @@ export function genericFiles(p: Project, m: Manifest, sheets: Map<string, Img>, 
       for (const a of rig.animations)
         rig.directions.forEach((d, r) =>
           files.push({ name: `generic/${it.id}_${l.id}/${a.id}_${d.id}_strip${a.cells}.png`, data: sheetRow(sheets.get(l.sheets![a.id])!, r, rig.cell.h) }));
-  if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(p, pr.items, a.id) });
+  if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(recolour(p, pr.variants), pr.items, a.id) });
   return files;
 }
 

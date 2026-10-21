@@ -36,7 +36,7 @@ export interface Slot {
   required?: boolean;
   hides?: string[];
   zOverrides?: ZOverride[];
-  rect?: { shape: string; grow: number };
+  band?: boolean;
 }
 export interface ZOverride { layer: 'fg' | 'bg'; z: number; dir?: DirectionName; anim?: string; cell?: number }
 
@@ -51,10 +51,37 @@ export interface Item {
   prompt: string;
   layers: Layer[];
   baseHash: Sha256;
-  reference?: Sha256;
-  extractor?: 'novel2_grow1' | 'novel_cc';
+  route?: 'skeleton-pose' | 'inpaint-grid' | 'ea2-anchor' | 'diff'; // manifest-spec v1.3
+  extractor?: 'chroma' | 'diff'; // deprecated (v1.2), still written for older readers
+  key?: 'green' | 'magenta';
+  dressed?: Partial<Record<DirectionName, Sha256>>; // skeleton-pose: dressed chroma keyframes
+  anchorCell?: CellKey; // ea2-anchor: design-call cell passed as frame 1 to later calls
   provenance: Provenance[];
-  qa?: unknown; // ItemQa (spec §2); not read by compose/export
+  qa?: ItemQa; // not read by compose/export
+}
+/** Gates G1–G8 (architecture §3.3); worst value over all cells/clips of the item. */
+export interface ItemQa {
+  minKeyKept: number;
+  maxKeyOutside: number;
+  minAreaRatio: number;
+  maxAreaCV: number;
+  maxPaletteDist: number;
+  clipPx: number;
+  handedness?: 'ok' | 'switched';
+  shiftedFrames?: number; // cells whose silhouette fits the base better at a non-zero 1 px shift
+  grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
+  strayPx?: number; // removed by the largest-component filter (posed cells)
+  rerolls: number;
+  status: 'pass' | 'warn' | 'fail' | 'accepted';
+  cells: Record<CellKey, CellQa>;
+}
+export interface CellQa {
+  route: 'posed' | 'ea2' | 'grid' | 'diff' | 'chroma' | 'propagated' | 'mirrored' | 'two-pass' | 'import';
+  provenance?: number;
+  area: number;
+  keyKept?: number;
+  offset?: [number, number];
+  snappedPct?: number; // no palette snap yet
 }
 export interface Layer {
   id: 'main' | 'fg' | 'bg';

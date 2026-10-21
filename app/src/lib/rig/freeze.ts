@@ -64,7 +64,8 @@ export async function buildRig(anims: SourceAnim[], { size = 64, mode = '4' as D
       if (cs.some((c) => !c.box)) warnings.push(`${a.id}/${d.id}: empty cell`);
     }
 
-  const rig: Rig = { cell: { w: size, h: size }, pivot, directions: dirs, animations, baseItem: 'base', baseHash: 'sha256:' };
+  const off = Object.values(cells)[0]?.offset;
+  const rig: Rig = { cell: { w: size, h: size }, pivot, directions: dirs, animations, baseItem: 'base', baseHash: 'sha256:', ...(off && (off[0] > 0 || off[1] > 0) ? { pad: { x: off[0], y: off[1] } } : {}) };
   const hashes = Object.fromEntries(Object.entries(cells).map(([k, c]) => [k, c.hash]));
   rig.baseHash = await baseHashOf(rig, hashes);
   errors.push(...validateRig(rig, hashes));

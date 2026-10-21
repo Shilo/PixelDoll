@@ -1,8 +1,8 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { defineConfig, type Plugin } from 'vite'
 
-// Dev-only (`vite dev`): serves PIXELLAB_API_KEY from ../.env at /__dev/pixellab-key to same-origin localhost requests,
+// Dev-only (`vite dev`): /__dev/save (test sheets -> docs/testing/img), serves PIXELLAB_API_KEY from ../.env at /__dev/pixellab-key to same-origin localhost requests,
 // and lets the CSP allow Vite's HMR websocket. `apply: 'serve'` keeps both out of `vite build`.
 function devKey(): Plugin {
   return {
@@ -20,6 +20,18 @@ function devKey(): Plugin {
         res.setHeader('cache-control', 'no-store')
         res.statusCode = key ? 200 : 404
         res.end(key)
+      })
+      // dev-only: test reports save contact sheets to docs/testing/img/<name>.png (POST body = PNG bytes)
+      server.middlewares.use('/__dev/save', (req, res) => {
+        const name = new URL(req.url ?? '', 'http://x').searchParams.get('name') ?? ''
+        const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '')
+        if (req.method !== 'POST' || !local || req.headers['sec-fetch-site'] !== 'same-origin' || !/^[a-z0-9_.-]+\.png$/.test(name)) { res.statusCode = 403; return res.end() }
+        const parts: Buffer[] = []
+        req.on('data', (c: Buffer) => parts.push(c))
+        req.on('end', () => {
+          writeFileSync(new URL(`../docs/testing/img/${name}`, import.meta.url), Buffer.concat(parts))
+          res.end('ok')
+        })
       })
     },
   }

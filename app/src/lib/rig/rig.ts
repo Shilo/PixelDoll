@@ -25,6 +25,7 @@ export interface Rig {
   animations: RigAnimation[];
   baseItem: string;
   baseHash: Sha256;
+  pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 16)
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 

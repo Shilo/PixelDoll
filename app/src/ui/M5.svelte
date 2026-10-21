@@ -2,6 +2,7 @@
   import { composeCell } from '../lib/compose/compose.ts'
   import { loadFixture } from '../lib/compose/fixture.ts'
   import { exportZip } from '../lib/export/export.ts'
+  import { listProjects, loadProject, type StoredProject } from '../lib/store/project.ts'
   import type { DirectionName, Engine, Preset, Project } from '../lib/store/manifest.ts'
 
   const ENGINES: Engine[] = ['generic', 'godot', 'phaser', 'unity']
@@ -22,14 +23,26 @@
   const m = $derived(project?.manifest)
   const rigAnim = $derived(m?.rig.animations.find((a) => a.id === anim))
 
+  // source: the S1 fixture or a frozen rig project from IndexedDB (M2 rig + M3 accepted items)
+  let source = $state('fixture')
+  let stored = $state.raw<StoredProject[]>([])
+  listProjects().then((p) => (stored = p))
   async function load() {
     error = ''
     try {
-      project = await loadFixture(async (p) => new Uint8Array(await (await fetch(`./fixtures/s1/${p}`)).arrayBuffer()))
+      if (source === 'fixture') project = await loadFixture(async (p) => new Uint8Array(await (await fetch(`./fixtures/s1/${p}`)).arrayBuffer()))
+      else {
+        const p = (await loadProject(source)).project
+        // in-memory preset "everything": first accepted item per slot (helmet hides hair via the slot rule)
+        const all: Preset['items'] = {}
+        for (const it of p.manifest.items) if (it.slot !== 'body' && it.status === 'accepted') all[it.slot] ??= it.id
+        if (!p.manifest.presets.some((x) => x.id === 'all')) p.manifest.presets = [{ id: 'all', name: 'All items', items: { body: p.manifest.rig.baseItem, ...all }, variants: {} }, ...p.manifest.presets]
+        project = p
+      }
       pickPreset(project.manifest.presets[0].id)
     } catch (e) { error = (e as Error).message }
   }
-  load()
+  $effect(() => { void source; void load() })
 
   function pickPreset(id: string) {
     presetId = id
@@ -74,8 +87,16 @@
 {#if !m}
   <p>Loading the S1 fixture…</p>
 {:else}
+  <p class="row">
+    <label>Source
+      <select bind:value={source} data-testid="m5-source">
+        <option value="fixture">S1 fixture</option>
+        {#each stored as p (p.id)}<option value={p.id}>{p.id} · {p.manifest.name} · {p.manifest.items.length - 1} items</option>{/each}
+      </select>
+    </label>
+  </p>
   <p>
-    Fixture <code>{m.name}</code>: real S1 PixelLab outputs (base walk + idle, helmet, leather vest, sword split fg/bg), {m.rig.cell.w}×{m.rig.cell.h},
+    {source === 'fixture' ? 'Fixture' : 'Project'} <code>{m.name}</code>: {source === 'fixture' ? 'real S1 PixelLab outputs' : `${m.items.length - 1} accepted items:`} {source === 'fixture' ? '(base walk + idle, helmet, leather vest, sword split fg/bg)' : m.items.filter((i) => i.slot !== 'body').map((i) => i.name).join(', ')}, {m.rig.cell.w}×{m.rig.cell.h},
     pivot ({m.rig.pivot.x}, {m.rig.pivot.y}), directions {m.rig.directions.map((d) => d.id + (d.mirrorOf ? ` (mirror of ${d.mirrorOf})` : '')).join(', ')}.
   </p>
 

@@ -9,9 +9,12 @@ export interface Normalized {
   semiAlpha: number; // source px with 0 < alpha < 255 (before binarization)
 }
 
-// ponytail: canvas-centre alignment only (identity for 64 -> 64). Shift-to-fit for off-centre larger canvases if a route needs it.
+// Smaller source = padded centred in x, bottom-aligned in y with a FLOOR px margin (48 -> 64 = x+8, y+12). M3: with S2's y+16
+// the feet sat on row 63, so blades pointing down were cut at the cell edge and PixelLab erased the outermost row.
+// Larger source = canvas-centre crop. ponytail: no shift-to-fit for off-centre larger canvases.
+export const FLOOR = 4;
 export function normalize(src: Img, w: number, h: number, thr = 128): Normalized {
-  const ox = Math.floor((w - src.w) / 2), oy = Math.floor((h - src.h) / 2);
+  const ox = Math.floor((w - src.w) / 2), oy = src.h <= h ? Math.max(0, h - src.h - FLOOR) : Math.floor((h - src.h) / 2);
   const out = makeImg(w, h);
   let cutPx = 0, semiAlpha = 0;
   for (let y = 0; y < src.h; y++)
@@ -53,7 +56,8 @@ export function selfTest() {
   const big = normalize(src, 2, 2);
   console.assert(big.cutPx === 1, 'crop cutting opaque px is reported');
   const pad = normalize(makeImg(2, 2), 4, 4);
-  console.assert(pad.offset.join() === '1,1' && pad.img.w === 4, 'pad centres');
+  console.assert(pad.offset.join() === '1,0' && pad.img.w === 4, 'pad: centred x, floor margin capped by the free space');
+  console.assert(normalize(makeImg(48, 48), 64, 64).offset.join() === '8,12' && normalize(makeImg(64, 64), 64, 64).offset.join() === '0,0', '48 -> 64 pad keeps a 4 px floor');
   console.assert(JSON.stringify(opaqueBox(n.img)) === '{"x0":1,"y0":3,"x1":1,"y1":3}' && opaqueBox(makeImg(2, 2)) === null, 'opaqueBox');
   const p = pivotOf(n.img);
   console.assert(p.x === 2 && p.y === 4, `pivot ${p.x},${p.y}`);
