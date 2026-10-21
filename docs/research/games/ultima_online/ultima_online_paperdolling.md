@@ -1,3 +1,9 @@
+> **Accuracy note (R4, 2026-10-20):** Checked against the ClassicUO source. The overall conclusions hold. Several specifics in
+> this doc are wrong or too vague: the paperdoll draw order (§2; the cloak is drawn *first*), the layer names (§7), how coverage
+> is implemented (§9; hardcoded per-graphic lists), the exact mirroring rule (§11; 5 stored + 3 mirrored), per-direction ordering
+> (§12; only the cloak moves), the frame-center mechanism (§13), and hue modes (§15). See the **Corrections** table in
+> [`ultima_online_paperdolling_verification.md`](ultima_online_paperdolling_verification.md). The body below is unchanged.
+
 # Research Spike: Ultima Online Paperdolling Architecture & Workflow
 
 ## Purpose
