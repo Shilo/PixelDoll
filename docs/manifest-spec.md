@@ -1,6 +1,6 @@
 # PixelDoll manifest spec — `pixeldoll/1`
 
-Author: A1 · Date: 2026-10-20 · Status: v1.1 (updated after S1). Pipeline and rationale: [`architecture.md`](architecture.md).
+Author: A1 · Date: 2026-10-20 · Status: v1.2 (updated after S1, S2, M5). Pipeline and rationale: [`architecture.md`](architecture.md).
 
 One schema serves two files:
 
@@ -55,6 +55,7 @@ export interface Rig {
   animations: RigAnimation[];            // order = export order
   baseItem: string;                      // id of the item in slot "body"
   baseHash: Sha256;                      // hash over all base cell hashes (anim, dir, cell order)
+  pad?: { x: number; y: number };        // translation applied at freeze (48 px base padded to 64: {x: 8, y: 16})
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 export interface RigDirection {
@@ -83,7 +84,7 @@ export interface Material {
   ramp: Hex[];                           // source ramp, shadow -> highlight; colours unique across ALL materials
   variants: Record<string, Hex[]>;       // same length as ramp; recolor = exact index swap
   linkTo?: string;                       // follow another material's selected variant (beard -> hair)
-  owner: string;                         // item id that introduced it ("base" for skin/eyes/underwear)
+  owner: string;                         // item id that introduced it ("base" for skin/eyes/shirt/shorts)
 }
 
 // ---------- slots ----------
@@ -91,12 +92,12 @@ export interface Slot {
   id: string;                            // "head", "main_hand"
   z: number;                             // z of the item's main/fg layer
   bgZ?: number;                          // present = items in this slot are split into fg/bg layers
-  class: 'base' | 'rigid' | 'held' | 'worn'; // default generation strategy
-  anchor?: AnchorId;                     // rigid/held propagation anchor
+  class: 'base' | 'rigid' | 'held' | 'worn'; // QA (held: handedness) and rigid budget propagation
+  anchor?: AnchorId;                     // anchor for placement/handedness QA and propagation
   required?: boolean;                    // true only for "body"
   hides?: string[];                      // default: slots whose layers are hidden while this slot has a visible item
   zOverrides?: ZOverride[];              // sparse exceptions
-  rect?: { shape: string; grow: number }; // project only: slot rect from keypoints (architecture §4)
+  band?: boolean;                        // project only: clip extraction to the slot's keypoint y-band (held: false)
 }
 export interface ZOverride {
   layer: 'fg' | 'bg';
@@ -118,8 +119,9 @@ export interface Item {
   prompt: string;                         // the user's item description
   layers: Layer[];                        // 1 layer ("main", role fg) or 2 ("fg" + "bg")
   baseHash: Sha256;                       // base the layers were extracted against
-  reference?: Sha256;                     // approved keyframe composite used as transfer-outfit-v2 reference
-  extractor?: 'novel2_grow1' | 'novel_cc'; // chosen once per item (architecture §3.2 step 5); absent on the base
+  extractor?: 'chroma' | 'diff';         // chroma = primary; diff = S1/S2 fallback (always human-reviewed); absent on the base
+  key?: 'green' | 'magenta';              // chroma key used
+  anchorCell?: CellKey;                   // design-call cell passed as frame 1 to later calls
   provenance: Provenance[];
   qa?: ItemQa;                            // absent on the base
 }
@@ -141,21 +143,24 @@ export interface Provenance {
   createdAt: string;                      // ISO 8601
   produced: CellKey[];                    // cells this call produced directly
 }
-/** Gates G1–G7 (architecture §3.3) are evaluated per item over all its cells. */
+/** Gates G1–G8 (architecture §3.3); worst value over all cells/clips of the item. */
 export interface ItemQa {
-  areaCV: number;                         // G2, <= 0.15
-  minAdjPaletteJaccard: number;           // G3, >= 0.6
-  centroidSpread: number;                 // G4, px relative to slot anchor, <= 2
-  minAreaRatio: number;                   // G5, min cell area / median, >= 0.5
+  minKeyKept: number;                     // G2, >= 0.97 (chroma only)
+  maxKeyOutside: number;                  // G3, <= 0.02 (chroma only)
+  minAreaRatio: number;                   // G4, cell area / clip median, >= 0.5
+  maxAreaCV: number;                      // G5, per clip, <= 0.15
+  maxPaletteDist: number;                 // G6, vs design call, <= 15 (warn above)
   clipPx: number;                         // G7, opaque px on cell borders, 0
+  handedness?: 'ok' | 'switched';         // G8, held items
   rerolls: number;
   status: 'pass' | 'warn' | 'fail' | 'accepted'; // accepted = human override
   cells: Record<CellKey, CellQa>;
 }
 export interface CellQa {
-  route: 'masked' | 'batch' | 'propagated' | 'mirrored' | 'two-pass' | 'import';
+  route: 'chroma' | 'diff' | 'propagated' | 'mirrored' | 'two-pass' | 'import';
   provenance?: number;                    // index into item.provenance (source call)
   area: number;                           // layer px
+  keyKept?: number;
   offset?: [number, number];              // propagated: translation from the keyframe
   snappedPct: number;                     // 0..100 of layer px within the item's ramps
 }
@@ -204,7 +209,8 @@ export interface ExportInfo {
   "app": "PixelDoll 0.1.0",
   "rig": {
     "cell": { "w": 64, "h": 64 },
-    "pivot": { "x": 32, "y": 60 },
+    "pivot": { "x": 32, "y": 59 },
+    "pad": { "x": 8, "y": 16 },
     "directions": [
       { "id": "south" }, { "id": "east" }, { "id": "north" }, { "id": "west", "mirrorOf": "east" }
     ],
@@ -225,7 +231,7 @@ export interface ExportInfo {
     { "id": "skin", "label": "Skin", "owner": "base",
       "ramp": ["#3b1f1a","#7a3e2e","#b56a4c","#d98f6b","#f2b896","#fbdcc4"],
       "variants": { "tan": ["#2e1913","#5f3121","#8e5236","#b0704f","#cf9572","#e8b99a"] } },
-    // shortened: "top" and "shorts" base materials
+    // shortened: "eyes", "shirt" and "shorts" base materials
     { "id": "hair", "label": "Hair", "owner": "hair_short",
       "ramp": ["#1a1410","#3a2a1e","#5c4430","#80603f"], "variants": { "blond": ["#5a4220","#9a7535","#c9a24e","#ecd27a"] } },
     { "id": "iron", "label": "Iron", "owner": "helmet_iron",
@@ -244,65 +250,58 @@ export interface ExportInfo {
   ],
   "items": [
     { "id": "base", "name": "Base body", "slot": "body", "status": "accepted", "mirror": "flip",
-      "materials": ["skin", "top", "shorts"],
-      "prompt": "small bald human character with space above the head, plain grey tank top and shorts, barefoot",
+      "materials": ["skin", "shirt", "shorts"],
+      "prompt": "bald human character, plain grey t-shirt and plain grey shorts, barefoot, arms slightly away",
       "baseHash": "sha256:5f1c…",
       "layers": [ { "id": "main", "role": "fg", "z": 10,
         "sheets": { "idle": "layers/body/base/main/idle.png", "walk": "layers/body/base/main/walk.png" } } ],
       "provenance": [
-        { "endpoint": "/create-character-v3", "seed": 1234, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "description": "small bald human character…", "image_size": {"width":64,"height":64},
+        { "endpoint": "/create-character-v3", "seed": 4321, "jobId": "…", "requestHash": "sha256:…",
+          "params": { "description": "bald human character, plain grey t-shirt…", "image_size": {"width":48,"height":48},
                       "view": "low top-down", "template_id": "mannequin", "no_background": true },
-          "usage": { "generations": 2 }, "createdAt": "2026-10-20T19:05:00Z", "produced": [] },
-        { "endpoint": "/characters/animations", "seed": 1234, "jobId": "…", "requestHash": "sha256:…",
+          "usage": { "generations": 2 }, "createdAt": "2026-10-21T09:05:00Z", "produced": [] },
+        { "endpoint": "/characters/animations", "seed": 4321, "jobId": "…", "requestHash": "sha256:…",
           "params": { "character_id": "…", "mode": "template", "template_animation_id": "walking-8-frames",
                       "directions": ["south", "east", "north"] },
-          "usage": { "generations": 3 }, "createdAt": "2026-10-20T19:12:00Z",
+          "usage": { "generations": 3 }, "createdAt": "2026-10-21T09:12:00Z",
           "produced": ["walk/south/0", "walk/south/1"] } // shortened
       ] },
     { "id": "helmet_iron", "name": "Iron helmet", "slot": "head", "status": "accepted", "mirror": "flip",
       "hides": ["hair"], "materials": ["iron"], "prompt": "a simple grey steel knight helmet, face visible",
-      "baseHash": "sha256:5f1c…", "extractor": "novel2_grow1",
+      "baseHash": "sha256:5f1c…", "extractor": "chroma", "key": "green", "anchorCell": "walk/south/0",
       "layers": [ { "id": "main", "role": "fg", "z": 130,
         "sheets": { "idle": "layers/head/helmet_iron/main/idle.png", "walk": "layers/head/helmet_iron/main/walk.png" } } ],
       "provenance": [
         { "endpoint": "/edit-animation-v2", "seed": 7, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "description": "Add only a simple grey steel knight helmet…",
-                      "frames": [ {"sha256": "…"}, {"sha256": "…"}, {"sha256": "…"} ],
-                      "image_size": {"width":64,"height":64}, "no_background": true,
-                      "target_palette": {"colors": ["#2b2f36","#4d535d","#7a828e","#b3bac4"]} },
-          "usage": { "generations": 10 }, "createdAt": "2026-10-20T19:40:00Z",
-          "produced": ["idle/south/0", "idle/east/0", "idle/north/0"] }
+          "params": { "description": "This pixel art character is a solid bright green mannequin… Add only a simple grey steel knight helmet…",
+                      "frames": [ {"sha256": "…"} ], // 16 key cells: walk south 0-7, walk east 0-7 (shortened)
+                      "image_size": {"width":64,"height":64}, "no_background": true },
+          "usage": { "generations": 10 }, "createdAt": "2026-10-21T10:40:00Z",
+          "produced": ["walk/south/0", "walk/east/7"] }, // shortened
+        { "endpoint": "/edit-animation-v2", "seed": 8, "jobId": "…", "requestHash": "sha256:…",
+          "params": { "description": "… Frame 1 already wears the helmet: copy exactly that helmet design…",
+                      "frames": [ {"sha256": "…"} ], // frame 1 = dressed walk/south/0, then 15 key cells; output 0 discarded
+                      "image_size": {"width":64,"height":64}, "no_background": true },
+          "usage": { "generations": 10 }, "createdAt": "2026-10-21T10:44:00Z",
+          "produced": ["walk/north/0", "idle/east/3"] } // shortened; + 1 more call
       ],
-      "qa": { "areaCV": 0.0, "minAdjPaletteJaccard": 1.0, "centroidSpread": 0, "minAreaRatio": 0.97, "clipPx": 0,
-              "rerolls": 0, "status": "pass",
+      "qa": { "minKeyKept": 0.994, "maxKeyOutside": 0.001, "minAreaRatio": 0.93, "maxAreaCV": 0.04, "maxPaletteDist": 10.3,
+              "clipPx": 0, "rerolls": 0, "status": "pass",
               "cells": {
-                "idle/south/0": { "route": "batch", "provenance": 0, "area": 176, "snappedPct": 97 },
-                "walk/south/3": { "route": "propagated", "provenance": 0, "area": 176, "offset": [0, -1], "snappedPct": 97 },
-                "walk/west/3":  { "route": "mirrored", "provenance": 0, "area": 171, "offset": [1, -1], "snappedPct": 97 }
+                "walk/south/3": { "route": "chroma", "provenance": 0, "area": 122, "keyKept": 0.996, "snappedPct": 98 },
+                "walk/west/3":  { "route": "mirrored", "provenance": 0, "area": 133, "snappedPct": 98 }
                 // shortened: one entry per cell
               } } },
     { "id": "cape_red", "name": "Red cape", "slot": "back", "status": "accepted", "mirror": "flip",
       "materials": ["cape_cloth"], "prompt": "a long red cloth cape hanging from the shoulders",
-      "baseHash": "sha256:5f1c…", "reference": "sha256:9a0e…", "extractor": "novel_cc",
+      "baseHash": "sha256:5f1c…", "extractor": "chroma", "key": "green", "anchorCell": "walk/south/0",
       "layers": [
         { "id": "fg", "role": "fg", "z": 90, "sheets": { "idle": "layers/back/cape_red/fg/idle.png", "walk": "layers/back/cape_red/fg/walk.png" } },
         { "id": "bg", "role": "bg", "z": 4,  "sheets": { "idle": "layers/back/cape_red/bg/idle.png", "walk": "layers/back/cape_red/bg/walk.png" } }
       ],
-      "provenance": [
-        { "endpoint": "/inpaint-v3", "seed": 11, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "description": "a long red cloth cape…", "inpainting_image": {"sha256": "…"},
-                      "mask_image": {"sha256": "…"}, "no_background": true },
-          "usage": { "generations": 10 }, "createdAt": "2026-10-20T20:02:00Z", "produced": [] },
-        { "endpoint": "/transfer-outfit-v2", "seed": 11, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "reference_image": {"sha256": "9a0e…"}, "frames": [{"sha256": "…"}], // 15 cells, shortened
-                      "image_size": {"width":64,"height":64}, "no_background": true,
-                      "target_palette": {"colors": ["#4a0d12","#7d1820","#b02832","#d9514f"]} },
-          "usage": { "generations": 10 }, "createdAt": "2026-10-20T20:10:00Z",
-          "produced": ["idle/south/0", "idle/south/1", "walk/east/0"] } // shortened; + 2 more calls
-      ],
-      "qa": { "areaCV": 0.07, "minAdjPaletteJaccard": 0.72, "centroidSpread": 1.5, "minAreaRatio": 0.81, "clipPx": 0,
-              "rerolls": 1, "status": "pass", "cells": {} } }
+      "provenance": [ /* 3 × /edit-animation-v2 as above (shortened) */ ],
+      "qa": { "minKeyKept": 0.976, "maxKeyOutside": 0.002, "minAreaRatio": 0.81, "maxAreaCV": 0.09, "maxPaletteDist": 9.9,
+              "clipPx": 0, "rerolls": 1, "status": "pass", "cells": {} } }
   ],
   "presets": [
     { "id": "default", "name": "Knight",
@@ -321,6 +320,7 @@ export interface ExportInfo {
 ```
 <name>.pixeldoll.zip
   manifest.json                                   # authoritative; everything below is derived from it
+  CREDITS.csv                                     # one row per PixelLab call: job id, endpoint, seed, prompt
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells
   baked/<preset>/<anim>.png                       # optional composites, same grid (RPG Maker, crowds)
@@ -351,6 +351,10 @@ at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Fram
 
 ### 6.2 Godot 4 — `SpriteFrames` `.tres` + scene + sync script
 
+Verified [M5]: Godot 4.7.1 imports with 0 errors (relative `ext_resource` paths), stays in sync over 540 ticks incl. a per-cell
+z override, and renders 0 differing px vs `baked/`.
+
+
 - One `SpriteFrames` per (item, layer). Animation name `<anim>_<dir>`, `loop` from the rig, `speed = 1000 / msBase` where
   `msBase` = smallest `ms` in the playlist; each playlist entry → frame `{texture: AtlasTexture(region = cell rect), duration:
   ms / msBase}`. AtlasTexture `filter_clip = true`. No `.import` files shipped.
@@ -364,6 +368,11 @@ at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Fram
 
 ### 6.3 Unity (2022.3 LTS / Unity 6) — Editor importer, no hand-written `.meta`
 
+Status [M5]: compiles with 0 errors/warnings against Unity 6000.4.0f1 (+ 2D Sprite, optional 2D Animation 14.0.3 via
+`PIXELDOLL_2D_ANIMATION`); the importer has **not run yet** (batchmode license-blocked). Export adds `pixeldoll_unity.json` (manifest
+flattened for `JsonUtility`) and two asmdefs.
+
+
 - `PixelDollImporter.cs` (`AssetPostprocessor` + a menu command reading `manifest.json`): for each sheet sets Sprite Mode
   Multiple, Filter Point, Compression None, PPU = `export.pixelsPerUnit`; slices via `ISpriteEditorDataProvider.SetSpriteRects`
   with names `<anim>_<dir>_<cell>`, custom pivot (§6.1), new `GUID` per rect. Builds body `AnimationClip`s `<anim>_<dir>`
@@ -376,6 +385,9 @@ at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Fram
   skipped in v1; add if users ask for Sprite Resolver workflows.
 
 ### 6.4 Phaser 3 / 4 — atlas JSON with customData
+
+Verified [M5]: Phaser 3.80, 3.90 and 4.2.1 render 0 differing px vs `baked/`; layer frame names match the body every step.
+
 
 - One TexturePacker **JSON-Hash** atlas per sheet (`<item>_<layer>_<anim>.json` → `layers/.../<anim>.png`): frames
   `<anim>_<dir>_<cell>` with `frame` rect, `rotated:false`, `trimmed:false`, `sourceSize`, `pivot` (§6.1). Extra top-level key
