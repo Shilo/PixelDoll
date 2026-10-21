@@ -15,7 +15,10 @@ theme-A Studio MVP are done and committed. Living document.
   export (Godot/Phaser/Unity/PNG+JSON), activity, cross-tab queue lock, worker-driven polling. Dev harnesses `#/m1…#/m5`.
 - **Verified:** Godot 4.7.1 and Phaser 3.80/3.90/4.2.1 render exports pixel-identical to PixelDoll's compositor (incl.
   oversize layers). Unity: compile-only (deferred). Independent UX QA: 6/10 → 8.5/10 after fixes (T1 → T2).
-- **Spend:** ≈4,000+ PixelLab generations across spikes/tests; balance ≈923 (2026-10-21).
+- **Hardening (Phase 7):** full item coverage (hair, cape, chest, trousers, boots × idle/walk/slash/hurt × 4 dirs),
+  per-clip inpaint-v3 fallback, hair tucked under helmets, 8-direction + 56 px options, shirt/shorts regions, offline pause,
+  layered .aseprite export, R6 robustness/security fixes, README/docs/user guide, Pages workflow (not enabled).
+- **Spend:** ≈4,400 PixelLab generations across spikes/tests; balance ≈529 (2026-10-21).
 
 ## Goal
 

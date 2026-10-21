@@ -50,7 +50,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 - [x] B14: cape north-slash fallback (inpaint-v3 per clip-dir), clip hair under helmet, fewer false 'Needs a look', boots (≤90 gens)
 - [x] B15: 4/8 directions + 48/56 px in Create, shirt/shorts colour regions, offline banner (≤60 gens)
 
-- [~] B16: 8-direction held items (chunked dress at 96 px cap 4) + cape hurt-north redo (≤70 gens)
+- [x] B16: 8-direction held items (chunked dress under frame cap) + cape hurt-north regrid (63 gens)
 
 ## Deferred
 - [ ] Unity export live verification (needs Unity Hub sign-in; C# compiles) — deferred by user 2026-10-20
@@ -76,11 +76,9 @@ proper post-processing and proper layering — frontier-standard paperdolling wo
 - [x] Background-tab throttling: queue ticks from a Worker timer
 
 ## Risks
-- [!] PixelLab balance ≈923 gens (2026-10-21) — spend economically
+- [!] PixelLab balance ≈529 gens (2026-10-21) — spend economically
 - [!] Shields (off_hand) untested; helmet south-slash frame flagged when forearm covers visor
 - [!] Base body swap invalidates layers (`baseHash` stale detection)
-- [ ] Next: hair/cape/chest/boots/legs on skeleton-pose across a full 3-dir × 4-clip set (O11)
-- [ ] Next: shields (off_hand) live test; reduce 'Needs a look' rate on action moves (smear on hurt/slash frames)
-- [ ] Next: separate base colour regions (shirt vs shorts) for independent recolour
-- [ ] Next: offline banner; 48 vs 56 px base option (O14); 4/8-direction choice in Create
-- [ ] Next: GitHub Pages deploy workflow
+- [ ] Next: shields (off_hand) live test; cape back-hem grey smudges; helmet visor flag when arm covers it
+- [ ] Next (user decision): create remote + enable GitHub Pages on its own origin (workflow ready)
+- [ ] Next (user): Unity live verification (needs Unity Hub sign-in); exact-key secret scan (needs approval)
