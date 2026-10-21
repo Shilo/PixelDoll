@@ -47,8 +47,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 - [x] B12 root README, docs index, user guide, GitHub Pages workflow (no push), repo hygiene
 - [x] R6 code/security/over-engineering review (report only)
 - [x] B13 R6 fixes: leader-only resume, no paid resend, atomic saves, key not broadcast, dev pages out of prod (432→317 kB)
-- [~] B14: cape north-slash fallback (inpaint-v3 per clip-dir), clip hair under helmet, fewer false 'Needs a look', boots (≤90 gens)
-- [~] B15: 4/8 directions + 48/56 px in Create, shirt/shorts colour regions, offline banner (≤60 gens)
+- [x] B14: cape north-slash fallback (inpaint-v3 per clip-dir), clip hair under helmet, fewer false 'Needs a look', boots (≤90 gens)
+- [x] B15: 4/8 directions + 48/56 px in Create, shirt/shorts colour regions, offline banner (≤60 gens)
+
+- [~] B16: 8-direction held items (chunked dress at 96 px cap 4) + cape hurt-north redo (≤70 gens)
 
 ## Deferred
 - [ ] Unity export live verification (needs Unity Hub sign-in; C# compiles) — deferred by user 2026-10-20

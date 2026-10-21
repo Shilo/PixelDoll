@@ -99,4 +99,7 @@ Cross-agent channel: `docs/research/SHARED_NOTES.md` (append-only, short bullets
   readable/professional). **Dark mode by default** with a visible dark/light switcher (persisted). Use a standard, mature,
   modern icon library everywhere (Lucide via `@lucide/svelte`) and the system UI font stack. Future (deferred): theming
   support + a "Paper" theme inspired by look D — modern, clean, paper-like surfaces (the brand is *paper*dolling).
+- D10 (2026-10-21, PM): Base garment regions (shirt vs shorts) are made exact-colour-disjoint by a 1/255 blue-channel
+  parity nudge assigned by hip line (B15). Imperceptible change to PixelLab pixels, chosen so engine palette-swap stays a pure
+  exact-colour lookup with no extra mask files. Upgrade path: per-layer region mask in the manifest if a user objects.
 - D6 (2026-10-21): Skeleton v3 is the preferred skeleton route; legacy skeleton only as baseline (user) — S3 validating.
