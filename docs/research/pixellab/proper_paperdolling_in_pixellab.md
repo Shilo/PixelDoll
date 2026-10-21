@@ -1,3 +1,5 @@
+> Accuracy note (2026-10-20, R2): This document is about the Android photo/text editor app "PixelLab – Text on pictures" (App Holdings / Imagin Studio), NOT pixellab.ai, and does not apply to PixelDoll except for its generic same-canvas/anchor/front-back layer rules. Its Play-listing date is stale and its `cite…` tokens are unresolvable. See `pixellab_current_capabilities_2026-10.md` §4.2.
+
 # Proper Paperdolling in PixelLab for Android
 
 ## Executive summary
