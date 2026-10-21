@@ -22,12 +22,6 @@
     else if (app.balanceError) msg = `Couldn't reach PixelLab: ${app.balanceError}`
     else connected()
   }
-  async function devKey() {
-    if (!import.meta.env.DEV) return
-    const r = await fetch('/__dev/pixellab-key', { cache: 'no-store' })
-    if (!r.ok) return void (msg = `No dev key (${r.status}).`)
-    await use(await r.text(), false)
-  }
 </script>
 
 <Sheet title="Connect PixelLab" onclose={() => (ui.sheet = null)}>
@@ -57,7 +51,6 @@
     <div class="field-row">
       <a class="small" href="https://pixellab.ai/account" target="_blank" rel="noreferrer">Get a key <ExternalLink size={12} style="display:inline" /></a>
       <span class="actions">
-        {#if import.meta.env.DEV}<button type="button" class="btn" onclick={devKey} data-testid="dev-key">Use dev key</button>{/if}
         <button class="btn primary" type="submit" disabled={!key.trim() || checking}>{checking ? 'Checking…' : 'Connect'}</button>
       </span>
     </div>

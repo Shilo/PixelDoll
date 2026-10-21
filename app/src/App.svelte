@@ -24,3 +24,8 @@
     <main><page.default /></main>
   {/await}
 {/if}
+{#if import.meta.env.DEV && import.meta.env.MODE === 'agent'}
+  <!-- inline style: a <style> rule would survive the dead {#if} into the production CSS -->
+  <div class="agent-badge" style="position:fixed;left:8px;bottom:8px;z-index:9999;pointer-events:none;padding:2px 8px;border-radius:999px;font:600 11px/1.6 system-ui,sans-serif;color:#000;background:var(--warn,#e8b339);opacity:.9" title="npm run dev:agent: auto-connected with the agent key from .env (AI-agent testing only)">Agent mode</div>
+{/if}
+

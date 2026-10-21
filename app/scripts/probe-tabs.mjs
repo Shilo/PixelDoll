@@ -1,4 +1,5 @@
 // B13 cross-tab probe (no key, no spend; DEV server only: imports /src modules). node app/scripts/probe-tabs.mjs  env BASE=http://localhost:5173
+// Keyless on the agent server too (opts out of the agent key).
 // Drafts load once per id across reload / follower / takeover; follower cannot start generations; nobody answers a key ask;
 // db.update is atomic; gcBlobs keeps referenced blobs and drops the rest.
 import { chromium } from '../../design-mockups/node_modules/playwright/index.mjs'
@@ -7,7 +8,7 @@ import assert from 'node:assert/strict'
 const BASE = process.env.BASE ?? 'http://localhost:5173'
 const browser = await chromium.launch()
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
-await ctx.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'))
+await ctx.addInitScript(() => { localStorage.setItem('pixeldoll.welcomed', '1'); localStorage.setItem('pixeldoll.agentKey', 'off') })
 const ok = (s) => console.log('ok', s)
 const open = async () => { const p = await ctx.newPage(); p.on('pageerror', (e) => console.log('pageerror', e.message)); await p.goto(`${BASE}/#/`); await p.waitForSelector('.stage canvas'); return p }
 const role = (p) => p.evaluate(() => window.__queue.role)

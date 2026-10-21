@@ -17,49 +17,15 @@
       "port": 5173
     },
     {
-      "name": "app-dev-b10",
+      "name": "app-dev-agent",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
         "--prefix",
         "app",
         "run",
-        "dev",
-        "--",
-        "--port",
-        "5176",
-        "--strictPort"
+        "dev:agent"
       ],
-      "port": 5176
-    },
-    {
-      "name": "app-dev-b9",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "--prefix",
-        "app",
-        "run",
-        "dev",
-        "--",
-        "--port",
-        "5175",
-        "--strictPort"
-      ],
-      "port": 5175
-    },
-    {
-      "name": "app-dev-b15",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "--prefix",
-        "app",
-        "run",
-        "dev",
-        "--",
-        "--port",
-        "5177",
-        "--strictPort"
-      ],
-      "port": 5177
+      "port": 5199
     },
     {
       "name": "app-preview",

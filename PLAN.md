@@ -105,4 +105,48 @@ Cross-agent channel: `docs/research/SHARED_NOTES.md` (append-only, short bullets
 - D10 (2026-10-21, PM): Base garment regions (shirt vs shorts) are made exact-colour-disjoint by a 1/255 blue-channel
   parity nudge assigned by hip line (B15). Imperceptible change to PixelLab pixels, chosen so engine palette-swap stays a pure
   exact-colour lookup with no extra mask files. Upgrade path: per-layer region mask in the manifest if a user objects.
+- D11 (2026-10-21, user): The `.env` `PIXELLAB_API_KEY` is for **AI-agent automation only**: `npm run dev:agent`
+  (`vite --mode agent`, :5199) serves it and the app auto-connects with an "Agent mode" badge. `npm run dev` and every build
+  have no key endpoint, no key option and no env loading (`envDir: false`); humans paste the key like production users. CI
+  (`.github/workflows/pages.yml`) runs check, selftest, build and a dist guard on every push/PR, and deploys Pages from `main`.
+- D12 (2026-10-21, user): Repo goes **public** on GitHub (`Shilo/PixelDoll`) under the **MIT** license. Pages URL:
+  https://shilo.github.io/PixelDoll/ (shared `*.github.io` origin, see README key-safety note; custom domain recommended).
+- D13 (pending, user): **PWA**. Plan below; not implemented.
 - D6 (2026-10-21): Skeleton v3 is the preferred skeleton route; legacy skeleton only as baseline (user) — S3 validating.
+
+## PWA (planned, decision D13 pending)
+
+Installable, offline-capable Studio. Nothing implemented yet; tasks in TODO.md "PWA (planned)".
+
+- **Manifest** (`app/public/manifest.webmanifest`, linked with a relative href): `name` "PixelDoll", `short_name`
+  "PixelDoll", `start_url` "./#/", `scope` "./", `display` "standalone", `theme_color` + `background_color` = the dark
+  theme's `--bg` (dark is the default, D9), `icons` 192 + 512 PNG plus a 512 `purpose: maskable` (safe-zone padded) and the
+  SVG. Relative URLs keep it working under `/PixelDoll/` and on a custom domain alike.
+- **Service worker** (one hand-written `sw.js` or `vite-plugin-pwa` generateSW; pick the smaller): precache the app shell
+  (`index.html`, hashed `assets/*`, the ticker worker, favicon, icons) and the demo `fixtures/` (cache-first; they are
+  immutable per build). **Never cache** `api.pixellab.ai` or PixelLab image hosts (network-only, outside the SW's fetch
+  handling), never see or store the key. IndexedDB stays the single source of truth for projects, blobs and the job ledger;
+  the SW owns no app data.
+- **Updates**: new SW installs and waits; the app shows "New version available — Reload" (toast/button) and posts
+  `SKIP_WAITING` only when the user accepts, so a running generation or unsaved edit is never cut off mid-tab. Old caches
+  are deleted on `activate`.
+- **Offline**: the shell loads from cache; the existing offline banner ("You're offline — generation paused; everything
+  else works") and queue pause stay the behaviour. Jobs resume from the IndexedDB ledger when back online.
+- **Install**: Chromium desktop/Android use `beforeinstallprompt` -> a quiet "Install app" item in the project menu (never
+  a pop-up). iOS/iPadOS Safari has no prompt: a one-line hint (Share -> Add to Home Screen) in the user guide / About.
+  Add `apple-touch-icon` and `<meta name="theme-color">` (light + dark media variants).
+- **Base path / scope**: SW registered with a relative URL (`./sw.js`) gets scope `/PixelDoll/` on
+  https://shilo.github.io/PixelDoll/ and `/` on a custom domain. The SW must not claim more than that path.
+- **Key safety vs scope**: a SW scope is a path, not a security boundary. On the shared `shilo.github.io` origin, other
+  project sites can still read storage and register their own SWs for their paths; PWA install does not isolate anything.
+  The own-origin requirement (README "Serve PixelDoll from its own origin") still holds, and an installed PWA on a custom
+  domain is the recommended setup. Moving origin later loses installs and local data (no migration across origins), so
+  pick the final origin **before** shipping the PWA.
+- **CSP** (`<meta>` in `index.html`): add `worker-src 'self'` (SW + ticker worker; today they fall back to `script-src`)
+  and `manifest-src 'self'`. `connect-src` unchanged. GitHub Pages cannot send headers, so the SW cannot add stricter ones.
+- **Testing**: Lighthouse PWA/installability audit on the Pages build; offline reload (DevTools offline -> reload -> demo
+  and saved projects open, banner shows, no PixelLab request is served from cache); update flow (deploy N+1 -> prompt ->
+  reload -> new hash, IndexedDB intact, running job resumes); install/uninstall on Chrome desktop, Android Chrome, iOS
+  Safari; sub-path scope check under `/PixelDoll/`; CI dist guard extended to assert the SW precache list has no
+  `__dev`/`.env`/`api.pixellab.ai` entries.
+

@@ -1,19 +1,14 @@
-# Build app/ and deploy app/dist to GitHub Pages. Enable once: Settings > Pages > Source = "GitHub Actions".
-name: Pages
+# CI on every push and PR (check, selftest, build, dist guard); on push to main also deploy app/dist to GitHub Pages.
+# Enable Pages once: Settings > Pages > Source = "GitHub Actions". No secrets or env: the PixelLab key never touches CI.
+name: CI and Pages
 
 on:
   push:
-    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: false
 
 jobs:
   build:
@@ -23,22 +18,42 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: 24 # selftest needs Node >= 23 (native TS type stripping)
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
+      - run: npm run check
       - run: npm run selftest
       - run: npm run build
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
+      - name: Dist guard (no dev/agent key code, no .env, no source maps)
+        shell: bash
+        run: |
+          bad=0
+          if grep -rlE '__dev|pixellab-key|PIXELLAB_API_KEY|pixeldoll\.agentKey|agent-badge' dist; then echo '::error::dev or agent-key code in dist'; bad=1; fi
+          if find dist -name '.env*' | grep .; then echo '::error::.env file in dist'; bad=1; fi
+          if find dist -name '*.map' | grep .; then echo '::error::source map in dist (could carry env or source)'; bad=1; fi
+          exit $bad
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/configure-pages@v6
+      - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v5
         with:
           path: app/dist
 
   deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

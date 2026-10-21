@@ -12,13 +12,13 @@ key.
 ## Status
 
 **Research / MVP phase.** Research R1–R5, live spikes S1–S5, architecture v1.3 and the Studio MVP are done; hardening is under
-way. See [PLAN.md](PLAN.md) (current state, decisions D1–D9) and [TODO.md](TODO.md).
+way. See [PLAN.md](PLAN.md) (current state, decisions D1–D13) and [TODO.md](TODO.md).
 
 - Proven: base character (48 px, padded to a 64 px cell) → skeleton-v3 moves → items dressed on a chroma mannequin and posed per
   move → automatic checks → layers. Held items use a 96 px canvas with the same pivot.
 - Godot 4.7.1 and Phaser 3.80 / 3.90 / 4.2.1 render the exports pixel-identical to PixelDoll's own compositor.
   Unity: the C# importer compiles, live import not yet verified.
-- Not yet: shields (off hand), 4/8-direction and 56 px options, offline banner. The bundled demo uses the team's own spike
+- Not yet: shields (off hand), PWA (planned in PLAN.md). The bundled demo uses the team's own spike
   outputs (revisit before a public release).
 
 ## Run locally
@@ -33,17 +33,19 @@ npm run dev        # http://localhost:5173
 
 Open `#/` for the Studio. **Try the demo** needs no key. To generate, open **Connect PixelLab…** and paste a key from
 <https://pixellab.ai/account>. It stays in memory unless you tick *Remember on this device*, and is only sent to
-`api.pixellab.ai`.
+`api.pixellab.ai`. `npm run dev` handles the key exactly like the deployed site: there is no key file, endpoint or button.
 
-**Dev key (optional, dev server only).** Put your key in a `.env` file at the repo root (git-ignored):
+**Agent mode (AI agents only).** Automated agents (Claude, Codex, …) that test generations use a separate dev server:
 
 ```sh
-PIXELLAB_API_KEY=<your key>
+npm --prefix app run dev:agent   # http://localhost:5199, Vite mode "agent" (launch config "app-dev-agent")
 ```
 
-`npm run dev` then shows a **Use dev key** button in the Connect sheet. It fetches the key from `/__dev/pixellab-key`, which the
-Vite dev server answers only for same-origin requests from localhost. The endpoint and the button are not in `vite build`
-output. Never commit `.env`.
+It reads `PIXELLAB_API_KEY` from a git-ignored `.env` at the repo root, server-side, and serves it at `/__dev/pixellab-key`
+only to same-origin requests from localhost (`cache-control: no-store`). The app connects automatically and shows an
+**Agent mode** badge. Humans don't use it. None of it exists outside `vite --mode agent`: Vite loads no `.env` files at all
+(`envDir: false`, no `VITE_` variables), `vite build --mode agent` refuses to run, and CI fails if `dist/` mentions it. Never
+commit `.env` and never print the key. See [AGENTS.md](AGENTS.md).
 
 Developer pages: `#/m1` … `#/m5` (the M1–M5 harnesses), `#/selftest` (browser self-tests).
 
@@ -69,6 +71,9 @@ npm --prefix app run dev                                  # in another terminal 
 node app/scripts/e2e-studio.mjs                           # BASE=http://localhost:4173 to test the preview build
 ```
 
+The scripts stay keyless on the agent server too (`BASE=http://localhost:5199`): they opt out of the agent key, and the e2e
+then only checks that agent mode auto-connected (`GET /balance`, free).
+
 `node app/scripts/shoot-mvp.mjs` writes Studio screenshots to `docs/testing/img/` the same way.
 
 ## Export targets
@@ -86,12 +91,15 @@ move; rows = directions, columns = frames) and, optionally, `baked/` (finished c
 
 Use nearest-neighbour filtering and whole-pixel positions in every engine.
 
-## Deploy to GitHub Pages
+## CI and deploy to GitHub Pages
 
-[.github/workflows/pages.yml](.github/workflows/pages.yml) runs `npm ci`, `npm run selftest` and `npm run build` in `app/`, then
-deploys `app/dist` on every push to `main` (or by hand from the Actions tab). To enable it once the repo is on GitHub:
-**Settings → Pages → Build and deployment → Source: GitHub Actions**. The site works under the `/<repo>/` sub-path because
-Vite's `base` is `./` and the router uses `#/` hashes.
+[.github/workflows/pages.yml](.github/workflows/pages.yml) runs on every push and pull request: `npm ci`, `npm run check`,
+`npm run selftest`, `npm run build` in `app/`, then a **dist guard** that fails the run if `app/dist` contains `__dev`,
+`pixellab-key`, `PIXELLAB_API_KEY`, agent-mode code, any `.env*` file or any source map. On a push to `main` it also deploys
+`app/dist` to GitHub Pages (or run it by hand from the Actions tab). The workflow uses no secrets and no environment
+variables: the PixelLab key never reaches CI. Enable Pages once: **Settings → Pages → Build and deployment → Source: GitHub
+Actions**. The site is served at <https://shilo.github.io/PixelDoll/>; it works under that sub-path because Vite's `base` is
+`./` and the router uses `#/` hashes.
 
 GitHub Pages cannot set response headers, so the Content-Security-Policy is a `<meta>` tag in `app/index.html`. It allows
 scripts from `'self'` only and network calls to `api.pixellab.ai` and PixelLab's image hosts. Add any new origin there.
@@ -102,10 +110,11 @@ project site of an account (`https://<user>.github.io/<repo>/`) shares the origi
 ledger), a key saved with "Remember on this device" (`localStorage`), and its same-origin `BroadcastChannel`. So deploy to
 either:
 
-- a custom domain (Settings → Pages → Custom domain), or
+- a custom domain (Settings → Pages → Custom domain), **recommended**, or
 - a user or organisation root site (`<name>.github.io`) that hosts nothing else.
 
-Never deploy it as a project path next to pages you do not control. PixelDoll keeps the key in memory by default and never
+`https://shilo.github.io/PixelDoll/` is such a project path: fine for trying the demo, but for real work (your key, saved
+projects) use a custom domain. Never deploy it as a project path next to pages you do not control. PixelDoll keeps the key in memory by default and never
 answers "send me the key" messages from other tabs. The Connect sheet warns when "Remember" is turned on at a `*.github.io`
 project path.
 
@@ -127,8 +136,7 @@ project path.
 
 ## License
 
-None yet. All rights reserved until a license is chosen. The bundled demo art and the spike outputs were generated with
-PixelLab by the team.
+[MIT](LICENSE). The bundled demo art and the spike outputs were generated with PixelLab by the team.
 
 ## Credits
 

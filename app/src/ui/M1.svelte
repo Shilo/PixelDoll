@@ -33,13 +33,6 @@
     setKey(keyInput, remember)
     keyInput = ''
   }
-  async function useDevKey() {
-    if (!import.meta.env.DEV) return
-    const r = await fetch('/__dev/pixellab-key', { cache: 'no-store' })
-    if (!r.ok) return void (msg = `dev key: ${r.status}`)
-    setKey(await r.text(), false)
-    msg = 'dev key loaded (memory only)'
-  }
   async function createBase() {
     const req = routes.createCharacterV3({
       description: PRESETS[preset].desc,
@@ -86,7 +79,6 @@
   <label><input type="checkbox" bind:checked={remember} /> remember on this device</label>
   <button onclick={saveKey} disabled={!keyInput.trim()}>use key</button>
   <button onclick={forgetKey} disabled={!app.key}>forget key</button>
-  {#if import.meta.env.DEV}<button onclick={useDevKey} data-testid="dev-key">use dev key (.env)</button>{/if}
   <label>concurrency <input type="number" min="1" max="8" value={$queue.concurrency} onchange={(e) => queue.setConcurrency(+e.currentTarget.value)} style="width:3rem" /></label>
 </section>
 

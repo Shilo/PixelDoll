@@ -3,6 +3,7 @@ import './app.css'
 import App from './App.svelte'
 import { queue } from './lib/pixellab/queue.ts'
 import { askPersist } from './lib/store/db.ts'
+import { app, setKey } from './lib/app.svelte.ts'
 
 askPersist()
 const target = document.getElementById('app')!
@@ -18,5 +19,14 @@ try {
 }
 import.meta.hot?.dispose(() => queue.disconnect())
 if (import.meta.env.DEV) (window as unknown as { __queue: unknown }).__queue = queue // dev: inspect role/ledger
+
+// AI-agent automation only (`npm run dev:agent`, Vite mode "agent"): connect with the key the agent dev server serves from
+// ../.env. Statically false in `npm run dev` and every build, so the bundle has no trace of it. Scripts that must stay keyless
+// set localStorage 'pixeldoll.agentKey' = 'off' first.
+if (import.meta.env.DEV && import.meta.env.MODE === 'agent' && !app.key) {
+  let off = false
+  try { off = localStorage.getItem('pixeldoll.agentKey') === 'off' } catch {}
+  if (!off) fetch('/__dev/pixellab-key', { cache: 'no-store' }).then(async (r) => { if (r.ok) setKey(await r.text(), false) }).catch(() => {})
+}
 
 export default mount(App, { target })

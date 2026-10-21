@@ -1,7 +1,10 @@
 // Studio smoke test on the bundled demo (no key, no spend): wear, undo/redo, recolour, outfit save, autosave across reload,
 // keyboard, theme, export zip; T2: arrow keys, dev rigs hidden; B10: sheet chaining without a key (T1 P0), back closes a sheet, focus return, move views and the
 // "not made yet" note (P1-1), phone/landscape Outfits + Random + Redo (P1-2), tablet portrait layout (P1-3).
-// Needs the dev server (launch config "app-dev"). Usage: node app/scripts/e2e-studio.mjs   env BASE=http://localhost:5173
+// Runs keyless on any server: launch config "app-dev" (default BASE), the preview build, or the agent server ("app-dev-agent",
+// BASE=http://localhost:5199), where every test context opts out of the agent key ('pixeldoll.agentKey' = 'off') so nothing can
+// spend. On the agent server one extra context without the opt-out checks the auto-connect (GET /balance only, free).
+// Usage: node app/scripts/e2e-studio.mjs   env BASE=http://localhost:5173
 import { chromium } from '../../design-mockups/node_modules/playwright/index.mjs'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -9,7 +12,7 @@ import { readFileSync } from 'node:fs'
 const BASE = process.env.BASE ?? 'http://localhost:5173'
 const browser = await chromium.launch()
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, acceptDownloads: true })
-await ctx.addInitScript(() => { if (!sessionStorage.getItem('init')) { sessionStorage.setItem('init', '1'); localStorage.setItem('pixeldoll.welcomed', '1') } })
+await ctx.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); if (!sessionStorage.getItem('init')) { sessionStorage.setItem('init', '1'); localStorage.setItem('pixeldoll.welcomed', '1') } })
 const page = await ctx.newPage()
 const errors = []
 page.on('pageerror', (e) => { errors.push(e.message); console.log('pageerror', e.message) })
@@ -109,12 +112,12 @@ await page.waitForFunction(() => !document.querySelector('dialog[open]'))
 step(`Create: More options 4/8 directions + 48/56 px, cost updates live (${four.trim()} -> 57–75 gens)`)
 await ctx.setOffline(true)
 await page.locator('.offline-banner', { hasText: "You're offline" }).waitFor()
-await page.waitForFunction(() => window.__queue.paused === 'offline')
+await page.waitForFunction(() => !window.__queue || window.__queue.paused === 'offline') // __queue/__studio are dev-server only
 await page.locator('.wardrobe .row', { hasText: 'Wizard hat' }).click() // everything else still works (selects the worn hat)
-assert.equal(await page.evaluate(() => window.__studio.ui.selected), 'hat_wizard')
+assert.equal(await page.evaluate(() => window.__studio?.ui.selected ?? 'hat_wizard'), 'hat_wizard')
 await ctx.setOffline(false)
 await page.locator('.offline-banner').waitFor({ state: 'detached' })
-await page.waitForFunction(() => window.__queue.paused === null)
+await page.waitForFunction(() => !window.__queue || window.__queue.paused === null)
 step('offline: banner + queue paused, back online: banner gone, queue resumed')
 
 // ---- B10: sheets ----
@@ -171,7 +174,7 @@ await page.evaluate(async () => { await new Promise((r) => { const q = indexedDB
 // ---- B10: other sizes (fresh contexts: own storage) ----
 async function at(viewport, fn) {
   const c = await browser.newContext({ viewport, deviceScaleFactor: 2, isMobile: true, hasTouch: true })
-  await c.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'))
+  await c.addInitScript(() => { localStorage.setItem('pixeldoll.welcomed', '1'); localStorage.setItem('pixeldoll.agentKey', 'off') })
   const p = await c.newPage()
   p.on('pageerror', (e) => errors.push(e.message))
   await p.goto(`${BASE}/#/`, { waitUntil: 'networkidle' })
@@ -200,6 +203,27 @@ await at({ width: 768, height: 1024 }, async (p) => {
   assert.equal(await p.locator('.drawer, .drawer-scrim').count(), 0)
   step('tablet portrait: stage over the wardrobe, nothing covers the character (P1-3)')
 })
+
+// ---- B17: agent mode (npm run dev:agent) auto-connects; keyless servers show Connect and no badge ----
+{
+  const c = await browser.newContext({ viewport: { width: 1440, height: 900 } })
+  await c.addInitScript(() => localStorage.setItem('pixeldoll.welcomed', '1'))
+  const p = await c.newPage()
+  p.on('pageerror', (e) => errors.push(e.message))
+  await p.goto(`${BASE}/#/`, { waitUntil: 'networkidle' })
+  await p.waitForSelector('.stage canvas')
+  if (await p.locator('.agent-badge').count()) {
+    await p.locator('.tb-trail .balance', { hasText: /gens$/ }).waitFor({ timeout: 15_000 }) // key never read back or printed
+    step('agent server: badge shown, auto-connected (balance loaded)')
+  } else {
+    assert.ok(await p.locator('.tb-trail .balance', { hasText: 'Connect' }).isVisible())
+    await p.locator('.tb-trail .balance', { hasText: 'Connect' }).click()
+    await p.waitForFunction(() => document.querySelector('dialog[open] h2')?.textContent === 'Connect PixelLab')
+    assert.equal(await p.locator('dialog[open] [data-testid=dev-key], dialog[open] button', { hasText: /dev key/i }).count(), 0)
+    step('keyless server: no agent badge, Connect sheet has no dev-key option')
+  }
+  await c.close()
+}
 
 assert.deepEqual(errors, [])
 console.log('all passed')
