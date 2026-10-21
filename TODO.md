@@ -13,24 +13,32 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 - [x] R2 PixelLab current capabilities + correct stale docs
 - [x] R3 Engine implementation patterns
 - [x] R4 Games survey (incl. Ultima Online verification)
-- [x] R5 Paperdoll tools survey (fralonra/paperdoll checkout + review)
+- [x] R5 Paperdoll tools survey (fralonra/paperdoll + LPC generator checkouts)
 
-## Phase 2 — API feasibility spike (live)
-- [~] S1 base character → animation → equipment edit → diff extraction → QA metrics
+## Phase 2 — Live API spikes
+- [x] S1 feasibility: base → animation → item edit → diff extraction → QA (`docs/spikes/S1_api_feasibility.md`)
+- [~] S2 clean layers: chroma mannequin, two-pass remove, better diff, N/W + attack coverage, headroom
 
 ## Phase 3 — Synthesis
-- [~] Architecture doc (A1)
-- [~] Manifest / export spec (A1)
-- [ ] Mockup scope list
+- [x] Architecture v1.1 (`docs/architecture.md`)
+- [x] Manifest / export spec (`docs/manifest-spec.md`)
+- [x] Mockup scope M1–M5 (architecture §14)
 
-## Phase 4 — Mockups
-- [ ] TBD after synthesis
+## Phase 4 — Mockups (`app/`, Svelte 5 + Vite 8 + TS)
+- [x] Scaffold + foundation (PixelLab client, job queue, IndexedDB, zip, png, hash)
+- [x] M1 Key + queue (live-tested, `docs/testing/M1_report.md`)
+- [~] M2 Rig freeze (normalize, pivot, mirror, skeleton, anchors, baseHash)
+- [ ] M3 Item lab (masks, routes, extraction, QA, fg/bg split) — waits on S2 winner
+- [ ] M4 Dress-up (z ladder, hides, recolor ramps, animated preview)
+- [ ] M5 Export round-trip (manifest + sheets + Godot/Phaser/Unity glue)
 
 ## Phase 5 — Testing
-- [ ] TBD
+- [ ] End-to-end browser test: base → 5 items → dress-up → export
+- [ ] Load export in Godot 4 / Phaser page; verify sync + pivots
 
 ## Risks
-- [!] PixelLab edits may redraw base pixels → diff picks up body drift
-- [!] Occlusion: items behind body (capes, back weapons) only partially visible per frame
-- [!] Temporal consistency of equipment across animation frames
-- [!] Base body swap: layers extracted against body A won't fit body B
+- [!] Extracted layers not yet production-clean (face/eye pixels, skin slivers, holes) → S2
+- [!] Only 2 px headroom above head at 64 px → S2
+- [!] North/west + attack animations untested → S2
+- [!] Base body swap invalidates layers (`baseHash` stale detection)
+- [!] Template-animation jobs report USD cost only; per-job cost may understate
