@@ -1,0 +1,101 @@
+<script lang="ts">
+  // Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
+  // re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
+  import Sheet from './Sheet.svelte'
+  import * as db from '../lib/store/db.ts'
+  import type { StoredProject } from '../lib/store/project.ts'
+  import { posable, poseGens } from '../lib/items/run.ts'
+  import { AUTHORED } from '../lib/rig/poses.ts'
+  import { MOVE_STEPS, isV13, moveEstimate } from './create.ts'
+  import { ui, doc, store, isDemo, moving, startMove, dismissMove, withKey } from './state.svelte.ts'
+  import { Check, ChevronRight, CircleAlert } from './icons.ts'
+
+  const m = $derived(store.project?.manifest)
+  let rec = $state.raw<StoredProject | null>(null)
+  $effect(() => { if (!isDemo()) void db.get<StoredProject>('projects', doc.id).then((r) => (rec = r ?? null)) })
+  const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null))
+  const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []))
+  let action = $state(AUTHORED.find((a) => !have.has(a)) ?? '')
+  let text = $state('')
+  const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24)
+  const id = $derived(text.trim() ? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) : action)
+  const items = $derived(m ? posable(m) : [])
+  let skip = $state<string[]>([])
+  const chosen = $derived(items.filter((i) => !skip.includes(i.id)).map((i) => i.id))
+  const est = $derived(m && id ? moveEstimate(m, { action: text.trim() ? undefined : action, frames: 8, items: chosen }) : null)
+  const dirs = $derived(m ? m.rig.directions.filter((d) => !d.mirrorOf).length : 3)
+  const mine = $derived(!!moving.spec && moving.projectId === doc.id)
+  const stepIx = $derived(MOVE_STEPS.findIndex((s) => s.id === moving.progress?.step))
+  const nice = (s: string) => s[0].toUpperCase() + s.slice(1).replace(/-/g, ' ')
+
+  function go() {
+    const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames: 8, items: chosen, seed: 1 + Math.floor(Math.random() * 1_000_000) }
+    withKey(() => { void startMove(doc.id, spec); ui.sheet = 'move' })
+  }
+</script>
+
+{#snippet foot()}
+  {#if mine && moving.done}
+    <button class="btn primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
+  {:else if mine && moving.error}
+    <button class="btn plain" onclick={dismissMove}>Start over</button>
+    <button class="btn primary" onclick={() => moving.spec && withKey(() => void startMove(moving.projectId, $state.snapshot(moving.spec!)))}>Try again</button>
+  {:else if mine}
+    <span class="foot-note">You can keep working.</span>
+    <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
+  {:else if ok}
+    <span class="foot-note">{est ? `About ${est.minutes} min` : ''}</span>
+    <button class="btn primary lg" disabled={!id || have.has(id) || !!moving.spec} onclick={go}>Add {id ? nice(id) : 'move'} <span class="cost">{est ? Math.ceil(est.gens) : '–'} gens</span></button>
+  {/if}
+{/snippet}
+
+<Sheet title="Add a move" cancel={mine && !moving.done ? 'Hide' : 'Cancel'} onclose={() => (ui.sheet = null)} footer={isDemo() ? undefined : foot}>
+  {#if mine}
+    <div class="form">
+      <p style="font-weight:600">{nice(moving.spec!.id)}</p>
+      <ol class="steps-list">
+        {#each MOVE_STEPS as s, i (s.id)}
+          {@const done = moving.done || i < stepIx}
+          <li class:done class:now={!moving.done && i === stepIx}>
+            {#if done}<Check size={16} />{:else if i === stepIx && !moving.error}<span class="ring spin" aria-hidden="true"></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}
+            {s.label}{#if !moving.done && i === stepIx && moving.progress && moving.progress.total > 1}<span class="muted num small">&nbsp;{moving.progress.done}/{moving.progress.total}</span>{/if}
+          </li>
+        {/each}
+      </ol>
+      {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
+    </div>
+  {:else if isDemo() || !ok}
+    <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'This character was made before skeleton rigs (v1.3). Create a new character to add moves to it.'}</p>
+  {:else}
+    <div class="form">
+      <div class="field">
+        <span class="label" id="act">Move</span>
+        <div class="chips" role="radiogroup" aria-labelledby="act">
+          {#each AUTHORED as a (a)}
+            <button class="chip" role="radio" aria-checked={!text.trim() && action === a} disabled={have.has(a)} onclick={() => { action = a; text = '' }}>{nice(a)}</button>
+          {/each}
+        </div>
+      </div>
+      <label class="field">
+        <span class="label">Or describe it <span class="faint">(optional)</span></span>
+        <input class="input" bind:value={text} placeholder="e.g. jumping in place" maxlength="120" />
+      </label>
+      {#if items.length}
+        <div class="field">
+          <span class="label">Animate these items too</span>
+          {#each items as it (it.id)}
+            <label class="check"><input type="checkbox" checked={!skip.includes(it.id)} onchange={(e) => (skip = e.currentTarget.checked ? skip.filter((x) => x !== it.id) : [...skip, it.id])} />{it.name}
+              <span class="faint small">{poseGens(1, est?.frames ?? 8, dirs)} gens</span></label>
+          {/each}
+          <p class="faint small">Items you leave out stay hidden in this move until they are made again.</p>
+        </div>
+      {/if}
+      <details class="disclosure">
+        <summary><ChevronRight size={14} />Details</summary>
+        <div>
+          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions (west mirrored) · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · failed checks re-roll once.</p>
+        </div>
+      </details>
+    </div>
+  {/if}
+</Sheet>

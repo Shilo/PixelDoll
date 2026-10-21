@@ -25,6 +25,8 @@ export interface CreateCharacterV3 {
   no_background?: boolean;
   outline?: string;
   detail?: string;
+  reference_image?: B64Image; // import mode: south view; with every other direction in direction_images = 0.25 gen, pixel-exact (S3)
+  direction_images?: Partial<Record<Direction, B64Image>>;
 }
 export interface CharacterAnimation {
   character_id: string;

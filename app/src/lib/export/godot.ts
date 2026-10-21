@@ -2,13 +2,14 @@
 // Paths are relative to godot/, so the export folder can live anywhere under res://.
 import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
+import { layerFrame } from '../compose/compose.ts';
 
 const q = JSON.stringify;
 const num = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
 export function spriteFramesTres(m: Manifest, itemId: string, layerId: string): string {
-  const { rig } = m, { w, h } = rig.cell;
-  const layer = m.items.find((i) => i.id === itemId)!.layers.find((l) => l.id === layerId)!;
+  const { rig } = m;
+  const layer = m.items.find((i) => i.id === itemId)!.layers.find((l) => l.id === layerId)!, { w, h } = layerFrame(rig, layer);
   const ext = rig.animations.map((a) => `[ext_resource type="Texture2D" path=${q('../' + layer.sheets![a.id])} id=${q(a.id)}]`);
   const subs: string[] = [], anims: string[] = [];
   for (const a of rig.animations) {
@@ -26,14 +27,14 @@ export function spriteFramesTres(m: Manifest, itemId: string, layerId: string): 
 /** One AnimatedSprite2D per (slot, role) that any item uses; sprite_frames from the default preset. */
 export function paperdollTscn(m: Manifest): string {
   const { rig } = m, preset = m.presets[0];
-  const nodes = new Map<string, { slot: string; role: string; z: number; res?: string }>();
+  const nodes = new Map<string, { slot: string; role: string; z: number; res?: string; pivot: { x: number; y: number } }>();
   for (const s of m.slots)
     for (const it of m.items.filter((i) => i.slot === s.id))
       for (const l of it.layers) {
         const key = `${s.id}_${l.role}`;
         const on = (preset?.items[s.id] ?? (s.id === 'body' ? rig.baseItem : null)) === it.id;
-        const n = nodes.get(key) ?? { slot: s.id, role: l.role, z: l.z };
-        if (on) Object.assign(n, { z: l.z, res: `${it.id}_${l.id}` });
+        const n = nodes.get(key) ?? { slot: s.id, role: l.role, z: l.z, pivot: rig.pivot };
+        if (on) Object.assign(n, { z: l.z, res: `${it.id}_${l.id}`, pivot: layerFrame(rig, l) }); // oversize layers: own pivot
         nodes.set(key, n);
       }
   const res = [...new Set([...nodes.values()].flatMap((n) => (n.res ? [n.res] : [])))];
@@ -52,7 +53,7 @@ export function paperdollTscn(m: Manifest): string {
       `z_index = ${n.z}`,
       ...(n.res ? [`sprite_frames = ExtResource(${q(n.res)})`, `animation = &${q(first)}`] : []),
       'centered = false',
-      `offset = Vector2(${-rig.pivot.x}, ${-rig.pivot.y})`,
+      `offset = Vector2(${-n.pivot.x}, ${-n.pivot.y})`,
       `metadata/slot = ${q(n.slot)}`,
       `metadata/role = ${q(n.role)}`,
       '',
@@ -63,6 +64,8 @@ export function paperdollTscn(m: Manifest): string {
 export const PAPERDOLL_GD = `extends Node2D
 ## PixelDoll paperdoll (pixeldoll/1). body_fg is the clock: every other layer copies its animation, frame and
 ## progress on frame_changed, so layers cannot drift. Reads ../manifest.json; no per-project data in this script.
+## Oversize layers (e.g. a 96x96 sword) have their own cell and pivot: equip sets each node's offset to -layer.pivot, so
+## every layer's pivot lands on the node origin.
 
 signal equipment_changed
 
@@ -114,6 +117,8 @@ func _refresh() -> void:
 			var frames: SpriteFrames = load(_here.path_join("%s_%s.tres" % [equipped[node.get_meta("slot")], layer["id"]]))
 			if node.sprite_frames != frames:
 				node.sprite_frames = frames
+			var pv: Dictionary = layer.get("pivot", manifest["rig"]["pivot"])
+			node.offset = -Vector2(pv["x"], pv["y"])
 	_sync()
 	equipment_changed.emit()
 
@@ -194,4 +199,9 @@ export function selfTest() {
   const s = paperdollTscn(m);
   console.assert(s.includes('[node name="body_fg" type="AnimatedSprite2D" parent="."]') && s.includes('offset = Vector2(-32, -60)'), 'tscn: body node + pivot offset');
   console.assert(s.indexOf('"back_bg"') < s.indexOf('"body_fg"') && s.includes('visible = false\nz_index = 4'), 'tscn: z-sorted, unequipped slot hidden');
+  // oversize layer: own region size and node offset
+  Object.assign(m.items[1].layers[0], { cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } });
+  m.presets[0].items.back = 'cape';
+  console.assert(spriteFramesTres(m, 'cape', 'fg').includes('region = Rect2(96, 96, 96, 96)'), 'tres: oversize region');
+  console.assert(paperdollTscn(m).includes('offset = Vector2(-48, -76)') && PAPERDOLL_GD.includes('node.offset = -Vector2(pv["x"], pv["y"])'), 'tscn/gd: oversize offset');
 }

@@ -7,9 +7,11 @@ import { binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts
 import { encodePngBytes } from '../image/pngraw.ts';
 import * as db from '../store/db.ts';
 import { saveItem, type StoredProject } from '../store/project.ts';
-import type { Item, Manifest, Project, Provenance } from '../store/manifest.ts';
+import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifest.ts';
 import type { DirectionName } from '../rig/rig.ts';
-import { GATES, SLOTS, bandOf, buildItem, canPose, extractCell, inputCell, itemPrompt, itemQa, itemRoute, planItem, restKey, slotOf, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { fromApi } from '../rig/poses.ts';
+import { chromaLayer } from '../image/chroma.ts';
+import { GATES, SLOTS, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, inputCell, itemPrompt, itemQa, itemRoute, planItem, restKey, slotOf, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind }
@@ -28,14 +30,14 @@ export const loadDrafts = async () => (await db.get<{ drafts: Draft[] }>('projec
 export const saveDrafts = (drafts: Draft[]) => db.put('projects', DRAFTS, { id: DRAFTS, drafts });
 
 /** Default method for a rig: skeleton posing when every needed cell has keypoints (S4 Q4), else the anchor-cell edit route. */
-export const defaultMethod = (ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs'>) => (canPose(ctx.rec.manifest.rig, ctx.rec.skeletons, spec) ? 'skel' : 'anchor');
+export const defaultMethod = (ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs'>) => (canPose(ctx.rec.manifest.rig, spec) ? 'skel' : 'anchor');
 
 /** New draft with a unique id and its call plan (spec.id is derived from name/prompt when empty; method defaults per rig). */
 export function newDraft(ctx: RigCtx, spec: Omit<ItemSpec, 'id'> & { id?: string }, taken: string[] = []): Draft {
   let id = spec.id || slug(spec.name || spec.prompt.split(/\s+/).slice(0, 3).join(' '));
   while (taken.includes(id) || ctx.rec.manifest.items.some((i) => i.id === id)) id += '_2';
   const s: ItemSpec = { ...spec, id, name: spec.name || id, method: spec.method ?? defaultMethod(ctx, spec) };
-  if (s.method === 'skel' && (s.key === 'none' || !canPose(ctx.rec.manifest.rig, ctx.rec.skeletons, s))) s.method = 'anchor';
+  if (s.method === 'skel' && (s.key === 'none' || !canPose(ctx.rec.manifest.rig, s))) s.method = 'anchor';
   return { spec: s, rigId: ctx.rec.id, calls: planItem(ctx.rec.manifest.rig, s).map((c) => ({ ...c, seed: seed(), rerolls: 0, old: [] })), keySwitched: false, log: [] };
 }
 
@@ -58,10 +60,19 @@ const outputsOf = (r: JobRec) => [...(r.jobs[0]?.results ?? [])].sort((a, b) => 
 export const gensOf = (d: Draft, list = jobs) => d.calls.flatMap((c) => [c.recId, ...c.old]).reduce((s, id) => s + (recIn(list, id)?.gens ?? 0), 0);
 export const callState = (c: CallState, list = jobs) => recIn(list, c.recId)?.state ?? 'not submitted';
 
+/** A frozen base cell, or a rest view for the pseudo key "rest/<dir>/0". */
 export function baseCell(ctx: RigCtx, k: string): Img {
-  const [a, d, i] = k.split('/') as [string, DirectionName, string];
-  return ctx.project.images.get(ctx.rec.manifest.items.find((x) => x.slot === 'body')!.layers[0].cells![a]![d]![+i]!)!;
+  const [a, d, i] = k.split('/') as [string, DirectionName, string], m = ctx.rec.manifest;
+  const h = a === 'rest' ? m.rig.rest?.[d]?.image : m.items.find((x) => x.slot === 'body')!.layers[0].cells![a]![d]![+i]!;
+  const im = h && ctx.project.images.get(h);
+  if (!im) throw new Error(`base cell ${k} not loaded`);
+  return im;
 }
+/** Keypoints of a base cell (measured) or a rest view (px). */
+const skelOf = (ctx: RigCtx, k: string) => {
+  const [a, d] = k.split('/') as [string, DirectionName], rest = ctx.rec.manifest.rig.rest?.[d];
+  return a === 'rest' ? rest && fromApi(rest.keypoints, ctx.rec.manifest.rig.cell) : ctx.rec.skeletons?.[k];
+};
 
 // ---------- calls ----------
 const blobB64 = async (sha: string) => bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
@@ -69,12 +80,13 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
   const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest;
   const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${c.cells[0].split('/').slice(0, 2).join('/')}` : ''})`;
   let req;
-  if (c.kind === 'pose') { // the direction's dressed keyframe (from the dress call) posed through the base clip's keypoints
+  if (c.kind === 'pose') { // the direction's dressed keyframe (from the dress call) posed through the base clip's STORED keypoints
     if (route === 'none') throw new Error('posing needs a chroma key');
-    const dress = d.calls[0], a = recOf(dress.recId), dir = c.cells[0].split('/')[1] as DirectionName;
+    const dress = d.calls[0], a = recOf(dress.recId), [anim, dir] = c.cells[0].split('/') as [string, DirectionName];
     if (a?.state !== 'done') throw new Error('dress call not done');
-    const kf = outputsOf(a)[dress.cells.indexOf(restKey(rig, dir))], skel = ctx.rec.skeletons!;
-    req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest: skel[restKey(rig, dir)], poses: c.cells.map((x) => skel[x]), item: d.spec.prompt, held: slotOf(d.spec.slot).class === 'held', key: route, anim: c.cells[0].split('/')[0], dir, seed: c.seed, cell: rig.cell });
+    const kf = outputsOf(a)[dress.cells.indexOf(restKey(dir))], poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
+    if (!poses || !rest) throw new Error(`${anim}/${dir}: the rig has no stored keypoints (rig v1.3)`);
+    req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest, poses, item: d.spec.prompt, held: slotOf(d.spec.slot).class === 'held', key: route, anim, dir, seed: c.seed });
   } else {
     const frames: string[] = [];
     if (k > 0) { // anchor cell: the design call's dressed cell 0 (cross-call design lock, S2)
@@ -181,10 +193,12 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
     }
   }
   const ex = (o: Out, useCc?: boolean) =>
-    extractCell({ key: o.key, call: o.k, base: baseCell(ctx, o.key), out: o.out, route, band: bandOf(d.spec.slot, ctx.rec.skeletons?.[o.key], rig.cell.h), useCc, posed: o.posed });
+    extractCell({ key: o.key, call: o.k, base: baseCell(ctx, o.key), out: o.out, route, band: bandOf(d.spec.slot, skelOf(ctx, o.key), rig.cell.h), useCc, posed: o.posed, clip: slotOf(d.spec.slot).band });
   // the dress call only makes keyframes: gate them (G2, G3, presence); they are not item cells themselves
+  const keys: Partial<Record<DirectionName, Img>> = {}; // dressed keyframe layers per direction (H4)
   for (const o of dressOuts) {
     const c = ex(o);
+    keys[o.key.split('/')[1] as DirectionName] = c.layer;
     const bad = [c.keyKept != null && c.keyKept < GATES.keyKept && `G2 keyframe ${o.key} key kept ${c.keyKept.toFixed(3)}`,
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
       !c.area && `G4 keyframe ${o.key}: item missing`].filter(Boolean);
@@ -197,8 +211,17 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
     if (cc.reduce((s, c) => s + c.area, 0) * 0.75 > cells.reduce((s, c) => s + c.area, 0)) cells = cc;
   }
   const kOut = d.spec.method === 'skel' ? GATES.keyOutsidePosed : GATES.keyOutside;
-  const qa = cells.length ? itemQa(rig, slotOf(d.spec.slot), route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut) : null;
+  const qa = cells.length ? withH4(itemQa(rig, slotOf(d.spec.slot), route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut), slotOf(d.spec.slot), cells, keys) : null;
   return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa) : null };
+}
+/** itemQa + the H4 keyframe-consistency gate (posed cells only). */
+function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>): QaResult {
+  const h = dirGate(slot, cells, keys);
+  for (const [k, why] of h.fails) q.failCalls.set(k, [...(q.failCalls.get(k) ?? []), ...why]);
+  q.warnings.push(...h.warnings);
+  if (h.fails.size) q.qa.status = 'fail';
+  else if (h.warnings.length && q.qa.status === 'pass') q.qa.status = 'warn';
+  return q;
 }
 /** The rig project with this draft equipped (for compose previews in every direction, mirrored ones included). */
 async function previewProject(d: Draft, ctx: RigCtx, cells: CellOut[], qa: QaResult): Promise<Project> {
@@ -231,4 +254,54 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
   await saveItem(d.rigId, item, images, SLOTS);
   d.acceptedAt = new Date().toISOString();
   return { item, cells: images.size };
+}
+
+// ---------- new clips on accepted items (architecture §4.1: "adding a clip later = one pose call per item-direction") ----------
+/** Accepted skeleton-pose items that can be posed onto a new clip (dressed keyframes + key, made for this base). */
+export const posable = (m: Manifest) => m.items.filter((i) => i.slot !== 'body' && i.route === 'skeleton-pose' && i.key && i.dressed && i.baseHash === m.rig.baseHash);
+/** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions (raw skeleton-v3: 3 gens for ≤ 8 frames). */
+export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * (cells <= 3 ? 2 : cells <= 8 ? 3 : 4);
+const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
+
+/**
+ * Pose an accepted item's dressed keyframes through a clip's stored keypoints (one call per generated direction, one re-roll
+ * on a failed gate), extract the layer and write the clip's cells into the item. Seeds derive from item/clip/direction, so a
+ * reload re-attaches to the ledger. Returns the clip QA.
+ */
+export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}): Promise<QaResult> {
+  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!;
+  const dirs = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
+  const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
+  for (const d of dirs) keys[d] = chromaLayer(await img(item.dressed![d]!.slice(7)), key, baseCell(ctx, restKey(d))).layer;
+  const perDir = await Promise.all(dirs.map(async (dir, k) => {
+    const poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
+    if (!poses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
+    const cells = poses.map((_, i) => `${anim}/${dir}/${i}`);
+    let last: CellOut[] = [];
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}`);
+      const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, held: slot.class === 'held', key, anim, dir, seed });
+      const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
+      const r = terminal(rec) ? rec : await settled(rec.id);
+      onCall();
+      if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
+      const outs = outputsOf(r);
+      if (outs.length !== cells.length) continue; // G1: re-roll
+      last = await Promise.all(cells.map(async (c, i) => extractCell({ key: c, call: k, base: baseCell(ctx, c), out: await img(outs[i].sha), route: key, band: bandOf(item.slot, skelOf(ctx, c), rig.cell.h), posed: true, clip: slot.band })));
+      const pass = !withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed), slot, last, keys).failCalls.size;
+      if (pass || attempt) { prov.push(toProv(r, { cells, seed, rerolls: attempt, old: [] })); break; }
+    }
+    return last;
+  }));
+  const cells = perDir.flat();
+  if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
+  const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed), slot, cells, keys);
+  const spec: ItemSpec = { id: item.id, name: item.name, slot: item.slot, prompt: item.prompt, key, anims: [anim], dirs, method: 'skel' };
+  const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa });
+  const out: Item = structuredClone(item);
+  out.layers.forEach((l, j) => { l.cells = { ...l.cells, [anim]: built.item.layers[j].cells![anim] }; });
+  out.provenance = [...out.provenance, ...prov];
+  if (out.qa) out.qa = { ...out.qa, cells: { ...out.qa.cells, ...q.qa.cells }, status: q.qa.status === 'pass' || out.qa.status !== 'pass' ? out.qa.status : 'warn' };
+  await saveItem(ctx.rec.id, out, built.images, SLOTS);
+  return q;
 }

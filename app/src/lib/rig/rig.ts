@@ -9,12 +9,26 @@ export type AnchorId = 'head' | 'neck' | 'hand_r' | 'hand_l' | 'hip' | 'foot_r' 
 export const ANCHORS: AnchorId[] = ['head', 'neck', 'hand_r', 'hand_l', 'hip', 'foot_r', 'foot_l'];
 
 export interface RigDirection { id: DirectionName; mirrorOf?: DirectionName }
+/** API keypoint (manifest-spec v1.3): x/y 0..1 of the cell, the character's left/right, z omitted. */
+export interface Keypoint { label: string; x: number; y: number }
+/** Padded rest rotation: first frame of every clip and the source of every item keyframe. */
+export interface RestView { image: Sha256; keypoints: Keypoint[] }
+/** How one clip-direction was made. Stored, never regenerated (PixelLab is not bit-repeatable). */
+export interface ClipSource {
+  route: 'skeleton-v3' | 'pixminimax' | 'v3' | 'import';
+  reference: Sha256; // first_frame sent (rig.rest[dir].image)
+  keypoints?: Keypoint[][]; // [cell][18]: the sequence sent to raw skeleton-v3; items are posed with exactly this
+  motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "pixminimax:<text>"
+  measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (QA, anchors)
+  provenance: number[]; // indexes into the base item's provenance
+}
 export interface RigAnimation {
   id: string;
   cells: number;
   loop: boolean;
   frames: { cell: number; ms: number }[];
   source?: { endpoint: string; mode?: string; template_animation_id?: string; action_description?: string };
+  sources?: Partial<Record<DirectionName, ClipSource>>; // v1.3: generated directions only (mirrors derive)
 }
 /** points[anim][dir][cell] = [x, y] pixel index (column, row). Mirrored directions included. */
 export type AnchorTrack = Record<string, Partial<Record<DirectionName, [number, number][]>>>;
@@ -25,7 +39,8 @@ export interface Rig {
   animations: RigAnimation[];
   baseItem: string;
   baseHash: Sha256;
-  pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 16)
+  pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
+  rest?: Partial<Record<DirectionName, RestView>>; // v1.3: generated directions only
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 

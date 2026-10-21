@@ -12,26 +12,29 @@ export interface StoredProject {
   manifest: Manifest;
   skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
   rigQa?: unknown;
+  character?: { id: string; looks: string }; // v1.3: managed rest character (motion source) + the base's looks description
 }
 
 export const listProjects = async () =>
   (await db.all<StoredProject>('projects')).filter((p) => p?.manifest?.format === 'pixeldoll/1' && p.id?.startsWith('rig-'));
 
-/** Decode every cell referenced by the manifest's layers into Project.images. */
+/** Decode every cell referenced by the manifest's layers (and the v1.3 rest views) into Project.images. */
 export async function loadProject(id: string): Promise<{ rec: StoredProject; project: Project }> {
   const rec = await db.get<StoredProject>('projects', id);
   if (!rec) throw new Error(`project ${id} not found`);
   const images = new Map<string, Img>();
+  const add = async (h: Sha256 | null | undefined, owner: string) => {
+    if (!h || images.has(h)) return;
+    const b = await db.getBlob(h.slice(7));
+    if (!b) throw new Error(`${owner}: cell blob ${h.slice(0, 19)} missing`);
+    images.set(h, await decodePng(b));
+  };
+  for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');
   for (const it of rec.manifest.items)
     for (const l of it.layers)
       for (const dirs of Object.values(l.cells ?? {}))
         for (const cells of Object.values(dirs ?? {}))
-          for (const h of cells ?? []) {
-            if (!h || images.has(h)) continue;
-            const b = await db.getBlob(h.slice(7));
-            if (!b) throw new Error(`${it.id}: cell blob ${h.slice(0, 19)} missing`);
-            images.set(h, await decodePng(b));
-          }
+          for (const h of cells ?? []) await add(h, it.id);
   return { rec, project: { manifest: rec.manifest, images } };
 }
 

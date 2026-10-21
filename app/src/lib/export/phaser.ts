@@ -1,10 +1,11 @@
 // Phaser 3.80+ / 4 export (manifest-spec §6.4): one TexturePacker JSON-Hash atlas per sheet + PaperdollContainer.js.
 import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
+import { layerFrame } from '../compose/compose.ts';
 
 export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: string) {
-  const { rig } = m, { w, h } = rig.cell;
-  const it = m.items.find((i) => i.id === itemId)!, l = it.layers.find((x) => x.id === layerId)!;
+  const { rig } = m;
+  const it = m.items.find((i) => i.id === itemId)!, l = it.layers.find((x) => x.id === layerId)!, { w, h, x: px, y: py } = layerFrame(rig, l);
   const a = rig.animations.find((x) => x.id === anim)!;
   const frames: Record<string, unknown> = {};
   rig.directions.forEach((d, r) => {
@@ -12,7 +13,7 @@ export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: st
       frames[`${anim}_${d.id}_${c}`] = {
         frame: { x: c * w, y: r * h, w, h }, rotated: false, trimmed: false,
         spriteSourceSize: { x: 0, y: 0, w, h }, sourceSize: { w, h },
-        pivot: { x: rig.pivot.x / w, y: rig.pivot.y / h },
+        pivot: { x: px / w, y: py / h }, // per layer: oversize layers line up with the body by pivot
       };
   });
   return {
@@ -130,4 +131,7 @@ export function selfTest() {
   const f = j.frames['walk_east_3'] as { frame: { x: number; y: number }; pivot: { x: number; y: number } };
   console.assert(Object.keys(j.frames).length === 16 && f.frame.x === 192 && f.frame.y === 64, 'atlas: 16 frames, east row');
   console.assert(f.pivot.x === 0.5 && f.pivot.y === 60 / 64 && j.meta.size.w === 512 && j.pixeldoll.z === 10, 'atlas: normalized pivot, size, customData');
+  Object.assign(m.items[0].layers[0], { cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } });
+  const o = atlasJson(m, 'base', 'main', 'walk'), g = o.frames['walk_east_3'] as typeof f & { frame: { w: number } };
+  console.assert(g.frame.x === 288 && g.frame.y === 96 && g.frame.w === 96 && g.pivot.y === 76 / 96 && o.meta.size.h === 192, 'atlas: oversize layer rect + pivot');
 }

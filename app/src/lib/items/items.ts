@@ -5,16 +5,19 @@ import { diffLayer, type Rect } from '../image/diff.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { over } from '../compose/compose.ts';
 import { splitFgBg } from '../compose/split.ts';
-import { cellHash, cellKey, type DirectionName, type Rig, type Sha256 } from '../rig/rig.ts';
+import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
+import { hasAll } from '../rig/poses.ts';
+import { actionOf, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { png, routes, type Req } from '../pixellab/routes.ts';
 
 /**
  * Item routes (S4 §Q4), swappable without touching extraction, QA or the UI:
- * - `skel` (default on rigs with per-cell keypoints): ONE edit-animation-v2 call dresses the chroma rest cells (S/E/N), then
- *   each clip × direction poses its dressed keyframe with the base clip's keypoints via raw animate-with-skeleton-v3
- *   (one design everywhere, held items follow the hand; ≈ 10 + 3 gens per clip-direction).
+ * - `skel` (default on v1.3 rigs): ONE edit-animation-v2 call dresses the chroma REST VIEWS (S/E/N), then each clip ×
+ *   direction poses its dressed keyframe via raw animate-with-skeleton-v3 with EXACTLY the stored keypoint sequence the base
+ *   clip was rendered from (rig.animations[].sources[dir].keypoints, first frame keypoints = rig.rest[dir].keypoints): same
+ *   request shape as the base, so the layers align (S3). No estimated fallback: rigs without stored sources use `anchor`.
  * - `anchor` (S2): edit-animation-v2 on ≤16 packed chroma cells per call, later calls carry one dressed anchor cell.
  */
 export type Method = 'skel' | 'anchor';
@@ -26,27 +29,26 @@ export const itemRoute = {
     const size = { width: cell.w, height: cell.h };
     return routes.editAnimationV2({ description, frames: framesPngB64.map((b) => ({ image: png(b), size })), image_size: size, no_background: true, seed });
   },
-  /** Pose a dressed chroma keyframe (in pose `rest`) through the clip's keypoints; returns frames in keypoint order. */
-  pose: (o: { keyframePngB64: string; rest: Skeleton; poses: Skeleton[]; item: string; held: boolean; key: Key; anim: string; dir: DirectionName; seed: number; cell: { w: number; h: number } }): Req =>
-    routes.animateWithSkeletonV3({
-      description: `solid ${o.key === 'green' ? 'bright green' : 'magenta'} mannequin (chroma key colour) ${o.held ? 'holding' : 'wearing'} ${o.item}`,
+  /** Pose a dressed chroma keyframe (in pose `rest`) through a stored keypoint sequence; returns frames in keypoint order. */
+  pose: (o: { keyframePngB64: string; rest: Keypoint[]; poses: Keypoint[][]; item: string; held: boolean; key: Key; anim: string; dir: DirectionName; seed: number }): Req =>
+    rawClip({
+      // B7 live: "slash" drew a blade into a helmet layer although the action said "no weapon" -> say it in the looks too
+      description: `solid ${o.key === 'green' ? 'bright green' : 'magenta'} mannequin (chroma key colour) ${o.held ? 'holding' : 'wearing'} ${o.item}${o.held ? '' : ', empty hands, no weapon'}`,
       // M3: a "slash" pose made the model draw a sword into a helmet layer -> unarmed unless the item is the held object
-      action: (o.anim.includes('idle') ? 'breathing idle' : o.anim.includes('walk') ? 'walking' : o.anim) + (o.held ? '' : ', empty hands, no weapon, no effects'),
-      direction: o.dir, view: 'low top-down', first_frame: png(o.keyframePngB64),
-      first_frame_keypoints: apiKeypoints(o.rest, o.cell), keypoints: o.poses.map((p) => apiKeypoints(p, o.cell)), seed: o.seed, no_background: true,
+      action: actionOf(o.anim) + (o.held ? '' : ', empty hands, no weapon, no effects'),
+      dir: o.dir, first: o.keyframePngB64, rest: o.rest, keypoints: o.poses, seed: o.seed,
     }),
 };
-const LABELS = ['NOSE', 'NECK', 'RIGHT SHOULDER', 'RIGHT ELBOW', 'RIGHT ARM', 'LEFT SHOULDER', 'LEFT ELBOW', 'LEFT ARM', 'RIGHT HIP', 'RIGHT KNEE', 'RIGHT LEG', 'LEFT HIP', 'LEFT KNEE', 'LEFT LEG', 'RIGHT EYE', 'LEFT EYE', 'RIGHT EAR', 'LEFT EAR'];
-/** px skeleton -> API keypoints (0-1, all 18 labels, z omitted so depth comes from the mannequin template: S3). */
-export const apiKeypoints = (s: Skeleton, cell: { w: number; h: number }) =>
-  LABELS.map((l) => ({ label: l, x: +Math.min(1, Math.max(0, s[l].x / cell.w)).toFixed(4), y: +Math.min(1, Math.max(0, s[l].y / cell.h)).toFixed(4) }));
-/** The rest cell a direction's keyframe is dressed on: idle cell 0, else walk cell 0, else the first animation's. */
-export const restKey = (rig: Rig, dir: DirectionName) =>
-  cellKey((rig.animations.find((a) => a.id.includes('idle')) ?? rig.animations.find((a) => a.id.includes('walk')) ?? rig.animations[0]).id, dir, 0);
-const hasAll = (s?: Skeleton) => !!s && LABELS.every((l) => s[l]);
-/** Can the skel route run? Needs keypoints for every generated cell of the chosen clips (M2 "estimate skeletons"). */
-export const canPose = (rig: Rig, skel: Record<string, Skeleton> | undefined, spec: Pick<ItemSpec, 'anims' | 'dirs'>) =>
-  spec.dirs.every((d) => hasAll(skel?.[restKey(rig, d)]) && spec.anims.every((a) => Array.from({ length: rig.animations.find((x) => x.id === a)?.cells ?? 0 }, (_, i) => skel?.[cellKey(a, d, i)]).every(hasAll)));
+/** Pseudo cell key of a direction's rest view (the dress call's input and its keyframe output). */
+export const restKey = (dir: DirectionName) => cellKey('rest', dir, 0);
+/** The stored keypoint sequence of a clip-direction (v1.3), or undefined. */
+export const clipKeypoints = (rig: Rig, anim: string, dir: DirectionName) => {
+  const a = rig.animations.find((x) => x.id === anim), k = a?.sources?.[dir]?.keypoints;
+  return k && k.length === a!.cells && k.every(hasAll) ? k : undefined;
+};
+/** Can the skel route run? Needs the v1.3 rest views and the stored keypoint sequence of every chosen clip-direction. */
+export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>) =>
+  spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints) && spec.anims.every((a) => !!clipKeypoints(rig, a, d)));
 
 /** Default slot ladder (architecture §4). Array order = tie-break for equal z. */
 export const SLOTS: Slot[] = [
@@ -62,8 +64,8 @@ export const SLOTS: Slot[] = [
   { id: 'back', z: 90, bgZ: 4, class: 'worn', anchor: 'neck' },
   { id: 'facial_hair', z: 100, class: 'rigid', anchor: 'head' },
   { id: 'hair', z: 110, bgZ: 3, class: 'rigid', anchor: 'head' },
-  { id: 'face_acc', z: 120, class: 'rigid', anchor: 'head' },
-  { id: 'head', z: 130, class: 'rigid', anchor: 'head', hides: ['hair'] },
+  { id: 'face_acc', z: 120, class: 'rigid', anchor: 'head', band: true },
+  { id: 'head', z: 130, class: 'rigid', anchor: 'head', hides: ['hair'], band: true },
   { id: 'off_hand', z: 140, bgZ: 2, class: 'held', anchor: 'hand_l' },
   { id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r' },
 ];
@@ -76,7 +78,7 @@ export interface ItemSpec { id: string; name: string; slot: string; prompt: stri
 export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'method' | 'key'>): { kind: CallKind; cells: string[] }[] {
   if (spec.method !== 'skel' || spec.key === 'none') return planCalls(rig, spec).map((cells) => ({ kind: 'edit', cells }));
   return [
-    { kind: 'dress', cells: spec.dirs.map((d) => restKey(rig, d)) },
+    { kind: 'dress', cells: spec.dirs.map(restKey) },
     ...spec.anims.flatMap((a) => spec.dirs.map((d) => ({ kind: 'pose' as const, cells: Array.from({ length: rig.animations.find((x) => x.id === a)!.cells }, (_, i) => cellKey(a, d, i)) }))),
   ];
 }
@@ -204,13 +206,16 @@ function translate(im: Img, dx: number, dy: number): Img {
   return o;
 }
 
-export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean }): CellOut {
+export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean }): CellOut {
   const { base, route, band } = o, { w, h } = base;
   // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
   const reg = o.posed ? bestShift(base, o.out) : ([0, 0] as [number, number]);
   const out = reg[0] || reg[1] ? translate(o.out, -reg[0], -reg[1]) : o.out;
   let r: { layer: Img; mask: Uint8Array; stray?: number } = route === 'none' ? diffLayer(base, out, band, o.useCc) : chromaLayer(out, route, base);
-  if (o.posed) r = majorComponents(r, w, h);
+  if (o.posed && o.clip) { // head items live above the neck: px below the band are smears/props the pose invented (B7 live)
+    for (let p = 0; p < r.mask.length; p++) if (r.mask[p] && ((p / w) | 0) >= band.y + band.h) { r.mask[p] = 0; r.layer.data.fill(0, p * 4, p * 4 + 4); r.stray = (r.stray ?? 0) + 1; }
+  }
+  if (o.posed) { const st = r.stray ?? 0; r = majorComponents(r, w, h); r.stray = (r.stray ?? 0) + st; }
   let outBand = 0, baseBand = 0;
   for (let p = 0; p < r.mask.length; p++) {
     const inBand = (p / w | 0) >= band.y && (p / w | 0) < band.y + band.h;
@@ -381,6 +386,60 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
   };
 }
 
+// ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------
+const maskOf = (im: Img) => { const m = new Uint8Array(im.w * im.h); for (let p = 0; p < m.length; p++) m[p] = im.data[p * 4 + 3] ? 1 : 0; return m; };
+const despeck = (im: Img) => {
+  const o = makeImg(im.w, im.h);
+  for (const c of components(maskOf(im), im.w, im.h)) if (c.length >= 4) for (const p of c) o.data.set(im.data.subarray(p * 4, p * 4 + 4), p * 4);
+  return o;
+};
+/** Appearance similarity of layer A to keyframe layer K after centroid alignment (±1 px): over the union of both masks a pixel
+ * scores 1 − maxChannelDiff/128 when both are opaque, 0 when only one is; K px landing on `occ` (visible mannequin) are skipped. */
+export function simAligned(A: Img, K: Img, occ?: Uint8Array): number {
+  const { w, h } = A, a = maskOf(A), b = maskOf(K), ca = centroid(a, w), cb = centroid(b, w);
+  if (!ca || !cb) return 0;
+  let best = 0;
+  for (let ey = -1; ey <= 1; ey++)
+    for (let ex = -1; ex <= 1; ex++) {
+      const dx = Math.round(cb[0] - ca[0]) + ex, dy = Math.round(cb[1] - ca[1]) + ey;
+      let S = 0, U = 0;
+      for (let y = 0; y < h; y++)
+        for (let x = 0; x < w; x++) {
+          const p = y * w + x, X = x + dx, Y = y + dy, inB = X >= 0 && Y >= 0 && X < w && Y < h && b[Y * w + X];
+          if ((!a[p] && !inB) || (!a[p] && occ?.[p])) continue;
+          U++;
+          const q = (Y * w + X) * 4;
+          if (a[p] && inB) S += Math.max(0, 1 - Math.max(Math.abs(A.data[p * 4] - K.data[q]), Math.abs(A.data[p * 4 + 1] - K.data[q + 1]), Math.abs(A.data[p * 4 + 2] - K.data[q + 2])) / 128);
+        }
+      best = Math.max(best, U ? S / U : 0);
+    }
+  return best;
+}
+const OPP: Partial<Record<DirectionName, DirectionName>> = { south: 'north', north: 'south' };
+export const H4 = { own: 0.75, oppMargin: 0.1 };
+/**
+ * H4: a posed layer must look like its own direction's dressed keyframe layer. Rigid (head) items: own < 0.75 fails in every
+ * view (S5: a visor on a back view; B7 live: a blade drawn into a helmet's slash frames); worn items (torso, back): front/back
+ * review warning only (cloth deforms). Off for feet and held items. Thresholds from S5's labelled helmet run (good ≥ 0.93).
+ */
+export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>): { fails: Map<number, string[]>; warnings: string[] } {
+  const fails = new Map<number, string[]>(), warnings: string[] = [];
+  if (slot.class === 'held' || slot.id === 'feet') return { fails, warnings };
+  for (const c of cells) {
+    const dir = c.key.split('/')[1] as DirectionName, opp = OPP[dir];
+    if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp)) continue;
+    const L = despeck(c.layer), occ = new Uint8Array(c.mask.length);
+    for (let p = 0; p < occ.length; p++) occ[p] = c.out.data[p * 4 + 3] && !c.mask[p] ? 1 : 0;
+    const own = simAligned(L, despeck(keys[dir]!), occ);
+    if (own >= H4.own) continue;
+    const other = opp && keys[opp] ? simAligned(L, despeck(keys[opp]!), occ) : 0;
+    const why = `H4 ${c.key}: ${other >= own - H4.oppMargin ? 'looks like the opposite view' : 'does not match its keyframe (extra or missing parts)'} (own ${own.toFixed(2)}${opp ? `, opposite ${other.toFixed(2)}` : ''})`;
+    if (slot.class === 'rigid') (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);
+    else warnings.push(why);
+  }
+  return { fails, warnings };
+}
+
 // ---------- manifest Item ----------
 /** Accepted item: layers (main, or fg + bg for slots with bgZ) with cell hashes for every selected anim × generated dir. */
 export async function buildItem(o: {
@@ -448,7 +507,7 @@ export async function selfTest() {
   const calls = planCalls(rig, { anims: ['idle', 'walk'], dirs: ['south', 'east', 'north'] });
   console.assert(calls.map((c) => c.length).join() === '16,12,8' && calls[0][0] === 'walk/south/0' && calls[1][8] === 'idle/south/0', `packing ${calls.map((c) => c.length)}`);
   const sk = planItem(rig, { anims: ['idle', 'walk'], dirs: ['south', 'east', 'north'], method: 'skel', key: 'green' });
-  console.assert(sk.length === 7 && sk[0].kind === 'dress' && sk[0].cells.join() === 'idle/south/0,idle/east/0,idle/north/0' && sk[6].cells.length === 8 && planGens(sk) === 10 + 3 * 3 + 3 * 3, `planItem skel ${planGens(sk)}`);
+  console.assert(sk.length === 7 && sk[0].kind === 'dress' && sk[0].cells.join() === 'rest/south/0,rest/east/0,rest/north/0' && sk[6].cells.length === 8 && planGens(sk) === 10 + 3 * 3 + 3 * 3, `planItem skel ${planGens(sk)}`);
   const two: Img = { w: 2, h: 1, data: new Uint8ClampedArray([10, 0, 0, 255, 250, 0, 0, 255]) };
   console.assert(paletteDistance([10 << 16], [two]) === 120, 'paletteDistance is pixel-weighted');
   console.assert(cellsNote(calls[1], 'walk/south/0') === 'Cells in order: frame 1 = reference (walk facing south (front view)), then 8 cells walk facing north (back view), 4 cells idle facing south (front view). ', 'cellsNote');
@@ -478,4 +537,12 @@ export async function selfTest() {
   const { item, images } = await buildItem({ spec: { id: 'h', name: 'H', slot: 'back', prompt: 'p', key: 'green', anims: ['idle'], dirs: ['south'] }, rig, cells: cs, route: 'green', provenance: [], qa: q.qa });
   console.assert(item.layers.map((l) => l.id).join() === 'fg,bg' && item.layers[0].cells!.idle!.south!.length === 4 && images.size === 1, 'buildItem split layers');
   console.assert(item.layers[1].cells!.idle!.south![0] === null, 'bg empty -> transparent cell');
+  const block = makeImg(8, 8);
+  for (let y = 3; y < 6; y++) for (let x = 3; x < 6; x++) block.data.set([90, 90, 100, 255], (y * 8 + x) * 4);
+  const cell = { ...cs[0], posed: true, layer: block, mask: new Uint8Array(64), area: 9 };
+  console.assert(simAligned(block, block) === 1 && !dirGate(slotOf('head'), [cell], { south: block }).fails.size, 'H4: same layer passes');
+  const blade = { ...cell, layer: makeImg(8, 8) };
+  blade.layer.data.set(block.data);
+  for (const p of [0, 1, 2, 8, 9, 10, 16]) blade.layer.data.set([200, 200, 210, 255], p * 4); // a foreign object attached to the item
+  console.assert(dirGate(slotOf('head'), [blade], { south: block }).fails.get(0)?.[0].startsWith('H4') === true && !dirGate(slotOf('main_hand'), [blade], { south: block }).fails.size, 'H4: extra parts fail rigid items, held items are skipped');
 }

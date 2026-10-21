@@ -16,7 +16,8 @@
   import NewItemSheet from './NewItemSheet.svelte'
   import ExportSheet from './ExportSheet.svelte'
   import ActivitySheet from './ActivitySheet.svelte'
-  import { ui, doc, store, view, gens, creating, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, undo, redo, genProgress } from './state.svelte.ts'
+  import MoveSheet from './MoveSheet.svelte'
+  import { ui, doc, store, view, gens, creating, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, undo, redo, genProgress } from './state.svelte.ts'
   import { Palette, PersonStanding, Shirt } from './icons.ts'
 
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
@@ -29,6 +30,7 @@
       await openProject(lastProject())
       await loadGens()
       await resumeCreate()
+      await resumeMove()
     })()
     return () => { off(); delete document.documentElement.dataset.app }
   })
@@ -121,6 +123,7 @@
   {#if ui.sheet === 'newitem'}<NewItemSheet />{/if}
   {#if ui.sheet === 'export'}<ExportSheet />{/if}
   {#if ui.sheet === 'activity'}<ActivitySheet />{/if}
+  {#if ui.sheet === 'move'}<MoveSheet />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
     <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><ItemPane id={ui.selected} /></Sheet>
   {/if}

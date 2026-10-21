@@ -15,7 +15,7 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
 **Goals**
 
 1. Produce **traditional frame-based paperdoll assets**: one frozen base (directions × clips × frames on one fixed cell and
-   pivot) plus any number of **frame-aligned, separately exportable item layers**. Every layer sheet has the base's grid.
+   pivot) plus any number of **frame-aligned, separately exportable item layers**. Every layer sheet has the base's grid (held items may use an oversize 96 cell around the same pivot: spec §2.1 v1.3.1 [S5, B8]).
    Transparent cells are emitted, never omitted.
 2. **Every pixel comes from PixelLab.** PixelDoll only pads, recolours to a key, keys, drops stray components and composes. It
    never draws or resamples.
@@ -24,8 +24,7 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
    Unity compiles, live check deferred [D5].
 5. **Fully client-side** on GitHub Pages; the browser calls `https://api.pixellab.ai/v2` with the user's key [D1].
 
-**Non-goals (v1)**: layers from character states; body-shape axis (one base per project, items bound by `baseHash`); oversize
-cells; bones/IK at runtime (skeletons are a *generation* tool, not an export feature); semi-transparent VFX; backend.
+**Non-goals (v1)**: layers from character states; body-shape axis (one base per project, items bound by `baseHash`); bones/IK at runtime (skeletons are a *generation* tool, not an export feature); semi-transparent VFX; backend.
 
 ## 2. Allowed models [D8, S4]
 
@@ -47,7 +46,7 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 | Property | Decision | Evidence |
 |---|---|---|
 | Cell | **64×64** square. | Pro editors fit 16 frames at ≤64 px [S1]. |
-| Base character | `create-character-v3` text at **48 px**, clothed (plain grey t-shirt + grey shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded to 64 (x+8, y+16), never rescaled** → 16–20 px headroom. Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
+| Base character | `create-character-v3` text at **48 px**, clothed (plain grey t-shirt + grey shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded to 64 (x+8, y+12: 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
 | Rest views | The padded S/E/N rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
 | Directions | `south, east, north` generated; `west.mirrorOf = east` (8-dir: 5 + 3 mirrored). Mirroring flips pixels and puts held items in the other hand: accepted for `mirror: "flip"`, else `mirror: "generate"`. | [M2, S3] |
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalised 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |

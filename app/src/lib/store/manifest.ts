@@ -1,7 +1,7 @@
 // pixeldoll/1 manifest types (docs/manifest-spec.md §2). Rig types live in rig/rig.ts.
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Rig, Sha256 } from '../rig/rig.ts';
-export type { DirectionName, Rig, RigAnimation, RigDirection, Sha256 } from '../rig/rig.ts';
+export type { ClipSource, DirectionName, Keypoint, RestView, Rig, RigAnimation, RigDirection, Sha256 } from '../rig/rig.ts';
 
 export type Hex = `#${string}`;
 export type CellKey = `${string}/${DirectionName}/${number}`;
@@ -89,6 +89,8 @@ export interface Layer {
   z: number;
   cells?: Record<string, Partial<Record<DirectionName, (Sha256 | null)[]>>>; // project; null = transparent
   sheets?: Record<string, string>; // export manifest; anim -> sheet path
+  cell?: { w: number; h: number }; // v1.3.1 oversize layer (held items: 96x96); default rig.cell; always written in manifest.json
+  pivot?: { x: number; y: number }; // same body point in this layer's cell (rig.pivot + pad); default rig.pivot
 }
 export interface Provenance {
   endpoint: string;
@@ -113,6 +115,8 @@ export interface ExportInfo {
   engines: Engine[];
   pixelsPerUnit: number;
   baked?: string[];
+  bakedCell?: { w: number; h: number }; // v1.3.1: baked composite cell = union of every exported layer around the pivot
+  bakedPivot?: { x: number; y: number };
 }
 
 /** In-memory project: the manifest plus decoded cell images keyed by hash. */

@@ -1,6 +1,6 @@
 <script lang="ts">
   // Material swatches: each option is the REAL variant ramp (lib/dress exact index swap), drawn as its colour steps.
-  import { SWATCHES, variantOf, variantRampOf } from '../lib/dress/dress.ts'
+  import { SWATCHES, materialNames, variantOf, variantRampOf } from '../lib/dress/dress.ts'
   import type { Hex, Material } from '../lib/store/manifest.ts'
   import { doc, store, setVariant, resetColours, randomize } from './state.svelte.ts'
   import { Plus, RotateCcw, Shuffle } from './icons.ts'
@@ -9,11 +9,12 @@
   const m = $derived(store.project?.manifest)
   const items = $derived(m ? m.items.filter((it) => (only ? it.id === only : it.id === m.rig.baseItem || doc.items[it.slot] === it.id)) : [])
   const matsOf = (id: string) => (m ? m.materials.filter((x) => x.owner === id) : [])
-  const steps = (r: Hex[]) => (r.length <= 5 ? r : [0, 1, 2, 3, 4].map((i) => r[Math.round((i * (r.length - 1)) / 4)]))
   const chosen = (mat: Material) => (m ? variantOf(m, doc.variants, mat.id) : undefined)
-  const label = (mat: Material, itemName: string) => {
-    const l = mat.label.startsWith(itemName) ? mat.label.slice(itemName.length).trim() : mat.label
-    return l ? l[0].toUpperCase() + l.slice(1) : 'Colour'
+  // names from the item's description/slot ("Metal", "Leather"), also for projects saved with the old hue labels
+  const namesOf = (it: (typeof items)[number], mats: Material[]) => materialNames(it, mats.map((x) => x.ramp))
+  const nameOf = (id?: string) => {
+    const mat = m?.materials.find((x) => x.id === id), it = m?.items.find((i) => i.id === mat?.owner)
+    return mat && it ? `${it.name} ${namesOf(it, matsOf(it.id))[matsOf(it.id).indexOf(mat)].toLowerCase()}` : mat?.label
   }
   const custom = (mat: Material) => { const v = doc.variants[mat.id]; return v?.startsWith('#') ? v : '#808080' }
 </script>
@@ -32,24 +33,25 @@
   {/if}
   {#each items as it (it.id)}
     {@const mats = matsOf(it.id)}
+    {@const names = namesOf(it, mats)}
     {#if mats.length}
       {#if !only}<p class="mat-name" style="font-weight:600">{it.name}</p>{/if}
-      {#each mats as mat (mat.id)}
+      {#each mats as mat, mi (mat.id)}
         {@const pick = chosen(mat)}
         <div class="mat">
-          <span class="muted small">{label(mat, it.name)}</span>
+          <span class="muted small">{names[mi]}</span>
           {#if mat.linkTo}
-            <span class="faint small">Follows {m?.materials.find((x) => x.id === mat.linkTo)?.label}</span>
+            <span class="faint small">Follows {nameOf(mat.linkTo)}</span>
           {:else}
-            <div class="swatches" role="radiogroup" aria-label="{label(mat, it.name)} colour">
+            <div class="swatches" role="radiogroup" aria-label="{names[mi]} colour">
               <button class="swatch" role="radio" aria-checked={!pick} title="Original" aria-label="Original" onclick={() => setVariant(mat.id, null)}>
-                {#each steps(mat.ramp) as c, i (i)}<i style:background={c}></i>{/each}
+                {#each mat.ramp as c, i (i)}<i style:background={c}></i>{/each}
               </button>
               {#each Object.keys(SWATCHES) as name (name)}
                 {@const r = variantRampOf(mat, name)}
                 {#if r}
                   <button class="swatch" role="radio" aria-checked={pick === name} title={name} aria-label={name} onclick={() => setVariant(mat.id, name)}>
-                    {#each steps(r) as c, i (i)}<i style:background={c}></i>{/each}
+                    {#each r as c, i (i)}<i style:background={c}></i>{/each}
                   </button>
                 {/if}
               {/each}

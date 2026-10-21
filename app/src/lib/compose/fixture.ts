@@ -5,7 +5,7 @@ import { makeImg, type Img } from '../image/png.ts';
 import { decodePngBytes } from '../image/pngraw.ts';
 import { baseHashOf, cellHash, cellKeys, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import type { Layer, Manifest, Project } from '../store/manifest.ts';
-import { cellImg } from './compose.ts';
+import { cellImg, layerFrame, over } from './compose.ts';
 import { splitFgBg } from './split.ts';
 
 const crop = (s: Img, x: number, y: number, w: number, h: number): Img => {
@@ -29,6 +29,7 @@ export async function loadFixture(read: (path: string) => Promise<Uint8Array>): 
   const generated = m.rig.directions.filter((d) => !d.mirrorOf);
   for (const it of m.items)
     for (const l of it.layers) {
+      const { w, h } = layerFrame(m.rig, l); // oversize layers have their own cell (v1.3.1)
       l.cells = {};
       for (const [anim, path] of Object.entries(l.sheets ?? {})) {
         const s = await decodePngBytes(await read(path)), cells = m.rig.animations.find((a) => a.id === anim)!.cells;
@@ -42,13 +43,14 @@ export async function loadFixture(read: (path: string) => Promise<Uint8Array>): 
   for (const it of m.items) {
     const bgZ = m.slots.find((s) => s.id === it.slot)?.bgZ;
     if (bgZ == null || it.layers.length !== 1) continue;
-    const main = it.layers[0];
-    const fg: Layer = { id: 'fg', role: 'fg', z: main.z, cells: {} }, bg: Layer = { id: 'bg', role: 'bg', z: bgZ, cells: {} };
+    const main = it.layers[0], f = layerFrame(m.rig, main), geo = { cell: main.cell, pivot: main.pivot };
+    const fg: Layer = { id: 'fg', role: 'fg', z: main.z, ...geo, cells: {} }, bg: Layer = { id: 'bg', role: 'bg', z: bgZ, ...geo, cells: {} };
+    const baseIn = (im: Img | null) => { const o = makeImg(f.w, f.h); if (im) over(o, im, f.x - m.rig.pivot.x, f.y - m.rig.pivot.y); return o; };
     for (const [anim, dirs] of Object.entries(main.cells!)) {
       fg.cells![anim] = {};
       bg.cells![anim] = {};
       for (const [dir, cells] of Object.entries(dirs!) as [DirectionName, (Sha256 | null)[]][]) {
-        const split = cells.map((k, c) => (k ? splitFgBg(images.get(k)!, cellImg(p, base, anim, dir, c) ?? makeImg(w, h)) : null));
+        const split = cells.map((k, c) => (k ? splitFgBg(images.get(k)!, baseIn(cellImg(p, base, anim, dir, c))) : null));
         fg.cells![anim]![dir] = await Promise.all(split.map((s) => (s ? put(s.fg) : null)));
         bg.cells![anim]![dir] = await Promise.all(split.map((s) => (s ? put(s.bg) : null)));
       }

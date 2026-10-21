@@ -41,6 +41,9 @@
     {#if phone}
       <button class="btn icon plain" aria-label={undoLabel ? `Undo ${undoLabel}` : 'Undo'} disabled={!undoLabel} onclick={undo}><Undo2 size={20} /></button>
     {:else}
+      {#if $queue.role === 'follower'}
+        <button class="btn plain balance faint small" onclick={() => (ui.sheet = 'activity')} title="Another PixelDoll tab runs the PixelLab jobs">Running in another tab</button>
+      {/if}
       {#if busy}
         <button class="btn plain balance" onclick={() => (ui.sheet = 'activity')} title="Activity"><span class="ring spin" aria-hidden="true"></span><span class="num">{active || ''}</span><span class="sr">jobs running</span></button>
       {/if}

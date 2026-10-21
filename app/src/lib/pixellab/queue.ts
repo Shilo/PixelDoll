@@ -1,6 +1,10 @@
 // One job queue for every PixelLab call (architecture §9).
 // Ledger rule: a record is persisted before submit, its background_job_ids right after, result PNGs the moment a job completes.
 // A record with job ids is never resubmitted; reload resumes polling.
+// Cross-tab: only the tab holding the Web Lock "pixeldoll-queue" submits/polls (leader). Other tabs (followers) mirror the
+// ledger from IndexedDB and only enqueue/cancel; the leader merges their new records. Only a leader marks orphaned
+// `submitting` records lost, so another live tab's in-flight jobs are never touched. The key stays in memory; a key entered
+// in any tab reaches the leader over a same-origin BroadcastChannel (never stored, never logged).
 import { api as realApi, ApiError, errorText, isPolicy } from './client.ts';
 import { jobIdsOf, jobImages, type Job, type Req, type SubmitResponse, type Usage } from './routes.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
@@ -45,8 +49,10 @@ export interface JobRec {
   gens: number;
   usd: number;
 }
+export type Role = 'solo' | 'leader' | 'follower';
 export interface QueueSnapshot {
   jobs: JobRec[];
+  role: Role;
   paused: null | 'auth' | 'credits';
   concurrency: number;
   current: number;
@@ -63,9 +69,10 @@ export interface Deps {
   getBlob: (sha: string) => Promise<Blob | undefined>;
   fetchBytes: (url: string) => Promise<Uint8Array>;
   now: () => number;
+  locks: Pick<LockManager, 'request'> | null; // Web Locks (null = single tab)
 }
 
-const POLL_MS = 5000;
+const POLL_MS = 5000, SYNC_MS = 1500, LOCK = 'pixeldoll-queue';
 const LOST_AFTER_MS = 120_000; // 404 on a job never seen completed, this long after submit -> lost
 
 export const backoff = (attempt: number, rnd = Math.random()) => Math.min(60_000, 2000 * 2 ** Math.max(0, attempt - 1)) * (0.5 + 0.5 * rnd);
@@ -93,6 +100,11 @@ export class Queue {
   private timer: ReturnType<typeof setInterval> | null = null;
   private streak = 0;
   private deps: Deps;
+  private follower: ReturnType<typeof setInterval> | null = null;
+  private release: (() => void) | null = null;
+  private merged = 0;
+  private chan: BroadcastChannel | null = null;
+  role: Role = 'solo';
   key = '';
   paused: QueueSnapshot['paused'] = null;
   concurrency = 3;
@@ -113,6 +125,7 @@ export class Queue {
         return new Uint8Array(await r.arrayBuffer());
       },
       now: Date.now,
+      locks: globalThis.navigator?.locks ?? null,
       ...deps,
     };
   }
@@ -132,7 +145,7 @@ export class Queue {
       else if (r.state === 'done') counts.done++;
       else if (r.state === 'failed' || r.state === 'lost') counts.failed++;
     }
-    return { jobs, paused: this.paused, concurrency: this.concurrency, current: this.current, sessionGens: this.sessionGens, sessionUsd: this.sessionUsd, counts };
+    return { jobs, role: this.role, paused: this.paused, concurrency: this.concurrency, current: this.current, sessionGens: this.sessionGens, sessionUsd: this.sessionUsd, counts };
   }
   private emit() {
     const s = this.snapshot();
@@ -144,6 +157,61 @@ export class Queue {
   }
 
   // ---- lifecycle ----
+  /** Become the leader if no other tab is, else mirror the ledger until the leader's tab closes. */
+  async connect() {
+    const locks = this.deps.locks;
+    if (!locks) { await this.load(); this.start(); return; }
+    if (typeof BroadcastChannel !== 'undefined') {
+      this.chan = new BroadcastChannel(LOCK);
+      this.chan.onmessage = (e: MessageEvent<{ key?: string; ask?: boolean }>) => {
+        if (e.data.key && !this.key && this.role === 'leader') this.setKey(e.data.key, false);
+        if (e.data.ask && this.key) this.chan?.postMessage({ key: this.key });
+      };
+    }
+    await this.sync(); // the UI has the ledger at once, whoever leads
+    const hold = () => new Promise<void>((res) => (this.release = res));
+    const got = await new Promise<boolean>((res) => void locks.request(LOCK, { ifAvailable: true }, (lock) => { res(!!lock); return lock ? hold() : undefined; }));
+    if (got) return this.lead();
+    this.role = 'follower';
+    if (this.key) this.chan?.postMessage({ key: this.key });
+    this.follower = setInterval(() => void this.sync(), SYNC_MS);
+    this.emit();
+    void locks.request(LOCK, async () => { await this.lead(); return hold(); });
+  }
+  private async lead() {
+    if (this.follower) clearInterval(this.follower);
+    this.follower = null;
+    this.role = 'leader';
+    this.recs.clear();
+    await this.load();
+    this.start();
+    if (!this.key) this.chan?.postMessage({ ask: true }); // a follower tab may hold the key
+  }
+  /** Stop working and hand the lock to the next tab (tests, HMR). */
+  disconnect() {
+    this.stop();
+    if (this.follower) clearInterval(this.follower);
+    this.follower = null;
+    this.release?.();
+    this.release = null;
+    this.chan?.close();
+    this.chan = null;
+  }
+  /** Follower: replace the mirror with the stored ledger. */
+  async sync() {
+    this.recs = new Map((await this.deps.all()).map((r) => [r.id, r]));
+    this.emit();
+  }
+  /** Leader: adopt records other tabs enqueued, and their cancels of still-queued records. */
+  private async merge() {
+    let changed = false;
+    for (const r of await this.deps.all()) {
+      const mine = this.recs.get(r.id);
+      if (!mine) { this.recs.set(r.id, r); changed = true; }
+      else if (mine.state === 'queued' && r.state === 'cancelled' && !this.busy.has(r.id)) { Object.assign(mine, { state: r.state, finishedAt: r.finishedAt }); changed = true; }
+    }
+    if (changed) this.emit();
+  }
   async load() {
     for (const r of await this.deps.all()) {
       // Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
@@ -163,8 +231,9 @@ export class Queue {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
   }
-  setKey(key: string) {
+  setKey(key: string, share = true) {
     this.key = key;
+    if (key && share && this.role === 'follower') this.chan?.postMessage({ key });
     if (key && this.paused === 'auth') this.paused = null;
     this.emit();
   }
@@ -179,7 +248,8 @@ export class Queue {
 
   // ---- enqueue ----
   // Identical request (same endpoint + params + input images, explicit seed) reuses the stored record instead of paying again.
-  async enqueue(req: Req, meta: { label?: string; tag?: string } = {}): Promise<JobRec> {
+  // meta.cache: also reuse unseeded done records (deterministic routes: estimate-skeleton, GET /characters).
+  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean } = {}): Promise<JobRec> {
     const inputs: string[] = [];
     const params = await mapDeep(req.body ?? null, (o) => {
       if (!isB64(o)) return undefined;
@@ -194,7 +264,7 @@ export class Queue {
     for (const r of this.recs.values()) {
       if (r.requestHash !== requestHash) continue;
       if (r.state === 'queued' || r.state === 'submitting' || r.state === 'running') return r; // double click
-      if (seeded && r.state === 'done') return r; // ponytail: cache only seeded requests; unseeded = intentional re-roll
+      if ((seeded || meta.cache) && r.state === 'done') return r; // ponytail: cache only seeded requests; unseeded = intentional re-roll
     }
     const now = this.deps.now();
     const rec: JobRec = {
@@ -221,7 +291,9 @@ export class Queue {
 
   // ---- the loop ----
   async tick(): Promise<void> {
+    if (this.role === 'follower') return; // the leader tab submits and polls
     const now = this.deps.now();
+    if (this.role === 'leader' && now - this.merged >= SYNC_MS) { this.merged = now; await this.merge(); }
     const ops: Promise<void>[] = [];
     if (this.key && !this.paused) {
       let active = [...this.recs.values()].filter((r) => r.state === 'submitting' || r.state === 'running').length;
@@ -376,6 +448,10 @@ export class Queue {
   async cancel(id: string) {
     const r = this.recs.get(id);
     if (!r) return;
+    if (this.role === 'follower' && r.state === 'running') { // the leader's next poll sees the cancel; never write its record
+      for (const s of r.jobs.filter((s) => !s.done)) await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`).catch(() => {});
+      return;
+    }
     if (r.state === 'queued') {
       r.state = 'cancelled';
       r.finishedAt = this.deps.now();
@@ -456,4 +532,66 @@ export async function selfTest() {
   const again = await q2.enqueue(req);
   console.assert(again.id === rec.id && submits === 1, 'request-hash cache hit');
   console.assert(backoff(1, 1) === 2000 && backoff(10, 1) === 60000 && backoff(2, 0) === 2000, 'backoff');
+  await lockTest();
+}
+
+/** A minimal Web Locks stand-in: one holder, FIFO waiters, ifAvailable. */
+function fakeLocks(): Pick<LockManager, 'request'> {
+  let held = false;
+  const waiters: (() => void)[] = [];
+  const grant = async (cb: LockGrantedCallback<unknown>) => { held = true; try { return await cb({ name: LOCK, mode: 'exclusive' }); } finally { held = false; waiters.shift()?.(); } };
+  return {
+    request: ((_name: string, a: LockOptions | LockGrantedCallback<unknown>, b?: LockGrantedCallback<unknown>) => {
+      const [opts, cb] = typeof a === 'function' ? [{} as LockOptions, a] : [a, b!];
+      if (!held) return grant(cb);
+      if (opts.ifAvailable) return Promise.resolve(cb(null));
+      return new Promise<unknown>((res) => waiters.push(() => res(grant(cb))));
+    }) as LockManager['request'],
+  };
+}
+
+// Two tabs on one ledger: one leader submits, the follower never submits, never marks the leader's in-flight jobs lost, and
+// takes over (and only then cleans up orphans) when the leader's tab goes away.
+async function lockTest() {
+  const store = new Map<string, JobRec>(), locks = fakeLocks(), tick = () => new Promise((r) => setTimeout(r, 0));
+  let t = 1000, submits = 0;
+  const deps: Partial<Deps> = {
+    now: () => t, locks,
+    put: async (k, r) => void store.set(k, structuredClone(r)),
+    all: async () => [...store.values()].map((r) => structuredClone(r)),
+    putBlob: async () => 'x', getBlob: async () => undefined, fetchBytes: async () => new Uint8Array(),
+    api: async <T>(_k: string, method: string, path: string): Promise<T> => {
+      if (method === 'POST' && path === '/hang') return new Promise<T>(() => {}); // in flight forever
+      if (method === 'POST') { submits++; return { background_job_id: `j${submits}` } as T; }
+      return { id: 'j', status: 'processing', created_at: '' } as T;
+    },
+  };
+  const a = new Queue(deps), b = new Queue(deps);
+  await a.connect();
+  await b.connect();
+  console.assert(a.role === 'leader' && b.role === 'follower' && b.snapshot().role === 'follower', `roles ${a.role}/${b.role}`);
+  b.setKey('k'); // key entered in the follower tab reaches the leader
+  for (let i = 0; i < 20 && !a.key; i++) await new Promise((r) => setTimeout(r, 5));
+  console.assert(a.key === 'k', 'leader adopts the key from a follower tab');
+  const hang = await a.enqueue({ method: 'POST', path: '/hang', body: { seed: 1 } });
+  void a.tick();
+  await tick();
+  console.assert(store.get(hang.id)?.state === 'submitting', 'leader submit in flight');
+  const c = new Queue(deps); // a third tab opening now must not rewrite it to lost
+  await c.connect();
+  console.assert(c.role === 'follower' && store.get(hang.id)?.state === 'submitting', 'follower load keeps the in-flight record');
+  const fromB = await b.enqueue({ method: 'POST', path: '/x', body: { seed: 2 } });
+  const dupB = await b.enqueue({ method: 'POST', path: '/x', body: { seed: 2 } });
+  t += 60_000;
+  await b.tick();
+  console.assert(submits === 0 && dupB.id === fromB.id, 'follower never submits; same request = same record');
+  await a.tick();
+  console.assert(submits === 1 && store.get(fromB.id)?.state === 'running', `leader merged and submitted the follower's job once (${submits})`);
+  await b.sync();
+  console.assert(b.snapshot().jobs.find((r) => r.id === fromB.id)?.state === 'running', 'follower mirror sees the state');
+  a.disconnect(); // leader tab closed
+  await tick(); await tick(); await tick();
+  console.assert(b.role === 'leader' && c.role === 'follower', `next tab takes over (${b.role}, ${c.role})`);
+  console.assert(store.get(hang.id)?.state === 'lost', 'orphaned submit is marked lost only by the new leader');
+  b.disconnect(); c.disconnect();
 }

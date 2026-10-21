@@ -11,6 +11,8 @@ import * as normalize from './rig/normalize.ts';
 import * as mirror from './rig/mirror.ts';
 import * as skeleton from './rig/skeleton.ts';
 import * as freeze from './rig/freeze.ts';
+import * as poses from './rig/poses.ts';
+import * as clips from './rig/clips.ts';
 import * as pngraw from './image/pngraw.ts';
 import * as compose from './compose/compose.ts';
 import * as split from './compose/split.ts';
@@ -38,6 +40,8 @@ const shared: Test[] = [
   ['rig/mirror', mirror.selfTest],
   ['rig/skeleton', skeleton.selfTest],
   ['rig/freeze', freeze.selfTest],
+  ['rig/poses', poses.selfTest],
+  ['rig/clips', clips.selfTest],
   ['pngraw', pngraw.selfTest],
   ['compose', compose.selfTest],
   ['compose/split', split.selfTest],

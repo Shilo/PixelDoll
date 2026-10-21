@@ -101,7 +101,7 @@
         <div>
           <label class="field"><span class="label small">Name</span><input class="input" bind:value={name} placeholder={nameFrom(desc || 'Adventurer')} /></label>
           <label class="field"><span class="label small">Seed</span><input class="input" type="number" bind:value={seed} /></label>
-          <p class="faint small">create-character-v3 at 48 px, padded to 64 (16 px headroom) · skeleton-v3 idle + walk per direction · estimate-skeleton joints · ≈ {est.gens.toFixed(1)} gens</p>
+          <p class="faint small">create-character-v3 at 48 px, padded to 64 (x+8, y+12: 4 px floor) · rest views re-imported for their joints · managed skeleton-v3 idle + walk as motion → joints → raw skeleton-v3 on the rest view per direction · ≈ {est.gens.toFixed(1)} gens</p>
         </div>
       </details>
     </div>

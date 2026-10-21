@@ -52,7 +52,7 @@
     if (rig && !form.anims.length) { form.anims = rig.animations.map((a) => a.id); form.dirs = [...generatedDirs] }
   })
   const autoKey = $derived(pickKey(form.prompt))
-  const posable = $derived(!!rig && canPose(rig, rec?.skeletons, form))
+  const posable = $derived(!!rig && canPose(rig, form))
   const method = $derived<Method>(form.method === 'auto' ? (posable ? 'skel' : 'anchor') : form.method)
   const plan = $derived(rig && form.anims.length && form.dirs.length ? planItem(rig, { ...form, key: form.key === 'auto' ? autoKey : form.key, method }) : [])
 

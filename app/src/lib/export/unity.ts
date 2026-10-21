@@ -2,6 +2,7 @@
 // unity/pixeldoll_unity.json is the manifest flattened for JsonUtility (no dictionaries).
 import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
+import { layerFrame } from '../compose/compose.ts';
 
 export function unityJson(m: Manifest) {
   const { rig } = m;
@@ -18,7 +19,10 @@ export function unityJson(m: Manifest) {
     })),
     items: m.items.map((it) => ({
       id: it.id, slot: it.slot, hasHides: !!it.hides, hides: it.hides ?? [],
-      layers: it.layers.map((l) => ({ id: l.id, role: l.role, z: l.z, sheets: rig.animations.map((a) => l.sheets![a.id]) })),
+      layers: it.layers.map((l) => {
+        const f = layerFrame(rig, l); // oversize layers: own cell + pivot; PPU stays the base's, so world scale matches
+        return { id: l.id, role: l.role, z: l.z, cellW: f.w, cellH: f.h, pivotX: f.x, pivotY: f.y, sheets: rig.animations.map((a) => l.sheets![a.id]) };
+      }),
     })),
     preset: Object.entries(m.presets[0]?.items ?? {}).map(([slot, item]) => ({ slot, item: item ?? '' })),
   };
@@ -34,7 +38,7 @@ namespace PixelDoll
     [Serializable] public class PdAnim { public string id; public bool loop; public int cells; public PdFrame[] frames; }
     [Serializable] public class PdZOverride { public string layer; public int z; public string dir; public string anim; public int cell = -1; }
     [Serializable] public class PdSlot { public string id; public int z; public string[] hides; public PdZOverride[] zOverrides; }
-    [Serializable] public class PdLayer { public string id; public string role; public int z; public string[] sheets; }
+    [Serializable] public class PdLayer { public string id; public string role; public int z, cellW, cellH, pivotX, pivotY; public string[] sheets; }
     [Serializable] public class PdItem { public string id; public string slot; public bool hasHides; public string[] hides; public PdLayer[] layers; }
     [Serializable] public class PdEquip { public string slot; public string item; }
     [Serializable] public class PdSprites { public string item; public string layer; public Sprite[] sprites; }
@@ -190,7 +194,7 @@ namespace PixelDoll.Editor
                 foreach (var l in it.layers)
                 {
                     var sprites = new List<Sprite>();
-                    for (int a = 0; a < d.animations.Length; a++) sprites.AddRange(Slice(root + "/" + l.sheets[a], d, d.animations[a]));
+                    for (int a = 0; a < d.animations.Length; a++) sprites.AddRange(Slice(root + "/" + l.sheets[a], d, l, d.animations[a]));
                     library.Add(new PdSprites { item = it.id, layer = l.id, sprites = sprites.ToArray() });
 #if PIXELDOLL_2D_ANIMATION
                     var lib = ScriptableObject.CreateInstance<SpriteLibraryAsset>();
@@ -251,7 +255,8 @@ namespace PixelDoll.Editor
             Debug.Log("PixelDoll: imported " + d.name + ": " + library.Sum(l => l.sprites.Length) + " sprites in " + library.Count + " layers, " + d.animations.Length * d.directions.Length + " clips -> " + outDir);
         }
 
-        static Sprite[] Slice(string png, PaperdollData d, PdAnim a)
+        /// Each layer is sliced by its own cell (oversize layers, e.g. 96x96) with its own pivot; PPU is the base's for all.
+        static Sprite[] Slice(string png, PaperdollData d, PdLayer l, PdAnim a)
         {
             var ti = (TextureImporter)AssetImporter.GetAtPath(png);
             ti.textureType = TextureImporterType.Sprite;
@@ -267,7 +272,7 @@ namespace PixelDoll.Editor
             dp.InitSpriteEditorDataProvider();
             var old = new Dictionary<string, GUID>();
             foreach (var r in dp.GetSpriteRects()) old[r.name] = r.spriteID; // keep sprite ids stable across re-imports
-            int texH = d.directions.Length * d.cellH;
+            int texH = d.directions.Length * l.cellH;
             var rects = new List<SpriteRect>();
             for (int row = 0; row < d.directions.Length; row++)
                 for (int c = 0; c < a.cells; c++)
@@ -276,9 +281,9 @@ namespace PixelDoll.Editor
                     rects.Add(new SpriteRect
                     {
                         name = name,
-                        rect = new Rect(c * d.cellW, texH - (row + 1) * d.cellH, d.cellW, d.cellH), // Unity rects start bottom-left
+                        rect = new Rect(c * l.cellW, texH - (row + 1) * l.cellH, l.cellW, l.cellH), // Unity rects start bottom-left
                         alignment = SpriteAlignment.Custom,
-                        pivot = new Vector2((float)d.pivotX / d.cellW, 1f - (float)d.pivotY / d.cellH),
+                        pivot = new Vector2((float)l.pivotX / l.cellW, 1f - (float)l.pivotY / l.cellH),
                         spriteID = old.TryGetValue(name, out var id) ? id : GUID.Generate(),
                     });
                 }
@@ -340,5 +345,9 @@ export function selfTest() {
   const u = unityJson(m);
   console.assert(u.name === 'my_hero' && u.ppu === 64 && u.items[0].layers[0].sheets[0] === 'w.png' && u.items[0].hasHides, 'unity json flattening');
   console.assert(u.slots[0].zOverrides[0].cell === -1 && u.slots[0].zOverrides[0].anim === '' && u.preset[1].item === '', 'unity json: absent = -1 / ""');
+  console.assert(u.items[0].layers[0].cellW === 64 && u.items[0].layers[0].pivotY === 60, 'unity json: per-layer cell/pivot default = rig');
+  Object.assign(m.items[0].layers[0], { cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } });
+  const u2 = unityJson(m).items[0].layers[0];
+  console.assert(u2.cellW === 96 && u2.pivotY === 76 && unityJson(m).ppu === 64, 'unity json: oversize layer keeps the base PPU');
   console.assert(IMPORTER_CS.includes(".Replace('\\\\', '/')"), 'C# backslash literal survives the template string');
 }

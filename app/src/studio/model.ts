@@ -1,7 +1,7 @@
-// Studio model helpers (pure, node-runnable): user-facing slot groups (D1 §4.1), item thumbnails, frame placement for the
-// create flow, base prompt, wording for QA and costs.
+// Studio model helpers (pure, node-runnable): user-facing slot groups (D1 §4.1), item thumbnails, base prompts, wording for
+// QA and costs. Frame placement lives in lib/rig/normalize.ts (one rule for M2/M3/Studio).
 import { makeImg, type Img } from '../lib/image/png.ts';
-import { cellImg, over } from '../lib/compose/compose.ts';
+import { cellImg, layerFrame, over, unionFrame } from '../lib/compose/compose.ts';
 import type { DirectionName, Item, Manifest, Project } from '../lib/store/manifest.ts';
 
 export interface Group { id: string; slots: string[]; empty: string; ideas: { label: string; slot?: string }[] }
@@ -23,12 +23,13 @@ export const SLOT_LABEL: Record<string, string> = {
 };
 export const slotLabel = (s: string) => SLOT_LABEL[s] ?? s;
 
-/** One item alone (all its layers, bg under fg) in one cell; mirrored directions flip their source. */
+/** One item alone (all its layers, bg under fg) in one cell; mirrored directions flip their source. Oversize layers (v1.3.1,
+ * e.g. 96 px held items) line up by pivot on the union of the item's layer frames. */
 export function itemCell(p: Project, it: Item, anim: string, dir: DirectionName, cell: number): Img {
-  const { w, h } = p.manifest.rig.cell, out = makeImg(w, h);
+  const rig = p.manifest.rig, frame = unionFrame(it.layers.map((l) => layerFrame(rig, l))), out = makeImg(frame.w, frame.h);
   for (const l of [...it.layers].sort((a, b) => +(a.role === 'fg') - +(b.role === 'fg'))) {
-    const im = cellImg(p, l, anim, dir, cell);
-    if (im) over(out, im);
+    const im = cellImg(p, l, anim, dir, cell), f = layerFrame(rig, l);
+    if (im) over(out, im, frame.x - f.x, frame.y - f.y);
   }
   return out;
 }
@@ -66,28 +67,12 @@ export function cropAll(ims: Img[]): Img[] {
   });
 }
 
-/**
- * Place a generated frame into the rig cell like the S2 base (48 -> 64 = x+8, y+16): the character box (charSize) sits
- * centred in x and bottom-aligned in y. Animation canvases are bigger than the character and centre it (S3/S4: managed
- * skeleton-v3 80x80, v3/pixminimax 68x68 for a 48 px character), so the offset is computed from the canvas centre.
- * Returns the cell and the opaque px that fell outside it.
- */
-export function place(src: Img, charSize: number, cell = 64): { img: Img; cut: number } {
-  const ox = Math.round((cell - src.w) / 2), oy = Math.round(cell - charSize - (src.h - charSize) / 2);
-  const out = makeImg(cell, cell);
-  let cut = 0;
-  for (let y = 0; y < src.h; y++)
-    for (let x = 0; x < src.w; x++) {
-      const i = (y * src.w + x) * 4, dx = x + ox, dy = y + oy;
-      if (dx < 0 || dy < 0 || dx >= cell || dy >= cell) { if (src.data[i + 3] >= 128) cut++; continue; }
-      out.data.set(src.data.subarray(i, i + 4), (dy * cell + dx) * 4);
-    }
-  return { img: out, cut };
-}
-
 /** Base prompt (S2 winner): the user's words + a plain clothed mannequin so items have a clean body to sit on. */
 export const basePrompt = (desc: string) =>
   `${desc.trim().replace(/[.\s]+$/, '')}, plain bald paperdoll base body, wearing a plain grey t-shirt and plain grey shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
+/** What the base LOOKS like (raw skeleton-v3 `description`, S3): no pose words, empty hands. */
+export const looksOf = (desc: string) =>
+  `${desc.trim().replace(/[.\s]+$/, '')}, bald, wearing a plain grey t-shirt and plain grey shorts, barefoot, empty hands, no weapon`;
 
 export const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 /** The noun of the description's first phrase: "a sturdy young dwarf with a friendly face" -> "Dwarf". */
@@ -115,6 +100,7 @@ export function plainReason(s: string): string {
   if (s.startsWith('G7')) return 'The item touches the frame edge (may be cut off)';
   if (s.startsWith('G8')) return 'The item switches hands';
   if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
+  if (s.startsWith('H4')) return 'The item does not match its design in some frames';
   return s;
 }
 
@@ -123,18 +109,8 @@ export const fmtNum = (n: number) => Math.round(n).toLocaleString('en-US');
 export const fmtTime = (s: number) => (s >= 90 ? `${Math.round(s / 60)} min` : `${Math.max(5, Math.round(s / 5) * 5)} s`);
 
 export function selfTest() {
-  const src = makeImg(80, 80);
-  src.data.set([1, 2, 3, 255], (63 * 80 + 40) * 4); // feet row of a 48 character centred in 80 (box 16..63)
-  const p = place(src, 48);
-  console.assert(p.cut === 0 && p.img.data[(63 * 64 + 32) * 4 + 3] === 255, 'place: 80 canvas -> feet on row 63, x centred');
-  const q = place(makeImg(48, 48), 48);
-  console.assert(q.cut === 0 && q.img.w === 64, 'place 48');
   const s = makeImg(48, 48);
   s.data.set([9, 9, 9, 255], 0);
-  console.assert(place(s, 48).img.data[(16 * 64 + 8) * 4 + 3] === 255, 'place: 48 -> x+8, y+16 (S2 pad)');
-  const r = makeImg(68, 68);
-  r.data.set([9, 9, 9, 255], (10 * 68 + 10) * 4);
-  console.assert(place(r, 48).img.data[(16 * 64 + 8) * 4 + 3] === 255, 'place: 68 canvas centred (+10,+10) -> same spot as 48');
   console.assert(nameFrom('a stocky dwarf, tan skin') === 'Dwarf' && nameFrom('a sturdy young dwarf with a friendly face') === 'Dwarf' && nameFrom('') === 'My character', 'nameFrom');
   console.assert(groupOf('off_hand').id === 'Hands' && groupOf('waist').id === 'Legs', 'groupOf');
   console.assert(crop(s)!.w === 1 && crop(makeImg(2, 2)) === null, 'crop');

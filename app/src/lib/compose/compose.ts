@@ -2,9 +2,22 @@
 // Pure over Img, so the preview, baked export and node scripts share one code path.
 import { makeImg, type Img } from '../image/png.ts';
 import { flipH } from '../rig/mirror.ts';
-import type { DirectionName, Item, Layer, Manifest, Preset, Project, Slot } from '../store/manifest.ts';
+import type { DirectionName, Item, Layer, Manifest, Preset, Project, Rig, Slot } from '../store/manifest.ts';
 
 export interface Draw { item: Item; layer: Layer; slot: Slot; z: number }
+
+/** A cell size plus the pivot inside it (pixel-edge coords). Layers line up by pivot: a layer's cell sits at
+ *  (frame.x - layer.x, frame.y - layer.y) in a frame (manifest-spec v1.3.1 oversize layers). */
+export interface Frame { w: number; h: number; x: number; y: number }
+export const rigFrame = (rig: Pick<Rig, 'cell' | 'pivot'>): Frame => ({ ...rig.cell, ...rig.pivot });
+export const layerFrame = (rig: Pick<Rig, 'cell' | 'pivot'>, l: Pick<Layer, 'cell' | 'pivot'>): Frame => ({ ...rig.cell, ...rig.pivot, ...l.cell, ...l.pivot });
+/** Smallest frame that holds every given frame around a shared pivot (baked composites). */
+export function unionFrame(fs: Frame[]): Frame {
+  const x = Math.max(...fs.map((f) => f.x)), y = Math.max(...fs.map((f) => f.y));
+  return { x, y, w: x + Math.max(...fs.map((f) => f.w - f.x)), h: y + Math.max(...fs.map((f) => f.h - f.y)) };
+}
+/** Frame for baked composites: the union of every layer of every item (one cell size per export, not per preset). */
+export const bakedFrame = (m: Manifest): Frame => unionFrame([rigFrame(m.rig), ...m.items.flatMap((it) => it.layers.map((l) => layerFrame(m.rig, l)))]);
 
 /** Equipped items of a preset (slot -> item); the base is always on. */
 export function equipped(m: Manifest, items: Preset['items']): Item[] {
@@ -55,10 +68,10 @@ export function cellImg(p: Project, layer: Layer, anim: string, dir: DirectionNa
   return im && flipH(im);
 }
 
-/** Straight-alpha source-over of src onto dst at (x, y), in place. Binary alpha = plain copy. */
+/** Straight-alpha source-over of src onto dst at (x, y), in place, clipped to dst. Binary alpha = plain copy. */
 export function over(dst: Img, src: Img, x = 0, y = 0) {
-  for (let sy = 0; sy < src.h; sy++)
-    for (let sx = 0; sx < src.w; sx++) {
+  for (let sy = Math.max(0, -y); sy < Math.min(src.h, dst.h - y); sy++)
+    for (let sx = Math.max(0, -x); sx < Math.min(src.w, dst.w - x); sx++) {
       const s = (sy * src.w + sx) * 4, ta = src.data[s + 3];
       if (!ta) continue;
       const d = ((y + sy) * dst.w + x + sx) * 4;
@@ -69,12 +82,12 @@ export function over(dst: Img, src: Img, x = 0, y = 0) {
     }
 }
 
-export function composeCell(p: Project, items: Preset['items'], anim: string, dir: DirectionName, cell: number): Img {
-  const { w, h } = p.manifest.rig.cell;
-  const out = makeImg(w, h);
+/** Composite of one cell on `frame` (default the rig cell: oversize layers are clipped to it; bakedFrame() keeps them whole). */
+export function composeCell(p: Project, items: Preset['items'], anim: string, dir: DirectionName, cell: number, frame = rigFrame(p.manifest.rig)): Img {
+  const out = makeImg(frame.w, frame.h);
   for (const d of drawList(p.manifest, items, anim, dir, cell)) {
-    const im = cellImg(p, d.layer, anim, dir, cell);
-    if (im) over(out, im);
+    const im = cellImg(p, d.layer, anim, dir, cell), f = layerFrame(p.manifest.rig, d.layer);
+    if (im) over(out, im, frame.x - f.x, frame.y - f.y);
   }
   return out;
 }
@@ -85,7 +98,7 @@ export function selfTest() {
   const L = (role: 'fg' | 'bg', z: number, h: string) => ({ id: role === 'bg' ? 'bg' : 'main', role, z, cells: { walk: { south: [h as `sha256:${string}`, null] } } }) as Layer;
   const item = (id: string, slot: string, layers: Layer[], hides?: string[]) => ({ id, slot, layers, hides }) as Item;
   const m = {
-    rig: { cell: { w: 1, h: 1 }, baseItem: 'base', directions: [{ id: 'south' }, { id: 'east' }, { id: 'west', mirrorOf: 'east' }] },
+    rig: { cell: { w: 1, h: 1 }, pivot: { x: 0, y: 0 }, baseItem: 'base', directions: [{ id: 'south' }, { id: 'east' }, { id: 'west', mirrorOf: 'east' }] },
     slots: [
       { id: 'body', z: 10 },
       { id: 'back', z: 90, bgZ: 4 },
@@ -118,4 +131,21 @@ export function selfTest() {
   images.set('sha256:b', two);
   console.assert(cellImg(p, e, 'walk', 'west', 0)?.data.join() === '2,0,0,255,1,0,0,255', 'mirrored dir = flip of source');
   console.assert(cellImg(p, e, 'walk', 'south', 0) === null && cellImg(p, e, 'idle', 'east', 0) === null, 'missing anim/dir = transparent');
+
+  // oversize: a 3x3 layer with pivot (2,2) over a 1x1 rig cell with pivot (1,1) -> its centre pixel lands on the rig cell
+  const big: Img = { w: 3, h: 3, data: new Uint8ClampedArray(36).map((_, i) => (i % 4 === 3 ? 255 : i % 4 === 0 ? 10 + (i >> 2) : 0)) };
+  images.set('sha256:o', big);
+  const sword = { id: 'main', role: 'fg', z: 150, cell: { w: 3, h: 3 }, pivot: { x: 2, y: 2 }, cells: { walk: { south: ['sha256:o', null] } } } as Layer;
+  m.slots.push({ id: 'main_hand', z: 150 } as Slot);
+  m.items.push(item('sw', 'main_hand', [sword]));
+  m.rig.pivot = { x: 1, y: 1 };
+  console.assert(composeCell(p, { main_hand: 'sw' }, 'walk', 'south', 0).data[0] === 14, 'oversize: aligned by pivot, clipped to the rig cell');
+  const bf = bakedFrame(m);
+  console.assert(bf.w === 3 && bf.h === 3 && bf.x === 2 && bf.y === 2, `bakedFrame = union around the pivot ${JSON.stringify(bf)}`);
+  const baked = composeCell(p, { main_hand: 'sw' }, 'walk', 'south', 0, bf);
+  console.assert(baked.data.filter((_, i) => i % 4 === 0).join() === '10,11,12,13,14,15,16,17,18', 'oversize: whole layer on the baked frame');
+  const u = unionFrame([{ w: 64, h: 64, x: 32, y: 60 }, { w: 96, h: 96, x: 48, y: 76 }, { w: 64, h: 80, x: 32, y: 60 }]);
+  console.assert(u.w === 96 && u.h === 96 && u.x === 48 && u.y === 76, 'unionFrame');
+  const clip = makeImg(2, 2); over(clip, big, -1, -1);
+  console.assert(clip.data[0] === 14 && clip.data[12] === 18, 'over clips negative offsets');
 }

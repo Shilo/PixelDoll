@@ -14,9 +14,44 @@ export const SKIN_TONES: Hex[] = ['#5c3a21', '#8d5524', '#c68642', '#e0ac69', '#
 export const itemImgs = (p: Project, it: Item): Img[] =>
   it.layers.flatMap((l) => Object.values(l.cells ?? {}).flatMap((d) => Object.values(d ?? {}).flat())).flatMap((h) => (h && p.images.get(h)) || []);
 
+// Material words (B7): from the item's description nouns, else its slot; the hue word is the last resort.
+const WORDS: [RegExp, string][] = [
+  [/\b(iron|steel|metal|chain\w*|plate|silver|golden|gold|bronze|copper|brass|armou?r|helmet|sword|blade|axe|crown|sabatons|greaves|knight)\b/, 'Metal'],
+  [/\b(leather|boots?|belt|vest|satchel)\b/, 'Leather'],
+  [/\b(hair|braid\w*|ponytail|beard|moustache|mustache|bun)\b/, 'Hair'],
+  [/\b(wood\w*|staff|bow|club|shield)\b/, 'Wood'],
+  [/\b(fur|pelt)\b/, 'Fur'],
+  [/\b(gem|jewel\w*|crystal|ruby|emerald|sapphire)\b/, 'Gem'],
+  [/\b(feathers?|plume)\b/, 'Feather'],
+  [/\b(cloth|cotton|silk|wool|linen|tunic|robe|cape|cloak|hood|shirt|trousers|pants|scarf|hat|mask|sash|dress|skirt|bandana)\b/, 'Cloth'],
+];
+const SLOT_WORD: Record<string, string> = { hair: 'Hair', facial_hair: 'Hair', feet: 'Leather', legs: 'Cloth', waist: 'Leather', torso_inner: 'Cloth', torso_outer: 'Cloth', back: 'Cloth', head: 'Cloth', face_acc: 'Cloth', main_hand: 'Metal', off_hand: 'Wood' };
+const COLOUR_HUE: Record<string, string[]> = { red: ['red'], crimson: ['red'], orange: ['orange'], brown: ['orange', 'red'], yellow: ['yellow', 'orange'], gold: ['yellow', 'orange'], golden: ['yellow', 'orange'], green: ['green'], teal: ['cyan', 'green'], cyan: ['cyan'], blue: ['blue', 'cyan'], azure: ['blue'], purple: ['purple'], violet: ['purple'], pink: ['pink'], black: ['grey'], white: ['grey'], grey: ['grey'], gray: ['grey'], silver: ['grey'] };
+const title = (w: string) => w[0].toUpperCase() + w.slice(1);
+const wordOf = (noun: string) => WORDS.find(([re]) => re.test(noun))?.[1];
+
+/** Sensible material names for an item's ramps: "Skin"/"Clothes" on the base, else description nouns ("red plume" -> Feather),
+ * then the slot's usual material, then the hue word. Repeats get a number ("Cloth 2"). */
+export function materialNames(it: Pick<Item, 'slot' | 'prompt' | 'name'>, ramps: Hex[][]): string[] {
+  const text = `${it.prompt} ${it.name}`.toLowerCase(), hues = ramps.map(hueName), used = new Set<string>();
+  const words = WORDS.map(([re, w]) => [text.search(re), w] as const).filter(([i]) => i >= 0).sort((a, b) => a[0] - b[0]).map(([, w]) => w);
+  const pairs = [...text.matchAll(/\b(\w+)\s+(\w+)/g)].filter((m) => COLOUR_HUE[m[1]]).map((m) => ({ hues: COLOUR_HUE[m[1]], noun: m[2] }));
+  const free = (w?: string) => (w && !used.has(w) ? w : undefined);
+  const names = ramps.map((_, i) => {
+    const pair = pairs.find((p) => p.hues.includes(hues[i]));
+    const n = it.slot === 'body'
+      ? (hues[i] === 'grey' ? free('Clothes') : ['red', 'orange', 'yellow', 'pink'].includes(hues[i]) ? free('Skin') : undefined) ?? title(hues[i])
+      : (pair && free(wordOf(pair.noun) ?? title(pair.noun))) ?? (hues[i] === 'grey' ? free(words.includes('Metal') ? 'Metal' : undefined) : undefined)
+        ?? free(words.find((w) => !used.has(w))) ?? free(SLOT_WORD[it.slot]) ?? title(hues[i]);
+    used.add(n);
+    return n;
+  });
+  return names.map((n, i) => (names.indexOf(n) < i ? `${n} ${names.slice(0, i + 1).filter((x) => x === n).length}` : n));
+}
+
 /**
  * (Re)derive the materials of `items` (default: items without materials) and replace theirs in m.materials. Other materials'
- * colours are claimed first, so ramps stay disjoint. k = 0 -> autoRamps. Labels: "<item name> <hue word>".
+ * colours are claimed first, so ramps stay disjoint. k = 0 -> autoRamps. Labels: materialNames().
  */
 export function deriveMaterials(p: Project, items = p.manifest.items.filter((i) => !i.materials.length), k: Record<string, number> = {}) {
   const m = p.manifest, ids = new Set(items.map((i) => i.id));
@@ -25,10 +60,11 @@ export function deriveMaterials(p: Project, items = p.manifest.items.filter((i) 
   for (const it of [...items].sort((a, b) => +(b.id === m.rig.baseItem) - +(a.id === m.rig.baseItem))) {
     const counts = colourCounts(itemImgs(p, it));
     const ramps = k[it.id] ? deriveRamps(counts, k[it.id], claimed) : autoRamps(counts, claimed);
+    const names = materialNames(it, ramps);
     it.materials = ramps.map((ramp, i) => {
       ramp.forEach((h) => claimed.add(fromHex(h)));
       const id = `${it.id}_${i + 1}`;
-      m.materials.push({ id, label: `${it.name} ${hueName(ramp)}`, ramp, variants: {}, owner: it.id });
+      m.materials.push({ id, label: names[i], ramp, variants: {}, owner: it.id });
       return id;
     });
   }
@@ -147,5 +183,9 @@ export function selfTest() {
   const r = randomOutfit(m, () => 0.99);
   console.assert(r.items.back === 'cape' && !('body' in r.items), 'random outfit');
   console.assert(coverageGaps(m, cape).join() === 'walk/east', `coverage gaps ${coverageGaps(m, cape)}`);
+  const red = ['#4a0d12', '#7d1820', '#b02832'] as Hex[], grey = ['#2b2f36', '#4d535d', '#7a828e'] as Hex[];
+  console.assert(materialNames({ slot: 'head', name: 'Iron helmet', prompt: 'iron knight helmet with a red plume' }, [grey, red]).join() === 'Metal,Feather', `names ${materialNames({ slot: 'head', name: 'Iron helmet', prompt: 'iron knight helmet with a red plume' }, [grey, red])}`);
+  console.assert(materialNames({ slot: 'feet', name: 'Boots', prompt: 'tall boots' }, [red, grey]).join() === 'Leather,Grey' && materialNames({ slot: 'body', name: 'Base', prompt: '' }, [red, grey]).join() === 'Skin,Clothes', 'slot + base names');
+  console.assert(materialNames({ slot: 'back', name: 'Cape', prompt: 'cape' }, [red, red]).join() === 'Cloth,Red', 'no duplicate words');
   console.assert(edges({ w: 3, h: 3, data: new Uint8ClampedArray(36).fill(255) }).join() === '0,1,2,3,5,6,7,8', 'edges');
 }

@@ -36,7 +36,7 @@
       <ul class="facts small">
         <li><Check size={14} />Generations come from your PixelLab account.</li>
         <li><Check size={14} />Sent only to api.pixellab.ai.</li>
-        <li><Check size={14} />Kept in this tab only, unless you choose Remember.</li>
+        <li><Check size={14} />Kept in memory (shared with your other open PixelDoll tabs), unless you choose Remember.</li>
       </ul>
     </div>
   </div>

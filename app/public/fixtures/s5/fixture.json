@@ -1,0 +1,220 @@
+{
+  "format": "pixeldoll/1",
+  "name": "s5_sword",
+  "app": "PixelDoll 0.1.0 (B8 oversize fixture from S5 spike outputs)",
+  "rig": {
+    "cell": {
+      "w": 64,
+      "h": 64
+    },
+    "pivot": {
+      "x": 32,
+      "y": 64
+    },
+    "directions": [
+      {
+        "id": "south"
+      },
+      {
+        "id": "east"
+      },
+      {
+        "id": "north"
+      },
+      {
+        "id": "west",
+        "mirrorOf": "east"
+      }
+    ],
+    "animations": [
+      {
+        "id": "walk",
+        "cells": 8,
+        "loop": true,
+        "frames": [
+          {
+            "cell": 0,
+            "ms": 100
+          },
+          {
+            "cell": 1,
+            "ms": 100
+          },
+          {
+            "cell": 2,
+            "ms": 100
+          },
+          {
+            "cell": 3,
+            "ms": 100
+          },
+          {
+            "cell": 4,
+            "ms": 100
+          },
+          {
+            "cell": 5,
+            "ms": 100
+          },
+          {
+            "cell": 6,
+            "ms": 100
+          },
+          {
+            "cell": 7,
+            "ms": 100
+          }
+        ],
+        "sources": {}
+      },
+      {
+        "id": "slash",
+        "cells": 8,
+        "loop": false,
+        "frames": [
+          {
+            "cell": 0,
+            "ms": 80
+          },
+          {
+            "cell": 1,
+            "ms": 80
+          },
+          {
+            "cell": 2,
+            "ms": 60
+          },
+          {
+            "cell": 3,
+            "ms": 60
+          },
+          {
+            "cell": 4,
+            "ms": 60
+          },
+          {
+            "cell": 5,
+            "ms": 80
+          },
+          {
+            "cell": 6,
+            "ms": 100
+          },
+          {
+            "cell": 7,
+            "ms": 120
+          }
+        ],
+        "sources": {}
+      }
+    ],
+    "baseItem": "base",
+    "baseHash": ""
+  },
+  "materials": [],
+  "slots": [
+    {
+      "id": "body",
+      "z": 10,
+      "class": "base",
+      "required": true
+    },
+    {
+      "id": "main_hand",
+      "z": 150,
+      "bgZ": 6,
+      "class": "held",
+      "anchor": "hand_r",
+      "zOverrides": [
+        {
+          "layer": "bg",
+          "dir": "north",
+          "z": 1
+        },
+        {
+          "layer": "fg",
+          "z": 45,
+          "anim": "walk",
+          "dir": "south",
+          "cell": 4
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "base",
+      "name": "Base body",
+      "slot": "body",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "S2 48 px clothed character, S3/S4 skeleton-v3 walk + slash",
+      "baseHash": "",
+      "provenance": [],
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 10,
+          "sheets": {
+            "walk": "layers/body/base/main/walk.png",
+            "slash": "layers/body/base/main/slash.png"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sword_fsw",
+      "name": "Longsword (96 px)",
+      "slot": "main_hand",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "route": "skeleton-pose",
+      "key": "green",
+      "baseHash": "",
+      "provenance": [],
+      "prompt": "a steel longsword in the right hand, pointing down and slightly outward (S5 d96 dress, 96x96 oversize canvas)",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 150,
+          "cell": {
+            "w": 96,
+            "h": 96
+          },
+          "pivot": {
+            "x": 48,
+            "y": 80
+          },
+          "sheets": {
+            "walk": "layers/main_hand/sword_fsw/main/walk.png",
+            "slash": "layers/main_hand/sword_fsw/main/slash.png"
+          }
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "id": "armed",
+      "name": "Armed",
+      "items": {
+        "body": "base",
+        "main_hand": "sword_fsw"
+      },
+      "variants": {}
+    },
+    {
+      "id": "bare",
+      "name": "Base only",
+      "items": {
+        "body": "base",
+        "main_hand": null
+      },
+      "variants": {}
+    }
+  ]
+}

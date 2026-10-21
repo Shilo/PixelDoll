@@ -26,6 +26,9 @@
         {:else if app.key}Balance unavailable{:else}Not connected{/if}</span>
       {#if app.key}<button class="btn icon plain" aria-label="Refresh balance" onclick={refreshBalance}><RefreshCw size={14} /></button>{:else}<button class="btn sm" onclick={() => (ui.sheet = 'connect')}>Connect</button>{/if}
     </div>
+    {#if $queue.role === 'follower'}
+      <p class="notice small"><CircleAlert size={14} />Running in another tab. PixelDoll is open twice: the other tab sends and checks the jobs (also the ones you start here). Keep it open, or close it to run them here.</p>
+    {/if}
     {#if $queue.paused}
       <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn't accept the key. Jobs wait until you connect again." : 'Out of generations. Jobs wait until you top up.'}
         <button class="btn sm" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button></p>

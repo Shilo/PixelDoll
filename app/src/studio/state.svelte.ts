@@ -10,7 +10,7 @@ import type { DirectionName, Preset, Project, ZOverride } from '../lib/store/man
 import { evaluateItem, type Draft, type ItemResult } from '../lib/items/run.ts';
 import { app } from '../lib/app.svelte.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
-import { createCharacter, saveCopy, type CreateSpec, type Progress } from './create.ts';
+import { addMove, createCharacter, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
 import { GROUPS, groupOf } from './model.ts';
 import type { JobRec } from '../lib/pixellab/queue.ts';
 
@@ -22,7 +22,7 @@ export const DEMO = 'fixture:s2';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
-export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item';
+export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move';
 const sizeNow = (): Size => {
   const w = innerWidth, h = innerHeight;
   if (h < 500 && w > h) return 'landscape';
@@ -416,3 +416,36 @@ export async function cancelCreate() {
   await db.del('projects', CREATE_KEY);
 }
 
+
+// ---------- add a move (one at a time; resumable like create) ----------
+export const moving = $state({ spec: null as MoveSpec | null, projectId: '', progress: null as Progress | null, error: '', done: false });
+const MOVE_KEY = 'studio-move';
+let moveRunning = false;
+export async function startMove(projectId: string, spec: MoveSpec) {
+  if (moveRunning) return;
+  moveRunning = true;
+  Object.assign(moving, { spec, projectId, progress: null, error: '', done: false });
+  await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId });
+  try {
+    await addMove(projectId, spec, (p) => (moving.progress = p));
+    moving.done = true;
+    await db.del('projects', MOVE_KEY);
+    if (doc.id === projectId) { await openProject(projectId); ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
+    toast(`${spec.id[0].toUpperCase() + spec.id.slice(1)} added`);
+  } catch (e) {
+    moving.error = (e as Error).message;
+  } finally {
+    moveRunning = false;
+  }
+}
+let moveResumed = false;
+export async function resumeMove() {
+  if (moveResumed) return;
+  moveResumed = true;
+  const r = await db.get<{ spec: MoveSpec; projectId: string }>('projects', MOVE_KEY).catch(() => undefined);
+  if (r?.spec && !moving.spec) void startMove(r.projectId, r.spec);
+}
+export async function dismissMove() {
+  Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false });
+  await db.del('projects', MOVE_KEY);
+}
