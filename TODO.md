@@ -36,6 +36,13 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 - [ ] End-to-end browser test: base → 5 items → dress-up → export
 - [ ] Load export in Godot 4 / Phaser page; verify sync + pivots
 
+## Deferred
+- [ ] Unity export live verification (needs Unity Hub sign-in; C# compiles) — deferred by user 2026-10-20
+
+## Quality bar (user, 2026-10-20)
+Paperdoll output must be accurate, consistent, high quality, using proper PixelLab tooling, proper skeleton rigging,
+proper post-processing and proper layering — frontier-standard paperdolling workflow.
+
 ## Phase 6 — Design & MVP (after Phases 2–5 are done)
 - [ ] Design brainstorm with agents (user flows for casual users, information architecture, Apple-style simplicity)
 - [ ] Theme brainstorm: minimalistic, modern, professional, intuitive candidates
