@@ -4,13 +4,15 @@ The single list of open work and known concerns. Done history is at the bottom; 
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 
 ## Next up (in order)
-1. [ ] Verify the first live GitHub Pages deploy at https://shilo.github.io/PixelDoll/ (demo, Connect, export, phone)
+1. [ ] Test the live site https://shilo.github.io/PixelDoll/ on a real phone + a real key (PM verified: CI green, demo loads,
+      no dev-key path, worker loads — 2026-10-21)
 2. [ ] Decide final origin: custom domain (recommended, key safety) vs shared `shilo.github.io` — blocks PWA + "remember key"
 3. [ ] PWA (see section below) — after the origin decision
 4. [ ] Shields (`off_hand`) live test on a 4- and 8-direction rig
 5. [ ] Item quality polish: cape back-hem grey smudges; helmet visor flagged when the forearm covers it
 6. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
 7. [ ] Paper theme + theming support (deferred by user)
+8. [ ] CI: pin `runs-on` to `ubuntu-24.04` or accept the Ubuntu 26 migration of `ubuntu-latest` (runner notice, 2026-10)
 
 ## Concerns
 - [!] **Key safety on a shared origin.** All `*.github.io/<repo>` sites of one account share an origin, so another of your
