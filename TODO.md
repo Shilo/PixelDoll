@@ -9,18 +9,18 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` blocked/risk
 - [x] PLAN.md / TODO.md
 
 ## Phase 1 — Research
-- [~] R1 pixellab-pip paperdolling review
-- [~] R2 PixelLab current capabilities + correct stale docs
-- [~] R3 Engine implementation patterns
-- [~] R4 Games survey (incl. Ultima Online verification)
-- [~] R5 Paperdoll tools survey (fralonra/paperdoll checkout + review)
+- [x] R1 pixellab-pip paperdolling review
+- [x] R2 PixelLab current capabilities + correct stale docs
+- [x] R3 Engine implementation patterns
+- [x] R4 Games survey (incl. Ultima Online verification)
+- [x] R5 Paperdoll tools survey (fralonra/paperdoll checkout + review)
 
 ## Phase 2 — API feasibility spike (live)
 - [~] S1 base character → animation → equipment edit → diff extraction → QA metrics
 
 ## Phase 3 — Synthesis
-- [ ] Architecture doc
-- [ ] Manifest / export spec
+- [~] Architecture doc (A1)
+- [~] Manifest / export spec (A1)
 - [ ] Mockup scope list
 
 ## Phase 4 — Mockups
