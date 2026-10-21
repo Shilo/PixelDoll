@@ -1,0 +1,42 @@
+[
+ {
+  "tag": "d96r",
+  "d": "south",
+  "clip": "slash",
+  "seed": "7",
+  "areaMin": 125,
+  "areaMed": 143,
+  "cv": 0.09,
+  "kKeptMin": 0.96,
+  "kOutMax": 0.0491,
+  "shifted": 0,
+  "borderPx": 0,
+  "out64px": 121,
+  "out64frames": 5,
+  "overflow": "0/8/0/4",
+  "grip": "6/0/1/1",
+  "g9min": 0.13,
+  "palDist": 0,
+  "stray": 0
+ },
+ {
+  "tag": "d96r",
+  "d": "north",
+  "clip": "slash",
+  "seed": "7",
+  "areaMin": 71,
+  "areaMed": 135,
+  "cv": 0.19,
+  "kKeptMin": 0.941,
+  "kOutMax": 0.0369,
+  "shifted": 0,
+  "borderPx": 0,
+  "out64px": 69,
+  "out64frames": 4,
+  "overflow": "0/8/0/3",
+  "grip": "5/1/0/2",
+  "g9min": 0.1,
+  "palDist": 0,
+  "stray": 29
+ }
+]

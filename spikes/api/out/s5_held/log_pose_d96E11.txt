@@ -1,0 +1,2 @@
+budget: spent 124, this call ~3
+COST {"cmd":"pose","tag":"d96","dress":"d96","act":"","rot":false,"C":96,"clip":"slash","d":"east","seed":11,"n":8,"size":"96x96","ms":192352,"gens":3}

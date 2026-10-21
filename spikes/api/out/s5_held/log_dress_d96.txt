@@ -1,0 +1,2 @@
+budget: spent 0, this call ~10
+COST {"cmd":"dress","tag":"d96","C":96,"k":"down","seed":7,"sizes":["96x96","96x96","96x96"],"ms":120181,"gens":10,"keyKept":[1,1,0.994],"keyOutside":[0,0,0.0063]}

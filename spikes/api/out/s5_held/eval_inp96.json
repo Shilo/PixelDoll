@@ -1,0 +1,42 @@
+[
+ {
+  "tag": "inp96",
+  "d": "east",
+  "clip": "walk",
+  "seed": "7",
+  "areaMin": 121,
+  "areaMed": 131,
+  "cv": 0.04,
+  "kKeptMin": 0.976,
+  "kOutMax": 0.0029,
+  "shifted": 0,
+  "borderPx": 0,
+  "out64px": 0,
+  "out64frames": 0,
+  "overflow": "0/0/0/0",
+  "grip": "2/1/5/0",
+  "g9min": 0.68,
+  "palDist": 12.8,
+  "stray": 0
+ },
+ {
+  "tag": "inp96",
+  "d": "east",
+  "clip": "slash",
+  "seed": "7",
+  "areaMin": 126,
+  "areaMed": 143,
+  "cv": 0.06,
+  "kKeptMin": 0.981,
+  "kOutMax": 0.0571,
+  "shifted": 0,
+  "borderPx": 0,
+  "out64px": 4,
+  "out64frames": 1,
+  "overflow": "0/0/1/0",
+  "grip": "3/0/5/0",
+  "g9min": 0.09,
+  "palDist": 11.3,
+  "stray": 0
+ }
+]
