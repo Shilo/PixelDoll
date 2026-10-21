@@ -27,7 +27,13 @@ frame-aligned** paperdoll data.
 - PixelLab REST v2 at `https://api.pixellab.ai/v2` allows **CORS** for a `*.github.io` origin (preflight 200, `authorization` header
   allowed) → a fully client-side app with a user-supplied API key is viable. Spec saved at
   `docs/research/pixellab/pixellab-openapi-v2.json` (102 paths).
-- No public endpoint returns semantic layers or "changes-only" output (pixellab-pip prior spike, 2026-07).
+- No public endpoint returns semantic layers. **Correction (R2/S1):** `inpaint-image-pro-flash` has `output_method`
+  ("New layer with changes" …) returning mask-bounded changes-only output (still redraws body inside the mask). Under live test.
+- Multi-frame edits pack frames into one grid → frames/call cap by size: edit-animation-v2 16/9/4, transfer-outfit-v2 15/8/3
+  (≤64 / 65–80 / 81+ px). Flat cost per call. → **base canvas ≤ 64 px** is the sweet spot.
+- Character states don't inherit animations; animation canvas may differ from rotation canvas → PixelDoll normalizes canvas/pivot.
+- JS SDK is v1-only/stale → plain `fetch` against v2. Jobs auto-delete after completion → persist results immediately.
+- Engines (R3): one sprite per layer, identical grid, one clock; exporter emits transparent cells, never omits.
 - `docs/research/pixellab/proper_paperdolling_in_pixellab.md` describes the **Android "PixelLab – Text on pictures" app**, not
   pixellab.ai — must be flagged/corrected.
 
