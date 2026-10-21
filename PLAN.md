@@ -65,3 +65,9 @@ Cross-agent channel: `docs/research/SHARED_NOTES.md` (append-only, short bullets
 
 - D1 (2026-10-20): Direct browser → PixelLab REST v2 calls with user-supplied key (CORS verified). No backend.
 - D2 (2026-10-20): Primary layer route = same-canvas edit of unchanged base + local diff extraction (to be validated in S1).
+- D3 (2026-10-21): **Superseded D2.** Primary route = chroma mannequin (S2): recolour frozen base to key ramp →
+  edit-animation-v2 (≤16 cells) → key-score extraction → layer over real base. Diff extractor = fallback only.
+- D4 (2026-10-21): Base generated at 48 px, padded to 64 px cell (never rescaled) for 16–20 px headroom. 56 px allowed as an
+  advanced option; default stays 48→64 (O14).
+- D5 (2026-10-21): Unity live verification deferred (user). Godot + Phaser verified pixel-identical.
+- D6 (2026-10-21): Skeleton v3 is the preferred skeleton route; legacy skeleton only as baseline (user) — S3 validating.
