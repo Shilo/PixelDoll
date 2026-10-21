@@ -1,0 +1,384 @@
+{
+  "format": "pixeldoll/1",
+  "name": "s1_knight",
+  "app": "PixelDoll 0.1.0 (fixture from S1 spike outputs)",
+  "rig": {
+    "cell": {
+      "w": 64,
+      "h": 64
+    },
+    "pivot": {
+      "x": 32,
+      "y": 63
+    },
+    "directions": [
+      {
+        "id": "south"
+      },
+      {
+        "id": "east"
+      },
+      {
+        "id": "west",
+        "mirrorOf": "east"
+      }
+    ],
+    "animations": [
+      {
+        "id": "idle",
+        "cells": 4,
+        "loop": true,
+        "frames": [
+          {
+            "cell": 0,
+            "ms": 150
+          },
+          {
+            "cell": 1,
+            "ms": 150
+          },
+          {
+            "cell": 2,
+            "ms": 150
+          },
+          {
+            "cell": 3,
+            "ms": 150
+          }
+        ],
+        "source": {
+          "endpoint": "/characters/animations",
+          "mode": "template",
+          "template_animation_id": "breathing-idle"
+        }
+      },
+      {
+        "id": "walk",
+        "cells": 8,
+        "loop": true,
+        "frames": [
+          {
+            "cell": 0,
+            "ms": 100
+          },
+          {
+            "cell": 1,
+            "ms": 100
+          },
+          {
+            "cell": 2,
+            "ms": 100
+          },
+          {
+            "cell": 3,
+            "ms": 100
+          },
+          {
+            "cell": 4,
+            "ms": 100
+          },
+          {
+            "cell": 5,
+            "ms": 100
+          },
+          {
+            "cell": 6,
+            "ms": 100
+          },
+          {
+            "cell": 7,
+            "ms": 100
+          }
+        ],
+        "source": {
+          "endpoint": "/characters/animations",
+          "mode": "template",
+          "template_animation_id": "walking-8-frames"
+        }
+      }
+    ],
+    "baseItem": "base",
+    "baseHash": ""
+  },
+  "materials": [],
+  "slots": [
+    {
+      "id": "body",
+      "z": 10,
+      "class": "base",
+      "required": true
+    },
+    {
+      "id": "torso_inner",
+      "z": 40,
+      "class": "worn",
+      "anchor": "neck"
+    },
+    {
+      "id": "hair",
+      "z": 110,
+      "bgZ": 3,
+      "class": "rigid",
+      "anchor": "head"
+    },
+    {
+      "id": "head",
+      "z": 130,
+      "class": "rigid",
+      "anchor": "head"
+    },
+    {
+      "id": "main_hand",
+      "z": 150,
+      "bgZ": 1,
+      "class": "held",
+      "anchor": "hand_r",
+      "zOverrides": [
+        {
+          "layer": "fg",
+          "z": 45,
+          "anim": "walk",
+          "dir": "south",
+          "cell": 4
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "base",
+      "name": "Base body",
+      "slot": "body",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "plain bald human base body (S1 e1/e2)",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 10,
+          "sheets": {
+            "idle": "layers/body/base/main/idle.png",
+            "walk": "layers/body/base/main/walk.png"
+          }
+        }
+      ],
+      "baseHash": "",
+      "provenance": [
+        {
+          "endpoint": "/characters/animations",
+          "params": {
+            "mode": "template",
+            "template_animation_id": "breathing-idle",
+            "directions": [
+              "south",
+              "east"
+            ]
+          },
+          "seed": 387193678,
+          "requestHash": "",
+          "jobId": "bc642633-917c-45bb-baab-28b136db7a50",
+          "usage": {
+            "usd": 0.012030873192681207
+          },
+          "createdAt": "2026-10-21T04:19:42.727363+00:00",
+          "produced": []
+        },
+        {
+          "endpoint": "/characters/animations",
+          "params": {
+            "mode": "template",
+            "template_animation_id": "walking-8-frames",
+            "directions": [
+              "south",
+              "east"
+            ]
+          },
+          "seed": 1248687889,
+          "requestHash": "",
+          "jobId": "c528b51c-523d-42c1-87f7-0cc65cf53653",
+          "usage": {
+            "usd": 0.01536289143562317
+          },
+          "createdAt": "2026-10-21T04:16:51.816409+00:00",
+          "produced": []
+        }
+      ]
+    },
+    {
+      "id": "chest_leather",
+      "name": "Leather vest",
+      "slot": "torso_inner",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "a brown leather chest armor vest covering the torso",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 40,
+          "sheets": {
+            "walk": "layers/torso_inner/chest_leather/main/walk.png"
+          }
+        }
+      ],
+      "baseHash": "",
+      "provenance": [
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "description": "Add only a brown leather chest armor vest covering the torso to this low top-down pixel art character in every frame, identical design in all frames. Keep every other pixel of the body, pose, outline and the transparent background unchanged.",
+            "image_size": {
+              "width": 64,
+              "height": 64
+            },
+            "no_background": true
+          },
+          "seed": 7,
+          "requestHash": "",
+          "jobId": "b78636b2-d72f-4155-a0c3-2f73c262bee5",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T04:32:53.069516+00:00",
+          "produced": []
+        }
+      ],
+      "extractor": "novel_cc"
+    },
+    {
+      "id": "helmet_iron",
+      "name": "Iron helmet",
+      "slot": "head",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "a simple grey steel knight helmet covering the top and sides of the head, face visible",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 130,
+          "sheets": {
+            "walk": "layers/head/helmet_iron/main/walk.png"
+          }
+        }
+      ],
+      "baseHash": "",
+      "provenance": [
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "description": "Add only a simple grey steel knight helmet covering the top and sides of the head, face visible to this low top-down pixel art character in every frame, identical design in all frames. Keep every other pixel of the body, pose, outline and the transparent background unchanged.",
+            "image_size": {
+              "width": 64,
+              "height": 64
+            },
+            "no_background": true
+          },
+          "seed": 7,
+          "requestHash": "",
+          "jobId": "c7b0624d-dbe7-4d39-9fbf-1130ed4ffd5f",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T04:29:27.315815+00:00",
+          "produced": []
+        },
+        {
+          "endpoint": "/edit-animation-v2",
+          "params": {
+            "description": "Add only a simple grey steel knight helmet covering the top and sides of the head, face visible to this low top-down pixel art character in every frame, identical design in all frames. Keep every other pixel of the body, pose, outline and the transparent background unchanged.",
+            "image_size": {
+              "width": 64,
+              "height": 64
+            },
+            "no_background": true
+          },
+          "seed": 7,
+          "requestHash": "",
+          "jobId": "7c7a9562-df0b-4277-ac06-1d981851d481",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T04:32:20.210425+00:00",
+          "produced": []
+        }
+      ],
+      "hides": [
+        "hair"
+      ],
+      "extractor": "novel_cc"
+    },
+    {
+      "id": "sword_steel",
+      "name": "Steel longsword",
+      "slot": "main_hand",
+      "status": "accepted",
+      "mirror": "flip",
+      "materials": [],
+      "prompt": "a steel longsword held in the character's right hand (on the left side of the image), blade pointing down and slightly outward",
+      "layers": [
+        {
+          "id": "main",
+          "role": "fg",
+          "z": 150,
+          "sheets": {
+            "walk": "layers/main_hand/sword_steel/main/walk.png"
+          }
+        }
+      ],
+      "baseHash": "",
+      "provenance": [
+        {
+          "endpoint": "/transfer-outfit-v2",
+          "params": {
+            "description": "a steel longsword held in the character's right hand (on the left side of the image), blade pointing down and slightly outward",
+            "image_size": {
+              "width": 64,
+              "height": 64
+            },
+            "no_background": true
+          },
+          "seed": 7,
+          "requestHash": "",
+          "jobId": "4fdfff5a-1b5f-42d5-8aff-ca419e8af608",
+          "usage": {
+            "generations": 10
+          },
+          "createdAt": "2026-10-21T04:32:20.147547+00:00",
+          "produced": []
+        }
+      ],
+      "extractor": "novel_cc"
+    }
+  ],
+  "presets": [
+    {
+      "id": "knight",
+      "name": "Knight",
+      "items": {
+        "body": "base",
+        "torso_inner": "chest_leather",
+        "head": "helmet_iron",
+        "main_hand": "sword_steel",
+        "hair": null
+      },
+      "variants": {}
+    },
+    {
+      "id": "bare",
+      "name": "Base only",
+      "items": {
+        "body": "base",
+        "torso_inner": null,
+        "head": null,
+        "main_hand": null,
+        "hair": null
+      },
+      "variants": {}
+    }
+  ]
+}

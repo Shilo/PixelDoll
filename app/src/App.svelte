@@ -2,9 +2,11 @@
   import TopBar from './ui/TopBar.svelte'
   import Home from './ui/Home.svelte'
   import M1 from './ui/M1.svelte'
+  import M2 from './ui/M2.svelte'
+  import M5 from './ui/M5.svelte'
   import SelfTest from './ui/SelfTest.svelte'
 
-  const placeholders: Record<string, string> = { '/m2': 'M2 rig freeze', '/m3': 'M3 item lab', '/m4': 'M4 dress-up', '/m5': 'M5 export' }
+  const placeholders: Record<string, string> = { '/m3': 'M3 item lab', '/m4': 'M4 dress-up' }
   const current = () => location.hash.replace(/^#/, '') || '/'
   let route = $state(current())
   $effect(() => {
@@ -18,6 +20,10 @@
 <main>
   {#if route === '/m1'}
     <M1 />
+  {:else if route === '/m2'}
+    <M2 />
+  {:else if route === '/m5'}
+    <M5 />
   {:else if route === '/selftest'}
     <SelfTest />
   {:else if placeholders[route]}

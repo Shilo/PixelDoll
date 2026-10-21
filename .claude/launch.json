@@ -30,6 +30,15 @@
         "--strictPort"
       ],
       "port": 4173
+    },
+    {
+      "name": "phaser-test",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Programming_Files/Shilocity/PixelLab/checkouts/engine-tests/phaser/serve.mjs",
+        "8765"
+      ],
+      "port": 8765
     }
   ]
 }

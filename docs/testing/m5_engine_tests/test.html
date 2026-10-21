@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PixelDoll Phaser test</title>
+<style>body { background: #222; color: #ddd; font: 14px monospace; } canvas { image-rendering: pixelated; }</style>
+</head>
+<body>
+<div id="game"></div>
+<pre id="out">loading…</pre>
+<script type="module">
+// ?v=<phaser version>. Phase 1: freeze every walk frame in south/east/west and compare the rendered canvas pixel-exactly with
+// PixelDoll's baked/knight/walk.png. Phase 2: play walk in all directions and check every step that each visible layer
+// shows the body's frame name. Results in window.__pd and #out.
+const v = new URLSearchParams(location.search).get('v') ?? '3.90.0';
+await new Promise((ok, err) => document.head.append(Object.assign(document.createElement('script'), { src: `https://cdn.jsdelivr.net/npm/phaser@${v}/dist/phaser.min.js`, onload: ok, onerror: err })));
+const { loadPaperdoll, Paperdoll } = await import('./s1_knight/phaser/PaperdollContainer.js');
+const out = document.getElementById('out');
+const R = (window.__pd = { version: Phaser.VERSION, pixelDiff: null, steps: 0, checks: 0, mismatches: 0, framesSeen: {}, done: false });
+const log = () => (out.textContent = JSON.stringify(R, null, 1));
+
+async function imageData(src) {
+  const img = src instanceof HTMLImageElement ? src : await new Promise((ok) => Object.assign(new Image(), { onload() { ok(this); }, src }));
+  const c = new OffscreenCanvas(img.width, img.height), g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  return g.getImageData(0, 0, img.width, img.height);
+}
+
+class Test extends Phaser.Scene {
+  create() { this.run().catch((e) => { R.error = String(e.stack ?? e); log(); }); }
+  async run() {
+    R.stage = "load"; const m = await loadPaperdoll(this, "s1_knight/"); R.stage = "loaded";
+    const dirs = ['south', 'east', 'west'];
+    const dolls = dirs.map((d, i) => new Paperdoll(this, i * 64 + m.rig.pivot.x, m.rig.pivot.y, m));
+    dolls.forEach((doll, i) => { doll.play('walk', dirs[i]); doll.body.anims.pause(); });
+    const baked = await imageData('s1_knight/baked/knight/walk.png');
+    let diff = 0;
+    for (let f = 0; f < 8; f++) {
+      dolls.forEach((doll) => { doll.body.anims.setCurrentFrame(doll.body.anims.currentAnim.frames[f]); doll.sync(); });
+      R.stage = "frame " + f; const shot = await imageData(await new Promise((ok) => this.game.renderer.snapshot(ok)));
+      for (let i = 0; i < 3; i++)
+        for (let y = 0; y < 64; y++)
+          for (let x = 0; x < 64; x++) {
+            const b = ((i * 64 + y) * baked.width + f * 64 + x) * 4, s = (y * shot.width + i * 64 + x) * 4;
+            const want = baked.data[b + 3] ? [baked.data[b], baked.data[b + 1], baked.data[b + 2]] : [0, 0, 0];
+            if (want.some((c, k) => c !== shot.data[s + k])) diff++;
+          }
+    }
+    R.pixelDiff = diff;
+    dolls.forEach((doll) => doll.body.anims.resume());
+    this.events.on('postupdate', () => {
+      R.steps++;
+      for (const doll of dolls) {
+        const name = doll.body.frame.name;
+        R.framesSeen[doll.dir] = [...new Set([...(R.framesSeen[doll.dir] ?? []), name.split('_').pop()])].sort();
+        for (const n of doll.nodes) {
+          if (!n.sprite.visible || n.sprite === doll.body) continue;
+          R.checks++;
+          if (n.sprite.frame.name !== name || !n.sprite.texture.key.endsWith(':walk')) R.mismatches++;
+        }
+      }
+      if (R.steps === 180) {
+        this.game.renderer.snapshot(async (img) => {
+          const c = new OffscreenCanvas(img.width * 4, img.height * 4), g = c.getContext('2d');
+          g.imageSmoothingEnabled = false;
+          g.drawImage(img, 0, 0, c.width, c.height);
+          await fetch(`/shot/phaser_${Phaser.VERSION}.png`, { method: 'POST', body: await c.convertToBlob() });
+          R.done = true; log();
+        });
+      }
+    });
+    log();
+  }
+}
+
+window.__game = new Phaser.Game({ type: Phaser.WEBGL, parent: 'game', width: 192, height: 64, zoom: 4, backgroundColor: '#000000', pixelArt: true, roundPixels: true, scene: Test, preserveDrawingBuffer: true, fps: { forceSetTimeOut: true, target: 60 } }); // timer loop: the test tab may run hidden (no rAF)
+</script>
+</body>
+</html>

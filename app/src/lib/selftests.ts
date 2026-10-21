@@ -6,6 +6,19 @@ import * as db from './store/db.ts';
 import * as client from './pixellab/client.ts';
 import * as routes from './pixellab/routes.ts';
 import * as queue from './pixellab/queue.ts';
+import * as rig from './rig/rig.ts';
+import * as normalize from './rig/normalize.ts';
+import * as mirror from './rig/mirror.ts';
+import * as skeleton from './rig/skeleton.ts';
+import * as freeze from './rig/freeze.ts';
+import * as pngraw from './image/pngraw.ts';
+import * as compose from './compose/compose.ts';
+import * as split from './compose/split.ts';
+import * as sheets from './export/sheets.ts';
+import * as generic from './export/generic.ts';
+import * as godot from './export/godot.ts';
+import * as phaser from './export/phaser.ts';
+import * as unity from './export/unity.ts';
 
 type Test = [string, () => unknown];
 const shared: Test[] = [
@@ -14,6 +27,19 @@ const shared: Test[] = [
   ['client', client.selfTest],
   ['routes', routes.selfTest],
   ['queue', queue.selfTest],
+  ['rig', rig.selfTest],
+  ['rig/normalize', normalize.selfTest],
+  ['rig/mirror', mirror.selfTest],
+  ['rig/skeleton', skeleton.selfTest],
+  ['rig/freeze', freeze.selfTest],
+  ['pngraw', pngraw.selfTest],
+  ['compose', compose.selfTest],
+  ['compose/split', split.selfTest],
+  ['export/sheets', sheets.selfTest],
+  ['export/generic', generic.selfTest],
+  ['export/godot', godot.selfTest],
+  ['export/phaser', phaser.selfTest],
+  ['export/unity', unity.selfTest],
 ];
 const node: Test[] = [...shared, ['png (pure)', png.selfTestNode]];
 const browser: Test[] = [...shared, ['png', png.selfTest], ['db', db.selfTest]];
