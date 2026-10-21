@@ -12,3 +12,7 @@
 {"name":"sword48_B","item":"sword","route":"to2","ref":"sword48_A","key":"green","cells":14,"ms":136566,"usage":{"type":"generations","generations":10},"nOut":14}
 {"name":"sword48_Ba","item":"sword","route":"ea2a","ref":"sword48_A","key":"green","cells":14,"ms":125710,"usage":{"type":"generations","generations":10},"nOut":14}
 {"name":"helmet48_Ba","item":"helmet","route":"ea2a","ref":"helmet48_A","key":"green","cells":14,"ms":146873,"usage":{"type":"generations","generations":10},"nOut":14}
+{"name":"b5_hair48_A","item":"hair","route":"ea2","key":"green","cells":16,"ms":128666,"usage":{"type":"generations","generations":10},"nOut":16}
+{"name":"b5_chest48_A","item":"chest","route":"ea2","key":"green","cells":16,"ms":132911,"usage":{"type":"generations","generations":10},"nOut":16}
+{"name":"b5_hair48_Ba","item":"hair","route":"ea2a","ref":"b5_hair48_A","key":"green","cells":14,"ms":139493,"usage":{"type":"generations","generations":10},"nOut":14}
+{"name":"b5_chest48_Ba","item":"chest","route":"ea2a","ref":"b5_chest48_A","key":"green","cells":14,"ms":139425,"usage":{"type":"generations","generations":10},"nOut":14}
