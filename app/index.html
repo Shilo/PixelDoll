@@ -2,9 +2,13 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.pixellab.ai; connect-src 'self' https://api.pixellab.ai https://backblaze.pixellab.ai https://supabase.pixellab.ai https://cdn.pixellab.ai; object-src 'none'; base-uri 'self'"
+    />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>app</title>
+    <title>PixelDoll</title>
   </head>
   <body>
     <div id="app"></div>
