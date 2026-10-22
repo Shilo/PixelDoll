@@ -121,6 +121,8 @@ test('PixelDoll export restores editable original cells, outfits, rest rig and d
 
 test('older PixelDoll sheets import with correct rows and preserve source pixels', async () => {
   const p = await loadFixture(async (path) => new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))))
+  p.manifest.items[1].dressed = { south: await cellHash(sprite(222)) }
+  p.manifest.items[1].route = 'skeleton-pose'
   const out = await exportFiles(p, { engines: ['generic'], baked: false })
   const old = out.entries.filter((f) => f.name !== 'project.json' && !f.name.startsWith('cells/'))
   const result = await readCharacterZip(await zip(old))
@@ -128,7 +130,16 @@ test('older PixelDoll sheets import with correct rows and preserve source pixels
   const restored = result.project.manifest.items.find((it) => it.id === p.manifest.rig.baseItem)!.layers[0]
   for (const a of p.manifest.rig.animations) for (const d of p.manifest.rig.directions) for (let c = 0; c < a.cells; c++) expect(cellImg(result.project, restored, a.id, d.id, c)).toEqual(cellImg(p, base, a.id, d.id, c))
   expect(result.project.manifest.rig.directions.every((d) => !d.mirrorOf)).toBe(true)
+  expect(result.project.manifest.items[1].dressed).toBeUndefined()
+  expect(result.project.manifest.items[1].route).toBeUndefined()
 }, 20_000)
+
+test('current PixelDoll ZIPs support one enclosing folder containing both manifests', async () => {
+  const { project } = await readCharacterZip(await zip(await pixelLabFiles()))
+  const exported = await exportFiles(project, { engines: ['generic'], baked: false })
+  const wrapped = exported.entries.map((e) => ({ ...e, name: `My character/${e.name}` }))
+  expect((await readCharacterZip(await zip(wrapped))).project.manifest).toEqual(project.manifest)
+})
 
 test('editable import verifies referenced image hashes', async () => {
   const imported = await readCharacterZip(await zip(await pixelLabFiles()))

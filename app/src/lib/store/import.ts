@@ -50,7 +50,8 @@ export async function readCharacterZip(bytes: Uint8Array, stateId?: string): Pro
   // Downloads often wrap the character in one enclosing folder.
   if (!['project.json', 'manifest.json', 'metadata.json'].some((p) => files.has(p))) {
     const roots = [...files.keys()].filter((p) => /\/(project|manifest|metadata)\.json$/.test(p));
-    if (roots.length === 1) { const prefix = roots[0].slice(0, roots[0].lastIndexOf('/') + 1); files = new Map([...files].filter(([p]) => p.startsWith(prefix)).map(([p, b]) => [p.slice(prefix.length), b])); }
+    const prefixes = new Set(roots.map((p) => p.slice(0, p.lastIndexOf('/') + 1)));
+    if (prefixes.size === 1) { const prefix = [...prefixes][0]; files = new Map([...files].filter(([p]) => p.startsWith(prefix)).map(([p, b]) => [p.slice(prefix.length), b])); }
   }
   let result: ImportedCharacter;
   let decodedPixels = 0;
@@ -100,6 +101,11 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
   const m = json(files, 'manifest.json') as Manifest;
   manifestShape(m);
   const images = new Map<string, Img>();
+  for (const it of m.items) {
+    // Engine-only archives do not include the dressed reference images needed for future posing.
+    delete it.dressed;
+    if (it.route === 'skeleton-pose') delete it.route;
+  }
   for (const it of m.items) for (const l of it.layers) {
     const f = layerFrame(m.rig, l);
     if (![f.w, f.h].every((n) => Number.isInteger(n) && n > 0 && n <= 256)) throw new Error('The export has an invalid layer size.');
