@@ -197,6 +197,15 @@ test('review shows every stored cell once when playback omits or repeats cells',
   await page.getByRole('dialog').getByRole('combobox', { name: 'Review zoom', exact: true }).selectOption('4')
   await expect(review.getByRole('img').first().locator('canvas')).toHaveAttribute('width', '256')
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.evaluate(() => {
+    const studio = (window as unknown as { __studio: { store: { project: { manifest: { items: { name: string; qa?: unknown }[] } } } } }).__studio
+    const project = studio.store.project
+    studio.store.project = { ...project, manifest: { ...project.manifest, items: project.manifest.items.map((item) => item.name === 'Wizard hat' ? { ...item, qa: { unmeasured: true, status: 'warn', minKeyKept: 0, maxKeyOutside: 0, minAreaRatio: 0, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, rerolls: 0, cells: {} } } : item) } }
+  })
+  await page.locator('.insp').getByText('Details', { exact: true }).click()
+  await expect(page.locator('.insp')).toContainText('Reused cells were not measured by PixelLab')
+  await expect(page.locator('.insp dt').filter({ hasText: /^(Key kept|Key outside|Area|Palette drift|Edge px|Hands)$/ })).toHaveCount(0)
   expect(errors).toEqual([])
   expect(requests).toEqual([])
 })

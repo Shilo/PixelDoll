@@ -147,7 +147,7 @@
       <p class="notice warn small"><TriangleAlert size={16} /><span>{draft?.error || 'This fit needs attention.'} No paid request is retried automatically.</span></p>
     {:else if stage === 'rest-review'}
       <p class="notice small"><CircleCheck size={16} /><span>Review the rest fit in every direction before paying to animate it. Check shape, colours, grip and alignment.</span></p>
-      {#if plan?.extension}<p class="muted small">Reuses this character’s approved standing references for free. Only {plan.extension.anims.join(', ')} will be generated; existing item frames and outfit colours stay intact.</p>{/if}
+      {#if plan?.extension}<p class="muted small">{plan.extension.reuseRest ? 'Reuses this character’s approved standing references for free.' : 'Review the new standing fit before animating.'} Only missing frames of {plan.extension.anims.join(', ')} will be generated; existing item frames and outfit colours stay intact.</p>{/if}
     {:else if stage === 'fit-review' || candidate}
       <p class="notice small"><CircleCheck size={16} /><span>{candidate ? 'Free copy: 0 generations.' : 'Animation is ready.'} Check every move and direction before keeping this copy.</span></p>
       {#if candidate && assessment.missingCells}<p class="notice warn small"><TriangleAlert size={14} /><span>This is a partial copy: {assessment.freeCells} verified frames are included; {assessment.missingCells} target frames have no item. Fitting the missing frames is a separate step.</span></p>{/if}

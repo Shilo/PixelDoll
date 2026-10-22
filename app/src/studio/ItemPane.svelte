@@ -31,7 +31,7 @@
   const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
   const reasons = $derived.by(() => {
     const q = it?.qa
-    if (!q) return []
+    if (!q || q.unmeasured) return []
     const r: string[] = []
     if (q.minKeyKept < 0.97) r.push('G2')
     if (q.maxKeyOutside > 0.02) r.push('G3')
@@ -126,12 +126,16 @@
           {#if it.qa}
             <dt>QA</dt><dd>{it.qa.status}</dd>
             {#if it.qa.legacy}<dt>Older checks</dt><dd>{it.qa.legacy.summary ? 'Older move checks are incomplete; totals may include replaced frames.' : 'Checks are incomplete for older moves.'}</dd>{/if}
-            <dt>Key kept</dt><dd>{it.qa.minKeyKept} (≥ 0.97)</dd>
-            <dt>Key outside</dt><dd>{it.qa.maxKeyOutside} (≤ 0.02)</dd>
-            <dt>Area</dt><dd>min {it.qa.minAreaRatio} of median · CV {it.qa.maxAreaCV}</dd>
-            <dt>Palette drift</dt><dd>{it.qa.maxPaletteDist} (≤ 15)</dd>
-            <dt>Edge px</dt><dd>{it.qa.clipPx}</dd>
-            {#if it.qa.handedness}<dt>Hands</dt><dd>{it.qa.handedness}</dd>{/if}
+            {#if it.qa.unmeasured}
+              <dt>Measurements</dt><dd>Reused cells were not measured by PixelLab. Aggregate checks are unavailable for this item.</dd>
+            {:else}
+              <dt>Key kept</dt><dd>{it.qa.minKeyKept} (≥ 0.97)</dd>
+              <dt>Key outside</dt><dd>{it.qa.maxKeyOutside} (≤ 0.02)</dd>
+              <dt>Area</dt><dd>min {it.qa.minAreaRatio} of median · CV {it.qa.maxAreaCV}</dd>
+              <dt>Palette drift</dt><dd>{it.qa.maxPaletteDist} (≤ 15)</dd>
+              <dt>Edge px</dt><dd>{it.qa.clipPx}</dd>
+              {#if it.qa.handedness}<dt>Hands</dt><dd>{it.qa.handedness}</dd>{/if}
+            {/if}
             <dt>Re-rolls</dt><dd>{it.qa.rerolls}</dd>
           {/if}
           <dt>Cost</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{it.provenance.length} PixelLab calls</dd>
