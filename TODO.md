@@ -12,6 +12,12 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
       occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recoloured.
 3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
 4. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
+5. [ ] Restore real offline-queue coverage (stack audit 2026-10-22, since c11113f): the studio demo now runs on the
+      production preview, where the dev-only `window.__queue`/`__studio` hooks are absent, so its queue-pause/resume and
+      selection checks pass vacuously. Fix: a `studio-dev` Playwright project rerunning `studio demo:` on `devURL`
+      (verified locally: a wrong queue expectation then fails on dev while production still passes).
+6. [ ] Test hardening (low, same audit): the B17 agent-mode branch in `studio.spec.ts` is dead under `agentKey='off'`
+      (add `blockApi(c)`; delete or document the branch); pin the self-test group names so a deleted group fails.
 
 Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio regression
 in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
