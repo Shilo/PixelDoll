@@ -164,7 +164,7 @@
     {#if preview && itemId}<DesignPreview project={preview} {itemId} itemOnly={!candidate && stage !== 'fit-review' && stage !== 'rest-review'} />{/if}
     {#if reference && design && (candidate || draft)}<details class="disclosure"><summary>Compare saved design reference</summary><div><DesignPreview project={reference} itemId={design.itemId} itemOnly /></div></details>{/if}
     {#if candidate || stage === 'rest-review' || stage === 'fit-review'}<label class="check review-check"><input type="checkbox" bind:checked={reviewed} />I checked every move and direction shown above.</label>{/if}
-    {#if draft}<p class="faint small">Spent: {+draft.spentGens.toFixed(2)} gens{#if draft.spentUsd && draft.spentUsd > 0} + ${draft.spentUsd.toFixed(3)}{/if}. Approved generation estimate: {draft.budget.previewGens} gens for rest fitting + {draft.budget.poseGens} gens for animation.</p>{/if}
+    {#if draft}<p class="faint small">Spent: {+draft.spentGens.toFixed(2)} gens{draft.spentUsd && draft.spentUsd > 0 ? ` + $${draft.spentUsd.toFixed(3)}` : ''}. Approved generation estimate: {draft.budget.previewGens} gens for rest fitting + {draft.budget.poseGens} gens for animation.</p>{/if}
     {#if plan && !candidate}<p class="faint small">PixelLab may bill usage in dollars instead of generations. Actual charges appear in Activity.</p>{/if}
     <div class="actions fit-actions">
       {#if candidate || stage === 'fit-review'}

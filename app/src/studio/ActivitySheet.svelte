@@ -48,7 +48,7 @@
     {/if}
     {#if fits.length}
       <section class="act-group"><span class="sec-title">Equipment fits</span><ul>{#each fits as fit (fit.id)}
-        <li><CircleAlert size={16} /><span class="act-main"><b>{fit.name}</b><span class="muted small">{fitLabel(fit.stage)} · {+fit.spentGens.toFixed(2)} gens{#if fit.spentUsd && fit.spentUsd > 0} + ${fit.spentUsd.toFixed(3)}{/if} spent</span></span><button class="btn sm" onclick={() => openFit(fit.id)}>{fit.stage.endsWith('running') ? 'View' : 'Continue'}</button></li>
+        <li><CircleAlert size={16} /><span class="act-main"><b>{fit.name}</b><span class="muted small">{fitLabel(fit.stage)} · {+fit.spentGens.toFixed(2)} gens{fit.spentUsd && fit.spentUsd > 0 ? ` + $${fit.spentUsd.toFixed(3)}` : ''} spent</span></span><button class="btn sm" onclick={() => openFit(fit.id)}>{fit.stage.endsWith('running') ? 'View' : 'Continue'}</button></li>
       {/each}</ul></section>
     {/if}
     {#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
