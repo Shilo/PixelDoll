@@ -154,6 +154,8 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     if (ui.selected) ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
     lsSet(K.last, id);
     doc.rev++;
+    // Keep it equips the accepted item while opening; persist that edit before a reload or project switch.
+    if (keep?.wear) { save(); await flushSave(); }
   } catch (e) {
     doc.error = (e as Error).message;
     if (id !== DEMO) return openProject(DEMO);
@@ -543,7 +545,7 @@ export async function startCreate(spec: CreateSpec) {
   creating.progress = null;
   await db.put('projects', CREATE_KEY, { id: CREATE_KEY, spec });
   try {
-    const id = await createCharacter(spec, (p) => (creating.progress = p));
+    const id = await createCharacter(spec, (p) => { creating.progress = p; });
     creating.projectId = id;
     const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', id);
     creating.warnings = rec?.rigQa?.warnings ?? [];
@@ -578,7 +580,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false });
   await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId });
   try {
-    await addMove(projectId, spec, (p) => (moving.progress = p));
+    await addMove(projectId, spec, (p) => { moving.progress = p; });
     moving.done = true;
     await db.del('projects', MOVE_KEY);
     if (doc.id === projectId) { await openProject(projectId); ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
@@ -612,7 +614,7 @@ export async function startSetup(spec: SetupSpec) {
   try {
     await flushSave();
     await db.put('projects', SETUP_KEY, { id: SETUP_KEY, spec });
-    await setupCharacter(spec, (p) => (settingUp.progress = p));
+    await setupCharacter(spec, (p) => { settingUp.progress = p; });
     settingUp.done = true;
     const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', spec.projectId);
     settingUp.warnings = rec?.rigQa?.warnings ?? [];

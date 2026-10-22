@@ -195,3 +195,22 @@ test('deleting a disposable character preserves another character’s pending re
   expect(result).toEqual({ resultKept: true, draftKept: true })
   await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
 })
+
+test('equipping an accepted item while opening its project survives reload', async ({ page, context }, info) => {
+  await context.route('https://api.pixellab.ai/**', (r) => r.abort())
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const name = await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    await s.copyDemo()
+    const hat = s.store.project.manifest.items.find((i: { slot: string }) => i.slot === 'head')
+    if (s.doc.items.head === hat.id) s.wear(hat.id)
+    await s.flushSave()
+    // Keep it calls this path after saving an accepted item's frames.
+    await s.openProject(s.doc.id, { wear: hat.id })
+    return hat.name as string
+  })
+  await expect(page.getByRole('button', { name: `Wear ${name}`, exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await page.reload()
+  await expect(page.getByRole('button', { name: `Wear ${name}`, exact: true })).toHaveAttribute('aria-pressed', 'true')
+})
