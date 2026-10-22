@@ -1,6 +1,7 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
   import Sprite from './Sprite.svelte'
+  import { formDrafts } from './formDrafts.ts'
   import { setupPlan, rigReady, type SetupPlan } from '../lib/rig/setup.ts'
   import * as db from '../lib/store/db.ts'
   import type { StoredProject } from '../lib/store/project.ts'
@@ -9,7 +10,8 @@
   import { Check, TriangleAlert } from './icons.ts'
   const m = $derived(store.project?.manifest)
   let rec = $state.raw<StoredProject | null>(null), plan = $state.raw<SetupPlan | null>(null)
-  let error = $state(''), looks = $state(store.project?.manifest.items.find((i) => i.slot === 'body')?.prompt ?? ''), restAnim = $state('')
+  const draft = formDrafts.setup?.projectId === doc.id ? formDrafts.setup : undefined
+  let error = $state(''), looks = $state(draft?.looks ?? store.project?.manifest.items.find((i) => i.slot === 'body')?.prompt ?? ''), restAnim = $state(draft?.restAnim ?? '')
   const mine = $derived(settingUp.spec?.projectId === doc.id)
   const active = $derived(mine && !settingUp.done && !settingUp.error)
   const busyElsewhere = $derived((!!settingUp.spec && !settingUp.done && !mine) || (!!moving.spec && !moving.done) || (!!creating.spec && !creating.projectId))
@@ -26,7 +28,8 @@
   function go() {
     if (!m || !plan || !looks.trim()) return
     const spec = { projectId: doc.id, baseHash: m.rig.baseHash, restAnim: plan.restAnim, looks: looks.trim(), seed: 1 + Math.floor(Math.random() * 2_000_000) }
-    withKey(() => { void startSetup(spec); ui.sheet = 'setup' })
+    formDrafts.setup = { projectId: doc.id, looks, restAnim }
+    withKey(() => { formDrafts.setup = undefined; void startSetup(spec); ui.sheet = 'setup' })
   }
 </script>
 
