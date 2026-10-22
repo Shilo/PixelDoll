@@ -63,8 +63,8 @@ export interface Item {
   provenance: Provenance[];
   qa?: ItemQa; // not read by compose/export
 }
-/** Gates G1–G8 (architecture §3.3); worst value over all cells/clips of the item. */
-export interface ItemQa {
+/** Scalar checks for one evaluation; extrema or totals over its frames. */
+export interface QaSummary {
   minKeyKept: number;
   maxKeyOutside: number;
   minAreaRatio: number;
@@ -75,9 +75,14 @@ export interface ItemQa {
   shiftedFrames?: number; // cells whose silhouette fits the base better at a non-zero 1 px shift
   grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
   strayPx?: number; // removed by the largest-component filter (posed cells)
-  rerolls: number;
   status: 'pass' | 'warn' | 'fail' | 'accepted';
+}
+/** Gates G1–G10 and H4 (architecture §3.3). */
+export interface ItemQa extends QaSummary {
+  rerolls: number; // recorded retry history, not a count of current frames
   cells: Record<CellKey, CellQa>;
+  clips?: Record<string, QaSummary & { hand?: 'r' | 'l' | '?' }>; // anim/direction; replaceable current checks
+  legacy?: { clips: string[]; summary?: QaSummary }; // indivisible older checks, retained until these clips are replaced
 }
 export interface CellQa {
   route: 'posed' | 'ea2' | 'grid' | 'diff' | 'chroma' | 'propagated' | 'mirrored' | 'two-pass' | 'import';

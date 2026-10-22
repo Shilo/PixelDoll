@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
-import { DESIGN, GREYISH, greyShare, dirGate, slotOf, type CellOut } from '../../src/lib/items/items.ts'
+import { DESIGN, GREYISH, greyShare, dirGate, itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts'
+import { withH4 } from '../../src/lib/items/run.ts'
 import { makeImg } from '../../src/lib/image/png.ts'
 import type { Rig } from '../../src/lib/rig/rig.ts'
 import fixture from '../fixtures/helmet-occlusion.json'
@@ -16,6 +17,14 @@ function cell(i = 0): CellOut {
   return { ...c, base, layer, out, input: base, mask: Uint8Array.from({ length: layer.w * layer.h }, (_, p) => layer.data[p * 4 + 3] ? 1 : 0), outBand: 0, baseBand: 0, specks: 0, pinholes: 0, shifted: false, offset: [0, 0], stray: 0, posed: true }
 }
 const gate = (c: CellOut, r?: Rig) => dirGate(slotOf('head'), [c], keys, r)
+
+test('H4 review and hard failures are retained in replaceable clip summaries', () => {
+  for (const i of [0, 1]) {
+    const c = cell(i), slot = slotOf('head'), q = withH4(itemQa(rig, slot, 'green', [c], 0), slot, [c], keys, rig)
+    expect(q.qa.clips![c.key.split('/').slice(0, 2).join('/')].status).toBe(i ? 'fail' : 'warn')
+    expect(q.qa.status).toBe(i ? 'fail' : 'warn')
+  }
+})
 
 test('a saved forearm-covered visor gets review instead of a false H4 retry', () => {
   const c = cell(), before = [...c.layer.data]

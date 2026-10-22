@@ -29,6 +29,10 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   pixels explain the mismatch; true deformations still fail. Appended move QA now links to the selected source record
   by produced frame key, including grid fallbacks and prior history. See `docs/testing/item-quality-follow-up-2026-10-22.md`.
 - **PixelLab credits:** balance ≈212 (free GET, 2026-10-22). Shield validation spent 99 generations (34 + 65).
+- **Move QA summaries:** new evaluations retain checks per move/direction, including H4 review status. Adding or replacing
+  a direction recomputes current extrema and counts, preserves accepted exceptions and source links, and survives ZIP
+  export. Older indivisible checks remain explicitly incomplete until their coverage is replaced. Both CI jobs now use
+  `ubuntu-24.04`. Offline tests and review: `docs/testing/qa-summaries-2026-10-22.md`.
 
 ## Roadmap
 
@@ -40,7 +44,7 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
    optional `mirror: "generate"` per item to keep handedness in mirrored directions.
 4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
 5. **Theming** — runtime theme tokens + "Paper" theme inspired by design look D (deferred by user).
-6. **Housekeeping** — CI runner pin (`ubuntu-latest` → Ubuntu 26 migration), PixelLab OpenAPI snapshot refresh when
+6. **Housekeeping** — CI runner pinned to `ubuntu-24.04`; PixelLab OpenAPI snapshot refresh when
    endpoints change. Releases: bump `app/package.json`, annotated tag `vX.Y.Z`, `gh release create`.
 
 ## Decisions log

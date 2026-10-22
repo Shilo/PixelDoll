@@ -12,7 +12,6 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
       occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recoloured.
 3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
 4. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
-5. [ ] CI: pin `runs-on` to `ubuntu-24.04` or accept the Ubuntu 26 migration of `ubuntu-latest` (runner notice, 2026-10)
 
 Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio regression
 in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
@@ -29,10 +28,10 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
   acceptance. Inspect saved grip/orientation evidence before more paid retries. See `docs/testing/shields-2026-10-22.md`.
 - [!] **Generation is not bit-repeatable.** Same request + seed ≠ same pixels → base frames are frozen and never
   regenerated; changing the base (`baseHash`) makes existing items stale.
-- [!] **QA summaries after adding moves.** Per-frame checks and warning status survive, but aggregate item metrics still
-  describe the original accepted clips. Accurate replaceable summaries need more per-clip data; do not infer a new
-  move is clean from them. Source-call indices for future appended/replaced cells are fixed; historical ZIPs retain
-  their original metadata and are not silently migrated.
+- [!] **Historical item QA.** New move summaries update correctly on additions/replacements. Older saved items lack
+  replaceable checks; after an edit they stay marked for review, with an explicit incomplete-check notice. Retained
+  historical totals may omit old additions or include replaced frames until all older coverage is replaced. No paid
+  recheck or silent reconstruction is performed. Historical source-call indices are also left untouched.
 - [!] **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colours disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 - [!] **Mirrored directions flip handedness** (west holds the sword in the left hand). `mirror: "generate"` per item is
@@ -65,6 +64,9 @@ Paperdoll output must be accurate, consistent, high quality, using proper PixelL
 proper post-processing and proper layering — frontier-standard paperdolling workflow.
 
 ## Done
+- [x] Replaceable move/direction QA summaries, accepted-exception handling, complete-frame guards, real IndexedDB/ZIP
+      browser regression and Codex browser inspection; adversarial review findings independently verified and fixed.
+      Both CI jobs pinned to `ubuntu-24.04`. See `docs/testing/qa-summaries-2026-10-22.md`.
 - [x] Saved shield trajectory audit; forearm-covered helmet review path with adversarial regression; cape D1 evidence;
       selected-source provenance mapping for appended/batched/grid move cells, with offline persistence regressions.
 - [x] Offline shield occlusion audit on all 96 saved frames, zero credits: body-explainable size/shape flags require

@@ -11,6 +11,7 @@ import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifes
 import type { DirectionName, Rig } from '../rig/rig.ts';
 import { fromApi } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
+import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
 import { chromaLayer, type Key } from '../image/chroma.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { DESIGN, GATES, anchored, planGens, GREYISH, SLOTS, bandMask, cutGrid, g2Fails, greyShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
@@ -319,12 +320,17 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa) : null };
 }
 /** itemQa + the H4 keyframe-consistency gate (posed cells only). */
-function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig: Rig): QaResult {
+export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig: Rig): QaResult {
   const h = dirGate(slot, cells, keys, rig);
   for (const [k, why] of h.fails) q.failCalls.set(k, [...(q.failCalls.get(k) ?? []), ...why]);
   q.warnings.push(...h.warnings);
   if (h.fails.size) q.qa.status = 'fail';
   else if (h.warnings.length && q.qa.status === 'pass') q.qa.status = 'warn';
+  for (const [clip, summary] of Object.entries(q.qa.clips ?? {})) {
+    const part = dirGate(slot, cells.filter((c) => clipOf(c.key) === clip), keys, rig);
+    if (part.fails.size) summary.status = 'fail';
+    else if (part.warnings.length && summary.status === 'pass') summary.status = 'warn';
+  }
   return q;
 }
 /** The rig project with this draft equipped (for compose previews in every direction, mirrored ones included). */
@@ -348,7 +354,7 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
   const r = res ?? (await evaluateItem(d, ctx));
   if (!r.qa || d.calls.some((c) => recOf(c.recId)?.state !== 'done')) throw new Error(`${d.spec.id}: not all calls are done`);
-  const qa = { ...r.qa.qa, status: r.qa.qa.status === 'pass' ? 'pass' : 'accepted' } as const;
+  const qa = acceptQa(r.qa.qa);
   const dress = d.calls[0].kind === 'dress', dressed: Partial<Record<DirectionName, Img>> = {};
   if (dress) for (const [k, o] of dressedOf(d.calls)) dressed[k.split('/')[1] as DirectionName] = await img(o.sha);
   const { item, images } = await buildItem({
@@ -422,6 +428,12 @@ const failCount = (q: QaResult) => [...q.failCalls.values()].flat().length;
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
 export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
   const { rig } = ctx.rec.manifest, key = item.key!;
+  const count = rig.animations.find((a) => a.id === anim)?.cells;
+  const expected = new Set(dirs.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`)));
+  if (!count || !expected.size || cells.length !== expected.size || new Set(cells.map((c) => c.key)).size !== expected.size || cells.some((c) => !expected.has(c.key))
+    || Object.keys(q.qa.cells).length !== expected.size || Object.keys(q.qa.cells).some((k) => !expected.has(k))
+    || dirs.some((d) => !q.qa.clips?.[`${anim}/${d}`]) || Object.keys(q.qa.clips ?? {}).length !== new Set(dirs).size)
+    throw new Error('Move QA requires every frame of each replaced direction');
   const spec: ItemSpec = { id: item.id, name: item.name, slot: item.slot, prompt: item.prompt, key, anims: [anim], dirs, method: 'skel' };
   const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa, pad });
   const out: Item = structuredClone(item);
@@ -435,7 +447,7 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
     return [k, { ...c, provenance }];
   }));
   out.provenance = [...out.provenance, ...prov];
-  if (out.qa) out.qa = { ...out.qa, cells: { ...out.qa.cells, ...qaCells }, status: q.qa.status === 'pass' || out.qa.status !== 'pass' ? out.qa.status : 'warn' };
+  out.qa = mergeQa(item, q.qa, qaCells);
   await saveItem(ctx.rec.id, out, built.images, SLOTS);
 }
 /** B14: one clip-direction of an accepted item as an inpaint-v3 grid (its dressed keyframes as the reference cells). */

@@ -187,6 +187,23 @@ elbow-to-wrist capsule (3 px radius at a 64 px cell). Require at least 6 visible
 and a masked score ≥ the unchanged 0.75 floor under that same joint alignment. An unrelated arm or head alignment
 alone cannot excuse a failure. This produces an explicit review warning, not verified hidden detail or a clean pass.
 All item and new-move H4 callers supply the rig; missing poses retain the original check.
+New QA records retain scalar summaries per `animation/direction`, including H4 failure/review status and the decided
+hand. Adding or replacing a complete direction reduces the current parts again: minimum kept/area ratio, maximum
+outside/CV/palette distance, and summed border/shift/stray/grip counts. Source-call mappings stay per frame. Recorded
+retry history is retained rather than subtracted when artwork is replaced. Accepting an item overrides only non-clean
+parts; replacing the last accepted exception can restore a clean result. A clip's slot-side gate determines failure;
+an accepted hand exception is not reopened by a later majority vote.
+
+Palette reporting uses the worst per-clip call-segment distance against the same evaluation's design-call palette.
+This prevents a clean segment of a packed call from diluting a drifting one; per-call paid retry maps/budgets are
+unchanged. A new per-clip review warning always carries an explanation. This does not add a cross-generation palette
+comparison to an older item's original design; each evaluation retains its own design reference.
+
+Older QA cannot be reconstructed exactly from transparent layers/composites. On a move edit, retain its indivisible
+scalar baseline and remaining original layer coverage, merge new parts, and prevent a clean status while old coverage
+remains. The inspector explicitly says older checks are incomplete and totals may include replaced frames. The baseline
+is removed only after all that coverage is replaced; an item without any old QA retains unknown coverage instead.
+This preserves historical evidence, not a claim that old totals measured every previously appended move.
 G8 decides a clip's hand only with half its frames decided. A held frame repaired from the keyframe (S5) is not a warning.
 D1 (dress, 0 gens): a colourful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-grey px fails the dress call, so the
 design is re-rolled before 36 gens of poses copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks

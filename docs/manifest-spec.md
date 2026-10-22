@@ -173,7 +173,7 @@ export interface ItemQa {
   shiftedFrames: number;                  // frames whose best integer shift != 0; must be 0
   minAreaRatio: number;                   // cell area / clip median, >= 0.5
   maxAreaCV: number;                      // per clip, <= 0.15
-  maxPaletteDist: number;                 // vs dressed keyframe / design call, <= 15
+  maxPaletteDist: number;                 // worst clip/call segment vs evaluation's design palette, <= 15
   clipPx: number;                         // opaque px on cell borders, 0
   grip?: { R: number; L: number; amb: number; none: number }; // held items (gripSide counts)
   anchorSpread?: number;                  // head items, px, <= 3 front/back
@@ -181,7 +181,13 @@ export interface ItemQa {
   rerolls: number;
   status: 'pass' | 'warn' | 'fail' | 'accepted'; // accepted = human override
   cells: Record<CellKey, CellQa>;
+  clips?: Record<string, QaSummary & { hand?: 'r' | 'l' | '?' }>; // animation/direction; current replaceable checks
+  legacy?: { clips: string[]; summary?: QaSummary }; // remaining older coverage; historical totals may be incomplete
 }
+// QaSummary contains ItemQa's scalar checks/status, excluding rerolls, cells, clips and legacy.
+// New move edits reduce the current parts; recorded retry history remains cumulative. Manual acceptance overrides
+// only non-clean parts. Old records are not silently reconstructed: while legacy coverage remains, status cannot pass.
+// Each evaluation uses its own design palette; the paid retry gates remain per call. Optional QA fields survive export.
 export interface CellQa {
   route: 'posed' | 'grid' | 'ea2' | 'diff' | 'mirrored' | 'import';
   provenance?: number;                    // index into item.provenance (source call)

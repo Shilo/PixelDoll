@@ -121,6 +121,7 @@
           {#if it.extractor}<dt>Extractor</dt><dd>{it.extractor}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
           {#if it.qa}
             <dt>QA</dt><dd>{it.qa.status}</dd>
+            {#if it.qa.legacy}<dt>Older checks</dt><dd>{it.qa.legacy.summary ? 'Older move checks are incomplete; totals may include replaced frames.' : 'Checks are incomplete for older moves.'}</dd>{/if}
             <dt>Key kept</dt><dd>{it.qa.minKeyKept} (≥ 0.97)</dd>
             <dt>Key outside</dt><dd>{it.qa.maxKeyOutside} (≤ 0.02)</dd>
             <dt>Area</dt><dd>min {it.qa.minAreaRatio} of median · CV {it.qa.maxAreaCV}</dd>

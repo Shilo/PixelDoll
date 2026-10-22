@@ -11,6 +11,7 @@ import { hasAll } from '../rig/poses.ts';
 import { actionOf, paddedPoses, poseBatches, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
+import { clipOf, summaryOf } from './qa-summary.ts';
 
 /**
  * Item routes (S4 §Q4), swappable without touching extraction, QA or the UI:
@@ -569,8 +570,29 @@ function heldVisibility(a: CellOut, b: CellOut, wa: [number, number], wb: [numbe
   return { hiddenA, hiddenB, compatible: shared >= 6 && hiddenA + hiddenB >= different && shared / (shared + different) >= GATES.heldIoU };
 }
 
-/** `pad`: oversize layers (held, S5) are gated on their own canvas; hand positions move by the pad. */
+/** Retain replaceable summaries against the same design palette as the complete evaluation.
+ * `pad`: oversize layers are gated on their own canvas; hand positions move by the pad. */
 export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax = GATES.keyOutside, pad = 0): QaResult {
+  const ref = designColours(cells), q = evaluateQa(rig, slot, route, cells, rerolls, keyOutsideMax, pad, ref);
+  q.qa.clips = Object.fromEntries(q.clips.map(({ clip, hand }) => {
+    const part = evaluateQa(rig, slot, route, cells.filter((c) => clipOf(c.key) === clip), 0, keyOutsideMax, pad, ref);
+    const summary = summaryOf(part.qa);
+    for (const warning of part.warnings) if (!q.warnings.includes(warning)) {
+      const message = warning.startsWith('G6 call ') ? `G6 ${clip}: palette distance ${summary.maxPaletteDist} to the design call` : `${clip}: ${warning}`;
+      if (!q.warnings.includes(message)) q.warnings.push(message);
+    }
+    return [clip, { ...summary, ...(hand ? { hand } : {}) }];
+  }));
+  // Reporting is per clip; the existing per-call palette retry budget is unchanged.
+  q.qa.maxPaletteDist = Math.max(0, ...Object.values(q.qa.clips).map((s) => s.maxPaletteDist));
+  if (q.qa.status === 'pass' && Object.values(q.qa.clips).some((s) => s.status === 'warn')) q.qa.status = 'warn';
+  return q;
+}
+const designColours = (cells: CellOut[]) => {
+  const first = Math.min(...cells.map((c) => c.call));
+  return [...new Set(cells.filter((c) => c.call === first).flatMap((c) => colours(c.layer)))];
+};
+function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax: number, pad: number, ref: number[]): QaResult {
   const w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, fail = new Map<number, string[]>(), warnings: string[] = [];
   const flag = (call: number, why: string) => (fail.get(call) ?? (fail.set(call, []), fail.get(call)!)).push(why);
   const cellsQa: Record<CellKey, CellQa> = {};
@@ -690,8 +712,6 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
   if (slot.class === 'held' && !decided.length) warnings.push('G8 handedness not checked (no hand anchors: run skeletons in M2)');
 
   // G6 design lock: palette distance of each later call to the design call (call 0)
-  const k0 = Math.min(...cells.map((c) => c.call)); // design call (anchor route) or the first posed clip (skel route)
-  const ref = [...new Set(cells.filter((c) => c.call === k0).flatMap((c) => colours(c.layer)))];
   const calls = [...new Set(cells.map((c) => c.call))].sort((a, b) => a - b);
   const paletteDist = Array.from({ length: Math.max(...calls) + 1 }, (_, k) => +paletteDistance(ref, cells.filter((c) => c.call === k).map((c) => c.layer)).toFixed(1));
   // soft gate: the UI re-rolls a drifting call while it has re-rolls left, then keeps it with a warning

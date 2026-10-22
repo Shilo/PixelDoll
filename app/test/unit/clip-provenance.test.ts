@@ -51,3 +51,12 @@ test('a missing source record cannot silently publish incorrect cell provenance'
   await expect(mergeClip(ctx, item, 'slash', ['south'], cells, [source(['slash/south/0'])], qa(cells))).rejects.toThrow('No source record for slash/south/1')
   expect(saveItem).not.toHaveBeenCalled()
 })
+
+test('incomplete, duplicate or mismatched frame checks cannot replace a complete direction', async () => {
+  const item = await existing(), cells = [cell('slash/south/0'), cell('slash/south/1')]
+  vi.mocked(saveItem).mockClear()
+  for (const partial of [cells.slice(0, 1), [cells[0], cells[0]]])
+    await expect(mergeClip(ctx, item, 'slash', ['south'], partial, [source(['slash/south/0', 'slash/south/1'])], qa(partial))).rejects.toThrow('every frame')
+  await expect(mergeClip(ctx, item, 'slash', ['south'], cells, [source(['slash/south/0', 'slash/south/1'])], qa(cells.slice(0, 1)))).rejects.toThrow('every frame')
+  expect(saveItem).not.toHaveBeenCalled()
+})

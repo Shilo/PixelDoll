@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><title>PixelDoll offline QA summary review</title>
+<style>body{font:16px system-ui;background:#18181b;color:#eee;max-width:1000px;margin:32px auto;padding:0 24px}button,a{font:inherit;padding:10px;margin:4px}a{color:#b9d2ff}td,th{padding:8px;text-align:left;border-bottom:1px solid #555}pre{white-space:pre-wrap}button{border-radius:8px}</style>
+<h1>Offline QA summary review</h1>
+<p>Deterministic check data on the saved demo body. No API requests or generation credits.</p>
+<button id="create">Create clean item</button><button id="add">Add faulty action</button>
+<button id="south">Replace south</button><button id="east">Replace east</button>
+<button id="reload">Reload saved checks</button><button id="roundtrip">Verify ZIP round trip</button><button id="legacy">Use older checks</button>
+<a href="/" target="_blank">Open in Studio</a>
+<p id="status" role="status">Ready</p><table><tbody id="summary"></tbody></table><pre id="result"></pre>
+<script type="module">
+import { loadFixture } from '/src/lib/compose/fixture.ts';
+import { cellImg } from '/src/lib/compose/compose.ts';
+import { buildItem, itemQa, SLOTS, slotOf } from '/src/lib/items/items.ts';
+import { mergeClip } from '/src/lib/items/run.ts';
+import { makeImg } from '/src/lib/image/png.ts';
+import { encodePngBytes } from '/src/lib/image/pngraw.ts';
+import { loadProject, saveItem } from '/src/lib/store/project.ts';
+import { projectEntries, readCharacterZip } from '/src/lib/store/import.ts';
+import { zip } from '/src/lib/store/zip.ts';
+import { exportManifest } from '/src/lib/export/generic.ts';
+import * as db from '/src/lib/store/db.ts';
+localStorage.setItem('pixeldoll.agentKey','off');
+const id='rig-qa-summary-review', itemId='qa-review-helmet';
+let ctx, dirs, first, action;
+const source=keys=>({endpoint:'/offline-fixture',params:{},seed:1,requestHash:'sha256:offline',createdAt:'2026-10-22T00:00:00Z',produced:keys});
+function cells(anim, selected, bad=false){
+ const rig=ctx.rec.manifest.rig, baseItem=ctx.rec.manifest.items.find(i=>i.id===rig.baseItem);
+ return selected.flatMap(d=>Array.from({length:rig.animations.find(a=>a.id===anim).cells},(_,i)=>{
+  const faulty=bad&&i===0&&(d==='south'||d==='east'), layer=makeImg(rig.cell.w,rig.cell.h), mask=new Uint8Array(layer.w*layer.h);
+  for(let y=8;y<(faulty?9:18);y++)for(let x=26;x<(faulty?27:36);x++){const p=y*layer.w+x;mask[p]=1;layer.data.set([150,150,170,255],p*4)}
+  const base=cellImg(ctx.project,baseItem.layers[0],anim,d,i)||makeImg(layer.w,layer.h);
+  return{key:`${anim}/${d}/${i}`,call:0,base,input:base,out:layer,layer,mask,area:faulty?1:100,outBand:0,baseBand:0,specks:0,pinholes:0,shifted:faulty,offset:[0,0],stray:faulty?5:0,posed:true,keyKept:faulty?.8:1,keyOutside:faulty?.2:0};
+ }));
+}
+async function reload(){
+ ctx=await loadProject(id); const m=ctx.rec.manifest, q=m.items.find(i=>i.id===itemId).qa;
+ dirs=m.rig.directions.filter(d=>!d.mirrorOf).map(d=>d.id);[first,action]=m.rig.animations.map(a=>a.id);
+ document.querySelector('#summary').replaceChildren();
+ for(const[k,v]of Object.entries(q).filter(([k])=>!['cells','clips'].includes(k))){const row=document.createElement('tr'),key=document.createElement('th'),value=document.createElement('td');key.scope='row';key.textContent=k;value.textContent=typeof v==='object'?JSON.stringify(v):String(v);row.append(key,value);document.querySelector('#summary').append(row)}
+ document.querySelector('#result').textContent=JSON.stringify({clips:q.clips,frames:Object.keys(q.cells).length},null,2);return q;
+}
+async function create(){
+ const p=await loadFixture(async path=>new Uint8Array(await(await fetch(`/fixtures/s2/${path}`)).arrayBuffer()));
+ const m=p.manifest;m.name='QA summary review';m.items=m.items.filter(i=>i.id===m.rig.baseItem);m.materials=m.materials.filter(x=>x.owner===m.rig.baseItem);m.presets=[{id:'default',name:'Default',items:{body:m.rig.baseItem,head:itemId},variants:{}}];
+ ctx={rec:{id,savedAt:new Date().toISOString(),manifest:m,origin:'studio'},project:p};
+ dirs=m.rig.directions.filter(d=>!d.mirrorOf).map(d=>d.id);[first,action]=m.rig.animations.map(a=>a.id);
+ for(const[h,im]of p.images)await db.put('blobs',h.slice(7),new Blob([await encodePngBytes(im)],{type:'image/png'}));
+ await db.put('projects',id,ctx.rec);
+ const c=cells(first,dirs), built=await buildItem({spec:{id:itemId,name:'QA review helmet',slot:'head',prompt:'offline fixture',key:'green',anims:[first],dirs,method:'skel'},rig:m.rig,cells:c,route:'green',provenance:[source(c.map(c=>c.key))],qa:itemQa(m.rig,slotOf('head'),'green',c,0).qa});
+ await saveItem(id,built.item,built.images,SLOTS);localStorage.setItem('pixeldoll.studio.project',id);localStorage.setItem('pixeldoll.welcomed','1');return reload();
+}
+async function replace(selected,bad=false){await reload();const item=ctx.rec.manifest.items.find(i=>i.id===itemId),c=cells(action,selected,bad);await mergeClip(ctx,item,action,selected,c,[source(c.map(c=>c.key))],itemQa(ctx.rec.manifest.rig,slotOf('head'),'green',c,0));return reload()}
+const jobs={create,add:()=>replace(dirs,true),south:()=>replace(['south']),east:()=>replace(['east']),reload,legacy:async()=>{await reload();await db.update('projects',id,rec=>{delete rec.manifest.items.find(i=>i.id===itemId).qa.clips;return rec});return replace(['south'])},roundtrip:async()=>{const q=await reload(),p=ctx.project,r=await readCharacterZip(await zip(await projectEntries(p))),copy=r.project.manifest.items.find(i=>i.id===itemId).qa,engine=exportManifest(p,{engines:['generic'],baked:false}).manifest.items.find(i=>i.id===itemId).qa;if(JSON.stringify(copy)!==JSON.stringify(q)||JSON.stringify(engine)!==JSON.stringify(q))throw Error('QA changed in export');return 'Editable ZIP and engine manifest retain every QA field'}};
+for(const[k,job]of Object.entries(jobs))document.getElementById(k).onclick=async()=>{const s=document.querySelector('#status');s.textContent='Running';try{await job();s.textContent=`PASS ${k}`}catch(e){s.textContent=`FAIL ${k}: ${e.message}`;console.error(e)}};
+</script></html>
