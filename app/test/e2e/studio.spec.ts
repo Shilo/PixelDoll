@@ -244,6 +244,40 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   assert.deepEqual(unexpectedRequests, [], 'demo tests must never call the paid API')
 })
 
+test('desktop resize keeps preview controls inside the stage when switching panels', async ({ page }) => {
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto('/#/')
+  await page.locator('.stage canvas').first().waitFor()
+  await page.setViewportSize({ width: 700, height: 650 })
+  const wardrobe = page.getByRole('complementary', { name: 'Wardrobe', exact: true })
+  const inspector = page.getByRole('complementary', { name: 'Inspector', exact: true })
+  const controlsFit = async () => {
+    const stage = (await page.getByRole('main', { name: 'Preview' }).boundingBox())!
+    const controls = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!
+    expect(controls.x).toBeGreaterThanOrEqual(stage.x)
+    expect(controls.x + controls.width).toBeLessThanOrEqual(stage.x + stage.width)
+  }
+  await expect(wardrobe).toBeVisible()
+  await expect(inspector).toHaveCount(0)
+  await controlsFit()
+  await page.getByRole('button', { name: 'Inspector', exact: true }).click()
+  await expect(inspector).toBeVisible()
+  await expect(wardrobe).toHaveCount(0)
+  await controlsFit()
+  await page.setViewportSize({ width: 600, height: 600 })
+  await controlsFit()
+  await page.getByRole('button', { name: 'Wardrobe', exact: true }).click()
+  await expect(wardrobe).toBeVisible()
+  await expect(inspector).toHaveCount(0)
+  await controlsFit()
+  await page.keyboard.press('Control+Alt+i')
+  await expect(inspector).toBeVisible()
+  await expect(wardrobe).toHaveCount(0)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await expect(wardrobe).toBeVisible()
+  await expect(inspector).toBeVisible()
+})
+
 test('canceling Connect preserves generation drafts and discards the pending action', async ({ page }) => {
   const paidRequests: string[] = []
   await page.route('https://api.pixellab.ai/**', async (route) => {

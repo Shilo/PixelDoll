@@ -93,7 +93,7 @@
     const m = store.project?.manifest
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return }
-    if (mod && e.altKey && e.key.toLowerCase() === 'i') { e.preventDefault(); ui.inspector = !ui.inspector; return }
+    if (mod && e.altKey && e.key.toLowerCase() === 'i') { e.preventDefault(); if (ui.size === 'medium' && ui.drawer) { ui.drawer = false; ui.inspector = true } else ui.inspector = !ui.inspector; return }
     if (mod || e.altKey || !m) return
     if (e.key === ' ' && !t.closest('button, a')) { e.preventDefault(); ui.playing = !ui.playing }
     else if (e.key === ',' || e.key === '.') { ui.playing = false; ui.frame += e.key === '.' ? 1 : (view.anim?.frames.length ?? 1) - 1 }
@@ -123,7 +123,7 @@
         <!-- B10 (T1 P1-3): medium width pushes the stage instead of covering it; portrait tablets use the stacked layout -->
         {#if (ui.size === 'expanded' && ui.sidebar) || (ui.size === 'medium' && ui.drawer)}<aside class="side pane" aria-label="Wardrobe"><Wardrobe /></aside>{/if}
         <main class="stage-wrap" aria-label="Preview"><Stage /><StageNote /></main>
-        {#if desk && ui.inspector}<aside class="insp pane" aria-label="Inspector"><Inspector /></aside>{/if}
+        {#if desk && ui.inspector && (ui.size !== 'medium' || !ui.drawer)}<aside class="insp pane" aria-label="Inspector"><Inspector /></aside>{/if}
         {#if ui.size === 'compact'}<section class="phone-panel" aria-label={ui.tab}><PhonePanel /></section>{/if}
         {#if ui.size === 'landscape'}
           <section class="land-col">

@@ -63,7 +63,7 @@
     {:else}
       <button class="btn primary" onclick={() => (ui.sheet = 'export')} disabled={!m}><Download size={15} />Export</button>
       {#if ui.size === 'expanded' || ui.size === 'medium'}
-        <button class="btn icon plain" aria-label="Inspector" title="Show / hide the inspector (Ctrl+Alt+I)" aria-pressed={ui.inspector} onclick={() => (ui.inspector = !ui.inspector)}><PanelRight size={18} /></button>
+        <button class="btn icon plain" aria-label="Inspector" title="Show / hide the inspector (Ctrl+Alt+I)" aria-pressed={ui.inspector && (ui.size !== 'medium' || !ui.drawer)} onclick={() => { if (ui.size === 'medium' && ui.drawer) { ui.drawer = false; ui.inspector = true } else ui.inspector = !ui.inspector }}><PanelRight size={18} /></button>
       {/if}
     {/if}
   </div>
