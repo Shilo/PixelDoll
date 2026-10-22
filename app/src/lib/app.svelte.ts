@@ -4,23 +4,10 @@ import type { Balance } from './pixellab/routes.ts';
 import { queue } from './pixellab/queue.ts';
 
 const LS_KEY = 'pixellabApiKey'; // shared across apps on this origin
-const LEGACY_LS_KEY = 'pixeldoll.apiKey';
-const SAVED_KEYS = [LS_KEY, LEGACY_LS_KEY, 'pixellab-backpack:key-kept'];
 const lsGet = () => {
-  let shared = '';
-  let legacy = '';
-  try {
-    shared = localStorage.getItem(LS_KEY) ?? '';
-    legacy = localStorage.getItem(LEGACY_LS_KEY) ?? '';
-  } catch {}
-  // A full store must not discard a readable saved key. Leave the old copy until a successful move or explicit Forget.
-  try {
-    if (!shared && legacy) localStorage.setItem(LS_KEY, legacy);
-    if (shared || legacy) localStorage.removeItem(LEGACY_LS_KEY);
-  } catch {}
-  return shared || legacy;
+  try { return localStorage.getItem(LS_KEY) ?? ''; } catch { return ''; }
 };
-const clearSavedKeys = () => { for (const name of SAVED_KEYS) { try { localStorage.removeItem(name); } catch {} } };
+const clearSavedKey = () => { try { localStorage.removeItem(LS_KEY); } catch {} };
 
 const stored = lsGet();
 export const app = $state({
@@ -43,14 +30,14 @@ export function setKey(key: string, remember: boolean) {
   app.remembered = remember && !!app.key;
   try {
     if (app.remembered) localStorage.setItem(LS_KEY, app.key);
-    else clearSavedKeys();
+    else clearSavedKey();
   } catch {}
   queue.setKey(app.key);
   void refreshBalance();
 }
 
 export function forgetKey() {
-  clearSavedKeys();
+  clearSavedKey();
   app.key = '';
   app.remembered = false;
   app.balance = null;

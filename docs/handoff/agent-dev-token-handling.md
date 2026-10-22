@@ -43,8 +43,8 @@ development**, generating images without a human pasting the token into the runn
 11. **Human token UX (production and normal dev):** the token is kept per tab by default (in memory or sessionStorage).
     "Remember on this device" (localStorage) is opt-in. It is sent only as `Authorization: Bearer` to `https://api.pixellab.ai`, and never put
     in URLs, logs, exports, project files, job ledgers or provenance.
-    Both apps use `localStorage['pixellabApiKey']` for remembered keys. Migrate each app's old saved entry once, preferring
-    an existing shared key and removing the old copy. Forget removes the shared saved key; other apps pick it up on load.
+    Both apps use only `localStorage['pixellabApiKey']` for remembered keys. Do not read, migrate, write or remove older
+    app-specific API-key entries. Forget removes the shared saved key; other apps pick it up on load.
 12. **Agents never print, log, screenshot or commit the token.** Agents check `GET /balance` (free) unless the task needs
     generations.
 

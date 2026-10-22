@@ -48,8 +48,8 @@ Open `#/` for the Studio. **Try the demo** needs no key. To generate, open **Con
 `api.pixellab.ai`. `npm run dev` handles the key exactly like the deployed site: there is no key file, endpoint or button.
 
 Remembered keys use `localStorage['pixellabApiKey']`, shared with PixelLab Backpack and other apps on the same origin
-(including other `https://shilo.github.io/` project paths). Existing `pixeldoll.apiKey` entries move to this name on load;
-an existing shared key takes priority. Forget removes the shared saved key. Other open apps read it on their next load.
+(including other `https://shilo.github.io/` project paths). Only this name is used; older saved names are ignored and are
+not migrated. Forget removes the shared saved key. Other open apps read it on their next load.
 
 **Agent mode (AI agents only).** Automated agents (Claude, Codex, …) that test generations use a separate dev server:
 

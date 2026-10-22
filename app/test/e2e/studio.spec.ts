@@ -405,15 +405,16 @@ test('canceling Connect preserves generation drafts and discards the pending act
 })
 
 // Synthetic keys only: exercise the production bundle without contacting PixelLab.
-for (const initial of ['shared', 'legacy', 'both', 'quota'] as const) {
-  test('remembered key: ' + initial + ' uses the shared name and Forget survives reload', async ({ page }) => {
+for (const initial of ['shared', 'old-only', 'both'] as const) {
+  test('remembered key: ' + initial + ' uses only the shared name and Forget survives reload', async ({ page }) => {
     const shared = 'test-shared-key-1234';
     const legacy = 'test-legacy-key-5678';
-    const expected = initial === 'legacy' || initial === 'quota' ? legacy : shared;
+    let requests = 0;
     await page.route('https://api.pixellab.ai/**', async (route) => {
+      requests++;
       expect(route.request().method()).toBe('GET');
       expect(new URL(route.request().url()).pathname).toBe('/v2/balance');
-      expect(route.request().headers().authorization).toBe('Bearer ' + expected);
+      expect(route.request().headers().authorization).toBe('Bearer ' + shared);
       await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 0 } } });
     });
     await page.addInitScript(({ initial, shared, legacy }) => {
@@ -424,17 +425,25 @@ for (const initial of ['shared', 'legacy', 'both', 'quota'] as const) {
       if (initial === 'shared' || initial === 'both') localStorage.setItem('pixellabApiKey', shared);
       if (initial !== 'shared') localStorage.setItem('pixeldoll.apiKey', legacy);
       localStorage.setItem('pixellab-backpack:key-kept', 'other-app-legacy-key');
-      if (initial === 'quota') Storage.prototype.setItem = () => { throw new DOMException('full', 'QuotaExceededError'); };
     }, { initial, shared, legacy });
     await page.goto('/#/');
     await page.locator('.project-btn').click();
-    await page.getByRole('menuitem', { name: 'PixelLab key', exact: true }).click();
+    await page.getByRole('menuitem', { name: initial === 'old-only' ? 'Connect PixelLab…' : 'PixelLab key', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
-    await expect(dialog.getByText(/Connected and remembered/)).toBeVisible();
-    expect(await page.evaluate(() => [localStorage.getItem('pixellabApiKey'), localStorage.getItem('pixeldoll.apiKey')])).toEqual(initial === 'quota' ? [null, legacy] : [expected, null]);
-    await dialog.getByRole('button', { name: 'Forget key' }).click();
+    if (initial === 'old-only') {
+      await expect(dialog.getByRole('button', { name: 'Forget key' })).toHaveCount(0);
+      await expect(dialog.getByLabel('API key', { exact: true })).toHaveValue('');
+      expect(requests).toBe(0);
+    } else {
+      await expect(dialog.getByText(/Connected and remembered/)).toBeVisible();
+      expect(requests).toBeGreaterThan(0);
+    }
+    expect(await page.evaluate(() => [localStorage.getItem('pixellabApiKey'), localStorage.getItem('pixeldoll.apiKey')])).toEqual([initial === 'old-only' ? null : shared, initial === 'shared' ? null : legacy]);
+    if (initial !== 'old-only') await dialog.getByRole('button', { name: 'Forget key' }).click();
+    const beforeReload = requests;
     await page.reload();
-    expect(await page.evaluate(() => [localStorage.getItem('pixellabApiKey'), localStorage.getItem('pixeldoll.apiKey'), localStorage.getItem('pixellab-backpack:key-kept')])).toEqual([null, null, null]);
+    expect(await page.evaluate(() => [localStorage.getItem('pixellabApiKey'), localStorage.getItem('pixeldoll.apiKey'), localStorage.getItem('pixellab-backpack:key-kept')])).toEqual([null, initial === 'shared' ? null : legacy, 'other-app-legacy-key']);
     await expect(page.locator('.tb-trail .balance')).toContainText('Connect');
+    expect(requests).toBe(beforeReload);
   });
 }
