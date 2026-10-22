@@ -10,7 +10,7 @@
   const k = $derived(Math.max(1, Math.floor((heroPx * ui.dpr) / 64)))
   const img = $derived(view.project && view.anim ? composeCell(view.project, doc.items, ui.anim, 'south', view.cell) : null)
   function create() { dismissWelcome(); ui.sheet = 'create' }
-  const STEPS = [['Create', 'Describe the body'], ['Add items', 'Hats, tops, weapons'], ['Dress up', 'Wear, recolour, play'], ['Export', 'Godot, Unity, Phaser']]
+  const STEPS = [['Create', 'Describe the body'], ['Add items', 'Hats, tops, weapons'], ['Dress up', 'Wear, recolour, play'], ['Export', 'Any game engine']]
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
@@ -25,8 +25,8 @@
       {#if img}<Sprite {img} {k} label="Demo character walking" />{:else}<span class="ring spin" aria-hidden="true"></span>{/if}
     </div>
     <div class="hero-copy">
-      <h1 class="hero-title">Make a pixel character you can dress up</h1>
-      <p class="hero-sub">Describe a character, add hats, armour and weapons as separate layers, recolour them, and export sprite sheets for Godot, Unity or Phaser.</p>
+      <h1 class="hero-title">Dress up your 2D game characters with pixel&#8209;perfect paper dolling</h1>
+      <p class="hero-sub">Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.</p>
       <div class="hero-actions">
         <button class="btn primary lg" onclick={create}><Sparkles size={16} />Create your character</button>
         <button class="btn lg" onclick={dismissWelcome}>Try the demo</button>
