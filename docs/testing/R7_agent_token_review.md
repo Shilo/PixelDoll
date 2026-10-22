@@ -1,4 +1,4 @@
-# R7: agent-only token review (`PIXELLAB_TOKEN_AGENT_DEV`), PixelDoll + PixelLab Backpack
+# R7: agent-only token review (`PIXELLAB_API_KEY_AGENT_DEV`), PixelDoll + PixelLab Backpack
 
 Date: 2026-10-21. Reviewer: R7 (review + test only, no tracked files edited, nothing committed).
 Scope: PixelDoll (`C:\Programming_Files\Shilocity\PixelLab\PixelDoll`, reference) and PixelLab Backpack
@@ -21,7 +21,7 @@ trees (ignored files included), or the full git history of either repo. All find
 ## Static review (checklist 1)
 
 - Env reads: the only `.env` readers are the two `agentKey()` plugins and PixelDoll's `node --env-file=../../.env` spikes
-  (`spikes/api/lib/run.mjs` → `process.env.PIXELLAB_TOKEN_AGENT_DEV`; the logger strips nothing sensitive because headers are
+  (`spikes/api/lib/run.mjs` → `process.env.PIXELLAB_API_KEY_AGENT_DEV`; the logger strips nothing sensitive because headers are
   never logged; errors carry only method, path, status and body). Neither repo has `loadEnv`, `envPrefix`, a `VITE_`/`PUBLIC_`
   read, `define` of the token, or `process.env` in app code. `envDir: false` is set in both. `import.meta.env` is used only
   for `DEV`/`MODE`.
@@ -110,7 +110,7 @@ browser-reachable way to make the token act for another page). F2 and F3 are nex
 
 | Aspect | PixelDoll | Backpack | Verdict |
 |---|---|---|---|
-| Variable / location | `PIXELLAB_TOKEN_AGENT_DEV`, repo-root `.env` | same | consistent |
+| Variable / location | `PIXELLAB_API_KEY_AGENT_DEV`, repo-root `.env` | same | consistent |
 | Agent command / port | `dev:agent` → `vite --mode agent --port 5199 --strictPort` | `--port 5281` | fine (project-specific) |
 | Human command | `dev` → `vite` | same | consistent |
 | Endpoint path | `/__dev/pixellab-key` | same | consistent |
@@ -159,7 +159,7 @@ Applied: F1, F2, F3, F5, F6, plus the handoff wording and the kill-switch senten
   The handoff doc notes that raw TCP forwards (`ssh -L/-R`, `socat`) can't be detected, so that rule is the real control.
 - F3: `app/scripts/dist-guard.mjs` (port of Backpack's), run by `"build": "vite build && node scripts/dist-guard.mjs"`;
   the inline bash step is gone from `pages.yml` (CI still runs `npm run build`). Both guards now share one marker set:
-  `__dev`, `pixellab-key`, `PIXELLAB_TOKEN_AGENT_DEV`, `PIXELLAB_API_KEY` (added to Backpack's), `API_KEY_OVERRIDE`,
+  `__dev`, `pixellab-key`, `PIXELLAB_API_KEY_AGENT_DEV`, `PIXELLAB_API_KEY` (added to Backpack's), `API_KEY_OVERRIDE`,
   `DEV_API_KEY`, `devkey`, the project's kill-switch key, `agent-badge`, `sourceMappingURL` (covers inline `data:` maps),
   plus `.env*` and `*.map` files.
 - F5: the predicate lives in `app/agent-key.ts` (PixelDoll, `selfTest()` run by `npm run selftest` through a new optional

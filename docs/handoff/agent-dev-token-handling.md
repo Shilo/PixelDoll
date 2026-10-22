@@ -1,4 +1,4 @@
-# Handoff: agent-only PixelLab token handling (`PIXELLAB_TOKEN_AGENT_DEV`)
+# Handoff: agent-only PixelLab token handling (`PIXELLAB_API_KEY_AGENT_DEV`)
 
 Audience: an AI agent working on **another project** that also uses the PixelLab API. Your job is to change that project's
 environment-variable and PixelLab-token handling so it matches the contract below, which PixelDoll already implements.
@@ -19,7 +19,7 @@ development**, generating images without a human pasting the token into the runn
 
 ## 2. The contract (must-haves)
 
-1. **One variable name in both projects:** `PIXELLAB_TOKEN_AGENT_DEV` (name of the token → surface → environment).
+1. **One variable name in both projects:** `PIXELLAB_API_KEY_AGENT_DEV` (service → credential → surface → environment).
    Rename any older name (`PIXELLAB_API_KEY`, `PIXELLAB_SECRET`, `VITE_*`, etc.) everywhere, including `.env.example` if any.
 2. **It lives only in the repo-root `.env`**, which is git-ignored. It is never committed, never in CI secrets, and never in a
    `.env.*` file that a bundler loads automatically.
@@ -43,6 +43,8 @@ development**, generating images without a human pasting the token into the runn
 11. **Human token UX (production and normal dev):** the token is kept per tab by default (in memory or sessionStorage).
     "Remember on this device" (localStorage) is opt-in. It is sent only as `Authorization: Bearer` to `https://api.pixellab.ai`, and never put
     in URLs, logs, exports, project files, job ledgers or provenance.
+    Both apps use `localStorage['pixellabApiKey']` for remembered keys. Migrate each app's old saved entry once, preferring
+    an existing shared key and removing the old copy. Forget removes the shared saved key; other apps pick it up on load.
 12. **Agents never print, log, screenshot or commit the token.** Agents check `GET /balance` (free) unless the task needs
     generations.
 
@@ -78,7 +80,7 @@ never expose the agent server beyond localhost (no `--host`, tunnels or port for
 ```ts
 import { localSameOrigin } from './agent-key.ts'
 
-// AI-agent automation only: serves PIXELLAB_TOKEN_AGENT_DEV from ../.env at /__dev/pixellab-key.
+// AI-agent automation only: serves PIXELLAB_API_KEY_AGENT_DEV from ../.env at /__dev/pixellab-key.
 // Not registered at all for `npm run dev` or any build. Read server-side per request, never through Vite's env.
 function agentKey(): Plugin {
   return {
@@ -87,7 +89,7 @@ function agentKey(): Plugin {
       server.middlewares.use('/__dev/pixellab-key', (req, res) => {
         if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
         let key = ''
-        try { key = readFileSync(new URL('../.env', import.meta.url), 'utf8').match(/^PIXELLAB_TOKEN_AGENT_DEV=(.*)$/m)?.[1]?.trim() ?? '' } catch {}
+        try { key = readFileSync(new URL('../.env', import.meta.url), 'utf8').match(/^PIXELLAB_API_KEY_AGENT_DEV=(.*)$/m)?.[1]?.trim() ?? '' } catch {}
         res.setHeader('cache-control', 'no-store')
         res.statusCode = key ? 200 : 404
         res.end(key)
@@ -142,12 +144,12 @@ origin, so keep it set for the whole run). Never expose the agent server beyond 
 forwards).
 
 ### Node scripts (spikes, outside the app bundle)
-`node --env-file=../../.env script.mjs` reads `process.env.PIXELLAB_TOKEN_AGENT_DEV`. These are agent research scripts. They
+`node --env-file=../../.env script.mjs` reads `process.env.PIXELLAB_API_KEY_AGENT_DEV`. These are agent research scripts. They
 are never bundled or deployed.
 
 ### `.gitignore`
 ```gitignore
-# secrets (PIXELLAB_TOKEN_AGENT_DEV lives in .env; never commit it)
+# secrets (PIXELLAB_API_KEY_AGENT_DEV lives in .env; never commit it)
 .env
 .env.*
 ```
@@ -160,7 +162,7 @@ also deploy to GitHub Pages. No secrets, no env for the token.
 ```
 `app/scripts/dist-guard.mjs` (same script as Backpack's `scripts/dist-guard.mjs`, only the kill-switch key differs) walks
 `dist/`, prints file names only, and fails on any `.env*` file, any `*.map` file, or a file containing one of: `__dev`,
-`pixellab-key`, `PIXELLAB_TOKEN_AGENT_DEV`, `PIXELLAB_API_KEY`, `API_KEY_OVERRIDE`, `DEV_API_KEY`, `devkey`,
+`pixellab-key`, `PIXELLAB_API_KEY_AGENT_DEV`, `PIXELLAB_API_KEY`, `API_KEY_OVERRIDE`, `DEV_API_KEY`, `devkey`,
 `pixeldoll.agentKey`, `agent-badge`, `sourceMappingURL` (catches inline `data:` maps, whose base64 `sourcesContent` would
 ship the agent block without matching any other marker). Running it inside `npm run build` also covers a local build that is
 deployed by hand.
@@ -171,7 +173,7 @@ Adapt names and paths to that project's stack. If it isn't Vite, keep the same s
 server-side read of `.env`, a compile-time guard on the client code, a refused agent build, and a CI dist guard.
 
 1. [ ] Inventory every place the project reads a PixelLab token or env (`grep -rn "PIXELLAB\|import.meta.env\|process.env\|VITE_\|.env"`).
-2. [ ] Rename the variable to `PIXELLAB_TOKEN_AGENT_DEV` everywhere (code, docs, launch configs, `.env.example`). Ask the human
+2. [ ] Rename the variable to `PIXELLAB_API_KEY_AGENT_DEV` everywhere (code, docs, launch configs, `.env.example`). Ask the human
        to rename it in their local `.env`; don't edit or print `.env` yourself unless they explicitly allow it.
 3. [ ] Remove any bundler-env exposure of the token (`VITE_*`, `define`, `loadEnv` passed to the client) and disable
        automatic `.env` loading (Vite: `envDir: false`).
@@ -208,11 +210,11 @@ State on 2026-10-21 (read-only survey by the PixelDoll PM; verify before editing
 
 Concrete changes for pixellab-gallery:
 
-1. Ask the human to rename `API_KEY_OVERRIDE` → `PIXELLAB_TOKEN_AGENT_DEV` in `.env`. Don't open or print `.env`.
+1. Ask the human to rename `API_KEY_OVERRIDE` → `PIXELLAB_API_KEY_AGENT_DEV` in `.env`. Don't open or print `.env`.
 2. `package.json`: add `"dev:agent": "vite --mode agent --port <free port> --strictPort"`. Keep `"dev": "vite"` unchanged.
 3. `vite.config.ts`: switch to `defineConfig(({ command, mode }) => …)`. Keep `define: { __APP_VERSION__ }`, `build`,
    `preview.headers` and `test` exactly as they are. Add `envDir: false`, throw on `command === 'build' && mode === 'agent'`,
-   and register the agent-key middleware (section 3) only for `serve` + `agent`, reading `PIXELLAB_TOKEN_AGENT_DEV`
+   and register the agent-key middleware (section 3) only for `serve` + `agent`, reading `PIXELLAB_API_KEY_AGENT_DEV`
    server-side.
 4. `src/main.ts`: a gated block `if (import.meta.env.DEV && import.meta.env.MODE === 'agent')` that fetches the token and
    passes it through the **same verify-then-keep path a human uses** (`library.svelte.ts`), in the memory/session store,
@@ -222,7 +224,7 @@ Concrete changes for pixellab-gallery:
 7. Playwright: existing e2e specs run against mocks and must stay keyless. If a real-token smoke test is wanted, add a
    separate opt-in Playwright project whose `webServer` runs `dev:agent`, and never make it the default.
 8. Add a dist-guard script (e.g. `scripts/dist-guard.mjs`, run after `npm run build`) that fails on `__dev`, the endpoint
-   path, `PIXELLAB_TOKEN_AGENT_DEV`, `API_KEY_OVERRIDE`, `DEV_API_KEY`, `devkey`, the badge class, `.env*` files or `*.map`.
+   path, `PIXELLAB_API_KEY_AGENT_DEV`, `API_KEY_OVERRIDE`, `DEV_API_KEY`, `devkey`, the badge class, `.env*` files or `*.map`.
    Wire it into CI when CI is added.
 9. Extend the phase-4 "Done when" grep to the new names. Make sure `grep -r "API_KEY_OVERRIDE\|DEV_API_KEY\|devkey" src
    vite.config.ts` stays empty, and that the agent code exists only behind the guard.

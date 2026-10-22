@@ -51,7 +51,7 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   icons, system font. Theming + "Paper" theme deferred.
 - D10 (2026-10-21): Shirt/shorts regions are kept colour-disjoint by a 1/255 blue-channel parity nudge (invisible); upgrade
   path = per-layer region mask in the manifest.
-- D11 (2026-10-21, user): `PIXELLAB_TOKEN_AGENT_DEV` (repo-root `.env`) is for AI-agent dev automation only
+- D11 (2026-10-21, user): `PIXELLAB_API_KEY_AGENT_DEV` (repo-root `.env`) is for AI-agent dev automation only
   (`npm run dev:agent`). Humans and every build have no env/key path; CI fails if agent code reaches `dist`.
   Contract: `docs/handoff/agent-dev-token-handling.md`.
 - D12 (2026-10-21, user): Public GitHub repo under MIT; Pages at https://shilo.github.io/PixelDoll/ (custom domain
