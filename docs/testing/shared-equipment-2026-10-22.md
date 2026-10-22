@@ -40,7 +40,7 @@ The actual downloaded ZIP was reimported through the normal, keyless Studio on p
 
 To bound further spending, a validated one-direction clone of the real four-direction export was imported through the UI. Existing south body/equipment cells, actual standing references, palette IDs and selected azure colourway were retained. A new six-frame Hurt body move completed in one request plus six measurements. The body request billed $0.040; measurements were billed in dollars as well, rather than generations.
 
-Its first missing-equipment pose call reused approved standing references at zero transfer cost, with a displayed 3-generation request estimate. Actual usage was $0.020. Two visibly deformed helmet cells failed H4 (own similarity 0.67 / 0.57); Keep was correctly disabled. Independent screenshot review agreed these were real geometry defects, not harmless numerical flags. A single separately priced batch retry was then started; its final review is recorded below when complete. Thresholds were not relaxed and the rejected raster never replaced wardrobe cells.
+Its first missing-equipment pose call reused approved standing references at zero transfer cost, with a displayed 3-generation request estimate. Actual usage was $0.020. Two visibly deformed helmet cells failed H4 (own similarity 0.67 / 0.57); Keep was correctly disabled. Independent screenshot review agreed these were real geometry defects, not harmless numerical flags. A single separately priced batch retry billed $0.022 and still failed those cells (0.67 / 0.60). The cumulative $0.042 charge survived reload and appeared in the review and Activity. Both rejected attempts remain separate from wardrobe pixels; thresholds were not relaxed. This Hurt helmet result is **not delivered or accepted**.
 
 A browser export while that retry was running independently verified the publication boundary: the new Hurt body exists, while the helmet still has only its original 12 approved south cells. The export explicitly warns about missing Hurt equipment. Original helmet/material IDs and the azure selection are retained.
 
@@ -48,7 +48,7 @@ A browser export while that retry was running independently verified the publica
 
 - Exact pinned toolchain: Node 24.22.1, npm 11.19.1, committed dependencies/lockfile.
 - `npm run check`: 0 errors, 0 warnings.
-- `npm test`: 130 tests in 14 files passed after the final core changes.
+- `npm test`: 131 tests in 15 files passed after the final core and move-normalization changes.
 - `npm run e2e`: all 23 integrated tests passed, including character import/setup/moves, shared designs, desktop/phone/landscape/tablet controls, persistence, exports and browser self-tests.
 - After the final currency changes, the six shared-equipment browser tests passed again. A strong assertion first caught Svelte removing the space before `+ $0.040`; the production text was corrected, not the expected value.
 - Production build and distribution credential guard passed after the final UI change.
@@ -67,5 +67,8 @@ Final review additionally found and corrected:
 - An extension's review could show its raw palette instead of the target's selected colourway. Preview mappings now use saved target selections while paid references and original raw cells stay unchanged.
 - Free or mixed copied frames could expose aggregate numeric API measurements. Such summaries now explicitly carry incomplete-measurement metadata and suppress those misleading numbers in the inspector.
 - Real API calls can report dollar usage instead of generations. Fit summaries now retain and show both currencies through failures, recovery and retries; the UI explains dollar billing before paid actions and labels the allowance as a generation estimate rather than a dollar cap.
+- Preparing equipment reviews before the Studio's body palette normalization could immediately stale both captured fit stamps. Add move now persists the existing normalization before direct item poses and shared fit preparation, including resumed raw clips. A real resumed-clip regression and independent probe verify blue-channel normalization, zero further changes on reopen, stable stamps, preserved equipment/azure choices and zero API calls.
+
+Global Activity rows also identify their target character, so multiple fits of the same design can be distinguished before opening a review.
 
 Independent review found no free-source pinning gap: draft references are scanned by blob garbage collection, and generated/mirrored raster assets are persisted before review publication. Speculative changes without a failing case were not added.
