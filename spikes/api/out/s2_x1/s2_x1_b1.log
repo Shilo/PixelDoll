@@ -1,9 +1,0 @@
-COST {"tag":"chest_green_ea2","route":"ea2","ms":107799,"usage":{"type":"generations","generations":10},"nOut":16}
-COST {"tag":"boots_magenta_ea2","route":"ea2","ms":112364,"usage":{"type":"generations","generations":10},"nOut":16}
-COST {"tag":"cape_magenta_ea2","route":"ea2","ms":114276,"usage":{"type":"generations","generations":10},"nOut":16}
-COST {"tag":"sword_green_ea2","route":"ea2","ms":114741,"usage":{"type":"generations","generations":10},"nOut":16}
-COST {"tag":"boots_green_ea2","route":"ea2","ms":125114,"usage":{"type":"generations","generations":10},"nOut":16}
-COST {"tag":"cape_green_ea2","route":"ea2","ms":154000,"usage":{"type":"generations","generations":10},"nOut":16}
-COST {"tag":"chest_magenta_ea2","route":"ea2","ms":160860,"usage":{"type":"generations","generations":10},"nOut":16}
-COST {"tag":"sword_magenta_ea2","route":"ea2","ms":196413,"usage":{"type":"generations","generations":10},"nOut":16}
-COST {"batch":"chest,boots,cape,sword green,magenta ea2","generationsDelta":130}

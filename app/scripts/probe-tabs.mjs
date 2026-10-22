@@ -2,7 +2,7 @@
 // Keyless on the agent server too (opts out of the agent key).
 // Drafts load once per id across reload / follower / takeover; follower cannot start generations; nobody answers a key ask;
 // db.update is atomic; gcBlobs keeps referenced blobs and drops the rest.
-import { chromium } from '../../design-mockups/node_modules/playwright/index.mjs'
+import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
 
 const BASE = process.env.BASE ?? 'http://localhost:5173'

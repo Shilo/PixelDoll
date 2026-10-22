@@ -1,2 +1,0 @@
-{"tag":"v48_pixminimax_idle","base":"s2b48","route":"pixminimax","action":"idle","dir":"south","requested":4,"n":4,"canvases":"68x68","rotFeetY":46,"feetY":[36,36],"cx":[24,24],"rotCx":24,"top":[-9,-9],"rotTop":1,"opaqueRange":[636,636],"colorsMax":24,"rotColors":30,"palDist":0,"offPal":0,"f0ExactVsRot":null,"f0IouVsRot":null,"usage":[{"type":"generations","generations":1}],"ms":72845}
-total ms 75431

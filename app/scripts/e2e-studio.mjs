@@ -5,7 +5,7 @@
 // BASE=http://localhost:5199), where every test context opts out of the agent key ('pixeldoll.agentKey' = 'off') so nothing can
 // spend. On the agent server one extra context without the opt-out checks the auto-connect (GET /balance only, free).
 // Usage: node app/scripts/e2e-studio.mjs   env BASE=http://localhost:5173
-import { chromium } from '../../design-mockups/node_modules/playwright/index.mjs'
+import { chromium } from 'playwright'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 

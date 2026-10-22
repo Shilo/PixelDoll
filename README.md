@@ -3,6 +3,14 @@
 **Dress up your 2D game characters with pixel-perfect paper dolling.** Generate swappable, frame-aligned equipment layers
 with PixelLab AI and export them to any game engine. · [Open PixelDoll](https://shilo.github.io/PixelDoll/)
 
+<p>
+  <img src="docs/media/studio-dark.png" width="49%" alt="PixelDoll Studio in dark mode: wardrobe slots on the left, the dressed demo character on a checkerboard canvas, item colours and layer order on the right">
+  <img src="docs/media/outfit-slash-sheet.png" width="49%" alt="Full-outfit slash sheet: helmet, leather vest, red cape and steel longsword layered on the base, 8 frames in 4 directions">
+</p>
+<p>
+  <img src="docs/media/godot-render-slash.png" width="49%" alt="The same slash exported and rendered in Godot 4, one sprite per layer, pixel-identical to PixelDoll's compositor">
+</p>
+
 Paperdolling for [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armour, hair and weapons as
 **separate frame-aligned layers**, recolour them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser** or any
 engine (PNG + JSON). Every generated pixel comes from PixelLab; PixelDoll turns PixelLab's one-image-per-call output into a
@@ -50,7 +58,8 @@ only to same-origin requests from localhost (`cache-control: no-store`). The app
 (`envDir: false`, no `VITE_` variables), `vite build --mode agent` refuses to run, and CI fails if `dist/` mentions it. Never
 commit `.env` and never print the key. See [AGENTS.md](AGENTS.md).
 
-Developer pages: `#/m1` … `#/m5` (the M1–M5 harnesses), `#/selftest` (browser self-tests).
+Developer pages: `#/m1` … `#/m5` (the M1–M5 harnesses), `#/selftest` (browser self-tests). Their extra fixtures (s1, s4rig, s5)
+live in `app/dev-fixtures/` and are served by the dev server only; the build ships just the demo fixture `s2`.
 
 ## Build and test
 
@@ -64,20 +73,19 @@ npm --prefix app run check      # svelte-check + tsc
 npm --prefix app run selftest   # node self-tests (no network, no spend)
 ```
 
-**End-to-end smoke test** (Playwright, demo only, no key, no spend). Playwright is not an `app/` dependency; the scripts import it
-from `design-mockups/node_modules`, so install that once:
+**End-to-end smoke test** (Playwright, demo only, no key, no spend). Playwright is a pinned `app/` devDependency; download its
+browser once:
 
 ```sh
-npm --prefix design-mockups ci
-npx --prefix design-mockups playwright install chromium   # first time only
-npm --prefix app run dev                                  # in another terminal (or the "app-dev" launch config)
-node app/scripts/e2e-studio.mjs                           # BASE=http://localhost:4173 to test the preview build
+npx --prefix app playwright install chromium   # first time only
+npm --prefix app run dev                       # in another terminal (or the "app-dev" launch config)
+node app/scripts/e2e-studio.mjs                # BASE=http://localhost:4173 to test the preview build
 ```
 
 The scripts stay keyless on the agent server too (`BASE=http://localhost:5199`): they opt out of the agent key, and the e2e
 then only checks that agent mode auto-connected (`GET /balance`, free).
 
-`node app/scripts/shoot-mvp.mjs` writes Studio screenshots to `docs/testing/img/` the same way.
+`node app/scripts/shoot-mvp.mjs` writes Studio screenshots to `docs/testing/img/` the same way (local only, git-ignored).
 
 ## Export targets
 
@@ -125,10 +133,13 @@ project path.
 
 | Path | What |
 |---|---|
-| `app/` | The Studio (Svelte 5 + Vite 8 + TS). `src/studio/` UI, `src/lib/` pipeline (pixellab, rig, items, dress, compose, export, store), `src/ui/` M1–M5 harnesses, `public/fixtures/` demo data, `scripts/` selftest, e2e, screenshots, fixture builders. |
-| `spikes/` | Node spikes S1–S5 against the live API (`spikes/api/*.mjs`) and their evidence in `spikes/api/out/` (PNGs, `calls.jsonl` with base64 and key stripped, costs). |
-| `design-mockups/` | D2 look mockups (A–E); also provides Playwright for the app's e2e scripts. |
-| `docs/` | Research, spikes, architecture, manifest spec, design, test reports. Start at [docs/README.md](docs/README.md). |
+| `app/` | The Studio (Svelte 5 + Vite 8 + TS). `src/studio/` UI, `src/lib/` pipeline (pixellab, rig, items, dress, compose, export, store), `src/ui/` M1–M5 harnesses, `public/fixtures/s2/` demo data, `dev-fixtures/` dev-server-only fixtures, `scripts/` selftest, e2e, screenshots, fixture builders. |
+| `spikes/` | Node spikes S1–S5 against the live API (`spikes/api/*.mjs`). |
+| `docs/` | Research, spikes, architecture, manifest spec, design, test reports. Start at [docs/README.md](docs/README.md). `docs/media/` holds the README images. |
+
+Evidence media (spike outputs `spikes/api/out/`, test screenshots `docs/testing/img/`, design screenshots
+`docs/design/screenshots/`) and the D2 mockup app `design-mockups/` are no longer tracked on `main`. They live at tag
+[v0.1.0](https://github.com/Shilo/PixelDoll/tree/v0.1.0); report links point there.
 
 ## Key docs
 

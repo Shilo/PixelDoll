@@ -1,7 +1,7 @@
-// B8: drives test_oversize.html in headless Chromium (Playwright from design-mockups/node_modules).
+// B8: drives test_oversize.html in headless Chromium (Playwright from app/node_modules).
 // Needs serve.mjs (M5 harness) serving the folder that holds test_oversize.html + the export: node serve.mjs 8765
 // Usage: node run_phaser.mjs <export folder> <phaser versions...>
-import { chromium } from '../../../design-mockups/node_modules/playwright/index.mjs';
+import { chromium } from '../../../app/node_modules/playwright/index.mjs';
 
 const [ex = 's5_sword', ...versions] = process.argv.slice(2);
 const browser = await chromium.launch();

@@ -1,6 +1,8 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import type { IncomingMessage } from 'node:http'
+import { resolve, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 
 // Same-origin requests from this machine only (Host = localhost, Sec-Fetch-Site = same-origin, loopback socket).
@@ -9,7 +11,11 @@ const localSameOrigin = (req: IncomingMessage) =>
   /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host ?? '') &&
   req.headers['sec-fetch-site'] === 'same-origin'
 
-// Dev server (any mode): /__dev/save (test sheets -> docs/testing/img) and a CSP that allows Vite's HMR websocket.
+// Dev-only fixtures (s1, s4rig, s5): served at /fixtures/<name>/... by the dev server, never copied into dist.
+const DEV_FIXTURES = fileURLToPath(new URL('./dev-fixtures', import.meta.url))
+const TYPES: Record<string, string> = { json: 'application/json', png: 'image/png', txt: 'text/plain' }
+
+// Dev server (any mode): /__dev/save (test sheets -> docs/testing/img), dev-fixtures and a CSP that allows Vite's HMR websocket.
 // `apply: 'serve'` keeps it out of `vite build`.
 function devTools(): Plugin {
   return {
@@ -24,9 +30,19 @@ function devTools(): Plugin {
         const parts: Buffer[] = []
         req.on('data', (c: Buffer) => parts.push(c))
         req.on('end', () => {
-          writeFileSync(new URL(`../docs/testing/img/${name}`, import.meta.url), Buffer.concat(parts))
+          const dir = new URL('../docs/testing/img/', import.meta.url) // local-only (gitignored), may not exist in a fresh clone
+          mkdirSync(dir, { recursive: true })
+          writeFileSync(new URL(name, dir), Buffer.concat(parts))
           res.end('ok')
         })
+      })
+      // /fixtures/<name>/... -> app/dev-fixtures when the file exists there (else falls through to public/)
+      server.middlewares.use('/fixtures', (req, res, next) => {
+        let file: string
+        try { file = resolve(DEV_FIXTURES, '.' + decodeURIComponent(new URL(req.url ?? '', 'http://x').pathname)) } catch { return next() }
+        if (!file.startsWith(DEV_FIXTURES + sep) || !existsSync(file) || !statSync(file).isFile()) return next()
+        res.setHeader('content-type', TYPES[file.split('.').pop() ?? ''] ?? 'application/octet-stream')
+        res.end(readFileSync(file))
       })
     },
   }

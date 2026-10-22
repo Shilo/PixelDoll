@@ -1,7 +1,0 @@
-COST {"cmd":"pose","v":"ea2","item":"hair","clip":"slash","d":"north","n":8,"size":"64x64","ms":108019,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"hair","clip":"walk","d":"north","n":8,"size":"64x64","ms":114747,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"hair","clip":"walk","d":"east","n":8,"size":"64x64","ms":148484,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"hair","clip":"slash","d":"east","n":8,"size":"64x64","ms":148574,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"hair","clip":"walk","d":"south","n":8,"size":"64x64","ms":148718,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"hair","clip":"slash","d":"south","n":8,"size":"64x64","ms":302833,"usage":{"type":"generations","generations":3}}
-total ms 302852

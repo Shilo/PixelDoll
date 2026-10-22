@@ -1,4 +1,4 @@
-// One-off: builds app/public/fixtures/s1/ from S1's real PixelLab outputs (spikes/api/out). `node scripts/build-fixture.ts`
+// One-off: builds app/dev-fixtures/s1/ from S1's real PixelLab outputs (spikes/api/out). `node scripts/build-fixture.ts`
 // Sheets hold only generated directions (rows south, east); west is mirrored at load. Item sheets are walk only.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { decodePngBytes, encodePngBytes } from '../src/lib/image/pngraw.ts';
@@ -7,7 +7,7 @@ import { over } from '../src/lib/compose/compose.ts';
 import { pivotOf } from '../src/lib/rig/normalize.ts';
 
 const SPIKE = new URL('../../spikes/api/out/', import.meta.url);
-const OUT = new URL('../public/fixtures/s1/', import.meta.url);
+const OUT = new URL('../dev-fixtures/s1/', import.meta.url);
 const load = (p: string) => decodePngBytes(readFileSync(new URL(p, SPIKE)));
 const DIRS = ['south', 'east'];
 

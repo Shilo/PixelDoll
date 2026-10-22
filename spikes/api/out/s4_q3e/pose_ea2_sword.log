@@ -1,7 +1,0 @@
-COST {"cmd":"pose","v":"ea2","item":"sword","clip":"slash","d":"north","n":8,"size":"64x64","ms":116558,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"sword","clip":"walk","d":"north","n":8,"size":"64x64","ms":118672,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"sword","clip":"walk","d":"south","n":8,"size":"64x64","ms":135853,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"sword","clip":"walk","d":"east","n":8,"size":"64x64","ms":137656,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"sword","clip":"slash","d":"east","n":8,"size":"64x64","ms":142690,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"sword","clip":"slash","d":"south","n":8,"size":"64x64","ms":229602,"usage":{"type":"generations","generations":3}}
-total ms 229622

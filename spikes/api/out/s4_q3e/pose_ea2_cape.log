@@ -1,7 +1,0 @@
-COST {"cmd":"pose","v":"ea2","item":"cape","clip":"walk","d":"south","n":8,"size":"64x64","ms":131007,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"cape","clip":"slash","d":"south","n":8,"size":"64x64","ms":136556,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"cape","clip":"slash","d":"north","n":8,"size":"64x64","ms":153284,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"cape","clip":"walk","d":"north","n":8,"size":"64x64","ms":156684,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"cape","clip":"slash","d":"east","n":8,"size":"64x64","ms":173563,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"cape","clip":"walk","d":"east","n":8,"size":"64x64","ms":180231,"usage":{"type":"generations","generations":3}}
-total ms 180252

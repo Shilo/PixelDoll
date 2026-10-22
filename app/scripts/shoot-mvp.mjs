@@ -1,7 +1,7 @@
 // Studio MVP screenshots -> docs/testing/img/mvp_<theme>_<screen>_<device>.png. Needs the dev server (launch config "app-dev").
 // Usage: node app/scripts/shoot-mvp.mjs [filter ...]   env BASE=http://localhost:5173 (keyless; opts out of the agent key on the agent server)
-// Playwright comes from the design-mockups checkout (not an app dependency).
-import { chromium } from '../../design-mockups/node_modules/playwright/index.mjs'
+// Playwright is an app devDependency (`npx playwright install chromium` once).
+import { chromium } from 'playwright'
 import { fileURLToPath } from 'node:url'
 
 const BASE = process.env.BASE ?? 'http://localhost:5173'

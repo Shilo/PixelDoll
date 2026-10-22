@@ -1,1 +1,0 @@
-COST {"ms":126005,"submitMs":1321,"nFrames":16,"sizes":["80x80"],"usage":{"type":"generations","generations":3},"jobIds":["d6a4de78-997e-4c9a-bbf7-f003c3e42a7f"]}

@@ -1,1 +1,0 @@
-COST {"cmd":"raw","name":"raw_chroma_slash_east_s7","tag":"chroma","action":"slash","dir":"east","seed":7,"ms":154339,"nFrames":8,"usage":{"type":"generations","generations":3}}

@@ -1,1 +1,0 @@
-COST {"cmd":"raw","name":"raw_dressed_slash_south_s7","tag":"dressed","action":"slash","dir":"south","seed":7,"ms":134575,"nFrames":8,"usage":{"type":"generations","generations":3}}

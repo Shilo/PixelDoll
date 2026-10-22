@@ -1,1 +1,0 @@
-COST {"cmd":"anim","name":"dressed_walking-8-frames_south_s11","tag":"dressed","tpl":"walking-8-frames","dir":"south","seed":11,"ms":194523,"nFrames":8,"size":"96x96","usage":{"type":"generations","generations":3},"job":"fa58eaa5-b571-497f-a035-722681aab1f6"}

@@ -36,9 +36,9 @@ Base: S2's 48 px clothed character `5352683c…` (b48), rotations and template f
    a bigger canvas (80 for a 48 px character, 96 for 64) and clips falling motions at the rig edge; unarmed action templates
    lose or swap the sword.
 
-Showcases: [`k1_v3_actions`](../../spikes/api/out/s3_overview/k1_v3_actions.png) (all v3 actions),
-[`items_raw_slash_south`](../../spikes/api/out/s3_k6/items_raw_slash_south_s7.png) and
-[`items_walking-8-frames_south`](../../spikes/api/out/s3_k6/items_walking-8-frames_south_s7.png) (dressed-keyframe route).
+Showcases: [`k1_v3_actions`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_overview/k1_v3_actions.png) (all v3 actions),
+[`items_raw_slash_south`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/items_raw_slash_south_s7.png) and
+[`items_walking-8-frames_south`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/items_walking-8-frames_south_s7.png) (dressed-keyframe route).
 
 ## Skeleton format (v3 vs legacy, verified)
 
@@ -82,7 +82,7 @@ no z/depth, seed 7. Every output frame was re-estimated (`s3_k1_eval.mjs`) to me
 | death S / E / N | 2.1 / 1.5, 1.1 / 1.0, 1.5 / 0.6 | — | (lying) | — | ≤0.06 | 1.00 | 21–25 | 29 / 32 / 130 on the last frame |
 | walk S/E/N, punch S **retargeted** (keypoints = estimated S2 template frames) | 0.5–0.8 / 0.6–1.1 | — | 3.6 (stride) | — | ≤0.03 | 0.99–1.0 | 21–29 | 0 |
 
-Comparisons on the same base (slash S unless noted; sheet [`k1_routes_slash_south`](../../spikes/api/out/s3_overview/k1_routes_slash_south.png)):
+Comparisons on the same base (slash S unless noted; sheet [`k1_routes_slash_south`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_overview/k1_routes_slash_south.png)):
 
 | Route | Result |
 |---|---|
@@ -94,13 +94,13 @@ Comparisons on the same base (slash S unless noted; sheet [`k1_routes_slash_sout
 
 Visual judgement (contact sheets read):
 
-- [`k1_v3_actions`](../../spikes/api/out/s3_overview/k1_v3_actions.png): every action reads; the arm chain follows the authored
+- [`k1_v3_actions`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_overview/k1_v3_actions.png): every action reads; the arm chain follows the authored
   keypoints closely; **the face, shirt, shorts and proportions stay those of the base**; legs do not move unless asked.
   Death lies down cleanly in S and E. Weak frames: the slash "strike high" frame covers the face with the forearm (as authored),
   east overhead frame squashes the head slightly.
 - Grey **motion-smear streaks** (detached components) appear along fast arm paths (cast f0–1, slash N f0) and on the final frame
   when the last two poses are identical (all three deaths). Keeping the largest 8-connected component removes them.
-- [`k1_retarget`](../../spikes/api/out/s3_overview/k1_retarget.png): re-running a template's estimated skeletons through raw v3
+- [`k1_retarget`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_overview/k1_retarget.png): re-running a template's estimated skeletons through raw v3
   on the one reference gives a clean walk (east stride clearly readable) and punch → **any motion can be stored as
   (reference image, keypoint sequence)**.
 
@@ -117,12 +117,12 @@ north). 12 calls, 120 gens, 108–177 s.
 
 | Run | Clip | area CV | grip R/L/amb/none (QA gate) | key kept | Notes (visual) |
 |---|---|---|---|---|---|
-| sword v0 S | v3 slash | 0.13 | **7/0/1/0** | 0.993 | sword raised overhead and swung down-right in the right hand ([sheet](../../spikes/api/out/s3_k2/sword_v0_S.final_sheet.png)) |
+| sword v0 S | v3 slash | 0.13 | **7/0/1/0** | 0.993 | sword raised overhead and swung down-right in the right hand ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k2/sword_v0_S.final_sheet.png)) |
 | sword v0 S | cross-punch | 0.18 | 4/1/0/1 | 0.94 | sword floats behind the head / changes hand |
-| sword v0 E | v3 slash | 0.04 | 6/0/2/0 | 0.978 | near (right) hand throughout ([sheet](../../spikes/api/out/s3_k2/sword_v0_E.final_sheet.png)) |
+| sword v0 E | v3 slash | 0.04 | 6/0/2/0 | 0.978 | near (right) hand throughout ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k2/sword_v0_E.final_sheet.png)) |
 | sword v0 E | cross-punch | 0.12 | 2/0/0/4 | 0.98 | sword hangs low, not following the punch |
 | sword v0 N | v3 slash / hurt | 0.06 / 0.05 | 6/0/0/2, 6/0/0/0 | 0.989 / 0.998 | correct, right = viewer's right |
-| helmet v0 S | slash / punch | 0.05 / 0.02 | — | 0.997 / 0.996 | clean; head-anchor dx spread 0.7 / 3.2 px ([sheet](../../spikes/api/out/s3_k2/helmet_v0_S.final_sheet.png)) |
+| helmet v0 S | slash / punch | 0.05 / 0.02 | — | 0.997 / 0.996 | clean; head-anchor dx spread 0.7 / 3.2 px ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k2/helmet_v0_S.final_sheet.png)) |
 | helmet v0 E | slash / punch | 0.06 / 0.03 | — | 0.993 / 0.996 | clean; dx spread 3.7 / 2.7 px (side view, helmet extends back) |
 
 The sword design matches the walk sword (same anchor). The mannequin is redrawn slightly on big-motion cells: key pixels
@@ -135,7 +135,7 @@ outside the base alpha 1–12 % (cross-punch E 11–22 %), vs ≤2 % in S2's wal
 | v0 S2 prompt + anchor cell | 7/8 R | 4/6 R | 6/8 R | 2/6 R | clean |
 | v1 + image-side phrasing ("right hand … viewer's LEFT … stays in that hand") | 7/8 | **2/6** (3 L) | 5/8 | 1/6 (4 L) | clean |
 | v2 magenta hand mark (r 2.5 px at the right-wrist keypoint) | 7/8 | 3/6 | 4/8 | 1/6 | **dirty**: PixelLab repaints the mark brown/skin (0 magenta px left), which leaks into the layer as brown specks on most frames; area CV up to 0.21 |
-| v3 phrasing + mark | 7/8 | 2/6 | 4/8 | 3/6 | dirty, strike frames point the blade the wrong way ([sheet](../../spikes/api/out/s3_k2/sword_v3_S.final_sheet.png)) |
+| v3 phrasing + mark | 7/8 | 2/6 | 4/8 | 3/6 | dirty, strike frames point the blade the wrong way ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k2/sword_v3_S.final_sheet.png)) |
 | dressed-keyframe posing (K6) | 8/8 visually (gate 5/1/2) | sword lost on 4/6 | 8/8 visually (side view: gate mostly "amb") | 3/6 | 1–6 specks per clip + motion smears |
 
 What reliably keeps handedness: **the motion itself**. If the weapon hand drives the clip (skeleton-authored attack) the sword
@@ -164,7 +164,7 @@ the sword, and no prompt fixes that. Retro-QA of S2's runs with the same gate re
 - Stray px (opaque px outside the largest component) → auto-remove, and log.
 
 Keypoint anchors also place rigid items without AI: the K6 dressed keyframes were built by moving S2's walk-frame helmet and
-sword layers by the head-centre / right-wrist delta onto the rotations ([`preview_rotations`](../../spikes/api/out/s3_k6/preview_rotations.png)).
+sword layers by the head-centre / right-wrist delta onto the rotations ([`preview_rotations`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/preview_rotations.png)).
 
 ## K6 (added for the constraint): skeleton-v3 alignment across keyframes
 
@@ -178,8 +178,8 @@ Each posed with the same skeleton: managed `mode: "skeleton-v3"` (walking-8-fram
 | managed walk S | 0.70 | 0.954 / 0.60 | 0.949 (0.912), 0,0 | 4.2 % (seed 11: 2.9 %) | **clean, rigid, aligned in 8/8** |
 | managed walk E | 0.38 | 0.928 / 0.49 | 0.930 (0.895), 0,0 | 6.4 % | aligned; sword 4 R / 4 amb |
 | managed cross-punch S / E | 0.30 / 0.24 | — | 0.895 / 0.873, ≤1 px | 4.2 / 8.3 % | helmet OK, **sword lost or wrong** on 3–4 of 6 |
-| raw v3 slash S | 0.66 | — | **0.988 (0.974)**, 0,0 | **1.3 %** (seed 11: 1.4 %) | **sword swings in the right hand, helmet locked** ([sheet](../../spikes/api/out/s3_k6/items_raw_slash_south_s7.png)) |
-| raw v3 slash E | 0.54 | — | 0.977 (0.957), 0,0 | 0.7 % | correct; 2 frames with grey motion smears ([sheet](../../spikes/api/out/s3_k6/items_raw_slash_east_s7.png)) |
+| raw v3 slash S | 0.66 | — | **0.988 (0.974)**, 0,0 | **1.3 %** (seed 11: 1.4 %) | **sword swings in the right hand, helmet locked** ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/items_raw_slash_south_s7.png)) |
+| raw v3 slash E | 0.54 | — | 0.977 (0.957), 0,0 | 0.7 % | correct; 2 frames with grey motion smears ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/items_raw_slash_east_s7.png)) |
 
 References for "stable body pixels": S2 template walk 0.35 (S) / 0.23 (E) consecutive-frame exact px. **Skeleton-v3 is about
 twice as stable but not pixel-locked**: a managed walk frame shares only 35–44 % (S) / 10–36 % (E) exact px with the rotation;

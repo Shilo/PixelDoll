@@ -16,7 +16,7 @@ Not committed.
 | Task | Result |
 |---|---|
 | Split the held-item dress into calls that respect the frame cap | Done, and it works for any call with a frame cap. `editFrameCap(px)` = 16 / 9 / 4 for ≤ 64 / 65–80 / 81–256 px. `planItem` chunks the dress with `anchorChunks`. A later chunk gets the first chunk's dressed cell 0 as an anchor frame, and that frame's output is thrown away. 8-direction held = **4 + (1 anchor + 1)** frames at 96 px. |
-| Correct cost in the New item sheet | "12 PixelLab calls · 65 frames … **Make · 50 gens**" (it was 40 for a call PixelLab would refuse). ![](img/b16_new_item_sword8_cost.jpg) |
+| Correct cost in the New item sheet | "12 PixelLab calls · 65 frames … **Make · 50 gens**" (it was 40 for a call PixelLab would refuse). ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_new_item_sword8_cost.jpg) |
 | Fake-API self-test | `items/run` self-test (node). It checks that each dress call sends no more than `editFrameCap(image_size)` frames and at least 2, that all 5 directions come back with their own keyframe (the anchor output is dropped), the cost of 50, and that re-rolling chunk 2 redoes only the north poses. Mutation check: with the old single dress call, all 4 asserts fail. |
 | Live: sword on rig-08110217d1a0, idle + walk × 8 directions | **Clean** on the first pass (1 automatic pose re-roll). Grip R 51 / L 0 / amb 9 / none 0, 0 border px, 0 shifted frames, key outside ≤ 0.012, palette distance to the design ≤ 6.6. Layers are 96×96, pivot (48, 75) = rig pivot (32, 59) + 16. |
 | Godot 4.7.1 | Import 0 errors (1 stale `.uid` cache warning from re-exporting into the same folder). Sync **1,440 ticks, 2,880 oversize layer-ticks, 0 failures** ([log](b8_engine_tests/b16_eight_sword_sync.log)). Render **0 of 1,769,472 px** differ ([log](b8_engine_tests/b16_eight_sword_render.log)). |
@@ -59,10 +59,10 @@ Not committed.
 
 The sword was made through the Studio: Hands → New item → "steel sword" → Make (50 gens shown).
 
-**Dress chunks** ([sheet](img/b16_dress_chunks.png): top row = inputs, bottom row = outputs. Call 1 = S, SE, E, NE.
+**Dress chunks** ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b16_dress_chunks.png): top row = inputs, bottom row = outputs. Call 1 = S, SE, E, NE.
 Call 2 = anchor (call 1's dressed S) + N.)
 
-![](img/b16_dress_chunks.png)
+![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_dress_chunks.png)
 
 - Call 1 sent 4 frames at 96 px and call 2 sent 2. Both passed the dress gates on the first roll (G2, G3, presence, D1).
 - **Consistent across chunks:** the N keyframe from chunk 2 has the same grey blade, dark crossguard and hilt as the chunk 1
@@ -71,16 +71,16 @@ Call 2 = anchor (call 1's dressed S) + N.)
 
 **Baked sheets** (body + sword, rows S, SE, E, NE, N, NW, W, SW):
 
-- [walk](img/b16_sword8_walk.png): ![](img/b16_sword8_walk.png)
-- [idle](img/b16_sword8_idle.png)
+- [walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b16_sword8_walk.png): ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_sword8_walk.png)
+- [idle](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b16_sword8_idle.png)
 - The design is the same in every direction and frame, with no flips and no lost frames.
 - SE walk f5–6 hold the arm wide. That is B15's known skeleton-v3 template pose, and the sword follows the hand.
 - The mirrored rows (NW, W, SW) put the sword in the left hand. This is the known mirror hand swap (O13, out of scope).
 
 **Studio:**
 
-- The review card reads **Clean**: "Every frame passed the checks". ![](img/b16_review_clean.jpg)
-- All-directions grid (4 × 2 layout at this pane width): [b16_stage_8dirs_sword.png](img/b16_stage_8dirs_sword.png).
+- The review card reads **Clean**: "Every frame passed the checks". ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_review_clean.jpg)
+- All-directions grid (4 × 2 layout at this pane width): [b16_stage_8dirs_sword.png](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b16_stage_8dirs_sword.png).
 
 **Stored item:**
 
@@ -103,17 +103,17 @@ Call 2 = anchor (call 1's dressed S) + N.)
 | `test_sync_oversize.gd -- b16_eight_sword` | 1,440 ticks, **2,880 oversize layer-ticks**, 0 failures. Offsets: body (−32, −59), sword (−48, −75) |
 | `test_render_oversize.gd -- b16_eight_sword` (768×96, Vulkan, RTX 3070 Ti) | sword/idle, sword/walk, default/idle, default/walk: **0 px** each, 0 of 1,769,472 total |
 
-Godot's own render of sword/walk: ![](img/b16_godot_sword8_walk.png)
+Godot's own render of sword/walk: ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_godot_sword8_walk.png)
 
 ## 4. Ranger cape hurt north (`regridClip`)
 
-- Before ([sheet](img/b16_cape_hurt_north_before.png)): f1–3 balloon (areas 832 / 795 / 773 vs 656).
-  ![](img/b16_cape_hurt_north_before.png)
+- Before ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b16_cape_hurt_north_before.png)): f1–3 balloon (areas 832 / 795 / 773 vs 656).
+  ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_cape_hurt_north_before.png)
 - After: `regridClip(cape, 'hurt', 'north', 4243)`, one inpaint-v3 grid, 10 gens.
   - **0 failed checks, saved.** Areas 649 / 653 / 668 / 657 / 647 / 647.
   - QA `warn`: one H4 warning on f2 (own 0.46), where the hem swings out to one side during the hit. It reads as cloth motion,
     not a balloon.
-  - Top row = body + cape; bottom row = the full outfit: ![](img/b16_cape_hurt_north_after.png)
+  - Top row = body + cape; bottom row = the full outfit: ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_cape_hurt_north_after.png)
 - The grid redrew all 6 frames. The grey hem smudges that came from the T3 dress are also gone in this clip, so hurt N is
   now slightly cleaner than walk/idle N.
 

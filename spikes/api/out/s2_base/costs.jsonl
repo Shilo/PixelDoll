@@ -1,6 +1,0 @@
-{"label":"b48 create-character-v3 48","ms":197570,"usd":0,"generations":2,"reported":[{"type":"generations","generations":2}]}
-{"label":"b64 create-character-v3 64","ms":285573,"usd":0,"generations":24,"reported":[{"type":"generations","generations":2}]}
-{"label":"b48walk template walking-8-frames south,east,north","ms":87063,"usd":0,"generations":51,"reported":[{"type":"usd","usd":0.010874554077784222},{"type":"usd","usd":0.009580811765458849},{"type":"usd","usd":0.011054531388812596}]}
-{"label":"b64walk template walking-8-frames south,east,north","ms":135712,"usd":0,"generations":66,"reported":[{"type":"usd","usd":0.01472356218761868},{"type":"usd","usd":0.016688072893354628},{"type":"usd","usd":0.014137970791922676}]}
-{"label":"b48punch template cross-punch south,east","ms":160644,"usd":0,"generations":13.9,"reported":[{"type":"usd","usd":0.014716961012946235},{"type":"usd","usd":0.020802843703163997}]}
-{"label":"b64punch template cross-punch south,east","ms":364553,"usd":0,"generations":67.6,"reported":[{"type":"usd","usd":0.043442581839031644},{"type":"usd","usd":0.015730336242251928}]}

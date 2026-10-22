@@ -23,3 +23,9 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 .idea/
+
+# evidence media lives in tag v0.1.0 (https://github.com/Shilo/PixelDoll/tree/v0.1.0); kept local-only from here on
+spikes/api/out/
+docs/testing/img/
+docs/design/screenshots/
+design-mockups/

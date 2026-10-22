@@ -1,7 +1,0 @@
-budget: spent 20, this call ~18
-COST {"cmd":"pose","tag":"u96","C":96,"clip":"slash","d":"north","seed":7,"n":8,"size":"96x96","ms":102185,"gens":3}
-COST {"cmd":"pose","tag":"u96","C":96,"clip":"slash","d":"south","seed":7,"n":8,"size":"96x96","ms":103585,"gens":3}
-COST {"cmd":"pose","tag":"u96","C":96,"clip":"walk","d":"south","seed":7,"n":8,"size":"96x96","ms":121746,"gens":3}
-COST {"cmd":"pose","tag":"u96","C":96,"clip":"walk","d":"north","seed":7,"n":8,"size":"96x96","ms":130392,"gens":3}
-COST {"cmd":"pose","tag":"u96","C":96,"clip":"walk","d":"east","seed":7,"n":8,"size":"96x96","ms":136340,"gens":3}
-COST {"cmd":"pose","tag":"u96","C":96,"clip":"slash","d":"east","seed":7,"n":8,"size":"96x96","ms":139778,"gens":3}

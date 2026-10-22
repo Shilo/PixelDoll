@@ -1,2 +1,0 @@
-{"item":"chest","dir":"south","route":"ea2","ms":119372,"usage":[{"type":"generations","generations":10}],"nOut":8,"summary":{"areaMean":232,"areaCV":0.04,"meanOutsideChanged":414.9,"meanPaletteJ0":0.77,"centroidSpread":[0.6,0.7],"orderOk":true}}
-{"item":"chest","dir":"south","route":"to2","ms":126054,"usage":[{"type":"generations","generations":10}],"nOut":8,"summary":{"areaMean":226.6,"areaCV":0.04,"meanOutsideChanged":415.8,"meanPaletteJ0":0.79,"centroidSpread":[1,1.1],"orderOk":true}}

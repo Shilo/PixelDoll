@@ -21,7 +21,7 @@ recommended pipeline is a batch edit plus slot-masked, palette-aware extraction.
 fallback for back items whose occluded part is needed.
 
 Showcase: helmet, chest and sword were each generated separately against the same 8-frame base walk, extracted, and re-stacked:
-[`anim_showcase_chest_helmet_sword.png`](../../spikes/api/out/e5_stack/anim_showcase_chest_helmet_sword.png). Rows: base / chest
+[`anim_showcase_chest_helmet_sword.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e5_stack/anim_showcase_chest_helmet_sword.png). Rows: base / chest
 layer / helmet layer / sword layer / composite. It reads coherently, and it shows the remaining artifacts honestly: skin speckles in
 the chest layer, a holey chest on frame 2, and a little face baked into the helmet.
 
@@ -46,8 +46,8 @@ slightly away from the body", seed 1234, low top-down.
 
 | Route | Gens | Latency | Stored canvas | Character bbox (south) | Colours | Notes |
 |---|---|---|---|---|---|---|
-| `create-character-v3` (from text, 64×64) | 2 | 288 s | **64×64** (not padded) | 26×60 at y=2 → **2 px headroom** | ~30 | 8 clean, consistent rotations, detailed shading. Sheet: [`v3_sheet.png`](../../spikes/api/out/e1_base/v3_sheet.png) |
-| `create-character-with-4-directions` (image_size 64) | 1 | 52 s | **92×92** (~40 % pad) | 25×65 at y=13 | 8–10 (quantized) | Flatter, chibi-ish, clean. Too big for multi-frame grids (81+ px → max 4 frames). Sheet: [`d4_sheet.png`](../../spikes/api/out/e1_base/d4_sheet.png) |
+| `create-character-v3` (from text, 64×64) | 2 | 288 s | **64×64** (not padded) | 26×60 at y=2 → **2 px headroom** | ~30 | 8 clean, consistent rotations, detailed shading. Sheet: [`v3_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e1_base/v3_sheet.png) |
+| `create-character-with-4-directions` (image_size 64) | 1 | 52 s | **92×92** (~40 % pad) | 25×65 at y=13 | 8–10 (quantized) | Flatter, chibi-ish, clean. Too big for multi-frame grids (81+ px → max 4 frames). Sheet: [`d4_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e1_base/d4_sheet.png) |
 
 R1 reported that v3 pads 64→120. We did not see this in from-text mode: the rotations stayed 64×64. Template animations also
 kept 64×64.
@@ -60,7 +60,7 @@ kept 64×64.
 | `breathing-idle` (v3 base) | south, east | **4** / 4 | 64×64 | 2 | 87 s | 26 / 773, 31 / 497 |
 | `walking-8-frames` (4-dir base) | south, east | 8 | 92×92 | ~1–2 | 125 s | 197 / 1172 |
 
-Sheets: [`walk_sheet.png`](../../spikes/api/out/e2_anim/walk_sheet.png), `idle_sheet.png`, `d4walk_sheet.png`.
+Sheets: [`walk_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e2_anim/walk_sheet.png), `idle_sheet.png`, `d4walk_sheet.png`.
 
 Findings:
 
@@ -99,11 +99,11 @@ touch the bottom row, so a correct result keeps 5 opaque border pixels.
 The full table, with all 30 calls and every extraction variant, is in `out/e3_static/results.json`.
 
 Contact sheets (columns: base / composite / heatmap / layer exact / layer thr18 / layer slot+hyst / mask):
-[`route_inpaint-v3.png`](../../spikes/api/out/e3_static/route_inpaint-v3.png),
-[`route_pf-inpaint.png`](../../spikes/api/out/e3_static/route_pf-inpaint.png),
-[`route_pf-edit.png`](../../spikes/api/out/e3_static/route_pf-edit.png),
-[`route_edit-images-v2.png`](../../spikes/api/out/e3_static/route_edit-images-v2.png),
-[`helmet_all.png`](../../spikes/api/out/e3_static/helmet_all.png) (all 7 helmet routes).
+[`route_inpaint-v3.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e3_static/route_inpaint-v3.png),
+[`route_pf-inpaint.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e3_static/route_pf-inpaint.png),
+[`route_pf-edit.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e3_static/route_pf-edit.png),
+[`route_edit-images-v2.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e3_static/route_edit-images-v2.png),
+[`helmet_all.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e3_static/helmet_all.png) (all 7 helmet routes).
 
 Findings:
 
@@ -155,17 +155,17 @@ Body drift distribution below the head (y≥24, 5033 px over 8 frames):
 | pf-inpaint (per frame, masked) | 99.5 % | 99.6 % | 99.9 % |
 
 Sheets (rows: base / composite / heatmap / layer):
-[`helmet_south_all.png`](../../spikes/api/out/e4_anim/helmet_south_all.png) (edit-animation-v2, transfer-outfit-v2),
-[`helmet_south_all2.png`](../../spikes/api/out/e4_anim/helmet_south_all2.png) (pf-inpaint, inpaint-v3, pf-edit-ref),
-[`sword_south_all.png`](../../spikes/api/out/e4_anim/sword_south_all.png),
-[`final_compare.png`](../../spikes/api/out/e4_anim/final_compare.png) (chest edit-animation-v2 + sword transfer-outfit-v2 with
+[`helmet_south_all.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e4_anim/helmet_south_all.png) (edit-animation-v2, transfer-outfit-v2),
+[`helmet_south_all2.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e4_anim/helmet_south_all2.png) (pf-inpaint, inpaint-v3, pf-edit-ref),
+[`sword_south_all.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e4_anim/sword_south_all.png),
+[`final_compare.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e4_anim/final_compare.png) (chest edit-animation-v2 + sword transfer-outfit-v2 with
 the final extractor; rows: base / composite / layer / base+layer),
-[`ea2_16_sheet.png`](../../spikes/api/out/e7_limits/ea2_16_sheet.png) (16 frames, two directions, one call). Every `*.final_sheet.png`
+[`ea2_16_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e7_limits/ea2_16_sheet.png) (16 frames, two directions, one call). Every `*.final_sheet.png`
 in `out/e4_anim/` is the same view for another run.
 
 ### State route: `create-character-state` + animate the state
 
-[`state_vs_base_sheet.png`](../../spikes/api/out/e4_state/state_vs_base_sheet.png)
+[`state_vs_base_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e4_state/state_vs_base_sheet.png)
 
 - The state (10 gens, 116 s) re-renders all rotations: 669 of ~900 body px changed on south.
 - Animating the state with the same template (`walking-8-frames`, ~1 gen/dir) gives the **same poses**. The silhouette bbox
@@ -180,7 +180,7 @@ in `out/e4_anim/` is the same view for another run.
 
 Method: take the helmet and sword layers from frame 0 (E3 inpaint-v3), find a per-frame integer translation by tracking a
 head or hand patch on the frozen base, and shift the layer.
-[`prop_all.png`](../../spikes/api/out/e8_propagate/prop_all.png)
+[`prop_all.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e8_propagate/prop_all.png)
 
 - Helmet offsets (dx, dy) for frames 1–7: (−1,−1), then (0,−1) for frames 2–6, then (1,−1). The edit-animation-v2 helmet
   centroid relative to NECK varies only ±1 px too, so the head really is rigid in walk and idle. **This works visually for the
@@ -193,8 +193,8 @@ head or hand patch on the frozen base, and shift the layer.
 
 ## E5 — Stacking, front/back split, two-pass fallback
 
-[`e5_all.png`](../../spikes/api/out/e5_stack/e5_all.png): row 1 progressive static stack, row 2 the static layers, row 3 cape
-split, row 4 two-pass. Animated stack: [`anim_stack_sheet.png`](../../spikes/api/out/e5_stack/anim_stack_sheet.png).
+[`e5_all.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e5_stack/e5_all.png): row 1 progressive static stack, row 2 the static layers, row 3 cape
+split, row 4 two-pass. Animated stack: [`anim_stack_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e5_stack/anim_stack_sheet.png).
 
 - **Independent extraction and stacking works.** Static layers (inpaint-v3): cape 499 px, chest 229, hair 228, helmet 145, sword 135.
   Pairwise overlap is small where it should be: helmet+chest 2, chest+sword 0, helmet+sword 0. It is large where the items

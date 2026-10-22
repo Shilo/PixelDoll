@@ -1,7 +1,0 @@
-COST {"cmd":"pose","v":"pfg","item":"helmet","clip":"slash","d":"south","n":8,"size":"64x64","ms":125114,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"pfg","item":"helmet","clip":"slash","d":"north","n":8,"size":"64x64","ms":125420,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"pfg","item":"helmet","clip":"walk","d":"east","n":8,"size":"64x64","ms":145500,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"pfg","item":"helmet","clip":"walk","d":"north","n":8,"size":"64x64","ms":152125,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"pfg","item":"helmet","clip":"walk","d":"south","n":8,"size":"64x64","ms":152317,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"pfg","item":"helmet","clip":"slash","d":"east","n":8,"size":"64x64","ms":173999,"usage":{"type":"generations","generations":3}}
-total ms 174024

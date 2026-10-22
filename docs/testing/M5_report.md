@@ -32,8 +32,8 @@ Zip layout follows spec §5. It contains 71 files and is 149 KiB:
 
 Self-tests: `npm run selftest` now covers 8 more modules (`pngraw`, `compose`, `compose/split`, `export/sheets|generic|godot|phaser|unity`), and all pass. `npm run check` reports 0 errors and 0 warnings, and `npm run build` succeeds.
 
-**App (`#/m5`, Claude Browser):** the fixture loads, and the three direction previews animate. West is the mirror of east, and the sword renders behind and in front of the body. "download zip" produces 71 files (149.0 KiB, `s1_knight.pixeldoll.zip`), the same file list as the node export. For the check, the anchor click was stubbed so no file was written. ![M5 UI](img/m5_ui.jpg)
-The same compositor produced the baked sheet: ![baked](img/m5_baked_knight_walk.png)
+**App (`#/m5`, Claude Browser):** the fixture loads, and the three direction previews animate. West is the mirror of east, and the sword renders behind and in front of the body. "download zip" produces 71 files (149.0 KiB, `s1_knight.pixeldoll.zip`), the same file list as the node export. For the check, the anchor click was stubbed so no file was written. ![M5 UI](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/m5_ui.jpg)
+The same compositor produced the baked sheet: ![baked](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/m5_baked_knight_walk.png)
 
 ### Godot 4.7.1 (fully verified)
 
@@ -43,7 +43,7 @@ Steps: `node scripts/export-fixture.ts <dir>`, then copy `s1_knight/` into the s
 1. `--headless --path . --import`: imports with 0 errors and 0 warnings. **Relative `ext_resource` paths** (`../layers/...png` and `paperdoll.gd`) resolve, so the export folder can sit anywhere under `res://`.
 2. `--headless --fixed-fps 60 -s test_sync.gd` ([log](m5_engine_tests/godot_sync.log)): plays every anim × dir (idle and walk × south, east, west) for 90 ticks each, 540 ticks in total. Every tick, every visible layer has the body's animation and frame, and its AtlasTexture region equals `Rect2(cell*64, dirRow*64, 64, 64)`. The pivot offset is `(-32,-63)` with `centered=false`, and `main_hand_fg.z_index` is 45 only on walk/south/cell 4 and 150 elsewhere. The body visits all cells, and equip/unequip hides fg and bg. Result: **PASS, 0 failures**. A mutation run with the `frame_changed` sync disconnected fails (3444 failures), so the test does detect drift.
 3. Windowed `--resolution 192x64 -s test_render.gd` ([log](m5_engine_tests/godot_render.log)): renders `Paperdoll.tscn` with Vulkan Forward+ on an RTX 3070 Ti for each of the 8 walk frames × south, east and west, and compares every pixel with `baked/knight/walk.png`. Result: **0 of 98,304 px differ**, so z order, the fg/bg split, the pivot and mirrored rows all match PixelDoll's compositor.
-   ![Godot render](img/m5_godot_render_walk.png)
+   ![Godot render](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/m5_godot_render_walk.png)
 
 ### Phaser 3.80.0 / 3.90.0 / 4.2.1 (fully verified)
 
@@ -59,7 +59,7 @@ all three directions for 180 steps, checking that every visible layer's frame na
 | 4.2.1 | 0 | 2208 | 0 | 0–7 for every dir |
 
 Frame `duration` replaces `msPerFrame` (checked in the 3.90 `Animation.js` source), so playlist ms values map 1:1.
-![Phaser 3.90](img/m5_phaser_3.90.png) ![Phaser 4.2.1](img/m5_phaser_4.2.1.png)
+![Phaser 3.90](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/m5_phaser_3.90.png) ![Phaser 4.2.1](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/m5_phaser_4.2.1.png)
 
 ### Unity 6000.4.0f1 (compile-verified only)
 

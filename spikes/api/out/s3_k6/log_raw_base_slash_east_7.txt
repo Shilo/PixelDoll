@@ -1,1 +1,0 @@
-COST {"cmd":"raw","name":"raw_base_slash_east_s7","tag":"base","action":"slash","dir":"east","seed":7,"ms":133527,"nFrames":8,"usage":{"type":"generations","generations":3}}

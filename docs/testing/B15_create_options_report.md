@@ -7,10 +7,10 @@ estimate 57.3, no re-rolls). One POST was refused with 500 and cost nothing.
 
 | Task | Result |
 |---|---|
-| Create → **More options**: Directions 4 / 8, Body size 48 / 56 px, live price | Done. Folded away by default (4 directions, 48 px). The price moves from 35–50 to 57–75 gens as soon as 8 is picked. ![](img/b15_create_options_desk.png) |
+| Create → **More options**: Directions 4 / 8, Body size 48 / 56 px, live price | Done. Folded away by default (4 directions, 48 px). The price moves from 35–50 to 57–75 gens as soon as 8 is picked. ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_create_options_desk.png) |
 | 8 directions through the whole pipeline | Live 8-direction 48 px character (idle + walk). All 8 directions are correct in the Studio, the baked sheets and Godot (0 px difference). Gaps fixed: Godot resource ids, the all-directions grid, the phone direction bar, diagonal pose tables and items wording / z. **One known gap: held items on 8-direction rigs (below).** |
-| Shirt / Shorts / Skin recolour separately | Done for new rigs (prompt plus split) and for existing rigs and the demo (split only, nothing regenerated). ![](img/b15_eight_recolour_walk_baked.png) |
-| Offline banner + queue pause | Done. ![](img/b15_offline_banner_phone.png) |
+| Shirt / Shorts / Skin recolour separately | Done for new rigs (prompt plus split) and for existing rigs and the demo (split only, nothing regenerated). ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_eight_recolour_walk_baked.png) |
+| Offline banner + queue pause | Done. ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_offline_banner_phone.png) |
 | Docs, check / build / selftest / e2e | User guide, architecture §3/§6/§7 and manifest-spec `Item.regions` updated. All four pass (e2e: 3 new steps). |
 
 ## 1. Create options and 8 directions
@@ -41,9 +41,9 @@ in the footer and on the button.
 2. **All-directions grid** (`Stage.svelte`).
    - It used a fixed 2-column layout for 8 views (2 × 4, tiny sprites).
    - It now picks the column count with the biggest whole-pixel zoom, and ties go to a full grid: 4 × 2 at 3×.
-     ![](img/b15_stage_8dirs_grid_zoom.png)
+     ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_stage_8dirs_grid_zoom.png)
 3. **Phone direction bar.** Eight buttons pushed W, SW and the grid button off-screen at 375 px. Below 1024 px with more than
-   4 directions it is now a menu ("North-east"). No overflow at 375 or 320 px. ![](img/b15_phone_8dir_menu.jpg)
+   4 directions it is now a menu ("North-east"). No overflow at 375 or 320 px. ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_phone_8dir_menu.jpg)
 4. **Items (`items.ts`), surgical edits only:**
    - The pose prompt says "front three-quarter view" or "back three-quarter view" for the diagonals, not "side view".
    - Held bg over the cape also applies in SE and SW.
@@ -76,7 +76,7 @@ in the footer and on the button.
 | Export | Import | Sync | Render vs PixelDoll |
 |---|---|---|---|
 | Live 8-dir rig, all engines (generic, Godot, Phaser, Unity, Aseprite), presets `default` + `recolour` | 0 errors / warnings | 1,440 ticks, 0 failures ([log](b8_engine_tests/b15_eight_sync.log)) | `default`: **0 px** differ; `recolour`: 15,709 px ([log](b8_engine_tests/b15_eight_render.log)) |
-| S5 96 px sword widened to 8 directions (SE = S cells, NE = N cells, SW/W/NW mirrored, 0 gens) | 0 | 1,440 ticks, 2,880 oversize layer-ticks, 0 failures ([log](b8_engine_tests/b15_s5_sword8_sync.log)) | **0 of 2,359,296 px** differ ([log](b8_engine_tests/b15_s5_sword8_render.log)); ![](img/b15_godot_s5_sword8_slash.png) |
+| S5 96 px sword widened to 8 directions (SE = S cells, NE = N cells, SW/W/NW mirrored, 0 gens) | 0 | 1,440 ticks, 2,880 oversize layer-ticks, 0 failures ([log](b8_engine_tests/b15_s5_sword8_sync.log)) | **0 of 2,359,296 px** differ ([log](b8_engine_tests/b15_s5_sword8_render.log)); ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_godot_s5_sword8_slash.png) |
 
 - The 15,709 px on `recolour` are exactly the rig's garment pixels.
 - The reason is that the Godot runtime (`paperdoll.gd`) does not apply material variants; the baked sheet does. This was the
@@ -98,7 +98,7 @@ in the footer and on the button.
 
 | Evidence | Result |
 |---|---|
-| S4 rig (old prompt "grey t-shirt + grey shorts"), positional split with keypoint hip lines | 23 garment colours, **9 used by both garments**. Exact-colour materials cannot separate them. ![](img/b15_regions_s4rig_zoom.png) (grey = original, red = shirt, blue = shorts) |
+| S4 rig (old prompt "grey t-shirt + grey shorts"), positional split with keypoint hip lines | 23 garment colours, **9 used by both garments**. Exact-colour materials cannot separate them. ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_regions_s4rig_zoom.png) (grey = original, red = shirt, blue = shorts) |
 | Same S4 rig, guessed line (60 % of the figure height, used for fixtures without keypoints) vs keypoint line | 99.9 % of 8,085 garment px agree |
 | Live rig with the new prompt "light grey t-shirt and dark grey shorts" | The garments come out visibly different, but **11 of 18 garment colours still occur in both** (1,213 minority px, 7.7 %). The prompt alone is not enough. |
 
@@ -133,9 +133,9 @@ in the footer and on the button.
 **Results**
 
 - Demo (S2 base, never regenerated): the Colours tab shows **Shirt, Shorts, Skin**.
-  ![](img/b15_colours_demo_shirt_shorts.jpg)
+  ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_colours_demo_shirt_shorts.jpg)
 - Live 8-direction rig: Shirt 18, Shorts 11 and Skin 23 colours. Crimson shirt plus azure shorts are clean in every frame
-  and direction: ![](img/b15_eight_recolour_walk_baked.png)
+  and direction: ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_eight_recolour_walk_baked.png)
 - **Limitation:** a garment grey of 1–3 px outside the clothes (a toe highlight) recolours with the garment the line puts it
   in. This was the same with the old single "Clothes" material.
 
@@ -159,7 +159,7 @@ in the footer and on the button.
     stays queued; probe fails → still paused; answer → resumed.
   - e2e uses `context.setOffline(true / false)`: banner shown, `paused === 'offline'`, the wardrobe still works; then the
     banner is gone and the queue resumed.
-  - Screenshots: desktop ![](img/b15_offline_banner_desk.png), phone (above).
+  - Screenshots: desktop ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_offline_banner_desk.png), phone (above).
 
 ## 4. Checks
 

@@ -1,4 +1,4 @@
-// Test project from S1's real outputs (public/fixtures/s1/, built by scripts/build-fixture.ts).
+// Test project from S1's real outputs (dev-fixtures/s1/, dev server only; built by scripts/build-fixture.ts).
 // fixture.json = a manifest whose layers point at sheets holding only the generated directions; mirrored rows are left out
 // (compose flips them). Single-layer items in a slot with bgZ are split into fg/bg here, like the item lab will do.
 import { makeImg, type Img } from '../image/png.ts';

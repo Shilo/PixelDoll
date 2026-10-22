@@ -1,2 +1,0 @@
-{"tag":"v48_pixminimax_slash","base":"s2b48","route":"pixminimax","action":"slash","dir":"south","requested":8,"n":8,"canvases":"68x68","rotFeetY":46,"feetY":[36,37],"cx":[22.5,32],"rotCx":24,"top":[-10,-8],"rotTop":1,"opaqueRange":[592,665],"colorsMax":29,"rotColors":30,"palDist":0,"offPal":0,"f0ExactVsRot":null,"f0IouVsRot":null,"usage":[{"type":"generations","generations":1}],"ms":78814}
-total ms 83506

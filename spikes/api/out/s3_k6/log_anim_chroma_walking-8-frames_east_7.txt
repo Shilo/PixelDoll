@@ -1,1 +1,0 @@
-COST {"cmd":"anim","name":"chroma_walking-8-frames_east_s7","tag":"chroma","tpl":"walking-8-frames","dir":"east","seed":7,"ms":117363,"nFrames":8,"size":"96x96","usage":{"type":"generations","generations":3},"job":"c959f478-1bbf-4ba7-a7d9-0e10ec33f135"}

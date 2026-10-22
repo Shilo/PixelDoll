@@ -1,6 +1,0 @@
-COST {"label":"d4 /create-character-with-4-directions","ms":52125,"usd":0,"generations":1,"reported":[{"type":"generations","generations":1}]}
-south 92 92 bbox {"x":34,"y":13,"w":25,"h":65} opaque 1176 colors 8
-west 92 92 bbox {"x":36,"y":14,"w":20,"h":67} opaque 842 colors 10
-east 92 92 bbox {"x":37,"y":14,"w":20,"h":67} opaque 853 colors 9
-north 92 92 bbox {"x":33,"y":12,"w":26,"h":68} opaque 1255 colors 8
-{"which":"d4","cid":"16b9f4ff-0d79-405e-9d5e-ded6d97440fd","submitMs":1263,"totalMs":51841,"size":{"width":92,"height":92},"dirs":["south","west","east","north"],"jobKeys":["seed","type","view","usage","images","image_width","template_id","character_id","image_height","storage_urls","billing_usage","generation_id","character_name","billing_charged","directions_type","directions_count","quantized_images","saved_to_storage","uploaded_directions","character_description","generation_started_at","original_image_n_colors","quantized_image_n_colors"]}

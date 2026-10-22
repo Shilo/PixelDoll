@@ -1,2 +1,0 @@
-{"tag":"v48_v3_idle","base":"s2b48","route":"v3","action":"idle","dir":"south","requested":4,"n":4,"canvases":"68x68","rotFeetY":46,"feetY":[36,36],"cx":[24,24],"rotCx":24,"top":[-9,-7],"rotTop":1,"opaqueRange":[642,661],"colorsMax":32,"rotColors":30,"palDist":0.2,"offPal":0.005,"f0ExactVsRot":null,"f0IouVsRot":null,"usage":[{"type":"generations","generations":1}],"ms":75186}
-total ms 81143

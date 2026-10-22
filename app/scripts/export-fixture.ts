@@ -1,4 +1,4 @@
-// Runs the browser export code in node on a fixture: `node scripts/export-fixture.ts <outDir> [engines] [fixture = s1 | s5]`
+// Runs the browser export code in node on a fixture: `node scripts/export-fixture.ts <outDir> [engines] [fixture = s1 | s2 | s5]`
 // Writes <outDir>/<name>.pixeldoll.zip and the unzipped tree <outDir>/<name>/ (for engine tests).
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -7,7 +7,7 @@ import { exportZip } from '../src/lib/export/export.ts';
 import type { Engine } from '../src/lib/store/manifest.ts';
 
 const [outDir = 'export-out', engines = 'generic,godot,phaser,unity', fixture = 's1'] = process.argv.slice(2);
-const p = await loadFixture(async (f) => readFileSync(new URL(`../public/fixtures/${fixture}/${f}`, import.meta.url)));
+const p = await loadFixture(async (f) => readFileSync(new URL(`../${fixture === 's2' ? 'public/fixtures' : 'dev-fixtures'}/${fixture}/${f}`, import.meta.url)));
 const r = await exportZip(p, { engines: engines.split(',') as Engine[], baked: true });
 if (r.errors.length) throw new Error(r.errors.join('\n'));
 const name = p.manifest.name, tree = join(outDir, name);

@@ -11,7 +11,7 @@ const { decodePngBytes } = await import(APP + 'src/lib/image/pngraw.ts');
 const ASE = 'C:/Program Files (x86)/Steam/steamapps/common/Aseprite/Aseprite.exe';
 
 const [fixture = 's1', outDir = 'out', mode = ''] = process.argv.slice(2);
-const p = await loadFixture(async (f: string) => readFileSync(new URL(`public/fixtures/${fixture}/${f}`, APP)));
+const p = await loadFixture(async (f: string) => readFileSync(new URL(`${fixture === 's2' ? 'public/fixtures' : 'dev-fixtures'}/${fixture}/${f}`, APP)));
 if (mode === 'zmut') {
   const head = p.manifest.slots.find((s: { id: string }) => s.id === (fixture === 's5' ? 'main_hand' : 'head'));
   head.zOverrides = [...(head.zOverrides ?? []), { layer: 'fg', z: 1, dir: 'south' }];

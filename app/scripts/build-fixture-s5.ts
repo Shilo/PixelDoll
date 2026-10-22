@@ -1,4 +1,4 @@
-// One-off: builds app/public/fixtures/s5/ (B8 oversize-layer fixture) from S5's accepted 96 px sword. `node scripts/build-fixture-s5.ts`
+// One-off: builds app/dev-fixtures/s5/ (B8 oversize-layer fixture) from S5's accepted 96 px sword. `node scripts/build-fixture-s5.ts`
 // Base = the exact frames S5 posed against: S3/S4 raw skeleton-v3 walk + slash S/E/N on the 64 rig (out/s4_items/sk_<dir>.base0-15).
 // Sword = S5 'fsw' (walk seed 7, slash S/N frame-0-last, slash E seed 11): out/s5_held/export_fsw_<clip>.png, 8 x 96 cells by
 // S/E/N, pivot = rig pivot + (16, 16). West mirrors east at load (flip of the 96 cell about x = 48). Split fg/bg at load.
@@ -9,7 +9,7 @@ import { over } from '../src/lib/compose/compose.ts';
 import { pivotOf } from '../src/lib/rig/normalize.ts';
 
 const SPIKE = new URL('../../spikes/api/out/', import.meta.url);
-const OUT = new URL('../public/fixtures/s5/', import.meta.url);
+const OUT = new URL('../dev-fixtures/s5/', import.meta.url);
 const load = (p: string) => decodePngBytes(readFileSync(new URL(p, SPIKE)));
 const DIRS = ['south', 'east', 'north'], CLIPS = { walk: 0, slash: 8 };
 const save = async (name: string, data: Uint8Array) => {

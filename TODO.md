@@ -64,3 +64,4 @@ proper post-processing and proper layering — frontier-standard paperdolling wo
 - [x] Exports verified pixel-identical: Godot 4.7.1, Phaser 3.80/3.90/4.2.1, Aseprite CLI
 - [x] Docs: README, docs index, user guide, MIT LICENSE
 - [x] Agent-only key mode (`npm run dev:agent`); no key path for humans or builds; CI + Pages workflow with dist guard
+- [x] Repo cleanup (B18): evidence media + design-mockups untracked (kept at tag v0.1.0, links retargeted), dev-only fixtures in `app/dev-fixtures/` (dist ships s2 only), Playwright an app devDependency, README gallery in `docs/media/`

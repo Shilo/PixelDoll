@@ -1,7 +1,0 @@
-COST {"cmd":"pose","v":"ea2","item":"chest","clip":"slash","d":"east","n":8,"size":"64x64","ms":144728,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"chest","clip":"slash","d":"south","n":8,"size":"64x64","ms":170110,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"chest","clip":"walk","d":"north","n":8,"size":"64x64","ms":174886,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"chest","clip":"slash","d":"north","n":8,"size":"64x64","ms":176766,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"chest","clip":"walk","d":"south","n":8,"size":"64x64","ms":190151,"usage":{"type":"generations","generations":3}}
-COST {"cmd":"pose","v":"ea2","item":"chest","clip":"walk","d":"east","n":8,"size":"64x64","ms":256866,"usage":{"type":"generations","generations":3}}
-total ms 256887
