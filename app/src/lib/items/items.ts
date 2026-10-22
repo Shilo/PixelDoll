@@ -631,6 +631,9 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
       let turn = 0, shapeIoU = 1;
       for (const [i, c] of ord.entries()) {
         const n = ord[(i + 1) % ord.length], j = +c.key.split('/')[2], k = +n.key.split('/')[2];
+        // Preserve the posed route's minimum sample size: tiny masks have too few pixels
+        // for a reliable axis, but can still rotate correctly with the hand.
+        if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) continue;
         const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
         if (fore && x != null && y != null) turn = Math.max(turn, angleDiff(x - fore[j], y - fore[k]));
         else shapeIoU = Math.min(shapeIoU, alignedIoU(c.mask, n.mask, w));

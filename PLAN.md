@@ -19,14 +19,19 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 - **Exports verified pixel-identical:** Godot 4.7.1, Phaser 3.80/3.90/4.2.1, Aseprite CLI. Unity compiles only.
 - **Quality evidence:** full item coverage (hair, cape, chest, trousers, boots, helmet, sword × idle/walk/slash/hurt × 4
   dirs; sword × 8 dirs). Independent UX QA 6 → 8.5/10. Robustness/security review fixed (R6/B13).
-- **PixelLab credits:** ≈4,400 gens spent on research/testing; balance ≈529 (2026-10-21).
+- **Shield validation (2026-10-22):** round-mask G9 false turns fixed; adversarial review preserved valid tiny-item
+  hand motion. Codex browser and offline regressions pass. Live idle/walk tests cover 4- and 8-direction
+  rigs (96 generated frames, 144 with mirrors); side/diagonal walk clips still need an occlusion-aware quality review.
+  Both items remain review drafts. Evidence: `docs/testing/shields-2026-10-22.md`.
+- **PixelLab credits:** balance ≈212 (free GET, 2026-10-22). Shield validation spent 99 generations (34 + 65).
 
 ## Roadmap
 
 1. **Own origin** (custom domain) — key safety on shared `*.github.io`; prerequisite for PWA and for recommending
    "Remember key". Decision deferred with PWA.
 2. **PWA** — deferred by user (2026-10-22); retain the installable, offline shell plan below (D13).
-3. **Item quality** — shields (`off_hand`) live test; cape back-hem smudges; helmet visor flag when an arm covers it;
+3. **Item quality** — shield side/diagonal walk occlusion and stability gates (reuse saved outputs); cape back-hem
+   smudges; helmet visor flag when an arm covers it;
    optional `mirror: "generate"` per item to keep handedness in mirrored directions.
 4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
 5. **Theming** — runtime theme tokens + "Paper" theme inspired by design look D (deferred by user).

@@ -45,3 +45,10 @@ test('elongated held items still fail a quarter turn against a stationary forear
   const cells = [0, 1, 2].map(i => cell(i, (x, y) => i === 1 ? Math.abs(x) <= 5 && Math.abs(y) <= 1 : Math.abs(x) <= 1 && Math.abs(y) <= 5))
   expect(rotationFailures(cells)).toEqual([expect.stringContaining('turns 90°')])
 })
+
+test.each([2, 3, 5])('a %i-pixel half-length held item may rotate with its forearm', half => {
+  const movingRig = structuredClone(rig)
+  movingRig.animations[0].sources!.south!.keypoints![1] = pose.map(p => p.label === 'LEFT ELBOW' ? { ...p, x: 5 / size, y: 12 / size } : p)
+  const cells = [0, 1, 2].map(i => cell(i, (x, y) => i === 1 ? y === 0 && Math.abs(x) <= half : x === 0 && Math.abs(y) <= half))
+  expect([...itemQa(movingRig, slotOf('off_hand'), 'green', cells, 0).failCalls.values()].flat()).toEqual([])
+})
