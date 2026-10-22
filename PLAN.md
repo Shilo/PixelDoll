@@ -19,7 +19,8 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 - **Exports verified pixel-identical:** Godot 4.7.1, Phaser 3.80/3.90/4.2.1, Aseprite CLI. Unity compiles only.
 - **Quality evidence:** full item coverage (hair, cape, chest, trousers, boots, helmet, sword × idle/walk/slash/hurt × 4
   dirs; sword × 8 dirs). Independent UX QA 6 → 8.5/10. Robustness/security review fixed (R6/B13).
-- **Shield validation (2026-10-22):** round-mask G9 false turns fixed. Live idle/walk tests cover 4- and 8-direction
+- **Shield validation (2026-10-22):** round-mask G9 false turns fixed; adversarial review preserved valid tiny-item
+  hand motion. Codex browser and offline regressions pass. Live idle/walk tests cover 4- and 8-direction
   rigs (96 generated frames, 144 with mirrors); side/diagonal walk clips still need an occlusion-aware quality review.
   Both items remain review drafts. Evidence: `docs/testing/shields-2026-10-22.md`.
 - **PixelLab credits:** balance ≈212 (free GET, 2026-10-22). Shield validation spent 99 generations (34 + 65).

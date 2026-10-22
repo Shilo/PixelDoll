@@ -58,6 +58,7 @@ Paperdoll output must be accurate, consistent, high quality, using proper PixelL
 proper post-processing and proper layering — frontier-standard paperdolling workflow.
 
 ## Done
+- [x] Codex browser shield/Studio checks and adversarial sub-agent review; independently reproduced and fixed the tiny-item G9 regression (40 offline tests).
 - [x] Shield live smoke test: idle/walk on 4- and 8-direction rigs, 99 gens; all 96 generated frames aligned, exports
       validated. Round-mask false rotation failures fixed; remaining walk/occlusion flags are tracked above.
 - [x] Research R1–R5 (pixellab-pip, PixelLab online, engines, games incl. Ultima Online, paperdoll tools)
