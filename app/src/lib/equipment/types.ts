@@ -55,7 +55,7 @@ export interface FitCandidate {
   assessment: FitAssessment;
 }
 export interface FitPlan {
-  extension?: { itemId: string; anims: string[]; cells: string[]; stamp: string; reuseRest: boolean };
+  extension?: { itemId: string; anims: string[]; cells: string[]; stamp: string; reuseRest: boolean; freeMatches?: CellMatch[]; freeSource?: Omit<EquipmentDesign, 'images'> };
   design: Omit<EquipmentDesign, 'images'>;
   targetId: string;
   targetAudit: Sha256;

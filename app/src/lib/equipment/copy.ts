@@ -8,7 +8,8 @@ import { SLOTS } from '../items/items.ts';
 import { validate } from '../export/generic.ts';
 import { mergeQa } from '../items/qa-summary.ts';
 import type { QaSummary } from '../store/manifest.ts';
-import { imageHashes } from './design.ts';
+import { imageHashes, restStamp } from './design.ts';
+export { restStamp } from './design.ts';
 import { assessDesign, targetAudit } from './compatibility.ts';
 import { encodedImages, loadImages, snapshotDesign } from './store.ts';
 import { designItem, type AcceptOptions, type EquipmentDesign, type FitCandidate } from './types.ts';
@@ -22,13 +23,12 @@ export const extensionStamp = (m: Manifest, id: string): string => {
   const it = m.items.find(i => i.id === id);
   return stableStringify(it && { layers: it.layers, dressed: it.dressed, key: it.key, route: it.route, baseHash: it.baseHash, provenance: it.provenance, materials: m.materials.filter(mat => mat.owner === id).map(({ id, ramp }) => ({ id, ramp })) });
 };
-export const restStamp = (m: Manifest): string => stableStringify({ rest: m.rig.rest, cell: m.rig.cell, pivot: m.rig.pivot, view: m.rig.view, template: m.rig.template });
 const combinePartialQa = (old: QaSummary | undefined, next: QaSummary): QaSummary => {
   if (!old) return { ...next, status: next.status === 'fail' ? 'fail' : 'warn' };
   const worst = (['fail', 'warn', 'accepted', 'pass'] as const).find(s => s === old.status || s === next.status)!;
   const min = (k: 'minKeyKept' | 'minAreaRatio') => Math.min(old[k], next[k]);
   const max = (k: 'maxKeyOutside' | 'maxAreaCV' | 'maxPaletteDist') => Math.max(old[k], next[k]);
-  return { ...next, status: worst, minKeyKept: min('minKeyKept'), minAreaRatio: min('minAreaRatio'), maxKeyOutside: max('maxKeyOutside'), maxAreaCV: max('maxAreaCV'), maxPaletteDist: max('maxPaletteDist'), clipPx: old.clipPx + next.clipPx, shiftedFrames: (old.shiftedFrames ?? 0) + (next.shiftedFrames ?? 0), strayPx: (old.strayPx ?? 0) + (next.strayPx ?? 0), ...(old.handedness === 'switched' ? { handedness: 'switched' } : {}) };
+  return { ...next, unmeasured: old.unmeasured || next.unmeasured, status: worst, minKeyKept: min('minKeyKept'), minAreaRatio: min('minAreaRatio'), maxKeyOutside: max('maxKeyOutside'), maxAreaCV: max('maxAreaCV'), maxPaletteDist: max('maxPaletteDist'), clipPx: old.clipPx + next.clipPx, shiftedFrames: (old.shiftedFrames ?? 0) + (next.shiftedFrames ?? 0), strayPx: (old.strayPx ?? 0) + (next.strayPx ?? 0), ...(old.handedness === 'switched' ? { handedness: 'switched' } : {}) };
 };
 export async function prepareCopy(design: EquipmentDesign, target: Project): Promise<FitCandidate> {
   const assessment = await assessDesign(design, target);
@@ -58,6 +58,7 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
   // Frozen raster copying does not prove a source standing reference fits future target moves.
   if (!assessment.canExtend) { delete item.dressed; delete item.route; }
   if (item.qa) {
+    item.qa.unmeasured = true;
     item.qa.status = 'warn'; item.qa.cells = {}; delete item.qa.clips;
     const { cells: _cells, clips: _clips, legacy: _legacy, rerolls: _rerolls, ...summary } = item.qa;
     item.qa.legacy = { clips: [...new Set(assessment.matches.map((m) => m.target.split('/').slice(0, 2).join('/')))], summary: { ...summary, status: 'warn' } };

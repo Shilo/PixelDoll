@@ -2,12 +2,13 @@ import { expect,test } from 'vitest';
 import { equipmentFixture,bodyOnly } from './equipment-fixture.ts';
 import { createDesign,designRevision,designRestReferences } from '../../src/lib/equipment/design.ts';
 import { assessDesign } from '../../src/lib/equipment/compatibility.ts';
-import { prepareCopy,targetStamp,publishCandidate,extensionStamp } from '../../src/lib/equipment/copy.ts';
+import { prepareCopy,targetStamp,publishCandidate,extensionStamp,restStamp } from '../../src/lib/equipment/copy.ts';
 import { saveCreatedDesign } from '../../src/lib/equipment/store.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { cellImg } from '../../src/lib/compose/compose.ts';
 import { recolour } from '../../src/lib/dress/dress.ts';
 import type { DirectionName } from '../../src/lib/store/manifest.ts';
+import { mergeQa } from '../../src/lib/items/qa-summary.ts';
 
 test('same frozen cells copy despite renamed moves and playback metadata; target playback stays owned',async()=>{
   const p=await equipmentFixture(),design=await createDesign(p,'hat',{hat:'blue'}),target=bodyOnly(p),base=target.manifest.items[0];
@@ -24,6 +25,13 @@ test('same frozen cells copy despite renamed moves and playback metadata; target
 test('fitting references preserve selected RGB channels exactly',async()=>{
   const p=await equipmentFixture(),design=await createDesign(p,'hat',{hat:'red'}),reference=designRestReferences(design,p)[0];
   expect([...reference.image.data.slice((18*64+20)*4,(18*64+20)*4+4)]).toEqual([255,0,0,255]);
+});
+test('saving a fitted copy cannot pair stale dressed artwork with newly changed standing joints',async()=>{
+  const p=await equipmentFixture(),base=p.manifest.items[0].layers[0].cells!.rest!.south![0]!,hat=p.manifest.items[1];
+  p.manifest.rig.rest={south:{image:base,keypoints:[{label:'NECK',x:0.5,y:0.3}]}};hat.dressed={south:base};hat.route='skeleton-pose';
+  const source=await createDesign(p,'hat');hat.design={designId:source.id,revision:source.revision,snapshot:source,roleMaterials:{hat:'hat'},targetAudit:base,targetStamp:'',dressedStamp:restStamp(p.manifest)};
+  expect((await createDesign(p,'hat')).source.items[1].dressed).toBeDefined();p.manifest.rig.rest.south!.keypoints[0].x=0.6;
+  const changed=await createDesign(p,'hat');expect(changed.source.items[1].dressed).toBeUndefined();expect(changed.source.items[1].route).toBeUndefined();expect(changed.warnings).not.toEqual([]);
 });
 test('unambiguous repeated body poses reuse per cell; contradictory equipment does not choose arbitrarily',async()=>{
   const p=await equipmentFixture(),target=bodyOnly(p),b=p.manifest.items[0].layers[0].cells!.rest!.south![0];
@@ -85,4 +93,10 @@ test('partial extension retains original and transparent pixels, old QA, other d
   expect(actual.qa!.status).toBe('warn');expect(actual.qa!.maxPaletteDist).toBe(7);
   expect(actual.qa!.cells['rest/south/0'].provenance).toBe(0);expect(actual.qa!.cells['rest/south/1'].area).toBe(0);expect(actual.qa!.cells['rest/south/2'].provenance).toBe(1);
   expect(actual.provenance[1].produced).toEqual(['rest/south/2']);expect(actual.provenance[0].produced).toEqual(['rest/south/0','rest/south/1']);
+});
+test('a later measured move cannot clear the warning or unknown measurement flag of a retained copied clip',async()=>{
+  const p=await equipmentFixture(),item=p.manifest.items[1],summary={status:'warn' as const,unmeasured:true,minKeyKept:0,minAreaRatio:0,maxKeyOutside:0,maxAreaCV:0,maxPaletteDist:0,clipPx:0};
+  item.qa={...summary,rerolls:0,cells:{'rest/south/0':{route:'propagated',area:1}},clips:{'rest/south':summary}};
+  const next={...summary,status:'pass' as const,unmeasured:undefined,minKeyKept:1,minAreaRatio:1,rerolls:0,cells:{},clips:{'walk/south':{...summary,status:'pass' as const,unmeasured:undefined,minKeyKept:1,minAreaRatio:1}}};
+  const merged=mergeQa(item,next,{});expect(merged.unmeasured).toBe(true);expect(merged.status).toBe('warn');
 });

@@ -23,6 +23,7 @@ export function imageHashes(m: Manifest): Sha256[] {
 }
 export const designRevision = async (source: Manifest, variants: Preset['variants'], hashes: readonly Sha256[]): Promise<Sha256> =>
   `sha256:${await sha256(stableStringify({ source, variants, imageHashes: [...hashes].sort() }))}`;
+export const restStamp = (m: Manifest): string => stableStringify({ rest: m.rig.rest, cell: m.rig.cell, pivot: m.rig.pivot, view: m.rig.view, template: m.rig.template });
 
 export async function createDesign(project: Project, itemId: string, variants: Preset['variants'] = {}, name?: string): Promise<EquipmentDesign> {
   const original = project.manifest.items.find((it) => it.id === itemId);
@@ -30,6 +31,7 @@ export async function createDesign(project: Project, itemId: string, variants: P
   if (original.baseHash !== project.manifest.rig.baseHash) throw new Error('This equipment belongs to an older body. Fit it to the current character before saving.');
   const m = structuredClone(project.manifest), base = m.items.find((it) => it.id === m.rig.baseItem)!;
   const item = m.items.find((it) => it.id === itemId)!;
+  if (original.design && original.design.dressedStamp !== restStamp(m)) { delete item.dressed; delete item.route; }
   delete base.design; delete item.design;
   const selected: Preset['variants'] = {};
   m.format = CURRENT_FORMAT;

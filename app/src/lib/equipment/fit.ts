@@ -12,11 +12,12 @@ import { assertDesign, encodedImages, loadImages, snapshotDesign } from './store
 import { qualifiedFit, restFitRequests, poseFitRequests, evaluateRestFit, evaluatePoseFit, type FitRecord, type GeneratedFitCall } from './generate.ts';
 import type { EquipmentDesign, FitCall, FitCandidate, FitDraft, FitPlan, FitReview } from './types.ts';
 import type { Img } from '../image/png.ts';
-import type { Project } from '../store/manifest.ts';
-import { variantRampOf } from '../dress/dress.ts';
+import type { Project, Item, ItemQa, Material, CellKey } from '../store/manifest.ts';
+import { variantRampOf, variantOf } from '../dress/dress.ts';
 import { colourCounts, fromHex } from '../dress/palette.ts';
 import { normaliseItemPalette } from './palette.ts';
 import { chromaLayer } from '../image/chroma.ts';
+import { cellImg } from '../compose/compose.ts';
 
 export const FIT_PROFILES = [{slot:'head',view:'low top-down',template:'mannequin',cell:64,experimental:true}] as const;
 const now=()=>new Date().toISOString();
@@ -36,23 +37,64 @@ async function targetOf(f:FitDraft):Promise<Project>{
   if(f.plan.extension&&extensionStamp(project.manifest,f.plan.extension.itemId)!==f.plan.extension.stamp)throw new Error('This equipment changed. Prepare its missing-frame fit again.');return project;
 }
 const selectedTarget=(target:Project,fit:FitDraft):Project=>fit.plan.extension?{...target,manifest:{...target.manifest,rig:{...target.manifest.rig,animations:target.manifest.rig.animations.filter(a=>fit.plan.extension!.anims.includes(a.id))}}}:target;
-export async function planFit(design:EquipmentDesign,targetId:string):Promise<FitPlan>{
+const unknownQa=():ItemQa=>({status:'warn',unmeasured:true,minKeyKept:0,minAreaRatio:0,maxKeyOutside:0,maxAreaCV:0,maxPaletteDist:0,clipPx:0,rerolls:0,cells:{},clips:{}});
+async function extensionPreviewVariants(targetId:string,originals:Material[],materials:Material[]):Promise<FitCandidate['variants']>{
+  const rec=await db.get<StoredProject&{dress?:{current?:{variants:FitCandidate['variants']}}}>('projects',targetId);
+  if(!rec)throw new Error('The target character was removed.');
+  const selected=rec.dress?.current?.variants??rec.manifest.presets[0]?.variants??{};
+  return Object.fromEntries(originals.flatMap((m,i)=>{const name=variantOf(rec.manifest,selected,m.id);return name?[[materials[i].id,name]]:[];}));
+}
+async function appendFreeCells(fit:FitDraft,project:Project,item:Item):Promise<void>{
+  const extension=fit.plan.extension;if(!extension?.freeMatches?.length||!extension.freeSource)return;
+  const source={manifest:extension.freeSource.source,images:await loadImages(extension.freeSource.imageHashes)},original=source.manifest.items.find(i=>i.id===extension.freeSource!.itemId)!;
+  item.qa??=unknownQa();const qa=item.qa,clips=qa.clips??={};
+  for(const match of extension.freeMatches){
+    const[a,d,n]=match.target.split('/') as[string,DirectionName,string],[sa,sd,sn]=match.source.split('/') as[string,DirectionName,string];let area=0;
+    for(const[i,l]of original.layers.entries()){
+      const im=cellImg(source,l,sa,sd,+sn),hash=im?await cellHash(im):null;
+      if(im){project.images.set(hash!,im);for(let p=3;p<im.data.length;p+=4)if(im.data[p])area++;}
+      const count=project.manifest.rig.animations.find(anim=>anim.id===a)!.cells,layer=item.layers[i];layer.cells??={};
+      ((layer.cells[a]??={})[d]??=Array(count).fill(null))[+n]=hash;
+    }
+    // Exact raster reuse has no new API preservation measurement or generating-call claim.
+    qa.cells[match.target as CellKey]={route:'propagated',area};
+    const clip=`${a}/${d}`;const {cells:_cells,clips:_clips,rerolls:_rerolls,...unknown}=unknownQa();clips[clip]??=unknown;clips[clip].unmeasured=true;if(clips[clip].status==='pass')clips[clip].status='warn';
+  }
+  if(qa.status==='pass')qa.status='warn';
+  qa.unmeasured=true;
+  item.coverage=[...new Set([...(item.coverage??[]),...extension.freeMatches.map(m=>m.target as CellKey)])];
+}
+async function freeExtensionReview(fit:FitDraft,target:Project):Promise<FitDraft>{
+  const existing=target.manifest.items.find(i=>i.id===fit.plan.extension!.itemId)!,item=structuredClone(existing),id=`gear-${crypto.randomUUID()}`;
+  item.id=id;item.coverage=[];item.qa=unknownQa();
+  if(!fit.plan.extension!.reuseRest){delete item.dressed;delete item.route;}
+  const originals=target.manifest.materials.filter(m=>m.owner===existing.id),materials=originals.map((m,i)=>({...structuredClone(m),id:`${id}_${i+1}`,owner:id}));
+  materials.forEach(m=>{delete m.linkTo;});item.materials=materials.map(m=>m.id);
+  item.design={designId:fit.plan.design.id,revision:fit.plan.design.revision,snapshot:snapshotDesign(fit.plan.design),roleMaterials:Object.fromEntries(originals.map((m,i)=>[m.id,materials[i].id])),targetAudit:fit.plan.targetAudit,targetStamp:fit.plan.targetStamp,dressedStamp:fit.plan.extension!.reuseRest?restStamp(target.manifest):undefined};
+  const project={manifest:structuredClone(target.manifest),images:new Map(target.images)};project.manifest.items.push(item);project.manifest.materials.push(...materials);
+  await appendFreeCells(fit,project,item);
+  await db.update<FitDraft>('projects',fit.id,f=>{if(!f||!['ready','pose-running'].includes(f.stage))throw new Error('The free fitting draft changed or was removed.');return{...f,stage:'pose-running',updatedAt:now()};});
+  return storeResult(fit.id,'pose',project,id,undefined,materials,await extensionPreviewVariants(fit.targetId,originals,materials),['These missing cells reuse exact frozen poses for free. Review the combined result; copied cells have no new API quality measurements.'],[]);
+}
+async function priceFit(design:EquipmentDesign,targetId:string,options:{reuseApprovedRest?:boolean}={}):Promise<FitPlan>{
   if(!targetId.startsWith('rig-'))throw new Error('Make an editable copy of the demo before fitting equipment.');
   const {project}=await loadProject(targetId),source=await sourceOf(design),assessment=await assessDesign(design,project),rig=project.manifest.rig;
   const reason=qualifiedFit(design,project);if(reason)throw new Error(reason);
   if(!assessment.targetRigReady)throw new Error('Set up the target character’s pose rig before fitting.');
-  const requests=await restFitRequests(design,source,project,1),directions=rig.directions.filter(d=>!d.mirrorOf).map(d=>d.id),body=project.manifest.items.find(it=>it.id===rig.baseItem)!;
+  if(options.reuseApprovedRest&&restStamp(source.manifest)!==restStamp(project.manifest))throw new Error('The approved standing reference contract changed.');
+  const requests=options.reuseApprovedRest?[]:await restFitRequests(design,source,project,1),directions=rig.directions.filter(d=>!d.mirrorOf).map(d=>d.id),body=project.manifest.items.find(it=>it.id===rig.baseItem)!;
   const poseGens=rig.animations.reduce((n,a)=>n+directions.filter(d=>body.layers[0].cells?.[a.id]?.[d]?.some(Boolean)&&!(a.cells===1&&a.sources?.[d]?.motion==='imported-rest')).length*poseBatches(a.cells).reduce((s,b)=>s+(b.count<=3?2:b.count<=8?3:4),0),0);
   assessment.warnings.push('Experimental headwear fitting: review every view and move. Failed attempts still cost generations.');
   return{design:snapshotDesign(design),targetId,targetAudit:await targetAudit(project),targetStamp:targetStamp(project.manifest,design.slot),assessment,previewGens:requests.reduce((n,r)=>n+r.limit,0),poseGens,directions,createdAt:now()};
 }
+export const planFit=(design:EquipmentDesign,targetId:string):Promise<FitPlan>=>priceFit(design,targetId);
 export async function getFit(id:string):Promise<FitDraft>{const f=await db.get<FitDraft>('projects',id);if(!f||f.kind!=='equipment-fit-draft')throw new Error('This equipment fit was removed.');return f;}
 export const listFits=async():Promise<FitDraft[]> =>(await db.all<FitDraft>('projects')).filter(r=>r?.kind==='equipment-fit-draft'&&r.stage!=='discarded').sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
 export async function createFit(plan:FitPlan,budget:FitDraft['budget']):Promise<FitDraft>{
   leader();if(!Number.isFinite(budget.previewGens)||!Number.isFinite(budget.poseGens)||budget.previewGens<plan.previewGens||budget.poseGens<0)throw new Error('Approve the displayed rest-preview cost before fitting.');
   const source=await sourceOf(plan.design),{project}=await loadProject(plan.targetId);
   if(targetStamp(project.manifest,plan.design.slot)!==plan.targetStamp)throw new Error('The character changed. Prepare a fresh fit plan.');
-  const reason=qualifiedFit(plan.design,project);if(reason)throw new Error(reason);
+  const reason=plan.extension&&!plan.extension.cells.length?null:qualifiedFit(plan.design,project);if(reason)throw new Error(reason);
   const fit:FitDraft={kind:'equipment-fit-draft',format:'pixeldoll-fit/1',id:`equipment-fit:${crypto.randomUUID()}`,name:plan.design.name,targetId:plan.targetId,targetProjectId:plan.targetId,plan:structuredClone(plan),stage:'ready',updatedAt:now(),error:'',previewGens:plan.previewGens,poseGens:plan.poseGens,spentGens:0,budget:{...budget},calls:[]};
   await db.putCharacter(fit.id,fit,await encodedImages(source.images));return fit;
 }
@@ -100,7 +142,9 @@ async function storeResult(id:string,stage:'rest'|'pose',project:Project,itemId:
   });return getFit(id);
 }
 async function finishStage(id:string,stage:'rest'|'pose'):Promise<FitDraft>{
-  const fit=await getFit(id),fullTarget=await targetOf(fit),target=selectedTarget(fullTarget,fit),completed=await records(fit,stage);
+  const fit=await getFit(id),fullTarget=await targetOf(fit);
+  if(stage==='pose'&&fit.plan.extension&&!fit.plan.extension.cells.length&&fit.plan.extension.freeMatches?.length)return freeExtensionReview(fit,fullTarget);
+  const target=selectedTarget(fullTarget,fit),completed=await records(fit,stage);
   const actual=(await db.all<JobRec>('jobs')).filter(r=>fit.calls.some(c=>c.recId===r.id)).reduce((n,r)=>n+r.gens,0);
   await db.update<FitDraft>('projects',id,f=>({...f!,spentGens:actual,updatedAt:now()}));
   if(stage==='rest'){const r=await evaluateRestFit(fit.plan.design,target,completed);return storeResult(id,stage,r.project,r.itemId,r.rest,[],{},r.warnings,r.fails);}
@@ -119,6 +163,8 @@ async function finishStage(id:string,stage:'rest'|'pose'):Promise<FitDraft>{
   }
   if(r.materials.length!==1){r.fails.push('This experimental single-material fitting route produced multiple material roles. Review a separate attempt; this result cannot be kept.');r.failedCells=[...new Set(completed.flatMap(x=>x.call.cells))];}
   item.design={designId:fit.plan.design.id,revision:fit.plan.design.revision,snapshot:snapshotDesign(fit.plan.design),roleMaterials,unmappedRoles,targetAudit:fit.plan.targetAudit,targetStamp:fit.plan.targetStamp,dressedStamp:restStamp(fullTarget.manifest)};
+  await appendFreeCells(fit,r.project,item);
+  if(fit.plan.extension?.freeMatches?.length)r.warnings.push('Exact matching poses were reused for free. Those cells have no new API body-preservation measurements; review their target appearance.');
   if(unmappedRoles.length)r.warnings.push('Some source colour roles could not be matched exactly. This fitted copy has its own independent materials.');
   if(fit.plan.extension){
     const existing=fullTarget.manifest.items.find(it=>it.id===fit.plan.extension!.itemId)!;
@@ -155,6 +201,7 @@ async function finishStage(id:string,stage:'rest'|'pose'):Promise<FitDraft>{
     r.materials=oldMaterials.map((m,i)=>({...structuredClone(m),id:`${newId}_${i+1}`,owner:newId}));
     for(const m of r.materials)delete m.linkTo;
     item.materials=r.materials.map(m=>m.id);r.project.manifest.materials.push(...r.materials);
+    r.variants=await extensionPreviewVariants(fit.targetId,oldMaterials,r.materials);
     item.design.roleMaterials=Object.fromEntries(oldMaterials.map((m,i)=>[m.id,r.materials[i].id]));
     item.design.unmappedRoles=[];
     const base=fullTarget.manifest.items.find(it=>it.id===fullTarget.manifest.rig.baseItem)!;
@@ -217,9 +264,19 @@ export async function prepareExtensionFit(targetId:string,itemId:string,options:
   const anims=project.manifest.rig.animations.filter(a=>(!options.anims||options.anims.includes(a.id))&&dirs.some(d=>body.layers[0].cells?.[a.id]?.[d]?.some(Boolean)&&(item.coverage?Array.from({length:a.cells},(_,i)=>`${a.id}/${d}/${i}` as NonNullable<typeof item.coverage>[number]).some(k=>!item.coverage!.includes(k)):!item.layers.some(l=>(l.cells?.[a.id]?.[d]?.length===a.cells))))).map(a=>a.id);
   if(!anims.length)throw new Error('This copy already covers the requested moves.');
   const stamp=extensionStamp(project.manifest,itemId);
-  const pending=(await listFits()).find(f=>f.targetId===targetId&&f.plan.extension?.itemId===itemId&&f.plan.extension.stamp===stamp&&JSON.stringify([...f.plan.extension.anims].sort())===JSON.stringify([...anims].sort())&&!['accepted','discarded'].includes(f.stage));
+  const pending=(await listFits()).find(f=>f.targetId===targetId&&f.plan.targetStamp===targetStamp(project.manifest,item.slot)&&f.plan.extension?.itemId===itemId&&f.plan.extension.stamp===stamp&&JSON.stringify([...f.plan.extension.anims].sort())===JSON.stringify([...anims].sort())&&!['accepted','discarded'].includes(f.stage));
   if(pending)return pending;
   const reuseRest=!!item.dressed&&dirs.every(d=>item.dressed?.[d])&&item.design.dressedStamp===restStamp(project.manifest);
+  const covered=new Set<string>(item.coverage??item.layers.flatMap(l=>Object.entries(l.cells??{}).flatMap(([a,ds])=>Object.entries(ds).flatMap(([d,cs])=>(cs??[]).map((_,i)=>`${a}/${d}/${i}`)))));
+  const missing=project.manifest.rig.animations.filter(a=>anims.includes(a.id)).flatMap(a=>dirs.filter(d=>body.layers[0].cells?.[a.id]?.[d]?.some(Boolean)).flatMap(d=>Array.from({length:a.cells},(_,i)=>`${a.id}/${d}/${i}`).filter(k=>!covered.has(k))));
+  const freeDesign=await createDesign(project,itemId,{},item.name);freeDesign.variants={};
+  freeDesign.source.presets.forEach(p=>{p.variants={};});freeDesign.source.materials.filter(m=>m.owner===itemId).forEach(m=>{delete m.defaultVariant;});
+  freeDesign.revision=await designRevision(freeDesign.source,freeDesign.variants,freeDesign.imageHashes);
+  const assessment=await assessDesign(freeDesign,project),freeMatches=assessment.matches.filter(m=>missing.includes(m.target)),freeKeys=new Set(freeMatches.map(m=>m.target)),cells=missing.filter(k=>!freeKeys.has(k));
+  if(!cells.length){
+    const plan:FitPlan={design:snapshotDesign(freeDesign),targetId,targetAudit:await targetAudit(project),targetStamp:targetStamp(project.manifest,item.slot),assessment,previewGens:0,poseGens:0,directions:dirs,createdAt:now(),extension:{itemId,anims,cells,stamp,reuseRest,freeMatches,freeSource:snapshotDesign(freeDesign)}};
+    const fit=await createFit(plan,{previewGens:0,poseGens:0});return run(fit.id,async()=>freeExtensionReview(fit,await targetOf(fit)));
+  }
   const design:EquipmentDesign=reuseRest?await createDesign(project,itemId,{},item.name):structuredClone(item.design.snapshot);
   design.images=await loadImages(design.imageHashes,project.images);
   const sourceMaterials=design.source.materials.filter(m=>m.owner===design.itemId),targetMaterials=project.manifest.materials.filter(m=>m.owner===itemId);
@@ -229,9 +286,7 @@ export async function prepareExtensionFit(targetId:string,itemId:string,options:
   if(!reuseRest&&!rawMatches&&!visibleMatches)throw new Error('The original source colourway cannot be matched exactly to this copy’s raw palette. No fitting request was sent.');
   if(reuseRest||rawMatches){design.variants={};design.source.presets.forEach(p=>{p.variants={};});sourceMaterials.forEach(m=>{delete m.defaultVariant;});}
   design.revision=await designRevision(design.source,design.variants,design.imageHashes);
-  const covered=new Set<string>(item.coverage??item.layers.flatMap(l=>Object.entries(l.cells??{}).flatMap(([a,ds])=>Object.entries(ds).flatMap(([d,cs])=>(cs??[]).map((_,i)=>`${a}/${d}/${i}`)))));
-  const cells=project.manifest.rig.animations.filter(a=>anims.includes(a.id)).flatMap(a=>dirs.filter(d=>body.layers[0].cells?.[a.id]?.[d]?.some(Boolean)).flatMap(d=>Array.from({length:a.cells},(_,i)=>`${a.id}/${d}/${i}`).filter(k=>!covered.has(k))));
-  const plan=await planFit(design,targetId);plan.extension={itemId,anims,cells,stamp,reuseRest};if(reuseRest)plan.previewGens=0;
+  const plan=await priceFit(design,targetId,{reuseApprovedRest:reuseRest});plan.extension={itemId,anims,cells,stamp,reuseRest,freeMatches,freeSource:freeMatches.length?snapshotDesign(freeDesign):undefined};
   const narrowed={...project,manifest:{...project.manifest,rig:{...project.manifest.rig,animations:project.manifest.rig.animations.filter(a=>anims.includes(a.id))}}};
   const rest=Object.fromEntries(dirs.map(d=>[d,project.images.get(reuseRest?item.dressed![d]!:project.manifest.rig.rest![d]!.image)!]));
   plan.poseGens=(await poseFitRequests(design,narrowed,rest,1,cells)).reduce((n,c)=>n+c.limit,0);

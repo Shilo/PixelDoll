@@ -35,6 +35,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
     amb: parts.reduce((n, p) => n + (p.grip?.amb ?? 0), 0), none: parts.reduce((n, p) => n + (p.grip?.none ?? 0), 0),
   } : undefined;
   return {
+    ...(parts.some(p => p.unmeasured) ? { unmeasured: true } : {}),
     minKeyKept: min('minKeyKept'), minAreaRatio: min('minAreaRatio'), maxKeyOutside: max('maxKeyOutside'), maxAreaCV: max('maxAreaCV'), maxPaletteDist: max('maxPaletteDist'),
     clipPx: sum('clipPx'), shiftedFrames: sum('shiftedFrames'), strayPx: sum('strayPx'),
     ...(grip ? { grip } : {}), ...(parts.some((p) => p.handedness) ? { handedness: switched ? 'switched' : 'ok' } : {}),

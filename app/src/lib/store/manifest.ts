@@ -73,6 +73,8 @@ export interface Item {
 }
 /** Scalar checks for one evaluation; extrema or totals over its frames. */
 export interface QaSummary {
+  /** Contains reused cells without a new API measurement; aggregate numeric checks are incomplete. */
+  unmeasured?: boolean;
   minKeyKept: number;
   maxKeyOutside: number;
   minAreaRatio: number;
