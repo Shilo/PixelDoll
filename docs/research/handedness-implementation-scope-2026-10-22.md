@@ -1,6 +1,6 @@
 # Handedness implementation scope — 2026-10-22
 
-Read-only source investigation; no generation or source edits in this follow-up. Requested by the parent to challenge the initial conclusion that per-item generation was blocked by missing body materialization.
+The initial investigation was read-only, with no generation or source edits; implementation and live follow-ups are recorded below. Requested by the parent to challenge the initial conclusion that per-item generation was blocked by missing body materialization.
 
 ## Revised finding
 
@@ -49,7 +49,7 @@ The item-only path is viable for attachment consistency, but it is broader and e
 
 ## Required verification
 
-- Offline four/eight direction plans, estimates, no accidental overwrite of original western rest views, all18 finite joint labels, western authored action uses the requested anatomical arm.
+- Offline four/eight direction plans, estimates, no accidental overwrite of original western rest views, all 18 finite joint labels, western authored action uses the requested anatomical arm.
 - A pending legacy creation resumes with the same request hashes after the feature update; new policies have deliberate distinct hashes.
 - Independent four/eight held items across idle/walk/slash, both hand slots, real occlusion review, oversize pivot alignment and frame-zero handling.
 - Future move addition, replacement invalidation, save/reload and editable ZIP roundtrip keep the policy and generated western rows.
@@ -64,6 +64,27 @@ After the legacy live flow settled successfully, the parent authorized the bound
 
 Creation now retains provider western rotation originals under the independent policy and renders every requested direction. Its initial text-only v3 request remains eight-direction capable without `n_directions: 4`; a matching previous completed drawing can be reused by the ordinary request ledger. Independent freezing uses the existing `all` mode and additionally asserts the exact requested four/eight direction set and expected mirror links before publication, guarding against `buildRig`'s intersection behavior. New body/item mirror metadata reflects the resulting rig rather than always saying flip.
 
-The estimator uses actual generated directions and existing shared retry bounds: independent four =46.25 baseline/75.45 configured upper estimate; independent eight =90.25/148.65. Time estimates scale the previous estimates to16/29 minutes before variable queue delays; these are extrapolations, not provider SLAs. Eight independently dressed held views need three96px dress batches (4+3+1 item references, including subsequent anchor overhead), followed by16 idle/walk pose calls, for78 generation units before retries. Existing dynamic item planning accounts for that batching automatically.
+The estimator uses actual generated directions and existing shared retry bounds: independent four = 46.25 baseline/75.45 configured upper estimate; independent eight = 90.25/148.65. Time estimates scale the previous estimates to 16/29 minutes before variable queue delays; these are extrapolations, not provider SLAs. Eight independently dressed held views need three 96px dress batches (4+3+1 item references, including subsequent anchor overhead), followed by 16 idle/walk pose calls, for 78 generation units before retries. Existing dynamic item planning accounts for that batching automatically.
 
-Offline tests cover omitted legacy policy, both independent direction sets/costs, preservation of distinct provider western pixels, missing/duplicate/wrong-mirror freeze rejection, unchanged initial text-only requests across policies, anatomical right-arm travel for W/SW/NW slash, held eight-direction caps/costs, and truthful mirror metadata. The data/export lane independently tests four policy/count combinations through editable ZIP plus recolored/tucked generic/Godot/Phaser/Unity/Aseprite outputs. The policy/queue/generation/selftest subset passed74tests and strict Svelte/TypeScript checks passed. Paid independent-character/weapon/slash visual acceptance is still required; these offline checks do not prove generative anatomy or artwork quality.
+Offline tests cover omitted legacy policy, both independent direction sets/costs, preservation of distinct provider western pixels, missing/duplicate/wrong-mirror freeze rejection, unchanged initial text-only requests across policies, anatomical right-arm travel for W/SW/NW slash, held eight-direction caps/costs, and truthful mirror metadata. The data/export lane independently tests four policy/count combinations through editable ZIP plus recolored/tucked generic/Godot/Phaser/Unity/Aseprite outputs. The policy/queue/generation/selftest subset passed 74 tests and strict Svelte/TypeScript checks passed. These initial offline checks do not prove generative anatomy or artwork quality; the current live evidence and remaining scope are recorded next.
+
+
+## Live evidence through source cd1122a
+
+The full independent four-direction idle+walk creation failed safely on two unknown estimator HTTP 500 outcomes. They
+were not resent, and this full run remains a failure. The developer-only offline helper recovered only 16 complete idle
+frames, requiring original rotations/rest references, exact processed PNG hashes/bytes and successful actual measurements.
+It did not substitute requested targets for observations or publish a completed idle+walk claim.
+
+The parent imported that artifact visibly, then generated and explicitly accepted the primary 96px right-hand sword after
+reviewing all 16 idle composites. The observed sword ledger was USD0.195. West's valid nearby wrists leave its silhouette
+grip classification uncertain, and the accepted warning survived reload and actual editable export/reimport. Actual Godot,
+Phaser and Aseprite runtime/export checks passed for these idle layers; this proves pixel preservation and synchronization,
+not anatomical correctness. Independent four-direction Slash subsequently completed ($0.582, no unknown outcomes),
+but all-32-frame visual review failed: both raw west rolls contain duplicate/ghost weapon pixels, and east/west body
+adherence retains 2.77/2.10px failures. Actual engines preserve the flagged artwork faithfully; no attack acceptance is claimed. Independent eight-direction weapon/action visual
+coverage and both hand slots remain broader verification requirements.
+
+Current integrated automated evidence reported by the parent is 321 unit tests across 34 files, 34 browser tests, strict
+checks with zero errors/warnings, and a clean production agent-token guard. Future live evidence belongs in the
+[professional audit report](../testing/professional-audit-2026-10-22.md).

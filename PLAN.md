@@ -38,8 +38,8 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 - **Professional audit:** adversarial pipeline/data/Studio reviews fixed credential sharing, unsafe paid recovery and lifecycle,
   import allocation bounds, persistence/navigation races, animation replacement validity, recoloured engine output and
   keyboard/review UX. New independent directions are implemented with automated policy/action/export coverage. The live
-  full creation stopped safely after two estimator HTTP 500 unknown outcomes; idle-only recovery and weapon/slash
-  handedness acceptance remain pending. Fresh evidence and remaining
+  full creation stopped safely after two estimator HTTP 500 unknown outcomes; idle-only recovery and the primary 96px idle sword passed with west grip ambiguity retained. Slash
+  execution completed but failed artwork acceptance; west duplicate weapon and east/west pose flags remain. Fresh evidence and remaining
   limits: [audit report](docs/testing/professional-audit-2026-10-22.md).
 
 ## Roadmap
@@ -123,11 +123,11 @@ trajectories, asymmetric pixels, eight-direction 96 px held-item batching, recol
 Estimated creation ranges are 46–80 gens for independent four directions and 90–150 for eight; mirrored economy remains
 35–60 / 57–95. PixelLab may also bill dollars, retries/fallbacks add cost, and queue time varies. These are estimates, not caps.
 
-The latest completed integrated snapshot passed 186 unit tests and 29 browser tests, with strict checks, production build
-and dist guard clean. That snapshot precedes subsequent submission-safety/validation changes and the final live-run
-finding. The controlled independent four-direction full creation stopped after two estimator HTTP 500 outcomes remained
-unknown; none was automatically resent. Activity had no queued/running work at the source-freeze release and displayed a
-$0.509 session ledger, which does not establish charges for unknown outcomes. Idle-only recovery from completed outputs
-and actual measurements is pending, followed by right-hand weapon/slash acceptance, western active-arm/grip inspection,
-reload and export. Independent pixels alone do not prove anatomical or generated-art correctness. A subsequent focused
-Activity/copy browser regression and strict checks pass; the next combined suite belongs to the parent audit report.
+The integrated source through commit `cd1122a` passed 321 unit tests across 34 files and 34 browser tests, with strict checks,
+production build and dist guard clean. The controlled independent four-direction full creation stopped after two estimator
+HTTP 500 outcomes remained unknown; none was automatically resent. Its settled ledger displayed $0.509, excluding any
+unknown charges. Offline recovery subsequently passed: four complete idle views with 16 real PNG-hash-matched measured
+frames, imported and visually inspected in Studio. This separate artifact does not turn the failed idle+walk run into a pass.
+The primary 96 px right-hand idle sword was manually accepted with its west-profile grip warning retained. Reload, keyless
+ZIP reimport and actual Godot/Phaser/Aseprite runtimes passed. The western slash execution completed but failed artwork acceptance: duplicate weapon remnants and retained east/west body QA require correction before use. Independent pixels alone do not prove anatomical or generated-art correctness. Follow the parent audit report
+for the final live acceptance results.

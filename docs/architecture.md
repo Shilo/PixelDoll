@@ -50,7 +50,7 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 | Rest views | The padded S/E/N rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
 | Directions | New forms default to independent 4/8 views: preserve original western rotations and render every direction. Optional mirrored economy and policy-less saved specs keep 3/5 authored views plus western flips. The initial text-only v3 request retains default eight rotations; reference import uses 4/8. Exact direction/policy coverage is required before freezing. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalised 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
-| Clips | Default rig: **`idle` (4), `walk` (8), `slash` (8), `hurt` (6)**; optional `run`, `cast`, `death`. Playlist `frames[{cell, ms}]`. | [S3, S4] |
+| Clips | New Studio characters start with **`idle` (4), `walk` (8)**. Add moves such as `slash` (8), `hurt` (6), `run`, `cast` or `death` separately. Older evidence rigs include additional moves. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
 | Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of the south rest view. Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
 | Frozen frame | Binary alpha; **largest 8-connected component kept** (skeleton-v3 adds detached motion-smear FX on 7/15 clips); SHA-256 per cell; `baseHash` over all cells. | [S3] |
 
@@ -104,8 +104,10 @@ rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE
 - Adding a clip later = one pose call per item-direction, same design, no re-dress.
 - **Dress frame cap [B16]:** edit-animation-v2 takes 16 / 9 / 4 frames at ≤ 64 / 65–80 / 81–256 px (`editFrameCap`). The dress
   is split into chunks under that cap (`anchorChunks`): the first takes `cap` rest views, later ones `cap − 1` plus the first
-  chunk's dressed cell 0 as an anchor (its output dropped, S2). An 8-direction held item (5 rest views at 96 px) = 4 + (1 + 1)
-  frames, 2 dress calls (20 gens). The anchor route's `planCalls` uses the same cap.
+  chunk's dressed cell 0 as an anchor (its output dropped, S2). A legacy/economy 8-direction held item has 5 independent
+  rest views at 96 px: 4 + (1 + 1 anchor) frames, 2 dress calls (20 estimated gens). New independent 8-direction items
+  have 8 rest views: 4 + (3 + 1 anchor) + (1 + 1 anchor) frames, 3 dress calls (30 estimated gens). Actual billing can use
+  USD. The anchor route's `planCalls` uses the same cap.
 - **Held items (`main_hand`, `off_hand`) [S5, B9]:** rest views and base frames are padded 64 → 96 around the same pivot
   (+16, +16; keypoints `(x·64 + 16)/96`); the dress prompt says "in the right hand, pointing down and slightly outward; exactly
   one weapon …; the arms stay exactly as they are"; poses run at 96 with **frame 0 sent last** when it is within 1 px of the rest
@@ -157,11 +159,11 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 | Gate | Pass |
 |---|---|
 | Key kept | ≥ 0.97, or ≤ 8 body px lost (a cape covering the back leaves ~126 body px; T3) |
-| Key outside base alpha | ≤ 0.03 (`skeleton-pose`), ≤ 0.05 (other routes) |
+| Key outside base alpha | ≤ 0.05 (`skeleton-pose`), ≤ 0.02 (anchor/diff route evaluation); current `GATES` and caller-selected limits govern |
 | Registration | best integer shift = 0 on every frame |
 | Area | each cell ≥ 50 % of the clip median; CV ≤ max(0.15, 2 × the CV of the body band it covers) (T3: trousers walk E) |
 | Design lock | palette distance to the dressed keyframe ≤ 15 |
-| Grip side (held) | `gripSide` from the clip's requested wrist keypoints: a clip held mostly in the wrong hand fails (G8); > 25 % ambiguous in a front/back view → review (side views are often ambiguous) |
+| Grip side (held) | Requested wrist keypoints, or tracked hand anchors as fallback. A frame votes only within 6 px of a wrist and with a > 2 px side margin; at least half the clip's frames must decide. A decided opposite-hand clip fails (G8). Each missing-position, unclear-side or no-contact clip retains a review warning; silhouette proximity is not anatomical proof. |
 | Shape (held, locomotion) | G9 principal-axis turn relative to the forearm ≤ 30° when keypoints and a reliable axis exist; otherwise adjacent-frame aligned IoU ≥ 0.3. With keypoints, pairs containing a mask below 6 pixels retain the minimum-sample skip. Near-round masks (normalized covariance eigenvalue gap < 0.2) use IoU because a one-pixel silhouette change can swap their axis by 90°. |
 | Anchor spread (head items) | layer centroid − head keypoint ≤ 3 px in front/back views |
 | Clip | no layer pixel on the cell border |
@@ -204,7 +206,11 @@ scalar baseline and remaining original layer coverage, merge new parts, and prev
 remains. The inspector explicitly says older checks are incomplete and totals may include replaced frames. The baseline
 is removed only after all that coverage is replaced; an item without any old QA retains unknown coverage instead.
 This preserves historical evidence, not a claim that old totals measured every previously appended move.
-G8 decides a clip's hand only with half its frames decided. A held frame repaired from the keyframe (S5) is not a warning.
+G8 requires at least half a clip's frames to supply contact-qualified side votes. Positions must be finite for every inspected
+frame; missing positions cannot be reported as merely ambiguous. Conversely, valid overlapping wrists cannot be described
+as missing anchors. A confident sibling never hides an uncertain clip. Detached pixels retain `grip.none` diagnostics and
+do not vote for the nearer wrist. The user reviews uncertain grip; no hidden anatomy is inferred. A held frame repaired
+from the keyframe (S5) is not itself a warning.
 D1 (dress, 0 gens): a colourful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-grey px fails the dress call, so the
 design is re-rolled before 36 gens of poses copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks
 for grey/metal/black/white parts. Handedness is set by the
@@ -270,21 +276,30 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
 
 ## 7. Storage, queue, key [M1, M2]
 
-- IndexedDB `projects` / `blobs` (SHA-256 of RGBA) / `jobs`; project zip = `project.json` + `cells/<sha>.png`; native-stream
+- IndexedDB `projects` / `blobs` / `jobs`: project cell keys hash RGBA pixels; queue inputs/results hash their stored
+  PNG or raw bytes. These hashes are not interchangeable. Project zip = `project.json` + `cells/<sha>.png`; native-stream
   zip and pure PNG encoder, no dependencies. Store **every** generated frame, reference, keypoint sequence and request: they
   cannot be reproduced.
-- Queue: persisted ledger; Pro/skeleton-v3 jobs default concurrency 8 (Tier 3 cap observed at 22 jobs [S4]),
-  `estimate-skeleton` 3 (code default 3, max 8). Backoff 2 → 60 s and resubmit only on refusals (423/429/503/529); a paid POST
-  that gets a network error, timeout (120 s) or another 5xx is marked `lost` ("may have run, check pixellab.ai") and never
-  resent automatically [B13]. **Re-poll** the same job id on network errors and timeouts; result downloads back off and give up
-  after 10 tries (URLs kept). Server 502/504/CUDA asserts happen [S3, S4]; whether they are charged is unknown. 401/402 pause; 422 and policy `code 5000` terminal. Verify
-  `res.directions` on managed animation calls.
-- **Offline (B15):** `navigator.onLine` false or a request that got no answer (network error, not a timeout) pauses the queue
-  (`paused: 'offline'`): nothing is submitted or polled, so no paid call can be lost to a dead connection. The leader probes a
-  free `GET /balance` every 15 s and resumes on any answer; the Studio shows a non-blocking banner.
-- A paid POST answered `500 "Failed to start any animation jobs"` (B15 live, 6 parallel jobs on a busy account) is a refusal
-  in words: re-queued with backoff like 429/503, not marked lost.
-- Key: memory by default, opt-in `localStorage`, never serialized; CSP `connect-src` limited to PixelLab hosts.
+- Queue: persisted ledger, one global concurrency setting (default 3, finite rounded/clamped range 1–8). Nonfinite
+  updates preserve the last valid capacity. Nominal backoff is 2–60 s with 0.5–1 jitter. Free GETs may retry transient failures; generic paid
+  retry requires a documented 429 refusal. Generic 423/503/529, network uncertainty and ambiguous 5xx responses leave
+  a paid POST `lost` ("may have run, check pixellab.ai"), never automatically resent. Accepted background-job identifiers
+  override every error classification, including 401/402, and remain in the ledger without paid resubmission. Ordinary
+  auth/credit refusals without accepted-job evidence leave submission waiting for the current credential to recover.
+  Policy `code 5000` and ordinary validation errors are terminal. Verify managed-animation `res.directions`.
+- **HTTP deadlines:** synchronous `POST /estimate-skeleton` permits 600 s; other API calls permit 120 s. These are bounded
+  client policies, not provider SLAs. Record the submission timestamp at HTTP invocation so synchronous wait duration is
+  visible. Poll known background-job IDs instead of resubmitting them; result downloads back off and give up after
+  10 tries (URLs retained). Unknown lost records stay terminal across reload.
+- **Offline (B15):** a browser-offline indication or a request network failure pauses new driving work. This cannot prove
+  that an already-sent request was unaccepted. The leader probes free `GET /balance` after a short initial delay, then
+  every 15 s; current authentication/credit errors retain the corresponding pause. Stale credential responses cannot
+  release work or pause a replacement key, including Forget/reconnect with the same value. A successful current probe
+  permits recovery; known jobs remain available for polling and unknown paid requests remain lost.
+- The observed B15 animation refusal is narrowly retryable: HTTP 500 on `/characters/animations`, exact "Failed to start
+  any animation jobs" text as raw text or a simple root `detail`/`error` envelope containing only that refusal. Additional
+  or conflicting payload, other routes/statuses and accepted job-ID evidence defeat this proof and remain unknown.
+- Key: memory by default, opt-in `localStorage`, never stored in projects or persisted request payloads; CSP `connect-src` limited to PixelLab hosts.
   Typed credentials remain per tab and never cross `BroadcastChannel`; only a credential-free Forget notification crosses
   tabs. Connect in the tab running the queue, or close that tab to let a connected follower take over. Pending lock
   requests are canceled on disconnect, so a closed Studio instance cannot later restart queue driving.
@@ -306,7 +321,12 @@ integer zoom. Theming ("Paper" look) deferred.
 | `items/` (items, run) | update to `skeleton-pose` (dress + pose) and `inpaint-grid` routes |
 | `dress/`, `compose/`, `export/` | built [M4, M5] |
 
-## 10. Cost model (gens; 3 generated dirs; idle, walk, slash, hurt)
+## 10. Historical cost model (gens; 3 generated dirs; idle, walk, slash, hurt)
+
+This preserves the older measured four-move scenario, including managed idle, for comparison. It is not the current
+new-character estimate: Studio now authors idle, starts with idle/walk, and defaults to independent directions. Current
+policy-specific baseline/retry estimates appear in the creation UI and [handedness scope](research/handedness-implementation-scope-2026-10-22.md).
+USD billing and unknown charges prevent treating any estimate as an account spending cap.
 
 | Step | Gens |
 |---|---|

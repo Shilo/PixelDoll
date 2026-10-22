@@ -142,4 +142,81 @@ East's cleanup removed one detached pixel; other directions removed none. The re
 
 The artifact reports **$0.1860957463 USD in selected source records only**, with an explicit warning that the failed full flow has additional charges. This is not a full creation cost or a successful idle+walk result. The visible helper also displayed the two lost estimator inputs: both are valid, nonblank 64×64 PNGs, with **520 opaque pixels (x24–39/y13–58)** and **525 opaque pixels (x25–41/y13–58)**, matching east walking cells 3 and 4. Blank/malformed input is not supported by this evidence; the HTTP500 cause remains unknown.
 
-Ignored evidence in `docs/testing/img/professional-audit/independent-live-runtime/`: `recovery-inspection.json`, `idle-trajectories.json` (requested/measured right/left wrist points and both anchor tracks for every direction), `east-flipped-east-west-rest-and-idle.png`, and `analyse-recovery.mts`. The original recovered ZIP is retained as `docs/testing/img/professional-audit/recovered-independent-idle.pixeldoll.zip`. No source changes or paid calls were needed for this inspection; independent 96 px weapon runtime evidence remains a separate pending test.
+Ignored evidence in `docs/testing/img/professional-audit/independent-live-runtime/`: `recovery-inspection.json`, `idle-trajectories.json` (requested/measured right/left wrist points and both anchor tracks for every direction), `east-flipped-east-west-rest-and-idle.png`, and `analyse-recovery.mts`. The original recovered ZIP is retained as `docs/testing/img/professional-audit/recovered-independent-idle.pixeldoll.zip`. No source changes or paid calls were needed for this inspection; independent 96 px weapon runtime evidence is recorded separately below.
+
+## Actual recovered independent idle engine runtimes
+
+Exported the actual recovered idle-only artifact offline with the frozen application code, then ran its generated Godot, Phaser and Aseprite files in the real runtimes. Source ZIP SHA-256: `a192066ab8bc4edf4529d0214837c8a84a48603d044278314a193d514b848e97`. This is actual independent four-direction body artwork, with four frames in every direction, and **no equipment/96 px layer**. No PixelLab request was made.
+
+| Runtime | Actual recovered idle result |
+| --- | --- |
+| Phaser 3.90.0, Chromium/WebGL | **65,536 pixel comparisons, 0 differences**; all four frames visited in S/E/N/W, including independently rendered west; 120 live steps, 480 clock/pivot checks, 0 mismatches. |
+| Phaser 4.2.1, Chromium/WebGL | **65,536 pixel comparisons, 0 differences**; all four frames visited in every direction; 120 live steps, 480 clock/pivot checks, 0 mismatches. |
+| Godot 4.7.1, imported scene/headless | **65,536 pixel comparisons; 65,705 checks; 0 failures**; all four body-clock frames advanced. Runtime-selected textures are composed with Image, not a GPU screenshot. |
+| Aseprite 1.3.18.6-x64 CLI | **16 timeline frames, 4 tags**, correct durations/loops and pivot `(32,59)`; **0/65,536 flattened differences** and **0/65,536 per-layer differences**. |
+
+The Phaser capture was visually inspected and shows south, east, north and the independently rendered west body. Every engine's west frame agrees with the actual recovered west pixels already shown to differ from flipped east. This proves preservation/playback of the recovered idle directions; it does not upgrade the failed full idle+walk creation to a success or prove a weapon's anatomical grip. The subsequent 96 px equipment test is recorded separately below. Godot's reference-PNG warning is limited to the test harness's direct baked image loading.
+
+Ignored evidence: `docs/testing/img/professional-audit/independent-idle-runtime/` contains source-hash metadata, exported files, `phaser-results.json`, `godot-results.json`, Aseprite `export/cli_colours/` frame sheets/metadata, scripts and the inspected `shot_oversize_export_3.90.0.png` / `4.2.1.png`. The owned localhost-only server was stopped after verification.
+
+## Actual independent 96 px idle sword verification
+
+Inspected the accepted/equipped **Audit steel sword** from the real UI download `audit-independent-idle-generic.pixeldoll.zip` (**94,377 B**, SHA-256 `f0944e737c6f6f80df8ba3d51357ab2f6f02f14ca643ffb62e0a227b7f7d919c`). This is **Audit independent idle**: four explicit directions, four idle cells per direction, original rest views, 64×64 body pivot `(32,59)`, and separate 96×96 sword fg/bg layers pivot `(48,75)`. Both body/item mirror metadata says `generate`; no direction has `mirrorOf`. Engine files and baked references were exported offline from this actual editable ZIP, without another PixelLab call. Slash was still running and is not included in this result.
+
+| Runtime | Actual 96 px idle sword result |
+| --- | --- |
+| Phaser 3.90.0, Chromium/WebGL | **294,912 pixel comparisons, 0 differences**, both current sword and default outfits; all four frames visited in all directions; 120 live steps, 1,440 follower/pivot checks including 960 oversize-layer checks, 0 mismatches. |
+| Phaser 4.2.1, Chromium/WebGL | Same **294,912 pixel comparisons, 0 differences**, 1,440 follower/pivot checks and 960 oversize checks, 0 mismatches. |
+| Godot 4.7.1, imported scene/headless | **294,912 pixel comparisons; 295,466 checks; 0 failures**. Static checks include 32 actual 96 px layer frames; equipped live playback adds 360 follower checks, including 240 oversize-layer checks. Body clock visited all four frames. |
+| Aseprite 1.3.18.6-x64 CLI | **16 frames, 4 tags**, correct timing/loops, actual layer order sword.bg → body → sword.fg, and 96×96 canvas pivot `(48,75)`; **0/147,456 flattened pixel differences**, **0/442,368 per-layer differences** over 48 layer frames. |
+
+All sixteen composed sword cells and requested-wrist overlays were visually inspected. Blade shape and attachment remain visually stable; south/north right-side placement is clear. Profile views do not establish anatomical handedness from whole-blade proximity alone. In west the nearest sword-pixel distances to requested right/left wrists are respectively **3.659/3.343, 3.302/3.258, 3.660/3.344, 3.302/3.258 px**; real measured wrists likewise leave all four frames ambiguous. The correct outcome stays **manually accepted / Needs a look**, with west `hand:'?'`; it is not a clean handedness proof. Stored aggregate grip counts are **10 right, 0 left, 6 ambiguous, 0 no-contact**. The G8 patch preserves this uncertainty while distinguishing genuinely missing tracks and detached silhouettes; opposite-hand contact still fails.
+
+The independent west sword pixels are not mirrored east artwork: foreground differs by **21/23/16/21 pixels** and background by **34/74/37/35 pixels** across cells 0–3. Full requested/measured wrist trajectories and nearest-pixel positions are retained, so a later Slash result can be assessed separately instead of inferred from idle.
+
+Evidence under ignored `docs/testing/img/professional-audit/independent-live-runtime/`: original `actual-idle-sword.pixeldoll.zip`, `prepare-results.json`, `sword-grip-inspection.json`, `idle-sword-contactsheet.png`, `idle-wrist-overlay-redR-blueL.png`, `phaser-results.json`, `godot-results.json`, exported resources, Aseprite `export/cli_colours/`, runtime screenshots and scripts. Godot uses headless Image composition of actual runtime-selected textures; its direct reference-PNG warning is test-only. No Unity editor or attack animation success is claimed here. The owned localhost-only scratch server was stopped after these checks.
+
+## Actual Slash: faithful engine export, failed artwork quality
+
+The next real UI ZIP, `audit-independent-idle-generic.pixeldoll (1).zip`, is **275,321 B**, SHA-256 `2303a73a4aaba119a919f7eb8f71c89a9b0dedf5dba2088e4ab94790e3d7405c`. It contains the recovered four-view idle plus **8 Slash cells in each of four explicit directions**, and the 96 px sword fg/bg layers. All paid jobs settled; the root observed **$0.582** for this flow including rerolls, without unknown outcomes. This completed generation/storage/export workflow is **not a clean artwork or anatomical-motion result**.
+
+All 32 Slash cells were reviewed by the root in Codex browser, including a sword-off countertest; independently inspected contact sheets and separated body/fg/bg images confirm west frames 1–2 retain a lowered blade while an upper blade/fragment appears, with additional west/east gray remnants. The base alone has the raised arm and no sword. Explicit foreground/background cells already contain these defects; composition has no idle-layer fallback. West cell1 is not repaired; only west0/7 carry `repaired:true`. The split partitions pixels and attachment cleanup removes pixels; neither can combine a new raised blade with an old lowered one.
+
+The item remains **QA `fail`**, with west minimum-area ratio **0.36**, minimum key kept **0.945**, and uncertain grip. Slash S/N are `warn`, E `pass`, W `fail`; the previously accepted idle-west uncertainty survives. No gate was weakened, no pixels repainted, and no failed art was certified clean.
+
+| Direction | Recomputed body pose adherence (px) | Requested right/left wrist travel (px) | Actual measured right/left wrist travel (px) |
+| --- | --- | --- | --- |
+| South | 0.9802 | 85.20 / 7.28 | 81.96 / 6.49 |
+| East | **2.7683 (fails 2 px gate)** | 88.82 / 4.80 | 89.21 / **55.93** |
+| North | 1.0829 | 76.45 / 7.53 | 74.13 / 8.41 |
+| West | **2.0974 (fails 2 px gate)** | 65.91 / 3.83 | **37.94** / 4.12 |
+
+These use every genuine selected measured frame, independently recomputing the stored adherence. East's measured left wrist departs by up to **23.71 px** and west's right wrist by **21.34 px** on individual frames. Estimator labeling and rendered motion can be uncertain under profile occlusion; these measurements do not establish fully correct right-hand attack motion. The original body QA failure warnings are retained.
+
+### Original-provider versus derived proof
+
+The root operated the visible, read-only `/dev-fixtures/audit-pose-inspection/index.html`: selected the actual project, inspected west/south, and downloaded **290,527 B / 51 files**. Exact selected provenance/request hash/background-job identity, original dressed input pixels, requested poses, complete logical output indices, every raw PNG hash and every derived comparison were checked. The page defaults agent mode off, blocks external connections, imports no client/queue/bootstrap, and never submits, mutates projects/jobs, replaces or accepts an item. Its seven parser identity regressions and strict checks pass.
+
+Both original west provider rolls' **raw PNG frame1 already shows the lowered sword and upper gray weapon/ghost**; their input keyframe contains a single lowered sword. The selected second roll's derived masks equal all eight currently stored item cells with **zero pixel differences**, proving faithful extraction/recomposition rather than a software-added second weapon.
+
+| Actual source roll | Failed checks | Outcome |
+| --- | --- | --- |
+| West first, seed271204 | **3**: G2 cells1/4; G4 minimum area19% | Bad provider artwork, fail. |
+| West second, seed1081539, originally selected | **4**: G2 cells1/3/4; G4 minimum area36%; plus G8 uncertainty/no-contact warnings | Bad provider artwork, fail; all derived pixels match stored item. |
+| South first, seed1175788 | 1 G2 failure | Fail. |
+| South second, seed1986123, selected | 0 failures; one G8 no-contact warning | Warn; all derived pixels match stored item. |
+
+This real counterexample justifies the bounded `poseItemClip` fix: preserve the complete candidate with fewer failed checks, retain the first on ties, keep pixels/provenance together, and count additional attempt history independently of the winning roll. Malformed candidates cannot displace complete ones; unknown/cancel/abort still stop publication. The future fix chooses west's first roll by the existing metric and south's second, but **both west rolls remain defective**. It neither repairs this stored artifact nor proves that the first is visually good. No more paid generations or forced pixel cleanup were used to hide that limit.
+
+### Actual engine fidelity on the failed artwork
+
+| Runtime | Result preserving the actual source, including defects |
+| --- | --- |
+| Phaser 3.90.0, Chromium/WebGL | **884,736 pixel comparisons, 0 differences**, current/default outfits; 240 live steps, 2,880 follower/pivot checks including 1,920 oversize checks, 0 mismatches. Every idle0–3 and Slash0–7 frame visited in S/E/N/W. |
+| Phaser 4.2.1, Chromium/WebGL | Same **884,736 pixel comparisons, 0 differences**, 2,880 checks/1,920 oversize checks, 0 mismatches; all frames visited. |
+| Godot 4.7.1, imported scene/headless | **884,736 pixel comparisons; 886,035 checks; 0 failures**. 96 static oversize layer-frame checks; 720 equipped live follower checks including 480 oversize checks; idle0–3 and Slash0–7 clocks advanced. |
+| Aseprite 1.3.18.6-x64 CLI | **48 frames, 8 tags**, correct durations, loop/repeat settings, bg→body→fg order and pivot `(48,75)`; **0/442,368 flattened differences**, **0/1,327,104 per-layer differences** over144layer frames. |
+
+This verifies exporter geometry/pivots/clocks and preservation of QA/data; it is not approval of the source animation. Godot uses headless Image composition of actual selected textures and emits only the test-reference PNG warning. No Unity editor run or clean attack-generation claim is made.
+
+Ignored evidence is kept separately in `docs/testing/img/professional-audit/independent-slash96-runtime/`: original ZIP, `slash-motion-validation.json`, `sword-grip-inspection.json`, `slash-source-qa.json`, `slash-{south,east,north,west}-row.png`, full/marked contact sheets, per-frame `slash-west-*-composite-body-fg-bg.png`, engine results/screenshots/resources, Aseprite CLI output and `source-roll-inspection/` containing original diagnostic ZIP, raw PNGs, before/after masks, selected markers and summary. The earlier successful96pxidle evidence is unchanged. The owned localhost-only scratch server was stopped after verification; no app source was edited for these offline checks.

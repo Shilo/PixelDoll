@@ -119,7 +119,7 @@ including frame edges and the grip of held items.
 
 - **Clean**: the generated coverage passed PixelDoll's automatic checks. This is not a guarantee of correct artwork.
 - **Needs a look**: a check flagged something. The reason is listed, for example "The item touches the frame edge (may be
-  cut off)", "The item switches hands" or "Some body pixels were changed by the model". Play each move and inspect the
+  cut off)", "The grip side is unclear; check the intended hand" or "Some body pixels were changed by the model". Play each move and inspect the
   flagged frames before deciding. Missing or malformed frame batches cannot be kept; complete artwork with appearance
   warnings can be kept explicitly, and those warnings remain visible on the saved item.
 

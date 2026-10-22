@@ -11,11 +11,13 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 2. [ ] Item quality polish: stored cape back-hem grey smudges and actual helmet hurt-frame deformations. The forearm
       occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recoloured.
 3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
-4. [~] Live validation of the implemented independent-direction default: the full four-direction attempt stopped after
-      two estimator HTTP 500 outcomes remained unknown, without automatic resend. Prove idle-only recovery from completed
-      outputs and actual measurements, then right-hand weapon/slash western active-arm/grip alignment, reload and export.
-      Automated policy, action, batching and persistence checks pass; live proof remains pending. Older mirrored slash clips cannot
-      be corrected by an item-only toggle; see the
+4. [!] Independent attack quality is not accepted. The four-direction Slash executed successfully ($0.582, no unknown
+      outcomes), but both raw west sword rolls contain duplicate/ghost blades, and east/west body adherence retains
+      2.77/2.10px failures. Keep this artifact flagged; engine pixel fidelity does not make it good artwork. The item
+      runner's worse-last-roll selection bug is fixed, and Export now discloses saved failures. The separate idle sword
+      passed reload, keyless ZIP reimport and Godot/Phaser/Aseprite preservation with west grip ambiguity retained.
+      The earlier full idle+walk creation also remains failed on two unknown estimator HTTP500 responses; no automatic
+      resend occurred. Older mirrored attacks need new body artwork, not an item-only toggle. See the
       [implementation scope](docs/research/handedness-implementation-scope-2026-10-22.md).
 
 Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio regression
@@ -43,7 +45,7 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 - [!] **Mirrored directions flip handedness** (west holds the sword in the left hand). New forms now default to independent
   body views/actions; old projects and optional economy mode remain mirrored. Independent views avoid the forced flip,
-  but generated anatomy and grip still need live weapon/slash review. An item-only toggle cannot repair old flipped actions.
+  but generated anatomy and grip still need review: idle sword retains west-profile ambiguity and slash execution completed but failed artwork acceptance (west duplicate weapon and east/west pose flags). An item-only toggle cannot repair old flipped actions.
 - [!] **Unity and Godot Aseprite Wizard paths unverified**; Godot 4.7.1 + Phaser 3.80/3.90/4.2.1 + Aseprite CLI verified.
 - [!] **Agent-only key mode is a convention.** `npm run dev:agent` reads `.env` for AI agents; humans must use `npm run dev`
   (no key path). Builds refuse agent mode; CI guard fails if key code or `.env` reaches `dist/`.

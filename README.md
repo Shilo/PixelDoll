@@ -33,8 +33,7 @@ and concerns).
   Unity: the C# importer compiles, live import not yet verified.
 - In the current checkout, new characters draw every direction independently by default; optional mirrored economy mode
   and older mirrored rigs swap held-item handedness. Automated direction/persistence/export checks pass; live independent
-  full creation stopped safely on unknown skeleton-estimation outcomes. Idle-only recovery and weapon/slash validation
-  are pending. This is separate from the released v0.1.0 evidence above.
+  full creation stopped safely on unknown skeleton-estimation outcomes. Idle-only recovery passed with 16 genuinely measured frames. A primary 96px sword passed reload, keyless ZIP reimport and engine runtime checks with a west-profile grip warning retained; slash execution completed but failed artwork acceptance (west duplicate weapon and east/west pose flags). This is separate from the released v0.1.0 evidence above.
 - Known quality limits: two shield east-walk drafts remain unaccepted; generated artwork still needs visual review.
   PWA is deferred (see PLAN.md). The bundled demo uses the team's own PixelLab outputs.
 
