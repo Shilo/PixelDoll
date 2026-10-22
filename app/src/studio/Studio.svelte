@@ -20,9 +20,10 @@
   import RenameSheet from './RenameSheet.svelte'
   import ImportSheet from './ImportSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
+  import SetupSheet from './SetupSheet.svelte'
   import StageNote from './StageNote.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, undo, redo, genProgress } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, undo, redo, genProgress } from './state.svelte.ts'
   import { Palette, PersonStanding, Shirt, WifiOff } from './icons.ts'
 
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
@@ -36,6 +37,7 @@
       await loadGens()
       await resumeCreate()
       await resumeMove()
+      await resumeSetup()
     })()
     return () => { off(); delete document.documentElement.dataset.app }
   })
@@ -69,7 +71,7 @@
   const settled = $derived($queue.counts.done + $queue.counts.failed)
   $effect(() => { void settled; if (app.key) void refreshBalance() })
   // the page title shows running work
-  const running = $derived(gens.filter((g) => g.phase === 'running').length + (creating.spec && !creating.projectId && !creating.error ? 1 : 0))
+  const running = $derived(gens.filter((g) => g.phase === 'running').length + (creating.spec && !creating.projectId && !creating.error ? 1 : 0) + (settingUp.spec && !settingUp.done && !settingUp.error ? 1 : 0))
   $effect(() => { document.title = running ? `(${running}) PixelDoll` : 'PixelDoll' })
 
   function onkey(e: KeyboardEvent) {
@@ -165,6 +167,7 @@
   {#if ui.sheet === 'rename'}<RenameSheet />{/if}
   {#if ui.sheet === 'import'}<ImportSheet />{/if}
   {#if ui.sheet === 'delete'}<DeleteSheet />{/if}
+  {#if ui.sheet === 'setup'}<SetupSheet />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
     <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><ItemPane id={ui.selected} /></Sheet>
   {/if}

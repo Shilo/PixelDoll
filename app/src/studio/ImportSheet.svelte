@@ -7,10 +7,13 @@
   import { characterId, downloadCharacter, listCharacters, type LibraryCharacter } from '../lib/pixellab/library.ts'
   import { CharacterImportError, readCharacterZip, saveImportedCharacter, type ImportedCharacter } from '../lib/store/import.ts'
   import { MAX_ZIP_BYTES } from '../lib/store/zip.ts'
+  import { rigReady } from '../lib/rig/setup.ts'
   import { ui, dismissWelcome, refreshProjects, openProject, toast, withKey } from './state.svelte.ts'
   import { Download, KeyRound, TriangleAlert } from './icons.ts'
 
   let prepared = $state.raw<ImportedCharacter | null>(null)
+  let setupNext = $state(true)
+  const needsSetup = $derived(!!prepared && !rigReady({ manifest: prepared.project.manifest, ...prepared.extra }))
   let states = $state.raw<{ id: string; name: string }[]>([]), stateId = $state('')
   let bytes: Uint8Array | null = null
   let name = $state(''), id = $state(''), error = $state(''), busy = $state(false), loading = $state(false)
@@ -77,7 +80,7 @@
       await refreshProjects()
       if (!alive) return
       await openProject(projectId)
-      dismissWelcome(); ui.sheet = null; toast(`Imported ${name.trim()}`)
+      dismissWelcome(); ui.sheet = setupNext && needsSetup ? 'setup' : null; toast(`Imported ${name.trim()}`)
     } catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) busy = false }
   }
@@ -129,6 +132,7 @@
     </div>
     <label class="field"><span class="label">Character name</span><input class="input" type="text" bind:value={name} maxlength="60" disabled={busy} /></label>
     {#each prepared.warnings as warning (warning)}<p class="notice warn small"><TriangleAlert size={16} /><span>{warning}</span></p>{/each}
+    {#if needsSetup}<label class="check"><input type="checkbox" bind:checked={setupNext} />Set up the pose rig next (recommended)</label><p class="faint small">Import is free. Rig setup shows its PixelLab generation cost before you start.</p>{/if}
     <button class="btn plain" disabled={busy} onclick={reset}>Choose another character</button>
   {/if}
   {#if busy}<p class="muted" role="status">Preparing your character…</p>{/if}

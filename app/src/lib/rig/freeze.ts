@@ -92,6 +92,7 @@ export function anchorTracks(b: Built, skel: Record<string, Skeleton | undefined
       if (!at) continue;
       const track = (anchors[id] ??= {} as AnchorTrack);
       for (const a of rig.animations) {
+        if (!cells[cellKey(a.id, d.id, 0)]) continue;
         const pts: [number, number][] = [];
         let maxDev = 0, sad = 0;
         for (let i = 0; i < a.cells; i++) {

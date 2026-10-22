@@ -83,7 +83,7 @@ export interface Clip {
 export interface ClipSource {
   route: 'skeleton-v3' | 'pixminimax' | 'v3' | 'import';
   reference: Sha256;                     // first_frame sent (normally rig.rest[dir].image)
-  keypoints?: Keypoint[][];              // [cell][18]: the sequence sent to raw skeleton-v3 (items are posed with it)
+  keypoints?: Keypoint[][];              // [cell][18]: requested sequence, or measured sequence on frozen imported art
   motion?: string;                       // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "estimated"
   measured?: Keypoint[][];               // [cell][18]: re-estimated on the frozen frames (anchors, QA)
   provenance: number[];                  // indexes into the base item's provenance
@@ -518,3 +518,5 @@ Every new export ZIP also contains `project.json` and `cells/<rgba-sha256>.png`.
 `project.json` has `format: "pixeldoll-project/1"`, the original in-memory `manifest` (including `layer.cells`, rest views and clip sources), and optional `character`, `skeletons` and `rigQa` from the local project record. Its presets include the exported current look. Cell filenames are the SHA-256 of decoded RGBA bytes, without the `sha256:` prefix; the importer verifies each referenced image hash before saving. Dressed item keyframes and rest images are included alongside animation and equipment cells. Local IDs, API keys and queue records are excluded.
 
 Import assigns a fresh local ID, writes blobs and project in one IndexedDB transaction, and preserves independent directions, sparse clips and layer pivots. For older ZIPs without `project.json`, the importer reconstructs cells from `manifest.json` sheet rows in rig direction order; unavailable original pose metadata is removed. ZIP parsing rejects unsafe paths, unsupported compression/encryption, corrupt CRCs and oversized archives. Deletion removes local project/draft records atomically while retaining shared cell blobs for ordinary garbage collection.
+
+Explicit rig setup measures every unique frozen body image with `estimate-skeleton`, registers all supplied rest views with `create-character-v3`, and atomically attaches the same rest/keypoint/anchor/character contract as creation. Existing artwork is not regenerated. Source camera `rig.view` and humanoid `rig.template` are retained. Imported sources use `route: "import"`, `motion: "estimated:frozen-import"` (or `"imported-rest"` for a matching one-cell rest), and actual measured keypoints. Their QA adherence is `null`; palette, feet and border checks still run. New moves use the normal skeleton-v3 render and independent adherence checks. Short item clips are padded to the API's three-frame minimum and trimmed; long clips are batched to at most fifteen poses with original cell indices preserved.

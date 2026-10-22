@@ -3,7 +3,8 @@
 // (0 = +x, 90 = down). Tables are written for south/east; north mirrors south (a -> 180 - a): in a back view the right arm is
 // on the viewer's right. 8 directions (B15): south-east uses the south table, north-east the mirrored one (front / back 3/4
 // views keep the arm on the same side of the screen as south / north); only the pure side view uses the east table.
-import type { Keypoint } from './rig.ts';
+import type { DirectionName, Keypoint } from './rig.ts';
+import { flipSkeleton } from './skeleton.ts';
 import type { Kp, Skeleton } from './skeleton.ts';
 
 export const LABELS = ['NOSE', 'NECK', 'RIGHT SHOULDER', 'RIGHT ELBOW', 'RIGHT ARM', 'LEFT SHOULDER', 'LEFT ELBOW', 'LEFT ARM', 'RIGHT HIP', 'RIGHT KNEE', 'RIGHT LEG', 'LEFT HIP', 'LEFT KNEE', 'LEFT LEG', 'RIGHT EYE', 'LEFT EYE', 'RIGHT EAR', 'LEFT EAR'];
@@ -15,7 +16,7 @@ export const ARMS = ['RIGHT SHOULDER', 'RIGHT ELBOW', 'RIGHT ARM', 'LEFT SHOULDE
 export const toApi = (s: Skeleton, cell: { w: number; h: number }): Keypoint[] =>
   LABELS.map((l) => ({ label: l, x: +Math.min(1, Math.max(0, s[l].x / cell.w)).toFixed(4), y: +Math.min(1, Math.max(0, s[l].y / cell.h)).toFixed(4) }));
 export const fromApi = (k: Keypoint[], cell: { w: number; h: number }): Skeleton => Object.fromEntries(k.map((p) => [p.label, { x: p.x * cell.w, y: p.y * cell.h, z: 0 }]));
-export const hasAll = (k?: Keypoint[]) => !!k && LABELS.every((l) => k.some((p) => p.label === l));
+export const hasAll = (k?: Keypoint[]) => !!k && LABELS.every((l) => k.some((p) => p.label === l && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1));
 
 const clone = (p: Skeleton): Skeleton => Object.fromEntries(Object.entries(p).map(([l, k]) => [l, { ...k }]));
 const mid = (p: Skeleton, ls: string[]) => ({ x: ls.reduce((s, l) => s + p[l].x, 0) / ls.length, y: ls.reduce((s, l) => s + p[l].y, 0) / ls.length });
@@ -100,6 +101,14 @@ export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]
 };
 /** Moves the user can add (idle is part of every base). */
 export const AUTHORED = Object.keys(ACTIONS).filter((a) => a !== 'idle');
+
+/** Use eastern action math on the actual western rest pose, reflecting coordinates without changing art or joint labels. */
+export function authoredPoses(action: string, rest: Skeleton, dir: DirectionName, width = 64): Skeleton[] {
+  const source = ({ west: 'east', 'south-west': 'south-east', 'north-west': 'north-east' } as Partial<Record<DirectionName, DirectionName>>)[dir];
+  const fn = ACTIONS[action];
+  if (!fn) throw new Error(`Unknown authored action: ${action}`);
+  return source ? fn(flipSkeleton(rest, width), source).map((p) => flipSkeleton(p, width)) : fn(rest, dir);
+}
 
 /** Mean px distance of `labels` between requested and measured poses (pose adherence, rig QA §3.2). */
 export function adherence(req: Skeleton[], got: (Skeleton | undefined)[], labels = ARMS): number {

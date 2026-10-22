@@ -123,6 +123,7 @@ test('older PixelDoll sheets import with correct rows and preserve source pixels
   const p = await loadFixture(async (path) => new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))))
   p.manifest.items[1].dressed = { south: await cellHash(sprite(222)) }
   p.manifest.items[1].route = 'skeleton-pose'
+  p.manifest.slots.find((s) => s.id === 'head')!.clips = ['hair']
   const out = await exportFiles(p, { engines: ['generic'], baked: false })
   const old = out.entries.filter((f) => f.name !== 'project.json' && !f.name.startsWith('cells/'))
   const result = await readCharacterZip(await zip(old))
@@ -132,6 +133,9 @@ test('older PixelDoll sheets import with correct rows and preserve source pixels
   expect(result.project.manifest.rig.directions.every((d) => !d.mirrorOf)).toBe(true)
   expect(result.project.manifest.items[1].dressed).toBeUndefined()
   expect(result.project.manifest.items[1].route).toBeUndefined()
+  expect(result.project.manifest.items.some((it) => it.variantOf)).toBe(false)
+  const reexported = await exportFiles(result.project, { engines: ['generic'], baked: false })
+  await expect(unzip(await zip(reexported.entries))).resolves.toBeInstanceOf(Map)
 }, 20_000)
 
 test('current PixelDoll ZIPs support one enclosing folder containing both manifests', async () => {

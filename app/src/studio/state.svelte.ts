@@ -15,6 +15,7 @@ import { itemRoute, type NewItemInput } from './itemRoute.ts';
 import { addMove, createCharacter, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
+import { setupCharacter, type SetupSpec } from './setup.ts';
 
 // ---------- small persistence helpers (every storage access can throw: private mode, blocked site data) ----------
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -24,7 +25,7 @@ export const DEMO = 'fixture:s2';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
-export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete';
+export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup';
 const sizeNow = (): Size => {
   const w = innerWidth, h = innerHeight;
   if (h < 500 && w > h) return 'landscape';
@@ -229,7 +230,7 @@ export function deletionBlocked(): string {
   if (isDemo()) return 'The bundled demo cannot be deleted.';
   if (doc.loading) return 'Wait for the character to finish loading.';
   if (queue.role === 'follower') return 'Manage characters in the other PixelDoll tab, or close it first.';
-  if (!queue.idle() || gens.some((g) => g.phase === 'running') || settling.size || (creating.spec && !creating.projectId) || (moving.spec && !moving.done)) return 'Finish or dismiss pending generation work before deleting a character.';
+  if (!queue.idle() || gens.some((g) => g.phase === 'running') || settling.size || (creating.spec && !creating.projectId) || (moving.spec && !moving.done) || (settingUp.spec && !settingUp.done)) return 'Finish or dismiss pending generation work before deleting a character.';
   return '';
 }
 
@@ -239,8 +240,9 @@ export async function removeProject(): Promise<void> {
   const id = doc.id, name = store.project?.manifest.name ?? 'Character';
   await flushSave();
   await db.deleteCharacter(id);
+  const deletedDrafts = new Set(gens.filter((g) => g.draft.rigId === id).map((g) => g.draft.spec.id));
   setGens(gens.filter((g) => g.draft.rigId !== id));
-  store.results = {};
+  store.results = Object.fromEntries(Object.entries(store.results).filter(([draftId]) => !deletedDrafts.has(draftId)));
   if (creating.projectId === id) Object.assign(creating, { spec: null, projectId: '', progress: null, error: '', warnings: [] });
   if (moving.projectId === id) await dismissMove();
   lsSet(K.last, null);
@@ -411,6 +413,7 @@ async function takeOver() {
   drive();
   await resumeCreate();
   await resumeMove();
+  await resumeSetup();
 }
 
 export async function startItem(input: NewItemInput) {
@@ -494,7 +497,7 @@ export function retryGen(g: Gen) {
 }
 
 const WEEK = 7 * 86_400_000;
-const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'm2-skel']; // create/move calls, re-attached by request hash
+const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'studio-setup', 'm2-skel']; // flows re-attached by request hash
 /**
  * Activity "Clear finished" (maxAge 0, sweeps blobs) and the leader's start-up prune (a week, records only). Deletes finished ledger records that no draft
  * references and no pending create/move may re-attach to (R6 P1-2), then, only while nothing is generating or being saved
@@ -506,7 +509,7 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
   if (queue.role === 'follower') return { jobs: 0, blobs: 0 };
   const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts().catch(() => []))];
   const refs = new Set(drafts.flatMap((d) => d.calls.flatMap((c) => [c.recId, ...c.old])));
-  const flow = !!(creating.spec || moving.spec || (await db.get('projects', CREATE_KEY)) || (await db.get('projects', MOVE_KEY)));
+  const flow = !!(creating.spec || moving.spec || settingUp.spec || (await db.get('projects', CREATE_KEY)) || (await db.get('projects', MOVE_KEY)) || (await db.get('projects', SETUP_KEY)));
   const cutoff = Date.now() - maxAge;
   const jobs = await queue.clearFinished((r) => refs.has(r.id) || (flow && FLOW_TAGS.includes(r.tag ?? '')) || (r.finishedAt ?? r.createdAt) > cutoff);
   const idle = sweep && !flow && queue.idle() && !runningGens.size && !settling.size;
@@ -596,4 +599,37 @@ export async function resumeMove() {
 export async function dismissMove() {
   Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false });
   await db.del('projects', MOVE_KEY);
+}
+
+// ---------- imported character setup ----------
+export const settingUp = $state({ spec: null as SetupSpec | null, progress: null as Progress | null, error: '', done: false, warnings: [] as string[] });
+const SETUP_KEY = 'studio-setup';
+let setupRunning = false, setupResumed = false;
+export async function startSetup(spec: SetupSpec) {
+  if (setupRunning) return;
+  setupRunning = true;
+  Object.assign(settingUp, { spec, progress: null, error: '', done: false, warnings: [] });
+  try {
+    await flushSave();
+    await db.put('projects', SETUP_KEY, { id: SETUP_KEY, spec });
+    await setupCharacter(spec, (p) => (settingUp.progress = p));
+    settingUp.done = true;
+    const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', spec.projectId);
+    settingUp.warnings = rec?.rigQa?.warnings ?? [];
+    await db.del('projects', SETUP_KEY);
+    if (doc.id === spec.projectId) await openProject(spec.projectId);
+    toast('Character ready for skeleton-posed items and new moves');
+  } catch (e) { settingUp.error = (e as Error).message; }
+  finally { setupRunning = false; }
+}
+export async function resumeSetup() {
+  if (setupResumed || queue.role === 'follower') return;
+  setupResumed = true;
+  const rec = await db.get<{ spec: SetupSpec }>('projects', SETUP_KEY).catch(() => undefined);
+  if (rec?.spec && !settingUp.spec) void startSetup(rec.spec);
+}
+export async function dismissSetup() {
+  if (setupRunning) return;
+  Object.assign(settingUp, { spec: null, progress: null, error: '', done: false, warnings: [] });
+  await db.del('projects', SETUP_KEY);
 }

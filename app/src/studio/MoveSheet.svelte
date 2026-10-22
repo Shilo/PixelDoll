@@ -7,7 +7,7 @@
   import { posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
   import { MOVE_STEPS, isV13, moveEstimate } from './create.ts'
-  import { ui, doc, store, isDemo, moving, startMove, dismissMove, withKey } from './state.svelte.ts'
+  import { ui, doc, store, isDemo, moving, settingUp, startMove, dismissMove, withKey } from './state.svelte.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
@@ -15,7 +15,8 @@
   $effect(() => { if (!isDemo()) void db.get<StoredProject>('projects', doc.id).then((r) => (rec = r ?? null)) })
   const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null))
   const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []))
-  let action = $state(AUTHORED.find((a) => !have.has(a)) ?? '')
+  const options = ['idle', 'walk', ...AUTHORED]
+  let action = $state(options.find((a) => !have.has(a)) ?? '')
   let text = $state('')
   const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24)
   const id = $derived(text.trim() ? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) : action)
@@ -45,7 +46,7 @@
     <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
     <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
-    <button class="btn primary lg" disabled={!id || have.has(id) || !!moving.spec} onclick={go}>Add {id ? nice(id) : 'move'} <span class="cost">{est ? Math.ceil(est.gens) : '–'} gens</span></button>
+    <button class="btn primary lg" disabled={!id || have.has(id) || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>Add {id ? nice(id) : 'move'} <span class="cost">{est ? Math.ceil(est.gens) : '–'} gens</span></button>
   {/if}
 {/snippet}
 
@@ -65,13 +66,14 @@
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
     </div>
   {:else if isDemo() || !ok}
-    <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'This character does not include the pose rig needed for new moves. Existing imported moves still work. Create a character in PixelDoll to add more moves.'}</p>
+    <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.'}</p>
+    {#if !isDemo()}<button class="btn primary" onclick={() => (ui.sheet = 'setup')}>Set up character</button>{/if}
   {:else}
     <div class="form">
       <div class="field">
         <span class="label" id="act">Move</span>
         <div class="chips" role="radiogroup" aria-labelledby="act">
-          {#each AUTHORED as a (a)}
+          {#each options as a (a)}
             <button class="chip" role="radio" aria-checked={!text.trim() && action === a} disabled={have.has(a)} onclick={() => { action = a; text = '' }}>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a) ? ' · added' : ''}</button>
           {/each}
         </div>
@@ -93,7 +95,7 @@
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
-          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions (west mirrored) · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · failed checks re-roll once.</p>
+          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ' (west mirrored)' : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · failed checks re-roll once.</p>
         </div>
       </details>
     </div>

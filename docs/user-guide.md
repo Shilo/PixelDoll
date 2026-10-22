@@ -71,7 +71,11 @@ Choose **Import an existing character** on the welcome screen or character menu 
 
 Artwork keeps its original pixels and directions. Existing clothes and hair in a PixelLab character are part of its base and cannot be removed as separate items. Frames that would crop visible pixels in PixelDoll’s 64 px cell are refused. Standalone PNGs are not supported because they do not describe the direction and animation layout.
 
-PixelLab ZIPs currently omit the pose data needed to add new moves. Their existing moves still play, and you can generate equipment for their available frames. New PixelDoll exports include an editable copy with their original rig, layers, colours and outfits. Older PixelDoll exports restore their sheets and outfits but cannot restore a pose rig that was not included.
+Leave **Set up the pose rig next** checked to prepare imported artwork for the same equipment and move pipeline used by created characters. You can also choose character menu → **Set up character…** later. Review the existing appearance and standing reference, then check the estimated price before starting. Setup finds joints on every unique body frame (0.1 gen each) and connects the supplied standing views to your current PixelLab account (0.25 gen). It keeps existing pixels, layers, colours and outfits intact. Saved standing views stay fixed to preserve existing equipment alignment.
+
+Setup supports 64 × 64 humanoid bodies with all four cardinal views or all eight views, and the same headroom needed by created characters. Missing views, empty frames and insufficient headroom are reported before spending. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their real measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
+
+New PixelDoll exports include an editable copy with their original rig, equipment keyframes, layers, colours and outfits. Older exports restore their sheets and outfits; setup can recover the body pose rig, but equipment without its original dressed reference must be made again before it can follow future moves. Unknown or failed setup requests stop for review in **Jobs** instead of being sent again after reload.
 
 ## Delete a character
 
@@ -121,7 +125,7 @@ so pixel art stays crisp, and it is free.
 
 ## Add a move
 
-Open the **Moves** tab → **Add a move**. Pick **Slash**, **Cast**, **Hurt** or **Death**, or describe your own under **Or
+Open the **Moves** tab → **Add a move**. Pick **Idle**, **Walk**, **Slash**, **Cast**, **Hurt** or **Death**, or describe your own under **Or
 describe it**, for example "jumping in place". Items you tick under **Animate these items too** are made for the new move.
 Items you leave out stay hidden in that move until you make them. A worn item without frames for the current move shows
 a note on the stage with **Make it** and its price.

@@ -8,6 +8,7 @@
   import * as db from '../lib/store/db.ts'
   import { SWATCHES } from '../lib/dress/dress.ts'
   import type { RigCtx } from '../lib/items/run.ts'
+  import { rigReady } from '../lib/rig/setup.ts'
   import { ChevronDown, ChevronRight, Sparkles, TriangleAlert } from './icons.ts'
 
   const draft = formDrafts.item?.projectId === doc.id && formDrafts.item.sourceGroup === ui.newItem.group && !ui.newItem.prompt ? formDrafts.item : undefined
@@ -73,6 +74,7 @@
       </button>
     </div>
   {:else}
+    {#if rec && !rigReady(rec)}<p class="notice small"><TriangleAlert size={16} /><span>Set up this character to use skeleton-posed equipment, oversize weapons and new moves.</span><button class="btn small" onclick={() => (ui.sheet = 'setup')}>Set up character</button></p>{/if}
     {#if planned.error}<p class="notice warn small" role="alert"><TriangleAlert size={16} /><span>This character’s frames cannot use the item generator: {planned.error}</span></p>{/if}
     <div class="form">
       <div class="field">

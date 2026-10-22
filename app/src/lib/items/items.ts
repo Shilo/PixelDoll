@@ -8,7 +8,7 @@ import { splitFgBg } from '../compose/split.ts';
 import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import { hasAll } from '../rig/poses.ts';
-import { actionOf, rawClip } from '../rig/clips.ts';
+import { actionOf, paddedPoses, poseBatches, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 
@@ -32,15 +32,16 @@ export const itemRoute = {
    * Pose a dressed chroma keyframe (in pose `rest`) through a stored keypoint sequence (rig-cell API coords; `pad` moves them
    * onto the oversize canvas). Held items send frame 0 LAST when it is the rest pose (S5); undo with `unrotate`.
    */
-  pose: (o: { keyframePngB64: string; rest: Keypoint[]; poses: Keypoint[][]; item: string; slot: string; key: Key; anim: string; dir: DirectionName; seed: number; cell: { w: number; h: number }; pad?: number }): Req => {
+  pose: (o: { keyframePngB64: string; rest: Keypoint[]; poses: Keypoint[][]; item: string; slot: string; key: Key; anim: string; dir: DirectionName; seed: number; cell: { w: number; h: number }; pad?: number; view?: Rig['view'] }): Req => {
     const held = slotOf(o.slot).class === 'held', p = o.pad ?? 0, k = (s: Keypoint[]) => padKeypoints(s, o.cell, p);
-    const poses = f0Last(o.slot, o.rest, o.poses, o.cell) ? [...o.poses.slice(1), o.poses[0]] : o.poses;
+    const sent = paddedPoses(o.poses);
+    const poses = f0Last(o.slot, o.rest, sent, o.cell) ? [...sent.slice(1), sent[0]] : sent;
     return rawClip({
       // B7 live: "slash" drew a blade into a helmet layer although the action said "no weapon" -> say it in the looks too
       description: `solid ${o.key === 'green' ? 'bright green' : 'magenta'} mannequin (chroma key colour) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${oneHeld(o.slot)}` : `wearing ${o.item}, empty hands, no weapon`}`,
       // M3: a "slash" pose made the model draw a sword into a helmet layer -> unarmed unless the item is the held object
       action: actionOf(o.anim) + (held ? '' : ', empty hands, no weapon, no effects'),
-      dir: o.dir, first: o.keyframePngB64, rest: k(o.rest), keypoints: poses.map(k), seed: o.seed,
+      dir: o.dir, first: o.keyframePngB64, rest: k(o.rest), keypoints: poses.map(k), seed: o.seed, view: o.view,
     });
   },
 };
@@ -155,7 +156,11 @@ export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clip
   const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method) : 0));
   return [
     ...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({ kind: 'dress' as const, cells })),
-    ...spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).map((d) => ({ kind: 'pose' as const, cells: Array.from({ length: rig.animations.find((x) => x.id === a)!.cells }, (_, i) => cellKey(a, d, i)) }))),
+    ...spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
+      const clip = rig.animations.find((x) => x.id === a)!;
+      if (clip.cells === 1 && clip.sources?.[d]?.motion === 'imported-rest') return []; // reuse the dressed standing reference
+      return poseBatches(clip.cells).map(({ start, count }) => ({ kind: 'pose' as const, cells: Array.from({ length: count }, (_, i) => cellKey(a, d, start + i)) }));
+    })),
   ];
 }
 /** Split cells for a capped multi-frame call: the first call takes `cap`, later ones `cap − 1` plus the anchor cell (S2). */

@@ -101,6 +101,10 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
   const m = json(files, 'manifest.json') as Manifest;
   manifestShape(m);
   const images = new Map<string, Img>();
+  // Baked tuck variants are engine artifacts. Restore the editable originals so a later export creates them exactly once.
+  const originals = new Map(m.items.filter((it) => it.variantOf && m.items.some((x) => x.id === it.variantOf)).map((it) => [it.id, it.variantOf!]));
+  for (const preset of m.presets) for (const [slot, id] of Object.entries(preset.items)) if (id && originals.has(id)) preset.items[slot] = originals.get(id)!;
+  m.items = m.items.filter((it) => !originals.has(it.id));
   for (const it of m.items) {
     // Engine-only archives do not include the dressed reference images needed for future posing.
     delete it.dressed;
@@ -132,12 +136,13 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
   delete m.rig.rest;
   for (const a of m.rig.animations) delete a.sources;
   delete m.export;
-  return { project: { manifest: m, images }, extra: {}, warnings: ['This older export restores layers, moves, colours and outfits. Its original pose rig was not included; adding moves is unavailable.'] };
+  return { project: { manifest: m, images }, extra: {}, warnings: ['This older export restores layers, moves, colours and outfits. Set up its pose rig to add new moves. Existing equipment keeps its original frames.'] };
 }
 
 async function pixelLab(files: Map<string, Uint8Array>, stateId?: string): Promise<ImportedCharacter> {
-  interface State { character: { id: string; name: string; prompt?: string }; frames: { rotations: Record<string, string>; animations: Record<string, Record<string, string[]>> } }
-  let meta = json(files, 'metadata.json') as { name?: string; prompt?: string; character?: { name?: string; prompt?: string }; states?: State[] };
+  interface Character { id?: string; name?: string; prompt?: string; view?: Manifest['rig']['view']; template_id?: string }
+  interface State { character: Character & { id: string; name: string }; frames: { rotations: Record<string, string>; animations: Record<string, Record<string, string[]>> } }
+  let meta = json(files, 'metadata.json') as Character & { character?: Character; states?: State[] };
   const states = meta.states?.map((s) => ({ id: s.character.id, name: s.character.name }));
   if (meta.states) {
     const selected = stateId ? meta.states.find((s) => s.character.id === stateId) : meta.states[0];
@@ -193,13 +198,15 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string): Promi
     animations.push({ id, cells: n, loop: !/death|die|attack|punch|slash|hurt/i.test(rawId), frames: playlist(n, 100) });
   }
   const rest = images.get(cells[restId][directions[0]]![0]!)!;
-  const rig: Manifest['rig'] = { cell: { w: 64, h: 64 }, pivot: pivotOf(rest), directions: directions.map((id) => ({ id })), animations, baseItem: 'base', baseHash: 'sha256:' as Sha256 };
+  const view = meta.view ?? meta.character?.view ?? 'low top-down', template = meta.template_id ?? meta.character?.template_id ?? 'mannequin';
+  if (!['low top-down', 'high top-down', 'side'].includes(view)) throw new Error('The character has an unsupported camera view.');
+  const rig: Manifest['rig'] = { cell: { w: 64, h: 64 }, pivot: pivotOf(rest), directions: directions.map((id) => ({ id })), animations, baseItem: 'base', baseHash: 'sha256:' as Sha256, view, template };
   const hashes: Record<string, Sha256> = {};
   const empty = await cellHash(makeImg(64, 64));
   for (const a of animations) for (const d of directions) for (let i = 0; i < a.cells; i++) hashes[`${a.id}/${d}/${i}`] = cells[a.id][d]?.[i] ?? empty;
   rig.baseHash = await baseHashOf(rig, hashes);
   const manifest: Manifest = { format: 'pixeldoll/1', app: 'PixelDoll 0.1.0', name, rig, materials: [], slots: [{ id: 'body', z: 10, class: 'base', required: true }], items: [{ id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'generate', materials: [], prompt, baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance: [] }], presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }] };
-  return { project: { manifest, images }, extra: {}, states, stateId, warnings: ['Imported artwork is the fixed base: existing clothes and hair cannot be removed. Moves keep their original directions. This export has no compatible PixelDoll pose rig; adding new moves is unavailable.', ...(semi ? ['Partially transparent edges were converted to pixel-art transparency.'] : [])] };
+  return { project: { manifest, images }, extra: {}, states, stateId, warnings: ['Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.', ...(semi ? ['Partially transparent edges were converted to pixel-art transparency.'] : [])] };
 }
 
 export async function saveImportedCharacter(imported: ImportedCharacter, name: string): Promise<string> {
