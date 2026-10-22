@@ -47,6 +47,8 @@ export interface Slot {
 export interface ZOverride { layer: 'fg' | 'bg'; z: number; dir?: DirectionName; anim?: string; cell?: number }
 
 export interface Item {
+  /** Explicit reviewed/generated target cells, including intentional transparent cells; absence is legacy coverage. */
+  coverage?: CellKey[];
   id: string;
   name: string;
   slot: string;

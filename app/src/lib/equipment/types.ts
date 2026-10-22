@@ -23,6 +23,7 @@ export interface EquipmentLineage {
   revision: Sha256;
   snapshot: Omit<EquipmentDesign, 'images'>;
   roleMaterials: Record<string, string>;
+  unmappedRoles?: string[];
   targetAudit: Sha256;
   targetStamp: string;
 }
@@ -40,6 +41,8 @@ export interface FitAssessment {
   matches: CellMatch[];
 }
 export interface FitCandidate {
+  extensionItemId?: string;
+  extensionStamp?: string;
   project: Project;
   itemId: string;
   designId: string;
@@ -50,6 +53,7 @@ export interface FitCandidate {
   assessment: FitAssessment;
 }
 export interface FitPlan {
+  extension?: { itemId: string; anims: string[]; stamp: string };
   design: Omit<EquipmentDesign, 'images'>;
   targetId: string;
   targetAudit: Sha256;
@@ -62,6 +66,7 @@ export interface FitPlan {
 }
 export type FitStage = 'ready' | 'rest-running' | 'rest-review' | 'pose-running' | 'fit-review' | 'needs-attention' | 'accepted' | 'discarded';
 export interface FitCall {
+  superseded?: boolean;
   id: string;
   stage: 'rest' | 'pose';
   direction?: DirectionName;
@@ -81,6 +86,11 @@ export interface FitDraft {
   stage: FitStage;
   updatedAt: string;
   error: string;
+  qualityFails?: string[];
+  warnings?: string[];
+  failedCells?: string[];
+  retryGens?: number;
+  retryStage?: 'rest' | 'pose';
   previewGens: number;
   poseGens: number;
   spentGens: number;

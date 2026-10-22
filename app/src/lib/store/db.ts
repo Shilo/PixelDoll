@@ -64,6 +64,23 @@ export async function updateCharacter<T>(id: string, blobs: Map<string, Blob>, f
   });
 }
 
+/** Publish an accepted fit, its character and PNGs in one transaction. The draft marker makes repeated acceptance safe. */
+export async function updateCharacterAndDraft<T, D>(id: string, draftId: string, blobs: Map<string, Blob>, fn: (project: T | undefined, draft: D | undefined) => { project: T; draft: D }): Promise<void> {
+  const database = await open();
+  return new Promise((resolve, reject) => {
+    const t = database.transaction(['projects', 'blobs'], 'readwrite'), projects = t.objectStore('projects');
+    const project = projects.get(id), draft = projects.get(draftId); let error: unknown;
+    draft.onsuccess = () => {
+      try {
+        const result = fn(project.result, draft.result);
+        for (const [hash, blob] of blobs) t.objectStore('blobs').put(blob, hash);
+        projects.put(result.project, id); projects.put(result.draft, draftId);
+      } catch (e) { error = e; t.abort(); }
+    };
+    t.oncomplete = () => resolve(); t.onerror = t.onabort = () => reject(error ?? t.error);
+  });
+}
+
 /** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay. */
 export async function deleteCharacter(id: string): Promise<void> {
   if (!id.startsWith('rig-')) throw new Error('Only a saved local character can be deleted.');
@@ -75,7 +92,8 @@ export async function deleteCharacter(id: string): Promise<void> {
     jobs.onsuccess = () => {
       const busy = jobs.result.some((j) => ['queued', 'submitting', 'running'].includes(j.state));
       const work = records.result.some((r) => r.id === 'studio-create' || r.id === 'studio-move' || r.id === 'studio-setup' || (r.id === 'studio-drafts' && r.gens?.some((g: { phase: string }) => g.phase === 'running')));
-      if (busy || work) { error = new Error('Finish or dismiss pending generation work before deleting a character.'); t.abort(); return; }
+      const fit = records.result.some((r) => r.kind === 'equipment-fit-draft' && r.targetId === id && !['accepted', 'discarded'].includes(r.stage));
+      if (busy || work || fit) { error = new Error('Finish or dismiss pending generation work before deleting a character.'); t.abort(); return; }
       projects.delete(id);
       for (const r of records.result) {
         if (r.id === 'studio-drafts') projects.put({ ...r, gens: r.gens.filter((g: { draft: { rigId: string } }) => g.draft.rigId !== id) }, r.id);
