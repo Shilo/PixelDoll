@@ -88,7 +88,7 @@
     {#if app.balance}<span class="faint small num">{fmtNum(app.balance.subscription.generations)} gens</span>{/if}</button>
   <button class="row" role="menuitem" aria-label="Activity" onclick={() => sheet('activity')}><Activity size={16} /><span class="row-name">Activity</span>{#if active}<span class="badge accent">{active}</span>{/if}</button>
   <button class="row" role="menuitem" aria-label="Welcome screen" onclick={() => { close(); ui.welcome = true }}><House size={16} /><span class="row-name">Welcome screen</span></button>
-  <a class="row" role="menuitem" aria-label="Developer pages" href="#/dev" onclick={close} style="text-decoration:none"><Ellipsis size={16} /><span class="row-name">Developer pages (M1–M5)</span></a>
+  {#if import.meta.env.DEV}<a class="row" role="menuitem" aria-label="Developer pages" href="#/dev" onclick={close} style="text-decoration:none"><Ellipsis size={16} /><span class="row-name">Developer pages (M1–M5)</span></a>{/if}
   <!-- T2: rigs frozen on the M2 dev pages stay out of the main list; reachable here for developers only -->
   {#if devRigs.length}
     <details class="dev-rigs">
