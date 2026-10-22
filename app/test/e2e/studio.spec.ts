@@ -363,6 +363,22 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
   await page.mouse.wheel(0, 2000)
   await expect.poll(() => inspector.locator('.inspector-content').evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
   expect((await tabs.boundingBox())!.y).toBe(top)
+  await page.getByRole('button', { name: 'Wizard hat', exact: true }).click()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.getByRole('button', { name: 'All directions', exact: true }).click()
+  const warning = page.locator('.stage-note')
+  await expect(warning).toBeVisible()
+  const warningBox = (await warning.boundingBox())!
+  const firstView = (await page.getByRole('button', { name: 'Show north-west only', exact: true }).boundingBox())!
+  expect(firstView.y).toBeGreaterThanOrEqual(warningBox.y + warningBox.height)
+  const art = page.locator('.stage-art')
+  await art.hover()
+  await page.mouse.wheel(0, 1000)
+  const toolbar = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!
+  await expect.poll(async () => {
+    const lastView = (await page.getByRole('button', { name: 'Show south-east only', exact: true }).boundingBox())!
+    return lastView.y + lastView.height
+  }).toBeLessThanOrEqual(toolbar.y)
 })
 
 test('desktop resize keeps preview controls inside the stage when switching panels', async ({ page }) => {

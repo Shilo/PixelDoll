@@ -21,7 +21,7 @@
   const cellH = $derived(frame?.h ?? 64)
   // Both desktop sidebars can leave less room than the full toolbar needs.
   const phone = $derived(ui.size !== 'expanded' || w < ((m?.rig.directions.length ?? 4) > 4 ? 620 : 440))
-  const barH = $derived(phone ? 64 : 64)
+  const barH = $derived(phone ? 76 : 64)
   const allDirs = $derived(m?.rig.directions ?? [])
   // B10: views the move has (the base has frames there); the others are disabled, not silently empty
   const made = $derived(m ? moveDirs(m, ui.anim) : [])
