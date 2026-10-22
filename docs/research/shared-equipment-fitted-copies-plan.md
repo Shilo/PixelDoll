@@ -1,6 +1,6 @@
 # Shared equipment designs and character-fitted copies
 
-Status: implementation underway under subsequent explicit user authorization. The original research and proposed qualification matrix below remain historical context. Exact copying, portable designs and reviewed fitting are implemented; the paid route is an experimental single-material headwear trial, not qualification of every item class. See the [implementation and verification report](../testing/shared-equipment-2026-10-22.md).
+Status: initial implementation verified under subsequent explicit user authorization. The original research and proposed qualification matrix below remain historical context. Exact copying, portable designs and reviewed fitting are implemented; the paid route is an experimental single-material headwear trial, not qualification of every item class. See the [implementation and verification report](../testing/shared-equipment-2026-10-22.md).
 Date: 2026-10-22.  
 Scope: a device-local design library shared across PixelDoll characters, portable design archives, and independently editable fitted copies on each target character. The app remains client-only.
 

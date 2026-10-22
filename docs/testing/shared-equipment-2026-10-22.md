@@ -24,7 +24,7 @@ The source was the iron helmet from the earlier real PixelLab Ragnarok import. T
 | Library design → Ranger standing fit | All four directions passed checks and visual review before animation approval. | 10 |
 | Approved fit → idle and walk | Eight real pose calls, 48 final cells. Reload during processing resumed retained submissions. All clip checks passed; enlarged frame review completed before Keep and wear. | 24 |
 
-The qualification rest job was local `cfdaf69f-827b-49b3-a0af-74a5eec928ae`, remote `f6c44071-68e4-4f01-aa4e-f0c683d87eba`. The kept fit's eight pose calls were 3 gens each. No fitting reroll or alternate paid route was used. Global account balance is shared and is not used as a per-test cost ledger.
+The qualification rest job was local `cfdaf69f-827b-49b3-a0af-74a5eec928ae`, remote `f6c44071-68e4-4f01-aa4e-f0c683d87eba`. The kept fit's eight pose calls were 3 gens each. The initial four-view fit used no fitting reroll or alternate paid route. Global account balance is shared and is not used as a per-test cost ledger.
 
 The fitted helmet was recoloured azure independently. Its real browser Godot download was 523,907 bytes, with 340 entries and 317 decoded images. All referenced PNG RGBA hashes, 146 pinned source images, palette-role mappings and measured-cell producer indices were verified. The imported rig remains ready for moves.
 
@@ -43,6 +43,24 @@ To bound further spending, a validated one-direction clone of the real four-dire
 Its first missing-equipment pose call reused approved standing references at zero transfer cost, with a displayed 3-generation request estimate. Actual usage was $0.020. Two visibly deformed helmet cells failed H4 (own similarity 0.67 / 0.57); Keep was correctly disabled. Independent screenshot review agreed these were real geometry defects, not harmless numerical flags. A single separately priced batch retry billed $0.022 and still failed those cells (0.67 / 0.60). The cumulative $0.042 charge survived reload and appeared in the review and Activity. Both rejected attempts remain separate from wardrobe pixels; thresholds were not relaxed. This Hurt helmet result is **not delivered or accepted**.
 
 A browser export while that retry was running independently verified the publication boundary: the new Hurt body exists, while the helmet still has only its original 12 approved south cells. The export explicitly warns about missing Hurt equipment. Original helmet/material IDs and the azure selection are retained.
+
+### Successful Cast extension and round trip
+
+A separate one-direction clone tested a new eight-frame Cast move without changing the blocked Hurt evidence. The ordinary body pipeline made its one allowed reroll after pose checks. Body calls reported $0.020 and $0.018; completed joint measurements reported dollar usage. Three measurement submissions ended with unknown outcomes and were retained without resending. Their final billing is not inferred from the shared account balance.
+
+The original automatically prepared equipment draft survived Studio normalization and a reload. Its standing review correctly displayed the existing blue colourway. One explicitly approved pose call generated the eight missing Cast equipment cells for an actual $0.040, with zero rest-fitting charge and no equipment retry. All hard checks passed. A forearm-occlusion warning on stored cell 3 remained visible; root inspected all eight frames, and the independent reviewer confirmed that the flagged frame retained the rounded helmet design while the arms rose beside it. The warning was retained when keeping the extension.
+
+The actual browser Godot export was 427,279 bytes. Independent artifact verification confirmed:
+
+- The existing equipment item and all 12 old raw equipment cells are unchanged.
+- Material IDs, complete material definitions and the selected azure colourway are unchanged.
+- Eight new Cast equipment cells are present; coverage is now 20 cells.
+- All 206 decoded RGBA hashes, 20 measured-cell producer links across 19 provenance entries, 146 pinned source images and the immutable design revision are valid.
+- The restored character remains rig-ready. Azure changes all eight new helmet cells and no body cells.
+
+The final ZIP was reimported through the normal keyless Studio as **Shared equipment — Cast export verified**, preserving the three moves and the fitted copy. Its Add a move form opens directly with Cast marked added, without another setup step or a paid request. The old imported shield has no dressed references or Cast cells; its existing frames remain intact and export explicitly reports that missing coverage. It was not silently animated or billed. It was taken off only in the final demonstration copy's current look.
+
+The verified character remains open in the normal app. Temporary documentation/agent tabs and the owned localhost agent server were closed after all live work finished; the human development server was left running.
 
 ## Automated verification
 
