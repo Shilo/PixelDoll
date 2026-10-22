@@ -5,7 +5,8 @@ decisions). Done history is at the bottom.
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 
 ## Next up (in order)
-1. [~] Shields (`off_hand`) live test on a 4- and 8-direction rig
+1. [ ] Shield quality: audit body occlusion in side/diagonal walk gates using the saved 4/8-direction outputs before
+      spending more credits ([live report](docs/testing/shields-2026-10-22.md))
 2. [ ] Item quality polish: cape back-hem grey smudges; helmet visor flagged when the forearm covers it
 3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
 4. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
@@ -18,8 +19,11 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
 - [!] **Key safety on a shared origin.** All `*.github.io/<repo>` sites of one account share an origin, so another of your
   Pages sites could read a remembered key (localStorage/IndexedDB). Mitigated: key is memory-only by default, never sent
   over BroadcastChannel, Connect warns on `*.github.io`. Fix: serve from a custom domain. (R6 P1-4, B13)
-- [!] **PixelLab credits.** Balance ≈529 gens (2026-10-21) after ≈4,400 spent on research/testing. A full 4-dir character
+- [!] **PixelLab credits.** Balance ≈212 gens (2026-10-22), after the 99-generation shield test. A full 4-dir character
   ≈35–50 gens, an item ≈28–50 gens, a move ≈11 + items. Paid POSTs are never auto-resent; failed ones show as "lost".
+- [!] **Shield walk gates need review.** The 4-direction east walk and 8-direction SE/E/NE walks still fail area/rotation
+  checks. Body occlusion appears to contribute to the visible silhouette changes; do not assume more paid retries will
+  fix them. Both drafts and all frame outputs are saved locally. See `docs/testing/shields-2026-10-22.md`.
 - [!] **Generation is not bit-repeatable.** Same request + seed ≠ same pixels → base frames are frozen and never
   regenerated; changing the base (`baseHash`) makes existing items stale.
 - [!] **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colours disjoint (D10). Invisible, but it alters
@@ -54,6 +58,8 @@ Paperdoll output must be accurate, consistent, high quality, using proper PixelL
 proper post-processing and proper layering — frontier-standard paperdolling workflow.
 
 ## Done
+- [x] Shield live smoke test: idle/walk on 4- and 8-direction rigs, 99 gens; all 96 generated frames aligned, exports
+      validated. Round-mask false rotation failures fixed; remaining walk/occlusion flags are tracked above.
 - [x] Research R1–R5 (pixellab-pip, PixelLab online, engines, games incl. Ultima Online, paperdoll tools)
 - [x] Live spikes S1–S5 (diff extraction → chroma mannequin → skeleton-v3 rig → allowed-model routing → held items)
 - [x] Architecture v1.3 + manifest/export spec v1.3.1
