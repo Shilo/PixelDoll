@@ -244,6 +244,61 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   assert.deepEqual(unexpectedRequests, [], 'demo tests must never call the paid API')
 })
 
+test('canceling Connect preserves generation drafts and discards the pending action', async ({ page }) => {
+  const paidRequests: string[] = []
+  await page.route('https://api.pixellab.ai/**', async (route) => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/v2/balance') {
+      await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 0 } } })
+    } else { paidRequests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname); await route.abort() }
+  })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto('/#/')
+  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click()
+  const item = page.getByRole('dialog', { name: 'New item', exact: true })
+  await item.getByRole('radio', { name: 'Hands', exact: true }).click()
+  await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword')
+  await item.getByRole('radio', { name: 'azure', exact: true }).click()
+  await item.getByRole('button', { name: /^Make/ }).click()
+  await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue('a silver sword')
+  await expect(item.getByRole('radio', { name: 'Hands', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(item.getByRole('radio', { name: 'azure', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await item.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  const character = page.getByRole('dialog', { name: 'New character', exact: true })
+  await character.getByRole('textbox', { name: 'Who is it?', exact: true }).fill('a cheerful elf archer')
+  await character.getByRole('radio', { name: 'Stocky', exact: true }).click()
+  await character.locator('summary').click()
+  await character.getByRole('radio', { name: '8', exact: true }).click()
+  await character.getByRole('radio', { name: '56 px', exact: true }).click()
+  await character.getByRole('textbox', { name: 'Name', exact: true }).fill('Archer draft')
+  await character.getByRole('button', { name: /^Create/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toBeVisible()
+  await page.goBack()
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  await expect(character.getByRole('textbox', { name: 'Who is it?', exact: true })).toHaveValue('a cheerful elf archer')
+  await expect(character.getByRole('radio', { name: 'Stocky', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await character.locator('summary').click()
+  await expect(character.getByRole('radio', { name: '8', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(character.getByRole('radio', { name: '56 px', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(character.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Archer draft')
+  await character.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+  // Connecting later must not start the character generation canceled above.
+  await page.getByRole('button', { name: 'Connect', exact: true }).click()
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab' })
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key')
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(page.locator('.tb-trail .balance')).toContainText('42 gens')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect(paidRequests).toEqual([])
+})
+
 // Synthetic keys only: exercise the production bundle without contacting PixelLab.
 for (const initial of ['shared', 'legacy', 'both', 'quota'] as const) {
   test('remembered key: ' + initial + ' uses the shared name and Forget survives reload', async ({ page }) => {

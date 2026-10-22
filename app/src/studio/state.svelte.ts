@@ -87,6 +87,8 @@ export function connected() {
   ui.sheet = null;
   f?.();
 }
+/** Closing Connect cancels its spending action, including when the balance request is still in flight. */
+export function clearPendingConnection() { afterConnect = null; }
 
 // ---------- project + outfit ----------
 export interface ProjectRef { id: string; name: string; demo: boolean; dev: boolean; savedAt: string }

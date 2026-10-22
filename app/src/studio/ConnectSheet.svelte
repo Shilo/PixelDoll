@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte'
   import { app, setKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts'
   import Sheet from './Sheet.svelte'
-  import { ui, connected } from './state.svelte.ts'
+  import { ui, connected, clearPendingConnection } from './state.svelte.ts'
   import { ExternalLink, KeyRound, Check } from './icons.ts'
   import { fmtNum } from './model.ts'
 
@@ -9,6 +10,8 @@
   let remember = $state(false)
   let msg = $state('')
   let checking = $state(false)
+  let closed = false
+  onDestroy(() => { closed = true; clearPendingConnection() })
   // R6 P1-4: a *.github.io project path (user.github.io/PixelDoll/) shares its origin, and so localStorage, with every other Pages project of that account
   const sharedOrigin = location.hostname.endsWith('.github.io') && location.pathname.split('/').filter(Boolean).length > 0
   async function use(k: string, rem: boolean) {
@@ -17,6 +20,7 @@
     setKey(k, rem)
     key = ''
     await refreshBalance()
+    if (closed) return
     checking = false
     if (app.keyRejected) msg = "PixelLab didn't accept this key."
     else if (app.balanceError) msg = `Couldn't reach PixelLab: ${app.balanceError}`

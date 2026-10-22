@@ -1,5 +1,6 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
+  import { formDrafts } from './formDrafts.ts'
   import Sprite from './Sprite.svelte'
   import { composeCell } from '../lib/compose/compose.ts'
   import { loadProject } from '../lib/store/project.ts'
@@ -12,14 +13,15 @@
 
   const SKIN_WORDS = ['deep brown', 'brown', 'tan', 'light tan', 'light', 'pale']
   const BUILDS = ['slim', 'average', 'stocky']
-  let desc = $state('')
-  let skin = $state(-1)
-  let build = $state('average')
-  let name = $state('')
-  let seed = $state(1 + Math.floor(Math.random() * 1_000_000))
+  const draft = formDrafts.character
+  let desc = $state(draft?.desc ?? '')
+  let skin = $state(draft?.skin ?? -1)
+  let build = $state(draft?.build ?? 'average')
+  let name = $state(draft?.name ?? '')
+  let seed = $state(draft?.seed ?? 1 + Math.floor(Math.random() * 1_000_000))
   // B15: More options. 4 directions (S/E/N + W mirrored) or 8 (S/SE/E/NE/N + SW/W/NW mirrored); body 48 or 56 px in the 64 cell
-  let dirs = $state<4 | 8>(4)
-  let size = $state<(typeof SIZES)[number]>(48)
+  let dirs = $state<4 | 8>(draft?.dirs ?? 4)
+  let size = $state<(typeof SIZES)[number]>(draft?.size ?? 48)
   // a running create shows the price of what it is making, the form the price of the current choice
   const est = $derived(estimate(creating.spec?.dirs ?? dirs))
   // T1 P2-13: the estimate is the no-re-roll price; a real create measured 45.45 (B7), so show a range up to +30 %
@@ -36,8 +38,9 @@
   const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1.25 : 2))))
 
   function go() {
+    formDrafts.character = { desc, skin, build, name, seed, dirs, size }
     const spec = { description: full, name: name.trim() || nameFrom(desc || 'Adventurer'), seed, size, dirs }
-    withKey(() => { void startCreate(spec); ui.sheet = 'create' }) // back to the progress after Connect
+    withKey(() => { formDrafts.character = undefined; void startCreate(spec); ui.sheet = 'create' }) // back to the progress after Connect
   }
   async function open() {
     const id = creating.projectId

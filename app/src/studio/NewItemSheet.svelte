@@ -1,5 +1,6 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
+  import { formDrafts } from './formDrafts.ts'
   import GroupIcon from './GroupIcon.svelte'
   import { GROUPS, slotLabel, itemNameFrom } from './model.ts'
   import { itemRoute } from './itemRoute.ts'
@@ -9,11 +10,12 @@
   import type { RigCtx } from '../lib/items/run.ts'
   import { ChevronDown, ChevronRight, Sparkles, TriangleAlert } from './icons.ts'
 
-  let group = $state(ui.newItem.group)
-  let slot = $state(ui.newItem.slot)
-  let prompt = $state(ui.newItem.prompt)
-  let colour = $state('')
-  let name = $state('')
+  const draft = formDrafts.item?.projectId === doc.id && formDrafts.item.sourceGroup === ui.newItem.group && !ui.newItem.prompt ? formDrafts.item : undefined
+  let group = $state(draft?.group ?? ui.newItem.group)
+  let slot = $state(draft?.slot ?? ui.newItem.slot)
+  let prompt = $state(draft?.prompt ?? ui.newItem.prompt)
+  let colour = $state(draft?.colour ?? '')
+  let name = $state(draft?.name ?? '')
   let busy = $state(false)
   const g = $derived(GROUPS.find((x) => x.id === group)!)
   $effect(() => { if (!g.slots.includes(slot)) slot = g.slots[0] })
@@ -32,6 +34,7 @@
   const plan = $derived(planned.plan)
 
   async function make(i: typeof input) {
+    formDrafts.item = undefined
     busy = true
     try {
       ui.sheet = null
@@ -44,11 +47,16 @@
     busy = true
     try { await copyDemo() } finally { busy = false }
   }
+  function go() {
+    formDrafts.item = { projectId: doc.id, sourceGroup: ui.newItem.group, group, slot, prompt, colour, name }
+    const i = $state.snapshot(input)
+    withKey(() => void make(i))
+  }
 </script>
 
 {#snippet foot()}
       <span class="foot-note">{plan ? `About ${plan.minutes + 2} min. You can keep working.` : ''}</span>
-      <button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={() => { const i = $state.snapshot(input); withKey(() => void make(i)) }}>Make <span class="cost">{plan?.gens ?? '–'} gens</span></button>
+      <button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">{plan?.gens ?? '–'} gens</span></button>
 {/snippet}
 
 <Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() ? undefined : foot}>
@@ -59,7 +67,10 @@
     </div>
     <div class="actions">
       <button class="btn primary" onclick={() => (ui.sheet = 'create')}>Create your character</button>
-      <button class="btn" onclick={useCopy} disabled={busy}>{busy ? 'Copying…' : 'Copy the demo body'}</button>
+      <button class="btn copy-demo" onclick={useCopy} disabled={busy}>
+        <span class:copy-hidden={busy}>Copy the demo body</span>
+        <span class:copy-hidden={!busy}>Copying…</span>
+      </button>
     </div>
   {:else}
     {#if planned.error}<p class="notice warn small" role="alert"><TriangleAlert size={16} /><span>This character’s frames cannot use the item generator: {planned.error}</span></p>{/if}
@@ -105,3 +116,9 @@
     </div>
   {/if}
 </Sheet>
+
+<style>
+  .copy-demo { display: inline-grid; }
+  .copy-demo > span { grid-area: 1 / 1; }
+  .copy-hidden { visibility: hidden; }
+</style>
