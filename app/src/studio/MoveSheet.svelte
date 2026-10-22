@@ -2,6 +2,7 @@
   // Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
   // re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
   import Sheet from './Sheet.svelte'
+  import { formDrafts } from './formDrafts.ts'
   import * as db from '../lib/store/db.ts'
   import type { StoredProject } from '../lib/store/project.ts'
   import { posable, poseGens } from '../lib/items/run.ts'
@@ -16,12 +17,13 @@
   const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null))
   const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []))
   const options = ['idle', 'walk', ...AUTHORED]
-  let action = $state(options.find((a) => !have.has(a)) ?? '')
-  let text = $state('')
+  const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined
+  let action = $state(draft?.action ?? options.find((a) => !have.has(a)) ?? '')
+  let text = $state(draft?.text ?? '')
   const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24)
   const id = $derived(text.trim() ? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) : action)
   const items = $derived(m ? posable(m) : [])
-  let skip = $state<string[]>([])
+  let skip = $state<string[]>(draft?.skip ?? [])
   const chosen = $derived(items.filter((i) => !skip.includes(i.id)).map((i) => i.id))
   const est = $derived(m && id ? moveEstimate(m, { action: text.trim() ? undefined : action, frames: 8, items: chosen }) : null)
   const dirs = $derived(m ? m.rig.directions.filter((d) => !d.mirrorOf).length : 3)
@@ -30,8 +32,10 @@
   const nice = (s: string) => s[0].toUpperCase() + s.slice(1).replace(/-/g, ' ')
 
   function go() {
+    const projectId = doc.id
     const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames: 8, items: chosen, seed: 1 + Math.floor(Math.random() * 1_000_000) }
-    withKey(() => { void startMove(doc.id, spec); ui.sheet = 'move' })
+    formDrafts.move = { projectId, action, text, skip: $state.snapshot(skip) }
+    withKey(() => { formDrafts.move = undefined; void startMove(projectId, spec); ui.sheet = 'move' })
   }
 </script>
 

@@ -447,3 +447,72 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
     expect(requests).toBe(beforeReload);
   });
 }
+
+test('setup and move drafts survive cancelled connection and stay scoped to their character', async ({ page, context }) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto('/')
+  await page.locator('.stage canvas').first().waitFor()
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const downloading = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Download zip/ }).click()
+  const files = await unzip(new Uint8Array(readFileSync((await (await downloading).path())!)))
+  const data = JSON.parse(new TextDecoder().decode(files.get('project.json')))
+  const m = data.manifest
+  m.name = 'Connection draft fixture'
+  const poses = JSON.parse(readFileSync('dev-fixtures/s4rig/keypoints.json', 'utf8'))
+  const { toApi } = await import('../../src/lib/rig/poses.ts')
+  const body = m.items.find((i: { id: string }) => i.id === m.rig.baseItem).layers[0]
+  m.rig.rest = {}
+  for (const d of m.rig.directions.filter((d: { mirrorOf?: string }) => !d.mirrorOf)) {
+    const keypoints = toApi(poses[`walk/${d.id}/0`], m.rig.cell)
+    m.rig.rest[d.id] = { image: body.cells.walk[d.id][0], keypoints }
+    for (const a of m.rig.animations) { a.sources ??= {}; a.sources[d.id] = { route: 'skeleton-v3', keypoints: Array.from({ length: a.cells }, () => keypoints) } }
+  }
+  const vest = m.items.find((i: { id: string }) => i.id === 'vest_leather') ?? m.items.find((i: { slot: string }) => i.slot === 'top_inner')
+  vest.route = 'skeleton-pose'; vest.key = 'magenta'; vest.dressed = Object.fromEntries(Object.entries(m.rig.rest).map(([d, r]) => [d, (r as { image: string }).image]))
+  data.character = { id: 'offline-draft-fixture', looks: 'Stored offline test artwork' }
+  files.set('project.json', new TextEncoder().encode(JSON.stringify(data)))
+  const archive = await zip([...files].map(([name, data]) => ({ name, data })))
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'draft-fixture.zip', mimeType: 'application/zip', buffer: Buffer.from(archive) })
+  await page.getByRole('img', { name: 'Character import preview', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Import character', exact: true }).click()
+  await expect(page.locator('.project-btn')).toContainText(m.name)
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click()
+  const setup = page.getByRole('dialog', { name: 'Set up character', exact: true })
+  await setup.getByRole('textbox', { name: /Existing appearance/ }).fill('Blue vest, bald, grey shorts')
+  await setup.getByRole('button', { name: /^Set up ·/ }).click()
+  await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click()
+  await expect(setup.getByRole('textbox', { name: /Existing appearance/ })).toHaveValue('Blue vest, bald, grey shorts')
+  await setup.getByRole('button', { name: 'Later', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Moves', exact: true }).click()
+  await page.getByRole('button', { name: 'Add a move', exact: true }).click()
+  const move = page.getByRole('dialog', { name: 'Add a move', exact: true })
+  await move.getByRole('radio', { name: 'Cast', exact: true }).click()
+  await move.getByRole('textbox', { name: /Or describe it/ }).fill('jumping in place')
+  await move.getByRole('checkbox', { name: new RegExp(vest.name) }).uncheck()
+  await move.getByRole('button', { name: /^Add Jumping in/ }).click()
+  await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Add a move', exact: true }).click()
+  await expect(move.getByRole('textbox', { name: /Or describe it/ })).toHaveValue('jumping in place')
+  await expect(move.getByRole('checkbox', { name: new RegExp(vest.name) })).not.toBeChecked()
+  await move.getByRole('textbox', { name: /Or describe it/ }).fill('')
+  await expect(move.getByRole('radio', { name: 'Cast', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await move.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitemradio', { name: 'Adventurer (demo)', exact: true }).click()
+  await page.getByRole('button', { name: 'Add a move', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toContainText('Moves are added to your own character.')
+  expect(requests).toEqual([])
+})
