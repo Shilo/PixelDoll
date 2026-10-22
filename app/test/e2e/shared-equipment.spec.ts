@@ -121,8 +121,8 @@ test('cleanup retains a submitted fit job across a crash before its record ID wa
     const database = await new Promise<IDBDatabase>((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error) })
     const transaction = database.transaction(['projects', 'jobs'], 'readwrite')
     const old = Date.now() - 8 * 24 * 60 * 60 * 1000
-    transaction.objectStore('projects').put({ kind: 'equipment-fit-draft', id: 'equipment-fit:recovery', format: 'pixeldoll-fit/1', name: 'Retained fit', targetId: 'rig-recovery', targetProjectId: 'rig-recovery', stage: 'needs-attention', plan: {}, error: 'Submission interrupted before its record ID was saved', updatedAt: new Date(old).toISOString(), spentGens: 2, previewGens: 2, poseGens: 0, budget: { previewGens: 2, poseGens: 0 }, calls: [{ id: 'rest-call', stage: 'rest', cells: [], seed: 1, limit: 2 }] }, 'equipment-fit:recovery')
-    transaction.objectStore('jobs').put({ id: 'recovery-job', tag: 'equipment-fit:recovery:rest-call', label: 'Retained fitting result', method: 'POST', endpoint: '/never-resubmit', params: { seed: 1 }, inputs: [], requestHash: 'recovery-hash', state: 'done', attempts: 1, nextAt: 0, createdAt: old, submittedAt: old, finishedAt: old, jobs: [], gens: 2, usd: 0 }, 'recovery-job')
+    transaction.objectStore('projects').put({ kind: 'equipment-fit-draft', id: 'equipment-fit:recovery', format: 'pixeldoll-fit/1', name: 'Retained fit', targetId: 'rig-recovery', targetProjectId: 'rig-recovery', stage: 'needs-attention', plan: {}, error: 'Submission interrupted before its record ID was saved', updatedAt: new Date(old).toISOString(), spentGens: 0, spentUsd: 0.04, previewGens: 2, poseGens: 0, budget: { previewGens: 2, poseGens: 0 }, calls: [{ id: 'rest-call', stage: 'rest', cells: [], seed: 1, limit: 2 }] }, 'equipment-fit:recovery')
+    transaction.objectStore('jobs').put({ id: 'recovery-job', tag: 'equipment-fit:recovery:rest-call', label: 'Retained fitting result', method: 'POST', endpoint: '/never-resubmit', params: { seed: 1 }, inputs: [], requestHash: 'recovery-hash', state: 'done', attempts: 1, nextAt: 0, createdAt: old, submittedAt: old, finishedAt: old, jobs: [], gens: 0, usd: 0.04 }, 'recovery-job')
     await new Promise<void>((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onabort = transaction.onerror = () => reject(transaction.error) })
     database.close()
   })
@@ -131,6 +131,7 @@ test('cleanup retains a submitted fit job across a crash before its record ID wa
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Activity', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('Retained fit')
+  await expect(page.getByRole('dialog')).toContainText('0 gens + $0.040 spent')
   await page.getByRole('dialog').getByText('Details', { exact: true }).click()
   await page.getByRole('button', { name: 'Clear finished', exact: true }).click()
   await expect(page.getByRole('status')).toContainText('Cleared')
