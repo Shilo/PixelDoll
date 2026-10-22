@@ -69,6 +69,7 @@ Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo
 | Doc | What |
 |---|---|
 | [Toolchain standardization](testing/toolchain-standardization-2026-10-22.md) | Exact runtime/dependencies, Vitest and Playwright migration, production byte parity and validation. |
+| [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |
 | [Character import compatibility](testing/character-import-compatibility-2026-10-22.md) | Actual PixelLab raw/default ZIPs, format boundaries, pagination, Cancel regression and shared-equipment planning. |
 | [Equipment QA summaries](testing/qa-summaries-2026-10-22.md) | Current-clip aggregate checks, persisted replacements/export, historical coverage labels and runner pin. |
 | [M1](testing/M1_report.md) | Key + job queue: resume after reload, IndexedDB ledger. |

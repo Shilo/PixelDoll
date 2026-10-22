@@ -32,6 +32,16 @@ paid recheck is attempted. Records with no QA retain unknown older coverage inst
   compares full QA through editable ZIP reimport and engine-manifest export. It is outside the production entry/public tree.
 - Initial sandbox Vitest collection failed on temporary-directory renames, before any tests ran. Using an ignored
   workspace directory under `app/node_modules/.tmp/qa-summary` for `TEMP`/`TMP` resolved it; no project config changed.
+- The focused new browser regression passed independently in 2.4 s. The full combined `npm run e2e` run passed all
+  17 tests in 48.2 s with build/dist guard clean. An earlier full run had only a trace-file ENOENT during teardown
+  (16 pass, no application assertion failure); a unique artifact directory resolved that collision.
+- A concurrent contributor's stylesheet changed after that full build. The final compatibility run rebuilds those
+  changes before testing; source/test hashes were compared during that run rather than claiming the old build covered
+  the new stylesheet. The dev-only QA fixture is absent from the production output.
+- Final `npm run build` and dist guard passed with the committed updated UI. The required
+  `node scripts/e2e-studio.mjs` passed all 15 tests in 44.9 s (exit 0). Its first sandbox run completed all 15 cases
+  but hung shutting down servers; that owned run was interrupted and the exact entry rerun outside the Windows
+  sandbox to obtain a clean exit. No application change was needed. Final combined type checks also passed 0/0.
 
 ## Codex browser
 
