@@ -22,8 +22,9 @@ key.
 
 ## Status
 
-**Research / MVP phase.** Research R1–R5, live spikes S1–S5, architecture v1.3 and the Studio MVP are done; hardening is under
-way. See [PLAN.md](PLAN.md) (current state, decisions D1–D13) and [TODO.md](TODO.md).
+**v0.1.0 released** ([release notes](https://github.com/Shilo/PixelDoll/releases/tag/v0.1.0)), live at
+https://shilo.github.io/PixelDoll/. See [PLAN.md](PLAN.md) (status, roadmap, decisions) and [TODO.md](TODO.md) (open work
+and concerns).
 
 - Proven: base character (48 px, padded to a 64 px cell) → skeleton-v3 moves → items dressed on a chroma mannequin and posed per
   move → automatic checks → layers. Held items use a 96 px canvas with the same pivot.

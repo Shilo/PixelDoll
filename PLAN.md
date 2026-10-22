@@ -1,152 +1,81 @@
 # PixelDoll — Plan
 
-Status: **First MVP built and tested** (2026-10-21). Research, spikes S1–S5, architecture v1.3, mockups M1–M5 and the
-theme-A Studio MVP are done and committed. Living document.
+Living document: status, roadmap, decisions. Open tasks and concerns live in `TODO.md`; how things work lives in
+`docs/architecture.md`; the agent quick map is `AGENTS.md`.
 
-## Current state (2026-10-21)
+## Status (2026-10-22)
 
-- **Pipeline (proven live):** create-character-v3 48 px → pad 64 (x+8, y+12) → skeleton-v3 clips with stored keypoints
-  (idle authored from rest pose, walk via managed skeleton-v3 motion re-rendered raw, attacks/hurt/death authored) →
-  items: chroma mannequin rest views dressed in one Pro `edit-animation-v2` call → posed per clip with
-  `animate-with-skeleton-v3` → chroma extraction + cleanup → QA gates (G1–G10, grip side, direction check) → layers.
-  Held items on a 96 px oversize canvas (shared pivot). Fallback: Pro `inpaint-v3` packed masked grid.
-- **Studio MVP** (`app/`, default route `#/`): look A, dark default + light switch, Lucide, responsive desktop/tablet/
-  phone/landscape; wardrobe, stage, inspector, exact recolour, outfits, undo/redo, create character, new item, add a move,
-  export (Godot/Phaser/Unity/PNG+JSON), activity, cross-tab queue lock, worker-driven polling. Dev harnesses `#/m1…#/m5`.
-- **Verified:** Godot 4.7.1 and Phaser 3.80/3.90/4.2.1 render exports pixel-identical to PixelDoll's compositor (incl.
-  oversize layers). Unity: compile-only (deferred). Independent UX QA: 6/10 → 8.5/10 after fixes (T1 → T2).
-- **Hardening (Phase 7):** full item coverage (hair, cape, chest, trousers, boots × idle/walk/slash/hurt × 4 dirs),
-  per-clip inpaint-v3 fallback, hair tucked under helmets, 8-direction + 56 px options, shirt/shorts regions, offline pause,
-  layered .aseprite export, R6 robustness/security fixes, README/docs/user guide, Pages workflow (not enabled).
-- **Spend:** ≈4,400 PixelLab generations across spikes/tests; balance ≈529 (2026-10-21).
+- **Released:** v0.1.0 (tag + GitHub release). Public repo https://github.com/Shilo/PixelDoll (MIT), live at
+  https://shilo.github.io/PixelDoll/. CI on every push/PR (check, selftest, build, dist guard); `main` deploys to Pages.
+- **Pipeline (proven live):** `create-character-v3` base (48 or 56 px body in a 64 px cell, 4 or 8 directions) →
+  skeleton-v3 clips with stored keypoints (idle authored, walk from managed skeleton-v3 motion re-rendered raw, slash/cast/
+  hurt/death authored) → items: chroma-keyed rest views dressed in one Pro `edit-animation-v2` call (chunked under the
+  frame cap) → posed per clip with `animate-with-skeleton-v3` → chroma extraction + cleanup → quality gates → layers.
+  Held items use a 96 px oversize layer sharing the body pivot. Fallback per clip: Pro `inpaint-v3` packed masked grid.
+- **Studio:** look A, dark default + light switch, Lucide, responsive desktop/tablet/phone/landscape. Wardrobe, stage,
+  inspector, exact palette recolour (incl. Shirt/Shorts/Skin), outfits, undo/redo, create character, new item, add a move,
+  export, activity, offline pause, cross-tab queue lock, worker-driven polling. Dev-only pages `#/m1…#/m5` are excluded
+  from production.
+- **Exports verified pixel-identical:** Godot 4.7.1, Phaser 3.80/3.90/4.2.1, Aseprite CLI. Unity compiles only.
+- **Quality evidence:** full item coverage (hair, cape, chest, trousers, boots, helmet, sword × idle/walk/slash/hurt × 4
+  dirs; sword × 8 dirs). Independent UX QA 6 → 8.5/10. Robustness/security review fixed (R6/B13).
+- **PixelLab credits:** ≈4,400 gens spent on research/testing; balance ≈529 (2026-10-21).
 
-## Goal
+## Roadmap
 
-A client-side (GitHub Pages) Svelte + Vite + TypeScript tool that produces **traditional frame-based 2D pixel-art paperdoll assets** —
-a base body animation set plus separately exportable, frame-aligned layers (hair, clothing, armor, weapons, accessories) — using
-PixelLab AI for every generated pixel, and exports them for Godot, Unity, Phaser (and generic PNG/JSON).
-
-PixelLab produces one composited image per call. PixelDoll's whole job is to turn that into **consistent, layered, slot-based,
-frame-aligned** paperdoll data.
-
-## Core hypothesis (to be proven/disproven by spikes)
-
-```
-1. Canonical base   : one base body, N directions, M animations, fixed canvas/frame-count/pivot  (the "rig contract")
-2. Equipment edit   : PixelLab edits the UNCHANGED base frames to add one item (edit-image / edit-animation-v2 / transfer-outfit-v2 / inpaint)
-3. Layer extraction : local alpha-aware diff (composite − base) → transparent per-frame equipment layer
-4. QA               : drift detection (body redraw), region checks, temporal jitter, coverage
-5. Compose          : slot z-order (incl. per-direction/per-frame front/back) → live preview
-6. Export           : per-layer spritesheets + manifest JSON + engine-specific importers (Godot/Unity/Phaser)
-```
-
-## Known facts (verified so far)
-
-- PixelLab REST v2 at `https://api.pixellab.ai/v2` allows **CORS** for a `*.github.io` origin (preflight 200, `authorization` header
-  allowed) → a fully client-side app with a user-supplied API key is viable. Spec saved at
-  `docs/research/pixellab/pixellab-openapi-v2.json` (102 paths).
-- No public endpoint returns semantic layers. **Correction (R2/S1):** `inpaint-image-pro-flash` has `output_method`
-  ("New layer with changes" …) returning mask-bounded changes-only output (still redraws body inside the mask). Under live test.
-- Multi-frame edits pack frames into one grid → frames/call cap by size: edit-animation-v2 16/9/4, transfer-outfit-v2 15/8/3
-  (≤64 / 65–80 / 81+ px). Flat cost per call. → **base canvas ≤ 64 px** is the sweet spot.
-- Character states don't inherit animations; animation canvas may differ from rotation canvas → PixelDoll normalizes canvas/pivot.
-- JS SDK is v1-only/stale → plain `fetch` against v2. Jobs auto-delete after completion → persist results immediately.
-- Engines (R3): one sprite per layer, identical grid, one clock; exporter emits transparent cells, never omits.
-- `docs/research/pixellab/proper_paperdolling_in_pixellab.md` describes the **Android "PixelLab – Text on pictures" app**, not
-  pixellab.ai — must be flagged/corrected.
-
-## Phases
-
-| # | Phase | Owner | Output |
-|---|---|---|---|
-| 0 | Repo survey, plan, CORS check | PM | PLAN.md, TODO.md |
-| 1 | Research (parallel agents) | R1–R5 | `docs/research/**` |
-| 2 | API feasibility spike (live generations) | S1 | `spikes/api/` + `docs/spikes/` report |
-| 3 | Synthesis → architecture + data model (manifest spec) | PM + architect agent | `docs/architecture.md`, `docs/manifest-spec.md` |
-| 4 | Mockups (Svelte, functionality-first) | M-agents | `mockups/*` |
-| 5 | Browser testing (Claude Browser / Playwright), real generations | T-agents | `docs/testing/*` |
-| 6 | Review / challenge / iterate | PM + reviewers | fixes, updated docs |
-
-## Research agents (Phase 1)
-
-| ID | Topic | Output file |
-|---|---|---|
-| R1 | pixellab-pip skill + prior paperdoll spikes | `docs/research/tools/pixellab_pip/pixellab_pip_paperdolling_review.md` |
-| R2 | PixelLab online docs/API currency check, correct stale docs | `docs/research/pixellab/pixellab_current_capabilities_2026-10.md` |
-| R3 | Engine implementation patterns (Godot/Unity/Phaser, atlases) | `docs/research/engines/engine_paperdolling_implementation.md` |
-| R4 | Games (Ultima Online, LPC, Tibia, RO, MapleStory, Stardew, …) | `docs/research/games/games_paperdolling_survey.md` |
-| R5 | Paperdoll tools (fralonra/paperdoll, LPC generator, RPG Maker gen, Spine skins…) | `docs/research/tools/paperdoll_tools_survey.md` |
-
-Cross-agent channel: `docs/research/SHARED_NOTES.md` (append-only, short bullets, prefixed with agent ID).
+1. **Own origin** (custom domain) — key safety on shared `*.github.io`; prerequisite for PWA and for recommending
+   "Remember key". (User decision.)
+2. **PWA** — installable, offline shell (plan below, D13).
+3. **Item quality** — shields (`off_hand`) live test; cape back-hem smudges; helmet visor flag when an arm covers it;
+   optional `mirror: "generate"` per item to keep handedness in mirrored directions.
+4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
+5. **Theming** — runtime theme tokens + "Paper" theme inspired by design look D (deferred by user).
+6. **Housekeeping** — CI runner pin (`ubuntu-latest` → Ubuntu 26 migration), PixelLab OpenAPI snapshot refresh when
+   endpoints change. Releases: bump `app/package.json`, annotated tag `vX.Y.Z`, `gh release create`.
 
 ## Decisions log
 
-- D1 (2026-10-20): Direct browser → PixelLab REST v2 calls with user-supplied key (CORS verified). No backend.
-- D2 (2026-10-20): Primary layer route = same-canvas edit of unchanged base + local diff extraction (to be validated in S1).
-- D3 (2026-10-21): **Superseded D2.** Primary route = chroma mannequin (S2): recolour frozen base to key ramp →
-  edit-animation-v2 (≤16 cells) → key-score extraction → layer over real base. Diff extractor = fallback only.
-- D4 (2026-10-21): Base generated at 48 px, padded to 64 px cell (never rescaled) for 16–20 px headroom. 56 px allowed as an
-  advanced option; default stays 48→64 (O14).
-- D5 (2026-10-21): Unity live verification deferred (user). Godot + Phaser verified pixel-identical.
-- D7 (2026-10-21, PM on D1 §9): mock up looks A+E (native minimal + pixel accents, recommended), B (GlassKit glass), D (soft
-  playful) and C (pro dark, as A's dark mode) → screenshots to user. Item flow default = auto-finish with an accept/re-roll
-  review at the end (minimal human work). Bundled demo = team's own S1/S2 PixelLab outputs (private mockup phase; revisit before
-  public release). Name stays PixelDoll; accent per D1 look E (blue + gold).
-- D8 (2026-10-21, user): **Allowed models only** — characters: `create-character-v3` (or `create-character-pro-flash`);
-  animations: `pixminimax` or `v3` (+ `skeleton-v3` mode); skeleton: `estimate-skeleton` + v3 skeleton. Banned: animation mode
-  `template`, mode `pro`, `create-character-pro`, 4/8-dir standard routes, legacy `animate-with-skeleton`.
-  **Clarified (user):** "Pro" is banned only for creating from scratch. Pro is ALLOWED (and usually noticeably best) for
-  editing images/frames/references/spritesheets (`edit-animation-v2`, `edit-images-v2`, `inpaint-v3`, …). Editing candidates
-  to benchmark: Pro vs Pro Flash vs Pixen (`edit-image-pixen`) — S4.
-- D9 (2026-10-21, user): MVP look = **A (native minimal) only**, NOT A+E — no pixel fonts, no pixel icons (inconsistent, less
-  readable/professional). **Dark mode by default** with a visible dark/light switcher (persisted). Use a standard, mature,
-  modern icon library everywhere (Lucide via `@lucide/svelte`) and the system UI font stack. Future (deferred): theming
-  support + a "Paper" theme inspired by look D — modern, clean, paper-like surfaces (the brand is *paper*dolling).
-- D10 (2026-10-21, PM): Base garment regions (shirt vs shorts) are made exact-colour-disjoint by a 1/255 blue-channel
-  parity nudge assigned by hip line (B15). Imperceptible change to PixelLab pixels, chosen so engine palette-swap stays a pure
-  exact-colour lookup with no extra mask files. Upgrade path: per-layer region mask in the manifest if a user objects.
-- D11 (2026-10-21, user): The `.env` `PIXELLAB_TOKEN_AGENT_DEV` is for **AI-agent automation only**: `npm run dev:agent`
-  (`vite --mode agent`, :5199) serves it and the app auto-connects with an "Agent mode" badge. `npm run dev` and every build
-  have no key endpoint, no key option and no env loading (`envDir: false`); humans paste the key like production users. CI
-  (`.github/workflows/pages.yml`) runs check, selftest, build and a dist guard on every push/PR, and deploys Pages from `main`.
-- D12 (2026-10-21, user): Repo goes **public** on GitHub (`Shilo/PixelDoll`) under the **MIT** license. Pages URL:
-  https://shilo.github.io/PixelDoll/ (shared `*.github.io` origin, see README key-safety note; custom domain recommended).
-- D13 (pending, user): **PWA**. Plan below; not implemented.
-- D6 (2026-10-21): Skeleton v3 is the preferred skeleton route; legacy skeleton only as baseline (user) — S3 validating.
+- D1 (2026-10-20): Browser calls PixelLab REST v2 directly with the user's token (CORS verified). No backend, ever.
+- D2 (2026-10-20): ~~Same-canvas edit + local diff extraction~~ — superseded by D3; the diff extractor is a fallback only.
+- D3 (2026-10-21): Item layers come from a chroma mannequin (recoloured frozen base) extracted by colour key (S2).
+- D4 (2026-10-21): Base generated at 48 px and padded to a 64 px cell (never rescaled); 56 px is an option.
+- D5 (2026-10-21, user): Unity live verification deferred; Godot + Phaser verified.
+- D6 (2026-10-21, user): Skeleton v3 is the rig (`estimate-skeleton` + `animate-with-skeleton-v3`); legacy skeleton banned.
+- D7 (2026-10-21): Item flow auto-finishes with an accept / try-again review. The bundled demo uses the team's own
+  PixelLab outputs (fine for the public MIT repo).
+- D8 (2026-10-21, user): Allowed models only — characters `create-character-v3` (Pro Flash alternative); animations
+  `v3`, `pixminimax`, `skeleton-v3`; skeleton `estimate-skeleton` + v3. Pro is for editing only (`edit-animation-v2`,
+  `inpaint-v3`, …), never for creating from scratch. Banned: `template`/`pro` animation modes, `create-character-pro`,
+  4/8-direction standard routes, legacy `animate-with-skeleton`, `edit-images-v2` for layers.
+- D9 (2026-10-21, user): UI look A only (no pixel fonts/icons), dark by default with a persisted light switch, Lucide
+  icons, system font. Theming + "Paper" theme deferred.
+- D10 (2026-10-21): Shirt/shorts regions are kept colour-disjoint by a 1/255 blue-channel parity nudge (invisible); upgrade
+  path = per-layer region mask in the manifest.
+- D11 (2026-10-21, user): `PIXELLAB_TOKEN_AGENT_DEV` (repo-root `.env`) is for AI-agent dev automation only
+  (`npm run dev:agent`). Humans and every build have no env/key path; CI fails if agent code reaches `dist`.
+  Contract: `docs/handoff/agent-dev-token-handling.md`.
+- D12 (2026-10-21, user): Public GitHub repo under MIT; Pages at https://shilo.github.io/PixelDoll/ (custom domain
+  recommended).
+- D13 (pending, user): PWA — plan below, not implemented.
+- D14 (2026-10-22, user): Evidence media (spike output, test screenshots, design mockups) is untracked and lives in tag
+  v0.1.0; the repo tracks only what helps development. Dev-only fixtures live in `app/dev-fixtures/`.
 
-## PWA (planned, decision D13 pending)
+## PWA (planned, D13 pending)
 
-Installable, offline-capable Studio. Nothing implemented yet; tasks in TODO.md "PWA (planned)".
+Installable, offline-capable Studio. Tasks in `TODO.md` "PWA".
 
-- **Manifest** (`app/public/manifest.webmanifest`, linked with a relative href): `name` "PixelDoll", `short_name`
-  "PixelDoll", `start_url` "./#/", `scope` "./", `display` "standalone", `theme_color` + `background_color` = the dark
-  theme's `--bg` (dark is the default, D9), `icons` 192 + 512 PNG plus a 512 `purpose: maskable` (safe-zone padded) and the
-  SVG. Relative URLs keep it working under `/PixelDoll/` and on a custom domain alike.
-- **Service worker** (one hand-written `sw.js` or `vite-plugin-pwa` generateSW; pick the smaller): precache the app shell
-  (`index.html`, hashed `assets/*`, the ticker worker, favicon, icons) and the demo `fixtures/` (cache-first; they are
-  immutable per build). **Never cache** `api.pixellab.ai` or PixelLab image hosts (network-only, outside the SW's fetch
-  handling), never see or store the key. IndexedDB stays the single source of truth for projects, blobs and the job ledger;
-  the SW owns no app data.
-- **Updates**: new SW installs and waits; the app shows "New version available — Reload" (toast/button) and posts
-  `SKIP_WAITING` only when the user accepts, so a running generation or unsaved edit is never cut off mid-tab. Old caches
-  are deleted on `activate`.
-- **Offline**: the shell loads from cache; the existing offline banner ("You're offline — generation paused; everything
-  else works") and queue pause stay the behaviour. Jobs resume from the IndexedDB ledger when back online.
-- **Install**: Chromium desktop/Android use `beforeinstallprompt` -> a quiet "Install app" item in the project menu (never
-  a pop-up). iOS/iPadOS Safari has no prompt: a one-line hint (Share -> Add to Home Screen) in the user guide / About.
-  Add `apple-touch-icon` and `<meta name="theme-color">` (light + dark media variants).
-- **Base path / scope**: SW registered with a relative URL (`./sw.js`) gets scope `/PixelDoll/` on
-  https://shilo.github.io/PixelDoll/ and `/` on a custom domain. The SW must not claim more than that path.
-- **Key safety vs scope**: a SW scope is a path, not a security boundary. On the shared `shilo.github.io` origin, other
-  project sites can still read storage and register their own SWs for their paths; PWA install does not isolate anything.
-  The own-origin requirement (README "Serve PixelDoll from its own origin") still holds, and an installed PWA on a custom
-  domain is the recommended setup. Moving origin later loses installs and local data (no migration across origins), so
-  pick the final origin **before** shipping the PWA.
-- **CSP** (`<meta>` in `index.html`): add `worker-src 'self'` (SW + ticker worker; today they fall back to `script-src`)
-  and `manifest-src 'self'`. `connect-src` unchanged. GitHub Pages cannot send headers, so the SW cannot add stricter ones.
-- **Testing**: Lighthouse PWA/installability audit on the Pages build; offline reload (DevTools offline -> reload -> demo
-  and saved projects open, banner shows, no PixelLab request is served from cache); update flow (deploy N+1 -> prompt ->
-  reload -> new hash, IndexedDB intact, running job resumes); install/uninstall on Chrome desktop, Android Chrome, iOS
-  Safari; sub-path scope check under `/PixelDoll/`; CI dist guard extended to assert the SW precache list has no
-  `__dev`/`.env`/`api.pixellab.ai` entries.
-
+- **Manifest** (`app/public/manifest.webmanifest`, relative href): name/short_name "PixelDoll", `start_url` "./#/",
+  `scope` "./", `display` "standalone", theme/background = dark `--bg`, icons 192 + 512 + 512 maskable + SVG.
+- **Service worker** (hand-written `sw.js` or `vite-plugin-pwa` generateSW, whichever is smaller): precache the shell,
+  hashed assets, ticker worker, icons and the demo fixture. Never cache PixelLab API or image hosts, never see the key.
+  IndexedDB stays the source of truth.
+- **Updates:** new SW waits; "New version available — Reload" posts `SKIP_WAITING` only on user accept; delete old caches
+  on activate.
+- **Offline:** shell from cache; existing offline banner + queue pause unchanged.
+- **Install:** `beforeinstallprompt` → quiet "Install app" menu item; iOS hint in the user guide; `apple-touch-icon` and
+  `theme-color` (light/dark).
+- **Scope / origin:** `./sw.js` → scope `/PixelDoll/` on Pages, `/` on a custom domain. A SW scope is not a security
+  boundary; choose the final origin before shipping (moving origin loses installs and local data).
+- **CSP:** add `worker-src 'self'` and `manifest-src 'self'`.
+- **Tests:** Lighthouse installability, offline reload, update flow, install on Chrome desktop / Android / iOS, sub-path
+  scope, CI guard that the precache list has no `__dev`, `.env` or PixelLab API entries.

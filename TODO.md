@@ -1,6 +1,7 @@
 # PixelDoll — TODO & Concerns
 
-The single list of open work and known concerns. Done history is at the bottom; decisions live in `PLAN.md`.
+The single list of open work and known concerns. New agents: read `AGENTS.md` first, then `PLAN.md` (status, roadmap,
+decisions). Done history is at the bottom.
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 
 ## Next up (in order)
@@ -11,8 +12,9 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 4. [ ] Shields (`off_hand`) live test on a 4- and 8-direction rig
 5. [ ] Item quality polish: cape back-hem grey smudges; helmet visor flagged when the forearm covers it
 6. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
-7. [ ] Paper theme + theming support (deferred by user)
-8. [ ] CI: pin `runs-on` to `ubuntu-24.04` or accept the Ubuntu 26 migration of `ubuntu-latest` (runner notice, 2026-10)
+7. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
+8. [ ] Paper theme + theming support (deferred by user)
+9. [ ] CI: pin `runs-on` to `ubuntu-24.04` or accept the Ubuntu 26 migration of `ubuntu-latest` (runner notice, 2026-10)
 
 ## Concerns
 - [!] **Key safety on a shared origin.** All `*.github.io/<repo>` sites of one account share an origin, so another of your
@@ -29,6 +31,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 - [!] **Unity and Godot Aseprite Wizard paths unverified**; Godot 4.7.1 + Phaser 3.80/3.90/4.2.1 + Aseprite CLI verified.
 - [!] **Agent-only key mode is a convention.** `npm run dev:agent` reads `.env` for AI agents; humans must use `npm run dev`
   (no key path). Builds refuse agent mode; CI guard fails if key code or `.env` reaches `dist/`.
+- [!] **Releasing.** Bump `app/package.json` version, annotated tag `vX.Y.Z`, `gh release create`; CI deploys `main`.
 - [!] **PixelLab API drift.** Template list, prices and Pro/Pro Flash behaviour change; the OpenAPI snapshot in
   `docs/research/pixellab/` is from 2026-10-20.
 
@@ -57,11 +60,12 @@ proper post-processing and proper layering — frontier-standard paperdolling wo
 - [x] Architecture v1.3 + manifest/export spec v1.3.1
 - [x] Mockups M1–M5 (key/queue, rig, item lab, dress-up, export) — dev-only, excluded from production
 - [x] Design research + six looks with screenshots; user chose look A, dark default, Lucide
-- [x] Studio MVP (responsive desktop/tablet/phone/landscape) + UX QA T1/T2 (6 → 8.5/10)
+- [x] Studio (responsive desktop/tablet/phone/landscape) + UX QA T1/T2 (6 → 8.5/10)
 - [x] Hardening: full item coverage (hair, cape, chest, trousers, boots × idle/walk/slash/hurt × 4 dirs), inpaint-v3
       per-clip fallback, hair tucked under helmets, 4/8 directions + 48/56 px, shirt/shorts regions, offline pause,
       8-direction held items, layered .aseprite export, R6 robustness/security fixes
 - [x] Exports verified pixel-identical: Godot 4.7.1, Phaser 3.80/3.90/4.2.1, Aseprite CLI
 - [x] Docs: README, docs index, user guide, MIT LICENSE
 - [x] Agent-only key mode (`npm run dev:agent`); no key path for humans or builds; CI + Pages workflow with dist guard
+- [x] v0.1.0 tag + GitHub release; repo public (MIT); Pages live; 20 topics + description
 - [x] Repo cleanup (B18): evidence media + design-mockups untracked (kept at tag v0.1.0, links retargeted), dev-only fixtures in `app/dev-fixtures/` (dist ships s2 only), Playwright an app devDependency, README gallery in `docs/media/`
