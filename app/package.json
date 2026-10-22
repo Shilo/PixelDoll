@@ -15,16 +15,22 @@
     "selftest": "node scripts/selftest.ts"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^7.3.1",
-    "@tsconfig/svelte": "^5.0.8",
-    "@types/node": "^24.19.2",
-    "playwright": "1.64.1",
-    "svelte": "^5.57.2",
-    "svelte-check": "^4.7.7",
-    "typescript": "~6.0.3",
-    "vite": "^8.3.4"
+    "@playwright/test": "1.64.1",
+    "@sveltejs/vite-plugin-svelte": "7.3.1",
+    "@tsconfig/svelte": "5.0.8",
+    "@types/node": "24.19.2",
+    "svelte": "5.57.2",
+    "svelte-check": "4.7.7",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "4.1.12"
   },
   "dependencies": {
     "@lucide/svelte": "1.61.0"
+  },
+  "packageManager": "npm@11.19.1",
+  "engines": {
+    "node": ">=24.22.1 <25",
+    "npm": ">=11.19.1 <12"
   }
 }
