@@ -301,6 +301,16 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
   await page.getByRole('button', { name: 'Red cape', exact: true }).click()
   await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8)
   await checkFrames()
+  // At the smallest desktop breakpoint both sidebars leave only 476px for the stage.
+  // The toolbar itself fitted before this fix, but its Move label collapsed and overlapped the directions.
+  await page.setViewportSize({ width: 1024, height: 768 })
+  const controls = page.getByRole('toolbar', { name: 'Preview controls' })
+  await expect(controls.getByRole('combobox', { name: 'Direction', exact: true })).toBeVisible()
+  const moveBox = (await controls.getByRole('combobox', { name: 'Move', exact: true }).boundingBox())!
+  const dirBox = (await controls.getByRole('combobox', { name: 'Direction', exact: true }).boundingBox())!
+  expect(moveBox.width).toBeGreaterThan(50)
+  expect(moveBox.x + moveBox.width).toBeLessThanOrEqual(dirBox.x)
+  await page.setViewportSize({ width: 1440, height: 900 })
   const tabs = inspector.getByRole('tablist', { name: 'Inspector' })
   const top = (await tabs.boundingBox())!.y
   await inspector.getByRole('tab', { name: 'Colours', exact: true }).click()

@@ -19,7 +19,8 @@
   const frame = $derived(m ? bakedFrame(m) : undefined)
   const cellW = $derived(frame?.w ?? 64)
   const cellH = $derived(frame?.h ?? 64)
-  const phone = $derived(ui.size !== 'expanded') // compact bar (no zoom / background) below 1024 px
+  // Both desktop sidebars can leave less room than the full toolbar needs.
+  const phone = $derived(ui.size !== 'expanded' || w < ((m?.rig.directions.length ?? 4) > 4 ? 620 : 440))
   const barH = $derived(phone ? 64 : 64)
   const allDirs = $derived(m?.rig.directions ?? [])
   // B10: views the move has (the base has frames there); the others are disabled, not silently empty
