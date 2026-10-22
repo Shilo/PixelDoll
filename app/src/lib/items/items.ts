@@ -511,12 +511,15 @@ const nearest = (m: Uint8Array, w: number, [x, y]: [number, number]) => {
   for (let p = 0; p < m.length; p++) if (m[p]) d = Math.min(d, Math.hypot((p % w) - x, ((p / w) | 0) - y));
   return d;
 };
-/** Principal-axis angle (rad) of a mask, or null for < 6 px. */
+/** Principal-axis angle (rad), or null for < 6 px or a near-round mask whose axis is unstable. */
 export function axisOf(m: Uint8Array, w: number): number | null {
   const c = centroid(m, w);
   if (!c || sum(m) < 6) return null;
   let a = 0, b = 0, d = 0;
   for (let p = 0; p < m.length; p++) if (m[p]) { const x = (p % w) - c[0], y = ((p / w) | 0) - c[1]; a += x * x; b += x * y; d += y * y; }
+  // Eigenvalue gap / sum: below 0.2 the aspect ratio is < sqrt(1.5). A round shield gaining a single
+  // row can swap its principal axis by 90 degrees without turning; compare its silhouette instead.
+  if (Math.hypot(a - d, 2 * b) < 0.2 * (a + d)) return null;
   return 0.5 * Math.atan2(2 * b, a - d);
 }
 /** Difference of two axis angles in degrees, 0..90 (axes have no direction). */
@@ -613,11 +616,20 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
     const minIoU = Math.min(1, ...ord.map((c, i) => alignedIoU(c.mask, ord[(i + 1) % ord.length].mask, w)));
     // B9: a held blade legitimately turns with the swinging arm (walk E: blade 29° -> 74° while the forearm goes 68° -> 92°),
     // which drops the IoU to 0.2 on every seed. With posed keypoints, G9 checks the blade angle RELATIVE to the forearm
-    // instead (a flip changes it, a swing does not); the IoU stays the gate where no keypoints exist (anchor route).
+    // instead (a flip changes it, a swing does not). Near-round shields have no reliable axis: compare those
+    // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
-    const turn = fore ? Math.max(0, ...ord.map((c, i) => { const n = ord[(i + 1) % ord.length], j = +c.key.split('/')[2], k = +n.key.split('/')[2], x = axisOf(c.mask, w), y = axisOf(n.mask, w); return x == null || y == null ? 0 : angleDiff(x - fore[j], y - fore[k]); })) : undefined;
-    if (slot.class === 'held' && !isAction(clip) && (turn != null ? turn > GATES.heldTurn : minIoU < GATES.heldIoU))
-      flag(cs[0].call, turn != null ? `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames` : `G9 ${clip}: shape jump (aligned IoU ${minIoU.toFixed(2)})`);
+    if (slot.class === 'held' && !isAction(clip)) {
+      let turn = 0, shapeIoU = 1;
+      for (const [i, c] of ord.entries()) {
+        const n = ord[(i + 1) % ord.length], j = +c.key.split('/')[2], k = +n.key.split('/')[2];
+        const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
+        if (fore && x != null && y != null) turn = Math.max(turn, angleDiff(x - fore[j], y - fore[k]));
+        else shapeIoU = Math.min(shapeIoU, alignedIoU(c.mask, n.mask, w));
+      }
+      if (turn > GATES.heldTurn) flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
+      if (shapeIoU < GATES.heldIoU) flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
+    }
     clips.push({ clip, call: cs[0].call, median: med, cv: +cv.toFixed(3), baseCv: +baseCv.toFixed(3), minIoU: +minIoU.toFixed(2), minRatio: +minRatio.toFixed(2), hand, spread: +spread.toFixed(1) });
   }
   // G8: every clip holds the item in the same hand (majority over clips; the slot anchor names the expected one)
