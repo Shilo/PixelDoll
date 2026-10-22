@@ -62,6 +62,21 @@ New characters wear a light grey shirt and dark grey shorts, so you can tell the
 You can keep working or close the tab while it runs. It picks up where it left off. When it is done, press
 **Start dressing up**.
 
+## Import an existing character
+
+Choose **Import an existing character** on the welcome screen or character menu → **Import character…**. Importing is free and saves a new copy on this device.
+
+- **From this device:** choose a PixelLab character ZIP (individual rotation and animation frames) or a PixelDoll export ZIP, up to 64 MB. If a PixelLab archive has several states, choose the one to import. Preview it, give it a name, then press **Import character**.
+- **From PixelLab:** connect your account to browse its characters, or paste a character ID or creator link without connecting. Select a character, review its preview, then import. This reads existing artwork; it does not generate or change anything in PixelLab.
+
+Artwork keeps its original pixels and directions. Existing clothes and hair in a PixelLab character are part of its base and cannot be removed as separate items. Frames that would crop visible pixels in PixelDoll’s 64 px cell are refused. Standalone PNGs are not supported because they do not describe the direction and animation layout.
+
+PixelLab ZIPs currently omit the pose data needed to add new moves. Their existing moves still play, and you can generate equipment for their available frames. New PixelDoll exports include an editable copy with their original rig, layers, colours and outfits. Older PixelDoll exports restore their sheets and outfits but cannot restore a pose rig that was not included.
+
+## Delete a character
+
+Open the character, then character menu → **Delete character…**. The confirmation names the local character and offers **Export a copy** before deletion. Deletion removes its local items, outfits and changes permanently; its PixelLab original remains in your account. Pending generation work must finish or be dismissed first. The demo cannot be deleted.
+
 ## Add items
 
 In the wardrobe, press **+** next to a slot group (Head, Hair, Face, Body, Legs, Feet, Back, Hands), or **New**.

@@ -65,7 +65,7 @@
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
     </div>
   {:else if isDemo() || !ok}
-    <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'Moves can be added to characters made from now on. Create a new character to add moves.'}</p>
+    <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'This character does not include the pose rig needed for new moves. Existing imported moves still work. Create a character in PixelDoll to add more moves.'}</p>
   {:else}
     <div class="form">
       <div class="field">

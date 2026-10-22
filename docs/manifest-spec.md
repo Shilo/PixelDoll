@@ -510,3 +510,11 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   Any engine: one sprite per layer, same frame index per tick from the body, draw in resolved-z order.
 - `baked/<preset>/<anim>.png`: the compositor's output on the same grid with `export.bakedCell` / `bakedPivot` (§2.1), for
   engines without layering (RPG Maker style).
+
+## 7. Editable import copy
+
+Every new export ZIP also contains `project.json` and `cells/<rgba-sha256>.png`. Engine readers continue to consume `manifest.json` and `layers/`.
+
+`project.json` has `format: "pixeldoll-project/1"`, the original in-memory `manifest` (including `layer.cells`, rest views and clip sources), and optional `character`, `skeletons` and `rigQa` from the local project record. Its presets include the exported current look. Cell filenames are the SHA-256 of decoded RGBA bytes, without the `sha256:` prefix; the importer verifies each referenced image hash before saving. Dressed item keyframes and rest images are included alongside animation and equipment cells. Local IDs, API keys and queue records are excluded.
+
+Import assigns a fresh local ID, writes blobs and project in one IndexedDB transaction, and preserves independent directions, sparse clips and layer pivots. For older ZIPs without `project.json`, the importer reconstructs cells from `manifest.json` sheet rows in rig direction order; unavailable original pose metadata is removed. ZIP parsing rejects unsafe paths, unsupported compression/encryption, corrupt CRCs and oversized archives. Deletion removes local project/draft records atomically while retaining shared cell blobs for ordinary garbage collection.

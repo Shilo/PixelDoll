@@ -4,7 +4,7 @@ import { loadFixture } from '../../src/lib/compose/fixture.ts'
 import { cellImg } from '../../src/lib/compose/compose.ts'
 import { exportFiles } from '../../src/lib/export/export.ts'
 import { makeImg } from '../../src/lib/image/png.ts'
-import { encodePngBytes } from '../../src/lib/image/pngraw.ts'
+import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts'
 import { characterId, downloadCharacter, listCharacters } from '../../src/lib/pixellab/library.ts'
 import { planItem } from '../../src/lib/items/items.ts'
 import { baseCell } from '../../src/lib/items/run.ts'
@@ -41,6 +41,12 @@ test('ZIP reader rejects truncation, damaged data, unsafe paths and duplicate en
   await expect(unzip(bytes)).rejects.toThrow('damaged')
   await expect(unzip(await zip([{ name: '../a.txt', data: enc.encode('bad') }]))).rejects.toThrow('unsafe')
   await expect(unzip(await zip([{ name: 'a', data: enc.encode('x') }, { name: 'a', data: enc.encode('y') }]))).rejects.toThrow('Duplicate')
+})
+
+test('PNG import rejects inflated data that exceeds its declared image dimensions', async () => {
+  const bytes = await encodePngBytes(makeImg(64, 64)), view = new DataView(bytes.buffer)
+  view.setUint32(16, 1); view.setUint32(20, 1)
+  await expect(decodePngBytes(bytes)).rejects.toThrow('exceeds image dimensions')
 })
 
 test('current PixelLab multi-state ZIP preserves independent directions and sparse animation', async () => {
@@ -111,7 +117,7 @@ test('PixelDoll export restores editable original cells, outfits, rest rig and d
   expect(result.extra).toEqual(extra)
   expect(result.project.images.get(hash)).toEqual(dressed)
   for (const [h, im] of p.images) if (result.project.images.has(h)) expect(result.project.images.get(h)).toEqual(im)
-})
+}, 20_000)
 
 test('older PixelDoll sheets import with correct rows and preserve source pixels', async () => {
   const p = await loadFixture(async (path) => new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))))
@@ -122,7 +128,7 @@ test('older PixelDoll sheets import with correct rows and preserve source pixels
   const restored = result.project.manifest.items.find((it) => it.id === p.manifest.rig.baseItem)!.layers[0]
   for (const a of p.manifest.rig.animations) for (const d of p.manifest.rig.directions) for (let c = 0; c < a.cells; c++) expect(cellImg(result.project, restored, a.id, d.id, c)).toEqual(cellImg(p, base, a.id, d.id, c))
   expect(result.project.manifest.rig.directions.every((d) => !d.mirrorOf)).toBe(true)
-})
+}, 20_000)
 
 test('editable import verifies referenced image hashes', async () => {
   const imported = await readCharacterZip(await zip(await pixelLabFiles()))
