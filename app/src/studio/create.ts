@@ -23,6 +23,9 @@ import { poseGens, poseItemClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { basePrompt, looksOf } from './model.ts';
 import { prepareExtensionFit } from '../lib/equipment/index.ts';
+import { splitBase } from '../lib/dress/regions.ts';
+import { deriveMaterials } from '../lib/dress/dress.ts';
+import { saveSplit } from '../lib/dress/project.ts';
 
 /** `size`: base 48 (default) or 56 px in the 64 cell (D4/O14). `dirs`: 4 = S/E/N + W mirrored (default), 8 = S/SE/E/NE/N +
  * SW/W/NW mirrored (architecture §3). Specs saved before B15 have no `dirs` (= 4). */
@@ -263,9 +266,15 @@ export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' 
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
 export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<{ fitIds: string[]; warnings: string[] }> {
-  const { rec } = await loadProject(projectId);
-  if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
-  if (spec.replace || !rec.manifest.rig.animations.some((a) => a.id === spec.id)) await addBodyClip(projectId, spec, onProgress);
+  const initial = await loadProject(projectId);
+  if (!isV13(initial.rec)) throw new Error('Set up this character’s pose rig before adding moves.');
+  if (spec.replace || !initial.rec.manifest.rig.animations.some((a) => a.id === spec.id)) await addBodyClip(projectId, spec, onProgress);
+  // Opening the Studio applies the same body colour-region normalization. Do it before poses or fit stamps are frozen,
+  // including a resumed move whose raw body was saved before interruption, so reopening cannot invalidate the results.
+  const { rec, project } = await loadProject(projectId);
+  const split = await splitBase(project);
+  deriveMaterials(project);
+  if (split.dirty) await saveSplit(projectId, project.manifest, split);
   // items: one pose call per item x direction with the clip's stored keypoints (sequential saves; the record is re-read each time)
   const directItems = spec.items.filter((id) => !rec.manifest.items.find((item) => item.id === id)?.design);
   const dirs = genDirs(rec.manifest).length, itemTotal = directItems.length * dirs;
