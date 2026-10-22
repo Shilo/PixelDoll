@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
+  import { resumeFits } from '../lib/equipment/index.ts'
   import Toolbar from './Toolbar.svelte'
   import Wardrobe from './Wardrobe.svelte'
   import Stage from './Stage.svelte'
@@ -21,9 +22,11 @@
   import ImportSheet from './ImportSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
   import SetupSheet from './SetupSheet.svelte'
+  import DesignSaveSheet from './DesignSaveSheet.svelte'
+  import FitDesignSheet from './FitDesignSheet.svelte'
   import StageNote from './StageNote.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, undo, redo, genProgress } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, undo, redo, genProgress } from './state.svelte.ts'
   import { Palette, PersonStanding, Shirt, WifiOff } from './icons.ts'
 
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
@@ -38,6 +41,8 @@
       await resumeCreate()
       await resumeMove()
       await resumeSetup()
+      if (queue.role !== 'follower') await resumeFits()
+      await refreshFits()
     })()
     return () => { off(); delete document.documentElement.dataset.app }
   })
@@ -65,7 +70,12 @@
     if (open && !sheetEntry) { history.pushState({ pixeldollSheet: 1 }, ''); sheetEntry = true }
     else if (!open && sheetEntry) { sheetEntry = false; history.back() }
   })
-  const onpop = () => { if (sheetEntry) { sheetEntry = false; ui.sheet = null } }
+  const onpop = () => {
+    if (!sheetEntry) return
+    // An atomic local save/publish has the same disabled-close rule for browser Back as for Cancel/Escape.
+    if (ui.sheetBusy) { history.pushState({ pixeldollSheet: 1 }, ''); return }
+    sheetEntry = false; ui.sheet = null
+  }
 
   // balance after every settled job (like TopBar)
   const settled = $derived($queue.counts.done + $queue.counts.failed)
@@ -168,6 +178,8 @@
   {#if ui.sheet === 'import'}<ImportSheet />{/if}
   {#if ui.sheet === 'delete'}<DeleteSheet />{/if}
   {#if ui.sheet === 'setup'}<SetupSheet />{/if}
+  {#if ui.sheet === 'savedesign'}<DesignSaveSheet />{/if}
+  {#if ui.sheet === 'fitdesign'}<FitDesignSheet />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
     <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><ItemPane id={ui.selected} /></Sheet>
   {/if}

@@ -20,8 +20,9 @@ import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/r
 import { rigReady } from '../lib/rig/setup.ts';
 import { actionOf, clipQa, largestComponent, loops, rawClip, type ClipQa } from '../lib/rig/clips.ts';
 import { poseGens, poseItemClip } from '../lib/items/run.ts';
-import type { CellKey, Manifest, Provenance } from '../lib/store/manifest.ts';
+import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { basePrompt, looksOf } from './model.ts';
+import { prepareExtensionFit } from '../lib/equipment/index.ts';
 
 /** `size`: base 48 (default) or 56 px in the 64 cell (D4/O14). `dirs`: 4 = S/E/N + W mirrored (default), 8 = S/SE/E/NE/N +
  * SW/W/NW mirrored (architecture §3). Specs saved before B15 have no `dirs` (= 4). */
@@ -219,7 +220,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const errs = validateRig(rig, Object.fromEntries(Object.entries(built.cells).map(([key, c]) => [key, c.hash])));
   if (errs.length) throw new Error(`rig not valid: ${errs.join('; ')}`);
   const manifest: Manifest = {
-    format: 'pixeldoll/1', name: spec.name, app: 'PixelDoll 0.1.0', rig, materials: [],
+    format: CURRENT_FORMAT, name: spec.name, app: 'PixelDoll 0.1.0', rig, materials: [],
     slots: [{ id: 'body', z: 10, class: 'base', required: true }],
     items: [{ id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'flip', materials: [], prompt: spec.description, baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance }],
     presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }],
@@ -237,7 +238,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; seed: number; replace?: boolean }
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; seed: number; replace?: boolean }
 export const MOVE_STEPS = [
   { id: 'animate', label: 'Animating the body' },
   { id: 'items', label: 'Posing your items' },
@@ -252,26 +253,38 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
 };
 export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' | 'items'>) {
   const n = moveFrames(m, s), dirs = genDirs(m).length, body = dirs * (RAW_GENS + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
-  const items = poseGens(s.items.length, n, dirs);
-  return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };
+  const directItems = s.items.filter((id) => !m.items.find((item) => item.id === id)?.design);
+  const items = poseGens(directItems.length, n, dirs);
+  return { gens: body + items, body, items, frames: n, minutes: 4 + directItems.length * 3 };
 }
 
 /**
  * Authored (raw skeleton-v3 with keypoints from the rest pose) or text (pixminimax motion source -> raw re-render) move, then
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
-export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<void> {
+export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<{ fitIds: string[]; warnings: string[] }> {
   const { rec } = await loadProject(projectId);
   if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
   if (spec.replace || !rec.manifest.rig.animations.some((a) => a.id === spec.id)) await addBodyClip(projectId, spec, onProgress);
   // items: one pose call per item x direction with the clip's stored keypoints (sequential saves; the record is re-read each time)
-  const dirs = genDirs(rec.manifest).length, itemTotal = spec.items.length * dirs;
+  const directItems = spec.items.filter((id) => !rec.manifest.items.find((item) => item.id === id)?.design);
+  const dirs = genDirs(rec.manifest).length, itemTotal = directItems.length * dirs;
   let posed = 0;
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
-  for (const id of spec.items) {
+  for (const id of directItems) {
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find((i) => i.id === id);
-    if (it && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] }), spec.seed);
+    if (it && !it.design && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] }), spec.seed);
   }
+  // Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.
+  const sharedIds = [...new Set([...(spec.sharedItems ?? []), ...spec.items.filter((id) => rec.manifest.items.find((item) => item.id === id)?.design)])];
+  const fitIds: string[] = [], warnings: string[] = [];
+  for (const id of sharedIds) {
+    const item = rec.manifest.items.find((i) => i.id === id);
+    if (!item?.design) continue;
+    try { fitIds.push((await prepareExtensionFit(projectId, id, { anims: [spec.id] })).id); }
+    catch (e) { warnings.push(`${item.name}: ${e instanceof Error ? e.message : 'The equipment fit could not be prepared.'}`); }
+  }
+  return { fitIds, warnings };
 }
 
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void) {

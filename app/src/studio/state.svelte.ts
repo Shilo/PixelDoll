@@ -16,6 +16,7 @@ import { addMove, createCharacter, saveCopy, type CreateSpec, type MoveSpec, typ
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { setupCharacter, type SetupSpec } from './setup.ts';
+import { listFits, clearFinishedFits, resumeFits, runRestFit, approveRestAndPose, retryFit, prepareExtensionFit, type EquipmentDesign, type FitDraft } from '../lib/equipment/index.ts';
 
 // ---------- small persistence helpers (every storage access can throw: private mode, blocked site data) ----------
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -25,7 +26,7 @@ export const DEMO = 'fixture:s2';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
-export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup';
+export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup' | 'savedesign' | 'fitdesign';
 const sizeNow = (): Size => {
   const w = innerWidth, h = innerHeight;
   if (h < 500 && w > h) return 'landscape';
@@ -47,7 +48,12 @@ export const ui = $state({
   group: 'Head',
   selected: '', // item id, or "gen:<draft id>"
   sheet: null as SheetId,
+  sheetBusy: false,
   importSource: 'device' as 'device' | 'pixellab',
+  newItemTab: 'create' as 'create' | 'designs',
+  designId: '',
+  designMode: 'copy' as 'copy' | 'fit',
+  fitId: '',
   newItem: { group: 'Head', slot: '', prompt: '' },
   anim: '',
   dir: 'south' as DirectionName,
@@ -99,6 +105,65 @@ class Store {
   results = $state.raw<Record<string, ItemResult | null>>({});
 }
 export const store = new Store();
+class DesignSource {
+  project = $state.raw<Project | null>(null);
+  itemId = $state('');
+  variants = $state.raw<Preset['variants']>({});
+}
+export const designSource = new DesignSource();
+class EquipmentState {
+  fits = $state.raw<FitDraft[]>([]);
+  running = $state<string[]>([]);
+  preparing = $state<string[]>([]);
+  previewDesign = $state.raw<EquipmentDesign | null>(null);
+}
+export const equipment = new EquipmentState();
+export async function refreshFits() { equipment.fits = await listFits(); }
+export function openFit(id: string) { equipment.previewDesign = null; ui.fitId = id; ui.designId = ''; ui.sheet = 'fitdesign'; }
+/** Accepted items pin the source even after its library entry has been deleted. */
+export function openPinnedDesign(itemId: string) {
+  const item = store.project?.manifest.items.find((i) => i.id === itemId);
+  if (!item?.design) return;
+  equipment.previewDesign = item.design.snapshot;
+  ui.designId = ''; ui.designMode = 'fit'; ui.fitId = ''; ui.sheet = 'fitdesign';
+}
+export async function openItemExtension(itemId: string, anims?: string[]) {
+  if (follower()) return;
+  const id = doc.id;
+  const sheet = ui.sheet;
+  const pending = `${id}/${itemId}`;
+  if (equipment.preparing.includes(pending)) return;
+  equipment.preparing = [...equipment.preparing, pending];
+  try {
+    await flushSave();
+    const fit = await prepareExtensionFit(id, itemId, { anims });
+    await refreshFits();
+    if (doc.id === id && ui.sheet === sheet) openFit(fit.id);
+    else toast('Equipment fit prepared in Activity');
+  } catch (e) { toast(e instanceof Error ? e.message : 'Could not prepare this equipment fit.'); }
+  finally { equipment.preparing = equipment.preparing.filter((key) => key !== pending); }
+}
+export const extensionPreparing = (itemId: string) => equipment.preparing.includes(`${doc.id}/${itemId}`);
+/** A hidden sheet never owns the lifetime of a paid fit stage. */
+async function trackFit(id: string, action: () => Promise<FitDraft>) {
+  if (equipment.running.includes(id)) return;
+  equipment.running = [...equipment.running, id];
+  try {
+    const finished = await action();
+    toast(finished.stage === 'rest-review' || finished.stage === 'fit-review' ? 'Equipment fit is ready for review in Activity' : 'Equipment fit needs attention in Activity');
+  } catch (e) { toast(e instanceof Error ? e.message : 'The equipment fit needs attention in Activity.'); }
+  finally { equipment.running = equipment.running.filter((x) => x !== id); await refreshFits(); }
+}
+export const runFitStage = (id: string, stage: 'rest' | 'pose', poseBudget = 0) => trackFit(id, () => stage === 'rest' ? runRestFit(id) : approveRestAndPose(id, poseBudget));
+export const retryFitStage = (id: string, stage: 'rest' | 'pose', budget: number) => trackFit(id, () => retryFit(id, stage, budget));
+/** Capture the displayed colourway before opening a sheet or changing characters. */
+export function openSaveDesign(itemId: string) {
+  if (!store.project || !store.project.manifest.items.some((i) => i.id === itemId && i.slot !== 'body' && i.status === 'accepted')) return;
+  designSource.project = { manifest: structuredClone(store.project.manifest), images: new Map(store.project.images) };
+  designSource.itemId = itemId;
+  designSource.variants = $state.snapshot(doc.variants);
+  ui.sheet = 'savedesign';
+}
 export const doc = $state({
   id: '',
   loading: true,
@@ -232,11 +297,13 @@ export function deletionBlocked(): string {
   if (isDemo()) return 'The bundled demo cannot be deleted.';
   if (doc.loading) return 'Wait for the character to finish loading.';
   if (queue.role === 'follower') return 'Manage characters in the other PixelDoll tab, or close it first.';
+  if (equipment.fits.some((f) => f.targetId === doc.id && f.stage !== 'accepted' && f.stage !== 'discarded')) return 'Finish or discard this character’s equipment fits in Activity before deleting it.';
   if (!queue.idle() || gens.some((g) => g.phase === 'running') || settling.size || (creating.spec && !creating.projectId) || (moving.spec && !moving.done) || (settingUp.spec && !settingUp.done)) return 'Finish or dismiss pending generation work before deleting a character.';
   return '';
 }
 
 export async function removeProject(): Promise<void> {
+  await refreshFits(); // Persisted drafts may have changed in another tab since the menu opened.
   const reason = deletionBlocked();
   if (reason) throw new Error(reason);
   const id = doc.id, name = store.project?.manifest.name ?? 'Character';
@@ -416,6 +483,8 @@ async function takeOver() {
   await resumeCreate();
   await resumeMove();
   await resumeSetup();
+  await resumeFits();
+  await refreshFits();
 }
 
 export async function startItem(input: NewItemInput) {
@@ -509,17 +578,24 @@ const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'studio-setup', '
  */
 export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number; blobs: number }> {
   if (queue.role === 'follower') return { jobs: 0, blobs: 0 };
+  if (maxAge === 0) await clearFinishedFits();
   const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts().catch(() => []))];
   const refs = new Set(drafts.flatMap((d) => d.calls.flatMap((c) => [c.recId, ...c.old])));
-  const flow = !!(creating.spec || moving.spec || settingUp.spec || (await db.get('projects', CREATE_KEY)) || (await db.get('projects', MOVE_KEY)) || (await db.get('projects', SETUP_KEY)));
+  const allFits = await listFits();
+  equipment.fits = allFits;
+  const fits = allFits.filter((fit) => fit.stage !== 'accepted' && fit.stage !== 'discarded');
+  for (const fit of fits) for (const call of fit.calls) if (call.recId) refs.add(call.recId);
+  const fitTags = new Set(fits.flatMap((fit) => fit.calls.map((call) => `${fit.id}:${call.id}`)));
+  const flow = !!(creating.spec || moving.spec || settingUp.spec || fits.some((f) => f.stage === 'rest-running' || f.stage === 'pose-running') || (await db.get('projects', CREATE_KEY)) || (await db.get('projects', MOVE_KEY)) || (await db.get('projects', SETUP_KEY)));
   const cutoff = Date.now() - maxAge;
-  const jobs = await queue.clearFinished((r) => refs.has(r.id) || (flow && FLOW_TAGS.includes(r.tag ?? '')) || (r.finishedAt ?? r.createdAt) > cutoff);
+  const jobs = await queue.clearFinished((r) => refs.has(r.id) || fitTags.has(r.tag ?? '') || (flow && FLOW_TAGS.includes(r.tag ?? '')) || (r.finishedAt ?? r.createdAt) > cutoff);
   const idle = sweep && !flow && queue.idle() && !runningGens.size && !settling.size;
   return { jobs, blobs: idle ? await db.gcBlobs() : 0 };
 }
 
 
 export function openNewItem(group: string, prefill?: { slot?: string; prompt?: string }) {
+  if (prefill) ui.newItemTab = 'create';
   ui.newItem = { group, slot: prefill?.slot ?? GROUPS.find((g) => g.id === group)!.slots[0], prompt: prefill?.prompt ?? '' };
   ui.sheet = 'newitem';
 }
@@ -571,16 +647,18 @@ export async function cancelCreate() {
 
 
 // ---------- add a move (one at a time; resumable like create) ----------
-export const moving = $state({ spec: null as MoveSpec | null, projectId: '', progress: null as Progress | null, error: '', done: false });
+export const moving = $state({ spec: null as MoveSpec | null, projectId: '', progress: null as Progress | null, error: '', done: false, fitIds: [] as string[], warnings: [] as string[] });
 const MOVE_KEY = 'studio-move';
 let moveRunning = false;
 export async function startMove(projectId: string, spec: MoveSpec) {
   if (moveRunning) return;
   moveRunning = true;
-  Object.assign(moving, { spec, projectId, progress: null, error: '', done: false });
+  Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId });
   try {
-    await addMove(projectId, spec, (p) => { moving.progress = p; });
+    const result = await addMove(projectId, spec, (p) => { moving.progress = p; });
+    moving.fitIds = result.fitIds; moving.warnings = result.warnings;
+    await refreshFits();
     moving.done = true;
     await db.del('projects', MOVE_KEY);
     if (doc.id === projectId) { await openProject(projectId); ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
@@ -599,7 +677,7 @@ export async function resumeMove() {
   if (r?.spec && !moving.spec) void startMove(r.projectId, r.spec);
 }
 export async function dismissMove() {
-  Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false });
+  Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false, fitIds: [], warnings: [] });
   await db.del('projects', MOVE_KEY);
 }
 

@@ -3,7 +3,7 @@
   import { missingAt, moveDirs } from '../lib/dress/dress.ts'
   import { posable, poseGens } from '../lib/items/run.ts'
   import { groupOf } from './model.ts'
-  import { ui, doc, store, isDemo, moving, startMove, withKey, openNewItem } from './state.svelte.ts'
+  import { ui, doc, store, isDemo, moving, startMove, withKey, openNewItem, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { TriangleAlert } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
@@ -15,9 +15,10 @@
   })
   const move = $derived(anim ? anim.id[0].toUpperCase() + anim.id.slice(1).replace(/-/g, ' ') : '')
   // own skeleton-rig items that have none of this move can be posed onto it (Add a move, items only)
-  const pose = $derived(m && anim ? posable(m).filter((i) => missing.includes(i) && !i.layers.some((l) => l.cells?.[anim.id])) : [])
+  const pose = $derived(m && anim ? posable(m).filter((i) => !i.design && missing.includes(i) && !i.layers.some((l) => l.cells?.[anim.id])) : [])
+  const shared = $derived(missing.find((i) => i.design))
   const cost = $derived(m && anim ? poseGens(pose.length, anim.cells, m.rig.directions.filter((d) => !d.mirrorOf).length) : 0)
-  const remake = $derived(missing.find((i) => i.prompt))
+  const remake = $derived(missing.find((i) => !i.design && i.prompt))
   const busy = $derived(!!moving.spec && moving.projectId === doc.id && moving.spec.id === anim?.id && !moving.done && !moving.error)
 
   function makePose() {
@@ -34,6 +35,8 @@
       <button class="btn sm" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span>Making…</button>
     {:else if isDemo()}
       <button class="btn sm" onclick={() => (ui.sheet = 'create')}>Make your own</button>
+    {:else if shared}
+      <button class="btn sm" disabled={extensionPreparing(shared.id)} onclick={() => openItemExtension(shared.id, [anim!.id])}>{extensionPreparing(shared.id) ? 'Checking fit…' : 'Review equipment fit'}</button>
     {:else if pose.length === missing.length}
       <button class="btn sm primary" disabled={!!moving.spec && !moving.done} onclick={makePose}>Make it <span class="cost">{cost} gens</span></button>
     {:else if remake}

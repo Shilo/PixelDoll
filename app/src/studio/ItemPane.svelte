@@ -6,8 +6,8 @@
   import Sprite from './Sprite.svelte'
   import Colours from './Colours.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
-  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey } from './state.svelte.ts'
-  import { ArrowUp, ArrowDown, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
+  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
+  import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
   let { id }: { id: string } = $props()
   const m = $derived(store.project?.manifest)
@@ -56,6 +56,7 @@
         {#if hiddenNow}<span class="badge">Hidden by another item</span>{/if}
       </p>
     </header>
+    {#if it.design}<p class="muted small">Independent copy of “{it.design.snapshot.name}”. Its colours and outfits belong to this character.</p>{/if}
 
     {#if anim}
       <div class="dir-strip" style:--preview-width="{Math.max(60, (strip[0]?.w ?? 0) * k / ui.dpr)}px" aria-label="{it.name} in every direction">
@@ -67,7 +68,10 @@
 
     <div class="actions">
       <button class="btn {on ? '' : 'primary'}" onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button>
-      {#if !isDemo() && it.prompt}
+      {#if it.status === 'accepted' && it.slot !== 'body'}<button class="btn" onclick={() => openSaveDesign(it.id)}><Bookmark size={14} />Save as shared design</button>{/if}
+      {#if it.design && !isDemo()}<button class="btn" onclick={() => openPinnedDesign(it.id)}>View saved design</button>{/if}
+      {#if it.design && gaps.length && !isDemo()}<button class="btn" disabled={extensionPreparing(it.id)} onclick={() => openItemExtension(it.id)}>{extensionPreparing(it.id) ? 'Checking fit…' : 'Fit missing frames'}</button>{/if}
+      {#if !isDemo() && it.prompt && !it.design}
         <button class="btn" onclick={() => withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}><RefreshCw size={14} />Try again</button>
       {/if}
       {#if !isDemo()}
