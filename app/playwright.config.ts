@@ -17,7 +17,7 @@ export default defineConfig({
     { command: 'npm run dev -- --host 127.0.0.1 --port 5298 --strictPort', url: devURL, reuseExistingServer: false },
   ],
   projects: [
-    { name: 'studio', testMatch: 'studio.spec.ts', use: { baseURL, viewport: { width: 1440, height: 900 }, acceptDownloads: true } },
+    { name: 'studio', testMatch: ['studio.spec.ts', 'characters.spec.ts'], use: { baseURL, viewport: { width: 1440, height: 900 }, acceptDownloads: true } },
     { name: 'browser-selftests', testMatch: 'selftests.spec.ts', use: { baseURL: devURL } },
   ],
 })

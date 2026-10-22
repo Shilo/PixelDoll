@@ -1,8 +1,8 @@
 <script lang="ts">
   import Sprite from './Sprite.svelte'
   import { composeCell } from '../lib/compose/compose.ts'
-  import { ui, doc, view, dismissWelcome, toggleTheme } from './state.svelte.ts'
-  import { Moon, Sun, Sparkles } from './icons.ts'
+  import { ui, doc, view, DEMO, openProject, dismissWelcome, toggleTheme } from './state.svelte.ts'
+  import { Moon, Sun, Sparkles, Download } from './icons.ts'
 
   let vw = $state(innerWidth), vh = $state(innerHeight)
   // short phones (320 x 568): the hero gives way so the buttons stay above the fold
@@ -10,6 +10,7 @@
   const k = $derived(Math.max(1, Math.floor((heroPx * ui.dpr) / 64)))
   const img = $derived(view.project && view.anim ? composeCell(view.project, doc.items, ui.anim, 'south', view.cell) : null)
   function create() { dismissWelcome(); ui.sheet = 'create' }
+  function demo() { dismissWelcome(); if (doc.id !== DEMO) void openProject(DEMO) }
   const STEPS = [['Create', 'Describe the body'], ['Add items', 'Hats, tops, weapons'], ['Dress up', 'Wear, recolour, play'], ['Export', 'Any game engine']]
 </script>
 
@@ -29,8 +30,9 @@
       <p class="hero-sub">Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.</p>
       <div class="hero-actions">
         <button class="btn primary lg" onclick={create}><Sparkles size={16} />Create your character</button>
-        <button class="btn lg" onclick={dismissWelcome}>Try the demo</button>
+        <button class="btn lg" onclick={demo}>Try the demo</button>
       </div>
+      <button class="btn plain" onclick={() => { ui.importSource = 'device'; ui.sheet = 'import' }}><Download size={16} />Import an existing character</button>
       <p class="faint small">The demo needs no account. Creating uses your <a href="https://pixellab.ai" target="_blank" rel="noreferrer">PixelLab</a> generations.</p>
     </div>
   </main>

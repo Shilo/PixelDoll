@@ -16,7 +16,8 @@ import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
 import { ANCHORS, baseHashOf, cellHash, cellKey, cellKeys, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type Sha256 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
-import { ACTIONS, LABELS, fromApi, toApi } from '../lib/rig/poses.ts';
+import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
+import { rigReady } from '../lib/rig/setup.ts';
 import { actionOf, clipQa, largestComponent, loops, rawClip, type ClipQa } from '../lib/rig/clips.ts';
 import { poseGens, poseItemClip } from '../lib/items/run.ts';
 import type { CellKey, Manifest, Provenance } from '../lib/store/manifest.ts';
@@ -51,13 +52,13 @@ export function estimate(dirs: 4 | 8 = 4) {
 }
 
 // ---------- queue helpers ----------
-async function run(req: Req, label: string, tag: string, cache = false): Promise<JobRec> {
-  const rec = await queue.enqueue(req, { label, tag, cache });
+export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = false): Promise<JobRec> {
+  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe });
   const r = live(rec) ? await queue.settled(rec.id) : rec;
-  if (r.state !== 'done') throw new Error(`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}`);
+  if (r.state !== 'done') throw new Error(`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Setup stopped without resending. Review this request in Jobs before starting again.' : ''}`);
   return r;
 }
-const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
+export const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
 /** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labelled by direction). */
 async function imagesOf(r: JobRec): Promise<{ label: string; img: Img }[]> {
   const res = r.jobs.flatMap((s) => s.results).sort((a, b) => +a.label.split('/').pop()! - +b.label.split('/').pop()!);
@@ -69,23 +70,23 @@ async function imagesOf(r: JobRec): Promise<{ label: string; img: Img }[]> {
 }
 const kp4 = (label: string, x: number, y: number): Keypoint => ({ label, x: +x.toFixed(4), y: +y.toFixed(4) });
 /** estimate-skeleton (deterministic, 0.1 gen, cached by request) -> API keypoints in LABELS order; undefined on failure. */
-async function joints(im: Img): Promise<Keypoint[] | undefined> {
+export async function joints(im: Img, resumeSafe = false): Promise<Keypoint[] | undefined> {
   try {
-    const r = await run(routes.estimateSkeleton(png(await b64(im))), 'Finding joints', 'm2-skel', true);
+    const r = await run(routes.estimateSkeleton(png(await b64(im))), 'Finding joints', 'm2-skel', true, resumeSafe);
     const ks = (r.response as { keypoints?: Keypoint[] } | undefined)?.keypoints ?? [];
     const out = LABELS.map((l) => ks.find((k) => k.label === l)).filter((k): k is Keypoint => !!k).map((k) => kp4(k.label, k.x, k.y));
-    return out.length === LABELS.length ? out : undefined;
-  } catch { return undefined; }
+    return hasAll(out) ? out : undefined;
+  } catch (e) { if (resumeSafe) throw e; return undefined; }
 }
 
 // ---------- one clip-direction: raw skeleton-v3 on the rest view + cleanup + gate ----------
-interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void }
+interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void; view?: Manifest['rig']['view'] }
 interface ClipOut { frames: Img[]; measured: (Keypoint[] | undefined)[]; qa: ClipQa; recs: JobRec[] }
 async function renderClip(j: ClipJob): Promise<ClipOut> {
   const restB64 = await b64(j.rest), recs: JobRec[] = [];
   let best: ClipOut | null = null;
   for (let attempt = 0; attempt < 2 && (!best || best.qa.fails.length); attempt++) { // fail -> one re-roll (new seed), keep the better
-    const r = await run(rawClip({ first: restB64, rest: j.restKps, keypoints: j.keypoints, description: j.looks, action: actionOf(j.anim), dir: j.dir, seed: j.seed + attempt * 7919 }),
+    const r = await run(rawClip({ first: restB64, rest: j.restKps, keypoints: j.keypoints, description: j.looks, action: actionOf(j.anim), dir: j.dir, seed: j.seed + attempt * 7919, view: j.view }),
       `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig');
     recs.push(r);
     j.tick();
@@ -114,7 +115,7 @@ async function motion(req: Req, dir: Direction, label: string, tick: () => void)
   return kps as Keypoint[][];
 }
 
-const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
+export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
   const params = r.params as Record<string, unknown>;
   return {
     endpoint: r.endpoint, params, seed: (params.seed as number) ?? 0, requestHash: `sha256:${r.requestHash}`, jobId: r.jobs[0]?.id,
@@ -171,7 +172,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const clips = await Promise.all(pairs.map(async ({ a, d }) => {
     const authored = authoredBase(a.name);
     let keypoints: Keypoint[][];
-    if (authored) keypoints = authored(fromApi(restKps[d], { w: CELL, h: CELL }), d).map((p) => toApi(p, { w: CELL, h: CELL }));
+    if (authored) keypoints = authoredPoses(a.name, fromApi(restKps[d], { w: CELL, h: CELL }), d).map((p) => toApi(p, { w: CELL, h: CELL }));
     else {
       const req = routes.animateCharacter(baseAnimation('skeleton-v3', charId, a, [d], spec.seed));
       keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, tick);
@@ -186,6 +187,8 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const built = await buildRig(anims, { size: CELL, mode: spec.dirs === 8 ? '8' : '4' });
   if (built.errors.length) throw new Error(`The animation frames do not fit together: ${built.errors.slice(0, 3).join('; ')}`);
   const rig = built.rig;
+  rig.view = view;
+  rig.template = 'mannequin';
   rig.pad = { x: pad[0], y: pad[1] };
   const provenance: Provenance[] = [provOf(base), provOf(imp)];
   const at = (r: JobRec, produced: CellKey[] = []) => provenance.push(provOf(r, produced)) - 1;
@@ -240,15 +243,15 @@ export const MOVE_STEPS = [
   { id: 'items', label: 'Posing your items' },
   { id: 'save', label: 'Saving' },
 ];
-export const isV13 = (rec?: Pick<StoredProject, 'character' | 'manifest'> | null) => !!rec?.character && !!rec.manifest.rig.rest && rec.manifest.rig.directions.every((d) => d.mirrorOf || rec.manifest.rig.rest?.[d.id]);
+export const isV13 = rigReady;
 const genDirs = (m: Manifest) => m.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) => {
   const r = m.rig.rest?.south;
-  return s.action && ACTIONS[s.action] && r ? ACTIONS[s.action](fromApi(r.keypoints, m.rig.cell), 'south').length : s.frames;
+  return s.action === 'walk' ? 8 : s.action && ACTIONS[s.action] && r ? ACTIONS[s.action](fromApi(r.keypoints, m.rig.cell), 'south').length : s.frames;
 };
 export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' | 'items'>) {
-  const n = moveFrames(m, s), dirs = genDirs(m).length, body = dirs * (RAW_GENS + n * EST + (s.action ? 0 : 1 + n * EST));
+  const n = moveFrames(m, s), dirs = genDirs(m).length, body = dirs * (RAW_GENS + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
   const items = poseGens(s.items.length, n, dirs);
   return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };
 }
@@ -259,7 +262,7 @@ export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' 
  */
 export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<void> {
   const { rec } = await loadProject(projectId);
-  if (!isV13(rec)) throw new Error('This character was made before rig v1.3. Create a new character to add moves.');
+  if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
   if (spec.replace || !rec.manifest.rig.animations.some((a) => a.id === spec.id)) await addBodyClip(projectId, spec, onProgress);
   // items: one pose call per item x direction with the clip's stored keypoints (sequential saves; the record is re-read each time)
   const dirs = genDirs(rec.manifest).length, itemTotal = spec.items.length * dirs;
@@ -274,7 +277,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void) {
   const { rec, project } = await loadProject(projectId), m = rec.manifest, rig = m.rig;
   const dirs = genDirs(m) as Direction[], n = moveFrames(m, spec), name = m.name;
-  const total = dirs.length * (1 + n + (spec.action ? 0 : 1 + n));
+  const total = dirs.length * (1 + n + (spec.action && ACTIONS[spec.action] ? 0 : 1 + n));
   let done = 0;
   const tick = () => onProgress({ step: 'animate', done: Math.min(total, ++done), total, recIds: [] });
   onProgress({ step: 'animate', done: 0, total, recIds: [] });
@@ -282,13 +285,13 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
   const clips = await Promise.all(dirs.map(async (d, k) => {
     const restKps = rig.rest![d]!.keypoints, restImg = project.images.get(rig.rest![d]!.image)!;
     let keypoints: Keypoint[][];
-    if (spec.action) keypoints = ACTIONS[spec.action](fromApi(restKps, rig.cell), d).map((p) => toApi(p, rig.cell));
+    if (spec.action && ACTIONS[spec.action]) keypoints = authoredPoses(spec.action, fromApi(restKps, rig.cell), d, rig.cell.w).map((p) => toApi(p, rig.cell));
     else {
-      const req = routes.animateCharacter({ character_id: rec.character!.id, mode: 'pixminimax', action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`, frame_count: n, keep_first_frame: false, animation_name: spec.id, directions: [d], seed: spec.seed });
+      const req = routes.animateCharacter(spec.action === 'walk' ? baseAnimation('skeleton-v3', rec.character!.id, BASE_ANIMS.find((a) => a.name === 'walk')!, [d], spec.seed) : { character_id: rec.character!.id, mode: 'pixminimax', action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`, frame_count: n, keep_first_frame: false, animation_name: spec.id, directions: [d], seed: spec.seed });
       keypoints = await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, tick);
       extra[k] = [(await queue.enqueue(req)) as JobRec];
     }
-    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, looks: rec.character!.looks, seed: spec.seed + 101, name, tick }) };
+    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, looks: rec.character!.looks, seed: spec.seed + 101, name, tick, view: rig.view }) };
   }));
 
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
@@ -300,7 +303,7 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
   for (const [k, c] of clips.entries()) {
     const produced = c.out.frames.map((_, i) => cellKey(spec.id, c.d, i) as CellKey);
     const idx = [...(extra[k] ?? []), ...c.out.recs].map((r, j) => baseIt.provenance.push(provOf(r, j >= (extra[k]?.length ?? 0) ? produced : [])) - 1);
-    const src: ClipSource = { route: 'skeleton-v3', reference: frig.rest![c.d]!.image, keypoints: c.keypoints, motion: spec.action ? `authored:${spec.action}` : `pixminimax:${spec.text}`, measured: c.out.measured.map((x) => x ?? []), provenance: idx };
+    const src: ClipSource = { route: 'skeleton-v3', reference: frig.rest![c.d]!.image, keypoints: c.keypoints, motion: spec.action === 'walk' ? 'managed-skeleton-v3:walking-8-frames' : spec.action ? `authored:${spec.action}` : `pixminimax:${spec.text}`, measured: c.out.measured.map((x) => x ?? []), provenance: idx };
     anim.sources![c.d] = src;
     cellMap[c.d] = await Promise.all(c.out.frames.map(async (f, i) => { const h = await cellHash(f); await putCell(h, f); const s = c.out.measured[i]; if (s) skeletons[cellKey(spec.id, c.d, i)] = fromApi(s, frig.cell); return h; }));
     warnings.push(...warn(`${spec.id}/${c.d}`, c.out.qa));

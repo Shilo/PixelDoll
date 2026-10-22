@@ -9,8 +9,9 @@ import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from 
 import { godotFiles } from './godot.ts';
 import { phaserFiles } from './phaser.ts';
 import { unityFiles } from './unity.ts';
+import { projectEntries, type ImportedCharacter } from '../store/import.ts';
 
-export interface ExportOptions { engines: Engine[]; baked: boolean; pixelsPerUnit?: number; exportedAt?: string }
+export interface ExportOptions { engines: Engine[]; baked: boolean; pixelsPerUnit?: number; exportedAt?: string; projectData?: ImportedCharacter['extra'] }
 export interface ExportResult { entries: ZipEntry[]; warnings: string[]; errors: string[] }
 
 export async function exportFiles(src: Project, o: ExportOptions): Promise<ExportResult> {
@@ -30,6 +31,7 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
     name: f.name,
     data: typeof f.data === 'string' ? enc.encode(f.data) : f.data instanceof Uint8Array ? f.data : await encodePngBytes(f.data),
   })));
+  entries.push(...await projectEntries(src, o.projectData));
   return { entries, warnings, errors };
 }
 

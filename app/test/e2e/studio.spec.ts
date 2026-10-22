@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { unzip, zip } from '../../src/lib/store/zip.ts'
 
 declare global {
   interface Window {
@@ -242,6 +243,165 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
 
   assert.deepEqual(errors, [])
   assert.deepEqual(unexpectedRequests, [], 'demo tests must never call the paid API')
+})
+
+test('Inspector animation stays stable and eight-direction previews fit the panel', async ({ page }) => {
+  await page.route('https://api.pixellab.ai/**', (route) => route.abort())
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto('/#/')
+  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click()
+  await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.getByRole('button', { name: 'Red cape', exact: true }).click()
+  await page.getByRole('button', { name: 'Pause', exact: true }).click()
+  const inspector = page.getByRole('complementary', { name: 'Inspector', exact: true })
+  async function checkFrames() {
+    const geometry: string[] = [], pixels: string[] = []
+    for (let frame = 0; frame < 8; frame++) {
+      await page.keyboard.press('.')
+      geometry.push(JSON.stringify(await inspector.locator('.dir-strip').boundingBox()))
+      geometry.push(JSON.stringify(await inspector.locator('.actions').first().boundingBox()))
+      pixels.push(await inspector.locator('.dir-strip canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL()))
+      const strip = (await inspector.locator('.dir-strip').boundingBox())!
+      for (const sprite of await inspector.locator('.dir-strip canvas').all()) {
+        const b = (await sprite.boundingBox())!
+        expect(b.x).toBeGreaterThanOrEqual(strip.x)
+        expect(b.x + b.width).toBeLessThanOrEqual(strip.x + strip.width)
+      }
+    }
+    expect(new Set(geometry.filter((_, i) => i % 2 === 0)).size).toBe(1)
+    expect(new Set(geometry.filter((_, i) => i % 2 === 1)).size).toBe(1)
+    expect(new Set(pixels).size).toBeGreaterThan(1)
+  }
+  await checkFrames()
+  await inspector.getByRole('button', { name: 'Remove', exact: true }).click()
+  await page.getByRole('button', { name: 'Steel helmet', exact: true }).click()
+  await expect(inspector.getByRole('button', { name: 'Remove for good', exact: true })).toHaveCount(0)
+
+  // Disposable layout fixture: duplicate stored east artwork into the extra directions, without generation.
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Download zip/ }).click()
+  const files = await unzip(new Uint8Array(readFileSync((await (await download).path())!)))
+  const data = JSON.parse(new TextDecoder().decode(files.get('project.json')))
+  data.manifest.rig.directions = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'].map((id) => ({ id }))
+  for (const it of data.manifest.items) for (const layer of it.layers) for (const dirs of Object.values(layer.cells ?? {}) as Record<string, unknown>[]) {
+    for (const dir of ['south-east', 'north-east', 'north-west', 'south-west', 'west']) dirs[dir] = dirs.east ?? dirs.south
+  }
+  files.set('project.json', new TextEncoder().encode(JSON.stringify(data)))
+  const bytes = await zip([...files].map(([name, data]) => ({ name, data })))
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'eight-directions.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await page.getByRole('img', { name: 'Character import preview' }).waitFor()
+  const setup = page.getByRole('checkbox', { name: /Set up the pose rig next/ })
+  if (await setup.count()) await setup.uncheck()
+  await page.getByRole('button', { name: 'Import character', exact: true }).click()
+  await page.getByRole('button', { name: 'Red cape', exact: true }).click()
+  await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8)
+  await checkFrames()
+  const tabs = inspector.getByRole('tablist', { name: 'Inspector' })
+  const top = (await tabs.boundingBox())!.y
+  await inspector.getByRole('tab', { name: 'Colours', exact: true }).click()
+  const content = (await inspector.locator('.inspector-content').boundingBox())!
+  await page.mouse.move(content.x + content.width / 2, content.y + content.height / 2)
+  await page.mouse.wheel(0, 2000)
+  await expect.poll(() => inspector.locator('.inspector-content').evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+  expect((await tabs.boundingBox())!.y).toBe(top)
+})
+
+test('desktop resize keeps preview controls inside the stage when switching panels', async ({ page }) => {
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto('/#/')
+  await page.locator('.stage canvas').first().waitFor()
+  await page.setViewportSize({ width: 700, height: 650 })
+  const wardrobe = page.getByRole('complementary', { name: 'Wardrobe', exact: true })
+  const inspector = page.getByRole('complementary', { name: 'Inspector', exact: true })
+  const controlsFit = async () => {
+    const stage = (await page.getByRole('main', { name: 'Preview' }).boundingBox())!
+    const controls = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!
+    expect(controls.x).toBeGreaterThanOrEqual(stage.x)
+    expect(controls.x + controls.width).toBeLessThanOrEqual(stage.x + stage.width)
+  }
+  await expect(wardrobe).toBeVisible()
+  await expect(inspector).toHaveCount(0)
+  await controlsFit()
+  await page.getByRole('button', { name: 'Inspector', exact: true }).click()
+  await expect(inspector).toBeVisible()
+  await expect(wardrobe).toHaveCount(0)
+  await controlsFit()
+  await page.setViewportSize({ width: 600, height: 600 })
+  await controlsFit()
+  await page.getByRole('button', { name: 'Wardrobe', exact: true }).click()
+  await expect(wardrobe).toBeVisible()
+  await expect(inspector).toHaveCount(0)
+  await controlsFit()
+  await page.keyboard.press('Control+Alt+i')
+  await expect(inspector).toBeVisible()
+  await expect(wardrobe).toHaveCount(0)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await expect(wardrobe).toBeVisible()
+  await expect(inspector).toBeVisible()
+})
+
+test('canceling Connect preserves generation drafts and discards the pending action', async ({ page }) => {
+  const paidRequests: string[] = []
+  await page.route('https://api.pixellab.ai/**', async (route) => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/v2/balance') {
+      await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 0 } } })
+    } else { paidRequests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname); await route.abort() }
+  })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto('/#/')
+  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click()
+  const item = page.getByRole('dialog', { name: 'New item', exact: true })
+  await item.getByRole('radio', { name: 'Hands', exact: true }).click()
+  await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword')
+  await item.getByRole('radio', { name: 'azure', exact: true }).click()
+  await item.getByRole('button', { name: /^Make/ }).click()
+  await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue('a silver sword')
+  await expect(item.getByRole('radio', { name: 'Hands', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(item.getByRole('radio', { name: 'azure', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await item.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  const character = page.getByRole('dialog', { name: 'New character', exact: true })
+  await character.getByRole('textbox', { name: 'Who is it?', exact: true }).fill('a cheerful elf archer')
+  await character.getByRole('radio', { name: 'Stocky', exact: true }).click()
+  await character.locator('summary').click()
+  await character.getByRole('radio', { name: '8', exact: true }).click()
+  await character.getByRole('radio', { name: '56 px', exact: true }).click()
+  await character.getByRole('textbox', { name: 'Name', exact: true }).fill('Archer draft')
+  await character.getByRole('button', { name: /^Create/ }).click()
+  await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toBeVisible()
+  await page.goBack()
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  await expect(character.getByRole('textbox', { name: 'Who is it?', exact: true })).toHaveValue('a cheerful elf archer')
+  await expect(character.getByRole('radio', { name: 'Stocky', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await character.locator('summary').click()
+  await expect(character.getByRole('radio', { name: '8', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(character.getByRole('radio', { name: '56 px', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(character.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Archer draft')
+  await character.getByRole('button', { name: 'Cancel', exact: true }).click()
+
+  // Connecting later must not start the character generation canceled above.
+  await page.getByRole('button', { name: 'Connect', exact: true }).click()
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab' })
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key')
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(page.locator('.tb-trail .balance')).toContainText('42 gens')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  expect(paidRequests).toEqual([])
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Welcome screen', exact: true }).click()
+  await page.getByRole('button', { name: 'Try the demo', exact: true }).click()
+  await expect(page.locator('.project-btn')).toHaveText('Adventurer (demo)')
 })
 
 // Synthetic keys only: exercise the production bundle without contacting PixelLab.

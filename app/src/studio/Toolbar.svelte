@@ -2,14 +2,14 @@
   import { app } from '../lib/app.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
-  import { ui, doc, store, creating, gens, openProject, undo, redo, toggleTheme, refreshProjects, isDemo } from './state.svelte.ts'
-  import { Check, ChevronDown, ChevronRight, Coins, Download, Ellipsis, KeyRound, PanelLeft, PanelRight, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil } from './icons.ts'
+  import { ui, doc, store, creating, settingUp, gens, openProject, undo, redo, toggleTheme, refreshProjects, isDemo } from './state.svelte.ts'
+  import { Check, ChevronDown, ChevronRight, Coins, Download, Ellipsis, KeyRound, PanelLeft, PanelRight, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
 
   let { phone = false }: { phone?: boolean } = $props()
   const m = $derived(store.project?.manifest)
   const devRigs = $derived(store.projects.filter((p) => p.dev))
   const active = $derived($queue.counts.running + $queue.counts.pending)
-  const busy = $derived(active > 0 || gens.some((g) => g.phase === 'running') || (!!creating.spec && !creating.projectId && !creating.error))
+  const busy = $derived(active > 0 || gens.some((g) => g.phase === 'running') || (!!creating.spec && !creating.projectId && !creating.error) || (!!settingUp.spec && !settingUp.done && !settingUp.error))
   const undoLabel = $derived(doc.undo.at(-1)?.label)
   const redoLabel = $derived(doc.redo.at(-1)?.label)
   let menu: HTMLElement
@@ -63,7 +63,7 @@
     {:else}
       <button class="btn primary" onclick={() => (ui.sheet = 'export')} disabled={!m}><Download size={15} />Export</button>
       {#if ui.size === 'expanded' || ui.size === 'medium'}
-        <button class="btn icon plain" aria-label="Inspector" title="Show / hide the inspector (Ctrl+Alt+I)" aria-pressed={ui.inspector} onclick={() => (ui.inspector = !ui.inspector)}><PanelRight size={18} /></button>
+        <button class="btn icon plain" aria-label="Inspector" title="Show / hide the inspector (Ctrl+Alt+I)" aria-pressed={ui.inspector && (ui.size !== 'medium' || !ui.drawer)} onclick={() => { if (ui.size === 'medium' && ui.drawer) { ui.drawer = false; ui.inspector = true } else ui.inspector = !ui.inspector }}><PanelRight size={18} /></button>
       {/if}
     {/if}
   </div>
@@ -79,7 +79,10 @@
   {/snippet}
   {#each store.projects.filter((p) => !p.dev) as p (p.id)}{@render proj(p)}{/each}
   <button class="row" role="menuitem" aria-label="New character…" onclick={() => sheet('create')}><Plus size={16} /><span class="row-name">New character…</span></button>
+  <button class="row" role="menuitem" aria-label="Import character…" onclick={() => { ui.importSource = 'device'; sheet('import') }}><Download size={16} /><span class="row-name">Import character…</span></button>
   {#if !isDemo()}<button class="row" role="menuitem" aria-label="Rename character…" onclick={() => sheet('rename')}><Pencil size={16} /><span class="row-name">Rename…</span></button>{/if}
+  {#if !isDemo()}<button class="row" role="menuitem" aria-label="Set up character…" onclick={() => sheet('setup')}><PersonStanding size={16} /><span class="row-name">Set up character…</span></button>{/if}
+  {#if !isDemo()}<button class="row" role="menuitem" aria-label="Delete character…" onclick={() => sheet('delete')}><Trash size={16} /><span class="row-name">Delete character…</span></button>{/if}
   <hr />
   <button class="row" role="menuitem" aria-label={app.key ? 'PixelLab key' : 'Connect PixelLab…'} onclick={() => sheet('connect')}><KeyRound size={16} /><span class="row-name">{app.key ? 'PixelLab key' : 'Connect PixelLab…'}</span>
     {#if app.balance}<span class="faint small num">{fmtNum(app.balance.subscription.generations)} gens</span>{/if}</button>

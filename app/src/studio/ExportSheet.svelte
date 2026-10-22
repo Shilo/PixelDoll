@@ -3,8 +3,10 @@
   import Sheet from './Sheet.svelte'
   import { exportZip } from '../lib/export/export.ts'
   import { coverageGaps, moveDirs, storeVariants } from '../lib/dress/dress.ts'
+  import * as db from '../lib/store/db.ts'
+  import type { StoredProject } from '../lib/store/project.ts'
   import type { Engine, Manifest, Preset } from '../lib/store/manifest.ts'
-  import { ui, doc, store, toast } from './state.svelte.ts'
+  import { ui, doc, store, toast, isDemo } from './state.svelte.ts'
   import { ChevronRight, Download, TriangleAlert } from './icons.ts'
 
   const ENGINES: { id: Engine; name: string; sub: string }[] = [
@@ -33,6 +35,7 @@
 
   $effect(() => {
     const e = engine, b = baked, p = store.project
+    const projectId = doc.id, demo = isDemo()
     if (!p) return
     try { localStorage.setItem(LS, e) } catch { /* ignore */ }
     busy = true
@@ -41,9 +44,16 @@
     const manifest = structuredClone({ ...p.manifest, presets }) as Manifest
     storeVariants(manifest, ...presets.map((x) => x.variants))
     let stale = false
-    void exportZip({ manifest, images: p.images }, { engines: [e], baked: b }).then((r) => {
+    void (async () => {
+      const rec = demo ? undefined : await db.get<StoredProject>('projects', projectId)
+      return exportZip({ manifest, images: p.images }, { engines: [e], baked: b, projectData: rec ? { character: rec.character, skeletons: rec.skeletons, rigQa: rec.rigQa } : undefined })
+    })().then((r) => {
       if (stale) return
       result = { zip: r.zip, files: r.entries.map((x) => x.name), warnings: r.warnings, errors: r.errors }
+      busy = false
+    }).catch(() => {
+      if (stale) return
+      result = { zip: null, files: [], warnings: [], errors: ['Could not prepare this export. Please try again.'] }
       busy = false
     })
     return () => { stale = true }
@@ -90,7 +100,7 @@
     </div>
   </details>
   {#snippet footer()}
-    <span class="foot-note">Free · runs on this device</span>
+    <span class="foot-note">Free · includes an editable copy</span>
     <button class="btn primary lg" onclick={download} disabled={busy || !result?.zip}><Download size={16} />{busy ? 'Preparing…' : `Download zip · ${kb} KB`}</button>
   {/snippet}
 </Sheet>

@@ -24,8 +24,8 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 ## Roadmap
 
 1. **Own origin** (custom domain) — key safety on shared `*.github.io`; prerequisite for PWA and for recommending
-   "Remember key". (User decision.)
-2. **PWA** — installable, offline shell (plan below, D13).
+   "Remember key". Decision deferred with PWA.
+2. **PWA** — deferred by user (2026-10-22); retain the installable, offline shell plan below (D13).
 3. **Item quality** — shields (`off_hand`) live test; cape back-hem smudges; helmet visor flag when an arm covers it;
    optional `mirror: "generate"` per item to keep handedness in mirrored directions.
 4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
@@ -56,11 +56,12 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   Contract: `docs/handoff/agent-dev-token-handling.md`.
 - D12 (2026-10-21, user): Public GitHub repo under MIT; Pages at https://shilo.github.io/PixelDoll/ (custom domain
   recommended).
-- D13 (pending, user): PWA — plan below, not implemented.
+- D13 (2026-10-22, user): PWA deferred — retain the plan below, not implemented. Final origin remains undecided.
 - D14 (2026-10-22, user): Evidence media (spike output, test screenshots, design mockups) is untracked and lives in tag
   v0.1.0; the repo tracks only what helps development. Dev-only fixtures live in `app/dev-fixtures/`.
+- D15 (2026-10-22, user): Do not perform physical-phone testing. Browser-emulated mobile checks remain useful.
 
-## PWA (planned, D13 pending)
+## PWA (deferred, D13)
 
 Installable, offline-capable Studio. Tasks in `TODO.md` "PWA".
 

@@ -162,7 +162,7 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 | Area | each cell ≥ 50 % of the clip median; CV ≤ max(0.15, 2 × the CV of the body band it covers) (T3: trousers walk E) |
 | Design lock | palette distance to the dressed keyframe ≤ 15 |
 | Grip side (held) | `gripSide` from the clip's requested wrist keypoints: a clip held mostly in the wrong hand fails (G8); > 25 % ambiguous in a front/back view → review (side views are often ambiguous) |
-| Shape (held, locomotion) | G9 adjacent-frame aligned IoU ≥ 0.3 (S5: 0.4 false-fails a 96 axe walk E at 0.38) |
+| Shape (held, locomotion) | G9 principal-axis turn relative to the forearm ≤ 30° when keypoints and a reliable axis exist; otherwise adjacent-frame aligned IoU ≥ 0.3. Near-round masks (normalized covariance eigenvalue gap < 0.2) use IoU because a one-pixel silhouette change can swap their axis by 90°. |
 | Anchor spread (head items) | layer centroid − head keypoint ≤ 3 px in front/back views |
 | Clip | no layer pixel on the cell border |
 | Stray px | removed and logged |

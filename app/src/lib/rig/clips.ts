@@ -14,9 +14,9 @@ export const standing = (anim: string) => !/walk|run|death|fall/.test(anim);
 export const loops = (anim: string) => /idle|walk|run/.test(anim);
 
 /** Raw /animate-with-skeleton-v3: pose `first` (in pose `rest`) through `keypoints`; one output frame per entry. */
-export const rawClip = (o: { first: string; rest: Keypoint[]; keypoints: Keypoint[][]; description: string; action: string; dir: Direction; seed: number }): Req =>
+export const rawClip = (o: { first: string; rest: Keypoint[]; keypoints: Keypoint[][]; description: string; action: string; dir: Direction; seed: number; view?: 'low top-down' | 'high top-down' | 'side' }): Req =>
   routes.animateWithSkeletonV3({
-    description: o.description, action: o.action, direction: o.dir, view: 'low top-down', first_frame: png(o.first),
+    description: o.description, action: o.action, direction: o.dir, view: o.view ?? 'low top-down', first_frame: png(o.first),
     first_frame_keypoints: o.rest, keypoints: o.keypoints, seed: o.seed, no_background: true,
   });
 
@@ -58,22 +58,30 @@ export const borderPx = (im: Img) => {
 };
 
 export const RIG_GATES = { adherence: 2, adherenceLying: 3, feetDrift: 1, paletteFit: 0.97, border: 0 };
-export interface ClipQa { adherence: number; feetDrift: number; paletteFit: number; border: number; stray: number; fails: string[] }
+export interface ClipQa { adherence: number | null; feetDrift: number; paletteFit: number; border: number; stray: number; fails: string[] }
 /** Freeze gate (architecture §3.2) for one clip-direction: requested vs re-estimated arms, feet, palette, cell border. */
-export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested: Keypoint[][]; measured: (Keypoint[] | undefined)[]; stray: number }): ClipQa {
+export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: Keypoint[][]; measured: (Keypoint[] | undefined)[]; stray: number }): ClipQa {
   const cell = { w: o.rest.w, h: o.rest.h };
-  const adh = adherence(o.requested.map((k) => fromApi(k, cell)), o.measured.map((k) => k && fromApi(k, cell)));
+  const adh = o.requested ? adherence(o.requested.map((k) => fromApi(k, cell)), o.measured.map((k) => k && fromApi(k, cell))) : null;
   const feet = Math.max(0, ...o.frames.map((f) => Math.abs(feetY(f) - feetY(o.rest))));
   const fit = paletteFit(o.rest, o.frames), border = o.frames.reduce((s, f) => s + borderPx(f), 0);
   const maxAdh = /death|fall/.test(o.anim) ? RIG_GATES.adherenceLying : RIG_GATES.adherence;
   const fails = [
-    adh > maxAdh && `arms ${adh.toFixed(1)} px off the requested pose`,
+    adh !== null && adh > maxAdh && `arms ${adh.toFixed(1)} px off the requested pose`,
     standing(o.anim) && feet > RIG_GATES.feetDrift && `feet drift ${feet} px`,
     fit < RIG_GATES.paletteFit && `palette fit ${fit.toFixed(3)}`,
     border > RIG_GATES.border && `${border} px on the cell border`,
   ].filter((s): s is string => !!s);
-  return { adherence: +adh.toFixed(2), feetDrift: feet, paletteFit: +fit.toFixed(3), border, stray: o.stray, fails };
+  return { adherence: adh === null ? null : +adh.toFixed(2), feetDrift: feet, paletteFit: +fit.toFixed(3), border, stray: o.stray, fails };
 }
+
+/** Balanced batches respect skeleton-v3's maximum; one/two-frame clips repeat their last pose to the minimum of three. */
+export function poseBatches(cells: number): { start: number; count: number }[] {
+  const n = Math.ceil(cells / 15), size = Math.floor(cells / n), extra = cells % n;
+  let start = 0;
+  return Array.from({ length: n }, (_, i) => { const count = size + (i < extra ? 1 : 0), out = { start, count }; start += count; return out; });
+}
+export const paddedPoses = (poses: Keypoint[][]): Keypoint[][] => poses.length >= 3 ? poses : [...poses, ...Array.from({ length: 3 - poses.length }, () => poses.at(-1)!)];
 
 export function selfTest() {
   const im = makeImg(8, 8);

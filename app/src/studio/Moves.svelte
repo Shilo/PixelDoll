@@ -46,8 +46,6 @@
     {#if moving.spec && moving.projectId === doc.id && !moving.done}
       <button class="move-row" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
     {/if}
-    <!-- T1 P2-11: rigs from before skeleton rigs (no rest views) cannot take new moves; say it plainly instead of offering it -->
-    {#if !isDemo() && m.rig.rest}<button class="btn" onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button>
-    {:else if !isDemo()}<p class="faint small">Moves can be added to characters made from now on.</p>{/if}
+    {#if !isDemo()}<button class="btn" onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button>{/if}
   {/if}
 </div>

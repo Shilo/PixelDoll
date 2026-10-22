@@ -34,6 +34,59 @@ export const del = (s: StoreName, key: string) => tx(s, 'readwrite', (o) => o.de
 export const all = <T>(s: StoreName) => tx<T[]>(s, 'readonly', (o) => o.getAll());
 export const clear = (s: StoreName) => tx(s, 'readwrite', (o) => o.clear());
 
+/** Encoding happens before this transaction, so garbage collection cannot sweep an import's partial blob writes. */
+export async function putCharacter(id: string, record: unknown, blobs: Map<string, Blob>): Promise<void> {
+  const db = await open();
+  return new Promise((res, rej) => {
+    const t = db.transaction(['projects', 'blobs'], 'readwrite');
+    for (const [hash, blob] of blobs) t.objectStore('blobs').put(blob, hash);
+    t.objectStore('projects').add(record, id);
+    t.oncomplete = () => res();
+    t.onerror = t.onabort = () => rej(t.error);
+  });
+}
+
+/** Publish a completed rig without a gap between new image blobs and their project references. */
+export async function updateCharacter<T>(id: string, blobs: Map<string, Blob>, fn: (record: T | undefined) => T): Promise<void> {
+  const db = await open();
+  return new Promise((res, rej) => {
+    const t = db.transaction(['projects', 'blobs'], 'readwrite'), projects = t.objectStore('projects'), read = projects.get(id);
+    let error: unknown;
+    read.onsuccess = () => {
+      try {
+        const record = fn(read.result);
+        for (const [hash, blob] of blobs) t.objectStore('blobs').put(blob, hash);
+        projects.put(record, id);
+      } catch (e) { error = e; t.abort(); }
+    };
+    t.oncomplete = () => res();
+    t.onerror = t.onabort = () => rej(error ?? t.error);
+  });
+}
+
+/** Delete a local character and its drafts atomically, refusing work that could later write it back. Shared blobs stay. */
+export async function deleteCharacter(id: string): Promise<void> {
+  if (!id.startsWith('rig-')) throw new Error('Only a saved local character can be deleted.');
+  const db = await open();
+  return new Promise((res, rej) => {
+    const t = db.transaction(['projects', 'jobs'], 'readwrite'), projects = t.objectStore('projects');
+    const records = projects.getAll(), jobs = t.objectStore('jobs').getAll();
+    let error: Error | undefined;
+    jobs.onsuccess = () => {
+      const busy = jobs.result.some((j) => ['queued', 'submitting', 'running'].includes(j.state));
+      const work = records.result.some((r) => r.id === 'studio-create' || r.id === 'studio-move' || r.id === 'studio-setup' || (r.id === 'studio-drafts' && r.gens?.some((g: { phase: string }) => g.phase === 'running')));
+      if (busy || work) { error = new Error('Finish or dismiss pending generation work before deleting a character.'); t.abort(); return; }
+      projects.delete(id);
+      for (const r of records.result) {
+        if (r.id === 'studio-drafts') projects.put({ ...r, gens: r.gens.filter((g: { draft: { rigId: string } }) => g.draft.rigId !== id) }, r.id);
+        if (r.id === 'm3-drafts') projects.put({ ...r, drafts: r.drafts.filter((d: { rigId: string }) => d.rigId !== id) }, r.id);
+      }
+    };
+    t.oncomplete = () => res();
+    t.onerror = t.onabort = () => rej(error ?? t.error);
+  });
+}
+
 /** Atomic read-modify-write: get + put in ONE readwrite transaction, so concurrent writers (another accept, autosave, another
  * tab) queue behind it instead of overwriting each other. `fn` must be synchronous: do async work (hashing, blob writes) first.
  * Throwing in `fn` aborts the transaction (nothing is written). */

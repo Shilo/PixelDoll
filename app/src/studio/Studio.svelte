@@ -18,9 +18,12 @@
   import ActivitySheet from './ActivitySheet.svelte'
   import MoveSheet from './MoveSheet.svelte'
   import RenameSheet from './RenameSheet.svelte'
+  import ImportSheet from './ImportSheet.svelte'
+  import DeleteSheet from './DeleteSheet.svelte'
+  import SetupSheet from './SetupSheet.svelte'
   import StageNote from './StageNote.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, undo, redo, genProgress } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, undo, redo, genProgress } from './state.svelte.ts'
   import { Palette, PersonStanding, Shirt, WifiOff } from './icons.ts'
 
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
@@ -34,6 +37,7 @@
       await loadGens()
       await resumeCreate()
       await resumeMove()
+      await resumeSetup()
     })()
     return () => { off(); delete document.documentElement.dataset.app }
   })
@@ -67,7 +71,7 @@
   const settled = $derived($queue.counts.done + $queue.counts.failed)
   $effect(() => { void settled; if (app.key) void refreshBalance() })
   // the page title shows running work
-  const running = $derived(gens.filter((g) => g.phase === 'running').length + (creating.spec && !creating.projectId && !creating.error ? 1 : 0))
+  const running = $derived(gens.filter((g) => g.phase === 'running').length + (creating.spec && !creating.projectId && !creating.error ? 1 : 0) + (settingUp.spec && !settingUp.done && !settingUp.error ? 1 : 0))
   $effect(() => { document.title = running ? `(${running}) PixelDoll` : 'PixelDoll' })
 
   function onkey(e: KeyboardEvent) {
@@ -91,7 +95,7 @@
     const m = store.project?.manifest
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return }
-    if (mod && e.altKey && e.key.toLowerCase() === 'i') { e.preventDefault(); ui.inspector = !ui.inspector; return }
+    if (mod && e.altKey && e.key.toLowerCase() === 'i') { e.preventDefault(); if (ui.size === 'medium' && ui.drawer) { ui.drawer = false; ui.inspector = true } else ui.inspector = !ui.inspector; return }
     if (mod || e.altKey || !m) return
     if (e.key === ' ' && !t.closest('button, a')) { e.preventDefault(); ui.playing = !ui.playing }
     else if (e.key === ',' || e.key === '.') { ui.playing = false; ui.frame += e.key === '.' ? 1 : (view.anim?.frames.length ?? 1) - 1 }
@@ -121,7 +125,7 @@
         <!-- B10 (T1 P1-3): medium width pushes the stage instead of covering it; portrait tablets use the stacked layout -->
         {#if (ui.size === 'expanded' && ui.sidebar) || (ui.size === 'medium' && ui.drawer)}<aside class="side pane" aria-label="Wardrobe"><Wardrobe /></aside>{/if}
         <main class="stage-wrap" aria-label="Preview"><Stage /><StageNote /></main>
-        {#if desk && ui.inspector}<aside class="insp pane" aria-label="Inspector"><Inspector /></aside>{/if}
+        {#if desk && ui.inspector && (ui.size !== 'medium' || !ui.drawer)}<aside class="insp pane" aria-label="Inspector"><Inspector /></aside>{/if}
         {#if ui.size === 'compact'}<section class="phone-panel" aria-label={ui.tab}><PhonePanel /></section>{/if}
         {#if ui.size === 'landscape'}
           <section class="land-col">
@@ -161,6 +165,9 @@
   {#if ui.sheet === 'activity'}<ActivitySheet />{/if}
   {#if ui.sheet === 'move'}<MoveSheet />{/if}
   {#if ui.sheet === 'rename'}<RenameSheet />{/if}
+  {#if ui.sheet === 'import'}<ImportSheet />{/if}
+  {#if ui.sheet === 'delete'}<DeleteSheet />{/if}
+  {#if ui.sheet === 'setup'}<SetupSheet />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
     <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><ItemPane id={ui.selected} /></Sheet>
   {/if}

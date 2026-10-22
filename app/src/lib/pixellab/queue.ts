@@ -316,7 +316,7 @@ export class Queue {
   // ---- enqueue ----
   // Identical request (same endpoint + params + input images, explicit seed) reuses the stored record instead of paying again.
   // meta.cache: also reuse unseeded done records (deterministic routes: estimate-skeleton, GET /characters).
-  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean } = {}): Promise<JobRec> {
+  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean; resumeSafe?: boolean } = {}): Promise<JobRec> {
     const inputs: string[] = [];
     const params = await mapDeep(req.body ?? null, (o) => {
       if (!isB64(o)) return undefined;
@@ -332,6 +332,8 @@ export class Queue {
       if (r.requestHash !== requestHash) continue;
       if (r.state === 'queued' || r.state === 'submitting' || r.state === 'running') return r; // double click
       if ((seeded || meta.cache) && r.state === 'done') return r; // ponytail: cache only seeded requests; unseeded = intentional re-roll
+      // Resuming a multi-step paid flow must never turn a terminal/unknown outcome into another submission.
+      if (meta.resumeSafe) return r;
     }
     const now = this.deps.now();
     const rec: JobRec = {

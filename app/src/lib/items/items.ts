@@ -8,7 +8,7 @@ import { splitFgBg } from '../compose/split.ts';
 import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import { hasAll } from '../rig/poses.ts';
-import { actionOf, rawClip } from '../rig/clips.ts';
+import { actionOf, paddedPoses, poseBatches, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 
@@ -32,15 +32,16 @@ export const itemRoute = {
    * Pose a dressed chroma keyframe (in pose `rest`) through a stored keypoint sequence (rig-cell API coords; `pad` moves them
    * onto the oversize canvas). Held items send frame 0 LAST when it is the rest pose (S5); undo with `unrotate`.
    */
-  pose: (o: { keyframePngB64: string; rest: Keypoint[]; poses: Keypoint[][]; item: string; slot: string; key: Key; anim: string; dir: DirectionName; seed: number; cell: { w: number; h: number }; pad?: number }): Req => {
+  pose: (o: { keyframePngB64: string; rest: Keypoint[]; poses: Keypoint[][]; item: string; slot: string; key: Key; anim: string; dir: DirectionName; seed: number; cell: { w: number; h: number }; pad?: number; view?: Rig['view'] }): Req => {
     const held = slotOf(o.slot).class === 'held', p = o.pad ?? 0, k = (s: Keypoint[]) => padKeypoints(s, o.cell, p);
-    const poses = f0Last(o.slot, o.rest, o.poses, o.cell) ? [...o.poses.slice(1), o.poses[0]] : o.poses;
+    const sent = paddedPoses(o.poses);
+    const poses = f0Last(o.slot, o.rest, sent, o.cell) ? [...sent.slice(1), sent[0]] : sent;
     return rawClip({
       // B7 live: "slash" drew a blade into a helmet layer although the action said "no weapon" -> say it in the looks too
       description: `solid ${o.key === 'green' ? 'bright green' : 'magenta'} mannequin (chroma key colour) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${oneHeld(o.slot)}` : `wearing ${o.item}, empty hands, no weapon`}`,
       // M3: a "slash" pose made the model draw a sword into a helmet layer -> unarmed unless the item is the held object
       action: actionOf(o.anim) + (held ? '' : ', empty hands, no weapon, no effects'),
-      dir: o.dir, first: o.keyframePngB64, rest: k(o.rest), keypoints: poses.map(k), seed: o.seed,
+      dir: o.dir, first: o.keyframePngB64, rest: k(o.rest), keypoints: poses.map(k), seed: o.seed, view: o.view,
     });
   },
 };
@@ -116,8 +117,8 @@ export const clipKeypoints = (rig: Rig, anim: string, dir: DirectionName) => {
   return k && k.length === a!.cells && k.every(hasAll) ? k : undefined;
 };
 /** Can the skel route run? Needs the v1.3 rest views and the stored keypoint sequence of every chosen clip-direction. */
-export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>) =>
-  spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints) && spec.anims.every((a) => !!clipKeypoints(rig, a, d)));
+export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) =>
+  spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints)) && spec.anims.every((a) => (spec.clipDirs?.[a] ?? spec.dirs).every((d) => !!clipKeypoints(rig, a, d)));
 
 /** M4/T3: a held item's bg (blade outside the body) sits above the cape's bg (z 4) in S/E/W, else the cape hides the hilt and
  * blade (T3 Ranger: 220 sword px hidden over walk S); from behind (north) the cape stays over it (bg z as built). */
@@ -146,16 +147,20 @@ export const SLOTS: Slot[] = [
 export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
 
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
-export interface ItemSpec { id: string; name: string; slot: string; prompt: string; key: Route; anims: string[]; dirs: DirectionName[]; method?: Method }
+export interface ItemSpec { id: string; name: string; slot: string; prompt: string; key: Route; anims: string[]; dirs: DirectionName[]; clipDirs?: Record<string, DirectionName[]>; method?: Method }
 
 /** Calls of an item. skel: [dress the rest cells (chunked to the frame cap), pose clip × dir ...]; anchor: packed edit calls (planCalls). */
-export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'method' | 'key'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
+export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
   if (spec.method !== 'skel' || spec.key === 'none') return planCalls(rig, spec).map((cells) => ({ kind: 'edit', cells }));
   // B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
   const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method) : 0));
   return [
     ...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({ kind: 'dress' as const, cells })),
-    ...spec.anims.flatMap((a) => spec.dirs.map((d) => ({ kind: 'pose' as const, cells: Array.from({ length: rig.animations.find((x) => x.id === a)!.cells }, (_, i) => cellKey(a, d, i)) }))),
+    ...spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
+      const clip = rig.animations.find((x) => x.id === a)!;
+      if (clip.cells === 1 && clip.sources?.[d]?.motion === 'imported-rest') return []; // reuse the dressed standing reference
+      return poseBatches(clip.cells).map(({ start, count }) => ({ kind: 'pose' as const, cells: Array.from({ length: count }, (_, i) => cellKey(a, d, start + i)) }));
+    })),
   ];
 }
 /** Split cells for a capped multi-frame call: the first call takes `cap`, later ones `cap − 1` plus the anchor cell (S2). */
@@ -165,16 +170,19 @@ export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind =
 export const planGens = (p: { kind: CallKind; cells: string[] }[]) => p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 8 ? 3 : 4) : 10), 0);
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
-export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>): string[][] {
-  const clips = spec.anims.flatMap((a) => spec.dirs.map((d) => ({ a, d, n: rig.animations.find((x) => x.id === a)?.cells ?? 0 }))).filter((c) => c.n);
+export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>): string[][] {
+  const max = editFrameCap(Math.max(rig.cell.w, rig.cell.h));
+  const clips = spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
+    const n = rig.animations.find((x) => x.id === a)?.cells ?? 0;
+    return Array.from({ length: Math.ceil(n / (max - 1)) }, (_, i) => ({ a, d, start: i * (max - 1), n: Math.min(max - 1, n - i * (max - 1)) }));
+  }));
   clips.sort((x, y) => y.n - x.n); // stable: walk S, E, N before idle
-  const bins: { cap: number; clips: typeof clips }[] = [], max = editFrameCap(Math.max(rig.cell.w, rig.cell.h));
+  const bins: { cap: number; clips: typeof clips }[] = [];
   for (const c of clips) {
-    if (c.n > max - 1) throw new Error(`${c.a}/${c.d}: ${c.n} cells do not fit one call`);
     const bin = bins.find((b) => b.cap - b.clips.reduce((s, x) => s + x.n, 0) >= c.n) ?? (bins.push({ cap: bins.length ? max - 1 : max, clips: [] }), bins.at(-1)!);
     bin.clips.push(c);
   }
-  return bins.map((b) => b.clips.flatMap((c) => Array.from({ length: c.n }, (_, i) => cellKey(c.a, c.d, i))));
+  return bins.map((b) => b.clips.flatMap((c) => Array.from({ length: c.n }, (_, i) => cellKey(c.a, c.d, c.start + i))));
 }
 
 const facing = (d: string) => `facing ${d}${d === 'south' ? ' (front view)' : d === 'north' ? ' (back view)' : d.includes('-') ? ` (${d.startsWith('south') ? 'front' : 'back'} three-quarter view)` : ' (side view)'}`;
@@ -511,12 +519,15 @@ const nearest = (m: Uint8Array, w: number, [x, y]: [number, number]) => {
   for (let p = 0; p < m.length; p++) if (m[p]) d = Math.min(d, Math.hypot((p % w) - x, ((p / w) | 0) - y));
   return d;
 };
-/** Principal-axis angle (rad) of a mask, or null for < 6 px. */
+/** Principal-axis angle (rad), or null for < 6 px or a near-round mask whose axis is unstable. */
 export function axisOf(m: Uint8Array, w: number): number | null {
   const c = centroid(m, w);
   if (!c || sum(m) < 6) return null;
   let a = 0, b = 0, d = 0;
   for (let p = 0; p < m.length; p++) if (m[p]) { const x = (p % w) - c[0], y = ((p / w) | 0) - c[1]; a += x * x; b += x * y; d += y * y; }
+  // Eigenvalue gap / sum: below 0.2 the aspect ratio is < sqrt(1.5). A round shield gaining a single
+  // row can swap its principal axis by 90 degrees without turning; compare its silhouette instead.
+  if (Math.hypot(a - d, 2 * b) < 0.2 * (a + d)) return null;
   return 0.5 * Math.atan2(2 * b, a - d);
 }
 /** Difference of two axis angles in degrees, 0..90 (axes have no direction). */
@@ -613,11 +624,20 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
     const minIoU = Math.min(1, ...ord.map((c, i) => alignedIoU(c.mask, ord[(i + 1) % ord.length].mask, w)));
     // B9: a held blade legitimately turns with the swinging arm (walk E: blade 29° -> 74° while the forearm goes 68° -> 92°),
     // which drops the IoU to 0.2 on every seed. With posed keypoints, G9 checks the blade angle RELATIVE to the forearm
-    // instead (a flip changes it, a swing does not); the IoU stays the gate where no keypoints exist (anchor route).
+    // instead (a flip changes it, a swing does not). Near-round shields have no reliable axis: compare those
+    // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
-    const turn = fore ? Math.max(0, ...ord.map((c, i) => { const n = ord[(i + 1) % ord.length], j = +c.key.split('/')[2], k = +n.key.split('/')[2], x = axisOf(c.mask, w), y = axisOf(n.mask, w); return x == null || y == null ? 0 : angleDiff(x - fore[j], y - fore[k]); })) : undefined;
-    if (slot.class === 'held' && !isAction(clip) && (turn != null ? turn > GATES.heldTurn : minIoU < GATES.heldIoU))
-      flag(cs[0].call, turn != null ? `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames` : `G9 ${clip}: shape jump (aligned IoU ${minIoU.toFixed(2)})`);
+    if (slot.class === 'held' && !isAction(clip)) {
+      let turn = 0, shapeIoU = 1;
+      for (const [i, c] of ord.entries()) {
+        const n = ord[(i + 1) % ord.length], j = +c.key.split('/')[2], k = +n.key.split('/')[2];
+        const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
+        if (fore && x != null && y != null) turn = Math.max(turn, angleDiff(x - fore[j], y - fore[k]));
+        else shapeIoU = Math.min(shapeIoU, alignedIoU(c.mask, n.mask, w));
+      }
+      if (turn > GATES.heldTurn) flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
+      if (shapeIoU < GATES.heldIoU) flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
+    }
     clips.push({ clip, call: cs[0].call, median: med, cv: +cv.toFixed(3), baseCv: +baseCv.toFixed(3), minIoU: +minIoU.toFixed(2), minRatio: +minRatio.toFixed(2), hand, spread: +spread.toFixed(1) });
   }
   // G8: every clip holds the item in the same hand (majority over clips; the slot anchor names the expected one)
@@ -752,7 +772,7 @@ export async function buildItem(o: {
   for (const a of spec.anims) {
     const n = rig.animations.find((x) => x.id === a)!.cells;
     for (const l of layers) l.cells![a] = {};
-    for (const d of spec.dirs)
+    for (const d of spec.clipDirs?.[a] ?? spec.dirs)
       for (let i = 0; i < n; i++) {
         const c = byKey.get(cellKey(a, d, i));
         const parts = !c ? [null, null] : slot.bgZ != null ? (({ fg, bg }) => [fg, bg])(splitFgBg(c.layer, c.base)) : [c.layer];

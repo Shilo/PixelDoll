@@ -5,16 +5,14 @@ decisions). Done history is at the bottom.
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 
 ## Next up (in order)
-1. [ ] Test the live site https://shilo.github.io/PixelDoll/ on a real phone + a real key (PM verified: CI green, demo loads,
-      no dev-key path, worker loads — 2026-10-21)
-2. [ ] Decide final origin: custom domain (recommended, key safety) vs shared `shilo.github.io` — blocks PWA + "remember key"
-3. [ ] PWA (see section below) — after the origin decision
-4. [ ] Shields (`off_hand`) live test on a 4- and 8-direction rig
-5. [ ] Item quality polish: cape back-hem grey smudges; helmet visor flagged when the forearm covers it
-6. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
-7. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
-8. [ ] Paper theme + theming support (deferred by user)
-9. [ ] CI: pin `runs-on` to `ubuntu-24.04` or accept the Ubuntu 26 migration of `ubuntu-latest` (runner notice, 2026-10)
+1. [~] Shields (`off_hand`) live test on a 4- and 8-direction rig
+2. [ ] Item quality polish: cape back-hem grey smudges; helmet visor flagged when the forearm covers it
+3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
+4. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
+5. [ ] CI: pin `runs-on` to `ubuntu-24.04` or accept the Ubuntu 26 migration of `ubuntu-latest` (runner notice, 2026-10)
+
+Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio regression
+in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
 
 ## Concerns
 - [!] **Key safety on a shared origin.** All `*.github.io/<repo>` sites of one account share an origin, so another of your
@@ -35,7 +33,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 - [!] **PixelLab API drift.** Template list, prices and Pro/Pro Flash behaviour change; the OpenAPI snapshot in
   `docs/research/pixellab/` is from 2026-10-20.
 
-## PWA (planned — PLAN.md "PWA", D13 pending)
+## PWA (deferred by user, 2026-10-22 — PLAN.md "PWA")
 - [ ] Final origin decided first (custom domain vs shilo.github.io/PixelDoll/)
 - [ ] Manifest: name, icons 192/512 + maskable 512, theme/background = dark `--bg`, start_url/scope `./`
 - [ ] Service worker: precache shell + hashed assets + demo fixtures; never cache PixelLab API/images or the key
@@ -47,6 +45,7 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
       CI guard on the precache list
 
 ## Deferred (user)
+- [ ] PWA and final-origin decision (custom domain vs shilo.github.io/PixelDoll/); retain the plan above for later
 - [ ] Theming support (token-based themes switchable at runtime)
 - [ ] "Paper" theme inspired by look D: modern, clean, paper-like surfaces; may be playful but must read as paper (brand)
 

@@ -33,6 +33,8 @@ export interface RigAnimation {
 /** points[anim][dir][cell] = [x, y] pixel index (column, row). Mirrored directions included. */
 export type AnchorTrack = Record<string, Partial<Record<DirectionName, [number, number][]>>>;
 export interface Rig {
+  view?: 'low top-down' | 'high top-down' | 'side';
+  template?: string;
   cell: { w: number; h: number };
   pivot: { x: number; y: number }; // pixel-edge coords
   directions: RigDirection[];

@@ -114,6 +114,8 @@ What is inside
                   rows = directions (${m.rig.directions.map((d) => d.id).join(', ')}), columns = frames${m.export?.baked ? `
   baked/          the finished character per outfit: baked/<outfit>/<move>.png` : ''}
   CREDITS.txt     where each item came from (PixelLab calls), CSV
+  project.json   editable character for importing back into PixelDoll
+  cells/         original frame and rest images for the editable copy
 
 Moves: ${moves.join(', ')}.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.

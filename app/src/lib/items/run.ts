@@ -10,6 +10,7 @@ import { saveItem, type StoredProject } from '../store/project.ts';
 import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifest.ts';
 import type { DirectionName } from '../rig/rig.ts';
 import { fromApi } from '../rig/poses.ts';
+import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { chromaLayer, type Key } from '../image/chroma.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { DESIGN, GATES, anchored, planGens, GREYISH, SLOTS, bandMask, cutGrid, g2Fails, greyShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
@@ -32,7 +33,7 @@ export const loadDrafts = async () => (await db.get<{ drafts: Draft[] }>('projec
 export const saveDrafts = (drafts: Draft[]) => db.put('projects', DRAFTS, { id: DRAFTS, drafts });
 
 /** Default method for a rig: skeleton posing when every needed cell has keypoints (S4 Q4), else the anchor-cell edit route. */
-export const defaultMethod = (ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs'>) => (canPose(ctx.rec.manifest.rig, spec) ? 'skel' : 'anchor');
+export const defaultMethod = (ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) => (canPose(ctx.rec.manifest.rig, spec) ? 'skel' : 'anchor');
 
 /** New draft with a unique id and its call plan (spec.id is derived from name/prompt when empty; method defaults per rig). */
 export function newDraft(ctx: RigCtx, spec: Omit<ItemSpec, 'id'> & { id?: string }, taken: string[] = []): Draft {
@@ -76,17 +77,17 @@ export const gensOf = (d: Draft, list = jobs) => d.calls.flatMap((c) => [c.recId
 export const callState = (c: CallState, list = jobs) => recIn(list, c.recId)?.state ?? 'not submitted';
 
 /** A frozen base cell, or a rest view for the pseudo key "rest/<dir>/0". */
-export function baseCell(ctx: RigCtx, k: string): Img {
+export function baseCell(ctx: RigCtx, k: string, restView = false): Img {
   const [a, d, i] = k.split('/') as [string, DirectionName, string], m = ctx.rec.manifest;
-  const h = a === 'rest' ? m.rig.rest?.[d]?.image : m.items.find((x) => x.slot === 'body')!.layers[0].cells![a]![d]![+i]!;
+  const h = (restView ? m.rig.rest?.[d]?.image : undefined) ?? m.items.find((x) => x.slot === 'body')!.layers[0].cells?.[a]?.[d]?.[+i] ?? (a === 'rest' ? m.rig.rest?.[d]?.image : undefined);
   const im = h && ctx.project.images.get(h);
   if (!im) throw new Error(`base cell ${k} not loaded`);
   return im;
 }
 /** Keypoints of a base cell (measured) or a rest view (px). */
-const skelOf = (ctx: RigCtx, k: string) => {
+const skelOf = (ctx: RigCtx, k: string, restView = false) => {
   const [a, d] = k.split('/') as [string, DirectionName], rest = ctx.rec.manifest.rig.rest?.[d];
-  return a === 'rest' ? rest && fromApi(rest.keypoints, ctx.rec.manifest.rig.cell) : ctx.rec.skeletons?.[k];
+  return restView ? rest && fromApi(rest.keypoints, ctx.rec.manifest.rig.cell) : ctx.rec.skeletons?.[k] ?? (a === 'rest' && rest ? fromApi(rest.keypoints, ctx.rec.manifest.rig.cell) : undefined);
 };
 
 // ---------- calls ----------
@@ -117,7 +118,7 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
     if (!kf) throw new Error(`${dir}: no dressed keyframe`);
     const poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
     if (!poses || !rest) throw new Error(`${anim}/${dir}: the rig has no stored keypoints (rig v1.3)`);
-    req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest, poses, item: d.spec.prompt, slot: d.spec.slot, key: route, anim, dir, seed: c.seed, cell: rig.cell, pad });
+    req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest, poses: c.cells.map((key) => poses[+key.split('/')[2]]), item: d.spec.prompt, slot: d.spec.slot, key: route, anim, dir, seed: c.seed, cell: rig.cell, pad, view: rig.view });
   } else {
     const frames: string[] = [];
     if (anchored(k, c.kind)) { // anchor cell: the design call's dressed cell 0 (cross-call design lock, S2; B16: dress chunks too)
@@ -125,7 +126,7 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
       if (a?.state !== 'done') throw new Error('design call not done');
       frames.push(await blobB64(outputsOf(a)[0].sha));
     }
-    for (const key of c.cells) frames.push(bytesToBase64(await encodePngBytes(padImg(inputCell(baseCell(ctx, key), route), pad))));
+    for (const key of c.cells) frames.push(bytesToBase64(await encodePngBytes(padImg(inputCell(baseCell(ctx, key, c.kind === 'dress'), route), pad))));
     // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
     req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, anchored(k, c.kind) ? d.calls[0].cells[0] : undefined), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
@@ -274,21 +275,30 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
       continue;
     }
     let o = cellOuts(k, c, r);
-    if (o.length !== c.cells.length) { g1.set(k, `G1 ${o.length} outputs for ${c.cells.length} cells`); continue; }
-    if (c.kind === 'pose') { const [a, dir] = c.cells[0].split('/') as [string, DirectionName]; o = unrotate(o, f0Last(d.spec.slot, rig.rest?.[dir]?.keypoints ?? [], clipKeypoints(rig, a, dir) ?? [], rig.cell)); }
+    const expected = c.kind === 'pose' ? Math.max(3, c.cells.length) : c.cells.length;
+    if (o.length !== expected) { g1.set(k, `G1 ${o.length} outputs for ${expected} requested frames`); continue; }
+    if (c.kind === 'pose') {
+      const [a, dir] = c.cells[0].split('/') as [string, DirectionName];
+      const poses = paddedPoses(c.cells.map((key) => clipKeypoints(rig, a, dir)![+key.split('/')[2]]));
+      o = unrotate(o, f0Last(d.spec.slot, rig.rest?.[dir]?.keypoints ?? [], poses, rig.cell)).slice(0, c.cells.length);
+    }
     for (const [i, key] of c.cells.entries()) {
       const im = await img(o[i].sha);
       if (im.w !== W || im.h !== H) { g1.set(k, `G1 output ${im.w}x${im.h}`); break; }
       (c.kind === 'dress' ? dressOuts : outs).push({ k, key, out: im, posed: c.kind === 'pose' });
     }
   }
-  const ex = (o: Out, useCc?: boolean) =>
+  for (const o of dressOuts) {
+    const dir = o.key.split('/')[1] as DirectionName;
+    for (const a of rig.animations) if (d.spec.anims.includes(a.id) && (d.spec.clipDirs?.[a.id] ?? d.spec.dirs).includes(dir) && a.cells === 1 && a.sources?.[dir]?.motion === 'imported-rest') outs.push({ ...o, key: `${a.id}/${dir}/0`, posed: true });
+  }
+  const ex = (o: Out, useCc?: boolean, restView = false) =>
     // ponytail: padded (held) slots have no keypoint band, so the rig-cell skeleton is not shifted
-    extractCell({ key: o.key, call: o.k, base: padImg(baseCell(ctx, o.key), pad), out: o.out, route, band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key), H), useCc, posed: o.posed, clip: slot.band });
+    extractCell({ key: o.key, call: o.k, base: padImg(baseCell(ctx, o.key, restView), pad), out: o.out, route, band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key, restView), H), useCc, posed: o.posed, clip: slot.band });
   // the dress call only makes keyframes: gate them (G2, G3, presence); they are not item cells themselves
   const keys: Partial<Record<DirectionName, Img>> = {}; // dressed keyframe layers per direction (H4)
   for (const o of dressOuts) {
-    const c = ex(o);
+    const c = ex(o, undefined, true);
     keys[o.key.split('/')[1] as DirectionName] = c.layer;
     const bad = [g2Fails(c) && `G2 keyframe ${o.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`,
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
@@ -354,7 +364,7 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
 /** Accepted skeleton-pose items that can be posed onto a new clip (dressed keyframes + key, made for this base). */
 export const posable = (m: Manifest) => m.items.filter((i) => i.slot !== 'body' && i.route === 'skeleton-pose' && i.key && i.dressed && i.baseHash === m.rig.baseHash);
 /** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions (raw skeleton-v3: 3 gens for ≤ 8 frames). */
-export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * (cells <= 3 ? 2 : cells <= 8 ? 3 : 4);
+export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * poseBatches(cells).reduce((sum, b) => sum + (b.count <= 3 ? 2 : b.count <= 8 ? 3 : 4), 0);
 const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
 
 /**
@@ -367,21 +377,24 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const dirs = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
-  for (const d of dirs) keys[d] = chromaLayer(await img(item.dressed![d]!.slice(7)), key, padImg(baseCell(ctx, restKey(d)), pad)).layer;
+  for (const d of dirs) keys[d] = chromaLayer(await img(item.dressed![d]!.slice(7)), key, padImg(baseCell(ctx, restKey(d), true), pad)).layer;
   const perDir = await Promise.all(dirs.map(async (dir, k) => {
-    const poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
-    if (!poses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
-    const cells = poses.map((_, i) => `${anim}/${dir}/${i}`);
+    const allPoses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
+    if (!allPoses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
+    const collected: CellOut[] = [];
+    for (const { start, count } of poseBatches(allPoses.length)) {
+    const poses = allPoses.slice(start, start + count), cells = poses.map((_, i) => `${anim}/${dir}/${start + i}`);
     let last: CellOut[] = [], lastProv: Provenance | undefined, lastFails = 0;
     for (let attempt = 0; attempt < 2; attempt++) {
-      const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}${moveSeed ? `/${moveSeed}` : ''}`);
-      const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad });
+      const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`);
+      const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad, view: rig.view });
       const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
       const r = terminal(rec) ? rec : await settled(rec.id);
       onCall();
       if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
-      const outs = unrotate(outputsOf(r), f0Last(item.slot, rest, poses, rig.cell));
-      if (outs.length !== cells.length) continue; // G1: re-roll
+      const outputs = outputsOf(r);
+      if (outputs.length !== Math.max(3, cells.length)) continue; // G1: re-roll
+      const outs = unrotate(outputs, f0Last(item.slot, rest, paddedPoses(poses), rig.cell)).slice(0, cells.length);
       last = await Promise.all(cells.map(async (c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: await img(outs[i].sha), route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band })));
       postProcess(rig, slot, last, keys, pad);
       lastFails = failCount(withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed, pad), slot, last, keys));
@@ -390,12 +403,14 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     }
     if (!last.length) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned the wrong number of frames twice. Try again.`); // R6 P2-13: never save a direction with empty cells
     if (lastFails && gridable(item)) { // B14: still failing after the re-roll -> one inpaint-v3 grid, kept only if it is better
-      const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid${moveSeed ? `/${moveSeed}` : ''}`));
+      const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells);
       onCall();
       if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys)) < lastFails) { last = g.cells; lastProv = g.prov; }
     }
     prov.push(lastProv!);
-    return last;
+    collected.push(...last);
+    }
+    return collected;
   }));
   const cells = perDir.flat();
   if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
@@ -416,9 +431,9 @@ async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionN
   await saveItem(ctx.rec.id, out, built.images, SLOTS);
 }
 /** B14: one clip-direction of an accepted item as an inpaint-v3 grid (its dressed keyframes as the reference cells). */
-async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number): Promise<{ cells: CellOut[]; prov: Provenance }> {
-  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), n = clipKeypoints(rig, anim, dir)?.length ?? rig.animations.find((a) => a.id === anim)!.cells;
-  const cells = Array.from({ length: n }, (_, i) => `${anim}/${dir}/${i}`);
+async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?: string[]): Promise<{ cells: CellOut[]; prov: Provenance }> {
+  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot);
+  const cells = selectedCells ?? Array.from({ length: clipKeypoints(rig, anim, dir)?.length ?? rig.animations.find((a) => a.id === anim)!.cells }, (_, i) => `${anim}/${dir}/${i}`), n = cells.length;
   const refs = await Promise.all((Object.entries(item.dressed ?? {}) as [DirectionName, string][]).map(async ([d, h]) => ({ dir: d, im: await img(h.slice(7)) })));
   const rec = await queue.enqueue(await gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key! }, cells, refs, seed), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
   const r = terminal(rec) ? rec : await settled(rec.id);
@@ -436,7 +451,7 @@ export async function regridClip(ctx: RigCtx, item: Item, anim: string, dir: Dir
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!;
   if (!gridable(item) || !item.dressed?.[dir]) throw new Error(`${item.name}: no grid fallback for this item`);
   const keys: Partial<Record<DirectionName, Img>> = {};
-  for (const [d, h] of Object.entries(item.dressed) as [DirectionName, string][]) keys[d] = chromaLayer(await img(h.slice(7)), key, baseCell(ctx, restKey(d))).layer;
+  for (const [d, h] of Object.entries(item.dressed) as [DirectionName, string][]) keys[d] = chromaLayer(await img(h.slice(7)), key, baseCell(ctx, restKey(d), true)).layer;
   const g = await gridItemClip(ctx, item, anim, dir, 0, keys, seedN);
   const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed), slot, g.cells, keys);
   const saved = !qa.failCalls.size;
