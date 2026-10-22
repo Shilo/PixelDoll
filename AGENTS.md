@@ -2,21 +2,66 @@
 
 Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.
 
-2D pixel-art paperdolling companion web app using PixelLab AI for image generations, animations, skeleton rigging, and other AI tools.
-Goal is to create traditional frame-based paperdolling sprites using modern tooling and AI for an automated workflow that is intuitive and easy to use. Uses minimal human workflow. It should automate creation of the art as well as the spritesheets and any other setup involving paperdolling systems. For 2D pixel art games that will be used with popular game engines such as Godot, Unity, Phaser.
-Tech stack: Svelte framework (Not SvelteKit), Vite+ or Vite, Typescript or Javascript. Fully client-side only hosting on GitHub pages.
-Powered by PixelLab: https://pixellab.ai
+PixelDoll is a free, open-source (MIT), fully client-side web app (Svelte 5, not SvelteKit, with Vite and TypeScript), hosted on GitHub Pages at https://shilo.github.io/PixelDoll/. It is powered by PixelLab (https://pixellab.ai) through its REST v2 API, called directly from the browser with the user's own token.
+PixelLab returns one composited image per call and has no layers. PixelDoll turns that into traditional frame-based paperdolling: one frozen base body (4 or 8 directions, several moves) plus a separate transparent layer per item (hair, headgear, clothing, boots, capes, weapons) that lines up on every frame.
+Pipeline: create-character-v3 base (48 or 56 px body in a 64 px cell) animated on a skeleton-v3 rig with stored keypoints; each item is dressed once on a chroma-keyed copy of the base with Pro edit-animation-v2, posed onto every move with animate-with-skeleton-v3, then extracted by colour key; Pro inpaint-v3 on a packed grid is the per-clip fallback; held weapons use a 96 px oversize layer that shares the body's pivot.
+Allowed PixelLab models: characters v3 (Pro Flash as alternative), animations v3, pixminimax or skeleton-v3, skeleton estimate-skeleton plus v3 skeleton. Pro is allowed for editing only, never for creating from scratch. No template, pro or other legacy modes.
+Every item passes quality gates (alignment, frame and direction consistency, grip side, stray pixels) and the Studio lets casual users dress up, recolour by exact palette ramps, add moves and export per-layer spritesheets with a manifest for Godot, Phaser, Unity, Aseprite or raw PNG and JSON.
+Quality bar: accurate, consistent, high-quality output using proper PixelLab tooling, skeleton rigging, post-processing and layering. Design: Apple-like simplicity, dark by default with a light switch, Lucide icons, every screen size and orientation.
 
-Research spiking and mockup phase only.
-To test what is possible with creating a proper modern paperdolling system powered by PixelLab behind the scenes.
+## Docs
 
-## Agent testing (PixelLab key)
+Overview and setup: README.md
+Plan and decisions: PLAN.md
+Open work and concerns: TODO.md
+Docs index: docs/README.md
+Architecture: docs/architecture.md
+Manifest and export format: docs/manifest-spec.md
+User guide: docs/user-guide.md
+Research and spikes: docs/research/, docs/spikes/
+Test reports: docs/testing/
+Agent token contract: docs/handoff/agent-dev-token-handling.md
+PixelLab API snapshot: docs/research/pixellab/pixellab-openapi-v2.json
+Old evidence media (spike output, screenshots): git tag v0.1.0
 
-- AI agents (Claude, Codex, others) that need the PixelLab key run the agent dev server: `npm --prefix app run dev:agent`
-  (launch config `app-dev-agent`, http://localhost:5199). It serves `PIXELLAB_TOKEN_AGENT_DEV` from the repo-root `.env` to
-  same-origin localhost requests, and the app auto-connects and shows an "Agent mode" badge.
-- Humans never use it. `npm run dev` (launch config `app-dev`, :5173) has no key endpoint and no key option: paste the key
-  in Connect, as in production. Builds never contain any of this (`vite build --mode agent` refuses to run; CI greps `dist`).
-- Never print, log, screenshot or commit the key. Check `GET /balance` only, unless the task needs generations.
-- Keyless scripts (`app/scripts/e2e-studio.mjs`, `probe-tabs.mjs`, `shoot-mvp.mjs`) work on either server; on the agent server
-  they set `localStorage['pixeldoll.agentKey'] = 'off'` so nothing can spend. Use `BASE=http://localhost:5199`.
+## Code
+
+Studio UI: app/src/studio/
+PixelLab client and job queue: app/src/lib/pixellab/
+Rig, clips and poses: app/src/lib/rig/
+Item generation and quality gates: app/src/lib/items/
+Image pipeline and chroma key: app/src/lib/image/
+Compositing and z order: app/src/lib/compose/
+Recolour and outfits: app/src/lib/dress/
+Exporters: app/src/lib/export/
+Storage (IndexedDB, zip): app/src/lib/store/
+Dev-only pages and fixtures: app/src/ui/, app/dev-fixtures/
+Demo fixture: app/public/fixtures/s2/
+Live API experiments: spikes/api/
+CI and Pages deploy: .github/workflows/pages.yml
+
+## Commands
+
+Run all from app/.
+Install: npm install
+Dev server for humans: npm run dev
+Dev server for agents: npm run dev:agent
+Type check: npm run check
+Self-tests: npm run selftest
+Build: npm run build
+End-to-end test: node scripts/e2e-studio.mjs
+
+## Rules
+
+Follow KISS and YAGNI: no feature, dependency or abstraction without a real need.
+Keep the app client-only; never add a backend.
+Use only the allowed PixelLab models above, and check docs/research/pixellab/ before calling an endpoint.
+PixelLab credits are real money: spend only when the task needs generations, never auto-resend paid requests, and prefer offline checks on stored frames.
+Never print, log, screenshot or commit a PixelLab token or the .env file.
+Follow the Git Conventional Commits standard for every commit.
+
+## Agent testing
+
+Agents that need PixelLab run npm run dev:agent (launch config app-dev-agent, port 5199). It reads PIXELLAB_TOKEN_AGENT_DEV from the repo-root .env server-side, and the app connects by itself and shows an Agent mode badge.
+Humans use npm run dev and paste their token in the app, as in production. Builds never contain the agent path (agent-mode builds are refused and CI fails if key code reaches dist).
+Check GET /balance only unless the task needs generations. Keyless scripts set localStorage pixeldoll.agentKey to off on the agent server so nothing can spend.
