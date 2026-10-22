@@ -90,7 +90,9 @@ export async function saveDress(id: string, m: Manifest, current: Outfit) {
     applyDress(rec.manifest, d);
     const extraOwners = new Set(rec.manifest.items.filter((it) => !known.has(it.id)).map((it) => it.id));
     const extraVariants = Object.fromEntries(Object.entries(retained?.variants ?? {}).filter(([mat]) => rec.manifest!.materials.some((m) => m.id === mat && extraOwners.has(m.owner))));
-    rec.dress = { current: d.current && { items: { ...d.current.items, ...Object.fromEntries(newSlots) }, variants: { ...d.current.variants, ...extraVariants } } };
+    const items = Object.fromEntries(Object.entries({ ...d.current?.items, ...Object.fromEntries(newSlots) }).map(([slot, item]) => [slot, item && rec.manifest!.items.some(it => it.id === item) ? item : null]));
+    const variants = Object.fromEntries(Object.entries({ ...d.current?.variants, ...extraVariants }).filter(([id]) => rec.manifest!.materials.some(mat => mat.id === id)));
+    rec.dress = { current: d.current && { items, variants } };
     return rec;
   });
 }

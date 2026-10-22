@@ -102,6 +102,11 @@ test('pending outfit autosave preserves new published wear and drops deleted own
   const rec=state.projects.get('rig-target') as {dress:{current:{items:{head:string}}};manifest:Project['manifest']};
   expect(rec.dress.current.items.head).toBe(candidate.itemId);expect(rec.manifest.materials.some(m=>m.owner===candidate.itemId)).toBe(true);
 });
+test('stale outfit selection cannot restore deleted item or material references',async()=>{
+  const{source}=await fixture();await saveDress('rig-target',source.manifest,{items:{body:'base',head:'hat'},variants:{hat:'red'}});
+  const rec=state.projects.get('rig-target') as {dress:{current:{items:{head:string|null};variants:Record<string,string>}}};
+  expect(rec.dress.current.items.head).toBeNull();expect(rec.dress.current.variants).toEqual({});
+});
 
 test('extension preparation is free/deduplicated, reuses target refs and preserves old/new outfit colors through restore',async()=>{
   const source=await equipmentFixture(),b=source.manifest.items[0].layers[0].cells!.rest!.south![0]!,points=LABELS.map(label=>({label,x:0.5,y:0.5}));
