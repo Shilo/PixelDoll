@@ -7,7 +7,7 @@
   import * as db from '../lib/store/db.ts'
   import { SWATCHES } from '../lib/dress/dress.ts'
   import type { RigCtx } from '../lib/items/run.ts'
-  import { ChevronDown, ChevronRight, Sparkles } from './icons.ts'
+  import { ChevronDown, ChevronRight, Sparkles, TriangleAlert } from './icons.ts'
 
   let group = $state(ui.newItem.group)
   let slot = $state(ui.newItem.slot)
@@ -25,7 +25,11 @@
   // the project record (skeletons decide the route); pixels are not needed for the plan
   let rec = $state.raw<RigCtx['rec'] | null>(null)
   $effect(() => { if (!isDemo()) void db.get<RigCtx['rec']>('projects', doc.id).then((r) => (rec = r ?? null)) })
-  const plan = $derived(m && rec ? itemRoute.plan(m.rig, { rec: { ...rec, manifest: m } } as RigCtx, input) : null)
+  const planned = $derived.by(() => {
+    try { return { plan: m && rec ? itemRoute.plan(m.rig, { rec: { ...rec, manifest: m } } as RigCtx, input) : null, error: '' } }
+    catch (e) { return { plan: null, error: (e as Error).message } }
+  })
+  const plan = $derived(planned.plan)
 
   async function make(i: typeof input) {
     busy = true
@@ -58,6 +62,7 @@
       <button class="btn" onclick={useCopy} disabled={busy}>{busy ? 'Copying…' : 'Copy the demo body'}</button>
     </div>
   {:else}
+    {#if planned.error}<p class="notice warn small" role="alert"><TriangleAlert size={16} /><span>This character’s frames cannot use the item generator: {planned.error}</span></p>{/if}
     <div class="form">
       <div class="field">
         <span class="label" id="where">Where does it go?</span>

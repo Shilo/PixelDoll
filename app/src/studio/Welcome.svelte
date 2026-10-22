@@ -2,7 +2,7 @@
   import Sprite from './Sprite.svelte'
   import { composeCell } from '../lib/compose/compose.ts'
   import { ui, doc, view, dismissWelcome, toggleTheme } from './state.svelte.ts'
-  import { Moon, Sun, Sparkles } from './icons.ts'
+  import { Moon, Sun, Sparkles, Download } from './icons.ts'
 
   let vw = $state(innerWidth), vh = $state(innerHeight)
   // short phones (320 x 568): the hero gives way so the buttons stay above the fold
@@ -31,6 +31,7 @@
         <button class="btn primary lg" onclick={create}><Sparkles size={16} />Create your character</button>
         <button class="btn lg" onclick={dismissWelcome}>Try the demo</button>
       </div>
+      <button class="btn plain" onclick={() => { ui.importSource = 'device'; ui.sheet = 'import' }}><Download size={16} />Import an existing character</button>
       <p class="faint small">The demo needs no account. Creating uses your <a href="https://pixellab.ai" target="_blank" rel="noreferrer">PixelLab</a> generations.</p>
     </div>
   </main>

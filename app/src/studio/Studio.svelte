@@ -18,6 +18,8 @@
   import ActivitySheet from './ActivitySheet.svelte'
   import MoveSheet from './MoveSheet.svelte'
   import RenameSheet from './RenameSheet.svelte'
+  import ImportSheet from './ImportSheet.svelte'
+  import DeleteSheet from './DeleteSheet.svelte'
   import StageNote from './StageNote.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
   import { ui, doc, store, view, gens, creating, initUi, refreshProjects, openProject, lastProject, loadGens, resumeCreate, resumeMove, undo, redo, genProgress } from './state.svelte.ts'
@@ -161,6 +163,8 @@
   {#if ui.sheet === 'activity'}<ActivitySheet />{/if}
   {#if ui.sheet === 'move'}<MoveSheet />{/if}
   {#if ui.sheet === 'rename'}<RenameSheet />{/if}
+  {#if ui.sheet === 'import'}<ImportSheet />{/if}
+  {#if ui.sheet === 'delete'}<DeleteSheet />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
     <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><ItemPane id={ui.selected} /></Sheet>
   {/if}

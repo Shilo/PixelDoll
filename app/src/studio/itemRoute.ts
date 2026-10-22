@@ -21,11 +21,12 @@ export interface ItemRoute {
 }
 
 /** Clips the item covers: every animation with base cells in every generated direction (the S2 fixture has punch for S/E only). */
-export function coverage(ctx: RigCtx): Pick<ItemSpec, 'anims' | 'dirs'> {
+export function coverage(ctx: RigCtx): Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'> {
   const m = ctx.rec.manifest, base = m.items.find((i) => i.id === m.rig.baseItem)!.layers[0];
   const dirs = m.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
-  const anims = m.rig.animations.filter((a) => dirs.every((d) => base.cells?.[a.id]?.[d]?.some(Boolean))).map((a) => a.id);
-  return { anims, dirs };
+  const clipDirs = Object.fromEntries(m.rig.animations.map((a) => [a.id, dirs.filter((d) => base.cells?.[a.id]?.[d]?.length === a.cells && base.cells[a.id][d]!.every(Boolean))]));
+  const anims = m.rig.animations.filter((a) => clipDirs[a.id].length).map((a) => a.id);
+  return { anims, dirs, clipDirs };
 }
 const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({ name: i.name, slot: i.slot, prompt: i.prompt, key: pickKey(i.prompt), ...coverage(ctx) });
 

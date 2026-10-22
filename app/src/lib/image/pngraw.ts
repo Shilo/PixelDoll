@@ -41,17 +41,30 @@ export async function decodePngBytes(b: Uint8Array): Promise<Img> {
   if (depth !== 8 || (type !== 6 && type !== 2) || b[28]) throw new Error(`png: only 8-bit RGB/RGBA non-interlaced (depth ${depth}, type ${type})`);
   const idat: Uint8Array[] = [];
   for (let p = 8; p < b.length; ) {
+    if (p + 12 > b.length) throw new Error('png: truncated chunk');
     const len = v.getUint32(p), t = String.fromCharCode(...b.subarray(p + 4, p + 8));
+    if (p + 12 + len > b.length) throw new Error('png: truncated chunk data');
     if (t === 'IDAT') idat.push(b.subarray(p + 8, p + 8 + len));
     p += 12 + len;
   }
   const z = new Uint8Array(idat.reduce((n, c) => n + c.length, 0));
   idat.reduce((o, c) => (z.set(c, o), o + c.length), 0);
-  const raw = await pipe(z, new DecompressionStream('deflate'));
   const bpp = type === 6 ? 4 : 3, stride = w * bpp;
+  const raw = new Uint8Array((stride + 1) * h);
+  const reader = new Blob([z]).stream().pipeThrough(new DecompressionStream('deflate')).getReader();
+  let count = 0;
+  try {
+    for (;;) {
+      const r = await reader.read(); if (r.done) break;
+      if (count + r.value.length > raw.length) throw new Error('png: inflated data exceeds image dimensions');
+      raw.set(r.value, count); count += r.value.length;
+    }
+  } finally { await reader.cancel(); }
+  if (count !== raw.length) throw new Error('png: incomplete image data');
   const px = new Uint8Array(stride * h);
   for (let y = 0; y < h; y++) {
     const f = raw[y * (stride + 1)], src = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1)), o = y * stride;
+    if (f > 4) throw new Error('png: invalid row filter');
     for (let x = 0; x < stride; x++) {
       const a = x >= bpp ? px[o + x - bpp] : 0, up = y ? px[o + x - stride] : 0, c = x >= bpp && y ? px[o + x - stride - bpp] : 0;
       const pred = f === 0 ? 0 : f === 1 ? a : f === 2 ? up : f === 3 ? (a + up) >> 1 : paeth(a, up, c);

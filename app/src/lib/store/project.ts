@@ -38,11 +38,13 @@ export async function loadProject(id: string): Promise<{ rec: StoredProject; pro
     images.set(h, await decodePng(b));
   };
   for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');
-  for (const it of rec.manifest.items)
+  for (const it of rec.manifest.items) {
+    for (const h of Object.values(it.dressed ?? {})) await add(h, `${it.id} dressed view`);
     for (const l of it.layers)
       for (const dirs of Object.values(l.cells ?? {}))
         for (const cells of Object.values(dirs ?? {}))
           for (const h of cells ?? []) await add(h, it.id);
+  }
   return { rec, project: { manifest: rec.manifest, images } };
 }
 

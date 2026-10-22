@@ -116,8 +116,8 @@ export const clipKeypoints = (rig: Rig, anim: string, dir: DirectionName) => {
   return k && k.length === a!.cells && k.every(hasAll) ? k : undefined;
 };
 /** Can the skel route run? Needs the v1.3 rest views and the stored keypoint sequence of every chosen clip-direction. */
-export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>) =>
-  spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints) && spec.anims.every((a) => !!clipKeypoints(rig, a, d)));
+export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) =>
+  spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints)) && spec.anims.every((a) => (spec.clipDirs?.[a] ?? spec.dirs).every((d) => !!clipKeypoints(rig, a, d)));
 
 /** M4/T3: a held item's bg (blade outside the body) sits above the cape's bg (z 4) in S/E/W, else the cape hides the hilt and
  * blade (T3 Ranger: 220 sword px hidden over walk S); from behind (north) the cape stays over it (bg z as built). */
@@ -146,16 +146,16 @@ export const SLOTS: Slot[] = [
 export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
 
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
-export interface ItemSpec { id: string; name: string; slot: string; prompt: string; key: Route; anims: string[]; dirs: DirectionName[]; method?: Method }
+export interface ItemSpec { id: string; name: string; slot: string; prompt: string; key: Route; anims: string[]; dirs: DirectionName[]; clipDirs?: Record<string, DirectionName[]>; method?: Method }
 
 /** Calls of an item. skel: [dress the rest cells (chunked to the frame cap), pose clip × dir ...]; anchor: packed edit calls (planCalls). */
-export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'method' | 'key'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
+export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
   if (spec.method !== 'skel' || spec.key === 'none') return planCalls(rig, spec).map((cells) => ({ kind: 'edit', cells }));
   // B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
   const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method) : 0));
   return [
     ...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({ kind: 'dress' as const, cells })),
-    ...spec.anims.flatMap((a) => spec.dirs.map((d) => ({ kind: 'pose' as const, cells: Array.from({ length: rig.animations.find((x) => x.id === a)!.cells }, (_, i) => cellKey(a, d, i)) }))),
+    ...spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).map((d) => ({ kind: 'pose' as const, cells: Array.from({ length: rig.animations.find((x) => x.id === a)!.cells }, (_, i) => cellKey(a, d, i)) }))),
   ];
 }
 /** Split cells for a capped multi-frame call: the first call takes `cap`, later ones `cap − 1` plus the anchor cell (S2). */
@@ -165,16 +165,19 @@ export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind =
 export const planGens = (p: { kind: CallKind; cells: string[] }[]) => p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 8 ? 3 : 4) : 10), 0);
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
-export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs'>): string[][] {
-  const clips = spec.anims.flatMap((a) => spec.dirs.map((d) => ({ a, d, n: rig.animations.find((x) => x.id === a)?.cells ?? 0 }))).filter((c) => c.n);
+export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>): string[][] {
+  const max = editFrameCap(Math.max(rig.cell.w, rig.cell.h));
+  const clips = spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
+    const n = rig.animations.find((x) => x.id === a)?.cells ?? 0;
+    return Array.from({ length: Math.ceil(n / (max - 1)) }, (_, i) => ({ a, d, start: i * (max - 1), n: Math.min(max - 1, n - i * (max - 1)) }));
+  }));
   clips.sort((x, y) => y.n - x.n); // stable: walk S, E, N before idle
-  const bins: { cap: number; clips: typeof clips }[] = [], max = editFrameCap(Math.max(rig.cell.w, rig.cell.h));
+  const bins: { cap: number; clips: typeof clips }[] = [];
   for (const c of clips) {
-    if (c.n > max - 1) throw new Error(`${c.a}/${c.d}: ${c.n} cells do not fit one call`);
     const bin = bins.find((b) => b.cap - b.clips.reduce((s, x) => s + x.n, 0) >= c.n) ?? (bins.push({ cap: bins.length ? max - 1 : max, clips: [] }), bins.at(-1)!);
     bin.clips.push(c);
   }
-  return bins.map((b) => b.clips.flatMap((c) => Array.from({ length: c.n }, (_, i) => cellKey(c.a, c.d, i))));
+  return bins.map((b) => b.clips.flatMap((c) => Array.from({ length: c.n }, (_, i) => cellKey(c.a, c.d, c.start + i))));
 }
 
 const facing = (d: string) => `facing ${d}${d === 'south' ? ' (front view)' : d === 'north' ? ' (back view)' : d.includes('-') ? ` (${d.startsWith('south') ? 'front' : 'back'} three-quarter view)` : ' (side view)'}`;
@@ -764,7 +767,7 @@ export async function buildItem(o: {
   for (const a of spec.anims) {
     const n = rig.animations.find((x) => x.id === a)!.cells;
     for (const l of layers) l.cells![a] = {};
-    for (const d of spec.dirs)
+    for (const d of spec.clipDirs?.[a] ?? spec.dirs)
       for (let i = 0; i < n; i++) {
         const c = byKey.get(cellKey(a, d, i));
         const parts = !c ? [null, null] : slot.bgZ != null ? (({ fg, bg }) => [fg, bg])(splitFgBg(c.layer, c.base)) : [c.layer];

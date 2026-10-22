@@ -32,7 +32,7 @@ export const loadDrafts = async () => (await db.get<{ drafts: Draft[] }>('projec
 export const saveDrafts = (drafts: Draft[]) => db.put('projects', DRAFTS, { id: DRAFTS, drafts });
 
 /** Default method for a rig: skeleton posing when every needed cell has keypoints (S4 Q4), else the anchor-cell edit route. */
-export const defaultMethod = (ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs'>) => (canPose(ctx.rec.manifest.rig, spec) ? 'skel' : 'anchor');
+export const defaultMethod = (ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) => (canPose(ctx.rec.manifest.rig, spec) ? 'skel' : 'anchor');
 
 /** New draft with a unique id and its call plan (spec.id is derived from name/prompt when empty; method defaults per rig). */
 export function newDraft(ctx: RigCtx, spec: Omit<ItemSpec, 'id'> & { id?: string }, taken: string[] = []): Draft {
@@ -78,7 +78,7 @@ export const callState = (c: CallState, list = jobs) => recIn(list, c.recId)?.st
 /** A frozen base cell, or a rest view for the pseudo key "rest/<dir>/0". */
 export function baseCell(ctx: RigCtx, k: string): Img {
   const [a, d, i] = k.split('/') as [string, DirectionName, string], m = ctx.rec.manifest;
-  const h = a === 'rest' ? m.rig.rest?.[d]?.image : m.items.find((x) => x.slot === 'body')!.layers[0].cells![a]![d]![+i]!;
+  const h = (a === 'rest' ? m.rig.rest?.[d]?.image : undefined) ?? m.items.find((x) => x.slot === 'body')!.layers[0].cells?.[a]?.[d]?.[+i];
   const im = h && ctx.project.images.get(h);
   if (!im) throw new Error(`base cell ${k} not loaded`);
   return im;

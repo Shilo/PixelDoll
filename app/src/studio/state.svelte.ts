@@ -24,7 +24,7 @@ export const DEMO = 'fixture:s2';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
-export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename';
+export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete';
 const sizeNow = (): Size => {
   const w = innerWidth, h = innerHeight;
   if (h < 500 && w > h) return 'landscape';
@@ -46,6 +46,7 @@ export const ui = $state({
   group: 'Head',
   selected: '', // item id, or "gen:<draft id>"
   sheet: null as SheetId,
+  importSource: 'device' as 'device' | 'pixellab',
   newItem: { group: 'Head', slot: '', prompt: '' },
   anim: '',
   dir: 'south' as DirectionName,
@@ -126,6 +127,7 @@ export async function refreshProjects() {
 }
 
 export async function openProject(id: string, keep?: { wear?: string }) {
+  await flushSave();
   doc.loading = true;
   doc.error = '';
   try {
@@ -199,15 +201,50 @@ export function redo() {
 }
 
 let saveT: ReturnType<typeof setTimeout> | undefined;
+let pendingSave: (() => Promise<void>) | null = null;
+let saving: Promise<void> = Promise.resolve();
+export async function flushSave() {
+  clearTimeout(saveT);
+  const pending = pendingSave;
+  pendingSave = null;
+  if (pending) saving = saving.then(pending);
+  await saving;
+}
 function save() {
   clearTimeout(saveT);
   const id = doc.id, m = store.project?.manifest;
   if (!m) return;
-  saveT = setTimeout(async () => {
-    const cur = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
+  const cur = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
+  pendingSave = async () => {
     storeVariants(m, cur.variants);
     try { await saveDress(id, m, cur); doc.saved = new Date().toLocaleTimeString(); } catch (e) { console.error('autosave', e); toast(`Could not save: ${(e as Error).message}`); }
-  }, 400);
+  };
+  saveT = setTimeout(() => void flushSave(), 400);
+}
+
+/** Deleting a project never cancels paid jobs or removes shared cell blobs. */
+export function deletionBlocked(): string {
+  if (isDemo()) return 'The bundled demo cannot be deleted.';
+  if (doc.loading) return 'Wait for the character to finish loading.';
+  if (queue.role === 'follower') return 'Manage characters in the other PixelDoll tab, or close it first.';
+  if (!queue.idle() || gens.some((g) => g.phase === 'running') || settling.size || (creating.spec && !creating.projectId) || (moving.spec && !moving.done)) return 'Finish or dismiss pending generation work before deleting a character.';
+  return '';
+}
+
+export async function removeProject(): Promise<void> {
+  const reason = deletionBlocked();
+  if (reason) throw new Error(reason);
+  const id = doc.id, name = store.project?.manifest.name ?? 'Character';
+  await flushSave();
+  await db.deleteCharacter(id);
+  setGens(gens.filter((g) => g.draft.rigId !== id));
+  store.results = {};
+  if (creating.projectId === id) Object.assign(creating, { spec: null, projectId: '', progress: null, error: '', warnings: [] });
+  if (moving.projectId === id) await dismissMove();
+  lsSet(K.last, null);
+  await refreshProjects();
+  await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
+  toast(`Deleted ${name} from this device`);
 }
 
 // ---- edits ----
