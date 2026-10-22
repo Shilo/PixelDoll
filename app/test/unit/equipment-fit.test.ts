@@ -4,7 +4,7 @@ import type { Project,Item,Material,CellKey } from '../../src/lib/store/manifest
 import type { EquipmentDesign,FitDraft,FitPlan } from '../../src/lib/equipment/types.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 
-const state=vi.hoisted(()=>({projects:new Map<string,unknown>(),blobs:new Map<string,Blob>(),jobs:new Map<string,JobRec>(),posts:0,failSave:false,poseFails:false,strictTransferMin:false,restPreflights:0,qualified:null as string|null,source:null as Project|null}));
+const state=vi.hoisted(()=>({projects:new Map<string,unknown>(),blobs:new Map<string,Blob>(),jobs:new Map<string,JobRec>(),posts:0,failSave:false,poseFails:false,dollarBilling:false,strictTransferMin:false,restPreflights:0,qualified:null as string|null,source:null as Project|null}));
 vi.mock('../../src/lib/store/db.ts',()=>({
   get:async(s:string,k:string)=>structuredClone((s==='projects'?state.projects:state.jobs).get(k)),
   all:async(s:string)=>[...(s==='projects'?state.projects:state.jobs).values()].map(x=>structuredClone(x)),
@@ -17,7 +17,7 @@ vi.mock('../../src/lib/store/db.ts',()=>({
   updateCharacterAndDraft:async(id:string,did:string,bs:Map<string,Blob>,fn:(p:unknown,d:unknown)=>{project:unknown;draft:unknown})=>{const out=fn(structuredClone(state.projects.get(id)),structuredClone(state.projects.get(did)));for(const[h,b]of bs)state.blobs.set(h,b);state.projects.set(id,structuredClone(out.project));state.projects.set(did,structuredClone(out.draft));},
 }));
 vi.mock('../../src/lib/pixellab/queue.ts',()=>({live:(r:JobRec)=>['queued','running','submitting'].includes(r.state),queue:{role:'solo',key:'test-only-placeholder',snapshot:()=>({jobs:[...state.jobs.values()]}),settled:async(id:string)=>state.jobs.get(id)!,enqueue:async(req:{path:string;body:unknown},meta:{tag:string})=>{
-  state.posts++;const rec:JobRec={id:crypto.randomUUID(),state:'done',endpoint:req.path,tag:meta.tag,params:req.body,gens:req.path==='/transfer-outfit-v2'?10:2,jobs:[],createdAt:1,label:'Test job',method:'POST',inputs:[],requestHash:'a'.repeat(64),attempts:1,nextAt:0,usd:0};state.jobs.set(rec.id,rec);return rec;
+  state.posts++;const rec:JobRec={id:crypto.randomUUID(),state:'done',endpoint:req.path,tag:meta.tag,params:req.body,gens:state.dollarBilling?0:req.path==='/transfer-outfit-v2'?10:2,jobs:[],createdAt:1,label:'Test job',method:'POST',inputs:[],requestHash:'a'.repeat(64),attempts:1,nextAt:0,usd:state.dollarBilling?0.04:0};state.jobs.set(rec.id,rec);return rec;
 }}}));
 vi.mock('../../src/lib/equipment/generate.ts',()=>({
   qualifiedFit:()=>state.qualified,
@@ -49,7 +49,7 @@ import { recolour } from '../../src/lib/dress/dress.ts';
 import { cellImg } from '../../src/lib/compose/compose.ts';
 import { planFit } from '../../src/lib/equipment/fit.ts';
 
-beforeEach(()=>{state.projects.clear();state.blobs.clear();state.jobs.clear();state.posts=0;state.failSave=false;state.poseFails=false;state.strictTransferMin=false;state.restPreflights=0;state.qualified=null;});
+beforeEach(()=>{state.projects.clear();state.blobs.clear();state.jobs.clear();state.posts=0;state.failSave=false;state.poseFails=false;state.dollarBilling=false;state.strictTransferMin=false;state.restPreflights=0;state.qualified=null;});
 async function fixture(){
   const source=await equipmentFixture();state.source=source;const target=bodyOnly(source),design=await createDesign(source,'hat',{hat:'blue'});
   for(const[h,b]of await encodedImages(source.images))state.blobs.set(h,b);
@@ -88,6 +88,13 @@ test('explicit failed-batch retry retains approved rest and charges only its add
   await expect(retryFit(f.id,'pose',1)).rejects.toThrow('additional');state.poseFails=false;
   const ready=await retryFit(f.id,'pose',2);expect(ready.stage).toBe('fit-review');expect(state.posts).toBe(3);expect(ready.calls.filter(c=>c.stage==='rest')).toHaveLength(1);
   expect(ready.calls.filter(c=>c.superseded)).toHaveLength(1);expect(ready.spentGens).toBe(14);
+});
+test('dollar-billed jobs retain actual charges through local recovery and explicit retries',async()=>{
+  const{plan}=await fixture(),fit=await createFit(plan,{previewGens:10,poseGens:0});state.dollarBilling=true;state.failSave=true;
+  await expect(runRestFit(fit.id)).rejects.toThrow('temporarily');expect((await getFit(fit.id)).spentGens).toBe(0);expect((await getFit(fit.id)).spentUsd).toBeCloseTo(0.04);
+  const rest=await runRestFit(fit.id);expect(rest.spentGens).toBe(0);expect(rest.spentUsd).toBeCloseTo(0.04);expect(state.posts).toBe(1);
+  state.poseFails=true;const failed=await approveRestAndPose(fit.id,2);expect(failed.spentGens).toBe(0);expect(failed.spentUsd).toBeCloseTo(0.08);
+  state.poseFails=false;const retried=await retryFit(fit.id,'pose',2);expect(retried.spentGens).toBe(0);expect(retried.spentUsd).toBeCloseTo(0.12);expect(state.posts).toBe(3);
 });
 test('source/library deletion, target reload, archive restore and re-save design retain source blobs',async()=>{
   const{design,target}=await fixture(),saved=await saveCreatedDesign(design),candidate=await prepareCopy(saved,target);

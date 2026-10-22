@@ -96,6 +96,7 @@ export interface FitDraft {
   previewGens: number;
   poseGens: number;
   spentGens: number;
+  spentUsd?: number;
   budget: { previewGens: number; poseGens: number };
   resumeStage?: 'rest' | 'pose';
   calls: FitCall[];

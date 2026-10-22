@@ -24,6 +24,7 @@ const now=()=>new Date().toISOString();
 const seed=()=>crypto.getRandomValues(new Uint32Array(1))[0]&0x7fffffff;
 const active=new Map<string,Promise<FitDraft>>();
 const callsOf=(f:FitDraft,s:'rest'|'pose')=>f.calls.filter(c=>c.stage===s&&!c.superseded);
+const fitUsage=(fit:FitDraft,ledger:JobRec[])=>ledger.filter(r=>fit.calls.some(c=>c.recId===r.id||r.tag===`${fit.id}:${c.id}`)).reduce((sum,r)=>({spentGens:sum.spentGens+(r.gens??0),spentUsd:sum.spentUsd+(r.usd??0)}),{spentGens:0,spentUsd:0});
 const leader=()=>{if(queue.role==='follower')throw new Error('Continue this fit in the active generation tab, or close that tab first.');};
 async function sourceOf(design:EquipmentDesign):Promise<Project>{
   assertDesign(design);
@@ -95,7 +96,7 @@ export async function createFit(plan:FitPlan,budget:FitDraft['budget']):Promise<
   const source=await sourceOf(plan.design),{project}=await loadProject(plan.targetId);
   if(targetStamp(project.manifest,plan.design.slot)!==plan.targetStamp)throw new Error('The character changed. Prepare a fresh fit plan.');
   const reason=plan.extension&&!plan.extension.cells.length?null:qualifiedFit(plan.design,project);if(reason)throw new Error(reason);
-  const fit:FitDraft={kind:'equipment-fit-draft',format:'pixeldoll-fit/1',id:`equipment-fit:${crypto.randomUUID()}`,name:plan.design.name,targetId:plan.targetId,targetProjectId:plan.targetId,plan:structuredClone(plan),stage:'ready',updatedAt:now(),error:'',previewGens:plan.previewGens,poseGens:plan.poseGens,spentGens:0,budget:{...budget},calls:[]};
+  const fit:FitDraft={kind:'equipment-fit-draft',format:'pixeldoll-fit/1',id:`equipment-fit:${crypto.randomUUID()}`,name:plan.design.name,targetId:plan.targetId,targetProjectId:plan.targetId,plan:structuredClone(plan),stage:'ready',updatedAt:now(),error:'',previewGens:plan.previewGens,poseGens:plan.poseGens,spentGens:0,spentUsd:0,budget:{...budget},calls:[]};
   await db.putCharacter(fit.id,fit,await encodedImages(source.images));return fit;
 }
 export async function reviewFit(id:string):Promise<FitReview>{const draft=await getFit(id);return{draft,project:draft.candidate?{manifest:draft.candidate.manifest,images:await loadImages(draft.candidate.imageHashes)}:null,itemId:draft.candidate?.itemId??null};}
@@ -115,8 +116,7 @@ export async function fitJobRefs():Promise<Set<string>>{const fits=(await listFi
 async function attention(id:string,error:unknown):Promise<void>{const ledger=await db.all<JobRec>('jobs');await db.update<FitDraft>('projects',id,f=>{
   if(!f||['accepted','discarded'].includes(f.stage))throw error;
   if(f.stage!=='rest-running'&&f.stage!=='pose-running')return f;
-  const spentGens=ledger.filter(r=>f.calls.some(c=>c.recId===r.id||r.tag===`${f.id}:${c.id}`)).reduce((sum,r)=>sum+r.gens,0);
-  return{...f,spentGens,stage:'needs-attention',resumeStage:f.stage==='rest-running'?'rest':'pose',error:error instanceof Error?error.message:String(error),updatedAt:now()};
+  return{...f,...fitUsage(f,ledger),stage:'needs-attention',resumeStage:f.stage==='rest-running'?'rest':'pose',error:error instanceof Error?error.message:String(error),updatedAt:now()};
 });}
 async function restImages(f:FitDraft):Promise<Partial<Record<DirectionName,Img>>>{const images=await loadImages(Object.values(f.rest??{}).filter((h):h is Sha256=>!!h));return Object.fromEntries(Object.entries(f.rest??{}).map(([d,h])=>[d,images.get(h!)]));}
 async function records(f:FitDraft,stage:'rest'|'pose'):Promise<FitRecord[]>{
@@ -145,8 +145,8 @@ async function finishStage(id:string,stage:'rest'|'pose'):Promise<FitDraft>{
   const fit=await getFit(id),fullTarget=await targetOf(fit);
   if(stage==='pose'&&fit.plan.extension&&!fit.plan.extension.cells.length&&fit.plan.extension.freeMatches?.length)return freeExtensionReview(fit,fullTarget);
   const target=selectedTarget(fullTarget,fit),completed=await records(fit,stage);
-  const actual=(await db.all<JobRec>('jobs')).filter(r=>fit.calls.some(c=>c.recId===r.id)).reduce((n,r)=>n+r.gens,0);
-  await db.update<FitDraft>('projects',id,f=>({...f!,spentGens:actual,updatedAt:now()}));
+  const usage=fitUsage(fit,await db.all<JobRec>('jobs'));
+  await db.update<FitDraft>('projects',id,f=>({...f!,...usage,updatedAt:now()}));
   if(stage==='rest'){const r=await evaluateRestFit(fit.plan.design,target,completed);return storeResult(id,stage,r.project,r.itemId,r.rest,[],{},r.warnings,r.fails);}
   const r=await evaluatePoseFit(fit.plan.design,target,await restImages(fit),completed,await records(fit,'rest'),fit.plan.extension?{reuseApprovedSourceRest:fit.plan.extension.reuseRest,selectedCells:fit.plan.extension.cells}:undefined);
   const item=r.project.manifest.items.find(it=>it.id===r.itemId)!,newId=`gear-${crypto.randomUUID()}`,roles:Record<string,string>={};item.id=newId;
