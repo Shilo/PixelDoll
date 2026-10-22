@@ -6,6 +6,7 @@ import { validate } from '../export/generic.ts';
 import { baseHashOf, cellHash, DIRECTIONS, playlist, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { normalize, opaqueBox, pivotOf } from '../rig/normalize.ts';
 import type { Manifest, Project } from './manifest.ts';
+import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
 import type { StoredProject } from './project.ts';
 import { unzip, type ZipEntry } from './zip.ts';
 import * as db from './db.ts';
@@ -32,7 +33,7 @@ const slice = (im: Img, x: number, y: number, w: number, h: number): Img => {
   return out;
 };
 function manifestShape(m: Manifest) {
-  if (m?.format !== 'pixeldoll/1' || !m.name?.trim() || !m.rig || !Array.isArray(m.items) || !Array.isArray(m.slots) || !Array.isArray(m.materials) || !Array.isArray(m.presets)) throw new Error('This is not a PixelDoll character export.');
+  if (!supportedFormat(m?.format) || !m.name?.trim() || !m.rig || !Array.isArray(m.items) || !Array.isArray(m.slots) || !Array.isArray(m.materials) || !Array.isArray(m.presets)) throw new Error('This is not a supported PixelDoll character export.');
   if (!Array.isArray(m.rig.directions) || !Array.isArray(m.rig.animations) || m.rig.directions.length > 8 || m.rig.animations.length > 100 || m.items.length > 500) throw new Error('The character has an invalid or oversized rig.');
   for (const a of m.rig.animations) if (!Number.isInteger(a.cells) || a.cells < 1 || a.cells > 120 || !Array.isArray(a.frames) || a.frames.length > 1000) throw new Error('The character has an invalid frame count.');
   if (new Set(m.items.map((i) => i.id)).size !== m.items.length) throw new Error('The character has duplicate item IDs.');
@@ -84,6 +85,7 @@ async function editable(files: Map<string, Uint8Array>): Promise<ImportedCharact
   manifestShape(m);
   const refs = new Set<string>();
   for (const it of m.items) {
+    for (const h of it.design?.snapshot.imageHashes ?? []) refs.add(h);
     for (const h of Object.values(it.dressed ?? {})) if (h) refs.add(h);
     for (const l of it.layers) for (const dirs of Object.values(l.cells ?? {})) for (const cells of Object.values(dirs)) for (const h of cells ?? []) if (h) refs.add(h);
   }
@@ -115,7 +117,7 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
     const f = layerFrame(m.rig, l);
     if (![f.w, f.h].every((n) => Number.isInteger(n) && n > 0 && n <= 256)) throw new Error('The export has an invalid layer size.');
     l.cells = {};
-    for (const [anim, path] of Object.entries(l.sheets ?? {})) {
+    for (const [anim, path] of Object.entries(l.sourceSheets ?? l.sheets ?? {})) {
       const a = m.rig.animations.find((a) => a.id === anim);
       if (!a) throw new Error(`Unknown move: ${anim}`);
       const sheet = await image(required(files, path));
@@ -131,6 +133,7 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
       }
     }
     delete l.sheets;
+    delete l.sourceSheets;
   }
   for (const d of m.rig.directions) delete d.mirrorOf;
   // Old engine ZIPs do not carry the referenced rest PNGs or a managed character record.

@@ -4,7 +4,7 @@ import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
 import type { Engine, Manifest, Project } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
-import { moveDirs, recolour } from '../dress/dress.ts';
+import { moveDirs, recolour, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame } from '../compose/compose.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
@@ -14,13 +14,25 @@ export function validate(p: Project): string[] {
   const m = p.manifest, e = validateRig(m.rig);
   const bodies = m.items.filter((i) => i.slot === 'body');
   if (bodies.length !== 1 || bodies[0].id !== m.rig.baseItem) e.push('exactly one item in slot "body" must be rig.baseItem');
-  const seen = new Map<string, string>();
+  const seen = new Map<string, string>(), ids = new Set<string>();
   for (const mat of m.materials) {
-    for (const c of mat.ramp) seen.has(c) ? e.push(`colour ${c} in ramps ${seen.get(c)} and ${mat.id}`) : seen.set(c, mat.id);
+    if (ids.has(mat.id)) e.push(`duplicate material ${mat.id}`);
+    ids.add(mat.id);
+    if (!m.items.some((it) => it.id === mat.owner)) e.push(`${mat.id}: unknown material owner ${mat.owner}`);
+    for (const c of mat.ramp) {
+      const key = m.format === 'pixeldoll/2' ? `${mat.owner}:${c.toLowerCase()}` : c.toLowerCase();
+      seen.has(key) ? e.push(`colour ${c} in ramps ${seen.get(key)} and ${mat.id}`) : seen.set(key, mat.id);
+    }
     for (const [v, r] of Object.entries(mat.variants)) if (r.length !== mat.ramp.length) e.push(`${mat.id}.${v}: ${r.length} colours for a ${mat.ramp.length}-colour ramp`);
+    if (mat.defaultVariant && (m.format !== 'pixeldoll/2' || !variantRampOf(mat, mat.defaultVariant))) e.push(`${mat.id}: invalid default colourway`);
   }
+  for (const mat of m.materials) if (mat.linkTo && !ids.has(mat.linkTo)) e.push(`${mat.id}: unknown linked material ${mat.linkTo}`);
   const mirrored = m.rig.directions.some((d) => d.mirrorOf);
   for (const it of m.items) {
+    for (const id of it.materials) {
+      const mat = m.materials.find((x) => x.id === id);
+      if (!mat || (mat.owner !== it.id && mat.owner !== it.variantOf)) e.push(`${it.id}: missing or foreign material ${id}`);
+    }
     if (!m.slots.some((s) => s.id === it.slot)) e.push(`${it.id}: unknown slot ${it.slot}`);
     for (const l of it.layers) {
       const f = layerFrame(m.rig, l);
@@ -61,6 +73,7 @@ export function exportManifest(p: Project, o: ManifestOptions): { manifest: Mani
       const f = layerFrame(m.rig, l);
       delete l.cells;
       l.sheets = Object.fromEntries(m.rig.animations.map((a) => [a.id, sheetPath(it, l, a.id)]));
+      if (it.materials.some((id) => m.materials.find((x) => x.id === id)?.defaultVariant)) l.sourceSheets = Object.fromEntries(m.rig.animations.map((a) => [a.id, `sources/${sheetPath(it, l, a.id)}`]));
       Object.assign(l, { cell: { w: f.w, h: f.h }, pivot: { x: f.x, y: f.y } }); // explicit in manifest.json: readers never default
     }
   for (const pr of m.presets) for (const s in pr.items) if (pr.items[s] && !ids.has(pr.items[s]!)) pr.items[s] = null;
@@ -127,10 +140,14 @@ Pixel art: use nearest-neighbour filtering and whole-pixel positions.
 export function coreFiles(p: Project, m: Manifest): OutFile[] {
   const files: OutFile[] = [{ name: 'README.txt', data: readme(m) }, { name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' }, { name: 'CREDITS.txt', data: creditsCsv(m) }];
   const byId = new Map(p.manifest.items.map((i) => [i.id, i]));
+  const defaults = recolour(p, {});
   for (const it of m.items)
     for (const l of it.layers) {
       const srcLayer = byId.get(it.id)!.layers.find((x) => x.id === l.id)!;
-      for (const a of m.rig.animations) files.push({ name: l.sheets![a.id], data: layerSheet(p, srcLayer, a.id) });
+      for (const a of m.rig.animations) {
+        files.push({ name: l.sheets![a.id], data: layerSheet(l.sourceSheets ? defaults : p, srcLayer, a.id) });
+        if (l.sourceSheets?.[a.id]) files.push({ name: l.sourceSheets[a.id], data: layerSheet(p, srcLayer, a.id) });
+      }
     }
   return files;
 }
