@@ -1,15 +1,9 @@
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import type { IncomingMessage } from 'node:http'
 import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
-
-// Same-origin requests from this machine only (Host = localhost, Sec-Fetch-Site = same-origin, loopback socket).
-const localSameOrigin = (req: IncomingMessage) =>
-  ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '') &&
-  /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host ?? '') &&
-  req.headers['sec-fetch-site'] === 'same-origin'
+import { localSameOrigin } from './agent-key.ts'
 
 // Dev-only fixtures (s1, s4rig, s5): served at /fixtures/<name>/... by the dev server, never copied into dist.
 const DEV_FIXTURES = fileURLToPath(new URL('./dev-fixtures', import.meta.url))

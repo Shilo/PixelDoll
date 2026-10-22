@@ -1,4 +1,4 @@
-# CI on every push and PR (check, selftest, build, dist guard); on push to main also deploy app/dist to GitHub Pages.
+# CI on every push and PR (check, selftest, build + dist guard); on push to main also deploy app/dist to GitHub Pages.
 # Enable Pages once: Settings > Pages > Source = "GitHub Actions". No secrets or env: the PixelLab key never touches CI.
 name: CI and Pages
 
@@ -28,15 +28,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm run selftest
-      - run: npm run build
-      - name: Dist guard (no dev/agent key code, no .env, no source maps)
-        shell: bash
-        run: |
-          bad=0
-          if grep -rlE '__dev|pixellab-key|PIXELLAB_TOKEN_AGENT_DEV|pixeldoll\.agentKey|agent-badge' dist; then echo '::error::dev or agent-key code in dist'; bad=1; fi
-          if find dist -name '.env*' | grep .; then echo '::error::.env file in dist'; bad=1; fi
-          if find dist -name '*.map' | grep .; then echo '::error::source map in dist (could carry env or source)'; bad=1; fi
-          exit $bad
+      - run: npm run build # ends with the dist guard (scripts/dist-guard.mjs): no dev/agent key code, .env or source maps
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v6
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'

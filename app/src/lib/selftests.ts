@@ -66,10 +66,10 @@ const shared: Test[] = [
 const node: Test[] = [...shared, ['png (pure)', png.selfTestNode]];
 const browser: Test[] = [...shared, ['png', png.selfTest], ['db', db.selfTest]];
 
-export async function runSelfTests(env: 'node' | 'browser', log: (line: string) => void = console.log): Promise<number> {
+export async function runSelfTests(env: 'node' | 'browser', log: (line: string) => void = console.log, extra: Test[] = []): Promise<number> {
   let total = 0;
   const orig = console.assert;
-  for (const [name, fn] of env === 'node' ? node : browser) {
+  for (const [name, fn] of [...(env === 'node' ? node : browser), ...extra]) {
     let fails = 0;
     console.assert = (cond?: boolean, ...msg: unknown[]) => {
       if (!cond) { fails++; log(`  FAIL ${name}: ${msg.join(' ')}`); }

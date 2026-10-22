@@ -26,20 +26,22 @@ development**, generating images without a human pasting the token into the runn
 3. **A separate agent-only dev command** (`npm run dev:agent`) is the *only* path that reads it. The normal `npm run dev` must
    behave exactly like production regarding the token: no endpoint, no button, no auto-fill.
 4. **Read server-side, per request.** The dev server reads `.env` itself and serves the token only to same-origin loopback
-   requests. The token is **never injected through the bundler's env system** (no `VITE_`/`PUBLIC_`/`NEXT_PUBLIC_` prefix,
+   requests, and never through a proxy (see section 3, `agent-key.ts`). The token is **never injected through the bundler's env system** (no `VITE_`/`PUBLIC_`/`NEXT_PUBLIC_` prefix,
    no `define`), because that inlines it into JavaScript.
 5. **The bundler loads no `.env` files at all** (Vite: `envDir: false`), so `import.meta.env` never carries the token, in any mode.
 6. **The client-side auto-connect code is guarded by a compile-time constant** that is false in every non-agent mode
-   (Vite: `import.meta.env.DEV && import.meta.env.MODE === 'agent'`), so production bundles contain no trace of it.
+   (Vite: `import.meta.env.DEV && import.meta.env.MODE === 'agent'`), so production bundles contain no trace of it. It also
+   skips when the app is framed (`window.top === window`): another page could embed the agent app and clickjack it.
 7. **Building in agent mode is refused** (the config throws).
-8. **CI never sees the token.** It defines no secrets or env for it. After building, a **dist guard** step fails the build if
-   the output contains the endpoint path, the variable name, agent markers, any `.env*` file, or source maps.
+8. **CI never sees the token.** It defines no secrets or env for it. `npm run build` ends with a **dist guard** script that
+   fails the build if the output contains the endpoint path, the variable name (or an old name), agent markers, any `.env*`
+   file, or a source map (file or inline `sourceMappingURL`). CI runs `npm run build`, so it runs the guard too.
 9. **Visible agent indicator.** In agent mode the app shows an "Agent mode" badge, so a human never mistakes it for the
    normal app.
 10. **Keyless automation stays keyless.** Test scripts that must not spend credits set a kill switch
     (`localStorage['pixeldoll.agentKey'] = 'off'`) before the app loads, even on the agent server.
-11. **Human token UX (production and normal dev):** the token is kept in memory for the tab by default. "Remember on this
-    device" (localStorage) is opt-in. It is sent only as `Authorization: Bearer` to `https://api.pixellab.ai`, and never put
+11. **Human token UX (production and normal dev):** the token is kept per tab by default (in memory or sessionStorage).
+    "Remember on this device" (localStorage) is opt-in. It is sent only as `Authorization: Bearer` to `https://api.pixellab.ai`, and never put
     in URLs, logs, exports, project files, job ledgers or provenance.
 12. **Agents never print, log, screenshot or commit the token.** Agents check `GET /balance` (free) unless the task needs
     generations.
@@ -52,13 +54,29 @@ development**, generating images without a human pasting the token into the runn
 "dev:agent": "vite --mode agent --port 5199 --strictPort"
 ```
 
-### `app/vite.config.ts` (abridged; full file in the repo)
+### `app/agent-key.ts`: the request guard, one module for the middleware and its test
 ```ts
-// Same-origin requests from this machine only (Host = localhost, Sec-Fetch-Site = same-origin, loopback socket).
-const localSameOrigin = (req: IncomingMessage) =>
+// Same-origin requests from this machine only: loopback socket, Host = localhost, Sec-Fetch-Site = same-origin, and no
+// proxy headers (HTTP-aware proxies and tunnels add them).
+export const localSameOrigin = (req: { headers: IncomingHttpHeaders; socket: { remoteAddress?: string } }) =>
   ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '') &&
   /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host ?? '') &&
-  req.headers['sec-fetch-site'] === 'same-origin'
+  req.headers['sec-fetch-site'] === 'same-origin' &&
+  !Object.keys(req.headers).some((h) => h === 'forwarded' || h === 'via' || h.startsWith('x-forwarded-'))
+```
+Its `selfTest()` runs in `npm run selftest` (Backpack: `tests/unit/agent-key.test.ts` imports the same module). Cases: a valid
+local request passes; `Sec-Fetch-Site` same-site / cross-site / none / missing, a foreign Host, `localhost.evil.example`, a
+missing Host, a non-loopback socket and each of `forwarded`, `via`, `x-forwarded-for`, `x-forwarded-host`,
+`x-forwarded-proto` are rejected. Without this test, a later "simplification" that drops the `Sec-Fetch-Site` check would
+silently hand the token to every localhost page (Vite's default CORS allows every `localhost` origin).
+
+The proxy-header check only catches HTTP-aware proxies and tunnels that add these headers. A raw TCP
+forward (`ssh -L`/`-R`, `socat`) is indistinguishable from a local request, so the real control is the AGENTS.md rule:
+never expose the agent server beyond localhost (no `--host`, tunnels or port forwards).
+
+### `app/vite.config.ts` (abridged; full file in the repo)
+```ts
+import { localSameOrigin } from './agent-key.ts'
 
 // AI-agent automation only: serves PIXELLAB_TOKEN_AGENT_DEV from ../.env at /__dev/pixellab-key.
 // Not registered at all for `npm run dev` or any build. Read server-side per request, never through Vite's env.
@@ -90,7 +108,8 @@ export default defineConfig(({ command, mode }) => {
 
 ### `app/src/main.ts`: auto-connect, compiled out of every other mode
 ```ts
-if (import.meta.env.DEV && import.meta.env.MODE === 'agent' && !app.key) {
+// Never when framed: another page could embed and clickjack the app.
+if (import.meta.env.DEV && import.meta.env.MODE === 'agent' && window.top === window && !app.key) {
   let off = false
   try { off = localStorage.getItem('pixeldoll.agentKey') === 'off' } catch {}
   if (!off) fetch('/__dev/pixellab-key', { cache: 'no-store' })
@@ -102,7 +121,7 @@ if (import.meta.env.DEV && import.meta.env.MODE === 'agent' && !app.key) {
 ### `app/src/App.svelte`: badge
 ```svelte
 {#if import.meta.env.DEV && import.meta.env.MODE === 'agent'}
-  <div class="agent-badge" title="npm run dev:agent: auto-connected with the agent token from .env (AI-agent testing only)">Agent mode</div>
+  <div class="agent-badge" title="Agent dev server (npm run dev:agent), for AI-agent testing only">Agent mode</div>
 {/if}
 ```
 
@@ -118,7 +137,9 @@ if (import.meta.env.DEV && import.meta.env.MODE === 'agent' && !app.key) {
 
 ### `AGENTS.md`: "Agent testing" section
 Tells every agent to use `dev:agent` / `app-dev-agent` to get the token. Humans never use it. Never print or commit the
-token. Use `GET /balance` for checks. Keyless scripts set the kill switch.
+token. Use `GET /balance` for checks. Keyless scripts set the kill switch (read at page load, it covers every tab of that
+origin, so keep it set for the whole run). Never expose the agent server beyond localhost (no `--host`, tunnels or port
+forwards).
 
 ### Node scripts (spikes, outside the app bundle)
 `node --env-file=../../.env script.mjs` reads `process.env.PIXELLAB_TOKEN_AGENT_DEV`. These are agent research scripts. They
@@ -132,15 +153,17 @@ are never bundled or deployed.
 ```
 
 ### CI (`.github/workflows/pages.yml`)
-Runs on every push and PR: `npm ci` → `check` → `selftest` → `build` → **dist guard**. Pushes to `main` also deploy to
-GitHub Pages. No secrets, no env for the token.
-```bash
-bad=0
-if grep -rlE '__dev|pixellab-key|PIXELLAB_TOKEN_AGENT_DEV|pixeldoll\.agentKey|agent-badge' dist; then echo '::error::dev or agent-key code in dist'; bad=1; fi
-if find dist -name '.env*' | grep .; then echo '::error::.env file in dist'; bad=1; fi
-if find dist -name '*.map' | grep .; then echo '::error::source map in dist (could carry env or source)'; bad=1; fi
-exit $bad
+Runs on every push and PR: `npm ci` → `check` → `selftest` → `build` (which ends with the **dist guard**). Pushes to `main`
+also deploy to GitHub Pages. No secrets, no env for the token.
+```json
+"build": "vite build && node scripts/dist-guard.mjs"
 ```
+`app/scripts/dist-guard.mjs` (same script as Backpack's `scripts/dist-guard.mjs`, only the kill-switch key differs) walks
+`dist/`, prints file names only, and fails on any `.env*` file, any `*.map` file, or a file containing one of: `__dev`,
+`pixellab-key`, `PIXELLAB_TOKEN_AGENT_DEV`, `PIXELLAB_API_KEY`, `API_KEY_OVERRIDE`, `DEV_API_KEY`, `devkey`,
+`pixeldoll.agentKey`, `agent-badge`, `sourceMappingURL` (catches inline `data:` maps, whose base64 `sourcesContent` would
+ship the agent block without matching any other marker). Running it inside `npm run build` also covers a local build that is
+deployed by hand.
 
 ## 4. Migration checklist for the other project
 
@@ -153,18 +176,20 @@ server-side read of `.env`, a compile-time guard on the client code, a refused a
 3. [ ] Remove any bundler-env exposure of the token (`VITE_*`, `define`, `loadEnv` passed to the client) and disable
        automatic `.env` loading (Vite: `envDir: false`).
 4. [ ] Add the `dev:agent` script and an agent-only dev-server endpoint that reads `.env` server-side and answers only
-       same-origin loopback requests, `no-store`.
+       same-origin loopback requests without proxy headers, `no-store`. Put the request guard in its own tiny module that
+       the middleware and a unit test both import.
 5. [ ] Register that endpoint only for `serve` + `agent` mode, and make an agent-mode build throw.
 6. [ ] Gate client auto-connect behind `import.meta.env.DEV && import.meta.env.MODE === 'agent'` (or the stack's equivalent
-       compile-time constant). Store the token in memory only. Honour the `localStorage` kill switch.
+       compile-time constant) and `window.top === window` (no auto-connect when framed). Store the token in memory only.
+       Honour the `localStorage` kill switch.
 7. [ ] Remove every human-visible dev-token affordance ("use dev key" buttons, auto-fill in normal dev).
 8. [ ] Add the "Agent mode" badge.
-9. [ ] Human token UX: memory default, opt-in Remember, Bearer header only to the PixelLab API, never in URLs, logs or exports;
+9. [ ] Human token UX: kept per tab by default (memory or sessionStorage), opt-in Remember, Bearer header only to the PixelLab API, never in URLs, logs or exports;
        warn on shared `*.github.io` origins if the project deploys to Pages.
 10. [ ] `.gitignore` covers `.env` and `.env.*`. Confirm no tracked file contains the token (ask the human before running
         any check that reads the token value).
-11. [ ] CI: no secrets or env for the token. Add the dist guard step (adjust the grep markers to the project's endpoint path,
-        badge class and kill-switch key).
+11. [ ] CI: no secrets or env for the token. Add `scripts/dist-guard.mjs` (copy it, change the kill-switch key) and run it
+        from `npm run build`, so CI and local builds both run it.
 12. [ ] Add an "Agent testing" section to `AGENTS.md`/`CLAUDE.md` and agent launch configs (human config + agent config).
 13. [ ] Verify (section 5) and record the evidence.
 
@@ -209,10 +234,11 @@ Concrete changes for pixellab-gallery:
 
 - `npm run dev` → `GET /__dev/pixellab-key` is not handled (normal SPA fallback, no token). Connect shows only paste +
   Remember. No badge.
-- `npm run dev:agent` → endpoint returns 200 to same-origin, 403 to cross-site or a wrong Host. The app auto-connects
-  (balance shows) and the badge is visible.
+- `npm run dev:agent` → endpoint returns 200 to same-origin, 403 to cross-site, a wrong Host, or any `forwarded`, `via` or
+  `x-forwarded-*` header. The app auto-connects (balance shows) and the badge is visible.
+- The agent app framed by a page on another localhost port → no endpoint request, no API call.
 - `vite build --mode agent` → throws.
-- `npm run build` → the dist guard finds nothing. No `.env*`, no `*.map` in `dist/`.
+- `npm run build` → the dist guard prints "clean". No `.env*`, no `*.map` in `dist/`.
 - Built app served under a sub-path (`/PixelDoll/`) → loads with no CSP errors.
 - Live GitHub Pages deploy → `GET /PixelDoll/__dev/pixellab-key` returns 404. No badge.
 
