@@ -31,7 +31,7 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 | R5 [fralonra_paperdoll_review.md](research/tools/fralonra/fralonra_paperdoll_review.md), [lpc_generator_review.md](research/tools/lpc/lpc_generator_review.md) | Code reviews of fralonra/paperdoll and the Universal LPC generator. |
 | [SHARED_NOTES.md](research/SHARED_NOTES.md) | Append-only cross-agent findings. |
 | [pixellab-openapi-v2.json](research/pixellab/pixellab-openapi-v2.json) | PixelLab REST v2 OpenAPI snapshot (102 paths). |
-| [Shared equipment designs with fitted copies](research/shared-equipment-fitted-copies-plan.md) | Proposed local design library, exact compatible reuse, reviewed target fitting, API qualification, palette ownership and implementation milestones. Planning only. |
+| [Shared equipment designs with fitted copies](research/shared-equipment-fitted-copies-plan.md) | Agreed design and qualification plan; implemented local library, exact reuse and independent fitted copies. Paid fitting starts with an experimental single-material headwear route. |
 
 Older inputs, kept for history:
 
@@ -71,6 +71,7 @@ Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo
 | [Toolchain standardization](testing/toolchain-standardization-2026-10-22.md) | Exact runtime/dependencies, Vitest and Playwright migration, production byte parity and validation. |
 | [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |
 | [Character import compatibility](testing/character-import-compatibility-2026-10-22.md) | Actual PixelLab raw/default ZIPs, format boundaries, pagination, Cancel regression and shared-equipment planning. |
+| [Shared equipment verification](testing/shared-equipment-2026-10-22.md) | Library/copy lifecycle, paid rest and animation reviews, independent palettes, new moves, adversarial fixes and real exported artifacts. |
 | [Equipment QA summaries](testing/qa-summaries-2026-10-22.md) | Current-clip aggregate checks, persisted replacements/export, historical coverage labels and runner pin. |
 | [M1](testing/M1_report.md) | Key + job queue: resume after reload, IndexedDB ledger. |
 | [M2](testing/M2_report.md) | Rig freeze: normalize, pivot, mirror, anchors, `baseHash`. Built for template frames, later updated by B7. |

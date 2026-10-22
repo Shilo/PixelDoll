@@ -1,6 +1,6 @@
 # PixelDoll manifest spec — `pixeldoll/2`
 
-Author: A1 · Date: 2026-10-20 · Status: v1.3.1 (v1.3 after S3, S4, D8; v1.3.1 = per-layer cell + pivot for oversize layers, S5/B8). Pipeline and rationale: [`architecture.md`](architecture.md).
+Author: A1 · Date: 2026-10-20; updated 2026-10-22 · Status: format 2, retaining the v1.3.1 rig contract (per-layer cell + pivot for oversize layers, S5/B8). Pipeline and rationale: [`architecture.md`](architecture.md).
 
 One schema serves two files:
 
