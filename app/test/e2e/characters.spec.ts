@@ -11,6 +11,52 @@ test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
 })
 
+test('import can be cancelled before choosing a file and reopened', async ({ page }, info) => {
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  for (const close of ['Cancel', 'Escape']) {
+    await page.locator('.project-btn').click()
+    await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+    await expect(page.getByRole('dialog')).toBeVisible()
+    if (close === 'Cancel') await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    else await page.keyboard.press('Escape')
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await expect(page.locator('.project-btn')).toBeFocused()
+  }
+})
+
+test('cancelling a downloading import closes it and cannot reopen a late preview', async ({ page, context }, info) => {
+  const im = makeImg(48, 48)
+  im.data.set([180, 100, 80, 255], (30 * 48 + 24) * 4)
+  const data = await zip([{ name: 'metadata.json', data: new TextEncoder().encode(JSON.stringify({ name: 'Late preview' })) }, { name: 'rotations/south.png', data: await encodePngBytes(im) }])
+  let finish!: () => void
+  const held = new Promise<void>((resolve) => { finish = resolve })
+  const calls: string[] = []
+  await context.route('https://api.pixellab.ai/**', async (route) => {
+    calls.push(route.request().method())
+    await held
+    await route.fulfill({ contentType: 'application/zip', body: Buffer.from(data) }).catch(() => {})
+  })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  await page.getByRole('tab', { name: 'From PixelLab', exact: true }).click()
+  await page.getByLabel('Character ID or PixelLab link', { exact: true }).fill(ID)
+  await page.getByRole('button', { name: 'Preview character', exact: true }).click()
+  try {
+    await expect(page.getByRole('status')).toContainText('Preparing your character')
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+  } finally { finish() }
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  await expect(page.getByRole('dialog')).not.toContainText('PixelLab could not find')
+  await expect(page.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
+  expect(calls).toEqual(['GET'])
+})
+
 test('device import roundtrip, duplicate copies, persistence and local deletion', async ({ page, context }) => {
   const requests: string[] = [], errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
@@ -68,7 +114,7 @@ test('PixelLab library connection, pagination and direct import use only free re
     calls.push(`${req.method()} ${url.pathname}${url.search}`)
     if (req.method() !== 'GET') return route.abort()
     if (url.pathname.endsWith('/balance')) return route.fulfill({ json: { credits: { type: 'usd', usd: 0 }, subscription: { type: 'generations', status: 'active', generations: 100, total: 100 } } })
-    if (url.pathname === '/v2/characters') return route.fulfill({ json: { total: 21, characters: [{ id: ID, name: url.searchParams.get('offset') === '20' ? 'Page two hero' : 'Library hero', directions: 1, animation_count: 0 }] } })
+    if (url.pathname === '/v2/characters') return route.fulfill({ json: { total: 21, characters: url.searchParams.get('offset') === '20' ? [{ id: ID, name: 'Page two hero', directions: 1, animation_count: 0 }] : Array.from({ length: 20 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`, name: i ? `Library hero ${i + 1}` : 'Library hero', directions: 1, animation_count: 0 })) } })
     if (url.pathname.endsWith('/zip')) { expect(req.headers().authorization).toBeUndefined(); return route.fulfill({ contentType: 'application/zip', body: Buffer.from(data) }) }
     return route.abort()
   })
@@ -80,8 +126,16 @@ test('PixelLab library connection, pagination and direct import use only free re
   await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key')
   await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click()
   await expect(page.getByRole('button', { name: /Library hero 1 directions/ })).toBeVisible()
+  await expect(page.locator('.character-library > button')).toHaveCount(20)
+  await expect(page.getByText('1–20 of 21', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Previous', exact: true })).toBeDisabled()
   await page.getByRole('button', { name: 'Next', exact: true }).click()
   await expect(page.getByRole('button', { name: /Page two hero/ })).toBeVisible()
+  await expect(page.getByText('21–21 of 21', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: 'Previous', exact: true }).click()
+  await expect(page.getByText('1–20 of 21', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Next', exact: true }).click()
   await page.getByRole('button', { name: /Page two hero/ }).click()
   await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible()
   await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck()

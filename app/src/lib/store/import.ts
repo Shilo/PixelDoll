@@ -51,6 +51,7 @@ export async function readCharacterZip(bytes: Uint8Array, stateId?: string): Pro
   if (!['project.json', 'manifest.json', 'metadata.json'].some((p) => files.has(p))) {
     const roots = [...files.keys()].filter((p) => /\/(project|manifest|metadata)\.json$/.test(p));
     const prefixes = new Set(roots.map((p) => p.slice(0, p.lastIndexOf('/') + 1)));
+    if (prefixes.size > 1) throw new Error('This ZIP contains multiple character folders. Choose a ZIP containing one character folder; PixelLab states within one metadata.json are supported.');
     if (prefixes.size === 1) { const prefix = [...prefixes][0]; files = new Map([...files].filter(([p]) => p.startsWith(prefix)).map(([p, b]) => [p.slice(prefix.length), b])); }
   }
   let result: ImportedCharacter;
@@ -67,7 +68,7 @@ export async function readCharacterZip(bytes: Uint8Array, stateId?: string): Pro
     try { result = await pixelLab(files, stateId); }
     catch (e) { throw new CharacterImportError((e as Error).message, meta.states?.map((s) => ({ id: s.character.id, name: s.character.name })), stateId ?? meta.states?.[0]?.character.id); }
   }
-  else throw new Error('Choose a PixelLab character ZIP or a PixelDoll export ZIP. A PNG alone does not describe directions and moves.');
+  else throw new Error('This ZIP needs PixelLab metadata.json or a PixelDoll project.json/manifest.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.');
   const errors = validate(result.project);
   if (errors.length) throw new Error(`The character is not compatible: ${errors.slice(0, 3).join('; ')}`);
   const { manifest: m } = result.project;

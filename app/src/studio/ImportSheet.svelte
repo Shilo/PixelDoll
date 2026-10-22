@@ -16,10 +16,11 @@
   const needsSetup = $derived(!!prepared && !rigReady({ manifest: prepared.project.manifest, ...prepared.extra }))
   let states = $state.raw<{ id: string; name: string }[]>([]), stateId = $state('')
   let bytes: Uint8Array | null = null
-  let name = $state(''), id = $state(''), error = $state(''), busy = $state(false), loading = $state(false)
+  let name = $state(''), id = $state(''), error = $state(''), busy = $state(false), saving = $state(false), loading = $state(false)
   let characters = $state.raw<LibraryCharacter[]>([]), total = $state(0), offset = $state(0), listed = $state(false)
   let alive = true
-  onDestroy(() => { alive = false })
+  const reads = new AbortController()
+  onDestroy(() => { alive = false; reads.abort() })
   const preview = $derived.by(() => {
     const p = prepared?.project
     if (!p) return null
@@ -28,10 +29,11 @@
   })
   $effect(() => { if (ui.importSource === 'pixellab' && app.key && !listed) { listed = true; void load(0) } })
   function reset() { prepared = null; bytes = null; error = ''; name = ''; states = []; stateId = '' }
+  function close() { if (!saving) { reads.abort(); ui.sheet = null } }
   async function load(next: number) {
     loading = true; error = ''
     try {
-      const page = await listCharacters(app.key, next)
+      const page = await listCharacters(app.key, next, reads.signal)
       if (!alive) return
       characters = page.characters; total = page.total; offset = next
     } catch (e) { if (alive) error = (e as Error).message }
@@ -59,7 +61,7 @@
   }
   async function fromPixelLab(value: string) {
     reset(); busy = true
-    try { const selected = characterId(value); await prepare(await downloadCharacter(selected), selected) }
+    try { const selected = characterId(value); await prepare(await downloadCharacter(selected, reads.signal), selected) }
     catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) busy = false }
   }
@@ -74,19 +76,20 @@
   }
   async function save() {
     if (!prepared || busy) return
-    busy = true; error = ''
+    busy = true; saving = true; error = ''
     try {
       const projectId = await saveImportedCharacter(prepared, name)
       await refreshProjects()
       if (!alive) return
       await openProject(projectId)
+      if (!alive) return
       dismissWelcome(); ui.sheet = setupNext && needsSetup ? 'setup' : null; toast(`Imported ${name.trim()}`)
     } catch (e) { if (alive) error = (e as Error).message }
-    finally { if (alive) busy = false }
+    finally { if (alive) { busy = false; saving = false } }
   }
 </script>
 
-<Sheet title="Import character" onclose={() => { if (!busy) ui.sheet = null }}>
+<Sheet title="Import character" onclose={close} cancelDisabled={saving}>
   <div class="seg full" role="tablist" aria-label="Import source">
     <button role="tab" aria-selected={ui.importSource === 'device'} disabled={busy} onclick={() => { ui.importSource = 'device'; reset() }}>From this device</button>
     <button role="tab" aria-selected={ui.importSource === 'pixellab'} disabled={busy} onclick={() => { ui.importSource = 'pixellab'; reset() }}>From PixelLab</button>
@@ -98,9 +101,9 @@
     {#if ui.importSource === 'device'}
       <p class="muted">Open a PixelLab character ZIP or a PixelDoll export ZIP. Your files stay on this device.</p>
       <label class="field"><span class="label">Character ZIP</span><input class="input" type="file" accept=".zip,application/zip" disabled={busy} onchange={fileChanged} /></label>
-      <p class="faint small">Up to 64 MB. In PixelLab’s character creator, export a ZIP with individual frames. PNGs alone do not include a character’s direction and move layout.</p>
+      <p class="faint small">Up to 64 MB. In PixelLab’s character creator, export a ZIP with individual frames. Enclosing folders are supported. Other spritesheet layouts and PNG-only ZIPs are not supported.</p>
     {:else}
-      <p class="muted">Bring in existing artwork and animations. Importing uses no generations.</p>
+      <p class="muted">Browse your account’s available characters, 20 per page, or paste a character link. Importing uses no generations.</p>
       {#if !app.key || app.keyRejected}
         <button class="btn" disabled={busy} onclick={() => withKey(() => { ui.importSource = 'pixellab'; ui.sheet = 'import' })}><KeyRound size={16} />Connect PixelLab to browse your characters</button>
       {:else}
@@ -116,7 +119,7 @@
               </button>
             {/each}
           </div>
-          <div class="library-head"><button class="btn small" disabled={busy || offset === 0} onclick={() => load(Math.max(0, offset - 20))}>Previous</button><span class="faint small">{offset + 1}–{Math.min(offset + characters.length, total)} of {total}</span><button class="btn small" disabled={busy || offset + characters.length >= total} onclick={() => load(offset + 20)}>Next</button></div>
+          <div class="library-head"><button class="btn small" disabled={busy || loading || offset === 0} onclick={() => load(Math.max(0, offset - 20))}>Previous</button><span class="faint small">{offset + 1}–{Math.min(offset + characters.length, total)} of {total}</span><button class="btn small" disabled={busy || loading || offset + characters.length >= total} onclick={() => load(offset + 20)}>Next</button></div>
         {/if}
       {/if}
       <form class="form" onsubmit={(e) => { e.preventDefault(); void fromPixelLab(id) }}>
@@ -132,10 +135,10 @@
     </div>
     <label class="field"><span class="label">Character name</span><input class="input" type="text" bind:value={name} maxlength="60" disabled={busy} /></label>
     {#each prepared.warnings as warning (warning)}<p class="notice warn small"><TriangleAlert size={16} /><span>{warning}</span></p>{/each}
-    {#if needsSetup}<label class="check"><input type="checkbox" bind:checked={setupNext} />Set up the pose rig next (recommended)</label><p class="faint small">Import is free. Rig setup shows its PixelLab generation cost before you start.</p>{/if}
+    {#if needsSetup}<label class="check"><input type="checkbox" bind:checked={setupNext} disabled={busy} />Set up the pose rig next (recommended)</label><p class="faint small">Import is free. Rig setup shows its PixelLab generation cost before you start.</p>{/if}
     <button class="btn plain" disabled={busy} onclick={reset}>Choose another character</button>
   {/if}
-  {#if busy}<p class="muted" role="status">Preparing your character…</p>{/if}
+  {#if busy}<p class="muted" role="status">{saving ? 'Saving your local copy…' : 'Preparing your character…'}</p>{/if}
   {#if error}<p class="notice bad small" role="alert"><TriangleAlert size={16} /><span>{error}</span></p>{/if}
   {#snippet footer()}
     <span class="foot-note">Free · saves a new local copy</span>

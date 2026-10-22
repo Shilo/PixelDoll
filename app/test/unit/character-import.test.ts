@@ -75,6 +75,26 @@ test('PixelLab legacy root exports import; opaque cropping is refused', async ()
   await expect(readCharacterZip(await zip(entries))).rejects.toThrow('visible pixels')
 })
 
+test('PixelLab metadata supports arbitrary safe frame paths inside nested enclosing folders', async () => {
+  const entries = await pixelLabFiles(), original = await readCharacterZip(await zip(entries))
+  const meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  const paths = new Map(entries.slice(1).map((e, i) => [e.name, `Artwork/深い folder/custom ${i}.PNG`]))
+  for (const state of meta.states) {
+    for (const [dir, path] of Object.entries(state.frames.rotations)) state.frames.rotations[dir] = paths.get(path as string)
+    for (const dirs of Object.values(state.frames.animations)) for (const [dir, frames] of Object.entries(dirs as Record<string, string[]>)) (dirs as Record<string, string[]>)[dir] = frames.map(p => paths.get(p)!)
+  }
+  const nested = [{ name: 'My download/Character/metadata.json', data: enc.encode(JSON.stringify(meta)) }, ...entries.slice(1).map(e => ({ name: `My download/Character/${paths.get(e.name)}`, data: e.data })), { name: 'README.txt', data: enc.encode('unrelated packaging') }]
+  const actual = await readCharacterZip(await zip(nested, { deflate: true }))
+  expect(actual.project.manifest).toEqual(original.project.manifest)
+  expect(actual.project.images).toEqual(original.project.images)
+})
+
+test('ambiguous character folders and PNG-only ZIPs explain their unsupported layout', async () => {
+  const entries = await pixelLabFiles()
+  await expect(readCharacterZip(await zip(['one', 'two'].flatMap(root => entries.map(e => ({ ...e, name: `${root}/${e.name}` })))))).rejects.toThrow('multiple character folders')
+  await expect(readCharacterZip(await zip(entries.filter(e => e.name !== 'metadata.json')))).rejects.toThrow('direction and frame layout')
+})
+
 test('sparse imported clips can be dressed without planning missing base frames', async () => {
   const { project } = await readCharacterZip(await zip(await pixelLabFiles()))
   const ctx = { rec: { id: 'rig-test', savedAt: '', manifest: project.manifest }, project }
@@ -171,5 +191,19 @@ test('library import uses GET only and never sends a key to the public ZIP', asy
     expect(fetch.mock.calls[1][0]).toContain(`/zip?states=${id}`)
     expect(fetch.mock.calls[1][1].headers).toBeUndefined()
     expect(fetch.mock.calls[1][1].credentials).toBe('omit')
+  } finally { vi.unstubAllGlobals() }
+})
+
+test('closing import aborts both library and ZIP reads without removing their timeout signals', async () => {
+  const fetch = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ characters: [], total: 0 }))).mockResolvedValueOnce(new Response(new Uint8Array([1])))
+  const reads = new AbortController()
+  vi.stubGlobal('fetch', fetch)
+  try {
+    await listCharacters('test-only-key', 0, reads.signal)
+    await downloadCharacter(id, reads.signal)
+    const signals = fetch.mock.calls.map(c => c[1].signal as AbortSignal)
+    expect(signals.every(s => s !== reads.signal && !s.aborted)).toBe(true)
+    reads.abort()
+    expect(signals.every(s => s.aborted && s.reason.name === 'AbortError')).toBe(true)
   } finally { vi.unstubAllGlobals() }
 })
