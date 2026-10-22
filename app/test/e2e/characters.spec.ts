@@ -140,7 +140,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
   await page.getByRole('button', { name: /^Set up.*0.35 gens$/ }).click()
   await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key')
   await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click()
-  await expect(page.getByRole('dialog')).toContainText('Ready. Equipment', { timeout: 30_000 })
+  await expect(page.getByRole('dialog')).toContainText('Ready. You can add equipment and moves fitted to this character.', { timeout: 30_000 })
   await page.getByRole('button', { name: 'Start dressing up' }).click()
   const read = () => page.evaluate(async () => new Promise<StoredProject>((resolve, reject) => {
     const r = indexedDB.open('pixeldoll'); r.onerror = () => reject(r.error)

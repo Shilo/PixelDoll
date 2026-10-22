@@ -32,7 +32,7 @@
 
 <Sheet title="Set up character" cancel={active ? 'Hide' : 'Later'} onclose={() => (ui.sheet = null)}>
   {#if mine && settingUp.spec}
-    {#if settingUp.done}<p class="notice ok"><Check size={16} />Ready. Equipment, oversize weapons and new moves now use the shared pose pipeline.</p>
+    {#if settingUp.done}<p class="notice ok"><Check size={16} />Ready. You can add equipment and moves fitted to this character.</p>
     {:else}
       <ol class="steps-list">{#each SETUP_STEPS as s, i (s.id)}<li class:done={i < step} class:now={i === step}>{#if i < step}<Check size={16} />{:else if i === step && !settingUp.error}<span class="ring spin" aria-hidden="true"></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}{s.label}{#if i === step && settingUp.progress}<span class="small faint">{settingUp.progress.done}/{settingUp.progress.total}</span>{/if}</li>{/each}</ol>
     {/if}
