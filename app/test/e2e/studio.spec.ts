@@ -10,6 +10,38 @@ declare global {
   }
 }
 
+async function expectDirectionGrid(page: Page, directions: (string | null)[], columns: number) {
+  const grid = page.locator('.all-dirs')
+  const cells = grid.locator(':scope > *')
+  await expect(cells).toHaveCount(directions.length)
+  const stage = (await page.locator('.stage-art').boundingBox())!
+  const boxes = []
+  for (const [i, direction] of directions.entries()) {
+    const cell = cells.nth(i)
+    if (direction) {
+      await expect(cell.getByRole('button', { name: `Show ${direction} only`, exact: true })).toBeVisible()
+      await expect(cell.locator('canvas')).toHaveCount(1)
+    } else {
+      await expect(cell).toHaveAttribute('aria-hidden', 'true')
+      await expect(cell).toBeEmpty()
+    }
+    const box = (await cell.boundingBox())!
+    expect(box.x).toBeGreaterThanOrEqual(stage.x)
+    expect(box.x + box.width).toBeLessThanOrEqual(stage.x + stage.width)
+    expect(box.y).toBeGreaterThanOrEqual(stage.y)
+    expect(box.y + box.height).toBeLessThanOrEqual(stage.y + stage.height - 64)
+    boxes.push(box)
+    if (i % columns) {
+      expect(box.y).toBeCloseTo(boxes[i - 1].y)
+      expect(box.x).toBeGreaterThan(boxes[i - 1].x + boxes[i - 1].width)
+    }
+    if (i >= columns) {
+      expect(box.x).toBeCloseTo(boxes[i - columns].x)
+      expect(box.y).toBeGreaterThan(boxes[i - columns].y + boxes[i - columns].height)
+    }
+  }
+}
+
 test('studio demo: dressing, storage, export and responsive controls', async ({ browser, context: ctx, page }, testInfo) => {
   const BASE = testInfo.project.use.baseURL!
   const unexpectedRequests: string[] = []
@@ -67,6 +99,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   assert.equal(await page.getByRole('button', { name: 'Face east' }).getAttribute('aria-pressed'), 'true')
   await page.keyboard.press('0')
   assert.equal(await page.locator('.all-dirs canvas').count(), 4)
+  await expectDirectionGrid(page, ['south', 'north', 'west', 'east'], 2)
   await page.keyboard.press('0')
   step('keyboard: direction + all directions')
 
@@ -155,6 +188,9 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   await page.locator('.canvas-bar select').selectOption('cross-punch')
   for (const d of ['east', 'north', 'west']) assert.ok(await page.getByRole('button', { name: `Face ${d}` }).isDisabled(), `cross punch ${d} disabled`)
   assert.equal(await page.getByRole('button', { name: 'Face south' }).getAttribute('aria-pressed'), 'true')
+  await page.getByRole('button', { name: 'All directions', exact: true }).click()
+  await expectDirectionGrid(page, ['south'], 1)
+  await page.getByRole('button', { name: 'Show south only', exact: true }).click()
   await page.locator('.canvas-bar select').selectOption('walk')
   await page.getByRole('button', { name: 'Face north' }).click()
   await page.locator('.stage-note', { hasText: 'Wizard hat' }).waitFor()
@@ -301,6 +337,14 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
   await page.getByRole('button', { name: 'Red cape', exact: true }).click()
   await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8)
   await checkFrames()
+  await page.getByRole('button', { name: 'All directions', exact: true }).click()
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
+    await page.setViewportSize(viewport)
+    await expectDirectionGrid(page, ['north-west', 'north', 'north-east', 'west', null, 'east', 'south-west', 'south', 'south-east'], 3)
+  }
+  await page.getByRole('button', { name: 'Show east only', exact: true }).click()
+  await expect(page.locator('.all-dirs')).toHaveCount(0)
+  await expect(page.locator('.stage-art [role="img"]')).toHaveAttribute('aria-label', /facing east/)
   // At the smallest desktop breakpoint both sidebars leave only 476px for the stage.
   // The toolbar itself fitted before this fix, but its Move label collapsed and overlapped the directions.
   await page.setViewportSize({ width: 1024, height: 768 })

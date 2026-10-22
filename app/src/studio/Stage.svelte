@@ -26,13 +26,14 @@
   // B10: views the move has (the base has frames there); the others are disabled, not silently empty
   const made = $derived(m ? moveDirs(m, ui.anim) : [])
   const dirs = $derived(allDirs.filter((d) => made.includes(d.id)))
-  // all directions: the column count with the biggest whole-pixel zoom; ties go to a full grid (B15: 8 directions as 4 x 2,
-  // not 3 + 3 + 2), then to the larger box
-  const room = (c: number) => Math.min((w - 24 - (c - 1) * 12) / c, (h - barH - 24 - (Math.ceil(dirs.length / c) - 1) * 30) / Math.ceil(dirs.length / c))
-  const score = (c: number) => [Math.floor((room(c) * ui.dpr) / cellH), -(c * Math.ceil(dirs.length / c) - dirs.length), room(c)]
-  const better = (a: number[], b: number[]) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]
-  const cols = $derived(ui.all ? Array.from({ length: Math.max(1, dirs.length) }, (_, i) => i + 1).reduce((b, c) => (better(score(c), score(b)) > 0 ? c : b), 1) : 1)
-  const rows = $derived(ui.all ? Math.ceil(dirs.length / cols) : 1)
+  // Fixed positions make views easy to compare. Eight directions face out from an empty center.
+  const order = $derived<(DirectionName | null)[]>(allDirs.some((d) => d.id.includes('-'))
+    ? ['north-west', 'north', 'north-east', 'west', null, 'east', 'south-west', 'south', 'south-east']
+    : ['south', 'north', 'west', 'east'])
+  // Keep unavailable views blank; moves with just one view still get the whole stage.
+  const grid = $derived(dirs.length === 1 ? dirs : order.map((id) => dirs.find((d) => d.id === id)))
+  const cols = $derived(ui.all ? (grid.length === 1 ? 1 : order.length === 9 ? 3 : 2) : 1)
+  const rows = $derived(ui.all ? Math.ceil(grid.length / cols) : 1)
   // integer device px per sprite px: largest that fits ("fit"), or the user's zoom
   const fit = $derived(Math.max(1, Math.min(Math.floor(Math.min((w - 24 - (cols - 1) * 12) / cols, (h - barH - 24 - (rows - 1) * 30) / rows) * ui.dpr / cellH), Math.round(10 * ui.dpr))))
   const k = $derived(Math.max(1, Math.min(fit, ui.zoom || fit)))
@@ -52,13 +53,17 @@
     <div class="stage-art" style:padding-bottom="{barH}px">
       {#if ui.all}
         <div class="all-dirs" style:--cols={cols}>
-          {#each dirs as d (d.id)}
-            <figure>
-              <button class="btn plain" style="height:auto;padding:0" onclick={() => { ui.dir = d.id; ui.all = false }} aria-label="Show {d.id} only">
-                <Sprite img={cellImg(d.id)} {k} w={cellW} h={cellH} checker={ui.bg === 'checker'} label={label(d.id)} />
-              </button>
-              <figcaption>{name(d.id)}{d.mirrorOf ? ' (mirrored)' : ''}</figcaption>
-            </figure>
+          {#each grid as d, i (i)}
+            {#if d}
+              <figure>
+                <button class="btn plain" style="height:auto;padding:0" onclick={() => { ui.dir = d.id; ui.all = false }} aria-label="Show {d.id} only">
+                  <Sprite img={cellImg(d.id)} {k} w={cellW} h={cellH} checker={ui.bg === 'checker'} label={label(d.id)} />
+                </button>
+                <figcaption>{name(d.id)}{d.mirrorOf ? ' (mirrored)' : ''}</figcaption>
+              </figure>
+            {:else}
+              <div aria-hidden="true"></div>
+            {/if}
           {/each}
         </div>
       {:else}
