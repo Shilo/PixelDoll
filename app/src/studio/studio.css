@@ -248,6 +248,7 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .row-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rows { padding-left: 28px; display: flex; flex-direction: column; gap: 1px; }
 .rows li { display: flex; align-items: center; gap: 2px; }
+.rows .row { flex: 1; min-width: 0; width: auto; }
 .thumb-box { flex: none; width: 28px; height: 28px; display: grid; place-items: center; border-radius: calc(var(--r-ctl) - 1px); background: var(--thumb-bg); overflow: hidden; }
 .thumb-box.pending { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
 .rows .wear { color: var(--text-3); opacity: 0; }

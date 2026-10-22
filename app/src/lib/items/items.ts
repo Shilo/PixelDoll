@@ -62,6 +62,7 @@ export function packGrid(cells: Img[], masks: (Uint8Array | null)[], cols = GRID
 }
 /** The first `n` cells of a grid made by packGrid. */
 export function cutGrid(g: Img, n: number, w: number, h: number, cols = GRID_COLS): Img[] {
+  if (g.w !== cols * w || g.h < Math.ceil(n / cols) * h || g.h % h) throw new Error(`Grid ${g.w}x${g.h} does not match ${cols} columns of ${w}x${h} cells`);
   return Array.from({ length: n }, (_, k) => {
     const o = makeImg(w, h), ox = (k % cols) * w, oy = ((k / cols) | 0) * h;
     for (let y = 0; y < h; y++) o.data.set(g.data.subarray(((oy + y) * g.w + ox) * 4, ((oy + y) * g.w + ox + w) * 4), y * w * 4);
@@ -868,7 +869,7 @@ export async function buildItem(o: {
       }
   }
   const item: Item = {
-    id: spec.id, name: spec.name, slot: spec.slot, status: 'accepted', mirror: 'flip', materials: [], prompt: spec.prompt, layers,
+    id: spec.id, name: spec.name, slot: spec.slot, status: 'accepted', mirror: rig.directions.some((d) => d.mirrorOf) ? 'flip' : 'generate', materials: [], prompt: spec.prompt, layers,
     baseHash: rig.baseHash, route: o.route === 'none' ? 'diff' : spec.method === 'skel' ? 'skeleton-pose' : 'ea2-anchor',
     extractor: o.route === 'none' ? 'diff' : 'chroma', ...(o.route !== 'none' ? { key: o.route } : {}),
     ...(o.anchorCell && spec.method !== 'skel' ? { anchorCell: o.anchorCell as CellKey } : {}), provenance: o.provenance, qa: o.qa,

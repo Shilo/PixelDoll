@@ -36,6 +36,17 @@ function manifestShape(m: Manifest) {
   if (!Array.isArray(m.rig.directions) || !Array.isArray(m.rig.animations) || m.rig.directions.length > 8 || m.rig.animations.length > 100 || m.items.length > 500) throw new Error('The character has an invalid or oversized rig.');
   for (const a of m.rig.animations) if (!Number.isInteger(a.cells) || a.cells < 1 || a.cells > 120 || !Array.isArray(a.frames) || a.frames.length > 1000) throw new Error('The character has an invalid frame count.');
   if (new Set(m.items.map((i) => i.id)).size !== m.items.length) throw new Error('The character has duplicate item IDs.');
+  // Count logical cells, including repeated sheet/hash references: a tiny archive can otherwise request gigabytes of copies.
+  let pixels = 0;
+  for (const item of m.items) for (const layer of item.layers) {
+    const f = layerFrame(m.rig, layer);
+    if (![f.w, f.h].every((n) => Number.isInteger(n) && n >= 1 && n <= 256)) throw new Error('The export has an invalid layer size.');
+    const cells = Object.values(layer.cells ?? {}).reduce((n, dirs) => n + Object.values(dirs).reduce((k, rows) => { if (rows != null && !Array.isArray(rows)) throw new Error('The character has an invalid layer frame list.'); return k + (rows?.length ?? 0); }, 0), 0);
+    const sheets = Object.keys(layer.sheets ?? {}).reduce((n, id) => n + (m.rig.animations.find((a) => a.id === id)?.cells ?? 0) * m.rig.directions.length, 0);
+    pixels += (cells + sheets) * f.w * f.h;
+    if (!Number.isSafeInteger(pixels) || pixels > 64 * 1024 * 1024) throw new Error('This character contains too many image pixels, including repeated frame references. Export fewer items or moves.');
+  }
+
 }
 
 /** Editable data travels alongside engine files; includes original cells, rest views and rig metadata. */

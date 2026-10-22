@@ -496,7 +496,7 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 - **One file per character** (`aseprite/<name>.aseprite`, RGBA): one Aseprite layer per exported (item, layer), named
   `<slot>.<item>` (`<slot>.<item>.fg` / `.bg` for split items), stacked in draw order by static z (inv. 7 tie-breaks; bottom =
   lowest, so bg layers sit below the base). Every item is in the file; **visible** = equipped in `presets[0]` and not hidden
-  (inv. 9). Pixels are the layer sheets' (source ramps; preset variants are not applied).
+  (inv. 9). Pixels are the layer sheets' (including the outfit-colour copies described below).
 - **Timeline**: frames = every playlist entry of every move × each direction the move has (`rig.animations[].directions`), in
   rig order, each with its `ms`; one tag `<anim>_<dir>` per move-direction (forward; repeat 1 when `loop` is false). A cell that
   repeats inside a playlist is a linked cel; a transparent cell has no cel.
@@ -526,3 +526,33 @@ Every new export ZIP also contains `project.json` and `cells/<rgba-sha256>.png`.
 Import assigns a fresh local ID, writes blobs and project in one IndexedDB transaction, and preserves independent directions, sparse clips and layer pivots. For older ZIPs without `project.json`, the importer reconstructs cells from `manifest.json` sheet rows in rig direction order; unavailable original pose metadata is removed. ZIP parsing rejects unsafe paths, unsupported compression/encryption, corrupt CRCs and oversized archives. Deletion removes local project/draft records atomically while retaining shared cell blobs for ordinary garbage collection.
 
 Explicit rig setup measures every unique frozen body image with `estimate-skeleton`, registers all supplied rest views with `create-character-v3`, and atomically attaches the same rest/keypoint/anchor/character contract as creation. Existing artwork is not regenerated. Source camera `rig.view` and humanoid `rig.template` are retained. Imported sources use `route: "import"`, `motion: "estimated:frozen-import"` (or `"imported-rest"` for a matching one-cell rest), and actual measured keypoints. Their QA adherence is `null`; palette, feet and border checks still run. New moves use the normal skeleton-v3 render and independent adherence checks. Short item clips are padded to the API's three-frame minimum and trimmed; long clips are batched to at most fifteen poses with original cell indices preserved.
+
+
+## Outfit-colour export normalization (2026-10-22)
+
+Before building engine files, PixelDoll makes an ordinary item copy for each distinct item/palette combination actually
+used by an exported preset. Copy IDs are deterministic `<item>-colour-<palette hash>` values (with a suffix when needed
+for an existing ID); matching outfits reuse a copy. Preset item selections point to those copies and their engine-facing
+`variants` maps are empty because the colours are already pixels. Original source-colour items and material definitions
+remain available. Tuck variants are built afterward, so coloured hair and helmets preserve the same masking as Studio.
+
+The canonical base stays the single item in slot `body` and remains every runtime's animation clock. When any outfit
+recolours the body, or equipped items can clip it, every exported outfit receives a body copy (including identity-colour
+copies for original palettes). A body copy
+uses an export-only `body_colour` slot immediately after `body` (a collision gets a numbered slot suffix), the same layer
+z values, geometry and overrides, and `hides: ["body"]` in addition to the base's existing hide rules. The hidden clock
+continues animating; the ordinary synced layer displays its pixels. Existing body hide and clipping rules target the
+visible copy as well. No engine-specific colour shader is needed.
+
+This normalization affects `manifest.json` and engine assets only. `project.json` and `cells/` preserve the original
+editable items, material ramps, outfit variant selections, rig and provenance. Body dimensions of 48/56 px inside a 64 px
+cell, legacy 32 px rig cells and 96 px held layers retain their geometry. Imported layer dimensions are bounded to
+1–256 px and pivots use the pixel-edge convention inside their own layer cell. Import budgets include repeated logical
+frame and sheet references, not just unique compressed files.
+
+
+Accepted keyframe appearance exceptions use the optional `items[].designWarnings: string[]` field. These are the actual
+reviewed design messages, independent of replaceable per-frame/clip `qa` summaries. They remain on the item when a move
+is added or replaced, even when all old frame QA is invalidated, and survive editable ZIP export/import. Passing frame
+checks remain `pass`; Studio separately labels the accepted appearance warnings. The optional field does not change
+`pixeldoll/1`. Imports allow at most 100 nonempty strings of at most 2,000 characters each.

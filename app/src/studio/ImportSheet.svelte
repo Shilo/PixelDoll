@@ -91,8 +91,8 @@
 
 <Sheet title="Import character" onclose={close} cancelDisabled={saving}>
   <div class="seg full" role="tablist" aria-label="Import source">
-    <button role="tab" aria-selected={ui.importSource === 'device'} disabled={busy} onclick={() => { ui.importSource = 'device'; reset() }}>From this device</button>
-    <button role="tab" aria-selected={ui.importSource === 'pixellab'} disabled={busy} onclick={() => { ui.importSource = 'pixellab'; reset() }}>From PixelLab</button>
+    <button role="tab" aria-selected={ui.importSource === 'device'} tabindex={ui.importSource === 'device' ? 0 : -1} disabled={busy} onclick={() => { ui.importSource = 'device'; reset() }}>From this device</button>
+    <button role="tab" aria-selected={ui.importSource === 'pixellab'} tabindex={ui.importSource === 'pixellab' ? 0 : -1} disabled={busy} onclick={() => { ui.importSource = 'pixellab'; reset() }}>From PixelLab</button>
   </div>
   {#if states.length > 1}
     <label class="field"><span class="label">Character state</span><select class="input" value={stateId || prepared?.stateId || states[0].id} disabled={busy} onchange={(e) => changeState(e.currentTarget.value)}>{#each states as state (state.id)}<option value={state.id}>{state.name}</option>{/each}</select></label>

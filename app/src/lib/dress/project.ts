@@ -57,11 +57,14 @@ export function applyDress(m: Manifest, d: DressState) {
 /** B15: persist a base region split (splitBase + deriveMaterials ran on `m`): new cell blobs, then one atomic update of the
  * base cells, regions mark, base materials, baseHash and the items moved from the old hash. */
 export async function saveSplit(id: string, m: Manifest, split: { oldHash: string; images: Map<string, Img> }) {
-  for (const [h, im] of split.images) if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  const blobs = new Map<string, Blob>();
+  for (const [h, im] of split.images) blobs.set(h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
   const base = m.items.find((i) => i.id === m.rig.baseItem)!;
-  await db.update<ProjectRecord>('projects', id, (rec) => {
+  await db.updateCharacter<ProjectRecord>(id, blobs, (rec) => {
     if (!rec?.manifest) throw new Error(`project ${id} vanished`);
     const cur = rec.manifest, cb = cur.items.find((i) => i.id === cur.rig.baseItem)!;
+    if (cur.rig.baseHash === m.rig.baseHash && cur.rig.baseHash !== split.oldHash && cb.regions === base.regions) return rec; // another tab completed the same split
+    if (cur.rig.baseHash !== split.oldHash && cur.rig.baseHash !== m.rig.baseHash) throw new Error('This character changed while preparing its colours. Open it again before editing.');
     cb.layers = structuredClone(base.layers);
     cb.regions = base.regions;
     cb.materials = [...base.materials];
@@ -80,8 +83,17 @@ export async function saveDress(id: string, m: Manifest, current: Outfit) {
   if (id.startsWith('fixture:')) return db.put('projects', `dress-${id}`, { id: `dress-${id}`, kind: 'dress', ...d });
   await db.update<ProjectRecord>('projects', id, (rec) => {
     if (!rec?.manifest) throw new Error(`project ${id} vanished`);
-    applyDress(rec.manifest, d);
-    rec.dress = { current: d.current };
+    const m = rec.manifest, live = new Set(m.items.map((it) => it.id));
+    // A generation accepted after this editor snapshot may have introduced its own materials.
+    const materials = [...d.materials.filter((mat) => live.has(mat.owner)), ...m.materials.filter((mat) => !Object.hasOwn(d.hides, mat.owner))];
+    const cleaned = { ...d, materials }, materialIds = new Set(materials.map((mat) => mat.id));
+    for (const mat of materials) if (mat.linkTo && !materialIds.has(mat.linkTo)) delete mat.linkTo;
+    for (const preset of [...cleaned.presets, ...(cleaned.current ? [cleaned.current] : [])]) {
+      for (const slot of Object.keys(preset.items)) if (preset.items[slot] && !live.has(preset.items[slot]!)) preset.items[slot] = null;
+      for (const material of Object.keys(preset.variants)) if (!materialIds.has(material)) delete preset.variants[material];
+    }
+    applyDress(m, cleaned);
+    rec.dress = { current: cleaned.current };
     return rec;
   });
 }

@@ -83,9 +83,9 @@ export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[]
   if (new Set(rig.animations.map((a) => a.id)).size !== rig.animations.length) e.push('duplicate animation id');
   for (const a of rig.animations) {
     if (!ID.test(a.id)) e.push(`animation id "${a.id}" must match ${ID}`);
-    if (!(a.cells >= 1)) e.push(`${a.id}: no cells`);
+    if (!Number.isInteger(a.cells) || !(a.cells >= 1)) e.push(`${a.id}: no cells`);
     if (!a.frames.length) e.push(`${a.id}: empty playlist`);
-    for (const f of a.frames) if (!(f.cell >= 0 && f.cell < a.cells) || !Number.isInteger(f.ms) || f.ms <= 0) e.push(`${a.id}: bad frame ${JSON.stringify(f)}`);
+    for (const f of a.frames) if (!Number.isInteger(f.cell) || !(f.cell >= 0 && f.cell < a.cells) || !Number.isInteger(f.ms) || f.ms <= 0) e.push(`${a.id}: bad frame ${JSON.stringify(f)}`);
   }
   if (!/^sha256:[0-9a-f]{64}$/.test(rig.baseHash)) e.push('baseHash missing');
   for (const [id, track] of Object.entries(rig.anchors ?? {}))

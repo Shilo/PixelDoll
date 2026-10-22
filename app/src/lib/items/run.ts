@@ -14,13 +14,16 @@ import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
 import { chromaLayer, type Key } from '../image/chroma.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { DESIGN, GATES, anchored, planGens, GREYISH, SLOTS, bandMask, cutGrid, g2Fails, greyShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { DESIGN, GATES, GRID_COLS, anchored, planGens, GREYISH, SLOTS, bandMask, cutGrid, g2Fails, greyShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 /** fallback: B14, a pose call redone as an inpaint-v3 grid keeps its best pose roll (and that roll's failed-check count). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; fallback?: { recId: string; fails: number } }
 export interface Draft { spec: ItemSpec; rigId: string; calls: CallState[]; keySwitched: boolean; log: string[]; acceptedAt?: string }
 export interface ItemResult { cells: CellOut[]; qa: QaResult | null; g1: Map<number, string>; preview: Project | null }
+/** G1 is structural; this legacy map also carries ordinary keyframe-art warnings. */
+const structuralReason = (why: string) => /(?:^|;\s*)G1\b/.test(why);
+export const hasStructuralFailure = (r: Pick<ItemResult, 'g1'>) => [...r.g1.values()].some(structuralReason);
 /** A frozen rig opened with store/project.ts loadProject(). */
 export interface RigCtx { rec: StoredProject; project: Project }
 
@@ -74,7 +77,9 @@ export function dressedOf(calls: CallState[], rec: (id?: string) => JobRec | und
   return m;
 }
 /** Generations spent on a draft, re-rolls included. */
-export const gensOf = (d: Draft, list = jobs) => d.calls.flatMap((c) => [c.recId, ...c.old]).reduce((s, id) => s + (recIn(list, id)?.gens ?? 0), 0);
+const draftRecords = (d: Draft) => [...new Set(d.calls.flatMap((c) => [c.recId, ...c.old]).filter((id): id is string => !!id))];
+export const gensOf = (d: Draft, list = jobs) => draftRecords(d).reduce((s, id) => s + (recIn(list, id)?.gens ?? 0), 0);
+export const usdOf = (d: Draft, list = jobs) => draftRecords(d).reduce((s, id) => s + (recIn(list, id)?.usd ?? 0), 0);
 export const callState = (c: CallState, list = jobs) => recIn(list, c.recId)?.state ?? 'not submitted';
 
 /** A frozen base cell, or a rest view for the pseudo key "rest/<dir>/0". */
@@ -270,8 +275,9 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
     const r = recOf(c.recId);
     if (r?.state !== 'done') continue;
     if (c.kind === 'grid') { // B14: cut the cells out of the returned grid
-      const g = await img(outputsOf(r)[0].sha), cut = cutGrid(g, c.cells.length, W, H);
-      if (g.w % W || g.h % H) { g1.set(k, `G1 grid ${g.w}x${g.h}`); continue; }
+      const g = await img(outputsOf(r)[0].sha), rows = Math.ceil((c.cells.length + d.spec.dirs.length) / GRID_COLS);
+      if (g.w !== GRID_COLS * W || g.h !== rows * H) { g1.set(k, `G1 grid ${g.w}x${g.h}, expected ${GRID_COLS * W}x${rows * H}`); continue; }
+      const cut = cutGrid(g, c.cells.length, W, H);
       c.cells.forEach((key, i) => outs.push({ k, key, out: cut[i], posed: true }));
       continue;
     }
@@ -308,7 +314,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
       !GREYISH.test(d.spec.prompt) && greyShare(c.layer) > DESIGN.grey && `D1 keyframe ${o.key}: ${(greyShare(c.layer) * 100).toFixed(0)} % grey smudges in a colourful design`].filter(Boolean);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
   }
-  const run = (useCc?: boolean) => outs.filter((o) => !g1.has(o.k)).map((o) => ex(o, useCc));
+  const run = (useCc?: boolean) => outs.filter((o) => !structuralReason(g1.get(o.k) ?? '')).map((o) => ex(o, useCc));
   let cells = run();
   if (route === 'none' && cells.length) { // per-item novel_cc decision (S1): novel2 lost > 25 % of the area over all cells
     const cc = run(true);
@@ -353,6 +359,12 @@ const toProv = (r: JobRec, c: CallState): Provenance => ({
 export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promise<{ item: Item; cells: number }> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
   const r = res ?? (await evaluateItem(d, ctx));
+  if (hasStructuralFailure(r)) throw new Error(`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`);
+  const covered = new Set(r.cells.map((c) => c.key));
+  for (const a of d.spec.anims) for (const dir of d.spec.clipDirs?.[a] ?? d.spec.dirs) {
+    const clip = ctx.rec.manifest.rig.animations.find((c) => c.id === a);
+    if (!clip || Array.from({ length: clip.cells }, (_, i) => `${a}/${dir}/${i}`).some((key) => !covered.has(key))) throw new Error(`${d.spec.id}: a batch has missing or malformed frames. Try again before keeping this item.`);
+  }
   if (!r.qa || d.calls.some((c) => recOf(c.recId)?.state !== 'done')) throw new Error(`${d.spec.id}: not all calls are done`);
   const qa = acceptQa(r.qa.qa);
   const dress = d.calls[0].kind === 'dress', dressed: Partial<Record<DirectionName, Img>> = {};
@@ -361,6 +373,8 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
     spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(dress ? { dressed } : {}), pad: padOf(d.spec.slot, d.spec.method),
     provenance: d.calls.map((c) => toProv(recOf(c.recId)!, c)), anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined,
   });
+  const designWarnings = [...new Set([...r.g1.values()].flatMap((why) => why.split(/;\s*/)))];
+  if (designWarnings.length) item.designWarnings = designWarnings;
   await saveItem(d.rigId, item, images, SLOTS);
   d.acceptedAt = new Date().toISOString();
   return { item, cells: images.size };
@@ -458,7 +472,9 @@ async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: Directio
   const rec = await queue.enqueue(await gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key! }, cells, refs, seed), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
   const r = terminal(rec) ? rec : await settled(rec.id);
   if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
-  const cut = cutGrid(await img(outputsOf(r)[0].sha), n, rig.cell.w, rig.cell.h);
+  const g = await img(outputsOf(r)[0].sha), rows = Math.ceil((n + refs.length) / GRID_COLS);
+  if (g.w !== GRID_COLS * rig.cell.w || g.h !== rows * rig.cell.h) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned a grid with the wrong frame layout`);
+  const cut = cutGrid(g, n, rig.cell.w, rig.cell.h);
   const out = cells.map((c, i) => extractCell({ key: c, call, base: baseCell(ctx, c), out: cut[i], route: item.key!, band: bandOf(item.slot, skelOf(ctx, c), rig.cell.h), posed: true, clip: slot.band }));
   postProcess(rig, slot, out, keys, 0);
   return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };

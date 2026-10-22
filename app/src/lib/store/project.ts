@@ -1,14 +1,15 @@
-// IndexedDB project records (B2 format, SHARED_NOTES): projects/rig-<baseHash 12 hex> = { id, savedAt, manifest, skeletons, rigQa }.
+// IndexedDB project records: projects/rig-<unique id> = { id, savedAt, manifest, skeletons, rigQa }. Older records use a body-hash prefix.
 // Cell PNGs live in `blobs` keyed by the RGBA sha256 hex (without "sha256:"). M3 adds accepted items to the same record.
 import { decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import * as db from './db.ts';
-import type { Item, Manifest, Project, Sha256, Slot } from './manifest.ts';
+import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
 
 export interface StoredProject {
   id: string;
   savedAt: string;
+  creationSpec?: string; // internal creation-attempt fingerprint; never exported or used as clone identity
   manifest: Manifest;
   skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
   rigQa?: unknown;
@@ -50,11 +51,12 @@ export async function loadProject(id: string): Promise<{ rec: StoredProject; pro
 
 /**
  * Add or replace an item (same id) in the project record, store its cell PNGs, and insert its slot (ladder order) if missing.
- * Blobs first, then one atomic read-modify-write (db.update), so concurrent edits (autosave, another accept, a new move) survive.
+ * Publish blobs and references in one transaction, so garbage collection cannot sweep the gap between them.
  */
 export async function saveItem(id: string, item: Item, images: Map<Sha256, Img>, ladder: Slot[]): Promise<void> {
-  for (const [h, im] of images) if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
-  await db.update<StoredProject>('projects', id, (rec) => {
+  const blobs = new Map<string, Blob>();
+  for (const [h, im] of images) blobs.set(h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  await db.updateCharacter<StoredProject>(id, blobs, (rec) => {
     if (!rec) throw new Error(`project ${id} not found`);
     const m = rec.manifest;
     m.items = [...m.items.filter((i) => i.id !== item.id), item];
@@ -70,9 +72,19 @@ export async function saveItem(id: string, item: Item, images: Map<Sha256, Img>,
 }
 
 export async function deleteItem(id: string, itemId: string): Promise<void> {
-  await db.update<StoredProject>('projects', id, (rec) => {
+  await db.update<StoredProject & { dress?: { current?: Pick<Preset, 'items' | 'variants'> } }>('projects', id, (rec) => {
     if (!rec) throw new Error(`project ${id} not found`);
-    rec.manifest.items = rec.manifest.items.filter((i) => i.id !== itemId || i.slot === 'body');
+    const m = rec.manifest;
+    if (itemId === m.rig.baseItem) return rec;
+    const materials = new Set(m.materials.filter((x) => x.owner === itemId).map((x) => x.id));
+    m.items = m.items.filter((i) => i.id !== itemId);
+    m.materials = m.materials.filter((x) => !materials.has(x.id));
+    for (const mat of m.materials) if (mat.linkTo && materials.has(mat.linkTo)) delete mat.linkTo;
+    for (const preset of [...m.presets, ...(rec.dress?.current ? [rec.dress.current] : [])]) {
+      for (const slot of Object.keys(preset.items)) if (preset.items[slot] === itemId) preset.items[slot] = null;
+      for (const material of materials) delete preset.variants[material];
+    }
+    rec.savedAt = new Date().toISOString();
     return rec;
   });
 }

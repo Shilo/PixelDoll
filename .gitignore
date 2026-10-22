@@ -29,3 +29,6 @@ spikes/api/out/
 docs/testing/img/
 docs/design/screenshots/
 design-mockups/
+
+# local agent session handoffs
+.claude/handoffs/

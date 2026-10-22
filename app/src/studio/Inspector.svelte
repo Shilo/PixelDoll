@@ -15,7 +15,7 @@
   <div class="inspector-tabs">
     <div class="seg full" role="tablist" aria-label="Inspector">
       {#each [['item', 'Item'], ['colours', 'Colours'], ['moves', 'Moves']] as [id, label] (id)}
-        <button role="tab" aria-selected={ui.inspTab === id} onclick={() => (ui.inspTab = id as typeof ui.inspTab)}>{label}</button>
+        <button role="tab" aria-selected={ui.inspTab === id} tabindex={ui.inspTab === id ? 0 : -1} onclick={() => (ui.inspTab = id as typeof ui.inspTab)}>{label}</button>
       {/each}
     </div>
   </div>

@@ -268,3 +268,147 @@ test('equipping an accepted item while opening its project survives reload', asy
   await page.reload()
   await expect(page.getByRole('button', { name: `Wear ${name}`, exact: true })).toHaveAttribute('aria-pressed', 'true')
 })
+
+
+test('a delayed earlier character load cannot replace the last selected character', async ({ page, context }, info) => {
+  await context.route('https://api.pixellab.ai/**', (r) => r.abort())
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const id = await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    return await s.copyDemo() as string
+  })
+  let release!: () => void
+  const held = new Promise<void>((resolve) => { release = resolve })
+  await page.route('**/fixtures/s2/fixture.json', async (route) => { await held; await route.continue() })
+  const requested = page.waitForRequest('**/fixtures/s2/fixture.json')
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    ;(window as unknown as { auditOpen: Promise<void> }).auditOpen = s.openProject('fixture:s2')
+  })
+  await requested
+  try {
+    await page.evaluate(async (id) => {
+      const path = '/src/studio/state.svelte.ts', s = await import(path)
+      await s.openProject(id)
+    }, id)
+  } finally { release() }
+  await page.evaluate(async () => await (window as unknown as { auditOpen: Promise<void> }).auditOpen)
+  await expect(page.locator('.project-btn')).toContainText('Adventurer copy')
+  expect(await page.evaluate(() => localStorage.getItem('pixeldoll.studio.project'))).toBe(id)
+})
+
+test('rename storage failures leave the name visible and retryable', async ({ page, context }, info) => {
+  await context.route('https://api.pixellab.ai/**', (r) => r.abort())
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    await s.copyDemo()
+    const dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    await db.del('projects', s.doc.id)
+  })
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Rename character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Rename character', exact: true })
+  await dialog.getByRole('textbox', { name: 'Name', exact: true }).fill('Keep this name')
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('Could not rename')
+  await expect(dialog.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Keep this name')
+  await expect(dialog.getByRole('button', { name: 'Save', exact: true })).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+})
+
+
+test('item deletion finishing during navigation cannot reopen the old character', async ({ page, context }, info) => {
+  await context.route('https://api.pixellab.ai/**', (r) => r.abort())
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    await s.copyDemo()
+  })
+  let release!: () => void
+  const held = new Promise<void>((resolve) => { release = resolve })
+  await page.route('**/fixtures/s2/fixture.json', async (route) => { await held; await route.continue() })
+  const requested = page.waitForRequest('**/fixtures/s2/fixture.json')
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    const testWindow = window as unknown as { deleting: Promise<void>; navigating: Promise<void> }
+    const item = s.store.project.manifest.items.find((i: { slot: string }) => i.slot !== 'body')
+    testWindow.deleting = s.removeItem(item.id)
+    testWindow.navigating = s.openProject('fixture:s2')
+  })
+  await requested
+  try { await page.evaluate(async () => await (window as unknown as { deleting: Promise<void> }).deleting) }
+  finally { release() }
+  await page.evaluate(async () => await (window as unknown as { navigating: Promise<void> }).navigating)
+  await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
+  expect(await page.evaluate(() => localStorage.getItem('pixeldoll.studio.project'))).toBe('fixture:s2')
+})
+
+
+test('storage failures before paid work surface errors and release the move runner', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const result = await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    const put = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function (value, key) {
+      if (key === 'studio-create' || key === 'studio-move') throw new DOMException('Test storage quota exceeded', 'QuotaExceededError')
+      return put.call(this, value, key)
+    }
+    try {
+      const firstCreate = s.startCreate({ description: 'test body', name: 'Storage fixture', seed: 1, size: 48, dirs: 4 })
+      await s.startCreate({ description: 'duplicate body', name: 'Duplicate request', seed: 2, size: 48, dirs: 4 })
+      await firstCreate
+      await s.startMove(s.doc.id, { id: 'first', action: 'cast', frames: 8, items: [], seed: 1 })
+      const firstError = s.moving.error
+      await s.startMove(s.doc.id, { id: 'second', action: 'cast', frames: 8, items: [], seed: 2 })
+      return { createError: s.creating.error, createName: s.creating.spec.name, firstError, secondError: s.moving.error, secondId: s.moving.spec.id }
+    } finally { IDBObjectStore.prototype.put = put }
+  })
+  expect(result.createError).toContain('Test storage quota exceeded')
+  expect(result.createName).toBe('Storage fixture')
+  expect(result.firstError).toContain('Test storage quota exceeded')
+  expect(result.secondError).toContain('Test storage quota exceeded')
+  expect(result.secondId).toBe('second')
+  expect(requests).toEqual([])
+})
+
+
+test('accepted appearance warnings remain visible with clean or removed frame QA and dollar source costs', async ({ page, context }, info) => {
+  await context.route('https://api.pixellab.ai/**', (r) => r.abort())
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const id = await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    await s.copyDemo()
+    const it = s.store.project.manifest.items.find((x: { slot: string }) => x.slot !== 'body')
+    it.designWarnings = ['D1 keyframe rest/south/0: grey smudges', 'G2 keyframe rest/south/0: changed pixels']
+    it.qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'pass', rerolls: 0, cells: {}, clips: {} }
+    it.provenance = [{ endpoint: '/test', params: {}, seed: 1, requestHash: 'sha256:test', createdAt: new Date().toISOString(), produced: [], usage: { generations: 10, usd: 0.08 } }]
+    s.store.project = { ...s.store.project, manifest: { ...s.store.project.manifest, items: s.store.project.manifest.items.map((x: { id: string }) => x.id === it.id ? { ...it } : x) } }
+    s.ui.selected = it.id
+    s.doc.rev++
+    return it.id
+  })
+  const pane = page.locator('.inspector')
+  await expect(pane.locator('.badge.look')).toContainText('Needs a look')
+  await expect(pane.getByText('Accepted appearance warnings', { exact: true })).toBeVisible()
+  await expect(pane.getByText('The design has grey smudges', { exact: true })).toBeVisible()
+  await expect(pane.getByText('Some body pixels were changed by the model', { exact: true })).toBeVisible()
+  await pane.getByText('Details', { exact: true }).click()
+  await expect(pane.getByText('10 gens · $0.080 · 1 PixelLab calls', { exact: true })).toBeVisible()
+  await page.evaluate(async (id) => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    const it = { ...s.store.project.manifest.items.find((x: { id: string }) => x.id === id) }
+    delete it.qa
+    s.store.project = { ...s.store.project, manifest: { ...s.store.project.manifest, items: s.store.project.manifest.items.map((x: { id: string }) => x.id === id ? it : x) } }
+    s.doc.rev++
+  }, id)
+  await expect(pane.locator('.badge.look')).toContainText('Needs a look')
+  await expect(pane.getByText('The design has grey smudges', { exact: true })).toBeVisible()
+})

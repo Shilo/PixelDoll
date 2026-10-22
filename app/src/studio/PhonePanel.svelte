@@ -30,11 +30,11 @@
     <div class="chip-row">
       <div class="slot-chips" role="tablist" aria-label="Slots" bind:this={chips}>
         {#each GROUPS as s (s.id)}
-          <button role="tab" class="slot-chip" aria-selected={ui.group === s.id} onclick={() => (ui.group = s.id)}>
+          <button role="tab" class="slot-chip" aria-selected={ui.group === s.id} tabindex={ui.group === s.id ? 0 : -1} onclick={() => (ui.group = s.id)}>
             <GroupIcon group={s.id} size={18} /><span>{s.id}</span>
           </button>
         {/each}
-        <button role="tab" class="slot-chip" aria-selected={outfits} onclick={() => (ui.group = 'Outfits')}><Bookmark size={18} /><span>Outfits</span></button>
+        <button role="tab" class="slot-chip" aria-selected={outfits} tabindex={outfits ? 0 : -1} onclick={() => (ui.group = 'Outfits')}><Bookmark size={18} /><span>Outfits</span></button>
       </div>
       <button class="btn icon plain" aria-label="Random look" title="Random look" onclick={randomize} disabled={!m}><Shuffle size={20} /></button>
     </div>

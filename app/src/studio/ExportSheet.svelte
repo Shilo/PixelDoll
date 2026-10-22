@@ -17,7 +17,7 @@
     { id: 'aseprite', name: 'Aseprite', sub: '.aseprite layers' },
   ]
   const LS = 'pixeldoll.export.engine'
-  let engine = $state<Engine>((() => { try { return (localStorage.getItem(LS) as Engine) || 'godot' } catch { return 'godot' } })())
+  let engine = $state<Engine>((() => { try { const saved = localStorage.getItem(LS); return ENGINES.find((e) => e.id === saved)?.id ?? 'godot' } catch { return 'godot' } })())
   let baked = $state(true)
   let result = $state.raw<{ zip: Uint8Array | null; files: string[]; warnings: string[]; errors: string[] } | null>(null)
   let busy = $state(false)
@@ -77,7 +77,7 @@
     <span class="label" id="eng">For which engine?</span>
     <div class="engines" role="radiogroup" aria-labelledby="eng">
       {#each ENGINES as e (e.id)}
-        <button class="engine" role="radio" aria-checked={engine === e.id} onclick={() => (engine = e.id)}>
+        <button class="engine" role="radio" aria-checked={engine === e.id} tabindex={engine === e.id ? 0 : -1} onclick={() => (engine = e.id)}>
           <span class="radio" aria-hidden="true"></span>
           <span class="engine-name">{e.name}</span><span class="engine-sub">{e.sub}</span>
         </button>

@@ -5,8 +5,8 @@ import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
 
 const q = JSON.stringify;
-/** Resource ids: Godot allows letters, digits and _ only (B15: "walk_south-east_0" logged an error per sub_resource). */
-const rid = (s: string) => q(s.replace(/[^A-Za-z0-9_]/g, '_'));
+/** Godot resource IDs allow letters, digits and _. Escape separators injectively: walk-fast and walk_fast must differ. */
+const rid = (s: string) => q(s.replace(/[^A-Za-z0-9]/g, (c) => `_${c.charCodeAt(0).toString(16)}_`));
 const num = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
 export function spriteFramesTres(m: Manifest, itemId: string, layerId: string): string {
@@ -223,5 +223,5 @@ export function selfTest() {
   // B15: 8 directions -> ids without '-', animation names keep the direction id
   m.rig.directions = [{ id: 'south-east' }];
   const t8 = spriteFramesTres(m, 'base', 'main');
-  console.assert(t8.includes('id="walk_south_east_0"') && t8.includes('SubResource("walk_south_east_1")') && t8.includes('&"walk_south-east"') && !/id="[^"]*-/.test(t8), 'tres: resource ids letters/digits/_ only');
+  console.assert(t8.includes('id="walk_5f_south_2d_east_5f_0"') && t8.includes('SubResource("walk_5f_south_2d_east_5f_1")') && t8.includes('&"walk_south-east"') && !/id="[^"]*-/.test(t8), 'tres: resource ids letters/digits/_ only');
 }

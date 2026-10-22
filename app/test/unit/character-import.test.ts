@@ -207,3 +207,15 @@ test('closing import aborts both library and ZIP reads without removing their ti
     expect(signals.every(s => s.aborted && s.reason.name === 'AbortError')).toBe(true)
   } finally { vi.unstubAllGlobals() }
 })
+
+
+test('import bounds repeated logical sheet references before decoding their images', async () => {
+  const { project } = await readCharacterZip(await zip(await pixelLabFiles()))
+  const m = structuredClone(project.manifest)
+  m.rig.animations = [{ id: 'idle', cells: 120, loop: true, frames: [{ cell: 0, ms: 100 }] }]
+  m.items = Array.from({ length: 200 }, (_, i) => ({ ...structuredClone(m.items[0]), id: i ? `item-${i}` : 'base', slot: i ? 'head' : 'body',
+    layers: [{ id: 'main' as const, role: 'fg' as const, z: 10, cell: { w: 256, h: 256 }, sheets: { idle: 'same.png' } }] }))
+  await expect(readCharacterZip(await zip([{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) }]))).rejects.toThrow('including repeated frame references')
+  m.items[0].layers[0].cell!.w = -256
+  await expect(readCharacterZip(await zip([{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) }]))).rejects.toThrow('invalid layer size')
+})

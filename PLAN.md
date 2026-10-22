@@ -7,7 +7,7 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 
 - **Released:** v0.1.0 (tag + GitHub release). Public repo https://github.com/Shilo/PixelDoll (MIT), live at
   https://shilo.github.io/PixelDoll/. CI on every push/PR (check, selftest, build, dist guard); `main` deploys to Pages.
-- **Pipeline (proven live):** `create-character-v3` base (48 or 56 px body in a 64 px cell, 4 or 8 directions) →
+- **Pipeline (live evidence from legacy mirrored creation and imported rigs):** `create-character-v3` base (48 or 56 px body in a 64 px cell, 4 or 8 directions) →
   skeleton-v3 clips with stored keypoints (idle authored, walk from managed skeleton-v3 motion re-rendered raw, slash/cast/
   hurt/death authored) → items: chroma-keyed rest views dressed in one Pro `edit-animation-v2` call (chunked under the
   frame cap) → posed per clip with `animate-with-skeleton-v3` → chroma extraction + cleanup → quality gates → layers.
@@ -28,11 +28,19 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   pixel repair. A forearm-covered helmet can now require review instead of an H4 retry when head-aligned observed arm
   pixels explain the mismatch; true deformations still fail. Appended move QA now links to the selected source record
   by produced frame key, including grid fallbacks and prior history. See `docs/testing/item-quality-follow-up-2026-10-22.md`.
-- **PixelLab credits:** balance ≈212 (free GET, 2026-10-22). Shield validation spent 99 generations (34 + 65).
+- **PixelLab credits:** shield validation spent 99 generations (34 + 65). Subsequent professional-audit live tests changed
+  the shared balance; query before further paid work. Unknown outcomes may have charged; see the audit report.
 - **Move QA summaries:** new evaluations retain checks per move/direction, including H4 review status. Adding or replacing
   a direction recomputes current extrema and counts, preserves accepted exceptions and source links, and survives ZIP
   export. Older indivisible checks remain explicitly incomplete until their coverage is replaced. Both CI jobs now use
   `ubuntu-24.04`. Offline tests and review: `docs/testing/qa-summaries-2026-10-22.md`.
+
+- **Professional audit:** adversarial pipeline/data/Studio reviews fixed credential sharing, unsafe paid recovery and lifecycle,
+  import allocation bounds, persistence/navigation races, animation replacement validity, recoloured engine output and
+  keyboard/review UX. New independent directions are implemented with automated policy/action/export coverage. The live
+  full creation stopped safely after two estimator HTTP 500 unknown outcomes; idle-only recovery and weapon/slash
+  handedness acceptance remain pending. Fresh evidence and remaining
+  limits: [audit report](docs/testing/professional-audit-2026-10-22.md).
 
 ## Roadmap
 
@@ -41,7 +49,9 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 2. **PWA** — deferred by user (2026-10-22); retain the installable, offline shell plan below (D13).
 3. **Item quality** — shield east-walk discontinuities (trajectory audit complete, two hard flags remain); stored cape
    back-hem smudges and actual helmet hurt-frame deformations (forearm-occlusion false retry fixed);
-   optional `mirror: "generate"` per item to keep handedness in mirrored directions.
+   live validation of the implemented independent-direction default with a right-hand weapon and western slash/grip
+   inspection (an item-only toggle cannot repair legacy mirrored actions;
+   see docs/research/handedness-implementation-scope-2026-10-22.md).
 4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
 5. **Theming** — runtime theme tokens + "Paper" theme inspired by design look D (deferred by user).
 6. **Housekeeping** — CI runner pinned to `ubuntu-24.04`; PixelLab OpenAPI snapshot refresh when
@@ -74,6 +84,9 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 - D14 (2026-10-22, user): Evidence media (spike output, test screenshots, design mockups) is untracked and lives in tag
   v0.1.0; the repo tracks only what helps development. Dev-only fixtures live in `app/dev-fixtures/`.
 - D15 (2026-10-22, user): Do not perform physical-phone testing. Browser-emulated mobile checks remain useful.
+- D16 (2026-10-22, professional audit): New character forms default to independent directions. Mirrored economy is
+  optional with an explicit held-hand warning; missing policy in historical drafts/specs retains mirrored behavior.
+  Existing frozen projects are not regenerated or silently converted.
 
 ## PWA (deferred, D13)
 
@@ -94,3 +107,27 @@ Installable, offline-capable Studio. Tasks in `TODO.md` "PWA".
 - **CSP:** add `worker-src 'self'` and `manifest-src 'self'`.
 - **Tests:** Lighthouse installability, offline reload, update flow, install on Chrome desktop / Android / iOS, sub-path
   scope, CI guard that the precache list has no `__dev`, `.env` or PixelLab API entries.
+
+## Professional audit follow-up: independent directions
+
+Implemented in the current checkout: new character forms select independent artwork by default, preserving provider
+western originals and rendering each selected action direction independently. More options offers mirrored economy mode
+with an explicit hand-switching warning. Historical specs/drafts without `directionPolicy` retain mirrored behavior;
+existing projects keep their frozen pixels. Active or interrupted specs determine their own estimates.
+
+The initial text-only v3 request still uses its supported default eight views, selecting cardinal originals for a four-view
+rig. Creation requires exactly the requested direction set before freezing. Item posing, future moves and exports preserve
+explicit western directions. Offline/browser tests cover all four policy/count combinations, western authored action
+trajectories, asymmetric pixels, eight-direction 96 px held-item batching, recolours, tucked layers and ZIP persistence.
+
+Estimated creation ranges are 46–80 gens for independent four directions and 90–150 for eight; mirrored economy remains
+35–60 / 57–95. PixelLab may also bill dollars, retries/fallbacks add cost, and queue time varies. These are estimates, not caps.
+
+The latest completed integrated snapshot passed 186 unit tests and 29 browser tests, with strict checks, production build
+and dist guard clean. That snapshot precedes subsequent submission-safety/validation changes and the final live-run
+finding. The controlled independent four-direction full creation stopped after two estimator HTTP 500 outcomes remained
+unknown; none was automatically resent. Activity had no queued/running work at the source-freeze release and displayed a
+$0.509 session ledger, which does not establish charges for unknown outcomes. Idle-only recovery from completed outputs
+and actual measurements is pending, followed by right-hand weapon/slash acceptance, western active-arm/grip inspection,
+reload and export. Independent pixels alone do not prove anatomical or generated-art correctness. A subsequent focused
+Activity/copy browser regression and strict checks pass; the next combined suite belongs to the parent audit report.

@@ -141,19 +141,33 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
     return value
   }
   const four = await cost()
+  assert.match(four, /Estimated 46–80 gens/)
+  assert.match(four, /queue time/)
   assert.ok(!(await page.locator('dialog [aria-labelledby="c-dirs"]').isVisible()), 'options folded away by default')
   await page.locator('dialog summary', { hasText: 'More options' }).click()
   assert.equal(await page.locator('dialog [aria-labelledby="c-dirs"] [role=radio][aria-checked=true]').textContent(), '4')
   assert.equal(await page.locator('dialog [aria-labelledby="c-size"] [role=radio][aria-checked=true]').textContent(), '48 px')
   await page.locator('dialog [aria-labelledby="c-dirs"] [role=radio]', { hasText: '8' }).click()
   assert.notEqual(await cost(), four)
-  assert.match(await cost(), /57–75 gens/)
+  assert.match(await cost(), /90–150 gens/)
   assert.ok(await page.locator('dialog', { hasText: 'all 8 directions' }).isVisible())
+  const mirrorEconomy = page.getByRole('checkbox', { name: 'Mirror left-facing views to save credits', exact: true })
+  await expect(mirrorEconomy).not.toBeChecked()
+  await mirrorEconomy.check()
+  assert.match(await cost(), /57–95 gens/)
+  await expect(page.getByText('Held items switch hands in left-facing views.', { exact: true })).toBeVisible()
+  await page.locator('dialog [aria-labelledby="c-dirs"] [role=radio]', { hasText: '4' }).click()
+  assert.match(await cost(), /35–60 gens/)
+  await mirrorEconomy.uncheck()
+  assert.match(await cost(), /46–80 gens/)
+  await page.locator('dialog [aria-labelledby="c-dirs"] [role=radio]', { hasText: '8' }).click()
+  assert.match(await cost(), /90–150 gens/)
+
   await page.locator('dialog [aria-labelledby="c-size"] [role=radio]', { hasText: '56 px' }).click()
   assert.ok(await page.locator('dialog', { hasText: 'create-character-v3 at 56 px, padded to 64 (x+4, y+4' }).isVisible())
   await page.keyboard.press('Escape')
   await page.waitForFunction(() => !document.querySelector('dialog[open]'))
-  step(`Create: More options 4/8 directions + 48/56 px, cost updates live (${four!.trim()} -> 57–75 gens)`)
+  step(`Create: More options 4/8 directions + 48/56 px, cost updates live (${four!.trim()} -> 90–150 gens)`)
   await ctx.setOffline(true)
   await page.locator('.offline-banner', { hasText: "You're offline" }).waitFor()
   await page.waitForFunction(() => !window.__queue || window.__queue.paused === 'offline') // __queue/__studio are dev-server only
@@ -430,6 +444,8 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await item.getByRole('radio', { name: 'Hands', exact: true }).click()
   await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword')
   await item.getByRole('radio', { name: 'azure', exact: true }).click()
+  await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/Est\. \d+ gens/)
+  await expect(item.getByText('PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.', { exact: true })).toBeVisible()
   await item.getByRole('button', { name: /^Make/ }).click()
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
   await page.getByRole('button', { name: 'New head item', exact: true }).click()
@@ -446,6 +462,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await character.locator('summary').click()
   await character.getByRole('radio', { name: '8', exact: true }).click()
   await character.getByRole('radio', { name: '56 px', exact: true }).click()
+  await expect(character.getByRole('checkbox', { name: 'Mirror left-facing views to save credits', exact: true })).not.toBeChecked()
   await character.getByRole('textbox', { name: 'Name', exact: true }).fill('Archer draft')
   await character.getByRole('button', { name: /^Create/ }).click()
   await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toBeVisible()
@@ -457,6 +474,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await character.locator('summary').click()
   await expect(character.getByRole('radio', { name: '8', exact: true })).toHaveAttribute('aria-checked', 'true')
   await expect(character.getByRole('radio', { name: '56 px', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(character.getByRole('checkbox', { name: 'Mirror left-facing views to save credits', exact: true })).not.toBeChecked()
   await expect(character.getByRole('textbox', { name: 'Name', exact: true })).toHaveValue('Archer draft')
   await character.getByRole('button', { name: 'Cancel', exact: true }).click()
 
@@ -570,6 +588,8 @@ test('setup and move drafts survive cancelled connection and stay scoped to thei
   await move.getByRole('radio', { name: 'Cast', exact: true }).click()
   await move.getByRole('textbox', { name: /Or describe it/ }).fill('jumping in place')
   await move.getByRole('checkbox', { name: new RegExp(vest.name) }).uncheck()
+  await expect(move.getByRole('button', { name: /^Add Jumping in/ })).toContainText(/Est\. \d+ gens/)
+  await expect(move.getByText('PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.', { exact: true })).toBeVisible()
   await move.getByRole('button', { name: /^Add Jumping in/ }).click()
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
@@ -585,4 +605,400 @@ test('setup and move drafts survive cancelled connection and stay scoped to thei
   await page.getByRole('button', { name: 'Add a move', exact: true }).click()
   await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toContainText('Moves are added to your own character.')
   expect(requests).toEqual([])
+})
+
+
+test('radio groups and tabs use one Tab stop and arrow selection', async ({ page, context }) => {
+  await context.route('https://api.pixellab.ai/**', (r) => r.abort())
+  await page.addInitScript(() => {
+    localStorage.setItem('pixeldoll.agentKey', 'off')
+    localStorage.setItem('pixeldoll.welcomed', '1')
+    localStorage.setItem('pixeldoll.export.engine', 'unknown-engine')
+  })
+  await page.goto('/')
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const tabs = page.getByRole('tablist', { name: 'Inspector', exact: true })
+  await expect(tabs.locator('[tabindex="0"]')).toHaveCount(1)
+  await tabs.getByRole('tab', { name: 'Item', exact: true }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(tabs.getByRole('tab', { name: 'Colours', exact: true })).toBeFocused()
+  await expect(tabs.getByRole('tab', { name: 'Colours', exact: true })).toHaveAttribute('aria-selected', 'true')
+  await expect(tabs.locator('[tabindex="0"]')).toHaveCount(1)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const engines = page.getByRole('radiogroup', { name: 'For which engine?', exact: true })
+  await expect(engines.getByRole('radio', { name: /Godot/ })).toHaveAttribute('aria-checked', 'true')
+  await expect(engines.locator('[tabindex="0"]')).toHaveCount(1)
+  await engines.getByRole('radio', { name: /Godot/ }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(engines.getByRole('radio', { name: /Unity/ })).toBeFocused()
+  await expect(engines.getByRole('radio', { name: /Unity/ })).toHaveAttribute('aria-checked', 'true')
+  await page.keyboard.press('Tab')
+  await expect(engines.getByRole('radio', { name: /Phaser/ })).not.toBeFocused()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  const skin = page.getByRole('radiogroup', { name: 'Skin', exact: true })
+  await expect(skin.locator('[tabindex="0"]')).toHaveCount(1)
+  await skin.getByRole('radio', { name: 'Any', exact: true }).focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(skin.getByRole('radio', { name: 'deep brown skin', exact: true })).toBeFocused()
+  await expect(skin.getByRole('radio', { name: 'deep brown skin', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await page.keyboard.press('Tab')
+  await expect(page.getByRole('radiogroup', { name: 'Build', exact: true }).getByRole('radio', { name: 'Average', exact: true })).toBeFocused()
+})
+
+
+test('draft review can inspect every generated move and only its available views', async ({ page, context }, info) => {
+  await context.route('https://api.pixellab.ai/**', (r) => r.abort())
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const s = (window as unknown as { __studio: { ui: { playing: boolean; frame: number; anim: string; inspTab: string; selected: string }; doc: { id: string }; store: { project: any; results: Record<string, unknown> }; gens: unknown[]; loadGens: () => Promise<void> } }).__studio
+    await s.loadGens()
+    s.ui.playing = false; s.ui.frame = 0; s.ui.anim = 'walk'; s.ui.inspTab = 'item'
+    const p = s.store.project, it = p.manifest.items.find((i: { slot: string }) => i.slot === 'head')
+    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: it.id, name: 'Review fixture', slot: it.slot, prompt: 'hat', key: 'magenta', anims: ['walk', 'cross-punch'], dirs: ['south', 'east', 'north'], clipDirs: { walk: ['south', 'east', 'north'], 'cross-punch': ['south'] } }, calls: [], keySwitched: false, log: [] }, input: { name: 'Review fixture', slot: it.slot, prompt: 'hat' }, phase: 'review', status: 'Review' })
+    s.store.results[it.id] = { cells: [], qa: null, g1: new Map(), preview: p }
+    s.ui.selected = 'gen:' + it.id
+  })
+  const review = page.locator('.gen')
+  await expect(review.getByRole('button', { name: /^Try again/ })).toContainText('Est.')
+  await expect(review.getByText('PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.', { exact: true })).toBeVisible()
+  await expect(review.getByRole('combobox', { name: 'Preview move', exact: true })).toHaveValue('walk')
+  await expect(review.locator('.review-grid figure')).toHaveCount(4)
+  const before = await review.locator('canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL())
+  await review.getByRole('combobox', { name: 'Preview move', exact: true }).selectOption('cross-punch')
+  await expect(page.getByRole('combobox', { name: 'Move', exact: true })).toHaveValue('cross-punch')
+  await expect(review.locator('.review-grid figure')).toHaveCount(1)
+  await expect(review.getByRole('img', { name: /facing south/ })).toBeVisible()
+  expect(await review.locator('canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL())).not.toBe(before)
+  await page.getByRole('combobox', { name: 'Move', exact: true }).selectOption('walk')
+  await expect(review.getByRole('combobox', { name: 'Preview move', exact: true })).toHaveValue('walk')
+  await expect(review.locator('.review-grid figure')).toHaveCount(4)
+  // Details must react to ledger-only completion; the draft itself does not change when usage arrives.
+  await page.evaluate(() => {
+    const w = window as unknown as { __studio: { ui: { selected: string }; gens: any[] }; __queue: { recs: Map<string, any>; emit: () => void } }
+    const g = w.__studio.gens.find((g) => 'gen:' + g.draft.spec.id === w.__studio.ui.selected)
+    g.draft.calls = [{ kind: 'edit', cells: ['walk/south/0'], seed: 1, rerolls: 0, old: [], recId: 'spent-first' }, { kind: 'edit', cells: ['walk/east/0'], seed: 2, rerolls: 0, old: [], recId: 'spent-second' }]
+    for (const [id, gens] of [['spent-first', 10], ['spent-second', 0]] as const) w.__queue.recs.set(id, { id, label: id, method: 'POST', endpoint: '/synthetic', params: {}, inputs: [], requestHash: id, state: 'done', createdAt: 1, nextAt: 0, attempts: 1, jobs: [], gens, usd: 0 })
+    w.__queue.emit()
+  })
+  await review.getByText('Details', { exact: true }).click()
+  const spent = review.locator('dt:has-text("Spent") + dd')
+  await expect(spent).toHaveText('10 gens')
+  const beforeDraft = await page.evaluate(() => {
+    const w = window as unknown as { __studio: { ui: { selected: string }; gens: any[] }; __queue: { recs: Map<string, any>; emit: () => void } }
+    const draft = w.__studio.gens.find((g) => 'gen:' + g.draft.spec.id === w.__studio.ui.selected).draft
+    const snapshot = JSON.stringify(draft)
+    w.__queue.recs.get('spent-second').usd = 0.08
+    w.__queue.emit()
+    return snapshot
+  })
+  await expect(spent).toHaveText('10 gens + $0.080')
+  expect(await page.evaluate(() => {
+    const w = window as unknown as { __studio: { ui: { selected: string }; gens: any[] } }
+    return JSON.stringify(w.__studio.gens.find((g) => 'gen:' + g.draft.spec.id === w.__studio.ui.selected).draft)
+  })).toBe(beforeDraft)
+
+})
+
+
+test('a follower explains blocked Create above the modal and preserves its draft', async ({ page, context }) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
+  await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto('/')
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const follower = await context.newPage()
+  await follower.goto('/')
+  await expect(follower.getByRole('button', { name: 'Working in another tab', exact: true })).toBeVisible()
+  async function openCreate() {
+    await follower.locator('.project-btn').click()
+    await follower.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+    return follower.getByRole('dialog', { name: 'New character', exact: true })
+  }
+  let create = await openCreate()
+  await create.getByRole('textbox', { name: 'Who is it?', exact: true }).fill('a cheerful copper clockwork scout')
+  await create.getByText('More options', { exact: true }).click()
+  await create.getByRole('checkbox', { name: 'Mirror left-facing views to save credits', exact: true }).check()
+  await create.getByRole('button', { name: /^Create/ }).click()
+  const activity = follower.getByRole('dialog', { name: 'Activity', exact: true })
+  await expect(activity).toBeVisible()
+  await expect(activity).toContainText('Running in another tab.')
+  await expect(activity).toContainText('close it to run jobs here')
+  await expect(follower.getByRole('dialog', { name: 'New character', exact: true })).toHaveCount(0)
+  await activity.getByRole('button', { name: 'Done', exact: true }).click()
+  create = await openCreate()
+  await expect(create.getByRole('textbox', { name: 'Who is it?', exact: true })).toHaveValue('a cheerful copper clockwork scout')
+  await create.getByText('More options', { exact: true }).click()
+  await expect(create.getByRole('checkbox', { name: 'Mirror left-facing views to save credits', exact: true })).toBeChecked()
+  await create.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.close()
+  await expect(follower.getByRole('button', { name: 'Working in another tab', exact: true })).toHaveCount(0)
+  create = await openCreate()
+  await expect(create.getByRole('textbox', { name: 'Who is it?', exact: true })).toHaveValue('a cheerful copper clockwork scout')
+  await create.getByText('More options', { exact: true }).click()
+  await expect(create.getByRole('checkbox', { name: 'Mirror left-facing views to save credits', exact: true })).toBeChecked()
+  await create.getByRole('button', { name: /^Create/ }).click()
+  await expect(follower.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toBeVisible()
+  expect(requests).toEqual([])
+})
+
+
+test('mixed malformed draft calls cannot claim Clean when surviving frame checks pass', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const s = (window as unknown as { __studio: { ui: { playing: boolean; anim: string; inspTab: string; selected: string }; doc: { id: string }; store: { project: any; results: Record<string, unknown> }; gens: unknown[]; loadGens: () => Promise<void> } }).__studio
+    await s.loadGens()
+    s.ui.playing = false; s.ui.anim = 'walk'; s.ui.inspTab = 'item'
+    const p = s.store.project, it = p.manifest.items.find((i: { slot: string }) => i.slot === 'head')
+    const calls = ['south', 'east'].map((d) => ({ kind: 'pose', cells: ['walk/' + d + '/0'], seed: 1, rerolls: 0, old: [] }))
+    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: it.id, name: 'Mixed malformed fixture', slot: it.slot, prompt: 'hat', key: 'magenta', anims: ['walk'], dirs: ['south', 'east'] }, calls, keySwitched: false, log: [] }, input: { name: 'Mixed malformed fixture', slot: it.slot, prompt: 'hat' }, phase: 'review', status: 'Review' })
+    // The valid call's cells pass; an excluded malformed call remains an independent G1 failure.
+    s.store.results = { ...s.store.results, [it.id]: { cells: [], qa: { qa: { status: 'pass' }, warnings: [], failCalls: new Map(), softCalls: new Set() }, g1: new Map([[1, 'G1 0 outputs for 3 requested frames']]), preview: p } }
+    s.ui.selected = 'gen:' + it.id
+  })
+  const review = page.locator('.gen')
+  await expect(review.locator('.badge.look')).toHaveText('Needs a look')
+  await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeDisabled()
+  await expect(review.getByText('PixelLab returned an unexpected image', { exact: true })).toBeVisible()
+  await expect(review.locator('.badge.clean')).toHaveCount(0)
+  await expect(review.getByText('Every frame passed the checks.', { exact: true })).toHaveCount(0)
+  await page.evaluate(() => {
+    const s = (window as unknown as { __studio: { ui: { selected: string }; store: { results: Record<string, any> } } }).__studio
+    const id = s.ui.selected.slice(4), r = s.store.results[id]
+    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % grey smudges in a colourful design']]) } }
+  })
+  await expect(review.locator('.badge.look')).toHaveText('Needs a look')
+  await expect(review.getByText('The design has grey smudges', { exact: true })).toBeVisible()
+  await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeEnabled()
+  await page.evaluate(() => {
+    const s = (window as unknown as { __studio: { ui: { selected: string }; store: { results: Record<string, any> } } }).__studio
+    const id = s.ui.selected.slice(4), r = s.store.results[id]
+    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map() } }
+  })
+  await expect(review.locator('.badge.clean')).toHaveText('Clean')
+  await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeEnabled()
+  await expect(review.getByText('Every frame passed the checks.', { exact: true })).toBeVisible()
+  expect(requests).toEqual([])
+})
+
+
+test('long item and outfit names leave wardrobe controls inside the desktop sidebar', async ({ page, context }, info) => {
+  await context.route('https://api.pixellab.ai/**', (r) => r.abort())
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.setViewportSize({ width: 1280, height: 720 })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const name = 'Polished copper clockwork adventurer ceremonial full helmet with a very long descriptive name'
+  await page.evaluate((name) => {
+    const s = (window as unknown as { __studio: { ui: { playing: boolean }; store: { project: any } } }).__studio
+    s.ui.playing = false
+    const p = s.store.project, head = p.manifest.items.find((i: { slot: string }) => i.slot === 'head')
+    s.store.project = { ...p, manifest: { ...p.manifest, items: p.manifest.items.map((i: { id: string }) => i.id === head.id ? { ...i, name } : i), presets: p.manifest.presets.map((v: object, n: number) => n === 0 ? { ...v, name } : v) } }
+  }, name)
+  const wear = page.getByRole('button', { name: 'Wear ' + name, exact: true })
+  await expect(wear).toBeVisible()
+  await expect(wear).toHaveAttribute('aria-pressed', 'true')
+  const dimensions = await page.locator('.side').evaluate((side) => {
+    const box = side.getBoundingClientRect()
+    const overflows = [side, ...side.querySelectorAll('.wardrobe, .side-scroll, .group, .rows, .rows li, .rows .row')].filter((n) => n.scrollWidth > n.clientWidth + 1).map((n) => n.className)
+    const controls = [...side.querySelectorAll('.wear, .row-del')].map((n) => { const r = n.getBoundingClientRect(); return { left: r.left, right: r.right, width: r.width } })
+    return { left: box.left, right: box.right, overflows, controls }
+  })
+  expect(dimensions.overflows).toEqual([])
+  for (const c of dimensions.controls) { expect(c.left).toBeGreaterThanOrEqual(dimensions.left); expect(c.right).toBeLessThanOrEqual(dimensions.right); expect(c.width).toBeGreaterThanOrEqual(24) }
+  await wear.click()
+  await expect(wear).toHaveAttribute('aria-pressed', 'false')
+})
+
+
+test('legacy character drafts and interrupted specifications keep mirrored estimates', async ({ page, context }, info) => {
+  const calls: string[] = []
+  await context.route('https://api.pixellab.ai/**', (r) => { calls.push(r.request().method()); return r.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const path = '/src/studio/formDrafts.ts', { formDrafts } = await import(path)
+    formDrafts.character = { desc: 'Historical form draft', skin: -1, build: 'average', name: '', seed: 123, dirs: 4, size: 48 }
+    const s = (window as unknown as { __studio: { ui: { sheet: string } } }).__studio
+    s.ui.sheet = 'create'
+  })
+  const create = page.getByRole('dialog', { name: 'New character', exact: true })
+  await expect(create.locator('.foot-note')).toContainText('Estimated 35–60 gens')
+  await create.getByText('More options', { exact: true }).click()
+  await expect(create.getByRole('checkbox', { name: 'Mirror left-facing views to save credits', exact: true })).toBeChecked()
+  await create.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.evaluate(async () => {
+    const path = '/src/studio/formDrafts.ts', { formDrafts } = await import(path)
+    formDrafts.character = { desc: 'Newer form draft', skin: -1, build: 'average', name: '', seed: 456, dirs: 8, size: 48, directionPolicy: 'independent' }
+    const s = (window as unknown as { __studio: { ui: { sheet: string }; creating: { spec: any; error: string } } }).__studio
+    // A stored interrupted run predates directionPolicy; the new form's default must not alter its pricing or retries.
+    s.creating.spec = { description: 'Historical interrupted run', name: 'Historical run', seed: 123, size: 48 }
+    s.creating.error = 'Stored interruption'
+    s.ui.sheet = 'create'
+  })
+  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('35–60 gens')
+  await page.evaluate(() => {
+    const s = (window as unknown as { __studio: { creating: { spec: { dirs: number } } } }).__studio
+    s.creating.spec.dirs = 8
+  })
+  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('57–95 gens')
+  await page.evaluate(() => {
+    const s = (window as unknown as { __studio: { creating: { spec: { directionPolicy: string } } } }).__studio
+    s.creating.spec.directionPolicy = 'independent'
+  })
+  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('90–150 gens')
+  expect(calls).toEqual([])
+})
+
+
+test('character Try again preserves direction policy and allocates a fresh publication identity', async ({ page, context }, info) => {
+  const unexpected: string[] = []
+  await context.route('https://api.pixellab.ai/**', async (route) => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/balance')) await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { type: 'usd', usd: 0 } } })
+    else { unexpected.push(route.request().method()); await route.abort() }
+  })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const s = (window as unknown as { __studio: { loadGens: () => Promise<void>; creating: { spec: any; error: string }; ui: { sheet: string } }; originalCreatePut?: IDBObjectStore['put'] }).__studio
+    await s.loadGens()
+    const put = IDBObjectStore.prototype.put
+    ;(window as unknown as { originalCreatePut: IDBObjectStore['put'] }).originalCreatePut = put
+    IDBObjectStore.prototype.put = function (value, key) {
+      if (key === 'studio-create') throw new Error('Synthetic draft persistence stopped before any paid request')
+      return put.call(this, value, key)
+    }
+    s.creating.spec = { projectId: 'prior-attempt-identity', description: 'Retry body', name: 'Retry fixture', size: 48, dirs: 8, directionPolicy: 'independent', seed: 0 }
+    s.creating.error = 'Prior interrupted attempt'
+    s.ui.sheet = 'create'
+  })
+  try {
+    await page.getByRole('dialog', { name: 'New character', exact: true }).getByRole('button', { name: /^Try again/ }).click()
+    const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
+    await connect.getByLabel('API key', { exact: true }).fill('synthetic-retry-test-key')
+    await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toBeVisible()
+    await expect(page.getByRole('dialog', { name: 'New character', exact: true })).toContainText('Synthetic draft persistence stopped before any paid request')
+    const retry = await page.evaluate(() => {
+      const s = (window as unknown as { __studio: { creating: { spec: { projectId?: string; seed: number; directionPolicy: string; dirs: number } } } }).__studio
+      return { projectId: s.creating.spec.projectId, seed: s.creating.spec.seed, directionPolicy: s.creating.spec.directionPolicy, dirs: s.creating.spec.dirs }
+    })
+    expect(retry.projectId).toBeTruthy()
+    expect(retry.projectId).not.toBe('prior-attempt-identity')
+    expect(retry.seed).not.toBe(0)
+    expect(retry.directionPolicy).toBe('independent')
+    expect(retry.dirs).toBe(8)
+    expect(unexpected).toEqual([])
+  } finally {
+    await page.evaluate(() => {
+      const w = window as unknown as { originalCreatePut: IDBObjectStore['put'] }
+      IDBObjectStore.prototype.put = w.originalCreatePut
+    })
+  }
+})
+
+
+test('Activity distinguishes unknown progress and credits while item guidance keeps the tab open', async ({ page, context }, info) => {
+  const posts: string[] = []
+  await context.route('https://api.pixellab.ai/**', async (route) => {
+    const request = route.request()
+    if (request.method() === 'GET' && new URL(request.url()).pathname.endsWith('/balance')) {
+      await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 0, total: 100 }, credits: { type: 'usd', usd: 0 } } })
+    } else { if (request.method() === 'POST') posts.push(new URL(request.url()).pathname); await route.abort() }
+  })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const w = window as unknown as { __studio: { ui: { selected: string; inspTab: string }; doc: { id: string }; store: { project: any }; gens: any[]; loadGens: () => Promise<void> }; __queue: { disconnect: () => void; key: string; paused: string | null; recs: Map<string, any>; emit: () => void } }
+    const s = w.__studio, q = w.__queue
+    await s.loadGens()
+    // Render deferred/synchronous states without letting the queue send or poll anything.
+    q.disconnect(); q.recs.clear(); q.key = 'synthetic-key'; q.paused = null
+    const common = { method: 'POST', params: {}, inputs: [], state: 'submitting', createdAt: Date.now(), submittedAt: Date.now() - 125000, nextAt: 0, attempts: 1, gens: 0, usd: 0 }
+    q.recs.set('sync-estimate', { ...common, id: 'sync-estimate', label: 'Finding joints fixture', endpoint: '/estimate-skeleton', requestHash: 'sync-estimate', jobs: [] })
+    q.recs.set('awaiting-id', { ...common, id: 'awaiting-id', label: 'Submitting fixture', endpoint: '/edit-animation-v2', requestHash: 'awaiting-id', jobs: [] })
+    q.recs.set('known-progress', { ...common, id: 'known-progress', label: 'Reported progress fixture', endpoint: '/edit-animation-v2', requestHash: 'known-progress', state: 'running', jobs: [{ id: 'known-job', status: 'running', done: false, progress: 0.37, queuePosition: 4, results: [] }] })
+    q.emit()
+    const it = s.store.project.manifest.items.find((i: { slot: string }) => i.slot === 'head')
+    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: it.id, name: 'Waiting fixture', slot: it.slot, prompt: 'hat', key: 'magenta', anims: ['walk'], dirs: ['south', 'east', 'north'] }, calls: [], keySwitched: false, log: [] }, input: { name: 'Waiting fixture', slot: it.slot, prompt: 'hat' }, phase: 'running', status: 'Starting' })
+    s.ui.selected = 'gen:' + it.id; s.ui.inspTab = 'item'
+  })
+  const gen = page.locator('.gen')
+  await expect(gen).toContainText('Keep this tab open while PixelLab responds. You can keep dressing up. Unknown outcomes stop for review in Activity.')
+  await expect(gen).not.toContainText('picks up where it left off')
+  await page.getByTitle('Activity', { exact: true }).click()
+  const activity = page.getByRole('dialog', { name: 'Activity', exact: true })
+  for (const label of ['Finding joints fixture', 'Submitting fixture']) {
+    const row = activity.locator('.act-group li').filter({ has: page.getByText(label, { exact: true }) })
+    await expect(row.locator('.act-main .small')).toHaveText('Waiting for PixelLab')
+    await expect(row.locator('.ring')).toHaveClass(/spin/)
+    await expect(row.getByRole('button', { name: 'Stop', exact: true })).toBeVisible()
+    await expect(row.locator('.act-meta')).toContainText(/\d+:\d{2}/)
+  }
+  const known = activity.locator('.act-group li').filter({ has: page.getByText('Reported progress fixture', { exact: true }) })
+  await expect(known.locator('.act-main .small')).toHaveText('37% · #4 in line')
+  await expect(known.locator('.ring')).not.toHaveClass(/spin/)
+  await page.evaluate(() => {
+    const q = (window as unknown as { __queue: { paused: string | null; emit: () => void } }).__queue
+    q.paused = 'credits'; q.emit()
+  })
+  await expect(activity).toContainText('PixelLab credits are insufficient. Jobs wait until credits are available.')
+  await expect(activity).not.toContainText('Out of generations')
+  await expect(activity.getByRole('button', { name: 'Resume', exact: true })).toBeVisible()
+  await page.evaluate(() => {
+    const q = (window as unknown as { __queue: { paused: string | null; emit: () => void } }).__queue
+    q.paused = 'offline'; q.emit()
+  })
+  await expect(activity).toContainText("You're offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.")
+  await activity.getByRole('button', { name: 'Done', exact: true }).click()
+  await expect(gen).toContainText("Paused while you're offline. Submitted jobs may still finish or charge.")
+  expect(posts).toEqual([])
+})
+
+
+test('reload restores failed create, move and setup for review without paid submissions', async ({ page, context }, info) => {
+  const posts: string[] = []
+  await context.route('https://api.pixellab.ai/**', async (route) => {
+    const r = route.request()
+    if (r.method() === 'GET' && new URL(r.url()).pathname.endsWith('/balance')) await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { type: 'usd', usd: 1 } } })
+    else { if (r.method() === 'POST') posts.push(new URL(r.url()).pathname); await route.abort() }
+  })
+  await page.addInitScript(() => {
+    localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1')
+    localStorage.setItem('pixellabApiKey', 'synthetic-failed-flow-key')
+  })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const s = (window as unknown as { __studio: { doc: { id: string }; store: { project: any } } }).__studio
+    const path = '/src/lib/store/db.ts', db = await import(/* @vite-ignore */ path)
+    const common = { status: 'failed', error: 'Saved terminal failure; inspect Activity', progress: { step: 'animate', done: 4, total: 69, recIds: [] } }
+    await db.put('projects', 'studio-create', { ...common, id: 'studio-create', spec: { name: 'Failed character', description: 'body', size: 48, dirs: 4, seed: 1, projectId: 'rig-failed-browser-fixture', directionPolicy: 'independent' } })
+    await db.put('projects', 'studio-move', { ...common, id: 'studio-move', projectId: s.doc.id, spec: { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 } })
+    await db.put('projects', 'studio-setup', { ...common, id: 'studio-setup', spec: { projectId: s.doc.id, baseHash: s.store.project.manifest.rig.baseHash, restAnim: 'idle', looks: 'body', seed: 1 } })
+  })
+  await page.reload()
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await expect.poll(() => page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(/* @vite-ignore */ path)
+    return [s.creating.error, s.moving.error, s.settingUp.error]
+  })).toEqual(Array(3).fill('Saved terminal failure; inspect Activity'))
+  for (const [sheet, name] of [['create', 'New character'], ['move', 'Add a move'], ['setup', 'Set up character']] as const) {
+    await page.evaluate((sheet) => { (window as unknown as { __studio: { ui: { sheet: string } } }).__studio.ui.sheet = sheet }, sheet)
+    const dialog = page.getByRole('dialog', { name, exact: true })
+    await expect(dialog).toContainText('Saved terminal failure; inspect Activity')
+    await expect(dialog.locator('.steps-list .ring.spin')).toHaveCount(0)
+    await page.keyboard.press('Escape')
+  }
+  expect(posts).toEqual([])
 })

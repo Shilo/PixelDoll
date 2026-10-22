@@ -3,6 +3,7 @@ import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import type { Engine, Project } from '../store/manifest.ts';
 import { zip, type ZipEntry } from '../store/zip.ts';
+import { withColourVariants } from './colours.ts';
 import { withTuckVariants } from '../compose/compose.ts';
 import { asepriteFiles } from './aseprite.ts';
 import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
@@ -15,7 +16,9 @@ export interface ExportOptions { engines: Engine[]; baked: boolean; pixelsPerUni
 export interface ExportResult { entries: ZipEntry[]; warnings: string[]; errors: string[] }
 
 export async function exportFiles(src: Project, o: ExportOptions): Promise<ExportResult> {
-  const p = await withTuckVariants(src); // B14: hair under a helmet ships as a baked "<hair>~<helmet>" item; engines swap to it
+  const sourceErrors = validate(src);
+  if (sourceErrors.length) return { entries: [], warnings: [], errors: sourceErrors };
+  const p = await withTuckVariants(await withColourVariants(src)); // B14: hair under a helmet ships as a baked "<hair>~<helmet>" item; engines swap to it
   const errors = validate(p);
   if (errors.length) return { entries: [], warnings: [], errors };
   const { manifest: m, warnings } = exportManifest(p, o);

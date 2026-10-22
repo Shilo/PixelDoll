@@ -7,7 +7,7 @@
 //  - canvas = export.bakedCell (bakedFrame: every layer fits around the shared pivot); a layer's cel sits at
 //    bakedPivot − layer.pivot, so a 96 sword and the 64 body line up by pivot. Slice "pivot" = canvas + bakedPivot.
 //  - zOverrides become cel z-indexes (Aseprite ≥ 1.3: draw order = layer index + z-index), so the flattened frame equals
-//    composeCell on the baked frame. Pixels come from the layer sheets (source ramps; preset variants are not applied).
+//    composeCell on the baked frame. Pixels come from the layer sheets, including baked outfit-colour copies.
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Item, Layer, Manifest, Slot } from '../store/manifest.ts';
 import { bakedFrame, equipped, hiddenSlots, layerFrame, resolveZ, shownItems } from '../compose/compose.ts';
@@ -87,7 +87,7 @@ Visible = the first outfit in manifest.json; show or hide layers to dress the ch
 Canvas ${bakedFrame(m).w}x${bakedFrame(m).h} (fits every layer); slice "pivot" marks the feet. Frame durations are the move's timing.
 Per-frame draw-order exceptions (slots[].zOverrides) are cel z-indexes; Unity applies them, per-layer exports ignore them.
 Unity: Aseprite Importer, Import Mode Individual Layers, Generate Model Prefab on, Pivot Space Canvas.
-Godot: Aseprite Wizard, one SpriteFrames per layer. Colours are the source ramps (outfit recolours are not applied).
+Godot: Aseprite Wizard, one SpriteFrames per layer. The first outfit includes its chosen colours; original source-colour layers are also available.
 `,
     },
   ];

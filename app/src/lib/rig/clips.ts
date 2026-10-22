@@ -67,7 +67,7 @@ export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: 
   const fit = paletteFit(o.rest, o.frames), border = o.frames.reduce((s, f) => s + borderPx(f), 0);
   const maxAdh = /death|fall/.test(o.anim) ? RIG_GATES.adherenceLying : RIG_GATES.adherence;
   const fails = [
-    adh !== null && adh > maxAdh && `arms ${adh.toFixed(1)} px off the requested pose`,
+    adh !== null && (!Number.isFinite(adh) ? 'pose measurements incomplete' : adh > maxAdh && `arms ${adh.toFixed(1)} px off the requested pose`),
     standing(o.anim) && feet > RIG_GATES.feetDrift && `feet drift ${feet} px`,
     fit < RIG_GATES.paletteFit && `palette fit ${fit.toFixed(3)}`,
     border > RIG_GATES.border && `${border} px on the cell border`,

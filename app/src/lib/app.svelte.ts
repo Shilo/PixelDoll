@@ -9,6 +9,7 @@ const lsGet = () => {
 };
 const clearSavedKey = () => { try { localStorage.removeItem(LS_KEY); } catch {} };
 
+let keyRevision = 0;
 const stored = lsGet();
 export const app = $state({
   key: stored,
@@ -19,10 +20,15 @@ export const app = $state({
   balanceAt: 0,
 });
 queue.setKey(stored);
-// The leader tab can get (or lose) its key from a follower tab where the user typed it or pressed Forget key (queue.ts).
-queue.subscribe(() => { if (queue.key !== app.key) Object.assign(app, { key: queue.key, keyRejected: false, balance: null, balanceError: '' }); });
+// A credential-free Forget signal from another tab also clears this tab. Typed credentials are never shared (queue.ts).
+queue.subscribe(() => {
+  if (queue.key === app.key) return;
+  keyRevision++;
+  Object.assign(app, { key: queue.key, keyRejected: false, balance: null, balanceError: '', balanceAt: 0, ...(!queue.key ? { remembered: false } : {}) });
+});
 
 export function setKey(key: string, remember: boolean) {
+  keyRevision++;
   app.key = key.trim();
   app.keyRejected = false;
   app.balance = null; // never show another key's balance
@@ -37,20 +43,28 @@ export function setKey(key: string, remember: boolean) {
 }
 
 export function forgetKey() {
+  keyRevision++;
   clearSavedKey();
   app.key = '';
   app.remembered = false;
   app.balance = null;
+  app.balanceError = '';
+  app.keyRejected = false;
+  app.balanceAt = 0;
   queue.setKey('');
 }
 
 export async function refreshBalance() {
   if (!app.key) return;
+  const requestedKey = app.key, revision = keyRevision;
   try {
-    app.balance = await api<Balance>(app.key, 'GET', '/balance');
+    const balance = await api<Balance>(requestedKey, 'GET', '/balance');
+    if (revision !== keyRevision || requestedKey !== app.key) return;
+    app.balance = balance;
     app.balanceError = '';
     app.balanceAt = Date.now();
   } catch (e) {
+    if (revision !== keyRevision || requestedKey !== app.key) return;
     app.balanceError = (e as Error).message;
     if (e instanceof ApiError && e.kind === 'auth') app.keyRejected = true;
   }

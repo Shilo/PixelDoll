@@ -31,17 +31,18 @@
       {#if app.key}<button class="btn icon plain" aria-label="Refresh balance" onclick={refreshBalance}><RefreshCw size={14} /></button>{:else}<button class="btn sm" onclick={() => (ui.sheet = 'connect')}>Connect</button>{/if}
     </div>
     {#if $queue.role === 'follower'}
-      <p class="notice small"><CircleAlert size={14} />Running in another tab. PixelDoll is open twice: the other tab sends and checks the jobs (also the ones you start here). Keep it open, or close it to run them here.</p>
+      <p class="notice small"><CircleAlert size={14} />Running in another tab. Keys stay in the tab where you connect. Connect PixelLab in the active queue tab, or close it to run jobs here.</p>
     {/if}
     {#if $queue.paused}
-      <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn't accept the key. Jobs wait until you connect again." : $queue.paused === 'offline' ? "You're offline. Jobs wait and continue by themselves when the connection is back." : 'Out of generations. Jobs wait until you top up.'}
+      <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn't accept the key. Jobs wait until you connect again." : $queue.paused === 'offline' ? "You're offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs." : 'PixelLab credits are insufficient. Jobs wait until credits are available.'}
         {#if $queue.paused !== 'offline'}<button class="btn sm" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button>{/if}</p>
     {/if}
     {#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
     {#if running.length}
       <section class="act-group"><span class="sec-title">Generating</span>
         <ul>{#each running as r (r.id)}
-          <li><span class="ring" style:--p={pct(r)}></span><span class="act-main"><b>{nice(r)}</b><span class="muted small">{pct(r)}%{r.jobs[0]?.queuePosition ? ` · #${r.jobs[0].queuePosition} in line` : ''}</span></span>
+          {@const waiting = !r.jobs.some((s) => !!s.id)}
+          <li><span class="ring" class:spin={waiting} style:--p={pct(r)} aria-hidden="true"></span><span class="act-main"><b>{nice(r)}</b><span class="muted small">{waiting ? 'Waiting for PixelLab' : `${pct(r)}%`}{r.jobs[0]?.queuePosition ? ` · #${r.jobs[0].queuePosition} in line` : ''}</span></span>
             <span class="act-meta num">{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><button class="btn link small" onclick={() => queue.cancel(r.id)}>Stop</button></span></li>
         {/each}</ul>
       </section>

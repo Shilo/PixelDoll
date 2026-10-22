@@ -48,7 +48,7 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 | Cell | **64×64** square. | Pro editors fit 16 frames at ≤64 px [S1]. |
 | Base character | `create-character-v3` text at **48 px**, clothed (plain grey t-shirt + grey shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded to 64 (x+8, y+12: 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
 | Rest views | The padded S/E/N rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
-| Directions | `south, east, north` generated; `west.mirrorOf = east`. **8-dir (B15, Create → More options):** `south, south-east, east, north-east, north` generated; `west ← east`, `south-west ← south-east`, `north-west ← north-east`; the re-import sends all 8 views (`n_directions: 8`). Authored actions: south-east uses the south tables, north-east the mirrored (north) ones. Mirroring flips pixels and puts held items in the other hand: accepted for `mirror: "flip"`, else `mirror: "generate"`. | [M2, S3, B15] |
+| Directions | New forms default to independent 4/8 views: preserve original western rotations and render every direction. Optional mirrored economy and policy-less saved specs keep 3/5 authored views plus western flips. The initial text-only v3 request retains default eight rotations; reference import uses 4/8. Exact direction/policy coverage is required before freezing. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalised 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
 | Clips | Default rig: **`idle` (4), `walk` (8), `slash` (8), `hurt` (6)**; optional `run`, `cast`, `death`. Playlist `frames[{cell, ms}]`. | [S3, S4] |
 | Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of the south rest view. Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
@@ -285,6 +285,9 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
 - A paid POST answered `500 "Failed to start any animation jobs"` (B15 live, 6 parallel jobs on a busy account) is a refusal
   in words: re-queued with backoff like 429/503, not marked lost.
 - Key: memory by default, opt-in `localStorage`, never serialized; CSP `connect-src` limited to PixelLab hosts.
+  Typed credentials remain per tab and never cross `BroadcastChannel`; only a credential-free Forget notification crosses
+  tabs. Connect in the tab running the queue, or close that tab to let a connected follower take over. Pending lock
+  requests are canceled on disconnect, so a closed Studio instance cannot later restart queue driving.
 
 ## 8. UI [D9]
 
@@ -324,10 +327,10 @@ integer zoom. Theming ("Paper" look) deferred.
 | Motion-smear FX, specks | Largest-component filter; avoid identical final poses; QA logs stray px. |
 | Pose not followed / wrong hand | Adherence + `gripSide` gates; re-roll; author an armed variant. |
 | North action frames lose back items (cape) | QA re-roll; `inpaint-grid` fallback. |
-| Side-view grip ambiguity | Accept "ambiguous" in side views; review only front/back. |
-| Mirrored west swaps the weapon hand | `mirror: "generate"` per item (pose a west keyframe with mirrored keypoints). |
+| Side-view grip ambiguity | Retain ambiguity warnings and visually inspect grips and trajectories in every direction. |
+| Mirrored west swaps the weapon hand | Independent body views/actions are the new-character default. An item-only toggle cannot repair a flipped attacking body. Existing mirrored rigs and economy mode retain this limitation. |
 | Pose presets tuned for one body | Free preview before paying; per-body check. |
-| Server failures / silent direction drop | Re-poll, resubmit only on `failed`; `res.directions` check. |
+| Server failures / silent direction drop | Poll known jobs; never automatically resend unknown paid outcomes. Require the exact requested direction set before publication. |
 | Small figure (48 base) | Product call (D4: 56 px optional). |
 | Unity importer not run live | Deferred [D5]. |
 
@@ -353,6 +356,6 @@ integer zoom. Theming ("Paper" look) deferred.
 |---|---|---|---|
 | O7 | Palette: 3-step key ramp to free item colours | colours per item, key kept | 5-step ramp |
 | O11 | Face-context items (hair, glasses) and worn items (chest, cape) on `skeleton-pose` over a full 3-dir × 4-clip set | §4.5 pass rate vs `inpaint-grid` | `skeleton-pose` |
-| O13 | Held items in mirrored west | visual handedness vs cost of `generate` | flip |
+| O13 | Held items in mirrored west | Superseded for new forms by independent body directions; generated grips still require QA. Legacy/economy rigs retain flips. | independent new forms |
 | O14 | Base scale 48 vs 56 | headroom vs figure size | 48 |
 | O15 | Dressing with `inpaint-v3` (192×64 row) instead of `edit-animation-v2` | §4.5 after posing | `edit-animation-v2` |

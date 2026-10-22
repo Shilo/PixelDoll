@@ -6,8 +6,8 @@
 // ledger: every save posts the record id on a same-origin BroadcastChannel and the other tabs read just that record (full
 // re-read every 30 s as a fallback). The leader adopts records a follower wrote, dropping duplicates of its own requests.
 // Only a leader marks orphaned `submitting` records lost, so another live tab's in-flight jobs are never touched.
-// The key stays in memory. It crosses tabs only when the user types it (or forgets it) in a follower tab: that tab posts it
-// to the leader. Nobody answers "ask for the key" messages, so another page on the same origin cannot pull it (R6 P1-4).
+// Credentials stay in the connected tab. BroadcastChannel is origin-wide (including sibling Pages sites), so it carries
+// only ledger notifications and a credential-free forget signal; keys are never broadcast or accepted from messages.
 import { api as realApi, ApiError, errorText, isNetwork, isPolicy, rejected } from './client.ts';
 import { jobIdsOf, jobImages, type Job, type Req, type SubmitResponse, type Usage } from './routes.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
@@ -50,6 +50,7 @@ export interface JobRec {
   response?: unknown; // submit response, long strings stripped
   jobs: SubJob[];
   error?: string;
+  autoCancelledAttempts?: number[]; // known automatic pre-submit cancellation; only a distinct explicit attempt may reopen
   gens: number;
   usd: number;
 }
@@ -82,11 +83,28 @@ export interface Deps {
 const POLL_MS = 5000, SYNC_MS = 1500, FULL_SYNC_MS = 30_000, MAX_TRIES = 10, MAX_PX = 2048, LOCK = 'pixeldoll-queue';
 const LOST_AFTER_MS = 120_000;
 const PROBE_MS = 15_000;
-const NOT_STARTED = /failed to start any/i; // offline: a free GET /balance this often until PixelLab answers again // 404 on a job never seen completed, this long after submit -> lost
+const NO_ANIMATION_JOBS = /^Failed to start any animation jobs[.!]?$/i;
+/** An accepted job identifier contradicts a retryable status, including when wrapped in last_response. */
+const hasJobEvidence = (value: unknown): boolean => {
+  for (let body = value; body && typeof body === 'object'; body = (body as Record<string, unknown>).last_response) {
+    const b = body as Record<string, unknown>;
+    if (b.background_job_id != null && b.background_job_id !== '') return true;
+    if (b.background_job_ids != null && (!Array.isArray(b.background_job_ids) || b.background_job_ids.length)) return true;
+  }
+  return false;
+};
+/** B15 observed a simple root refusal on this route; any additional payload makes the paid outcome uncertain. */
+const noAnimationJobsStarted = (endpoint: string, error: ApiError): boolean => {
+  if (endpoint !== '/characters/animations' || error.status !== 500) return false;
+  if (typeof error.body === 'string') return NO_ANIMATION_JOBS.test(error.body.trim());
+  if (!error.body || typeof error.body !== 'object' || Array.isArray(error.body)) return false;
+  const messages = Object.entries(error.body);
+  return messages.length > 0 && messages.every(([key, message]) => (key === 'detail' || key === 'error') && typeof message === 'string' && NO_ANIMATION_JOBS.test(message.trim()));
+};
 
 export const live = (r?: JobRec) => !!r && (r.state === 'queued' || r.state === 'submitting' || r.state === 'running');
 const seededOf = (r: JobRec) => typeof (r.params as { seed?: unknown } | null)?.seed === 'number';
-type Msg = { key?: string; rec?: string; sync?: boolean };
+type Msg = { forget?: boolean; rec?: string; sync?: boolean };
 
 export const backoff = (attempt: number, rnd = Math.random()) => Math.min(60_000, 2000 * 2 ** Math.max(0, attempt - 1)) * (0.5 + 0.5 * rnd);
 
@@ -133,6 +151,10 @@ export class Queue {
   private deps: Deps;
   private follower: (() => void) | null = null;
   private release: (() => void) | null = null;
+  private connection: AbortController | null = null;
+  private connectedOnce = false;
+  private keyRevision = 0; // includes Forget/reconnect with the same value; never persisted
+  private submitScopes = new Map<string, { signals: Map<AbortSignal, number | undefined>; unscoped: boolean }>(); // ephemeral consumers; never persisted
   private merged = 0;
   private probeAt = 0;
   private chan: BroadcastChannel | null = null;
@@ -205,37 +227,62 @@ export class Queue {
   // ---- lifecycle ----
   /** Become the leader if no other tab is, else mirror the ledger until the leader's tab closes. */
   async connect() {
+    this.connectedOnce = true;
+    this.disconnect();
+    const connection = new AbortController(), { signal } = connection;
+    this.connection = connection;
     const locks = this.deps.locks;
-    if (!locks) { await this.load(); this.start(); return; }
+    if (!locks) { await this.load(); if (!signal.aborted) this.start(); return; }
     if (typeof BroadcastChannel !== 'undefined') {
       this.chan = new BroadcastChannel(LOCK);
       this.chan.onmessage = (e: MessageEvent<Msg>) => {
+        if (signal.aborted) return;
         const m = e.data ?? {};
-        // a key typed (or forgotten: '') in a follower tab; adopted when the leader has none or PixelLab rejected its own
-        if (typeof m.key === 'string' && this.role === 'leader' && (!m.key || !this.key || this.paused === 'auth')) this.setKey(m.key, false);
+        if (m.forget === true) this.setKey('', false);
         if (typeof m.rec === 'string') void this.pull(m.rec);
         if (m.sync && this.role === 'follower') void this.sync();
       };
     }
     await this.sync(); // the UI has the ledger at once, whoever leads
-    const hold = () => new Promise<void>((res) => (this.release = res));
-    const got = await new Promise<boolean>((res) => void locks.request(LOCK, { ifAvailable: true }, (lock) => { res(!!lock); return lock ? hold() : undefined; }));
-    if (got) return this.lead();
+    if (signal.aborted) return;
+    const hold = () => new Promise<void>((res) => {
+      if (signal.aborted) return res();
+      this.release = res;
+      signal.addEventListener('abort', () => res(), { once: true });
+    });
+    let got: boolean;
+    try {
+      got = await new Promise<boolean>((res, reject) => {
+        void locks.request(LOCK, { ifAvailable: true }, (lock) => {
+          res(!!lock && !signal.aborted);
+          return lock && !signal.aborted ? hold() : undefined;
+        }).catch(reject);
+      });
+    } catch (e) { if (signal.aborted) return; throw e; }
+    if (signal.aborted) return;
+    if (got) return this.lead(connection);
     this.role = 'follower';
     this.follower = every(this.chan ? FULL_SYNC_MS : SYNC_MS, () => void this.sync());
     this.emit();
-    void locks.request(LOCK, async () => { await this.lead(); return hold(); });
+    void locks.request(LOCK, { signal }, async () => {
+      if (signal.aborted) return;
+      await this.lead(connection);
+      if (!signal.aborted) return hold();
+    }).catch((e) => { if (!signal.aborted) console.error('queue lock', e); });
   }
-  private async lead() {
+  private async lead(connection: AbortController) {
+    if (connection.signal.aborted) return;
     this.follower?.();
     this.follower = null;
     this.role = 'leader';
     this.recs.clear();
     await this.load();
-    this.start();
+    if (!connection.signal.aborted) this.start();
   }
-  /** Stop working and hand the lock to the next tab (tests, HMR). */
+  /** Stop driving jobs and release/cancel this connection's lock; paid requests are never resent. */
   disconnect() {
+    this.connection?.abort();
+    this.connection = null;
     this.stop();
     this.follower?.();
     this.follower = null;
@@ -297,10 +344,11 @@ export class Queue {
     this.timer?.();
     this.timer = null;
   }
-  /** `share`: the user typed (or forgot, '') the key in this follower tab, so the leader gets it too. */
-  setKey(key: string, share = true) {
+  /** Forget stops connected tabs without sharing credentials. A new key belongs only to this tab. */
+  setKey(key: string, notifyForget = true) {
+    this.keyRevision++;
     this.key = key;
-    if (share && this.role === 'follower') this.chan?.postMessage({ key } satisfies Msg);
+    if (!key && notifyForget) this.chan?.postMessage({ forget: true } satisfies Msg);
     if (key && this.paused === 'auth') this.paused = null;
     this.emit();
   }
@@ -315,8 +363,15 @@ export class Queue {
 
   // ---- enqueue ----
   // Identical request (same endpoint + params + input images, explicit seed) reuses the stored record instead of paying again.
-  // meta.cache: also reuse unseeded done records (deterministic routes: estimate-skeleton, GET /characters).
-  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean; resumeSafe?: boolean } = {}): Promise<JobRec> {
+  // Paid requests are resume-safe by default; a new seed expresses an intentional re-roll. meta.cache also reuses
+  // unseeded done GET records (deterministic routes such as GET /characters).
+  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean; resumeSafe?: boolean; signal?: AbortSignal; attempt?: number } = {}): Promise<JobRec> {
+    const connection = this.connection;
+    const assertConnected = () => {
+      meta.signal?.throwIfAborted(); // orchestration cancellation stops publication, never aborts a paid HTTP request
+      if (this.connectedOnce && (!this.connection || this.connection !== connection)) throw new Error('Queue disconnected. Reload PixelDoll before starting more work.');
+    };
+    assertConnected();
     const inputs: string[] = [];
     const params = await mapDeep(req.body ?? null, (o) => {
       if (!isB64(o)) return undefined;
@@ -327,13 +382,22 @@ export class Queue {
       })();
     });
     const requestHash = await sha256(stableStringify({ method: req.method, endpoint: req.path, params }));
+    assertConnected(); // obsolete async flows cannot publish another request during disconnect/HMR navigation
     const seeded = typeof (params as { seed?: unknown } | null)?.seed === 'number';
-    for (const r of this.recs.values()) {
-      if (r.requestHash !== requestHash) continue;
-      if (r.state === 'queued' || r.state === 'submitting' || r.state === 'running') return r; // double click
-      if ((seeded || meta.cache) && r.state === 'done') return r; // ponytail: cache only seeded requests; unseeded = intentional re-roll
-      // Resuming a multi-step paid flow must never turn a terminal/unknown outcome into another submission.
-      if (meta.resumeSafe) return r;
+    // A resumed paid flow must never turn a terminal/unknown outcome into another submission. Explicit re-rolls change seed.
+    const resumeSafe = meta.resumeSafe ?? req.method === 'POST';
+    const matches = [...this.recs.values()].filter((r) => r.requestHash === requestHash).reverse().sort((a, b) => b.createdAt - a.createdAt);
+    // Historical duplicates can exist from older versions. Prefer useful newer work before considering an old failure.
+    const active = matches.find(live);
+    if (active) {
+      if (active.state !== 'running') this.observeScope(active.id, meta.signal, meta.attempt);
+      return active;
+    }
+    const done = matches.find((r) => r.state === 'done');
+    if (done && (seeded || meta.cache || resumeSafe)) return done;
+    if (resumeSafe) {
+      const terminal = matches.find((r) => !(r.state === 'cancelled' && Number.isSafeInteger(meta.attempt) && r.autoCancelledAttempts?.length && !r.autoCancelledAttempts.includes(meta.attempt!)));
+      if (terminal) return terminal;
     }
     const now = this.deps.now();
     const rec: JobRec = {
@@ -354,8 +418,34 @@ export class Queue {
       usd: 0,
     };
     this.recs.set(rec.id, rec);
+    this.observeScope(rec.id, meta.signal, meta.attempt);
     await this.save(rec);
     return rec;
+  }
+
+  /** A deduplicated request may serve several flows. One failed consumer cannot cancel another consumer's work. */
+  private observeScope(id: string, signal?: AbortSignal, attempt?: number) {
+    let consumers = this.submitScopes.get(id);
+    if (!consumers) this.submitScopes.set(id, consumers = { signals: new Map(), unscoped: false });
+    if (!signal) { consumers.unscoped = true; return; }
+    if (consumers.signals.has(signal)) return;
+    consumers.signals.set(signal, Number.isSafeInteger(attempt) ? attempt : undefined);
+    signal.addEventListener('abort', () => {
+      if (this.flowAborted(id)) {
+        const r = this.recs.get(id);
+        if (r?.state === 'queued') r.autoCancelledAttempts = this.cancellationAttempts(id);
+        void this.cancel(id, true).catch(() => {});
+      }
+    }, { once: true });
+  }
+  private flowAborted(id: string): boolean {
+    const consumers = this.submitScopes.get(id);
+    return !!consumers && !consumers.unscoped && consumers.signals.size > 0 && [...consumers.signals.keys()].every((s) => s.aborted);
+  }
+  private cancellationAttempts(id: string): number[] | undefined {
+    const consumers = this.submitScopes.get(id), attempts = [...(consumers?.signals.values() ?? [])];
+    return consumers && !consumers.unscoped && attempts.length && attempts.every((a) => a !== undefined)
+      ? [...new Set(attempts as number[])] : undefined;
   }
 
   // ---- the loop ----
@@ -373,15 +463,25 @@ export class Queue {
     if (this.role === 'follower' || !this.key) { this.resume(); return true; } // nothing to probe with: trust the browser
     if (now < this.probeAt) return false;
     this.probeAt = now + PROBE_MS;
-    try { await this.deps.api(this.key, 'GET', '/balance'); } catch (e) { if (isNetwork(e)) return false; } // any answer = back online
+    const credentialRevision = this.keyRevision;
+    try { await this.deps.api(this.key, 'GET', '/balance'); } catch (e) {
+      if (credentialRevision !== this.keyRevision) return false;
+      if (isNetwork(e)) return false;
+      if (e instanceof ApiError && (e.kind === 'auth' || e.kind === 'credits')) { this.paused = e.kind; this.emit(); return false; }
+    }
+    if (credentialRevision !== this.keyRevision) return false;
     if (this.paused === 'offline') this.resume();
     return true;
   }
   async tick(): Promise<void> {
+    const connection = this.connection;
+    const disconnected = () => this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted);
+    if (disconnected()) return;
     const now = this.deps.now();
-    if (!(await this.network(now))) return;
+    if (!(await this.network(now)) || disconnected()) return;
     if (this.role === 'follower') return; // the leader tab submits and polls
     if (this.role === 'leader' && now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS)) { this.merged = now; await this.merge(); }
+    if (disconnected()) return; // a suspended tick cannot drive jobs after its lock/session was released
     const ops: Promise<void>[] = [];
     if (this.key && !this.paused) {
       let active = [...this.recs.values()].filter((r) => r.state === 'submitting' || r.state === 'running').length;
@@ -409,6 +509,8 @@ export class Queue {
   }
 
   private async submit(r: JobRec) {
+    const connection = this.connection;
+    let credentialRevision: number | undefined;
     r.state = 'submitting';
     r.attempts++;
     await this.save(r); // persisted before the request leaves
@@ -422,8 +524,19 @@ export class Queue {
           return { ...rest, base64: bytesToBase64(new Uint8Array(await blob.arrayBuffer())) };
         })();
       });
-      const res = await this.deps.api<SubmitResponse>(this.key, r.method, r.endpoint, body ?? undefined);
+      // Persisting and rehydrating inputs await storage. A released queue or failed sibling must not send afterward.
+      if ((this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted)) || this.flowAborted(r.id)) {
+        Object.assign(r, { state: 'cancelled', error: 'Request stopped before sending. No API request was made.', finishedAt: this.deps.now(), autoCancelledAttempts: this.cancellationAttempts(r.id) });
+        this.submitScopes.delete(r.id);
+        await this.save(r);
+        return;
+      }
+      // Once invoked, HTTP may have left the browser. Scope cancellation never aborts it or changes uncertainty handling.
       r.submittedAt = this.deps.now();
+      credentialRevision = this.keyRevision;
+      const response = this.deps.api<SubmitResponse>(this.key, r.method, r.endpoint, body ?? undefined);
+      this.emit(); // notify only after HTTP invocation; listeners cannot reopen the guarded pre-submit boundary
+      const res = await response;
       r.response = strip(res);
       const ids = jobIdsOf(res);
       r.jobs = ids.map((id) => ({ id, status: 'submitted', done: false, results: [] }));
@@ -432,10 +545,18 @@ export class Queue {
       if (++this.streak >= 5 && this.current < this.concurrency) { this.current++; this.streak = 0; }
     } catch (e) {
       const err = e instanceof ApiError ? e : new ApiError(-1, 'other', (e as Error)?.message ?? String(e));
+      const currentCredential = credentialRevision === this.keyRevision;
       r.error = err.message;
       this.streak = 0;
       // refused before any job existed; B15 live: a 500 "Failed to start any animation jobs" (busy account) said so in words
-      if (err.kind === 'retry' && (r.method !== 'POST' || rejected(err.status) || NOT_STARTED.test(err.message))) {
+      if (r.method === 'POST' && hasJobEvidence(err.body)) {
+        // Accepted-job evidence outranks every error classification, including auth/credits that normally wait for reconnection.
+        if (currentCredential && (err.kind === 'auth' || err.kind === 'credits')) this.paused = err.kind;
+        r.state = 'lost';
+        r.response = strip(err.body); // retain the known identifiers for manual review without resubmitting
+        r.error = `PixelLab returned job evidence with an error (${err.message}). The request may have run and been charged; not resent.`;
+        r.finishedAt = this.deps.now();
+      } else if (err.kind === 'retry' && (r.method !== 'POST' || rejected(err.status) || noAnimationJobsStarted(r.endpoint, err))) {
         if (err.status === 429) this.current = Math.max(1, this.current - 1);
         r.state = 'queued';
         r.nextAt = this.deps.now() + backoff(r.attempts);
@@ -443,27 +564,29 @@ export class Queue {
         r.state = 'lost';
         r.error = `no clear answer from PixelLab (${err.message}). The job may have run and been charged (check pixellab.ai); not resent.`;
         r.finishedAt = this.deps.now();
-        if (isNetwork(err)) this.goOffline(); // B15: stop here instead of losing the next queued job too
+        if (currentCredential && isNetwork(err)) this.goOffline(); // B15: stop here instead of losing the next queued job too
       } else if (err.kind === 'auth' || err.kind === 'credits') {
-        this.paused = err.kind;
+        if (currentCredential) this.paused = err.kind;
         r.state = 'queued';
       } else {
         r.state = 'failed';
         r.finishedAt = this.deps.now();
       }
     }
+    if (r.state !== 'queued') this.submitScopes.delete(r.id);
     await this.save(r);
   }
 
   private async poll(r: JobRec, s: SubJob) {
     s.lastPoll = this.deps.now();
     let job: Job;
+    const credentialRevision = this.keyRevision;
     try {
       job = await this.deps.api<Job>(this.key, 'GET', `/background-jobs/${encodeURIComponent(s.id)}`);
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
-      if (e.kind === 'auth') this.paused = 'auth';
-      else if (isNetwork(e)) { s.error = e.message; this.goOffline(); } // B15
+      if (e.kind === 'auth') { s.error = e.message; if (credentialRevision === this.keyRevision) this.paused = 'auth'; }
+      else if (isNetwork(e)) { s.error = e.message; if (credentialRevision === this.keyRevision) this.goOffline(); } // B15
       else if (e.kind === 'notfound' && this.deps.now() - (r.submittedAt ?? 0) > LOST_AFTER_MS) {
         s.done = true;
         s.status = 'lost';
@@ -559,14 +682,16 @@ export class Queue {
   }
 
   // ---- user actions ----
-  async cancel(id: string) {
+  async cancel(id: string, queuedOnly = false) {
     const r = this.recs.get(id);
-    if (!r) return;
+    if (!r || (queuedOnly && r.state !== 'queued')) return;
+    if (!queuedOnly) delete r.autoCancelledAttempts; // an explicit user cancellation is never reopened by recovery
     if (this.role === 'follower' && r.state === 'running') { // the leader's next poll sees the cancel; never write its record
       for (const s of r.jobs.filter((s) => !s.done)) await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`).catch(() => {});
       return;
     }
     if (r.state === 'queued') {
+      this.submitScopes.delete(r.id);
       r.state = 'cancelled';
       r.finishedAt = this.deps.now();
     } else if (r.state === 'running') {
@@ -660,6 +785,8 @@ export async function selfTest() {
   await robustTest();
   await offlineTest();
   await notStartedTest();
+  await handoffTest();
+  await disconnectedLockTest();
   await lockTest();
 }
 
@@ -672,7 +799,7 @@ async function notStartedTest() {
     put: async (k, r) => void store.set(k, structuredClone(r)), get: async (k) => structuredClone(store.get(k)), del: async (k) => store.delete(k),
     all: async () => [...store.values()].map((r) => structuredClone(r)), putBlob: async () => 'x', getBlob: async () => undefined, fetchBytes: async () => new Uint8Array(),
     api: async <T>(_k: string, method: string): Promise<T> => {
-      if (method === 'POST' && ++posts === 1) throw new ApiError(500, 'retry', 'POST /characters/animations -> 500: Failed to start any animation jobs');
+      if (method === 'POST' && ++posts === 1) throw new ApiError(500, 'retry', 'POST /characters/animations -> 500: Failed to start any animation jobs', { detail: 'Failed to start any animation jobs' });
       return (method === 'POST' ? { background_job_ids: ['j'] } : { id: 'j', status: 'processing', created_at: '' }) as T;
     },
   });
@@ -765,7 +892,7 @@ async function robustTest() {
   const st = (r: JobRec) => store.get(r.id)!;
   console.assert(st(net).state === 'lost' && st(gw).state === 'lost' && posts['/net'] === 1 && posts['/gw'] === 1, `network error / 502 on a paid POST: lost, sent once (${st(net).state} ${posts['/net']}, ${st(gw).state} ${posts['/gw']})`);
   console.assert(/may have run/.test(st(net).error ?? ''), 'lost says the job may have run');
-  console.assert(st(busy).state === 'running' && posts['/busy'] === 2, `503 (refused) is resent (${st(busy).state} ${posts['/busy']})`);
+  console.assert(st(busy).state === 'lost' && posts['/busy'] === 1, `generic 503 is uncertain and never resent (${st(busy).state} ${posts['/busy']})`);
   console.assert(st(ch).state === 'done' && gets === 2, `GET retries after a network error (${st(ch).state} ${gets})`);
   console.assert(st(img).state === 'failed' && !posts['/img'] && /missing/.test(st(img).error ?? ''), `missing input image: failed, nothing sent (${st(img).state})`);
 
@@ -777,7 +904,7 @@ async function robustTest() {
 
   const keep = new Set([url.id]);
   const n = await q.clearFinished((r) => keep.has(r.id));
-  console.assert(store.has(url.id) && !store.has(bad.id) && store.has(busy.id) && n === 5, `clear finished keeps referenced and live records (${n})`);
+  console.assert(store.has(url.id) && !store.has(bad.id) && !store.has(busy.id) && n === 6, `clear finished keeps referenced records and removes terminal unknowns (${n})`);
 }
 
 /** A minimal Web Locks stand-in: one holder, FIFO waiters, ifAvailable. */
@@ -788,6 +915,7 @@ function fakeLocks(): Pick<LockManager, 'request'> {
   return {
     request: ((_name: string, a: LockOptions | LockGrantedCallback<unknown>, b?: LockGrantedCallback<unknown>) => {
       const [opts, cb] = typeof a === 'function' ? [{} as LockOptions, a] : [a, b!];
+      if (opts.ifAvailable && opts.signal) return Promise.reject(new DOMException('signal and ifAvailable cannot be combined', 'NotSupportedError'));
       if (!held) return grant(cb);
       if (opts.ifAvailable) return Promise.resolve(cb(null));
       return new Promise<unknown>((res) => waiters.push(() => res(grant(cb))));
@@ -817,23 +945,28 @@ async function lockTest() {
   await a.connect();
   await b.connect();
   console.assert(a.role === 'leader' && b.role === 'follower' && b.snapshot().role === 'follower', `roles ${a.role}/${b.role}`);
-  b.setKey('k'); // key entered in the follower tab reaches the leader
-  for (let i = 0; i < 20 && !a.key; i++) await new Promise((r) => setTimeout(r, 5));
-  console.assert(a.key === 'k', 'leader adopts the key from a follower tab');
-  const spy = new BroadcastChannel(LOCK), heard: unknown[] = []; // R6 P1-4: another same-origin page asks for the key
+  const spy = new BroadcastChannel(LOCK), heard: unknown[] = [];
   spy.onmessage = (e) => heard.push(e.data);
+  b.setKey('synthetic-follower-token');
+  await new Promise((r) => setTimeout(r, 20));
+  console.assert(a.key === '' && b.key === 'synthetic-follower-token', 'typed key stays private to the connected tab');
+  console.assert(!JSON.stringify(heard).includes('synthetic-follower-token'), 'an origin-wide listener never receives typed credentials');
+  spy.postMessage({ key: 'synthetic-injected-token' }); // old or malicious same-origin sender
   spy.postMessage({ ask: true });
   await new Promise((r) => setTimeout(r, 20));
-  console.assert(!heard.some((m) => typeof (m as Msg).key === 'string'), 'nobody hands the key to an ask');
-  spy.close();
-  a.paused = 'auth'; // R6 P2-8: the leader's key was rejected, the user types a new one in the follower tab
-  b.setKey('k2');
-  for (let i = 0; i < 20 && a.key !== 'k2'; i++) await new Promise((r) => setTimeout(r, 5));
-  console.assert(a.key === 'k2' && !a.paused, 'leader paused on auth adopts the new key');
+  console.assert(a.key === '' && b.key === 'synthetic-follower-token', 'credential injection and key requests are ignored');
+  a.setKey('k');
+  a.paused = 'auth';
+  b.setKey('synthetic-replacement-token');
+  await new Promise((r) => setTimeout(r, 20));
+  console.assert(a.key === 'k' && a.paused === 'auth', 'a follower cannot replace a rejected leader credential');
+  console.assert(!JSON.stringify(heard).includes('synthetic-replacement-token'), 'replacement credentials are never broadcast');
   b.setKey('');
   for (let i = 0; i < 20 && a.key; i++) await new Promise((r) => setTimeout(r, 5));
-  console.assert(a.key === '', 'Forget key in a follower tab stops the leader');
-  a.setKey('k'); b.setKey('k', false);
+  console.assert(a.key === '', 'credential-free Forget signal stops the leader');
+  console.assert(!heard.some((m) => typeof (m as Record<string, unknown>).key === 'string'), 'queue notifications never contain a key');
+  spy.close();
+  a.setKey('k'); b.setKey('k');
   const hang = await a.enqueue({ method: 'POST', path: '/hang', body: { seed: 1 } });
   void a.tick();
   await tick();
@@ -864,4 +997,50 @@ async function lockTest() {
   console.assert(b.role === 'leader' && c.role === 'follower', `next tab takes over (${b.role}, ${c.role})`);
   console.assert(store.get(hang.id)?.state === 'lost', 'orphaned submit is marked lost only by the new leader');
   b.disconnect(); c.disconnect();
+}
+
+
+// A keyless leader cannot borrow a follower key; closing it lets that follower resume safely with its own key.
+async function handoffTest() {
+  const store = new Map<string, JobRec>(), locks = fakeLocks(), tick = () => new Promise((r) => setTimeout(r, 0));
+  let t = 1000, posts = 0, usedKey = '';
+  const deps: Partial<Deps> = {
+    locks, now: () => t,
+    put: async (k, r) => void store.set(k, structuredClone(r)), get: async (k) => structuredClone(store.get(k)),
+    all: async () => [...store.values()].map((r) => structuredClone(r)),
+    api: async <T>(key: string): Promise<T> => { posts++; usedKey = key; return { usage: { type: 'generations', generations: 0.1 } } as T; },
+  };
+  const a = new Queue(deps), b = new Queue(deps);
+  await a.connect(); await b.connect();
+  b.setKey('synthetic-private-handoff-key');
+  const rec = await b.enqueue({ method: 'POST', path: '/handoff', body: { seed: 123 } });
+  t += FULL_SYNC_MS + 1;
+  await a.tick(); await b.tick();
+  console.assert(posts === 0 && a.key === '' && store.get(rec.id)?.state === 'queued', 'keyless leader leaves follower work queued without borrowing its key');
+  a.disconnect();
+  await tick(); await tick(); await tick();
+  await b.tick(); await b.tick();
+  console.assert(b.role === 'leader' && posts === 1 && usedKey === 'synthetic-private-handoff-key' && store.get(rec.id)?.state === 'done', 'connected follower takes over and submits its queued work exactly once with its own key');
+  b.disconnect();
+}
+
+// A follower disconnected while waiting for the Web Lock must never become an active queue later (HMR/remount).
+async function disconnectedLockTest() {
+  const locks = fakeLocks(), tick = () => new Promise((r) => setTimeout(r, 0));
+  const deps: Partial<Deps> = { locks, all: async () => [], put: async () => {}, now: () => 1000 };
+  const a = new Queue(deps), b = new Queue(deps), c = new Queue(deps);
+  await a.connect(); await b.connect(); await c.connect();
+  b.disconnect();
+  a.disconnect();
+  for (let i = 0; i < 6; i++) await tick();
+  console.assert(b.role === 'follower' && c.role === 'leader', 'disconnected follower skips lock takeover; next live tab becomes leader');
+  c.disconnect();
+  // Disconnect during the asynchronous ledger load must also prevent restarting the ticker.
+  let finish!: () => void;
+  const slow = new Queue({ ...deps, locks: null, all: () => new Promise((res) => { finish = () => res([]); }) });
+  let starts = 0;
+  slow.start = () => { starts++; };
+  const pending = slow.connect();
+  slow.disconnect(); finish(); await pending;
+  console.assert(starts === 0, 'disconnect during ledger load never restarts the queue timer');
 }

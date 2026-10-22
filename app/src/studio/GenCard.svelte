@@ -2,8 +2,7 @@
   // A generating item: progress from the ledger, then the review (auto-finish with accept / try again at the end, PLAN D7).
   import { bakedFrame, composeCell } from '../lib/compose/compose.ts'
   import { queue } from '../lib/pixellab/queue.ts'
-  import { failsOf } from '../lib/items/run.ts'
-  import { itemRoute } from './itemRoute.ts'
+  import { failsOf, gensOf, usdOf, hasStructuralFailure } from '../lib/items/run.ts'
   import { planGens } from '../lib/items/items.ts'
   import Sprite from './Sprite.svelte'
   import { groupOf, plainReason } from './model.ts'
@@ -13,13 +12,18 @@
 
   let { g }: { g: Gen } = $props()
   const p = $derived(genProgress(g, $queue.jobs))
+  const spent = $derived(gensOf(g.draft, $queue.jobs))
+  const spentUsd = $derived(usdOf(g.draft, $queue.jobs))
   const res = $derived(store.results[g.draft.spec.id])
   const prev = $derived(res?.preview)
-  const anim = $derived(prev?.manifest.rig.animations.find((a) => a.id === g.draft.spec.anims[0]))
+  const anims = $derived(prev?.manifest.rig.animations.filter((a) => g.draft.spec.anims.includes(a.id)) ?? [])
+  const anim = $derived(anims.find((a) => a.id === ui.anim) ?? anims[0])
+  const dirs = $derived(prev && anim ? prev.manifest.rig.directions.filter((d) => (g.draft.spec.clipDirs?.[anim.id] ?? g.draft.spec.dirs).includes(d.mirrorOf ?? d.id)) : [])
   const k = $derived(Math.max(1, Math.floor(ui.dpr)))
   const frame = $derived(prev ? bakedFrame(prev.manifest) : undefined) // a 96 px held item shows whole
   const reasons = $derived(res ? [...new Set(g.draft.calls.flatMap((_, i) => failsOf(res, i)).map(plainReason))] : [])
   const warns = $derived(res?.qa?.warnings.map(plainReason) ?? [])
+  const clean = $derived(res?.qa?.qa.status === 'pass' && res.g1.size === 0 && res.qa.failCalls.size === 0 && res.qa.warnings.length === 0)
   let busy = $state(false)
   async function accept() { busy = true; try { await acceptGen(g) } finally { busy = false } }
   // wear the draft in the review previews
@@ -32,7 +36,7 @@
     <p class="insp-sub">
       <span>{groupOf(g.input.slot).id}</span>
       {#if g.phase === 'review'}
-        {#if res?.qa?.qa.status === 'pass'}<span class="badge clean"><CircleCheck size={12} />Clean</span>{:else}<span class="badge look"><TriangleAlert size={12} />Needs a look</span>{/if}
+        {#if clean}<span class="badge clean"><CircleCheck size={12} />Clean</span>{:else}<span class="badge look"><TriangleAlert size={12} />Needs a look</span>{/if}
       {:else if g.phase === 'failed'}<span class="badge look"><CircleAlert size={12} />Failed</span>
       {:else}<span class="badge accent">Generating</span>{/if}
     </p>
@@ -43,14 +47,15 @@
       <div class="field-row small"><span>{g.status || 'Starting'}</span><span class="num muted">{p.pct}%</span></div>
       <div class="track" role="progressbar" aria-valuenow={p.pct} aria-valuemin={0} aria-valuemax={100} aria-label="{g.input.name} progress"><div class="fill" style:width="{Math.max(4, p.pct)}%"></div></div>
       <p class="muted small">
-        {#if !app.key}Waiting for your PixelLab key.{:else if $queue.paused === 'offline'}Paused while you're offline; it continues by itself.{:else if $queue.paused}PixelLab paused the queue ({$queue.paused}).{:else}{g.draft.calls.length} batches of frames · about {5 + Math.ceil(g.draft.calls.length / 3) * 2} min. You can keep dressing up or close the tab; it picks up where it left off.{/if}
+        {#if !app.key}Waiting for your PixelLab key.{:else if $queue.paused === 'offline'}Paused while you're offline. Submitted jobs may still finish or charge.{:else if $queue.paused}PixelLab paused the queue ({$queue.paused}).{:else}{g.draft.calls.length} batches of frames · about {5 + Math.ceil(g.draft.calls.length / 3) * 2} min + queue time. Keep this tab open while PixelLab responds. You can keep dressing up. Unknown outcomes stop for review in Activity.{/if}
       </p>
     </div>
   {/if}
 
   {#if prev && anim}
+    <label class="field"><span class="label small">Preview move</span><select class="input" value={anim.id} onchange={(e) => { ui.anim = e.currentTarget.value; ui.frame = 0 }}>{#each anims as a (a.id)}<option value={a.id}>{a.id[0].toUpperCase() + a.id.slice(1).replace(/-/g, ' ')}</option>{/each}</select></label>
     <div class="review-grid" aria-label="Preview in every direction">
-      {#each prev.manifest.rig.directions as d (d.id)}
+      {#each dirs as d (d.id)}
         <figure>
           <Sprite img={composeCell(prev, outfit, anim.id, d.id, anim.frames[ui.frame % anim.frames.length].cell, frame)} {k} w={frame?.w} h={frame?.h} checker label="{g.input.name} facing {d.id}" />
           {d.id[0].toUpperCase() + d.id.slice(1)}
@@ -64,22 +69,25 @@
       <p class="muted small">Checking the frames…</p>
     {:else if reasons.length || warns.length}
       <ul class="reasons small">{#each [...new Set([...reasons, ...warns])] as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
-    {:else}
+    {:else if clean}
       <p class="muted small">Every frame passed the checks.</p>
+    {:else}
+      <p class="muted small">Some checks need review.</p>
     {/if}
     <div class="actions">
-      <button class="btn primary" onclick={accept} disabled={busy || !res?.qa}>Keep it</button>
-      <button class="btn" onclick={() => retryGen(g)} disabled={busy}>Try again <span class="cost">{planGens(g.draft.calls.map((c) => ({ kind: c.kind ?? 'edit', cells: c.cells })))} gens</span></button>
+      <button class="btn primary" onclick={accept} disabled={busy || !res?.qa || hasStructuralFailure(res)}>Keep it</button>
+      <button class="btn" onclick={() => retryGen(g)} disabled={busy}>Try again <span class="cost">Est. {planGens(g.draft.calls.map((c) => ({ kind: c.kind ?? 'edit', cells: c.cells })))} gens</span></button>
       <button class="btn plain danger" onclick={() => discardGen(g)} disabled={busy}>Discard</button>
     </div>
   {:else if g.phase === 'failed'}
     <p class="notice bad small"><CircleAlert size={14} />{g.error?.includes('5000') || g.error?.toLowerCase().includes('policy') ? 'PixelLab declined this prompt. Try different words.' : 'This item could not be made.'}</p>
     <div class="actions">
-      <button class="btn primary" onclick={() => retryGen(g)}>Try again</button>
+      <button class="btn primary" onclick={() => retryGen(g)}>Try again <span class="cost">Est. {planGens(g.draft.calls.map((c) => ({ kind: c.kind ?? 'edit', cells: c.cells })))} gens</span></button>
       <button class="btn plain danger" onclick={() => discardGen(g)}>Discard</button>
     </div>
   {/if}
 
+  {#if g.phase !== 'running'}<p class="faint small">PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.</p>{/if}
   <details class="disclosure">
     <summary><ChevronRight size={14} />Details</summary>
     <div>
@@ -88,7 +96,7 @@
         <dt>Slot</dt><dd>{g.draft.spec.slot} · {g.draft.spec.key} key</dd>
         <dt>Moves</dt><dd>{g.draft.spec.anims.join(', ')} × {g.draft.spec.dirs.join(', ')}</dd>
         <dt>Calls</dt><dd>{g.draft.calls.map((c, i) => `${i + 1}: ${c.cells.length} cells${c.rerolls ? `, ${c.rerolls} re-rolls` : ''}`).join(' · ')}</dd>
-        <dt>Spent</dt><dd>{+itemRoute.spent(g.draft).toFixed(1)} gens</dd>
+        <dt>Spent</dt><dd>{+spent.toFixed(2)} gens{spentUsd ? ` + $${spentUsd.toFixed(3)}` : ''}</dd>
         {#if g.error}<dt>Error</dt><dd>{g.error}</dd>{/if}
       </dl>
       {#if g.draft.log.length}<p class="faint small">{g.draft.log.join(' · ')}</p>{/if}

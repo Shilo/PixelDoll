@@ -61,6 +61,7 @@ export interface Item {
   dressed?: Partial<Record<DirectionName, Sha256>>; // skeleton-pose: dressed chroma keyframes
   anchorCell?: CellKey; // ea2-anchor: design-call cell passed as frame 1 to later calls
   provenance: Provenance[];
+  designWarnings?: string[]; // explicitly accepted keyframe design issues, retained when move QA is replaced
   qa?: ItemQa; // not read by compose/export
 }
 /** Scalar checks for one evaluation; extrema or totals over its frames. */

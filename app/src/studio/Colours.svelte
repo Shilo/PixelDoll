@@ -46,13 +46,13 @@
             <span class="faint small">Follows {nameOf(mat.linkTo)}</span>
           {:else}
             <div class="swatches" role="radiogroup" aria-label="{names[mi]} colour">
-              <button class="swatch" role="radio" aria-checked={!pick} title="Original" aria-label="Original" onclick={() => setVariant(mat.id, null)}>
+              <button class="swatch" role="radio" aria-checked={!pick} tabindex={!pick || pick.startsWith('#') ? 0 : -1} title="Original" aria-label="Original" onclick={() => setVariant(mat.id, null)}>
                 {#each mat.ramp as c, i (i)}<i style:background={c}></i>{/each}
               </button>
               {#each Object.keys(SWATCHES) as name (name)}
                 {@const r = variantRampOf(mat, name)}
                 {#if r}
-                  <button class="swatch" role="radio" aria-checked={pick === name} title={name} aria-label={name} onclick={() => setVariant(mat.id, name)}>
+                  <button class="swatch" role="radio" aria-checked={pick === name} tabindex={pick === name ? 0 : -1} title={name} aria-label={name} onclick={() => setVariant(mat.id, name)}>
                     {#each r as c, i (i)}<i style:background={c}></i>{/each}
                   </button>
                 {/if}

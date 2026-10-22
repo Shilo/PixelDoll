@@ -12,6 +12,25 @@ export type OutFile = { name: string; data: string | Img | Uint8Array };
 /** Invariants checked before export (spec §3); export refuses on any error. Stale items are warnings, not errors. */
 export function validate(p: Project): string[] {
   const m = p.manifest, e = validateRig(m.rig);
+  // IDs become archive paths and engine resource names; validate them before producing either.
+  const id = /^[a-z0-9][a-z0-9_-]*$/;
+  for (const [kind, rows] of [['slot', m.slots], ['material', m.materials], ['preset', m.presets]] as const) {
+    const ids = new Set<string>();
+    for (const row of rows) {
+      if (!id.test(row.id)) e.push(`${kind} id "${row.id}" is invalid`);
+      if (ids.has(row.id)) e.push(`duplicate ${kind} id ${row.id}`);
+      ids.add(row.id);
+    }
+  }
+  const itemIds = new Set<string>();
+  for (const it of m.items) {
+    const variant = it.variantOf && it.under && id.test(it.variantOf) && id.test(it.under) && it.id === `${it.variantOf}~${it.under}`;
+    if (!id.test(it.id) && !variant) e.push(`item id "${it.id}" is invalid`);
+    if (itemIds.has(it.id)) e.push(`duplicate item id ${it.id}`);
+    itemIds.add(it.id);
+    if (new Set(it.layers.map((l) => l.id)).size !== it.layers.length) e.push(`${it.id}: duplicate layer id`);
+    if (it.designWarnings !== undefined && (!Array.isArray(it.designWarnings) || it.designWarnings.length > 100 || it.designWarnings.some((why) => typeof why !== 'string' || !why.trim() || why.length > 2000))) e.push(`${it.id}: invalid accepted appearance warnings`);
+  }
   const bodies = m.items.filter((i) => i.slot === 'body');
   if (bodies.length !== 1 || bodies[0].id !== m.rig.baseItem) e.push('exactly one item in slot "body" must be rig.baseItem');
   const seen = new Map<string, string>();
@@ -24,7 +43,8 @@ export function validate(p: Project): string[] {
     if (!m.slots.some((s) => s.id === it.slot)) e.push(`${it.id}: unknown slot ${it.slot}`);
     for (const l of it.layers) {
       const f = layerFrame(m.rig, l);
-      if (![f.w, f.h, f.x, f.y].every(Number.isInteger) || f.w < 1 || f.h < 1) e.push(`${it.id}.${l.id}: cell ${f.w}x${f.h} / pivot ${f.x},${f.y} must be integers`);
+      if (!['main', 'fg', 'bg'].includes(l.id) || !['fg', 'bg'].includes(l.role)) e.push(`${it.id}: invalid layer id or role`);
+      if (![f.w, f.h, f.x, f.y].every(Number.isInteger) || f.w < 1 || f.h < 1 || f.w > 256 || f.h > 256 || f.x < 0 || f.x > f.w || f.y < 0 || f.y > f.h) e.push(`${it.id}.${l.id}: cell ${f.w}x${f.h} must be 1–256 px with an integer pivot inside the cell`);
       // a mirrored row is a flip of the whole layer cell: only correct if that cell is centred on the rig cell
       if (mirrored && 2 * (m.rig.pivot.x - f.x) + f.w !== m.rig.cell.w) e.push(`${it.id}.${l.id}: cell ${f.w} with pivot x ${f.x} is not centred on the rig cell (mirrored directions flip it)`);
       for (const [anim, dirs] of Object.entries(l.cells ?? {})) {
@@ -117,6 +137,9 @@ What is inside
   project.json   editable character for importing back into PixelDoll
   cells/         original frame and rest images for the editable copy
 
+Outfit colours are baked into additional item layers, reused by matching outfits. The source layers remain available.
+A coloured body is a synced body_colour layer; its hidden original body remains the animation clock.
+
 Moves: ${moves.join(', ')}.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.
 Pixel art: use nearest-neighbour filtering and whole-pixel positions.
@@ -136,7 +159,7 @@ export function coreFiles(p: Project, m: Manifest): OutFile[] {
 }
 
 /** generic/<item>_<layer>/<anim>_<dir>_strip<N>.png and baked/<preset>/<anim>.png (reuses the layer sheets already built).
- *  Layer sheets keep source ramps (materials + preset variants are in the manifest); baked sheets apply the preset's variants. */
+ *  Outfit colour copies are already baked by withColourVariants(); original inventory sheets retain their source ramps. */
 export function genericFiles(p: Project, m: Manifest, sheets: Map<string, Img>, o: { strips: boolean; baked: boolean }): OutFile[] {
   const files: OutFile[] = [];
   const { rig } = m;

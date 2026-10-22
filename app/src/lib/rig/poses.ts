@@ -16,7 +16,7 @@ export const ARMS = ['RIGHT SHOULDER', 'RIGHT ELBOW', 'RIGHT ARM', 'LEFT SHOULDE
 export const toApi = (s: Skeleton, cell: { w: number; h: number }): Keypoint[] =>
   LABELS.map((l) => ({ label: l, x: +Math.min(1, Math.max(0, s[l].x / cell.w)).toFixed(4), y: +Math.min(1, Math.max(0, s[l].y / cell.h)).toFixed(4) }));
 export const fromApi = (k: Keypoint[], cell: { w: number; h: number }): Skeleton => Object.fromEntries(k.map((p) => [p.label, { x: p.x * cell.w, y: p.y * cell.h, z: 0 }]));
-export const hasAll = (k?: Keypoint[]) => !!k && LABELS.every((l) => k.some((p) => p.label === l && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1));
+export const hasAll = (k?: Keypoint[]) => Array.isArray(k) && k.length === LABELS.length && new Set(k.map((p) => p?.label)).size === LABELS.length && k.every((p) => p && LABELS.includes(p.label) && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1);
 
 const clone = (p: Skeleton): Skeleton => Object.fromEntries(Object.entries(p).map(([l, k]) => [l, { ...k }]));
 const mid = (p: Skeleton, ls: string[]) => ({ x: ls.reduce((s, l) => s + p[l].x, 0) / ls.length, y: ls.reduce((s, l) => s + p[l].y, 0) / ls.length });
@@ -112,7 +112,14 @@ export function authoredPoses(action: string, rest: Skeleton, dir: DirectionName
 
 /** Mean px distance of `labels` between requested and measured poses (pose adherence, rig QA §3.2). */
 export function adherence(req: Skeleton[], got: (Skeleton | undefined)[], labels = ARMS): number {
-  const d = req.flatMap((r, i) => labels.filter((l) => r[l] && got[i]?.[l]).map((l) => Math.hypot(r[l].x - got[i]![l].x, r[l].y - got[i]![l].y)));
+  // Every requested observation must be measured. Dropping missing frames/joints biases the mean toward the good frames.
+  if (req.length !== got.length) return Infinity;
+  const d: number[] = [];
+  for (const [i, r] of req.entries()) for (const l of labels.filter((l) => r[l])) {
+    const p = got[i]?.[l];
+    if (!p || ![r[l].x, r[l].y, p.x, p.y].every(Number.isFinite)) return Infinity;
+    d.push(Math.hypot(r[l].x - p.x, r[l].y - p.y));
+  }
   return d.length ? d.reduce((s, v) => s + v, 0) / d.length : Infinity;
 }
 

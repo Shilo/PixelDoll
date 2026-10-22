@@ -57,7 +57,7 @@
 
 {#snippet foot()}
       <span class="foot-note">{plan ? `About ${plan.minutes + 2} min. You can keep working.` : ''}</span>
-      <button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">{plan?.gens ?? '–'} gens</span></button>
+      <button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button>
 {/snippet}
 
 <Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() ? undefined : foot}>
@@ -81,7 +81,7 @@
         <span class="label" id="where">Where does it go?</span>
         <div class="chips" role="radiogroup" aria-labelledby="where">
           {#each GROUPS as x (x.id)}
-            <button class="chip" role="radio" aria-checked={group === x.id} onclick={() => (group = x.id)}><GroupIcon group={x.id} size={14} />{x.id}</button>
+            <button class="chip" role="radio" aria-checked={group === x.id} tabindex={group === x.id ? 0 : -1} onclick={() => (group = x.id)}><GroupIcon group={x.id} size={14} />{x.id}</button>
           {/each}
         </div>
       </div>
@@ -97,12 +97,13 @@
       <div class="field">
         <span class="label">Colour hint <span class="faint">(optional)</span></span>
         <div class="dots" role="radiogroup" aria-label="Colour hint">
-          <button class="dot-swatch none" role="radio" aria-checked={!colour} onclick={() => (colour = '')}>Any</button>
+          <button class="dot-swatch none" role="radio" aria-checked={!colour} tabindex={!colour ? 0 : -1} onclick={() => (colour = '')}>Any</button>
           {#each Object.entries(SWATCHES) as [n, hex] (n)}
-            <button class="dot-swatch" role="radio" aria-checked={colour === n} aria-label={n} title={n} style:background={hex} onclick={() => (colour = n)}></button>
+            <button class="dot-swatch" role="radio" aria-checked={colour === n} tabindex={colour === n ? 0 : -1} aria-label={n} title={n} style:background={hex} onclick={() => (colour = n)}></button>
           {/each}
         </div>
       </div>
+      <p class="faint small">PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.</p>
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>

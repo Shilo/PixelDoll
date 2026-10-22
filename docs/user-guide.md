@@ -14,7 +14,8 @@ Open **Connect PixelLab…** from the character menu (top left), or press the ge
 (**Get a key** opens your PixelLab account page), then press **Connect**.
 
 - The key is only sent to PixelLab.
-- It is forgotten when you close PixelDoll, unless you tick **Remember on this device**. **Forget key** removes it.
+- Each tab keeps its own key in memory. Closing that tab forgets it unless you tick **Remember on this device**.
+  **Forget key** clears the key in open PixelDoll tabs and removes the saved key.
 - Remembered keys are shared with PixelLab Backpack on the same website. Open or reload either app to use the saved key;
   **Forget key** removes the shared saved key for both apps.
 - The toolbar then shows how many **gens** you have left.
@@ -22,45 +23,49 @@ Open **Connect PixelLab…** from the character menu (top left), or press the ge
 ## What "gens" cost
 
 A gen is one PixelLab generation from your account's monthly allowance. Before you spend anything, every button that spends
-shows its price, for example **Create 35–50 gens** or **Make 28 gens**. Typical prices:
+shows an estimate, for example **Create 46–80 gens** or **Make · Est. 34 gens**. Typical estimates:
 
 | Action | About |
 |---|---|
-| Create a character (idle + walk, 4 directions) | 35–50 gens, about 12 minutes |
-| Create a character with 8 directions | 57–75 gens, about 18 minutes |
-| Make an item | about 28 gens |
-| Add a move | 30–40 gens |
+| Create a character (idle + walk, 4 independent directions) | 46–80 gens |
+| Create a character with 8 independent directions | 90–150 gens |
+| Mirrored economy mode (4 / 8 directions) | 35–60 / 57–95 gens |
+| Make an item | about 34 gens for a new 4-view idle/walk rig; varies with coverage |
+| Add a move | depends on the move, views and selected items; shown before spending |
 | Try again on an item | shown on the button |
 | Dress up, recolour, outfits, export | free |
 
-The price is an estimate. When an automatic check fails, PixelDoll re-rolls that part, so a job can cost a little more.
-**Activity** shows each job's real cost and your balance. Some calls are billed in dollars instead of gens; your balance is the
-real total.
+PixelLab may bill some calls in dollars. Automatic quality retries and fallbacks cost extra; queue and generation time vary.
+**Activity** shows reported job usage in gens and dollars, plus your balance. Usage can arrive after a job finishes; an unknown
+request may still have run or charged. Estimates are not spending caps.
 
 ## Create a character
 
 Character menu → **New character…**
 
-1. **Name** it, then describe the body under **Who is it?**, for example "a stocky dwarf with a friendly face". Describe only
+1. Describe the body under **Who is it?**, for example "a stocky dwarf with a friendly face". Describe only
    the body. Hair, clothes and gear come later as separate items.
 2. Pick **Skin** and **Build** (slim, average, stocky) if you like.
-3. Press **Create**. You get idle and walk, facing south, east, north and west, as 64 × 64 pixel sprites. West is a mirror of
-   east.
+3. Press **Create**. You get idle and walk, facing south, east, north and west, as 64 × 64 pixel sprites. Each direction
+   has its own artwork by default, avoiding automatic left/right hand swaps. Generated artwork can still get hands or
+   poses wrong, so inspect every view and move before relying on it.
 
 **More options** (folded away; the defaults suit most games):
 
-- **Directions**: **4** (default) or **8**. With 8 you also get the diagonals: south-east, north-east and north-west,
-  south-west, west are mirrors of their east-facing twins. The price on **Create** updates as you choose (8 directions costs
-  about 60 % more).
+- **Directions**: **4** (default) or **8**, including diagonals. The estimate updates with the number of independently drawn views.
+- **Mirror left-facing views to save credits**: optional economy mode. Western views flip their eastern counterparts, so
+  held items switch hands. Older saved creation drafts retain this behavior; changing the setting does not alter existing characters.
 - **Body size**: **48 px** (default) or **56 px** tall inside the same 64 × 64 sprite. 56 px gives a bigger figure but less room
   above the head for tall hats. If a 56 px character comes out too tall to leave 6 px above its head, PixelDoll stops after the
-  first drawing (2 gens) and asks you to try again with 48 px or another seed.
-- **Name** and **Seed** (same seed + same description = the same first drawing).
+  first drawing and asks you to try again with 48 px or another seed.
+- **Name** and **Seed**. A matching completed request can be reused; new PixelLab generations may differ even with the same seed.
 
 New characters wear a light grey shirt and dark grey shorts, so you can tell them apart and recolour them separately.
 
-You can keep working or close the tab while it runs. It picks up where it left off. When it is done, press
-**Start dressing up**.
+Keep this tab open while PixelLab responds; you can keep dressing existing characters. After reopening, PixelDoll can resume requests with a
+known job ID and reuse saved results. If a submitted request has an unknown outcome, generation stops for review in
+**Activity**; it is never automatically sent again. **Try again** starts a new paid attempt and may incur additional charges.
+When creation is done, press **Start dressing up**.
 
 ## Import an existing character
 
@@ -90,7 +95,7 @@ Each character has its own fitted equipment layers. Imported and created charact
 
 Setup supports 64 × 64 humanoid bodies with all four cardinal views or all eight views, and the same headroom needed by created characters. Missing views, empty frames and insufficient headroom are reported before spending. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their real measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
 
-New PixelDoll exports include an editable copy with their original rig, equipment keyframes, layers, colours and outfits. Older exports restore their sheets and outfits; setup can recover the body pose rig, but equipment without its original dressed reference must be made again before it can follow future moves. Unknown or failed setup requests stop for review in **Jobs** instead of being sent again after reload.
+New PixelDoll exports include an editable copy with their original rig, equipment keyframes, layers, colours and outfits. Older exports restore their sheets and outfits; setup can recover the body pose rig, but equipment without its original dressed reference must be made again before it can follow future moves. Unknown or failed setup requests stop for review in **Activity** instead of being sent again after reload.
 
 ## Delete a character
 
@@ -109,14 +114,16 @@ Items are drawn for your own character. On the demo, use **Copy the demo body** 
 
 ### Review: Clean or Needs a look
 
-When an item is done, it appears on your character for review in every direction.
+When an item is done, review it on your character. Use **Preview move** to inspect every generated move and direction,
+including frame edges and the grip of held items.
 
-- **Clean**: every frame passed PixelDoll's checks.
+- **Clean**: the generated coverage passed PixelDoll's automatic checks. This is not a guarantee of correct artwork.
 - **Needs a look**: a check flagged something. The reason is listed, for example "The item touches the frame edge (may be
-  cut off)", "The item switches hands" or "Some body pixels were changed by the model". It is often still fine. Play it, look
-  at each direction, then decide.
+  cut off)", "The item switches hands" or "Some body pixels were changed by the model". Play each move and inspect the
+  flagged frames before deciding. Missing or malformed frame batches cannot be kept; complete artwork with appearance
+  warnings can be kept explicitly, and those warnings remain visible on the saved item.
 
-Then choose **Keep it**, **Try again** (spends gens again) or **Discard**.
+Then choose **Keep it**, **Try again** (starts another paid attempt, in gens or dollars) or **Discard**.
 
 ## Dress up
 
@@ -128,7 +135,8 @@ Then choose **Keep it**, **Try again** (spends gens again) or **Discard**.
 - **Undo** and **Redo** are in the toolbar (Ctrl+Z, Ctrl+Shift+Z).
 - **Outfits**: press **Save current look** and give it a name. Outfits are exported too, so your game can switch between them.
 
-Everything saves on this device automatically.
+Changes save automatically in this browser on this device. If storage fails, follow the visible error and retry. Export
+a copy for backup; clearing browser data removes local projects.
 
 ## Recolour
 
@@ -145,22 +153,33 @@ describe it**, for example "jumping in place". Items you tick under **Animate th
 Items you leave out stay hidden in that move until you make them. A worn item without frames for the current move shows
 a note on the stage with **Make it** and its price.
 
-Moves are added to your own characters (not the demo).
+Moves are added to your own characters (not the demo), using their existing direction policy. Older mirrored characters
+stay mirrored; the new-character setting does not rebuild their frozen artwork.
 
 ## Export
 
-Press **Export** (toolbar), choose **For which engine?**: Godot, Unity, Phaser or PNG + JSON, and download the zip. Export is
+Press **Export** (toolbar), choose **For which engine?**: Godot, Unity, Phaser, Aseprite or PNG + JSON, and download the zip. Export is
 free and runs on your device. Tick **Also export finished characters** to also get one ready-made sheet per outfit.
 
 Each zip has a `README.txt` with a quick start for that engine. Copy the whole folder into your project.
 
+Exported outfits keep their selected colours on separate item layer copies, including skin, shirts and shorts. Matching
+colour combinations share a copy. Original source-colour layers stay available, and importing the ZIP back into PixelDoll
+restores the original editable colours and outfits. In engine assets, a coloured body layer follows a hidden original
+body that provides the shared animation clock.
+
 ## Good to know
 
 - **Activity** (toolbar) lists running jobs with **Stop** and **Cancel**, and your balance.
-- With PixelDoll open in two tabs, one tab runs the jobs ("Working in another tab"). Keep it open.
+- Failed character creation, moves and setup stay stopped after reload. Open their progress sheet to review the error;
+  use the explicit retry/resume action or dismiss it. Reloading does not retry a recorded failure.
+- With PixelDoll open in two tabs, one tab runs the jobs ("Working in another tab"). Keys are not passed between tabs.
+  Connect in the active queue tab, or close it to let this tab take over. A blocked generation action opens **Activity**
+  with this guidance and keeps the form draft.
 - Keys: Space play/pause · 1–4 face south/east/north/west (1–8 on 8-direction characters, in the order of the direction
   buttons) · 0 all directions · , and . step one frame.
-- **Offline?** A small banner says "You're offline — generation paused; everything else works". Running and queued jobs wait
-  (nothing is sent, so no gens are spent on a dead connection) and continue by themselves when you are back online.
-  Dressing up, recolouring, outfits and export keep working.
+- **Offline?** The offline banner pauses new submissions and polling until the connection returns. Requests already sent
+  to PixelLab may finish and charge while you are offline. Known jobs can resume; unknown paid outcomes stop for review
+  rather than being sent again. Dressing up, recolouring, outfits and export work with locally saved artwork while the
+  app is open. Offline reload/install support is not implemented yet.
 - PixelLab may decline some descriptions. Try different words.

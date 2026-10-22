@@ -50,7 +50,7 @@
     <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
     <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
-    <button class="btn primary lg" disabled={!id || have.has(id) || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>Add {id ? nice(id) : 'move'} <span class="cost">{est ? Math.ceil(est.gens) : '–'} gens</span></button>
+    <button class="btn primary lg" disabled={!id || have.has(id) || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>Add {id ? nice(id) : 'move'} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button>
   {/if}
 {/snippet}
 
@@ -78,7 +78,7 @@
         <span class="label" id="act">Move</span>
         <div class="chips" role="radiogroup" aria-labelledby="act">
           {#each options as a (a)}
-            <button class="chip" role="radio" aria-checked={!text.trim() && action === a} disabled={have.has(a)} onclick={() => { action = a; text = '' }}>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a) ? ' · added' : ''}</button>
+            <button class="chip" role="radio" aria-checked={!text.trim() && action === a} tabindex={(text.trim() ? options.find((o) => !have.has(o)) === a : action === a) ? 0 : -1} disabled={have.has(a)} onclick={() => { action = a; text = '' }}>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a) ? ' · added' : ''}</button>
           {/each}
         </div>
       </div>
@@ -96,6 +96,7 @@
           <p class="faint small">Items you leave out stay hidden in this move until they are made again.</p>
         </div>
       {/if}
+      <p class="faint small">PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.</p>
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>

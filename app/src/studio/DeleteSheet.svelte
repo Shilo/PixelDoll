@@ -13,7 +13,7 @@
   }
 </script>
 
-<Sheet title="Delete character?" onclose={() => { if (!busy) ui.sheet = null }}>
+<Sheet title="Delete character?" cancelDisabled={busy} onclose={() => { if (!busy) ui.sheet = null }}>
   <p>Delete <strong>{store.project?.manifest.name}</strong> from this device?</p>
   <p class="muted">This removes its items, outfits, and local changes. This cannot be undone. Export a ZIP first if you want to keep a copy.</p>
   <p class="faint small">Your original character in PixelLab stays in your PixelLab account.</p>

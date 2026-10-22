@@ -104,6 +104,7 @@ export function itemNameFrom(desc: string): string {
 export type Health = 'clean' | 'look' | 'stale' | 'demo';
 export function healthOf(m: Manifest, it: Item): Health {
   if (it.baseHash !== m.rig.baseHash) return 'stale';
+  if (it.designWarnings?.length) return 'look';
   if (!it.qa) return 'demo';
   return it.qa.status === 'pass' ? 'clean' : 'look';
 }

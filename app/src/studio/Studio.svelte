@@ -29,7 +29,7 @@
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
   onMount(() => {
     document.documentElement.dataset.app = 'studio'
-    if (import.meta.env.DEV) (window as unknown as { __studio: unknown }).__studio = { ui, doc, store, gens, creating }
+    if (import.meta.env.DEV) (window as unknown as { __studio: unknown }).__studio = { ui, doc, store, gens, creating, loadGens }
     const off = initUi()
     void (async () => {
       await refreshProjects()
@@ -131,7 +131,7 @@
           <section class="land-col">
             <Toolbar phone />
             <div class="seg full" role="tablist" aria-label="Studio">
-              {#each TABS as [id, label] (id)}<button role="tab" aria-selected={ui.tab === id} onclick={() => (ui.tab = id)}>{label}</button>{/each}
+              {#each TABS as [id, label] (id)}<button role="tab" aria-selected={ui.tab === id} tabindex={ui.tab === id ? 0 : -1} onclick={() => (ui.tab = id)}>{label}</button>{/each}
             </div>
             <PhonePanel />
           </section>
@@ -148,7 +148,7 @@
           {/if}
           <div class="tabbar" role="tablist" aria-label="Studio">
             {#each TABS as [id, label, I] (id)}
-              <button class="tab" role="tab" aria-selected={ui.tab === id} onclick={() => (ui.tab = id)}><I size={20} /><span class="tab-label">{label}</span></button>
+              <button class="tab" role="tab" aria-selected={ui.tab === id} tabindex={ui.tab === id ? 0 : -1} onclick={() => (ui.tab = id)}><I size={20} /><span class="tab-label">{label}</span></button>
             {/each}
           </div>
         </div>

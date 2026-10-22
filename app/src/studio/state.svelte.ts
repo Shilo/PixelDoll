@@ -17,6 +17,15 @@ import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { setupCharacter, type SetupSpec } from './setup.ts';
 
+// Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
+// A full dev reload destroys those closures; the disconnected queue refuses further submissions.
+const hmrReloading = import.meta.hot?.data.flowReloading === true;
+import.meta.hot?.dispose((data) => {
+  data.flowReloading = true;
+  queue.disconnect();
+  window.location.reload();
+});
+
 // ---------- small persistence helpers (every storage access can throw: private mode, blocked site data) ----------
 const lsGet = (k: string) => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k: string, v: string | null) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* ignore */ } };
@@ -72,8 +81,12 @@ export function dismissWelcome() { ui.welcome = false; lsSet(K.welcomed, '1'); }
 let toastT: ReturnType<typeof setTimeout> | undefined;
 export function toast(s: string) { ui.toast = s; clearTimeout(toastT); toastT = setTimeout(() => (ui.toast = ''), 4000); }
 
-/** Only the queue-leader tab drives generations (R6 P1-1). True (with a toast) in a second PixelDoll tab, which only mirrors. */
-const follower = () => queue.role === 'follower' && (toast('PixelDoll is open in another tab. Generate there, or close it to generate here.'), true);
+/** Only the queue-leader tab drives generations. Explain blocked actions above any open native modal. */
+const follower = () => {
+  if (queue.role !== 'follower') return false;
+  ui.sheet = 'activity';
+  return true;
+};
 
 /** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. */
 export function withKey(fn: () => void) {
@@ -129,15 +142,20 @@ export async function refreshProjects() {
   store.projects = [{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' }, ...own.map((p) => ({ id: p.id, name: p.manifest.name, demo: false, dev: originOf(p) === 'dev', savedAt: p.savedAt }))];
 }
 
+let openRequest = 0;
 export async function openProject(id: string, keep?: { wear?: string }) {
+  const request = ++openRequest;
   await flushSave();
+  if (request !== openRequest) return;
   doc.loading = true;
   doc.error = '';
   try {
     const r = await openSource(id);
+    if (request !== openRequest) return;
     const split = await splitBase(r.project); // B15: shirt / shorts colour regions on the base (idempotent; fixtures in memory)
     deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
     if (split.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
+    if (request !== openRequest) return;
     const m = r.project.manifest;
     const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
     doc.items = { ...pr.items };
@@ -157,10 +175,11 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     // Keep it equips the accepted item while opening; persist that edit before a reload or project switch.
     if (keep?.wear) { save(); await flushSave(); }
   } catch (e) {
+    if (request !== openRequest) return;
     doc.error = (e as Error).message;
     if (id !== DEMO) return openProject(DEMO);
   } finally {
-    doc.loading = false;
+    if (request === openRequest) doc.loading = false;
   }
 }
 export const lastProject = () => lsGet(K.last) ?? DEMO;
@@ -239,7 +258,7 @@ export function deletionBlocked(): string {
 export async function removeProject(): Promise<void> {
   const reason = deletionBlocked();
   if (reason) throw new Error(reason);
-  const id = doc.id, name = store.project?.manifest.name ?? 'Character';
+  const id = doc.id, request = openRequest, name = store.project?.manifest.name ?? 'Character';
   await flushSave();
   await db.deleteCharacter(id);
   const deletedDrafts = new Set(gens.filter((g) => g.draft.rigId === id).map((g) => g.draft.spec.id));
@@ -247,9 +266,11 @@ export async function removeProject(): Promise<void> {
   store.results = Object.fromEntries(Object.entries(store.results).filter(([draftId]) => !deletedDrafts.has(draftId)));
   if (creating.projectId === id) Object.assign(creating, { spec: null, projectId: '', progress: null, error: '', warnings: [] });
   if (moving.projectId === id) await dismissMove();
-  lsSet(K.last, null);
   await refreshProjects();
-  await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
+  if (doc.id === id && request === openRequest) {
+    lsSet(K.last, null);
+    await openProject(store.projects.find((p) => !p.demo && !p.dev)?.id ?? DEMO);
+  }
   toast(`Deleted ${name} from this device`);
 }
 
@@ -323,9 +344,11 @@ export function resetLayer(itemId: string) {
 export async function removeItem(itemId: string) {
   const it = itemById(itemId);
   if (!it || isDemo()) return;
-  await deleteItem(doc.id, itemId);
+  const projectId = doc.id, request = openRequest;
+  await flushSave();
+  await deleteItem(projectId, itemId);
   toast(`Removed ${it.name}`);
-  await openProject(doc.id);
+  if (doc.id === projectId && request === openRequest) await openProject(projectId);
 }
 
 /** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. */
@@ -339,14 +362,13 @@ export async function copyDemo(): Promise<string> {
 /** Rename the open (own) character: the manifest name is also the exported name. */
 export async function renameProject(name: string) {
   if (isDemo()) return;
-  const ok = await db.update<{ manifest?: Manifest }>('projects', doc.id, (rec) => {
+  const projectId = doc.id;
+  await db.update<{ manifest?: Manifest }>('projects', projectId, (rec) => {
     if (!rec?.manifest) throw new Error('gone');
     rec.manifest.name = name;
     return rec;
-  }).then(() => true, () => false);
-  if (!ok) return;
-  store.project!.manifest.name = name;
-  bump();
+  });
+  if (doc.id === projectId) { store.project!.manifest.name = name; bump(); }
   await refreshProjects();
 }
 
@@ -380,6 +402,7 @@ function setGens(list: Gen[]) {
 }
 /** Once per page (a second call, e.g. a Studio remount, returns the same promise). */
 export function loadGens(): Promise<void> {
+  if (hmrReloading) return Promise.resolve();
   return (loading ??= (async () => {
     setGens(await readGens());
     gensReady = true;
@@ -419,6 +442,7 @@ async function takeOver() {
 }
 
 export async function startItem(input: NewItemInput) {
+  if (hmrReloading) return;
   const ctx = await loadProject(doc.id);
   const taken = gens.map((g) => g.draft.spec.id);
   gens.push({ draft: itemRoute.draft(ctx, input, taken), input, phase: 'running', status: 'Starting' });
@@ -535,34 +559,62 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number; short: strin
   return { pct, short: waiting ? 'Queued' : `${pct}%`, label: `${g.status || 'Generating'} · ${pct}%` };
 }
 
+// A caught failure must stay terminal across reload; only an explicit start clears it.
+interface FlowDraft<S> { spec: S; status?: 'running' | 'failed'; error?: string; progress?: Progress | null }
+async function persistFlowFailure(key: string, record: object, error: unknown): Promise<string> {
+  const message = error instanceof Error ? error.message : String(error);
+  try { await db.put('projects', key, { id: key, ...record, status: 'failed', error: message }); }
+  catch { return `${message} Could not save this failure on this device. Dismiss this operation before reloading.`; }
+  return message;
+}
+
 // ---------- create character ----------
 export const creating = $state({ spec: null as CreateSpec | null, progress: null as Progress | null, error: '', projectId: '', warnings: [] as string[] });
 const CREATE_KEY = 'studio-create';
+let createRunning = false, createRevision = 0;
 export async function startCreate(spec: CreateSpec) {
+  if (hmrReloading || createRunning) return;
+  createRunning = true;
+  const revision = ++createRevision, current = () => revision === createRevision && createRunning;
+  let failed = false;
+  spec = { ...spec, projectId: spec.projectId ?? `rig-${crypto.randomUUID()}` }; // persisted before paid work; legacy pending specs migrate once
   creating.spec = spec;
   creating.error = '';
   creating.projectId = '';
   creating.progress = null;
-  await db.put('projects', CREATE_KEY, { id: CREATE_KEY, spec });
   try {
-    const id = await createCharacter(spec, (p) => { creating.progress = p; });
+    await db.put('projects', CREATE_KEY, { id: CREATE_KEY, spec, status: 'running' });
+    const id = await createCharacter(spec, (p) => { if (current() && !failed) creating.progress = p; });
+    if (!current()) return;
     creating.projectId = id;
     const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', id);
+    if (!current()) return;
     creating.warnings = rec?.rigQa?.warnings ?? [];
     await db.del('projects', CREATE_KEY);
-    await refreshProjects();
+    if (current()) await refreshProjects();
   } catch (e) {
-    creating.error = (e as Error).message;
+    if (current()) {
+      failed = true;
+      creating.error = e instanceof Error ? e.message : String(e);
+      const error = await persistFlowFailure(CREATE_KEY, { spec, progress: $state.snapshot(creating.progress) }, e);
+      if (current()) creating.error = error;
+    }
+  } finally {
+    if (revision === createRevision) createRunning = false;
   }
 }
 let createResumed = false;
 export async function resumeCreate() {
-  if (createResumed || queue.role === 'follower') return; // the leader resumes it (takeOver)
+  if (hmrReloading || createResumed || queue.role === 'follower') return; // the leader resumes it (takeOver)
   createResumed = true;
-  const r = await db.get<{ spec: CreateSpec }>('projects', CREATE_KEY).catch(() => undefined);
-  if (r?.spec && !creating.spec) void startCreate(r.spec);
+  const r = await db.get<FlowDraft<CreateSpec>>('projects', CREATE_KEY).catch(() => undefined);
+  if (!r?.spec || creating.spec) return;
+  if (r.status === 'failed') Object.assign(creating, { spec: r.spec, progress: r.progress ?? null, error: r.error || 'Generation stopped. Review Activity before trying again.', projectId: '', warnings: [] });
+  else void startCreate(r.spec);
 }
 export async function cancelCreate() {
+  if (createRunning) return;
+  createRevision++;
   creating.spec = null;
   creating.progress = null;
   creating.error = '';
@@ -573,32 +625,45 @@ export async function cancelCreate() {
 // ---------- add a move (one at a time; resumable like create) ----------
 export const moving = $state({ spec: null as MoveSpec | null, projectId: '', progress: null as Progress | null, error: '', done: false });
 const MOVE_KEY = 'studio-move';
-let moveRunning = false;
+let moveRunning = false, moveRevision = 0;
 export async function startMove(projectId: string, spec: MoveSpec) {
-  if (moveRunning) return;
+  if (hmrReloading || moveRunning) return;
   moveRunning = true;
+  const revision = ++moveRevision, current = () => revision === moveRevision && moveRunning;
+  let failed = false;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false });
-  await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId });
   try {
-    await addMove(projectId, spec, (p) => { moving.progress = p; });
+    await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId, status: 'running' });
+    await addMove(projectId, spec, (p) => { if (current() && !failed) moving.progress = p; });
+    if (!current()) return;
     moving.done = true;
     await db.del('projects', MOVE_KEY);
-    if (doc.id === projectId) { await openProject(projectId); ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
+    if (!current()) return;
+    if (doc.id === projectId) { await openProject(projectId); if (!current()) return; ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
     toast(`${spec.id[0].toUpperCase() + spec.id.slice(1)} added`);
   } catch (e) {
-    moving.error = (e as Error).message;
+    if (current()) {
+      failed = true;
+      moving.error = e instanceof Error ? e.message : String(e);
+      const error = await persistFlowFailure(MOVE_KEY, { spec, projectId, progress: $state.snapshot(moving.progress) }, e);
+      if (current()) moving.error = error;
+    }
   } finally {
-    moveRunning = false;
+    if (revision === moveRevision) moveRunning = false;
   }
 }
 let moveResumed = false;
 export async function resumeMove() {
-  if (moveResumed || queue.role === 'follower') return;
+  if (hmrReloading || moveResumed || queue.role === 'follower') return;
   moveResumed = true;
-  const r = await db.get<{ spec: MoveSpec; projectId: string }>('projects', MOVE_KEY).catch(() => undefined);
-  if (r?.spec && !moving.spec) void startMove(r.projectId, r.spec);
+  const r = await db.get<FlowDraft<MoveSpec> & { projectId: string }>('projects', MOVE_KEY).catch(() => undefined);
+  if (!r?.spec || moving.spec) return;
+  if (r.status === 'failed') Object.assign(moving, { spec: r.spec, projectId: r.projectId, progress: r.progress ?? null, error: r.error || 'Generation stopped. Review Activity before trying again.', done: false });
+  else void startMove(r.projectId, r.spec);
 }
 export async function dismissMove() {
+  if (moveRunning) return;
+  moveRevision++;
   Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false });
   await db.del('projects', MOVE_KEY);
 }
@@ -606,32 +671,47 @@ export async function dismissMove() {
 // ---------- imported character setup ----------
 export const settingUp = $state({ spec: null as SetupSpec | null, progress: null as Progress | null, error: '', done: false, warnings: [] as string[] });
 const SETUP_KEY = 'studio-setup';
-let setupRunning = false, setupResumed = false;
+let setupRunning = false, setupResumed = false, setupRevision = 0;
 export async function startSetup(spec: SetupSpec) {
-  if (setupRunning) return;
+  if (hmrReloading || setupRunning) return;
   setupRunning = true;
+  const revision = ++setupRevision, current = () => revision === setupRevision && setupRunning;
+  let failed = false;
   Object.assign(settingUp, { spec, progress: null, error: '', done: false, warnings: [] });
   try {
     await flushSave();
-    await db.put('projects', SETUP_KEY, { id: SETUP_KEY, spec });
-    await setupCharacter(spec, (p) => { settingUp.progress = p; });
+    await db.put('projects', SETUP_KEY, { id: SETUP_KEY, spec, status: 'running' });
+    await setupCharacter(spec, (p) => { if (current() && !failed) settingUp.progress = p; });
+    if (!current()) return;
     settingUp.done = true;
     const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', spec.projectId);
+    if (!current()) return;
     settingUp.warnings = rec?.rigQa?.warnings ?? [];
     await db.del('projects', SETUP_KEY);
+    if (!current()) return;
     if (doc.id === spec.projectId) await openProject(spec.projectId);
     toast('Character ready for skeleton-posed items and new moves');
-  } catch (e) { settingUp.error = (e as Error).message; }
-  finally { setupRunning = false; }
+  } catch (e) {
+    if (current()) {
+      failed = true;
+      settingUp.error = e instanceof Error ? e.message : String(e);
+      const error = await persistFlowFailure(SETUP_KEY, { spec, progress: $state.snapshot(settingUp.progress) }, e);
+      if (current()) settingUp.error = error;
+    }
+  }
+  finally { if (revision === setupRevision) setupRunning = false; }
 }
 export async function resumeSetup() {
-  if (setupResumed || queue.role === 'follower') return;
+  if (hmrReloading || setupResumed || queue.role === 'follower') return;
   setupResumed = true;
-  const rec = await db.get<{ spec: SetupSpec }>('projects', SETUP_KEY).catch(() => undefined);
-  if (rec?.spec && !settingUp.spec) void startSetup(rec.spec);
+  const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
+  if (!rec?.spec || settingUp.spec) return;
+  if (rec.status === 'failed') Object.assign(settingUp, { spec: rec.spec, progress: rec.progress ?? null, error: rec.error || 'Setup stopped. Review Activity before trying again.', done: false, warnings: [] });
+  else void startSetup(rec.spec);
 }
 export async function dismissSetup() {
   if (setupRunning) return;
+  setupRevision++;
   Object.assign(settingUp, { spec: null, progress: null, error: '', done: false, warnings: [] });
   await db.del('projects', SETUP_KEY);
 }

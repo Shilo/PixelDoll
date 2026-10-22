@@ -1,7 +1,6 @@
 <script lang="ts">
   import { coverageGaps, moveDirs } from '../lib/dress/dress.ts'
   import { hiddenSlots, equipped } from '../lib/compose/compose.ts'
-  import { itemRoute } from './itemRoute.ts'
   import { SLOTS } from '../lib/items/items.ts'
   import Sprite from './Sprite.svelte'
   import Colours from './Colours.svelte'
@@ -15,6 +14,7 @@
   const on = $derived(!!it && doc.items[it.slot] === it.id)
   const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false)
   const health = $derived(m && it ? healthOf(m, it) : 'demo')
+  const routeNames = { 'skeleton-pose': 'Skeleton posing', 'inpaint-grid': 'Inpainted grid', 'ea2-anchor': 'Anchored frame edits', diff: 'Difference extraction' }
   const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim))
   const made = $derived(m ? moveDirs(m, ui.anim) : [])
   // Cache a shared crop across every frame and direction, rather than resizing the strip on each playback tick.
@@ -29,6 +29,8 @@
   const moveGaps = $derived(gaps.filter((g) => g.startsWith(`${ui.anim}/`)).map((g) => g.split('/')[1]))
   const moveName = $derived(ui.anim ? ui.anim[0].toUpperCase() + ui.anim.slice(1).replace(/-/g, ' ') : '')
   const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
+  const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0)
+  const designReasons = $derived([...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))])
   const reasons = $derived.by(() => {
     const q = it?.qa
     if (!q) return []
@@ -80,6 +82,12 @@
       {/if}
     </div>
 
+    {#if designReasons.length}
+      <div class="field">
+        <span class="sec-title">Accepted appearance warnings</span>
+        <ul class="reasons small">{#each designReasons as reason (reason)}<li><TriangleAlert size={12} />{reason}</li>{/each}</ul>
+      </div>
+    {/if}
     {#if health === 'look' && reasons.length}
       <ul class="reasons small">{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
     {/if}
@@ -130,9 +138,9 @@
             {#if it.qa.handedness}<dt>Hands</dt><dd>{it.qa.handedness}</dd>{/if}
             <dt>Re-rolls</dt><dd>{it.qa.rerolls}</dd>
           {/if}
-          <dt>Cost</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{it.provenance.length} PixelLab calls</dd>
+          <dt>Source calls</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent ? `$${usdSpent.toFixed(3)} · ` : ''}{it.provenance.length} PixelLab calls</dd>
           {#if gaps.length}<dt>No frames for</dt><dd>{gaps.join(', ')}</dd>{/if}
-          <dt>Route</dt><dd>{itemRoute.label}</dd>
+          <dt>Method</dt><dd>{it.route ? routeNames[it.route] : 'Not recorded'}</dd>
         </dl>
       </div>
     </details>

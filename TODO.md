@@ -11,7 +11,12 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 2. [ ] Item quality polish: stored cape back-hem grey smudges and actual helmet hurt-frame deformations. The forearm
       occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recoloured.
 3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
-4. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
+4. [~] Live validation of the implemented independent-direction default: the full four-direction attempt stopped after
+      two estimator HTTP 500 outcomes remained unknown, without automatic resend. Prove idle-only recovery from completed
+      outputs and actual measurements, then right-hand weapon/slash western active-arm/grip alignment, reload and export.
+      Automated policy, action, batching and persistence checks pass; live proof remains pending. Older mirrored slash clips cannot
+      be corrected by an item-only toggle; see the
+      [implementation scope](docs/research/handedness-implementation-scope-2026-10-22.md).
 
 Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio regression
 in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
@@ -20,8 +25,10 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
 - [!] **Key safety on a shared origin.** All `*.github.io/<repo>` sites of one account share an origin, so another of your
   Pages sites could read a remembered key (localStorage/IndexedDB). Mitigated: key is memory-only by default, never sent
   over BroadcastChannel, Connect warns on `*.github.io`. Fix: serve from a custom domain. (R6 P1-4, B13)
-- [!] **PixelLab credits.** Balance ≈212 gens (2026-10-22), after the 99-generation shield test. A full 4-dir character
-  ≈35–50 gens, an item ≈28–50 gens, a move ≈11 + items. Paid POSTs are never auto-resent; failed ones show as "lost".
+- [!] **PixelLab credits.** The shared balance changed during live audit testing; query it before further paid work.
+  New independent characters are estimated at 46–80 gens (4 directions) or 90–150 (8); optional mirrored economy mode
+  remains 35–60 / 57–95. Item/move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps.
+  Lost responses may have run or charged and are never auto-resent. See the professional audit report.
 - [!] **Shield east walks remain unresolved.** The offline body-occlusion audit converts five of seven hard flags to
   explicit review warnings. The 4-direction east walk still fails G5 (area CV 0.284 > 0.186), and the 8-direction east
   walk still fails G9 (68° against the forearm). Hidden shape cannot be verified from a composite; warnings do not mean
@@ -34,8 +41,9 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
   recheck or silent reconstruction is performed. Historical source-call indices are also left untouched.
 - [!] **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colours disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
-- [!] **Mirrored directions flip handedness** (west holds the sword in the left hand). `mirror: "generate"` per item is
-  specified but not exposed in the UI.
+- [!] **Mirrored directions flip handedness** (west holds the sword in the left hand). New forms now default to independent
+  body views/actions; old projects and optional economy mode remain mirrored. Independent views avoid the forced flip,
+  but generated anatomy and grip still need live weapon/slash review. An item-only toggle cannot repair old flipped actions.
 - [!] **Unity and Godot Aseprite Wizard paths unverified**; Godot 4.7.1 + Phaser 3.80/3.90/4.2.1 + Aseprite CLI verified.
 - [!] **Agent-only key mode is a convention.** `npm run dev:agent` reads `.env` for AI agents; humans must use `npm run dev`
   (no key path). Builds refuse agent mode; CI guard fails if key code or `.env` reaches `dist/`.
@@ -64,6 +72,12 @@ Paperdoll output must be accurate, consistent, high quality, using proper PixelL
 proper post-processing and proper layering — frontier-standard paperdolling workflow.
 
 ## Done
+- [x] Independent direction policy implemented for new forms, including explicit western originals/actions, strict frozen
+      direction coverage, 4/8-view costs and mirrored-economy disclosure. Missing policy in saved drafts retains legacy
+      behavior. Offline/browser/export regressions pass; live handedness acceptance remains open above.
+- [x] Professional audit: independent primary-source research and adversarial pipeline/data/Studio review; credential
+      isolation, paid resume/lifecycle safety, import bounds, atomic persistence, fitted move invalidation, colour-faithful
+      engine exports and recoverable responsive Studio workflows. See [audit evidence](docs/testing/professional-audit-2026-10-22.md).
 - [x] Replaceable move/direction QA summaries, accepted-exception handling, complete-frame guards, real IndexedDB/ZIP
       browser regression and Codex browser inspection; adversarial review findings independently verified and fixed.
       Both CI jobs pinned to `ubuntu-24.04`. See `docs/testing/qa-summaries-2026-10-22.md`.

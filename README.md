@@ -13,7 +13,8 @@ with PixelLab AI and export them to any game engine. · [Open PixelDoll](https:/
 
 Paperdolling for [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armour, hair and weapons as
 **separate frame-aligned layers**, recolour them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser** or any
-engine (PNG + JSON). Every generated pixel comes from PixelLab; PixelDoll turns PixelLab's one-image-per-call output into a
+engine (PNG + JSON). Source artwork comes from PixelLab; PixelDoll extracts layers, cleans keyed pixels and applies exact
+colour changes to turn PixelLab's one-image-per-call output into a
 consistent, layered, slot-based paperdoll: one base body, N directions, M moves, and a transparent layer per item on the same
 grid and pivot.
 
@@ -30,8 +31,12 @@ and concerns).
   move → automatic checks → layers. Held items use a 96 px canvas with the same pivot.
 - Godot 4.7.1 and Phaser 3.80 / 3.90 / 4.2.1 render the exports pixel-identical to PixelDoll's own compositor.
   Unity: the C# importer compiles, live import not yet verified.
-- Not yet: shields (off hand), PWA (planned in PLAN.md). The bundled demo uses the team's own spike
-  outputs (revisit before a public release).
+- In the current checkout, new characters draw every direction independently by default; optional mirrored economy mode
+  and older mirrored rigs swap held-item handedness. Automated direction/persistence/export checks pass; live independent
+  full creation stopped safely on unknown skeleton-estimation outcomes. Idle-only recovery and weapon/slash validation
+  are pending. This is separate from the released v0.1.0 evidence above.
+- Known quality limits: two shield east-walk drafts remain unaccepted; generated artwork still needs visual review.
+  PWA is deferred (see PLAN.md). The bundled demo uses the team's own PixelLab outputs.
 
 ## Run locally
 
@@ -79,21 +84,21 @@ npm --prefix app test           # Vitest: existing module assertions + runner fa
 npm --prefix app run selftest   # compatibility alias for npm test
 ```
 
-**Browser regression tests** use `@playwright/test` **1.64.1** with managed Chromium. They build the app, start their own local servers, run the existing Studio regression against the production build, and run every browser-only PNG/IndexedDB self-test against the dev harness. Tests use the bundled demo, isolated storage and blocked PixelLab API requests: no key or credits are needed.
+**Browser regression tests** use `@playwright/test` **1.64.1** with managed Chromium. They build the app, start their own local servers, exercise Studio workflows against the production build and run browser-only PNG/IndexedDB self-tests against the dev harness. Tests use the bundled demo, isolated storage and blocked PixelLab API requests: no key or credits are needed.
 
 ```sh
 npx --prefix app playwright install chromium   # first time only; add --with-deps on Linux CI
-npm --prefix app run e2e                       # builds + dist guard, then both browser cases
+npm --prefix app run e2e                       # builds + dist guard, then Studio flows and browser self-tests
 ```
 
-Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a separate check; a Chromium pass does not establish cross-browser compatibility. The legacy `node app/scripts/e2e-studio.mjs` entry point delegates to the Studio Playwright project and expects an existing build. `BASE` can point it at an already-running normal local server; keyless regressions do not need the agent server.
+Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a separate check; a Chromium pass does not establish cross-browser compatibility. The legacy `node app/scripts/e2e-studio.mjs` entry point delegates to the Studio Playwright project and expects an existing build. `E2E_PREVIEW_PORT` and `E2E_DEV_PORT` select unused local ports when testing multiple checkouts. `BASE` can point it at an already-running normal local server; keyless regressions do not need the agent server.
 
 `node app/scripts/shoot-mvp.mjs` remains a separate screenshot utility (local-only output in `docs/testing/img/`). The production UI keeps its existing custom CSS and Lucide icons; no GlassKit is used. See [toolchain validation](docs/testing/toolchain-standardization-2026-10-22.md).
 
 ## Export targets
 
 The Studio's **Export** sheet builds one zip per engine, on your device, for free. Each zip contains `README.txt` (quick start),
-`manifest.json` ([spec](docs/manifest-spec.md)), `CREDITS.csv` (PixelLab provenance), `layers/` (one sheet per item layer and
+`manifest.json` ([spec](docs/manifest-spec.md)), `CREDITS.txt` (CSV PixelLab provenance), `layers/` (one sheet per item layer and
 move; rows = directions, columns = frames) and, optionally, `baked/` (finished characters per outfit).
 
 | Target | In the zip | Import |
@@ -102,6 +107,7 @@ move; rows = directions, columns = frames) and, optionally, `baked/` (finished c
 | Unity 6 | Editor importer + `unity/pixeldoll_unity.json` | Copy under `Assets/`; the importer builds sliced sheets, clips, a controller and a prefab in `unity/Generated/`. See `unity/README.txt`. |
 | Phaser 3.80+ / 4 | `phaser/PaperdollContainer.js` + TexturePacker-hash atlases | Copy into your assets, `loadPaperdoll(scene, dir)` then `new Paperdoll(...)`; serve over http. See `phaser/README.txt`. |
 | PNG + JSON | `generic/` strips per layer, move and direction | Any engine: one sprite per layer, same grid and pivot, one clock. See `generic/README.txt`. |
+| Aseprite | `aseprite/<character>.aseprite` | Open the layered character file in Aseprite 1.3+; move/direction tags and frame timing are retained, with the first outfit visible. |
 
 Use nearest-neighbour filtering and whole-pixel positions in every engine.
 
@@ -110,8 +116,8 @@ Use nearest-neighbour filtering and whole-pixel positions in every engine.
 [.github/workflows/pages.yml](.github/workflows/pages.yml) runs on every push and pull request: `npm ci`, `npm run check`,
 `npm test` and `npm run e2e` in `app/`; the browser command includes a build and a **dist guard** that fails the run if `app/dist` contains `__dev`,
 `pixellab-key`, `PIXELLAB_API_KEY_AGENT_DEV`, agent-mode code, any `.env*` file or any source map. On a push to `main` it also deploys
-`app/dist` to GitHub Pages (or run it by hand from the Actions tab). The workflow uses no secrets and no environment
-variables: the PixelLab key never reaches CI. Enable Pages once: **Settings → Pages → Build and deployment → Source: GitHub
+`app/dist` to GitHub Pages. A manual workflow run performs the checks; deployment requires a push to `main`. The workflow
+requires no PixelLab secret or key environment variable. Enable Pages once: **Settings → Pages → Build and deployment → Source: GitHub
 Actions**. The site is served at <https://shilo.github.io/PixelDoll/>; it works under that sub-path because Vite's `base` is
 `./` and the router uses `#/` hashes.
 
@@ -128,9 +134,9 @@ either:
 - a user or organisation root site (`<name>.github.io`) that hosts nothing else.
 
 `https://shilo.github.io/PixelDoll/` is such a project path: fine for trying the demo, but for real work (your key, saved
-projects) use a custom domain. Never deploy it as a project path next to pages you do not control. PixelDoll keeps the key in memory by default and never
-answers "send me the key" messages from other tabs. The Connect sheet warns when "Remember" is turned on at a `*.github.io`
-project path.
+projects) use a custom domain. Never deploy it as a project path next to pages you do not control. PixelDoll keeps the key
+in memory per tab by default and never broadcasts it to other tabs. Connect in the active queue tab, or close that tab to
+run work here. The Connect sheet warns when "Remember" is turned on at a `*.github.io` project path.
 
 ## Repo layout
 
