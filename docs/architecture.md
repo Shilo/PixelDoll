@@ -167,6 +167,15 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 | Clip | no layer pixel on the cell border |
 | Stray px | removed and logged |
 
+For posed held items with wrist tracks, G5/G9 failures may be inconclusive because the body hides part of the item.
+Compare masks in wrist coordinates: missing pixels can be hidden only inside the other frame's frozen body silhouette
+(1 px tolerance, as in posed extraction). Require at least 6 shared pixels, observable IoU ≥ 0.3, and at least as many
+body-hidden differences as visibly unexplained differences. G5 also requires every frame to match the largest observed
+silhouette and its area plus potentially hidden reference pixels to meet the original CV limit. Such cases produce an
+explicit occlusion review warning, never a clean pass or a paid G5/G9 retry. Original metrics and exported pixels stay
+unchanged; hard presence, body integrity, alignment, border and grip checks remain. Hidden geometry is not reconstructed
+or proven by this heuristic, and unexplained changes retain their hard failure.
+
 Fail → re-roll the call once (new seed), then switch to the alternative route, then the user decides. When a call is out of
 re-rolls it keeps its roll with the fewest failed checks, not the last one (free ledger re-evaluation; same inputs only) [T3].
 H4 (keyframe consistency) fails only band items (helmet, face) [T3]. B14: soft items (hair, worn torso/back) warn only in a

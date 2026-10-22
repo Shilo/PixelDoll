@@ -550,6 +550,25 @@ const centroid = (m: Uint8Array, w: number): [number, number] | null => {
   return n ? [sx / n, sy / n] : null;
 };
 
+/** Compare held silhouettes in wrist coordinates. Only a missing pixel behind the other frame's body can be hidden.
+ * One pixel of body tolerance matches posed extraction. This cannot prove the hidden shape: callers must warn, not pass.
+ */
+function heldVisibility(a: CellOut, b: CellOut, wa: [number, number], wb: [number, number]) {
+  const { w, h } = a.layer, dx = Math.round(wb[0] - wa[0]), dy = Math.round(wb[1] - wa[1]);
+  const bodyA = dilate(maskOf(a.base), w, 1), bodyB = dilate(maskOf(b.base), w, 1);
+  const at = (m: Uint8Array, x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && !!m[y * w + x];
+  let shared = 0, different = 0, hiddenA = 0, hiddenB = 0;
+  // Include both canvases: a wrist shift must not silently discard an unexplained pixel off the other frame's edge.
+  for (let y = Math.min(0, -dy); y < Math.max(h, h - dy); y++) for (let x = Math.min(0, -dx); x < Math.max(w, w - dx); x++) {
+    const av = at(a.mask, x, y), bv = at(b.mask, x + dx, y + dy);
+    if (av && bv) shared++;
+    else if (av) { if (at(bodyB, x + dx, y + dy)) hiddenB++; else different++; }
+    else if (bv) { if (at(bodyA, x, y)) hiddenA++; else different++; }
+  }
+  // Occlusion must explain the dominant disagreement; incidental body contact cannot excuse a visible bad turn.
+  return { hiddenA, hiddenB, compatible: shared >= 6 && hiddenA + hiddenB >= different && shared / (shared + different) >= GATES.heldIoU };
+}
+
 /** `pad`: oversize layers (held, S5) are gated on their own canvas; hand positions move by the pad. */
 export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax = GATES.keyOutside, pad = 0): QaResult {
   const w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, fail = new Map<number, string[]>(), warnings: string[] = [];
@@ -595,11 +614,20 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
     // far trouser leg hides behind the near one, so the visible item varies ~2x the body band (walk E: CV 0.20-0.22 vs band
     // 0.11 on 3 seeds, frames visually consistent); a lost item is G4's job
     const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, 2 * baseCv);
+    const wrist = slot.class === 'held' && cs.every((c) => c.posed) ? handTrack(slot.anchor === 'hand_l' ? 'hand_l' : 'hand_r', a, d) : undefined;
     const minRatio = med ? Math.min(...areas) / med : 0;
     if (!med) flag(cs[0].call, `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
     else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
-    if (cv > cvMax && !isAction(clip)) flag(cs[0].call, `G5 ${clip}: area CV ${cv.toFixed(2)} > ${cvMax.toFixed(2)}`);
+    if (cv > cvMax && !isAction(clip)) {
+      const ref = cs.reduce((big, c) => c.area > big.area ? c : big), ri = +ref.key.split('/')[2];
+      const visibility = wrist && cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]]));
+      // The largest observed silhouette is only a reference, not an invented full shield. If hidden pixels explain
+      // the area variation, stop paid G5 retries but retain an explicit review warning and the original QA metrics.
+      if (visibility?.every((v) => v.compatible) && visibility.some((v) => v.hiddenB) && cvOf(cs.map((c, i) => c.area + visibility[i].hiddenB)) <= cvMax)
+        warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
+      else flag(cs[0].call, `G5 ${clip}: area CV ${cv.toFixed(2)} > ${cvMax.toFixed(2)}`);
+    }
     // placement: centroid spread relative to the slot anchor (info)
     const anc = slot.anchor ? rig.anchors?.[slot.anchor as 'head']?.[a]?.[d as DirectionName] : undefined;
     const rel = cs.map((c) => { const ct = centroid(c.mask, w), i = +c.key.split('/')[2]; return ct && anc?.[i] ? [ct[0] - anc[i][0] - pad, ct[1] - anc[i][1] - pad] : null; }).filter(Boolean) as number[][];
@@ -628,16 +656,23 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
     // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
     if (slot.class === 'held' && !isAction(clip)) {
-      let turn = 0, shapeIoU = 1;
+      let turn = 0, shapeIoU = 1, occluded = false;
       for (const [i, c] of ord.entries()) {
         const n = ord[(i + 1) % ord.length], j = +c.key.split('/')[2], k = +n.key.split('/')[2];
         // Preserve the posed route's minimum sample size: tiny masks have too few pixels
         // for a reliable axis, but can still rotate correctly with the hand.
         if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) continue;
         const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
-        if (fore && x != null && y != null) turn = Math.max(turn, angleDiff(x - fore[j], y - fore[k]));
-        else shapeIoU = Math.min(shapeIoU, alignedIoU(c.mask, n.mask, w));
+        const angle = fore && x != null && y != null ? angleDiff(x - fore[j], y - fore[k]) : null;
+        const iou = angle == null ? alignedIoU(c.mask, n.mask, w) : 1;
+        if ((angle != null && angle > GATES.heldTurn) || iou < GATES.heldIoU) {
+          const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);
+          if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) { occluded = true; continue; }
+        }
+        if (angle != null) turn = Math.max(turn, angle);
+        else shapeIoU = Math.min(shapeIoU, iou);
       }
+      if (occluded && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
       if (turn > GATES.heldTurn) flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
       if (shapeIoU < GATES.heldIoU) flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
     }

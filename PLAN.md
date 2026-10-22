@@ -21,8 +21,9 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   dirs; sword × 8 dirs). Independent UX QA 6 → 8.5/10. Robustness/security review fixed (R6/B13).
 - **Shield validation (2026-10-22):** round-mask G9 false turns fixed; adversarial review preserved valid tiny-item
   hand motion. Codex browser and offline regressions pass. Live idle/walk tests cover 4- and 8-direction
-  rigs (96 generated frames, 144 with mirrors); side/diagonal walk clips still need an occlusion-aware quality review.
-  Both items remain review drafts. Evidence: `docs/testing/shields-2026-10-22.md`.
+  rigs (96 generated frames, 144 with mirrors). The offline occlusion audit now routes plausible body-hidden changes
+  to explicit review warnings instead of paid retries. East walks retain two unexplained hard flags; both items remain
+  unaccepted drafts. Evidence: `docs/testing/shields-2026-10-22.md`.
 - **PixelLab credits:** balance ≈212 (free GET, 2026-10-22). Shield validation spent 99 generations (34 + 65).
 
 ## Roadmap
@@ -30,7 +31,7 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 1. **Own origin** (custom domain) — key safety on shared `*.github.io`; prerequisite for PWA and for recommending
    "Remember key". Decision deferred with PWA.
 2. **PWA** — deferred by user (2026-10-22); retain the installable, offline shell plan below (D13).
-3. **Item quality** — shield side/diagonal walk occlusion and stability gates (reuse saved outputs); cape back-hem
+3. **Item quality** — shield east-walk grip/orientation discontinuities (two hard flags remain; reuse saved outputs); cape back-hem
    smudges; helmet visor flag when an arm covers it;
    optional `mirror: "generate"` per item to keep handedness in mirrored directions.
 4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
