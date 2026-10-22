@@ -62,6 +62,20 @@ New characters wear a light grey shirt and dark grey shorts, so you can tell the
 You can keep working or close the tab while it runs. It picks up where it left off. When it is done, press
 **Start dressing up**.
 
+## Share equipment designs between characters
+
+Select an accepted equipment item and press **Save as shared design**. Check the current colours in the preview and name the design. This saves an independent local snapshot of its artwork and references.
+
+On another character, choose **New item → Saved designs**:
+
+- **Review free copy** reuses frames whose frozen body pixels and geometry match. If only some frames match, **Review available copy · Free** shows the available coverage and its gaps. Copying uses no PixelLab generations.
+- **View fit** checks whether a different body can use a reference fit. The initial paid trial supports single-material headwear on known 64 px low top-down humanoid rigs with complete standing references. Other slots and multi-material designs still support compatible free copies.
+- Paid fitting has separate prices and reviews: preview the standing fit first, then approve animation. Inspect every direction and move before **Keep and wear** or **Keep in wardrobe**. A failed attempt still costs generations; retries require a separate priced action.
+
+Each kept copy has its own wardrobe entry, colours and outfit choices. Changing the source or removing its library entry leaves existing copies intact. **Export** on a design card downloads a portable `.pixeldoll-design.zip`; **Import design** restores it. Character exports also keep their accepted copies and pinned references.
+
+The library lives in this browser's storage. Download design and character ZIPs to keep backups or move them to another device.
+
 ## Import an existing character
 
 Choose **Import an existing character** on the welcome screen or character menu → **Import character…**. Importing is free and saves a new copy on this device.

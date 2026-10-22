@@ -1,4 +1,4 @@
-# PixelDoll manifest spec — `pixeldoll/1`
+# PixelDoll manifest spec — `pixeldoll/2`
 
 Author: A1 · Date: 2026-10-20 · Status: v1.3.1 (v1.3 after S3, S4, D8; v1.3.1 = per-layer cell + pivot for oversize layers, S5/B8). Pipeline and rationale: [`architecture.md`](architecture.md).
 
@@ -10,6 +10,12 @@ One schema serves two files:
   `cells` is dropped, everything else is kept (provenance is the credits trail [R5]).
 
 The API key never appears in either file.
+
+Current projects use `pixeldoll/2`. Readers also accept `pixeldoll/1`; its original global palette constraint remains enforced. Version 2 gives every item independent materials: material IDs remain globally unique, while source RGB ramps need only be disjoint within the same owner. Two items may therefore share both original pixels and RGB values and still recolour independently. Engines must apply material swaps to the owning item, including its tucked variants.
+
+Version 2 also permits `Material.defaultVariant`: the approved baseline when an outfit has no explicit colour selection. For affected items, canonical `Layer.sheets` render that baseline for all supplied engine runtimes, while optional `Layer.sourceSheets` point to the original source-ramp PNGs under `sources/`. Palette-aware consumers must start from `sourceSheets` when present. Original material ramps remain disjoint even when two selected variants share a colour. Editable `project.json` always retains original raw cells and the complete material definitions.
+
+An accepted shared copy may carry `Item.design` lineage: the design ID/revision, immutable minimal source snapshot, palette-role mapping and target audit. Its referenced source images travel in `cells/` alongside the target frames. Library deletion therefore does not remove the copy's artwork or its portable reference. A separate equipment archive uses `pixeldoll-design/1` in `design.json`; it is not a character ZIP.
 
 ---
 
@@ -40,7 +46,7 @@ export type JointLabel =
 export interface Keypoint { label: JointLabel; x: number; y: number } // normalised 0..1 of the 64 cell; no z_index
 
 export interface Manifest {
-  format: 'pixeldoll/1';
+  format: 'pixeldoll/1' | 'pixeldoll/2';
   name: string;
   app: string;                    // "PixelDoll 0.1.0"
   rig: Rig;
@@ -95,10 +101,11 @@ export type AnchorTrack = Record<string, Partial<Record<DirectionName, [number, 
 export interface Material {
   id: string;                            // "skin", "hair", "sword_metal"
   label: string;
-  ramp: Hex[];                           // source ramp, shadow -> highlight; colours unique across ALL materials
+  ramp: Hex[];                           // shadow -> highlight; disjoint per owner in /2, globally in /1
   variants: Record<string, Hex[]>;       // same length as ramp; recolor = exact index swap
   linkTo?: string;                       // follow another material's selected variant (beard -> hair)
   owner: string;                         // item id that introduced it ("base" for skin/eyes/shirt/shorts)
+  defaultVariant?: string;               // /2 approved baseline when the outfit has no explicit selection
 }
 
 // ---------- slots ----------
@@ -106,7 +113,7 @@ export interface Slot {
   id: string;                            // "head", "main_hand"
   z: number;                             // z of the item's main/fg layer
   bgZ?: number;                          // present = items in this slot are split into fg/bg layers
-  class: 'base' | 'head' | 'held' | 'worn'; // QA (head: anchor spread; held: grip side) and inpaint-grid mask band
+  class: 'base' | 'rigid' | 'held' | 'worn'; // QA (rigid headwear: anchor spread; held: grip side) and mask band
   anchor?: AnchorId;                     // anchor for placement/handedness QA
   required?: boolean;                    // true only for "body"
   hides?: string[];                      // default: slots whose layers are hidden while this slot has a visible item
@@ -143,6 +150,8 @@ export interface Item {
   anchorCell?: CellKey;                   // ea2-anchor: dressed cell passed as frame 1 to later calls
   provenance: Provenance[];
   qa?: ItemQa;                            // absent on the base
+  coverage?: CellKey[];                   // /2 known cells, including intentionally transparent cells
+  design?: EquipmentLineage;             // /2 pinned source snapshot, palette roles and target/reference audit
 }
 export interface Layer {
   id: 'main' | 'fg' | 'bg';
@@ -150,6 +159,7 @@ export interface Layer {
   z: number;                              // resolved static z (slot ladder or item override)
   cells?: Record<string, Partial<Record<DirectionName, (Sha256 | null)[]>>>; // project.json; null = transparent cell
   sheets?: Record<string, string>;        // manifest.json; anim id -> path of the sheet PNG
+  sourceSheets?: Record<string, string>;  // /2 original source-ramp sheets when sheets render defaultVariant
   cell?: { w: number; h: number };        // v1.3.1: this layer's cell; default rig.cell. Held items: {w: 96, h: 96} [S5]
   pivot?: { x: number; y: number };       // v1.3.1: the SAME body point in this layer's cell; default rig.pivot.
                                           //   96 held layer: rig.pivot + (16, 16). manifest.json always writes both.
@@ -246,7 +256,7 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
    layer has exactly the layer's cell size; cell and pivot are integers.
 3. Every `frames[].cell < cells`. Every `frames[].ms` is a positive integer.
 4. `item.baseHash === rig.baseHash` for exported items (stale items are excluded with a warning).
-5. Material ramps are pairwise disjoint; `variants[*].length === ramp.length`.
+5. Material IDs are globally unique. Ramps are pairwise disjoint within an owner in `pixeldoll/2`, and globally in `pixeldoll/1`; `variants[*].length === ramp.length`.
 6. Exactly one item has `slot: "body"`; it is `rig.baseItem`.
 7. Draw order: ascending resolved z; ties broken by `slots` order, then `role` (bg before fg), then item id.
 8. Resolved z for a cell = the most specific matching `zOverride` (cell > anim > dir > none; on equal specificity the later entry
