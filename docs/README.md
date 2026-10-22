@@ -67,6 +67,7 @@ Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo
 
 | Doc | What |
 |---|---|
+| [Toolchain standardization](testing/toolchain-standardization-2026-10-22.md) | Exact runtime/dependencies, Vitest and Playwright migration, production byte parity and validation. |
 | [M1](testing/M1_report.md) | Key + job queue: resume after reload, IndexedDB ledger. |
 | [M2](testing/M2_report.md) | Rig freeze: normalize, pivot, mirror, anchors, `baseHash`. Built for template frames, later updated by B7. |
 | [M3](testing/M3_report.md) | Item lab: chroma extraction, QA gates G1–G10, automatic re-roll, fg/bg split. |

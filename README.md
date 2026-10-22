@@ -35,11 +35,11 @@ and concerns).
 
 ## Run locally
 
-Needs Node 24 (Node ≥ 23 for `npm run selftest`; it runs the TypeScript directly).
+Use **Node.js 24.22.1** (`.nvmrc`) with its bundled **npm 11.19.1**. Dependency versions and the lockfile are pinned.
 
 ```sh
 cd app
-npm install
+npm ci
 npm run dev        # http://localhost:5173
 ```
 
@@ -70,23 +70,21 @@ All commands run from the repo root.
 npm --prefix app ci
 npm --prefix app run build      # -> app/dist (base './', works under any sub-path)
 npm --prefix app run preview    # serves app/dist on http://localhost:4173
-npm --prefix app run check      # svelte-check + tsc
-npm --prefix app run selftest   # node self-tests (no network, no spend)
+npm --prefix app run check      # strict Svelte, build-config and test type checks
+npm --prefix app test           # Vitest: existing module assertions + runner failure checks
+npm --prefix app run selftest   # compatibility alias for npm test
 ```
 
-**End-to-end smoke test** (Playwright, demo only, no key, no spend). Playwright is a pinned `app/` devDependency; download its
-browser once:
+**Browser regression tests** use `@playwright/test` **1.64.1** with managed Chromium. They build the app, start their own local servers, run the existing Studio regression against the production build, and run every browser-only PNG/IndexedDB self-test against the dev harness. Tests use the bundled demo, isolated storage and blocked PixelLab API requests: no key or credits are needed.
 
 ```sh
-npx --prefix app playwright install chromium   # first time only
-npm --prefix app run dev                       # in another terminal (or the "app-dev" launch config)
-node app/scripts/e2e-studio.mjs                # BASE=http://localhost:4173 to test the preview build
+npx --prefix app playwright install chromium   # first time only; add --with-deps on Linux CI
+npm --prefix app run e2e                       # builds + dist guard, then both browser cases
 ```
 
-The scripts stay keyless on the agent server too (`BASE=http://localhost:5199`): they opt out of the agent key, and the e2e
-then only checks that agent mode auto-connected (`GET /balance`, free).
+Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a separate check; a Chromium pass does not establish cross-browser compatibility. The legacy `node app/scripts/e2e-studio.mjs` entry point delegates to the Studio Playwright project and expects an existing build. `BASE` can point it at an already-running normal local server; keyless regressions do not need the agent server.
 
-`node app/scripts/shoot-mvp.mjs` writes Studio screenshots to `docs/testing/img/` the same way (local only, git-ignored).
+`node app/scripts/shoot-mvp.mjs` remains a separate screenshot utility (local-only output in `docs/testing/img/`). The production UI keeps its existing custom CSS and Lucide icons; no GlassKit is used. See [toolchain validation](docs/testing/toolchain-standardization-2026-10-22.md).
 
 ## Export targets
 
@@ -106,7 +104,7 @@ Use nearest-neighbour filtering and whole-pixel positions in every engine.
 ## CI and deploy to GitHub Pages
 
 [.github/workflows/pages.yml](.github/workflows/pages.yml) runs on every push and pull request: `npm ci`, `npm run check`,
-`npm run selftest`, `npm run build` in `app/`, then a **dist guard** that fails the run if `app/dist` contains `__dev`,
+`npm test` and `npm run e2e` in `app/`; the browser command includes a build and a **dist guard** that fails the run if `app/dist` contains `__dev`,
 `pixellab-key`, `PIXELLAB_TOKEN_AGENT_DEV`, agent-mode code, any `.env*` file or any source map. On a push to `main` it also deploys
 `app/dist` to GitHub Pages (or run it by hand from the Actions tab). The workflow uses no secrets and no environment
 variables: the PixelLab key never reaches CI. Enable Pages once: **Settings → Pages → Build and deployment → Source: GitHub

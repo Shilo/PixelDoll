@@ -43,17 +43,21 @@ CI and Pages deploy: .github/workflows/pages.yml
 ## Commands
 
 Run all from app/.
-Install: npm install
+Runtime: Node.js 24.22.1 (.nvmrc), npm 11.19.1; use exact package versions and the committed lockfile.
+Install: npm ci
 Dev server for humans: npm run dev
 Dev server for agents: npm run dev:agent
 Type check: npm run check
-Self-tests: npm run selftest
+Unit tests: npm test (Vitest 4.1.12); npm run selftest is a compatibility alias
 Build: npm run build
-End-to-end test: node scripts/e2e-studio.mjs
+End-to-end tests: npm run e2e (Playwright Test 1.64.1; managed Chromium; builds and starts local servers)
+Browser install: npx playwright install chromium
+Standalone Studio compatibility entry: node scripts/e2e-studio.mjs (existing build required)
 
 ## Rules
 
 Follow KISS and YAGNI: no feature, dependency or abstraction without a real need.
+Keep the existing custom CSS and visuals; do not introduce GlassKit.
 Keep the app client-only; never add a backend.
 Use only the allowed PixelLab models above, and check docs/research/pixellab/ before calling an endpoint.
 PixelLab credits are real money: spend only when the task needs generations, never auto-resend paid requests, and prefer offline checks on stored frames.
