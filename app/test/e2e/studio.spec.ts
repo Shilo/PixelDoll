@@ -331,6 +331,10 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await expect(page.locator('.tb-trail .balance')).toContainText('42 gens')
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(paidRequests).toEqual([])
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Welcome screen', exact: true }).click()
+  await page.getByRole('button', { name: 'Try the demo', exact: true }).click()
+  await expect(page.locator('.project-btn')).toHaveText('Adventurer (demo)')
 })
 
 // Synthetic keys only: exercise the production bundle without contacting PixelLab.
