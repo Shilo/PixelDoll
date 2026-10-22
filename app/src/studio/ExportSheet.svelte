@@ -19,10 +19,11 @@
   const LS = 'pixeldoll.export.engine'
   let engine = $state<Engine>((() => { try { const saved = localStorage.getItem(LS); return ENGINES.find((e) => e.id === saved)?.id ?? 'godot' } catch { return 'godot' } })())
   let baked = $state(true)
-  let result = $state.raw<{ zip: Uint8Array | null; files: string[]; warnings: string[]; errors: string[] } | null>(null)
+  let result = $state.raw<{ zip: Uint8Array | null; files: string[]; warnings: string[]; errors: string[]; rigIssues: string[] } | null>(null)
   let busy = $state(false)
   const m = $derived(store.project?.manifest)
   const items = $derived(m ? m.items.filter((i) => i.slot !== 'body') : [])
+  const reviewItems = $derived(m ? m.items.filter((i) => i.designWarnings?.length || (i.qa && i.qa.status !== 'pass')).map((i) => i.name) : [])
   const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
   // B10 (T1 P1-1): views a move or an item doesn't have are empty in the sheets; say so before the download
   const gaps = $derived.by(() => {
@@ -46,14 +47,19 @@
     let stale = false
     void (async () => {
       const rec = demo ? undefined : await db.get<StoredProject>('projects', projectId)
-      return exportZip({ manifest, images: p.images }, { engines: [e], baked: b, projectData: rec ? { character: rec.character, skeletons: rec.skeletons, rigQa: rec.rigQa } : undefined })
+      const qa = rec?.rigQa as { clips?: Record<string, { fails?: unknown }> } | undefined
+      const rigIssues = Object.entries(qa?.clips ?? {}).filter(([clip, checks]) => {
+        const [anim, dir] = clip.split('/')
+        return manifest.rig.animations.some((a) => a.id === anim) && moveDirs(manifest, anim).some((d) => d === dir) && Array.isArray(checks?.fails) && checks.fails.length > 0
+      }).map(([clip]) => { const [anim, dir] = clip.split('/'); return `${nice(anim)} facing ${dir.replaceAll('-', ' ')}` })
+      return { ...await exportZip({ manifest, images: p.images }, { engines: [e], baked: b, projectData: rec ? { character: rec.character, skeletons: rec.skeletons, rigQa: rec.rigQa } : undefined }), rigIssues }
     })().then((r) => {
       if (stale) return
-      result = { zip: r.zip, files: r.entries.map((x) => x.name), warnings: r.warnings, errors: r.errors }
+      result = { zip: r.zip, files: r.entries.map((x) => x.name), warnings: r.warnings, errors: r.errors, rigIssues: r.rigIssues }
       busy = false
     }).catch(() => {
       if (stale) return
-      result = { zip: null, files: [], warnings: [], errors: ['Could not prepare this export. Please try again.'] }
+      result = { zip: null, files: [], warnings: [], errors: ['Could not prepare this export. Please try again.'], rigIssues: [] }
       busy = false
     })
     return () => { stale = true }
@@ -86,6 +92,8 @@
   </div>
   {#if m}
     <p class="muted">Includes {n(m.rig.directions.length, 'direction')} · {n(m.rig.animations.length, 'move')} · {n(items.length, 'item')} · {m.presets.filter((x) => x.id !== 'current').length ? `${n(m.presets.filter((x) => x.id !== 'current').length, 'outfit')} + your current look` : 'your current look'}, each item on its own layer sheet.</p>
+    {#if reviewItems.length}<p class="notice warn small"><TriangleAlert size={14} /><span>Saved quality or appearance flags: {reviewItems.join(', ')}. Review the flagged moves and directions before using these sprites. Export remains available, including explicitly accepted artwork.</span></p>{/if}
+    {#if result?.rigIssues.length}<p class="notice warn small"><TriangleAlert size={14} /><span>Body frames failed saved checks: {result.rigIssues.join(', ')}. Inspect these moves before using the exported sprites.</span></p>{/if}
     {#if gaps.length}<p class="notice small"><TriangleAlert size={14} /><span>{gaps.join(' · ')}. Those frames stay empty in the sheets; manifest.json lists the directions of each move.</span></p>{/if}
   {/if}
   {#if result?.errors.length}

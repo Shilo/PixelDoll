@@ -397,6 +397,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const dirs = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
+  let rerolls = 0; // actual additional attempted calls, independent of which candidate wins
   for (const d of dirs) keys[d] = chromaLayer(await img(item.dressed![d]!.slice(7)), key, padImg(baseCell(ctx, restKey(d), true), pad)).layer;
   const perDir = await Promise.all(dirs.map(async (dir, k) => {
     const allPoses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
@@ -404,37 +405,42 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     const collected: CellOut[] = [];
     for (const { start, count } of poseBatches(allPoses.length)) {
     const poses = allPoses.slice(start, start + count), cells = poses.map((_, i) => `${anim}/${dir}/${start + i}`);
-    let last: CellOut[] = [], lastProv: Provenance | undefined, lastFails = 0;
+    let best: CellOut[] = [], bestProv: Provenance | undefined, bestFails = Infinity;
     for (let attempt = 0; attempt < 2; attempt++) {
       const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`);
       const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad, view: rig.view });
       const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
       const r = terminal(rec) ? rec : await settled(rec.id);
       onCall();
+      if (attempt) rerolls++;
       if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
       const outputs = outputsOf(r);
       if (outputs.length !== Math.max(3, cells.length)) continue; // G1: re-roll
       const outs = unrotate(outputs, f0Last(item.slot, rest, paddedPoses(poses), rig.cell)).slice(0, cells.length);
-      last = await Promise.all(cells.map(async (c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: await img(outs[i].sha), route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band })));
-      postProcess(rig, slot, last, keys, pad);
-      lastFails = failCount(withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed, pad), slot, last, keys, rig));
-      lastProv = toProv(r, { cells, seed, rerolls: attempt, old: [] });
-      if (!lastFails) break;
+      const images = await Promise.all(outs.map((o) => img(o.sha)));
+      if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad)) continue; // G1: wrong geometry is not a candidate
+      const candidate = cells.map((c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: images[i], route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band }));
+      postProcess(rig, slot, candidate, keys, pad);
+      const fails = failCount(withH4(itemQa(rig, slot, key, candidate, attempt, GATES.keyOutsidePosed, pad), slot, candidate, keys, rig));
+      // Keep pixels and provenance together. A later equal/worse or malformed roll cannot replace the earlier candidate.
+      if (fails < bestFails) { best = candidate; bestFails = fails; bestProv = toProv(r, { cells, seed, rerolls: attempt, old: [] }); }
+      if (!fails) break;
     }
-    if (!last.length) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned the wrong number of frames twice. Try again.`); // R6 P2-13: never save a direction with empty cells
-    if (lastFails && gridable(item)) { // B14: still failing after the re-roll -> one inpaint-v3 grid, kept only if it is better
+    if (!best.length) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames twice. Try again.`); // R6 P2-13: never save a direction with empty cells
+    if (bestFails && gridable(item)) { // B14: still failing after the re-roll -> one inpaint-v3 grid, kept only if it is better
       const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells);
       onCall();
-      if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys, rig)) < lastFails) { last = g.cells; lastProv = g.prov; }
+      rerolls++;
+      if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys, rig)) < bestFails) { best = g.cells; bestProv = g.prov; }
     }
-    prov.push(lastProv!);
-    collected.push(...last);
+    prov.push(bestProv!);
+    collected.push(...best);
     }
     return collected;
   }));
   const cells = perDir.flat();
   if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
-  const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad), slot, cells, keys, rig);
+  const q = withH4(itemQa(rig, slot, key, cells, rerolls, GATES.keyOutsidePosed, pad), slot, cells, keys, rig);
   await mergeClip(ctx, item, anim, dirs, cells, prov, q, pad);
   return q;
 }

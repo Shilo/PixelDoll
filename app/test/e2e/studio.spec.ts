@@ -1104,3 +1104,54 @@ test('accepted held-item review reasons survive actual reload without claiming a
   await expect(pane.getByText(/Hand positions are unavailable/)).toHaveCount(0)
   expect(requests).toEqual([])
 })
+
+
+test('Export discloses saved item and body review flags without blocking analysis downloads', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const names = await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    await s.copyDemo()
+    const rec = await db.get('projects', s.doc.id), items = rec.manifest.items.filter((it: { slot: string }) => it.slot !== 'body').slice(0, 4)
+    const qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, rerolls: 0, cells: {}, clips: {} }
+    items[0].qa = { ...qa, status: 'fail' }
+    items[1].qa = { ...qa, status: 'warn' }
+    items[2].qa = { ...qa, status: 'accepted' }; items[2].designWarnings = ['D1 keyframe rest/west/0: grey smudges']
+    items[3].qa = { ...qa, status: 'pass' }; items[3].designWarnings = ['D1 keyframe rest/south/0: grey smudges']; items[3].baseHash = 'sha256:' + 'f'.repeat(64)
+    rec.rigQa = { clips: { 'walk/east': { fails: ['arms 2.77 px off the requested pose'] }, 'walk/west': { fails: ['arms 2.10 px off the requested pose'] }, 'idle/south': { fails: [] }, 'removed/south': { fails: ['historical removed clip'] }, 'cross-punch/west': { fails: ['historical unavailable view'] } } }
+    await db.put('projects', s.doc.id, rec)
+    return items.map((it: { name: string }) => it.name)
+  })
+  await page.reload()
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
+  const itemNotice = sheet.locator('.notice.warn').filter({ hasText: 'Saved quality or appearance flags:' })
+  for (const name of names) await expect(itemNotice).toContainText(name)
+  await expect(itemNotice).toContainText('including explicitly accepted artwork')
+  const bodyNotice = sheet.locator('.notice.warn').filter({ hasText: 'Body frames failed saved checks:' })
+  await expect(bodyNotice).toContainText('Walk facing east, Walk facing west')
+  await expect(bodyNotice).not.toContainText('Removed')
+  await expect(bodyNotice).not.toContainText('Cross punch')
+  await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
+  const download = sheet.getByRole('button', { name: /^Download zip/ })
+  await expect(download).toBeEnabled()
+  const file = page.waitForEvent('download')
+  await download.click()
+  expect((await file).suggestedFilename()).toMatch(/generic\.pixeldoll\.zip$/)
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    const rec = await db.get('projects', s.doc.id)
+    for (const it of rec.manifest.items) { if (it.qa) it.qa.status = 'pass'; delete it.designWarnings; it.baseHash = rec.manifest.rig.baseHash }
+    rec.rigQa = { clips: { 'walk/east': { fails: [] } } }
+    await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id)
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(sheet.getByRole('button', { name: /^Download zip/ })).toBeEnabled()
+  await expect(sheet.getByText(/Saved quality or appearance flags:/)).toHaveCount(0)
+  await expect(sheet.getByText(/Body frames failed saved checks:/)).toHaveCount(0)
+  expect(requests).toEqual([])
+})

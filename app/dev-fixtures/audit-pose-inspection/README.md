@@ -1,0 +1,5 @@
+# Offline pose-source evidence
+
+Dev-only standalone `/dev-fixtures/audit-pose-inspection/index.html`, not a production entry. Defaults to agent opt-out; external connections are blocked by CSP. Explicit buttons load saved project names, inspect selected move/directions and download evidence. No HTTP client, queue/bootstrap, credentials or data mutation is used. Original provider inputs/results are verified by PNG SHA256 and exact selected provenance/request/job identity. Only done comparable requests with equal params apart from seed can join the comparison; all output indices must be complete. Stored request params must also match the selected item's original keyframe and the current requested clip poses. Raw frames are unrotated into logical cell order with the same pure helpers as production. Extracted/pre-postprocess layers, per-roll QA and differences against the currently stored item are preserved. This is evidence, not automatic repair or acceptance.
+
+From app/: `npx vitest run test/unit/pose-inspection.test.ts`; `npx tsc -p dev-fixtures/audit-pose-inspection/tsconfig.json`.
