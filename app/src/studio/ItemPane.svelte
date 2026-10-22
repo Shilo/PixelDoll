@@ -5,7 +5,7 @@
   import { SLOTS } from '../lib/items/items.ts'
   import Sprite from './Sprite.svelte'
   import Colours from './Colours.svelte'
-  import { HEALTH_LABEL, cropAll, groupOf, healthOf, itemCell, slotLabel, plainReason } from './model.ts'
+  import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
   import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
@@ -17,12 +17,9 @@
   const health = $derived(m && it ? healthOf(m, it) : 'demo')
   const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim))
   const made = $derived(m ? moveDirs(m, ui.anim) : [])
-  // the item alone in every direction, cropped to a shared box and scaled up to fill the strip
-  const strip = $derived.by(() => {
-    if (!m || !it || !view.project) return []
-    const ims = cropAll(m.rig.directions.map((d) => itemCell(view.project!, it, ui.anim, d.id, view.cell)))
-    return ims
-  })
+  // Cache a shared crop across every frame and direction, rather than resizing the strip on each playback tick.
+  const previews = $derived(view.project && it ? itemPreviewFrames(view.project, it, ui.anim) : [])
+  const strip = $derived(previews[ui.frame % previews.length] ?? [])
   const k = $derived(strip.length ? Math.max(1, Math.floor(Math.min(60 / strip[0].w, 72 / strip[0].h, 6) * ui.dpr)) : 1)
   const others = $derived(m && it ? m.slots.filter((s) => s.id !== 'body' && s.id !== it.slot && m.items.some((x) => x.slot === s.id)) : [])
   const hides = $derived(it ? it.hides ?? m?.slots.find((s) => s.id === it.slot)?.hides ?? [] : [])
@@ -61,9 +58,9 @@
     </header>
 
     {#if anim}
-      <div class="dir-strip" aria-label="{it.name} in every direction">
+      <div class="dir-strip" style:--preview-width="{Math.max(60, (strip[0]?.w ?? 0) * k / ui.dpr)}px" aria-label="{it.name} in every direction">
         {#each m.rig.directions as d, i (d.id)}
-          {#if strip[i] && made.includes(d.id)}<figure><Sprite img={strip[i]} {k} w={strip[i].w} h={strip[i].h} label="{it.name} facing {d.id}" />{d.id[0].toUpperCase()}</figure>{/if}
+          {#if strip[i] && made.includes(d.id)}<figure><Sprite img={strip[i]} {k} w={strip[i].w} h={strip[i].h} label="{it.name} facing {d.id}" />{d.id.split('-').map((s) => s[0].toUpperCase()).join('')}</figure>{/if}
         {/each}
       </div>
     {/if}

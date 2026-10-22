@@ -210,7 +210,7 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .main { flex: 1; display: flex; min-height: 0; position: relative; }
 .pane { flex: none; background: var(--bg-side); overflow: auto; scrollbar-gutter: stable; }
 .side { width: var(--side-w); border-right: 1px solid var(--line); }
-.insp { width: var(--insp-w); border-left: 1px solid var(--line); }
+.insp { width: var(--insp-w); border-left: 1px solid var(--line); overflow: hidden; scrollbar-gutter: auto; }
 .stage-wrap { flex: 1; min-width: 0; min-height: 0; position: relative; background: var(--stage); }
 
 .stage { position: absolute; inset: 0; display: flex; flex-direction: column; }
@@ -259,13 +259,15 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .inline-form .input { padding: 4px 8px; }
 
 /* inspector */
-.inspector { display: flex; flex-direction: column; gap: 14px; padding: 12px; }
+.inspector { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.inspector-tabs { flex: none; padding: 12px; }
+.inspector-content { flex: 1; min-height: 0; overflow: auto; scrollbar-gutter: stable; padding: 0 12px 12px; }
 .insp-body { display: flex; flex-direction: column; gap: 18px; }
 .insp-head { display: flex; flex-direction: column; gap: 4px; }
 .insp-title { font-size: var(--fs-md); font-weight: 600; }
 .insp-sub { display: flex; align-items: center; gap: 8px; color: var(--text-2); flex-wrap: wrap; }
-.dir-strip { display: flex; justify-content: space-around; gap: 0; background: var(--stage); border-radius: var(--r-card); padding: 6px 2px; }
-.dir-strip figure { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: var(--fs-sm); color: var(--text-3); }
+.dir-strip { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 8px 0; background: var(--stage); border-radius: var(--r-card); padding: 6px 2px; }
+.dir-strip figure { flex: 0 0 var(--preview-width, 60px); display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: var(--fs-sm); color: var(--text-3); }
 .field-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 24px 12px; color: var(--text-2); }

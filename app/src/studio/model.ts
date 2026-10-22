@@ -68,6 +68,15 @@ export function cropAll(ims: Img[]): Img[] {
   });
 }
 
+/** One crop for the entire clip, so animated item previews keep their scale, alignment and layout bounds. */
+export function itemPreviewFrames(p: Project, it: Item, anim: string): Img[][] {
+  const clip = p.manifest.rig.animations.find((a) => a.id === anim);
+  if (!clip) return [];
+  const dirs = p.manifest.rig.directions;
+  const cropped = cropAll(clip.frames.flatMap((f) => dirs.map((d) => itemCell(p, it, anim, d.id, f.cell))));
+  return clip.frames.map((_, i) => cropped.slice(i * dirs.length, (i + 1) * dirs.length));
+}
+
 /** Base prompt (S2 winner): the user's words + a plain clothed mannequin so items have a clean body to sit on. B15: a light
  * shirt over dark shorts, so the two garments get their own shades (lib/dress/regions.ts splits them into Shirt and Shorts). */
 export const basePrompt = (desc: string) =>

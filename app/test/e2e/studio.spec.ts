@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { unzip, zip } from '../../src/lib/store/zip.ts'
 
 declare global {
   interface Window {
@@ -242,6 +243,72 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
 
   assert.deepEqual(errors, [])
   assert.deepEqual(unexpectedRequests, [], 'demo tests must never call the paid API')
+})
+
+test('Inspector animation stays stable and eight-direction previews fit the panel', async ({ page }) => {
+  await page.route('https://api.pixellab.ai/**', (route) => route.abort())
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto('/#/')
+  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click()
+  await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.getByRole('button', { name: 'Red cape', exact: true }).click()
+  await page.getByRole('button', { name: 'Pause', exact: true }).click()
+  const inspector = page.getByRole('complementary', { name: 'Inspector', exact: true })
+  async function checkFrames() {
+    const geometry: string[] = [], pixels: string[] = []
+    for (let frame = 0; frame < 8; frame++) {
+      await page.keyboard.press('.')
+      geometry.push(JSON.stringify(await inspector.locator('.dir-strip').boundingBox()))
+      geometry.push(JSON.stringify(await inspector.locator('.actions').first().boundingBox()))
+      pixels.push(await inspector.locator('.dir-strip canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL()))
+      const strip = (await inspector.locator('.dir-strip').boundingBox())!
+      for (const sprite of await inspector.locator('.dir-strip canvas').all()) {
+        const b = (await sprite.boundingBox())!
+        expect(b.x).toBeGreaterThanOrEqual(strip.x)
+        expect(b.x + b.width).toBeLessThanOrEqual(strip.x + strip.width)
+      }
+    }
+    expect(new Set(geometry.filter((_, i) => i % 2 === 0)).size).toBe(1)
+    expect(new Set(geometry.filter((_, i) => i % 2 === 1)).size).toBe(1)
+    expect(new Set(pixels).size).toBeGreaterThan(1)
+  }
+  await checkFrames()
+  await inspector.getByRole('button', { name: 'Remove', exact: true }).click()
+  await page.getByRole('button', { name: 'Steel helmet', exact: true }).click()
+  await expect(inspector.getByRole('button', { name: 'Remove for good', exact: true })).toHaveCount(0)
+
+  // Disposable layout fixture: duplicate stored east artwork into the extra directions, without generation.
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: /Download zip/ }).click()
+  const files = await unzip(new Uint8Array(readFileSync((await (await download).path())!)))
+  const data = JSON.parse(new TextDecoder().decode(files.get('project.json')))
+  data.manifest.rig.directions = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'].map((id) => ({ id }))
+  for (const it of data.manifest.items) for (const layer of it.layers) for (const dirs of Object.values(layer.cells ?? {}) as Record<string, unknown>[]) {
+    for (const dir of ['south-east', 'north-east', 'north-west', 'south-west', 'west']) dirs[dir] = dirs.east ?? dirs.south
+  }
+  files.set('project.json', new TextEncoder().encode(JSON.stringify(data)))
+  const bytes = await zip([...files].map(([name, data]) => ({ name, data })))
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'eight-directions.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await page.getByRole('img', { name: 'Character import preview' }).waitFor()
+  const setup = page.getByRole('checkbox', { name: /Set up the pose rig next/ })
+  if (await setup.count()) await setup.uncheck()
+  await page.getByRole('button', { name: 'Import character', exact: true }).click()
+  await page.getByRole('button', { name: 'Red cape', exact: true }).click()
+  await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8)
+  await checkFrames()
+  const tabs = inspector.getByRole('tablist', { name: 'Inspector' })
+  const top = (await tabs.boundingBox())!.y
+  await inspector.getByRole('tab', { name: 'Colours', exact: true }).click()
+  const content = (await inspector.locator('.inspector-content').boundingBox())!
+  await page.mouse.move(content.x + content.width / 2, content.y + content.height / 2)
+  await page.mouse.wheel(0, 2000)
+  await expect.poll(() => inspector.locator('.inspector-content').evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
+  expect((await tabs.boundingBox())!.y).toBe(top)
 })
 
 test('desktop resize keeps preview controls inside the stage when switching panels', async ({ page }) => {

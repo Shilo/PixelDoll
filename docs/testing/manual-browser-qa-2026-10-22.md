@@ -47,3 +47,19 @@ Screenshots are local, gitignored evidence under `docs/testing/img/`:
 ## Limits
 
 This pass used the Codex Chromium browser and responsive viewport overrides, not physical touch devices, Safari or Firefox. Paid character, item and move generation and a real PixelLab library import were not exercised. Connection success in the regression used a synthetic key and mocked balance response. This report does not establish that all possible visual or functional bugs are absent.
+
+## Inspector follow-up after user clarification
+
+The first pass missed the animated item preview problem. The user clarified that the preview itself sometimes overflowed the panel and changed height continuously, shifting all controls beneath it.
+
+Reproduced at 1366 × 768 desktop: the Red cape preview cycled through heights 60.09, 61.09, 62.09 and 63.09 px, moving the action row between y=239.28 and y=242.28. The crop and scale were recalculated from only the current frame. The unwrapped direction strip also had no provision for eight views or larger sprites.
+
+The preview now computes one shared crop across every direction and frame of the selected clip, caches those images, and advances playback within those fixed bounds. Direction figures wrap within the available width and diagonal labels are distinct. The Codex browser measured a single 63.09 px height and action-row y=242.28 across 150 consecutive cape samples after the fix. An offline eight-direction fixture, using duplicated stored east frames for its diagonals, showed all eight previews in two rows: its scroll width and available width were both 260 px, and its height stayed at 122.19 px across 100 samples. No generation was involved.
+
+Additional Inspector checks found that its tabs scrolled away and that a pending “Remove for good” state carried from one selected item into the next. Tabs now sit outside the scrolling content; changing the selected item or project recreates the content, resetting scroll position and item-specific action state.
+
+Supporting verification: the focused crop unit regression passed; the Inspector animation/eight-direction browser regression passed; the existing desktop resize regression passed; production build and dist guard passed. The browser regression steps through all eight clip frames, checks that the pixels change while preview/action bounds stay constant, checks every preview is contained in the strip, and verifies fixed tabs and cleared removal confirmation. Its first run reached the import step but timed out on another contributor's newly added optional pose-setup dialog; the layout fixture now opts out of that dialog and the rerun passed.
+
+Local evidence: `img/inspector-preview-eight-directions-after.jpg` and `img/inspector-confirmation-before.jpg`. The synthetic ZIP under `img/` is disposable layout evidence, not a generated eight-direction character.
+
+A final whole-checkout check overlapped another contributor's unfinished `test/unit/rig-setup.test.ts`: type checking and the full unit command stopped on its line-25 parse error, while 51 runnable tests passed. That file was left untouched. The focused Inspector unit/browser tests and production build above passed; the integration coordinator will repeat whole-checkout validation after the other contributor's checkpoint.
