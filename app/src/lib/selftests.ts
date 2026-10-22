@@ -66,15 +66,12 @@ const shared: Test[] = [
 const node: Test[] = [...shared, ['png (pure)', png.selfTestNode]];
 const browser: Test[] = [...shared, ['png', png.selfTest], ['db', db.selfTest]];
 
-// Shared registry keeps the Node runner, Vitest and browser harness on the same cases.
-export function selfTestsFor(env: 'node' | 'browser'): readonly Test[] {
-  return env === 'node' ? node : browser;
-}
+export { node as nodeSelfTests, browser as browserSelfTests };
 
 export async function runSelfTests(env: 'node' | 'browser', log: (line: string) => void = console.log, extra: Test[] = []): Promise<number> {
   let total = 0;
   const orig = console.assert;
-  for (const [name, fn] of [...selfTestsFor(env), ...extra]) {
+  for (const [name, fn] of [...(env === 'node' ? node : browser), ...extra]) {
     let fails = 0;
     console.assert = (cond?: boolean, ...msg: unknown[]) => {
       if (!cond) { fails++; log(`  FAIL ${name}: ${msg.join(' ')}`); }
