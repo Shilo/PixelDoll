@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join } from 'node:path';
 
-const MARKERS = ['__dev', 'pixellab-key', 'PIXELLAB_TOKEN_AGENT_DEV', 'PIXELLAB_API_KEY', 'API_KEY_OVERRIDE', 'DEV_API_KEY', 'devkey', 'pixeldoll.agentKey', 'agent-badge', 'sourceMappingURL'];
+const MARKERS = ['__dev', 'pixellab-key', 'PIXELLAB_API_KEY_AGENT_DEV', 'PIXELLAB_TOKEN_AGENT_DEV', 'PIXELLAB_API_KEY', 'API_KEY_OVERRIDE', 'DEV_API_KEY', 'devkey', 'pixeldoll.agentKey', 'agent-badge', 'sourceMappingURL'];
 const bad = [];
 for (const rel of readdirSync('dist', { recursive: true })) {
   const file = join('dist', rel);

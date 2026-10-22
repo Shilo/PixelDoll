@@ -1,4 +1,4 @@
-# Token modes verification — `PIXELLAB_TOKEN_AGENT_DEV` (2026-10-21)
+# Token modes verification — `PIXELLAB_API_KEY_AGENT_DEV` (2026-10-21)
 
 PM test after the user renamed the `.env` variable. The token value was never printed: only its length, HTTP statuses and
 yes/no checks were recorded.

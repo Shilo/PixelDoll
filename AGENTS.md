@@ -66,7 +66,7 @@ Follow the Git Conventional Commits standard for every commit.
 
 ## Agent testing
 
-Agents that need PixelLab run npm run dev:agent (launch config app-dev-agent, port 5199). It reads PIXELLAB_TOKEN_AGENT_DEV from the repo-root .env server-side, and the app connects by itself and shows an Agent mode badge.
+Agents that need PixelLab run npm run dev:agent (launch config app-dev-agent, port 5199). It reads PIXELLAB_API_KEY_AGENT_DEV from the repo-root .env server-side, and the app connects by itself and shows an Agent mode badge.
 Humans use npm run dev and paste their token in the app, as in production. Builds never contain the agent path (agent-mode builds are refused, and npm run build ends with the dist guard, app/scripts/dist-guard.mjs, which fails if key code reaches dist).
 Check GET /balance only unless the task needs generations. Keyless scripts set localStorage pixeldoll.agentKey to off on the agent server so nothing can spend. The switch is read at page load and covers every tab of that origin, so keep it set for the whole run.
 Never expose the agent server beyond localhost (no --host, tunnels or port forwards).

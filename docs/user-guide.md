@@ -15,6 +15,8 @@ Open **Connect PixelLab…** from the character menu (top left), or press the ge
 
 - The key is only sent to PixelLab.
 - It is forgotten when you close PixelDoll, unless you tick **Remember on this device**. **Forget key** removes it.
+- Remembered keys are shared with PixelLab Backpack on the same website. Open or reload either app to use the saved key;
+  **Forget key** removes the shared saved key for both apps.
 - The toolbar then shows how many **gens** you have left.
 
 ## What "gens" cost

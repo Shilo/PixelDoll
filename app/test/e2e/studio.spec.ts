@@ -1,4 +1,4 @@
-import { test, type Page } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
@@ -243,3 +243,38 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   assert.deepEqual(errors, [])
   assert.deepEqual(unexpectedRequests, [], 'demo tests must never call the paid API')
 })
+
+// Synthetic keys only: exercise the production bundle without contacting PixelLab.
+for (const initial of ['shared', 'legacy', 'both', 'quota'] as const) {
+  test('remembered key: ' + initial + ' uses the shared name and Forget survives reload', async ({ page }) => {
+    const shared = 'test-shared-key-1234';
+    const legacy = 'test-legacy-key-5678';
+    const expected = initial === 'legacy' || initial === 'quota' ? legacy : shared;
+    await page.route('https://api.pixellab.ai/**', async (route) => {
+      expect(route.request().method()).toBe('GET');
+      expect(new URL(route.request().url()).pathname).toBe('/v2/balance');
+      expect(route.request().headers().authorization).toBe('Bearer ' + expected);
+      await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 0 } } });
+    });
+    await page.addInitScript(({ initial, shared, legacy }) => {
+      localStorage.setItem('pixeldoll.agentKey', 'off');
+      localStorage.setItem('pixeldoll.welcomed', '1');
+      if (sessionStorage.getItem('seeded')) return;
+      sessionStorage.setItem('seeded', '1');
+      if (initial === 'shared' || initial === 'both') localStorage.setItem('pixellabApiKey', shared);
+      if (initial !== 'shared') localStorage.setItem('pixeldoll.apiKey', legacy);
+      localStorage.setItem('pixellab-backpack:key-kept', 'other-app-legacy-key');
+      if (initial === 'quota') Storage.prototype.setItem = () => { throw new DOMException('full', 'QuotaExceededError'); };
+    }, { initial, shared, legacy });
+    await page.goto('/#/');
+    await page.locator('.project-btn').click();
+    await page.getByRole('menuitem', { name: 'PixelLab key', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
+    await expect(dialog.getByText(/Connected and remembered/)).toBeVisible();
+    expect(await page.evaluate(() => [localStorage.getItem('pixellabApiKey'), localStorage.getItem('pixeldoll.apiKey')])).toEqual(initial === 'quota' ? [null, legacy] : [expected, null]);
+    await dialog.getByRole('button', { name: 'Forget key' }).click();
+    await page.reload();
+    expect(await page.evaluate(() => [localStorage.getItem('pixellabApiKey'), localStorage.getItem('pixeldoll.apiKey'), localStorage.getItem('pixellab-backpack:key-kept')])).toEqual([null, null, null]);
+    await expect(page.locator('.tb-trail .balance')).toContainText('Connect');
+  });
+}
