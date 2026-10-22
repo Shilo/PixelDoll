@@ -1,5 +1,5 @@
 import { expect, test, vi } from 'vitest'
-import { selfTestsFor } from '../../src/lib/selftests.ts'
+import { nodeSelfTests } from '../../src/lib/selftests.ts'
 import { selfTest as agentKeyTest } from '../../agent-key.ts'
 
 // Existing self-tests use console.assert in both Node and the dev-only browser harness.
@@ -16,7 +16,7 @@ async function runSelfTest(check: () => unknown): Promise<void> {
   }
 }
 
-for (const [name, check] of [...selfTestsFor('node'), ['agent-key', agentKeyTest] as const]) {
+for (const [name, check] of [...nodeSelfTests, ['agent-key', agentKeyTest] as const]) {
   test.sequential(name, () => runSelfTest(check))
 }
 
