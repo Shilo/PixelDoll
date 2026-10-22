@@ -5,10 +5,11 @@ decisions). Done history is at the bottom.
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 
 ## Next up (in order)
-1. [ ] Shield quality: inspect remaining east-walk grip/orientation discontinuities using saved frames/keypoints.
-      The occlusion audit is complete: two hard flags remain, and both drafts stay unaccepted; no new credits needed
-      ([report](docs/testing/shields-2026-10-22.md)).
-2. [ ] Item quality polish: cape back-hem grey smudges; helmet visor flagged when the forearm covers it
+1. [ ] Shield quality: two east-walk drafts still need visual acceptance or targeted artwork correction. Offline
+      occlusion and joint/centroid audits are complete; no safe automatic pixel repair is supported by the evidence
+      ([follow-up](docs/testing/item-quality-follow-up-2026-10-22.md)). Keep both drafts unaccepted.
+2. [ ] Item quality polish: stored cape back-hem grey smudges and actual helmet hurt-frame deformations. The forearm
+      occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recoloured.
 3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
 4. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
 5. [ ] CI: pin `runs-on` to `ubuntu-24.04` or accept the Ubuntu 26 migration of `ubuntu-latest` (runner notice, 2026-10)
@@ -28,6 +29,10 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
   acceptance. Inspect saved grip/orientation evidence before more paid retries. See `docs/testing/shields-2026-10-22.md`.
 - [!] **Generation is not bit-repeatable.** Same request + seed ≠ same pixels → base frames are frozen and never
   regenerated; changing the base (`baseHash`) makes existing items stale.
+- [!] **QA summaries after adding moves.** Per-frame checks and warning status survive, but aggregate item metrics still
+  describe the original accepted clips. Accurate replaceable summaries need more per-clip data; do not infer a new
+  move is clean from them. Source-call indices for future appended/replaced cells are fixed; historical ZIPs retain
+  their original metadata and are not silently migrated.
 - [!] **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colours disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 - [!] **Mirrored directions flip handedness** (west holds the sword in the left hand). `mirror: "generate"` per item is
@@ -60,6 +65,8 @@ Paperdoll output must be accurate, consistent, high quality, using proper PixelL
 proper post-processing and proper layering — frontier-standard paperdolling workflow.
 
 ## Done
+- [x] Saved shield trajectory audit; forearm-covered helmet review path with adversarial regression; cape D1 evidence;
+      selected-source provenance mapping for appended/batched/grid move cells, with offline persistence regressions.
 - [x] Offline shield occlusion audit on all 96 saved frames, zero credits: body-explainable size/shape flags require
       visual review, visible mismatches retain hard failures; Codex browser checks and adversarial review completed.
 - [x] Codex browser shield/Studio checks and adversarial sub-agent review; independently reproduced and fixed the tiny-item G9 regression (40 offline tests).

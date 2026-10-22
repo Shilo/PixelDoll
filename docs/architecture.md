@@ -181,6 +181,12 @@ re-rolls it keeps its roll with the fewest failed checks, not the last one (free
 H4 (keyframe consistency) fails only band items (helmet, face) [T3]. B14: soft items (hair, worn torso/back) warn only in a
 clip-direction where the item covers ≥ 50 % of the body in some frame and own < 0.5 (the cape from behind, not its edges from the
 front); off for legs and feet (S and N look alike). On the Ranger: 6 of the 7 real cape-north frames still flag (the 7th clip fails G4 anyway), 43 false flags are gone.
+For band items with stored rest/move poses, a failed H4 may instead require review when an observed forearm explains
+it. Align by head joints (±1 px), and allow occlusion only at visible key-coloured body pixels within the requested
+elbow-to-wrist capsule (3 px radius at a 64 px cell). Require at least 6 visible item pixels, a failing unmasked score,
+and a masked score ≥ the unchanged 0.75 floor under that same joint alignment. An unrelated arm or head alignment
+alone cannot excuse a failure. This produces an explicit review warning, not verified hidden detail or a clean pass.
+All item and new-move H4 callers supply the rig; missing poses retain the original check.
 G8 decides a clip's hand only with half its frames decided. A held frame repaired from the keyframe (S5) is not a warning.
 D1 (dress, 0 gens): a colourful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-grey px fails the dress call, so the
 design is re-rolled before 36 gens of poses copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks
@@ -188,6 +194,11 @@ for grey/metal/black/white parts. Handedness is set by the
 motion: authored weapon-hand actions and dressed keyframes keep it; prompts and hand marks do not [S3].
 
 ### 4.6 fg/bg split, compose, export
+
+When appending or replacing an accepted item's move, each new `CellQa.provenance` resolves the selected record by its
+`produced` frame keys and adds the existing item provenance length. Direction-local call indices are not source indices:
+requests can finish out of order, span batches, or use a grid fallback. Existing cells keep their source references;
+missing source evidence fails before persistence. Historical exports are not rewritten automatically.
 
 `fg = layer ∩ base alpha`, `bg = layer − fg` for slots with `bgZ` (exact recompose [S1]). Compose and export as built in M4/M5:
 draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg before fg, item id. Export: manifest-spec §5–§6.

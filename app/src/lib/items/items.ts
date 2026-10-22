@@ -1,6 +1,6 @@
 // Item lab core (architecture §3.1–3.4, §4): slot ladder, call packing, prompts, per-cell extraction, gates G1–G8, fg/bg split,
 // manifest Item. Pure over Img; the UI (ui/M3.svelte) only runs calls through the queue and persists.
-import { chromaLayer, chromaPrompt, components, fillHoles, keyKept, keyOutside, toChroma, type Key } from '../image/chroma.ts';
+import { chromaLayer, chromaPrompt, components, fillHoles, keyKept, keyOutside, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
 import { diffLayer, type Rect } from '../image/diff.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { over } from '../compose/compose.ts';
@@ -729,14 +729,15 @@ const despeck = (im: Img) => {
   return o;
 };
 /** Appearance similarity of layer A to keyframe layer K after centroid alignment (±1 px): over the union of both masks a pixel
- * scores 1 − maxChannelDiff/128 when both are opaque, 0 when only one is; K px landing on `occ` (visible mannequin) are skipped. */
-export function simAligned(A: Img, K: Img, occ?: Uint8Array): number {
+ * scores 1 − maxChannelDiff/128 when both are opaque, 0 when only one is; K px landing on `occ` (visible mannequin) are skipped.
+ * Optional `shift` maps layer coordinates to keyframe coordinates using stored joints instead of a partial mask's centroid. */
+export function simAligned(A: Img, K: Img, occ?: Uint8Array, shift?: [number, number]): number {
   const { w, h } = A, a = maskOf(A), b = maskOf(K), ca = centroid(a, w), cb = centroid(b, w);
   if (!ca || !cb) return 0;
   let best = 0;
   for (let ey = -1; ey <= 1; ey++)
     for (let ex = -1; ex <= 1; ex++) {
-      const dx = Math.round(cb[0] - ca[0]) + ex, dy = Math.round(cb[1] - ca[1]) + ey;
+      const dx = (shift?.[0] ?? Math.round(cb[0] - ca[0])) + ex, dy = (shift?.[1] ?? Math.round(cb[1] - ca[1])) + ey;
       let S = 0, U = 0;
       for (let y = 0; y < h; y++)
         for (let x = 0; x < w; x++) {
@@ -751,6 +752,28 @@ export function simAligned(A: Img, K: Img, occ?: Uint8Array): number {
   return best;
 }
 const OPP: Partial<Record<DirectionName, DirectionName>> = { south: 'north', north: 'south' };
+/** A raised forearm can cover a helmet. Limit possible occlusion to visible key-coloured body pixels near its stored
+ * elbow-to-wrist segment, not the whole head/mannequin. At a 64 px cell, a 4 px forearm gets 1 px of pose tolerance.
+ */
+function headOcclusion(c: CellOut, rig: Rig): { mask: Uint8Array; shift: [number, number] } | null {
+  const { pose, rest } = posedKps(rig, c.key), h0 = kpAt(rest, HEAD, rig.cell, 0), h1 = kpAt(pose, HEAD, rig.cell, 0);
+  if (!pose || !h0 || !h1) return null;
+  const mask = new Uint8Array(c.mask.length), radius = 3 * rig.cell.w / 64;
+  for (const side of ['LEFT', 'RIGHT']) {
+    const e = kpAt(pose, [`${side} ELBOW`], rig.cell, 0)!, wr = kpAt(pose, [`${side} ARM`], rig.cell, 0)!;
+    const dx = wr[0] - e[0], dy = wr[1] - e[1], length2 = dx * dx + dy * dy;
+    if (!length2) continue;
+    for (let p = 0; p < mask.length; p++) {
+      if (c.mask[p] || !c.base.data[p * 4 + 3] || !c.out.data[p * 4 + 3]) continue;
+      const [r, g, b] = c.out.data.subarray(p * 4, p * 4 + 3);
+      if (keyScore('green', r, g, b) < KT && keyScore('magenta', r, g, b) < KT) continue;
+      const x = p % c.layer.w + 0.5 - e[0], y = (p / c.layer.w | 0) + 0.5 - e[1];
+      const t = Math.max(0, Math.min(1, (x * dx + y * dy) / length2));
+      if (Math.hypot(x - t * dx, y - t * dy) <= radius) mask[p] = 1;
+    }
+  }
+  return sum(mask) ? { mask, shift: [Math.round(h0[0] - h1[0]), Math.round(h0[1] - h1[1])] } : null;
+}
 /** cover: B14, soft items (cloth, hair) are only judged in a view where the item covers at least half of the body (a cape from
  *  behind, not the cape edges from the front); soft: their own-similarity floor there. */
 export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5 };
@@ -761,7 +784,7 @@ export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5 };
  * frames: hair, chest and the cape's front view scored 0.20–0.74 on 31 frames that look right; the cape wrapping the raised arm
  * from behind scored 0.31–0.46). Off for legs, feet (S and N look alike: trousers own ≈ opposite on 13 good frames) and held items.
  */
-export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>): { fails: Map<number, string[]>; warnings: string[] } {
+export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig): { fails: Map<number, string[]>; warnings: string[] } {
   const fails = new Map<number, string[]>(), warnings: string[] = [];
   if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return { fails, warnings };
   // soft items: the clip's best body coverage (item px on the base silhouette / base px)
@@ -781,6 +804,13 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     for (let p = 0; p < occ.length; p++) occ[p] = c.out.data[p * 4 + 3] && !c.mask[p] ? 1 : 0;
     const own = simAligned(L, despeck(keys[dir]!), occ);
     if (own >= (slot.band ? H4.own : H4.soft)) continue;
+    if (slot.band && rig && sum(maskOf(L)) >= 6) {
+      const arm = headOcclusion(c, rig);
+      if (arm && simAligned(L, despeck(keys[dir]!), undefined, arm.shift) < H4.own && simAligned(L, despeck(keys[dir]!), arm.mask, arm.shift) >= H4.own) {
+        warnings.push(`Occlusion ${c.key}: the forearm may cover the head item; inspect it before keeping it`);
+        continue; // Hidden details cannot be verified: review, never a clean pass or an automatic H4 retry.
+      }
+    }
     const other = opp && keys[opp] ? simAligned(L, despeck(keys[opp]!), occ) : 0;
     const why = `H4 ${c.key}: ${other >= own - H4.oppMargin ? 'looks like the opposite view' : 'does not match its keyframe (extra or missing parts)'} (own ${own.toFixed(2)}${opp ? `, opposite ${other.toFixed(2)}` : ''})`;
     if (slot.band) (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);

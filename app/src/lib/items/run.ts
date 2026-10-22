@@ -8,7 +8,7 @@ import { encodePngBytes } from '../image/pngraw.ts';
 import * as db from '../store/db.ts';
 import { saveItem, type StoredProject } from '../store/project.ts';
 import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifest.ts';
-import type { DirectionName } from '../rig/rig.ts';
+import type { DirectionName, Rig } from '../rig/rig.ts';
 import { fromApi } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { chromaLayer, type Key } from '../image/chroma.ts';
@@ -315,12 +315,12 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   }
   postProcess(rig, slot, cells, keys, pad);
   const kOut = d.spec.method === 'skel' ? GATES.keyOutsidePosed : GATES.keyOutside;
-  const qa = cells.length ? withH4(itemQa(rig, slot, route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut, pad), slot, cells, keys) : null;
+  const qa = cells.length ? withH4(itemQa(rig, slot, route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut, pad), slot, cells, keys, rig) : null;
   return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa) : null };
 }
 /** itemQa + the H4 keyframe-consistency gate (posed cells only). */
-function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>): QaResult {
-  const h = dirGate(slot, cells, keys);
+function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig: Rig): QaResult {
+  const h = dirGate(slot, cells, keys, rig);
   for (const [k, why] of h.fails) q.failCalls.set(k, [...(q.failCalls.get(k) ?? []), ...why]);
   q.warnings.push(...h.warnings);
   if (h.fails.size) q.qa.status = 'fail';
@@ -397,7 +397,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
       const outs = unrotate(outputs, f0Last(item.slot, rest, paddedPoses(poses), rig.cell)).slice(0, cells.length);
       last = await Promise.all(cells.map(async (c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: await img(outs[i].sha), route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band })));
       postProcess(rig, slot, last, keys, pad);
-      lastFails = failCount(withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed, pad), slot, last, keys));
+      lastFails = failCount(withH4(itemQa(rig, slot, key, last, attempt, GATES.keyOutsidePosed, pad), slot, last, keys, rig));
       lastProv = toProv(r, { cells, seed, rerolls: attempt, old: [] });
       if (!lastFails) break;
     }
@@ -405,7 +405,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     if (lastFails && gridable(item)) { // B14: still failing after the re-roll -> one inpaint-v3 grid, kept only if it is better
       const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells);
       onCall();
-      if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys)) < lastFails) { last = g.cells; lastProv = g.prov; }
+      if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys, rig)) < lastFails) { last = g.cells; lastProv = g.prov; }
     }
     prov.push(lastProv!);
     collected.push(...last);
@@ -414,20 +414,28 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   }));
   const cells = perDir.flat();
   if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
-  const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad), slot, cells, keys);
+  const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad), slot, cells, keys, rig);
   await mergeClip(ctx, item, anim, dirs, cells, prov, q, pad);
   return q;
 }
 const failCount = (q: QaResult) => [...q.failCalls.values()].flat().length;
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
-async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
+export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
   const { rig } = ctx.rec.manifest, key = item.key!;
   const spec: ItemSpec = { id: item.id, name: item.name, slot: item.slot, prompt: item.prompt, key, anims: [anim], dirs, method: 'skel' };
   const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa, pad });
   const out: Item = structuredClone(item);
   out.layers.forEach((l, j) => { l.cells = { ...l.cells, [anim]: { ...l.cells?.[anim], ...built.item.layers[j].cells![anim] } }; });
+  // Per-direction call numbers are local to this move; records arrive in completion order (and may be grid fallbacks).
+  // Resolve the selected record by its produced keys, then offset into the item's full provenance history.
+  const source = new Map(prov.flatMap((p, i) => p.produced.map((k) => [k, item.provenance.length + i] as const)));
+  const qaCells = Object.fromEntries(Object.entries(q.qa.cells).map(([k, c]) => {
+    const provenance = source.get(k as keyof typeof q.qa.cells);
+    if (provenance == null) throw new Error(`No source record for ${k}`);
+    return [k, { ...c, provenance }];
+  }));
   out.provenance = [...out.provenance, ...prov];
-  if (out.qa) out.qa = { ...out.qa, cells: { ...out.qa.cells, ...q.qa.cells }, status: q.qa.status === 'pass' || out.qa.status !== 'pass' ? out.qa.status : 'warn' };
+  if (out.qa) out.qa = { ...out.qa, cells: { ...out.qa.cells, ...qaCells }, status: q.qa.status === 'pass' || out.qa.status !== 'pass' ? out.qa.status : 'warn' };
   await saveItem(ctx.rec.id, out, built.images, SLOTS);
 }
 /** B14: one clip-direction of an accepted item as an inpaint-v3 grid (its dressed keyframes as the reference cells). */
@@ -453,7 +461,7 @@ export async function regridClip(ctx: RigCtx, item: Item, anim: string, dir: Dir
   const keys: Partial<Record<DirectionName, Img>> = {};
   for (const [d, h] of Object.entries(item.dressed) as [DirectionName, string][]) keys[d] = chromaLayer(await img(h.slice(7)), key, baseCell(ctx, restKey(d), true)).layer;
   const g = await gridItemClip(ctx, item, anim, dir, 0, keys, seedN);
-  const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed), slot, g.cells, keys);
+  const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed), slot, g.cells, keys, rig);
   const saved = !qa.failCalls.size;
   if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa);
   return { qa, saved, cells: g.cells };

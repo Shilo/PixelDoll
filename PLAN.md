@@ -24,6 +24,10 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   rigs (96 generated frames, 144 with mirrors). The offline occlusion audit now routes plausible body-hidden changes
   to explicit review warnings instead of paid retries. East walks retain two unexplained hard flags; both items remain
   unaccepted drafts. Evidence: `docs/testing/shields-2026-10-22.md`.
+- **Item quality follow-up:** saved east-walk joint/centroid evidence supports retaining both shield flags; no automatic
+  pixel repair. A forearm-covered helmet can now require review instead of an H4 retry when head-aligned observed arm
+  pixels explain the mismatch; true deformations still fail. Appended move QA now links to the selected source record
+  by produced frame key, including grid fallbacks and prior history. See `docs/testing/item-quality-follow-up-2026-10-22.md`.
 - **PixelLab credits:** balance ≈212 (free GET, 2026-10-22). Shield validation spent 99 generations (34 + 65).
 
 ## Roadmap
@@ -31,8 +35,8 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 1. **Own origin** (custom domain) — key safety on shared `*.github.io`; prerequisite for PWA and for recommending
    "Remember key". Decision deferred with PWA.
 2. **PWA** — deferred by user (2026-10-22); retain the installable, offline shell plan below (D13).
-3. **Item quality** — shield east-walk grip/orientation discontinuities (two hard flags remain; reuse saved outputs); cape back-hem
-   smudges; helmet visor flag when an arm covers it;
+3. **Item quality** — shield east-walk discontinuities (trajectory audit complete, two hard flags remain); stored cape
+   back-hem smudges and actual helmet hurt-frame deformations (forearm-occlusion false retry fixed);
    optional `mirror: "generate"` per item to keep handedness in mirrored directions.
 4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
 5. **Theming** — runtime theme tokens + "Paper" theme inspired by design look D (deferred by user).
