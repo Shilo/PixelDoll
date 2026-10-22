@@ -1,5 +1,8 @@
 # PixelDoll
 
+**Dress up your 2D game characters with pixel-perfect paper dolling.** Generate swappable, frame-aligned equipment layers
+with PixelLab AI and export them to any game engine. · [Open PixelDoll](https://shilo.github.io/PixelDoll/)
+
 Paperdolling for [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armour, hair and weapons as
 **separate frame-aligned layers**, recolour them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser** or any
 engine (PNG + JSON). Every generated pixel comes from PixelLab; PixelDoll turns PixelLab's one-image-per-call output into a
