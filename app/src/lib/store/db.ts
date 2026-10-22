@@ -96,6 +96,7 @@ export async function deleteCharacter(id: string): Promise<void> {
       if (busy || work || fit) { error = new Error('Finish or dismiss pending generation work before deleting a character.'); t.abort(); return; }
       projects.delete(id);
       for (const r of records.result) {
+        if (r.kind === 'equipment-fit-draft' && r.targetId === id && ['accepted', 'discarded'].includes(r.stage)) projects.delete(r.id);
         if (r.id === 'studio-drafts') projects.put({ ...r, gens: r.gens.filter((g: { draft: { rigId: string } }) => g.draft.rigId !== id) }, r.id);
         if (r.id === 'm3-drafts') projects.put({ ...r, drafts: r.drafts.filter((d: { rigId: string }) => d.rigId !== id) }, r.id);
       }

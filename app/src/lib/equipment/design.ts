@@ -77,7 +77,7 @@ function applyColourway(im: Img, design: EquipmentDesign): Img {
   }
   for (let i = 0; i < pixels.length; i += 4) if (pixels[i + 3]) {
     const next = table.get((pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2]);
-    if (next != null) { pixels[i] = next >> 16; pixels[i + 1] = next >> 8; pixels[i + 2] = next; }
+    if (next != null) { pixels[i] = next >> 16; pixels[i + 1] = (next >> 8) & 255; pixels[i + 2] = next & 255; }
   }
   return { ...im, data: pixels };
 }

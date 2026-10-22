@@ -1,8 +1,8 @@
 import { expect,test } from 'vitest';
 import { equipmentFixture,bodyOnly } from './equipment-fixture.ts';
-import { createDesign,designRevision } from '../../src/lib/equipment/design.ts';
+import { createDesign,designRevision,designRestReferences } from '../../src/lib/equipment/design.ts';
 import { assessDesign } from '../../src/lib/equipment/compatibility.ts';
-import { prepareCopy,targetStamp,publishCandidate } from '../../src/lib/equipment/copy.ts';
+import { prepareCopy,targetStamp,publishCandidate,extensionStamp } from '../../src/lib/equipment/copy.ts';
 import { saveCreatedDesign } from '../../src/lib/equipment/store.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { cellImg } from '../../src/lib/compose/compose.ts';
@@ -20,6 +20,10 @@ test('same frozen cells copy despite renamed moves and playback metadata; target
   const rendered=cellImg(recolour(candidate.project,{}),item.layers[0],'standing','south',0)!;
   expect([...rendered.data.slice((18*64+20)*4,(18*64+20)*4+4)]).toEqual([0,0,255,255]);
   const stamp=targetStamp(target.manifest,'head');target.manifest.rig.animations[0].frames[0].ms=500;expect(targetStamp(target.manifest,'head')).toBe(stamp);
+});
+test('fitting references preserve selected RGB channels exactly',async()=>{
+  const p=await equipmentFixture(),design=await createDesign(p,'hat',{hat:'red'}),reference=designRestReferences(design,p)[0];
+  expect([...reference.image.data.slice((18*64+20)*4,(18*64+20)*4+4)]).toEqual([255,0,0,255]);
 });
 test('unambiguous repeated body poses reuse per cell; contradictory equipment does not choose arbitrarily',async()=>{
   const p=await equipmentFixture(),target=bodyOnly(p),b=p.manifest.items[0].layers[0].cells!.rest!.south![0];
@@ -59,4 +63,26 @@ test('atomic free publication keeps saved default in wardrobe and rejects change
   const out=publishCandidate(rec,candidate,{wear:false});expect(out.manifest.materials.find(m=>m.owner===candidate.itemId)!.defaultVariant).toBe('blue');
   const stale={id:'rig-target',manifest:structuredClone(target.manifest),savedAt:''};stale.manifest.slots[1].anchor='hand-r';
   expect(()=>publishCandidate(stale,candidate,{wear:true})).toThrow('character changed');
+});
+
+test('partial extension retains original and transparent pixels, old QA, other directions and actual producer keys',async()=>{
+  const source=await equipmentFixture(),target=bodyOnly(source),candidate=await prepareCopy(await createDesign(source,'hat'),target);
+  const existing=structuredClone(candidate.project.manifest.items.find(it=>it.id===candidate.itemId)!);
+  const m=structuredClone(candidate.project.manifest),h=existing.layers[0].cells!.rest!.south![0]!,other=[...source.images.keys()].at(-1)!;
+  m.rig.animations[0].cells=3;existing.layers[0].cells={rest:{south:[h,null,null],east:[h,h,h]}};existing.coverage=['rest/south/0','rest/south/1','rest/east/0','rest/east/1','rest/east/2'];
+  const summary={status:'pass' as const,minKeyKept:1,minAreaRatio:1,maxKeyOutside:0,maxAreaCV:0,maxPaletteDist:0,clipPx:0};
+  existing.provenance=[{endpoint:'/original',params:{},seed:1,requestHash:m.rig.baseHash,createdAt:'',produced:['rest/south/0','rest/south/1']}];
+  existing.qa={...summary,rerolls:0,clips:{'rest/south':summary},cells:{'rest/south/0':{route:'chroma',area:1,provenance:0},'rest/south/1':{route:'chroma',area:0,provenance:0}}};
+  m.items=m.items.filter(it=>it.id!==existing.id);m.items.push(existing);
+  const generated=structuredClone(existing);generated.id='extension';generated.layers[0].cells={rest:{south:[other as typeof h,other as typeof h,other as typeof h]}};generated.coverage=['rest/south/0','rest/south/1','rest/south/2'];
+  generated.design!.snapshot.source.items[1].provenance=structuredClone(existing.provenance);
+  generated.provenance=[...structuredClone(existing.provenance),{endpoint:'/new',params:{},seed:2,requestHash:m.rig.baseHash,createdAt:'',produced:['rest/south/0','rest/south/1','rest/south/2']}];
+  generated.qa={...summary,status:'warn',maxPaletteDist:7,rerolls:0,clips:{'rest/south':{...summary,status:'warn',maxPaletteDist:7}},cells:{'rest/south/2':{route:'posed',area:1,provenance:1}}};
+  const preview={manifest:{...structuredClone(m),items:[...m.items,generated]},images:source.images};
+  const ext={...candidate,project:preview,itemId:generated.id,targetStamp:targetStamp(m,'head'),extensionItemId:existing.id,extensionStamp:extensionStamp(m,existing.id),reuseRest:true};
+  const out=publishCandidate({id:'rig-target',savedAt:'',manifest:m},ext,{wear:false}),actual=out.manifest.items.find(it=>it.id===existing.id)!;
+  expect(actual.layers[0].cells!.rest!.south).toEqual([h,null,other]);expect(actual.layers[0].cells!.rest!.east).toEqual([h,h,h]);
+  expect(actual.qa!.status).toBe('warn');expect(actual.qa!.maxPaletteDist).toBe(7);
+  expect(actual.qa!.cells['rest/south/0'].provenance).toBe(0);expect(actual.qa!.cells['rest/south/1'].area).toBe(0);expect(actual.qa!.cells['rest/south/2'].provenance).toBe(1);
+  expect(actual.provenance[1].produced).toEqual(['rest/south/2']);expect(actual.provenance[0].produced).toEqual(['rest/south/0','rest/south/1']);
 });

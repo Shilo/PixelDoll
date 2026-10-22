@@ -86,3 +86,13 @@ test('default colourway survives old outfits; canonical sheets render it and sou
   expect(restored.manifest.materials.find((m) => m.id === 'a')!.defaultVariant).toBe('blue');
   expect(rgba(cellImg(recolour(restored, {}), restored.manifest.items.find((it) => it.id === 'a')!.layers[0], 'walk', 'south', 0)!)).toEqual([0, 0, 255, 255]);
 });
+
+test('two roles with equal rendered defaults keep distinct raw source ownership through engine export/import',async()=>{
+  const p=await fixture(),item=p.manifest.items[1],old=item.layers[0].cells!.walk!.south![0]!,image=structuredClone(p.images.get(old)!);
+  image.data.set([50,50,50,255],(22*64+32)*4);const hash=await cellHash(image);p.images.set(hash,image);item.layers[0].cells!.walk!.south=[hash];
+  p.manifest.materials.find(m=>m.id==='a')!.defaultVariant='blue';
+  p.manifest.materials.push({id:'a_detail',owner:'a',label:'Detail',ramp:['#323232'],variants:{blue:['#0000ff']},defaultVariant:'blue'});item.materials.push('a_detail');
+  const exported=await exportFiles(p,{engines:['generic','godot','unity','phaser','aseprite'],baked:true});expect(exported.errors).toEqual([]);
+  const restored=(await readCharacterZip(await zip(exported.entries))).project,a=restored.manifest.items.find(it=>it.id==='a')!,view=recolour(restored,{a:'red'}),im=cellImg(view,a.layers[0],'walk','south',0)!;
+  expect(rgba(im,32,21)).toEqual([255,0,0,255]);expect(rgba(im,32,22)).toEqual([0,0,255,255]);expect(validate(restored)).toEqual([]);
+});

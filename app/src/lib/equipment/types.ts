@@ -19,6 +19,7 @@ export interface EquipmentDesign {
   images?: Map<string, Img>;
 }
 export interface EquipmentLineage {
+  dressedStamp?: string;
   designId: string;
   revision: Sha256;
   snapshot: Omit<EquipmentDesign, 'images'>;
@@ -43,6 +44,7 @@ export interface FitAssessment {
 export interface FitCandidate {
   extensionItemId?: string;
   extensionStamp?: string;
+  reuseRest?: boolean;
   project: Project;
   itemId: string;
   designId: string;
@@ -53,7 +55,7 @@ export interface FitCandidate {
   assessment: FitAssessment;
 }
 export interface FitPlan {
-  extension?: { itemId: string; anims: string[]; stamp: string };
+  extension?: { itemId: string; anims: string[]; cells: string[]; stamp: string; reuseRest: boolean };
   design: Omit<EquipmentDesign, 'images'>;
   targetId: string;
   targetAudit: Sha256;
