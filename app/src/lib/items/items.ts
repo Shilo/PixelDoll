@@ -626,18 +626,22 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
   const byClip = new Map<string, CellOut[]>(), grip = { R: 0, L: 0, amb: 0, none: 0 };
   for (const c of cells) { const k = c.key.split('/').slice(0, 2).join('/'); (byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c); }
   // wrists: the clip's requested keypoints (what the item was posed with, S5 gripSide), else the tracked hand anchors
-  const handTrack = (id: 'hand_r' | 'hand_l', a: string, d: string): [number, number][] | undefined => {
+  const handTrack = (id: 'hand_r' | 'hand_l', a: string, d: string) => {
     const k = clipKeypoints(rig, a, d as DirectionName), lab = id === 'hand_r' ? ['RIGHT ARM'] : ['LEFT ARM'];
-    return k ? k.map((f) => kpAt(f, lab, rig.cell, pad)!) : rig.anchors?.[id]?.[a]?.[d as DirectionName]?.map(([x, y]) => [x + pad, y + pad] as [number, number]);
+    const track = k ? k.map((f) => kpAt(f, lab, rig.cell, 0)) : rig.anchors?.[id]?.[a]?.[d as DirectionName];
+    return track?.map((p) => p && Number.isFinite(p[0]) && Number.isFinite(p[1]) ? [p[0] + pad, p[1] + pad] as [number, number] : undefined);
   };
   for (const [clip, cs] of byClip) {
     const [a, d] = clip.split('/'), areas = cs.map((c) => c.area), med = median(areas);
+    const rawR = handTrack('hand_r', a, d), rawL = handTrack('hand_l', a, d);
+    const usable = (track: ReturnType<typeof handTrack>) => cs.every((c) => !!track?.[+c.key.split('/')[2]]) ? track as [number, number][] : undefined;
+    const hr = usable(rawR), hl = usable(rawL);
     const cvOf = (v: number[]) => { const m = v.reduce((s, x) => s + x, 0) / v.length; return m ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) / m : 0; };
     // G5 allows the item area to vary with the body region it covers (legs crossing in a side walk: boots/pants). T3: the
     // far trouser leg hides behind the near one, so the visible item varies ~2x the body band (walk E: CV 0.20-0.22 vs band
     // 0.11 on 3 seeds, frames visually consistent); a lost item is G4's job
     const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, 2 * baseCv);
-    const wrist = slot.class === 'held' && cs.every((c) => c.posed) ? handTrack(slot.anchor === 'hand_l' ? 'hand_l' : 'hand_r', a, d) : undefined;
+    const wrist = slot.class === 'held' && cs.every((c) => c.posed) ? slot.anchor === 'hand_l' ? hl : hr : undefined;
     const minRatio = med ? Math.min(...areas) / med : 0;
     if (!med) flag(cs[0].call, `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
@@ -656,19 +660,25 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const rel = cs.map((c) => { const ct = centroid(c.mask, w), i = +c.key.split('/')[2]; return ct && anc?.[i] ? [ct[0] - anc[i][0] - pad, ct[1] - anc[i][1] - pad] : null; }).filter(Boolean) as number[][];
     const spread = rel.length ? Math.max(...[0, 1].map((k) => Math.max(...rel.map((r) => r[k])) - Math.min(...rel.map((r) => r[k])))) : 0;
     let hand: ClipQa['hand'];
-    const hr = handTrack('hand_r', a, d), hl = handTrack('hand_l', a, d);
-    if (slot.class === 'held' && hr && hl) {
-      let r = 0, l = 0;
+    if (slot.class === 'held' && (!hr || !hl)) {
+      const missing = cs.filter((c) => { const i = +c.key.split('/')[2]; return !rawR?.[i] || !rawL?.[i]; }).length;
+      warnings.push(`G8 ${clip}: hand positions are missing for ${missing} of ${cs.length} frames; set up the character’s pose rig and check this view`);
+    } else if (slot.class === 'held' && hr && hl) {
+      let r = 0, l = 0, none = 0;
       for (const c of cs) {
         const i = +c.key.split('/')[2], dr = nearest(c.mask, w, hr[i]), dl = nearest(c.mask, w, hl[i]);
+        // A nearer wrist is not a grip if the object is detached from both hands. Keep the existing 6 px contact limit.
+        if (Math.min(dr, dl) > 6) { grip.none++; none++; continue; }
         if (dr + 2 < dl) r++;
         else if (dl + 2 < dr) l++;
-        grip[Math.min(dr, dl) > 6 ? 'none' : dr + 2 < dl ? 'R' : dl + 2 < dr ? 'L' : 'amb']++; // S3 gripSide
+        grip[dr + 2 < dl ? 'R' : dl + 2 < dr ? 'L' : 'amb']++; // S3 gripSide
       }
       // B14: one decided frame of six (sword hurt E: 0 R / 1 L) is not a hand switch; a clip decides with half its frames
       hand = (r + l) * 2 < cs.length ? '?' : r > l ? 'r' : l > r ? 'l' : '?';
       const want = slot.anchor === 'hand_l' ? 'l' : 'r';
       if (hand !== '?' && hand !== want) flag(cs[0].call, `G8 ${clip}: held in the ${hand === 'r' ? 'right' : 'left'} hand (${r} R / ${l} L frames)`);
+      if (none) warnings.push(`G8 ${clip}: item is more than 6 px from both hands in ${none} of ${cs.length} frames; check its grip`);
+      if (hand === '?' && none !== cs.length) warnings.push(`G8 ${clip}: grip side is unclear (${r} right / ${l} left frames); check that the item stays in the intended hand`);
     }
     // G9 (held): a rigid object keeps its shape frame to frame (S2/M3: a sword flipped from vertical to horizontal mid-walk)
     const ord = [...cs].sort((x, y) => +x.key.split('/')[2] - +y.key.split('/')[2]);
@@ -710,7 +720,6 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     for (const c of decided.filter((c) => c.hand !== major)) { handedness = 'switched'; flag(c.call, `G8 ${c.clip}: held in the ${c.hand === 'r' ? 'right' : 'left'} hand, other clips ${major === 'r' ? 'right' : 'left'}`); }
     if (slot.anchor && slot.anchor.endsWith(major === 'r' ? 'l' : 'r')) warnings.push(`held in the ${major === 'r' ? 'right' : 'left'} hand; slot ${slot.id} expects ${slot.anchor}`);
   }
-  if (slot.class === 'held' && !decided.length) warnings.push('G8 handedness not checked (no hand anchors: run skeletons in M2)');
 
   // G6 design lock: palette distance of each later call to the design call (call 0)
   const calls = [...new Set(cells.map((c) => c.call))].sort((a, b) => a - b);

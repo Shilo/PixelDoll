@@ -357,6 +357,7 @@ export class Queue {
     this.emit();
   }
   setConcurrency(n: number) {
+    if (!Number.isFinite(n)) return; // preserve the last valid capacity; NaN would bypass the scheduler limit
     this.concurrency = this.current = Math.max(1, Math.min(8, Math.round(n)));
     this.emit();
   }

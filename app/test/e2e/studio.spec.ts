@@ -777,10 +777,25 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
   await expect(review.locator('.badge.look')).toHaveText('Needs a look')
   await expect(review.getByText('The design has grey smudges', { exact: true })).toBeVisible()
   await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeEnabled()
+  for (const [warning, reason] of [
+    ['G8 idle/west: hand positions are missing for 4 of 4 frames; set up the character’s pose rig and check this view', 'Hand positions are unavailable; set up the pose rig and check this view (idle, west)'],
+    ['G8 idle/west: grip side is unclear (0 right / 0 left frames); check that the item stays in the intended hand', 'The grip side is unclear; check the intended hand (idle, west)'],
+    ['G8 idle/west: item is more than 6 px from both hands in 4 of 4 frames; check its grip', 'The grip could not be confirmed; inspect the item at the hand (idle, west)'],
+  ]) {
+    await page.evaluate((warning) => {
+      const s = (window as unknown as { __studio: { ui: { selected: string }; store: { results: Record<string, any> } } }).__studio
+      const id = s.ui.selected.slice(4), r = s.store.results[id]
+      s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map(), qa: { ...r.qa, warnings: [warning] } } }
+    }, warning)
+    await expect(review.locator('.badge.look')).toHaveText('Needs a look')
+    await expect(review.getByText(reason, { exact: true })).toBeVisible()
+    await expect(review.getByText('The item switches hands', { exact: true })).toHaveCount(0)
+    await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeEnabled()
+  }
   await page.evaluate(() => {
     const s = (window as unknown as { __studio: { ui: { selected: string }; store: { results: Record<string, any> } } }).__studio
     const id = s.ui.selected.slice(4), r = s.store.results[id]
-    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map() } }
+    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map(), qa: { ...r.qa, warnings: [] } } }
   })
   await expect(review.locator('.badge.clean')).toHaveText('Clean')
   await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeEnabled()
@@ -1001,4 +1016,91 @@ test('reload restores failed create, move and setup for review without paid subm
     await page.keyboard.press('Escape')
   }
   expect(posts).toEqual([])
+})
+
+
+test('valid concurrency edits apply before blur while snapshots preserve unfinished text', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(() => {
+    const w = window as unknown as { __queue: { disconnect: () => void; setConcurrency: (n: number) => void }; __studio: { ui: { sheet: string } } }
+    w.__queue.disconnect(); w.__queue.setConcurrency(3); w.__studio.ui.sheet = 'activity'
+  })
+  const activity = page.getByRole('dialog', { name: 'Activity', exact: true })
+  await activity.getByText('Details', { exact: true }).click()
+  const input = activity.getByRole('spinbutton', { name: 'Parallel calls', exact: true })
+  const cap = () => page.evaluate(() => (window as unknown as { __queue: { concurrency: number } }).__queue.concurrency)
+  const snapshot = () => page.evaluate(() => (window as unknown as { __queue: { emit: () => void } }).__queue.emit())
+  await input.fill('1')
+  // No blur: the cap must already match what the user sees before any queued work is scheduled.
+  await expect(input).toBeFocused()
+  expect(await cap()).toBe(1)
+  await snapshot()
+  await expect(input).toHaveValue('1')
+  await input.fill('')
+  await snapshot()
+  await expect(input).toBeFocused()
+  await expect(input).toHaveValue('')
+  expect(await cap()).toBe(1)
+  await input.press('7')
+  expect(await cap()).toBe(7)
+  await activity.getByRole('button', { name: 'Done', exact: true }).click()
+  await page.evaluate(() => { (window as unknown as { __studio: { ui: { sheet: string } } }).__studio.ui.sheet = 'activity' })
+  await activity.getByText('Details', { exact: true }).click()
+  await expect(input).toHaveValue('7')
+  await input.fill('9')
+  await snapshot()
+  await expect(input).toHaveValue('9')
+  expect(await cap()).toBe(7)
+  await input.press('Tab')
+  await expect(input).toHaveValue('8')
+  expect(await cap()).toBe(8)
+  await input.fill('')
+  await input.press('Tab')
+  await expect(input).toHaveValue('8')
+  expect(await cap()).toBe(8)
+  await input.fill('1')
+  expect(await cap()).toBe(1)
+  await input.press('Escape')
+  await expect(activity).toHaveCount(0)
+  expect(await cap()).toBe(1)
+  expect(requests).toEqual([])
+})
+
+
+test('accepted held-item review reasons survive actual reload without claiming a hand switch', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const name = await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    const dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    await s.copyDemo()
+    const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((it: { slot: string }) => it.slot === 'main_hand')
+    const part = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'accepted' }
+    item.qa = { ...part, rerolls: 0, cells: {}, handedness: 'ok', grip: { R: 4, L: 0, amb: 4, none: 4 }, clips: {
+      'idle/west': { ...part, hand: '?', grip: { R: 0, L: 0, amb: 4, none: 0 } },
+      'idle/north': { ...part, grip: { R: 0, L: 0, amb: 0, none: 0 } },
+      'idle/east': { ...part, hand: '?', grip: { R: 0, L: 0, amb: 0, none: 4 } },
+      'idle/south': { ...part, hand: 'r', grip: { R: 4, L: 0, amb: 0, none: 0 } },
+    } }
+    await db.put('projects', s.doc.id, rec)
+    return item.name
+  })
+  await page.reload()
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.getByRole('button', { name: 'Wear ' + name, exact: true }).click()
+  const pane = page.locator('.inspector')
+  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
+  await expect(pane.getByText('The grip side is unclear; check the intended hand (idle, west)', { exact: true })).toBeVisible()
+  await expect(pane.getByText('Handedness could not be confirmed; inspect the intended hand (idle, north)', { exact: true })).toBeVisible()
+  await expect(pane.getByText('The grip could not be confirmed; inspect the item at the hand', { exact: true })).toBeVisible()
+  await expect(pane.getByText('The item switches hands', { exact: true })).toHaveCount(0)
+  await expect(pane.getByText(/Hand positions are unavailable/)).toHaveCount(0)
+  expect(requests).toEqual([])
 })

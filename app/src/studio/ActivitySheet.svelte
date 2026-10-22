@@ -69,7 +69,7 @@
       <summary><ChevronRight size={14} />Details</summary>
       <div>
         <div class="field-row small">
-          <label class="check">Parallel calls <input class="input" style="width:64px" type="number" min="1" max="8" value={$queue.concurrency} onchange={(e) => queue.setConcurrency(+e.currentTarget.value)} /></label>
+          <label class="check">Parallel calls <input class="input" style="width:64px" type="number" min="1" max="8" value={$queue.concurrency} oninput={(e) => { const n = e.currentTarget.valueAsNumber; if (Number.isInteger(n) && n >= 1 && n <= 8) queue.setConcurrency(n) }} onchange={(e) => { const n = e.currentTarget.valueAsNumber; if (Number.isFinite(n)) queue.setConcurrency(n); e.currentTarget.value = String($queue.concurrency) }} /></label>
           <button class="btn sm" onclick={clear} disabled={$queue.role === 'follower'} title={$queue.role === 'follower' ? 'Clear it in the PixelDoll tab that runs the jobs' : undefined}>Clear finished</button>
         </div>
         <div style="overflow:auto;max-height:240px">

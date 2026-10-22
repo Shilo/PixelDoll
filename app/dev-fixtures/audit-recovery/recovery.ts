@@ -112,6 +112,3 @@ export async function lostEstimateInputs(spec: RecoverySpec, jobs: RecoveryJob[]
   for(const job of jobs){if(job.method!=='POST'||job.endpoint!=='/estimate-skeleton'||job.state!=='lost')continue;const h=obj(obj(job.params).image).$blob;if(typeof h!=='string'||!rawInputs.has(h))continue;const b=await readBlob(h);if(!b)fail('A lost estimator input blob is missing.');const data=new Uint8Array(await b!.arrayBuffer());if(await sha256(data)!==h)fail('A lost estimator input PNG hash is invalid.');const im=await decodePng(data);let opaque=0;for(let i=3;i<im.data.length;i+=4)if(im.data[i])opaque++;result.push({job:job.id,state:job.state,sha:h,w:im.w,h:im.h,opaquePixels:opaque,bounds:opaqueBox(im),rawMatches:rawInputs.get(h)!,png:data});}
   return result;
 }
-
-
-

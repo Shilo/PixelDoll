@@ -109,5 +109,5 @@ test('mixed tracked and untracked held views explain their per-clip review warni
   expect(q.qa.status).toBe('warn')
   expect(q.qa.clips!['idle/south'].status).toBe('pass')
   expect(q.qa.clips!['idle/east'].status).toBe('warn')
-  expect(q.warnings).toContain('idle/east: G8 handedness not checked (no hand anchors: run skeletons in M2)')
+  expect(q.warnings).toContain('G8 idle/east: hand positions are missing for 1 of 1 frames; set up the character’s pose rig and check this view')
 })

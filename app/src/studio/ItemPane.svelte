@@ -42,6 +42,14 @@
     if (q.maxPaletteDist > 15) r.push('G6')
     if (q.clipPx) r.push('G7')
     if (q.handedness === 'switched') r.push('G8')
+    if (SLOTS.find((s) => s.id === it?.slot)?.class === 'held') {
+      for (const [clip, part] of Object.entries(q.clips ?? {})) {
+        if (!part.hand) r.push(`G8 ${clip}: handedness not checked`)
+        else if (part.hand === '?' && (!part.grip || part.grip.R + part.grip.L + part.grip.amb > 0)) r.push(`G8 ${clip}: grip side is unclear`)
+      }
+      if (q.grip?.none) r.push('G8 grip contact not confirmed')
+      if (!q.clips && !q.handedness) r.push('G8 handedness not checked')
+    }
     return r.map(plainReason)
   })
   let confirmRemove = $state(false)

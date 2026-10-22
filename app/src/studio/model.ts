@@ -117,7 +117,16 @@ export function plainReason(s: string): string {
   if (s.startsWith('G5')) return 'The item changes size between frames';
   if (s.startsWith('G6')) return 'Colours drift between directions';
   if (s.startsWith('G7')) return 'The item touches the frame edge (may be cut off)';
-  if (s.startsWith('G8')) return 'The item switches hands';
+  if (s.startsWith('G8')) {
+    const clip = /^G8 ([^ :]+\/[^ :]+):/.exec(s)?.[1];
+    const where = clip ? ` (${clip.replaceAll('/', ', ').replaceAll('-', ' ')})` : '';
+    if (s.includes('hand positions are missing')) return `Hand positions are unavailable; set up the pose rig and check this view${where}`;
+    if (s.includes('handedness not checked')) return `Handedness could not be confirmed; inspect the intended hand${where}`;
+    if (s.includes('grip side is unclear')) return `The grip side is unclear; check the intended hand${where}`;
+    if (s.includes('from both hands') || s.includes('grip contact not confirmed')) return `The grip could not be confirmed; inspect the item at the hand${where}`;
+    if (s.includes('other clips') || s === 'G8') return `The item may change hands between views; check the intended hand${where}`;
+    return `The item may be held in the wrong hand; check the intended hand${where}`;
+  }
   if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
   if (s.startsWith('H4')) return 'Some frames do not look like the design (e.g. a cape wrapped around an arm)';
   if (s.startsWith('D1')) return 'The design has grey smudges';

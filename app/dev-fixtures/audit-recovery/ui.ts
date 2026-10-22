@@ -13,4 +13,3 @@ inspect.onclick=async()=>{inspect.disabled=true;download.disabled=true;artifact=
  artifact=await recoverIdle(spec,jobs,db.getBlob,element<HTMLInputElement>('name').value||`${spec.name} recovered idle`);report.textContent=JSON.stringify(artifact.report,null,2);status.textContent=`Validated idle only: four independent views, ${artifact.project.manifest.rig.animations[0].cells} frames per view. Review warnings below. No API requests or writes occurred.`;download.disabled=false;
 }catch(e){status.textContent=`Recovery stopped: ${(e as Error).message}`;}finally{inspect.disabled=false;}};
 download.onclick=()=>{if(!artifact)return;const url=URL.createObjectURL(new Blob([artifact.zip as Uint8Array<ArrayBuffer>],{type:'application/zip'})),a=document.createElement('a');a.href=url;a.download='audit-recovered-independent-idle.pixeldoll.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-
