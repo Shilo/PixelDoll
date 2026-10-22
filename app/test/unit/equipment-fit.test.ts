@@ -175,8 +175,16 @@ test('one-direction approved refs bypass transfer-only limits; ordinary or chang
   const target=bodyOnly(source),design=await createDesign(source,'hat');state.projects.set('rig-target',{id:'rig-target',savedAt:'',manifest:target.manifest});
   const copy=await prepareCopy(design,target),id=await acceptCopy('rig-target',copy,{wear:false}),loaded=await loadProject('rig-target'),m=loaded.project.manifest;
   const moved=structuredClone(source.images.get(b)!);moved.data.set([180,120,90,255],(51*64+20)*4);const mh=await(await import('../../src/lib/rig/rig.ts')).cellHash(moved);for(const[h,blob]of await encodedImages(new Map([[mh,moved]])))state.blobs.set(h,blob);
-  m.rig.animations.push({id:'move',cells:7,loop:true,frames:[{cell:0,ms:100}],sources:{south:{route:'import',reference:b,keypoints:Array(7).fill(points),provenance:[]}}});m.items[0].layers[0].cells!.move={south:Array(7).fill(mh)};state.projects.set('rig-target',{...loaded.rec,manifest:m});state.strictTransferMin=true;
+  m.rig.animations.push({id:'move',cells:7,loop:true,frames:[{cell:0,ms:100}],sources:{south:{route:'import',reference:b,keypoints:Array(7).fill(points),provenance:[]}}});m.items[0].layers[0].cells!.move={south:Array(7).fill(mh)};
+  const material=m.items.find(it=>it.id===id)!.materials[0];m.materials.find(mat=>mat.id==='base')!.variants['preview-skin']=['#123456'];
+  state.projects.set('rig-target',{...loaded.rec,manifest:m,dress:{current:{items:{body:'base',head:id},variants:{[material]:'blue',base:'preview-skin'}}}});state.strictTransferMin=true;
   const fit=await prepareExtensionFit('rig-target',id,{anims:['move']});expect(fit.previewGens).toBe(0);expect(fit.poseGens).toBe(3);expect(state.restPreflights).toBe(0);
+  const restReview=await reviewFit(fit.id),view=recolour(restReview.project!,restReview.draft.candidate!.variants),hat=view.manifest.items.find(it=>it.id===id)!;
+  expect(restReview.draft.candidate!.variants[material]).toBe('blue');expect(restReview.draft.candidate!.variants.base).toBe('preview-skin');
+  expect([...cellImg(view,hat.layers[0],'rest','south',0)!.data.slice((18*64+20)*4,(18*64+20)*4+3)]).toEqual([0,0,255]);
+  expect([...cellImg(view,view.manifest.items[0].layers[0],'rest','south',0)!.data.slice((50*64+20)*4,(50*64+20)*4+3)]).toEqual([18,52,86]);
+  expect([...restReview.project!.images.get(hat.layers[0].cells!.rest!.south![0]!)!.data.slice((18*64+20)*4,(18*64+20)*4+3)]).toEqual([120,120,120]);
+  expect(restReview.draft.rest).toEqual(m.items.find(it=>it.id===id)!.dressed);
   await expect(planFit(design,'rig-target')).rejects.toThrow('at least two');
   m.rig.rest!.south!.keypoints=structuredClone(points);m.rig.rest!.south!.keypoints[0].x=0.6;state.projects.set('rig-target',{...loaded.rec,manifest:m});
   await expect(prepareExtensionFit('rig-target',id,{anims:['move']})).rejects.toThrow('at least two');expect(state.posts).toBe(0);

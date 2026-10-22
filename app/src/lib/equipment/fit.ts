@@ -42,7 +42,7 @@ async function extensionPreviewVariants(targetId:string,originals:Material[],mat
   const rec=await db.get<StoredProject&{dress?:{current?:{variants:FitCandidate['variants']}}}>('projects',targetId);
   if(!rec)throw new Error('The target character was removed.');
   const selected=rec.dress?.current?.variants??rec.manifest.presets[0]?.variants??{};
-  return Object.fromEntries(originals.flatMap((m,i)=>{const name=variantOf(rec.manifest,selected,m.id);return name?[[materials[i].id,name]]:[];}));
+  return {...selected,...Object.fromEntries(originals.flatMap((m,i)=>{const name=variantOf(rec.manifest,selected,m.id);return name?[[materials[i].id,name]]:[];}))};
 }
 async function appendFreeCells(fit:FitDraft,project:Project,item:Item):Promise<void>{
   const extension=fit.plan.extension;if(!extension?.freeMatches?.length||!extension.freeSource)return;
@@ -291,7 +291,10 @@ export async function prepareExtensionFit(targetId:string,itemId:string,options:
   const rest=Object.fromEntries(dirs.map(d=>[d,project.images.get(reuseRest?item.dressed![d]!:project.manifest.rig.rest![d]!.image)!]));
   plan.poseGens=(await poseFitRequests(design,narrowed,rest,1,cells)).reduce((n,c)=>n+c.limit,0);
   const fit=await createFit(plan,{previewGens:plan.previewGens,poseGens:0});
-  if(reuseRest)await db.update<FitDraft>('projects',fit.id,current=>({...current!,stage:'rest-review',rest:structuredClone(item.dressed),candidate:{manifest:structuredClone(project.manifest),imageHashes:imageHashes(project.manifest),itemId,materials:[],variants:{}},warnings:['Existing target standing references are reused for free. Only missing cells will be generated; existing approved cells and outfit colours are kept.'],updatedAt:now()}));
+  if(reuseRest){
+    const materials=project.manifest.materials.filter(m=>m.owner===itemId),variants=await extensionPreviewVariants(targetId,materials,materials);
+    await db.update<FitDraft>('projects',fit.id,current=>({...current!,stage:'rest-review',rest:structuredClone(item.dressed),candidate:{manifest:structuredClone(project.manifest),imageHashes:imageHashes(project.manifest),itemId,materials:[],variants},warnings:['Existing target standing references are reused for free. Only missing cells will be generated; existing approved cells and outfit colours are kept.'],updatedAt:now()}));
+  }
   return getFit(fit.id);
 }
 
