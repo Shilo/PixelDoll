@@ -31,6 +31,7 @@ VERIFIED on Node.js 24.22.1/npm 11.19.1 with Playwright-managed Chromium:
 
 | Check | Result |
 |---|---|
+| Clean npm ci from committed checkout | Passed; zero reported audit advisories |
 | Pre-change strict Svelte/config check | 0 errors, 0 warnings |
 | Pre-change direct Node self-tests | All 31 groups passed |
 | Pre-change Studio browser script | Passed desktop, phone, landscape and tablet flows |
@@ -39,5 +40,7 @@ VERIFIED on Node.js 24.22.1/npm 11.19.1 with Playwright-managed Chromium:
 | Playwright Test | Both Studio production-build regression and full browser self-test registry passed |
 | Production build and dist guard | Passed; no agent/dev code or secret/source-map markers |
 | Production asset parity | Main JavaScript, worker JavaScript and CSS each match pre-change SHA-256 byte-for-byte |
+
+The final clean-install run used a temporary export of committed checkout aff23e7, keeping an already-running development server and concurrent source edits undisturbed.
 
 The byte-identical production artifacts establish that this tooling migration changes no deployed UI code or styling. Chromium checks do not claim real-device, assistive-technology or cross-engine coverage. No live API calls or generations were performed.
