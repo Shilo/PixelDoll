@@ -11,8 +11,9 @@
     "dev:agent": "vite --mode agent --port 5199 --strictPort",
     "build": "vite build && node scripts/dist-guard.mjs",
     "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json",
-    "selftest": "node scripts/selftest.ts"
+    "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p tsconfig.test.json",
+    "selftest": "npm test",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
