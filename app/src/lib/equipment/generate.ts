@@ -32,6 +32,8 @@ export function qualifiedFit(design: EquipmentDesign, target: Project): string |
   const source = design.source, rig = target.manifest.rig, item = designItem(design);
   if (item.slot !== 'head') return 'Reference fitting is currently an experimental trial for headwear. Other slots support exact free copies.';
   if(source.materials.filter(m=>m.owner===item.id).length!==1)return 'This experimental fitting trial supports single-material headwear. Multi-material designs can still be copied onto matching frames for free.';
+  const sourceSlot=source.slots.find(s=>s.id==='head')??slotOf('head'),targetSlot=target.manifest.slots.find(s=>s.id==='head')??slotOf('head');
+  if([sourceSlot,targetSlot].some(s=>s.class!=='rigid'||s.anchor!=='head'||s.bgZ!==undefined))return 'This fitting trial needs a standard rigid head slot on both characters; custom grips and split layers are not qualified.';
   if (source.rig.view !== 'low top-down' || rig.view !== 'low top-down' || source.rig.template !== 'mannequin' || rig.template !== 'mannequin') return 'This fitting trial needs known low top-down humanoid rigs on both characters. Set up imported characters first.';
   if (source.rig.cell.w !== 64 || source.rig.cell.h !== 64 || rig.cell.w !== 64 || rig.cell.h !== 64) return 'This fitting trial supports 64 × 64 worn layers.';
   if (item.layers.length !== 1 || item.layers[0].role !== 'fg') return 'This headwear layer layout has not been qualified for reference fitting.';
@@ -68,6 +70,11 @@ function specFor(design: EquipmentDesign, target: Project): ItemSpec {
   const clipDirs = Object.fromEntries(rig.animations.map(a => [a.id, directions(target).filter(d => body.layers[0].cells?.[a.id]?.[d]?.some(Boolean))]));
   return { id: 'fitted-preview', name: design.name, slot: design.slot, prompt: designItem(design).prompt, method: 'skel', key: fitKey(design), anims: rig.animations.filter(a => clipDirs[a.id].length).map(a => a.id), dirs: directions(target), clipDirs };
 }
+function selectionFor(spec:ItemSpec,target:Project,requested?:string[]):Set<string> {
+  const all=target.manifest.rig.animations.filter(a=>spec.anims.includes(a.id)).flatMap(a=>spec.clipDirs![a.id].flatMap(d=>Array.from({length:a.cells},(_,i)=>cellKey(a.id,d,i))));
+  if(requested&&(!requested.length||new Set(requested).size!==requested.length||requested.some(k=>!all.includes(k))))throw new Error('The missing-frame selection is empty, duplicated or outside the target moves.');
+  return new Set(requested??all);
+}
 export async function restFitRequests(design: EquipmentDesign, source: Project, target: Project, seed: number): Promise<GeneratedFitCall[]> {
   const reason = qualifiedFit(design, target); if (reason) throw new Error(reason);
   const key = fitKey(design), refs = designRestReferences(design, source, key), dirs = directions(target);
@@ -80,16 +87,19 @@ export async function restFitRequests(design: EquipmentDesign, source: Project, 
     additional_instructions: `Transfer ONLY the identical ${designItem(design).prompt} from the reference onto the ${colour} mannequin in every target frame. Target directions in order: ${dirs.join(', ')}. Use the reference colours even if the description names the original colour. Preserve target body silhouette, limb positions, ${colour} chroma-key ramp and transparent background exactly. Empty hands; no other clothing, weapons or effects. Keep the headwear design; fit it to the target head. Do not transfer the reference body shape.`,
   } }, cells: dirs.map(d => `rest/${d}/0`), limit: 10 }];
 }
-export async function poseFitRequests(design: EquipmentDesign, target: Project, rest: Partial<Record<DirectionName, Img>>, seed: number): Promise<GeneratedFitCall[]> {
+export async function poseFitRequests(design: EquipmentDesign, target: Project, rest: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?:string[]): Promise<GeneratedFitCall[]> {
   const reason = qualifiedFit(design, target); if (reason) throw new Error(reason);
-  const rig = target.manifest.rig, spec = specFor(design, target), calls: GeneratedFitCall[] = [];
+  const rig = target.manifest.rig, spec = specFor(design, target), calls: GeneratedFitCall[] = [], selected=selectionFor(spec,target,selectedCells);
   for (const a of rig.animations.filter(a => spec.anims.includes(a.id))) for (const dir of spec.clipDirs![a.id]) {
     const poses = a.sources?.[dir]?.keypoints, first = rest[dir], reference = rig.rest?.[dir];
     if (!first || !reference || !poses || poses.length !== a.cells || !poses.every(hasAll)) throw new Error(`Missing approved reference or stored poses for ${a.id}/${dir}.`);
     // The API poses a minimum of three cells; a frozen imported single-frame rest is already the approved fitted frame.
     if (a.cells === 1 && a.sources?.[dir]?.motion === 'imported-rest') continue;
-    for (const batch of poseBatches(a.cells)) {
-      calls.push({ req: itemRoute.pose({ keyframePngB64: await b64(first), rest: reference.keypoints, poses: poses.slice(batch.start, batch.start + batch.count), item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim: a.id, dir, seed: seed + calls.length, cell: rig.cell, view: rig.view }), cells: Array.from({ length: batch.count }, (_, n) => cellKey(a.id, dir, batch.start + n)), limit: batch.count <= 3 ? 2 : batch.count <= 8 ? 3 : 4 });
+    const indices=Array.from({length:a.cells},(_,i)=>i).filter(i=>selected.has(cellKey(a.id,dir,i)));
+    if(!indices.length)continue;
+    for (const batch of poseBatches(indices.length)) {
+      const part=indices.slice(batch.start,batch.start+batch.count);
+      calls.push({ req: itemRoute.pose({ keyframePngB64: await b64(first), rest: reference.keypoints, poses: part.map(i=>poses[i]), item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim: a.id, dir, seed: seed + calls.length, cell: rig.cell, view: rig.view }), cells: part.map(i=>cellKey(a.id,dir,i)), limit: batch.count <= 3 ? 2 : batch.count <= 8 ? 3 : 4 });
     }
   }
   return calls;
@@ -128,9 +138,10 @@ export async function evaluateRestFit(design: EquipmentDesign, target: Project, 
   if (!manifest.slots.some(s => s.id === 'head')) manifest.slots.push(slotOf('head'));
   return { project: { manifest, images }, itemId: item.id, rest, warnings, fails };
 }
-export async function evaluatePoseFit(design: EquipmentDesign, target: Project, rest: Partial<Record<DirectionName, Img>>, records: FitRecord[], restRecords: FitRecord[] = [], options: { reuseApprovedSourceRest?: boolean } = {}): Promise<{ project: Project; itemId: string; materials: Material[]; variants: Preset['variants']; warnings: string[]; fails: string[]; failedCells: string[] }> {
+export async function evaluatePoseFit(design: EquipmentDesign, target: Project, rest: Partial<Record<DirectionName, Img>>, records: FitRecord[], restRecords: FitRecord[] = [], options: { reuseApprovedSourceRest?: boolean; selectedCells?:string[] } = {}): Promise<{ project: Project; itemId: string; materials: Material[]; variants: Preset['variants']; warnings: string[]; fails: string[]; failedCells: string[] }> {
   const rig = target.manifest.rig, spec = specFor(design,target), body = target.manifest.items.find(i => i.id === rig.baseItem)!, cells: CellOut[] = [], keys: Partial<Record<DirectionName, Img>> = {};
-  const history = structuredClone(designItem(design).provenance).map(p => ({...p, produced: []}));
+  const history:Provenance[] = structuredClone(designItem(design).provenance).map(p => ({...p, produced: []}));
+  const selected=selectionFor(spec,target,options.selectedCells);
   if(options.reuseApprovedSourceRest) {
     const source=design.source.rig, item=designItem(design);
     const profile=(r:typeof rig)=>({cell:r.cell,pivot:r.pivot,view:r.view,template:r.template,rest:r.rest});
@@ -147,15 +158,20 @@ export async function evaluatePoseFit(design: EquipmentDesign, target: Project, 
   }
   const restProvenance = provenance(restRecords);
   for (const a of rig.animations.filter(a=>spec.anims.includes(a.id)&&a.cells===1)) for (const dir of spec.clipDirs![a.id]) if (a.sources?.[dir]?.motion==='imported-rest') {
+    if(!selected.has(cellKey(a.id,dir,0)))continue;
     const producer=restRecords.findIndex(r=>r.call.cells.includes(`rest/${dir}/0`));
-    if(producer<0)throw new Error('The fitted standing view is missing its generating-call provenance.');
-    const key=cellKey(a.id,dir,0);restProvenance[producer].produced=[...new Set([...(restProvenance[producer].produced??[]),key as NonNullable<Provenance['produced']>[number]])];
-    cells.push(extractCell({key,call:history.length+records.length+producer,base:cellImg(target,body.layers[0],a.id,dir,0)!,out:rest[dir]!,route:spec.key,band:bandOf(spec.slot,fromApi(rig.rest![dir]!.keypoints,rig.cell),64),posed:true,clip:true}));
+    const originalProducer=options.reuseApprovedSourceRest?designItem(design).provenance.findIndex(p=>p.produced?.includes(cellKey('rest',dir,0) as NonNullable<Provenance['produced']>[number])):-1;
+    if(producer<0&&originalProducer<0)throw new Error('The fitted standing view is missing its generating-call provenance.');
+    const key=cellKey(a.id,dir,0), source=producer>=0?restProvenance[producer]:history[originalProducer];source.produced=[...new Set([...source.produced,key as NonNullable<Provenance['produced']>[number]])];
+    cells.push(extractCell({key,call:producer>=0?history.length+records.length+producer:originalProducer,base:cellImg(target,body.layers[0],a.id,dir,0)!,out:rest[dir]!,route:spec.key,band:bandOf(spec.slot,fromApi(rig.rest![dir]!.keypoints,rig.cell),64),posed:true,clip:true}));
   }
-  const expected = rig.animations.filter(a=>spec.anims.includes(a.id)).reduce((n,a)=>n+a.cells*spec.clipDirs![a.id].length,0);
-  if (new Set(cells.map(c=>c.key)).size !== expected || cells.length !== expected) throw new Error('Fitted animation coverage is incomplete or duplicated.');
+  if (new Set(cells.map(c=>c.key)).size !== selected.size || cells.length !== selected.size || cells.some(c=>!selected.has(c.key))) throw new Error('Fitted animation coverage is incomplete or duplicated.');
   postProcess(rig,slotOf(spec.slot),cells,keys);
   const qa = withH4(itemQa(rig,slotOf(spec.slot),spec.key,cells,0,GATES.keyOutsidePosed),slotOf(spec.slot),cells,keys,rig);
+  for(const [clip,summary]of Object.entries(qa.qa.clips??{})) {
+    const count=rig.animations.find(a=>a.id===clip.split('/')[0])!.cells;
+    if(cells.filter(c=>c.key.startsWith(clip+'/')).length<count){if(summary.status==='pass')summary.status='warn';if(qa.qa.status==='pass')qa.qa.status='warn';qa.warnings.push(`${clip}: only newly fitted cells were checked. Earlier frames retain their existing checks.`);}
+  }
   // itemQa's ordinary design lock starts at its first posed call. Fitting has an approved standing design before any pose;
   // compare against that actual per-direction palette as well, so a uniformly drifted whole clip cannot self-score clean.
   const palettes = new Map<DirectionName,number[]>();

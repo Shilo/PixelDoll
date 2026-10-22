@@ -38,6 +38,7 @@ test('paid fitting fails closed for unknown profiles, offsets, missing reference
   const source=await project(5,true), target=await project(7), design=await createDesign(source,'helmet');
   expect(qualifiedFit(design,target)).toBeNull();
   design.source.materials.push({id:'accent',owner:design.itemId,label:'Accent',ramp:['#ff0000'],variants:{}});expect(qualifiedFit(design,target)).toContain('single-material');design.source.materials.pop();
+  target.manifest.slots[1].class='held';expect(qualifiedFit(design,target)).toContain('standard rigid head');target.manifest.slots[1].class='rigid';
   delete target.manifest.rig.view;expect(qualifiedFit(design,target)).toContain('known');target.manifest.rig.view='low top-down';
   design.source.items[1].layers[0].pivot={x:33,y:60};expect(qualifiedFit(design,target)).toContain('offset');delete design.source.items[1].layers[0].pivot;
   target.manifest.items[0].layers[0].cells!.blink!.south![1]=null;expect(qualifiedFit(design,target)).toContain('missing, empty');
@@ -114,4 +115,23 @@ test('extension reuses approved raw references only with exact body, pose, profi
   }
   target.manifest.rig.rest!.south!.keypoints[0].x+=0.001;
   await expect(evaluatePoseFit(design,target,refs,records,[],{reuseApprovedSourceRest:true})).rejects.toThrow('changed body, pose');
+});
+test('one missing frame of a long move generates one padded call and retains its actual cell index',async()=>{
+  const source=await project(5,true),target=await project(7),design=await createDesign(source,'helmet');
+  const approved=toChroma(target.images.get(target.manifest.rig.rest!.south!.image)!,'green');over(approved,source.images.get(source.manifest.items[1].layers[0].cells!.rest!.south![0]!)!);
+  const refs=Object.fromEntries(dirs.map(d=>[d,approved])),selected=['long/south/15'];
+  const calls=await poseFitRequests(design,target,refs,100,selected);expect(calls).toHaveLength(1);expect(calls[0].limit).toBe(2);expect(calls[0].cells).toEqual(selected);
+  const transfer=await record(dirs.map(d=>`rest/${d}/0`),dirs.map(()=>approved)),output=await record(selected,[approved,approved,approved],'/animate-with-skeleton-v3');
+  const result=await evaluatePoseFit(design,target,refs,[output],[transfer],{selectedCells:selected});
+  const item=result.project.manifest.items.find(i=>i.id===result.itemId)!;
+  expect(Object.keys(item.qa!.cells)).toEqual(selected);expect(item.layers[0].cells!.long!.south![15]).toBeTruthy();expect(item.layers[0].cells!.long!.south![0]).toBeNull();
+  expect(item.qa!.clips!['long/south'].status).toBe('warn');
+});
+test('an imported-rest-only repair reuses its historical source producer without another paid call',async()=>{
+  const source=await project(5,true);
+  source.manifest.items[1].provenance.push({endpoint:'/edit-animation-v2',params:{},seed:1,requestHash:`sha256:${'a'.repeat(64)}`,produced:dirs.map(d=>cellKey('rest',d,0) as CellKey),createdAt:'2026-10-22T00:00:00Z'});
+  const design=await createDesign(source,'helmet'),target=structuredClone(source),refs=Object.fromEntries(dirs.map(d=>[d,source.images.get(source.manifest.items[1].dressed![d]!)!])),selected=['rest/south/0'];
+  expect(await poseFitRequests(design,target,refs,1,selected)).toEqual([]);
+  const result=await evaluatePoseFit(design,target,refs,[],[],{selectedCells:selected,reuseApprovedSourceRest:true}),item=result.project.manifest.items.find(i=>i.id===result.itemId)!;
+  expect(item.qa!.cells['rest/south/0'].provenance).toBe(0);expect(item.provenance[0].produced).toContain('rest/south/0');
 });
