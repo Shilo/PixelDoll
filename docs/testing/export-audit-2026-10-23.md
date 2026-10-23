@@ -43,7 +43,9 @@ Final integrated verification:
 | Studio production browser regression | **1 passed (17.5 s)**: actual export ZIP download, outfit recolouring/storage, desktop, phone, landscape and tablet controls, with PixelLab requests blocked |
 | Whitespace/diff validation | Passed for the export audit's changed files |
 
-The first sandboxed browser run completed its assertions but stalled during Playwright server cleanup. Retrying outside the sandbox completed cleanly with exit code 0. Browser output is isolated under `test-results/studio-export-review-final/`, preventing Playwright cleanup from deleting other agents' evidence. Unrelated design/dependency edits in the checkout are excluded from this audit's commit.
+The first sandboxed browser run completed its assertions but stalled during Playwright server cleanup. Retrying outside the sandbox completed cleanly with exit code 0. Browser output is isolated under `test-results/studio-export-review-final/`, preventing Playwright cleanup from deleting other agents' evidence.
+
+Commit provenance: a concurrent task committed the shared Git index as `e2f2006` (`feat(design): integrate published Bronze UI theme into prototype`) immediately before this audit's path-scoped commit ran. That commit includes all 18 reviewed export source/test/document files alongside its independent design/dependency changes. The export audit did not edit those unrelated files. Its attempted separate code commit correctly reported no remaining changes; shared history was preserved rather than rewritten. This follow-up record documents the verified export work and the commit overlap.
 
 ## Target-list agreement
 
