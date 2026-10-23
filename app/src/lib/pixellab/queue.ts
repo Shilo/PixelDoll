@@ -11,7 +11,7 @@
 import { api as realApi, ApiError, errorText, isNetwork, isPolicy, rejected } from './client.ts';
 import { jobIdsOf, jobImages, type Balance, type Job, type Req, type SubmitResponse, type Usage } from './routes.ts';
 import { planCapacity, requestedSlots } from './capacity.ts';
-import { PLAN_JOB_LIMITS, planRestriction } from './plans.ts';
+import { PLAN_JOB_LIMITS, planRestriction, requestTier } from './plans.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { base64ToBytes, bytesToBase64, pngSize } from '../image/png.ts';
 import * as db from '../store/db.ts';
@@ -317,13 +317,22 @@ export class Queue {
       const dup = r.state === 'queued' && [...this.recs.values()].find((x) => x.requestHash === r.requestHash && (live(x) || (x.state === 'done' && seededOf(x))));
       this.recs.set(r.id, r);
       if (dup) {
+        this.strengthenPlan(dup, r);
         Object.assign(r, { state: 'cancelled', error: `duplicate of ${dup.id} (sent from two tabs)`, finishedAt: this.deps.now() });
         void this.save(r).catch((e) => console.error('queue', e));
       }
       return true;
     }
     if (mine.state === 'queued' && r.state === 'cancelled' && !this.busy.has(r.id)) { Object.assign(mine, { state: r.state, finishedAt: r.finishedAt }); return true; }
-    return false;
+    return r.state === 'queued' && this.strengthenPlan(mine, r);
+  }
+  /** A follower can strengthen eligibility, but must never replace the leader's transport state or payload. */
+  private strengthenPlan(mine: JobRec, incoming: JobRec): boolean {
+    const minimum = requestTier(incoming);
+    if (mine.state !== 'queued' || mine.requestHash !== incoming.requestHash || minimum <= (mine.minimumTier ?? 0)) return false;
+    mine.minimumTier = minimum;
+    void this.save(mine).catch((e) => console.error('queue', e));
+    return true;
   }
   async load() {
     for (const r of await this.deps.all()) {
@@ -436,6 +445,14 @@ export class Queue {
     }
   }
 
+  private planWait(r: JobRec): string | null {
+    if (this.detectCapacity && requestTier(r) > 0) {
+      if (this.capacityRead) return 'Checking PixelLab plan before starting this workflow…';
+      if (!this.accountBalance) return 'Waiting to verify your PixelLab plan. Retrying automatically…';
+    }
+    return planRestriction(this.accountBalance, r);
+  }
+
   private async hasPreparedInputs(): Promise<boolean> {
     // A broken stored request should fail locally without even an account lookup.
     for (const r of this.recs.values()) if (r.state === 'queued') {
@@ -541,7 +558,7 @@ export class Queue {
       for (const r of [...this.recs.values()].sort((a, b) => a.createdAt - b.createdAt)) {
         if (active >= this.concurrency) break;
         if (r.state !== 'queued' || r.nextAt > now || this.busy.has(r.id)) continue;
-        const restriction = planRestriction(this.accountBalance, r);
+        const restriction = this.planWait(r);
         if (restriction) {
           if (r.waitingForPlan !== restriction) {
             r.waitingForPlan = restriction;
@@ -594,14 +611,16 @@ export class Queue {
           return { ...rest, base64: bytesToBase64(new Uint8Array(await blob.arrayBuffer())) };
         })();
       });
-      if (key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt || planRestriction(this.accountBalance, r)) {
+      if (key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt || this.planWait(r)) {
+        r.waitingForPlan = this.planWait(r) ?? undefined;
         r.state = 'queued'; r.attempts--; r.nextAt = Math.max(r.nextAt, this.capacityRetryAt);
         await this.save(r); return;
       }
       r.requestStarted = true;
       try { await this.save(r); } // a crash from this point has an unknown transport outcome; never auto-resubmit it
       catch { r.requestStarted = false; throw new Error('request could not be saved; nothing was sent'); }
-      if (key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt || planRestriction(this.accountBalance, r)) {
+      if (key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt || this.planWait(r)) {
+        r.waitingForPlan = this.planWait(r) ?? undefined;
         r.requestStarted = false; r.state = 'queued'; r.attempts--; r.nextAt = Math.max(r.nextAt, this.capacityRetryAt);
         await this.save(r); return;
       }

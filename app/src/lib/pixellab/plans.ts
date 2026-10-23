@@ -31,7 +31,7 @@ export function requestTier(req: Pick<Req, 'method'> & { endpoint: string; param
   let minimum = req.minimumTier ?? 0; // Whole workflows declare this before their FIRST paid call.
   // Retained pre-policy character workflows also need protection before their base drawing/registration is charged.
   if (['studio-base', 'studio-rig', 'studio-move', 'studio-setup'].includes(req.tag ?? '')) minimum = Math.max(minimum, 1);
-  if (req.endpoint === '/animate-with-skeleton-v3' || req.endpoint === '/animate-pixminimax') minimum = Math.max(minimum, 1);
+  if (['/animate-with-skeleton-v3', '/animate-pixminimax', '/transfer-outfit-v2'].includes(req.endpoint)) minimum = Math.max(minimum, 1);
   const body = req.params as { mode?: string; inpainting_image?: { size?: { width?: number; height?: number } } } | null;
   if (['/characters/animations', '/animate-character'].includes(req.endpoint) && ['skeleton-v3', 'pixminimax'].includes(body?.mode ?? '')) minimum = Math.max(minimum, 1);
   if (req.endpoint === '/inpaint-v3') {
