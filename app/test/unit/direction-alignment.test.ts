@@ -1,7 +1,9 @@
 import { expect, test, vi } from 'vitest'
 import { alignCharacter, planAlignment, shiftMotionPoses } from '../../src/lib/rig/align.ts'
 import { makeImg, type Img } from '../../src/lib/image/png.ts'
-import { cellHash, cellKey, ANCHORS } from '../../src/lib/rig/rig.ts'
+import { baseHashOf, cellHash, cellKey, cellKeys, ANCHORS } from '../../src/lib/rig/rig.ts'
+import { validate } from '../../src/lib/export/generic.ts'
+import { moveDirs } from '../../src/lib/dress/dress.ts'
 import { LABELS } from '../../src/lib/rig/poses.ts'
 import { flipH } from '../../src/lib/rig/mirror.ts'
 import { bakedFrame, cellImg, composeCell } from '../../src/lib/compose/compose.ts'
@@ -14,6 +16,56 @@ const shifted = (im: Img, dy: number): Img => {
   for (let y = 0; y < im.h; y++) if (y + dy >= 0 && y + dy < im.h) out.data.set(im.data.subarray(y * im.w * 4, (y + 1) * im.w * 4), (y + dy) * im.w * 4)
   return out
 }
+
+test('partial alignment QA uses the retained pivot when the south baseline is left unchanged', async () => {
+  const { project, record } = await fixture()
+  project.manifest.rig.pivot.y = 58
+  const result = await alignCharacter(project, record, { north: 3 })
+  const warnings = (result.record.rigQa as { warnings: string[] }).warnings
+  expect(result.project.manifest.rig.pivot.y).toBe(58)
+  expect(warnings).toContain('idle/south: ground line is 2 px below the shared pivot')
+  expect(warnings.some(w => w.startsWith('idle/north: ground line'))).toBe(false)
+})
+
+test.each(['absent', 'null'] as const)('supported sparse animation rows stay %s during alignment', async kind => {
+  const { project, record } = await fixture(), m = project.manifest
+  const cells = m.items[0].layers[0].cells!.jump!
+  if (kind === 'absent') delete cells.north
+  else cells.north = [null, null]
+  delete m.rig.animations.find(a => a.id === 'jump')!.sources!.north
+  const empty = await cellHash(makeImg(64, 64))
+  const hashes = Object.fromEntries(cellKeys(m.rig).map(key => {
+    const [anim, dir, index] = key.split('/')
+    return [key, m.items[0].layers[0].cells![anim][dir as 'south' | 'north']?.[+index] ?? empty]
+  }))
+  m.rig.baseHash = await baseHashOf(m.rig, hashes)
+  for (const item of m.items) item.baseHash = m.rig.baseHash
+  expect(validate(project)).toEqual([])
+  expect(moveDirs(m, 'jump')).toEqual(['south'])
+  const result = await alignCharacter(project, record, { north: 5 })
+  expect(result.project.manifest.items[0].layers[0].cells!.jump!.north).toEqual(cells.north)
+  expect(moveDirs(result.project.manifest, 'jump')).toEqual(['south'])
+  expect(validate(result.project)).toEqual([])
+})
+
+test('an absent idle direction uses its saved standing reference, but a partial idle remains invalid', async () => {
+  const { project, record } = await fixture(true), body = project.manifest.items[0].layers[0]
+  delete body.cells!.idle!.north
+  delete project.manifest.rig.animations[0].sources!.north
+  expect(planAlignment(project).offsets.north).toBe(5)
+  const result = await alignCharacter(project, record, { north: 5 })
+  expect(result.project.manifest.items[0].layers[0].cells!.idle!.north).toBeUndefined()
+  const partial = await alignCharacter(project, record, { east: 5, west: 5 })
+  expect((partial.record.rigQa as { warnings: string[] }).warnings).toContain('rest/north: ground line is 5 px above the shared pivot')
+  body.cells!.idle!.north = [project.manifest.rig.rest!.north!.image, null]
+  await expect(alignCharacter(project, record, { north: 5 })).rejects.toThrow(/missing|empty/)
+})
+
+test('a partially missing action row is rejected instead of being treated as an absent direction', async () => {
+  const { project, record } = await fixture()
+  project.manifest.items[0].layers[0].cells!.jump!.north![1] = null
+  await expect(alignCharacter(project, record, { north: 5 })).rejects.toThrow(/missing|empty/)
+})
 
 test('a constant direction correction preserves every animation, layer, rig coordinate, colour and source record', async () => {
   const { project, record } = await fixture(), before = structuredClone(record), originalPixels = new Map([...project.images].map(([h, im]) => [h, im.data.slice()]))

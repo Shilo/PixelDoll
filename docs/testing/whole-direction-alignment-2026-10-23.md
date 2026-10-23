@@ -21,3 +21,12 @@ Local screenshots (outside Git): `C:/Users/shilo/.codex/visualizations/2026/10/2
 ## Review follow-up
 
 Initial architecture/design challengers and independently authored transformation tests agreed on global animation coordinates, mirror linking, strict clipping and transparent fill. Per-animation toggles and opaque chroma padding were challenged and rejected based on the actual alpha/rig contracts. A further independent review follows the feature commit; validated findings and targeted retests are recorded below.
+
+Independent review of feature commit `53b02f1` found two substantive issues. Both were challenged against the existing contracts and reproduced before production fixes:
+
+1. Partial-alignment diagnostics used a newly inferred pivot. A failing regression demonstrated that leaving South unchanged could incorrectly blame a corrected North view. Geometry warnings now inspect the actual frozen pixels against the retained pivot and per-direction standing baseline.
+2. Supported sparse imported animations were rejected for missing direction rows. Two failing cases demonstrated absent and all-null rows; another demonstrated a missing idle direction with a valid standing reference. Alignment now preserves those rows, follows the importer's canonical transparent-cell hash convention, uses standing references where idle is entirely absent, and still rejects partial/empty available body frames. QA skips unavailable rows and retains their prior evidence rather than inventing measurements.
+
+A final review found only a warning-label mismatch for the standing-reference fallback. The existing regression was extended, failed before the fix, then passed with `rest/north` instead of the nonexistent `idle/north` label. No further actionable issue was found. A suggested extra ground guide was deferred as optional presentation work.
+
+After fixes: **31/31 focused unit tests passed** (27 alignment + four actual motion/setup cases), **3/3 offline browser tests passed again**, and type/build/secret checks passed. Combined with the earlier full-suite run this covers **301 unique unit cases**; the unrelated suite was not rerun unnecessarily. Credits spent: **zero**. Screenshots and generated ZIPs remain outside Git.

@@ -1,12 +1,12 @@
 // Lossless whole-direction translation. All animations/layers move together; source records and paid history stay frozen.
 import { makeImg, type Img } from '../image/png.ts';
 import { opaqueBox, feetY } from './normalize.ts';
-import { baseHashOf, cellHash, cellKey, cellKeys, DIRECTIONS, validateRig, type DirectionName, type Keypoint, type Sha256 } from './rig.ts';
+import { baseHashOf, cellHash, cellKey, DIRECTIONS, validateRig, type DirectionName, type Keypoint, type Sha256 } from './rig.ts';
 import type { Project } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
 import { cellImg } from '../compose/compose.ts';
-import { buildRig } from './freeze.ts';
-import { clipQa, type ClipQa } from './clips.ts';
+import { HEADROOM_MIN } from './freeze.ts';
+import { clipQa, standing, type ClipQa } from './clips.ts';
 import { targetAudit } from '../equipment/compatibility.ts';
 import { targetStamp } from '../equipment/copy.ts';
 import { restStamp } from '../equipment/design.ts';
@@ -35,8 +35,8 @@ export function planAlignment(project: Project): AlignmentPlan {
   for (const d of rig.directions.filter(d => !d.mirrorOf)) {
     try {
       let baseline: number;
-      if (idle) {
-        const frames = Array.from({ length: idle.cells }, (_, i) => cellImg(project, body, idle.id, d.id, i));
+      const frames = idle ? Array.from({ length: idle.cells }, (_, i) => cellImg(project, body, idle.id, d.id, i)) : [];
+      if (frames.some(Boolean)) {
         if (!frames.length || frames.some(im => !im || !opaqueBox(im))) throw new Error('idle frames are missing or empty');
         const bottoms = frames.map(im => feetY(im!)).sort((a, b) => a - b);
         if (bottoms.at(-1)! - bottoms[0] > 1) throw new Error('idle has no stable standing baseline');
@@ -139,11 +139,17 @@ export async function alignCharacter(project: Project, record: StoredProject, re
     ds[dir as DirectionName] = points.map(([x, y]) => { point(x, y, dy, rig.cell.w, rig.cell.h, `${anim}/${dir} anchor`); return [x, y + dy]; });
   }
   const body = m.items.find(it => it.id === rig.baseItem)!;
-  const hashes: Record<string, Sha256> = {};
-  for (const key of cellKeys(rig)) {
-    const [anim, dir, i] = key.split('/'), im = cellImg({ manifest: m, images }, body.layers[0], anim, dir as DirectionName, +i);
-    if (!im) throw new Error(`${key}: the frozen body frame is missing.`);
-    hashes[key] = await cellHash(im);
+  const hashes: Record<string, Sha256> = {}, rows = new Map<string, Img[]>();
+  // Imports can legitimately have a move in only some directions. Keep absent rows absent, using the
+  // importer's canonical transparent-cell hash, while refusing holes within an available direction.
+  const emptyHash = await cellHash(makeImg(rig.cell.w, rig.cell.h));
+  for (const a of rig.animations) for (const d of rig.directions) {
+    const frames = Array.from({ length: a.cells }, (_, i) => cellImg({ manifest: m, images }, body.layers[0], a.id, d.id, i));
+    if (frames.some(Boolean)) {
+      if (frames.some(im => !im || !opaqueBox(im))) throw new Error(`${a.id}/${d.id}: a frozen body frame is missing or empty.`);
+      rows.set(`${a.id}/${d.id}`, frames as Img[]);
+    }
+    for (const [i, im] of frames.entries()) hashes[cellKey(a.id, d.id, i)] = im ? await cellHash(im) : emptyHash;
   }
   rig.baseHash = await baseHashOf(rig, hashes);
   const errors = validateRig(rig, hashes);
@@ -165,18 +171,34 @@ export async function alignCharacter(project: Project, record: StoredProject, re
       result.character.motionOffsets[dir as DirectionName] = total;
     }
   }
-  const built = await buildRig(rig.animations.map(a => ({ id: a.id, dirs: Object.fromEntries(rig.directions.filter(d => !d.mirrorOf).map(d => [d.id, Array.from({ length: a.cells }, (_, i) => cellImg(aligned, body.layers[0], a.id, d.id, i)!)])) })), { size: rig.cell.w, directions: rig.directions });
+  // Inspect the frozen pixels directly: rebuilding a rig would normalize artwork, discard sparse views
+  // and infer a new pivot instead of retaining the reviewed character's coordinate system.
+  const remaining = planAlignment(aligned), geometryNotes: string[] = [];
+  const groundNotes = remaining.groups.filter(g => Math.abs(g.offset) > 1).flatMap(g => g.directions.map(d =>
+    `${rows.has(`idle/${d}`) ? 'idle' : 'rest'}/${d}: ground line is ${Math.abs(g.offset)} px ${g.offset > 0 ? 'above' : 'below'} the shared pivot`));
+  for (const a of rig.animations) for (const d of rig.directions) {
+    const frames = rows.get(`${a.id}/${d.id}`);
+    if (!frames) continue;
+    const ground = rig.pivot.y - (remaining.offsets[d.id] ?? 0);
+    const drift = Math.max(0, ...frames.map(im => Math.abs(feetY(im) - ground)));
+    if (drift > 1) geometryNotes.push(standing(a.id)
+      ? `${a.id}/${d.id}: feet drift ${drift} px from the direction ground line`
+      : `${a.id}/${d.id}: footprint differs up to ${drift} px from the direction ground line (includes ${/walk|run/.test(a.id) ? 'stride' : 'pose'} motion)`);
+    const head = Math.min(...frames.map(im => opaqueBox(im)!.y0));
+    if (head < HEADROOM_MIN) geometryNotes.push(`${a.id}/${d.id}: headroom ${head} px < ${HEADROOM_MIN} (hats/hair will clip)`);
+  }
   const qa = (result.rigQa && typeof result.rigQa === 'object' ? result.rigQa : {}) as { warnings?: string[]; clips?: Record<string, ClipQa>; alignment?: unknown[] };
   const clips = { ...qa.clips }, clipNotes: string[] = [], replaced = new Set<string>();
   for (const a of rig.animations) for (const d of rig.directions.filter(d => !d.mirrorOf)) {
     const source = a.sources?.[d.id], rest = rig.rest?.[d.id], key = `${a.id}/${d.id}`;
-    if (!source?.measured || !rest) continue;
+    const frames = rows.get(key);
+    if (!source?.measured || !rest || !frames) continue;
     for (const fail of qa.clips?.[key]?.fails ?? []) replaced.add(`${key}: ${fail}`);
-    clips[key] = clipQa({ anim: a.id, rest: images.get(rest.image)!, frames: Array.from({ length: a.cells }, (_, i) => cellImg(aligned, body.layers[0], a.id, d.id, i)!), requested: source.keypoints, measured: source.measured, stray: qa.clips?.[key]?.stray ?? 0 });
+    clips[key] = clipQa({ anim: a.id, rest: images.get(rest.image)!, frames, requested: source.keypoints, measured: source.measured, stray: qa.clips?.[key]?.stray ?? 0 });
     clipNotes.push(...clips[key].fails.map(f => `${key}: ${f}`));
   }
   // Keep non-geometric warnings and original API provenance; the local operation has its own audit trail.
   const retained = (qa.warnings ?? []).filter(w => !replaced.has(w) && !/feet drift \d+ px from (?:pivot y|the direction ground line)|ground line is|footprint differs|headroom \d+ px/.test(w));
-  result.rigQa = { ...qa, clips, warnings: [...new Set([...clipNotes, ...built.warnings.filter(w => !w.includes('binarized')), ...retained])], alignment: [...(qa.alignment ?? []), { sourceId: record.id, sourceBaseHash: oldHash, offsets, createdAt: new Date().toISOString() }] };
+  result.rigQa = { ...qa, clips, warnings: [...new Set([...clipNotes, ...groundNotes, ...geometryNotes, ...retained])], alignment: [...(qa.alignment ?? []), { sourceId: record.id, sourceBaseHash: oldHash, offsets, createdAt: new Date().toISOString() }] };
   return { project: aligned, record: result, offsets };
 }
