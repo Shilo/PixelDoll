@@ -10,7 +10,17 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
       ([follow-up](docs/testing/item-quality-follow-up-2026-10-22.md)). Keep both drafts unaccepted.
 2. [ ] Item quality polish: stored cape back-hem grey smudges and actual helmet hurt-frame deformations. The forearm
       occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recoloured.
-3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles)
+3. [ ] **Unity native engine verification — blocked (2026-10-23).** Unity Editor 6000.4.0f1 is installed, but has no
+      activated license; the batch-mode attempt exited 198. Missing prerequisite: an activated compatible Unity Editor
+      (Unity Hub sign-in/license setup by the user). Existing generated-C# compilation against installed assemblies and
+      official Sprite interfaces, plus JSON/structural tests, do not establish actual Editor import or runtime correctness.
+      Before calling the Unity export fully verified, import a fresh exported character into a real Unity project with
+      the required 2D Sprite package, compile without errors, and verify generated sprites, pivots, prefab and Animator.
+      Run rendered assertions for playlist timing/repeated cells/nonlooping playback, synchronized layers, oversized
+      alignment, equipment/hides/tucking/per-cell depth, source/default/linked/preset palettes, fractional pixels-per-unit
+      and independent characters. Reimport must preserve existing asset references; a standalone player build must retain
+      all equipment resources and pass the same runtime checks. Record Editor/package versions, commands and results in
+      [export verification](docs/testing/export-challenge-2026-10-23.md) before marking this complete.
 4. [ ] Mirrored directions keep handedness: expose `mirror: "generate"` per item (west/back-diagonals generated, not flipped)
 5. [ ] Restore real offline-queue coverage (stack audit 2026-10-22, since c11113f): the studio demo now runs on the
       production preview, where the dev-only `window.__queue`/`__studio` hooks are absent, so its queue-pause/resume and
