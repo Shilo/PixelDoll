@@ -25,9 +25,9 @@ export class World {
   async load(url){if(!this.images.has(url)){this.loadCounts[url]=(this.loadCounts[url]??0)+1;this.images.set(url,new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=()=>reject(Error('Background unavailable'));im.src=url;}));}return this.images.get(url);}
   async prepare(){for(const t of Object.values(THEMES))await Promise.all(Object.values(t).filter(v=>typeof v==='string').map(url=>this.load(url)));}
   layout(state){const w=innerWidth,h=innerHeight,mobile=w<=760,short=h<540;
-    const panel=mobile?0:Math.min(350,w*.29),x=mobile?w*.5:(w-panel)*.53;
-    const studio=state.screen==='studio';const y=mobile?(short?h*.65:h*(studio?.52:.57)):h*(studio?.77:.78);
-    const scale=Math.max(2,Math.floor(Math.min(mobile?w/110:(w-panel)/130,h*(mobile?.24:.37)/50)));
+    const panel=mobile?0:Math.min(470,w*.29),x=mobile?w*.5:(w-panel)*.55;
+    const studio=state.screen==='studio';const y=mobile?(short?h*.65:h*(studio?.52:.575)):h*(studio?.755:.77);
+    const scale=Math.max(2,Math.floor(Math.min(mobile?w/(studio?110:100):(w-panel)/130,h*(mobile?(studio?.24:.26):(studio?.40:.43))/50)));
     return {w,h,mobile,x,y,scale};
   }
   projection(state,camera){const l=this.layout(state),side=state.view==='side';const horizon=side?l.y-l.h*.13:-l.h*.40,focal=l.h*1.1,height=side?95:600,depth=focal*height/(l.y-horizon);return {...l,horizon,focal,height,depth,camera};}
@@ -53,7 +53,7 @@ export class World {
     g.drawImage(canvas,x,y,64*scale,64*scale);return {x,y,w:64*scale,h:64*scale};
   }
   draw(state,demo,characters,resolved,camera,position){const l=this.layout(state),g=this.ctx;g.clearRect(0,0,l.w,l.h);this.hitAreas=[];if(state.screen==='creation')return;
-    if(state.screen==='selection'){const n=characters.length,selected=state.character;for(const [offset,smaller]of [[-1,true],[1,true],[0,false]]){if(n<2&&smaller)continue;const ix=(selected+offset+n)%n;if(n===2&&offset===1)continue;const c=characters[ix],sc=smaller?Math.max(2,l.scale-2):l.scale,xx=l.x+offset*(l.mobile?l.w*.32:l.w*.19),yy=l.y-(smaller?30:0);const spr=demo.sprite(c.items,'walk','south',0);const r=this.drawSprite(spr.canvas,xx,yy,sc,REFLECTION.selection);this.hitAreas.push({...r,index:ix});}return;}
+    if(state.screen==='selection'){const n=characters.length,selected=state.character;for(const [offset,smaller]of [[-1,true],[1,true],[0,false]]){if(n<2&&smaller)continue;const ix=(selected+offset+n)%n;if(n===2&&offset===1)continue;const c=characters[ix],sc=smaller?Math.max(2,Math.round(l.scale*.56)):l.scale,xx=l.x+offset*(l.mobile?l.w*.32:l.w*.19),yy=l.y-(smaller?30:0);const spr=demo.sprite(c.items,'walk','south',0);const r=this.drawSprite(spr.canvas,xx,yy,sc,REFLECTION.selection);this.hitAreas.push({...r,index:ix});}return;}
     const live=state.view!=='preview',p=live?this.floor(state,camera):null,pt=p?this.point(position.x,position.y,p):{x:l.x,y:l.y};if(!resolved.clip||!resolved.dir)return;
     const {canvas}=demo.sprite(characters[state.character].items,resolved.clip,resolved.dir,resolved.cell??0);this.actorBounds=this.drawSprite(canvas,pt.x,pt.y,l.scale,REFLECTION[state.view]);
   }

@@ -1,0 +1,41 @@
+/* Restore the approved image hierarchy at large sizes, without scaling phone UI as desktop. */
+:root{--edge:clamp(28px,2.92vw,56px);--rail:clamp(300px,21.56vw,414px)}
+.view-tabs button[aria-selected=true],.mode-tabs button[aria-selected=true],.editor-tabs button[aria-selected=true]{font-weight:600}
+.character-row{display:flex!important;justify-content:flex-start!important;gap:18px!important;min-height:88px!important;padding:8px 14px!important;text-align:left;border:1px solid transparent}
+.character-row[aria-pressed=true]{border-color:color-mix(in srgb,var(--accent) 30%,transparent)}
+.character-thumb{width:64px;height:64px;flex:none;object-fit:contain;image-rendering:pixelated}
+.character-copy{display:grid;gap:4px;min-width:0}.character-copy>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.character-copy small{font-weight:400}
+.character-popover{width:330px}.character-popover .character-row{font-size:17px}.character-popover>small{padding-bottom:12px}
+.theme-toggle{gap:12px!important}
+.directions-section>.presets{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}.directions-section>.presets button{grid-column:span 2}.directions-section>.presets button:nth-child(-n+2){grid-column:span 3}
+.facing .direction-arrow{display:flex;pointer-events:none}.facing .direction-arrow svg{width:22px;height:22px}
+@media(min-width:1101px) and (min-height:541px){
+ :root{font-size:clamp(16px,1.1vw,21px)}
+ header{inset:28px var(--edge) auto;height:50px}header svg{width:24px;height:24px}header .outline{min-height:52px;padding-inline:22px}
+ .view-tabs{top:28px;left:46%;gap:clamp(24px,2.4vw,46px)}.view-tabs button{font-size:clamp(17px,1.2vw,23px);min-height:52px}
+ .identity{left:var(--edge);top:14%;max-width:28vw}.identity h1{font-size:clamp(42px,3.02vw,58px)}.identity .eyebrow{font-size:clamp(16px,1.04vw,20px);margin-bottom:12px}.prompt-line{font-size:clamp(16px,1.09vw,21px);min-height:44px}.name-switch svg{width:28px;height:28px}
+ .wardrobe,.library{right:var(--edge);width:var(--rail)}.wardrobe{top:18%;max-height:calc(82% - 24px)}
+ .mode-tabs button{font-size:clamp(16px,1.09vw,21px);min-height:50px}.mode-tabs{margin-bottom:20px}
+ .categories{margin-bottom:30px;padding-bottom:22px}.categories button{font-size:clamp(15px,.99vw,19px);gap:18px;min-height:82px}.categories svg{width:27px;height:27px}
+ .panel-heading h2{font-size:clamp(19px,1.2vw,23px)}small,.panel-heading small{font-size:clamp(14px,.94vw,18px)}
+ .panel-heading{margin-bottom:22px}.items{gap:18px}.item{height:clamp(148px,8.95vw,172px);font-size:clamp(16px,.99vw,19px);padding:14px}.item img{width:128px;height:128px;top:6px}.item .check svg{width:20px;height:20px}
+ .none{font-size:18px;min-height:46px;margin:18px 0 28px}.palette{gap:22px;margin:18px 0 35px}.swatch{width:34px;height:34px;min-height:34px}.new-item{min-height:57px}.saved{font-size:clamp(16px,1.04vw,20px);margin-top:22px;min-height:50px}
+ .playback{top:83.3%;left:42%;padding:4px 12px;gap:14px;min-height:54px}.playback select{font-size:21px;max-width:155px}.playback .dir{font-size:20px;min-width:40px;min-height:40px}.playback svg{width:24px;height:24px}
+ .library{top:20%;bottom:12.5%;display:flex;flex-direction:column}.library h2{font-size:26px}.library input{font-size:20px;min-height:53px}.library .character-list{overflow:auto;min-height:0;flex:1;align-content:start;gap:10px}.character-list .character-row{font-size:22px;min-height:94px!important}.library .primary{margin-top:22px;min-height:64px;flex-shrink:0}
+ .selected-name{left:40.5%;top:81.5%}.selected-name h2{font-size:38px}.stage-nav{gap:45px}.footnote{left:var(--edge);font-size:15px;bottom:28px}.hint{left:var(--edge);font-size:16px}
+ .popover{right:var(--edge);top:90px;width:330px}.character-popover,.description{left:var(--edge);right:auto;top:29%;width:420px}.popover button,.popover a{min-height:48px}.description p{font-size:18px}.character-popover .character-row{font-size:21px}
+ .draft-header{left:var(--edge);top:12.5%}.draft-header h1{font-size:48px}.draft-name{left:31.25%;top:9.5%;width:22.4%}.creator{left:31.25%;right:var(--edge);top:20.5%;bottom:96px;grid-template-columns:1.1fr .75fr 1.08fr;gap:32px}
+ body[data-screen=selection] .identity>p{font-size:20px!important}
+ body[data-screen=creation] .scrims{background:linear-gradient(90deg,rgba(var(--surface),.6),transparent 25%,rgba(var(--surface),.65) 33%,rgba(var(--surface),.94)),linear-gradient(180deg,rgba(var(--surface),.7),transparent 28%,transparent 80%,rgba(var(--surface),.6))}
+ .creator label,.draft-name label{font-size:17px;gap:8px}.creator label{margin-bottom:17px}.creator label input,.creator label select,.creator label textarea,.draft-name input{font-size:20px;min-height:48px}.creator textarea{min-height:126px}.creator .editor-tabs button{font-size:22px}.editor-actions{min-height:49px;margin-bottom:16px}.editor-actions .enhance{font-size:18px;min-height:49px}.exact-excerpt{font-size:17px;max-height:90px}.creator .presets button{font-size:17px;min-height:46px}.creator .compass{gap:10px}.compass>div{min-height:82px}.creator .compass .facing{font-size:18px;gap:8px}.creator .compass .mirror{width:28px;min-width:28px}.size-guide{font-size:19px;width:228px;top:40%;left:7.8%}.size-guide .diagram{height:228px}.size-guide svg{width:160px;height:170px}.size-guide dl{font-size:18px}.create-footer{right:var(--edge);bottom:22px}.create-footer button{min-height:54px;font-size:20px}
+}
+@media(max-width:760px) and (min-height:541px){
+ .identity .eyebrow{font-size:12.5px}.prompt-line{font-size:12.5px}.view-tabs button{font-size:14.5px}.mode-tabs button{font-size:14px}.categories button{font-size:13px}.categories svg{width:20px;height:20px}.panel-heading h2{font-size:16px}.panel-heading small{font-size:12px}.item{font-size:13px;height:88px}.equipment-tools small{font-size:12px}.new-item{font-size:13px}.saved{font-size:12px}.playback select{font-size:14px}.playback .dir{font-size:13px}.playback{gap:5px}.wardrobe{top:62%}.wardrobe.expanded{top:34%}.sheet-handle{height:18px;min-height:18px}.character-popover{width:auto;top:154px}.character-row{min-height:82px!important}.character-popover .character-row{font-size:17px}.selected-name h2{font-size:26px}
+ .creator{top:180px;bottom:103px}.draft-header{top:65px}.draft-header h1{font-size:26px}.draft-name{top:106px}.draft-name input{min-height:44px;padding:7px 12px}.draft-name label{gap:4px}.creator label{font-size:14px}.editor-tabs button{font-size:16px}.exact-excerpt{font-size:13px}.creator .presets button{font-size:13.5px}.creator .compass .facing{font-size:14px;gap:8px}.directions-section>.presets{gap:8px}.creator .directions-section>.presets button{min-height:42px}.creator .frame-row{font-size:15px}
+ body[data-screen=creation] .scrims{background:linear-gradient(180deg,rgba(var(--surface),.8),rgba(var(--surface),.55) 19%,rgba(var(--surface),.94) 25%,rgba(var(--surface),.97))}
+ .mobile-guide{width:125px;margin:20px auto}.mobile-guide .diagram{height:115px;margin:10px 0}.mobile-guide svg{width:82px;height:90px}.mobile-guide dl{font-size:12px;grid-template-columns:auto auto;gap:6px}
+ .creator section:nth-child(2) .presets{margin:8px 0 12px}.creator section:nth-child(2) label{margin-bottom:12px}.creator section:nth-child(2) .frame-row{margin:6px 0 10px}.mobile-guide{margin:12px auto;width:112px}.mobile-guide .diagram{height:104px}.mobile-guide dl{margin:8px 0}
+ .creator .compass{gap:8px;margin:12px 0}.creator .compass .facing{min-height:75px}.creator .seed{margin-top:16px}
+ .wardrobe{top:60%;padding-bottom:max(12px,env(safe-area-inset-bottom))}.sheet-handle{height:12px;min-height:12px}.categories{margin-bottom:8px;padding-bottom:6px}.categories button{min-height:44px;gap:3px}.panel-heading{margin-bottom:8px}.item{height:80px}.item img{height:76px;width:76px;top:-8px}.equipment-tools{margin-top:12px}.palette{margin:6px 0}.saved{min-height:24px}.playback{top:55%}#toast{bottom:calc(40dvh + 6px)}
+}
+@media(max-height:540px){.character-row{min-height:72px!important;gap:8px!important;padding:4px 8px!important}.character-thumb{width:56px;height:56px}.character-copy small{font-size:11px}.library .character-list button{font-size:15px}.character-popover{top:110px;max-height:65vh}.facing .direction-arrow svg{width:18px;height:18px}}

@@ -31,7 +31,10 @@ export async function loadDemo(){
   function thumbnail(item){const canvas=document.createElement('canvas');canvas.width=64;canvas.height=64;const g=canvas.getContext('2d');const im=sprite({[item.slot]:item.id},'walk','south',0).canvas;
     // Actual standalone layer thumbnails, not a new generated item.
     const out=new Uint8ClampedArray(64*64*4);for(const layer of item.layers){const l=cellImg(project,layer,'walk','south',0);if(l)for(let p=0;p<l.data.length;p+=4)if(l.data[p+3])out.set(l.data.subarray(p,p+4),p);}
-    g.putImageData(new ImageData(out,64,64),0,0);return canvas.toDataURL();
+    g.putImageData(new ImageData(out,64,64),0,0);
+    // Thumbnail framing only: preserve the animated actor's fixed frame/pivot elsewhere.
+    let left=64,top=64,right=-1,bottom=-1;for(let y=0;y<64;y++)for(let x=0;x<64;x++)if(out[(y*64+x)*4+3]){left=Math.min(left,x);top=Math.min(top,y);right=Math.max(right,x);bottom=Math.max(bottom,y);}
+    if(right<0)return canvas.toDataURL();const size=Math.max(32,right-left+1,bottom-top+1),thumb=document.createElement('canvas');thumb.width=thumb.height=size;thumb.getContext('2d').drawImage(canvas,left,top,right-left+1,bottom-top+1,Math.floor((size-(right-left+1))/2),Math.floor((size-(bottom-top+1))/2),right-left+1,bottom-top+1);return thumb.toDataURL();
   }
   return {project,m,frame,dirs,available,still,covered,sprite,thumbnail,cache};
 }
