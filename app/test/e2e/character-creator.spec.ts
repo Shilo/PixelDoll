@@ -41,11 +41,17 @@ test('visible size fields, auto frame, preset deselection and preview positions 
   await sheet.getByRole('button', { name: 'Auto', exact: true }).click(); await expect(frame).toBeFocused()
   expect((await sheet.getByRole('button', { name: 'Auto', exact: true }).boundingBox())!.width).toBeCloseTo((await sheet.getByRole('button', { name: '48', exact: true }).boundingBox())!.width)
   await expect(sheet.locator('.pixel-input > span')).toHaveText(['px', 'px']); expect(calls).toEqual([])
+  await body.fill('64.5')
+  await expect(sheet.getByRole('status')).toContainText('whole pixels')
+  await expect(sheet.getByRole('button', { name: 'Create character', exact: true })).toBeDisabled()
+  await body.fill('64'); await frame.fill('80'); await expect(sheet.locator('.creator-validation')).toHaveCount(0)
 })
 
 test('linked prompt is lossless, copy is exact, and keyboard tabs work', async ({ page }) => {
   const sheet = await open(page)
-  await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A freckled elf')
+  const details = sheet.getByRole('textbox', { name: 'Details', exact: true })
+  await details.pressSequentially('A freckled elf ')
+  await expect(details).toHaveValue('A freckled elf ')
   await sheet.getByRole('combobox', { name: 'Kind', exact: true }).selectOption('Elf')
   await sheet.getByRole('tab', { name: 'Appearance', exact: true }).press('ArrowRight')
   const prompt = sheet.getByRole('textbox', { name: 'Exact prompt', exact: true })
@@ -132,6 +138,16 @@ test('canceling the connection discards the pending enhancement instead of charg
   expect(api.calls.filter(c => c.path === '/v2/enhance-character-v3-prompt')).toEqual([])
 })
 
+test.describe('touch tablet', () => {
+  test.use({ hasTouch: true, viewport: { width: 768, height: 1024 } })
+  test('mirror controls retain 44px targets without overflowing the two-column layout', async ({ page }) => {
+    const sheet = await open(page)
+    const buttons = await sheet.locator('.mirror, .creator-tabs button').evaluateAll(elements => elements.map(el => { const r = el.getBoundingClientRect(); return { w: r.width, h: r.height } }))
+    expect(buttons.every(b => b.w >= 44 && b.h >= 44)).toBe(true)
+    expect(await sheet.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
+  })
+})
+
 for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) test(`creator fits ${viewport.width}×${viewport.height} without clipped controls`, async ({ page }) => {
   await page.setViewportSize(viewport); const sheet = await open(page)
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf')
@@ -175,6 +191,9 @@ for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse:
   if (config.reverse) expect(raw.every(c => (c.body as unknown as { direction: string }).direction === 'west')).toBe(true)
   await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click()
   await expect(page.locator('.project-btn')).toContainText('Offline creator test')
+  await page.locator('.project-btn').click(); await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click()
   await page.getByRole('tab', { name: 'Moves', exact: true }).click()
   const moveCanvas = page.locator('.move-thumb canvas').first()
   expect(await moveCanvas.getAttribute('width')).toBe(String(config.frame))
@@ -188,6 +207,7 @@ for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse:
   const entries = await unzip(new Uint8Array(zipBytes))
   const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json'))) as Manifest
   expect(manifest.rig.cell).toEqual({ w: config.frame, h: config.frame }); expect(manifest.rig.directions).toHaveLength(config.rows)
+  expect(Object.keys(manifest.rig.rest!)).toHaveLength(8)
   const image = await decodePngBytes(entries.get('layers/body/base/main/idle.png')!)
   expect(image.w).toBe(config.frame * 4); expect(image.h).toBe(config.frame * config.rows)
   if (config.reverse) {
@@ -210,5 +230,17 @@ for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse:
   await page.getByLabel('Character name', { exact: true }).fill('Restored custom frame')
   await page.getByRole('button', { name: 'Import character', exact: true }).click()
   await expect(page.locator('.project-btn')).toContainText('Restored custom frame')
+  if (config.reverse) {
+    await page.locator('.project-btn').click(); await page.getByRole('menuitem', { name: /Set up character/ }).click()
+    const setup = page.getByRole('dialog', { name: 'Set up character', exact: true })
+    await setup.getByRole('button', { name: /^Set up.*gens$/ }).click()
+    await connect(page)
+    await expect(setup).toContainText('Ready. You can add equipment', { timeout: 60_000 })
+    const registrations = api.calls.filter(c => c.path === '/v2/create-character-v3' && c.body?.reference_image)
+    expect(registrations).toHaveLength(2)
+    expect(registrations[1].body?.direction_images).toEqual(registrations[0].body?.direction_images)
+    const estimates = api.calls.filter(c => c.path === '/v2/estimate-skeleton')
+    for (const call of estimates) expect((await decodePngBytes(Buffer.from(call.body!.image!.base64, 'base64'))).w).toBe(128)
+  }
   expect(errors).toEqual([])
 })

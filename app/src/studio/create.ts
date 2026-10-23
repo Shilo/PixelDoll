@@ -217,6 +217,11 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const at = (r: JobRec, produced: CellKey[] = []) => provenance.push(provOf(r, produced)) - 1;
   rig.rest = {};
   for (const d of DIRS) rig.rest[d] = { image: await cellHash(rest[d]), keypoints: restKps[d] };
+  // Retain unselected originals for a future account reconnection, without estimating unused joints or animating them.
+  if (modern) for (const d of DIRECTIONS.filter(d => !DIRS.includes(d))) {
+    const k = refs?.[d]?.keypoints;
+    rig.rest[d] = { image: await cellHash(rest[d]), keypoints: k && LABELS.every(l => k[l]) ? LABELS.map(l => kp4(l, k[l].x, k[l].y)) : [] };
+  }
   for (const c of clips) {
     const anim = rig.animations.find((x) => x.id === c.a.name)!;
     anim.loop = loops(anim.id);
@@ -251,7 +256,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     id: `rig-${rig.baseHash.slice(7, 19)}`, savedAt: new Date().toISOString(), manifest, skeletons, character: { id: charId, looks }, origin: 'studio',
     rigQa: { warnings: built.warnings, pivotFrom: built.pivotFrom, clips: Object.fromEntries(clips.map((c) => [`${c.a.name}/${c.d}`, c.out.qa])), tracks: tracks.stats.map(({ points: _, ...t }) => t) },
   };
-  for (const d of DIRS) await putCell(rig.rest[d]!.image, rest[d]);
+  for (const d of Object.keys(rig.rest) as DirectionName[]) await putCell(rig.rest[d]!.image, rest[d]);
   for (const c of Object.values(built.cells)) await putCell(c.hash, c.img);
   await db.put('projects', rec.id, rec);
   db.askPersist();
@@ -397,7 +402,8 @@ export async function saveCopy(p: { manifest: Manifest; images: Map<string, Img>
   m.name = name;
   const id = `rig-${m.rig.baseHash.slice(7, 19)}`;
   if (await db.get('projects', id)) return id;
-  for (const [h, im] of p.images) await putCell(h as Sha256, im);
-  await db.put('projects', id, { id, savedAt: new Date().toISOString(), manifest: m, skeletons: {}, rigQa: { warnings: [], pivotFrom: '', tracks: [] }, origin: 'studio' });
+  const blobs = new Map<string, Blob>();
+  for (const [h, im] of p.images) blobs.set(h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  await db.updateCharacter<StoredProject>(id, blobs, current => current ?? { id, savedAt: new Date().toISOString(), manifest: m, skeletons: {}, rigQa: { warnings: [], pivotFrom: '', tracks: [] }, origin: 'studio' });
   return id;
 }

@@ -16,7 +16,7 @@ Implements the approved compact workspace in the actual Svelte Studio. Earlier d
 - Fixed size-guide geometry; Camera below it. Five direction presets arranged 2 + 3, all individual directions selectable,
   and attached left/right mirror toggles. Either horizontal partner may be the source. No cycles or dangling sources.
   Removing a source promotes its remaining partner to an original view. Seed is last and blank means fresh variation.
-- New creation always generates and registers all eight original V3 views, including south when it is not selected.
+- New creation always generates, registers and saves all eight original V3 views, including south when it is not selected.
   It animates only selected unique sources and derives mirrors in frozen cells, skeletons and anchors.
   Existing in-flight legacy specs retain their original registration payload for ledger reuse.
 - Flexible rig cells propagate through normalization, pose generation, added moves, item frame limits, held-item padding,
@@ -30,9 +30,9 @@ Implements the approved compact workspace in the actual Svelte Studio. Earlier d
 | Check | Result |
 |---|---|
 | TypeScript and Svelte | 0 errors, 0 warnings |
-| Vitest | 205 tests passed |
+| Vitest | 210 tests passed |
 | Production build and credential guard | Passed; existing bundle-size advisory remains |
-| Complete Playwright regression suite | All 46 cases passed; Windows runner teardown is being checked separately |
+| Complete Playwright regression suite | 48 passed (2.6 minutes), process exited 0, including Windows server teardown |
 | Responsive checks | 320×568, 390×844, 844×390, 768×1024, 1440×900 |
 | Offline end-to-end generation | Side-scroller with E mirrored from W, custom 81 px frame; diagonal 160 px frame; Unique 8 at 256 px |
 | Persistence / export | Reloaded projects, checked exact PNG mirror pixels and sheet dimensions; custom ZIP round trips included |
@@ -43,6 +43,10 @@ Codex browser manually exercised the real app at localhost:5199 and an offline f
 Desktop and phone checks cover linked controls, arbitrary sizes, camera help, presets, reverse mirrors, enhancement,
 failure recovery and a complete mobile creation into the Studio. The offline fixture intercepts every PixelLab request;
 it does not assess AI artwork quality. No live character or animation generation was purchased during this implementation.
+
+Final verification completed on 2026-10-23. The restricted Windows process sandbox prevented teardown in earlier runs;
+the final local offline regression command completed with permitted process access. Two mistakes in the newly added test
+setup (an undersized manual frame and a missing post-reload test-key connection) were corrected before the clean full run.
 
 The fixture is dev-only at `/dev-fixtures/creator/index.html`, requires a normal server rather than agent mode and refuses
 a saved key. Use a dedicated empty test origin. It is not included in production builds. Parallel test runs can set
@@ -65,4 +69,34 @@ The separately qualified paid shared-equipment fitting experiment still supports
 
 ## Independent review
 
-The requested post-commit challenge review and its accepted/rejected findings will be recorded after the implementation commit.
+After implementation commit `fdf438d`, an independent sub-agent reviewed the code and used Codex browser on desktop,
+320 px phone and 768 px tablet. The root agent challenged its findings against consumers, API contracts and tests.
+
+Accepted and corrected:
+
+- Death poses clamped knees/ankles to absolute 58/60 px and collapsed all legs to 15 px. The floor and final limb lengths
+  now come from the rest skeleton. Tests cover translation under padding in every action/direction and larger leg lengths.
+- Setup still required 64 px cardinal rigs. All eight originals now survive creation and editable ZIPs, including unused
+  views. Reconnection registers these originals at their saved size without inventing a south view. Historical complete
+  four-view projects keep their four-view payload. Missing legacy views fail before spending. Padded estimate provenance
+  uses the exact cached request, avoiding an additional unpadded measurement.
+- Canonical trait lines entered in Details did not immediately update the selects. They now reconcile immediately.
+  The reviewer caught whitespace loss in the first fix; per-character and browser typing regressions preserve spaces
+  and blank lines. Arbitrary prose is still never interpreted as a trait.
+- Decimal body sizes disabled Create without a visible explanation. All validation errors now render consistently.
+- Tablet mirror targets were 29 px wide. Coarse pointers get 44 px targets while retaining the tablet layout.
+- Pre-existing completion state prevented another creation in the same page. Dismissing the completed workflow now clears
+  its result ID and warnings; browser tests reopen a fresh creator after completion.
+
+The root agent rejected scaling animation motion by frame size: adding padding must not change movement. The reviewer
+agreed and checked the rest-relative correction instead. It also confirmed that adding retained originals to `rig.rest`
+does not expand selected animation/item coverage. The final review found no remaining proven blocker.
+
+A full regression run separately exposed an intermittent demo-copy storage race. Copying now publishes images and the
+project atomically through the existing storage primitive. A browser test forces concurrent garbage collection during
+copying and confirms the resulting character loads successfully.
+
+Final Codex-browser rechecks covered decimal feedback, ordinary typing, canonical Details synchronization, mobile reverse
+mirrors, Unique 8 at 320 px, camera help and Enhance/Undo. Screenshots are local evidence in `docs/testing/img/`:
+`creator-desktop-implemented.png`, `creator-mobile-appearance.png`, `creator-mobile-directions.png`,
+`creator-mobile-light.png`, `creator-v3-enhance-live.png` and `creator-mobile-export.png`.

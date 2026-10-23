@@ -40,7 +40,7 @@ function recognized(line: string): { key: Trait; value: string } | undefined {
   for (const key of TRAIT_KEYS) for (const value of TRAITS[key].options) if (text === `${TRAITS[key].label}: ${value}`.toLowerCase()) return { key, value };
 }
 /** Only complete known trait lines are interpreted. Arbitrary prose is never guessed or rewritten. */
-export function readPrompt(d: CharacterDraft, prompt: string): void {
+export function readPrompt(d: CharacterDraft, prompt: string, preserveDetailsWhitespace = false): void {
   d.prompt = prompt;
   const lines = prompt.split('\n'), matches = Object.fromEntries(TRAIT_KEYS.map(k => [k, [] as number[]])) as Record<Trait, number[]>;
   lines.forEach((line, i) => { const hit = recognized(line); if (hit) matches[hit.key].push(i); });
@@ -50,7 +50,8 @@ export function readPrompt(d: CharacterDraft, prompt: string): void {
     d[key] = indices.length === 1 ? recognized(lines[indices[0]])!.value : UNSET;
     if (indices.length === 1) owned.add(indices[0]);
   }
-  d.details = lines.filter((line, i) => !owned.has(i) && line.trim() !== BASE_BODY).join('\n').trim();
+  const details = lines.filter((line, i) => !owned.has(i) && line.trim() !== BASE_BODY).join('\n');
+  d.details = preserveDetailsWhitespace ? details : details.trim();
 }
 export function writeTrait(d: CharacterDraft, key: Trait, value: string): void {
   const lines = d.prompt.split('\n'), indices = lines.map((l, i) => recognized(l)?.key === key ? i : -1).filter(i => i >= 0);
@@ -70,8 +71,8 @@ export function writeDetails(d: CharacterDraft, value: string): void {
     else if (!inserted) { next.push(value); inserted = true; }
   }
   if (!inserted) next.unshift(value);
-  d.prompt = next.filter((l, i) => l || i > 0).join('\n');
-  d.details = value;
+  // Keep spaces/newlines while typing in Details; only known trait lines leave the field.
+  readPrompt(d, next.filter((l, i) => l || i > 0).join('\n'), true);
 }
 export function setPreset(d: CharacterDraft, id: string): void {
   const p = PRESETS.find(p => p.id === id)!;

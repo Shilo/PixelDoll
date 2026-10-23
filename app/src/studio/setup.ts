@@ -1,7 +1,8 @@
 // Paid setup is explicit, resumable through the same queue as creation, and commits only when every measurement exists.
 import { b64, joints, provOf, run, type Progress } from './create.ts';
 import { attachImportedRig, setupPlan } from '../lib/rig/setup.ts';
-import { cellHash, type Keypoint } from '../lib/rig/rig.ts';
+import { DIRECTIONS, cellHash, type Keypoint } from '../lib/rig/rig.ts';
+import { skeletonInput } from '../lib/rig/estimate.ts';
 import { png, routes } from '../lib/pixellab/routes.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import type { Provenance } from '../lib/store/manifest.ts';
@@ -27,14 +28,14 @@ export async function setupCharacter(spec: SetupSpec, progress: (p: Progress) =>
     const k = await joints(im, true, spec.activityScope);
     if (!k) throw new Error('PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.');
     measured.set(hash, k);
-    const request = routes.estimateSkeleton(png(await b64(im)));
+    const request = routes.estimateSkeleton(png(await b64(skeletonInput(im).image)));
     provenance.push(provOf(await run(request, 'Finding joints', 'm2-skel', true, true, spec.activityScope)));
     progress({ step: 'joints', done: ++done, total: plan.frames.size, recIds: [] });
   }
   progress({ step: 'register', done: 0, total: 1, recIds: [] });
-  const directions = project.manifest.rig.directions;
-  const direction_images = Object.fromEntries(await Promise.all(directions.filter((d) => d.id !== 'south').map(async (d) => [d.id, png(await b64(plan.rest[d.id]!))])));
-  const managed = await run(routes.createCharacterV3({ description: spec.looks.trim(), reference_image: png(await b64(plan.rest.south!)), direction_images, n_directions: directions.length === 8 ? 8 : 4, view: project.manifest.rig.view ?? 'low top-down', template_id: 'mannequin', no_background: true, seed: spec.seed }), `${rec.manifest.name} · rig setup`, 'studio-setup', false, true, spec.activityScope);
+  const directions = plan.registrationDirections === 8 ? DIRECTIONS : ['south', 'east', 'north', 'west'] as const;
+  const direction_images = Object.fromEntries(await Promise.all(directions.filter(d => d !== 'south').map(async d => [d, png(await b64(plan.rest[d]!))])));
+  const managed = await run(routes.createCharacterV3({ description: spec.looks.trim(), reference_image: png(await b64(plan.rest.south!)), direction_images, n_directions: plan.registrationDirections, view: project.manifest.rig.view ?? 'low top-down', template_id: 'mannequin', no_background: true, seed: spec.seed }), `${rec.manifest.name} · rig setup`, 'studio-setup', false, true, spec.activityScope);
   const id = (managed.response as { character_id?: string })?.character_id;
   if (!id) throw new Error('PixelLab did not return a managed character ID. Existing artwork is unchanged.');
   provenance.push(provOf(managed));

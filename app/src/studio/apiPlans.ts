@@ -102,10 +102,10 @@ export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | nu
   }
   return [...calls, ...lifecycle()]
 }
-export function setupPeekPlan(plan: SetupPlan | null, looks: string, directions: number): PeekCall[] {
+  export function setupPeekPlan(plan: SetupPlan | null, looks: string): PeekCall[] {
   if (!plan) return []
   return [...[...plan.frames.keys()].map((hash, index): PeekCall => ({ method: 'POST', path: '/estimate-skeleton', label: `Measure body frame ${index + 1} of ${plan.frames.size}`, generations: 0.1, note: `Sends existing frame ${hash} as image (base64 PNG). Matching saved measurements are reused.` })),
-    { method: 'POST', path: '/create-character-v3', label: 'Register existing standing views', generations: 0.25, body: { description: looks.trim(), n_directions: directions === 8 ? 8 : 4, template_id: 'mannequin', no_background: true }, note: `Known fields only. Existing standing reference images and camera view are added on submission. ${selectedSeed} Existing artwork is preserved.` }, ...lifecycle()]
+      { method: 'POST', path: '/create-character-v3', label: 'Register existing standing views', generations: 0.25, body: { description: looks.trim(), n_directions: plan.registrationDirections, template_id: 'mannequin', no_background: true }, note: `Known fields only. Existing standing reference images and camera view are added on submission. ${selectedSeed} Existing artwork is preserved.` }, ...lifecycle()]
 }
 export function cancelPlan(job: JobRec): PeekCall[] {
   if (job.state !== 'running') return []

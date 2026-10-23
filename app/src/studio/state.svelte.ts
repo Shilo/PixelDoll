@@ -573,8 +573,7 @@ const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'studio-setup', '
  * Activity "Clear finished" (maxAge 0, sweeps blobs) and the leader's start-up prune (a week, records only). Deletes finished ledger records that no draft
  * references and no pending create/move may re-attach to (R6 P1-2), then, only while nothing is generating or being saved
  * in this tab, the blobs nothing references any more (R6 P2-15).
- * ponytail: a follower tab's copyDemo/M-page writes its blobs one transaction before its record; a sweep exactly in between
- * would drop them. Followers cannot generate, so the window is a demo copy; add a "recent blobs" grace list if that bites.
+ * Demo copying publishes its record and blobs atomically, including when a follower copies during a leader's sweep.
  */
 export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number; blobs: number }> {
   if (queue.role === 'follower') return { jobs: 0, blobs: 0 };
@@ -648,6 +647,8 @@ export async function cancelCreate() {
   creating.spec = null;
   creating.progress = null;
   creating.error = '';
+  creating.projectId = '';
+  creating.warnings = [];
   await db.del('projects', CREATE_KEY);
 }
 

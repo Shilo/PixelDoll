@@ -121,7 +121,7 @@
     <div class="creator-field seed"><Help title="Seed" text="Controls the random starting point for character generation and its animations. It does not randomize one specific trait. Leave blank for a fresh seed. Reusing it can give similar results, but does not guarantee identical pixels." /><input class="input" aria-label="Seed" inputmode="numeric" pattern="[0-9]*" bind:value={d.seed} placeholder="Random" /></div>
   </section>
 </div>
-{#if errors.length && (d.prompt.length > 2000 || d.body === undefined || d.body! < 32 || d.body! > 256 || !d.selected.length || (!d.auto && errors.some(e => e.startsWith('Frame'))) || d.seed && errors.some(e => e.startsWith('Seed')))}<p class="creator-validation" role="status">{errors[0]}</p>{/if}
+{#if errors.length}<p class="creator-validation" role="status">{errors[0]}</p>{/if}
 
 <style>
   .creator-grid { display:grid; grid-template-columns:minmax(250px,1.1fr) minmax(170px,.8fr) minmax(290px,1.15fr); gap:24px; align-items:start; }
@@ -161,6 +161,7 @@
   .direction, .mirror { display:flex; align-items:center; justify-content:center; gap:3px; border:1px solid var(--line-strong); border-radius:var(--r-ctl); background:var(--bg-side); color:var(--text-3); padding:0; font:inherit; cursor:pointer; }
   .direction { flex:1; min-width:0; flex-direction:column; font-size:10px; }
   .mirror { flex:0 0 29px; }
+  @media (pointer:coarse) { .mirror { flex-basis:44px; } .creator-tabs button { min-height:44px; } }
   .west .direction { border-top-left-radius:0; border-bottom-left-radius:0; }
   .west .mirror { border-right:0; border-top-right-radius:0; border-bottom-right-radius:0; }
   .east .direction { border-top-right-radius:0; border-bottom-right-radius:0; }

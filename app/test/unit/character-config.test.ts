@@ -52,6 +52,24 @@ test('conflicting trait lines remain editable prose until explicitly replaced', 
   writeDetails(d, 'A friendly face')
   expect(d.prompt).toBe('A friendly face\nKind: Human\nSkin: Pale')
 })
+
+test('canonical trait lines entered in Details synchronize immediately and survive subsequent trait edits', () => {
+  const d = newCharacterDraft()
+  writeDetails(d, 'Kind: Elf\nBuild: Broad\nA friendly face')
+  expect(d.kind).toBe('Elf'); expect(d.build).toBe('Broad'); expect(d.details).toBe('A friendly face')
+  const before = d.prompt
+  writeTrait(d, 'skin', 'Pale')
+  expect(d.details).toBe('A friendly face'); expect(d.prompt).toContain(before.split('\n')[0])
+  expect(d.prompt.match(/Kind: Elf/g)).toHaveLength(1)
+})
+
+test('Details preserves intermediate whitespace during normal multiword typing', () => {
+  const d = newCharacterDraft(), text = 'A freckled elf\n\nWith a kind face '
+  for (let i = 1; i <= text.length; i++) {
+    writeDetails(d, text.slice(0, i))
+    expect(d.details).toBe(text.slice(0, i))
+  }
+})
 test('details and traits produce one exact prompt without accumulating base hints', () => {
   const d = newCharacterDraft(); expect(draftErrors(d)).toEqual([])
   readPrompt(d, ''); expect(draftErrors(d)).toContain('Enter a character prompt.')

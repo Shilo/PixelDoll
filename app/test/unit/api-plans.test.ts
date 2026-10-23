@@ -72,8 +72,8 @@ test('described move lists each generated direction and measurement at the displ
 })
 
 test('setup preflight prices each unique measurement and registration without inventing image data', () => {
-  const plan: SetupPlan = { frames: new Map([['sha256:a', makeImg(64, 64)], ['sha256:b', makeImg(64, 64)]]), restAnim: 'rest', fixedRest: false, rest: {}, gens: 0.45, warnings: [] }
-  const calls = setupPeekPlan(plan, 'existing blue body', 8)
+  const plan: SetupPlan = { frames: new Map([['sha256:a', makeImg(64, 64)], ['sha256:b', makeImg(64, 64)]]), restAnim: 'rest', fixedRest: false, rest: {}, registrationDirections: 8, gens: 0.45, warnings: [] }
+  const calls = setupPeekPlan(plan, 'existing blue body')
   expect(calls.reduce((sum, call) => sum + (call.generations ?? 0), 0)).toBeCloseTo(0.45)
   expect(calls[2].body).toMatchObject({ description: 'existing blue body', n_directions: 8, no_background: true })
   expect(calls[2].body).not.toHaveProperty('reference_image')
