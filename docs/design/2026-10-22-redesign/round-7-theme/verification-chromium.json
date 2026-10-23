@@ -1,0 +1,359 @@
+{
+  "engine": "chromium",
+  "result": "passed",
+  "cases": [
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080,
+      "section": "Scene",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080,
+      "section": "Controls",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080,
+      "section": "Creator",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080,
+      "section": "Library",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080,
+      "section": "Feedback",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 1920,
+      "height": 1080,
+      "section": "Overlays",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 1080,
+      "section": "Scene",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 1080,
+      "section": "Controls",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 1080,
+      "section": "Creator",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 1080,
+      "section": "Library",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 1080,
+      "section": "Feedback",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 1920,
+      "height": 1080,
+      "section": "Overlays",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "section": "Scene",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "section": "Controls",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "section": "Creator",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "section": "Library",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "section": "Feedback",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 390,
+      "height": 844,
+      "section": "Overlays",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "section": "Scene",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "section": "Controls",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "section": "Creator",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "section": "Library",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "section": "Feedback",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 390,
+      "height": 844,
+      "section": "Overlays",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "height": 568,
+      "section": "Scene",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "height": 568,
+      "section": "Controls",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "height": 568,
+      "section": "Creator",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "height": 568,
+      "section": "Library",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "height": 568,
+      "section": "Feedback",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 320,
+      "height": 568,
+      "section": "Overlays",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "height": 568,
+      "section": "Scene",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "height": 568,
+      "section": "Controls",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "height": 568,
+      "section": "Creator",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "height": 568,
+      "section": "Library",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "height": 568,
+      "section": "Feedback",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 320,
+      "height": 568,
+      "section": "Overlays",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "section": "Scene",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "section": "Controls",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "section": "Creator",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "section": "Library",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "section": "Feedback",
+      "result": "passed"
+    },
+    {
+      "theme": "dark",
+      "width": 844,
+      "height": 390,
+      "section": "Overlays",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "section": "Scene",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "section": "Controls",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "section": "Creator",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "section": "Library",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "section": "Feedback",
+      "result": "passed"
+    },
+    {
+      "theme": "light",
+      "width": 844,
+      "height": 390,
+      "section": "Overlays",
+      "result": "passed"
+    }
+  ],
+  "checks": [
+    "48 screen/appearance/viewport combinations without horizontal overflow",
+    "Native light/dark color-scheme, persisted choice, source actor canvas unchanged on switch",
+    "Themed root/nested scrollbars, native width and forced-color fallback",
+    "Stable filtered character identity, palette reset and 44px color picker",
+    "Checkbox switch state; keyboard prompt tabs with retained panels",
+    "Local file selection, outfit editing, ramp keyboard and popup-to-dialog focus return",
+    "Associated numeric error, joined field marker and aligned heights",
+    "44px coarse-pointer playback/compass/mirror targets including narrow portrait and landscape",
+    "Native modal bounds and full-width phone sheet, choice keyboard navigation, busy Escape protection, opener return",
+    "Help in top layer and nested Escape ordering",
+    "Nonmodal API panel permits keyboard exit",
+    "Forced colors in both themes, contrast/motion and Chromium reduced-transparency fallbacks",
+    "No page errors or external requests"
+  ],
+  "errors": [],
+  "external": []
+}

@@ -20,7 +20,9 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 
 **Latest material study:** [GlassKit evaluation](design/2026-10-22-redesign/round-6-prototype/glasskit-study.md) records the selective adoption, baseline/rounded comparisons, independent review and accessibility/rendering checks.
 
-**Full-app theme recommendation:** [Theme foundation and component/state catalog](design/2026-10-22-redesign/round-6-prototype/theme-foundation.md), with [independent challenge](design/2026-10-22-redesign/round-6-prototype/theme-foundation-review.md). Recommends owned Bronze tokens/materials and existing native-first Svelte components; fairly evaluates GlassKit CSS/Elements and defines coverage and parity gates. Research only: the approved GlassKit prototype remains unchanged.
+**Owned theme implementation:** [Bronze component-state showcase](design/2026-10-22-redesign/round-7-theme/README.md) and [style guide](design/2026-10-22-redesign/round-7-theme/STYLE-GUIDE.md) implement native light/dark tokens, shared controls, overlays and state samples in an isolated Svelte lab at port 5203. Includes app inventory, independent research/runtime challenge and browser evidence. This is a component-family proof, not production migration.
+
+**Full-app theme recommendation history:** [Theme foundation and component/state catalog](design/2026-10-22-redesign/round-6-prototype/theme-foundation.md), with [independent challenge](design/2026-10-22-redesign/round-6-prototype/theme-foundation-review.md). Fairly evaluates GlassKit CSS/Elements and defines coverage and parity gates. The earlier approved GlassKit playable reference remains unchanged.
 
 **Decision history and palette evidence:** [earlier direction review](design/2026-10-22-redesign/round-4-discussion/README.md), [decision log and corrections](design/2026-10-22-redesign/round-4-discussion/decisions-2026-10-23.md), [Bronze/Frost/Sage studies with exact demo sprites](design/2026-10-22-redesign/round-4-discussion/palette-studies/README.md). Bronze is selected; themes change background/UI only and optional reflection is code-only.
 

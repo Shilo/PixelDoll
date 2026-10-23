@@ -86,6 +86,8 @@ The current manifest's compass supports up to eight named angles; any nonempty s
 
 ## Change discipline and known limits
 
+**Owned-theme successor proof (2026-10-23):** the isolated [Bronze component showcase](2026-10-22-redesign/round-7-theme/README.md) now implements the [full component style guide](2026-10-22-redesign/round-7-theme/STYLE-GUIDE.md). It owns native light/dark roles, restrained floating/opaque surfaces, themed scrollbars, reusable controls and overlay behaviors without GlassKit. Use that guide for new theme work. The round-six vendor boundary described below remains historical and still applies to that unchanged playable reference; neither prototype is a completed production migration.
+
 1. Change a token or shared component at its source; do not paste per-screen color/layout overrides.
 2. Keep breakpoint overrides that express real responsive differences. Avoid redundant declarations and history-based patch stylesheets. The former style.css/parity.css stack is consolidated into styles.css. The separate glass-theme.css is a deliberate vendor boundary, not an arbitrary patch sheet.
 3. Keep asset URLs in the dedicated `backgrounds` map. Preload only that map; a theme label or color string must never be fetched as an image.
