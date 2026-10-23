@@ -162,7 +162,7 @@ try {
     await click('view:preview'); await click('panel:Moves');
     await boundedChoices(page, '.wardrobe .character-list button', `${theme} ${width}×${height} moves`);
     await click('panel:Outfits'); await boundedChoices(page, '.wardrobe .character-list button', `${theme} ${width}×${height} outfits`);
-    await click('panel:Colours'); assert.equal(await page.locator('.wardrobe h2').innerText(), 'Equipment colours');
+    await click('panel:Colors'); assert.equal(await page.locator('.wardrobe h2').innerText(), 'Equipment colors');
     await nativeOptions(page, theme, `${theme} playback`);
     results.push({ theme, viewport: [width, height], result: 'passed' }); await context.close();
   }

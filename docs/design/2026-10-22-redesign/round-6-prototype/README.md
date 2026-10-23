@@ -74,3 +74,5 @@ Generated backgrounds and screenshots remain local and ignored under repository 
 ## Regression review
 
 See [regression-repair.md](regression-repair.md) for the current layout/theme contract and [regression-review.html](http://127.0.0.1:5202/regression-review.html) for the preserved baseline, reported version and repaired UI. Run `node docs/design/2026-10-22-redesign/round-6-prototype/verify-regressions.mjs` for control-level regression checks.
+
+The subsequent [composition and interaction contract](composition-polish.md) documents shared stage centering, select-then-open behavior, the **More** category, panel order, attached controls and creator contrast materials. Run `node docs/design/2026-10-22-redesign/round-6-prototype/verify-polish.mjs` for those checks. Both corrective suites accept `BROWSER=webkit` when that managed browser is installed. [Matching follow-up screenshots](http://127.0.0.1:5202/polish-review.html) retain the prior repair as their before reference.

@@ -1,4 +1,4 @@
-import { esc, icon, button, iconButton, tabs } from './ui.js';
+import { esc, icon, button, iconButton, tabs, positionPopover } from './ui.js';
 import { applyBronze } from './bronze.mjs';
 import { createDraft, renderCreator, exactPrompt, basePrompt, autoFrame } from './creator.js';
 import { applyTheme, themeName } from './theme.mjs';
@@ -7,6 +7,7 @@ import { MOVEMENT_KEYS, keyboardVector } from './input.mjs';
 import { loadDemo } from './assets.js';
 import { renderEquipment, EQUIPMENT_SLOTS } from './equipment.js';
 import { World } from './world.js';
+import { measureStage } from './stage-layout.mjs';
 import { MOTION, REFLECTION } from './config.js';
 import { unit, resolveMotion, resolvePreview, clipLabel, frameAt, advance } from './motion.mjs';
 const $ = s => document.querySelector(s), ui = $('#ui'), dialog = $('#dialog'), stick = $('#joystick');
@@ -36,7 +37,21 @@ function current() { return characters[state.character]; }
 function changeScreen(screen) { stop(); $('#toast').hidden = true; state.screen = screen; state.menu = null; state.expanded = false; elapsed = 0; presentationKey = ''; if (screen === 'studio')
     state.view = 'preview'; render(); world.backdrop(state); }
 function changeView(view) { stop(); $('#toast').hidden = true; state.view = view; state.menu = null; state.panel = state.panel === 'Moves' && view !== 'preview' ? 'Wardrobe' : state.panel; position.x = position.y = camera.x = camera.y = 0; elapsed = 0; presentationKey = ''; lastFacing = view === 'side' ? 'east' : state.direction; state.hint = view !== 'preview'; clearTimeout(hintTimer); hintTimer = setTimeout(() => { state.hint = false; render(); }, 6500); render(); world.backdrop(state); }
-function changeCharacter(index) { stop(); $('#toast').hidden = true; state.character = index; lastFacing = 'south'; state.direction = 'south'; state.menu = null; position.x = position.y = camera.x = camera.y = 0; elapsed = 0; presentationKey = ''; lastHidden = ''; render(); }
+function changeCharacter(index) {
+    // Keep the clicked row under the pointer across selection rerenders. Without
+    // this, a second click can hit a different row in a scrolled landscape list.
+    const scroll = state.screen === 'selection'
+        ? ['.library', '.library .character-list'].map(selector => [selector, ui.querySelector(selector)?.scrollTop ?? 0]) : [];
+    stop(); $('#toast').hidden = true; state.character = index; lastFacing = 'south';
+    state.direction = 'south'; state.menu = null;
+    position.x = position.y = camera.x = camera.y = 0;
+    elapsed = 0; presentationKey = ''; lastHidden = ''; render();
+    for (const [selector, top] of scroll) { const element = ui.querySelector(selector); if (element) element.scrollTop = top; }
+}
+function activateCharacter(index) {
+    if (state.screen === 'selection' && index === state.character) changeScreen('studio');
+    else changeCharacter(index);
+}
 function top() { const select = state.screen === 'selection', create = state.screen === 'creation'; return `<header>${button(select ? 'PixelDoll' : 'Characters', select ? 'home' : 'back', { icon: select ? 'person-standing' : 'arrow-left' })}<div class="top-actions">${create ? button('Cancel', 'back') : select ? `${button('<span class="label">Import</span>', 'import', { icon: 'upload', cls: 'desktop-only', title: 'Import (not connected in prototype)' })}${button('<span class="label">New character</span>', 'create', { icon: 'plus', cls: 'outline desktop-only', title: 'New character' })}${iconButton('More options', 'more', 'ellipsis')}` : `${button('<span class="label">Undo</span>', 'undo', { icon: 'undo-2', cls: 'desktop-only', disabled: !current().history.length, title: 'Undo equipment change' })}${button('<span class="label">Export</span>', 'export', { icon: 'download', title: 'Export (not connected in prototype)' })}${iconButton('More options', 'more', 'ellipsis')}`}</div></header>`; }
 const STUDIO_VIEWS = [['preview', 'Preview'], ['topdown', 'Top-down'], ['side', 'Side-scroller']];
 function viewTabs() { return tabs(STUDIO_VIEWS, state.view, { cls: 'view-tabs', label: 'Character view', action: 'view' }); }
@@ -54,17 +69,18 @@ function wardrobe() { return renderEquipment({ state, demo, character: current()
 function playback() { const presentation = previewPresentation(); return `<div class="playback" data-ui aria-label="Animation playback">${presentation.missing ? button('Still', 'play', { disabled: true, title: 'The selected animation has no frames for this facing' }) : iconButton(state.playing ? 'Pause animation' : 'Play animation', 'play', state.playing ? 'pause' : 'play')}<select data-field="clip" aria-label="Animation">${demo.m.rig.animations.map(a => `<option value="${a.id}" ${state.clip === a.id ? 'selected' : ''}>${clipLabel(a.id)}</option>`).join('')}</select>${demo.dirs.map(d => button(direction(d)?.short ?? d, 'direction:' + d, { cls: 'dir', pressed: state.direction === d, title: labelDir[d], extra: `aria-label="Face ${esc(labelDir[d] ?? d)}"` })).join('')}${iconButton('Animation details', 'animation-info', 'settings-2')}</div>`; }
 function menus() {
     if (state.menu === 'more')
-        return `<div class="popover" data-ui>${button(state.theme === 'obsidian' ? 'Light mode' : 'Dark mode', 'theme:' + (state.theme === 'obsidian' ? 'porcelain' : 'obsidian'), { icon: state.theme === 'obsidian' ? 'sun' : 'moon', cls: 'theme-toggle' })}<div class="divider"></div><a href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noopener">GitHub ${icon('external-link')}</a>${button('About this prototype', 'about', { icon: 'circle-help' })}</div>`;
+        return `<div class="popover" data-ui>${button(state.theme === 'obsidian' ? 'Light mode' : 'Dark mode', 'theme:' + (state.theme === 'obsidian' ? 'porcelain' : 'obsidian'), { icon: state.theme === 'obsidian' ? 'sun' : 'moon', cls: 'theme-toggle' })}<div class="divider"></div><a href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noopener" class="menu-link">${icon('github')}<span>GitHub</span>${icon('external-link')}</a>${button('About this prototype', 'about', { icon: 'circle-help' })}</div>`;
     if (state.menu === 'characters')
         return `<div class="popover character-popover" data-ui><small>Switch character</small>${characterButtons()}</div>`;
     if (state.menu === 'description')
         return `<section class="popover description" data-ui aria-label="Character prompt"><div class="popover-head"><h2>Character prompt</h2>${iconButton('Close prompt', 'dismiss', 'x')}</div><p>${esc(current().prompt)}</p>${button('Copy prompt', 'copy-description', { icon: 'copy' })}<small>Walk available. Idle absent; live views use a still frame.</small></section>`;
     if (state.menu === 'parts')
-        return `<div class="popover parts-popover" data-ui><small>Equipment parts</small>${EQUIPMENT_SLOTS.map(s => [s.id, s.label]).map(([id, n]) => button(n, 'slot:' + id, { pressed: state.slot === id })).join('')}</div>`;
+        return `<div class="popover parts-popover" data-ui><small>Equipment parts</small>${EQUIPMENT_SLOTS.filter(s => !s.tab).map(s => [s.id, s.label]).map(([id, n]) => button(n, 'slot:' + id, { pressed: state.slot === id })).join('')}</div>`;
     return '';
 }
+function positionPartsMenu() { positionPopover(ui.querySelector('.parts-popover'), ui.querySelector('[data-action="slot:all"]'), ui.querySelector('.mode-tabs')); }
 function render() { if (!demo)
-    return; applyTheme(state.theme); document.body.dataset.screen = state.screen; document.body.dataset.view = state.view; ui.innerHTML = top() + (state.screen === 'selection' ? library() : state.screen === 'creation' ? renderCreator(draft, manualPrompt) : viewTabs() + identity() + wardrobe() + (state.view === 'preview' ? playback() : state.hint ? `<p class="hint">${matchMedia('(pointer:coarse)').matches ? 'Drag in the world to move' : 'WASD / arrow keys to move'}</p>` : '')) + menus() + `<p class="footnote">${state.screen === 'creation' ? '' : 'Local visual prototype · demo artwork'}</p>`; applyBronze(ui); }
+    return; applyTheme(state.theme); document.body.dataset.screen = state.screen; document.body.dataset.view = state.view; ui.innerHTML = top() + (state.screen === 'selection' ? library() : state.screen === 'creation' ? renderCreator(draft, manualPrompt) : viewTabs() + identity() + wardrobe() + (state.view === 'preview' ? playback() : state.hint ? `<p class="hint">${matchMedia('(pointer:coarse)').matches ? 'Drag in the world to move' : 'WASD / arrow keys to move'}</p>` : '')) + menus() + `<p class="footnote">${state.screen === 'creation' ? '' : 'Local visual prototype · demo artwork'}</p>`; applyBronze(ui); measureStage(state.screen, ui); positionPartsMenu(); }
 function applyOutfit(items) { current().history.push({ ...current().items }); current().items = { ...items }; lastHidden = ''; render(); }
 function equip(id) { applyOutfit({ ...current().items, [state.slot]: id === 'none' ? null : id }); }
 function chooseClip(clip) { state.clip = clip; elapsed = 0; presentationKey = ''; render(); }
@@ -105,7 +121,7 @@ async function action(action) {
         return;
     }
     if (name === 'character') {
-        changeCharacter(+value);
+        activateCharacter(+value);
         return;
     }
     if (name === 'previous' || name === 'next') {
@@ -132,6 +148,7 @@ async function action(action) {
         return;
     }
     if (name === 'panel') {
+        state.menu = null;
         state.panel = value;
         render();
         return;
@@ -339,7 +356,9 @@ if (state.screen === 'studio' && k === 'tab' && (!e.target.closest('button,a,[ta
 window.addEventListener('keyup', e => { keys.delete(e.key.toLowerCase()); previewFacing(); });
 window.addEventListener('blur', stop);
 document.addEventListener('visibilitychange', () => { stop(); last = 0; });
-window.addEventListener('resize', () => { stop(); world?.backdrop(state); });
+window.addEventListener('resize', () => { stop(); measureStage(state.screen, ui); positionPartsMenu(); world?.backdrop(state); });
+ui.addEventListener('scroll', e => { if (e.target.classList.contains('wardrobe-scroll')) positionPartsMenu(); }, true);
+
 document.addEventListener('focusin', e => { if (editTarget(e.target))
     stop(); });
 $('#actors').addEventListener('pointerdown', e => { if (dialog.open)
@@ -349,9 +368,9 @@ $('#actors').addEventListener('pointerdown', e => { if (dialog.open)
     render();
     return;
 } if (state.screen === 'selection') {
-    const hit = world.hitAreas.find(a => e.clientX >= a.x && e.clientX <= a.x + a.w && e.clientY >= a.y && e.clientY <= a.y + a.h);
+    const hit = world.hitAreas.findLast(a => e.clientX >= a.x && e.clientX <= a.x + a.w && e.clientY >= a.y && e.clientY <= a.y + a.h);
     if (hit)
-        changeCharacter(hit.index);
+        activateCharacter(hit.index);
     return;
 } if (state.screen !== 'studio' || state.view === 'preview' || joystick || e.button > 0)
     return; e.preventDefault(); joystick = { id: e.pointerId, x: e.clientX, y: e.clientY, v: [0, 0] }; e.target.setPointerCapture(e.pointerId); stick.style.left = e.clientX + 'px'; stick.style.top = e.clientY + 'px'; stick.firstElementChild.style.transform = ''; stick.hidden = false; });
@@ -415,7 +434,7 @@ async function boot() {
         render();
         await world.backdrop(state);
         // Read-only diagnostics for offline verification; no production state or credentials.
-        window.prototype = { snapshot: () => ({ state: structuredClone(state), position: { ...position }, camera: { ...camera }, resolved: { ...resolved }, hiddenItems: hiddenItems.map(i => i.id), equipped: { ...current().items }, drawnFrames, backgroundLoads: { ...world.loadCounts }, reflection: { ...REFLECTION }, actorBounds: world.actorBounds, cacheSize: demo.cache.size, velocity: velocity() }), ready: true };
+        window.prototype = { snapshot: () => ({ state: structuredClone(state), position: { ...position }, camera: { ...camera }, resolved: { ...resolved }, hiddenItems: hiddenItems.map(i => i.id), equipped: { ...current().items }, drawnFrames, backgroundLoads: { ...world.loadCounts }, reflection: { ...REFLECTION }, actorBounds: world.actorBounds, selectionActors: world.hitAreas.map(box => ({ ...box })), cacheSize: demo.cache.size, velocity: velocity() }), ready: true };
         requestAnimationFrame(tick);
     }
     catch (error) {

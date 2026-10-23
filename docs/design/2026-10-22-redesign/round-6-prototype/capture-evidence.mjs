@@ -14,7 +14,7 @@ export async function captureEvidence({ phase, root, runtimeTheme, labels, suppl
   const base = process.env.PROTOTYPE_URL ?? 'http://127.0.0.1:5202';
   await mkdir(new URL(`${phase}/`, root), { recursive: true });
   const report = { phase, capturedAt: new Date().toISOString(), node: process.version, base, deviceScaleFactor: 1, devHotReloadDisabled: true, provenance, captureComplete: false, images: [], supplementalImages: [], errors: [], external: [] };
-  const runtimeFiles = () => Promise.all(['index.html', 'main.js', 'creator.js', 'ui.js', 'equipment.js', 'assets.js', 'world.js', 'config.js', 'theme.mjs', 'directions.mjs', 'input.mjs', 'motion.mjs', 'styles.css', 'creator.css', 'bronze-theme.css', 'bronze.mjs'].map(async file => ({ file, sha256: await readFile(new URL(file, import.meta.url)).then(data => createHash('sha256').update(data).digest('hex'), error => { if (error.code === 'ENOENT') return null; throw error; }) })));
+  const runtimeFiles = () => Promise.all(['index.html', 'main.js', 'creator.js', 'ui.js', 'equipment.js', 'assets.js', 'world.js', 'config.js', 'theme.mjs', 'directions.mjs', 'input.mjs', 'motion.mjs', 'styles.css', 'creator.css', 'bronze-theme.css', 'bronze.mjs', 'stage-layout.mjs'].map(async file => ({ file, sha256: await readFile(new URL(file, import.meta.url)).then(data => createHash('sha256').update(data).digest('hex'), error => { if (error.code === 'ENOENT') return null; throw error; }) })));
   report.runtimeFiles = await runtimeFiles();
   const browser = await chromium.launch({ headless: true });
   report.browser = browser.version();
@@ -59,7 +59,7 @@ export async function captureEvidence({ phase, root, runtimeTheme, labels, suppl
       await record('selection'); await click('create'); await record('creation');
       if (mobile) for (const [section, screen] of [[1, 'creation-size'], [2, 'creation-directions']]) { await page.locator('.creator').evaluate((el, i) => el.scrollTop = el.children[i].offsetTop, section); await record(screen); }
       await click('back'); await click('customize'); await click('play'); await record('preview');
-      for (const panel of ['Colours', 'Moves', 'Outfits']) { await click('panel:' + panel); await record('panel-' + panel.toLowerCase()); }
+      for (const panel of ['Colors', 'Moves', 'Outfits']) { const action = panel === 'Colors' && await page.locator('[data-action="panel:Colours"]').count() ? 'Colours' : panel; await click('panel:' + action); await record('panel-' + (panel === 'Colors' ? 'colours' : panel.toLowerCase())); }
       await click('panel:Wardrobe');
       for (const [action, screen] of [['more', 'menu-more'], ['characters', 'menu-characters'], ['description', 'menu-prompt'], ['slot:all', 'menu-parts']]) { await click(action); await record(screen); await page.keyboard.press('Escape'); }
       for (const [action, screen] of [['export', 'dialog-export'], ['animation-info', 'dialog-animation']]) { await click(action); await record(screen); await page.keyboard.press('Escape'); }

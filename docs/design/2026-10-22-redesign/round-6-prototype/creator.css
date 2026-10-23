@@ -31,7 +31,6 @@
 .exact-excerpt { white-space:pre-wrap; max-height:110px; overflow:auto; font-size:14px; line-height:1.5; color:var(--muted); margin-top:8px; }
 .presets { display:flex; gap:6px; margin:8px 0 20px; flex-wrap:wrap; }
 .presets button { border:var(--border-control); flex:1; font-size:14px; min-height:44px; padding:6px 8px; }
-:is(.presets button,.compass .facing)[aria-pressed=true] { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); }
 .frame-row { display:flex; gap:8px; margin:8px 0 20px; }
 .frame-row button { border:var(--border-control); min-height:44px; }
 .frame-row input { min-width:0; }
@@ -43,7 +42,6 @@
 .compass .facing { border:var(--border-control); display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; padding:4px; font-size:14px; }
 .compass .mirror { padding:2px; width:26px; min-width:26px; border:var(--border-control); }
 .compass .mirror svg { width:16px; }
-.compass .mirror[aria-pressed=true] { background:color-mix(in srgb,var(--accent) 17%,transparent); }
 .direction-arrow { display:flex; pointer-events:none; }
 .direction-arrow svg { width:20px; height:20px; }
 .seed { margin-top:24px; }
@@ -94,3 +92,8 @@
  .compass .mirror { width:44px; min-width:44px; }
  .compass { gap:6px; }
 }
+
+/* Facing and mirror share a seam; only outer corners are rounded. */
+.compass>div:has(.mirror)>:first-child { border-top-right-radius:0; border-bottom-right-radius:0; }
+.compass>div:has(.mirror)>:last-child { border-top-left-radius:0; border-bottom-left-radius:0; margin-left:-1px; }
+.compass button:focus-visible { position:relative; z-index:1; }

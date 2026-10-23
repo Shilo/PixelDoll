@@ -91,3 +91,19 @@ option, optgroup { color: var(--bu-text); background-color: var(--bu-field); }
   .playback select { width:140px; max-width:none; flex-shrink:0; }
   @media(max-width:760px) { .playback select { width:128px; } }
 }
+
+/* Scene-facing form choices use dependable local materials, not blur. */
+.creator :is(.presets button,.frame-row button,.compass button) { background:var(--bu-field); border-color:var(--bu-border); }
+.creator :is(.presets button,.frame-row button,.compass button)[aria-pressed=true] { background:var(--bu-selected); border-color:var(--bu-accent); }
+.creator :is(.presets button,.frame-row button,.compass button):hover { background:var(--bu-hover); }
+
+/* Dense creator labels retain muted hierarchy with measured minimum backing:
+   dark 85% over white >=4.76:1; light 90% over black >=4.62:1.
+   Keep world visible; these scene materials are not package color tokens. */
+:root { --creator-scrim-start:85%; --creator-scrim-end:88%; }
+:root[data-theme=light] { --creator-scrim-start:90%; --creator-scrim-end:92%; }
+body[data-screen=creation] .scrims { background:linear-gradient(90deg,color-mix(in srgb,var(--bu-surface) 65%,transparent),color-mix(in srgb,var(--bu-surface) var(--creator-scrim-start),transparent) 19%,color-mix(in srgb,var(--bu-surface) var(--creator-scrim-end),transparent)); }
+.creation-workspace .size-guide, .creation-workspace .size-guide small { color:var(--bu-text); }
+@media(max-width:1000px), (max-height:540px) and (min-width:541px) {
+  body[data-screen=creation] .scrims { background:linear-gradient(180deg,color-mix(in srgb,var(--bu-surface) var(--creator-scrim-start),transparent),color-mix(in srgb,var(--bu-surface) var(--creator-scrim-end),transparent)); }
+}

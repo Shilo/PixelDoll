@@ -10,7 +10,7 @@
     "Preview WASD/arrows select declared facings without movement or changing the chosen clip; missing frames use an explicit still",
     "Palette ring has paint room without shifting its left alignment; hovering preserves the equipment color",
     "Preview direction shortcuts leave focused form controls and open menus alone",
-    "Original fixture RGB verified in both themes (1003 opaque source pixels in first comparison)",
+    "Original fixture RGB verified in both themes (997 opaque source pixels in first comparison)",
     "Side movement, camera follow and immediate stop; real still fallback",
     "Top-down continuous diagonal movement normalized",
     "Wizard north coverage hides gear without unequipping, south restores it",

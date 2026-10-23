@@ -419,8 +419,8 @@ header {
 
 .playback {
   position: absolute;
+  left: var(--stage-center);
   top: 84%;
-  left: calc((100% - 350px)*.53);
   transform: translateX(-50%);
   display: flex;
   align-items: center;
@@ -508,8 +508,8 @@ header {
 
 .selected-name {
   position: absolute;
+  left: var(--stage-center);
   top: 81%;
-  left: calc((100% - 350px)*.53);
   transform: translateX(-50%);
   text-align: center;
 }
@@ -541,10 +541,6 @@ header {
   max-height: calc(100dvh - var(--popover-top) - 16px);
   overflow: auto;
   z-index: 50;
-}
-
-.popover.parts-popover {
-  --popover-top: 31dvh;
 }
 
 .popover button,.popover a {
@@ -694,9 +690,6 @@ dialog button {
   .top-actions .label {
     display: none;
   }
-  .playback,.selected-name {
-    left: calc((100% - 300px)*.53);
-  }
 }
 
 @media (max-width:760px) {
@@ -753,10 +746,11 @@ dialog button {
   .view-tabs {
     top: 158px;
     left: 20px;
-    right: 20px;
+    right: auto;
+    width: max-content;
     transform: none;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: flex-start;
+    gap: 1.25em;
   }
   .view-tabs button {
     font-size: 12px;
@@ -843,7 +837,6 @@ dialog button {
   }
   .playback {
     top: 56%;
-    left: 50%;
     max-width: calc(100% - 28px);
     gap: 3px;
     padding: 1px 3px;
@@ -885,7 +878,6 @@ dialog button {
   }
   .selected-name {
     top: 64%;
-    left: 50%;
     width: 100%;
   }
   .selected-name h2 {
@@ -999,7 +991,6 @@ dialog button {
   .playback {
     top: auto;
     bottom: 20px;
-    left: 34%;
   }
   .hint {
     top: auto;
@@ -1023,7 +1014,6 @@ dialog button {
   .selected-name {
     top: auto;
     bottom: 12px;
-    left: 33%;
     width: auto;
   }
   .mobile-library-actions {
@@ -1313,7 +1303,6 @@ body:has(#toast:not([hidden])) .hint {
   }
   .playback {
     top: 83.3%;
-    left: 42%;
     padding: 4px 12px;
     gap: 14px;
     min-height: 54px;
@@ -1361,7 +1350,6 @@ body:has(#toast:not([hidden])) .hint {
     flex-shrink: 0;
   }
   .selected-name {
-    left: 40.5%;
     top: 81.5%;
   }
   .selected-name h2 {
@@ -1401,9 +1389,6 @@ body:has(#toast:not([hidden])) .hint {
   }
   body[data-screen=selection] .identity>p {
     font-size: 20px !important;
-  }
-  body[data-screen=creation] .scrims {
-    background: linear-gradient(90deg,color-mix(in srgb,var(--surface) 60%,transparent),transparent 25%,color-mix(in srgb,var(--surface) 65%,transparent) 33%,color-mix(in srgb,var(--surface) 94%,transparent)),linear-gradient(180deg,color-mix(in srgb,var(--surface) 70%,transparent),transparent 28%,transparent 80%,color-mix(in srgb,var(--surface) 60%,transparent));
   }
 }
 
@@ -1469,9 +1454,6 @@ body:has(#toast:not([hidden])) .hint {
   }
   .selected-name h2 {
     font-size: 26px;
-  }
-  body[data-screen=creation] .scrims {
-    background: linear-gradient(180deg,color-mix(in srgb,var(--surface) 80%,transparent),color-mix(in srgb,var(--surface) 55%,transparent) 19%,color-mix(in srgb,var(--surface) 94%,transparent) 25%,color-mix(in srgb,var(--surface) 97%,transparent));
   }
   .wardrobe {
     top: 60%;
@@ -1545,8 +1527,8 @@ body:has(#toast:not([hidden])) .hint {
 
 
 /* A narrow phone keeps every playback control reachable in two rows. */
-@media (max-width:360px) and (orientation:portrait) {
-  .playback { display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); width:calc(100% - 28px); gap:4px; top:auto; bottom:calc(40dvh + 8px); }
+@media (max-width:360px) and (orientation:portrait), (max-width:760px) and (max-height:540px) and (orientation:landscape) {
+  .playback { display:grid; grid-template-columns:repeat(8,minmax(0,1fr)); width:calc(var(--stage-width) - 28px); gap:4px; }
   .playback button.icon { width:100%; min-width:0; }
   .playback [data-action=play] { grid-row:1; grid-column:1; }
   .playback [data-field=clip] { grid-row:1; grid-column:2/8; width:100%; }
@@ -1557,3 +1539,9 @@ body:has(#toast:not([hidden])) .hint {
   /* The portrait action row is hidden in landscape; keep header action icons. */
   .top-actions .desktop-only { display:inline-flex; }
 }
+
+@media (max-width:360px) and (orientation:portrait) {
+  .playback { top:auto; bottom:calc(40dvh + 8px); }
+}
+.menu-link { gap:12px; }
+.menu-link>svg:last-child { margin-left:auto; }

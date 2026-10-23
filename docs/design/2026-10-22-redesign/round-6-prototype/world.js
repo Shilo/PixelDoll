@@ -1,4 +1,5 @@
 import { THEMES, REFLECTION, MOTION } from './config.js';
+import { stageLayout } from './stage-layout.mjs';
 const vertex = `#version 300 es
 in vec2 p;void main(){gl_Position=vec4(p,0,1);}`;
 const fragment = `#version 300 es
@@ -50,11 +51,11 @@ export class World {
         await Promise.all(Object.values(t.backgrounds).map(url => this.load(url))); }
     layout(state) {
         const w = innerWidth, h = innerHeight, mobile = w <= 760, short = h <= 540 && w >= h;
-        const panel = mobile ? 0 : Math.min(470, w * .29), x = mobile ? w * .5 : (w - panel) * .55;
+        const { width: stageWidth, center: x } = stageLayout();
         const studio = state.screen === 'studio';
         const y = mobile ? (short ? h * .65 : h * (studio ? .52 : .575)) : h * (studio ? .755 : .77);
-        const scale = Math.max(2, Math.floor(Math.min(mobile ? w / (studio ? 110 : 100) : (w - panel) / 130, h * (mobile ? (studio ? .24 : .26) : (studio ? .40 : .43)) / 50)));
-        return { w, h, mobile, x, y, scale };
+        const scale = Math.max(2, Math.floor(Math.min(mobile ? stageWidth / (studio ? 110 : 100) : stageWidth / 130, h * (mobile ? (studio ? .24 : .26) : (studio ? .40 : .43)) / 50)));
+        return { w, h, mobile, x, y, scale, stageWidth };
     }
     projection(state, camera) { const l = this.layout(state), side = state.view === 'side'; const horizon = side ? l.y - l.h * .13 : -l.h * .40, focal = l.h * 1.1, height = side ? 95 : 600, depth = focal * height / (l.y - horizon); return { ...l, horizon, focal, height, depth, camera }; }
     point(x, y, p) { const z = p.depth + y - p.camera.y; return { x: p.x + (x - p.camera.x) * p.focal / z, y: p.horizon + p.focal * p.height / z }; }
@@ -182,7 +183,7 @@ export class World {
                 const ix = (selected + offset + n) % n;
                 if (n === 2 && offset === 1)
                     continue;
-                const c = characters[ix], sc = smaller ? Math.max(2, Math.round(l.scale * .56)) : l.scale, xx = l.x + offset * (l.mobile ? l.w * .32 : l.w * .19), yy = l.y - (smaller ? 30 : 0);
+                const c = characters[ix], sc = smaller ? Math.max(2, Math.round(l.scale * .56)) : l.scale, xx = l.x + offset * (l.stageWidth * (l.mobile ? .32 : .25)), yy = l.y - (smaller ? 30 : 0);
                 const spr = demo.sprite(c.items, 'walk', 'south', 0);
                 const r = this.drawSprite(spr.canvas, xx, yy, sc, REFLECTION.selection);
                 this.hitAreas.push({ ...r, index: ix });
