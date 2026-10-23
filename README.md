@@ -12,7 +12,7 @@ with PixelLab AI and export them to any game engine. · [Open PixelDoll](https:/
 </p>
 
 Paperdolling for [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armour, hair and weapons as
-**separate frame-aligned layers**, recolour them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser** or any
+**separate frame-aligned layers**, recolour them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser, GDevelop** or any
 engine (PNG + JSON). Every generated pixel comes from PixelLab; PixelDoll turns PixelLab's one-image-per-call output into a
 consistent, layered, slot-based paperdoll: one base body, N directions, M moves, and a transparent layer per item on the same
 grid and pivot.
@@ -92,8 +92,9 @@ Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a se
 
 ## Export targets
 
-The Studio's **Export** sheet builds one zip per engine, on your device, for free. Each zip contains `README.txt` (quick start),
-`manifest.json` ([spec](docs/manifest-spec.md)), `CREDITS.csv` (PixelLab provenance), `layers/` (one sheet per item layer and
+The Studio's **Export** sheet groups **Engines & frameworks** separately from **Asset formats**, and builds one zip per selected
+target, on your device, for free. Each zip contains `README.txt` (quick start), `manifest.json` ([spec](docs/manifest-spec.md)),
+`CREDITS.txt` (CSV text with PixelLab provenance), `layers/` (one sheet per item layer and
 move; rows = directions, columns = frames) and, optionally, `baked/` (finished characters per outfit).
 
 | Target | In the zip | Import |
@@ -101,7 +102,13 @@ move; rows = directions, columns = frames) and, optionally, `baked/` (finished c
 | Godot 4 | `godot/Paperdoll.tscn`, `.gd`, SpriteFrames `.tres` | Copy the folder into the project, instance `godot/Paperdoll.tscn`; `play_anim(anim, dir)`, `equip(slot, item_id)`. See `godot/README.txt`. |
 | Unity 6 | Editor importer + `unity/pixeldoll_unity.json` | Copy under `Assets/`; the importer builds sliced sheets, clips, a controller and a prefab in `unity/Generated/`. See `unity/README.txt`. |
 | Phaser 3.80+ / 4 | `phaser/PaperdollContainer.js` + TexturePacker-hash atlases | Copy into your assets, `loadPaperdoll(scene, dir)` then `new Paperdoll(...)`; serve over http. See `phaser/README.txt`. |
+| GDevelop | `gdevelop/game.json`, registered Sprite frames and an embedded controller event | Open the native project and Preview, or copy its Sprite objects and controller event into an existing project. See `gdevelop/README.txt`. |
+| Aseprite | Layered `.aseprite` file, animation tags and pivot slice | Open in Aseprite 1.3+; colours and visibility match the exported current look. |
 | PNG + JSON | `generic/` strips per layer, move and direction | Any engine: one sprite per layer, same grid and pivot, one clock. See `generic/README.txt`. |
+
+GameMaker is deferred by user decision until a modern runtime is available for native compile/render verification.
+Unreal support is possible through Paper2D plus a dedicated importer/component, but is not currently implemented.
+See the [native export decisions](docs/research/native-export-expansion-2026-10-23.md).
 
 Use nearest-neighbour filtering and whole-pixel positions in every engine.
 

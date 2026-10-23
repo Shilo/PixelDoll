@@ -219,7 +219,7 @@ export interface Preset {
 export interface ExportInfo {
   exportedAt: string;
   layout: 'pixeldoll-sheets/1';
-  engines: ('generic' | 'godot' | 'unity' | 'phaser' | 'aseprite')[];
+  engines: ('generic' | 'godot' | 'unity' | 'phaser' | 'gdevelop' | 'aseprite')[];
   pixelsPerUnit: number;                  // Unity; default = rig.cell.w
   baked?: string[];                       // preset ids with baked composites
   bakedCell?: { w: number; h: number };   // v1.3.1: cell of every baked sheet = union of all exported layers around the pivot
@@ -425,6 +425,7 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
   godot/      <item>_<layer>.tres, library.tres, Paperdoll.tscn, paperdoll.gd
   unity/      Editor/PixelDollImporter.cs, Runtime/Paperdoll.cs, Editor/Runtime asmdefs
   phaser/     <length>-<item>_<length>-<layer>_<length>-<anim>.json, PaperdollContainer.js
+  gdevelop/   game.json, Paperdoll.js, images/<registered-frame>.png
   generic/    <item>_<layer>/<anim>_<dir>_strip<N>.png
   aseprite/   <name>.aseprite, README.txt          # B11: layered, zero-code path (§6.5)
 ```
@@ -546,6 +547,21 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   canonical sheets; palette-aware integrations start from `sourceSheets` when provided.
 - `baked/<preset>/<anim>.png`: the compositor's output on the same grid with `export.bakedCell` / `bakedPivot` (§2.1), for
   engines without layering (RPG Maker style).
+
+### 6.7 GDevelop — editable native project and Sprite controller
+
+- `gdevelop/game.json` is a native GDevelop project. Every equipment layer is a registered Sprite object, with individual
+  untrimmed PNG resources for every source cell and direction. Native `originPoint` uses the layer pivot. All resources,
+  including unequipped items, are registered so the editor's exporter retains them.
+- A native JavaScript event embeds manifest data and drives a single millisecond clock per doll. It resolves playlist
+  holds, non-looping endings, hides, tucked variants and per-cell z overrides, with stable slot/role ties. Equipment and
+  presets are independent across doll instances. Palette textures use exact owner-local source RGB ramps and are released
+  on destruction or scene unload. `Paperdoll.js` is a readable copy of the event, not an additional script to execute.
+- Open the project to Preview. To integrate, copy its Sprite objects and controller event into a destination scene and
+  preserve resource paths; see the generated README for the character-specific library key and API.
+- Verified with GDevelop 5.6.285's released editor-core WASM importer, official HTML exporter and shipped GDJS/PIXI runtime
+  in Chromium. The portable desktop executable could not launch here because of a crashpad error; desktop UI was not
+  exercised. `app/scripts/verify-gdevelop-engine.mjs` reproduces the engine-core/export/runtime checks using a local release.
 
 ## 7. Editable import copy
 

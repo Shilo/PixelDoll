@@ -9,6 +9,7 @@ import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from 
 import { godotFiles } from './godot.ts';
 import { phaserFiles } from './phaser.ts';
 import { unityFiles } from './unity.ts';
+import { gdevelopFiles } from './gdevelop.ts';
 import { projectEntries, type ImportedCharacter } from '../store/import.ts';
 
 export interface ExportOptions { engines: Engine[]; baked: boolean; pixelsPerUnit?: number; exportedAt?: string; projectData?: ImportedCharacter['extra'] }
@@ -31,6 +32,13 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
   if (o.engines.includes('godot')) files.push(...godotFiles(m));
   if (o.engines.includes('phaser')) files.push(...phaserFiles(m));
   if (o.engines.includes('unity')) files.push(...unityFiles(m));
+  if (o.engines.includes('gdevelop')) {
+    try { files.push(...gdevelopFiles(m, sheets)); }
+    catch (error) {
+      if (!(error instanceof Error) || !error.message.startsWith('GDevelop: ')) throw error;
+      return { entries: [], warnings, errors: [error.message] };
+    }
+  }
   if (o.engines.includes('aseprite')) {
     try { files.push(...await asepriteFiles(m, sheets)); }
     catch (error) {

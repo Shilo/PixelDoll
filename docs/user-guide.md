@@ -184,14 +184,20 @@ Moves are added to your own characters (not the demo).
 
 ## Export
 
-Press **Export** (toolbar), choose **For which engine?**: Godot, Unity, Phaser, Aseprite or PNG + JSON, and download the zip. Export is
+Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines & frameworks** lists Godot, Unity,
+Phaser and GDevelop; **Asset formats** lists Aseprite and PNG + JSON. Export is
 free and runs on your device. Tick **Also export finished characters** to also get one ready-made sheet per outfit.
 
 Each zip has a `README.txt` with a quick start for that engine. Copy the whole folder into your project.
 
 Godot includes a native scene, animation resources and an equipment runtime. Unity includes an Editor importer that creates
 a layered prefab, sliced sprites and animation assets; follow its package requirements before importing. Phaser includes
-native atlas data and a Container runtime. These integrations keep the layers synchronized and expose equipment and outfit controls.
+native atlas data and a Container runtime. GDevelop includes an editable project with registered Sprite frames and an embedded
+controller event: open `gdevelop/game.json` and Preview, or follow its README to copy the objects and event into your project.
+These integrations keep the layers synchronized and expose equipment and outfit controls.
+
+The selected format's description stays visible; hover a card for more detail. Arrow keys move between native radio choices.
+GameMaker is deferred until native runtime verification is available. Unreal is not currently an export option.
 
 Use Aseprite for an editable layered animation, or PNG + JSON for other engines and custom runtimes such as MonoGame.
 The JSON records each layer's size and pivot, frame timing, direction order and equipment rules. Your integration must read

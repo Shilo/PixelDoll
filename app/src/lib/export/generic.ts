@@ -136,6 +136,7 @@ const ENGINE_START: Record<string, string> = {
   godot: 'Godot 4: copy this folder into your project and instance godot/Paperdoll.tscn (see godot/README.txt).',
   unity: 'Unity 6: copy this folder under Assets/; the importer builds a prefab in unity/Generated/ (see unity/README.txt).',
   phaser: 'Phaser 3.80+ / 4: copy this folder into your assets and use phaser/PaperdollContainer.js (see phaser/README.txt).',
+  gdevelop: 'GDevelop: open gdevelop/game.json for an editable Sprite project with a paperdoll controller (see gdevelop/README.txt).',
   aseprite: 'Aseprite 1.3+ / zero code: open aseprite/<name>.aseprite, one layer per item (see aseprite/README.txt).',
   generic: 'Any engine: one PNG strip per layer, move and direction in generic/ (see generic/README.txt).',
 };

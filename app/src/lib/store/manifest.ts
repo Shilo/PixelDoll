@@ -129,7 +129,7 @@ export interface Preset {
   items: Record<string, string | null>; // slot -> item id
   variants: Record<string, string>;
 }
-export type Engine = 'generic' | 'godot' | 'unity' | 'phaser' | 'aseprite';
+export type Engine = 'generic' | 'godot' | 'unity' | 'phaser' | 'gdevelop' | 'aseprite';
 export interface ExportInfo {
   exportedAt: string;
   layout: 'pixeldoll-sheets/1';

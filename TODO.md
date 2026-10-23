@@ -61,6 +61,12 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
       CI guard on the precache list
 
 ## Deferred (user)
+- [ ] **Native GameMaker export (2026-10-23).** Deferred because the user will not install the runtime needed for actual
+      engine verification. Do not advertise a GameMaker target based on PNG strips or ProjectTool validation alone.
+      Future scope: native `.yyp`/`.yy` resources or `.yymps`, reusable GML paperdoll runtime, sprite origins, shared timing,
+      equipment/hides/tucking/z order and exact owner-local palettes. Acceptance requires Igor compile/run and rendered
+      alignment/timing/outfit assertions. Official IDE 2026.0.0.16 / ProjectTool 2024.14.165 were inspected; matching runtime
+      2026.0.0.23 is absent. See [native export expansion](docs/research/native-export-expansion-2026-10-23.md).
 - [ ] PWA and final-origin decision (custom domain vs shilo.github.io/PixelDoll/); retain the plan above for later
 - [ ] Theming support (token-based themes switchable at runtime)
 - [ ] "Paper" theme inspired by look D: modern, clean, paper-like surfaces; may be playful but must read as paper (brand)
