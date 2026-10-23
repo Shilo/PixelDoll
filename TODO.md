@@ -18,6 +18,9 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
       (verified locally: a wrong queue expectation then fails on dev while production still passes).
 6. [ ] Test hardening (low, same audit): the B17 agent-mode branch in `studio.spec.ts` is dead under `agentKey='off'`
       (add `blockApi(c)`; delete or document the branch); pin the self-test group names so a deleted group fails.
+7. [ ] Shared equipment fitting: improve the experimental headwear route and qualify broader support only with
+      evidence. See [shared equipment remaining work](#shared-equipment-remaining-work); free compatible copying and
+      the reviewed headwear trial are already implemented.
 
 Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio regression
 in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
@@ -26,8 +29,11 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
 - [!] **Key safety on a shared origin.** All `*.github.io/<repo>` sites of one account share an origin, so another of your
   Pages sites could read a remembered key (localStorage/IndexedDB). Mitigated: key is memory-only by default, never sent
   over BroadcastChannel, Connect warns on `*.github.io`. Fix: serve from a custom domain. (R6 P1-4, B13)
-- [!] **PixelLab credits.** Balance ≈212 gens (2026-10-22), after the 99-generation shield test. A full 4-dir character
-  ≈35–50 gens, an item ≈28–50 gens, a move ≈11 + items. Paid POSTs are never auto-resent; failed ones show as "lost".
+- [!] **PixelLab credits and dollar billing.** The earlier ≈212-gen balance was a historical snapshot before later live
+  work, not a current balance. Fitting records both reported generations and USD, including rejected attempts and explicit
+  retries. A generation estimate is not a dollar spending cap. Three Cast body joint-measurement outcomes remain unknown;
+  do not infer their charges from the shared account balance or resend their paid requests. See the
+  [shared-equipment ledger and evidence](docs/testing/shared-equipment-2026-10-22.md).
 - [!] **Shield east walks remain unresolved.** The offline body-occlusion audit converts five of seven hard flags to
   explicit review warnings. The 4-direction east walk still fails G5 (area CV 0.284 > 0.186), and the 8-direction east
   walk still fails G9 (68° against the forearm). Hidden shape cannot be verified from a composite; warnings do not mean
@@ -48,6 +54,61 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
 - [!] **Releasing.** Bump `app/package.json` version, annotated tag `vX.Y.Z`, `gh release create`; CI deploys `main`.
 - [!] **PixelLab API drift.** Template list, prices and Pro/Pro Flash behaviour change; the OpenAPI snapshot in
   `docs/research/pixellab/` is from 2026-10-20.
+
+## Shared equipment remaining work
+
+This is the canonical shared-system backlog, updated 2026-10-22. The [plan](docs/research/shared-equipment-fitted-copies-plan.md)
+contains the original design and qualification proposals; the [verification report](docs/testing/shared-equipment-2026-10-22.md)
+records what actually passed and failed. Items below distinguish missing capabilities from validation gaps.
+
+### Current limits and priorities
+
+- [ ] **SE1 — Improve headwear motion reliability (confirmed failed output).** The live Hurt extension produced visible
+  helmet deformations on two cells; one explicitly paid retry still failed H4. Both attempts remain unaccepted.
+  Investigate the source/target standing references and pose route using the saved evidence before further paid trials.
+  A fix must preserve the design through the problematic poses and pass the existing hard gates and enlarged visual
+  review. Do not loosen thresholds, conceal defects as occlusion, or add an automatic paid fallback.
+- [ ] **SE2 — Qualify more source/target and motion combinations (validation gap).** Successful four-direction idle/walk
+  fitting and one-direction Cast extension do not establish universal headwear compatibility. Add representative
+  different head/body proportions, palettes and styles; include overhead arms, Hurt/death, occlusion, eight directions
+  and independently generated west views. Extend regression fixtures with representative non-secret accepted/rejected
+  evidence: current live artwork/contact sheets are ignored local files, not a committed reproducible test corpus.
+  Record per-case calls, actual charges, raw pixels, checks and visual decisions before widening the supported claim.
+- [ ] **SE3 — Add further paid fitting classes individually (not implemented).** Hair, face/body/leg/foot equipment,
+  capes/back layers, held weapons/shields, multiple material roles and 96 px/split layers need their own validated routes.
+  Test pivots, grip/handedness, front/back occlusion, palette-role mapping and independent recolouring. Other camera,
+  template and cell-geometry profiles also need explicit qualification. Keep these cross-body paid routes disabled until
+  their preflight, cost/review flow, extraction, quality gates and export round trip are demonstrated. Compatible free
+  copies for supported layer contracts already work; this is not a request to regenerate those frames.
+- [ ] **SE4 — Provide a reviewed recovery path for missing equipment references (not implemented).** Old imports may have
+  wearable frames but no original dressed standing references; body rig setup cannot reconstruct those references.
+  Today they retain old frames and need a remade item for future moves. Design an explicit, priced remake/reference
+  workflow if added; never silently repaint old coverage or treat a composite containing unrelated gear as a clean
+  reference. Incomplete body views remain a separate character setup/import limitation. Arbitrary PNG-folder/spritesheet
+  ZIPs would require a user-confirmed layout mapper; they are not currently supported character import formats.
+- [ ] **SE5 — Reconcile unknown paid outcomes where evidence permits (unresolved billing).** Investigate the three Cast
+  joint-measurement submissions through existing API/account evidence if available. Record final usage only when
+  confirmed; leave genuinely unrecoverable outcomes explicitly unknown. Keep their existing no-resend protection.
+  A trustworthy USD preflight/cap would require reliable provider pricing/usage support; the current generation estimate
+  must continue to be labelled as an estimate, with actual USD retained across failure, reload and manual retry.
+- [ ] **SE6 — Exercise shared-copy exports in engines (validation gap).** All five export formats were generated and
+  round-tripped offline; actual Godot ZIPs were independently inspected and reimported in the normal browser. That is
+  not a new shared-copy runtime test in each engine. Verify independent palettes/default colourways, source-sheet use,
+  sparse coverage warnings and subsequent moves in Godot, Phaser and Aseprite; Unity still needs the live verification
+  listed above. Add oversize/multi-role cases when those paid routes are qualified, rather than claiming them now.
+
+### Guardrails for follow-up work
+
+Already implemented and to preserve: immutable pinned design snapshots; safe source/library deletion; independent
+target materials/outfits; exact per-cell pixel/geometry proof for free copying; reuse of approved target rest references;
+generation of only missing cells; palette normalization before fit planning; durable review and atomic wardrobe publication;
+honest incomplete-measurement/provenance labels; and no automatic resubmission of uncertain paid requests.
+
+"Shared" means this browser origin's local library plus portable design ZIPs. Character ZIPs carry their kept copies and
+references; neither backup provides account/cloud sync. Clearing browser storage can lose unexported work. Cloud sync,
+a public gallery and universal automatic retargeting are outside the implemented scope, not prerequisites for this feature.
+Physical-device testing remains out of scope as noted above. Existing offline-queue coverage gaps in Next up remain open
+despite the shared-equipment test suite passing.
 
 ## PWA (deferred by user, 2026-10-22 — PLAN.md "PWA")
 - [ ] Final origin decided first (custom domain vs shilo.github.io/PixelDoll/)
@@ -70,6 +131,11 @@ Paperdoll output must be accurate, consistent, high quality, using proper PixelL
 proper post-processing and proper layering — frontier-standard paperdolling workflow.
 
 ## Done
+
+- [x] Shared design library and portable archives, free exact/partial copies, independent palettes and reviewed
+      experimental headwear fitting; durable retries/charges and missing-move extension. Real PixelLab helmet → imported
+      Ranger → rig → fit/recolour → Cast → export/reimport passed; rejected Hurt output remains blocked. Independent
+      adversarial review and automated checks are recorded in [the report](docs/testing/shared-equipment-2026-10-22.md).
 - [x] Replaceable move/direction QA summaries, accepted-exception handling, complete-frame guards, real IndexedDB/ZIP
       browser regression and Codex browser inspection; adversarial review findings independently verified and fixed.
       Both CI jobs pinned to `ubuntu-24.04`. See `docs/testing/qa-summaries-2026-10-22.md`.

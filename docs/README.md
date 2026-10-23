@@ -15,7 +15,7 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 | Doc | What |
 |---|---|
 | [architecture.md](architecture.md) | v1.3: allowed models (D8), rig contract, item pipeline (chroma mannequin + skeleton-posed keyframe, 96 px held items), slots and z ladder, colour model, queue/storage/key, cost model, risks. |
-| [manifest-spec.md](manifest-spec.md) | `pixeldoll/1` manifest v1.3.1: TypeScript types, invariants checked before export, example, zip layout, per-engine mapping. |
+| [manifest-spec.md](manifest-spec.md) | `pixeldoll/2` manifest with legacy `pixeldoll/1` reading: owner-local palettes, shared-copy lineage, source sheets, invariants, ZIP layout and per-engine mapping. |
 | [user-guide.md](user-guide.md) | The Studio in plain language. |
 
 ## Research (R1–R5, 2026-10-20)
@@ -32,6 +32,9 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 | [SHARED_NOTES.md](research/SHARED_NOTES.md) | Append-only cross-agent findings. |
 | [pixellab-openapi-v2.json](research/pixellab/pixellab-openapi-v2.json) | PixelLab REST v2 OpenAPI snapshot (102 paths). |
 | [Shared equipment designs with fitted copies](research/shared-equipment-fitted-copies-plan.md) | Agreed design and qualification plan; implemented local library, exact reuse and independent fitted copies. Paid fitting starts with an experimental single-material headwear route. |
+
+Shared-system limits and follow-up tasks live in [TODO — Shared equipment remaining work](../TODO.md#shared-equipment-remaining-work).
+The research plan is broader than the delivered paid trial; the verification report records both accepted and rejected live results.
 
 Older inputs, kept for history:
 

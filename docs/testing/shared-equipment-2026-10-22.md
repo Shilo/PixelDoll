@@ -62,6 +62,24 @@ The final ZIP was reimported through the normal keyless Studio as **Shared equip
 
 The verified character remains open in the normal app. Temporary documentation/agent tabs and the owned localhost agent server were closed after all live work finished; the human development server was left running.
 
+## Remaining concerns and follow-up
+
+The canonical action list is [TODO — Shared equipment remaining work](../../TODO.md#shared-equipment-remaining-work).
+This report records a completed implementation/verification checkpoint, not completion of the broader fitting plan.
+
+- **Confirmed quality failure:** Hurt helmet deformation persisted through an explicit retry; it remains blocked.
+  Cast passed with a retained occlusion warning. Neither result justifies weakening the hard gates.
+- **Limited paid scope:** only the experimental single-material, foreground headwear route on qualified 64 px
+  low top-down rigs is enabled. Other item classes, material-role combinations, oversize/custom profiles and a broader
+  body/style/motion matrix still need qualification. Compatible free copying is already available.
+- **Legacy references:** old equipment without dressed standing references keeps its existing frames but cannot
+  automatically follow new moves. A reviewed remake/reference recovery flow has not been implemented.
+- **Billing uncertainty:** three Cast body joint-measurement outcomes remain unknown. Known generations and USD
+  are retained; generation allowances are not dollar caps, and uncertain paid requests must not be resent.
+- **Evidence and export limits:** live media remain ignored machine-local evidence; representative regression
+  fixtures need preserving for repeatable wider qualification. Artifact generation and browser reimport do not establish
+  execution of shared-copy palettes/moves in every engine. Existing offline-queue coverage gaps in TODO also remain open.
+
 ## Automated verification
 
 - Exact pinned toolchain: Node 24.22.1, npm 11.19.1, committed dependencies/lockfile.
