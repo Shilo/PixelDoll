@@ -62,14 +62,16 @@ export interface ClipQa { adherence: number | null; feetDrift: number; paletteFi
 /** Freeze gate (architecture §3.2) for one clip-direction: requested vs re-estimated arms, feet, palette, cell border. */
 export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: Keypoint[][]; measured: (Keypoint[] | undefined)[]; stray: number }): ClipQa {
   const cell = { w: o.rest.w, h: o.rest.h };
-  const adh = o.requested ? adherence(o.requested.map((k) => fromApi(k, cell)), o.measured.map((k) => k && fromApi(k, cell))) : null;
+  const complete = o.frames.length > 0 && o.measured.length === o.frames.length && o.measured.every(k => hasAll(k));
+  const countMatches = !o.requested || o.requested.length === o.frames.length;
+  const adh = o.requested && complete && countMatches ? adherence(o.requested.map((k) => fromApi(k, cell)), o.measured.map((k) => k && fromApi(k, cell))) : null;
   const feet = Math.max(0, ...o.frames.map((f) => Math.abs(feetY(f) - feetY(o.rest))));
   const fit = paletteFit(o.rest, o.frames), border = o.frames.reduce((s, f) => s + borderPx(f), 0);
   const maxAdh = /death|fall/.test(o.anim) ? RIG_GATES.adherenceLying : RIG_GATES.adherence;
   const fails = [
     (!o.frames.length || o.frames.some(f => !opaqueBox(f))) && 'empty animation frame',
-    (o.measured.length !== o.frames.length || o.measured.some(k => !hasAll(k))) && 'missing or invalid frame joints',
-    o.requested && o.requested.length !== o.frames.length && 'requested pose count does not match frames',
+    !complete && 'missing or invalid frame joints',
+    !countMatches && 'requested pose count does not match frames',
     adh !== null && adh > maxAdh && `arms ${adh.toFixed(1)} px off the requested pose`,
     standing(o.anim) && feet > RIG_GATES.feetDrift && `feet drift ${feet} px`,
     fit < RIG_GATES.paletteFit && `palette fit ${fit.toFixed(3)}`,

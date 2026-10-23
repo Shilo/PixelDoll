@@ -47,16 +47,24 @@ test('complete measurements of every nonempty frame pass the observation gate', 
 test('one unmeasured output frame fails even when the other frames exactly match their requested poses', () => {
   const rest = frame(), requested = [points(), points(), points()]
   const result = clipQa({ anim: 'walk', rest, frames: [rest, rest, rest], requested, measured: [points(), undefined, points()], stray: 0 })
-  // The old mean still reads zero for available arms; completeness must fail separately.
-  expect(result.adherence).toBe(0)
+  // A mean over only the available arms must not masquerade as complete pose adherence.
+  expect(result.adherence).toBeNull()
   expect(result.fails).toContain('missing or invalid frame joints')
+})
+
+test('entirely missing measurements are unscorable rather than infinite pose error', () => {
+  const rest = frame(), requested = [points(), points(), points()]
+  const result = clipQa({ anim: 'walk', rest, frames: [rest, rest, rest], requested, measured: [undefined, undefined, undefined], stray: 0 })
+  expect(result.adherence).toBeNull()
+  expect(result.fails).toContain('missing or invalid frame joints')
+  expect(result.fails.some(failure => failure.includes('Infinity'))).toBe(false)
 })
 
 test('missing leg joints and out-of-range measurements fail independently of arm adherence', () => {
   const rest = frame(), requested = [points()]
   for (const measured of [points().filter(point => point.label !== 'LEFT LEG'), points().map(point => point.label === 'LEFT LEG' ? { ...point, y: 1.01 } : point)]) {
     const result = clipQa({ anim: 'walk', rest, frames: [rest], requested, measured: [measured], stray: 0 })
-    expect(result.adherence).toBe(0)
+    expect(result.adherence).toBeNull()
     expect(result.fails).toContain('missing or invalid frame joints')
   }
 })
@@ -64,12 +72,14 @@ test('missing leg joints and out-of-range measurements fail independently of arm
 test.each([2, 4])('a measurement count of %i cannot validate three output frames', count => {
   const rest = frame(), requested = [points(), points(), points()]
   const result = clipQa({ anim: 'walk', rest, frames: [rest, rest, rest], requested, measured: Array.from({ length: count }, points), stray: 0 })
+  expect(result.adherence).toBeNull()
   expect(result.fails).toContain('missing or invalid frame joints')
 })
 
 test.each([0, 2, 4])('a requested pose count of %i cannot validate three output frames', count => {
   const rest = frame(), measured = [points(), points(), points()]
   const result = clipQa({ anim: 'walk', rest, frames: [rest, rest, rest], requested: Array.from({ length: count }, points), measured, stray: 0 })
+  expect(result.adherence).toBeNull()
   expect(result.fails).toContain('requested pose count does not match frames')
 })
 
