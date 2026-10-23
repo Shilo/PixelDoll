@@ -224,6 +224,31 @@ test('Appearance enhancement sends all selected hints and keeps them linked with
   expect(await page.evaluate(() => sessionStorage.getItem('creator-copy'))).toBe(before)
 })
 
+test('Appearance enhancement cannot clear selected hints with repeated clauses or erase details with an empty rewrite', async ({ page, context }) => {
+  const api = new CharacterApi()
+  let response = 'Sharper ears\nKind: Human\nKind: Orc\nBuild: Rounded'
+  await context.route('https://*.pixellab.ai/**', async route => {
+    const req = route.request()
+    if (new URL(req.url()).pathname === '/v2/enhance-character-v3-prompt') await route.fulfill({ json: { enhanced_prompt: response, usage: { type: 'generations', generations: .05 } } })
+    else await fulfill(route, await api.handle(req.method(), req.url(), req.postDataJSON()))
+  })
+  const sheet = await open(page)
+  await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('Pointed ears')
+  await sheet.getByRole('combobox', { name: 'Kind', exact: true }).selectOption('Elf')
+  await sheet.getByRole('combobox', { name: 'Build', exact: true }).selectOption('Broad')
+  await sheet.getByRole('button', { name: 'Enhance', exact: true }).click(); await connect(page)
+  await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible()
+  await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue('Sharper ears')
+  await expect(sheet.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('Elf')
+  await expect(sheet.getByRole('combobox', { name: 'Build', exact: true })).toHaveValue('Broad')
+  await sheet.getByRole('button', { name: 'Undo', exact: true }).click()
+  response = 'Kind: Orc\nBuild: Rounded'
+  await sheet.getByRole('button', { name: 'Enhance', exact: true }).click()
+  await expect(sheet.getByRole('status')).toContainText('Your text was kept')
+  await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue('Pointed ears')
+  await expect(sheet.getByRole('combobox', { name: 'Kind', exact: true })).toHaveValue('Elf')
+})
+
 test('late enhancement cannot overwrite edits or reopen a closed form', async ({ page, context }) => {
   const api = new CharacterApi()
   await context.route('https://*.pixellab.ai/**', async route => { const req = route.request(), response = await api.handle(req.method(), req.url(), req.postDataJSON()); await fulfill(route, response).catch(() => {}) })

@@ -27,8 +27,8 @@
   const editorHelpText = $derived(d.tab === 'appearance'
     ? 'Describe distinctive features, then choose appearance hints below. These choices build the linked prompt. Hair, clothes and gear are added later.'
     : 'This exact text is sent to V3. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; prose is never guessed as a trait.')
-  const enhanceInput = (_target: 'details' | 'prompt') => ({ description: d.prompt, image_size: { width: d.body || 0, height: d.body || 0 }, view: d.view })
-  const canEnhance = (target: 'details' | 'prompt') => !busy && !!(target === 'details' ? d.details : d.prompt).trim() && Number.isInteger(d.body) && d.body! >= 32 && d.body! <= 256 && enhanceInput(target).description.length <= 2000
+  const enhanceInput = () => ({ description: d.prompt, image_size: { width: d.body || 0, height: d.body || 0 }, view: d.view })
+  const canEnhance = (target: 'details' | 'prompt') => !busy && !!(target === 'details' ? d.details : d.prompt).trim() && Number.isInteger(d.body) && d.body! >= 32 && d.body! <= 256 && enhanceInput().description.length <= 2000
   const canUndo = (target: 'details' | 'prompt') => undo?.target === target && undo.after === d.prompt
   function edited() { undo = null; message = ''; copied = null }
   function details(value: string) { edited(); writeDetails(d, value) }
@@ -44,10 +44,11 @@
     catch { if (target === 'prompt') d.tab = 'prompt'; message = 'Select the text to copy it.' }
   }
   async function enhance(target: 'details' | 'prompt') {
+    copied = null
     if (canUndo(target)) { readPrompt(d, undo!.before); undo = null; message = ''; return }
     if (!canEnhance(target)) return
     if (!app.key) { onconnect(target); return }
-    const input = enhanceInput(target), before = d.prompt
+    const input = enhanceInput(), before = d.prompt
     abort = new AbortController(); busy = true; message = ''
     try {
       const enhanced = await enhanceCharacter(app.key, input, abort.signal, scope)
@@ -57,6 +58,8 @@
       else {
         // The enhancer sees the whole appearance. Its prose improves Details; selected hints remain authoritative.
         const parsed = { ...d }; readPrompt(parsed, enhanced)
+        for (const key of TRAIT_KEYS) writeTrait(parsed, key, UNSET)
+        if (!parsed.details.trim()) { message = 'PixelLab returned no details. Your text was kept.'; return }
         const candidate = { ...d }; writeDetails(candidate, parsed.details)
         if (candidate.prompt.length > 2000) { message = 'The enhanced text is too long. Your text was kept.'; return }
         writeDetails(d, parsed.details)
@@ -85,7 +88,7 @@
       </div>
       <span class="prompt-actions">
         <Help bind:this={editorHelp} iconOnly tooltipId={editorHelpId} title={d.tab === 'appearance' ? 'Appearance help' : 'Prompt help'} text={editorHelpText} />
-        <ApiPeek scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'} label={d.tab === 'appearance' ? 'Enhance details' : 'Enhance exact prompt'} plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput(enhanceTarget)), label: d.tab === 'appearance' ? 'Enhance character details' : 'Enhance exact character prompt', generations: 0.05 }]} activityScope={scope} />
+        <ApiPeek scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'} label={d.tab === 'appearance' ? 'Enhance details' : 'Enhance exact prompt'} plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput()), label: d.tab === 'appearance' ? 'Enhance character details' : 'Enhance exact character prompt', generations: 0.05 }]} activityScope={scope} />
         <button class="btn icon copy" aria-label={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'} title={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'} onclick={() => copy(enhanceTarget)}>{#if copied === enhanceTarget}<Check size={14} />{:else}<Copy size={14} />{/if}</button>
         <button class="btn small enhance" aria-label={canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'} aria-busy={busy} title={canUndo(enhanceTarget) ? 'Restore the previous prompt' : 'Enhance with V3 (~0.05 gens)'} disabled={busy || (!canUndo(enhanceTarget) && !canEnhance(enhanceTarget))} onclick={() => enhance(enhanceTarget)}>
           {#if canUndo(enhanceTarget)}<Undo2 size={13} />{:else}<WandSparkles size={13} />{/if}
