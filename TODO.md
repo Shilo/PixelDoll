@@ -4,6 +4,16 @@ The single list of open work and known concerns. New agents: read `AGENTS.md` fi
 decisions). Done history is at the bottom.
 Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 
+## Assigned audit status
+
+- [x] Professional audit and scoped Slash repair completed in the shared `codex/professional-audit` worktree
+  through `f3faf84`. Includes adversarial team review, implemented fixes, actual artwork repair, visual/functional
+  browser checks, editable ZIP roundtrip and engine verification. All 32 repaired Slash frames were reviewed;
+  467 unit tests and 42 browser tests passed, with strict checks and the production build passing.
+  Evidence and verification limits: [audit report](docs/testing/professional-audit-2026-10-22.md).
+- [x] Free item colour matching completed and verified on the actual repaired project: 475 RGB-only corrections
+  across 17 frames, preserving body/alpha/geometry, existing palettes, saved recolours and review warnings.
+
 ## Next up (in order)
 1. [ ] Shield quality: two east-walk drafts still need visual acceptance or targeted artwork correction. Offline
       occlusion and joint/centroid audits are complete; no safe automatic pixel repair is supported by the evidence
@@ -18,6 +28,15 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
       The earlier full idle+walk creation remains failed on two unknown estimator HTTP500 responses, with no automatic
       resend. Older mirrored attacks still require new body artwork. See the
       [audit report](docs/testing/professional-audit-2026-10-22.md).
+
+
+5. [ ] Complete a fresh independent four-direction idle + walk live validation. The previous full run stopped on
+      two unknown `/estimate-skeleton` HTTP 500 outcomes. Preserve those records and never automatically resend them;
+      distinguish a successful new full creation from the verified idle-only recovery and repaired Slash artifact.
+6. [ ] Broader weapon validation: visually check independently generated eight-direction action clips and off-hand
+      equipment. Existing automated coverage and the verified four-direction main-hand sword do not certify these cases.
+7. [ ] Release integration: review and merge `codex/professional-audit`, run checks on the merged result, then deploy
+      as part of an authorized release. The audit worktree is committed; no push, merge or deployment was performed.
 
 Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio regression
 in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
