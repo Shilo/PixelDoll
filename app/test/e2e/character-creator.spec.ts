@@ -37,6 +37,7 @@ test('all quality notes remain visible and failed clips come first', async ({ pa
     const id = await state.copyDemo()
     const warnings = Array.from({ length: 6 }, (_, i) => `idle/north-east: feet drift ${i + 1} px`)
     warnings.push('walk/west: arms 2.7 px off the requested pose')
+    warnings.push('walk/east: feet drift 2 px from pivot y 123')
     await db.update<import('../../src/lib/store/project.ts').StoredProject>('projects', id, rec => {
       rec!.rigQa = { warnings, clips: { 'walk/west': { fails: ['arms 2.7 px off the requested pose'] } } }; return rec!
     })
@@ -46,10 +47,10 @@ test('all quality notes remain visible and failed clips come first', async ({ pa
   })
   const notes = page.locator('.quality-notes')
   await expect(notes).toHaveAttribute('open', '')
-  await expect(notes.locator('summary')).toHaveText('7 quality notes')
-  await expect(notes.locator('li')).toHaveCount(7)
+  await expect(notes.locator('summary')).toHaveText('8 quality notes')
+  await expect(notes.locator('li')).toHaveCount(8)
   await expect(notes.locator('li').first()).toContainText('Walk west: arms 2.7 px')
-  await expect(notes.locator('li').last()).toHaveText('Idle north-east: feet move up to 6 px')
+  await expect(notes.locator('li').last()).toHaveText('Walk east: footprint differs up to 2 px from the shared ground line')
   await notes.locator('summary').click()
   await expect(notes.locator('li').last()).not.toBeVisible()
   await notes.locator('summary').click()
@@ -149,6 +150,22 @@ test('visible size fields, auto frame, preset deselection and preview positions 
   await expect(sheet.getByRole('status')).toContainText('whole pixels')
   await expect(sheet.getByRole('button', { name: 'Create character', exact: true })).toBeDisabled()
   await body.fill('64'); await frame.fill('80'); await expect(sheet.locator('.creator-validation')).toHaveCount(0)
+})
+
+test('appearance tooltips stay next to their trigger and inside the viewport', async ({ page }) => {
+  const sheet = await open(page)
+  for (const name of ['Appearance help', 'Kind']) {
+    const trigger = sheet.getByRole('button', { name, exact: true })
+    await trigger.click()
+    const tip = sheet.getByRole('tooltip')
+    await expect(tip).toBeVisible()
+    const r = (await trigger.boundingBox())!, t = (await tip.boundingBox())!
+    expect(t.x).toBeGreaterThanOrEqual(0)
+    expect(t.x + t.width).toBeLessThanOrEqual(page.viewportSize()!.width)
+    expect(t.y + t.height).toBeLessThanOrEqual(page.viewportSize()!.height)
+    expect(Math.min(Math.abs(t.y - r.y - r.height), Math.abs(r.y - t.y - t.height))).toBeLessThanOrEqual(8)
+    await page.keyboard.press('Escape')
+  }
 })
 
 test('linked prompt is lossless, copy is exact, and keyboard tabs work', async ({ page }) => {

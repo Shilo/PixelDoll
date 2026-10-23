@@ -101,3 +101,26 @@ The reviewer caught and corrected an invalid test-fixture assumption while evalu
 Single-facing battle art is a real use case, but current research does not establish enough demand to add a sixth permanent preset. Side-scroller 2 already uses one unique east source; west is a free mirror. Turning W off obtains east only, with the same paid work. Keep five presets and explain that action in Directions help. If added later, “Single view” describes the behavior accurately.
 
 “RPG Maker” would imply compatibility the preset does not provide: [RPG Maker MZ side-view battlers](https://rpgmakerofficial.com/product/MZ_help-en/01_11_02.html) require a specific 9 × 6 motion layout. Pokémon-style battle systems also commonly use distinct front and back graphics; see the maintained [Pokémon Emerald expansion authoring guide](https://github.com/rh-hideout/pokeemerald-expansion/blob/master/docs/tutorials/how_to_new_pokemon.md).
+
+## Follow-up: offline grounding experiment and full review
+
+No PixelLab requests or credits were used in this follow-up. A new sub-agent reviewed the entire implementation read-only, including creation, enhancement, prompts, mirrors, dimensions, resume behavior, references and export. It did not run tests. Root challenged the findings and tested before editing production code.
+
+- **Accepted and reproduced:** an interrupted paid POST becomes `lost`, but creator stages previously allowed the pipeline to enqueue the same request again. Four pre-fix regressions failed, including the actual initial creation path. Paid creation, registration, motion and rendering now retain uncertain outcomes. Seven final safety regressions pass, including completed-cache reuse, deliberate new-seed rerolls and explicitly retryable free GETs.
+- **Rejected:** the reviewer suspected container-query CSS offset Appearance tooltips. A real browser geometry test of Appearance and Kind passed viewport and trigger-adjacency checks. No tooltip source rewrite was made; the reviewer withdrew the finding.
+- **Accepted and reproduced:** the old freeze note compared every direction and action to one south-facing pivot. Three pre-fix regressions demonstrated that a constant direction offset and a walking stride were both labelled “feet drift.” New notes distinguish a fixed baseline offset, standing movement relative to that direction, and stride/pose footprint variation. Actual clip gates and failure thresholds are unchanged. Legacy shared-pivot notes are displayed as footprint differences, not proven temporal drift.
+
+Saved L04 measurements establish the causes:
+
+| Observation | Measurement | Implication |
+|---|---|---|
+| North idle | All four bottoms are 147; south pivot is 152 | Fixed 5 px baseline offset, zero idle jitter |
+| NE/NW idle | All four bottoms are 149 | Fixed 3 px offsets, zero idle jitter |
+| Walking footprints | Vary within clips; requested ankle poses also move | Bounding-box ground locking would erase stride/perspective motion |
+| West walking arms | Mean disagreement 2.71 px; best integer translation per frame still averages 2.45 px | Translation cannot resolve the 2 px pose gate; rendering and estimator disagreement remain |
+
+The [offline grounding experiment](live-creator-2026-10-23/verify-grounding.mjs) applies constant NE/N/NW shifts of +3/+5/+3 to all 96 saved animation frames. It verifies zero clipped/repainted opaque pixels, preserved stride ranges and in-bounds transformed pose coordinates. Before/after PNGs and numeric results remain outside Git. Run the script with the local evidence directory; it never changes a saved project.
+
+This proves a local baseline correction is possible without generation, not that it is safe to silently modify a frozen/dressed character. A product operation must transform every affected layer, rest reference, pose, skeleton and anchor together, recompute hashes/fit stamps and preserve the relationship to the server-side character. This experiment remains a preview; existing characters and server references are untouched. Moving only keypoint metadata or repainting limbs to make a score pass would conceal uncertainty rather than fix it.
+
+Validation: the full unit run passed 269 cases and exposed one new test-fixture mistake (queue snapshots are copies). After correcting that fixture, the seven-case safety file passed; all 270 unique unit cases are covered by the full and focused runs. The two affected browser checks pass (quality-note presentation and seeded/cached/resumed creation); the separate tooltip geometry check also passes. Type checking has zero errors/warnings; build and secret-dist guard pass. No additional paid test is warranted.

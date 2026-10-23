@@ -4,6 +4,7 @@ import { normalize, opaqueBox, feetY, pivotOf, type Box } from './normalize.ts';
 import { planDirections, flipH, flipX, type DirMode } from './mirror.ts';
 import { ANCHORS, baseHashOf, cellHash, cellKey, defaultMs, playlist, validateRig, type AnchorTrack, type DirectionName, type Rig, type RigAnimation, type RigDirection, type Sha256 } from './rig.ts';
 import { anchorsOf, flipSkeleton, PATCH_R, refineAnchor, type Skeleton } from './skeleton.ts';
+import { standing } from './clips.ts';
 
 export interface SourceAnim { id: string; dirs: Partial<Record<DirectionName, Img[]>>; source?: RigAnimation['source'] }
 export interface Cell { img: Img; hash: Sha256; box: Box | null; mirrorOf?: DirectionName; offset: [number, number] }
@@ -57,11 +58,20 @@ export async function buildRig(anims: SourceAnim[], { size = 64, mode = '4', dir
   if (!directions && pivotFrom && pivotFrom !== 'idle/south/0') warnings.push(`no idle/south/0: pivot taken from ${pivotFrom}`);
   const ref = cells[pivotFrom]?.img;
   const pivot = ref ? pivotOf(ref) : { x: Math.floor(size / 2), y: size };
+  const ground = new Map(dirs.map(d => {
+    const reference = pa && cells[cellKey(pa.id, d.id, 0)]?.img;
+    const y = reference ? feetY(reference) : pivot.y;
+    const delta = y - pivot.y;
+    if (Math.abs(delta) > 1) warnings.push(`${pa.id}/${d.id}: ground line is ${Math.abs(delta)} px ${delta < 0 ? 'above' : 'below'} the shared pivot`);
+    return [d.id, y];
+  }));
   for (const a of animations)
     for (const d of dirs) {
       const cs = Array.from({ length: a.cells }, (_, i) => cells[cellKey(a.id, d.id, i)]).filter(Boolean);
-      const drift = Math.max(0, ...cs.map((c) => Math.abs(feetY(c.img) - pivot.y)));
-      if (drift > 1) warnings.push(`${a.id}/${d.id}: feet drift ${drift} px from pivot y ${pivot.y}`);
+      const drift = Math.max(0, ...cs.map((c) => Math.abs(feetY(c.img) - ground.get(d.id)!)));
+      if (drift > 1) warnings.push(standing(a.id)
+        ? `${a.id}/${d.id}: feet drift ${drift} px from the direction ground line`
+        : `${a.id}/${d.id}: footprint differs up to ${drift} px from the direction ground line (includes ${/walk|run/.test(a.id) ? 'stride' : 'pose'} motion)`);
       const head = Math.min(...cs.map((c) => c.box?.y0 ?? size));
       if (head < HEADROOM_MIN) warnings.push(`${a.id}/${d.id}: headroom ${head} px < ${HEADROOM_MIN} (hats/hair will clip)`);
       if (cs.some((c) => !c.box)) warnings.push(`${a.id}/${d.id}: empty cell`);

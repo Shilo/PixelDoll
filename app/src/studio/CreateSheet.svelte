@@ -62,7 +62,7 @@
     ui.welcome = false
     await openProject(id)
   }
-  const plain = (w: string) => w.replace(/^([^/]+)\/([^:]+): /, (_, clip: string, direction: string) => `${clip[0].toUpperCase() + clip.slice(1)} ${direction}: `).replace(/feet drift (\d+) px.*/, 'feet move up to $1 px').replace(/headroom (\d+) px.*/, 'little room above the head ($1 px): tall hats may be cut off')
+  const plain = (w: string) => w.replace(/^([^/]+)\/([^:]+): /, (_, clip: string, direction: string) => `${clip[0].toUpperCase() + clip.slice(1)} ${direction}: `).replace(/feet drift (\d+) px from pivot y \d+/, 'footprint differs up to $1 px from the shared ground line').replace(/feet drift (\d+) px.*/, 'feet move up to $1 px').replace(/headroom (\d+) px.*/, 'little room above the head ($1 px): tall hats may be cut off')
 </script>
 
 <Sheet title="New character" cancel={running ? 'Hide' : creating.projectId ? 'Close' : 'Cancel'} onclose={() => (ui.sheet = null)} className="character-sheet" wide>
