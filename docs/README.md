@@ -20,6 +20,8 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 
 **Latest material study:** [GlassKit evaluation](design/2026-10-22-redesign/round-6-prototype/glasskit-study.md) records the selective adoption, baseline/rounded comparisons, independent review and accessibility/rendering checks.
 
+**Full-app theme recommendation:** [Theme foundation and component/state catalog](design/2026-10-22-redesign/round-6-prototype/theme-foundation.md), with [independent challenge](design/2026-10-22-redesign/round-6-prototype/theme-foundation-review.md). Recommends owned Bronze tokens/materials and existing native-first Svelte components; fairly evaluates GlassKit CSS/Elements and defines coverage and parity gates. Research only: the approved GlassKit prototype remains unchanged.
+
 **Decision history and palette evidence:** [earlier direction review](design/2026-10-22-redesign/round-4-discussion/README.md), [decision log and corrections](design/2026-10-22-redesign/round-4-discussion/decisions-2026-10-23.md), [Bronze/Frost/Sage studies with exact demo sprites](design/2026-10-22-redesign/round-4-discussion/palette-studies/README.md). Bronze is selected; themes change background/UI only and optional reflection is code-only.
 
 **Current imagery: [round three — immersive HD simulation worlds](design/2026-10-22-redesign/round-3/README.md).** Image-only design: 11 selected screenshots across three world directions, a shared customization/gameplay shell, desktop and phone selection/creation, research and continuous-gameplay requirements. Supersedes round two's visual recommendation; no production implementation. The direction review above corrects these images' outdated workflow labels and controls.

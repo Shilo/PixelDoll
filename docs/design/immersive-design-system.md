@@ -4,6 +4,8 @@ Updated 2026-10-23. This is the reusable styling and interaction contract for th
 
 Latest refinement: [GlassKit evaluation and comparisons](2026-10-22-redesign/round-6-prototype/glasskit-study.md). The user authorized this isolated experiment after the previous no-GlassKit direction. Restrained material is the implemented recommendation; larger radii remain a comparison only.
 
+**Full-app foundation recommendation:** [Owned Bronze theme and component/state coverage](2026-10-22-redesign/round-6-prototype/theme-foundation.md) extends this contract to production workflows after research and independent challenge. Prefer PixelDoll-owned semantic tokens, selective materials and existing native-first Svelte components. This is a migration recommendation, not an implemented replacement or new user approval. The current GlassKit prototype remains the reference until a bounded component/state proof demonstrates parity. The source ownership table below describes today's prototype.
+
 ## Sources of truth
 
 | Responsibility | Source |
