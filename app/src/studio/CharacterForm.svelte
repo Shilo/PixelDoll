@@ -14,7 +14,7 @@
   let { draft: d = $bindable(), busy = $bindable(false), onconnect }: { draft: CharacterDraft; busy?: boolean; onconnect: (target: 'details' | 'prompt') => void } = $props()
   const scope = `enhance:${crypto.randomUUID()}`
   let frameInput: HTMLInputElement
-  let message = $state(''), announcement = $state(''), copied = $state(false)
+  let message = $state(''), announcement = $state(''), copied = $state<'details' | 'prompt' | null>(null)
   let undo = $state<{ target: 'details' | 'prompt'; before: string; after: string } | null>(null)
   let abort: AbortController | undefined
   let alive = true
@@ -25,7 +25,7 @@
   const enhanceInput = (target: 'details' | 'prompt') => ({ description: target === 'prompt' ? d.prompt : d.details, image_size: { width: d.body || 0, height: d.body || 0 }, view: d.view })
   const canEnhance = (target: 'details' | 'prompt') => !busy && !!enhanceInput(target).description.trim() && Number.isInteger(d.body) && d.body! >= 32 && d.body! <= 256 && enhanceInput(target).description.length <= 2000
   const canUndo = (target: 'details' | 'prompt') => undo?.target === target && undo.after === d.prompt
-  function edited() { undo = null; message = ''; copied = false }
+  function edited() { undo = null; message = ''; copied = null }
   function details(value: string) { edited(); writeDetails(d, value) }
   function trait(key: Trait, value: string) { edited(); writeTrait(d, key, value) }
   function tabKey(e: KeyboardEvent) {
@@ -34,9 +34,9 @@
     d.tab = e.key === 'Home' ? 'appearance' : e.key === 'End' ? 'prompt' : d.tab === 'appearance' ? 'prompt' : 'appearance'
     document.getElementById(`${d.tab}-tab`)?.focus()
   }
-  async function copy() {
-    try { await navigator.clipboard.writeText(d.prompt); copied = true; message = '' }
-    catch { d.tab = 'prompt'; message = 'Select the prompt to copy it.' }
+  async function copy(target: 'details' | 'prompt') {
+    try { await navigator.clipboard.writeText(target === 'details' ? d.details : d.prompt); copied = target; message = '' }
+    catch { if (target === 'prompt') d.tab = 'prompt'; message = 'Select the text to copy it.' }
   }
   async function enhance(target: 'details' | 'prompt') {
     if (canUndo(target)) { readPrompt(d, undo!.before); undo = null; message = ''; return }
@@ -75,8 +75,12 @@
         <button role="tab" id="prompt-tab" aria-controls="prompt-panel" tabindex={d.tab === 'prompt' ? 0 : -1} aria-selected={d.tab === 'prompt'} onkeydown={tabKey} onclick={() => d.tab = 'prompt'}>Prompt</button>
       </div>
       <span class="prompt-actions">
-        {#if d.tab === 'prompt'}<button class="btn icon copy" aria-label="Copy exact prompt" title="Copy exact prompt" onclick={copy}>{#if copied}<Check size={14} />{:else}<Copy size={14} />{/if}</button>{/if}
-        <span class="api-action"><ApiPeek scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'} label={d.tab === 'appearance' ? 'Enhance details' : 'Enhance exact prompt'} plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput(enhanceTarget)), label: d.tab === 'appearance' ? 'Enhance character details' : 'Enhance exact character prompt', generations: 0.05 }]} activityScope={scope} /><button class="btn small enhance" aria-label={canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'} title={canUndo(enhanceTarget) ? 'Restore the previous prompt' : 'Enhance with V3 (~0.05 gens)'} disabled={busy || (!canUndo(enhanceTarget) && !canEnhance(enhanceTarget))} onclick={() => enhance(enhanceTarget)}>{#if canUndo(enhanceTarget)}<Undo2 size={13} /><span class="enhance-label">Undo</span>{:else}<WandSparkles size={13} /><span class="enhance-label">{busy ? 'Enhancing…' : 'Enhance'}</span>{/if}</button></span>
+        <button class="btn small enhance" aria-label={canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'} aria-busy={busy} title={canUndo(enhanceTarget) ? 'Restore the previous prompt' : 'Enhance with V3 (~0.05 gens)'} disabled={busy || (!canUndo(enhanceTarget) && !canEnhance(enhanceTarget))} onclick={() => enhance(enhanceTarget)}>
+          {#if canUndo(enhanceTarget)}<Undo2 size={13} />{:else}<WandSparkles size={13} />{/if}
+          <span class="enhance-label"><span class="enhance-sizer" aria-hidden="true">Enhance</span><span class="enhance-text">{canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'}</span></span>
+        </button>
+        <ApiPeek scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'} label={d.tab === 'appearance' ? 'Enhance details' : 'Enhance exact prompt'} plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput(enhanceTarget)), label: d.tab === 'appearance' ? 'Enhance character details' : 'Enhance exact character prompt', generations: 0.05 }]} activityScope={scope} />
+        <button class="btn icon copy" aria-label={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'} title={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'} onclick={() => copy(enhanceTarget)}>{#if copied === enhanceTarget}<Check size={14} />{:else}<Copy size={14} />{/if}</button>
       </span>
     </div>
     {#if d.tab === 'appearance'}
@@ -87,7 +91,7 @@
         {#each TRAIT_KEYS as key (key)}
           <div class="trait-row"><Help title={TRAITS[key].label} text={TRAITS[key].help} /><select class="input" aria-label={TRAITS[key].label} value={d[key]} onchange={(e) => trait(key, e.currentTarget.value)}><option>{UNSET}</option>{#each TRAITS[key].options as option (option)}<option>{option}</option>{/each}</select></div>
         {/each}
-        <div class="prompt-note"><button class="prompt-excerpt" onclick={() => d.tab = 'prompt'} aria-label="Edit exact prompt">{d.prompt}</button><button class="btn icon copy" title="Copy exact prompt" aria-label="Copy exact prompt" onclick={copy}>{#if copied}<Check size={14} />{:else}<Copy size={14} />{/if}</button></div>
+        <div class="prompt-note"><button class="prompt-excerpt" onclick={() => d.tab = 'prompt'} aria-label="Edit exact prompt">{d.prompt}</button><button class="btn icon copy" title="Copy exact prompt" aria-label="Copy exact prompt" onclick={() => copy('prompt')}>{#if copied === 'prompt'}<Check size={14} />{:else}<Copy size={14} />{/if}</button></div>
       </div>
     {:else}
       <div id="prompt-panel" role="tabpanel" aria-labelledby="prompt-tab" class="editor-panel">
@@ -120,7 +124,7 @@
         {:else}<span class="compass-center" aria-hidden="true"><PersonStanding size={23} /></span>{/if}
       {/each}
     </div>
-    <div class="mirror-summary" aria-live="polite">{announcement || (Object.entries(d.mirrors).length ? Object.entries(d.mirrors).map(([target, source]) => `${DIRECTION_LABELS[target as keyof typeof DIRECTION_LABELS]} ← ${DIRECTION_LABELS[source!]}`).join('   ') : 'Independent views')}</div>
+    <span class="direction-announcement" aria-live="polite">{announcement}</span>
     <div class="creator-field seed"><Help title="Seed" text="Controls the random starting point for character generation and its animations. It does not randomize one specific trait. Leave blank for a fresh seed. Reusing it can give similar results, but does not guarantee identical pixels." /><input class="input" aria-label="Seed" inputmode="numeric" pattern="[0-9]*" bind:value={d.seed} placeholder="Random" /></div>
   </section>
 </div>
@@ -129,16 +133,18 @@
 <style>
   .creator-grid { display:grid; grid-template-columns:minmax(250px,1.1fr) minmax(170px,.8fr) minmax(290px,1.15fr); gap:24px; align-items:start; }
   section { min-width:0; display:flex; flex-direction:column; gap:12px; }
-  .appearance { gap:10px; }
+  .appearance { gap:10px; container-type:inline-size; }
   .editor-toolbar { display:flex; align-items:center; justify-content:space-between; gap:6px; min-height:36px; }
   .creator-tabs { display:flex; flex:1; min-width:0; gap:3px; padding:3px; background:var(--bg-side); border-radius:var(--r-ctl); }
   .creator-tabs button { flex:1; height:30px; padding:0 6px; border:0; border-radius:4px; background:none; color:var(--text-3); font:inherit; font-size:var(--fs-sm); cursor:pointer; }
   .creator-tabs [aria-selected=true] { background:var(--bg-hover); color:var(--text); box-shadow:0 1px 3px #0002; }
   .editor-panel { display:flex; flex-direction:column; gap:12px; min-height:336px; }
   .creator-field { display:flex; flex-direction:column; gap:6px; }
-  .editor-toolbar :global(.api-action) { gap:3px; }
-  .enhance { min-width:78px; gap:4px; padding-inline:7px; }
-  .prompt-actions { display:flex; align-items:center; gap:3px; }
+  .enhance { min-width:78px; gap:4px; padding-inline:7px; font-size:var(--fs-sm); }
+  .enhance-label { position:relative; }
+  .enhance-sizer { visibility:hidden; }
+  .enhance-text { position:absolute; inset:0; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .prompt-actions { display:flex; flex:none; align-items:center; gap:3px; }
   .details-input { resize:vertical; min-height:82px; max-height:160px; font-size:var(--fs); }
   .trait-row { display:grid; grid-template-columns:88px minmax(0,1fr); gap:8px; align-items:center; }
   .trait-row :global(.help-title) { align-self:center; }
@@ -169,11 +175,12 @@
   .east .direction { border-top-right-radius:0; border-bottom-right-radius:0; }
   .east .mirror { border-left:0; border-top-left-radius:0; border-bottom-left-radius:0; }
   .compass-center { display:flex; align-items:center; justify-content:center; color:var(--text-3); opacity:.55; }
-  .mirror-summary { color:var(--text-3); font-size:10px; min-height:15px; line-height:1.5; }
+  .direction-announcement { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
   .seed { margin-top:4px; }
   .creator-message, .creator-validation { color:var(--text-2); font-size:var(--fs-sm); line-height:1.5; overflow-wrap:anywhere; }
   .creator-validation { color:var(--danger-text, var(--text-2)); }
   @media (max-width:850px) { .creator-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; } .facing { grid-column:1/-1; max-width:360px; } }
-  @media (max-width:599px), (max-height:499px) { .creator-grid { display:flex; flex-direction:column; gap:22px; } section { width:100%; } .editor-panel { min-height:0; } .creator-tabs button { height:40px; } .editor-toolbar { min-height:46px; } .trait-row { grid-template-columns:90px minmax(0,1fr); } .input { min-height:44px; font-size:16px; } .body-presets .btn, .frame-controls .btn, .direction-presets .btn { min-height:44px; } .mirror { flex-basis:44px; } .direction-tile { height:56px; } .compass { grid-template-columns:1fr 44px 1fr; max-width:360px; } .facing { max-width:none; } .exact-input { min-height:300px; } .direction-presets .btn { font-size:12px; } .prompt-excerpt { font-size:12px; height:54px; } .mirror-summary { font-size:11px; } }
-  @media (max-width:359px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } }
+  @media (max-width:599px), (max-height:499px) { .creator-grid { display:flex; flex-direction:column; gap:22px; } section { width:100%; } .editor-panel { min-height:0; } .creator-tabs button { height:40px; } .editor-toolbar { min-height:46px; } .trait-row { grid-template-columns:90px minmax(0,1fr); } .input { min-height:44px; font-size:16px; } .body-presets .btn, .frame-controls .btn, .direction-presets .btn { min-height:44px; } .mirror { flex-basis:44px; } .direction-tile { height:56px; } .compass { grid-template-columns:1fr 44px 1fr; max-width:360px; } .facing { max-width:none; } .exact-input { min-height:300px; } .direction-presets .btn { font-size:12px; } .prompt-excerpt { font-size:12px; height:54px; } }
+  @container (max-width:290px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } }
+  @media (pointer:coarse) { @container (max-width:340px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } } }
 </style>

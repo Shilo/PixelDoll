@@ -19,9 +19,10 @@
 </div>
 
 <style>
-  .size-guide { height:186px; display:flex; flex-direction:column; align-items:flex-start; gap:8px; padding-top:2px; }
-  .preview-box { width:128px; height:128px; border:1px solid var(--line-strong); border-radius:4px; background:repeating-conic-gradient(var(--bg-hover) 0% 25%, var(--bg-side) 0% 50%) 50% / 16px 16px; }
+  .size-guide { height:130px; display:grid; grid-template-columns:minmax(0,128px) 88px; align-items:start; gap:12px; padding-top:2px; }
+  .preview-box { width:100%; aspect-ratio:1; border:1px solid var(--line-strong); border-radius:4px; background:repeating-conic-gradient(var(--bg-hover) 0% 25%, var(--bg-side) 0% 50%) 50% / 16px 16px; }
   canvas { display:block; width:100%; height:100%; image-rendering:pixelated; }
-  .sizes { display:flex; flex-direction:column; gap:3px; color:var(--text-3); font-size:var(--fs-sm); line-height:1.3; font-variant-numeric:tabular-nums; }
-  b { color:var(--text-2); font-weight:400; margin-left:6px; }
+  .sizes { display:flex; flex-direction:column; align-items:flex-start; gap:10px; color:var(--text-3); font-size:var(--fs-sm); line-height:1.3; font-variant-numeric:tabular-nums; }
+  .sizes > span { display:flex; flex-direction:column; gap:2px; }
+  b { color:var(--text-2); font-weight:400; white-space:nowrap; }
 </style>
