@@ -27,7 +27,8 @@ function changeScreen(screen) { stop(); $('#toast').hidden = true; state.screen 
 function changeView(view) { stop(); $('#toast').hidden = true; state.view = view; state.menu = null; state.panel = state.panel === 'Moves' && view !== 'preview' ? 'Wardrobe' : state.panel; position.x = position.y = camera.x = camera.y = 0; elapsed = 0; presentationKey = ''; lastFacing = view === 'side' ? 'east' : state.direction; state.hint = view !== 'preview'; clearTimeout(hintTimer); hintTimer = setTimeout(() => { state.hint = false; render(); }, 6500); render(); world.backdrop(state); }
 function changeCharacter(index) { stop(); $('#toast').hidden = true; state.character = index; lastFacing = 'south'; state.direction = 'south'; state.menu = null; position.x = position.y = camera.x = camera.y = 0; elapsed = 0; presentationKey = ''; lastHidden = ''; render(); }
 function top() { const select = state.screen === 'selection', create = state.screen === 'creation'; return `<header>${button(select ? 'PixelDoll' : 'Characters', select ? 'home' : 'back', { icon: select ? 'person-standing' : 'arrow-left' })}<div class="top-actions">${create ? button('Cancel', 'back') : select ? `${button('<span class="label">Import</span>', 'import', { icon: 'upload', cls: 'desktop-only', title: 'Import (not connected in prototype)' })}${button('<span class="label">New character</span>', 'create', { icon: 'plus', cls: 'outline desktop-only', title: 'New character' })}${iconButton('More options', 'more', 'ellipsis')}` : `${button('<span class="label">Undo</span>', 'undo', { icon: 'undo-2', cls: 'desktop-only', disabled: !current().history.length, title: 'Undo equipment change' })}${button('<span class="label">Export</span>', 'export', { icon: 'download', title: 'Export (not connected in prototype)' })}${iconButton('More options', 'more', 'ellipsis')}`}</div></header>`; }
-function viewTabs() { return tabs([['preview', 'Preview'], ['topdown', 'Top-down'], ['side', 'Side-scroller']], state.view, { cls: 'view-tabs', label: 'Character view', action: 'view' }); }
+const STUDIO_VIEWS = [['preview', 'Preview'], ['topdown', 'Top-down'], ['side', 'Side-scroller']];
+function viewTabs() { return tabs(STUDIO_VIEWS, state.view, { cls: 'view-tabs', label: 'Character view', action: 'view' }); }
 function identity() { return `<section class="identity"><p class="eyebrow">Customize character</p><h1>${button(esc(current().name) + icon('chevron-down'), 'characters', { cls: 'name-switch', extra: 'aria-label="Switch character" aria-expanded="' + (state.menu === 'characters') + '"' })}</h1>${button(`<span>${esc(current().prompt)}</span>${icon('chevron-down')}`, 'description', { cls: 'prompt-line', title: 'Read character prompt', extra: `aria-expanded="${state.menu === 'description'}"` })}</section>`; }
 function selected() { return `<div class="selected-name"><h2>${esc(current().name)}</h2><div class="stage-nav">${iconButton('Previous character', 'previous', 'chevron-left')}<small>Demo outfit · ${state.character + 1} / ${characters.length}</small>${iconButton('Next character', 'next', 'chevron-right')}</div></div>`; }
 function library() { return `<section class="identity"><h1>Characters</h1><p class="muted" style="margin-top:10px;font-size:13px">${characters.length} demo outfits</p></section><div class="mobile-library-actions"><input class="search" data-field="search" placeholder="Search characters" aria-label="Search characters" value="${esc(state.search)}">${button('New', 'create', { cls: 'outline', icon: 'plus' })}${button('Import', 'import', { cls: 'outline' })}</div><aside class="library" data-ui><h2>Your characters</h2><input class="search" data-field="search" placeholder="Search characters" aria-label="Search characters" value="${esc(state.search)}"><div class="character-list">${characterButtons()}</div>${button('Customize ' + esc(current().name), 'customize', { cls: 'primary', icon: 'arrow-right' })}</aside>${selected()}`; }
@@ -275,7 +276,14 @@ document.addEventListener('change', e => { if (e.target.dataset.field === 'clip'
     chooseClip(e.target.value); });
 dialog.addEventListener('close', stop);
 const editTarget = el => el?.closest('input,textarea,select,[contenteditable=true]');
-window.addEventListener('keydown', e => { if (e.key === 'Escape') {
+window.addEventListener('keydown', e => {
+    if (!demo || e.ctrlKey || e.altKey || e.metaKey)
+        return;
+    const k = e.key.toLowerCase();
+    if (k === 'escape' || (k === 'backspace' && !editTarget(e.target))) {
+    e.preventDefault();
+    if (e.repeat)
+        return;
     stop();
     if (dialog.open)
         dialog.close();
@@ -283,9 +291,19 @@ window.addEventListener('keydown', e => { if (e.key === 'Escape') {
         state.menu = null;
         render();
     }
+    else if (state.screen !== 'selection')
+        changeScreen('selection');
     return;
-} if (editTarget(e.target) || dialog.open || state.menu || e.ctrlKey || e.altKey || e.metaKey)
-    return; const k = e.key.toLowerCase(); if (state.screen === 'selection' && (MOVEMENT_KEYS.has(k) || k === 'enter')) {
+} if (editTarget(e.target) || dialog.open || state.menu)
+    return;
+if (state.screen === 'studio' && k === 'tab' && (!e.target.closest('button,a,[tabindex]') || e.target.closest('.view-tabs'))) {
+    e.preventDefault();
+    if (!e.repeat) {
+        const index = STUDIO_VIEWS.findIndex(([id]) => id === state.view);
+        changeView(STUDIO_VIEWS[(index + (e.shiftKey ? -1 : 1) + STUDIO_VIEWS.length) % STUDIO_VIEWS.length][0]);
+    }
+    return;
+} if (state.screen === 'selection' && (MOVEMENT_KEYS.has(k) || k === 'enter')) {
     e.preventDefault();
     if (!e.repeat) {
         const [horizontal, vertical] = keyboardVector(new Set([k]));

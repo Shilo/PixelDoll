@@ -66,6 +66,8 @@ Preview and live modes share keyboard vectors, compass metadata and nearest-dire
 
 Character selection reuses the same key mapping: A/W/Left/Up select the previous character; D/S/Right/Down select the next. Each key press advances once, with existing wraparound; held-key repeats do not race through characters. Enter opens customization. Search fields, menus, dialogs and modified shortcuts retain their normal behavior.
 
+Escape and Backspace dismiss the topmost dialog or menu first; otherwise they return creation/studio to character selection. Backspace in editable controls remains editing, and neither shortcut navigates browser history at the selection root. Repeats do not cascade through multiple navigation levels. Studio Tab cycles Preview → Top-down → Side-scroller, and Shift+Tab reverses, when the scene or view-selector button has focus. Elsewhere Tab retains native focus traversal. View switching uses the same transition as clicking a mode, including movement cancellation and camera reset. Modified browser shortcuts remain untouched.
+
 Preview changes **facing only**. It does not translate the actor or camera, change the selected clip, reset playback preference, or derive permitted directions from the current animation. Every declared character direction remains selectable by keyboard and button.
 
 If the requested Preview clip lacks the requested direction, retain both selections, show a valid stored still for that facing when available, display **Still** in playback and show a persistent coverage note. If no artwork exists for that facing, say so rather than display another direction as if it matched. Normal gameplay has its own continuous movement/fallback policy. Preview fallback does not manufacture export coverage.
