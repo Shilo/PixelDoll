@@ -1,0 +1,305 @@
+{
+  "date": "2026-10-23",
+  "result": "passed",
+  "vendor": "1.30.0",
+  "cases": [
+    {
+      "variant": "restrained",
+      "theme": "obsidian",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "12px",
+        "font": "21px"
+      }
+    },
+    {
+      "variant": "restrained",
+      "theme": "obsidian",
+      "viewport": {
+        "width": 450,
+        "height": 800
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "12px",
+        "font": "14px"
+      }
+    },
+    {
+      "variant": "restrained",
+      "theme": "obsidian",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "12px",
+        "font": "14px"
+      }
+    },
+    {
+      "variant": "restrained",
+      "theme": "obsidian",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "12px",
+        "font": "15px"
+      }
+    },
+    {
+      "variant": "restrained",
+      "theme": "porcelain",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "12px",
+        "font": "21px"
+      }
+    },
+    {
+      "variant": "restrained",
+      "theme": "porcelain",
+      "viewport": {
+        "width": 450,
+        "height": 800
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "12px",
+        "font": "14px"
+      }
+    },
+    {
+      "variant": "restrained",
+      "theme": "porcelain",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "12px",
+        "font": "14px"
+      }
+    },
+    {
+      "variant": "restrained",
+      "theme": "porcelain",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "12px",
+        "font": "15px"
+      }
+    },
+    {
+      "variant": "rounded",
+      "theme": "obsidian",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "24px",
+        "font": "21px"
+      }
+    },
+    {
+      "variant": "rounded",
+      "theme": "obsidian",
+      "viewport": {
+        "width": 450,
+        "height": 800
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "24px",
+        "font": "14px"
+      }
+    },
+    {
+      "variant": "rounded",
+      "theme": "obsidian",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "24px",
+        "font": "14px"
+      }
+    },
+    {
+      "variant": "rounded",
+      "theme": "obsidian",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "24px",
+        "font": "15px"
+      }
+    },
+    {
+      "variant": "rounded",
+      "theme": "porcelain",
+      "viewport": {
+        "width": 1920,
+        "height": 1080
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "24px",
+        "font": "21px"
+      }
+    },
+    {
+      "variant": "rounded",
+      "theme": "porcelain",
+      "viewport": {
+        "width": 450,
+        "height": 800
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "24px",
+        "font": "14px"
+      }
+    },
+    {
+      "variant": "rounded",
+      "theme": "porcelain",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "24px",
+        "font": "14px"
+      }
+    },
+    {
+      "variant": "rounded",
+      "theme": "porcelain",
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "result": "passed",
+      "surface": {
+        "blur": "blur(12px)",
+        "radius": "24px",
+        "font": "15px"
+      }
+    }
+  ],
+  "checks": [
+    "Pinned vendor SHA-256 matches unchanged upstream CSS",
+    "16 appearance/viewport/material combinations passed",
+    "All five screen layouts: no page overflow; creator remains scrollable",
+    "Root theme tokens, preserved 15px mobile fields, focus outline and filter budget",
+    "Modal naming, top layer, viewport bounds, focus containment, Escape and focus return",
+    "Menu bounds and Backspace dismissal",
+    "Reduced transparency, increased contrast/reduced motion and forced-colors fallbacks",
+    "Worst-case surface text contrast >=4.5:1",
+    "Relative Preview playback and moving-toast frame samples captured"
+  ],
+  "errors": [],
+  "contrast": [
+    {
+      "theme": "obsidian",
+      "scope": "Text against 92% surface over worst-case black/white; primary fill",
+      "text": 10.686989600404983,
+      "muted": 6.036666744037967,
+      "accent": 5.388454419689367,
+      "primaryButton": 8.102228675217019
+    },
+    {
+      "theme": "porcelain",
+      "scope": "Text against 92% surface over worst-case black/white; primary fill",
+      "text": 11.563124968879933,
+      "muted": 4.846291947433266,
+      "accent": 5.225333668989095,
+      "primaryButton": 6.682635041283074
+    }
+  ],
+  "frameSamples": [
+    {
+      "variant": "baseline",
+      "scene": "preview",
+      "medianMs": 16.699999999999818,
+      "p95Ms": 33.399999999999864,
+      "maxMs": 33.40000000000009
+    },
+    {
+      "variant": "baseline",
+      "scene": "moving-toast",
+      "medianMs": 33.30000000000018,
+      "p95Ms": 50.10000000000002,
+      "maxMs": 50.100000000000364
+    },
+    {
+      "variant": "restrained",
+      "scene": "preview",
+      "medianMs": 16.69999999999999,
+      "p95Ms": 16.800000000000182,
+      "maxMs": 33.40000000000009
+    },
+    {
+      "variant": "restrained",
+      "scene": "moving-toast",
+      "medianMs": 33.39999999999998,
+      "p95Ms": 50,
+      "maxMs": 66.69999999999993
+    },
+    {
+      "variant": "rounded",
+      "scene": "preview",
+      "medianMs": 16.700000000000045,
+      "p95Ms": 33.40000000000009,
+      "maxMs": 50.09999999999991
+    },
+    {
+      "variant": "rounded",
+      "scene": "moving-toast",
+      "medianMs": 33.399999999999636,
+      "p95Ms": 50,
+      "maxMs": 50.100000000000364
+    }
+  ]
+}

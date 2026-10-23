@@ -1,5 +1,7 @@
 # Isolated immersive character playground
 
+**Latest material study:** [GlassKit research, decisions and verification](glasskit-study.md) · [before/after screenshot gallery](http://127.0.0.1:5202/glass-review.html). Restrained GlassKit 1.30.0 is the default prototype treatment. Larger-radius and original variants remain review-only URL options; production Studio is unchanged.
+
 2026-10-23. Implements the user-approved visual proof using Obsidian / Porcelain Bronze and the actual bundled S2 demo sprites. Production Studio is not integrated or changed by this prototype.
 
 **Shared implementation contract:** [Immersive design system](../../immersive-design-system.md) documents theme values, typography, geometry, responsive rules, Preview keyboard behavior and module ownership. Shared controls, creator/equipment renderers, input/direction rules and theme tokens now have dedicated modules; styles.css replaces the previous two-sheet override stack. Latest verification: **12 unit tests and 18 browser checks**.

@@ -1,4 +1,5 @@
 import { esc, icon, button, iconButton, tabs } from './ui.js';
+import { applyMaterial, hasGlass } from './material.mjs';
 import { createDraft, renderCreator, exactPrompt, basePrompt, autoFrame } from './creator.js';
 import { applyTheme, themeName } from './theme.mjs';
 import { direction, labelDir, DIRECTION_PRESETS, facingFromVector } from './directions.mjs';
@@ -11,15 +12,25 @@ import { unit, resolveMotion, resolvePreview, clipLabel, frameAt, advance } from
 const $ = s => document.querySelector(s), ui = $('#ui'), dialog = $('#dialog'), stick = $('#joystick');
 const state = { screen: 'selection', view: 'preview', theme: themeName(localStorage.getItem('bronze-prototype-theme')), character: 0, slot: 'head', panel: 'Wardrobe', menu: null, clip: 'walk', direction: 'south', playing: true, expanded: false, hint: false, search: '' };
 applyTheme(state.theme);
+if (hasGlass) $('#toast').className = 'glass-toast is-visible';
 const position = { x: 0, y: 0 }, camera = { x: 0, y: 0 }, keys = new Set(), seenIssues = new Set();
 let joystick = null, toastTimer, toastKey = '', hintTimer, elapsed = 0, last = 0, presentationKey = '', resolved = {}, lastHidden = '', drawnFrames = 0, world, demo, characters, hiddenItems = [], lastFacing = 'south';
 const draft = createDraft();
 const prompt = () => exactPrompt(draft);
 let manualPrompt = '';
+let dialogReturnAction = null;
 function notify(message, key = message) { if (seenIssues.has(key))
     return; seenIssues.add(key); toastKey = key; const toast = $('#toast'); toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.hidden = true, 4800); }
 function stop() { keys.clear(); joystick = null; stick.hidden = true; }
-function showDialog(title, html) { stop(); state.menu = null; render(); dialog.innerHTML = `${iconButton('Close', 'close-dialog', 'x')}<h2>${esc(title)}</h2>${html}`; dialog.querySelector('button').classList.add('close'); dialog.showModal(); }
+function showDialog(title, html) {
+    dialogReturnAction = document.activeElement?.dataset.action ?? null;
+    stop(); state.menu = null; render();
+    const content = `${iconButton('Close', 'close-dialog', 'x')}<h2 id="dialog-title">${esc(title)}</h2>${html}`;
+    dialog.innerHTML = hasGlass ? `<div class="glass-modal dialog-panel">${content}</div>` : content;
+    dialog.className = hasGlass ? 'glass-modal-overlay is-active' : '';
+    dialog.setAttribute('aria-labelledby', 'dialog-title');
+    dialog.querySelector('button').classList.add('close'); applyMaterial(dialog); dialog.showModal();
+}
 function unavailable(title) { showDialog(title, '<p>This isolated prototype uses the bundled demo artwork. Generation, import, export and account actions are not connected.</p><p>You can switch characters, change demo equipment, inspect animations and move through both test views. No API calls or credits are used.</p>'); }
 function current() { return characters[state.character]; }
 function changeScreen(screen) { stop(); $('#toast').hidden = true; state.screen = screen; state.menu = null; state.expanded = false; elapsed = 0; presentationKey = ''; if (screen === 'studio')
@@ -53,7 +64,7 @@ function menus() {
     return '';
 }
 function render() { if (!demo)
-    return; applyTheme(state.theme); document.body.dataset.screen = state.screen; document.body.dataset.view = state.view; ui.innerHTML = top() + (state.screen === 'selection' ? library() : state.screen === 'creation' ? renderCreator(draft, manualPrompt) : viewTabs() + identity() + wardrobe() + (state.view === 'preview' ? playback() : state.hint ? `<p class="hint">${matchMedia('(pointer:coarse)').matches ? 'Drag in the world to move' : 'WASD / arrow keys to move'}</p>` : '')) + menus() + `<p class="footnote">${state.screen === 'creation' ? '' : 'Local visual prototype · demo artwork'}</p>`; }
+    return; applyTheme(state.theme); document.body.dataset.screen = state.screen; document.body.dataset.view = state.view; ui.innerHTML = top() + (state.screen === 'selection' ? library() : state.screen === 'creation' ? renderCreator(draft, manualPrompt) : viewTabs() + identity() + wardrobe() + (state.view === 'preview' ? playback() : state.hint ? `<p class="hint">${matchMedia('(pointer:coarse)').matches ? 'Drag in the world to move' : 'WASD / arrow keys to move'}</p>` : '')) + menus() + `<p class="footnote">${state.screen === 'creation' ? '' : 'Local visual prototype · demo artwork'}</p>`; applyMaterial(ui); }
 function applyOutfit(items) { current().history.push({ ...current().items }); current().items = { ...items }; lastHidden = ''; render(); }
 function equip(id) { applyOutfit({ ...current().items, [state.slot]: id === 'none' ? null : id }); }
 function chooseClip(clip) { state.clip = clip; elapsed = 0; presentationKey = ''; render(); }
@@ -274,7 +285,11 @@ document.addEventListener('input', e => { const el = e.target; if (el.dataset.fi
 } });
 document.addEventListener('change', e => { if (e.target.dataset.field === 'clip')
     chooseClip(e.target.value); });
-dialog.addEventListener('close', stop);
+dialog.addEventListener('close', () => {
+    stop();
+    if (dialogReturnAction) ui.querySelector(`[data-action="${CSS.escape(dialogReturnAction)}"]`)?.focus({ preventScroll: true });
+    dialogReturnAction = null;
+});
 const editTarget = el => el?.closest('input,textarea,select,[contenteditable=true]');
 window.addEventListener('keydown', e => {
     if (!demo || e.ctrlKey || e.altKey || e.metaKey)

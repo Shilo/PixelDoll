@@ -1,0 +1,3369 @@
+/* ============================================================
+   GLASSKIT COMPONENT LIBRARY
+   Jungherz GmbH – v1.30.0
+
+   Features:
+   - Scoped Reset (box-sizing fix)
+   - Dark Mode (default)
+   - Light Mode via [data-theme="light"]
+   - Compact density via [data-density="compact"]
+   - 34 components (incl. floating Tab-Bar variant + Accessory)
+   ============================================================ */
+
+
+/* ============================================================
+   A NOTE ON THE ::slotted() PAIRS
+
+   Several icon rules are written twice, e.g.
+
+     .glass-btn svg,
+     .glass-btn ::slotted(svg) { … }
+
+   They are not redundant. When this sheet is adopted into a shadow root —
+   as GlassKit Elements does — an icon passed in from the outside stays in
+   the light DOM and is therefore no descendant of anything in the shadow
+   tree. `.glass-btn svg` cannot reach it; only `::slotted()` can.
+
+   Do not "simplify" these away. In the document they match nothing, so
+   they cost nothing there.
+
+   Note that ::slotted() only ever matches the assigned node itself. An icon
+   wrapped in a container — <span slot="leading"><svg …></span> — cannot be
+   styled from inside the shadow root at all. Pass icons directly.
+   ============================================================ */
+
+
+/* ============================================================
+   0. SCOPED RESET
+   ============================================================ */
+[class*="glass-"],
+[class*="glass-"]::before,
+[class*="glass-"]::after,
+[class*="gl-"] {
+  box-sizing: border-box;
+}
+
+
+/* ============================================================
+   1. DESIGN TOKENS – DARK MODE (Standard)
+   ============================================================ */
+:root,
+[data-theme="dark"] {
+  /* Tells the browser which scheme its own widgets should use: date and time
+     pickers, number spinners, select popups, scrollbars, autofill. Without it
+     they render light and the calendar glyph sits black on dark glass. */
+  color-scheme: dark;
+
+  /* ---- Colors ----
+     Re-branding needs exactly two declarations: --gl-color-primary and
+     --gl-color-primary-dark. Everything warm below is mixed from them, so a
+     teal primary gets a teal gradient, a teal glow and a teal focus ring.
+     Set --gl-color-primary-mid explicitly only to bend the gradient's middle. */
+  --gl-color-primary:        #f5a623;
+  --gl-color-primary-dark:   #d4692a;
+  --gl-color-primary-mid:    color-mix(in srgb, var(--gl-color-primary) 32%, var(--gl-color-primary-dark));
+  --gl-color-bg-dark:        #0e2530;
+  --gl-color-bg-mid:         #1a3d4e;
+  --gl-color-bg-light:       #1b3e50;
+  --gl-color-text:           #ffffff;
+  --gl-color-text-muted:     rgba(255, 255, 255, 0.60);
+  --gl-color-text-on-light:  #1a3a4a;
+  --gl-color-text-heading:   #ffffff;
+  /* The select's chevron, drawn in the muted text colour of each theme. */
+  --gl-select-chevron:       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  --gl-color-success:        #34c759;
+  --gl-color-error:          #ff3b30;
+  --gl-color-warning:        #ffcc00;
+  --gl-color-success-dark:   #2da44e;
+  --gl-color-error-dark:     #d63027;
+
+  /* ---- Role Colors: ink on FILLED surfaces ----
+     White by design – the primary button, the checkbox tick and the filled
+     accessory capsules keep the look they have always had. On the light
+     orange fill that is below WCAG AA (2.03:1 on the lightest gradient stop);
+     the deliberate escape hatch is a dark ink, e.g.
+       :root { --gl-color-on-primary: color-mix(in srgb, var(--gl-color-primary) 17%, #000); }
+     which reaches 4.62:1. Set it to #ffffff if you re-brand to a dark primary. */
+  --gl-color-on-primary:            #ffffff;
+  --gl-color-on-success:            #ffffff;
+  --gl-color-on-error:              #ffffff;
+  --gl-color-primary-on-surface:    color-mix(in srgb, var(--gl-color-primary) 50%, #ffffff);
+  --gl-color-success-on-surface:    color-mix(in srgb, var(--gl-color-success) 62%, #ffffff);
+  --gl-color-error-on-surface:      color-mix(in srgb, var(--gl-color-error)   50%, #ffffff);
+  /* Yellow is light already: it takes less white here, and more black in the
+     light theme, to read like the others (measured, see CHANGELOG 1.18.0). */
+  --gl-color-warning-on-surface:    color-mix(in srgb, var(--gl-color-warning) 80%, #ffffff);
+
+  /* ---- Primary as text ----
+     Text and line icons in the primary colour, straight on the page or the
+     glass: links in .glass-prose, the active tab, the primary modal action,
+     accent list rows, the value of a range, the hovered and the open
+     accordion. It defaults to the primary. A brand that darkens its primary
+     for white button text sets a lighter tone here in its dark theme, and
+     the buttons keep theirs. */
+  --gl-color-primary-text:          var(--gl-color-primary);
+
+  /* ---- State Surfaces & Borders (badge, chip) ----
+     The scrim sits *behind* the colored tint and makes the chip
+     readable regardless of what shows through the glass. */
+  --gl-state-scrim:            rgba(0, 0, 0, 0.30);
+  --gl-color-primary-surface:  color-mix(in srgb, var(--gl-color-primary) 25%, transparent);
+  --gl-color-primary-border:   var(--gl-border-warm);
+  --gl-color-success-surface:  color-mix(in srgb, var(--gl-color-success) 15%, transparent);
+  --gl-color-success-border:   color-mix(in srgb, var(--gl-color-success) 30%, transparent);
+  --gl-color-error-surface:    color-mix(in srgb, var(--gl-color-error)   15%, transparent);
+  --gl-color-error-border:     color-mix(in srgb, var(--gl-color-error)   30%, transparent);
+  --gl-color-warning-surface:  color-mix(in srgb, var(--gl-color-warning) 15%, transparent);
+  --gl-color-warning-border:   color-mix(in srgb, var(--gl-color-warning) 30%, transparent);
+
+  /* ---- Glass Surfaces ---- */
+  --gl-surface-1:            rgba(255, 255, 255, 0.08);
+  --gl-surface-2:            rgba(255, 255, 255, 0.10);
+  --gl-surface-3:            rgba(255, 255, 255, 0.14);
+  --gl-surface-4:            rgba(255, 255, 255, 0.16);
+  --gl-surface-5:            rgba(255, 255, 255, 0.22);
+  --gl-surface-milk:         rgba(255, 255, 255, 0.55);
+  --gl-surface-milk-strong:  rgba(255, 255, 255, 0.75);
+  --gl-surface-overlay:      rgba(0, 0, 0, 0.50);
+
+  /* Card Glow Gradient */
+  --gl-card-glow-top:        rgba(255, 255, 255, 0.32);
+  --gl-card-glow-mid:        rgba(255, 255, 255, 0.22);
+  --gl-card-glow-low:        rgba(255, 255, 255, 0.14);
+  --gl-card-glow-bottom:     rgba(255, 255, 255, 0.08);
+
+  /* Card Text & Icons */
+  --gl-card-icon-color:      rgba(255, 255, 255, 0.8);
+  --gl-card-text-color:      rgba(255, 255, 255, 0.7);
+
+  /* ---- Borders ---- */
+  --gl-border-subtle:        rgba(255, 255, 255, 0.18);
+  --gl-border-medium:        rgba(255, 255, 255, 0.30);
+  --gl-border-strong:        rgba(255, 255, 255, 0.40);
+  --gl-border-milk:          rgba(255, 255, 255, 0.60);
+  /* Warm = the rim of a primary-filled control; focus = the keyboard ring.
+     Both are roles, so both follow --gl-color-primary. Kept as-is by name for
+     compatibility; pre-1.11.0 they were rgba(255,200,100,.35) / rgba(245,166,35,.6). */
+  --gl-border-warm:          color-mix(in srgb, color-mix(in srgb, var(--gl-color-primary) 68%, #ffffff) 35%, transparent);
+  --gl-border-focus:         color-mix(in srgb, var(--gl-color-primary) 60%, transparent);
+
+  /* ---- Icon Colors ---- */
+  --gl-icon-default:         rgba(255, 255, 255, 0.6);
+  --gl-icon-muted:           rgba(255, 255, 255, 0.45);
+  --gl-icon-strong:          rgba(255, 255, 255, 0.8);
+  --gl-icon-on-primary:      var(--gl-color-on-primary, #ffffff);
+  --gl-icon-on-secondary:    #1a3a4a;
+  --gl-icon-on-tertiary:     rgba(255, 255, 255, 0.6);
+
+  /* ---- Blur ---- */
+  --gl-blur:                 24px;
+  --gl-blur-light:           16px;
+  --gl-blur-soft:            12px;
+  --gl-blur-heavy:           40px;
+
+  /* ---- Radii ---- */
+  --gl-radius-pill:          50%;
+  --gl-radius-full:          9999px;
+  --gl-radius-card:          24px;
+  --gl-radius-btn:           16px;
+  --gl-radius-input:         14px;
+  --gl-radius-sm:            12px;
+  --gl-radius-xs:            8px;
+
+  /* ---- Shadows ---- */
+  --gl-shadow-card:          0 8px 32px rgba(0, 0, 0, 0.18);
+  --gl-shadow-btn:           0 4px 16px rgba(0, 0, 0, 0.12);
+  --gl-shadow-btn-primary:   0 6px 24px color-mix(in srgb, var(--gl-color-primary-mid) 35%, transparent),
+                             0 2px 8px rgba(0, 0, 0, 0.15);
+  --gl-shadow-glow:          0 2px 12px rgba(255, 255, 255, 0.08),
+                             0 4px 16px rgba(0, 0, 0, 0.15);
+  --gl-shadow-modal:         0 24px 80px rgba(0, 0, 0, 0.4),
+                             0 8px 32px rgba(0, 0, 0, 0.2);
+  --gl-shadow-toast:         0 8px 32px rgba(0, 0, 0, 0.25);
+  --gl-shadow-focus:         0 0 0 3px color-mix(in srgb, var(--gl-color-primary) 30%, transparent);
+
+  /* ---- Inset Highlights ---- */
+  --gl-inset-subtle:         inset 0 1px 1px rgba(255, 255, 255, 0.10);
+  --gl-inset-medium:         inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  --gl-inset-strong:         inset 0 1px 2px rgba(255, 255, 255, 0.25);
+  --gl-inset-milk:           inset 0 1px 2px rgba(255, 255, 255, 0.40);
+
+  /* ---- Gloss ----
+     The light that glass catches: the highlight along the top edge of the
+     glow card and of the modal, the sheen on the progress fill and the rim
+     of the range thumb. The same in both themes, so only declared here.
+     Literals until 1.23.0; [data-surface="solid"] (1d) turns them off. */
+  --gl-gloss-card:           linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 30%,
+                               rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.5) 70%, transparent 100%);
+  --gl-gloss-modal:          linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 30%,
+                               rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.4) 70%, transparent 100%);
+  --gl-gloss-progress:       linear-gradient(to bottom, rgba(255,255,255,0.3) 0%, transparent 100%);
+  --gl-range-thumb-border:   2px solid rgba(255,255,255,0.5);
+  /* The light in the drop of the --droplet rows (tab bar, segmented): a
+     highlight at the top, the caustic glow it throws at the bottom. */
+  --gl-gloss-droplet:        radial-gradient(60% 55% at 32% 12%, rgba(255,255,255,0.42) 0%, transparent 70%),
+                             radial-gradient(75% 60% at 50% 112%, rgba(255,255,255,0.18) 0%, transparent 70%);
+
+  /* ---- Background Effects ----
+     Deliberately *not* derived from --gl-color-primary: the aurora is the scene
+     behind the glass, a fixed cool/warm mix, not the action color. Deriving it
+     would repaint every page on a re-brand. Override directly to change it. */
+  --gl-bg-aurora-1:          rgba(60, 160, 160, 0.25);
+  --gl-bg-aurora-2:          rgba(200, 140, 60, 0.12);
+  --gl-bg-aurora-3:          rgba(80, 180, 200, 0.18);
+  --gl-bg-light-streak-1:    rgba(90, 210, 200, 0.14);
+  --gl-bg-light-streak-2:    rgba(110, 200, 190, 0.10);
+  --gl-bg-warm-glow:         rgba(220, 160, 70, 0.10);
+
+  /* ---- Spacing ---- */
+  --gl-space-2xs:            4px;
+  --gl-space-xs:             8px;
+  --gl-space-sm:             12px;
+  --gl-space-md:             16px;
+  --gl-space-lg:             20px;
+  --gl-space-xl:             24px;
+  --gl-space-2xl:            32px;
+  --gl-space-3xl:            40px;
+  --gl-space-4xl:            56px;
+
+  /* ---- Density: control sizes ----
+     The sizes GlassKit has always drawn its controls at, as tokens; the
+     rules read them with that value as fallback, like --gl-modal-max-width.
+     [data-density="compact"] (1c below) swaps in a denser set. The toggle's
+     thumb inset and travel and the first-line alignment of toggle, checkbox
+     and radio are derived from these, so any value set here stays aligned.
+     Two more are left unset on purpose, like --gl-toast-top:
+     --gl-control-padding-x (inner left and right of input, select and
+     textarea) and --gl-list-item-padding-y. Unset, the rules fall back to
+     --gl-space-md as before, so a spacing override still reaches them
+     wherever it is declared. */
+  --gl-control-height:       52px;   /* input, select */
+  --gl-btn-height:           56px;
+  --gl-btn-height-sm:        44px;
+  --gl-btn-height-lg:        64px;
+  --gl-textarea-min-height:  120px;
+  --gl-list-item-min-height: 56px;
+  --gl-toggle-width:         52px;
+  --gl-toggle-height:        30px;
+  --gl-toggle-thumb-size:    22px;
+  --gl-check-size:           24px;   /* checkbox, radio */
+  --gl-modal-action-height:  52px;
+
+  /* ---- Typography ---- */
+  --gl-font-family:          -apple-system, BlinkMacSystemFont, 'SF Pro Display',
+                             'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --gl-font-size-xs:         13px;
+  --gl-font-size-sm:         14px;
+  --gl-font-size-base:       15px;
+  --gl-font-size-btn:        16px;
+  --gl-font-size-lg:         18px;
+  --gl-font-size-title:      24px;
+  --gl-font-size-modal:      20px;
+  --gl-font-weight-normal:   400;
+  --gl-font-weight-medium:   500;
+  --gl-font-weight-semibold: 600;
+
+  /* ---- Transitions ---- */
+  --gl-transition:           all 0.25s ease;
+  --gl-transition-fast:      all 0.15s ease;
+  --gl-transition-modal:     all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- Tab-Bar ---- */
+  --gl-tab-bar-height:       82px;
+  /* Widest a .glass-modal grows; dialogs with a form or a table can take more. */
+  --gl-modal-max-width:      340px;
+
+  /* ---- Tab-Bar Floating ---- */
+  --gl-tab-bar-floating-bottom:    16px;
+  --gl-tab-bar-floating-gap:       var(--gl-space-sm);
+  --gl-tab-bar-floating-padding:   6px 10px;
+  --gl-tab-bar-floating-radius:    var(--gl-radius-full);
+  --gl-tab-bar-accessory-size:     56px;
+  --gl-tab-bar-spotlight-color:    var(--gl-color-primary);
+
+  /* ---- Input Placeholder ---- */
+  --gl-placeholder:          rgba(255, 255, 255, 0.35);
+
+  /* ---- Accordion ---- */
+  --gl-accordion-body-color: var(--gl-color-text-muted);
+
+  /* ---- Toggle (inactive) ---- */
+  --gl-toggle-thumb-bg:      linear-gradient(to bottom,
+                               rgba(255,255,255,0.9) 0%,
+                               rgba(255,255,255,0.7) 100%);
+
+  /* ---- Range Track ---- */
+  --gl-range-track-bg:       var(--gl-surface-2);
+  --gl-range-track-border:   var(--gl-border-subtle);
+}
+
+
+/* ============================================================
+   1b. DESIGN TOKENS – LIGHT MODE
+   ============================================================ */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --gl-color-primary:        #e8852d;
+  --gl-color-primary-dark:   #c96a1e;
+  --gl-color-primary-mid:    color-mix(in srgb, var(--gl-color-primary) 52%, var(--gl-color-primary-dark));
+  --gl-color-bg-dark:        #e8ecf1;
+  --gl-color-bg-mid:         #f0f4f8;
+  --gl-color-bg-light:       #f5f7fa;
+  --gl-color-text:           #1a2a36;
+  --gl-color-text-muted:     rgba(26, 42, 54, 0.55);
+  --gl-color-text-on-light:  #1a3a4a;
+  --gl-color-text-heading:   #0f1f2a;
+  --gl-select-chevron:       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(26,42,54,0.55)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  --gl-color-success:        #28a745;
+  --gl-color-error:          #dc3545;
+  --gl-color-warning:        #e6a800;
+  --gl-color-success-dark:   #1e7e34;
+  --gl-color-error-dark:     #b02a37;
+
+  --gl-color-on-primary:            #ffffff;
+  --gl-color-on-success:            #ffffff;
+  --gl-color-on-error:              #ffffff;
+  --gl-color-primary-on-surface:    color-mix(in srgb, var(--gl-color-primary) 60%, #000000);
+  --gl-color-success-on-surface:    color-mix(in srgb, var(--gl-color-success) 68%, #000000);
+  --gl-color-error-on-surface:      color-mix(in srgb, var(--gl-color-error)   82%, #000000);
+  --gl-color-warning-on-surface:    color-mix(in srgb, var(--gl-color-warning) 56%, #000000);
+  --gl-color-primary-text:          var(--gl-color-primary);
+
+  --gl-state-scrim:            rgba(255, 255, 255, 0.30);
+  --gl-color-primary-surface:  color-mix(in srgb, var(--gl-color-primary) 25%, transparent);
+  --gl-color-primary-border:   var(--gl-border-warm);
+  --gl-color-success-surface:  color-mix(in srgb, var(--gl-color-success) 15%, transparent);
+  --gl-color-success-border:   color-mix(in srgb, var(--gl-color-success) 30%, transparent);
+  --gl-color-error-surface:    color-mix(in srgb, var(--gl-color-error)   15%, transparent);
+  --gl-color-error-border:     color-mix(in srgb, var(--gl-color-error)   30%, transparent);
+  --gl-color-warning-surface:  color-mix(in srgb, var(--gl-color-warning) 15%, transparent);
+  --gl-color-warning-border:   color-mix(in srgb, var(--gl-color-warning) 30%, transparent);
+
+  --gl-surface-1:            rgba(255, 255, 255, 0.50);
+  --gl-surface-2:            rgba(255, 255, 255, 0.60);
+  --gl-surface-3:            rgba(255, 255, 255, 0.70);
+  --gl-surface-4:            rgba(255, 255, 255, 0.75);
+  --gl-surface-5:            rgba(255, 255, 255, 0.85);
+  --gl-surface-milk:         rgba(255, 255, 255, 0.85);
+  --gl-surface-milk-strong:  rgba(255, 255, 255, 0.92);
+  --gl-surface-overlay:      rgba(0, 0, 0, 0.25);
+
+  --gl-card-glow-top:        rgba(255, 255, 255, 0.90);
+  --gl-card-glow-mid:        rgba(255, 255, 255, 0.78);
+  --gl-card-glow-low:        rgba(255, 255, 255, 0.65);
+  --gl-card-glow-bottom:     rgba(255, 255, 255, 0.50);
+
+  --gl-card-icon-color:      rgba(26, 42, 54, 0.5);
+  --gl-card-text-color:      rgba(26, 42, 54, 0.6);
+
+  --gl-border-subtle:        rgba(0, 0, 0, 0.08);
+  --gl-border-medium:        rgba(0, 0, 0, 0.12);
+  --gl-border-strong:        rgba(0, 0, 0, 0.15);
+  --gl-border-milk:          rgba(0, 0, 0, 0.10);
+  --gl-border-warm:          color-mix(in srgb, var(--gl-color-primary) 30%, transparent);
+  --gl-border-focus:         color-mix(in srgb, var(--gl-color-primary) 50%, transparent);
+
+  --gl-icon-default:         rgba(26, 42, 54, 0.50);
+  --gl-icon-muted:           rgba(26, 42, 54, 0.35);
+  --gl-icon-strong:          rgba(26, 42, 54, 0.70);
+  --gl-icon-on-primary:      var(--gl-color-on-primary, #ffffff);
+  --gl-icon-on-secondary:    #1a3a4a;
+  --gl-icon-on-tertiary:     rgba(26, 42, 54, 0.50);
+
+  --gl-shadow-card:          0 4px 20px rgba(0, 0, 0, 0.06);
+  --gl-shadow-btn:           0 2px 10px rgba(0, 0, 0, 0.06);
+  --gl-shadow-btn-primary:   0 4px 16px color-mix(in srgb, var(--gl-color-primary) 25%, transparent),
+                             0 2px 6px rgba(0, 0, 0, 0.08);
+  --gl-shadow-glow:          0 2px 8px rgba(0, 0, 0, 0.05),
+                             0 4px 12px rgba(0, 0, 0, 0.04);
+  --gl-shadow-modal:         0 16px 48px rgba(0, 0, 0, 0.12),
+                             0 4px 16px rgba(0, 0, 0, 0.08);
+  --gl-shadow-toast:         0 4px 20px rgba(0, 0, 0, 0.10);
+  --gl-shadow-focus:         0 0 0 3px color-mix(in srgb, var(--gl-color-primary) 25%, transparent);
+
+  --gl-inset-subtle:         inset 0 1px 1px rgba(255, 255, 255, 0.60);
+  --gl-inset-medium:         inset 0 1px 1px rgba(255, 255, 255, 0.70);
+  --gl-inset-strong:         inset 0 1px 2px rgba(255, 255, 255, 0.80);
+  --gl-inset-milk:           inset 0 1px 2px rgba(255, 255, 255, 0.90);
+
+  --gl-bg-aurora-1:          rgba(100, 200, 220, 0.15);
+  --gl-bg-aurora-2:          rgba(240, 180, 100, 0.10);
+  --gl-bg-aurora-3:          rgba(120, 200, 230, 0.12);
+  --gl-bg-light-streak-1:    rgba(140, 230, 220, 0.10);
+  --gl-bg-light-streak-2:    rgba(160, 220, 210, 0.08);
+  --gl-bg-warm-glow:         rgba(240, 180, 100, 0.08);
+
+  --gl-placeholder:          rgba(26, 42, 54, 0.30);
+  --gl-accordion-body-color: var(--gl-color-text-muted);
+  --gl-toggle-thumb-bg:      linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
+  --gl-range-track-bg:       var(--gl-surface-2);
+  --gl-range-track-border:   var(--gl-border-subtle);
+}
+
+
+/* ============================================================
+   1c. DESIGN TOKENS – COMPACT DENSITY
+   ============================================================ */
+/* Opt-in, next to the theme: <html data-density="compact">. Fields and
+   buttons at 40px instead of 52 and 56, smaller toggles and boxes, denser
+   list rows — for admin screens, desktop layouts and narrow forms. Only
+   the density tokens change; colours, type and spacing stay as they are.
+
+   A bare attribute selector, like [data-theme="light"]: it matches <html>,
+   and a theme wrapper that carries the attribute in a shadow root that
+   adopts the full sheet. build-styles-js.mjs moves it into tokensCss with
+   the theme blocks. It stays after them: the dark one declares the
+   defaults with the same specificity, and where both match, the later
+   block wins. */
+[data-density="compact"] {
+  --gl-control-height:       40px;
+  --gl-control-padding-x:    var(--gl-space-sm);
+  --gl-btn-height:           40px;
+  --gl-btn-height-sm:        32px;
+  --gl-btn-height-lg:        48px;
+  --gl-textarea-min-height:  88px;
+  --gl-list-item-min-height: 48px;
+  --gl-list-item-padding-y:  10px;
+  --gl-toggle-width:         44px;
+  --gl-toggle-height:        26px;
+  --gl-toggle-thumb-size:    18px;
+  --gl-check-size:           20px;
+  --gl-modal-action-height:  44px;
+}
+
+
+/* ============================================================
+   1d. SURFACE PRESETS – SOLID AND TINT
+   ============================================================ */
+/* Opt-in, next to the theme and the density, on <html>.
+
+   data-surface="solid" (since 1.24.0): opaque surfaces without blur and
+   gloss, for admin screens, forms on a plain background, designs without
+   glass. Each surface takes the colour the glass shows over the theme's
+   middle background, --gl-color-bg-mid: one surface above another keeps
+   its place in the order, and a re-branded background carries over.
+
+   data-surface="tint" (since 1.25.0): for a page with a background of its
+   own — a brand colour, a photo, a pattern — where a surface mixed over
+   --gl-color-bg-mid would stand out as a foreign block. The surfaces in the
+   flow of the page become see-through tints of the text colour, nothing
+   blurred: a field on a card stays as see-through as the card, and its
+   contrast follows the text. What lies over other content keeps the solid
+   values: modal, sheet, popover, toast and the tab bars (1e). So do the
+   milk surfaces, light plates for dark ink: a see-through secondary button
+   would lose its text on a dark page.
+
+   Both turn off the blur, the inner shine (--gl-inset-*) and the gloss.
+   Borders, drop shadows, the tints of badges and chips and the dimming
+   overlay stay as they are; a blur behind dialogs stays where a project
+   sets --gl-blur-overlay.
+
+   The bare selectors match <html>, like the density preset. A theme scope
+   inside the page — an element with its own data-theme — re-declares its
+   theme's glass tokens, so the presets name it too. build-styles-js.mjs
+   moves the three blocks into tokensCss, after the density block. */
+
+/* Solid, dark theme — and the ground of the tint preset. The solid
+   surfaces are kept under names of their own as well, --gl-solid-*: the
+   panels of the tint preset take them from there (1e). */
+[data-surface="solid"],
+[data-surface="tint"],
+[data-surface="solid"] [data-theme="dark"],
+[data-surface="tint"] [data-theme="dark"] {
+  --gl-solid-surface-1:      color-mix(in srgb, #ffffff 8%,  var(--gl-color-bg-mid));
+  --gl-solid-surface-2:      color-mix(in srgb, #ffffff 10%, var(--gl-color-bg-mid));
+  --gl-solid-surface-3:      color-mix(in srgb, #ffffff 14%, var(--gl-color-bg-mid));
+  --gl-solid-surface-4:      color-mix(in srgb, #ffffff 16%, var(--gl-color-bg-mid));
+  --gl-solid-surface-5:      color-mix(in srgb, #ffffff 22%, var(--gl-color-bg-mid));
+  --gl-solid-card-glow-top:    color-mix(in srgb, #ffffff 32%, var(--gl-color-bg-mid));
+  --gl-solid-card-glow-mid:    color-mix(in srgb, #ffffff 22%, var(--gl-color-bg-mid));
+  --gl-solid-card-glow-low:    color-mix(in srgb, #ffffff 14%, var(--gl-color-bg-mid));
+  --gl-solid-card-glow-bottom: color-mix(in srgb, #ffffff 8%,  var(--gl-color-bg-mid));
+  --gl-surface-1:            var(--gl-solid-surface-1);
+  --gl-surface-2:            var(--gl-solid-surface-2);
+  --gl-surface-3:            var(--gl-solid-surface-3);
+  --gl-surface-4:            var(--gl-solid-surface-4);
+  --gl-surface-5:            var(--gl-solid-surface-5);
+  --gl-surface-milk:         color-mix(in srgb, #ffffff 55%, var(--gl-color-bg-mid));
+  --gl-surface-milk-strong:  color-mix(in srgb, #ffffff 75%, var(--gl-color-bg-mid));
+  --gl-card-glow-top:        var(--gl-solid-card-glow-top);
+  --gl-card-glow-mid:        var(--gl-solid-card-glow-mid);
+  --gl-card-glow-low:        var(--gl-solid-card-glow-low);
+  --gl-card-glow-bottom:     var(--gl-solid-card-glow-bottom);
+  --gl-toggle-thumb-bg:      linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%);
+  --gl-shadow-glow:          0 4px 16px rgba(0, 0, 0, 0.15);
+  --gl-blur:                 0px;
+  --gl-blur-light:           0px;
+  --gl-blur-soft:            0px;
+  --gl-blur-heavy:           0px;
+  /* No inner shine. A zero shadow, not none: the insets sit in shadow lists. */
+  --gl-inset-subtle:         inset 0 0 0 transparent;
+  --gl-inset-medium:         inset 0 0 0 transparent;
+  --gl-inset-strong:         inset 0 0 0 transparent;
+  --gl-inset-milk:           inset 0 0 0 transparent;
+  --gl-gloss-card:           none;
+  --gl-gloss-modal:          none;
+  --gl-gloss-progress:       none;
+  --gl-gloss-droplet:        none;
+  --gl-range-thumb-border:   2px solid transparent;
+}
+/* Solid, light theme — and the tint preset's ground in it. */
+[data-surface="solid"][data-theme="light"],
+[data-surface="solid"] [data-theme="light"],
+[data-theme="light"] [data-surface="solid"],
+[data-surface="tint"][data-theme="light"],
+[data-surface="tint"] [data-theme="light"],
+[data-theme="light"] [data-surface="tint"] {
+  --gl-solid-surface-1:      color-mix(in srgb, #ffffff 50%, var(--gl-color-bg-mid));
+  --gl-solid-surface-2:      color-mix(in srgb, #ffffff 60%, var(--gl-color-bg-mid));
+  --gl-solid-surface-3:      color-mix(in srgb, #ffffff 70%, var(--gl-color-bg-mid));
+  --gl-solid-surface-4:      color-mix(in srgb, #ffffff 75%, var(--gl-color-bg-mid));
+  --gl-solid-surface-5:      color-mix(in srgb, #ffffff 85%, var(--gl-color-bg-mid));
+  --gl-solid-card-glow-top:    color-mix(in srgb, #ffffff 90%, var(--gl-color-bg-mid));
+  --gl-solid-card-glow-mid:    color-mix(in srgb, #ffffff 78%, var(--gl-color-bg-mid));
+  --gl-solid-card-glow-low:    color-mix(in srgb, #ffffff 65%, var(--gl-color-bg-mid));
+  --gl-solid-card-glow-bottom: color-mix(in srgb, #ffffff 50%, var(--gl-color-bg-mid));
+  --gl-surface-1:            var(--gl-solid-surface-1);
+  --gl-surface-2:            var(--gl-solid-surface-2);
+  --gl-surface-3:            var(--gl-solid-surface-3);
+  --gl-surface-4:            var(--gl-solid-surface-4);
+  --gl-surface-5:            var(--gl-solid-surface-5);
+  --gl-surface-milk:         color-mix(in srgb, #ffffff 85%, var(--gl-color-bg-mid));
+  --gl-surface-milk-strong:  color-mix(in srgb, #ffffff 92%, var(--gl-color-bg-mid));
+  --gl-card-glow-top:        var(--gl-solid-card-glow-top);
+  --gl-card-glow-mid:        var(--gl-solid-card-glow-mid);
+  --gl-card-glow-low:        var(--gl-solid-card-glow-low);
+  --gl-card-glow-bottom:     var(--gl-solid-card-glow-bottom);
+  --gl-shadow-glow:          0 2px 8px rgba(0, 0, 0, 0.05),
+                             0 4px 12px rgba(0, 0, 0, 0.04);
+  --gl-inset-subtle:         inset 0 0 0 transparent;
+  --gl-inset-medium:         inset 0 0 0 transparent;
+  --gl-inset-strong:         inset 0 0 0 transparent;
+  --gl-inset-milk:           inset 0 0 0 transparent;
+}
+/* Tint: the surfaces in the flow of the page become see-through tints of
+   the text colour. One block for both themes: the text colour is the
+   theme's. It comes after the solid blocks and outranks the light one. */
+:root[data-surface="tint"],
+[data-surface="tint"][data-theme],
+[data-surface="tint"] [data-theme],
+[data-theme] [data-surface="tint"] {
+  --gl-surface-1:            color-mix(in srgb, var(--gl-color-text) 4%,  transparent);
+  --gl-surface-2:            color-mix(in srgb, var(--gl-color-text) 6%,  transparent);
+  --gl-surface-3:            color-mix(in srgb, var(--gl-color-text) 9%,  transparent);
+  --gl-surface-4:            color-mix(in srgb, var(--gl-color-text) 12%, transparent);
+  --gl-surface-5:            color-mix(in srgb, var(--gl-color-text) 16%, transparent);
+  --gl-card-glow-top:        color-mix(in srgb, var(--gl-color-text) 16%, transparent);
+  --gl-card-glow-mid:        color-mix(in srgb, var(--gl-color-text) 12%, transparent);
+  --gl-card-glow-low:        color-mix(in srgb, var(--gl-color-text) 9%,  transparent);
+  --gl-card-glow-bottom:     color-mix(in srgb, var(--gl-color-text) 6%,  transparent);
+}
+
+
+/* ============================================================
+   1e. TINT PRESET – PANELS
+   ============================================================ */
+/* What lies over other content stays opaque under data-surface="tint":
+   it takes the solid surfaces the preset keeps under --gl-solid-*, and so
+   does what sits inside it — a field in a modal, a row in a popover. A
+   component rule, not a token block, so that it also matches inside the
+   shadow roots of GlassKit Elements, on the theme wrapper that mirrors
+   data-surface. */
+[data-surface="tint"] :is(.glass-modal, .glass-sheet, .glass-popover, .glass-toast, .glass-tab-bar, .glass-tab-bar__accessory) {
+  --gl-surface-1:            var(--gl-solid-surface-1);
+  --gl-surface-2:            var(--gl-solid-surface-2);
+  --gl-surface-3:            var(--gl-solid-surface-3);
+  --gl-surface-4:            var(--gl-solid-surface-4);
+  --gl-surface-5:            var(--gl-solid-surface-5);
+  --gl-card-glow-top:        var(--gl-solid-card-glow-top);
+  --gl-card-glow-mid:        var(--gl-solid-card-glow-mid);
+  --gl-card-glow-low:        var(--gl-solid-card-glow-low);
+  --gl-card-glow-bottom:     var(--gl-solid-card-glow-bottom);
+}
+
+
+/* ============================================================
+   2. HINTERGRUND
+   ============================================================ */
+.glass-bg {
+  background:
+    radial-gradient(ellipse at 20% 40%, var(--gl-bg-aurora-1) 0%, transparent 55%),
+    radial-gradient(ellipse at 80% 65%, var(--gl-bg-aurora-2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 20%, var(--gl-bg-aurora-3) 0%, transparent 50%),
+    linear-gradient(170deg,
+      var(--gl-color-bg-light) 0%,
+      var(--gl-color-bg-mid) 50%,
+      var(--gl-color-bg-dark) 100%
+    );
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-family: var(--gl-font-family);
+  color: var(--gl-color-text);
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.4s ease, color 0.3s ease;
+  isolation: isolate;
+}
+
+.glass-bg::before {
+  content: '';
+  position: absolute;
+  top: 20%; left: -30%;
+  width: 160%; height: 55%;
+  background:
+    radial-gradient(ellipse at 35% 45%, var(--gl-bg-light-streak-1) 0%, transparent 50%),
+    radial-gradient(ellipse at 65% 55%, var(--gl-bg-light-streak-2) 0%, transparent 45%);
+  transform: rotate(-8deg);
+  pointer-events: none; z-index: -1;
+}
+
+.glass-bg::after {
+  content: '';
+  position: absolute;
+  top: 40%; right: -20%;
+  width: 70%; height: 50%;
+  background: radial-gradient(ellipse at center,
+    var(--gl-bg-warm-glow) 0%, transparent 65%
+  );
+  pointer-events: none; z-index: -1;
+}
+
+/* The decorations sit at z-index -1 inside .glass-bg's own stacking
+   context (isolation: isolate on .glass-bg), so the children stay above
+   them without a z-index of their own. Before 1.15.1 every child carried
+   z-index: 1 and so became a stacking context — an overlay inside one of
+   them (modal, sheet: z-index 1000) was trapped at level 1 and painted
+   below a tab bar (900) that came later in the DOM. */
+.glass-bg > * { position: relative; }
+
+.glass-bg--has-tab-bar {
+  padding-bottom: var(--gl-tab-bar-height);
+}
+
+.glass-bg--has-tab-bar-floating {
+  padding-bottom: calc(var(--gl-tab-bar-accessory-size)
+                       + var(--gl-tab-bar-floating-bottom)
+                       + var(--gl-space-md));
+}
+
+
+/* ============================================================
+   3. NAVIGATION
+   ============================================================ */
+.glass-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 var(--gl-space-xs);
+}
+
+.glass-pill {
+  width: 46px; height: 46px;
+  border-radius: var(--gl-radius-pill);
+  background: var(--gl-surface-3);
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+  border: 1.5px solid var(--gl-border-strong);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: var(--gl-transition);
+  color: var(--gl-color-text);
+  box-shadow: var(--gl-shadow-glow), var(--gl-inset-medium);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.glass-pill:hover { background: var(--gl-surface-5); transform: scale(1.05); }
+.glass-pill:active { transform: scale(0.95); }
+/* Disabled: dimmed, not-allowed cursor, no hover — see .glass-btn:disabled. */
+.glass-pill:disabled,
+.glass-pill[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.glass-pill:disabled:is(:hover, :active),
+.glass-pill[aria-disabled="true"]:is(:hover, :active) { background: var(--gl-surface-3); transform: none; }
+
+.glass-pill svg,
+.glass-pill ::slotted(svg) {
+  width: 20px; height: 20px;
+  fill: none; stroke: var(--gl-color-text); stroke-width: 2.2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+
+/* ============================================================
+   4. SEITENTITEL
+   ============================================================ */
+.glass-title {
+  text-align: center;
+  color: var(--gl-color-text-heading);
+  font-size: var(--gl-font-size-title);
+  font-weight: var(--gl-font-weight-semibold);
+  line-height: 1.3;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  letter-spacing: -0.3px;
+}
+
+
+/* ============================================================
+   5. GLASS CARD
+   ============================================================ */
+.glass-card {
+  background: var(--gl-surface-2);
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+  border: 1.5px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-card);
+  padding: var(--gl-space-3xl) var(--gl-space-xl) var(--gl-space-2xl);
+  box-shadow: var(--gl-shadow-card), var(--gl-inset-strong);
+  /* A .glass-list--flush inside reaches the card's edges (since 1.29.1). */
+  --gl-list-flush-inset: var(--gl-space-xl);
+}
+
+.glass-card--glow {
+  position: relative; overflow: hidden;
+  background: linear-gradient(to bottom,
+    var(--gl-card-glow-top) 0%,
+    var(--gl-card-glow-mid) 25%,
+    var(--gl-card-glow-low) 55%,
+    var(--gl-card-glow-bottom) 100%
+  );
+}
+
+.glass-card--glow::before {
+  content: '';
+  position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+  background: var(--gl-gloss-card);
+  z-index: 1;
+}
+
+.glass-card__icon {
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto var(--gl-space-lg);
+}
+
+.glass-card__icon svg {
+  width: 64px; height: 64px;
+  stroke: var(--gl-card-icon-color); stroke-width: 1.2; fill: none;
+}
+
+.glass-card__text {
+  color: var(--gl-card-text-color);
+  font-size: var(--gl-font-size-base);
+  font-weight: var(--gl-font-weight-normal);
+  line-height: 1.55; text-align: center;
+}
+
+
+/* ============================================================
+   6. BUTTONS
+   ============================================================ */
+.glass-btn {
+  display: flex; align-items: center; justify-content: center;
+  gap: 10px; width: 100%; height: var(--gl-btn-height, 56px);
+  border: none; border-radius: var(--gl-radius-btn);
+  font-family: var(--gl-font-family);
+  font-size: var(--gl-font-size-btn);
+  font-weight: var(--gl-font-weight-semibold);
+  cursor: pointer; transition: var(--gl-transition);
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+
+/* Anchors as buttons: shrink-to-fit like real <button> elements
+   (block-level flex would fill the line despite --auto) */
+a.glass-btn { display: inline-flex; text-decoration: none; }
+
+/* The hidden attribute is only a user-agent rule, and display:flex above
+   would beat it — a button hidden by script stayed on screen. */
+.glass-btn[hidden] { display: none; }
+
+.glass-btn svg,
+.glass-btn ::slotted(svg) {
+  width: 20px; height: 20px; flex-shrink: 0;
+  fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
+/* Primary */
+.glass-btn--primary {
+  background: linear-gradient(135deg,
+    var(--gl-color-primary) 0%, var(--gl-color-primary-mid) 50%,
+    var(--gl-color-primary-dark) 100%
+  );
+  color: var(--gl-color-on-primary, #ffffff);
+  border: 1px solid var(--gl-border-warm);
+  box-shadow: var(--gl-shadow-btn-primary), var(--gl-inset-strong);
+}
+.glass-btn--primary svg,
+.glass-btn--primary ::slotted(svg) { fill: var(--gl-icon-on-primary); stroke: var(--gl-icon-on-primary); stroke-width: 0; }
+.glass-btn--primary:hover { transform: translateY(-1px); }
+.glass-btn--primary:active { transform: translateY(1px); }
+
+/* Secondary */
+.glass-btn--secondary {
+  background: linear-gradient(to bottom,
+    var(--gl-surface-milk-strong) 0%, var(--gl-surface-milk) 100%
+  );
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+  border: 1.5px solid var(--gl-border-milk);
+  color: var(--gl-color-text-on-light);
+  box-shadow: var(--gl-shadow-btn), var(--gl-inset-milk);
+}
+.glass-btn--secondary svg,
+.glass-btn--secondary ::slotted(svg) {
+  fill: none; stroke: var(--gl-icon-on-secondary);
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.glass-btn--secondary:hover { transform: translateY(-1px); }
+.glass-btn--secondary:active { transform: translateY(1px); }
+
+/* Tertiary */
+.glass-btn--tertiary {
+  background: var(--gl-surface-2);
+  backdrop-filter: blur(var(--gl-blur-light));
+  -webkit-backdrop-filter: blur(var(--gl-blur-light));
+  border: 1px solid var(--gl-border-subtle);
+  color: var(--gl-color-text-muted);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.10), var(--gl-inset-subtle);
+}
+.glass-btn--tertiary svg,
+.glass-btn--tertiary ::slotted(svg) {
+  fill: none; stroke: var(--gl-icon-on-tertiary);
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.glass-btn--tertiary:hover {
+  background: var(--gl-surface-4); color: var(--gl-color-text);
+  transform: translateY(-1px);
+}
+.glass-btn--tertiary:active { transform: translateY(1px); }
+
+/* Disabled. A disabled button looked exactly like an enabled one, kept the
+   pointer cursor and still lifted on hover — a tap did nothing, with no cue
+   beforehand. Dimmed to 0.45 like the segmented control and the date chips,
+   the not-allowed cursor, and it stays put. [aria-disabled="true"] covers
+   a.glass-btn, which cannot be disabled; the link itself still navigates
+   unless the page stops it. */
+.glass-btn:disabled,
+.glass-btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.glass-btn:disabled:is(:hover, :active),
+.glass-btn[aria-disabled="true"]:is(:hover, :active) { transform: none; }
+.glass-btn--tertiary:disabled:hover,
+.glass-btn--tertiary[aria-disabled="true"]:hover {
+  background: var(--gl-surface-2); color: var(--gl-color-text-muted);
+}
+
+/* Sizes */
+.glass-btn--sm { height: var(--gl-btn-height-sm, 44px); font-size: var(--gl-font-size-sm); border-radius: var(--gl-radius-sm); }
+.glass-btn--lg { height: var(--gl-btn-height-lg, 64px); font-size: var(--gl-font-size-lg); }
+.glass-btn--auto { width: auto; padding: 0 var(--gl-space-xl); }
+
+
+/* ============================================================
+   7. STATUS CARD
+   ============================================================ */
+.glass-status {
+  background: var(--gl-surface-1);
+  backdrop-filter: blur(var(--gl-blur-light));
+  -webkit-backdrop-filter: blur(var(--gl-blur-light));
+  border: 1px solid var(--gl-border-subtle);
+  border-radius: var(--gl-radius-btn);
+  padding: var(--gl-space-md) var(--gl-space-lg);
+  display: flex; align-items: center; gap: var(--gl-space-sm);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), var(--gl-inset-subtle);
+}
+
+.glass-status svg,
+.glass-status ::slotted(svg) {
+  width: 20px; height: 20px; flex-shrink: 0;
+  stroke: var(--gl-icon-muted); stroke-width: 2; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+.glass-status p {
+  color: var(--gl-color-text-muted);
+  font-size: var(--gl-font-size-sm);
+  font-weight: var(--gl-font-weight-normal);
+  line-height: 1.45;
+}
+
+
+/* ============================================================
+   8. INPUT FIELDS
+   ============================================================ */
+.glass-input-group {
+  display: flex; flex-direction: column; gap: var(--gl-space-xs);
+}
+
+.glass-label {
+  font-size: var(--gl-font-size-sm);
+  font-weight: var(--gl-font-weight-medium);
+  color: var(--gl-icon-strong);
+  padding-inline-start: var(--gl-space-2xs);
+}
+/* Without text a label takes no room: an empty one kept the group's gap
+   above its field (until 1.24.0). */
+.glass-label:empty { display: none; }
+
+.glass-input {
+  width: 100%; height: var(--gl-control-height, 52px);
+  padding: 0 var(--gl-control-padding-x, var(--gl-space-md));
+  background: var(--gl-surface-2);
+  backdrop-filter: blur(var(--gl-blur-light));
+  -webkit-backdrop-filter: blur(var(--gl-blur-light));
+  border: 1.5px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-input);
+  color: var(--gl-color-text);
+  font-family: var(--gl-font-family);
+  font-size: var(--gl-font-size-base);
+  transition: var(--gl-transition);
+  outline: none;
+  box-shadow: var(--gl-inset-subtle);
+  -webkit-tap-highlight-color: transparent;
+  /* A value or placeholder too long for the field ends in an ellipsis
+     while the field is not being edited (since 1.25.0). */
+  text-overflow: ellipsis;
+}
+/* The browser's own picker button of a date or time field, and the arrow
+   of a datalist, unless --gl-input-picker-icon is none (since 1.25.0) —
+   when the field's prefix is the picker, for instance; call showPicker()
+   from it then. Unset, revert keeps each browser's own. */
+.glass-input::-webkit-calendar-picker-indicator { display: var(--gl-input-picker-icon, revert); }
+
+.glass-input::placeholder { color: var(--gl-placeholder); }
+
+/* Date and time fields drop the native appearance. iOS draws them as a
+   native control with a width of its own: width: 100% notwithstanding, a
+   date field came out wider than its column (two side by side overlapped),
+   an empty one narrower than a filled one, and the value sat centred where
+   every other field starts at the left. Without the appearance iOS gives
+   them the column width like any other field; the picker still opens. The
+   box was GlassKit's already, so other browsers draw the same as before. */
+.glass-input[type="date"],
+.glass-input[type="time"],
+.glass-input[type="datetime-local"],
+.glass-input[type="month"] {
+  -webkit-appearance: none; appearance: none;
+}
+/* A rule of its own: a browser that does not know this pseudo-element
+   drops the whole rule, and must not take the one above with it. */
+.glass-input::-webkit-date-and-time-value { text-align: start; }
+
+.glass-input:focus {
+  border-color: var(--gl-border-focus);
+  background: var(--gl-surface-3);
+  box-shadow: var(--gl-shadow-focus), var(--gl-inset-medium);
+}
+
+.glass-input:disabled { opacity: 0.4; cursor: not-allowed; }
+.glass-input--error { border-color: var(--gl-color-error); }
+.glass-input--error:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--gl-color-error) 25%, transparent), var(--gl-inset-medium);
+}
+
+/* Input with a prefix and a suffix inside its box: an icon, a currency, a
+   unit, a button. The wrapper is a one-cell grid, so the affixes lie on the
+   field, centred on it, at its inline start and end (they swap sides right
+   to left). The field's padding grows by their width: --gl-input-prefix-size
+   and --gl-input-suffix-size, 18px (an icon) unless set — set them for a
+   wider unit; GlassKit Elements' <glk-input> measures them. The padding
+   follows the --prefix / --suffix modifier, or, where :has() is supported,
+   a visible affix. A click on text, an icon or a disabled control reaches
+   the field; what can be used inside takes its own click. */
+/* The one column may shrink to nothing: as an `auto` track it held a grid
+   item at its content-based minimum, and Chromium's date and time inputs
+   count their whole intrinsic width as that, picker icon included — in a
+   narrow column they ran out of the wrapper (1.22.0). */
+.glass-input-wrap { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; }
+.glass-input-wrap > * { grid-area: 1 / 1; }
+/* The room for an affix changes at once: animated, the text would slide
+   sideways while the page loads and an affix gets measured. */
+.glass-input-wrap > .glass-input { transition: var(--gl-transition), padding 0s; }
+.glass-input-wrap__prefix,
+.glass-input-wrap__suffix {
+  position: relative; z-index: 1;
+  display: inline-flex; align-items: center; gap: var(--gl-space-2xs);
+  color: var(--gl-color-text-muted);
+  font-family: var(--gl-font-family); font-size: var(--gl-font-size-base);
+  white-space: nowrap; pointer-events: none;
+}
+.glass-input-wrap__prefix { justify-self: start; margin-inline-start: var(--gl-control-padding-x, var(--gl-space-md)); }
+.glass-input-wrap__suffix { justify-self: end; margin-inline-end: var(--gl-control-padding-x, var(--gl-space-md)); }
+.glass-input-wrap__prefix[hidden],
+.glass-input-wrap__suffix[hidden] { display: none; }
+/* What can be used takes the pointer back: an enabled control — a
+   form-associated custom element such as <glk-button> too — a link, an
+   element with tabindex. Until 1.22.1 a fixed list did: a disabled button
+   kept the click from the field, and a <glk-button> took none. The `auto`
+   also outweighs a `none` inherited from a container that locks a form:
+   lock it with `inert`, or disable the controls. */
+.glass-input-wrap__prefix :is(:enabled, a[href], [tabindex]):not(:disabled),
+.glass-input-wrap__suffix :is(:enabled, a[href], [tabindex]):not(:disabled) { pointer-events: auto; }
+.glass-input-wrap__prefix svg, .glass-input-wrap__suffix svg,
+.glass-input-wrap__prefix ::slotted(svg), .glass-input-wrap__suffix ::slotted(svg) {
+  width: 18px; height: 18px; flex-shrink: 0;
+  fill: none; stroke: var(--gl-icon-muted);
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.glass-input-wrap--prefix > .glass-input {
+  padding-inline-start: calc(var(--gl-control-padding-x, var(--gl-space-md)) + var(--gl-input-prefix-size, 18px) + var(--gl-space-xs));
+}
+.glass-input-wrap--suffix > .glass-input {
+  padding-inline-end: calc(var(--gl-control-padding-x, var(--gl-space-md)) + var(--gl-input-suffix-size, 18px) + var(--gl-space-xs));
+}
+.glass-input-wrap:has(> .glass-input-wrap__prefix:not([hidden])) > .glass-input {
+  padding-inline-start: calc(var(--gl-control-padding-x, var(--gl-space-md)) + var(--gl-input-prefix-size, 18px) + var(--gl-space-xs));
+}
+.glass-input-wrap:has(> .glass-input-wrap__suffix:not([hidden])) > .glass-input {
+  padding-inline-end: calc(var(--gl-control-padding-x, var(--gl-space-md)) + var(--gl-input-suffix-size, 18px) + var(--gl-space-xs));
+}
+
+.glass-hint {
+  font-size: var(--gl-font-size-xs);
+  color: var(--gl-color-text-muted);
+  padding-inline-start: var(--gl-space-2xs);
+}
+.glass-hint--error { color: var(--gl-color-error); }
+
+/* Textarea */
+.glass-textarea {
+  width: 100%; min-height: var(--gl-textarea-min-height, 120px);
+  padding: var(--gl-space-md) var(--gl-control-padding-x, var(--gl-space-md));
+  background: var(--gl-surface-2);
+  backdrop-filter: blur(var(--gl-blur-light));
+  -webkit-backdrop-filter: blur(var(--gl-blur-light));
+  border: 1.5px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-input);
+  color: var(--gl-color-text);
+  font-family: var(--gl-font-family);
+  font-size: var(--gl-font-size-base);
+  line-height: 1.5; resize: vertical;
+  transition: var(--gl-transition);
+  outline: none;
+  box-shadow: var(--gl-inset-subtle);
+  /* --gl-textarea-field-sizing: content lets text areas grow with their
+     text (since 1.25.0); off by default, because it ignores rows. Browsers
+     without field-sizing keep the fixed height. */
+  field-sizing: var(--gl-textarea-field-sizing, fixed);
+}
+/* Nothing to resize in a text area that cannot be edited (since 1.25.0). */
+.glass-textarea:read-only { resize: none; }
+.glass-textarea::placeholder { color: var(--gl-placeholder); }
+.glass-textarea:focus {
+  border-color: var(--gl-border-focus);
+  background: var(--gl-surface-3);
+  box-shadow: var(--gl-shadow-focus), var(--gl-inset-medium);
+}
+
+
+/* ============================================================
+   9. SELECT
+   ============================================================ */
+.glass-select {
+  width: 100%; height: var(--gl-control-height, 52px);
+  padding: 0 var(--gl-space-3xl) 0 var(--gl-control-padding-x, var(--gl-space-md));
+  background: var(--gl-surface-2);
+  backdrop-filter: blur(var(--gl-blur-light));
+  -webkit-backdrop-filter: blur(var(--gl-blur-light));
+  border: 1.5px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-input);
+  color: var(--gl-color-text);
+  font-family: var(--gl-font-family);
+  font-size: var(--gl-font-size-base);
+  transition: var(--gl-transition);
+  outline: none;
+  box-shadow: var(--gl-inset-subtle);
+  cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: var(--gl-select-chevron, url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"));
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+}
+/* Right to left: the chevron and the room kept for it move to the left —
+   together, under :dir(), so a browser without it keeps both on the right. */
+.glass-select:dir(rtl) {
+  padding: 0 var(--gl-control-padding-x, var(--gl-space-md)) 0 var(--gl-space-3xl);
+  background-position: left 16px center;
+}
+.glass-select:focus {
+  border-color: var(--gl-border-focus);
+  box-shadow: var(--gl-shadow-focus), var(--gl-inset-medium);
+}
+.glass-select option { background: var(--gl-color-bg-mid); color: var(--gl-color-text); }
+/* Disabled like .glass-input. */
+.glass-select:disabled,
+.glass-textarea:disabled { opacity: 0.4; cursor: not-allowed; }
+
+
+/* ============================================================
+   10. SEARCH FIELD
+   ============================================================ */
+.glass-search {
+  position: relative; display: flex; align-items: center;
+}
+
+.glass-search__icon {
+  position: absolute; inset-inline-start: var(--gl-space-md);
+  width: 18px; height: 18px;
+  stroke: var(--gl-icon-muted) !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  fill: none !important;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.glass-search .glass-input {
+  padding-inline-start: 44px;
+  border-radius: var(--gl-radius-full);
+}
+
+
+/* ============================================================
+   11. TOGGLE SWITCH
+   ============================================================ */
+/* First-line alignment — see the note on .glass-checkbox below. The track
+   is --gl-toggle-height high (30px by default). */
+.glass-toggle {
+  display: inline-flex; align-items: flex-start;
+  gap: var(--gl-space-sm); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Visually hidden, but it keeps the control's area and lies on top of it.
+   Zero-size inputs make the browser suppress the native validation bubble
+   on required fields (silent submit block). On top, a pointer — or a test
+   tool that clicks the switch by its role — reaches the input itself; the
+   track drew over it before and took the click. It covers the track only:
+   the label text, which may hold a link, stays the label's. margin-top is
+   the track's first-line offset, from the label's font; a browser without
+   the lh unit drops it and keeps margin: 0, as the track does. */
+.glass-toggle__input {
+  position: absolute; z-index: 1; opacity: 0; cursor: inherit;
+  width: var(--gl-toggle-width, 52px); height: var(--gl-toggle-height, 30px); margin: 0; font: inherit;
+  margin-top: max(0px, calc((1lh - var(--gl-toggle-height, 30px)) / 2));
+}
+
+.glass-toggle__track {
+  position: relative; width: var(--gl-toggle-width, 52px); height: var(--gl-toggle-height, 30px);
+  /* --gl-toggle-track-bg and -checked (since 1.25.0): a stronger track for
+     a page without glass, where the surface can be hard to see. */
+  background: var(--gl-toggle-track-bg, var(--gl-surface-2));
+  backdrop-filter: blur(var(--gl-blur-soft));
+  -webkit-backdrop-filter: blur(var(--gl-blur-soft));
+  border: 1.5px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-full);
+  transition: var(--gl-transition);
+  box-shadow: var(--gl-inset-subtle);
+  flex-shrink: 0;
+  margin-top: max(0px, calc((1lh - var(--gl-toggle-height, 30px)) / 2));
+}
+
+/* Inset and travel follow the track. Top and left (right, right to left)
+   are (height − thumb) / 2 − 1px inside the 1.5px border: 3px at 52 × 30,
+   where the thumb has always sat (taking off the whole border would move
+   it by half a pixel). It travels width − height, so the gap at the end
+   mirrors the one below. */
+.glass-toggle__thumb {
+  position: absolute;
+  top: calc((var(--gl-toggle-height, 30px) - var(--gl-toggle-thumb-size, 22px)) / 2 - 1px);
+  left: calc((var(--gl-toggle-height, 30px) - var(--gl-toggle-thumb-size, 22px)) / 2 - 1px);
+  width: var(--gl-toggle-thumb-size, 22px); height: var(--gl-toggle-thumb-size, 22px);
+  border-radius: var(--gl-radius-pill);
+  background: var(--gl-toggle-thumb-bg);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2), var(--gl-inset-milk);
+  transition: var(--gl-transition);
+}
+
+.glass-toggle__input:checked + .glass-toggle__track {
+  background: var(--gl-toggle-track-bg-checked, linear-gradient(135deg,
+    var(--gl-color-primary) 0%, var(--gl-color-primary-dark) 100%
+  ));
+  border-color: var(--gl-border-warm);
+}
+
+.glass-toggle__input:checked + .glass-toggle__track .glass-toggle__thumb {
+  transform: translateX(calc(var(--gl-toggle-width, 52px) - var(--gl-toggle-height, 30px)));
+}
+/* Right to left the thumb starts on the right and travels left — both
+   under :dir(), so a browser without it keeps the left-to-right switch. */
+.glass-toggle__thumb:dir(rtl) {
+  left: auto; right: calc((var(--gl-toggle-height, 30px) - var(--gl-toggle-thumb-size, 22px)) / 2 - 1px);
+}
+.glass-toggle__input:checked + .glass-toggle__track .glass-toggle__thumb:dir(rtl) {
+  transform: translateX(calc(var(--gl-toggle-height, 30px) - var(--gl-toggle-width, 52px)));
+}
+
+.glass-toggle__input:focus-visible + .glass-toggle__track { box-shadow: var(--gl-shadow-focus); }
+/* Disabled: track and label dim, the cursor says no. Sibling selectors, so
+   it holds without :has() too; the gap between them follows where :has()
+   is supported. The same for checkbox and radio. */
+.glass-toggle__input:disabled { cursor: not-allowed; }
+.glass-toggle__input:disabled + .glass-toggle__track,
+.glass-toggle__input:disabled ~ .glass-toggle__label { opacity: 0.45; cursor: not-allowed; }
+.glass-toggle:has(> .glass-toggle__input:disabled) { cursor: not-allowed; }
+
+.glass-toggle__label {
+  font-size: var(--gl-font-size-base);
+  color: var(--gl-color-text);
+  user-select: none;
+  margin-top: max(0px, calc((var(--gl-toggle-height, 30px) - 1lh) / 2));
+}
+/* A control without a label keeps no gap for one. */
+.glass-toggle__label:empty,
+.glass-checkbox__label:empty,
+.glass-radio__label:empty { display: none; }
+
+
+/* ============================================================
+   12. CHECKBOX
+   ============================================================ */
+/* Control and label are aligned on the *first line*, not on the middle of the
+   text block — a consent label runs over several lines and a centred box then
+   points at nothing. The two margins below centre the box (--gl-check-size,
+   24px by default) on that first line; whichever is the shorter of the two
+   gets the offset, so exactly one is ever non-zero. For a single-line label
+   this is pixel-identical to the `align-items: center` of pre-1.11.0.
+   Repeated on .glass-radio (--gl-check-size) and .glass-toggle
+   (--gl-toggle-height) — keep the three in step. */
+.glass-checkbox {
+  display: inline-flex; align-items: flex-start;
+  gap: var(--gl-space-sm); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* On top of the box, covering it only — see .glass-toggle__input. */
+.glass-checkbox__input {
+  position: absolute; z-index: 1; opacity: 0; cursor: inherit;
+  width: var(--gl-check-size, 24px); height: var(--gl-check-size, 24px); margin: 0; font: inherit;
+  margin-top: max(0px, calc((1lh - var(--gl-check-size, 24px)) / 2));
+}
+
+.glass-checkbox__box {
+  width: var(--gl-check-size, 24px); height: var(--gl-check-size, 24px);
+  border-radius: var(--gl-radius-xs);
+  background: var(--gl-surface-2);
+  backdrop-filter: blur(var(--gl-blur-soft));
+  -webkit-backdrop-filter: blur(var(--gl-blur-soft));
+  border: 1.5px solid var(--gl-border-medium);
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--gl-transition);
+  box-shadow: var(--gl-inset-subtle);
+  flex-shrink: 0;
+  margin-top: max(0px, calc((1lh - var(--gl-check-size, 24px)) / 2));
+}
+
+.glass-checkbox__box svg {
+  width: 14px; height: 14px;
+  stroke: var(--gl-color-on-primary, #ffffff); stroke-width: 3; fill: none;
+  stroke-linecap: round; stroke-linejoin: round;
+  opacity: 0; transform: scale(0.5);
+  transition: var(--gl-transition-fast);
+}
+
+.glass-checkbox__input:checked + .glass-checkbox__box {
+  background: linear-gradient(135deg,
+    var(--gl-color-primary) 0%, var(--gl-color-primary-dark) 100%
+  );
+  border-color: var(--gl-border-warm);
+}
+.glass-checkbox__input:checked + .glass-checkbox__box svg { opacity: 1; transform: scale(1); }
+.glass-checkbox__input:focus-visible + .glass-checkbox__box { box-shadow: var(--gl-shadow-focus); }
+/* Disabled — see .glass-toggle__input:disabled. */
+.glass-checkbox__input:disabled { cursor: not-allowed; }
+.glass-checkbox__input:disabled + .glass-checkbox__box,
+.glass-checkbox__input:disabled ~ .glass-checkbox__label { opacity: 0.45; cursor: not-allowed; }
+.glass-checkbox:has(> .glass-checkbox__input:disabled) { cursor: not-allowed; }
+
+.glass-checkbox__label {
+  font-size: var(--gl-font-size-base);
+  color: var(--gl-color-text); user-select: none;
+  margin-top: max(0px, calc((var(--gl-check-size, 24px) - 1lh) / 2));
+}
+
+
+/* ============================================================
+   13. RADIO BUTTON
+   ============================================================ */
+/* First-line alignment — see the note on .glass-checkbox. */
+.glass-radio {
+  display: inline-flex; align-items: flex-start;
+  gap: var(--gl-space-sm); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+/* On top of the circle, covering it only — see .glass-toggle__input. */
+.glass-radio__input {
+  position: absolute; z-index: 1; opacity: 0; cursor: inherit;
+  width: var(--gl-check-size, 24px); height: var(--gl-check-size, 24px); margin: 0; font: inherit;
+  margin-top: max(0px, calc((1lh - var(--gl-check-size, 24px)) / 2));
+}
+
+/* --gl-radio-* (since 1.25.0): fill, rim and dot, for a look without glass —
+   a ring in the text colour that turns the accent colour when checked, say.
+   The two rims are whole border values, so give both the same width. */
+.glass-radio__circle {
+  width: var(--gl-check-size, 24px); height: var(--gl-check-size, 24px);
+  border-radius: var(--gl-radius-pill);
+  background: var(--gl-radio-bg, var(--gl-surface-2));
+  backdrop-filter: blur(var(--gl-blur-soft));
+  border: var(--gl-radio-border, 1.5px solid var(--gl-border-medium));
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--gl-transition);
+  box-shadow: var(--gl-inset-subtle);
+  flex-shrink: 0;
+  margin-top: max(0px, calc((1lh - var(--gl-check-size, 24px)) / 2));
+}
+
+.glass-radio__dot {
+  width: var(--gl-radio-dot-size, 10px); height: var(--gl-radio-dot-size, 10px);
+  border-radius: var(--gl-radius-pill);
+  background: var(--gl-radio-dot-color, white);
+  opacity: 0; transform: scale(0);
+  transition: var(--gl-transition-fast);
+}
+
+.glass-radio__input:checked + .glass-radio__circle {
+  background: var(--gl-radio-bg-checked, linear-gradient(135deg,
+    var(--gl-color-primary) 0%, var(--gl-color-primary-dark) 100%
+  ));
+  border: var(--gl-radio-border-checked, 1.5px solid var(--gl-border-warm));
+}
+.glass-radio__input:checked + .glass-radio__circle .glass-radio__dot { opacity: 1; transform: scale(1); }
+.glass-radio__input:focus-visible + .glass-radio__circle { box-shadow: var(--gl-shadow-focus); }
+/* Disabled — see .glass-toggle__input:disabled. */
+.glass-radio__input:disabled { cursor: not-allowed; }
+.glass-radio__input:disabled + .glass-radio__circle,
+.glass-radio__input:disabled ~ .glass-radio__label { opacity: 0.45; cursor: not-allowed; }
+.glass-radio:has(> .glass-radio__input:disabled) { cursor: not-allowed; }
+
+.glass-radio__label {
+  font-size: var(--gl-font-size-base);
+  color: var(--gl-color-text); user-select: none;
+  margin-top: max(0px, calc((var(--gl-check-size, 24px) - 1lh) / 2));
+}
+
+
+/* ============================================================
+   14. RANGE SLIDER
+   ============================================================ */
+.glass-range-group { display: flex; flex-direction: column; gap: var(--gl-space-xs); }
+.glass-range-header { display: flex; justify-content: space-between; align-items: baseline; }
+
+.glass-range-value {
+  font-size: var(--gl-font-size-sm);
+  font-weight: var(--gl-font-weight-semibold);
+  color: var(--gl-color-primary-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.glass-range {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 6px;
+  border-radius: var(--gl-radius-full);
+  background: var(--gl-range-track-bg);
+  border: 1px solid var(--gl-range-track-border);
+  outline: none; cursor: pointer;
+}
+
+.glass-range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  box-sizing: border-box;
+  width: 26px; height: 26px;
+  border-radius: var(--gl-radius-pill);
+  background: linear-gradient(135deg,
+    var(--gl-color-primary) 0%, var(--gl-color-primary-dark) 100%
+  );
+  border: var(--gl-range-thumb-border);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--gl-color-primary-mid) 35%, transparent), var(--gl-inset-strong);
+  margin-top: -2px; cursor: pointer;
+  transition: var(--gl-transition);
+}
+
+.glass-range::-webkit-slider-thumb:hover { transform: scale(1.1); }
+
+.glass-range::-moz-range-thumb {
+  width: 26px; height: 26px;
+  border-radius: var(--gl-radius-pill);
+  background: linear-gradient(135deg,
+    var(--gl-color-primary) 0%, var(--gl-color-primary-dark) 100%
+  );
+  border: var(--gl-range-thumb-border);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--gl-color-primary-mid) 35%, transparent);
+  cursor: pointer;
+}
+
+.glass-range::-moz-range-track {
+  height: 6px; border-radius: var(--gl-radius-full);
+  background: var(--gl-range-track-bg);
+  border: 1px solid var(--gl-range-track-border);
+}
+
+.glass-range:focus-visible { box-shadow: var(--gl-shadow-focus); }
+/* Disabled like .glass-input; the thumb keeps its size on hover. One rule
+   per engine's thumb — a list naming both would be dropped by both. */
+.glass-range:disabled { opacity: 0.4; cursor: not-allowed; }
+.glass-range:disabled::-webkit-slider-thumb { cursor: not-allowed; transform: none; }
+.glass-range:disabled::-moz-range-thumb { cursor: not-allowed; }
+
+
+/* ============================================================
+   15. PROGRESS BAR
+   ============================================================ */
+.glass-progress { width: 100%; display: flex; flex-direction: column; gap: var(--gl-space-xs); }
+.glass-progress__header { display: flex; justify-content: space-between; align-items: baseline; }
+
+.glass-progress__label {
+  font-size: var(--gl-font-size-sm);
+  font-weight: var(--gl-font-weight-medium);
+  color: var(--gl-icon-strong);
+}
+
+.glass-progress__value {
+  font-size: var(--gl-font-size-xs);
+  font-weight: var(--gl-font-weight-semibold);
+  color: var(--gl-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.glass-progress__track {
+  width: 100%; height: 8px;
+  border-radius: var(--gl-radius-full);
+  background: var(--gl-surface-2);
+  border: 1px solid var(--gl-border-subtle);
+  overflow: hidden;
+  box-shadow: var(--gl-inset-subtle);
+}
+
+.glass-progress__fill {
+  height: 100%; border-radius: var(--gl-radius-full);
+  background: linear-gradient(90deg,
+    var(--gl-color-primary) 0%, var(--gl-color-primary-dark) 100%
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--gl-color-primary) 30%, transparent), var(--gl-inset-strong);
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.glass-progress__fill::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 50%;
+  border-radius: var(--gl-radius-full);
+  background: var(--gl-gloss-progress);
+}
+
+.glass-progress--sm .glass-progress__track { height: 4px; }
+.glass-progress--lg .glass-progress__track { height: 12px; }
+
+.glass-progress--success .glass-progress__fill {
+  background: linear-gradient(90deg,
+    var(--gl-color-success) 0%, var(--gl-color-success-dark, #2da44e) 100%
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--gl-color-success) 30%, transparent), var(--gl-inset-strong);
+}
+.glass-progress--error .glass-progress__fill {
+  background: linear-gradient(90deg,
+    var(--gl-color-error) 0%, var(--gl-color-error-dark, #d63027) 100%
+  );
+  box-shadow: 0 0 8px color-mix(in srgb, var(--gl-color-error) 30%, transparent), var(--gl-inset-strong);
+}
+/* The fill grows from the inline start; right to left its gradient turns
+   round so the darker end still leads. */
+.glass-progress__fill:dir(rtl) { scale: -1 1; }
+
+
+/* ============================================================
+   16. MODAL
+   ============================================================ */
+/* The dimmer behind a dialog blurs with --gl-blur-overlay where a project
+   sets it, else with --gl-blur-soft (since 1.25.0). The surface presets set
+   the blur tokens to 0 but leave this one alone: a blurred dimmer suits a
+   page without glass as well. */
+.glass-modal-overlay {
+  position: fixed; inset: 0;
+  background: var(--gl-surface-overlay);
+  backdrop-filter: blur(var(--gl-blur-overlay, var(--gl-blur-soft)));
+  -webkit-backdrop-filter: blur(var(--gl-blur-overlay, var(--gl-blur-soft)));
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--gl-space-lg); z-index: 1000;
+  opacity: 0; pointer-events: none;
+  transition: var(--gl-transition-modal);
+  font-family: var(--gl-font-family);
+  -webkit-font-smoothing: antialiased;
+}
+.glass-modal-overlay.is-active { opacity: 1; pointer-events: auto; }
+/* The overlay may be a native <dialog>: opened with showModal() it lies in
+   the top layer, the page behind it is inert, focus moves in and Escape
+   closes it. These rules undo the dialog's own box and backdrop; the
+   overlay above paints the dimmed, blurred layer. GlassKit Elements'
+   <glk-modal> uses exactly this. With nothing to focus inside, showModal()
+   focuses the dialog itself, and its focus ring traced the edges of the
+   screen; no outline since 1.30.0, Tab still goes to the first control. */
+dialog.glass-modal-overlay {
+  width: auto; height: auto; max-width: none; max-height: none;
+  margin: 0; border: 0; color: inherit; outline: none;
+}
+dialog.glass-modal-overlay:not([open]) { display: none; }
+dialog.glass-modal-overlay::backdrop { background: transparent; }
+
+.glass-modal {
+  width: 100%; max-width: var(--gl-modal-max-width, 340px);
+  background: linear-gradient(to bottom,
+    var(--gl-card-glow-top) 0%, var(--gl-card-glow-bottom) 100%
+  );
+  backdrop-filter: blur(var(--gl-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--gl-blur-heavy));
+  border: 1.5px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-card);
+  overflow: hidden;
+  box-shadow: var(--gl-shadow-modal);
+  transform: scale(0.9) translateY(20px);
+  transition: var(--gl-transition-modal);
+  position: relative;
+}
+.glass-modal-overlay.is-active .glass-modal { transform: scale(1) translateY(0); }
+
+.glass-modal::before {
+  content: '';
+  position: absolute; top: 0; left: 10%; right: 10%; height: 1px;
+  background: var(--gl-gloss-modal);
+}
+
+.glass-modal__header { padding: var(--gl-space-xl) var(--gl-space-xl) var(--gl-space-sm); text-align: center; }
+.glass-modal__title { font-size: var(--gl-font-size-modal); font-weight: var(--gl-font-weight-semibold); color: var(--gl-color-text); }
+.glass-modal__body { padding: var(--gl-space-sm) var(--gl-space-xl) var(--gl-space-xl); text-align: center; --gl-list-flush-inset: var(--gl-space-xl); }
+.glass-modal__body p { color: var(--gl-color-text-muted); font-size: var(--gl-font-size-base); line-height: 1.55; }
+.glass-modal__footer { display: flex; border-top: 1px solid var(--gl-border-subtle); }
+
+.glass-modal__action {
+  flex: 1; height: var(--gl-modal-action-height, 52px);
+  background: transparent; border: none;
+  font-family: var(--gl-font-family);
+  font-size: var(--gl-font-size-btn);
+  font-weight: var(--gl-font-weight-medium);
+  color: var(--gl-color-text-muted);
+  cursor: pointer; transition: var(--gl-transition-fast); outline: none;
+}
+.glass-modal__action:hover { background: var(--gl-surface-1); }
+.glass-modal__action:disabled { opacity: 0.45; cursor: not-allowed; }
+.glass-modal__action:disabled:hover { background: transparent; }
+.glass-modal__action + .glass-modal__action { border-inline-start: 1px solid var(--gl-border-subtle); }
+.glass-modal__action--primary { color: var(--gl-color-primary-text); font-weight: var(--gl-font-weight-semibold); }
+.glass-modal__action--danger { color: var(--gl-color-error); font-weight: var(--gl-font-weight-semibold); }
+
+
+/* ============================================================
+   17. TOAST
+   ============================================================ */
+/* Where the toast sits: --gl-toast-top, 56px from the top unless a page
+   sets it — for instance just below its own header, and with
+   env(safe-area-inset-top) added when the page uses viewport-fit=cover.
+   The toast stays at the top also with an action: one place for every
+   toast, so a confirmation that briefly replaces a standing offer does not
+   jump, and it covers neither the tab bar nor a form's last button. */
+.glass-toast {
+  position: fixed; top: var(--gl-toast-top, var(--gl-space-4xl)); left: 50%;
+  transform: translateX(-50%) translateY(-20px);
+  min-width: 280px; max-width: 340px;
+  padding: var(--gl-space-md) var(--gl-space-lg);
+  background: linear-gradient(to bottom,
+    var(--gl-surface-4) 0%, var(--gl-surface-2) 100%
+  );
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+  border: 1px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-btn);
+  display: flex; align-items: center; gap: var(--gl-space-sm);
+  box-shadow: var(--gl-shadow-toast), var(--gl-inset-medium);
+  z-index: 1100;
+  opacity: 0; pointer-events: none;
+  transition: var(--gl-transition-modal);
+  font-family: var(--gl-font-family);
+  -webkit-font-smoothing: antialiased;
+}
+.glass-toast.is-visible { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+.glass-toast__icon {
+  width: 22px; height: 22px; flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round;
+}
+.glass-toast__icon ::slotted(svg) { display: block; width: 100%; height: 100%; }
+.glass-toast--success .glass-toast__icon { stroke: var(--gl-color-success); }
+.glass-toast--error   .glass-toast__icon { stroke: var(--gl-color-error); }
+.glass-toast--warning .glass-toast__icon { stroke: var(--gl-color-warning); }
+
+.glass-toast__text {
+  flex: 1 1 auto; min-width: 0;
+  font-size: var(--gl-font-size-sm);
+  font-weight: var(--gl-font-weight-medium);
+  color: var(--gl-color-text); line-height: 1.4;
+}
+
+/* One action and a close button — "A new version · Reload". __action is a
+   small pill in the toast's own tone: primary on a plain toast, the state
+   colour on a variant, from the same -surface, -border and -on-surface
+   tokens as the badges. It lies on a doubled scrim because the toast's
+   glass is lighter than the page: on a single one the label sat at the
+   AA threshold, on two it reads at 4.9:1 or better in every tone and
+   theme. __close is the × at the end. Both keep a 44px hit area without
+   making the toast taller. A toast with an action may grow to 480px, or
+   the viewport minus 16px each side: the text wraps, the buttons never
+   shrink. Only a shown toast takes the pointer. */
+.glass-toast:has(.glass-toast__action) {
+  width: max-content;
+  max-width: min(480px, calc(100% - 2 * var(--gl-space-md)));
+}
+.glass-toast--success {
+  --gl-toast-action-surface: var(--gl-color-success-surface);
+  --gl-toast-action-border: var(--gl-color-success-border);
+  --gl-toast-action-ink: var(--gl-color-success-on-surface);
+}
+.glass-toast--error {
+  --gl-toast-action-surface: var(--gl-color-error-surface);
+  --gl-toast-action-border: var(--gl-color-error-border);
+  --gl-toast-action-ink: var(--gl-color-error-on-surface);
+}
+.glass-toast--warning {
+  --gl-toast-action-surface: var(--gl-color-warning-surface);
+  --gl-toast-action-border: var(--gl-color-warning-border);
+  --gl-toast-action-ink: var(--gl-color-warning-on-surface);
+}
+.glass-toast__action,
+.glass-toast__close {
+  -webkit-appearance: none; appearance: none;
+  flex: none; position: relative;
+  font: inherit;
+  cursor: pointer;
+  transition: var(--gl-transition-fast);
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.glass-toast__action {
+  height: 32px; padding: 0 14px;
+  border: 1px solid var(--gl-toast-action-border, var(--gl-color-primary-border));
+  border-radius: var(--gl-radius-full);
+  background:
+    linear-gradient(var(--gl-toast-action-surface, var(--gl-color-primary-surface)),
+                    var(--gl-toast-action-surface, var(--gl-color-primary-surface))),
+    linear-gradient(var(--gl-state-scrim), var(--gl-state-scrim)),
+    var(--gl-state-scrim);
+  color: var(--gl-toast-action-ink, var(--gl-color-primary-on-surface));
+  font-size: var(--gl-font-size-sm);
+  font-weight: var(--gl-font-weight-semibold);
+  white-space: nowrap;
+}
+.glass-toast__action::after { content: ""; position: absolute; inset: -6px 0; }
+.glass-toast__action:hover {
+  box-shadow: inset 0 0 0 100px color-mix(in srgb, var(--gl-toast-action-ink, var(--gl-color-primary-on-surface)) 10%, transparent);
+}
+.glass-toast__action:active { transform: scale(0.96); }
+.glass-toast__close {
+  width: 28px; height: 28px; margin-block: 0; margin-inline: -4px -8px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 0; border-radius: 50%;
+  background: transparent;
+  color: var(--gl-color-text-muted);
+}
+.glass-toast__close::after { content: ""; position: absolute; inset: -8px; }
+.glass-toast__close:hover { background: var(--gl-surface-3); color: var(--gl-color-text); }
+.glass-toast__close svg {
+  width: 16px; height: 16px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round;
+}
+.glass-toast__action:focus-visible,
+.glass-toast__close:focus-visible { box-shadow: var(--gl-shadow-focus); }
+
+
+/* ============================================================
+   18. TAB BAR
+   ============================================================ */
+.glass-tab-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--gl-tab-bar-height);
+  background: linear-gradient(to bottom,
+    var(--gl-surface-3) 0%, var(--gl-surface-1) 100%
+  );
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+  border-top: 1px solid var(--gl-border-subtle);
+  display: flex; justify-content: space-around;
+  /* The items sit in the middle of the room the home indicator leaves.
+     Where its inset leaves less than they need (an iPhone with
+     viewport-fit=cover), they overflow the content box and `safe` keeps
+     them at the top, as before 1.28.0. Without one — Android, the desktop —
+     the inset is 0px, not the fallback, and the items sat 9px below the
+     top edge with 26px empty below them. A browser without `safe` keeps
+     flex-start. */
+  align-items: flex-start;
+  align-items: safe center;
+  padding-top: var(--gl-space-xs);
+  padding-bottom: max(var(--gl-space-xs), env(safe-area-inset-bottom, 0px));
+  z-index: var(--gl-tab-bar-z-index, 900);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.08), var(--gl-inset-subtle);
+}
+
+.glass-tab-bar__item {
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--gl-space-2xs);
+  padding: var(--gl-space-2xs) var(--gl-space-sm);
+  background: none; border: none; cursor: pointer;
+  border-radius: var(--gl-radius-sm);
+  transition: var(--gl-transition); outline: none;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 60px;
+}
+
+/* Every state colours the icon box, and the SVG strokes in currentColor
+   (since 1.28.0): an icon font, an <img> mask or an element slotted in
+   takes the colour as well, with the lens of the drop and the drag state.
+   A font icon takes the box's size unless it sets its own. Unset, the
+   inactive colour is --gl-icon-muted and the hovered one --gl-icon-default;
+   --gl-tab-bar-color and --gl-tab-bar-hover-color set them, for icon and
+   label alike. */
+.glass-tab-bar__icon {
+  width: 24px; height: 24px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  color: var(--gl-tab-bar-color, var(--gl-icon-muted));
+  font-size: 24px;
+  transition: var(--gl-transition);
+}
+
+.glass-tab-bar__icon svg,
+.glass-tab-bar__icon ::slotted(svg) {
+  width: 24px; height: 24px; fill: none;
+  stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+  transition: var(--gl-transition);
+}
+
+.glass-tab-bar__label {
+  font-size: var(--gl-tab-bar-label-size, 10px); font-weight: var(--gl-font-weight-medium);
+  color: var(--gl-tab-bar-color, var(--gl-icon-muted)); transition: var(--gl-transition);
+  letter-spacing: 0.2px;
+}
+
+/* --gl-tab-bar-active-color, where set, colours the active icon and label
+   alone: the spotlight lightens the active item more than any other surface.
+   Glow, dot and spotlight stay in the primary. The glow lies on the icon
+   itself, not on the badge beside it; :where() keeps the rule as specific
+   as it was when it named the svg. */
+.glass-tab-bar__item.is-active .glass-tab-bar__icon { color: var(--gl-tab-bar-active-color, var(--gl-color-primary-text)); }
+.glass-tab-bar__item.is-active .glass-tab-bar__icon > :where(:not(.glass-tab-bar__badge)),
+.glass-tab-bar__item.is-active .glass-tab-bar__icon ::slotted(*) {
+  filter: var(--gl-tab-bar-active-glow, drop-shadow(0 0 6px color-mix(in srgb, var(--gl-color-primary) 35%, transparent)));
+}
+.glass-tab-bar__item.is-active .glass-tab-bar__label { color: var(--gl-tab-bar-active-color, var(--gl-color-primary-text)); }
+
+/* The active item's own surface; unset, it has none. A capsule like the
+   selected tab of iOS 26 takes --gl-tab-bar-active-bg and -shadow; on the
+   floating bar --gl-tab-bar-spotlight-opacity: 0 turns the spotlight off,
+   and --gl-tab-bar-active-glow: none the glow above, which reads as a blur
+   on a light capsule. */
+.glass-tab-bar__item.is-active {
+  background: var(--gl-tab-bar-active-bg, none);
+  box-shadow: var(--gl-tab-bar-active-shadow, none);
+}
+
+.glass-tab-bar__item.is-active .glass-tab-bar__icon::after {
+  content: '';
+  position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: var(--gl-radius-pill);
+  background: var(--gl-color-primary);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--gl-color-primary) 50%, transparent);
+}
+
+.glass-tab-bar__item:not(.is-active):hover .glass-tab-bar__icon,
+.glass-tab-bar__item:not(.is-active):hover .glass-tab-bar__label { color: var(--gl-tab-bar-hover-color, var(--gl-icon-default)); }
+
+.glass-tab-bar__badge {
+  position: absolute; top: -4px; inset-inline-end: -8px;
+  min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: var(--gl-radius-full);
+  /* 10px text needs 4.5:1 – white on the plain error red only reaches 3.55:1
+     in dark mode, so the pill uses the darker state color as its fill. */
+  background: var(--gl-color-error-dark, #d63027); color: #ffffff;
+  font-size: 10px; font-weight: var(--gl-font-weight-semibold);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--gl-color-error) 40%, transparent);
+}
+
+
+/* ============================================================
+   18b. TAB BAR – FLOATING (Liquid Glass)
+   ============================================================ */
+.glass-tab-bar-dock {
+  position: fixed; left: 50%;
+  bottom: calc(var(--gl-tab-bar-floating-bottom) + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex; align-items: center;
+  gap: var(--gl-tab-bar-floating-gap);
+  z-index: var(--gl-tab-bar-z-index, 900);
+  max-width: calc(100vw - 2 * var(--gl-space-md));
+}
+
+.glass-tab-bar-dock--accessory-left { flex-direction: row-reverse; }
+
+.glass-tab-bar.glass-tab-bar--floating {
+  position: static;
+  left: auto; right: auto; bottom: auto;
+  height: auto; width: max-content;
+  padding: var(--gl-tab-bar-floating-padding);
+  border-radius: var(--gl-tab-bar-floating-radius);
+  border: 1px solid var(--gl-border-subtle);
+  background: linear-gradient(to bottom,
+    var(--gl-surface-3) 0%, var(--gl-surface-1) 100%
+  );
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.18),
+    0 2px 8px rgba(0,0,0,0.08),
+    var(--gl-inset-subtle);
+  display: flex; justify-content: flex-start; align-items: center;
+  gap: var(--gl-space-2xs);
+}
+
+.glass-tab-bar--floating .glass-tab-bar__item {
+  position: relative;
+  border-radius: var(--gl-radius-full);
+  padding: var(--gl-space-2xs) var(--gl-space-sm);
+  min-width: auto;
+  align-items: center;
+}
+
+.glass-tab-bar--floating .glass-tab-bar__item > * {
+  position: relative; z-index: 1;
+}
+
+.glass-tab-bar--floating .glass-tab-bar__item.is-active::before {
+  content: '';
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at center,
+    color-mix(in srgb, var(--gl-tab-bar-spotlight-color) 28%, transparent) 0%,
+    color-mix(in srgb, var(--gl-tab-bar-spotlight-color) 10%, transparent) 55%,
+    transparent 100%
+  );
+  opacity: var(--gl-tab-bar-spotlight-opacity, 1);
+  pointer-events: none; z-index: 0;
+}
+
+.glass-tab-bar--floating .glass-tab-bar__item.is-active .glass-tab-bar__icon::after {
+  display: none;
+}
+
+.glass-tab-bar__accessory {
+  width: var(--gl-tab-bar-accessory-size);
+  height: var(--gl-tab-bar-accessory-size);
+  border-radius: var(--gl-radius-pill);
+  background: linear-gradient(to bottom,
+    var(--gl-surface-3) 0%, var(--gl-surface-1) 100%
+  );
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+  border: 1px solid var(--gl-border-subtle);
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.18),
+    0 2px 8px rgba(0,0,0,0.08),
+    var(--gl-inset-subtle);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: var(--gl-transition);
+  outline: none; padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+  /* The icon colour sits on the button, the SVG strokes in currentColor
+     (since 1.28.0), so a font icon follows hover and the colour variants. */
+  color: var(--gl-icon-default);
+}
+
+.glass-tab-bar__accessory svg,
+.glass-tab-bar__accessory ::slotted(svg) {
+  width: 22px; height: 22px; fill: none;
+  stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+  transition: var(--gl-transition);
+}
+
+/* :where() keeps the hover rule at its specificity while leaving a
+   disabled accessory out of it — a reset could not restore the icon
+   colour, which each tone variant sets on its own. */
+.glass-tab-bar__accessory:where(:not(:disabled, [aria-disabled="true"])):hover {
+  transform: translateY(-1px);
+  color: var(--gl-icon-strong);
+}
+.glass-tab-bar__accessory:disabled,
+.glass-tab-bar__accessory[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+
+.glass-tab-bar__accessory:focus-visible {
+  box-shadow:
+    0 8px 32px rgba(0,0,0,0.18),
+    var(--gl-shadow-focus),
+    var(--gl-inset-subtle);
+}
+
+/* Accent variants – use existing color tokens. Each keeps its ink on
+   hover; until 1.28.0 only the accent one did, and the success and error
+   capsules turned their icon --gl-icon-strong, dark grey in the light
+   theme. */
+.glass-tab-bar__accessory--accent {
+  background: linear-gradient(135deg,
+    var(--gl-color-primary) 0%,
+    color-mix(in srgb, var(--gl-color-primary) 70%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--gl-color-primary) 50%, transparent);
+  box-shadow:
+    0 8px 32px color-mix(in srgb, var(--gl-color-primary) 35%, transparent),
+    var(--gl-inset-medium);
+}
+.glass-tab-bar__accessory--accent,
+.glass-tab-bar__accessory--accent:hover { color: var(--gl-color-on-primary, #ffffff); }
+
+.glass-tab-bar__accessory--success {
+  background: linear-gradient(135deg,
+    var(--gl-color-success) 0%,
+    color-mix(in srgb, var(--gl-color-success) 70%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--gl-color-success) 50%, transparent);
+  box-shadow:
+    0 8px 32px color-mix(in srgb, var(--gl-color-success) 35%, transparent),
+    var(--gl-inset-medium);
+}
+.glass-tab-bar__accessory--success,
+.glass-tab-bar__accessory--success:hover { color: var(--gl-color-on-success, #ffffff); }
+
+.glass-tab-bar__accessory--error {
+  background: linear-gradient(135deg,
+    var(--gl-color-error) 0%,
+    color-mix(in srgb, var(--gl-color-error) 70%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--gl-color-error) 50%, transparent);
+  box-shadow:
+    0 8px 32px color-mix(in srgb, var(--gl-color-error) 35%, transparent),
+    var(--gl-inset-medium);
+}
+.glass-tab-bar__accessory--error,
+.glass-tab-bar__accessory--error:hover { color: var(--gl-color-on-error, #ffffff); }
+
+
+/* ============================================================
+   18c. DROPLET – TAB BAR AND SEGMENTED
+   ============================================================ */
+/* --droplet on .glass-tab-bar or .glass-segmented sets the chosen item on
+   a drop of glass that floats a little above the row. On a change it runs
+   to the new item like water on a pane: the leading edge goes first, the
+   trailing one follows and overshoots, the drop runs flatter on the way
+   and settles with a small wobble. A finger can drag it along the row; the
+   item below it lights up as under a lens. In a segmented row that
+   scrolls (--scroll) a swipe still scrolls: there only the drop itself is
+   dragged, and the row follows it at its edges.
+
+   The drop is the row's ::before, and a script places it: it sets
+   data-droplet on the row and --gl-droplet-left, -right, -top and -bottom
+   to the chosen item's box, measured in the row's padding box (in a row
+   that scrolls, in its scrolled content). On a change it sets
+   data-droplet-dir="left" or "right" and data-droplet-lift while the drop
+   travels, data-droplet-drag while a finger holds it, and .is-under-droplet
+   on the item below it. Without the script a row keeps its usual look:
+   the tab bar its spotlight, the segmented row its raised option. GlassKit
+   Elements' <glk-tab-bar droplet> and <glk-segmented droplet> do all of
+   this; for plain markup the docs have the script. */
+.glass-tab-bar--floating.glass-tab-bar--droplet,
+.glass-segmented.glass-segmented--droplet { position: relative; }
+.glass-tab-bar.glass-tab-bar--droplet[data-droplet],
+.glass-segmented.glass-segmented--droplet[data-droplet] { isolation: isolate; touch-action: pan-y; }
+/* A row that scrolls keeps its swipe; the chosen option takes the drag. */
+.glass-segmented--scroll.glass-segmented--droplet[data-droplet] { touch-action: auto; }
+.glass-segmented--scroll.glass-segmented--droplet[data-droplet] .glass-segmented__item[aria-pressed="true"] { touch-action: pan-y; }
+
+:is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet]::before {
+  content: '';
+  position: absolute; z-index: -1;
+  top: var(--gl-droplet-top, 0px);
+  bottom: var(--gl-droplet-bottom, 0px);
+  left: var(--gl-droplet-left, 0px);
+  right: var(--gl-droplet-right, 0px);
+  border-radius: var(--gl-radius-sm);
+  background:
+    var(--gl-gloss-droplet, none),
+    linear-gradient(to bottom, var(--gl-surface-5) 0%, var(--gl-surface-3) 100%);
+  box-shadow:
+    0 4px 14px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12),
+    inset 0 0 0 1px var(--gl-border-subtle),
+    var(--gl-inset-strong);
+  backdrop-filter: blur(var(--gl-blur-light)) saturate(1.6);
+  -webkit-backdrop-filter: blur(var(--gl-blur-light)) saturate(1.6);
+  pointer-events: none;
+  transition:
+    transform 0.55s cubic-bezier(0.34, 1.8, 0.5, 1),
+    box-shadow 0.3s ease;
+}
+/* The tab bar's drop is a capsule, in the active item's surface where a
+   project set one (--gl-tab-bar-active-bg, -shadow). */
+.glass-tab-bar.glass-tab-bar--droplet[data-droplet]::before {
+  border-radius: var(--gl-radius-full);
+  background:
+    var(--gl-gloss-droplet, none),
+    var(--gl-tab-bar-active-bg, linear-gradient(to bottom, var(--gl-surface-5) 0%, var(--gl-surface-3) 100%));
+  box-shadow:
+    var(--gl-tab-bar-active-shadow, 0 4px 14px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12)),
+    inset 0 0 0 1px var(--gl-border-subtle),
+    var(--gl-inset-strong);
+}
+/* The segmented drop likewise, in the chosen option's surface where a
+   project set one (--gl-segmented-active-bg, -shadow; since 1.28.0). */
+.glass-segmented.glass-segmented--droplet[data-droplet]::before {
+  background:
+    var(--gl-gloss-droplet, none),
+    var(--gl-segmented-active-bg, linear-gradient(to bottom, var(--gl-surface-5) 0%, var(--gl-surface-3) 100%));
+  box-shadow:
+    var(--gl-segmented-active-shadow, 0 4px 14px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12)),
+    inset 0 0 0 1px var(--gl-border-subtle),
+    var(--gl-inset-strong);
+}
+/* On the way: the leading edge runs ahead, the trailing one is pulled
+   after it and overshoots, so the drop stretches and draws together. */
+:is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet][data-droplet-dir="right"]::before {
+  transition:
+    right 0.3s cubic-bezier(0.3, 1.2, 0.5, 1),
+    left 0.5s cubic-bezier(0.5, 1.5, 0.45, 0.92) 0.04s,
+    top 0.3s ease, bottom 0.3s ease,
+    transform 0.55s cubic-bezier(0.34, 1.8, 0.5, 1),
+    box-shadow 0.3s ease;
+}
+:is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet][data-droplet-dir="left"]::before {
+  transition:
+    left 0.3s cubic-bezier(0.3, 1.2, 0.5, 1),
+    right 0.5s cubic-bezier(0.5, 1.5, 0.45, 0.92) 0.04s,
+    top 0.3s ease, bottom 0.3s ease,
+    transform 0.55s cubic-bezier(0.34, 1.8, 0.5, 1),
+    box-shadow 0.3s ease;
+}
+/* While it travels the drop runs flatter and lifts off the row; it comes
+   back with the overshoot of its transform, the wobble at the end. Held
+   by a finger it grows instead, a lens over the row, and follows the
+   finger closely. */
+:is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet][data-droplet-lift]::before,
+:is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet][data-droplet-drag]::before {
+  box-shadow:
+    0 10px 24px rgba(0,0,0,0.24), 0 2px 6px rgba(0,0,0,0.14),
+    inset 0 0 0 1px var(--gl-border-medium),
+    var(--gl-inset-strong);
+}
+:is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet][data-droplet-lift]::before {
+  transform: scale(1, 0.86);
+}
+:is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet][data-droplet-drag]::before {
+  transform: scale(1.1, 1.22);
+  transition:
+    left 0.1s ease-out, right 0.1s ease-out,
+    transform 0.25s ease-out, box-shadow 0.25s ease;
+}
+
+/* The drop is the chosen item's surface, so the item draws none; on the
+   tab bar neither spotlight, dot nor glow. */
+.glass-tab-bar--droplet[data-droplet] .glass-tab-bar__item.is-active { background: none; box-shadow: none; }
+.glass-tab-bar--droplet[data-droplet] .glass-tab-bar__item.is-active::before { display: none; }
+.glass-tab-bar--droplet[data-droplet] .glass-tab-bar__item.is-active .glass-tab-bar__icon::after { display: none; }
+.glass-tab-bar--droplet[data-droplet] .glass-tab-bar__item.is-active .glass-tab-bar__icon > :where(:not(.glass-tab-bar__badge)),
+.glass-tab-bar--droplet[data-droplet] .glass-tab-bar__item.is-active .glass-tab-bar__icon ::slotted(*) { filter: var(--gl-tab-bar-active-glow, none); }
+.glass-segmented--droplet[data-droplet] .glass-segmented__item[aria-pressed="true"] { background: transparent; box-shadow: none; }
+.glass-segmented--droplet[data-droplet] .glass-segmented__item[aria-pressed="true"]:focus-visible { box-shadow: var(--gl-shadow-focus); }
+/* A disabled choice dims its drop as it dims itself. */
+:is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet]:has(:is(.glass-tab-bar__item.is-active, .glass-segmented__item[aria-pressed="true"]):disabled)::before { opacity: 0.45; }
+
+/* Under the drop a tab icon, a segmented icon or a tone dot grows as under
+   a lens. While a finger drags the drop, the item below it takes the
+   chosen colour and the chosen item lets it go. The tab icon keeps the
+   fade of its colour next to the lens. */
+.glass-tab-bar--droplet[data-droplet] .glass-tab-bar__icon { transition: var(--gl-transition), transform 0.4s cubic-bezier(0.34, 1.6, 0.5, 1); }
+.glass-segmented--droplet[data-droplet] .glass-segmented__dot,
+.glass-segmented--droplet[data-droplet] .glass-segmented__icon { transition: transform 0.4s cubic-bezier(0.34, 1.6, 0.5, 1); }
+.glass-tab-bar--droplet[data-droplet] .glass-tab-bar__item.is-under-droplet .glass-tab-bar__icon { transform: scale(1.15); }
+.glass-segmented--droplet[data-droplet] .glass-segmented__item.is-under-droplet .glass-segmented__dot { transform: scale(1.3); }
+.glass-segmented--droplet[data-droplet] .glass-segmented__item.is-under-droplet .glass-segmented__icon { transform: scale(1.15); }
+.glass-tab-bar--droplet[data-droplet] .glass-tab-bar__item.is-under-droplet :is(.glass-tab-bar__icon, .glass-tab-bar__label) { color: var(--gl-tab-bar-active-color, var(--gl-color-primary-text)); }
+.glass-segmented--droplet[data-droplet] .glass-segmented__item.is-under-droplet { color: var(--gl-segmented-active-color, var(--gl-color-text-heading)); }
+.glass-tab-bar--droplet[data-droplet-drag] .glass-tab-bar__item.is-active:not(.is-under-droplet) :is(.glass-tab-bar__icon, .glass-tab-bar__label) { color: var(--gl-tab-bar-color, var(--gl-icon-muted)); }
+.glass-segmented--droplet[data-droplet-drag] .glass-segmented__item[aria-pressed="true"]:not(.is-under-droplet) { color: var(--gl-color-text-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet]::before,
+  :is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet][data-droplet-dir]::before,
+  :is(.glass-tab-bar.glass-tab-bar--droplet, .glass-segmented.glass-segmented--droplet)[data-droplet][data-droplet-drag]::before { transition: none; }
+  .glass-tab-bar--droplet[data-droplet] .glass-tab-bar__icon { transition: var(--gl-transition), transform 0s; }
+  .glass-segmented--droplet[data-droplet] .glass-segmented__dot,
+  .glass-segmented--droplet[data-droplet] .glass-segmented__icon { transition: none; }
+}
+
+
+/* ============================================================
+   19. ACCORDION
+   ============================================================ */
+.glass-accordion { display: flex; flex-direction: column; gap: var(--gl-space-xs); }
+
+.glass-accordion__item {
+  background: var(--gl-surface-2);
+  backdrop-filter: blur(var(--gl-blur-light));
+  -webkit-backdrop-filter: blur(var(--gl-blur-light));
+  border: 1px solid var(--gl-border-subtle);
+  border-radius: var(--gl-radius-btn);
+  overflow: hidden;
+  transition: var(--gl-transition);
+  box-shadow: var(--gl-inset-subtle);
+}
+
+.glass-accordion__item.is-open {
+  background: var(--gl-surface-3);
+  border-color: var(--gl-border-medium);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10), var(--gl-inset-medium);
+}
+
+.glass-accordion__trigger {
+  width: 100%; display: flex; align-items: center;
+  justify-content: space-between; gap: var(--gl-space-sm);
+  padding: var(--gl-space-md) var(--gl-space-lg);
+  background: none; border: none; cursor: pointer;
+  font-family: var(--gl-font-family);
+  font-size: var(--gl-font-size-base);
+  font-weight: var(--gl-font-weight-semibold);
+  color: var(--gl-color-text); text-align: start;
+  outline: none; transition: var(--gl-transition);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.glass-accordion__trigger:hover { color: var(--gl-color-primary-text); }
+
+.glass-accordion__trigger-icon { display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+
+.glass-accordion__trigger-icon svg {
+  width: 18px; height: 18px; fill: none;
+  stroke: var(--gl-icon-default); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-accordion__item.is-open .glass-accordion__trigger-icon svg {
+  transform: rotate(180deg);
+  stroke: var(--gl-color-primary-text);
+}
+
+/* Open, the content takes its own height, however long (since 1.30.0): a
+   grid of one row that slides from 0fr to 1fr, clipped while it does.
+   Until then max-height capped an open item at 500px and cut off the
+   rest. Both tracks start at 0: the row, so the body's padding cannot hold
+   a closed item open; the column, so a long word or a URL cannot make the
+   body wider than the item, as it could not in a block. */
+.glass-accordion__content {
+  display: grid;
+  grid-template-rows: minmax(0, 0fr);
+  grid-template-columns: minmax(0, 1fr);
+  overflow: hidden;
+  transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-accordion__item.is-open .glass-accordion__content { grid-template-rows: minmax(0, 1fr); }
+@media (prefers-reduced-motion: reduce) {
+  .glass-accordion__content { transition: none; }
+}
+
+.glass-accordion__body {
+  padding: 0 var(--gl-space-lg) var(--gl-space-lg);
+  color: var(--gl-accordion-body-color);
+  font-size: var(--gl-font-size-sm); line-height: 1.6;
+}
+
+
+/* ============================================================
+   20. BADGE
+   ============================================================ */
+.glass-badge {
+  /* The accent a chip deepens when it is hovered or selected. Each variant
+     below re-points it, so a selected success chip stays green instead of
+     turning primary. A plain badge has no colour of its own, so it borrows
+     the primary one — which is what a filter row wants. */
+  --gl-badge-accent: var(--gl-color-primary);
+  --gl-badge-accent-text: var(--gl-color-primary-on-surface, var(--gl-color-primary));
+
+  display: inline-flex; align-items: center; gap: var(--gl-space-2xs);
+  padding: var(--gl-space-2xs) var(--gl-space-sm);
+  background: var(--gl-surface-3);
+  backdrop-filter: blur(var(--gl-blur-soft));
+  -webkit-backdrop-filter: blur(var(--gl-blur-soft));
+  border: 1px solid var(--gl-border-subtle);
+  border-radius: var(--gl-radius-full);
+  font-size: var(--gl-font-size-xs);
+  font-weight: var(--gl-font-weight-medium);
+  color: var(--gl-color-text);
+  box-shadow: var(--gl-inset-subtle);
+}
+/* Variant surfaces are token-derived, so re-branding a state color moves the
+   fill, the border and the text together. The --gl-state-scrim layer sits
+   behind the tint and keeps the label readable over any backdrop. */
+.glass-badge--primary {
+  --gl-badge-accent: var(--gl-color-primary);
+  --gl-badge-accent-text: var(--gl-color-primary-on-surface, var(--gl-color-primary));
+  background:
+    linear-gradient(135deg,
+      var(--gl-color-primary-surface, rgba(245,166,35,0.25)) 0%,
+      color-mix(in srgb, var(--gl-color-primary-dark) 20%, transparent) 100%
+    ),
+    var(--gl-state-scrim, transparent);
+  border-color: var(--gl-color-primary-border, var(--gl-border-warm));
+  color: var(--gl-color-primary-on-surface, var(--gl-color-primary));
+}
+.glass-badge--success {
+  --gl-badge-accent: var(--gl-color-success);
+  --gl-badge-accent-text: var(--gl-color-success-on-surface, var(--gl-color-success));
+  background:
+    linear-gradient(var(--gl-color-success-surface, rgba(52,199,89,0.15)) 0%,
+                    var(--gl-color-success-surface, rgba(52,199,89,0.15)) 100%),
+    var(--gl-state-scrim, transparent);
+  border-color: var(--gl-color-success-border, rgba(52,199,89,0.30));
+  color: var(--gl-color-success-on-surface, var(--gl-color-success));
+}
+.glass-badge--error {
+  --gl-badge-accent: var(--gl-color-error);
+  --gl-badge-accent-text: var(--gl-color-error-on-surface, var(--gl-color-error));
+  background:
+    linear-gradient(var(--gl-color-error-surface, rgba(255,59,48,0.15)) 0%,
+                    var(--gl-color-error-surface, rgba(255,59,48,0.15)) 100%),
+    var(--gl-state-scrim, transparent);
+  border-color: var(--gl-color-error-border, rgba(255,59,48,0.30));
+  color: var(--gl-color-error-on-surface, var(--gl-color-error));
+}
+.glass-badge--warning {
+  --gl-badge-accent: var(--gl-color-warning);
+  --gl-badge-accent-text: var(--gl-color-warning-on-surface, var(--gl-color-warning));
+  background:
+    linear-gradient(var(--gl-color-warning-surface, rgba(255,204,0,0.15)) 0%,
+                    var(--gl-color-warning-surface, rgba(255,204,0,0.15)) 100%),
+    var(--gl-state-scrim, transparent);
+  border-color: var(--gl-color-warning-border, rgba(255,204,0,0.30));
+  color: var(--gl-color-warning-on-surface, var(--gl-color-warning));
+}
+
+
+/* ---- Badges as chips ----
+   A badge doubles as a filter chip. `--interactive` carries the affordance,
+   `--selected` says which chip is on; both combine with the variants above.
+
+   Both paint through a full-bleed inset shadow instead of `background`,
+   because the variants put a gradient there — a hover rule that touched
+   `background` would wipe it, and with it the --gl-state-scrim layer that
+   keeps the label readable over any backdrop.
+
+   In GlassKit Elements an interactive badge renders as a real <button>, so
+   the rule below also undoes the one thing a button does not inherit. In the
+   document that declaration costs nothing.
+
+   Mark the pressed state for assistive tech as well as for the eye:
+   <button class="glass-badge glass-badge--interactive glass-badge--selected"
+           aria-pressed="true">Active</button> */
+.glass-badge--interactive {
+  font-family: inherit;
+  -webkit-appearance: none; appearance: none;
+  cursor: pointer;
+  transition: var(--gl-transition-fast);
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.glass-badge--interactive:hover {
+  border-color: color-mix(in srgb, var(--gl-badge-accent) 45%, var(--gl-border-subtle));
+  box-shadow: var(--gl-inset-subtle),
+              inset 0 0 0 100px color-mix(in srgb, var(--gl-badge-accent) 12%, transparent);
+}
+.glass-badge--interactive:active { transform: scale(0.96); }
+.glass-badge--interactive:focus-visible {
+  box-shadow: var(--gl-shadow-focus), var(--gl-inset-subtle);
+}
+
+.glass-badge--selected {
+  border-color: color-mix(in srgb, var(--gl-badge-accent) 55%, transparent);
+  color: var(--gl-badge-accent-text);
+  box-shadow: var(--gl-inset-subtle),
+              inset 0 0 0 100px color-mix(in srgb, var(--gl-badge-accent) 22%, transparent);
+}
+/* A bare :hover / :focus-visible rule outweighs `--selected` on its own, so
+   the selected chip states are spelled out rather than left to source order. */
+.glass-badge--interactive.glass-badge--selected:hover {
+  box-shadow: var(--gl-inset-subtle),
+              inset 0 0 0 100px color-mix(in srgb, var(--gl-badge-accent) 30%, transparent);
+}
+.glass-badge--interactive.glass-badge--selected:focus-visible {
+  box-shadow: var(--gl-shadow-focus), var(--gl-inset-subtle),
+              inset 0 0 0 100px color-mix(in srgb, var(--gl-badge-accent) 22%, transparent);
+}
+
+
+/* ============================================================
+   21. DIVIDER
+   ============================================================ */
+.glass-divider {
+  height: 1px; border: none;
+  background: linear-gradient(90deg,
+    transparent 0%, var(--gl-border-subtle) 20%,
+    var(--gl-border-medium) 50%, var(--gl-border-subtle) 80%, transparent 100%
+  );
+}
+
+
+/* ============================================================
+   22. AVATAR
+   ============================================================ */
+.glass-avatar {
+  width: 44px; height: 44px;
+  border-radius: var(--gl-radius-pill);
+  background: var(--gl-surface-3);
+  backdrop-filter: blur(var(--gl-blur-soft));
+  -webkit-backdrop-filter: blur(var(--gl-blur-soft));
+  border: 1.5px solid var(--gl-border-strong);
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  box-shadow: var(--gl-shadow-glow), var(--gl-inset-medium);
+  flex-shrink: 0;
+  font-size: var(--gl-font-size-btn);
+  font-weight: var(--gl-font-weight-semibold);
+  color: var(--gl-color-text);
+}
+.glass-avatar img,
+.glass-avatar ::slotted(img) { width: 100%; height: 100%; object-fit: cover; }
+.glass-avatar--sm { width: 32px; height: 32px; font-size: var(--gl-font-size-xs); }
+.glass-avatar--lg { width: 56px; height: 56px; font-size: var(--gl-font-size-lg); }
+
+
+/* ============================================================
+   23. THEME TOGGLE BUTTON
+   ============================================================ */
+.glass-theme-toggle {
+  width: 46px; height: 46px;
+  border-radius: var(--gl-radius-pill);
+  background: var(--gl-surface-3);
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+  border: 1.5px solid var(--gl-border-strong);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: var(--gl-transition);
+  box-shadow: var(--gl-shadow-glow), var(--gl-inset-medium);
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.glass-theme-toggle:hover { background: var(--gl-surface-5); transform: scale(1.05); }
+.glass-theme-toggle:active { transform: scale(0.95); }
+
+.glass-theme-toggle svg {
+  width: 20px; height: 20px;
+  fill: none; stroke: var(--gl-color-text); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+
+.glass-theme-toggle .icon-sun  { display: none; }
+.glass-theme-toggle .icon-moon { display: block; }
+[data-theme="light"] .glass-theme-toggle .icon-sun  { display: block; }
+[data-theme="light"] .glass-theme-toggle .icon-moon { display: none; }
+
+
+/* ============================================================
+   24. POPOVER
+   ============================================================ */
+.glass-popover-anchor {
+  position: relative;
+  display: inline-block;
+}
+
+.glass-popover {
+  position: absolute;
+  top: calc(100% + var(--gl-space-xs));
+  left: 50%;
+  transform: translateX(-50%) translateY(-4px) scale(0.96);
+  transform-origin: top center;
+  min-width: 220px;
+  padding: var(--gl-space-sm);
+  background: var(--gl-surface-3);
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+  border: 1px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-card);
+  box-shadow: var(--gl-shadow-card), var(--gl-inset-strong);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity .18s ease,
+    transform .18s cubic-bezier(.2,.8,.2,1),
+    visibility 0s linear .18s;
+  z-index: 50;
+}
+.glass-popover.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0) scale(1);
+  transition:
+    opacity .18s ease,
+    transform .22s cubic-bezier(.2,.8,.2,1),
+    visibility 0s linear 0s;
+}
+
+.glass-popover--top {
+  top: auto;
+  bottom: calc(100% + var(--gl-space-xs));
+  transform-origin: bottom center;
+}
+.glass-popover--start {
+  inset-inline-start: 0; inset-inline-end: auto;
+  transform: translateY(-4px) scale(0.96);
+  transform-origin: top left;
+}
+.glass-popover--start:dir(rtl) { transform-origin: top right; }
+.glass-popover--start.is-open { transform: translateY(0) scale(1); }
+
+.glass-popover--end {
+  inset-inline-start: auto; inset-inline-end: 0;
+  transform: translateY(-4px) scale(0.96);
+  transform-origin: top right;
+}
+.glass-popover--end:dir(rtl) { transform-origin: top left; }
+.glass-popover--end.is-open { transform: translateY(0) scale(1); }
+
+
+/* ============================================================
+   25. LIST
+   ============================================================ */
+.glass-list {
+  background: var(--gl-surface-1);
+  backdrop-filter: blur(var(--gl-blur-light));
+  -webkit-backdrop-filter: blur(var(--gl-blur-light));
+  border: 1px solid var(--gl-border-subtle);
+  border-radius: var(--gl-radius-btn);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08), var(--gl-inset-subtle);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Edge to edge in its container: as wide as the container's content plus
+   its padding on both sides, pulled out by that padding. Until 1.29.1 the
+   list kept width: 100% and only moved to the start, ending twice the
+   padding short of the other edge. The inset is the container's padding,
+   --gl-list-flush-inset: 20px (--gl-space-lg) unless the container sets
+   it — the card and the modal body do, from the same token as their own
+   padding. An explicit width, not auto, so a flex or grid container that
+   does not stretch its items gives the same result. */
+.glass-list--flush {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  width: calc(100% + 2 * var(--gl-list-flush-inset, var(--gl-space-lg)));
+  margin-left: calc(var(--gl-list-flush-inset, var(--gl-space-lg)) * -1);
+  margin-right: calc(var(--gl-list-flush-inset, var(--gl-space-lg)) * -1);
+}
+
+/* Bare: no own glass surface — for lists that live inside a container
+   which already provides background, border and shadow (e.g. inside a
+   glass-popover or glass-card). */
+.glass-list--bare {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.glass-list__section-header {
+  padding: var(--gl-space-xs) var(--gl-space-lg) var(--gl-space-2xs);
+  font-size: var(--gl-font-size-xs);
+  font-weight: var(--gl-font-weight-semibold);
+  color: var(--gl-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.glass-list__item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--gl-space-sm);
+  padding: var(--gl-list-item-padding-y, var(--gl-space-md)) var(--gl-space-lg);
+  min-height: var(--gl-list-item-min-height, 56px);
+  color: var(--gl-color-text);
+  font-size: var(--gl-font-size-base);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: start;
+  font-family: inherit;
+  list-style: none;
+}
+
+.glass-list__item:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: calc(var(--gl-space-lg) + 28px + var(--gl-space-sm));
+  inset-inline-end: var(--gl-space-lg);
+  bottom: 0;
+  height: 1px;
+  background: var(--gl-border-subtle);
+  pointer-events: none;
+}
+/* Items without a leading icon — no slot, or a hidden one: divider follows
+   the standard horizontal padding instead of the icon slot. */
+.glass-list__item:not(:has(.glass-list__leading:not([hidden]))):not(:last-child)::after {
+  inset-inline-start: var(--gl-space-lg);
+}
+.glass-list__item:has(.glass-list__leading--lg:not([hidden])):not(:last-child)::after {
+  inset-inline-start: calc(var(--gl-space-lg) + 40px + var(--gl-space-sm));
+}
+
+.glass-list__item--center {
+  justify-content: center;
+  text-align: center;
+  white-space: var(--gl-list-title-white-space, nowrap);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+.glass-list__item--center > .glass-list__title {
+  white-space: var(--gl-list-title-white-space, nowrap);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.glass-list__item--interactive {
+  cursor: pointer;
+  transition: background .15s ease;
+}
+.glass-list__item--interactive:hover,
+.glass-list__item--interactive:focus-visible {
+  background: var(--gl-surface-2);
+  outline: none;
+}
+.glass-list__item--interactive:active {
+  background: var(--gl-surface-3);
+}
+/* A row that is a disabled <button>, or carries aria-disabled="true". */
+.glass-list__item--interactive:disabled,
+.glass-list__item--interactive[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.glass-list__item--interactive:disabled:is(:hover, :active),
+.glass-list__item--interactive[aria-disabled="true"]:is(:hover, :active) { background: transparent; }
+
+.glass-list__item--danger { color: var(--gl-color-error); }
+.glass-list__item--danger .glass-list__title,
+.glass-list__item--danger .glass-list__leading { color: inherit; }
+
+.glass-list__item--accent { color: var(--gl-color-primary-text); }
+.glass-list__item--accent .glass-list__title,
+.glass-list__item--accent .glass-list__leading { color: inherit; }
+
+.glass-list__leading {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gl-icon-strong);
+}
+/* display: flex above beats the hidden attribute's own rule: an empty slot
+   hidden by script kept its 28px and its gap. */
+.glass-list__leading[hidden],
+.glass-list__trailing[hidden] { display: none; }
+.glass-list__leading svg,
+.glass-list__leading ::slotted(svg) {
+  width: 24px;
+  height: 24px;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.glass-list__leading--lg {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--gl-radius-xs);
+  overflow: hidden;
+}
+.glass-list__leading--lg svg,
+.glass-list__leading--lg ::slotted(svg) {
+  width: 32px;
+  height: 32px;
+}
+.glass-list__leading--lg img,
+.glass-list__leading--lg ::slotted(img) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.glass-list__content {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+/* Title and subtitle keep to one line, cut with an ellipsis, and --wrap
+   clamps the subtitle at three lines. A project may decide otherwise once,
+   on :root, or for one list or one row (since 1.23.0); the tokens are
+   inherited, so they reach into <glk-list-item> as well:
+     --gl-list-title-white-space     nowrap, or normal to wrap the title
+     --gl-list-subtitle-white-space  nowrap, or normal to wrap the subtitle
+     --gl-list-subtitle-lines        the clamp of --wrap, 3; none shows all
+   A word wider than the column breaks where it has to instead of running
+   out of it — an e-mail address in a --wrap subtitle used to — while text
+   still breaks at spaces. hyphens is left to inheritance: set it on the
+   list or the page for breaks at syllables. */
+.glass-list__title {
+  font-size: var(--gl-font-size-base);
+  font-weight: var(--gl-font-weight-medium);
+  color: var(--gl-color-text);
+  white-space: var(--gl-list-title-white-space, nowrap);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+.glass-list__subtitle {
+  font-size: var(--gl-font-size-sm);
+  color: var(--gl-color-text-muted);
+  white-space: var(--gl-list-subtitle-white-space, nowrap);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+.glass-list__subtitle--wrap {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: var(--gl-list-subtitle-lines, 3);
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+/* display: -webkit-box above beats the hidden attribute's own rule: an empty
+   --wrap subtitle kept its place, and the title sat 1px off centre. */
+.glass-list__subtitle[hidden] { display: none; }
+
+.glass-list__trailing {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--gl-space-xs);
+  color: var(--gl-color-text-muted);
+  font-size: var(--gl-font-size-sm);
+}
+.glass-list__trailing svg,
+.glass-list__trailing ::slotted(svg) {
+  width: 18px;
+  height: 18px;
+  stroke: var(--gl-icon-muted);
+  stroke-width: 2;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.glass-list__value {
+  color: var(--gl-color-text-muted);
+  font-size: var(--gl-font-size-sm);
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   26. SKELETON
+   ============================================================ */
+/* Loading placeholder: shimmer lines standing in for text that has not
+   arrived. The caller sets each line's width; the shimmer runs over the
+   surface tokens, so it follows the theme. Holds still when the user asked
+   for reduced motion. */
+.glass-skeleton { display: flex; flex-direction: column; gap: 10px; }
+.glass-skeleton__line {
+  height: 12px; border-radius: 6px;
+  background: linear-gradient(90deg,
+    var(--gl-surface-1) 0%, var(--gl-surface-4) 50%, var(--gl-surface-1) 100%);
+  background-size: 200% 100%;
+  animation: glass-skeleton 1.4s ease-in-out infinite;
+}
+.glass-skeleton__line--title { height: 18px; }
+@keyframes glass-skeleton {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-skeleton__line { animation: none; }
+}
+
+
+/* ============================================================
+   27. TABLE
+   ============================================================ */
+/* A plain <table> on glass: hairline rows, a muted header, numbers
+   right-aligned in tabular figures, and a wrapper that scrolls sideways
+   where the columns do not fit. Document-level by design — from a shadow
+   root, ::slotted() cannot reach a slotted table's cells, so there is no
+   element for this; put the class on the <table> itself. */
+.glass-table-wrap { overflow-x: auto; border-radius: var(--gl-radius-sm); }
+.glass-table {
+  width: 100%; border-collapse: collapse;
+  font-size: var(--gl-font-size-sm); color: var(--gl-color-text);
+}
+.glass-table th {
+  text-align: start; padding: 8px 10px; white-space: nowrap;
+  font-weight: var(--gl-font-weight-medium); color: var(--gl-color-text-muted);
+  border-bottom: 1px solid var(--gl-border-medium);
+}
+.glass-table td {
+  padding: 9px 10px; vertical-align: top;
+  border-bottom: 1px solid var(--gl-border-subtle);
+}
+.glass-table tbody tr:last-child td { border-bottom: 0; }
+.glass-table tbody tr:hover td { background: var(--gl-surface-1); }
+.glass-table__num { text-align: end; font-variant-numeric: tabular-nums; }
+.glass-table__muted { color: var(--gl-color-text-muted); }
+
+
+/* ============================================================
+   28. PROSE
+   ============================================================ */
+/* Running text the app did not write by hand — rendered Markdown, help and
+   info pages. One class on the container gives headings, lists, links,
+   code, quotes, images and tables the GlassKit voice without a class on
+   every tag. Document-level by design: the content is light DOM, and
+   ::slotted() stops at the first level. */
+.glass-prose {
+  font-size: var(--gl-font-size-base); line-height: 1.6;
+  color: var(--gl-color-text);
+}
+.glass-prose > :first-child { margin-top: 0; }
+.glass-prose > :last-child { margin-bottom: 0; }
+.glass-prose h1, .glass-prose h2, .glass-prose h3 {
+  color: var(--gl-color-text-heading); line-height: 1.25; margin: 1.2em 0 0.4em;
+}
+.glass-prose h1 { font-size: var(--gl-font-size-title); }
+.glass-prose h2 { font-size: var(--gl-font-size-modal); }
+.glass-prose h3 { font-size: var(--gl-font-size-lg); }
+.glass-prose p, .glass-prose ul, .glass-prose ol, .glass-prose pre,
+.glass-prose blockquote, .glass-prose table { margin: 0 0 0.9em; }
+.glass-prose ul, .glass-prose ol { padding-inline-start: 1.3em; }
+.glass-prose strong { color: var(--gl-color-text-heading); }
+/* Links in running text are underlined: colour alone does not mark them. */
+.glass-prose a { color: var(--gl-color-primary-text); text-decoration: underline; text-underline-offset: 2px; }
+.glass-prose code {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 0.9em;
+  background: var(--gl-surface-2); padding: 1px 5px; border-radius: 4px;
+}
+.glass-prose pre {
+  padding: 12px 14px; overflow-x: auto;
+  background: var(--gl-surface-1); border-radius: var(--gl-radius-sm);
+}
+.glass-prose pre code { background: none; padding: 0; }
+.glass-prose blockquote {
+  padding: 8px 14px;
+  border-inline-start: 3px solid var(--gl-color-primary);
+  background: var(--gl-surface-1);
+  border-start-start-radius: 0; border-end-start-radius: 0;
+  border-start-end-radius: var(--gl-radius-xs); border-end-end-radius: var(--gl-radius-xs);
+}
+.glass-prose img { max-width: 100%; height: auto; border-radius: var(--gl-radius-sm); }
+.glass-prose hr { height: 1px; border: 0; margin: 1.2em 0; background: var(--gl-border-subtle); }
+.glass-prose table { width: 100%; border-collapse: collapse; }
+.glass-prose th, .glass-prose td {
+  padding: 6px 8px; text-align: start;
+  border-bottom: 1px solid var(--gl-border-subtle);
+}
+
+
+/* ============================================================
+   29. SEGMENTED
+   ============================================================ */
+/* A small, exclusive choice as one control — traffic light, morning /
+   afternoon, mode. Buttons inside a role="group"; the chosen one carries
+   aria-pressed="true", and the styling hangs on exactly that attribute so
+   state and semantics cannot drift apart. --full shares the width between
+   the buttons. The tone modifiers put a dot in a state colour before the
+   label; the dot reads --gl-segmented-tone, so a fourth tone is one line. */
+.glass-segmented {
+  display: inline-flex; gap: 4px; padding: 4px;
+  max-width: 100%;
+  background: var(--gl-surface-1);
+  border: 1px solid var(--gl-border-subtle);
+  border-radius: var(--gl-radius-btn);
+  box-shadow: var(--gl-inset-subtle);
+}
+.glass-segmented--full { display: flex; }
+.glass-segmented--full .glass-segmented__item { flex: 1 1 0; }
+
+/* More options than fit: --scroll keeps one row and lets it scroll
+   sideways with the scrollbar hidden, as on the date strip; --wrap breaks
+   the row into lines. Without either the row stays one line and runs past
+   the edge — seven options on a phone lost the last ones. Both combine
+   with --full; use one or the other. The 4px padding keeps the focus ring
+   inside the scroll box. */
+.glass-segmented--scroll {
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.glass-segmented--scroll::-webkit-scrollbar { display: none; }
+.glass-segmented--wrap { flex-wrap: wrap; }
+
+.glass-segmented__item {
+  -webkit-appearance: none; appearance: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 8px 14px;
+  border: 0; border-radius: var(--gl-radius-sm);
+  background: transparent;
+  color: var(--gl-color-text-muted);
+  font-family: inherit;
+  font-size: var(--gl-font-size-sm);
+  font-weight: var(--gl-font-weight-medium);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: var(--gl-transition-fast);
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.glass-segmented__item:hover { color: var(--gl-color-text); }
+/* The chosen option's surface, shadow and text colour can be set
+   (since 1.28.0), like the tab bar's active item: on a dark brand the
+   light surface left a white label below 4.5:1. Unset, they keep their
+   values; the drop of --droplet takes the same surface (18c). The shadow
+   sits in shadow lists: switch it off with a zero shadow, not none. */
+.glass-segmented__item[aria-pressed="true"] {
+  background: var(--gl-segmented-active-bg, var(--gl-surface-5));
+  color: var(--gl-segmented-active-color, var(--gl-color-text-heading));
+  box-shadow: var(--gl-segmented-active-shadow, var(--gl-shadow-btn));
+}
+.glass-segmented__item:focus-visible { box-shadow: var(--gl-shadow-focus); }
+.glass-segmented__item[aria-pressed="true"]:focus-visible { box-shadow: var(--gl-shadow-focus), var(--gl-segmented-active-shadow, var(--gl-shadow-btn)); }
+.glass-segmented__item:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.glass-segmented__dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--gl-segmented-tone, currentColor);
+}
+.glass-segmented__item--success { --gl-segmented-tone: var(--gl-color-success); }
+.glass-segmented__item--warning { --gl-segmented-tone: var(--gl-color-warning); }
+.glass-segmented__item--error   { --gl-segmented-tone: var(--gl-color-error); }
+
+/* An icon before the label (since 1.28.0): an SVG strokes in the text
+   colour; any other element — a font icon, an <img>, a mask — takes the
+   colour, and a font icon the size, from the box. Under the drop it grows
+   like the dot. Hidden by script while empty: the display below beats the
+   hidden attribute's own rule. --icons makes a row of icons alone, square,
+   each option's name in its aria-label (and title, for the pointer). */
+.glass-segmented__icon {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  font-size: 18px; line-height: 1;
+  position: relative;
+}
+.glass-segmented__icon[hidden] { display: none; }
+.glass-segmented__icon svg,
+.glass-segmented__icon ::slotted(svg) {
+  width: 18px; height: 18px; fill: none;
+  stroke: currentColor; stroke-width: 1.8;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.glass-segmented--icons .glass-segmented__item { padding: 8px; }
+
+/* A count after the label (since 1.29.0): how much waits behind an option,
+   where the dot only says that something does. Inline, so a scrolling row
+   and the drop measure the option with it, and in tabular figures. Without
+   a tone it is neutral, a tint of the text colour over the state scrim,
+   which keeps the small figures readable on the chosen option as well
+   (--gl-segmented-badge-bg, -color, both colours); with a tone it takes the
+   state tint of .glass-badge over a doubled scrim. Inside
+   .glass-segmented__icon it sits at the icon's corner, as on the tab bar —
+   the place for an --icons row. There it covers the icon, so the theme's
+   middle background goes underneath (--gl-segmented-badge-base, the
+   badge's background colour). Its number is no name: give the option an
+   aria-label such as "Tickets, 1 open". */
+.glass-segmented__badge {
+  flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; padding: 0 5px;
+  border-radius: var(--gl-radius-full);
+  background-color: var(--gl-segmented-badge-base, var(--gl-state-scrim, transparent));
+  background-image: linear-gradient(var(--gl-segmented-badge-bg, color-mix(in srgb, var(--gl-color-text) 12%, transparent)),
+                                    var(--gl-segmented-badge-bg, color-mix(in srgb, var(--gl-color-text) 12%, transparent)));
+  color: var(--gl-segmented-badge-color, var(--gl-color-text));
+  font-size: 11px; font-weight: var(--gl-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.glass-segmented__item--success .glass-segmented__badge {
+  background-image: linear-gradient(var(--gl-color-success-surface), var(--gl-color-success-surface)),
+                    linear-gradient(var(--gl-state-scrim), var(--gl-state-scrim));
+  box-shadow: inset 0 0 0 1px var(--gl-color-success-border);
+  color: var(--gl-color-success-on-surface, var(--gl-color-success));
+}
+.glass-segmented__item--warning .glass-segmented__badge {
+  background-image: linear-gradient(var(--gl-color-warning-surface), var(--gl-color-warning-surface)),
+                    linear-gradient(var(--gl-state-scrim), var(--gl-state-scrim));
+  box-shadow: inset 0 0 0 1px var(--gl-color-warning-border);
+  color: var(--gl-color-warning-on-surface, var(--gl-color-warning));
+}
+.glass-segmented__item--error .glass-segmented__badge {
+  background-image: linear-gradient(var(--gl-color-error-surface), var(--gl-color-error-surface)),
+                    linear-gradient(var(--gl-state-scrim), var(--gl-state-scrim));
+  box-shadow: inset 0 0 0 1px var(--gl-color-error-border);
+  color: var(--gl-color-error-on-surface, var(--gl-color-error));
+}
+.glass-segmented__icon > .glass-segmented__badge {
+  --gl-segmented-badge-base: var(--gl-color-bg-mid);
+  position: absolute; top: -4px; inset-inline-end: -8px;
+}
+
+
+/* ============================================================
+   30. STEPS
+   ============================================================ */
+/* Progress through a short flow: numbered circles joined by hairlines,
+   done ones on the success surface, the current one in the primary colour.
+   The list is a size container: narrower than 360px (a phone, a narrow
+   card) only the current step keeps its label and the others show their
+   number; before that, labels shorten with an ellipsis instead of pushing
+   past the edge. Keyed to the block's own width, not the viewport — so in
+   a flex row give the list a width, size containment leaves it none. */
+.glass-steps {
+  display: flex; align-items: center; gap: 6px;
+  margin: 0; padding: 0; list-style: none;
+  min-width: 0; container-type: inline-size;
+}
+.glass-steps__item {
+  display: flex; align-items: center; gap: 6px;
+  flex: 0 1 auto; min-width: 0;
+  font-size: var(--gl-font-size-xs);
+  color: var(--gl-color-text-muted);
+  white-space: nowrap;
+}
+.glass-steps__num {
+  flex: none; width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--gl-border-medium);
+  font-size: 11px; font-weight: var(--gl-font-weight-semibold);
+}
+.glass-steps__num svg {
+  width: 12px; height: 12px; fill: none; stroke: currentColor;
+  stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.glass-steps__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.glass-steps__item--done .glass-steps__num {
+  background: var(--gl-color-success-surface);
+  border-color: var(--gl-color-success-border);
+  color: var(--gl-color-success-on-surface);
+}
+.glass-steps__item--current { color: var(--gl-color-text-heading); }
+.glass-steps__item--current .glass-steps__num {
+  background: var(--gl-color-primary); border-color: transparent;
+  color: var(--gl-color-on-primary);
+}
+.glass-steps__line { flex: 1 1 8px; min-width: 8px; height: 1px; background: var(--gl-border-subtle); }
+/* Narrow, the current label comes first (since 1.28.0). The circles keep
+   their size and the lines take only the room that is left, down to 2px
+   at 4px from their neighbours: the gap belongs to the list, which is the
+   container itself and out of its own query's reach, so the lines take a
+   negative margin. Only then does the label shorten. Until 1.28.0 every
+   part gave way at once — seven steps cut the current label in a 350px
+   column and pushed the circles past its edge. */
+@container (max-width: 360px) {
+  .glass-steps__label { display: none; }
+  .glass-steps__item--current .glass-steps__label { display: inline; }
+  .glass-steps__item { flex-shrink: 0; }
+  .glass-steps__item--current { flex-shrink: 1; }
+  .glass-steps__line { flex-basis: 0; min-width: 2px; margin-inline: -2px; }
+}
+
+
+/* ============================================================
+   31. SHEET
+   ============================================================ */
+/* Bottom sheet — the mobile sibling of the modal: an overlay that fades,
+   a panel that rises from the bottom edge, only the top corners rounded, a
+   grip, safe-area padding. Its own block rather than a modal modifier,
+   because layout, entry motion and gesture differ. Show: remove [hidden],
+   force a reflow, add .is-active on the next frame. Hide: drop .is-active,
+   set [hidden] after transitionend — so the blurred overlay leaves the
+   layout instead of idling at opacity 0. <glk-sheet> in GlassKit Elements
+   does exactly this. --inline embeds the panel in the flow, no overlay. */
+.glass-sheet-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: var(--gl-surface-overlay);
+  /* Like the modal's dimmer: --gl-blur-overlay where set (1.25.0). */
+  backdrop-filter: blur(var(--gl-blur-overlay, var(--gl-blur-soft)));
+  -webkit-backdrop-filter: blur(var(--gl-blur-overlay, var(--gl-blur-soft)));
+  font-family: var(--gl-font-family);
+  -webkit-font-smoothing: antialiased;
+  opacity: 0;
+  transition: var(--gl-transition-modal); transition-property: opacity;
+}
+.glass-sheet-overlay[hidden] { display: none; }
+.glass-sheet-overlay.is-active { opacity: 1; }
+/* The overlay may be a native <dialog>, as the modal's (since 1.30.0):
+   opened with showModal() it lies in the top layer, above every fixed or
+   transformed element of the page whatever its z-index, and the page
+   behind it is inert. These rules undo the dialog's own box and backdrop;
+   overflow stays hidden, so the panel rising from below the edge does not
+   make the overlay scroll. Show with showModal(), then .is-active; hide by
+   removing .is-active, then close() after transitionend. GlassKit
+   Elements' <glk-sheet> does this. No outline, as on the modal's: with
+   nothing to focus inside, the dialog itself takes the focus. */
+dialog.glass-sheet-overlay {
+  width: auto; height: auto; max-width: none; max-height: none;
+  margin: 0; padding: 0; border: 0; color: inherit; outline: none;
+  overflow: hidden;
+}
+dialog.glass-sheet-overlay:not([open]) { display: none; }
+dialog.glass-sheet-overlay::backdrop { background: transparent; }
+
+.glass-sheet {
+  width: min(100%, 560px); max-height: 88dvh; overflow: auto;
+  padding: 8px var(--gl-space-lg) calc(var(--gl-space-lg) + env(safe-area-inset-bottom, 0px));
+  /* The modal's material, not the milk surfaces: milk is a light plate for
+     dark ink (--gl-color-text-on-light, the secondary button) and stays
+     light in dark mode — with --gl-color-text on it the sheet read white
+     on white-grey. The card glow gradient over heavy blur is what the
+     text tokens are made for, in both themes. */
+  background: linear-gradient(to bottom,
+    var(--gl-card-glow-top) 0%, var(--gl-card-glow-bottom) 100%
+  );
+  backdrop-filter: blur(var(--gl-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--gl-blur-heavy));
+  color: var(--gl-color-text);
+  border: 1.5px solid var(--gl-border-medium);
+  border-radius: var(--gl-radius-card) var(--gl-radius-card) 0 0;
+  box-shadow: var(--gl-shadow-modal);
+}
+.glass-sheet-overlay .glass-sheet {
+  transform: translateY(100%);
+  transition: var(--gl-transition-modal); transition-property: transform;
+}
+.glass-sheet-overlay.is-active .glass-sheet { transform: translateY(0); }
+.glass-sheet--inline { border-radius: var(--gl-radius-card); box-shadow: var(--gl-shadow-card); }
+
+.glass-sheet__grip { width: 40px; height: 4px; margin: 4px auto 12px; border-radius: 2px; background: var(--gl-border-strong); }
+.glass-sheet__title {
+  margin: 0 0 8px;
+  font-size: var(--gl-font-size-modal); font-weight: var(--gl-font-weight-semibold);
+  color: var(--gl-color-text-heading);
+}
+.glass-sheet__body { font-size: var(--gl-font-size-base); line-height: 1.55; }
+.glass-sheet__actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+@media (prefers-reduced-motion: reduce) {
+  .glass-sheet-overlay, .glass-sheet-overlay .glass-sheet { transition: none; }
+}
+
+
+/* ============================================================
+   32. EMPTY
+   ============================================================ */
+/* Empty state for lists and result pages: a centred column with a round
+   icon plate, a title, a short muted text and room for one action. */
+.glass-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 28px 16px; text-align: center;
+}
+.glass-empty__icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--gl-surface-2); color: var(--gl-icon-default);
+}
+.glass-empty__icon svg,
+.glass-empty__icon ::slotted(svg) {
+  width: 24px; height: 24px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.glass-empty__title { margin: 4px 0 0; font-weight: var(--gl-font-weight-semibold); color: var(--gl-color-text-heading); }
+.glass-empty__text {
+  margin: 0; max-width: 38ch;
+  font-size: var(--gl-font-size-sm); line-height: 1.55;
+  color: var(--gl-color-text-muted);
+}
+/* Room for one action or several: side by side with 8px between them,
+   wrapping and centred when the width runs out. One alone sits as before. */
+.glass-empty__action {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+  margin-top: 8px;
+}
+
+
+/* ============================================================
+   33. DATE STRIP
+   ============================================================ */
+/* A row of day chips that scrolls sideways — a booking horizon, the
+   days around today. Each chip is a button: weekday in small caps, the
+   day number, and a dot beneath that a tone modifier lights up. Without
+   a tone the dot is transparent, so chips with and without a mark keep
+   the same height. The chosen chip carries aria-pressed="true" and takes
+   the primary surface, as in .glass-segmented; --today underlines the
+   number; :disabled (or aria-disabled="true", which keeps the chip
+   focusable) dims a day that cannot be chosen. The scrollbar is hidden;
+   the strip pads itself so its own overflow does not clip the focus
+   ring. The dot reads --gl-date-strip-tone, so a fifth tone is one
+   line; on the chosen chip --gl-date-strip-ink turns every tone into
+   the ink on primary, and a dot without a tone stays transparent. */
+.glass-date-strip {
+  display: flex; gap: 6px; padding: 4px;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.glass-date-strip::-webkit-scrollbar { display: none; }
+
+.glass-date-strip__day {
+  -webkit-appearance: none; appearance: none;
+  flex: 1 0 44px; min-width: 44px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 4px 6px;
+  border: 1px solid var(--gl-border-subtle);
+  border-radius: var(--gl-radius-input);
+  background: var(--gl-surface-1);
+  color: var(--gl-color-text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--gl-transition-fast);
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.glass-date-strip__day:hover { background: var(--gl-surface-3); }
+.glass-date-strip__day[aria-pressed="true"] {
+  --gl-date-strip-ink: var(--gl-color-on-primary);
+  background: var(--gl-color-primary);
+  color: var(--gl-color-on-primary);
+  border-color: transparent;
+  box-shadow: var(--gl-shadow-btn-primary);
+}
+.glass-date-strip__day:focus-visible { box-shadow: var(--gl-shadow-focus); }
+.glass-date-strip__day[aria-pressed="true"]:focus-visible { box-shadow: var(--gl-shadow-focus), var(--gl-shadow-btn-primary); }
+.glass-date-strip__day:disabled,
+.glass-date-strip__day[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.glass-date-strip__day:disabled:hover,
+.glass-date-strip__day[aria-disabled="true"]:hover { background: var(--gl-surface-1); }
+.glass-date-strip__day--today .glass-date-strip__num { text-decoration: underline; text-underline-offset: 3px; }
+
+.glass-date-strip__wd {
+  font-size: var(--gl-font-size-xs); opacity: 0.75;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.glass-date-strip__num {
+  font-size: var(--gl-font-size-lg); font-weight: var(--gl-font-weight-semibold);
+  line-height: 1.1;
+}
+.glass-date-strip__mark {
+  width: 6px; height: 6px; margin-top: 2px; border-radius: 50%;
+  background: var(--gl-date-strip-tone, transparent);
+}
+.glass-date-strip__mark--primary { --gl-date-strip-tone: var(--gl-date-strip-ink, var(--gl-color-primary)); }
+.glass-date-strip__mark--success { --gl-date-strip-tone: var(--gl-date-strip-ink, var(--gl-color-success)); }
+.glass-date-strip__mark--warning { --gl-date-strip-tone: var(--gl-date-strip-ink, var(--gl-color-warning)); }
+.glass-date-strip__mark--error   { --gl-date-strip-tone: var(--gl-date-strip-ink, var(--gl-color-error)); }
+
+
+/* ============================================================
+   34. CALENDAR
+   ============================================================ */
+/* One month: a head with the title between two round nav buttons, a
+   weekday row and six rows of seven day buttons, each a square with the
+   number and up to three dots beneath. The chosen day carries
+   aria-pressed="true" and takes the primary surface; --today draws a
+   warm border; --other dims a day of the neighbouring month; :disabled
+   or aria-disabled="true" dims a day outside the allowed range — the
+   second form keeps it focusable, so arrow keys can pass over it. The
+   block is a group of buttons whose names carry the full date, not a
+   role="grid": a grid demands rows and cells with aria-selected, which
+   is not what the styling hangs on. The nav buttons take an SVG chevron.
+   The dot reads --gl-calendar-tone, so a fifth tone is one line; on the
+   chosen day --gl-calendar-ink turns every tone into the ink on primary. */
+.glass-calendar { display: block; }
+.glass-calendar__head {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-bottom: 8px;
+}
+.glass-calendar__title {
+  flex: 1 1 auto; min-width: 0; text-align: center;
+  font-weight: var(--gl-font-weight-semibold);
+  color: var(--gl-color-text-heading);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.glass-calendar__nav {
+  -webkit-appearance: none; appearance: none;
+  flex: none; width: 32px; height: 32px; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--gl-border-subtle);
+  border-radius: var(--gl-radius-full);
+  background: var(--gl-surface-1);
+  color: var(--gl-color-text);
+  font-family: inherit;
+  cursor: pointer;
+  transition: var(--gl-transition-fast);
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.glass-calendar__nav:hover { background: var(--gl-surface-3); }
+.glass-calendar__nav:focus-visible { box-shadow: var(--gl-shadow-focus); }
+.glass-calendar__nav:disabled { opacity: 0.45; cursor: not-allowed; }
+.glass-calendar__nav:disabled:hover { background: var(--gl-surface-1); }
+.glass-calendar__nav svg {
+  width: 16px; height: 16px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+
+.glass-calendar__grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.glass-calendar__wd {
+  padding: 4px 0; text-align: center;
+  font-size: var(--gl-font-size-xs);
+  color: var(--gl-color-text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.glass-calendar__day {
+  -webkit-appearance: none; appearance: none;
+  aspect-ratio: 1; min-width: 0; padding: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border: 1px solid transparent;
+  border-radius: var(--gl-radius-sm);
+  background: transparent;
+  color: var(--gl-color-text);
+  font-family: inherit;
+  font-size: var(--gl-font-size-sm);
+  cursor: pointer;
+  transition: var(--gl-transition-fast);
+  outline: none; -webkit-tap-highlight-color: transparent;
+}
+.glass-calendar__day:hover { background: var(--gl-surface-2); }
+.glass-calendar__day--other { opacity: 0.35; }
+.glass-calendar__day--today { border-color: var(--gl-border-warm); }
+.glass-calendar__day[aria-pressed="true"] {
+  --gl-calendar-ink: var(--gl-color-on-primary);
+  background: var(--gl-color-primary);
+  color: var(--gl-color-on-primary);
+}
+.glass-calendar__day:focus-visible { box-shadow: var(--gl-shadow-focus); }
+.glass-calendar__day:disabled,
+.glass-calendar__day[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.glass-calendar__day:disabled:hover,
+.glass-calendar__day[aria-disabled="true"]:hover { background: transparent; }
+
+.glass-calendar__marks { display: flex; gap: 2px; height: 5px; }
+.glass-calendar__mark {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gl-calendar-tone, transparent);
+}
+.glass-calendar__mark--primary { --gl-calendar-tone: var(--gl-calendar-ink, var(--gl-color-primary)); }
+.glass-calendar__mark--success { --gl-calendar-tone: var(--gl-calendar-ink, var(--gl-color-success)); }
+.glass-calendar__mark--warning { --gl-calendar-tone: var(--gl-calendar-ink, var(--gl-color-warning)); }
+.glass-calendar__mark--error   { --gl-calendar-tone: var(--gl-calendar-ink, var(--gl-color-error)); }
+
+
+/* ============================================================
+   35. IMAGE PICKER
+   ============================================================ */
+/* Choosing one image with a preview: a 72px plate on the left — the
+   picture with object-fit: cover, or a placeholder icon in the muted
+   icon colour — and a column with the label, a hint and the actions.
+   The actions are ordinary .glass-btn buttons (secondary --sm --auto to
+   choose, tertiary --sm --auto to remove); the block brings no button
+   look of its own. --round makes the plate a circle for avatars. The
+   column yields (min-width: 0) and the label wraps, so a long label
+   never squeezes the plate. Any image, not only photos — a logo, an
+   illustration — hence the name. */
+.glass-image-picker { display: flex; align-items: center; gap: 14px; }
+.glass-image-picker__preview {
+  flex: none; width: 72px; height: 72px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--gl-border-subtle);
+  border-radius: var(--gl-radius-input);
+  background: var(--gl-surface-2);
+  color: var(--gl-icon-muted);
+  overflow: hidden;
+}
+.glass-image-picker__preview--round { border-radius: 50%; }
+.glass-image-picker__preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.glass-image-picker__preview svg {
+  width: 28px; height: 28px; fill: none; stroke: currentColor;
+  stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+}
+.glass-image-picker__meta {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+}
+.glass-image-picker__label {
+  font-size: var(--gl-font-size-sm); font-weight: var(--gl-font-weight-medium);
+  color: var(--gl-icon-strong);
+  overflow-wrap: anywhere;
+}
+.glass-image-picker__hint { font-size: var(--gl-font-size-xs); color: var(--gl-color-text-muted); }
+.glass-image-picker__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+
+/* ============================================================
+   36. UTILITIES
+   ============================================================ */
+.gl-stack            { display: flex; flex-direction: column; }
+.gl-row              { display: flex; flex-direction: row; align-items: center; }
+
+.gl-stack--2xs { gap: var(--gl-space-2xs); }
+.gl-stack--xs  { gap: var(--gl-space-xs);  }
+.gl-stack--sm  { gap: var(--gl-space-sm);  }
+.gl-stack--md  { gap: var(--gl-space-md);  }
+.gl-stack--lg  { gap: var(--gl-space-lg);  }
+.gl-stack--xl  { gap: var(--gl-space-xl);  }
+
+.gl-row--xs    { gap: var(--gl-space-xs);  }
+.gl-row--sm    { gap: var(--gl-space-sm);  }
+.gl-row--md    { gap: var(--gl-space-md);  }
+
+.gl-text-center { text-align: center; }
+.gl-text-muted  { color: var(--gl-color-text-muted); }
+.gl-text-sm     { font-size: var(--gl-font-size-sm); }
+
+.gl-mt-sm  { margin-top: var(--gl-space-sm);  }
+.gl-mt-md  { margin-top: var(--gl-space-md);  }
+.gl-mt-lg  { margin-top: var(--gl-space-lg);  }
+.gl-mt-xl  { margin-top: var(--gl-space-xl);  }
+
+.gl-mb-sm  { margin-bottom: var(--gl-space-sm);  }
+.gl-mb-md  { margin-bottom: var(--gl-space-md);  }
+.gl-mb-lg  { margin-bottom: var(--gl-space-lg);  }
+.gl-mb-xl  { margin-bottom: var(--gl-space-xl);  }
+
+.gl-px { padding-left: var(--gl-space-lg); padding-right: var(--gl-space-lg); }
+.gl-w-full { width: 100%; }
+.gl-flex-1 { flex: 1; }
+
+/* Escape hatch: deliberately filled icons (e.g. brand logos),
+   overrides the outline defaults of the components */
+svg.glass-icon--fill { fill: currentColor; stroke: none; }
+
+
+/* ============================================================
+   37. PRINT
+   ============================================================ */
+/* Printing drops backgrounds unless "Background graphics" is ticked, and it
+   is off by default in the print dialogs. Several states are drawn with a
+   background only: the checked box and its white tick, the chosen radio and
+   its dot, the toggle's on track, the progress fill, the current step, the
+   chosen day of date strip and calendar, the slider thumb, and the tone dots
+   of calendar, date strip and segmented control. On paper a checked box
+   printed like an empty one and the chosen day came out paler than the rest.
+   These parts print as on screen; thumb, tick, dot and marks inherit the
+   setting from the part they sit in. Everything else keeps the economical
+   mode — including the browser darkening light text for white paper, which
+   is why whole day buttons or step numbers are not listed, only the chosen
+   and the current ones. Both spellings: browsers differ in which they read. */
+@media print {
+  .glass-toggle__track,
+  .glass-checkbox__box,
+  .glass-radio__circle,
+  .glass-progress__fill,
+  .glass-range,
+  .glass-steps__item--current .glass-steps__num,
+  .glass-date-strip__day[aria-pressed="true"],
+  .glass-calendar__day[aria-pressed="true"],
+  .glass-date-strip__mark,
+  .glass-calendar__mark,
+  .glass-segmented__dot {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

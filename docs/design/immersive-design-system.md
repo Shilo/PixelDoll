@@ -2,12 +2,16 @@
 
 Updated 2026-10-23. This is the reusable styling and interaction contract for the approved Obsidian / Porcelain Bronze direction. It describes the implemented isolated prototype and the target for future app integration. Production Studio has not been migrated. The [current design record](2026-10-22-redesign/round-4-discussion/current-design.md) controls product decisions; this document controls their reusable visual treatment.
 
+Latest refinement: [GlassKit evaluation and comparisons](2026-10-22-redesign/round-6-prototype/glasskit-study.md). The user authorized this isolated experiment after the previous no-GlassKit direction. Restrained material is the implemented recommendation; larger radii remain a comparison only.
+
 ## Sources of truth
 
 | Responsibility | Source |
 | --- | --- |
 | Semantic UI colors, world palette, mode application | [theme.mjs](2026-10-22-redesign/round-6-prototype/theme.mjs) |
 | Fonts, geometry, control states, responsive layout | [styles.css](2026-10-22-redesign/round-6-prototype/styles.css) |
+| Pinned GlassKit token/material adaptation and accessibility fallbacks | [glass-theme.css](2026-10-22-redesign/round-6-prototype/glass-theme.css) |
+| Shared material/component application and review-only variants | [material.mjs](2026-10-22-redesign/round-6-prototype/material.mjs) |
 | Button, icon, field and mode-selector markup | [ui.js](2026-10-22-redesign/round-6-prototype/ui.js) |
 | Shared equipment surface and slot metadata | [equipment.js](2026-10-22-redesign/round-6-prototype/equipment.js) |
 | Creator rendering, prompt composition and draft sizing helper | [creator.js](2026-10-22-redesign/round-6-prototype/creator.js) |
@@ -46,7 +50,11 @@ Actor and equipment pixels never consume appearance tokens. Preserve source colo
 
 ## Geometry, states and responsive composition
 
-Control, panel and dialog corner radii are shared tokens (5, 8 and 10 px). Standard borders and focus outlines use shared tokens too. Circular palette swatches, joystick rings and square pixel artwork are purposeful exceptions, not separate screen themes.
+Control, panel and dialog radii are shared tokens. Current restrained material uses **8 / 12 / 16 px**; baseline 5/8/10 and larger 16/24/24 remain review variants. Standard borders and focus outlines use shared tokens too. Circular palette swatches, joystick rings and square pixel artwork are purposeful exceptions.
+
+Glass is limited to playback and temporary menus/dialogs/toasts. Keep recommended view labels open and underlined. Do not enclose equipment in shiny cards. Forms use shared 92% surface fills and stronger field borders without per-field filters. Solid bronze actions use existing on-accent ink. Original sprite pixels/world imagery remain independent of the material.
+
+GlassKit 1.30.0 is locally pinned, MIT-licensed and loaded in a lower-priority cascade layer. Theme colors live on root so derived tokens resolve correctly. Adaptations belong in the documented adapter, not vendor source or per-screen copies. Native modality, focus return, labels and live regions remain application responsibilities. Keep native hints and Help dialogs: the pinned library supplies no tooltip component.
 
 Buttons, icon buttons, fields and mode selectors use the same markup helpers. Native buttons keep Enter/Space behavior; action labels and disabled states remain explicit. Mode rows look like tabs but use native pressed buttons, so scene arrow keys are not misrepresented as an unimplemented ARIA tablist controller. A future proper tablist must include its full keyboard behavior and resolve that shortcut conflict explicitly.
 
@@ -77,7 +85,7 @@ The current manifest's compass supports up to eight named angles; any nonempty s
 ## Change discipline and known limits
 
 1. Change a token or shared component at its source; do not paste per-screen color/layout overrides.
-2. Keep breakpoint overrides that express real responsive differences. Avoid redundant declarations and history-based patch stylesheets. The former style.css/parity.css stack is consolidated into styles.css with cascade order preserved.
+2. Keep breakpoint overrides that express real responsive differences. Avoid redundant declarations and history-based patch stylesheets. The former style.css/parity.css stack is consolidated into styles.css. The separate glass-theme.css is a deliberate vendor boundary, not an arbitrary patch sheet.
 3. Keep asset URLs in the dedicated `backgrounds` map. Preload only that map; a theme label or color string must never be fetched as an image.
 4. Verify representative selection, creator, Preview and both live modes in dark/light and desktop/phone. Check missing-animation behavior, original actor colors, pointer cancellation and paint overflow when their code changes.
 5. Update this guide and the design decision record with accepted changes. Save screenshots and test reports separately; old reviews remain historical evidence.

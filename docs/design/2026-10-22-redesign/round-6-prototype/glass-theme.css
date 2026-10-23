@@ -1,0 +1,195 @@
+@import url('./vendor/glasskit/glasskit.css') layer(glasskit);
+
+/* PixelDoll adapter for unmodified GlassKit 1.30.0. Layout/type stay in styles.css.
+   Map tokens at the root where GlassKit derives them. No nested blurred fields. */
+:root:not([data-material=baseline]) {
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-dialog: 16px;
+  --glass-fill: rgba(var(--surface), .92);
+  --glass-field: rgba(var(--surface), .92);
+  --glass-field-border: color-mix(in srgb, var(--muted) 74%, rgb(var(--surface)));
+  --glass-rim: color-mix(in srgb, var(--muted) 38%, transparent);
+  --glass-highlight: color-mix(in srgb, var(--text) 12%, transparent);
+  --glass-shadow: 0 8px 28px rgba(0,0,0,.12);
+  --gl-color-primary: var(--accent);
+  --gl-color-primary-dark: var(--accent);
+  --gl-color-primary-text: var(--accent);
+  --gl-color-on-primary: var(--ink);
+  --gl-color-bg-mid: rgb(var(--surface));
+  --gl-color-text: var(--text);
+  --gl-color-text-heading: var(--text);
+  --gl-color-text-muted: var(--muted);
+  --gl-placeholder: var(--muted);
+  --gl-icon-on-primary: var(--ink);
+  --gl-border-subtle: var(--line);
+  --gl-border-medium: var(--glass-rim);
+  --gl-border-focus: var(--accent);
+  --gl-surface-1: var(--glass-field);
+  --gl-surface-2: var(--glass-field);
+  --gl-surface-3: var(--glass-fill);
+  --gl-surface-4: var(--glass-fill);
+  --gl-surface-5: color-mix(in srgb, var(--accent) 14%, rgb(var(--surface)));
+  --gl-card-glow-top: var(--glass-fill);
+  --gl-card-glow-bottom: var(--glass-fill);
+  --gl-inset-subtle: inset 0 1px 0 var(--glass-highlight);
+  --gl-inset-medium: var(--gl-inset-subtle);
+  --gl-inset-strong: var(--gl-inset-subtle);
+  --gl-shadow-card: var(--glass-shadow);
+  --gl-shadow-modal: 0 20px 64px rgba(0,0,0,.25);
+  --gl-shadow-toast: var(--glass-shadow);
+  --gl-shadow-btn-primary: 0 2px 8px rgba(0,0,0,.10);
+  --gl-gloss-modal: linear-gradient(90deg, transparent, var(--glass-highlight), transparent);
+  --gl-blur: 12px;
+  --gl-blur-heavy: 12px;
+  --gl-blur-overlay: 0px;
+  --gl-radius-input: var(--radius-control);
+  --gl-radius-btn: var(--radius-control);
+  --gl-radius-sm: var(--radius-control);
+  --gl-radius-card: var(--radius-panel);
+  --gl-font-family: var(--font-ui);
+  --gl-control-height: auto;
+  --gl-btn-height: auto;
+  --gl-textarea-min-height: 100px;
+  --gl-font-size-base: inherit;
+  --gl-font-size-btn: inherit;
+  --gl-transition: background-color .15s ease, border-color .15s ease;
+  --gl-transition-modal: none;
+  --gl-segmented-active-bg: var(--gl-surface-5);
+  --gl-segmented-active-color: var(--accent);
+  --gl-segmented-active-shadow: 0 0 0 transparent;
+}
+
+/* Comparison B deliberately uses GlassKit's larger geometry and grouped nav.
+   It is not a persistent user setting or an additional app theme. */
+:root[data-material=rounded] {
+  --radius-control: 16px;
+  --radius-panel: 24px;
+  --radius-dialog: 24px;
+}
+
+/* Component adapters retain established responsive sizing and native semantics. */
+.glass-btn.primary {
+  height: auto;
+  width: auto;
+  display: inline-flex;
+  gap: 8px;
+  background: var(--accent);
+  color: var(--ink);
+  border: 0;
+  border-radius: var(--radius-control);
+}
+.glass-btn.primary:is(:hover,:active) { transform: none; }
+.glass-btn.primary svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
+.library .glass-btn.primary, .equipment-tools .glass-btn.primary { width: 100%; }
+/* Root-scoped tokens also repair the old unresolved border/focus aliases.
+   Keep equipment previews open to the world, not boxed like form fields. */
+:root:not([data-material=baseline]) :is(.item,.none) { border: 0; }
+.glass-input, .glass-textarea {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: 10px 12px;
+  border-width: 1px;
+  border-color: var(--glass-field-border);
+  border-radius: var(--radius-control);
+  background: var(--glass-field);
+  font-family: inherit;
+  line-height: inherit;
+}
+.glass-input:focus, .glass-textarea:focus { box-shadow: var(--gl-inset-subtle); }
+/* Keep native select arrows and the existing form layout; style their surface
+   using the same tokens without layering another filter over the creator. */
+:root:not([data-material=baseline]) .creator select {
+  background-color: var(--glass-field);
+  border-color: var(--glass-field-border);
+  box-shadow: var(--gl-inset-subtle);
+}
+.glass-surface {
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-rim);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--glass-shadow), var(--gl-inset-subtle);
+  backdrop-filter: blur(var(--gl-blur));
+  -webkit-backdrop-filter: blur(var(--gl-blur));
+}
+.popover.glass-popover {
+  left: auto;
+  transform: none;
+  background: var(--glass-fill);
+  border-radius: var(--radius-panel);
+  transition: none;
+}
+#toast.glass-toast {
+  top: auto;
+  transform: none;
+  min-width: 0;
+  opacity: 1;
+  background: var(--glass-fill);
+  border-radius: var(--radius-panel);
+  pointer-events: none;
+}
+#dialog.glass-modal-overlay {
+  width: 100%; height: 100%; max-height: none;
+  border-radius: 0;
+  padding: 16px;
+  background: var(--modal-backdrop);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.dialog-panel.glass-modal {
+  max-width: 480px;
+  max-height: 80dvh;
+  overflow: auto;
+  padding: 25px;
+  transform: none;
+  border-width: 1px;
+  border-radius: var(--radius-dialog);
+}
+.glass-segmented.view-tabs {
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-panel);
+}
+.glass-segmented.view-tabs button {
+  border-radius: var(--radius-control);
+  border-bottom-color: transparent;
+}
+.glass-segmented.view-tabs button[aria-pressed=true] {
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+/* The upstream .glass-* rules remove outline; retain our shared visible focus. */
+:root:not([data-material=baseline]) :is(button,a,input,textarea,select):focus-visible {
+  outline: var(--focus-outline);
+  outline-offset: 3px;
+}
+
+/* A reliable opaque backing is more important than simulated transparency.
+   The mode token removes every filter, including upstream component filters. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root:not([data-material=baseline]) {
+    --glass-fill: rgb(var(--surface));
+    --glass-field: rgb(var(--surface));
+    --glass-rim: var(--muted);
+    --glass-highlight: transparent;
+    --gl-blur: 0px;
+    --gl-blur-heavy: 0px;
+  }
+  :root:not([data-material=baseline]) :is(.glass-surface,.glass-popover,.glass-toast,.glass-modal) { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root:not([data-material=baseline]) { --glass-fill: rgb(var(--surface)); --glass-field: rgb(var(--surface)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-material=baseline]) :is([class*=glass-], [class*=glass-]::before) { transition: none; animation: none; }
+}
+@media (forced-colors: active) {
+  :root:not([data-material=baseline]) {
+    --glass-fill: Canvas; --glass-field: Canvas; --glass-rim: CanvasText;
+    --text: CanvasText !important; --muted: CanvasText !important;
+    --accent: Highlight !important; --ink: HighlightText !important;
+    --gl-blur: 0px; --gl-blur-heavy: 0px;
+  }
+  :root:not([data-material=baseline]) :is(button,input,textarea,select,.popover,.playback,.dialog-panel,#toast) { border: 1px solid CanvasText; }
+  :root:not([data-material=baseline]) :is(.glass-surface,.glass-popover,.glass-toast,.glass-modal) { backdrop-filter: none; -webkit-backdrop-filter: none; }
+  :root:not([data-material=baseline]) button[aria-pressed=true] { outline: 2px solid Highlight; }
+}

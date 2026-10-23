@@ -8,6 +8,8 @@ Updated 2026-10-23 after the user's movement-fallback correction and palette cho
 
 ## Accepted visual and screen direction
 
+Latest user-authorized experiment: [restrained GlassKit material study](../round-6-prototype/glasskit-study.md). Adopted in the isolated prototype after research and independent review; retains Bronze colors, open navigation and world-first composition. The previous no-GlassKit restriction is superseded for this experiment only. Production migration is not part of this change.
+
 Reusable styling, tokens and implementation ownership are maintained in the [immersive design system](../../immersive-design-system.md). It supersedes prototype-specific duplicated styling while preserving the approved visual direction.
 
 - Full-screen immersive HD prototype world; Obsidian Holodeck is the chosen direction. Use **Obsidian / Porcelain Bronze** for coordinated dark/light backgrounds and UI. Frost and Sage remain historical alternatives, not additional product requirements.

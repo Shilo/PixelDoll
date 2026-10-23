@@ -1,0 +1,26 @@
+{
+  "engine": "Playwright WebKit 27.2 on Windows (not physical iOS)",
+  "result": "passed",
+  "cases": [
+    {
+      "width": 1920,
+      "theme": "obsidian",
+      "result": "passed"
+    },
+    {
+      "width": 1920,
+      "theme": "porcelain",
+      "result": "passed"
+    },
+    {
+      "width": 450,
+      "theme": "obsidian",
+      "result": "passed"
+    },
+    {
+      "width": 450,
+      "theme": "porcelain",
+      "result": "passed"
+    }
+  ]
+}

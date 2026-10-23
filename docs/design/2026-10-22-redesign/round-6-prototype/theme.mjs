@@ -10,9 +10,12 @@ export function applyTheme(name, element = document.body) {
     const theme = APPEARANCES[themeName(name)];
     element.dataset.theme = themeName(name);
     element.style.colorScheme = theme.scheme;
+    const root = document.documentElement;
+    const tokens = element === document.body && root.dataset.material !== 'baseline' ? root : element;
+    if (element === document.body) root.dataset.theme = theme.scheme;
     for (const [key, value] of Object.entries(theme.ui))
-        element.style.setProperty('--' + key, key === 'surface' ? rgb(value).join(',') : value);
-    element.style.setProperty('--line', `rgba(${rgb(theme.ui.muted).join(',')},${theme.lineAlpha})`);
+        tokens.style.setProperty('--' + key, key === 'surface' ? rgb(value).join(',') : value);
+    tokens.style.setProperty('--line', `rgba(${rgb(theme.ui.muted).join(',')},${theme.lineAlpha})`);
 }
 // Sample equipment ramp: authored item colors, deliberately independent of appearance.
 export const DEMO_EQUIPMENT_PALETTE = ['#858581', '#a73933', '#428d7a', '#72549d', '#d7af65'];
