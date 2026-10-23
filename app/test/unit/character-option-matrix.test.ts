@@ -85,12 +85,21 @@ test('all 12,082 direction and mirror transitions preserve valid sources and det
   expect(operations).toBe(12_082)
 })
 
-test('every supported body integer has a valid automatic frame and exact source-size request', () => {
+test('all 57 supported four-pixel body sizes map exactly and every unsupported integer is rejected before work', async () => {
   let sizes = 0
   for (let body = 32; body <= 256; body++) {
-    sizes++
     const frame = autoFrame(body), draft = newCharacterDraft()
     draft.body = body
+    if (body % 4) {
+      expect(sizeErrors(body, frame)).not.toEqual([])
+      expect(draftErrors(draft)).not.toEqual([])
+      await expect(createCharacter({ ...specOf(plans[0]), size: body, frame })).rejects.toThrow('Body size')
+      // A persisted legacy spec without an explicit frame must also stop before contacting PixelLab.
+      const { frame: _, ...legacy } = { ...specOf(plans[0]), size: body }
+      await expect(createCharacter(legacy)).rejects.toThrow('Body size must be 32–256 pixels in 4 px steps')
+      continue
+    }
+    sizes++
     expect(sizeErrors(body, frame)).toEqual([])
     expect(frame).toBeGreaterThanOrEqual(body)
     expect(frame).toBeLessThanOrEqual(256)
@@ -105,7 +114,7 @@ test('every supported body integer has a valid automatic frame and exact source-
     // Frame is applied locally to response images; it must not replace the source image_size.
     expect(calls[1].body).not.toHaveProperty('image_size')
   }
-  expect(sizes).toBe(225)
+  expect(sizes).toBe(57)
   for (const body of [undefined, NaN, -1, 0, 31, 32.5, 256.5, 257, Infinity]) expect(sizeErrors(body, 256)).not.toEqual([])
   expect([48, 64, 96, 128].map(autoFrame)).toEqual([64, 80, 128, 160])
 })
@@ -136,7 +145,7 @@ test('all 21 appearance choices, including Not set, map into the exact descripti
   expect(total).toBe(21)
 })
 
-test('all 225 source sizes preserve exact pixels through automatic/manual padding and horizontal mirroring', () => {
+test('all 225 integer image sizes preserve exact pixels locally, independently of from-scratch generation increments', () => {
   for (let body = 32; body <= 256; body++) {
     const source = makeImg(body, body)
     const points = [{ x: 3, y: 5, rgba: [23, 67, 101, 255] }, { x: body - 4, y: body - 6, rgba: [181, 37, 89, 255] }]

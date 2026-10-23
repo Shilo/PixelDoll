@@ -55,7 +55,7 @@ async function setup(page: Page) {
     await expect(sheet.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible()
     return body
   }
-  return { sheet, submit }
+  return { sheet, submit, posted }
 }
 
 async function plannedSources(page: Page, sheet: Locator, expected: string[]) {
@@ -95,24 +95,32 @@ test('all 21 appearance options and exact custom text reach the initial HTTP JSO
 })
 
 test('every body preset, custom size, and manual/auto frame has the correct source-size HTTP field', async ({ page }) => {
-  const { sheet, submit } = await setup(page)
+  const { sheet, submit, posted } = await setup(page)
   const body = sheet.getByRole('spinbutton', { name: 'Body size', exact: true }), frame = sheet.getByRole('spinbutton', { name: 'Frame size', exact: true })
+  await body.fill('73')
+  await expect(body).toHaveValue('73') // Invalid custom input is explained rather than silently rounded.
+  await expect(body).toHaveAttribute('step', '4')
+  await expect(frame).toHaveAttribute('step', '1')
+  await expect(sheet.getByRole('button', { name: 'Create character', exact: true })).toBeDisabled()
+  await expect(sheet.locator('.creator-validation')).toContainText('4')
+  expect(posted).toEqual([])
   for (const [size, expectedFrame] of [[48, 64], [64, 80], [96, 128], [128, 160]]) {
     await sheet.getByRole('button', { name: String(size), exact: true }).click()
     await expect(frame).toHaveValue(String(expectedFrame))
     expect((await submit()).image_size).toEqual({ width: size, height: size })
   }
-  for (const [size, expectedFrame] of [[32, 48], [73, 96], [256, 256]]) {
+  // 76 is divisible by four but not eight, protecting the least-restrictive supported increment.
+  for (const [size, expectedFrame] of [[32, 48], [76, 96], [256, 256]]) {
     await body.fill(String(size))
     await expect(sheet.locator('.body-presets [aria-pressed=true]')).toHaveCount(0)
     await expect(frame).toHaveValue(String(expectedFrame))
     expect((await submit()).image_size).toEqual({ width: size, height: size })
   }
-  await body.fill('73'); await frame.fill('160')
+  await body.fill('76'); await frame.fill('129')
   await expect(sheet.getByRole('button', { name: 'Auto', exact: true })).toHaveAttribute('aria-pressed', 'false')
-  expect((await submit()).image_size).toEqual({ width: 73, height: 73 })
+  expect((await submit()).image_size).toEqual({ width: 76, height: 76 })
   await sheet.getByRole('button', { name: 'Auto', exact: true }).click(); await expect(frame).toHaveValue('96')
-  expect((await submit()).image_size).toEqual({ width: 73, height: 73 })
+  expect((await submit()).image_size).toEqual({ width: 76, height: 76 })
 })
 
 test('five direction presets keep eight-view V3 creation and plan only selected unique sources', async ({ page }) => {

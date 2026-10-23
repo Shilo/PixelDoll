@@ -9,7 +9,7 @@
   import { routes } from '../lib/pixellab/routes.ts'
   import { ArrowUp, PersonStanding, Copy, Check, WandSparkles, Undo2 } from './icons.ts'
   import MirrorViews from '@lucide/svelte/icons/triangles-centerline-dashed-vertical'
-  import { ANGLES, autoFrame, BODY_SIZES, COMPASS, DIRECTION_LABELS, draftErrors, PRESETS, presetOf, readPrompt, setPreset, toggleDirection, toggleMirror, TRAITS, TRAIT_KEYS, UNSET, writeDetails, writeTrait, type CharacterDraft, type Trait } from './characterConfig.ts'
+  import { ANGLES, autoFrame, BODY_SIZES, COMPASS, DIRECTION_LABELS, draftErrors, PRESETS, presetOf, readPrompt, setPreset, toggleDirection, toggleMirror, TRAITS, TRAIT_KEYS, UNSET, validBodySize, writeDetails, writeTrait, type CharacterDraft, type Trait } from './characterConfig.ts'
 
   let { draft: d = $bindable(), busy = $bindable(false), onconnect }: { draft: CharacterDraft; busy?: boolean; onconnect: (target: 'details' | 'prompt') => void } = $props()
   const scope = `enhance:${crypto.randomUUID()}`
@@ -28,7 +28,7 @@
     ? 'Describe distinctive features, then choose appearance hints below. These choices build the linked prompt. Hair, clothes and gear are added later.'
     : 'This exact text is sent to V3. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; prose is never guessed as a trait.')
   const enhanceInput = () => ({ description: d.prompt, image_size: { width: d.body || 0, height: d.body || 0 }, view: d.view })
-  const canEnhance = (target: 'details' | 'prompt') => !busy && !!(target === 'details' ? d.details : d.prompt).trim() && Number.isInteger(d.body) && d.body! >= 32 && d.body! <= 256 && enhanceInput().description.length <= 2000
+  const canEnhance = (target: 'details' | 'prompt') => !busy && !!(target === 'details' ? d.details : d.prompt).trim() && validBodySize(d.body) && enhanceInput().description.length <= 2000
   const canUndo = (target: 'details' | 'prompt') => undo?.target === target && undo.after === d.prompt
   function edited() { undo = null; message = ''; copied = null }
   function details(value: string) { edited(); writeDetails(d, value) }
@@ -115,7 +115,7 @@
   </section>
 
   <section class="geometry" aria-label="Character size and camera">
-    <div class="creator-field"><Help title="Body size" text="The source canvas V3 draws into, in pixels—not a guaranteed opaque body height. Choose 32–256 whole pixels. The frame adds space for movement and equipment." /><div class="body-presets" role="group" aria-label="Body size presets">{#each BODY_SIZES as size (size)}<button class="btn" aria-pressed={d.bodyPreset === size} onclick={() => { d.body = size; d.bodyPreset = size }}>{size}</button>{/each}</div><div class="pixel-input"><input class="input" aria-label="Body size" type="number" min="32" max="256" step="1" bind:value={d.body} oninput={() => d.bodyPreset = null} /><span aria-hidden="true">px</span></div></div>
+    <div class="creator-field"><Help title="Body size" text="The source canvas V3 draws into, in pixels—not a guaranteed opaque body height. Choose 32–256 pixels in 4 px steps. The frame adds space for movement and equipment." /><div class="body-presets" role="group" aria-label="Body size presets">{#each BODY_SIZES as size (size)}<button class="btn" aria-pressed={d.bodyPreset === size} onclick={() => { d.body = size; d.bodyPreset = size }}>{size}</button>{/each}</div><div class="pixel-input"><input class="input" aria-label="Body size" type="number" min="32" max="256" step="4" bind:value={d.body} oninput={() => d.bodyPreset = null} /><span aria-hidden="true">px</span></div></div>
     <div class="creator-field"><Help title="Frame" text="The square cell used by every exported frame. Auto adds padding around the body canvas. Enter a larger value for more room, up to 256 px. Pixels are padded, never scaled." /><div class="frame-controls"><button class="btn" aria-pressed={d.auto} onclick={() => { d.frame = frame; d.auto = !d.auto; if (!d.auto) { frameInput.focus(); frameInput.select() } }}>Auto</button><div class="pixel-input"><input bind:this={frameInput} class="input" aria-label="Frame size" type="number" min={autoFrame(d.body || 32)} max="256" step="1" value={frame ?? ''} oninput={(e) => { d.auto = false; d.frame = e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }} /><span aria-hidden="true">px</span></div></div></div>
     <SizePreview body={d.body || 0} frame={frame || 0} />
     <div class="creator-field camera"><Help title="Camera" text="Low top-down shows a slight overhead view. High top-down looks down more steeply. Side is level with the character. Direction presets also set a suitable camera." /><select class="input" aria-label="Camera" bind:value={d.view}><option value="low top-down">Low top-down</option><option value="high top-down">High top-down</option><option value="side">Side</option></select></div>

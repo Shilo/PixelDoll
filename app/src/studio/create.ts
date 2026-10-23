@@ -22,7 +22,7 @@ import { actionOf, clipQa, largestComponent, loops, rawClip, type ClipQa } from 
 import { poseGens, poseItemClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { BASE_BODY, basePrompt, looksOf } from './model.ts';
-import { facingErrors, sizeErrors } from './characterConfig.ts';
+import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
 import { planDirections } from '../lib/rig/mirror.ts';
 import { prepareExtensionFit } from '../lib/equipment/index.ts';
@@ -157,7 +157,7 @@ export interface Progress { step: string; done: number; total: number; recIds: s
 export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress) => void = () => {}): Promise<string> {
   const cell = spec.frame ?? CELL, directions = creationDirections(spec), DIRS = directions.filter(d => !d.mirrorOf).map(d => d.id);
   const errors = [...facingErrors(directions), ...(spec.frame !== undefined ? sizeErrors(spec.size, cell) : []),
-    ...(!Number.isInteger(spec.size) || spec.size < 32 || spec.size > 256 ? ['Invalid body size.'] : []),
+    ...(spec.frame === undefined && !validBodySize(spec.size) ? ['Body size must be 32–256 pixels in 4 px steps.'] : []),
     ...(!spec.description.trim() || spec.description.length > 2000 ? ['Enter a prompt of 1–2,000 characters.'] : []),
     ...(!Number.isSafeInteger(spec.seed) || spec.seed < 0 || spec.seed > Number.MAX_SAFE_INTEGER - 100_000 ? ['Invalid seed.'] : []),
     ...(spec.view && !['low top-down', 'high top-down', 'side'].includes(spec.view) ? ['Invalid camera.'] : [])];

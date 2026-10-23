@@ -111,8 +111,10 @@ export function facingErrors(dirs: RigDirection[]): string[] {
   }
   return errors;
 }
+export const validBodySize = (body: number | undefined) => Number.isInteger(body) && body! >= 32 && body! <= 256 && body! % 4 === 0;
 export function sizeErrors(body: number | undefined, frame: number | undefined): string[] {
   if (!Number.isInteger(body) || body! < 32 || body! > 256) return ['Body size must be 32–256 whole pixels.'];
+  if (!validBodySize(body)) return ['Body size must use 4 px steps (32, 36, 40, …, 256).'];
   const min = autoFrame(body!);
   return !Number.isInteger(frame) || frame! < min || frame! > 256 ? [`Frame must be ${min}–256 whole pixels.`] : [];
 }

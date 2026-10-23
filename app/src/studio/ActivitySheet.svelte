@@ -94,7 +94,7 @@
         <div style="overflow:auto;max-height:240px">
           <table class="ledger">
             <thead><tr><th>Job</th><th>Endpoint</th><th>State</th><th>Cost</th></tr></thead>
-            <tbody>{#each jobs.slice(0, 50) as r (r.id)}<tr><td>{r.label}</td><td class="mono">{r.endpoint}</td><td>{r.state}{r.attempts > 1 ? ` (try ${r.attempts})` : ''}{r.error ? ` · ${r.error.slice(0, 80)}` : ''}</td><td class="num">{cost(r)}</td></tr>{/each}</tbody>
+            <tbody>{#each jobs.slice(0, 50) as r (r.id)}<tr><td>{r.label}</td><td class="mono">{r.endpoint}</td><td title={r.error}>{r.state}{r.attempts > 1 ? ` (try ${r.attempts})` : ''}{r.error ? ` · ${r.error.slice(0, 80)}` : ''}</td><td class="num">{cost(r)}</td></tr>{/each}</tbody>
           </table>
         </div>
       </div>
