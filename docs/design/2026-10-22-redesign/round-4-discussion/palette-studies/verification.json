@@ -1,0 +1,50 @@
+{
+  "source": "app/public/fixtures/s2",
+  "preset": "adventurer",
+  "animation": "walk",
+  "direction": "south",
+  "frame": 0,
+  "composite": "composeCell + bakedFrame",
+  "spritePngSha256": "cb7376b2d6917e8a4467d6c3b492f8cb4868e755b2f4a50d1560d7bdc6356a99",
+  "evidence": [
+    {
+      "palette": "bronze",
+      "dark": {
+        "appearance": "dark",
+        "opaquePixelsVerified": 1029,
+        "scale": 5
+      },
+      "light": {
+        "appearance": "light",
+        "opaquePixelsVerified": 1029,
+        "scale": 5
+      }
+    },
+    {
+      "palette": "frost",
+      "dark": {
+        "appearance": "dark",
+        "opaquePixelsVerified": 1029,
+        "scale": 5
+      },
+      "light": {
+        "appearance": "light",
+        "opaquePixelsVerified": 1029,
+        "scale": 5
+      }
+    },
+    {
+      "palette": "sage",
+      "dark": {
+        "appearance": "dark",
+        "opaquePixelsVerified": 1029,
+        "scale": 5
+      },
+      "light": {
+        "appearance": "light",
+        "opaquePixelsVerified": 1029,
+        "scale": 5
+      }
+    }
+  ]
+}

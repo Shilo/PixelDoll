@@ -1,5 +1,7 @@
 # Shared studio and gameplay contract
 
+**Historical contract:** [current accepted direction](../round-4-discussion/current-design.md) supersedes conflicting details here, particularly the Customize/Play split, strict missing-animation handling, actor shadows and rejection of a mobile joystick. Movement now continues with available presentation fallbacks; equipment without matching coverage may temporarily hide.
+
 This records the intended interaction behind the image-only round-three proposal. It supersedes the static-world and per-keypress movement behavior of earlier mockups. It is a design contract, not implemented code or evidence that required animation assets already exist.
 
 ## One character, one wardrobe, one interface
