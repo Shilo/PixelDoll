@@ -122,7 +122,7 @@
   </section>
 
   <section class="facing" aria-label="Character directions">
-    <Help title="Directions" text="Choose the views to keep and animate. V3 first creates all eight original views. Attached flip buttons mirror a horizontal partner; a blue flip marks a derived view. Turning it off uses that view’s original artwork." />
+    <Help title="Directions" text="Choose the views to keep and animate. V3 first creates all eight original views. Attached flip buttons mirror a horizontal partner; a blue flip marks a derived view. Turning it off uses that view’s original artwork. For one facing, choose Side-scroller 2 and turn W off." />
     <div class="direction-presets" role="group" aria-label="Direction presets">{#each PRESETS as p (p.id)}<button class="btn" aria-pressed={preset === p.id} onclick={() => { setPreset(d, p.id); announcement = '' }}>{p.label}</button>{/each}</div>
     <div class="compass" role="group" aria-label="Facing directions">
       {#each COMPASS as dir, i (dir ?? 'center')}
@@ -163,11 +163,12 @@
   .trait-row :global(.help-title) { align-self:center; }
   .input { width:100%; min-width:0; }
   .prompt-note { display:flex; align-items:flex-start; gap:4px; padding-top:2px; }
-  .prompt-excerpt { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; text-align:left; border:0; background:none; padding:0; color:var(--text-3); font:inherit; font-size:11px; line-height:1.5; cursor:pointer; height:49.5px; overflow-wrap:anywhere; }
+  .prompt-excerpt { flex:1; min-width:0; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; line-clamp:3; overflow:hidden; text-align:left; border:0; background:none; padding:0; color:var(--text-3); font:inherit; font-size:11px; line-height:1.5; cursor:pointer; height:49.5px; overflow-wrap:anywhere; }
   .copy { flex:none; color:var(--text-3); }
   .exact-input { min-height:302px; resize:vertical; line-height:1.6; font-size:var(--fs-sm); }
   .body-presets, .frame-controls { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
   .body-presets .btn, .frame-controls .btn { padding-inline:0; }
+  .frame-controls .btn { height:auto; align-self:stretch; }
   .frame-controls .pixel-input { grid-column:span 3; }
   .pixel-input { position:relative; min-width:0; }
   .pixel-input input { padding-right:33px; font-variant-numeric:tabular-nums; appearance:textfield; -moz-appearance:textfield; }
@@ -177,12 +178,12 @@
   .direction-presets { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:5px; margin-top:-4px; }
   .direction-presets .btn { grid-column:span 2; padding-inline:3px; font-size:var(--fs-sm); white-space:nowrap; }
   .direction-presets .btn:nth-child(-n+2) { grid-column:span 3; }
-  .compass { display:grid; grid-template-columns:1fr .65fr 1fr; gap:6px; width:100%; max-width:320px; margin-top:4px; }
+  .compass { --mirror-width:29px; display:grid; grid-template-columns:calc(56px + var(--mirror-width)) 56px calc(56px + var(--mirror-width)); gap:6px; width:max-content; max-width:100%; margin-top:4px; }
   .direction-tile { display:flex; height:54px; min-width:0; }
   .direction, .mirror { display:flex; align-items:center; justify-content:center; gap:3px; border:1px solid var(--line-strong); border-radius:var(--r-ctl); background:var(--bg-side); color:var(--text-3); padding:0; font:inherit; cursor:pointer; }
   .direction { flex:1; min-width:0; flex-direction:column; font-size:10px; }
-  .mirror { flex:0 0 29px; }
-  @media (pointer:coarse) { .mirror { flex-basis:44px; } .creator-tabs button { min-height:44px; } }
+  .mirror { flex:0 0 var(--mirror-width); }
+  @media (pointer:coarse) { .compass { --mirror-width:44px; } .creator-tabs button { min-height:44px; } }
   .west .direction { border-top-left-radius:0; border-bottom-left-radius:0; }
   .west .mirror { border-right:0; border-top-right-radius:0; border-bottom-right-radius:0; }
   .east .direction { border-top-right-radius:0; border-bottom-right-radius:0; }
@@ -193,7 +194,7 @@
   .creator-message, .creator-validation { color:var(--text-2); font-size:var(--fs-sm); line-height:1.5; overflow-wrap:anywhere; }
   .creator-validation { color:var(--danger-text, var(--text-2)); }
   @media (max-width:850px) { .creator-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; } .facing { grid-column:1/-1; max-width:360px; } }
-  @media (max-width:599px), (max-height:499px) { .creator-grid { display:flex; flex-direction:column; gap:22px; } section { width:100%; } .editor-panel { min-height:0; } .creator-tabs button { height:40px; } .editor-toolbar { min-height:46px; } .trait-row { grid-template-columns:90px minmax(0,1fr); } .input { min-height:44px; font-size:16px; } .body-presets .btn, .frame-controls .btn, .direction-presets .btn { min-height:44px; } .mirror { flex-basis:44px; } .direction-tile { height:56px; } .compass { grid-template-columns:1fr 44px 1fr; max-width:360px; } .facing { max-width:none; } .exact-input { min-height:300px; } .direction-presets .btn { font-size:12px; } .prompt-excerpt { font-size:12px; height:54px; } }
+  @media (max-width:599px), (max-height:499px) { .creator-grid { display:flex; flex-direction:column; gap:22px; } section { width:100%; } .editor-panel { min-height:0; } .creator-tabs button { height:40px; } .editor-toolbar { min-height:46px; } .trait-row { grid-template-columns:90px minmax(0,1fr); } .input { min-height:44px; font-size:16px; } .body-presets .btn, .frame-controls .btn, .direction-presets .btn { min-height:44px; } .direction-tile { height:56px; } .compass { --mirror-width:44px; } .facing { max-width:none; } .exact-input { min-height:300px; } .direction-presets .btn { font-size:12px; } .prompt-excerpt { font-size:12px; height:54px; } }
   @container (max-width:290px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } }
   @media (pointer:coarse) { @container (max-width:340px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } } }
   @container (max-width:310px) { .creator-tabs { gap:2px; padding:3px; } .creator-tabs button { min-width:0; padding-inline:4px; font-size:var(--fs-sm); } .creator-tabs button:first-child { flex:1.6; } .prompt-actions { gap:1px; } .editor-toolbar { gap:4px; } }

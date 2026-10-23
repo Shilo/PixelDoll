@@ -7,6 +7,7 @@
   import { composeCell } from '../lib/compose/compose.ts'
   import { loadProject } from '../lib/store/project.ts'
   import type { Project } from '../lib/store/manifest.ts'
+  import type { ClipQa } from '../lib/rig/clips.ts'
   import { STEPS, estimate, type CreateSpec } from './create.ts'
   import CharacterForm from './CharacterForm.svelte'
   import { autoFrame, draftErrors, facingOf, freshSeed, newCharacterDraft } from './characterConfig.ts'
@@ -30,7 +31,20 @@
   const running = $derived(!!creating.spec && !creating.projectId && !creating.error)
   const stepIx = $derived(STEPS.findIndex((s) => s.id === creating.progress?.step))
   let result = $state.raw<Project | null>(null)
-  $effect(() => { if (creating.projectId) void loadProject(creating.projectId).then((r) => (result = r.project)) })
+  let failedNotes = $state<string[]>([])
+  const qualityNotes = $derived([...new Set([...failedNotes, ...creating.warnings])])
+  $effect(() => {
+    const id = creating.projectId
+    let active = true
+    result = null; failedNotes = []
+    if (id) void loadProject(id).then(({ rec, project }) => {
+      if (!active) return
+      result = project
+      const qa = rec.rigQa as { clips?: Record<string, ClipQa> } | undefined
+      failedNotes = Object.entries(qa?.clips ?? {}).flatMap(([clip, qa]) => qa.fails.map(f => `${clip}: ${f}`))
+    })
+    return () => { active = false }
+  })
   let frame = $state(0)
   $effect(() => { const t = setInterval(() => frame++, 110); return () => clearInterval(t) })
   const k = $derived(Math.max(1, Math.floor(ui.dpr * (ui.size === 'compact' ? 1.25 : 2))))
@@ -48,7 +62,7 @@
     ui.welcome = false
     await openProject(id)
   }
-  const plain = (w: string) => w.replace(/^\w+\/\w+: /, '').replace(/feet drift (\d+) px.*/, 'feet move up to $1 px while walking').replace(/headroom (\d+) px.*/, 'little room above the head ($1 px): tall hats may be cut off')
+  const plain = (w: string) => w.replace(/^([^/]+)\/([^:]+): /, (_, clip: string, direction: string) => `${clip[0].toUpperCase() + clip.slice(1)} ${direction}: `).replace(/feet drift (\d+) px.*/, 'feet move up to $1 px').replace(/headroom (\d+) px.*/, 'little room above the head ($1 px): tall hats may be cut off')
 </script>
 
 <Sheet title="New character" cancel={running ? 'Hide' : creating.projectId ? 'Close' : 'Cancel'} onclose={() => (ui.sheet = null)} className="character-sheet" wide>
@@ -65,8 +79,11 @@
           {/each}
         </div>
       {/if}
-      {#if creating.warnings.length}
-        <ul class="reasons small" style="text-align:left">{#each creating.warnings.slice(0, 4) as w (w)}<li><TriangleAlert size={12} />{plain(w)}</li>{/each}</ul>
+      {#if qualityNotes.length}
+        <details class="quality-notes small" open={failedNotes.length > 0}>
+          <summary>{qualityNotes.length} quality {qualityNotes.length === 1 ? 'note' : 'notes'}</summary>
+          <ul class="reasons">{#each qualityNotes as w (w)}<li><TriangleAlert size={12} />{plain(w)}</li>{/each}</ul>
+        </details>
       {/if}
     </div>
   {:else if running || creating.error}
@@ -106,3 +123,9 @@
     {/if}
   {/snippet}
 </Sheet>
+
+<style>
+  .quality-notes { width:100%; text-align:left; color:var(--text-2); }
+  summary { cursor:pointer; padding-block:8px; }
+  .reasons { padding-top:4px; }
+</style>

@@ -26,6 +26,36 @@ async function connect(page: Page) {
 
 test.describe('creation safety', () => {
 test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` })
+test('all quality notes remain visible and failed clips come first', async ({ page, context }) => {
+  await context.route('https://*.pixellab.ai/**', route => route.abort())
+  await page.goto('/')
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts'
+    const state = await import(statePath) as typeof import('../../src/studio/state.svelte.ts')
+    const db = await import(dbPath) as typeof import('../../src/lib/store/db.ts')
+    const id = await state.copyDemo()
+    const warnings = Array.from({ length: 6 }, (_, i) => `idle/north-east: feet drift ${i + 1} px`)
+    warnings.push('walk/west: arms 2.7 px off the requested pose')
+    await db.update<import('../../src/lib/store/project.ts').StoredProject>('projects', id, rec => {
+      rec!.rigQa = { warnings, clips: { 'walk/west': { fails: ['arms 2.7 px off the requested pose'] } } }; return rec!
+    })
+    state.creating.warnings = warnings
+    state.creating.projectId = id
+    state.ui.sheet = 'create'
+  })
+  const notes = page.locator('.quality-notes')
+  await expect(notes).toHaveAttribute('open', '')
+  await expect(notes.locator('summary')).toHaveText('7 quality notes')
+  await expect(notes.locator('li')).toHaveCount(7)
+  await expect(notes.locator('li').first()).toContainText('Walk west: arms 2.7 px')
+  await expect(notes.locator('li').last()).toHaveText('Idle north-east: feet move up to 6 px')
+  await notes.locator('summary').click()
+  await expect(notes.locator('li').last()).not.toBeVisible()
+  await notes.locator('summary').click()
+  await expect(notes.locator('li').last()).toBeVisible()
+})
+
 test('same seeded output creates separate projects and a resumed workflow preserves its identity', async ({ page, context }) => {
   test.setTimeout(180_000)
   const api = new CharacterApi()
@@ -303,6 +333,17 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
   })
   expect(readoutFits).toBe(true)
   await expect(sheet.locator('.mirror-summary')).toHaveCount(0)
+  const autoHeight = await sheet.getByRole('button', { name: 'Auto', exact: true }).boundingBox()
+  const frameHeight = await sheet.getByRole('spinbutton', { name: 'Frame size', exact: true }).boundingBox()
+  expect(autoHeight!.height).toBeCloseTo(frameHeight!.height, 0)
+  const arrowWidths = await sheet.locator('.direction').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().width))
+  expect(arrowWidths.every(width => Math.abs(width - 56) < 1)).toBe(true)
+  const copyRight = async () => sheet.locator('.prompt-note').evaluate(el => ({ copy: el.querySelector('.copy')!.getBoundingClientRect().right, row: el.getBoundingClientRect().right }))
+  const shortCopy = await copyRight()
+  await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf with freckles and a broad nose, expressive eyebrows, small ears and a calm expression')
+  const longCopy = await copyRight()
+  expect(shortCopy.copy).toBeCloseTo(shortCopy.row, 0)
+  expect(longCopy.copy).toBeCloseTo(shortCopy.copy, 0)
   const buttons = await sheet.locator('.direction, .mirror').evaluateAll(elements => elements.map(el => { const r = el.getBoundingClientRect(); return { w: r.width, h: r.height } }))
   expect(buttons.every(b => b.w >= (viewport.width <= 599 || viewport.height <= 499 ? 44 : 28) && b.h >= 44)).toBe(true)
   await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill('123')

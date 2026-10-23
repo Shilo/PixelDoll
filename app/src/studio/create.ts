@@ -61,7 +61,7 @@ export function estimate(choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' 
 export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = false, activityScope?: string): Promise<JobRec> {
   const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, activityScope, minimumTier: 1 });
   const r = live(rec) ? await queue.settled(rec.id) : rec;
-  if (r.state !== 'done') throw new Error(`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Setup stopped without resending. Review this request in Jobs before starting again.' : ''}`);
+  if (r.state !== 'done') throw new Error(`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Setup stopped without resending. Review this request in Activity before starting again.' : ''}`);
   return r;
 }
 export const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
@@ -109,13 +109,13 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
     const outs = await imagesOf(r);
     if (outs.length !== j.keypoints.length) continue;
     const normalized = outs.map(o => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
-    if (normalized.some(n => n.cutPx)) throw new Error(`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame before creating again.`);
+    if (normalized.some(n => n.cutPx)) throw new Error(`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`);
     const clean = normalized.map(n => largestComponent(n.img));
     // Empty art is a rendering failure; do not pay to estimate joints on it. One art re-roll is allowed.
     if (clean.some(c => !opaqueBox(c.img))) continue;
     // Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
     const measured = await Promise.all(clean.map(async (c) => { const k = await joints(c.img, true, j.activityScope); j.tick(); return k; }));
-    if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Jobs; setup stopped without redrawing them.`);
+    if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`);
     const frames = clean.map((c) => c.img);
     const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: clean.reduce((s, c) => s + c.stray, 0) });
     if (!best || qa.fails.length < best.qa.fails.length) best = { frames, measured, qa, recs };
@@ -132,7 +132,7 @@ async function motion(req: Req, dir: Direction, label: string, tick: () => void,
   if (got && !got.includes(dir)) throw new Error(`${label}: PixelLab dropped the direction (busy). Try again.`); // S4 truncation
   const frames = (await imagesOf(r)).map((o) => {
     const normalized = normalize(o.img, size, size, 128, size);
-    if (normalized.cutPx) throw new Error(`${label}: motion exceeds the ${size} px frame. Increase Frame before creating again.`);
+    if (normalized.cutPx) throw new Error(`${label}: motion exceeds the ${size} px frame. Increase Frame or reduce Body size before creating again.`);
     return normalized.img;
   });
   if (frames.some(f => !opaqueBox(f))) throw new Error(`${label}: PixelLab returned an empty motion frame`);
@@ -176,7 +176,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     const r = rots.find((x) => x.label === d);
     if (!r) throw new Error(`PixelLab returned no ${d} view`);
     const n = normalize(r.img, cell, cell);
-    if (n.cutPx) throw new Error(`The ${d} view does not fit the ${cell} px frame. Increase Frame before creating again.`);
+    if (n.cutPx) throw new Error(`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`);
     const top = opaqueBox(n.img)?.y0 ?? cell;
     if (!opaqueBox(n.img)) throw new Error(`PixelLab returned an empty ${d} view.`);
     if ((modern || DIRS.includes(d)) && top < HEADROOM_MIN) throw new Error(`${spec.name} needs more room above the head in the ${cell} px frame. Increase Frame or reduce Body size before creating again.`);
