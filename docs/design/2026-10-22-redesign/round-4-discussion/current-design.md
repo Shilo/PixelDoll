@@ -4,6 +4,8 @@ Updated 2026-10-23 after the user's movement-fallback correction and palette cho
 
 **Dynamic behavior refinement:** [animation-resolver.md](animation-resolver.md) specifies the velocity-based motion state machine, normalized nearest-direction calculation, intended-versus-available coverage, fallback chain, equipment synchronization and deduplicated error notices. The user delegated algorithm choice and accepted the equipment recommendation. The specification below remains the visual/interaction overview.
 
+**Approval recorded:** The user explicitly agreed to the recommendations, including the dynamic resolver, and authorized full desktop/mobile image mockups for Characters, Create character, Preview, Top-down and Side-scroller in Obsidian / Porcelain Bronze using actual demo sprites. The image round is [round five](../round-5-mockups/README.md). This approval does not request production integration or the later playable prototype yet.
+
 ## Accepted visual and screen direction
 
 - Full-screen immersive HD prototype world; Obsidian Holodeck is the chosen direction. Use **Obsidian / Porcelain Bronze** for coordinated dark/light backgrounds and UI. Frost and Sage remain historical alternatives, not additional product requirements.
