@@ -12,4 +12,6 @@ This round does not implement the production app or the later isolated playable 
 
 ## Production record
 
-Approval recorded before image production. The final image index, source provenance, visual review and validation will be added here after rendering.
+Completed: **32 full-resolution images and four overview boards**. See the [full image index and delivery review](image-index.md). The main set covers all five screens in both appearances and both desktop/mobile layouts; supplemental images cover the complete mobile form, first visit, overflow and prompt disclosure.
+
+Approval was committed before image production in `d70ff55`. Documentation, prompts, verification records and the offline rendering source are committed; generated media remains local under the repository's media-ignore policy. These images do not implement application behavior.

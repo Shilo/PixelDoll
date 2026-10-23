@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-23",
+  "generator": "Built-in image_gen; environment only",
+  "generativeCharacters": false,
+  "sourceSprites": "app/public/fixtures/s2",
+  "icons": {
+    "provider": "Iconify Lucide collection",
+    "url": "https://api.iconify.design/lucide.json",
+    "license": "../assets/lucide-LICENSE"
+  },
+  "assets": [
+    {
+      "id": "obsidian-stage",
+      "file": "assets/obsidian-stage.png",
+      "generationOriginal": "exec-2681d096-e142-4901-a825-8d330db9c79e.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "a71e0f7e87219deb2b461c789fef2021c69f54188dfc73dcbde614fb554aed3b"
+    },
+    {
+      "id": "obsidian-topdown",
+      "file": "assets/obsidian-topdown.png",
+      "generationOriginal": "exec-b77ab1b5-c68d-40a0-83c3-2453a688772b.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "fca265be902a99a9e2e88c883ef6329a38c35c85d19bfdb3b7b9a8b930e23bbc"
+    },
+    {
+      "id": "obsidian-side",
+      "file": "assets/obsidian-side.png",
+      "generationOriginal": "exec-c8c0d609-1beb-41e7-ac84-e19c0f37a5bd.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "3698438029ce0b94db3b36cd4c53c1d367d17f7b02ab6a98083d9667bddd5cee"
+    },
+    {
+      "id": "porcelain-stage",
+      "file": "assets/porcelain-stage.png",
+      "generationOriginal": "exec-6a0b7c25-0921-4acf-bf13-cabe42b83511.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "b29c7c4457cdfbb744251a45a2449ba13e92c9d8aa03829721db7c1d270f09ae"
+    },
+    {
+      "id": "porcelain-topdown",
+      "file": "assets/porcelain-topdown.png",
+      "generationOriginal": "exec-6195d11e-41b2-4635-9b7d-975b83e079c2.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "ae7ca9902a722b5964786631e4a00b0807e688ef9e0e5a8c774cde748dde5c30"
+    },
+    {
+      "id": "porcelain-side",
+      "file": "assets/porcelain-side.png",
+      "generationOriginal": "exec-a366a9b6-4fe0-49b9-b415-bb49a3b90e39.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "6288f9e80dbdca7b9107b60f870df4a4e629c0051bcb5a047fb635ada56d479b"
+    }
+  ]
+}

@@ -1,0 +1,615 @@
+{
+  "source": "app/public/fixtures/s2",
+  "generatedCharacters": false,
+  "sourceHashes": {
+    "hero": "cb7376b2d6917e8a4467d6c3b492f8cb4868e755b2f4a50d1560d7bdc6356a99",
+    "walk": "688cbf38fbe834cf9431c569cc056c3f39608ad8e123a68f9c975def8b859603",
+    "side": "fc3962698f7faa18ff16867166fe5013fc70fad51b7412d7aa9ac1a549a8e6d6",
+    "mage": "304e9fc05e944829125d9130b5e24e21f35bed840c7780a6c2cc800c826943d7",
+    "scout": "ef90cc62a62ad033afdf3d16d16ea66602ac485eb4c735082bb55e5a8555a54c",
+    "hat0": "feb50d78980abdcfb2904a0888568a478dc640306db4c7a05d04b4870c6f0adb",
+    "hat1": "5efd5e1df43f5eaa4d9da331a685985ac480b24322f993a7daa17db33eccc0d6"
+  },
+  "screens": [
+    {
+      "file": "obsidian-desktop-selection.png",
+      "theme": "obsidian",
+      "mobile": false,
+      "screen": "selection",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "mage",
+          "x": 350,
+          "y": 486,
+          "scale": 5,
+          "verified": 1110,
+          "finalVerified": 1110
+        },
+        {
+          "id": "scout",
+          "x": 1068,
+          "y": 531,
+          "scale": 5,
+          "verified": 707,
+          "finalVerified": 707
+        },
+        {
+          "id": "hero",
+          "x": 597,
+          "y": 382,
+          "scale": 9,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 21
+    },
+    {
+      "file": "obsidian-desktop-creation.png",
+      "theme": "obsidian",
+      "mobile": false,
+      "screen": "creation",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [],
+      "textCount": 61
+    },
+    {
+      "file": "obsidian-desktop-preview.png",
+      "theme": "obsidian",
+      "mobile": false,
+      "screen": "preview",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 645,
+          "y": 415,
+          "scale": 8,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 31
+    },
+    {
+      "file": "obsidian-desktop-topdown.png",
+      "theme": "obsidian",
+      "mobile": false,
+      "screen": "topdown",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "walk",
+          "x": 645,
+          "y": 415,
+          "scale": 8,
+          "verified": 966,
+          "finalVerified": 966
+        }
+      ],
+      "textCount": 25
+    },
+    {
+      "file": "obsidian-desktop-side.png",
+      "theme": "obsidian",
+      "mobile": false,
+      "screen": "side",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "side",
+          "x": 609,
+          "y": 466,
+          "scale": 8,
+          "verified": 907,
+          "finalVerified": 907
+        }
+      ],
+      "textCount": 25
+    },
+    {
+      "file": "obsidian-mobile-selection.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "selection",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "mage",
+          "x": 62,
+          "y": 602,
+          "scale": 4,
+          "verified": 1110,
+          "finalVerified": 1110
+        },
+        {
+          "id": "scout",
+          "x": 729,
+          "y": 638,
+          "scale": 4,
+          "verified": 707,
+          "finalVerified": 707
+        },
+        {
+          "id": "hero",
+          "x": 290,
+          "y": 520,
+          "scale": 8,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 10
+    },
+    {
+      "file": "obsidian-mobile-creation.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "creation",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [],
+      "textCount": 22
+    },
+    {
+      "file": "obsidian-mobile-preview.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "preview",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 350,
+          "y": 557,
+          "scale": 6,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 28
+    },
+    {
+      "file": "obsidian-mobile-topdown.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "topdown",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "walk",
+          "x": 350,
+          "y": 557,
+          "scale": 6,
+          "verified": 966,
+          "finalVerified": 966
+        }
+      ],
+      "textCount": 22
+    },
+    {
+      "file": "obsidian-mobile-side.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "side",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "side",
+          "x": 323,
+          "y": 545,
+          "scale": 6,
+          "verified": 907,
+          "finalVerified": 907
+        }
+      ],
+      "textCount": 22
+    },
+    {
+      "file": "porcelain-desktop-selection.png",
+      "theme": "porcelain",
+      "mobile": false,
+      "screen": "selection",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "mage",
+          "x": 350,
+          "y": 486,
+          "scale": 5,
+          "verified": 1110,
+          "finalVerified": 1110
+        },
+        {
+          "id": "scout",
+          "x": 1068,
+          "y": 531,
+          "scale": 5,
+          "verified": 707,
+          "finalVerified": 707
+        },
+        {
+          "id": "hero",
+          "x": 597,
+          "y": 382,
+          "scale": 9,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 21
+    },
+    {
+      "file": "porcelain-desktop-creation.png",
+      "theme": "porcelain",
+      "mobile": false,
+      "screen": "creation",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [],
+      "textCount": 61
+    },
+    {
+      "file": "porcelain-desktop-preview.png",
+      "theme": "porcelain",
+      "mobile": false,
+      "screen": "preview",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 645,
+          "y": 415,
+          "scale": 8,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 31
+    },
+    {
+      "file": "porcelain-desktop-topdown.png",
+      "theme": "porcelain",
+      "mobile": false,
+      "screen": "topdown",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "walk",
+          "x": 645,
+          "y": 415,
+          "scale": 8,
+          "verified": 966,
+          "finalVerified": 966
+        }
+      ],
+      "textCount": 25
+    },
+    {
+      "file": "porcelain-desktop-side.png",
+      "theme": "porcelain",
+      "mobile": false,
+      "screen": "side",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "side",
+          "x": 609,
+          "y": 466,
+          "scale": 8,
+          "verified": 907,
+          "finalVerified": 907
+        }
+      ],
+      "textCount": 25
+    },
+    {
+      "file": "porcelain-mobile-selection.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "selection",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "mage",
+          "x": 62,
+          "y": 602,
+          "scale": 4,
+          "verified": 1110,
+          "finalVerified": 1110
+        },
+        {
+          "id": "scout",
+          "x": 729,
+          "y": 638,
+          "scale": 4,
+          "verified": 707,
+          "finalVerified": 707
+        },
+        {
+          "id": "hero",
+          "x": 290,
+          "y": 520,
+          "scale": 8,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 10
+    },
+    {
+      "file": "porcelain-mobile-creation.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "creation",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [],
+      "textCount": 22
+    },
+    {
+      "file": "porcelain-mobile-preview.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "preview",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 350,
+          "y": 557,
+          "scale": 6,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 28
+    },
+    {
+      "file": "porcelain-mobile-topdown.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "topdown",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "walk",
+          "x": 350,
+          "y": 557,
+          "scale": 6,
+          "verified": 966,
+          "finalVerified": 966
+        }
+      ],
+      "textCount": 22
+    },
+    {
+      "file": "porcelain-mobile-side.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "side",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "side",
+          "x": 323,
+          "y": 545,
+          "scale": 6,
+          "verified": 907,
+          "finalVerified": 907
+        }
+      ],
+      "textCount": 22
+    },
+    {
+      "file": "obsidian-mobile-creation-size.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "creation-size",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [],
+      "textCount": 27
+    },
+    {
+      "file": "obsidian-mobile-creation-directions.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "creation-directions",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [],
+      "textCount": 25
+    },
+    {
+      "file": "porcelain-mobile-creation-size.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "creation-size",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [],
+      "textCount": 27
+    },
+    {
+      "file": "porcelain-mobile-creation-directions.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "creation-directions",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [],
+      "textCount": 25
+    },
+    {
+      "file": "obsidian-desktop-selection-first.png",
+      "theme": "obsidian",
+      "mobile": false,
+      "screen": "selection-first",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 597,
+          "y": 382,
+          "scale": 9,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 13
+    },
+    {
+      "file": "obsidian-mobile-selection-first.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "selection-first",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 290,
+          "y": 520,
+          "scale": 8,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 9
+    },
+    {
+      "file": "porcelain-desktop-selection-first.png",
+      "theme": "porcelain",
+      "mobile": false,
+      "screen": "selection-first",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 597,
+          "y": 382,
+          "scale": 9,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 13
+    },
+    {
+      "file": "porcelain-mobile-selection-first.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "selection-first",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 290,
+          "y": 520,
+          "scale": 8,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 9
+    },
+    {
+      "file": "obsidian-desktop-preview-more.png",
+      "theme": "obsidian",
+      "mobile": false,
+      "screen": "preview-more",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 645,
+          "y": 415,
+          "scale": 8,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 36
+    },
+    {
+      "file": "obsidian-mobile-preview-description.png",
+      "theme": "obsidian",
+      "mobile": true,
+      "screen": "preview-description",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 350,
+          "y": 557,
+          "scale": 6,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 32
+    },
+    {
+      "file": "porcelain-desktop-preview-more.png",
+      "theme": "porcelain",
+      "mobile": false,
+      "screen": "preview-more",
+      "width": 1920,
+      "height": 1080,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 645,
+          "y": 415,
+          "scale": 8,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 36
+    },
+    {
+      "file": "porcelain-mobile-preview-description.png",
+      "theme": "porcelain",
+      "mobile": true,
+      "screen": "preview-description",
+      "width": 900,
+      "height": 1600,
+      "spriteChecks": [
+        {
+          "id": "hero",
+          "x": 350,
+          "y": 557,
+          "scale": 6,
+          "verified": 1029,
+          "finalVerified": 1029
+        }
+      ],
+      "textCount": 32
+    }
+  ]
+}
