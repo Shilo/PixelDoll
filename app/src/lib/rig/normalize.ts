@@ -47,7 +47,7 @@ export function opaqueBox(im: Img): Box | null {
 /** Feet line in pixel-edge coords = bottom edge of the lowest opaque row. */
 export const feetY = (im: Img) => (opaqueBox(im)?.y1 ?? im.h - 1) + 1;
 /** Rig pivot from the reference cell (idle/south/0): x = w/2, y = feet line. */
-export const pivotOf = (im: Img) => ({ x: im.w / 2, y: feetY(im) });
+export const pivotOf = (im: Img) => ({ x: Math.floor(im.w / 2), y: feetY(im) });
 
 export function selfTest() {
   const src = makeImg(6, 6);

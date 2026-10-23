@@ -138,7 +138,7 @@
     {/if}
   {:else}
     <div class="import-preview">
-      {#if preview}<Sprite img={preview} k={3} label="Character import preview" />{/if}
+      {#if preview}<Sprite img={preview} k={Math.max(1, Math.min(3, Math.floor(256 * ui.dpr / Math.max(preview.w, preview.h))))} label="Character import preview" />{/if}
       <p class="muted">{prepared.project.manifest.rig.directions.length} directions · {prepared.project.manifest.rig.animations.length} moves · {prepared.project.manifest.items.filter((i) => i.slot !== 'body').length} separate items</p>
     </div>
     <label class="field"><span class="label">Character name</span><input class="input" type="text" bind:value={name} maxlength="60" disabled={busy} /></label>

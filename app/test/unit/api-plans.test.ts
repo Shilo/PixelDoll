@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { balancePlan, cancelPlan, characterZipPlan, createPlan, draftQueueIds, fitPlan, fitRetryPlan, itemPlan, libraryPlan, movePlan, setupPeekPlan } from '../../src/studio/apiPlans.ts'
-import { estimate, moveEstimate } from '../../src/studio/create.ts'
+import { estimate, moveEstimate, moveFrames } from '../../src/studio/create.ts'
 import { basePrompt } from '../../src/studio/model.ts'
 import { itemRoute } from '../../src/studio/itemRoute.ts'
 import type { Draft, RigCtx } from '../../src/lib/items/run.ts'
@@ -23,6 +23,26 @@ test.each([4, 8] as const)('create preflight baseline matches the %i-direction e
   expect(plan[2].note).toContain('conditionally')
   expect(plan.filter(c => c.background).every(c => c.method === 'GET')).toBe(true)
   expect(createPlan(spec, true)[0].body).not.toHaveProperty('seed')
+  expect(plan[1].body).toMatchObject({ n_directions: dirs })
+})
+
+test('custom creator preflight uses exact text, camera, eight originals and only the selected unique source', () => {
+  const spec = { description: 'Exact raw prompt.\nBuild: Broad', name: 'Custom', size: 96, frame: 160, seed: 123, exactPrompt: true, view: 'side' as const, directions: [{ id: 'east' as const, mirrorOf: 'west' as const }, { id: 'west' as const }] }
+  const plan = createPlan(spec)
+  expect(plan[0].body).toMatchObject({ description: spec.description, view: 'side', image_size: { width: 96, height: 96 } })
+  expect(plan[0].generations).toBe(3)
+  expect(plan[1].body).toMatchObject({ n_directions: 8, view: 'side' })
+  expect(plan[1].note).toContain('160 px')
+  const raw = plan.filter(c => c.path === '/animate-with-skeleton-v3')
+  expect(raw).toHaveLength(2); expect(raw.every(c => (c.body as { direction: string; view: string }).direction === 'west' && (c.body as { view: string }).view === 'side')).toBe(true)
+  expect(plan.reduce((sum, c) => sum + (c.generations ?? 0), 0)).toBeCloseTo(estimate(spec).gens)
+})
+test('authored moves count frames from an available unique rest view when south is absent', async () => {
+  const { manifest } = await equipmentFixture(), r = manifest.rig
+  r.directions = [{ id: 'east', mirrorOf: 'west' }, { id: 'west' }]
+  r.rest = { west: { image: manifest.items[0].layers[0].cells!.rest!.south![0]!, keypoints: LABELS.map(label => ({ label, x: .5, y: .5 })) } }
+  expect(moveFrames(manifest, { action: 'idle', frames: 8 })).toBe(4)
+  expect(moveFrames(manifest, { action: 'walk', frames: 4 })).toBe(8)
 })
 
 test('item preflight reuses the real planner and reports conditional fallback separately', async () => {

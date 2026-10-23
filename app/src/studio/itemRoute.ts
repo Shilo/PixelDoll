@@ -33,7 +33,7 @@ const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({ name: i.
 export const chromaEdit: ItemRoute = {
   label: `chroma mannequin + ${libRoute.name}`,
   plan(rig, ctx, input) {
-    const s = spec(ctx, input), method = defaultMethod(ctx, s), p = planItem(rig, { ...s, method }), pad = padOf(s.slot, method);
+    const s = spec(ctx, input), method = defaultMethod(ctx, s), p = planItem(rig, { ...s, method }), pad = padOf(s.slot, method, rig.cell);
     // held slots route to S5's 96 px oversize canvas automatically (same price: pose calls bill by frames, not canvas)
     return { calls: p.length, cells: p.reduce((n, c) => n + c.cells.length, 0), gens: planGens(p), minutes: 3 + Math.ceil(p.length / 3) * 2, ...(pad ? { cell: rig.cell.w + 2 * pad } : {}) };
   },

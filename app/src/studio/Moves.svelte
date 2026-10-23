@@ -9,7 +9,7 @@
   const k = $derived(Math.max(1, Math.floor(ui.dpr)))
   // fixed 56 px window (bottom-centred, no per-frame jitter) so the thumbnail is shown 1:1 instead of shrunk
   const win = (im: Img) => {
-    if (im.w < 56 || im.h < 56) return im
+    if (im.w < 56 || im.h < 56 || im.w > 64 || im.h > 64) return im
     const o = makeImg(56, 56), x0 = (im.w - 56) >> 1, y0 = im.h - 56
     for (let y = 0; y < 56; y++) o.data.set(im.data.subarray(((y0 + y) * im.w + x0) * 4, ((y0 + y) * im.w + x0 + 56) * 4), y * 56 * 4)
     return o
@@ -25,7 +25,7 @@
         {@const dirs = m.rig.directions.filter((d) => !d.mirrorOf && base?.layers[0].cells?.[a.id]?.[d.id]?.some(Boolean))}
         {@const nDirs = dirs.length + m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf)).length}
         <button class="move-row" aria-pressed={ui.anim === a.id} onclick={() => { ui.anim = a.id; ui.frame = 0; ui.playing = true }}>
-          <span class="move-thumb"><Sprite img={win(composeCell(view.project, doc.items, a.id, dirs[0]?.id ?? 'south', a.frames[ui.frame % a.frames.length].cell))} {k} w={56} h={56} label="{nice(a.id)} preview" /></span>
+          <span class="move-thumb"><Sprite img={win(composeCell(view.project, doc.items, a.id, dirs[0]?.id ?? 'south', a.frames[ui.frame % a.frames.length].cell))} {k} limit={56} label="{nice(a.id)} preview" /></span>
           <span class="move-text"><b>{nice(a.id)}</b><span class="muted small">{a.cells} frames · {nDirs === 1 ? `${dirs[0]?.id ?? 'one'} only` : `${nDirs} directions`}</span></span>
         </button>
       {/each}

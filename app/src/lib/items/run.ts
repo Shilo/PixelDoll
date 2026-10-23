@@ -108,7 +108,7 @@ const gridable = (spec: { slot: string; key?: ItemSpec['key'] }) => !!spec.key &
 
 const blobB64 = async (sha: string) => bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
 async function submit(d: Draft, k: number, ctx: RigCtx) {
-  const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method);
+  const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method, rig.cell);
   const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${c.cells[0].split('/').slice(0, 2).join('/')}` : ''})`;
   let req;
   if (c.kind === 'grid') { // B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
@@ -265,7 +265,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
   type Out = { k: number; key: string; out: Img; posed: boolean };
   const { rig } = ctx.rec.manifest, route = d.spec.key, g1 = new Map<number, string>(), outs: Out[] = [], dressOuts: Out[] = [];
-  const pad = padOf(d.spec.slot, d.spec.method), slot = slotOf(d.spec.slot), W = rig.cell.w + 2 * pad, H = rig.cell.h + 2 * pad;
+  const pad = padOf(d.spec.slot, d.spec.method, rig.cell), slot = slotOf(d.spec.slot), W = rig.cell.w + 2 * pad, H = rig.cell.h + 2 * pad;
   for (const [k, c] of d.calls.entries()) {
     const r = recOf(c.recId);
     if (r?.state !== 'done') continue;
@@ -335,7 +335,7 @@ export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<
 }
 /** The rig project with this draft equipped (for compose previews in every direction, mirrored ones included). */
 async function previewProject(d: Draft, ctx: RigCtx, cells: CellOut[], qa: QaResult): Promise<Project> {
-  const { item, images } = await buildItem({ spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells, route: d.spec.key, provenance: [], qa: qa.qa, pad: padOf(d.spec.slot, d.spec.method) });
+  const { item, images } = await buildItem({ spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells, route: d.spec.key, provenance: [], qa: qa.qa, pad: padOf(d.spec.slot, d.spec.method, ctx.rec.manifest.rig.cell) });
   const m: Manifest = structuredClone(ctx.rec.manifest);
   m.items = [...m.items.filter((i) => i.id !== item.id), item];
   if (!m.slots.some((s) => s.id === item.slot)) m.slots = [...m.slots, slotOf(item.slot)];
@@ -358,7 +358,7 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
   const dress = d.calls[0].kind === 'dress', dressed: Partial<Record<DirectionName, Img>> = {};
   if (dress) for (const [k, o] of dressedOf(d.calls)) dressed[k.split('/')[1] as DirectionName] = await img(o.sha);
   const { item, images } = await buildItem({
-    spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(dress ? { dressed } : {}), pad: padOf(d.spec.slot, d.spec.method),
+    spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(dress ? { dressed } : {}), pad: padOf(d.spec.slot, d.spec.method, ctx.rec.manifest.rig.cell),
     provenance: d.calls.map((c) => toProv(recOf(c.recId)!, c)), anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined,
   });
   await saveItem(d.rigId, item, images, SLOTS);

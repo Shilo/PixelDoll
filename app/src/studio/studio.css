@@ -278,7 +278,7 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 24px 12px; color: var(--text-2); }
 .empty-title { font-weight: 600; font-size: var(--fs-md); color: var(--text); }
 .gen { display: flex; flex-direction: column; gap: 14px; }
-.review-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px 4px; padding: 6px 4px; background: var(--stage); border-radius: var(--r-card); }
+.review-grid { display: flex; flex-wrap: wrap; justify-content: safe center; gap: 2px 4px; padding: 6px 4px; max-width:100%; overflow:auto; background: var(--stage); border-radius: var(--r-card); }
 .review-grid figure { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--fs-sm); color: var(--text-2); }
 .reasons { display: flex; flex-direction: column; gap: 4px; color: var(--text-2); }
 .reasons li { display: flex; gap: 6px; align-items: flex-start; }
@@ -323,6 +323,10 @@ dialog.sheet:not([open]) { display: none; }
 dialog.sheet::backdrop { background: var(--scrim); }
 dialog.sheet.center { width: min(560px, calc(100vw - 32px)); border-radius: var(--r-sheet); margin: auto; }
 dialog.sheet.center.wide { width: min(720px, calc(100vw - 32px)); }
+dialog.sheet.center.character-sheet { width:min(1000px, calc(100vw - 32px)); }
+.character-sheet .character-name { width:160px; min-width:70px; font-weight:400; }
+.character-sheet .sheet-foot { justify-content:flex-end; }
+.character-sheet .creator-cost { color:var(--text-3); margin-right:0; white-space:nowrap; }
 dialog.sheet.bottom { width: 100%; max-width: 100%; margin: auto 0 0; border-radius: var(--r-sheet) var(--r-sheet) 0 0; max-height: calc(100dvh - 32px); padding-bottom: env(safe-area-inset-bottom); }
 dialog.sheet.side { width: min(62vw, 480px); max-width: none; height: 100dvh; max-height: 100dvh; margin: 0 0 0 auto; border-radius: var(--r-sheet) 0 0 var(--r-sheet); }
 dialog.sheet.side::backdrop { background: color-mix(in srgb, var(--scrim) 50%, transparent); }
@@ -336,6 +340,16 @@ dialog.sheet.side::backdrop { background: color-mix(in srgb, var(--scrim) 50%, t
 dialog.sheet.bottom .sheet-foot { flex-direction: column-reverse; align-items: stretch; }
 dialog.sheet.bottom .sheet-foot .btn.primary { width: 100%; }
 dialog.sheet.bottom .sheet-foot .api-action > .btn.primary { width:auto; flex:1; }
+dialog.sheet.bottom.character-sheet .sheet-foot { flex-direction:row; align-items:center; gap:8px; padding-inline:16px; }
+dialog.sheet.bottom.character-sheet .sheet-foot .api-action { flex:1; justify-content:flex-end; }
+dialog.sheet.bottom.character-sheet .sheet-foot .creator-cost { font-size:11px; }
+@media (max-width:599px), (max-height:499px) {
+  .character-sheet:has(.character-name) .sheet-head { grid-template-columns:auto minmax(0,1fr); gap:8px; }
+  .character-sheet:has(.character-name) .sheet-head > span:last-child { display:none; }
+  .character-sheet .character-name { width:100px; flex:1; max-width:160px; font-size:16px; min-height:40px; }
+  .character-sheet .sheet-title { white-space:nowrap; font-size:13px; }
+  dialog.sheet.side.character-sheet { width:min(100vw, 620px); }
+}
 @media (max-width:599px), (max-height:499px) {
   .api-action > .btn:not(.icon) { white-space:normal; height:auto; min-height:var(--ctl-h); line-height:1.25; padding-top:8px; padding-bottom:8px; }
 }

@@ -21,8 +21,7 @@ Open **Connect PixelLab…** from the character menu (top left), or press the ge
 
 ## What "gens" cost
 
-A gen is one PixelLab generation from your account's monthly allowance. Before you spend anything, every button that spends
-shows its price, for example **Create 35–50 gens** or **Make 28 gens**. Typical prices:
+A gen is one PixelLab generation from your account's monthly allowance. Creation and item actions show an estimated price beside or inside their button. Enhance uses about 0.05 gens per request. Typical prices:
 
 | Action | About |
 |---|---|
@@ -57,21 +56,27 @@ saved queue submissions can be reconstructed, but earlier attempts and backgroun
 
 Character menu → **New character…**
 
-1. **Name** it, then describe the body under **Who is it?**, for example "a stocky dwarf with a friendly face". Describe only
-   the body. Hair, clothes and gear come later as separate items.
-2. Pick **Skin** and **Build** (slim, average, stocky) if you like.
-3. Press **Create**. You get idle and walk, facing south, east, north and west, as 64 × 64 pixel sprites. West is a mirror of
-   east.
+1. Enter a **Name** in the title bar for your library and exports. It is not sent as part of the prompt.
+2. In **Appearance**, add **Details** and choose Kind, Build, Proportions or Skin. **Not set** adds no extra hint.
+   Switch to **Prompt** to edit the exact V3 text. Complete lines such as `Kind: Elf` update the matching control; other
+   prose stays in Details. The muted preview and Copy button always use the complete prompt.
+3. Choose a **Body size** preset (48, 64, 96 or 128 px), or type 32–256 whole pixels. This is V3's source canvas,
+   not a guaranteed opaque body height. **Frame → Auto** adds padding; type a larger frame for more room, up to 256 px.
+   Neither padding nor export rescale the artwork.
+4. Choose **Directions**: Top-down 8 (default), Top-down 4, Diagonal 4, Side-scroller 2 or Unique 8. Individual arrows
+   toggle retained views. Attached mirror buttons derive that view from its horizontal partner. Select the opposite
+   mirror button to reverse the source. Removing a source makes its remaining partner independent. **Unique 8** has no mirrors.
+5. Check **Camera** and leave **Seed** blank for a fresh variation, or enter a non-negative whole seed. The seed affects
+   generation and animations rather than one appearance trait; reuse can give similar results but does not guarantee identical pixels.
+6. Press **Create character** for idle and walk in the selected directions. The muted cost includes the whole pipeline.
 
-**More options** (folded away; the defaults suit most games):
+Hover a title on desktop, or tap it on mobile, for help. **Enhance** uses the V3 prompt endpoint with the current body size
+and camera; the same button becomes **Undo**. It never runs automatically during creation. A failed or stale response keeps
+your text, and no enhancement is automatically retried.
 
-- **Directions**: **4** (default) or **8**. With 8 you also get the diagonals: south-east, north-east and north-west,
-  south-west, west are mirrors of their east-facing twins. The price on **Create** updates as you choose (8 directions costs
-  about 60 % more).
-- **Body size**: **48 px** (default) or **56 px** tall inside the same 64 × 64 sprite. 56 px gives a bigger figure but less room
-  above the head for tall hats. If a 56 px character comes out too tall to leave 6 px above its head, PixelDoll stops after the
-  first drawing (2 gens) and asks you to try again with 48 px or another seed.
-- **Name** and **Seed** (same seed + same description = the same first drawing).
+V3 always creates all eight original views. PixelDoll pads and registers them, animates only the selected independent
+sources, then derives the selected mirrors. Asymmetric details change sides in a mirrored view; use an independent view
+when that matters. A result that does not fit the chosen frame stops with a size error instead of silently cropping it.
 
 New characters wear a light grey shirt and dark grey shorts, so you can tell them apart and recolour them separately.
 

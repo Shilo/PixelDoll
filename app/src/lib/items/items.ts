@@ -86,7 +86,7 @@ export function gridPrompt(o: { item: string; slot: string; key: Key; anim: stri
 /** S5: held items are generated on a 96 px canvas around the same pivot (64 + 2 × 16): no blade px on the border, no flips. */
 export const HELD_PAD = 16;
 /** Oversize padding of an item's layers (skeleton-pose held items only; the anchor route stays on the rig cell). */
-export const padOf = (slot: string, method?: Method) => (method === 'skel' && slotOf(slot).class === 'held' ? HELD_PAD : 0);
+export const padOf = (slot: string, method?: Method, cell?: { w: number; h: number }) => (method === 'skel' && slotOf(slot).class === 'held' ? Math.max(0, Math.min(HELD_PAD, Math.floor((256 - Math.max(cell?.w ?? 64, cell?.h ?? 64)) / 2))) : 0);
 /** Grow a cell by `p` transparent px on every side (same pivot, never resampled). */
 export function padImg(im: Img, p: number): Img {
   if (!p) return im;
@@ -154,7 +154,7 @@ export interface ItemSpec { id: string; name: string; slot: string; prompt: stri
 export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
   if (spec.method !== 'skel' || spec.key === 'none') return planCalls(rig, spec).map((cells) => ({ kind: 'edit', cells }));
   // B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
-  const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method) : 0));
+  const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method, rig.cell) : 0));
   return [
     ...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({ kind: 'dress' as const, cells })),
     ...spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
