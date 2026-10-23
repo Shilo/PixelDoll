@@ -26,5 +26,6 @@ The reviewer independently reran 43 targeted tests after the fixes and reported 
 - Production build and agent-key dist guard passed; existing bundle-size advisory remains.
 - All 50 browser tests passed on the implementation. After review fixes, all three concurrency/Free-account browser cases passed again, including two-tab leadership, external saturation/recovery, and permitted pending enhancement.
 - Codex browser visually verified the one-line **Up to 20 jobs at once.** footnote and the valid-Free-account warning/limited-access flow. [Activity screenshot](img/plan-footnote-2026-10-23.png), [Free warning screenshot](img/free-plan-warning-2026-10-23.png).
+- Final browser cleanup found a fixture-only dialog-unmount issue. Retained DOM references restore the harness controls after closing a modal; the concurrency case also checks close/reopen without browser errors.
 
 All implementation and regression tests used mocks with real generation traffic blocked. No PixelLab credits were spent.

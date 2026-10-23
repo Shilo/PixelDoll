@@ -10,6 +10,8 @@ const limit = (tier: number) => tier === 0 ? 1 : tier === 1 ? 8 : tier === 2 ? 1
 const read = (): State => JSON.parse(localStorage.getItem(stateKey) ?? JSON.stringify(initial()));
 const write = (s: State) => localStorage.setItem(stateKey, JSON.stringify(s));
 const png = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==';
+// Keep references when a Svelte dialog unmounts its borrowed fixture controls.
+const panel = document.getElementById('fixture')!, stats = panel.querySelector('output')!;
 window.fetch = async (input, init) => {
   const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url, location.href);
   if (url.origin !== 'https://api.pixellab.ai') return originalFetch(input, init);
@@ -46,9 +48,9 @@ button('activity', () => { ui.sheet = 'activity'; });
 button('connect', () => { ui.sheet = 'connect'; });
 setInterval(() => {
   const s = read();
-  document.getElementById('stats')!.textContent = `${queue.role} · ${s.jobs.length} remote · ${s.external} external · ${s.posts} POSTs · ${s.refused} deferred`;
+  stats.textContent = `${queue.role} · ${s.jobs.length} remote · ${s.external} external · ${s.posts} POSTs · ${s.refused} deferred`;
   // Native modal dialogs make siblings inert. Keep the fixture controls in the current top layer.
-  const panel = document.getElementById('fixture')!, host = document.querySelector('dialog[open]') ?? document.body;
+  const host = document.querySelector('dialog[open]') ?? document.body;
   if (panel.parentElement !== host) host.append(panel);
 }, 250);
 ui.sheet = 'activity';
