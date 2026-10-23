@@ -23,30 +23,29 @@
 .creator label textarea { min-height:112px; resize:vertical; }
 .creator label .prompt-editor { min-height:300px; }
 .editor-tabs { display:flex; gap:20px; margin-bottom:12px; }
-.editor-tabs button { font-size:18px; min-height:44px; border-radius:0; padding:6px 0; }
-.editor-tabs [aria-pressed=true] { border-bottom:2px solid var(--accent); }
+.editor-tabs button { font-size:18px; min-height:44px; padding:6px 0; }
 .editor-actions { display:flex; gap:2px; align-items:center; margin-bottom:12px; }
 .editor-actions button { min-height:44px; padding:8px; }
 .editor-actions .enhance { margin-left:auto; font-size:14px; }
 .exact-excerpt { white-space:pre-wrap; max-height:110px; overflow:auto; font-size:14px; line-height:1.5; color:var(--muted); margin-top:8px; }
 .presets { display:flex; gap:6px; margin:8px 0 20px; flex-wrap:wrap; }
-.presets button { border:var(--border-control); flex:1; font-size:14px; min-height:44px; padding:6px 8px; }
+.presets button { flex:1; font-size:14px; min-height:44px; padding:6px 8px; }
 .frame-row { display:flex; gap:8px; margin:8px 0 20px; }
-.frame-row button { border:var(--border-control); min-height:44px; }
+.frame-row button { min-height:44px; }
 .frame-row input { min-width:0; }
 .directions-section>.presets { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; }
 .directions-section>.presets button { grid-column:span 2; }
 .directions-section>.presets button:nth-child(-n+2) { grid-column:span 3; }
 .compass { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin:20px 0; }
 .compass>div { display:flex; justify-content:center; min-height:64px; }
-.compass .facing { border:var(--border-control); display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; padding:4px; font-size:14px; }
-.compass .mirror { padding:2px; width:26px; min-width:26px; border:var(--border-control); }
+.compass .facing { display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; padding:4px; font-size:14px; }
+.compass .mirror { padding:2px; width:26px; min-width:26px; }
 .compass .mirror svg { width:16px; }
 .direction-arrow { display:flex; pointer-events:none; }
 .direction-arrow svg { width:20px; height:20px; }
 .seed { margin-top:24px; }
 .size-guide { grid-area:guide; width:min(100%, 220px); align-self:center; justify-self:center; color:var(--muted); font-size:14px; }
-.size-guide .diagram { height:200px; border:var(--border-control); margin:12px 0; background:color-mix(in srgb,var(--surface) 15%,transparent); display:grid; place-items:center; }
+.size-guide .diagram { height:200px; border:var(--border-control); margin:12px 0; background:var(--bu-diagram); display:grid; place-items:center; }
 .size-guide svg { width:130px; height:140px; stroke-width:.7; }
 .size-guide dl { display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:14px; }
 .size-guide dd { margin:0; color:var(--text); }
@@ -93,7 +92,6 @@
  .compass { gap:6px; }
 }
 
-/* Facing and mirror share a seam; only outer corners are rounded. */
-.compass>div:has(.mirror)>:first-child { border-top-right-radius:0; border-bottom-right-radius:0; }
-.compass>div:has(.mirror)>:last-child { border-top-left-radius:0; border-bottom-left-radius:0; margin-left:-1px; }
-.compass button:focus-visible { position:relative; z-index:1; }
+
+
+.editor-tabs { --bu-tab-stroke:2px; }

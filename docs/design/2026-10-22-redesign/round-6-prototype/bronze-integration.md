@@ -1,5 +1,7 @@
 # Bronze UI dependency integration
 
+Current ownership contract: [Bronze UI 0.2.0](./theme-ownership-0.2.0.md). Shared appearance, including scene-backing material strengths, is now upstream; consumer layout remains local. Earlier entries below describe their historical state.
+
 > **Follow-up:** the user identified defects the original visual checks missed. See [regression repair](regression-repair.md) for root causes, corrected styling contracts and new evidence. The parity conclusions below describe the original limited checks and are superseded by that review.
 
 2026-10-23. The round-six playable prototype consumes the extracted MIT `@shilo/bronze-ui` package. Its approved immersive composition, scene assets, original fixture pixels, creator controls, movement and native dialog behavior remain owned by this prototype. This integration has no PixelLab requests or production Studio behavior changes.

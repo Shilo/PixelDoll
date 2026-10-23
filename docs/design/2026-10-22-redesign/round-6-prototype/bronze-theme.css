@@ -1,5 +1,5 @@
 @import '@shilo/bronze-ui/tokens.css';
-@import '@shilo/bronze-ui/components.css' layer(bronze);
+@import '@shilo/bronze-ui/components.css';
 
 /* One consumer adapter. Bronze owns semantic colors/materials; styles.css owns
    this immersive layout. Deliberately omit Bronze's optional document reset. */
@@ -22,33 +22,11 @@
 }
 
 /* Keep the approved screen geometry while using package recipes. */
-.bu-btn.primary {
-  width: auto;
-  height: auto;
-  padding: 8px 11px;
-  border: 0;
-  font-family: inherit;
-  font-weight: 600;
-  line-height: inherit;
-}
-.library .bu-btn.primary, .equipment-tools .bu-btn.primary { width: 100%; }
-.bu-btn.primary svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
-.bu-btn.primary:is(:hover,:active) { transform: none; }
+.library .primary, .equipment-tools .primary { width: 100%; }
 .bu-input {
   min-height: 42px;
-  padding: 10px 12px;
-  border-color: var(--bu-border);
-  background: var(--bu-field);
-  font-family: inherit;
-  line-height: inherit;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 textarea.bu-input { min-height: 100px; }
-.creator select { background: var(--bu-field); border-color: var(--bu-border); }
-:is(.item,.none) { border: 1px solid var(--bu-rim); background: color-mix(in srgb, var(--bu-surface) 65%, transparent); }
-:is(.item,.none,.outline)[aria-pressed=true] { border-color: var(--bu-accent); background: var(--bu-selected); }
-:is(.item,.none,.outline):hover { border-color: var(--bu-border); background: var(--bu-hover); }
 .item { isolation: isolate; }
 
 #toast.bu-floating { top: auto; min-width: 0; opacity: 1; pointer-events: none; }
@@ -60,37 +38,23 @@ textarea.bu-input { min-height: 100px; }
 }
 #dialog.bronze-dialog-overlay[open] { display: flex; }
 #dialog.bronze-dialog-overlay::backdrop { background: transparent; }
-.dialog-panel.bu-floating {
+.dialog-panel {
   width: 100%; max-width: 480px; max-height: 80dvh;
   overflow: auto; padding: 25px;
-  border-radius: var(--bu-radius-dialog);
-  box-shadow: var(--bu-dialog-shadow);
-}
-:is(button,a,input,textarea,select):focus-visible { outline: var(--focus-outline); outline-offset: 3px; }
-@media (forced-colors: active) {
-  :is(button,input,textarea,select,.popover,.playback,.dialog-panel,#toast) { border: 1px solid CanvasText; }
-  button[aria-pressed=true] { outline: 2px solid Highlight; }
 }
 
 /* Native picker materials come from Bronze UI. Only playback geometry is local. */
-.playback select { border:1px solid var(--bu-rim); background:var(--bu-field); font-size:16px; }
+.playback select { font-size:16px; }
 @supports (appearance:base-select) and selector(select::picker(select)) {
   .playback select { width:140px; max-width:none; flex-shrink:0; }
   @media(max-width:760px) { .playback select { width:128px; } }
 }
 
-/* Scene-facing form choices use dependable local materials, not blur. */
-.creator :is(.presets button,.frame-row button,.compass button) { background:var(--bu-field); border-color:var(--bu-border); }
-.creator :is(.presets button,.frame-row button,.compass button)[aria-pressed=true] { background:var(--bu-selected); border-color:var(--bu-accent); }
-.creator :is(.presets button,.frame-row button,.compass button):hover { background:var(--bu-hover); }
-
 /* Dense creator labels retain muted hierarchy with measured minimum backing:
    dark 85% over white >=4.76:1; light 90% over black >=4.62:1.
-   Keep world visible; these scene materials are not package color tokens. */
-:root { --creator-scrim-start:85%; --creator-scrim-end:88%; }
-:root[data-theme=light] { --creator-scrim-start:90%; --creator-scrim-end:92%; }
-body[data-screen=creation] .scrims { background:linear-gradient(90deg,color-mix(in srgb,var(--bu-surface) 65%,transparent),color-mix(in srgb,var(--bu-surface) var(--creator-scrim-start),transparent) 19%,color-mix(in srgb,var(--bu-surface) var(--creator-scrim-end),transparent)); }
+   Bronze owns these material values; this file only places the gradients. */
+body[data-screen=creation] .scrims { background:linear-gradient(90deg,var(--bu-tile),var(--bu-reading-start) 19%,var(--bu-reading-end)); }
 .creation-workspace .size-guide, .creation-workspace .size-guide small { color:var(--bu-text); }
 @media(max-width:1000px), (max-height:540px) and (min-width:541px) {
-  body[data-screen=creation] .scrims { background:linear-gradient(180deg,color-mix(in srgb,var(--bu-surface) var(--creator-scrim-start),transparent),color-mix(in srgb,var(--bu-surface) var(--creator-scrim-end),transparent)); }
+  body[data-screen=creation] .scrims { background:linear-gradient(180deg,var(--bu-reading-start),var(--bu-reading-end)); }
 }

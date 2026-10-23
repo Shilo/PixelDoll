@@ -27,7 +27,7 @@ function showDialog(title, html) {
     dialogReturnAction = document.activeElement?.dataset.action ?? null;
     stop(); state.menu = null; render();
     const content = `${iconButton('Close', 'close-dialog', 'x')}<h2 id="dialog-title">${esc(title)}</h2>${html}`;
-    dialog.innerHTML = `<div class="bu-floating dialog-panel">${content}</div>`;
+    dialog.innerHTML = `<div class="bu-dialog-surface dialog-panel">${content}</div>`;
     dialog.className = 'bronze-dialog-overlay';
     dialog.setAttribute('aria-labelledby', 'dialog-title');
     dialog.querySelector('button').classList.add('close'); applyBronze(dialog); dialog.showModal();

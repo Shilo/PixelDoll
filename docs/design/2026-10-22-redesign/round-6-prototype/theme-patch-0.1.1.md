@@ -1,5 +1,7 @@
 # Bronze UI 0.1.1 ownership correction
 
+Current ownership contract: [Bronze UI 0.2.0](./theme-ownership-0.2.0.md). Shared appearance, including scene-backing material strengths, is now upstream; consumer layout remains local. Earlier entries below describe their historical state.
+
 2026-10-23. Follow-up to the composition polish. The **More** trigger remains concise; its popup heading is now **Additional equipment**, with only Back and Held item. Portrait view tabs have at least 8px clearance below the actual prompt touch target (about 13px with the approved typography), not merely below its text baseline.
 
 ## Fixes at their source

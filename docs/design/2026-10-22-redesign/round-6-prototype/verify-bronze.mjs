@@ -1,3 +1,4 @@
+import './verify-theme-ownership.mjs';
 // New dependency/theme checks supplement the existing 12 unit / 18 browser checks.
 import { chromium } from '../../../../app/node_modules/playwright/index.mjs';
 import { writeFile, readFile } from 'node:fs/promises';
@@ -7,7 +8,7 @@ import { createRequire } from 'node:module';
 const pkg = JSON.parse(await readFile(new URL('../../../../app/node_modules/@shilo/bronze-ui/package.json', import.meta.url), 'utf8'));
 const lock = JSON.parse(await readFile(new URL('../../../../app/package-lock.json', import.meta.url), 'utf8')).packages['node_modules/@shilo/bronze-ui'];
 assert.equal(lock.version, pkg.version);
-assert.equal(lock.resolved, 'https://github.com/Shilo/bronze-ui/releases/download/v0.1.1/shilo-bronze-ui-0.1.1.tgz');
+assert.equal(lock.resolved, 'https://github.com/Shilo/bronze-ui/releases/download/v0.2.0/shilo-bronze-ui-0.2.0.tgz');
 const resolvePackage = createRequire(new URL('../../../../app/package.json', import.meta.url)).resolve;
 const styleURLs = Object.fromEntries(['tokens.css', 'components.css'].map(entry => [entry, '/@fs/' + resolvePackage('@shilo/bronze-ui/' + entry).replaceAll('\\', '/') + '?raw']));
 const styles = Object.fromEntries(await Promise.all(['tokens.css', 'components.css'].map(async entry => [entry, createHash('sha256').update(await readFile(resolvePackage('@shilo/bronze-ui/' + entry))).digest('hex')])));
@@ -62,7 +63,7 @@ try {
     const compiledCSS = await page.evaluate(() => [...document.styleSheets].flatMap(sheet => [...sheet.cssRules].map(rule => rule.cssText)).join('\n'));
     assert.ok(compiledCSS.includes('--bu-canvas:') && compiledCSS.includes('.bu-floating {'), 'Installed package tokens and recipes compiled into consumer stylesheet');
     assert.ok(resources.every(name => !name.includes('glasskit') && !name.includes('glass-theme')), 'No GlassKit runtime');
-    assert.equal(await page.locator('.primary.bu-btn[data-variant=primary]').count(), viewport.width <= 760 ? 1 : 1);
+    assert.equal(await page.locator('.primary.bu-action[data-variant=primary]').count(), viewport.width <= 760 ? 1 : 1);
     await click('create');
     assert.ok(await page.locator('.creator').evaluate(el => el.scrollWidth <= el.clientWidth + 1));
     for (const selector of ['[data-draft=name]', '[data-draft=details]', '[data-draft=size]', '[data-draft=camera]']) {

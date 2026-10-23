@@ -15,12 +15,18 @@
 </main>
 <script type="module">
 const $=id=>document.getElementById(id), params=new URLSearchParams(location.search);
-const round=params.get('round')==='theme-0.1.1'?'theme-0.1.1':'polish';
+const round=['theme-0.1.1','theme-0.2.0'].includes(params.get('round'))?params.get('round'):'polish';
 if(round==='theme-0.1.1'){
  document.title='PixelDoll · Bronze UI 0.1.1 comparison';
  document.querySelector('h1').textContent='Bronze UI 0.1.1 and mobile spacing';
  document.querySelector('details p').textContent='The before set preserves the completed bc856ea composition-polish captures with Bronze UI 0.1.0. The after set uses the published 0.1.1 dependency. Both sets retain their original capture dates and hashes; historical evidence is unchanged.';
  for(const a of document.querySelectorAll('details a'))a.href=a.getAttribute('href').replace('evidence/polish/','evidence/theme-0.1.1/').replace('composition-polish.md','theme-patch-0.1.1.md');
+}
+if(round==='theme-0.2.0'){
+ document.title='PixelDoll · Bronze UI 0.2.0 ownership comparison';
+ document.querySelector('h1').textContent='Bronze UI 0.2.0 · shared appearance';
+ document.querySelector('details p').textContent='Before preserves ac192d3 with Bronze UI 0.1.1. After uses the published 0.2.0 package with shared appearance extracted upstream. Dates and hashes remain in each manifest; original historical evidence is unchanged.';
+ for(const a of document.querySelectorAll('details a'))a.href=a.getAttribute('href').replace('evidence/polish/','evidence/theme-0.2.0/').replace('composition-polish.md','theme-ownership-0.2.0.md');
 }
 try {
  const [before,after]=await Promise.all(['before','after'].map(async phase=>{const r=await fetch(`./evidence/${round}/${phase}.json`);if(!r.ok)throw Error('Capture manifest unavailable');return r.json()}));
@@ -31,7 +37,7 @@ try {
   const entries=[before,after].map(m=>m.images.find(i=>i.file===file));
   if(entries.some(e=>!e)||JSON.stringify(entries[0].viewport)!==JSON.stringify(entries[1].viewport))throw Error('Missing or mismatched comparison');
   $('pair').className='pair '+($('size').value==='actual'?'actual':'');
-  $('pair').replaceChildren(...['before','after'].map((phase,i)=>{const figure=document.createElement('figure'),caption=document.createElement('figcaption'),link=document.createElement('a'),image=document.createElement('img');caption.textContent=round==='theme-0.1.1'?(i?'After · Bronze UI 0.1.1':'Before · Bronze UI 0.1.0'):(i?'After · polished':'Before · reported follow-up');link.className='image';link.href=`./evidence/${round}/${phase}/${file}`;image.src=link.href;image.alt=`${phase}: ${$('screen').value}, ${$('theme').value}`;link.append(image);figure.append(caption,link);return figure}));
+  $('pair').replaceChildren(...['before','after'].map((phase,i)=>{const figure=document.createElement('figure'),caption=document.createElement('figcaption'),link=document.createElement('a'),image=document.createElement('img');caption.textContent=round==='theme-0.2.0'?(i?'After · Bronze UI 0.2.0':'Before · Bronze UI 0.1.1'):round==='theme-0.1.1'?(i?'After · Bronze UI 0.1.1':'Before · Bronze UI 0.1.0'):(i?'After · polished':'Before · reported follow-up');link.className='image';link.href=`./evidence/${round}/${phase}/${file}`;image.src=link.href;image.alt=`${phase}: ${$('screen').value}, ${$('theme').value}`;link.append(image);figure.append(caption,link);return figure}));
   $('status').textContent=`${entries[0].viewport.width} × ${entries[0].viewport.height} each · ${after.images.length} matched states captured`;
   history.replaceState(null,'',`?round=${round}&device=${$('device').value}&theme=${$('theme').value}&screen=${$('screen').value}`);
  }
