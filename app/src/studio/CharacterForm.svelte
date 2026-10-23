@@ -27,8 +27,8 @@
   const editorHelpText = $derived(d.tab === 'appearance'
     ? 'Describe distinctive features, then choose appearance hints below. These choices build the linked prompt. Hair, clothes and gear are added later.'
     : 'This exact text is sent to V3. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; prose is never guessed as a trait.')
-  const enhanceInput = (target: 'details' | 'prompt') => ({ description: target === 'prompt' ? d.prompt : d.details, image_size: { width: d.body || 0, height: d.body || 0 }, view: d.view })
-  const canEnhance = (target: 'details' | 'prompt') => !busy && !!enhanceInput(target).description.trim() && Number.isInteger(d.body) && d.body! >= 32 && d.body! <= 256 && enhanceInput(target).description.length <= 2000
+  const enhanceInput = (_target: 'details' | 'prompt') => ({ description: d.prompt, image_size: { width: d.body || 0, height: d.body || 0 }, view: d.view })
+  const canEnhance = (target: 'details' | 'prompt') => !busy && !!(target === 'details' ? d.details : d.prompt).trim() && Number.isInteger(d.body) && d.body! >= 32 && d.body! <= 256 && enhanceInput(target).description.length <= 2000
   const canUndo = (target: 'details' | 'prompt') => undo?.target === target && undo.after === d.prompt
   function edited() { undo = null; message = ''; copied = null }
   function details(value: string) { edited(); writeDetails(d, value) }
@@ -55,9 +55,11 @@
       if (d.prompt !== before || d.body !== input.image_size.width || d.view !== input.view) { message = 'Settings changed. Your text was kept.'; return }
       if (target === 'prompt') readPrompt(d, enhanced)
       else {
-        const candidate = { ...d }; writeDetails(candidate, enhanced)
+        // The enhancer sees the whole appearance. Its prose improves Details; selected hints remain authoritative.
+        const parsed = { ...d }; readPrompt(parsed, enhanced)
+        const candidate = { ...d }; writeDetails(candidate, parsed.details)
         if (candidate.prompt.length > 2000) { message = 'The enhanced text is too long. Your text was kept.'; return }
-        writeDetails(d, enhanced)
+        writeDetails(d, parsed.details)
       }
       undo = { target, before, after: d.prompt }
     } catch (e) { if (alive) message = e instanceof ApiError

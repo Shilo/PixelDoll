@@ -32,7 +32,7 @@ import { saveSplit } from '../lib/dress/project.ts';
 
 /** New forms send an exact prompt, frame, camera and explicit direction plan. Old saved in-flight specs retain their
  * original 64 px / 4-or-8-direction registration payload so resuming does not create a differently keyed paid pipeline. */
-export interface CreateSpec { description: string; name: string; seed: number; size: number; frame?: number; directions?: RigDirection[]; view?: Rig['view']; exactPrompt?: boolean; dirs?: 4 | 8; activityScope?: string }
+export interface CreateSpec { description: string; name: string; seed: number; size: number; frame?: number; directions?: RigDirection[]; view?: Rig['view']; exactPrompt?: boolean; dirs?: 4 | 8; activityScope?: string; projectId?: string }
 export type CreateStep = 'draw' | 'rest' | 'animate' | 'save';
 export const STEPS: { id: CreateStep; label: string }[] = [
   { id: 'draw', label: 'Drawing your character' },
@@ -75,13 +75,22 @@ async function imagesOf(r: JobRec): Promise<{ label: string; img: Img }[]> {
   }));
 }
 const kp4 = (label: string, x: number, y: number): Keypoint => ({ label, x: +x.toFixed(4), y: +y.toFixed(4) });
+/** A malformed managed reference must fall back to estimation, never become a fabricated/clamped pose. */
+export function managedPose(points?: Record<string, { x: number; y: number }>): Keypoint[] | undefined {
+  const pose = LABELS.map(label => ({ label, x: points?.[label]?.x, y: points?.[label]?.y })) as Keypoint[];
+  return hasAll(pose) ? pose.map(k => kp4(k.label, k.x, k.y)) : undefined;
+}
 /** estimate-skeleton (deterministic, 0.1 gen, cached by request) -> API keypoints in LABELS order; undefined on failure. */
 export async function joints(im: Img, resumeSafe = false, activityScope?: string): Promise<Keypoint[] | undefined> {
   try {
     const input = skeletonInput(im);
     const r = await run(routes.estimateSkeleton(png(await b64(input.image))), 'Finding joints', 'm2-skel', true, resumeSafe, activityScope);
     const ks = (r.response as { keypoints?: Keypoint[] } | undefined)?.keypoints ?? [];
-    const out = unpadSkeleton(LABELS.map((l) => ks.find((k) => k.label === l)).filter((k): k is Keypoint => !!k), input, im).map((k) => kp4(k.label, k.x, k.y));
+    if (!Array.isArray(ks) || ks.some(k => !k || typeof k !== 'object') || !hasAll(ks) || LABELS.some(label => ks.filter(k => k.label === label).length !== 1)) return undefined;
+    const ordered = LABELS.map(label => ks.find(k => k.label === label)!);
+    const unpadded = unpadSkeleton(ordered, input, im);
+    if (!hasAll(unpadded)) return undefined;
+    const out = unpadded.map((k) => kp4(k.label, k.x, k.y));
     return hasAll(out) ? out : undefined;
   } catch (e) { if (resumeSafe) throw e; return undefined; }
 }
@@ -102,12 +111,16 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
     const normalized = outs.map(o => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
     if (normalized.some(n => n.cutPx)) throw new Error(`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame before creating again.`);
     const clean = normalized.map(n => largestComponent(n.img));
-    const measured = await Promise.all(clean.map(async (c) => { const k = await joints(c.img, false, j.activityScope); j.tick(); return k; }));
+    // Empty art is a rendering failure; do not pay to estimate joints on it. One art re-roll is allowed.
+    if (clean.some(c => !opaqueBox(c.img))) continue;
+    // Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
+    const measured = await Promise.all(clean.map(async (c) => { const k = await joints(c.img, true, j.activityScope); j.tick(); return k; }));
+    if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Jobs; setup stopped without redrawing them.`);
     const frames = clean.map((c) => c.img);
     const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: clean.reduce((s, c) => s + c.stray, 0) });
     if (!best || qa.fails.length < best.qa.fails.length) best = { frames, measured, qa, recs };
   }
-  if (!best) throw new Error(`${j.anim} ${j.dir}: PixelLab returned the wrong number of frames`);
+  if (!best) throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames or the wrong number of frames`);
   return { ...best, recs };
 }
 
@@ -122,7 +135,8 @@ async function motion(req: Req, dir: Direction, label: string, tick: () => void,
     if (normalized.cutPx) throw new Error(`${label}: motion exceeds the ${size} px frame. Increase Frame before creating again.`);
     return normalized.img;
   });
-  const kps = await Promise.all(frames.map(async (f) => { const k = await joints(f, false, activityScope); tick(); return k; }));
+  if (frames.some(f => !opaqueBox(f))) throw new Error(`${label}: PixelLab returned an empty motion frame`);
+  const kps = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, activityScope); tick(); return k; }));
   if (kps.some((k) => !k)) throw new Error(`${label}: joints not found on every frame`);
   if (kps.length < 3 || kps.length > 15) throw new Error(`${label}: ${kps.length} frames (skeleton-v3 takes 3-15)`);
   return kps as Keypoint[][];
@@ -179,8 +193,8 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const refs = (ch.response as { skeletons?: { '2d_references'?: Record<string, { keypoints?: Record<string, { x: number; y: number }> }> } })?.skeletons?.['2d_references'];
   const restKps = {} as Record<DirectionName, Keypoint[]>;
   for (const d of DIRS) {
-    const k = refs?.[d]?.keypoints, fromChar = k && LABELS.every((l) => k[l]) ? LABELS.map((l) => kp4(l, k[l].x, k[l].y)) : undefined;
-    const kps = fromChar ?? (await joints(rest[d], false, spec.activityScope)); // free from the managed character, else estimate (0.1)
+    const fromChar = managedPose(refs?.[d]?.keypoints);
+    const kps = fromChar ?? (await joints(rest[d], true, spec.activityScope)); // free from the managed character, else estimate (0.1)
     if (!kps) throw new Error(`no joints found on the ${d} view`);
     restKps[d] = kps;
   }
@@ -219,8 +233,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   for (const d of DIRS) rig.rest[d] = { image: await cellHash(rest[d]), keypoints: restKps[d] };
   // Retain unselected originals for a future account reconnection, without estimating unused joints or animating them.
   if (modern) for (const d of DIRECTIONS.filter(d => !DIRS.includes(d))) {
-    const k = refs?.[d]?.keypoints;
-    rig.rest[d] = { image: await cellHash(rest[d]), keypoints: k && LABELS.every(l => k[l]) ? LABELS.map(l => kp4(l, k[l].x, k[l].y)) : [] };
+    rig.rest[d] = { image: await cellHash(rest[d]), keypoints: managedPose(refs?.[d]?.keypoints) ?? [] };
   }
   for (const c of clips) {
     const anim = rig.animations.find((x) => x.id === c.a.name)!;
@@ -253,12 +266,15 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }],
   };
   const rec: StoredProject = {
-    id: `rig-${rig.baseHash.slice(7, 19)}`, savedAt: new Date().toISOString(), manifest, skeletons, character: { id: charId, looks }, origin: 'studio',
+    id: spec.projectId ?? `rig-${rig.baseHash.slice(7, 19)}`, savedAt: new Date().toISOString(), manifest, skeletons, character: { id: charId, looks }, origin: 'studio',
     rigQa: { warnings: built.warnings, pivotFrom: built.pivotFrom, clips: Object.fromEntries(clips.map((c) => [`${c.a.name}/${c.d}`, c.out.qa])), tracks: tracks.stats.map(({ points: _, ...t }) => t) },
   };
-  for (const d of Object.keys(rig.rest) as DirectionName[]) await putCell(rig.rest[d]!.image, rest[d]);
-  for (const c of Object.values(built.cells)) await putCell(c.hash, c.img);
-  await db.put('projects', rec.id, rec);
+  const blobs = new Map<string, Blob>();
+  for (const [hash, image] of [...Object.keys(rig.rest).map(d => [rig.rest![d as DirectionName]!.image, rest[d as DirectionName]] as const), ...Object.values(built.cells).map(c => [c.hash, c.img] as const)]) {
+    blobs.set(hash.slice(7), new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  }
+  // A reload reuses the persisted creation identity. Legacy hash IDs must also preserve any already dressed project.
+  await db.updateCharacter<StoredProject>(rec.id, blobs, current => current ?? rec);
   db.askPersist();
   return rec.id;
 }

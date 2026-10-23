@@ -2,8 +2,8 @@
 // cleanup, and the freeze gate. Pure over Img; the queue orchestration lives in studio/create.ts.
 import { components } from '../image/chroma.ts';
 import { binaryAlpha, makeImg, type Img } from '../image/png.ts';
-import { feetY } from './normalize.ts';
-import { adherence, fromApi } from './poses.ts';
+import { feetY, opaqueBox } from './normalize.ts';
+import { adherence, fromApi, hasAll, LABELS } from './poses.ts';
 import { routes, png, type Direction, type Req } from '../pixellab/routes.ts';
 import type { Keypoint } from './rig.ts';
 
@@ -67,6 +67,9 @@ export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: 
   const fit = paletteFit(o.rest, o.frames), border = o.frames.reduce((s, f) => s + borderPx(f), 0);
   const maxAdh = /death|fall/.test(o.anim) ? RIG_GATES.adherenceLying : RIG_GATES.adherence;
   const fails = [
+    (!o.frames.length || o.frames.some(f => !opaqueBox(f))) && 'empty animation frame',
+    (o.measured.length !== o.frames.length || o.measured.some(k => !hasAll(k))) && 'missing or invalid frame joints',
+    o.requested && o.requested.length !== o.frames.length && 'requested pose count does not match frames',
     adh !== null && adh > maxAdh && `arms ${adh.toFixed(1)} px off the requested pose`,
     standing(o.anim) && feet > RIG_GATES.feetDrift && `feet drift ${feet} px`,
     fit < RIG_GATES.paletteFit && `palette fit ${fit.toFixed(3)}`,
@@ -91,7 +94,7 @@ export function selfTest() {
   const r = largestComponent(im);
   console.assert(r.stray === 1 && r.img.data[(1 * 8 + 7) * 4 + 3] === 0 && r.img.data[(2 * 8 + 3) * 4 + 3] === 255 && borderPx(r.img) === 0 && borderPx(im) === 2, `largestComponent stray ${r.stray}`);
   console.assert(paletteFit(r.img, [r.img]) === 1 && paletteFit(r.img, [im]) < 1, 'paletteFit');
-  const k = [{ label: 'RIGHT ARM', x: 0.5, y: 0.5 }], k2 = [{ label: 'RIGHT ARM', x: 0.5, y: 0.8 }]; // 2.4 px apart on 8 px
+  const k = LABELS.map(label => ({ label, x: 0.5, y: 0.5 })), k2 = k.map(p => ({ ...p, y: 0.8 })); // joints 2.4 px apart on 8 px
   const ok = clipQa({ anim: 'slash', rest: r.img, frames: [r.img], requested: [k], measured: [k], stray: 0 });
   const bad = clipQa({ anim: 'slash', rest: r.img, frames: [im], requested: [k], measured: [k2], stray: 0 });
   console.assert(!ok.fails.length && ok.adherence === 0, `clean clip passes: ${ok.fails}`);

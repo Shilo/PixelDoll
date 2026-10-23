@@ -374,6 +374,8 @@ export class Queue {
     } catch { bodyUnavailable = true; }
     // A sync may have supplied newer remote usage while the original PNG was being read.
     const current = this.recs.get(r.id) ?? r;
+    // The live client records this request next. Only restore interrupted submissions after load marks them lost.
+    if (current.state === 'submitting') return;
     if (!this.wasRequested(current)) return;
     restoreActivityRequest({ queueId: current.id, queueTag: current.tag, activityScope: current.activityScope, label: current.label, method: current.method, endpoint: current.endpoint, body,
       bodyUnavailable,

@@ -24,6 +24,80 @@ async function connect(page: Page) {
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Connect', exact: true }).click()
 }
 
+test.describe('creation safety', () => {
+test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` })
+test('same seeded output creates separate projects and a resumed workflow preserves its identity', async ({ page, context }) => {
+  test.setTimeout(180_000)
+  const api = new CharacterApi()
+  await context.route('https://*.pixellab.ai/**', async route => { const req = route.request(); await fulfill(route, await api.handle(req.method(), req.url(), req.postDataJSON())) })
+  const sheet = await open(page)
+  const configure = async (name: string) => {
+    await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill(name)
+    await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human')
+    await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click()
+    await sheet.getByRole('textbox', { name: 'Seed', exact: true }).fill('4242')
+  }
+  await configure('Keep my outfit')
+  await sheet.getByRole('button', { name: 'Create character', exact: true }).click(); await connect(page)
+  await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible({ timeout: 120_000 })
+  await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click()
+  const first = await page.evaluate(async () => {
+    const modulePath = '/src/lib/store/db.ts'
+    const { all, update } = await import(modulePath) as typeof import('../../src/lib/store/db.ts')
+    const records = await all<import('../../src/lib/store/project.ts').StoredProject>('projects')
+    const rec = records.find(r => r.manifest?.name === 'Keep my outfit')!
+    await update<typeof rec>('projects', rec.id, current => { current!.manifest.presets.push({ id: 'precious-outfit', name: 'Saved outfit', items: { body: 'base' }, variants: {} }); return current! })
+    return rec.id
+  })
+  await page.locator('.project-btn').click(); await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  await configure('Separate character')
+  await sheet.getByRole('button', { name: 'Create character', exact: true }).click()
+  await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible({ timeout: 120_000 })
+  const saved = await page.evaluate(async () => {
+    const modulePath = '/src/lib/store/db.ts'
+    const { all } = await import(modulePath) as typeof import('../../src/lib/store/db.ts')
+    return (await all<import('../../src/lib/store/project.ts').StoredProject>('projects')).filter(r => r.manifest?.name === 'Keep my outfit' || r.manifest?.name === 'Separate character')
+  })
+  expect(saved).toHaveLength(2)
+  expect(saved.find(r => r.id === first)?.manifest.presets.some(p => p.id === 'precious-outfit')).toBe(true)
+  const second = saved.find(r => r.id !== first)!
+  expect(second.manifest.name).toBe('Separate character')
+  expect(api.calls.filter(c => c.path === '/v2/create-character-v3')).toHaveLength(2) // cached art reused, local identities separate
+  await page.evaluate(async () => {
+    const modulePath = '/src/lib/store/db.ts'
+    const { put } = await import(modulePath) as typeof import('../../src/lib/store/db.ts')
+    const statePath = '/src/studio/state.svelte.ts'
+    const { creating } = await import(statePath) as typeof import('../../src/studio/state.svelte.ts')
+    await put('projects', 'studio-create', { id: 'studio-create', spec: JSON.parse(JSON.stringify(creating.spec)) })
+  })
+  await page.reload()
+  await expect.poll(async () => page.evaluate(async () => {
+    const modulePath = '/src/lib/store/db.ts'
+    const { get } = await import(modulePath) as typeof import('../../src/lib/store/db.ts'); return !(await get('projects', 'studio-create'))
+  }), { timeout: 30_000 }).toBe(true)
+  expect(await page.evaluate(async () => { const modulePath = '/src/lib/store/db.ts'; const { all } = await import(modulePath) as typeof import('../../src/lib/store/db.ts'); return (await all<{ id: string; manifest?: unknown }>('projects')).filter(r => r.id.startsWith('rig-') && r.manifest).length })).toBe(2)
+  expect(api.calls.filter(c => c.path === '/v2/create-character-v3')).toHaveLength(2)
+})
+
+test('a failed required measurement stops creation without paying for an art reroll', async ({ page, context }) => {
+  test.setTimeout(120_000)
+  const api = new CharacterApi()
+  await context.route('https://*.pixellab.ai/**', async route => {
+    const req = route.request(), body = req.postDataJSON()
+    const response = await api.handle(req.method(), req.url(), body)
+    await fulfill(route, new URL(req.url()).pathname === '/v2/estimate-skeleton' ? Response.json({ keypoints: [], usage: { type: 'generations', generations: .1 } }) : response)
+  })
+  const sheet = await open(page)
+  await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human')
+  await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click()
+  await sheet.getByRole('button', { name: 'Create character', exact: true }).click(); await connect(page)
+  await expect(sheet).toContainText(/joints (were )?not found on every frame/, { timeout: 90_000 })
+  await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toHaveCount(0)
+  expect(api.calls.filter(c => c.path === '/v2/animate-with-skeleton-v3')).toHaveLength(1)
+  expect(await page.evaluate(async () => { const modulePath = '/src/lib/store/db.ts'; const { all } = await import(modulePath) as typeof import('../../src/lib/store/db.ts'); return (await all<{ manifest?: unknown }>('projects')).filter(r => r.manifest).length })).toBe(0)
+})
+})
+
 test('visible size fields, auto frame, preset deselection and preview positions stay consistent', async ({ page, context }) => {
   const calls: string[] = []; await context.route('https://*.pixellab.ai/**', async route => { calls.push(route.request().url()); await route.abort() })
   const sheet = await open(page), body = sheet.getByRole('spinbutton', { name: 'Body size', exact: true }), frame = sheet.getByRole('spinbutton', { name: 'Frame size', exact: true })
@@ -127,6 +201,27 @@ test('V3 enhance connects once, preserves settings, undo restores exactly, and f
   await expect(sheet.getByRole('status')).toContainText('Your text was kept')
   await expect(sheet.getByRole('textbox', { name: 'Exact prompt', exact: true })).toHaveValue('[fail] a dwarf')
   expect(api.calls.filter(c => c.path === '/v2/enhance-character-v3-prompt')).toHaveLength(2)
+})
+
+test('Appearance enhancement sends all selected hints and keeps them linked without duplicate prompt lines', async ({ page, context }) => {
+  const api = new CharacterApi()
+  await context.route('https://*.pixellab.ai/**', async route => { const req = route.request(); await fulfill(route, await api.handle(req.method(), req.url(), req.postDataJSON())) })
+  const sheet = await open(page)
+  await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('Pointed ears')
+  for (const [name, value] of [['Kind', 'Elf'], ['Build', 'Broad'], ['Proportions', 'Chibi'], ['Skin', 'Brown']]) await sheet.getByRole('combobox', { name, exact: true }).selectOption(value)
+  await sheet.getByRole('button', { name: 'Copy exact prompt', exact: true }).click()
+  const before = await page.evaluate(() => sessionStorage.getItem('creator-copy'))
+  await sheet.getByRole('button', { name: 'Enhance', exact: true }).click(); await connect(page)
+  await expect(sheet.getByRole('button', { name: 'Undo', exact: true })).toBeVisible()
+  expect(api.calls.find(c => c.path === '/v2/enhance-character-v3-prompt')?.body?.description).toBe(before)
+  for (const [name, value] of [['Kind', 'Elf'], ['Build', 'Broad'], ['Proportions', 'Chibi'], ['Skin', 'Brown']]) await expect(sheet.getByRole('combobox', { name, exact: true })).toHaveValue(value)
+  await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue('Pointed ears\nSubtle freckles and expressive eyes.')
+  await sheet.getByRole('button', { name: 'Copy exact prompt', exact: true }).click()
+  const after = await page.evaluate(() => sessionStorage.getItem('creator-copy'))
+  expect(after?.match(/Kind: Elf/g)).toHaveLength(1)
+  await sheet.getByRole('button', { name: 'Undo', exact: true }).click()
+  await sheet.getByRole('button', { name: 'Copy exact prompt', exact: true }).click()
+  expect(await page.evaluate(() => sessionStorage.getItem('creator-copy'))).toBe(before)
 })
 
 test('late enhancement cannot overwrite edits or reopen a closed form', async ({ page, context }) => {

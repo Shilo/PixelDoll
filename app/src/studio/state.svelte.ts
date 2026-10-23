@@ -622,7 +622,7 @@ function withActivityScope<T extends { seed: number; activityScope?: string }>(s
 export const creating = $state({ spec: null as CreateSpec | null, progress: null as Progress | null, error: '', projectId: '', warnings: [] as string[] });
 const CREATE_KEY = 'studio-create';
 export async function startCreate(spec: CreateSpec) {
-  spec = withActivityScope(spec, 'create');
+  spec = withActivityScope({ ...spec, projectId: spec.projectId ?? `rig-${crypto.randomUUID()}` }, 'create');
   creating.spec = spec;
   creating.error = '';
   creating.projectId = '';
