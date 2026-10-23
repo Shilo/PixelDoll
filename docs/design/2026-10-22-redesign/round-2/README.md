@@ -1,5 +1,7 @@
 # PixelDoll — six pixel-world design studies
 
+**Historical exploration, superseded by [round three](../round-3/README.md).** The user rejected this round's flat tool-like framing. Preserve it as research history, not the active visual or gameplay direction. In particular, the per-press movement study is not the requested continuous gameplay design.
+
 2026-10-22. A second visual design round, following the request for two Moonlit Camp alternatives and four Quiet Stage alternatives built around pixel-art prototype worlds. These are standalone design prototypes, not a production UI replacement.
 
 **Recommendation: Calibration Yard as the main creation/customization space, with Moonwell Grove as an optional character-collection backdrop.** The yard best combines a small playable-looking world with clear inspection. It gives PixelDoll an identity without asking decorative scenery to compete with equipment. The grove makes choosing a character feel welcoming. A transition between them should preserve the selected character, outfit, direction and working state; it should not become a navigation task.

@@ -2,7 +2,9 @@
 
 **2026-10-22 · design proposal, not a production UI replacement.**
 
-**Latest: [round two — six pixel-art world and prototype-stage studies](round-2/README.md).** Includes two scenic alternatives and four inspection stages, 36 desktop/phone core screens and 14 future walking-map screens. The updated recommendation is **Calibration Yard** for everyday creation/customization, with **Moonwell Grove** as an optional collection backdrop. [Open the new gallery](round-2/gallery.html). The first-round recommendation below is retained as design history.
+**Latest: [round three — immersive HD simulation worlds, image-only](round-3/README.md).** The user rejected round two's flat tool-like presentation. This round restores Camp's immersive hierarchy and Quiet Stage's restraint, groups equipment on the right, and gives customization/gameplay one shared shell. Eleven selected raster mockups, three world directions, desktop and phone flows. **Obsidian Holodeck** is the new recommendation. No new interactive HTML or gameplay implementation.
+
+**Historical: [round two — six pixel-art world and prototype-stage studies](round-2/README.md).** Its Calibration Yard recommendation is superseded by round three. The first-round recommendation below is retained as design history.
 
 Recommendation: **Moonlit Camp**, with Quiet Stage available as the neutral inspection background. The character library becomes a paged in-world cast; creation becomes its own scene; dressing uses one active equipment category and one contextual choice panel. The world creates atmosphere, while visible controls keep every action direct.
 

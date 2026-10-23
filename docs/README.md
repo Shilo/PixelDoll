@@ -12,6 +12,8 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 
 ## Character creator redesign (2026-10-22 proposal)
 
+**Current: [round three — immersive HD simulation worlds](design/2026-10-22-redesign/round-3/README.md).** Image-only design: 11 selected screenshots across three world directions, a shared customization/gameplay shell, desktop and phone selection/creation, research and continuous-gameplay requirements. Supersedes round two's visual recommendation; no production implementation.
+
 [Round two — pixel worlds and prototype stages](design/2026-10-22-redesign/round-2/README.md): six curated alternatives, desktop/phone selection, creation and customization, Asemulator-inspired future walking studies, source research and the updated Calibration Yard recommendation.
 
 [Design review package](design/2026-10-22-redesign/README.md): current UI audit with 23 screenshots, research into 12 game families and two creator tools, three curated concepts, 18 desktop/mobile mockups, and an offline interactive prototype. The lead recommends Moonlit Camp. This is a new proposal; it does not replace the implemented design or prior decisions until adopted. Its screenshots are included alongside the proposal rather than in the historical tag.
