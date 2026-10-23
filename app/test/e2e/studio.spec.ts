@@ -515,6 +515,8 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
       localStorage.setItem('pixellab-backpack:key-kept', 'other-app-legacy-key');
     }, { initial, shared, legacy });
     await page.goto('/#/');
+    await expect(page.locator('.project-btn')).toHaveText('Adventurer (demo)');
+    await expect(page.locator('.stage canvas').first()).toBeVisible();
     await page.locator('.project-btn').click();
     await page.getByRole('menuitem', { name: initial === 'old-only' ? 'Connect PixelLab…' : 'PixelLab key', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
@@ -1485,10 +1487,10 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
 })
 
 
-async function freePaletteFixture(page: Page) {
+async function freePaletteFixture(page: Page, shared = false) {
   const fixture = await targetedRepairFixture(page)
   await oversizedItemFixture(page, fixture.itemId)
-  const before = await page.evaluate(async id => {
+  const before = await page.evaluate(async ({ id, shared }) => {
     const p = '/src/studio/state.svelte.ts', s = await import(p), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
     const pngPath = '/src/lib/image/png.ts', png = await import(pngPath), rawPath = '/src/lib/image/pngraw.ts', raw = await import(rawPath)
     const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((it: { id: string }) => it.id === id), metalId = id + '-fixed-metal'
@@ -1508,10 +1510,16 @@ async function freePaletteFixture(page: Page) {
     await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id)
     s.ui.anim = 'walk'; s.ui.dir = 'west'; s.ui.frame = 0; s.ui.playing = false; s.pick(id)
     s.setVariant(metalId, 'azure'); await s.flushSave()
+    if (shared) {
+      const projectPath = '/src/lib/store/project.ts', projectModule = await import(projectPath), designPath = '/src/lib/equipment/design.ts', designs = await import(designPath), compatibilityPath = '/src/lib/equipment/compatibility.ts', compatibility = await import(compatibilityPath), copyPath = '/src/lib/equipment/copy.ts', copies = await import(copyPath), storePath = '/src/lib/equipment/store.ts', equipmentStore = await import(storePath)
+      const ctx = await projectModule.loadProject(s.doc.id), design = await designs.createDesign(ctx.project, id, s.doc.variants, 'Pinned palette fixture'), pinned = ctx.rec.manifest.items.find((it: { id: string }) => it.id === id)
+      pinned.design = { designId: design.id, revision: design.revision, snapshot: equipmentStore.snapshotDesign(design), roleMaterials: Object.fromEntries(pinned.materials.map((m: string) => [m, m])), targetAudit: await compatibility.targetAudit(ctx.project), targetStamp: copies.targetStamp(ctx.rec.manifest, pinned.slot), dressedStamp: designs.restStamp(ctx.rec.manifest) }
+      await db.put('projects', s.doc.id, ctx.rec); await s.openProject(s.doc.id); s.ui.anim = 'walk'; s.ui.dir = 'west'; s.ui.playing = false; s.pick(id)
+    }
     const saved = await db.get('projects', s.doc.id), savedItem = saved.manifest.items.find((it: { id: string }) => it.id === id)
     const unscoped = structuredClone(savedItem.layers); for (const layer of unscoped) delete layer.cells.walk.west
     return { projectId: s.doc.id, metalId, materials: saved.manifest.materials, presets: saved.manifest.presets, variants: s.doc.variants, qa: savedItem.qa, warnings: savedItem.designWarnings, provenance: savedItem.provenance, rig: saved.manifest.rig, unscoped, sourceHash: hash }
-  }, fixture.itemId)
+  }, { id: fixture.itemId, shared })
   const diagnosis = await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p), r = '/src/lib/items/run.ts', run = await import(r); try { return await run.itemPaletteRepairPlan(s.doc.id, id, 'walk', 'west') } catch (e) { return String(e) } }, fixture.itemId)
   expect(diagnosis).toMatchObject({ changedPixels: 2, changedFrames: [0, 1], unmatchedPixels: 2 })
   return { ...fixture, ...before }
@@ -1523,7 +1531,11 @@ test('free item colour matching is offline, scoped, persistent and preserves sav
   await context.route('https://api.pixellab.ai/**', r => r.abort())
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
   await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
-  const fixture = await freePaletteFixture(page), pane = page.locator('.inspector')
+  const fixture = await freePaletteFixture(page, true), pane = page.locator('.inspector')
+  const eligibility = await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p), item = s.store.project.manifest.items.find((it: { id: string }) => it.id === id); return { route: item.route, key: item.key, dressed: !!item.dressed.west, frames: s.store.project.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').sources.west.keypoints.length, shared: !!item.design } }, fixture.itemId)
+  expect(eligibility).toMatchObject({ route: 'skeleton-pose', key: 'green', dressed: true, frames: 8, shared: true })
+  await expect(pane.getByRole('button', { name: /^Try new item frames/ })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: 'View saved design', exact: true })).toBeVisible()
   const action = pane.getByRole('button', { name: /^Match item colours.*Free$/ })
   await expect(action).toBeVisible()
   await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west')

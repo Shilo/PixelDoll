@@ -31,7 +31,7 @@
   const moveGaps = $derived(gaps.filter((g) => g.startsWith(`${ui.anim}/`)).map((g) => g.split('/')[1]))
   const moveName = $derived(ui.anim ? ui.anim[0].toUpperCase() + ui.anim.slice(1).replace(/-/g, ' ') : '')
   const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir)
-  const repairSpec = $derived(it && anim && it.route === 'skeleton-pose' && it.key && it.dressed?.[sourceDir] && anim.sources?.[sourceDir]?.keypoints?.length === anim.cells
+  const repairSpec = $derived(it && !it.design && anim && it.route === 'skeleton-pose' && it.key && it.dressed?.[sourceDir] && anim.sources?.[sourceDir]?.keypoints?.length === anim.cells
     ? { id: anim.id, frames: anim.cells, items: [it.id], dirs: [sourceDir], itemMethod: 'grid' as const, seed: 0 } : null)
   const repairCost = $derived(m && repairSpec ? moveEstimate(m, repairSpec).gens : 0)
   const repairBusy = $derived(!!moving.spec && !moving.done || !!settingUp.spec && !settingUp.done)

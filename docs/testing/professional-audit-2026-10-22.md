@@ -233,3 +233,22 @@ Original ignored evidence was preserved and byte-verified before worktree cleanu
 under `C:/Programming_Files/Shilocity/PixelLab/PixelDoll/docs/testing/img/audit-worktree-39533f7/`. The `testing-img` subtree
 retains original relative evidence paths. This avoids losing live-generation/engine evidence when removing dependencies,
 build products and the audit checkout. The unrelated UI-redesign checkout, branch and uncommitted files are preserved.
+
+
+Integrated validation passes: **521 unit tests across 53 files**, **48 browser tests**, strict checks with zero
+errors/warnings, and a **535.36 KB / 180.56 KB gzip** production main bundle with a clean credential guard. Vite's
+500 KB chunk advisory remains visible and is recorded in TODO. The merged Studio was also reloaded and visually checked
+with the actual four-direction repaired Slash and its retained colour/review state; wardrobe counts and shared-design
+controls coexist with the audit features.
+
+Shared designs retain their free local colour matching but cannot enter the direct paid grid-repair route. Browser
+regressions prove both conditions against an otherwise grid-eligible shared item. The remembered-key test now waits for
+the loaded demo before opening its menu, preserving every credential assertion while avoiding an initial-navigation
+popover race. Measured-clip fixtures exercise the merged atomic normalization storage contract; incomplete measurements
+still publish nothing. No new paid call or automatic resend was made during integration.
+
+The verified result is fast-forwarded into local main without changing the unrelated UI-redesign checkout. The audit
+managed worktree is archived/removed only after its committed head is reachable from main; its local branch is then
+removed. Push/deployment remain separate. Final integration traces and a standalone copy of this report are preserved
+beside the original ignored evidence under `audit-worktree-39533f7/integration-results` and
+`audit-worktree-39533f7/main-integration-report.md`.

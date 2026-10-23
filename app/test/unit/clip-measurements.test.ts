@@ -29,6 +29,7 @@ async function fixture(validAttempts: boolean[]) {
   vi.spyOn(db, 'getBlob').mockImplementation(async (id) => blobs.get(id))
   const put = vi.spyOn(db, 'put').mockResolvedValue(undefined)
   const update = vi.spyOn(db, 'update').mockImplementation(async (_store, _id, change) => { saved = change(structuredClone(saved)) as projects.StoredProject })
+  const atomic = vi.spyOn(db, 'updateCharacter').mockImplementation(async (_id, images, change) => { const next = change(structuredClone(saved)) as projects.StoredProject; for (const [h, blob] of images) blobs.set(h, blob); saved = next })
   vi.spyOn(queue, 'enqueue').mockImplementation(async (req) => {
     if (req.path === '/animate-with-skeleton-v3') {
       const attempt = raws++, keypoints = (req.body as { keypoints: Keypoint[][] }).keypoints
@@ -47,13 +48,13 @@ async function fixture(validAttempts: boolean[]) {
     }
     throw new Error(`Unexpected route ${req.path}`)
   })
-  return { run: () => addMove(saved.id, { id: 'idle', action: 'idle', seed: 7, frames: 4, items: [], replace: true }), original, saved: () => saved, raws: () => raws, put, update }
+  return { run: () => addMove(saved.id, { id: 'idle', action: 'idle', seed: 7, frames: 4, items: [], replace: true }), original, saved: () => saved, raws: () => raws, put, update, atomic }
 }
 
 test('two incomplete measurement candidates cannot replace a saved body or publish any cell', async () => {
   const f = await fixture([false, false])
   await expect(f.run()).rejects.toThrow('idle south: joints could not be measured on frame 0')
-  expect(f.raws()).toBe(2); expect(f.put).not.toHaveBeenCalled(); expect(f.update).not.toHaveBeenCalled(); expect(f.saved()).toEqual(f.original)
+  expect(f.raws()).toBe(2); expect(f.put).not.toHaveBeenCalled(); expect(f.update).not.toHaveBeenCalled(); expect(f.atomic).not.toHaveBeenCalled(); expect(f.saved()).toEqual(f.original)
 })
 
 test.each([{ valid: [false, true] }, { valid: [true, false] }])('a complete art-warning candidate wins over missing measurements regardless of attempt order: %o', async ({ valid }) => {
@@ -61,8 +62,8 @@ test.each([{ valid: [false, true] }, { valid: [true, false] }])('a complete art-
   const qa = clipQa({ anim: 'idle', rest: body(), frames: [body(true)], requested: [points()], measured: [points()], stray: 0 })
   expect(qa.fails).toHaveLength(2)
   const f = await fixture(valid)
-  await expect(f.run()).resolves.toBeUndefined()
-  expect(f.raws()).toBe(2); expect(f.update).toHaveBeenCalledOnce()
+  await expect(f.run()).resolves.toEqual({ fitIds: [], warnings: [] })
+  expect(f.raws()).toBe(2); expect(f.update).toHaveBeenCalledOnce(); expect(f.atomic).toHaveBeenCalledOnce()
   const saved = f.saved(), source = saved.manifest.rig.animations[0].sources!.south!
   expect(source.measured).toHaveLength(4); expect(source.measured!.every(hasAll)).toBe(true)
   expect(Object.keys(saved.skeletons!)).toHaveLength(4)

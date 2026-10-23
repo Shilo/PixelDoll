@@ -237,6 +237,9 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .group-head { display: flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 0 0 8px; }
 .group-head h3 { font-size: var(--fs); font-weight: 600; }
 .group-head .add { margin-left: auto; }
+.category-count { color: var(--text-3); }
+.group-head .category-count { margin-left: auto; }
+.group-head .category-count + .add { margin-left: 0; }
 .glyph { width: 20px; display: grid; place-items: center; color: var(--text-2); flex: none; }
 .group.outfits { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); }
 .row {
@@ -363,6 +366,9 @@ dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
 .slot-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px 0 10px; border-radius: var(--r-pill);
   border: 1px solid var(--line-strong); background: transparent; color: var(--text-2); font-weight: 500; }
 .slot-chip[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+.slot-chip[aria-selected="true"] .category-count { color: inherit; }
+.category-empty { display: flex; align-items: center; gap: 8px; min-height: 44px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--text-2); }
+.category-empty .add { margin-left: auto; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
 .tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--text-2); min-width: 0; }
 .tile-art { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: var(--r-card); background: var(--thumb-bg); color: var(--text-2); overflow: hidden; }

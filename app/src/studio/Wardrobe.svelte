@@ -24,7 +24,7 @@
           <div class="group-head">
             <span class="glyph" aria-hidden="true"><GroupIcon group={g.id} size={16} /></span>
             <h3 id="g-{g.id}">{g.id}</h3>
-            {#if !items.length && !pending.length}<span class="faint small">None yet</span>{/if}
+            <span class="category-count small num">{items.length + pending.length}<span class="sr"> items{pending.length ? ` (${pending.length} pending)` : ''}</span></span>
             <button class="btn icon plain add" aria-label="New {g.id.toLowerCase()} item" title="New {g.id.toLowerCase()} item" onclick={() => openNewItem(g.id)}><Plus size={16} /></button>
           </div>
           {#if items.length || pending.length}

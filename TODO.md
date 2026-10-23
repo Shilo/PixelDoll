@@ -15,6 +15,10 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 - [x] Free item colour matching completed and verified on the actual repaired project: 475 RGB-only corrections
   across 17 frames, preserving body/alpha/geometry, existing palettes, saved recolours and review warnings.
 
+- [x] Reconciled the audit with newer main-branch shared-equipment and wardrobe changes. Integrated validation:
+  521 unit tests across 53 files, 48 browser tests, strict checks and production credential guard pass. The audit
+  checkout/branch are retired after the verified main update; deployment remains a separate release step below.
+
 ## Next up (in order)
 
 1. [ ] Shield quality: two east-walk drafts still need visual acceptance or targeted artwork correction. Offline
@@ -44,6 +48,9 @@ Physical-phone testing is out of scope by user decision (2026-10-22). The live s
 in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
 
 ## Concerns
+- [!] **Merged bundle size.** The combined audit/shared-equipment build is 535.36 KB minified (180.56 KB gzip),
+  crossing Vite's default 500 KB chunk warning. Profile startup before deciding whether shared-design UI should load
+  on demand; keep the warning visible instead of raising the threshold. Build and credential guard still pass.
 - [!] **Key safety on a shared origin.** All `*.github.io/<repo>` sites of one account share an origin, so another of your
   Pages sites could read a remembered key (localStorage/IndexedDB). Mitigated: key is memory-only by default, never sent
   over BroadcastChannel, Connect warns on `*.github.io`. Fix: serve from a custom domain. (R6 P1-4, B13)
