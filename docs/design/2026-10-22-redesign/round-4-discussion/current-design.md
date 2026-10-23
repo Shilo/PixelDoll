@@ -2,6 +2,8 @@
 
 Updated 2026-10-23 after the user's movement-fallback correction and palette choice. **This is the controlling design record.** It supersedes incompatible proposals in the earlier discussion, including blocked locomotion, timed prompt disappearance, overhead warning icons, and the previous rejection of a mobile joystick. It records design intent, not implemented behavior or a passed gameplay test.
 
+**Dynamic behavior refinement:** [animation-resolver.md](animation-resolver.md) specifies the velocity-based motion state machine, normalized nearest-direction calculation, intended-versus-available coverage, fallback chain, equipment synchronization and deduplicated error notices. The user delegated algorithm choice and accepted the equipment recommendation. The specification below remains the visual/interaction overview.
+
 ## Accepted visual and screen direction
 
 - Full-screen immersive HD prototype world; Obsidian Holodeck is the chosen direction. Use **Obsidian / Porcelain Bronze** for coordinated dark/light backgrounds and UI. Frost and Sage remain historical alternatives, not additional product requirements.
@@ -33,7 +35,7 @@ These are direction quantization rules, not automatic mirroring or a new camera 
 Lead recommendations within this direction:
 
 - Use nearest available facing with a stable tie-break: keep the previous eligible facing when possible; otherwise use a documented deterministic default. For a fresh east/west character, prefer a saved eligible facing, then east if available, then west.
-- Stabilize the decision near sector boundaries so minor joystick noise cannot rapidly flip east/north or east/west. Dead-zone and facing thresholds need adjustment in the visual proof.
+- Start with normalized nearest-direction selection, remembered ties and the joystick dead zone. No extra angular smoothing/delay is required; consider a small switch margin only if real prototype input demonstrates a problem.
 - Four-direction diagonal ties are valid either way; consistency matters more than claiming one universal mapping. Pure vertical motion for a two-direction set explicitly uses remembered facing as requested.
 - Use only actual artwork or mirroring already authorized by the rig. Direction fallback does not repair incompatible camera pitch.
 
@@ -41,12 +43,14 @@ Lead recommendations within this direction:
 
 For the live views, resolve a renderable presentation while preserving continuous movement:
 
-1. Requested locomotion clip, using its available facings and the mapping above.
-2. Compatible idle animation, still allowing world movement.
+1. Requested locomotion clip, using its available facings and the mapping above. For unexpected gaps, avoid opposite-facing animated substitutions: prefer an available direction within 90 degrees of the intended facing.
+2. Compatible idle animation, still allowing world movement, when the requested clip has no suitable available facing.
 3. Stored character creation/rest image for an appropriate facing. New V3 output retains original rest views; use what the particular character actually contains.
 4. A valid existing frame when that character lacks stored rest artwork as well. This is a last-resort display fallback; the world position still moves.
 
 On stopping, use idle if available, otherwise stored rest artwork or a valid still frame. Preserve facing continuity rather than unexpectedly rotating the actor on release. Do not repeatedly warn whenever the actor stops.
+
+This suitability check applies after intentional direction quantization: it never rejects a deliberately one/two-direction presentation. If no suitable animated/rest presentation exists, use a closest valid still image as the final rescue. The detailed resolver defines finite termination, missing metadata and unavailable-body handling.
 
 Resolve body clip, facing, timeline and frame **before** drawing any equipment. All visible equipment must use that same resolved state. Never animate Walk equipment over an Idle body, independently offset frame clocks or retain a frozen helmet pose over a cycling body.
 
@@ -62,7 +66,7 @@ Mark affected equipment and keep the reason reachable after a toast fades. Aggre
 
 ### Toast feedback
 
-Use a compact screen-anchored toast in a reserved area clear of the character, joystick and equipment actions. An overhead icon is not required.
+Use a compact screen-anchored error toast for genuine unexpected coverage issues in a reserved area clear of the character, joystick and equipment actions. An overhead icon is not required. Do not infer intended coverage from whichever clip frames happen to be present; compare against declared rig directions first.
 
 - No warning for normal two/four-direction quantization.
 - For a genuine missing clip: **Walk unavailable — showing Idle** or **Walk unavailable — showing a still pose**.
@@ -108,6 +112,6 @@ Lead recommendations for predictable interaction:
 - [Earlier decisions](decisions-2026-10-23.md), [interaction research](interaction-edge-cases.md) and [world feasibility](world-feasibility.md) preserve how the design evolved. Their conflicting recommendations are superseded by this record.
 - Two GPT-6.1 Sol / High researchers challenged the new fallback/disclosure and touch policies. The lead accepted continuous fallback movement, rejected warnings for intentional direction reduction, retained explicit equipment coverage feedback and clarified gesture ownership/cancellation.
 
-No remaining visual-direction blocker was identified. Remaining questions are interaction tuning and validation: directional boundary stability, fallback readability, toast frequency, incomplete equipment sequencing, touch threshold/edge behavior, prompt disclosure sizing, and mobile world space. No new paid generations or application implementation are required to settle the mockup direction.
+No remaining visual-direction blocker was identified. Interaction tuning means checking concrete defaults in the prototype: finger travel before movement starts, joystick travel/speed, immediate stopping, camera-follow comfort, readable toast duration and the space needed for expanded prompts. These are not additional product features or unresolved decisions the user must make before mockups. Fallback correctness, coverage notifications and equipment synchronization are specified in the resolver and must be verified when implemented. No new paid generations or application implementation are required to settle the mockup direction.
 
 Next: full desktop/mobile image mockups using exact demo assets and the selected Bronze pair. After image review, an isolated visual proof can test navigation, continuous movement/camera, the dynamic joystick, fallback cases, equipment changes and code-configured reflection. This commit records research/design only; it does not implement those behaviors.

@@ -14,6 +14,8 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 
 **Current accepted direction: [Obsidian / Porcelain Bronze](design/2026-10-22-redesign/round-4-discussion/current-design.md).** Source-verified creator workflow; exact unlit sprites; Preview/Top-down/Side-scroller; continuous movement with animation/direction fallbacks; contextual toasts; one-line prompt expansion; and a dynamic mobile joystick. This record supersedes incompatible earlier proposals. Full-screen mockups and a playable proof are not implemented.
 
+[Dynamic animation resolver](design/2026-10-22-redesign/round-4-discussion/animation-resolver.md): velocity-based state, nearest-direction mathematics, intended-versus-available coverage, fallback/notification rules, equipment synchronization and acceptance scenarios.
+
 **Decision history and palette evidence:** [earlier direction review](design/2026-10-22-redesign/round-4-discussion/README.md), [decision log and corrections](design/2026-10-22-redesign/round-4-discussion/decisions-2026-10-23.md), [Bronze/Frost/Sage studies with exact demo sprites](design/2026-10-22-redesign/round-4-discussion/palette-studies/README.md). Bronze is selected; themes change background/UI only and optional reflection is code-only.
 
 **Current imagery: [round three — immersive HD simulation worlds](design/2026-10-22-redesign/round-3/README.md).** Image-only design: 11 selected screenshots across three world directions, a shared customization/gameplay shell, desktop and phone selection/creation, research and continuous-gameplay requirements. Supersedes round two's visual recommendation; no production implementation. The direction review above corrects these images' outdated workflow labels and controls.

@@ -2,6 +2,8 @@
 
 **Current accepted direction: [current-design.md](current-design.md).** Bronze is selected; movement continues through animation/direction fallbacks; incompatible equipment temporarily hides; prompts expand from one line; mobile uses a dynamic joystick. The discussion below is retained history, not the controlling interaction contract.
 
+[Dynamic animation resolver](animation-resolver.md) specifies the mathematical direction selection, small motion state machine, coverage diagnostics and finite fallback behavior. It also explains the limited prototype values meant by interaction tuning.
+
 2026-10-23. **Proposed direction for discussion; not an approved implementation specification.** No new image mockups, application changes or playable prototype in this round. The user requested agreement in text before more images, followed later by a small isolated rendering proof.
 
 **Subsequent update:** The user accepted the core direction and clarified background/UI-only themes, unlit exact source sprites and code-only optional reflection. The [decision record](decisions-2026-10-23.md) is now the controlling state. [Palette studies](palette-studies/README.md) are authorized and completed; full-screen mockups and the playable proof remain deferred. The original discussion below is preserved as history, including proposals superseded by those clarifications.
