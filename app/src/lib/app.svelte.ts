@@ -2,6 +2,7 @@
 import { api, ApiError } from './pixellab/client.ts';
 import type { Balance } from './pixellab/routes.ts';
 import { queue } from './pixellab/queue.ts';
+import type { ActivityContext } from './pixellab/activity.ts';
 
 const LS_KEY = 'pixellabApiKey'; // shared across apps on this origin
 const lsGet = () => {
@@ -22,7 +23,7 @@ queue.setKey(stored);
 // The leader tab can get (or lose) its key from a follower tab where the user typed it or pressed Forget key (queue.ts).
 queue.subscribe(() => { if (queue.key !== app.key) Object.assign(app, { key: queue.key, keyRejected: false, balance: null, balanceError: '' }); });
 
-export function setKey(key: string, remember: boolean) {
+export function setKey(key: string, remember: boolean, activity?: ActivityContext) {
   app.key = key.trim();
   app.keyRejected = false;
   app.balance = null; // never show another key's balance
@@ -33,7 +34,7 @@ export function setKey(key: string, remember: boolean) {
     else clearSavedKey();
   } catch {}
   queue.setKey(app.key);
-  void refreshBalance();
+  void refreshBalance(activity);
 }
 
 export function forgetKey() {
@@ -44,10 +45,10 @@ export function forgetKey() {
   queue.setKey('');
 }
 
-export async function refreshBalance() {
+export async function refreshBalance(activity?: ActivityContext | Event) {
   if (!app.key) return;
   try {
-    app.balance = await api<Balance>(app.key, 'GET', '/balance');
+    app.balance = await api<Balance>(app.key, 'GET', '/balance', undefined, undefined, activity instanceof Event ? { label: 'Refresh balance', background: false } : activity);
     app.balanceError = '';
     app.balanceAt = Date.now();
   } catch (e) {

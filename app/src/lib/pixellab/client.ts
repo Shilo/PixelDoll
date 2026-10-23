@@ -1,4 +1,5 @@
 // fetch wrapper for PixelLab REST v2. The key only ever goes into the Authorization header.
+import { beginActivityCall, finishActivityCall, type ActivityContext } from './activity.ts';
 
 export const API_BASE = 'https://api.pixellab.ai/v2';
 const TIMEOUT_MS = 120_000;
@@ -48,8 +49,9 @@ export function errorText(body: unknown): string {
   return (typeof d === 'string' ? d : JSON.stringify(d) ?? '').slice(0, 400);
 }
 
-export async function api<T>(key: string, method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+export async function api<T>(key: string, method: string, path: string, body?: unknown, signal?: AbortSignal, context?: ActivityContext): Promise<T> {
   if (!key) throw new ApiError(401, 'auth', 'no API key set');
+  const activityId = beginActivityCall(method, API_BASE + path, body, context);
   let r: Response;
   try {
     r = await fetch(API_BASE + path, {
@@ -59,13 +61,17 @@ export async function api<T>(key: string, method: string, path: string, body?: u
       signal: signal ?? AbortSignal.timeout(TIMEOUT_MS), // a hung request never holds a queue slot forever
     });
   } catch (e) {
+    finishActivityCall(activityId, null, false);
     // B15: `network` = no connection (offline banner, queue pauses); a timeout or abort is not one
     const name = (e as Error)?.name;
     throw new ApiError(0, 'retry', `network error: ${(e as Error).message}`, { network: name !== 'TimeoutError' && name !== 'AbortError' });
   }
-  const text = await r.text();
+  let text: string;
+  try { text = await r.text(); }
+  catch (e) { finishActivityCall(activityId, r.status, false); throw e; }
   let json: unknown;
   try { json = text ? JSON.parse(text) : null; } catch { json = text.slice(0, 500); }
+  finishActivityCall(activityId, r.status, r.ok, json);
   if (!r.ok) throw new ApiError(r.status, classify(r.status, json), `${method} ${path} -> ${r.status}: ${errorText(json)}`, json);
   return json as T;
 }

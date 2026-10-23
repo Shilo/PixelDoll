@@ -1,5 +1,7 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { createPlan } from './apiPlans.ts'
   import { formDrafts } from './formDrafts.ts'
   import Sprite from './Sprite.svelte'
   import { composeCell } from '../lib/compose/compose.ts'
@@ -55,6 +57,7 @@
 <Sheet title="New character" cancel={running ? 'Hide' : creating.projectId ? 'Close' : 'Cancel'} onclose={() => (ui.sheet = null)} wide>
   {#if creating.projectId}
     <div class="create-review">
+      <ApiPeek scope="character-create-result" label="Completed character generation" plan={creating.spec ? createPlan(creating.spec) : []} activityScope={creating.spec?.activityScope} />
       <h3 style="font-size:var(--fs-title)">{creating.spec?.name} is ready</h3>
       {#if result}
         {@const a = result.manifest.rig.animations.find((x) => x.id === 'walk') ?? result.manifest.rig.animations[0]}
@@ -70,7 +73,7 @@
     </div>
   {:else if running || creating.error}
     <div class="form">
-      <p style="font-weight:600">{creating.spec?.name}</p>
+      <div class="api-action"><p style="font-weight:600">{creating.spec?.name}</p><ApiPeek scope="character-create-progress" label="Current character generation" plan={creating.spec ? createPlan(creating.spec) : []} activityScope={creating.spec?.activityScope} /></div>
       <ol class="steps-list">
         {#each STEPS as s, i (s.id)}
           <li class:done={i < stepIx} class:now={i === stepIx}>
@@ -137,13 +140,13 @@
       <button class="btn primary lg" onclick={open}>Start dressing up</button>
     {:else if creating.error}
       <button class="btn plain" onclick={cancelCreate}>Start over</button>
-      <button class="btn primary" onclick={() => creating.spec && withKey(() => void startCreate({ ...$state.snapshot(creating.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }))}>Try again</button><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
+      <span class="api-action"><ApiPeek scope="character-create-retry" label="Create character again" plan={creating.spec ? createPlan(creating.spec, true) : []} /><button class="btn primary" onclick={() => creating.spec && withKey(() => void startCreate({ ...$state.snapshot(creating.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }))}>Try again</button></span><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
     {:else if running}
       <span class="foot-note">Spending {lo}–{hi} gens</span>
       <button class="btn" onclick={() => (ui.sheet = null)}>Keep working</button>
     {:else}
       <span class="foot-note">About {est.minutes} min · {lo}–{hi} gens (failed checks re-roll)</span>
-      <button class="btn primary lg" onclick={go}>Create <span class="cost">{lo}–{hi} gens</span></button>
+      <span class="api-action"><ApiPeek scope="character-create" label="Create character" plan={createPlan({ description: full, name, seed, size, dirs })} /><button class="btn primary lg" onclick={go}>Create <span class="cost">{lo}–{hi} gens</span></button></span>
     {/if}
   {/snippet}
 </Sheet>

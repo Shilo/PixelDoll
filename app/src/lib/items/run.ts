@@ -379,7 +379,7 @@ const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeA
  * reload re-attaches to the ledger. `moveSeed` (the move's seed) joins the seed, so a move's "Try again" re-rolls the poses
  * instead of re-reading the cached ones (R6 P2-7). Returns the clip QA.
  */
-export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number): Promise<QaResult> {
+export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number, activityScope?: string): Promise<QaResult> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const dirs = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
@@ -394,7 +394,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     for (let attempt = 0; attempt < 2; attempt++) {
       const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`);
       const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad, view: rig.view });
-      const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
+      const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope });
       const r = terminal(rec) ? rec : await settled(rec.id);
       onCall();
       if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
@@ -409,7 +409,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     }
     if (!last.length) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned the wrong number of frames twice. Try again.`); // R6 P2-13: never save a direction with empty cells
     if (lastFails && gridable(item)) { // B14: still failing after the re-roll -> one inpaint-v3 grid, kept only if it is better
-      const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells);
+      const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells, activityScope);
       onCall();
       if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys, rig)) < lastFails) { last = g.cells; lastProv = g.prov; }
     }
@@ -451,11 +451,11 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
   await saveItem(ctx.rec.id, out, built.images, SLOTS);
 }
 /** B14: one clip-direction of an accepted item as an inpaint-v3 grid (its dressed keyframes as the reference cells). */
-async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?: string[]): Promise<{ cells: CellOut[]; prov: Provenance }> {
+async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?: string[], activityScope?: string): Promise<{ cells: CellOut[]; prov: Provenance }> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot);
   const cells = selectedCells ?? Array.from({ length: clipKeypoints(rig, anim, dir)?.length ?? rig.animations.find((a) => a.id === anim)!.cells }, (_, i) => `${anim}/${dir}/${i}`), n = cells.length;
   const refs = await Promise.all((Object.entries(item.dressed ?? {}) as [DirectionName, string][]).map(async ([d, h]) => ({ dir: d, im: await img(h.slice(7)) })));
-  const rec = await queue.enqueue(await gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key! }, cells, refs, seed), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
+  const rec = await queue.enqueue(await gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key! }, cells, refs, seed), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope });
   const r = terminal(rec) ? rec : await settled(rec.id);
   if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
   const cut = cutGrid(await img(outputsOf(r)[0].sha), n, rig.cell.w, rig.cell.h);

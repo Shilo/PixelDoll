@@ -29,7 +29,7 @@ import { saveSplit } from '../lib/dress/project.ts';
 
 /** `size`: base 48 (default) or 56 px in the 64 cell (D4/O14). `dirs`: 4 = S/E/N + W mirrored (default), 8 = S/SE/E/NE/N +
  * SW/W/NW mirrored (architecture §3). Specs saved before B15 have no `dirs` (= 4). */
-export interface CreateSpec { description: string; name: string; seed: number; size: number; dirs?: 4 | 8 }
+export interface CreateSpec { description: string; name: string; seed: number; size: number; dirs?: 4 | 8; activityScope?: string }
 export type CreateStep = 'draw' | 'rest' | 'animate' | 'save';
 export const STEPS: { id: CreateStep; label: string }[] = [
   { id: 'draw', label: 'Drawing your character' },
@@ -56,8 +56,8 @@ export function estimate(dirs: 4 | 8 = 4) {
 }
 
 // ---------- queue helpers ----------
-export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = false): Promise<JobRec> {
-  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe });
+export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = false, activityScope?: string): Promise<JobRec> {
+  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, activityScope });
   const r = live(rec) ? await queue.settled(rec.id) : rec;
   if (r.state !== 'done') throw new Error(`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Setup stopped without resending. Review this request in Jobs before starting again.' : ''}`);
   return r;
@@ -74,9 +74,9 @@ async function imagesOf(r: JobRec): Promise<{ label: string; img: Img }[]> {
 }
 const kp4 = (label: string, x: number, y: number): Keypoint => ({ label, x: +x.toFixed(4), y: +y.toFixed(4) });
 /** estimate-skeleton (deterministic, 0.1 gen, cached by request) -> API keypoints in LABELS order; undefined on failure. */
-export async function joints(im: Img, resumeSafe = false): Promise<Keypoint[] | undefined> {
+export async function joints(im: Img, resumeSafe = false, activityScope?: string): Promise<Keypoint[] | undefined> {
   try {
-    const r = await run(routes.estimateSkeleton(png(await b64(im))), 'Finding joints', 'm2-skel', true, resumeSafe);
+    const r = await run(routes.estimateSkeleton(png(await b64(im))), 'Finding joints', 'm2-skel', true, resumeSafe, activityScope);
     const ks = (r.response as { keypoints?: Keypoint[] } | undefined)?.keypoints ?? [];
     const out = LABELS.map((l) => ks.find((k) => k.label === l)).filter((k): k is Keypoint => !!k).map((k) => kp4(k.label, k.x, k.y));
     return hasAll(out) ? out : undefined;
@@ -84,20 +84,20 @@ export async function joints(im: Img, resumeSafe = false): Promise<Keypoint[] | 
 }
 
 // ---------- one clip-direction: raw skeleton-v3 on the rest view + cleanup + gate ----------
-interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void; view?: Manifest['rig']['view'] }
+interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void; view?: Manifest['rig']['view']; activityScope?: string }
 interface ClipOut { frames: Img[]; measured: (Keypoint[] | undefined)[]; qa: ClipQa; recs: JobRec[] }
 async function renderClip(j: ClipJob): Promise<ClipOut> {
   const restB64 = await b64(j.rest), recs: JobRec[] = [];
   let best: ClipOut | null = null;
   for (let attempt = 0; attempt < 2 && (!best || best.qa.fails.length); attempt++) { // fail -> one re-roll (new seed), keep the better
     const r = await run(rawClip({ first: restB64, rest: j.restKps, keypoints: j.keypoints, description: j.looks, action: actionOf(j.anim), dir: j.dir, seed: j.seed + attempt * 7919, view: j.view }),
-      `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig');
+      `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig', false, false, j.activityScope);
     recs.push(r);
     j.tick();
     const outs = await imagesOf(r);
     if (outs.length !== j.keypoints.length) continue;
     const clean = outs.map((o) => largestComponent(normalize(o.img, CELL, CELL, 128, CELL).img));
-    const measured = await Promise.all(clean.map(async (c) => { const k = await joints(c.img); j.tick(); return k; }));
+    const measured = await Promise.all(clean.map(async (c) => { const k = await joints(c.img, false, j.activityScope); j.tick(); return k; }));
     const frames = clean.map((c) => c.img);
     const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: clean.reduce((s, c) => s + c.stray, 0) });
     if (!best || qa.fails.length < best.qa.fails.length) best = { frames, measured, qa, recs };
@@ -107,13 +107,13 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 }
 
 /** Managed motion source on the rest character -> frames on the 64 cell -> estimated keypoint sequence. */
-async function motion(req: Req, dir: Direction, label: string, tick: () => void): Promise<Keypoint[][]> {
-  const r = await run(req, label, 'studio-rig');
+async function motion(req: Req, dir: Direction, label: string, tick: () => void, activityScope?: string): Promise<Keypoint[][]> {
+  const r = await run(req, label, 'studio-rig', false, false, activityScope);
   tick();
   const got = (r.response as SubmitResponse | undefined)?.directions;
   if (got && !got.includes(dir)) throw new Error(`${label}: PixelLab dropped the direction (busy). Try again.`); // S4 truncation
   const frames = (await imagesOf(r)).map((o) => normalize(o.img, CELL, CELL, 128, CELL).img); // 96/84 -> 64, centred
-  const kps = await Promise.all(frames.map(async (f) => { const k = await joints(f); tick(); return k; }));
+  const kps = await Promise.all(frames.map(async (f) => { const k = await joints(f, false, activityScope); tick(); return k; }));
   if (kps.some((k) => !k)) throw new Error(`${label}: joints not found on every frame`);
   if (kps.length < 3 || kps.length > 15) throw new Error(`${label}: ${kps.length} frames (skeleton-v3 takes 3-15)`);
   return kps as Keypoint[][];
@@ -135,7 +135,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const looks = looksOf(spec.description), view = 'low top-down' as const, DIRS = genDirsOf(spec.dirs);
   // 1. base character, text only (8 rotations)
   onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
-  const base = await run(routes.createCharacterV3({ description: basePrompt(spec.description), image_size: { width: spec.size, height: spec.size }, view, template_id: 'mannequin', seed: spec.seed, no_background: true }), `${spec.name} · drawing`, 'studio-base');
+  const base = await run(routes.createCharacterV3({ description: basePrompt(spec.description), image_size: { width: spec.size, height: spec.size }, view, template_id: 'mannequin', seed: spec.seed, no_background: true }), `${spec.name} · drawing`, 'studio-base', false, false, spec.activityScope);
 
   // 2. rest views: rotations on the 64 cell with the floor pad, mirrored directions = flips; re-import for the rest keypoints
   onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
@@ -153,15 +153,15 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   }
   for (const [m, src] of MIRRORS) if (DIRS.includes(src)) rest[m] = flipH(rest[src]);
   const others = Object.fromEntries(await Promise.all((Object.keys(rest) as Direction[]).filter((d) => d !== 'south').map(async (d) => [d, png(await b64(rest[d]))])));
-  const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(rest.south)), direction_images: others, n_directions: spec.dirs === 8 ? 8 : 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base');
+  const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(rest.south)), direction_images: others, n_directions: spec.dirs === 8 ? 8 : 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base', false, false, spec.activityScope);
   const charId = (imp.response as { character_id?: string })?.character_id;
   if (!charId) throw new Error('PixelLab did not return a character id');
-  const ch = await run(routes.getCharacter(charId), `${spec.name} · skeleton`, 'studio-base', true);
+  const ch = await run(routes.getCharacter(charId), `${spec.name} · skeleton`, 'studio-base', true, false, spec.activityScope);
   const refs = (ch.response as { skeletons?: { '2d_references'?: Record<string, { keypoints?: Record<string, { x: number; y: number }> }> } })?.skeletons?.['2d_references'];
   const restKps = {} as Record<DirectionName, Keypoint[]>;
   for (const d of DIRS) {
     const k = refs?.[d]?.keypoints, fromChar = k && LABELS.every((l) => k[l]) ? LABELS.map((l) => kp4(l, k[l].x, k[l].y)) : undefined;
-    const kps = fromChar ?? (await joints(rest[d])); // free from the managed character, else estimate (0.1)
+    const kps = fromChar ?? (await joints(rest[d], false, spec.activityScope)); // free from the managed character, else estimate (0.1)
     if (!kps) throw new Error(`no joints found on the ${d} view`);
     restKps[d] = kps;
   }
@@ -179,10 +179,10 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     if (authored) keypoints = authoredPoses(a.name, fromApi(restKps[d], { w: CELL, h: CELL }), d).map((p) => toApi(p, { w: CELL, h: CELL }));
     else {
       const req = routes.animateCharacter(baseAnimation('skeleton-v3', charId, a, [d], spec.seed));
-      keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, tick);
+      keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, tick, spec.activityScope);
       motions.set(`${a.name}/${d}`, (await queue.enqueue(req)) as JobRec); // cache hit: the record for provenance
     }
-    return { a, d, keypoints, out: await renderClip({ anim: a.name, dir: d, rest: rest[d], restKps: restKps[d], keypoints, looks, seed: spec.seed + 101, name: spec.name, tick }) };
+    return { a, d, keypoints, out: await renderClip({ anim: a.name, dir: d, rest: rest[d], restKps: restKps[d], keypoints, looks, seed: spec.seed + 101, name: spec.name, tick, activityScope: spec.activityScope }) };
   }));
 
   // 4. freeze
@@ -241,7 +241,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; seed: number; replace?: boolean }
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; seed: number; replace?: boolean; activityScope?: string }
 export const MOVE_STEPS = [
   { id: 'animate', label: 'Animating the body' },
   { id: 'items', label: 'Posing your items' },
@@ -282,7 +282,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
   for (const id of directItems) {
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find((i) => i.id === id);
-    if (it && !it.design && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] }), spec.seed);
+    if (it && !it.design && (spec.replace || !it.layers.some((l) => l.cells?.[spec.id]))) await poseItemClip(ctx, it, spec.id, () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] }), spec.seed, spec.activityScope);
   }
   // Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.
   const sharedIds = [...new Set([...(spec.sharedItems ?? []), ...spec.items.filter((id) => rec.manifest.items.find((item) => item.id === id)?.design)])];
@@ -310,10 +310,10 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
     if (spec.action && ACTIONS[spec.action]) keypoints = authoredPoses(spec.action, fromApi(restKps, rig.cell), d, rig.cell.w).map((p) => toApi(p, rig.cell));
     else {
       const req = routes.animateCharacter(spec.action === 'walk' ? baseAnimation('skeleton-v3', rec.character!.id, BASE_ANIMS.find((a) => a.name === 'walk')!, [d], spec.seed) : { character_id: rec.character!.id, mode: 'pixminimax', action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`, frame_count: n, keep_first_frame: false, animation_name: spec.id, directions: [d], seed: spec.seed });
-      keypoints = await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, tick);
+      keypoints = await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, tick, spec.activityScope);
       extra[k] = [(await queue.enqueue(req)) as JobRec];
     }
-    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, looks: rec.character!.looks, seed: spec.seed + 101, name, tick, view: rig.view }) };
+    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, looks: rec.character!.looks, seed: spec.seed + 101, name, tick, view: rig.view, activityScope: spec.activityScope }) };
   }));
 
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });

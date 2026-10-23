@@ -1,5 +1,7 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { balancePlan, cancelPlan, queuedPlan } from './apiPlans.ts'
   import { queue, type JobRec } from '../lib/pixellab/queue.ts'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { fmtNum } from './model.ts'
@@ -11,6 +13,7 @@
   import { ChevronRight, CircleAlert, CircleCheck, Coins, RefreshCw } from './icons.ts'
 
   let now = $state(Date.now())
+  const balanceScope = crypto.randomUUID()
   $effect(() => { const t = setInterval(() => (now = Date.now()), 1000); return () => clearInterval(t) })
   const refreshEquipment = () => { void refreshFits().catch(() => toast('Could not load saved equipment fits.')) }
   $effect(() => { refreshEquipment() })
@@ -37,14 +40,14 @@
       <span class="balance" style="display:flex;gap:6px;align-items:center"><Coins size={16} />
         {#if app.balance}<b class="num">{fmtNum(app.balance.subscription.generations)}</b> of {fmtNum(app.balance.subscription.total)} gens left{app.balance.credits.usd ? ` · $${app.balance.credits.usd.toFixed(2)}` : ''}
         {:else if app.key}Balance unavailable{:else}Not connected{/if}</span>
-      {#if app.key}<button class="btn icon plain" aria-label="Refresh balance" onclick={refreshBalance}><RefreshCw size={14} /></button>{:else}<button class="btn sm" onclick={() => (ui.sheet = 'connect')}>Connect</button>{/if}
+      {#if app.key}<span class="api-action"><ApiPeek scope="balance-refresh" label="Refresh balance" plan={balancePlan()} activityScope={balanceScope} /><button class="btn icon plain" aria-label="Refresh balance" onclick={() => refreshBalance({ activityScope: balanceScope, label: 'Refresh balance', background: false })}><RefreshCw size={14} /></button></span>{:else}<button class="btn sm" onclick={() => (ui.sheet = 'connect')}>Connect</button>{/if}
     </div>
     {#if $queue.role === 'follower'}
       <p class="notice small"><CircleAlert size={14} />Running in another tab. PixelDoll is open twice: the other tab sends and checks the jobs (also the ones you start here). Keep it open, or close it to run them here.</p>
     {/if}
     {#if $queue.paused}
       <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn't accept the key. Jobs wait until you connect again." : $queue.paused === 'offline' ? "You're offline. Jobs wait and continue by themselves when the connection is back." : 'Out of generations. Jobs wait until you top up.'}
-        {#if $queue.paused !== 'offline'}<button class="btn sm" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button>{/if}</p>
+        {#if $queue.paused !== 'offline'}<span class="api-action">{#if $queue.paused !== 'auth'}<ApiPeek scope="queue-resume" label="Resume waiting requests" plan={queuedPlan(jobs)} />{/if}<button class="btn sm" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button></span>{/if}</p>
     {/if}
     {#if fits.length}
       <section class="act-group"><span class="sec-title">Equipment fits</span><ul>{#each fits as fit (fit.id)}
@@ -55,8 +58,8 @@
     {#if running.length}
       <section class="act-group"><span class="sec-title">Generating</span>
         <ul>{#each running as r (r.id)}
-          <li><span class="ring" style:--p={pct(r)}></span><span class="act-main"><b>{nice(r)}</b><span class="muted small">{pct(r)}%{r.jobs[0]?.queuePosition ? ` · #${r.jobs[0].queuePosition} in line` : ''}</span></span>
-            <span class="act-meta num">{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><button class="btn link small" onclick={() => queue.cancel(r.id)}>Stop</button></span></li>
+          <li><span class="ring" style:--p={pct(r)}></span><span class="act-main"><span class="api-action"><b>{nice(r)}</b><ApiPeek scope={`job-running-${r.id}`} label={nice(r)} plan={[]} queueIds={[r.id]} /></span><span class="muted small">{pct(r)}%{r.jobs[0]?.queuePosition ? ` · #${r.jobs[0].queuePosition} in line` : ''}</span></span>
+            <span class="act-meta num">{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><span class="api-action"><ApiPeek scope={`job-stop-${r.id}`} label={`Stop ${nice(r)}`} plan={cancelPlan(r)} /><button class="btn link small" onclick={() => queue.cancel(r.id)}>Stop</button></span></span></li>
         {/each}</ul>
       </section>
     {/if}
@@ -73,7 +76,7 @@
         <ul>{#each done as r (r.id)}
           <li>{#if r.state === 'done'}<CircleCheck size={16} style="color:var(--ok)" />{:else}<CircleAlert size={16} style="color:var(--bad)" />{/if}
             <span class="act-main"><b>{nice(r)}</b><span class="muted small">{r.state === 'done' ? (r.finishedAt && r.submittedAt ? mins(r.finishedAt - r.submittedAt) : 'done') : r.state === 'lost' ? 'unknown: may have run, check pixellab.ai' : r.state}</span></span>
-            <span class="act-meta num muted">{cost(r)}</span></li>
+            <span class="act-meta num muted">{cost(r)}<ApiPeek scope={`job-result-${r.id}`} label={nice(r)} plan={[]} queueIds={[r.id]} /></span></li>
         {/each}</ul>
       </section>
     {/if}

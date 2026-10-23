@@ -612,9 +612,15 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number; short: strin
 }
 
 // ---------- create character ----------
+// Persist the inspector identity with the resumable spec. A new seed starts a distinct run.
+function withActivityScope<T extends { seed: number; activityScope?: string }>(spec: T, kind: string): T {
+  const prefix = `${kind}:${spec.seed}:`;
+  return { ...spec, activityScope: spec.activityScope?.startsWith(prefix) ? spec.activityScope : `${prefix}${crypto.randomUUID()}` };
+}
 export const creating = $state({ spec: null as CreateSpec | null, progress: null as Progress | null, error: '', projectId: '', warnings: [] as string[] });
 const CREATE_KEY = 'studio-create';
 export async function startCreate(spec: CreateSpec) {
+  spec = withActivityScope(spec, 'create');
   creating.spec = spec;
   creating.error = '';
   creating.projectId = '';
@@ -652,6 +658,7 @@ const MOVE_KEY = 'studio-move';
 let moveRunning = false;
 export async function startMove(projectId: string, spec: MoveSpec) {
   if (moveRunning) return;
+  spec = withActivityScope(spec, 'move');
   moveRunning = true;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId });
@@ -687,6 +694,7 @@ const SETUP_KEY = 'studio-setup';
 let setupRunning = false, setupResumed = false;
 export async function startSetup(spec: SetupSpec) {
   if (setupRunning) return;
+  spec = withActivityScope(spec, 'setup');
   setupRunning = true;
   Object.assign(settingUp, { spec, progress: null, error: '', done: false, warnings: [] });
   try {

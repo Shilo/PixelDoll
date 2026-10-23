@@ -91,6 +91,8 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .btn:disabled { opacity: .45; cursor: default; }
 .btn .cost { font-weight: 400; opacity: .9; }
 .btn .cost::before { content: "· "; margin-right: 2px; }
+.api-action { display:inline-flex; align-items:center; gap:4px; min-width:0; max-width:100%; }
+.api-action > .btn:not(.icon) { min-width:0; flex-shrink:1; }
 
 /* ---------- segmented, chips, badges ---------- */
 .seg { display: inline-flex; gap: 2px; padding: 2px; border-radius: calc(var(--r-ctl) + 2px); background: var(--bg-hover); }
@@ -333,6 +335,10 @@ dialog.sheet.side::backdrop { background: color-mix(in srgb, var(--scrim) 50%, t
 .foot-note { display: flex; align-items: center; gap: 6px; color: var(--text-2); font-size: var(--fs-sm); }
 dialog.sheet.bottom .sheet-foot { flex-direction: column-reverse; align-items: stretch; }
 dialog.sheet.bottom .sheet-foot .btn.primary { width: 100%; }
+dialog.sheet.bottom .sheet-foot .api-action > .btn.primary { width:auto; flex:1; }
+@media (max-width:599px), (max-height:499px) {
+  .api-action > .btn:not(.icon) { white-space:normal; height:auto; min-height:var(--ctl-h); line-height:1.25; padding-top:8px; padding-bottom:8px; }
+}
 dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
 
 .engines { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }

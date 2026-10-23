@@ -1,5 +1,6 @@
 <script lang="ts">
   import { app } from '../lib/app.svelte.ts'
+  import ApiPeek from './ApiPeek.svelte'
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
   import { ui, doc, store, creating, settingUp, gens, openProject, undo, redo, toggleTheme, refreshProjects, isDemo } from './state.svelte.ts'
@@ -39,6 +40,7 @@
   {/if}
 
   <div class="tb-trail">
+    <ApiPeek scope="all" all />
     {#if phone}
       <button class="btn icon plain" aria-label={undoLabel ? `Undo ${undoLabel}` : 'Undo'} disabled={!undoLabel} onclick={undo}><Undo2 size={20} /></button>
       <button class="btn icon plain" aria-label={redoLabel ? `Redo ${redoLabel}` : 'Redo'} disabled={!redoLabel} onclick={redo}><Redo2 size={20} /></button>

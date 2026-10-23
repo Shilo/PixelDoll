@@ -8,7 +8,7 @@ import type { Provenance } from '../lib/store/manifest.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 
-export interface SetupSpec { projectId: string; baseHash: string; restAnim: string; looks: string; seed: number }
+export interface SetupSpec { projectId: string; baseHash: string; restAnim: string; looks: string; seed: number; activityScope?: string }
 export const SETUP_STEPS = [
   { id: 'joints', label: 'Finding joints on every frame' },
   { id: 'register', label: 'Connecting the standing views' },
@@ -24,17 +24,17 @@ export async function setupCharacter(spec: SetupSpec, progress: (p: Progress) =>
   progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
   // Sequential estimates keep the UI responsive and fail before registering a character if a frame cannot be rigged.
   for (const [hash, im] of plan.frames) {
-    const k = await joints(im, true);
+    const k = await joints(im, true, spec.activityScope);
     if (!k) throw new Error('PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.');
     measured.set(hash, k);
     const request = routes.estimateSkeleton(png(await b64(im)));
-    provenance.push(provOf(await run(request, 'Finding joints', 'm2-skel', true, true)));
+    provenance.push(provOf(await run(request, 'Finding joints', 'm2-skel', true, true, spec.activityScope)));
     progress({ step: 'joints', done: ++done, total: plan.frames.size, recIds: [] });
   }
   progress({ step: 'register', done: 0, total: 1, recIds: [] });
   const directions = project.manifest.rig.directions;
   const direction_images = Object.fromEntries(await Promise.all(directions.filter((d) => d.id !== 'south').map(async (d) => [d.id, png(await b64(plan.rest[d.id]!))])));
-  const managed = await run(routes.createCharacterV3({ description: spec.looks.trim(), reference_image: png(await b64(plan.rest.south!)), direction_images, n_directions: directions.length === 8 ? 8 : 4, view: project.manifest.rig.view ?? 'low top-down', template_id: 'mannequin', no_background: true, seed: spec.seed }), `${rec.manifest.name} · rig setup`, 'studio-setup', false, true);
+  const managed = await run(routes.createCharacterV3({ description: spec.looks.trim(), reference_image: png(await b64(plan.rest.south!)), direction_images, n_directions: directions.length === 8 ? 8 : 4, view: project.manifest.rig.view ?? 'low top-down', template_id: 'mannequin', no_background: true, seed: spec.seed }), `${rec.manifest.name} · rig setup`, 'studio-setup', false, true, spec.activityScope);
   const id = (managed.response as { character_id?: string })?.character_id;
   if (!id) throw new Error('PixelLab did not return a managed character ID. Existing artwork is unchanged.');
   provenance.push(provOf(managed));

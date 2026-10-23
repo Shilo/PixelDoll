@@ -2,6 +2,8 @@
   // Add a move: an authored action (raw skeleton-v3 keypoints from the rest pose, S3) or a described one (pixminimax motion,
   // re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
   import Sheet from './Sheet.svelte'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { movePlan } from './apiPlans.ts'
   import { formDrafts } from './formDrafts.ts'
   import * as db from '../lib/store/db.ts'
   import type { StoredProject } from '../lib/store/project.ts'
@@ -46,20 +48,20 @@
     <button class="btn primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
   {:else if mine && moving.error}
     <button class="btn plain" onclick={dismissMove}>Start over</button>
-    <button class="btn primary" onclick={() => moving.spec && withKey(() => void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }))}>Try again</button><!-- new seed re-rolls body + item poses (R6 P2-7) -->
+    <span class="api-action"><ApiPeek scope="move-retry" label="Try move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, seed: undefined }) : []} /><button class="btn primary" onclick={() => moving.spec && withKey(() => void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }))}>Try again</button></span><!-- new seed re-rolls body + item poses (R6 P2-7) -->
   {:else if mine}
     <span class="foot-note">You can keep working.</span>
     <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
     <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
-    <button class="btn primary lg" disabled={!id || have.has(id) || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>Add {id ? nice(id) : 'move'} <span class="cost">{est ? Math.ceil(est.gens) : '–'} gens</span></button>
+    <span class="api-action"><ApiPeek scope="move-add" label="Add move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames: 8, items: chosen, sharedItems: sharedChosen })} /><button class="btn primary lg" disabled={!id || have.has(id) || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>Add {id ? nice(id) : 'move'} <span class="cost">{est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
   {/if}
 {/snippet}
 
 <Sheet title="Add a move" cancel={mine && !moving.done ? 'Hide' : 'Cancel'} onclose={() => (ui.sheet = null)} footer={isDemo() || (!ok && !mine) ? undefined : foot}>
   {#if mine}
     <div class="form">
-      <p style="font-weight:600">{nice(moving.spec!.id)}</p>
+      <div class="api-action"><p style="font-weight:600">{nice(moving.spec!.id)}</p><ApiPeek scope="move-progress" label="Current move generation" plan={moving.spec ? movePlan(rec, moving.spec) : []} activityScope={moving.spec?.activityScope} /></div>
       <ol class="steps-list">
         {#each MOVE_STEPS as s, i (s.id)}
           {@const done = moving.done || i < stepIx}

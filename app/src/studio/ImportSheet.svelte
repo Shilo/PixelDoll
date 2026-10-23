@@ -1,6 +1,9 @@
 <script lang="ts">
   import { onDestroy } from 'svelte'
   import Sheet from './Sheet.svelte'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import ApiPreview from './ApiPreview.svelte'
+  import { libraryPlan, characterZipPlan } from './apiPlans.ts'
   import Sprite from './Sprite.svelte'
   import { app } from '../lib/app.svelte.ts'
   import { composeCell } from '../lib/compose/compose.ts'
@@ -20,6 +23,11 @@
   let characters = $state.raw<LibraryCharacter[]>([]), total = $state(0), offset = $state(0), listed = $state(false)
   let alive = true
   const reads = new AbortController()
+  const peekScope = crypto.randomUUID()
+  const listScope = (page: number) => `${peekScope}:library:${page}`
+  function zipScope(value: string) {
+    try { return `${peekScope}:zip:${characterId(value)}` } catch { return `${peekScope}:zip:invalid` }
+  }
   onDestroy(() => { alive = false; reads.abort() })
   const preview = $derived.by(() => {
     const p = prepared?.project
@@ -33,7 +41,7 @@
   async function load(next: number) {
     loading = true; error = ''
     try {
-      const page = await listCharacters(app.key, next, reads.signal)
+      const page = await listCharacters(app.key, next, reads.signal, { activityScope: listScope(next) })
       if (!alive) return
       characters = page.characters; total = page.total; offset = next
     } catch (e) { if (alive) error = (e as Error).message }
@@ -61,7 +69,7 @@
   }
   async function fromPixelLab(value: string) {
     reset(); busy = true
-    try { const selected = characterId(value); await prepare(await downloadCharacter(selected, reads.signal), selected) }
+    try { const selected = characterId(value); await prepare(await downloadCharacter(selected, reads.signal, { activityScope: zipScope(selected) }), selected) }
     catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) busy = false }
   }
@@ -90,10 +98,10 @@
 </script>
 
 <Sheet title="Import character" onclose={close} cancelDisabled={saving}>
-  <div class="seg full" role="tablist" aria-label="Import source">
+  <div class="api-action"><ApiPeek scope="library-open" label="Browse PixelLab characters" plan={libraryPlan()} activityScope={listScope(0)} /><div class="seg full" style="flex:1" role="tablist" aria-label="Import source">
     <button role="tab" aria-selected={ui.importSource === 'device'} disabled={busy} onclick={() => { ui.importSource = 'device'; reset() }}>From this device</button>
     <button role="tab" aria-selected={ui.importSource === 'pixellab'} disabled={busy} onclick={() => { ui.importSource = 'pixellab'; reset() }}>From PixelLab</button>
-  </div>
+  </div></div>
   {#if states.length > 1}
     <label class="field"><span class="label">Character state</span><select class="input" value={stateId || prepared?.stateId || states[0].id} disabled={busy} onchange={(e) => changeState(e.currentTarget.value)}>{#each states as state (state.id)}<option value={state.id}>{state.name}</option>{/each}</select></label>
   {/if}
@@ -107,24 +115,24 @@
       {#if !app.key || app.keyRejected}
         <button class="btn" disabled={busy} onclick={() => withKey(() => { ui.importSource = 'pixellab'; ui.sheet = 'import' })}><KeyRound size={16} />Connect PixelLab to browse your characters</button>
       {:else}
-        <div class="library-head"><span class="label">Your PixelLab characters</span><button class="btn plain small" disabled={busy || loading} onclick={() => load(offset)}>Refresh</button></div>
+        <div class="library-head"><span class="label">Your PixelLab characters</span><span class="api-action"><ApiPeek scope="library-refresh" label="Refresh character library" plan={libraryPlan(offset)} activityScope={listScope(offset)} /><button class="btn plain small" disabled={busy || loading} onclick={() => load(offset)}>Refresh</button></span></div>
         {#if loading}<p class="muted" role="status">Loading characters…</p>
         {:else if !characters.length}<p class="faint">No characters found on this PixelLab account.</p>
         {:else}
           <div class="character-library" aria-label="PixelLab characters">
             {#each characters as ch (ch.id)}
-              <button class="library-character" disabled={busy} onclick={() => fromPixelLab(ch.id)}>
-                {#if ch.preview_url}<img src={ch.preview_url} alt="" loading="lazy" referrerpolicy="no-referrer" />{/if}
+              <div class="api-action library-entry"><ApiPeek scope={`library-character-${ch.id}`} label={`Preview ${ch.name || 'character'}`} plan={characterZipPlan(ch.id)} activityScope={zipScope(ch.id)} /><button class="library-character" disabled={busy} onclick={() => fromPixelLab(ch.id)}>
+                {#if ch.preview_url}{#key ch.preview_url}<ApiPreview src={ch.preview_url} activityScope={listScope(offset)} />{/key}{/if}
                 <span><b>{ch.name || 'Untitled character'}</b><span class="faint small">{ch.directions} directions · {ch.animation_count} animations</span></span>
-              </button>
+              </button></div>
             {/each}
           </div>
-          <div class="library-head"><button class="btn small" disabled={busy || loading || offset === 0} onclick={() => load(Math.max(0, offset - 20))}>Previous</button><span class="faint small">{offset + 1}–{Math.min(offset + characters.length, total)} of {total}</span><button class="btn small" disabled={busy || loading || offset + characters.length >= total} onclick={() => load(offset + 20)}>Next</button></div>
+          <div class="library-head"><span class="api-action"><ApiPeek scope="library-previous" label="Previous character page" plan={libraryPlan(Math.max(0, offset - 20))} activityScope={listScope(Math.max(0, offset - 20))} /><button class="btn small" disabled={busy || loading || offset === 0} onclick={() => load(Math.max(0, offset - 20))}>Previous</button></span><span class="faint small">{offset + 1}–{Math.min(offset + characters.length, total)} of {total}</span><span class="api-action"><ApiPeek scope="library-next" label="Next character page" plan={libraryPlan(offset + 20)} activityScope={listScope(offset + 20)} /><button class="btn small" disabled={busy || loading || offset + characters.length >= total} onclick={() => load(offset + 20)}>Next</button></span></div>
         {/if}
       {/if}
       <form class="form" onsubmit={(e) => { e.preventDefault(); void fromPixelLab(id) }}>
         <label class="field"><span class="label">Character ID or PixelLab link</span><input class="input" type="text" bind:value={id} placeholder="Paste a character ID or creator link" disabled={busy} /></label>
-        <button class="btn" type="submit" disabled={busy || !id.trim()}>Preview character</button>
+        <span class="api-action"><ApiPeek scope="library-preview" label="Preview character ZIP" plan={characterZipPlan(id)} activityScope={zipScope(id)} /><button class="btn" type="submit" disabled={busy || !id.trim()}>Preview character</button></span>
       </form>
       <p class="faint small">An ID or shared creator link works without connecting an account.</p>
     {/if}
@@ -148,10 +156,12 @@
 
 <style>
   .library-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .library-entry { display: flex; }
+  .library-entry > .library-character { flex: 1; }
   .character-library { display: grid; gap: 6px; max-height: 260px; overflow-y: auto; }
   .library-character { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-ctl); background: var(--bg-hover); color: var(--text); text-align: left; cursor: pointer; min-width: 0; }
   .library-character:hover { border-color: var(--accent); }
-  .library-character img { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
+  .library-character :global(img) { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
   .library-character > span { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
   .import-preview { display: grid; justify-items: center; gap: 8px; padding: 12px; border-radius: var(--r-ctl); background: var(--bg-hover); }
   input[type=file] { max-width: 100%; }

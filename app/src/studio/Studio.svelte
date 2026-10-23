@@ -1,6 +1,6 @@
 <script lang="ts">
   import './studio.css'
-  import { onMount } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import { resumeFits } from '../lib/equipment/index.ts'
@@ -79,7 +79,18 @@
 
   // balance after every settled job (like TopBar)
   const settled = $derived($queue.counts.done + $queue.counts.failed)
-  $effect(() => { void settled; if (app.key) void refreshBalance() })
+  let observedFinished = new Set<string>()
+  $effect(() => {
+    void settled
+    // One balance read may serve several jobs that finished together. Link it to all their peeks.
+    const fresh = untrack(() => {
+      const finished = $queue.jobs.filter((job) => job.state === 'done' || job.state === 'failed' || job.state === 'lost')
+      const added = finished.filter((job) => !observedFinished.has(job.id))
+      observedFinished = new Set(finished.map((job) => job.id))
+      return added
+    })
+    if (app.key) void refreshBalance({ background: true, label: 'Update account balance', relatedQueueIds: fresh.map((job) => job.id), relatedScopes: [...new Set(fresh.flatMap((job) => job.activityScope ? [job.activityScope] : []))] })
+  })
   // the page title shows running work
   const running = $derived(gens.filter((g) => g.phase === 'running').length + (creating.spec && !creating.projectId && !creating.error ? 1 : 0) + (settingUp.spec && !settingUp.done && !settingUp.error ? 1 : 0))
   $effect(() => { document.title = running ? `(${running}) PixelDoll` : 'PixelDoll' })

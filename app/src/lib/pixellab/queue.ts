@@ -13,6 +13,7 @@ import { jobIdsOf, jobImages, type Job, type Req, type SubmitResponse, type Usag
 import { sha256, stableStringify } from '../image/hash.ts';
 import { base64ToBytes, bytesToBase64, pngSize } from '../image/png.ts';
 import * as db from '../store/db.ts';
+import { activityRequest, beginActivityCall, finishActivityCall, restoreActivityRequest, type ActivityContext } from './activity.ts';
 
 export type RecState = 'queued' | 'submitting' | 'running' | 'done' | 'failed' | 'cancelled' | 'lost';
 export interface Result { label: string; sha: string; w?: number; h?: number }
@@ -36,6 +37,7 @@ export interface JobRec {
   id: string;
   label: string;
   tag?: string;
+  activityScope?: string;
   method: Req['method'];
   endpoint: string;
   params: unknown; // request body; images replaced by {$blob: sha256}; never the key
@@ -43,6 +45,7 @@ export interface JobRec {
   requestHash: string;
   state: RecState;
   attempts: number;
+  requestStarted?: boolean; // persisted immediately before transport; false means preparation never reached a request
   nextAt: number;
   createdAt: number;
   submittedAt?: number;
@@ -66,14 +69,14 @@ export interface QueueSnapshot {
 }
 
 export interface Deps {
-  api: <T>(key: string, method: string, path: string, body?: unknown) => Promise<T>;
+  api: <T>(key: string, method: string, path: string, body?: unknown, signal?: AbortSignal, context?: ActivityContext) => Promise<T>;
   put: (key: string, rec: JobRec) => Promise<void>;
   get: (key: string) => Promise<JobRec | undefined>;
   del: (key: string) => Promise<unknown>;
   all: () => Promise<JobRec[]>;
   putBlob: (bytes: Uint8Array) => Promise<string>;
   getBlob: (sha: string) => Promise<Blob | undefined>;
-  fetchBytes: (url: string) => Promise<Uint8Array>;
+  fetchBytes: (url: string, context?: ActivityContext) => Promise<Uint8Array>;
   now: () => number;
   locks: Pick<LockManager, 'request'> | null; // Web Locks (null = single tab)
   online: () => boolean; // navigator.onLine
@@ -136,6 +139,7 @@ export class Queue {
   private merged = 0;
   private probeAt = 0;
   private chan: BroadcastChannel | null = null;
+  private activityInspection = new Map<string, Promise<void>>();
   role: Role = 'solo';
   key = '';
   paused: QueueSnapshot['paused'] = null;
@@ -153,10 +157,17 @@ export class Queue {
       all: () => db.all<JobRec>('jobs'),
       putBlob: (b) => db.putBlob(b),
       getBlob: db.getBlob,
-      fetchBytes: async (url) => {
-        const r = await fetch(url); // storage CDN: no auth header, ever
-        if (!r.ok) throw new Error(`GET ${url} -> ${r.status}`);
-        return new Uint8Array(await r.arrayBuffer());
+      fetchBytes: async (url, context) => {
+        const id = beginActivityCall('GET', url, undefined, context, 'download');
+        let status: number | null = null;
+        try {
+          const r = await fetch(url); // storage CDN: no auth header, ever
+          status = r.status;
+          if (!r.ok) throw new Error(`GET ${url} -> ${r.status}`);
+          const bytes = new Uint8Array(await r.arrayBuffer());
+          finishActivityCall(id, status, true);
+          return bytes;
+        } catch (e) { finishActivityCall(id, status, false); throw e; }
       },
       now: Date.now,
       locks: globalThis.navigator?.locks ?? null,
@@ -249,6 +260,14 @@ export class Queue {
     this.recs = new Map((await this.deps.all()).map((r) => [r.id, r]));
     this.emit();
   }
+  /** Inspect mirrored/persisted submissions without making requests or eagerly decoding every saved input. */
+  async inspectActivity(ids: string[], activityScope?: string): Promise<void> {
+    const selected = new Set(ids);
+    for (const rec of this.recs.values()) {
+      if ((selected.has(rec.id) || activityScope && rec.activityScope === activityScope) && this.wasRequested(rec)) await this.restoreActivity(rec);
+    }
+  }
+  private wasRequested(r: JobRec) { return r.attempts > 0 && r.requestStarted !== false && !/nothing was sent/i.test(r.error ?? ''); }
   /** One record another tab saved: a follower mirrors it, the leader adopts it. */
   private async pull(id: string) {
     const r = await this.deps.get(id);
@@ -282,13 +301,43 @@ export class Queue {
     for (const r of await this.deps.all()) {
       // Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
       if (r.state === 'submitting') {
-        r.state = 'lost';
-        r.error = 'page closed during submit; the job may have run (check pixellab.ai). Not resubmitted.';
+        r.state = r.requestStarted === false ? 'failed' : 'lost';
+        r.error = r.requestStarted === false ? 'page closed before request preparation finished; nothing was sent.' : 'page closed during submit; the job may have run (check pixellab.ai). Not resubmitted.';
         await this.deps.put(r.id, r);
       }
       this.recs.set(r.id, r);
     }
+    // Reattach known remote jobs before polling, so reported usage belongs to their original paid submission.
+    if (this.deps.api === realApi) for (const r of [...this.recs.values()].filter((r) => this.wasRequested(r)).sort((a, b) => a.createdAt - b.createdAt).slice(-200)) await this.restoreActivity(r);
     this.emit();
+  }
+  private async restoreActivity(r: JobRec) {
+    const pending = this.activityInspection.get(r.id);
+    if (pending) await pending;
+    const task = this.restoreActivityRecord(r);
+    this.activityInspection.set(r.id, task);
+    try { await task; } finally { if (this.activityInspection.get(r.id) === task) this.activityInspection.delete(r.id); }
+  }
+  private async restoreActivityRecord(r: JobRec) {
+    const existing = activityRequest(r.id);
+    if (existing && !existing.restored) return;
+    let body = existing ? existing.body : r.params;
+    let bodyUnavailable = existing?.bodyUnavailable ?? false;
+    if (!existing) try {
+      body = await mapDeep(r.params, (o) => typeof o.$blob === 'string' ? (async () => {
+        const blob = await this.deps.getBlob(o.$blob as string);
+        if (!blob) throw new Error('stored input unavailable');
+        const { $blob: _, ...rest } = o;
+        return { ...rest, base64: bytesToBase64(new Uint8Array(await blob.arrayBuffer())) };
+      })() : undefined);
+    } catch { bodyUnavailable = true; }
+    // A sync may have supplied newer remote usage while the original PNG was being read.
+    const current = this.recs.get(r.id) ?? r;
+    if (!this.wasRequested(current)) return;
+    restoreActivityRequest({ queueId: current.id, queueTag: current.tag, activityScope: current.activityScope, label: current.label, method: current.method, endpoint: current.endpoint, body,
+      bodyUnavailable,
+      startedAt: current.submittedAt ?? current.createdAt, state: current.jobs.length || current.state === 'done' ? 'completed' : 'failed',
+      jobs: current.jobs, usage: (current.response as { usage?: unknown } | undefined)?.usage });
   }
   start() {
     this.timer ??= every(1000, () => void this.tick());
@@ -316,7 +365,7 @@ export class Queue {
   // ---- enqueue ----
   // Identical request (same endpoint + params + input images, explicit seed) reuses the stored record instead of paying again.
   // meta.cache: also reuse unseeded done records (deterministic routes: estimate-skeleton, GET /characters).
-  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean; resumeSafe?: boolean } = {}): Promise<JobRec> {
+  async enqueue(req: Req, meta: { label?: string; tag?: string; activityScope?: string; cache?: boolean; resumeSafe?: boolean } = {}): Promise<JobRec> {
     const inputs: string[] = [];
     const params = await mapDeep(req.body ?? null, (o) => {
       if (!isB64(o)) return undefined;
@@ -340,6 +389,7 @@ export class Queue {
       id: crypto.randomUUID(),
       label: meta.label ?? req.path,
       tag: meta.tag,
+      activityScope: meta.activityScope,
       method: req.method,
       endpoint: req.path,
       params,
@@ -347,6 +397,7 @@ export class Queue {
       requestHash,
       state: 'queued',
       attempts: 0,
+      requestStarted: false,
       nextAt: 0,
       createdAt: now,
       jobs: [],
@@ -373,7 +424,7 @@ export class Queue {
     if (this.role === 'follower' || !this.key) { this.resume(); return true; } // nothing to probe with: trust the browser
     if (now < this.probeAt) return false;
     this.probeAt = now + PROBE_MS;
-    try { await this.deps.api(this.key, 'GET', '/balance'); } catch (e) { if (isNetwork(e)) return false; } // any answer = back online
+    try { await this.deps.api(this.key, 'GET', '/balance', undefined, undefined, { label: 'Connection recovery', background: true }); } catch (e) { if (isNetwork(e)) return false; } // any answer = back online
     if (this.paused === 'offline') this.resume();
     return true;
   }
@@ -411,6 +462,7 @@ export class Queue {
   private async submit(r: JobRec) {
     r.state = 'submitting';
     r.attempts++;
+    r.requestStarted = false;
     await this.save(r); // persisted before the request leaves
     try {
       const body = await mapDeep(r.params, (o) => { // inside the try: a missing input fails the record, never sticks it in `submitting`
@@ -422,7 +474,10 @@ export class Queue {
           return { ...rest, base64: bytesToBase64(new Uint8Array(await blob.arrayBuffer())) };
         })();
       });
-      const res = await this.deps.api<SubmitResponse>(this.key, r.method, r.endpoint, body ?? undefined);
+      r.requestStarted = true;
+      try { await this.save(r); } // a crash from this point has an unknown transport outcome; never auto-resubmit it
+      catch { r.requestStarted = false; throw new Error('request could not be saved; nothing was sent'); }
+      const res = await this.deps.api<SubmitResponse>(this.key, r.method, r.endpoint, body ?? undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: r.label });
       r.submittedAt = this.deps.now();
       r.response = strip(res);
       const ids = jobIdsOf(res);
@@ -432,6 +487,7 @@ export class Queue {
       if (++this.streak >= 5 && this.current < this.concurrency) { this.current++; this.streak = 0; }
     } catch (e) {
       const err = e instanceof ApiError ? e : new ApiError(-1, 'other', (e as Error)?.message ?? String(e));
+      if (err.message === 'no API key set') r.requestStarted = false; // client guard rejected before fetch
       r.error = err.message;
       this.streak = 0;
       // refused before any job existed; B15 live: a 500 "Failed to start any animation jobs" (busy account) said so in words
@@ -456,10 +512,11 @@ export class Queue {
   }
 
   private async poll(r: JobRec, s: SubJob) {
+    if (this.deps.api === realApi) await this.restoreActivity(r);
     s.lastPoll = this.deps.now();
     let job: Job;
     try {
-      job = await this.deps.api<Job>(this.key, 'GET', `/background-jobs/${encodeURIComponent(s.id)}`);
+      job = await this.deps.api<Job>(this.key, 'GET', `/background-jobs/${encodeURIComponent(s.id)}`, undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: r.label, background: true });
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
       if (e.kind === 'auth') this.paused = 'auth';
@@ -519,7 +576,7 @@ export class Queue {
     try {
       while (s.pendingUrls?.length) {
         const { label, url } = s.pendingUrls[0];
-        await this.saveResult(s, label, await this.deps.fetchBytes(url));
+        await this.saveResult(s, label, await this.deps.fetchBytes(url, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: `${r.label} · ${label}`, background: true }));
         s.pendingUrls.shift();
         await this.save(r);
       }
@@ -563,7 +620,7 @@ export class Queue {
     const r = this.recs.get(id);
     if (!r) return;
     if (this.role === 'follower' && r.state === 'running') { // the leader's next poll sees the cancel; never write its record
-      for (const s of r.jobs.filter((s) => !s.done)) await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`).catch(() => {});
+      for (const s of r.jobs.filter((s) => !s.done)) await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`, undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: `Stop ${r.label}`, background: false }).catch(() => {});
       return;
     }
     if (r.state === 'queued') {
@@ -572,7 +629,7 @@ export class Queue {
     } else if (r.state === 'running') {
       for (const s of r.jobs.filter((s) => !s.done && !s.remoteDone)) {
         try {
-          await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`);
+          await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`, undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: `Stop ${r.label}`, background: false });
           s.done = true;
           s.status = 'cancelled';
         } catch (e) {

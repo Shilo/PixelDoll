@@ -37,6 +37,22 @@ The price is an estimate. When an automatic check fails, PixelDoll re-rolls that
 **Activity** shows each job's real cost and your balance. Some calls are billed in dollars instead of gens; your balance is the
 real total.
 
+## Inspect API calls
+
+Press the **code brackets** icon beside a PixelLab action to peek at its requests without running it. Before generation,
+the list shows estimated costs and the fields already known; dependent images and poses become available when prepared.
+Expand a call for readable fields, with nested objects and lists you can open individually.
+
+The toolbar's code brackets icon shows recorded calls, including automatic generation and quality repairs. Each call shows
+its cost, with a total below. Pending or unreported charges are marked explicitly; dollar charges stay separate from gens.
+The list-plus icon reveals background checks, polling and image downloads. **Copy all calls** copies structured JSON,
+including hidden background calls and full available request images; authentication credentials are excluded. If copying
+is unavailable, PixelDoll downloads the JSON instead.
+
+On phones the same peek fits the screen and closes back to your unchanged form. Recorded history is local to this tab;
+the latest 500 foreground and 2,000 background calls are retained. A notice identifies omitted older calls. After a reload,
+saved queue submissions can be reconstructed, but earlier attempts and background history are not a complete archive.
+
 ## Create a character
 
 Character menu → **New character…**

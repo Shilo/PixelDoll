@@ -126,7 +126,7 @@ test('PixelLab library connection, pagination and direct import use only free re
   await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key')
   await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click()
   await expect(page.getByRole('button', { name: /Library hero 1 directions/ })).toBeVisible()
-  await expect(page.locator('.character-library > button')).toHaveCount(20)
+  await expect(page.locator('.character-library .library-character')).toHaveCount(20)
   await expect(page.getByText('1–20 of 21', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Previous', exact: true })).toBeDisabled()
   await page.getByRole('button', { name: 'Next', exact: true }).click()

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
+  import ApiPeek from '../studio/ApiPeek.svelte'
 
   // refresh balance whenever a job settles
   let settled = $derived($queue.counts.done + $queue.counts.failed)
@@ -13,6 +14,7 @@
 
 <header>
   <a href="#/"><b>PixelDoll</b></a>
+  <ApiPeek scope="all" all />
   <nav><a href="#/m1">M1</a> <a href="#/m2">M2</a> <a href="#/m3">M3</a> <a href="#/m4">M4</a> <a href="#/m5">M5</a> <a href="#/selftest">tests</a></nav>
   <span data-testid="key-status">
     key:

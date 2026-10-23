@@ -1,5 +1,7 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { setupPeekPlan } from './apiPlans.ts'
   import Sprite from './Sprite.svelte'
   import { formDrafts } from './formDrafts.ts'
   import { setupPlan, rigReady, type SetupPlan } from '../lib/rig/setup.ts'
@@ -35,6 +37,7 @@
 
 <Sheet title="Set up character" cancel={active ? 'Hide' : 'Later'} onclose={() => (ui.sheet = null)}>
   {#if mine && settingUp.spec}
+    <div class="api-action"><span class="small muted">Rig setup</span><ApiPeek scope="character-setup-progress" label="Current rig setup" plan={setupPeekPlan(plan, settingUp.spec.looks, m?.rig.directions.length ?? 4)} activityScope={settingUp.spec.activityScope} /></div>
     {#if settingUp.done}<p class="notice ok"><Check size={16} />Ready. You can add equipment and moves fitted to this character.</p>
     {:else}
       <ol class="steps-list">{#each SETUP_STEPS as s, i (s.id)}<li class:done={i < step} class:now={i === step}>{#if i < step}<Check size={16} />{:else if i === step && !settingUp.error}<span class="ring spin" aria-hidden="true"></span>{:else}<span class="dot" aria-hidden="true"></span>{/if}{s.label}{#if i === step && settingUp.progress}<span class="small faint">{settingUp.progress.done}/{settingUp.progress.total}</span>{/if}</li>{/each}</ol>
@@ -55,9 +58,9 @@
   {/if}
   {#snippet footer()}
     {#if mine && settingUp.done}<button class="btn primary" onclick={async () => { await dismissSetup(); ui.sheet = null }}>Start dressing up</button>
-    {:else if mine && settingUp.error}<button class="btn plain" onclick={dismissSetup}>Dismiss setup</button><button class="btn primary" onclick={() => settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)))}>Resume setup</button>
+    {:else if mine && settingUp.error}<ApiPeek scope="character-setup-resume" label="Resume rig setup" plan={setupPeekPlan(plan, settingUp.spec?.looks ?? looks, m?.rig.directions.length ?? 4)} activityScope={settingUp.spec?.activityScope} /><button class="btn plain" onclick={dismissSetup}>Dismiss setup</button><span class="api-action"><button class="btn primary" onclick={() => settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)))}>Resume setup</button></span>
     {:else if active}<span class="foot-note">You can keep working. Setup resumes after reload.</span><button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
-    {:else}<span class="foot-note">Existing pixels stay unchanged</span><button class="btn primary" disabled={!plan || !looks.trim() || busyElsewhere} onclick={go}>Set up <span class="cost">{plan?.gens ?? '–'} gens</span></button>{/if}
+    {:else}<span class="foot-note">Existing pixels stay unchanged</span><span class="api-action"><ApiPeek scope="character-setup" label="Set up rig" plan={setupPeekPlan(plan, looks, m?.rig.directions.length ?? 4)} /><button class="btn primary" disabled={!plan || !looks.trim() || busyElsewhere} onclick={go}>Set up <span class="cost">{plan?.gens ?? '–'} gens</span></button></span>{/if}
   {/snippet}
 </Sheet>
 
