@@ -12,13 +12,13 @@
   type Target = { id: Engine; name: string; sub: string; detail: string }
   // Product order for this layered 2D workflow; asset formats are useful across engines.
   const GROUPS: { id: string; name: string; targets: Target[] }[] = [
-    { id: 'engines', name: 'Engines & frameworks', targets: [
+    { id: 'engines', name: 'Engines and frameworks', targets: [
       { id: 'godot', name: 'Godot', sub: 'Scene + runtime', detail: 'Godot 4 scene and animation resources with synchronized equipment and outfit controls.' },
       { id: 'unity', name: 'Unity', sub: 'Prefab importer', detail: 'Unity Editor importer creates a layered prefab and animation assets. Requires the 2D Sprite package.' },
       { id: 'phaser', name: 'Phaser', sub: 'Atlas + runtime', detail: 'Phaser 3 / 4 atlases and a Container runtime for equipment, colours and synchronized playback.' },
       { id: 'gdevelop', name: 'GDevelop', sub: 'Editable project', detail: 'Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game.' },
     ] },
-    { id: 'assets', name: 'Asset formats', targets: [
+    { id: 'assets', name: 'Assets', targets: [
       { id: 'aseprite', name: 'Aseprite', sub: 'Editable layers', detail: 'One layered .aseprite animation with tags, timing, pivot and your current look. Open in Aseprite 1.3 or later.' },
       { id: 'generic', name: 'PNG + JSON', sub: 'Custom integration', detail: 'Layer sheets and strips with timing, pivots, equipment and palette data. Your engine needs code to read these rules.' },
     ] },
@@ -82,8 +82,7 @@
 </script>
 
 <Sheet title="Export" onclose={() => (ui.sheet = null)}>
-  <fieldset class="export-picker">
-    <legend class="label">Export format</legend>
+  <fieldset class="export-picker" aria-label="Export format">
     {#each GROUPS as group (group.id)}
       <section aria-labelledby={`export-${group.id}`}>
         <h3 class="label" id={`export-${group.id}`}>{group.name}</h3>
@@ -123,7 +122,6 @@
 
 <style>
   .export-picker { border:0; padding:0; margin:0; min-width:0; display:flex; flex-direction:column; gap:16px; }
-  .export-picker legend { margin-bottom:12px; }
   .export-picker h3 { margin:0 0 8px; }
   .export-targets { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
   .export-target { display:grid; grid-template-columns:28px minmax(0, 1fr) 16px; align-items:center; gap:10px; padding:12px; min-height:68px; border:1px solid var(--line-strong); border-radius:var(--r-card); background:var(--bg); cursor:pointer; }
