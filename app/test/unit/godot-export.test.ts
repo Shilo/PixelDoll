@@ -3,7 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { exportFiles } from '../../src/lib/export/export.ts';
-import { godotFiles, spriteFramesTres } from '../../src/lib/export/godot.ts';
+import { godotFiles, paperdollTscn, spriteFramesTres } from '../../src/lib/export/godot.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Item, Project } from '../../src/lib/store/manifest.ts';
@@ -49,12 +49,37 @@ test('Godot move resource IDs remain unique for hyphens and underscores and pres
   expect(godotFiles(m).find((f) => f.name === 'godot/library.tres')).toBeDefined();
 });
 
+test('Godot scene maps large manifest depths and initial-cell overrides to bounded stable ranks', async () => {
+  const m = (await fixture()).manifest;
+  m.items[0].layers[0].z = 10000;
+  for (const item of m.items.slice(1)) item.layers[0].z = 9999;
+  m.slots[1].zOverrides = [{ layer: 'fg', cell: 1, z: 10001 }];
+  const text = paperdollTscn(m);
+  expect(text).toMatch(/name="body_fg"[^\n]*\]\nz_index = 0\n/);
+  expect(text).toMatch(/name="hair_fg"[^\n]*\]\nz_index = 1\n/);
+  m.slots[1].zOverrides = [{ layer: 'fg', z: 10000 }];
+  expect(paperdollTscn(m)).toMatch(/name="body_fg"[^\n]*\]\nz_index = 0\n/);
+  expect(paperdollTscn(m)).toMatch(/name="hair_fg"[^\n]*\]\nz_index = 1\n/);
+  expect(m.items[0].layers[0].z).toBe(10000);
+  expect(m.items[1].layers[0].z).toBe(9999);
+});
+
+test('Godot refuses more layer nodes than its native z range can represent', async () => {
+  const m = (await fixture()).manifest, item = m.items[0], layer = item.layers[0];
+  m.slots = Array.from({ length: 4097 }, (_, i) => ({ ...m.slots[0], id: i ? `slot${i}` : 'body' }));
+  m.items = m.slots.map((slot, i) => ({ ...item, id: i ? `item${i}` : 'base', slot: slot.id, layers: [{ ...layer, id: 'fg', role: 'fg' }, { ...layer, id: 'bg', role: 'bg' }] }));
+  expect(() => paperdollTscn(m)).toThrow('Godot: supports at most 8193');
+});
+
 // Opt-in native smoke/regression: GODOT_BIN=<Godot console executable> npm test -- godot-export
 test.skipIf(!process.env.GODOT_BIN)('Godot natively imports and runs palettes, presets, ownership, links and equipment guards', async () => {
   const directory = resolve('test-results/godot-export');
   const project = await fixture();
   project.manifest.rig.directions.unshift({ id: 'east' });
   project.manifest.rig.animations.unshift({ id: 'empty', cells: 1, loop: false, frames: [{ cell: 0, ms: 100 }] });
+  project.manifest.items[0].layers[0].z = 10000;
+  for (const item of project.manifest.items.slice(1)) item.layers[0].z = 9999;
+  project.manifest.slots[1].zOverrides = [{ layer: 'fg', cell: 0, z: 10001 }];
   const output = await exportFiles(project, { engines: ['godot'], baked: true });
   expect(output.errors).toEqual([]);
   for (const entry of output.entries) { const path = join(directory, entry.name); mkdirSync(dirname(path), { recursive: true }); writeFileSync(path, entry.data); }
@@ -100,6 +125,15 @@ func run() -> void:
 	root.add_child(doll)
 	await process_frame
 	check(doll.anim == "walk-fast" and doll.dir == "south", "Startup skips empty moves and unavailable first rig view")
+	check(doll.get_node("hair_fg").z_index < doll.body.z_index, "Large source depths retain initial relative ordering")
+	check(doll.manifest.items[0].layers[0].z == 10000 and doll.manifest.items[1].layers[0].z == 9999, "Native ranks must retain original manifest depths")
+	doll.body.set_frame_and_progress(1, 0.2)
+	check(doll.get_node("hair_fg").z_index > doll.body.z_index, "Cell override crosses large source depths using bounded ranks")
+	doll.manifest.slots[1]["zOverrides"] = [{"layer": "fg", "z": 10000}]
+	doll._sync()
+	check(doll.body.z_index < doll.get_node("hair_fg").z_index, "Equal-depth ranks preserve manifest slot order")
+	doll.manifest.slots[1]["zOverrides"] = [{"layer": "fg", "cell": 0, "z": 10001}]
+	doll.body.set_frame_and_progress(0, 0.0)
 	doll.play_anim("walk-fast", "east")
 	check(doll.dir == "south", "Unavailable view must not replace active playback")
 	doll.play_anim("empty", "south")

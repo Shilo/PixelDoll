@@ -257,9 +257,9 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
    layer has exactly the layer's cell size; cell and pivot are integers.
 3. Every `frames[].cell < cells`. Every `frames[].ms` is a positive integer.
 4. `item.baseHash === rig.baseHash` for exported items (stale items are excluded with a warning).
-5. Material IDs are globally unique. Ramps are pairwise disjoint within an owner in `pixeldoll/2`, and globally in `pixeldoll/1`; `variants[*].length === ramp.length`.
-6. Exactly one item has `slot: "body"`; it is `rig.baseItem`.
-7. Draw order: ascending resolved z; ties broken by `slots` order, then `role` (bg before fg), then item id.
+5. Material IDs are globally unique. Ramps are pairwise disjoint within an owner in `pixeldoll/2`, and globally in `pixeldoll/1`; `variants[*].length === ramp.length`. Source and variant colours use six-digit `#RRGGBB` values.
+6. Exactly one item has `slot: "body"`; it is `rig.baseItem`. Every item has either one `main` layer with role `fg`, or an `fg`/`bg` pair with matching roles. Import and export reject other layouts because native playback uses the foreground body as its clock.
+7. Draw order: ascending resolved z; ties broken by `slots` order, then `role` (bg before fg), then item id. Slot, layer and override depths must be signed 32-bit integers; native consumers store integer depths.
 8. Resolved z for a cell = the most specific matching `zOverride` (cell > anim > dir > none; on equal specificity the later entry
    wins), else `layer.z`.
 9. A visible item hides every layer of each slot in `item.hides ?? slot.hides` (hidden layers are not drawn; their cells still exist).
@@ -269,6 +269,13 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
     covering item's lowest opaque row, per column (columns beside the cover use the nearest covered column); `hides` wins.
     Exports bake one item `"<item>~<cover>"` (`variantOf`, `under`) per pair; a runtime draws that item instead of `<item>`
     whenever `<cover>` is equipped (Godot `_shown`, Phaser `shown`, Unity `Shown`). Mirrored rows stay flips (tucking commutes).
+    Preview/import can represent multiple covering slots, but export currently refuses combinations where two distinct,
+    populated clipping slots can cover a visible target together. Per-pair baked variants cannot represent their combined mask.
+    Alternative items in one covering slot, stale/empty covering slots, and covers that always hide the target do not trigger this restriction.
+
+Export `pixelsPerUnit`, when supplied, must be positive and finite; fractional values are supported.
+Godot maps manifest depths to compact native ranks because `CanvasItem.z_index` has a bounded range. Ordering and cell overrides
+are preserved; use the character root's depth for positioning among scene objects rather than treating manifest depths as native indices.
 
 ---
 

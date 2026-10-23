@@ -61,7 +61,8 @@ namespace PixelDoll
     public class PaperdollData
     {
         public string name, baseItem, exportId;
-        public int cellW, cellH, pivotX, pivotY, ppu;
+        public int cellW, cellH, pivotX, pivotY;
+        public float ppu;
         public string[] directions;
         public PdAnim[] animations;
         public PdSlot[] slots;

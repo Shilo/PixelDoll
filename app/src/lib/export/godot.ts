@@ -2,7 +2,7 @@
 // Paths are relative to godot/, so the export folder can live anywhere under res://.
 import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
-import { layerFrame } from '../compose/compose.ts';
+import { layerFrame, resolveZ } from '../compose/compose.ts';
 
 const q = JSON.stringify;
 /** Encode instead of sanitize: valid move names walk-fast and walk_fast must remain distinct. */
@@ -29,6 +29,8 @@ export function spriteFramesTres(m: Manifest, itemId: string, layerId: string): 
 /** One AnimatedSprite2D per (slot, role) that any item uses; sprite_frames from the default preset. */
 export function paperdollTscn(m: Manifest): string {
   const { rig } = m, preset = m.presets[0];
+  const initial = rig.animations.find((a) => (a.directions ?? rig.directions.map((d) => d.id)).length);
+  const initialDir = initial ? (initial.directions ?? rig.directions.map((d) => d.id))[0] : rig.directions[0].id;
   const nodes = new Map<string, { slot: string; role: string; z: number; res?: string; pivot: { x: number; y: number } }>();
   for (const s of m.slots)
     for (const it of m.items.filter((i) => i.slot === s.id))
@@ -36,12 +38,12 @@ export function paperdollTscn(m: Manifest): string {
         const key = `${s.id}_${l.role}`;
         const on = (preset?.items[s.id] ?? (s.id === 'body' ? rig.baseItem : null)) === it.id;
         const n = nodes.get(key) ?? { slot: s.id, role: l.role, z: l.z, pivot: rig.pivot };
-        if (on) Object.assign(n, { z: l.z, res: `${it.id}_${l.id}`, pivot: layerFrame(rig, l) }); // oversize layers: own pivot
+        if (on) Object.assign(n, { z: initial ? resolveZ(s, l, initial.id, initialDir, initial.frames[0].cell) : l.z, res: `${it.id}_${l.id}`, pivot: layerFrame(rig, l) }); // oversize layers: own pivot
         nodes.set(key, n);
       }
   const res = [...new Set([...nodes.values()].flatMap((n) => (n.res ? [n.res] : [])))];
-  const initial = rig.animations.find((a) => (a.directions ?? rig.directions.map((d) => d.id)).length);
-  const first = initial ? `${initial.id}_${(initial.directions ?? rig.directions.map((d) => d.id))[0]}` : '';
+  if (nodes.size > 8193) throw new Error('Godot: supports at most 8193 paperdoll layer nodes.');
+  const first = initial ? `${initial.id}_${initialDir}` : '';
   const out = [
     '[gd_scene format=3]\n',
     '[ext_resource type="Script" path="paperdoll.gd" id="script"]',
@@ -53,11 +55,13 @@ export function paperdollTscn(m: Manifest): string {
   // B14: equal z_index draws in tree order, so the tree follows compose's tie-break (slot order, bg before fg): hair bg and a
   // held bg both at z 5 (south) drew the hair over the blade in Godot, the blade over the hair in PixelDoll (4 px, Ranger)
   const ix = (n: { slot: string; role: string }) => m.slots.findIndex((s) => s.id === n.slot) * 2 + (n.role === 'bg' ? 0 : 1);
+  // Manifest depths describe ordering; CanvasItem only accepts -4096..4096. Keep the source values in library.tres.
+  const ranks = new Map([...nodes].sort((a, b) => a[1].z - b[1].z || ix(a[1]) - ix(b[1])).map(([name], i) => [name, i + Math.min(0, 4097 - nodes.size)]));
   for (const [name, n] of [...nodes].sort((a, b) => ix(a[1]) - ix(b[1])))
     out.push([
       `[node name=${q(name)} type="AnimatedSprite2D" parent="."]`,
       ...(n.res ? [] : ['visible = false']),
-      `z_index = ${n.z}`,
+      `z_index = ${ranks.get(name)}`,
       ...(n.res ? [`sprite_frames = ExtResource(${rid(n.res)})`, `animation = &${q(first)}`] : []),
       'centered = false',
       `offset = Vector2(${-n.pivot.x}, ${-n.pivot.y})`,
@@ -185,15 +189,22 @@ func _sync() -> void:
 		return
 	var frames: Array = _find(manifest["rig"]["animations"], anim)["frames"]
 	var cell := int(frames[mini(body.frame, frames.size() - 1)]["cell"])
+	var visible := []
 	for node in _layers():
 		var layer := _layer_of(node)
 		if layer.is_empty():
 			continue
-		node.z_index = _z(node.get_meta("slot"), layer, cell)
+		if node.visible:
+			visible.append({"node": node, "z": _z(node.get_meta("slot"), layer, cell), "order": visible.size()})
 		if node != body and node.visible:
 			if node.animation != body.animation:
 				node.animation = body.animation
 			node.set_frame_and_progress(body.frame, body.frame_progress)
+	# Tree order already follows manifest slots, bg before fg; preserve it when raw depths tie.
+	visible.sort_custom(func(a, b): return a["z"] < b["z"] if a["z"] != b["z"] else a["order"] < b["order"])
+	var start := mini(0, 4097 - visible.size())
+	for i in visible.size():
+		visible[i]["node"].z_index = start + i
 
 
 func _variant_of(id: String, seen: Dictionary) -> String:
@@ -308,6 +319,8 @@ API: play_anim(anim, dir), equip(slot, item_id) ("" = empty slot), set_preset(pr
 The frozen base body stays equipped. body_fg is the clock; other layers follow it. Palette swaps use exact source RGBs,
 owner-local materials, linked selections and defaults; variant names must exist in exported materials[].variants.
 library.tres retains the manifest and all equipment resources, including for selected-scene game exports.
+Manifest depths become compact native z_index ranks, preserving slot order/bg-before-fg ties and per-cell overrides.
+Use the root's z_index to position the character among scene objects. At most 8193 slot/role nodes are supported.
 Project settings: Rendering > Textures > Default Texture Filter = Nearest (the scene sets Nearest on its root anyway),
 2D > Snap 2D Transforms To Pixel = on. Keep the exported folder structure intact.
 `,
@@ -330,7 +343,7 @@ export function selfTest() {
   console.assert(t.includes('"speed": 10.0') && t.includes('"duration": 2.0') && (t.match(/"duration"/g) ?? []).length === 6, 'tres: msBase speed, relative durations, playlist frames x dirs');
   const s = paperdollTscn(m);
   console.assert(s.includes('[node name="body_fg" type="AnimatedSprite2D" parent="."]') && s.includes('offset = Vector2(-32, -60)'), 'tscn: body node + pivot offset');
-  console.assert(s.indexOf('"body_fg"') < s.indexOf('"back_bg"') && s.indexOf('"back_bg"') < s.indexOf('"back_fg"') &&s.includes('visible = false\nz_index = 4'), 'tscn: tree in compose tie-break order (slot, bg before fg), unequipped slot hidden');
+  console.assert(s.indexOf('"body_fg"') < s.indexOf('"back_bg"') && s.indexOf('"back_bg"') < s.indexOf('"back_fg"') && s.includes('visible = false\nz_index = 0'), 'tscn: tree in compose tie-break order (slot, bg before fg), unequipped slot hidden and bounded rank');
   // oversize layer: own region size and node offset
   Object.assign(m.items[1].layers[0], { cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } });
   m.presets[0].items.back = 'cape';

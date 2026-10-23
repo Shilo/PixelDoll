@@ -6,7 +6,7 @@ import { exportManifest, validate } from '../../src/lib/export/generic.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
-import { readCharacterZip } from '../../src/lib/store/import.ts';
+import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts';
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 
@@ -174,4 +174,83 @@ test('Aseprite native limits surface as actionable export errors with no partial
   expect(result.errors.join()).toContain('Aseprite frame duration');
   expect(result.zip).toBeNull();
   expect(result.entries).toEqual([]);
+});
+
+test('foreground layer contracts reject broken clock layouts on import and every export target', async () => {
+  for (const layout of ['background-only', 'duplicate', 'mismatched-role', 'empty'] as const) {
+    const p = await fixture(), layers = p.manifest.items[0].layers;
+    if (layout === 'background-only') Object.assign(layers[0], { id: 'bg', role: 'bg' });
+    if (layout === 'duplicate') layers.push(structuredClone(layers[0]));
+    if (layout === 'mismatched-role') Object.assign(layers[0], { id: 'main', role: 'bg' });
+    if (layout === 'empty') layers.length = 0;
+    expect(validate(p).join()).toContain('foreground');
+    await expect(readCharacterZip(await zip(await projectEntries(p)))).rejects.toThrow(/foreground/);
+    for (const engine of ['godot', 'unity', 'phaser', 'gdevelop', 'aseprite', 'generic'] as const) {
+      const result = await exportZip(p, { ...opts(), engines: [engine] });
+      expect(result.errors.join()).toContain('foreground');
+      expect(result.zip).toBeNull();
+      expect(result.entries).toEqual([]);
+    }
+  }
+  const split = await fixture(), fg = split.manifest.items[0].layers[0];
+  fg.id = 'fg'; split.manifest.items[0].layers.push({ ...structuredClone(fg), id: 'bg', role: 'bg' });
+  expect(validate(split)).toEqual([]);
+});
+
+test('invalid source and variant RGB values fail before image processing or native code generation', async () => {
+  for (const value of ['#gggggg', '#123', '#12345678', 123, null]) {
+    for (const variant of [false, true]) {
+      const p = await fixture();
+      const ramp = [value] as unknown as `#${string}`[];
+      if (variant) p.manifest.materials[0].variants.bad = ramp;
+      else p.manifest.materials[0].ramp = ramp;
+      const result = await exportZip(p, opts());
+      expect(result.errors.join()).toContain('#RRGGBB');
+      expect(result.zip).toBeNull();
+    }
+  }
+});
+
+test('export refuses simultaneous clipping slots but permits alternate items, empty slots and stale covers', async () => {
+  const p = await fixture();
+  p.manifest.slots.push({ id: 'head', z: 100, class: 'rigid', clips: ['main_hand'] }, { id: 'face_acc', z: 110, class: 'rigid', clips: ['main_hand'] });
+  const cover = (id: string, slot: string) => ({ ...structuredClone(p.manifest.items[0]), id, slot, materials: [] });
+  p.manifest.items.push(cover('hat', 'head'), cover('cap', 'head'));
+  expect((await exportFiles(p, opts())).errors).toEqual([]); // two hats cannot be equipped together
+  p.manifest.items.push(cover('mask', 'face_acc'));
+  expect(validate(p)).toEqual([]); // preview/import retain their richer clipping rules
+  const result = await exportZip(p, opts());
+  expect(result.errors.join()).toContain('head, face_acc can cover it together');
+  expect(result.zip).toBeNull(); expect(result.entries).toEqual([]);
+  p.manifest.slots.find((s) => s.id === 'head')!.hides = ['main_hand'];
+  expect((await exportFiles(p, opts())).errors).toEqual([]); // covered item is always hidden
+  p.manifest.items.find((it) => it.id === 'hat')!.hides = []; // an item can override its slot's hiding
+  expect((await exportFiles(p, opts())).errors.join()).toContain('head, face_acc');
+  p.manifest.items.at(-1)!.baseHash = `sha256:${'1'.repeat(64)}`;
+  expect((await exportFiles(p, opts())).errors).toEqual([]);
+});
+
+test('export scale accepts fractions and refuses invalid values without a partial archive', async () => {
+  const p = await fixture();
+  for (const pixelsPerUnit of [0, -1, NaN, Infinity, null as unknown as number]) {
+    const result = await exportZip(p, { ...opts(), pixelsPerUnit });
+    expect(result.errors.join()).toContain('positive finite');
+    expect(result.zip).toBeNull(); expect(result.entries).toEqual([]);
+  }
+  const result = await exportFiles(p, { ...opts(), pixelsPerUnit: 2.5 });
+  expect(result.errors).toEqual([]);
+  const m = JSON.parse(new TextDecoder().decode(result.entries.find((e) => e.name === 'manifest.json')!.data)) as Manifest;
+  expect(m.export!.pixelsPerUnit).toBe(2.5);
+});
+
+test('fractional and nonfinite depths cannot silently collapse in native integer properties', async () => {
+  for (const z of [1.5, NaN, Infinity, 2147483648, -2147483649]) {
+    for (const location of ['layer', 'slot', 'override']) {
+      const p = await fixture();
+      if (location === 'layer') p.manifest.items[0].layers[0].z = z;
+      if (location === 'slot') p.manifest.slots[0].z = z;
+      if (location === 'override') p.manifest.slots[0].zOverrides = [{ layer: 'fg', z }];
+      expect((await exportFiles(p, opts())).errors.join()).toContain('finite integer');
+    }
+  }
 });

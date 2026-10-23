@@ -16,6 +16,17 @@ export interface ExportOptions { engines: Engine[]; baked: boolean; pixelsPerUni
 export interface ExportResult { entries: ZipEntry[]; warnings: string[]; errors: string[] }
 
 export async function exportFiles(src: Project, o: ExportOptions): Promise<ExportResult> {
+  const invalid = validate(src);
+  if (o.pixelsPerUnit !== undefined && (!Number.isFinite(o.pixelsPerUnit) || o.pixelsPerUnit <= 0)) invalid.push('Pixels per unit must be a positive finite number.');
+  // Baked variants represent one covering item. Two independently equipped covering slots need a combined mask.
+  const source = src.manifest;
+  const populated = new Set(source.items.filter((it) => !it.variantOf && it.baseHash === source.rig.baseHash).map((it) => it.slot));
+  for (const target of source.slots.filter((s) => populated.has(s.id))) {
+    const covers = source.slots.filter((s) => s.id !== target.id && s.clips?.includes(target.id) && source.items.some((it) =>
+      it.slot === s.id && !it.variantOf && it.baseHash === source.rig.baseHash && !(it.hides ?? s.hides ?? []).includes(target.id)));
+    if (new Set(covers.map((s) => s.id)).size > 1) invalid.push(`${target.id}: export supports one populated clipping slot; ${covers.map((s) => s.id).join(', ')} can cover it together. Remove the overlapping clips rules before exporting.`);
+  }
+  if (invalid.length) return { entries: [], warnings: [], errors: invalid };
   const base = src.manifest.items.find((it) => it.id === src.manifest.rig.baseItem);
   if (base && base.baseHash !== src.manifest.rig.baseHash) return { entries: [], warnings: [], errors: ['The base body is stale; freeze a matching base before exporting.'] };
   const p = await withTuckVariants(src); // B14: hair under a helmet ships as a baked "<hair>~<helmet>" item; engines swap to it
@@ -29,7 +40,13 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
   const files = coreFiles(p, m);
   const sheets = new Map(files.flatMap((f) => (typeof f.data === 'object' && 'w' in f.data ? [[f.name, f.data] as [string, Img]] : [])));
   files.push(...genericFiles(p, m, sheets, { strips: o.engines.includes('generic'), baked: o.baked }));
-  if (o.engines.includes('godot')) files.push(...godotFiles(m));
+  if (o.engines.includes('godot')) {
+    try { files.push(...godotFiles(m)); }
+    catch (error) {
+      if (!(error instanceof Error) || !error.message.startsWith('Godot: ')) throw error;
+      return { entries: [], warnings, errors: [error.message] };
+    }
+  }
   if (o.engines.includes('phaser')) files.push(...phaserFiles(m));
   if (o.engines.includes('unity')) files.push(...unityFiles(m));
   if (o.engines.includes('gdevelop')) {

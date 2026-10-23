@@ -8,6 +8,7 @@ import { moveDirs, recolour, storeVariants, variantOf, variantRampOf } from '../
 import { bakedFrame, layerFrame } from '../compose/compose.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
+const nativeDepth = (z: number) => Number.isInteger(z) && z >= -2147483648 && z <= 2147483647;
 
 /** Invariants checked before export (spec §3); export refuses on any error. Stale items are warnings, not errors. */
 export function validate(p: Project): string[] {
@@ -18,27 +19,38 @@ export function validate(p: Project): string[] {
   }
   const bodies = m.items.filter((i) => i.slot === 'body');
   if (bodies.length !== 1 || bodies[0].id !== m.rig.baseItem) e.push('exactly one item in slot "body" must be rig.baseItem');
+  for (const slot of m.slots) {
+    if (!nativeDepth(slot.z) || slot.zOverrides?.some((o) => !nativeDepth(o.z))) e.push(`${slot.id}: slot and override depths must be finite integers in the signed 32-bit range`);
+  }
   const seen = new Map<string, string>(), ids = new Set<string>();
   for (const mat of m.materials) {
     if (ids.has(mat.id)) e.push(`duplicate material ${mat.id}`);
     ids.add(mat.id);
     if (!m.items.some((it) => it.id === mat.owner)) e.push(`${mat.id}: unknown material owner ${mat.owner}`);
     for (const c of mat.ramp) {
+      if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) { e.push(`${mat.id}: ramp colours must be six-digit #RRGGBB values`); continue; }
       const key = m.format === 'pixeldoll/2' ? `${mat.owner}:${c.toLowerCase()}` : c.toLowerCase();
       seen.has(key) ? e.push(`colour ${c} in ramps ${seen.get(key)} and ${mat.id}`) : seen.set(key, mat.id);
     }
-    for (const [v, r] of Object.entries(mat.variants)) if (r.length !== mat.ramp.length) e.push(`${mat.id}.${v}: ${r.length} colours for a ${mat.ramp.length}-colour ramp`);
-    if (mat.defaultVariant && (m.format !== 'pixeldoll/2' || !variantRampOf(mat, mat.defaultVariant))) e.push(`${mat.id}: invalid default colourway`);
+    for (const [v, r] of Object.entries(mat.variants)) {
+      if (r.length !== mat.ramp.length) e.push(`${mat.id}.${v}: ${r.length} colours for a ${mat.ramp.length}-colour ramp`);
+      if (r.some((c) => typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c))) e.push(`${mat.id}.${v}: variant colours must be six-digit #RRGGBB values`);
+    }
+    if (mat.defaultVariant && mat.ramp.every((c) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) && (m.format !== 'pixeldoll/2' || !variantRampOf(mat, mat.defaultVariant))) e.push(`${mat.id}: invalid default colourway`);
   }
   for (const mat of m.materials) if (mat.linkTo && !ids.has(mat.linkTo)) e.push(`${mat.id}: unknown linked material ${mat.linkTo}`);
   const mirrored = m.rig.directions.some((d) => d.mirrorOf);
   for (const it of m.items) {
+    const single = it.layers.length === 1 && it.layers[0].id === 'main' && it.layers[0].role === 'fg';
+    const split = it.layers.length === 2 && it.layers.some((l) => l.id === 'fg' && l.role === 'fg') && it.layers.some((l) => l.id === 'bg' && l.role === 'bg');
+    if (!single && !split) e.push(`${it.id}: layers must be one main foreground layer or an fg/background bg pair`);
     for (const id of it.materials) {
       const mat = m.materials.find((x) => x.id === id);
       if (!mat || (mat.owner !== it.id && mat.owner !== it.variantOf)) e.push(`${it.id}: missing or foreign material ${id}`);
     }
     if (!m.slots.some((s) => s.id === it.slot)) e.push(`${it.id}: unknown slot ${it.slot}`);
     for (const l of it.layers) {
+      if (!nativeDepth(l.z)) e.push(`${it.id}.${l.id}: layer depth must be a finite integer in the signed 32-bit range`);
       const f = layerFrame(m.rig, l);
       if (![f.w, f.h, f.x, f.y].every(Number.isInteger) || f.w < 1 || f.h < 1) e.push(`${it.id}.${l.id}: cell ${f.w}x${f.h} / pivot ${f.x},${f.y} must be integers`);
       // a mirrored row is a flip of the whole layer cell: only correct if that cell is centred on the rig cell

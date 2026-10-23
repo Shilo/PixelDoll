@@ -61,6 +61,13 @@ in Edge, including emulated phone portrait/landscape and tablet layouts; no phys
       CI guard on the precache list
 
 ## Deferred (user)
+- [ ] **Native Unreal Engine export (2026-10-23).** Paper2D supports native Sprites/Flipbooks, but image descriptors alone
+      do not implement a swappable paperdoll. A complete target needs an Editor importer plus a Blueprint-callable
+      Actor/component for shared timing, equipment/hides/tucking, per-frame ordering, oversize pivots and exact palette
+      materials/textures. Binary `.uasset` generation from the browser is not a portable substitute for that importer.
+      No runnable Unreal Editor is installed here (the old UE 5.1 registration points to a missing directory), so native
+      import, rendering and cooked-build dependency retention cannot currently be verified. Defer the public export
+      option until the plugin/runtime exists and passes those engine tests. See [native export concerns and scope](docs/research/native-export-expansion-2026-10-23.md#unreal-possible-but-not-currently-implemented).
 - [ ] **Native GameMaker export (2026-10-23).** Deferred because the user will not install the runtime needed for actual
       engine verification. Do not advertise a GameMaker target based on PNG strips or ProjectTool validation alone.
       Future scope: native `.yyp`/`.yy` resources or `.yymps`, reusable GML paperdoll runtime, sprite origins, shared timing,

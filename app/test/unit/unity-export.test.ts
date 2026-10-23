@@ -24,6 +24,14 @@ test('Unity native export declares only required assemblies and isolates charact
   expect(unityFiles(structuredClone(m))).toEqual(files);
 });
 
+test('Unity serializes fractional pixels per unit as a native float', async () => {
+  const m = await manifest();
+  m.export!.pixelsPerUnit = 2.5;
+  expect(unityJson(m).ppu).toBe(2.5);
+  const data = String(unityFiles(m).find((f) => f.name === 'unity/Runtime/Paperdoll.cs')!.data);
+  expect(data).toContain('public float ppu;');
+});
+
 test('Unity JSON retains all presets, original source sheets and item-local palette metadata', async () => {
   const m = await manifest();
   m.materials.push({ id: 'body_colour', owner: m.items[0].id, label: 'Body', ramp: ['#112233'], variants: {} });
