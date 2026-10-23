@@ -2,7 +2,7 @@
 // with the floor pad (lib/rig/normalize), then registered as a managed character (0.25 gen,
 // pixel-exact; its skeletons["2d_references"] are the rest keypoints) -> per clip x direction: a MOTION SOURCE (managed
 // skeleton-v3 template, pixminimax text, or authored keypoints) -> keypoint sequence -> raw /animate-with-skeleton-v3 on the
-// rest view (the request shape items are posed with) -> largest component -> re-estimate -> freeze gate (1 re-roll) -> stored
+// rest view (the request shape items are posed with) -> preserve normalized pixels -> re-estimate -> review notes -> stored
 // frames + reference + keypoints + route + provenance. Every paid call is seeded and every free one cached, so re-running the
 // same spec after a reload re-attaches to the ledger instead of paying again.
 import { live, queue, type JobRec } from '../lib/pixellab/queue.ts';
@@ -18,7 +18,7 @@ import { ANCHORS, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, playlist,
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
-import { actionOf, clipQa, largestComponent, loops, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
+import { actionOf, bodyComponents, clipQa, loops, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { poseGens, poseItemClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { BASE_BODY, basePrompt, looksOf } from './model.ts';
@@ -95,13 +95,12 @@ export async function joints(im: Img, resumeSafe = false, activityScope?: string
   } catch (e) { if (resumeSafe) throw e; return undefined; }
 }
 
-// ---------- one clip-direction: raw skeleton-v3 on the rest view + cleanup + gate ----------
+// ---------- one clip-direction: raw skeleton-v3 on the rest view + structural checks + observations ----------
 interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void; view?: Manifest['rig']['view']; activityScope?: string }
 interface ClipOut { frames: Img[]; measured: (Keypoint[] | undefined)[]; qa: ClipQa; recs: JobRec[] }
 async function renderClip(j: ClipJob): Promise<ClipOut> {
   const restB64 = await b64(j.rest), recs: JobRec[] = [];
-  let best: ClipOut | null = null;
-  for (let attempt = 0; attempt < 2 && (!best || best.qa.fails.length); attempt++) { // fail -> one re-roll (new seed), keep the better
+  for (let attempt = 0; attempt < 2; attempt++) { // Only empty output or a wrong frame count may retry with a new seed.
     const r = await run(rawClip({ first: restB64, rest: j.restKps, keypoints: j.keypoints, description: j.looks, action: actionOf(j.anim), dir: j.dir, seed: j.seed + attempt * 7919, view: j.view }),
       `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig', false, true, j.activityScope);
     recs.push(r);
@@ -110,18 +109,16 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
     if (outs.length !== j.keypoints.length) continue;
     const normalized = outs.map(o => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
     if (normalized.some(n => n.cutPx)) throw new Error(`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`);
-    const clean = normalized.map(n => largestComponent(n.img));
+    const frames = normalized.map(n => n.img);
     // Empty art is a rendering failure; do not pay to estimate joints on it. One art re-roll is allowed.
-    if (clean.some(c => !opaqueBox(c.img))) continue;
+    if (frames.some(f => !opaqueBox(f))) continue;
     // Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
-    const measured = await Promise.all(clean.map(async (c) => { const k = await joints(c.img, true, j.activityScope); j.tick(); return k; }));
+    const measured = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, j.activityScope); j.tick(); return k; }));
     if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`);
-    const frames = clean.map((c) => c.img);
-    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: clean.reduce((s, c) => s + c.stray, 0) });
-    if (!best || qa.fails.length < best.qa.fails.length) best = { frames, measured, qa, recs };
+    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: 0, disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0) });
+    return { frames, measured, qa, recs };
   }
-  if (!best) throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames or the wrong number of frames`);
-  return { ...best, recs };
+  throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames or the wrong number of frames`);
 }
 
 /** Managed motion source on the rest character -> frames on the 64 cell -> estimated keypoint sequence. */
@@ -150,7 +147,7 @@ export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
   };
 };
 const putCell = async (h: Sha256, im: Img) => { if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })); };
-const warn = (clip: string, qa: ClipQa) => qa.fails.map((f) => `${clip}: ${f}`);
+const warn = (clip: string, qa: ClipQa) => [...qa.fails, ...(qa.warnings ?? [])].map((f) => `${clip}: ${f}`);
 
 export interface Progress { step: string; done: number; total: number; recIds: string[] }
 
@@ -170,7 +167,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
   // 2. rest views: rotations on the 64 cell with the floor pad, mirrored directions = flips; re-import for the rest keypoints
   onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
-  const rots = await imagesOf(base), rest = {} as Record<DirectionName, Img>;
+  const rots = await imagesOf(base), rest = {} as Record<DirectionName, Img>, restWarnings: string[] = [];
   let pad: [number, number] = [0, 0];
   for (const d of DIRECTIONS) {
     const r = rots.find((x) => x.label === d);
@@ -179,7 +176,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     if (n.cutPx) throw new Error(`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`);
     const top = opaqueBox(n.img)?.y0 ?? cell;
     if (!opaqueBox(n.img)) throw new Error(`PixelLab returned an empty ${d} view.`);
-    if ((modern || DIRS.includes(d)) && top < HEADROOM_MIN) throw new Error(`${spec.name} needs more room above the head in the ${cell} px frame. Increase Frame or reduce Body size before creating again.`);
+    if ((modern || DIRS.includes(d)) && top < HEADROOM_MIN) restWarnings.push(`${d}: standing headroom ${top} px; tall hair or hats may need a larger frame`);
     rest[d] = n.img;
     pad = n.offset;
   }
@@ -267,7 +264,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   };
   const rec: StoredProject = {
     id: spec.projectId ?? `rig-${rig.baseHash.slice(7, 19)}`, savedAt: new Date().toISOString(), manifest, skeletons, character: { id: charId, looks }, origin: 'studio',
-    rigQa: { warnings: built.warnings, pivotFrom: built.pivotFrom, clips: Object.fromEntries(clips.map((c) => [`${c.a.name}/${c.d}`, c.out.qa])), tracks: tracks.stats.map(({ points: _, ...t }) => t) },
+    rigQa: { warnings: [...restWarnings, ...built.warnings], pivotFrom: built.pivotFrom, clips: Object.fromEntries(clips.map((c) => [`${c.a.name}/${c.d}`, c.out.qa])), tracks: tracks.stats.map(({ points: _, ...t }) => t) },
   };
   const blobs = new Map<string, Blob>();
   for (const [hash, image] of [...Object.keys(rig.rest).map(d => [rig.rest![d as DirectionName]!.image, rest[d as DirectionName]] as const), ...Object.values(built.cells).map(c => [c.hash, c.img] as const)]) {

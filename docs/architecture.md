@@ -82,9 +82,11 @@ concurrency cap (200 with `directions: ["south"]`): send one direction per call 
 
 ### 3.2 Rig QA (freeze gate)
 
-Per skeleton clip, every frame re-estimated: arm adherence ≤ 2 px mean vs requested; feet drift ≤ 1 px on standing clips;
-palette fit ≥ 0.97 (colours within 12 of the rest palette); no opaque pixel on the cell border; stray px removed and logged.
-Skip the L/R label check on lying frames. Fail → re-roll (new seed), then soften the pose (shorter reach) [S3].
+Every body frame must be nonempty, fit its frame without opaque cropping, have the expected frame count and yield complete valid measured joints. Empty/wrong-count rendering may retry once with a new seed. Missing joint observations stop setup and retain the generated art; they do not redraw it.
+
+Estimated arm-joint difference, silhouette-bottom displacement, palette similarity, border contact and disconnected pixels are **review observations**, not proof of bad art and never automatic body-redraw triggers. The 2 px arm threshold highlights estimates for review; it is not a scale-independent accuracy guarantee. Silhouette bottoms do not identify foot contact or a rotation origin. The historical `feetDrift` storage field records this bottom displacement only. Optional hat/hair headroom is advisory when the body itself fits.
+
+Body output keeps all normalized components, including detached details. Binary-alpha normalization remains the pixel-art contract. Component counts are reported without deleting artwork. Item chroma extraction and its independently documented checks retain their existing policy. Genuine body-pose deviation can still affect later equipment fitting; review notes remain visible and measurements are retained.
 
 ---
 
@@ -307,7 +309,7 @@ integer zoom. Theming ("Paper" look) deferred.
 |---|---|
 | `pixellab/` (client, routes, queue) | built [M1]; add raw/managed skeleton-v3, pixminimax, `create-character-v3` import, `res.directions` check, re-poll policy |
 | `store/` (manifest, db, zip, project) | built; manifest gains `Clip` sources (§manifest-spec) |
-| `image/` (png, pngraw, hash, chroma, diff) | built; add `largestComponent`, `gripSide`, registration shift check |
+| `image/` (png, pngraw, hash, chroma, diff) | built; body connectivity observations, item grip and registration checks |
 | `rig/` (rig, normalize, mirror, skeleton, freeze) | built for template frames [M2]; **update**: rest-view import, clip routes, pose presets (`setArm`/`rotate`/`shift`, port of `spikes/api/lib/skel.mjs`), canvas re-centring 68/80/96 → 64, rig QA §3.2 |
 | `items/` (items, run) | update to `skeleton-pose` (dress + pose) and `inpaint-grid` routes |
 | `dress/`, `compose/`, `export/` | built [M4, M5] |
@@ -330,7 +332,7 @@ integer zoom. Theming ("Paper" look) deferred.
 | Risk | Mitigation |
 |---|---|
 | Non-deterministic generation | Store everything; never regenerate base frames; items reference stored frames and keypoints. |
-| Motion-smear FX, specks | Largest-component filter; avoid identical final poses; QA logs stray px. |
+| Motion-smear FX, specks | Body components are preserved and reported for review; item extraction retains its slot-specific cleanup. |
 | Pose not followed / wrong hand | Adherence + `gripSide` gates; re-roll; author an armed variant. |
 | North action frames lose back items (cape) | QA re-roll; `inpaint-grid` fallback. |
 | Side-view grip ambiguity | Accept "ambiguous" in side views; review only front/back. |

@@ -41,7 +41,7 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
     const im = existing || cellImg(p, base.layers[0], a.id, d.id, 0);
     if (!im || !opaqueBox(im)) throw new Error(`${a.id} has no ${d.id} standing reference. Choose a move with every view.`);
     const top = opaqueBox(im)!.y0;
-    if (top < HEADROOM_MIN) throw new Error(`${d.id} leaves ${top} px above the head; ${HEADROOM_MIN} px are needed for hair and hats, as for created characters.`);
+    if (top < HEADROOM_MIN) warnings.push(`${d.id} leaves ${top} px above the head; tall hair or hats may need a larger frame.`);
     rest[d.id] = im;
     if (!d.mirrorOf) frames.set(await cellHash(im), im);
   }
@@ -93,7 +93,7 @@ export async function attachImportedRig(p: Project, plan: SetupPlan, measured: M
       a.sources[d.id] = { route: 'import', reference: reference.image, keypoints: poses, measured: poses, motion: isRest ? 'imported-rest' : 'estimated:frozen-import', provenance: provenance.map((_, i) => start + i) };
       const qa = clipQa({ anim: a.id, rest: plan.rest[d.id]!, frames: frames as Img[], measured: poses, stray: 0 });
       clips[`${a.id}/${d.id}`] = qa;
-      warnings.push(...qa.fails.map((f) => `${a.id}/${d.id}: ${f}`));
+      warnings.push(...[...qa.fails, ...qa.warnings].map((f) => `${a.id}/${d.id}: ${f}`));
     }
   }
   for (const d of rig.directions.filter((d) => d.mirrorOf)) for (const a of rig.animations) for (let i = 0; i < a.cells; i++) {

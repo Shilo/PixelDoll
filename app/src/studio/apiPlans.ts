@@ -50,8 +50,8 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
     }
     calls.push({ method: 'POST', path: '/animate-with-skeleton-v3', label: `${anim.name} ${direction} · render ${anim.frames} frames`, generations: 3,
       body: { description: looks, action: actionOf(anim.name), direction, view, ...(seed === undefined ? {} : { seed: seed + 101 }), no_background: true },
-      note: `Known fields only. ${dependent} Adds first_frame, first_frame_keypoints and ${ACTIONS[anim.name] ? 'locally authored' : 'measured motion'} keypoints. Failed quality gates can add one re-roll and its measurements.` })
-    for (let frame = 0; frame < anim.frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${anim.name} ${direction} · check frame ${frame + 1}`, generations: 0.1, note: 'Sends this rendered body frame as image (base64 PNG) for alignment checks. Matching measurements are reused.' })
+      note: `Known fields only. ${dependent} Adds first_frame, first_frame_keypoints and ${ACTIONS[anim.name] ? 'locally authored' : 'measured motion'} keypoints. Empty output or a wrong frame count can add one re-roll. Pose, silhouette, palette and border observations never redraw the body automatically.` })
+    for (let frame = 0; frame < anim.frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${anim.name} ${direction} · check frame ${frame + 1}`, generations: 0.1, note: 'Sends this rendered body frame as image (base64 PNG) for pose observations. Matching measurements are reused.' })
   }
   return [...calls, ...lifecycle()]
 }
@@ -93,7 +93,7 @@ export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | nu
       }
       calls.push({ method: 'POST', path: '/animate-with-skeleton-v3', label: `${spec.id} ${direction} · render body`, generations: 3,
         body: { description: rec.character?.looks, action: actionOf(spec.id), direction, view: m.rig.view ?? 'low top-down', ...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }), no_background: true },
-        note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${spec.action && ACTIONS[spec.action] ? 'locally authored' : 'generated motion'} keypoints. Failed body quality checks may add one re-roll.` })
+        note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${spec.action && ACTIONS[spec.action] ? 'locally authored' : 'generated motion'} keypoints. Empty output or a wrong frame count can add one re-roll; review observations do not.` })
       for (let frame = 0; frame < frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${spec.id} ${direction} · check frame ${frame + 1}`, generations: 0.1, note: 'Sends the rendered body frame as image (base64 PNG), unless already measured.' })
     }
   }

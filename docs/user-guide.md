@@ -32,7 +32,7 @@ A gen is one PixelLab generation from your account's monthly allowance. Creation
 | Try again on an item | shown on the button |
 | Dress up, recolour, outfits, export | free |
 
-The price is an estimate. When an automatic check fails, PixelDoll re-rolls that part, so a job can cost a little more.
+The price is an estimate. Empty body output or a wrong frame count may retry once. Body pose estimates, silhouette movement, colour differences and border contact are review notes and do not trigger paid redraws. Equipment fitting keeps its separate automatic checks and retry budget.
 **Activity** shows each job's real cost and your balance. Some calls are billed in dollars instead of gens; your balance is the
 real total.
 
@@ -123,7 +123,7 @@ Leave **Set up the pose rig next** checked to prepare imported artwork for the s
 
 Each character has its own fitted equipment layers. Imported and created characters use the same tools to make those layers; sharing an equipment design between different bodies is a future feature.
 
-Setup supports 64 × 64 humanoid bodies with all four cardinal views or all eight views, and the same headroom needed by created characters. Missing views, empty frames and insufficient headroom are reported before spending. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their real measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
+Setup supports square 32–256 px humanoid frames with all four cardinal views or saved original views for reconnection. Missing views and empty frames are reported before spending. Little space above the head produces a warning about tall hair or hats, without rejecting a contained body. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
 
 New PixelDoll exports include an editable copy with their original rig, equipment keyframes, layers, colours and outfits. Older exports restore their sheets and outfits; setup can recover the body pose rig, but equipment without its original dressed reference must be made again before it can follow future moves. Unknown or failed setup requests stop for review in **Jobs** instead of being sent again after reload.
 

@@ -18,10 +18,10 @@ test('stride footprint movement is distinguished from planted-foot drift', async
     { id: 'idle', dirs: { south: [frame(60), frame(60)] } },
     { id: 'walk', dirs: { south: [frame(58), frame(60)] } },
   ], { directions: [{ id: 'south' }] })
-  expect(b.warnings).toContain('walk/south: footprint differs up to 2 px from the direction ground line (includes stride motion)')
+  expect(b.warnings).toContain('walk/south: silhouette bottom differs up to 2 px from the idle reference')
   expect(b.warnings.some(w => /walk.*feet drift/.test(w))).toBe(false)
 })
 test('actual standing-frame movement is still reported', async () => {
   const b = await buildRig([{ id: 'idle', dirs: { south: [frame(60), frame(58)] } }], { directions: [{ id: 'south' }] })
-  expect(b.warnings).toContain('idle/south: feet drift 2 px from the direction ground line')
+  expect(b.warnings).toContain('idle/south: silhouette bottom differs up to 2 px from the idle reference')
 })
