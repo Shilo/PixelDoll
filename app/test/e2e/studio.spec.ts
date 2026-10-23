@@ -1183,6 +1183,25 @@ async function targetedRepairFixture(page: Page) {
   })
 }
 
+async function oversizedItemFixture(page: Page, itemId: string) {
+  await page.evaluate(async id => {
+    const sPath = '/src/studio/state.svelte.ts', s = await import(sPath), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    const pPath = '/src/lib/store/project.ts', projectModule = await import(pPath), iPath = '/src/lib/items/items.ts', items = await import(iPath), pngPath = '/src/lib/image/pngraw.ts', png = await import(pngPath)
+    const ctx = await projectModule.loadProject(s.doc.id), item = ctx.rec.manifest.items.find((it: { id: string }) => it.id === id), padded = new Map<string, string>()
+    const pad = async (hash: string) => {
+      if (!padded.has(hash)) padded.set(hash, 'sha256:' + await db.putBlob(await png.encodePngBytes(items.padImg(ctx.project.images.get(hash), 16))))
+      return padded.get(hash)
+    }
+    for (const layer of item.layers) {
+      layer.cell = { w: 96, h: 96 }; layer.pivot = { x: ctx.rec.manifest.rig.pivot.x + 16, y: ctx.rec.manifest.rig.pivot.y + 16 }
+      for (const dirs of Object.values(layer.cells) as any[]) for (const [dir, cells] of Object.entries(dirs) as [string, (string | null)[]][]) dirs[dir] = await Promise.all(cells.map(hash => hash ? pad(hash) : null))
+    }
+    for (const [dir, hash] of Object.entries(item.dressed) as [string, string][]) item.dressed[dir] = await pad(hash)
+    await db.put('projects', s.doc.id, ctx.rec); await s.openProject(s.doc.id)
+    s.ui.anim = 'walk'; s.ui.dir = 'west'; s.pick(id)
+  }, itemId)
+}
+
 test('targeted move replacement scopes views, estimates and retained drafts before any paid work', async ({ page, context }, info) => {
   const posts: string[] = []
   await context.route('https://api.pixellab.ai/**', async (r) => {
@@ -1261,7 +1280,9 @@ test('partial missing gear and explicit item repair stay on the current move and
   await sheet.getByRole('button', { name: 'Start over', exact: true }).click()
   await sheet.getByRole('button', { name: 'Cancel', exact: true }).click()
   const repair = page.getByRole('button', { name: /^Try new item frames/ })
-  await expect(repair).toContainText('Est. 10 gens')
+  await expect(repair).toContainText('Est. 10 gens') // The bundled fixture uses actual 64 px equipment layers.
+  await oversizedItemFixture(page, fixture.itemId)
+  await expect(repair).toContainText('Est. 15 gens')
   await repair.click()
   sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true })
   await expect(sheet).toContainText('Scoped repair stopped before paid work')
@@ -1424,4 +1445,148 @@ test('bounded body colour correction discloses changed checks and equipment cost
   expect(fresh.seed).not.toBe(original.spec.seed)
   expect(fresh.bodyPaletteRepair).toBeUndefined(); expect(fresh.measurementRecovery).toBeUndefined()
   expect(posts).toEqual([]); expect(errors).toEqual([])
+})
+
+
+test('draft retry prices a fresh item plan rather than historical grid fallbacks and stops when pricing is unavailable', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', r => { requests.push(r.request().method()); return r.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await targetedRepairFixture(page)
+  const expected = await page.evaluate(async () => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p), routePath = '/src/studio/itemRoute.ts', route = await import(routePath)
+    const projectPath = '/src/lib/store/project.ts', projectModule = await import(projectPath)
+    await s.loadGens()
+    const ctx = await projectModule.loadProject(s.doc.id), input = { name: 'Fresh retry price', slot: 'main_hand', prompt: 'a steel sword' }
+    const draft = route.itemRoute.draft(ctx, input, [])
+    draft.calls = [{ kind: 'grid', cells: Array.from({ length: 8 }, (_, i) => 'walk/west/' + i), seed: 1, old: [], rerolls: 2 }]
+    s.gens.push({ draft, input, phase: 'failed', status: 'Stopped', error: 'Synthetic completed fallback failed review' })
+    s.ui.inspTab = 'item'; s.ui.selected = 'gen:' + draft.spec.id
+    return route.itemRoute.plan(ctx.rec.manifest.rig, ctx, input).gens
+  })
+  const panel = page.locator('.gen'), retry = panel.getByRole('button', { name: /^Try again/ })
+  expect(expected).toBeGreaterThan(15)
+  await expect(retry).toBeEnabled()
+  await expect(retry).toHaveText(`Try again Est. ${expected} gens`)
+  await page.evaluate(async () => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p)
+    const g = s.gens.find((g: { draft: { spec: { id: string } } }) => 'gen:' + g.draft.spec.id === s.ui.selected)
+    g.draft.calls.push({ kind: 'grid', cells: Array.from({ length: 15 }, (_, i) => 'walk/east/' + i), seed: 2, old: [], rerolls: 2 })
+  })
+  await expect(retry).toHaveText(`Try again Est. ${expected} gens`)
+  await page.evaluate(async () => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p)
+    s.gens.find((g: { draft: { spec: { id: string } } }) => 'gen:' + g.draft.spec.id === s.ui.selected).draft.rigId = 'rig-unavailable-retry-price'
+  })
+  await expect(panel).toContainText('Could not estimate this retry. Reopen the character and try again.')
+  await expect(retry).toBeDisabled()
+  expect(requests).toEqual([])
+})
+
+
+async function freePaletteFixture(page: Page) {
+  const fixture = await targetedRepairFixture(page)
+  await oversizedItemFixture(page, fixture.itemId)
+  const before = await page.evaluate(async id => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    const pngPath = '/src/lib/image/png.ts', png = await import(pngPath), rawPath = '/src/lib/image/pngraw.ts', raw = await import(rawPath)
+    const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((it: { id: string }) => it.id === id), metalId = id + '-fixed-metal'
+    const materials = [
+      { id: metalId, owner: id, label: 'Metal', ramp: ['#808080', '#c0c0c0'], variants: { azure: ['#2255aa', '#77aaff'] } },
+      { id: id + '-fixed-outline', owner: id, label: 'Outline', ramp: ['#101010'], variants: {} },
+    ]
+    rec.manifest.materials = [...rec.manifest.materials.filter((m: { owner: string }) => m.owner !== id), ...materials]
+    item.materials = materials.map(m => m.id); item.status = 'accepted'; item.baseHash = rec.manifest.rig.baseHash
+    item.designWarnings = ['D1 keyframe rest/west/0: grey smudges']
+    if (item.qa) item.qa.status = 'warn'
+    const image = png.makeImg(96, 96)
+    for (const [offset, rgb] of [[0, [133, 133, 133]], [1, [240, 240, 240]], [2, [192, 128, 96]], [3, [16, 16, 16]]] as [number, number[]][]) image.data.set([...rgb, 255], (40 * 96 + 40 + offset) * 4)
+    const hash = 'sha256:' + await db.putBlob(await raw.encodePngBytes(image))
+    for (const layer of item.layers) layer.cells.walk.west = Array.from({ length: 8 }, () => null)
+    item.layers[0].cells.walk.west[0] = hash; item.layers[0].cells.walk.west[1] = hash
+    await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id)
+    s.ui.anim = 'walk'; s.ui.dir = 'west'; s.ui.frame = 0; s.ui.playing = false; s.pick(id)
+    s.setVariant(metalId, 'azure'); await s.flushSave()
+    const saved = await db.get('projects', s.doc.id), savedItem = saved.manifest.items.find((it: { id: string }) => it.id === id)
+    const unscoped = structuredClone(savedItem.layers); for (const layer of unscoped) delete layer.cells.walk.west
+    return { projectId: s.doc.id, metalId, materials: saved.manifest.materials, presets: saved.manifest.presets, variants: s.doc.variants, qa: savedItem.qa, warnings: savedItem.designWarnings, provenance: savedItem.provenance, rig: saved.manifest.rig, unscoped, sourceHash: hash }
+  }, fixture.itemId)
+  const diagnosis = await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p), r = '/src/lib/items/run.ts', run = await import(r); try { return await run.itemPaletteRepairPlan(s.doc.id, id, 'walk', 'west') } catch (e) { return String(e) } }, fixture.itemId)
+  expect(diagnosis).toMatchObject({ changedPixels: 2, changedFrames: [0, 1], unmatchedPixels: 2 })
+  return { ...fixture, ...before }
+}
+
+test('free item colour matching is offline, scoped, persistent and preserves saved recolours and warnings', async ({ page, context }, info) => {
+  const requests: string[] = []
+  context.on('request', r => { if (r.url().startsWith('https://api.pixellab.ai/')) requests.push(r.method()) })
+  await context.route('https://api.pixellab.ai/**', r => r.abort())
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await freePaletteFixture(page), pane = page.locator('.inspector')
+  const action = pane.getByRole('button', { name: /^Match item colours.*Free$/ })
+  await expect(action).toBeVisible()
+  await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west')
+  await expect(pane).toContainText('2 unmatched eligible pixels stay unchanged')
+  await expect(pane).toContainText('No PixelLab call is made')
+  await context.setOffline(true)
+  await action.click()
+  await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible()
+  await expect(action).toHaveCount(0)
+  await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.doc.rev++ })
+  await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible()
+  await context.setOffline(false)
+  const after = await page.evaluate(async id => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p), projectPath = '/src/lib/store/project.ts', projectModule = await import(projectPath)
+    const ctx = await projectModule.loadProject(s.doc.id), item = ctx.rec.manifest.items.find((it: { id: string }) => it.id === id), image = ctx.project.images.get(item.layers[0].cells.walk.west[0])
+    const unscoped = structuredClone(item.layers); for (const layer of unscoped) delete layer.cells.walk.west
+    return { materials: ctx.rec.manifest.materials, presets: ctx.rec.manifest.presets, variants: s.doc.variants, qa: item.qa, warnings: item.designWarnings, provenance: item.provenance, rig: ctx.rec.manifest.rig, unscoped, pixels: [...image.data.slice((40 * 96 + 40) * 4, (40 * 96 + 44) * 4)], audit: item.paletteRepairs, selected: s.ui.selected, anim: s.ui.anim, dir: s.ui.dir }
+  }, fixture.itemId)
+  for (const key of ['materials', 'presets', 'variants', 'qa', 'warnings', 'provenance', 'rig', 'unscoped'] as const) expect(after[key]).toEqual(fixture[key])
+  expect(after.pixels).toEqual([128, 128, 128, 255, 240, 240, 240, 255, 192, 128, 96, 255, 16, 16, 16, 255])
+  expect(after).toMatchObject({ selected: fixture.itemId, anim: 'walk', dir: 'west' })
+  expect(after.audit).toHaveLength(1)
+  expect(after.audit[0]).toMatchObject({ version: 'neutral-owned-v1', anim: 'walk', dir: 'west' })
+  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
+  await page.reload(); await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.anim = 'walk'; s.ui.dir = 'west'; s.pick(id) }, fixture.itemId)
+  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
+  await expect(pane.getByRole('radio', { name: 'azure', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
+  await expect(pane.getByRole('button', { name: /^Match item colours.*Free$/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
+  await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
+  const download = sheet.getByRole('button', { name: /^Download zip/ })
+  await expect(download).toBeEnabled()
+  const event = page.waitForEvent('download'); await download.click()
+  const file = await event, path = await file.path(); expect(path).not.toBeNull()
+  const entries = await unzip(new Uint8Array(readFileSync(path!)))
+  const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json')!))
+  expect(manifest.items.find((it: { id: string }) => it.id === fixture.itemId).paletteRepairs).toHaveLength(1)
+  expect(manifest.materials).toEqual(fixture.materials)
+  expect(requests).toEqual([])
+})
+
+for (const changed of ['item', 'rig'] as const) test(`free item colour matching refuses a stale ${changed} review without changing any pixels`, async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', r => { requests.push(r.request().method()); return r.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await freePaletteFixture(page), pane = page.locator('.inspector')
+  const action = pane.getByRole('button', { name: /^Match item colours.*Free$/ })
+  await expect(action).toBeVisible()
+  await page.evaluate(async ({ id, changed }) => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p), dbPath = '/src/lib/store/db.ts', db = await import(dbPath), rec = await db.get('projects', s.doc.id)
+    if (changed === 'item') rec.manifest.items.find((it: { id: string }) => it.id === id).prompt += ', changed after preview'
+    else rec.manifest.rig.view = rec.manifest.rig.view === 'side' ? 'low top-down' : 'side'
+    await db.put('projects', s.doc.id, rec)
+  }, { id: fixture.itemId, changed })
+  await action.click()
+  await expect(pane).toContainText('This item or its colours changed. Review the colour match again.')
+  const saved = await page.evaluate(async id => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p), dbPath = '/src/lib/store/db.ts', db = await import(dbPath), rec = await db.get('projects', s.doc.id), it = rec.manifest.items.find((i: { id: string }) => i.id === id)
+    return { hash: it.layers[0].cells.walk.west[0], audit: it.paletteRepairs }
+  }, fixture.itemId)
+  expect(saved.hash).toBe(fixture.sourceHash); expect(saved.audit).toBeUndefined()
+  expect(requests).toEqual([])
 })

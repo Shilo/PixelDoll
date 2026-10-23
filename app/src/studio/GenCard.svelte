@@ -3,7 +3,8 @@
   import { bakedFrame, composeCell } from '../lib/compose/compose.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import { failsOf, gensOf, usdOf, hasStructuralFailure } from '../lib/items/run.ts'
-  import { planGens } from '../lib/items/items.ts'
+  import { loadProject } from '../lib/store/project.ts'
+  import { itemRoute } from './itemRoute.ts'
   import Sprite from './Sprite.svelte'
   import { groupOf, plainReason } from './model.ts'
   import { ui, store, genProgress, acceptGen, discardGen, retryGen, type Gen } from './state.svelte.ts'
@@ -24,6 +25,20 @@
   const reasons = $derived(res ? [...new Set(g.draft.calls.flatMap((_, i) => failsOf(res, i)).map(plainReason))] : [])
   const warns = $derived(res?.qa?.warnings.map(plainReason) ?? [])
   const clean = $derived(res?.qa?.qa.status === 'pass' && res.g1.size === 0 && res.qa.failCalls.size === 0 && res.qa.warnings.length === 0)
+  let retryGens = $state<number | null>(null)
+  let retryEstimateError = $state('')
+  $effect(() => {
+    const projectId = g.draft.rigId, input = $state.snapshot(g.input)
+    void store.project?.manifest // Re-price when the character's coverage changes.
+    let current = true
+    retryGens = null; retryEstimateError = ''
+    // Try again creates a fresh item plan; old fallback calls are not the next attempt's plan.
+    void loadProject(projectId).then((ctx) => {
+      const plan = itemRoute.plan(ctx.rec.manifest.rig, ctx, input)
+      if (current) retryGens = plan.gens
+    }).catch(() => { if (current) retryEstimateError = 'Could not estimate this retry. Reopen the character and try again.' })
+    return () => { current = false }
+  })
   let busy = $state(false)
   async function accept() { busy = true; try { await acceptGen(g) } finally { busy = false } }
   // wear the draft in the review previews
@@ -76,17 +91,18 @@
     {/if}
     <div class="actions">
       <button class="btn primary" onclick={accept} disabled={busy || !res?.qa || hasStructuralFailure(res)}>Keep it</button>
-      <button class="btn" onclick={() => retryGen(g)} disabled={busy}>Try again <span class="cost">Est. {planGens(g.draft.calls.map((c) => ({ kind: c.kind ?? 'edit', cells: c.cells })))} gens</span></button>
+      <button class="btn" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button>
       <button class="btn plain danger" onclick={() => discardGen(g)} disabled={busy}>Discard</button>
     </div>
   {:else if g.phase === 'failed'}
     <p class="notice bad small"><CircleAlert size={14} />{g.error?.includes('5000') || g.error?.toLowerCase().includes('policy') ? 'PixelLab declined this prompt. Try different words.' : 'This item could not be made.'}</p>
     <div class="actions">
-      <button class="btn primary" onclick={() => retryGen(g)}>Try again <span class="cost">Est. {planGens(g.draft.calls.map((c) => ({ kind: c.kind ?? 'edit', cells: c.cells })))} gens</span></button>
+      <button class="btn primary" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button>
       <button class="btn plain danger" onclick={() => discardGen(g)}>Discard</button>
     </div>
   {/if}
 
+  {#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small"><CircleAlert size={14} />{retryEstimateError}</p>{/if}
   {#if g.phase !== 'running'}<p class="faint small">PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.</p>{/if}
   <details class="disclosure">
     <summary><ChevronRight size={14} />Details</summary>

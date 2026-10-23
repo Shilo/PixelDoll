@@ -146,6 +146,12 @@ splits it into shirt and shorts the next time you open them, nothing is regenera
 **Original** restores one colour and **Reset** restores them all. Recolouring swaps exact colours,
 so pixel art stays crisp, and it is free.
 
+If a saved item's new frames contain nearby steel shades outside its existing palette, the **Item** tab may offer
+**Match item colours · Free**. Select the move and facing view first, then review the displayed pixel and frame counts.
+It matches only small, unambiguous neutral colour differences to that item's existing palette. Other views and moves,
+body pixels, existing palette colours, material ramps, saved recolours and quality warnings stay intact. Larger or ambiguous differences
+remain unchanged. This runs locally and makes no PixelLab call; export a backup before editing artwork.
+
 ## Add a move
 
 Open the **Moves** tab → **Add a move**. Pick **Idle**, **Walk**, **Slash**, **Cast**, **Hurt** or **Death**, or describe your own under **Or
@@ -164,7 +170,8 @@ that still fails body checks keeps the previous artwork.
 For an accepted item that has bad frames, select the move and facing direction in the preview, then use **Try new item
 frames** in the Item tab. This redraws that item's frames on the frozen body, preserving its saved design and the other
 views and moves. Review the displayed estimate before starting. Failed quality checks keep the previous item frames;
-successful generation still needs a visual check for grip, missing parts and extra blades.
+successful generation still needs a visual check for grip, missing parts and extra blades. Grid estimates include
+protected design references and the actual submitted canvas size; large 96px grids can cost more than small 64px grids.
 
 If a body render finished but its joint measurements failed, the failed move may offer **Retry joint checks**. This
 reuses the exact completed body images and runs only unfinished measurements, sequentially. Review the count and cost:

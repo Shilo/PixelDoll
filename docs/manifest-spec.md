@@ -556,3 +556,16 @@ reviewed design messages, independent of replaceable per-frame/clip `qa` summari
 is added or replaced, even when all old frame QA is invalidated, and survive editable ZIP export/import. Passing frame
 checks remain `pass`; Studio separately labels the accepted appearance warnings. The optional field does not change
 `pixeldoll/1`. Imports allow at most 100 nonempty strings of at most 2,000 characters each.
+
+
+### Explicit item palette repair history
+
+An item may contain `paletteRepairs`: local, explicit colour edits under the fixed `neutral-owned-v1` policy. Each entry
+records `materialId`, `anim`, authored `dir`, and changed frames (`cell`, `changedPixels`, layer `id` plus `before`/`after`
+SHA-256 image references). Current cells point to corrected images. Historical hashes are audit references and do not
+require obsolete blobs in the editable ZIP; later clip replacements may supersede them. Original paid provenance and
+historical QA remain intact. The operation preserves alpha and pixel coordinates, changes no material definition or
+variant, and matches only unclaimed neutral/cool colours to the one eligible item-owned neutral ramp within 24/255 per
+channel. Ambiguous or unsupported colours stay unchanged. No PixelLab request or synthetic clean QA claim is implied.
+The optional field does not change `pixeldoll/1`. Imports validate bounded history arrays, known policy version, safe
+IDs, direction/frame/layer shapes, unique frame/layer entries, positive pixel counts and distinct valid hashes.

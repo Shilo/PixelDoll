@@ -21,6 +21,7 @@ import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/r
 import { rigReady } from '../lib/rig/setup.ts';
 import { repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, clipQa, largestComponent, loops, rawClip, type ClipQa } from '../lib/rig/clips.ts';
+import { gridEstimate } from '../lib/items/items.ts';
 import { poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
 import type { CellKey, Manifest, Provenance } from '../lib/store/manifest.ts';
 import { basePrompt, looksOf } from './model.ts';
@@ -468,7 +469,12 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
 };
 export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace'>) {
   const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = s.itemMethod === 'grid' && !s.replace ? 0 : dirs * (RAW_GENS + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
-  const items = s.itemMethod === 'grid' ? 10 * s.items.length * dirs : poseGens(s.items.length, n, dirs);
+  const items = s.itemMethod === 'grid' ? s.items.reduce((sum, id) => {
+    const item = m.items.find(i => i.id === id);
+    if (!item) throw new Error('The selected equipment is no longer available.');
+    const cell = item.layers[0]?.cell ?? m.rig.cell;
+    return sum + gridEstimate(cell, n, Object.keys(item.dressed ?? {}).length).gens * dirs;
+  }, 0) : poseGens(s.items.length, n, dirs);
   return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };
 }
 

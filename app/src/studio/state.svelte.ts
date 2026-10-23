@@ -8,7 +8,7 @@ import { drawList } from '../lib/compose/compose.ts';
 import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
-import { evaluateItem, loadDrafts, type Draft, type ItemResult } from '../lib/items/run.ts';
+import { evaluateItem, loadDrafts, matchItemColours as applyItemColours, type ItemPaletteRepairPlan, type Draft, type ItemResult } from '../lib/items/run.ts';
 import { SLOTS } from '../lib/items/items.ts';
 import { app } from '../lib/app.svelte.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
@@ -339,6 +339,19 @@ export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
 export function resetLayer(itemId: string) {
   const m = store.project!.manifest, slot = m.slots.find((s) => s.id === itemById(itemId)!.slot)!;
   commit('Reset layer order', () => { slot.zOverrides = structuredClone(SLOTS.find((s) => s.id === slot.id)?.zOverrides ?? []); }); // ladder default (T3)
+}
+
+let itemPaletteRefresh = 0;
+/** Free, explicit correction of one saved item view; keep the open outfit and inspector selection. */
+export async function matchItemPalette(projectId: string, itemId: string, anim: string, dir: DirectionName, reviewed: ItemPaletteRepairPlan) {
+  const request = openRequest;
+  await flushSave();
+  await applyItemColours(projectId, itemId, anim, dir, reviewed);
+  if (doc.id !== projectId || request !== openRequest) return;
+  const refresh = ++itemPaletteRefresh, fresh = await loadProject(projectId);
+  if (doc.id !== projectId || request !== openRequest || refresh !== itemPaletteRefresh) return;
+  store.project = fresh.project;
+  doc.rev++;
 }
 
 export async function removeItem(itemId: string) {

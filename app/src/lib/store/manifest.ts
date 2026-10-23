@@ -62,7 +62,16 @@ export interface Item {
   anchorCell?: CellKey; // ea2-anchor: design-call cell passed as frame 1 to later calls
   provenance: Provenance[];
   designWarnings?: string[]; // explicitly accepted keyframe design issues, retained when move QA is replaced
+  paletteRepairs?: ItemPaletteRepair[]; // explicit local edits; paid source provenance and historical QA remain intact
   qa?: ItemQa; // not read by compose/export
+}
+/** Original and corrected layer references for an explicit free colour edit. Historical source blobs need not remain loaded. */
+export interface ItemPaletteRepair {
+  version: 'neutral-owned-v1';
+  materialId: string;
+  anim: string;
+  dir: DirectionName;
+  frames: { cell: number; changedPixels: number; layers: { id: string; before: Sha256; after: Sha256 }[] }[];
 }
 /** Scalar checks for one evaluation; extrema or totals over its frames. */
 export interface QaSummary {

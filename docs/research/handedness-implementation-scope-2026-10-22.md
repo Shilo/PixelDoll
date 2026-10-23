@@ -88,3 +88,18 @@ coverage and both hand slots remain broader verification requirements.
 Current integrated automated evidence reported by the parent is 321 unit tests across 34 files, 34 browser tests, strict
 checks with zero errors/warnings, and a clean production agent-token guard. Future live evidence belongs in the
 [professional audit report](../testing/professional-audit-2026-10-22.md).
+
+
+## Scoped repair follow-up (2026-10-22)
+
+The failed original Slash is retained as evidence. A new versioned side pose keeps the active hand visible and separates
+its passive arm without rewriting old intents. Explicit measurement-only recovery reuses completed renders and preserves
+unknown estimator records; bounded cached-frame palette correction passes the unchanged body gates with genuine joints.
+Final East/West adherence is 0.78/0.81px. Selected equipment is reposed without changing idle or other views.
+
+Independent enlarged review then found retained North/South grip defects, so each was repaired on the frozen body with
+one 96px masked-grid request. All32 final attack frames now pass manual grip/single-blade review, with honest soft item
+warnings retained. Actual Godot, Phaser3.90/4.2 and Aseprite preserve the final package exactly. This four-direction,
+main-hand result does not certify independent eight-direction/off-hand generation, legacy mirrored anatomy or the full
+idle+walk creation that stopped on unknown HTTP500 estimator outcomes. Latest source checks and local palette follow-up
+are recorded in the [audit report](../testing/professional-audit-2026-10-22.md).

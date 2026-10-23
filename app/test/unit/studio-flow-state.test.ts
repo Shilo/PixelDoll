@@ -2,9 +2,13 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
+vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColours: mocks.match }))
+vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: mocks.load }))
+vi.mock('../../src/lib/dress/project.ts', async original => ({ ...await original<typeof import('../../src/lib/dress/project.ts')>(), openSource: mocks.source }))
+
 vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', subscribe: () => () => {}, idle: () => true } }))
@@ -259,4 +263,48 @@ test('body colour consent storage failure cannot start paid work', async () => {
   await s.matchMoveBodyColours('project', structuredClone(paletteSpec), palettePlan)
   expect(mocks.move).not.toHaveBeenCalled()
   expect(s.moving.error).toContain('Consent storage blocked')
+})
+
+
+const itemColourPlan = { version: 'neutral-owned-v1' as const, fingerprint: 'reviewed-item-and-rig', materialId: 'sword-metal', changedPixels: 20, changedFrames: [0, 1], unmatchedPixels: 0 }
+
+test('free item palette refresh preserves the outfit, selected view and inspector without invoking paid flow', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  s.doc.id = 'project'; s.doc.items = { main_hand: 'sword' }; s.doc.variants = { 'sword-metal': 'azure' }
+  s.ui.selected = 'sword'; s.ui.anim = 'slash'; s.ui.dir = 'west'; s.ui.frame = 3
+  const project = { manifest: { name: 'Refreshed palette' }, images: new Map() }
+  mocks.match.mockResolvedValue(undefined); mocks.load.mockResolvedValue({ project })
+  await s.matchItemPalette('project', 'sword', 'slash', 'west', itemColourPlan)
+  expect(mocks.match).toHaveBeenCalledWith('project', 'sword', 'slash', 'west', itemColourPlan)
+  expect(s.store.project).toBe(project)
+  expect(s.doc.items).toEqual({ main_hand: 'sword' }); expect(s.doc.variants).toEqual({ 'sword-metal': 'azure' })
+  expect(s.ui).toMatchObject({ selected: 'sword', anim: 'slash', dir: 'west', frame: 3 })
+  expect(mocks.move).not.toHaveBeenCalled(); expect(mocks.create).not.toHaveBeenCalled(); expect(mocks.setup).not.toHaveBeenCalled()
+})
+
+test('free item palette cannot replace a newer pending navigation even while the old project remains displayed', async () => {
+  const work = pending<void>(), navigation = pending<never>()
+  mocks.match.mockReturnValue(work.promise); mocks.source.mockReturnValue(navigation.promise)
+  const s = await import('../../src/studio/state.svelte.ts'); s.doc.id = 'old-project'
+  const run = s.matchItemPalette('old-project', 'sword', 'slash', 'west', itemColourPlan)
+  await vi.waitFor(() => expect(mocks.match).toHaveBeenCalledOnce())
+  void s.openProject('new-project')
+  await vi.waitFor(() => expect(mocks.source).toHaveBeenCalledOnce())
+  expect(s.doc.id).toBe('old-project')
+  work.resolve(); await run
+  expect(mocks.load).not.toHaveBeenCalled()
+})
+
+test('free item palette applies only the newest refresh when two item corrections complete close together', async () => {
+  const older = pending<{ project: any }>(), newer = pending<{ project: any }>()
+  mocks.match.mockResolvedValue(undefined); mocks.load.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
+  const s = await import('../../src/studio/state.svelte.ts'); s.doc.id = 'project'
+  const first = s.matchItemPalette('project', 'first-item', 'slash', 'west', itemColourPlan)
+  await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(1))
+  const second = s.matchItemPalette('project', 'second-item', 'slash', 'west', itemColourPlan)
+  await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2))
+  const currentProject = { manifest: { name: 'Both corrections' }, images: new Map() }
+  newer.resolve({ project: currentProject }); await second
+  older.resolve({ project: { manifest: { name: 'Older snapshot' }, images: new Map() } }); await first
+  expect(s.store.project).toBe(currentProject)
 })

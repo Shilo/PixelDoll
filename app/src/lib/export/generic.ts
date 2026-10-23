@@ -6,6 +6,7 @@ import type { Engine, Manifest, Project } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
 import { moveDirs, recolour } from '../dress/dress.ts';
 import { bakedFrame, layerFrame } from '../compose/compose.ts';
+import { validPaletteRepairs } from '../dress/item-palette.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
 
@@ -30,6 +31,7 @@ export function validate(p: Project): string[] {
     itemIds.add(it.id);
     if (new Set(it.layers.map((l) => l.id)).size !== it.layers.length) e.push(`${it.id}: duplicate layer id`);
     if (it.designWarnings !== undefined && (!Array.isArray(it.designWarnings) || it.designWarnings.length > 100 || it.designWarnings.some((why) => typeof why !== 'string' || !why.trim() || why.length > 2000))) e.push(`${it.id}: invalid accepted appearance warnings`);
+    if (it.paletteRepairs !== undefined && !validPaletteRepairs(it.paletteRepairs)) e.push(`${it.id}: invalid local palette repair history`);
   }
   const bodies = m.items.filter((i) => i.slot === 'body');
   if (bodies.length !== 1 || bodies[0].id !== m.rig.baseItem) e.push('exactly one item in slot "body" must be rig.baseItem');

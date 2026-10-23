@@ -126,8 +126,91 @@ Validation at `c101df5`: 383 unit tests across 42 files, 37 browser tests, stric
 429.49 KB production main bundle with clean credential guard. Exact-token staged and bundle scans passed. Read-only
 raw/cleaned/requested/measured inspection tools remain development-only and cannot call PixelLab or alter projects.
 
+`1f2ee6e` adds an explicit cached-frame colour repair. Raw West has 177/4,619 outlier pixels; broad RGB quantization would
+incorrectly map some dark skin to grey. The fixed `near-rest-v1` policy changes only unique, hue-compatible nearest
+standing colours within 16/255 per channel, and only existing outliers beyond the unchanged 12/255 tolerance. Raw and
+changed shares are capped at 5%; broad, ambiguous or different-hue matches are refused. Independent before/after review
+approved 39 changes across West frames 1–4, mostly near-black outline pixels. Alpha, coordinates, warm skin and the
+remaining 138 unsafe outliers stay intact. Fit becomes 0.970123; the existing garment-region tagging leaves that exact
+result unchanged. This narrow correction was approved visually, not merely because its result crosses the gate.
+
+The live **Match body colours** action reused both completed renders and all unchanged measurements. Four genuinely new
+corrected-PNG estimates completed for 0.4 gens, the body passed all gates and was published, and selected East/West sword
+posing began. Raw/final input PNG hashes and correction counts survive in `ClipSource.processing`. A correction known
+to remain below the palette gate is rejected before paid measurements. The UI separately discloses the selected sword's
+six-gen posing baseline and possible dollar charges/retries. The selected East/West sword poses completed on their first calls for six gens.
+
+Validation at `1f2ee6e`: 414 unit tests across 43 files, 38 browser tests, strict checks with zero errors/warnings, a
+436.27 KB production main bundle, clean credential guard and exact-token scans. No new package dependency was added.
+
+### Completed four-direction Slash artwork
+
+The repaired East/West body passes every unchanged body gate: adherence is 0.78/0.81 px, with no foot drift or border
+clipping. Their new sword poses contain one blade and meet the active fist. Independent enlarged review challenged the
+initial assumption that retained North/South artwork was already good: North frame 4 and South frames 3/4 had misplaced
+grips. The team confirmed those defects against isolated body/wrist evidence before spending again.
+
+Explicit **Try new item frames** repaired North and South separately using the frozen body, a 96 px layer and four
+protected design references. Each 384×288 inpaint completed for 15 gens, with no unknown outcome or automatic reroll.
+The resulting 243,822-byte editable ZIP has SHA-256
+`856a992e54d1e10c5d395bf39bb3625a4d5cc4e75241e6849380b1f2210d43f6`.
+All body pixels/metadata, all idle cells and the already repaired East/West equipment remain identical; only the
+selected North/South Slash equipment changed. All 32 final sword frames were reviewed independently at 8×, then stepped
+through all four directions in the Codex browser. The original floating grips and duplicate weapon are corrected.
+Automated body-change, size-variation and grip-uncertainty warnings remain visible; no thresholds or warnings were hidden.
+
+The final actual package passes Phaser 3.90/4.2 (884,736 pixels each, zero differences; 2,880 clock/pivot checks and 1,920
+oversize checks each), Godot (886,035 checks, zero failures) and Aseprite (48 frames/eight tags, zero flattened/per-layer
+pixel differences). These certify tested pixel preservation and synchronization, alongside the separate visual review.
+
+The live 15-gen charges exposed an inaccurate fixed 10-gen inpaint estimate. Shared pricing now uses the actual packed
+canvas including protected references and unused packed cells. Official 256²/341²/512² tiers are 10/15/25 gens; using area
+for non-square inputs is explicitly an inference supported by observed charges. Fresh-item retry estimates now price the
+actual new plan rather than historical fallback calls, and disable safely when the project cannot be read.
+
+### Exact recolour after repair
+
+A final independent histogram/enlarged review caught new blade greys outside the original saved Metal ramp. Normal-size
+blue previews concealed uncoloured steel edges/highlights. Rebuilding or extending the material ramp was rejected:
+that could change custom variant lengths and the mean used for future swatches, altering old saved outfits.
+
+**Match item colours · Free** now previews the number of pixels/frames in the selected saved move/view and makes no
+PixelLab call. Fixed `neutral-owned-v1` matches only unclaimed neutral/cool pixels to exactly one eligible item-owned
+neutral material. Nearest RGB must be unique and within 24/255 per channel; warm guards/skin, claimed colours, transparent
+pixels and excluded dark outlines stay intact. A proposed 32 limit was challenged with a dark-edge counterexample and
+reduced to 24, preserving the same actual successful mappings. Larger/ambiguous differences remain unchanged.
+
+The operation replaces only selected stored image references, preserves old shared image objects and all palette IDs,
+ramps, custom variants, original paid provenance and historical QA, and records per-frame before/after hashes/counts.
+Atomic reviewed fingerprints bind the scope, rig, item and every material definition. Stale edits refuse publication;
+current outfits survive. The writer preflights the same bounded metadata contract used by export/import. The UI remains
+usable offline/disconnected and preserves the selected move/view and saved recolour after an in-place refresh.
+
+The actual Codex-browser actions changed North 231/South 234/West 10 pixels in 8/8/1 frames; East already needed no change.
+Enlarged before/after blue previews confirm complete steel recolouring with the same single blade and fist contact.
+Reload, real editable download and actual file-chooser reimport as **Audit final Slash** pass, retaining four independent
+directions, two moves, separate 96px equipment, Azure Metal/original Wood and all review warnings.
+
+Final archive: `C:/Users/shilo/Downloads/audit-repaired-slash-generic.pixeldoll.zip`, 281,073 bytes, SHA-256
+`32a031f1391bbe9b26d7e405c7350f446fb2588f05e9d72ceb3b1dcca385cf3b`.
+Independent production-helper comparison proves exactly 475 RGB-only changes across 17 frames, zero alpha/geometry or
+unexpected pixel changes, and three valid history entries. Body/idle/rig/QA/provenance remain exact. Original materials
+and variant mappings remain exact; export caches only the explicitly selected Azure swatch. Phaser 3.90/4.2 each pass
+884,736 pixel comparisons and 2,880 clock/pivot checks; Godot passes 886,035 checks; Aseprite preserves 48 frames/eight tags
+with zero 442,368 composite or 2,211,840 per-layer differences, including the coloured item copy.
+
+A development-only export attempt during partial hot-module reload failed; a clean reload restored export immediately.
+The final production tests include the real free-action→reload→editable-download path. No paid request was made for the
+colour correction. The authenticated agent server was stopped after every paid request settled; the keyless final preview
+remains available. No push, merge or deployment was performed.
+
+Final source validation: **467 unit tests across 46 files**, **42 full browser tests** and the three affected offline
+colour-match/export/stale-review browser cases repeated successfully after the final history-writer safeguard. Strict
+checks report zero errors/warnings; production build is 443.99 KB main JavaScript with a clean dist credential guard.
+Exact-token staged/bundle scans passed. The final source adds no package dependency or backend.
+
 ## Remaining limits
 
-Two shield east-walk drafts retain hard QA flags and remain unaccepted; stored cape smudges and helmet hurt-frame artwork also require correction or explicit review. Independent body directions/actions are implemented for new characters. The live slash execution completed, but its east/west body checks and west weapon artwork failed quality acceptance; it remains review evidence, not a certified attack asset. Existing and economy-mode mirrored rigs still flip asymmetric attacks. No item-only toggle was presented as an anatomical fix.
+Two shield east-walk drafts retain hard QA flags and remain unaccepted; stored cape smudges and helmet hurt-frame artwork also require correction or explicit review. Independent body directions/actions are implemented for new characters. The original failed Slash remains historical evidence; the new targeted repair passes body gates and manual artwork review, with soft item warnings retained. Existing and economy-mode mirrored rigs still flip asymmetric attacks. No item-only toggle was presented as an anatomical fix.
 
 Unity live editor and Godot Aseprite Wizard remain unverified here. Physical-device and screen-reader certification are not claimed. Existing PWA, final-origin and theme decisions remain deferred. Passing this bounded audit does not certify all possible archives, provider artwork or engine customizations.

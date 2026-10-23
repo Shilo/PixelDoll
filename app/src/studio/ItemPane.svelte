@@ -2,11 +2,12 @@
   import { coverageGaps, moveDirs } from '../lib/dress/dress.ts'
   import { hiddenSlots, equipped } from '../lib/compose/compose.ts'
   import { SLOTS } from '../lib/items/items.ts'
+  import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
   import { moveEstimate } from './create.ts'
   import Sprite from './Sprite.svelte'
   import Colours from './Colours.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
-  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, moving, settingUp } from './state.svelte.ts'
+  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, moving, settingUp, matchItemPalette } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
   let { id }: { id: string } = $props()
@@ -38,6 +39,31 @@
     if (!repairSpec) return
     const projectId = doc.id, spec = { ...$state.snapshot(repairSpec), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
+  }
+  let colourPlan = $state<ItemPaletteRepairPlan | null>(null)
+  let colourBusy = $state(false)
+  let colourError = $state('')
+  let colourDone = $state('')
+  const colourScope = $derived(`${doc.id}|${it?.id ?? ''}|${anim?.id ?? ''}|${sourceDir}`)
+  $effect(() => { void colourScope; colourError = ''; colourDone = '' })
+  $effect(() => {
+    const projectId = doc.id, itemId = it?.id, animId = anim?.id, dir = sourceDir
+    void doc.rev
+    let current = true
+    colourPlan = null
+    if (!isDemo() && itemId && animId) void itemPaletteRepairPlan(projectId, itemId, animId, dir).then((plan) => { if (current) colourPlan = plan }).catch(() => {})
+    return () => { current = false }
+  })
+  async function matchColours() {
+    if (!colourPlan || !it || !anim || colourBusy) return
+    const projectId = doc.id, itemId = it.id, animId = anim.id, dir = sourceDir, reviewed = $state.snapshot(colourPlan)
+    const sameView = () => doc.id === projectId && it?.id === itemId && anim?.id === animId && sourceDir === dir
+    colourBusy = true; colourError = ''; colourDone = ''
+    try {
+      await matchItemPalette(projectId, itemId, animId, dir, reviewed)
+      if (sameView()) colourDone = `Matched ${reviewed.changedPixels} ${reviewed.changedPixels === 1 ? 'pixel' : 'pixels'} in ${reviewed.changedFrames.length} ${reviewed.changedFrames.length === 1 ? 'frame' : 'frames'}.`
+    } catch (e) { if (sameView()) colourError = e instanceof Error ? e.message : String(e) }
+    finally { colourBusy = false }
   }
   const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
   const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0)
@@ -119,6 +145,15 @@
         <p class="faint small">Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard failures keep the previous frames. PixelLab may bill dollars; queue time varies.</p>
       </div>
     {/if}
+
+    {#if !isDemo() && colourPlan}
+      <div class="field">
+        <button class="btn" disabled={colourBusy || repairBusy} onclick={matchColours}>{colourBusy ? 'Matching colours…' : 'Match item colours'} <span class="cost">Free</span></button>
+        <p class="faint small">Match {colourPlan.changedPixels} pixels in {colourPlan.changedFrames.length} saved {moveName} {colourPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item's existing colour palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolours stay fixed. {#if colourPlan.unmatchedPixels}{colourPlan.unmatchedPixels} unmatched eligible pixels stay unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
+      </div>
+    {/if}
+    {#if colourError}<p class="notice bad small"><TriangleAlert size={14} />{colourError}</p>{/if}
+    {#if colourDone}<p class="notice small">{colourDone}</p>{/if}
 
     <Colours only={it.id} />
 

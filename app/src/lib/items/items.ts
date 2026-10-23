@@ -49,6 +49,16 @@ export const itemRoute = {
 
 // ---------- B14 fallback: one clip-direction as a Pro inpaint-v3 packed masked grid (S4 inv3, S5 H3) ----------
 export const GRID_COLS = 4;
+/** Estimated Pro inpaint tiers from the official 256²/341²/512² catalog bands (2026-10-22).
+ * Area interpretation is inferred from actual 384×288=15 and 480×384=25 charges; it is not a provider quote.
+ * References and unused packed cells remain part of the submitted canvas. */
+export function gridEstimate(cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS): { w: number; h: number; gens: number } {
+  if (![cell.w, cell.h, cells, refs, cols].every(Number.isInteger) || cell.w <= 0 || cell.h <= 0 || cells <= 0 || refs < 0 || cols <= 0) throw new Error('Repair grid dimensions and frame/reference counts must be valid integers.');
+  const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h;
+  if (w < 32 || h < 32 || w > 512 || h > 512) throw new Error('This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.');
+  const area = w * h;
+  return { w, h, gens: area <= 256 * 256 ? 10 : area <= 341 * 341 ? 15 : 25 };
+}
 /** Pack cells into one grid (row-major, `cols` wide) plus its mask: white = generate (the cell's mask px), black = keep. */
 export function packGrid(cells: Img[], masks: (Uint8Array | null)[], cols = GRID_COLS): { image: Img; mask: Img } {
   const { w, h } = cells[0], rows = Math.ceil(cells.length / cols), image = makeImg(cols * w, rows * h), mask = makeImg(cols * w, rows * h);
@@ -170,7 +180,10 @@ export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clip
 export const anchorChunks = <T>(cells: T[], cap: number): T[][] => [cells.slice(0, cap), ...Array.from({ length: Math.ceil(Math.max(0, cells.length - cap) / (cap - 1)) }, (_, i) => cells.slice(cap + i * (cap - 1), cap + (i + 1) * (cap - 1)))];
 /** Does call k lead with the anchor cell (edit-animation-v2 after the first call)? Its first output is then dropped. */
 export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind === 'edit' || kind === 'dress');
-export const planGens = (p: { kind: CallKind; cells: string[] }[]) => p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 8 ? 3 : 4) : 10), 0);
+export function planGens(p: { kind: CallKind; cells: string[] }[], gridCell = { w: 64, h: 64 }): number {
+  const refs = new Set(p.filter(c => c.kind === 'dress').flatMap(c => c.cells)).size;
+  return p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 8 ? 3 : 4) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, refs).gens : 10), 0);
+}
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
 export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>): string[][] {
