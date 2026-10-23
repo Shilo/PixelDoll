@@ -20,6 +20,7 @@ vi.mock('../../src/lib/pixellab/queue.ts',()=>({live:(r:JobRec)=>['queued','runn
   state.posts++;const rec:JobRec={id:crypto.randomUUID(),state:'done',endpoint:req.path,tag:meta.tag,params:req.body,gens:state.dollarBilling?0:req.path==='/transfer-outfit-v2'?10:2,jobs:[],createdAt:1,label:'Test job',method:'POST',inputs:[],requestHash:'a'.repeat(64),attempts:1,nextAt:0,usd:state.dollarBilling?0.04:0};state.jobs.set(rec.id,rec);return rec;
 }}}));
 vi.mock('../../src/lib/equipment/generate.ts',()=>({
+  fitFramingWarnings:()=>[],
   qualifiedFit:()=>state.qualified,
   restFitRequests:async(_d:unknown,_s:unknown,t:Project,seed:number)=>{state.restPreflights++;if(state.strictTransferMin&&t.manifest.rig.directions.length<2)throw new Error('Transfer requires at least two target frames.');return[{req:{method:'POST',path:'/transfer-outfit-v2',body:{seed}},cells:['rest/south/0'],limit:10}];},
   poseFitRequests:async(_d:unknown,t:Project,_r:unknown,seed:number,selected?:string[])=>t.manifest.rig.animations.map(a=>({req:{method:'POST',path:'/animate-with-skeleton-v3',body:{seed}},cells:Array.from({length:a.cells},(_,i)=>`${a.id}/south/${i}`).filter(k=>!selected||selected.includes(k)),limit:2})).filter(c=>c.cells.length).map(c=>({...c,limit:c.cells.length<=3?2:c.cells.length<=8?3:4})),

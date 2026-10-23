@@ -75,7 +75,9 @@ const add = () => addMove('rig-quality', { id: 'jump', action: 'idle', frames: 4
 test('actual Add move keeps detached parts and observation differences without another paid drawing', async () => {
   const art = image(-3, true, true)
   state.output = (await store(art)).slice(7); state.estimate = points(0.65)
-  await add()
+  const outcome = await add()
+  expect.soft(outcome.warnings.join(' ')).toMatch(/estimated arm-joint difference/)
+  expect.soft(outcome.warnings.join(' ')).toMatch(/disconnected pixels retained/)
   expect.soft(state.rawCount).toBe(1)
   const rec = state.projects.get('rig-quality')!
   const hash = rec.manifest.items[0].layers[0].cells!.jump!.south![0]!
@@ -87,6 +89,12 @@ test('actual Add move keeps detached parts and observation differences without a
   expect(qa.adherence).toBeGreaterThan(2)
   expect(qa.feetDrift).toBe(3)
   expect(qa.paletteFit).toBe(0)
+  // Resuming a completed move surfaces the current clip notes, without drawing or replaying stale flattened notes.
+  rec.rigQa = { ...(rec.rigQa as object), warnings: ['rest/north: stale historical warning'] }
+  state.projects.set(rec.id, rec)
+  const resumed = await add()
+  expect(resumed.warnings).toEqual(outcome.warnings)
+  expect(state.rawCount).toBe(1)
 })
 
 test.each(['wrong-count', 'empty'])('actual Add move retains one bounded retry for structurally invalid %s art', async first => {

@@ -166,7 +166,7 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 | Grip side (held) | `gripSide` from the clip's requested wrist keypoints: a clip held mostly in the wrong hand fails (G8); > 25 % ambiguous in a front/back view → review (side views are often ambiguous) |
 | Shape (held, locomotion) | G9 principal-axis turn relative to the forearm ≤ 30° when keypoints and a reliable axis exist; otherwise adjacent-frame aligned IoU ≥ 0.3. With keypoints, pairs containing a mask below 6 pixels retain the minimum-sample skip. Near-round masks (normalized covariance eigenvalue gap < 0.2) use IoU because a one-pixel silhouette change can swap their axis by 90°. |
 | Anchor spread (head items) | layer centroid − head keypoint ≤ 3 px in front/back views |
-| Clip | no layer pixel on the cell border |
+| Framing review | border contact is reported for review; it cannot prove unseen pixels were cropped and does not trigger a G7 retry |
 | Stray px | removed and logged |
 
 For posed held items with wrist tracks, G5/G9 failures may be inconclusive because the body hides part of the item.
@@ -175,8 +175,12 @@ Compare masks in wrist coordinates: missing pixels can be hidden only inside the
 body-hidden differences as visibly unexplained differences. G5 also requires every frame to match the largest observed
 silhouette and its area plus potentially hidden reference pixels to meet the original CV limit. Such cases produce an
 explicit occlusion review warning, never a clean pass or a paid G5/G9 retry. Original metrics and exported pixels stay
-unchanged; hard presence, body integrity, alignment, border and grip checks remain. Hidden geometry is not reconstructed
+unchanged; hard presence, body integrity, alignment and grip checks remain. Hidden geometry is not reconstructed
 or proven by this heuristic, and unexplained changes retain their hard failure.
+
+Border contact and optional headwear padding are review policies, not export constraints. A contained layer can legitimately
+reach a cell edge. Keep the contact count and a framing warning; reject actual normalization pixel loss, wrong dimensions,
+missing frames or invalid required joints as before. Reference fitting warns about low headroom before a paid trial.
 
 Fail → re-roll the call once (new seed), then switch to the alternative route, then the user decides. When a call is out of
 re-rolls it keeps its roll with the fewest failed checks, not the last one (free ledger re-evaluation; same inputs only) [T3].

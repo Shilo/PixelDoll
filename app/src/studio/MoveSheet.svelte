@@ -10,6 +10,7 @@
   import { posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
   import { MOVE_STEPS, isV13, moveEstimate } from './create.ts'
+  import { bodyQualityNote } from './model.ts'
   import { ui, doc, store, isDemo, moving, settingUp, startMove, dismissMove, withKey } from './state.svelte.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
@@ -73,7 +74,7 @@
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
       {#if moving.done && moving.fitIds.length}<p class="notice small"><Check size={14} /><span>The body move is ready. {moving.fitIds.length} shared equipment {moving.fitIds.length === 1 ? 'copy needs' : 'copies need'} a separately priced animation review.</span><button class="btn sm" onclick={() => (ui.sheet = 'activity')}>Review equipment fits</button></p>{/if}
-      {#each moving.warnings as warning (warning)}<p class="notice warn small"><CircleAlert size={14} />{warning}</p>{/each}
+      {#each moving.warnings as warning (warning)}<p class="notice warn small"><CircleAlert size={14} />{bodyQualityNote(warning)}</p>{/each}
     </div>
   {:else if isDemo() || !ok}
     <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.'}</p>
@@ -112,7 +113,7 @@
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
-          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ' (west mirrored)' : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · failed checks re-roll once.</p>
+          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ' (west mirrored)' : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes do not trigger redraws.</p>
         </div>
       </details>
     </div>

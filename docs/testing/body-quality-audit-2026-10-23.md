@@ -27,3 +27,20 @@ Creation and imported setup persist all observations. The review screen also rea
 - `live-creator-2026-10-23/verify-body-quality.mjs <saved-evidence-directory>` rechecked **192 independent-direction frames** across L01–L06: complete structural checks, unchanged image hashes during component inspection, retained numeric metrics/observations and West's 2.71 px estimated mismatch. No saved projects changed.
 
 Saved-art JSON and visual evidence stay outside Git. Credits spent: **zero**. A second independent review follows the first commit; validated follow-up findings are recorded below.
+
+## Independent follow-up review and challenges
+
+The first change was committed as `178db0c`. A second independent agent reviewed the full change and adjacent equipment policy, then reviewed the follow-up delta again. Its validated findings were:
+
+- **Add move hid the observations:** the saved nested clip QA contained the notes, but `addMove()` returned only equipment errors. Extended actual-orchestration tests failed before the fix. It now returns deduplicated observations for the current move only, including resume; flattened historical notes are excluded to avoid stale replaced-clip warnings. Creation and Add move share the qualified legacy wording.
+- **Equipment border contact was still called clipping:** idle/walk contact could trigger a paid G7 retry; fitted standing contact blocked approval. Challenged this against the documented zero-margin quality policy and export validation: transparent margins were a policy, not a technical export requirement. Three controlled idle/walk/slash tests and a connected fitted-headwear counterexample reproduced the problem before the fix. Contact now retains its count, framing warning and review status, without declaring unseen pixels cropped or triggering G7 retries. Actual crop/dimension, body-preservation, registration, presence and grip checks remain intact.
+- **Fitting duplicated the six-pixel headroom restriction:** a contained target with 2 px headroom was blocked solely for hypothetical future hats. Reproduced before changing it to a visible warning in the fit plan, before payment, and in standing review. Complete joints and nonempty 64 × 64 target references remain required.
+
+Rejected a proposed malformed-requested-pose scorer hardening as unproven in current callers: no reachable production reproduction established a bug. Neither review justified removing the other item-specific checks. The second agent's final review found no further concrete issue in the bounded follow-up change, including warning persistence/reload, resume, and budget guards. This is a review conclusion, not a guarantee that every future generated pose is correct.
+
+## Follow-up verification
+
+- **287/287 unit tests passed**, including no-extra-request Add move/resume, intact detached body parts, retained empty/count retry bounds, invalid-measurement stop, item border observations and fitted-headwear framing. The existing equipment-flow test mock was updated for the added offline framing helper.
+- **2/2 offline Playwright tests passed:** nested creation notes and completed-move notes, including legacy wording and 390 px mobile bounds. PixelLab requests were blocked; the move UI made zero requests.
+- TypeScript/Svelte: **0 errors, 0 warnings**. Production build and secret guard passed; only the existing bundle-size advisory remains.
+- Saved-frame verification from the first commit remains applicable: no body geometry or saved assets changed in this follow-up. No screenshots, saved generations, mock-up assets or tokens added to Git. Credits spent across both reviews: **zero**.

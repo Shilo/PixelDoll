@@ -324,14 +324,16 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   }
   // Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.
   const sharedIds = [...new Set([...(spec.sharedItems ?? []), ...spec.items.filter((id) => rec.manifest.items.find((item) => item.id === id)?.design)])];
-  const fitIds: string[] = [], warnings: string[] = [];
+  const clipQa = (rec.rigQa as { clips?: Record<string, ClipQa> } | undefined)?.clips ?? {};
+  // Include this move's current nested observations, including after resume. Flattened historical notes may be stale.
+  const fitIds: string[] = [], warnings: string[] = Object.entries(clipQa).filter(([clip]) => clip.startsWith(`${spec.id}/`)).flatMap(([clip, qa]) => warn(clip, qa));
   for (const id of sharedIds) {
     const item = rec.manifest.items.find((i) => i.id === id);
     if (!item?.design) continue;
     try { fitIds.push((await prepareExtensionFit(projectId, id, { anims: [spec.id] })).id); }
     catch (e) { warnings.push(`${item.name}: ${e instanceof Error ? e.message : 'The equipment fit could not be prepared.'}`); }
   }
-  return { fitIds, warnings };
+  return { fitIds, warnings: [...new Set(warnings)] };
 }
 
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void) {

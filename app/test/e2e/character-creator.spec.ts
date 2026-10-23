@@ -39,7 +39,7 @@ test('all quality notes remain visible and failed clips come first', async ({ pa
     warnings.push('walk/west: arms 2.7 px off the requested pose')
     warnings.push('walk/east: feet drift 2 px from pivot y 123')
     await db.update<import('../../src/lib/store/project.ts').StoredProject>('projects', id, rec => {
-      rec!.rigQa = { warnings, clips: { 'walk/west': { fails: ['arms 2.7 px off the requested pose'] } } }; return rec!
+      rec!.rigQa = { warnings, clips: { 'walk/west': { fails: ['arms 2.7 px off the requested pose'] }, 'idle/east': { fails: [], warnings: ['12 disconnected pixels retained; review details'] } } }; return rec!
     })
     state.creating.warnings = warnings
     state.creating.projectId = id
@@ -47,14 +47,41 @@ test('all quality notes remain visible and failed clips come first', async ({ pa
   })
   const notes = page.locator('.quality-notes')
   await expect(notes).toHaveAttribute('open', '')
-  await expect(notes.locator('summary')).toHaveText('8 quality notes')
-  await expect(notes.locator('li')).toHaveCount(8)
+  await expect(notes.locator('summary')).toHaveText('9 quality notes')
+  await expect(notes.locator('li')).toHaveCount(9)
   await expect(notes.locator('li').first()).toContainText('Walk west: estimated arm-joint difference 2.7 px')
-  await expect(notes.locator('li').last()).toHaveText('Walk east: legacy silhouette-bottom difference 2 px from frame pivot')
+  await expect(notes.getByText('Walk east: legacy silhouette-bottom difference 2 px from frame pivot', { exact: true })).toBeVisible()
+  await expect(notes.getByText('Idle east: 12 disconnected pixels retained; review details', { exact: true })).toBeVisible()
   await notes.locator('summary').click()
   await expect(notes.locator('li').last()).not.toBeVisible()
   await notes.locator('summary').click()
   await expect(notes.locator('li').last()).toBeVisible()
+})
+
+test('completed move observations remain readable on desktop and mobile', async ({ page, context }) => {
+  let requests = 0
+  await context.route('https://*.pixellab.ai/**', route => { requests++; return route.abort() })
+  await page.goto('/')
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts'
+    const state = await import(statePath) as typeof import('../../src/studio/state.svelte.ts')
+    const id = await state.copyDemo()
+    await state.openProject(id)
+    Object.assign(state.moving, { spec: { id: 'walk', action: 'walk', frames: 4, items: [] }, projectId: id, done: true, warnings: ['walk/west: arms 2.7 px off the requested pose', 'walk/east: feet drift 2 px from pivot y 123'], fitIds: [], error: '' })
+    state.ui.sheet = 'move'
+  })
+  const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true })
+  await expect(sheet.getByText('Walk west: estimated arm-joint difference 2.7 px from requested pose; review', { exact: true })).toBeVisible()
+  await expect(sheet.getByText('Walk east: legacy silhouette-bottom difference 2 px from frame pivot', { exact: true })).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(sheet.locator('.notice.warn')).toHaveCount(2)
+  for (const note of await sheet.locator('.notice.warn').all()) {
+    await expect(note).toBeVisible()
+    const box = (await note.boundingBox())!
+    expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(390)
+  }
+  expect(requests).toBe(0)
 })
 
 test('same seeded output creates separate projects and a resumed workflow preserves its identity', async ({ page, context }) => {

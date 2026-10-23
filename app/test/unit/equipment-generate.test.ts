@@ -9,7 +9,7 @@ import type { CellKey } from '../../src/lib/store/manifest.ts';
 import type { Project, Item } from '../../src/lib/store/manifest.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import { createDesign } from '../../src/lib/equipment/design.ts';
-import { qualifiedFit, restFitRequests, poseFitRequests, evaluateRestFit, evaluatePoseFit, type FitRecord } from '../../src/lib/equipment/generate.ts';
+import { qualifiedFit, fitFramingWarnings, restFitRequests, poseFitRequests, evaluateRestFit, evaluatePoseFit, type FitRecord } from '../../src/lib/equipment/generate.ts';
 
 const { blobs } = vi.hoisted(() => ({ blobs: new Map<string, Blob>() }));
 vi.mock('../../src/lib/store/db.ts', () => ({ getBlob: async (id: string) => blobs.get(id) }));
@@ -34,6 +34,25 @@ async function record(cells: string[], images: Img[], endpoint='/transfer-outfit
   const results=await Promise.all(images.map(async(im,i)=>{const sha=`result-${blobs.size}-${i}`;blobs.set(sha,new Blob([await encodePngBytes(im) as Uint8Array<ArrayBuffer>]));return {label:String(i),sha};}));
   return {call:{cells,seed:99},rec:{id:crypto.randomUUID(),label:'test',method:'POST',endpoint,params:{},inputs:[],requestHash:'a'.repeat(64),state:'done',attempts:1,nextAt:0,createdAt:1,jobs:[{id:'remote',status:'completed',done:true,results}],gens:10,usd:0} as JobRec};
 }
+test('a contained fitted headwear border is a framing observation, not proof of clipping',async()=>{
+  const source=await project(5,true),target=await project(7),design=await createDesign(source,'helmet');
+  const output=toChroma(target.images.get(target.manifest.rig.rest!.south!.image)!,'green');
+  const hat=source.images.get(source.manifest.items[1].layers[0].cells!.rest!.south![0]!)!;over(output,hat);
+  for(let x=0;x<38;x++)output.data.set([140,145,150,255],(9*64+x)*4);
+  const before=output.data.slice(),review=await evaluateRestFit(design,target,[await record(dirs.map(d=>`rest/${d}/0`),dirs.map(()=>output))]);
+  expect(review.fails).toEqual([]);expect(review.warnings.join(' ')).toMatch(/border.*(?:review|check)/);
+  expect(output.data).toEqual(before);
+});
+test('reference fitting does not reject a contained target solely for optional hat padding',async()=>{
+  const source=await project(5,true),target=await project(7),design=await createDesign(source,'helmet');
+  const rest=target.manifest.rig.rest!.south!,body=structuredClone(target.images.get(rest.image)!);
+  for(let y=2;y<10;y++)for(let x=25;x<39;x++)body.data.set([170,120,90,255],(y*64+x)*4);
+  const hash=await cellHash(body);target.images.set(hash,body);
+  for(const d of dirs)target.manifest.rig.rest![d]!.image=hash;
+  expect(qualifiedFit(design,target)).toBeNull();
+  expect(fitFramingWarnings(target)).toHaveLength(4);
+  expect(fitFramingWarnings(target).every(w=>w.includes('headroom 2 px'))).toBe(true);
+});
 test('paid fitting fails closed for unknown profiles, offsets, missing references and unsafe colourways',async()=>{
   const source=await project(5,true), target=await project(7), design=await createDesign(source,'helmet');
   expect(qualifiedFit(design,target)).toBeNull();
@@ -68,7 +87,7 @@ test('rest review uses actual API pixels, rejects malformed output, and flags al
   const malformed=await record(paths,[im]);await expect(evaluateRestFit(design,target,[malformed])).rejects.toThrow('frame count');
   const altered=makeImg(64,64);over(altered,hat);const bad=await record(paths,dirs.map(()=>altered));expect((await evaluateRestFit(design,target,[bad])).fails.length).toBe(4);
   const stray=structuredClone(im);for(let y=0;y<2;y++)for(let x=0;x<2;x++)stray.data.set([100,100,100,255],(y*64+x)*4);
-  const border=await record(paths,dirs.map(()=>stray));const flagged=await evaluateRestFit(design,target,[border]);expect(flagged.fails.some(f=>f.startsWith('G7'))).toBe(true);expect(flagged.warnings.some(w=>w.includes('detached'))).toBe(true);
+  const border=await record(paths,dirs.map(()=>stray));const flagged=await evaluateRestFit(design,target,[border]);expect(flagged.fails.some(f=>f.startsWith('G7'))).toBe(false);expect(flagged.warnings.some(w=>w.startsWith('G7'))).toBe(true);expect(flagged.warnings.some(w=>w.includes('detached'))).toBe(true);
 });
 test('pose review cannot publish missing coverage as a complete fit',async()=>{
   const source=await project(5,true), target=await project(7), design=await createDesign(source,'helmet');

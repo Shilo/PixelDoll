@@ -609,8 +609,8 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const foot = (x: number) => [-2, -1, 0, 1, 2].some((d) => x + d >= 0 && x + d < w && c.base.data[((h - 1) * w + x + d) * 4 + 3]);
     let border = 0;
     for (let p = 0; p < c.mask.length; p++) if (c.mask[p] && (p < w || p % w === 0 || p % w === w - 1 || (p >= (h - 1) * w && !foot(p % w)))) border++;
-    // an overhead swing leaving a 64 px cell is geometry, not a bad roll: warn on action clips, re-roll on locomotion
-    if (border) (isAction(c.key) ? warnings.push.bind(warnings) : (w: string) => flag(c.call, w))(`G7 ${c.key} ${border} px on the cell border (clipped)`);
+    // Contact with a finite frame cannot establish that unseen pixels were cropped, for any move name.
+    if (border) warnings.push(`G7 ${c.key}: ${border} pixels touch the cell border; review framing`);
     clipPx += border;
     if (slot.bgZ != null) {
       const { fg, bg } = splitFgBg(c.layer, c.base), a = makeImg(w, h), b = recompose(c);

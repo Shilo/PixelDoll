@@ -80,7 +80,7 @@ export interface QaSummary {
   minAreaRatio: number;
   maxAreaCV: number;
   maxPaletteDist: number;
-  clipPx: number;
+  clipPx: number; // historical name: border-contact observations, not a measurement of pixels lost outside the frame
   handedness?: 'ok' | 'switched';
   shiftedFrames?: number; // cells whose silhouette fits the base better at a non-zero 1 px shift
   grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell

@@ -5,6 +5,14 @@ import { cellImg, layerFrame, over, unionFrame } from '../lib/compose/compose.ts
 import type { DirectionName, Item, Manifest, Project } from '../lib/store/manifest.ts';
 import { originOf, type StoredProject } from '../lib/store/project.ts';
 
+/** Explain historical body-QA records without presenting estimated joints or silhouette bounds as proven defects. */
+export const bodyQualityNote = (w: string) => w.replace(/^([^/]+)\/([^:]+): /, (_, clip: string, direction: string) => `${clip[0].toUpperCase() + clip.slice(1)} ${direction}: `)
+  .replace(/arms ([\d.]+) px off (?:the )?requested pose/, 'estimated arm-joint difference $1 px from requested pose; review')
+  .replace(/feet drift (\d+) px from pivot y \d+/, 'legacy silhouette-bottom difference $1 px from frame pivot')
+  .replace(/feet drift (\d+) px.*/, 'silhouette bottom differs up to $1 px from reference')
+  .replace(/ground line is (\d+) px (above|below) the shared pivot/, 'legacy silhouette bottom is $1 px $2 the frame pivot (view dependent)')
+  .replace(/headroom (\d+) px.*/, 'headroom $1 px; tall hair or hats may need a larger frame');
+
 export interface Group { id: string; slots: string[]; empty: string; ideas: { label: string; slot?: string }[] }
 /** 16 architecture slots in 8 groups; slots[0] = default slot for a new item. */
 export const GROUPS: Group[] = [

@@ -185,7 +185,7 @@ export interface ItemQa {
   minAreaRatio: number;                   // cell area / clip median, >= 0.5
   maxAreaCV: number;                      // per clip, <= 0.15
   maxPaletteDist: number;                 // worst clip/call segment vs evaluation's design palette, <= 15
-  clipPx: number;                         // opaque px on cell borders, 0
+  clipPx: number;                         // legacy name: border-contact count for review, not pixels proven cropped
   grip?: { R: number; L: number; amb: number; none: number }; // held items (gripSide counts)
   anchorSpread?: number;                  // head items, px, <= 3 front/back
   strayPx: number;                        // removed by the largest-component filter (logged)
