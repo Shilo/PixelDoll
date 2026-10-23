@@ -5,6 +5,7 @@ import { encodePngBytes } from '../image/pngraw.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import * as db from './db.ts';
 import type { Item, Manifest, Preset, Project, Sha256, Slot } from './manifest.ts';
+import { supportedFormat } from './manifest.ts';
 
 export interface StoredProject {
   id: string;
@@ -23,7 +24,7 @@ export const originOf = (p: StoredProject): 'studio' | 'dev' =>
   p.origin ?? (p.character || (p.rigQa as { pivotFrom?: string } | undefined)?.pivotFrom === '' ? 'studio' : 'dev');
 
 export const listProjects = async () =>
-  (await db.all<StoredProject>('projects')).filter((p) => p?.manifest?.format === 'pixeldoll/1' && p.id?.startsWith('rig-'));
+  (await db.all<StoredProject>('projects')).filter((p) => supportedFormat(p?.manifest?.format) && p.id?.startsWith('rig-'));
 
 /** Decode every cell referenced by the manifest's layers (and the v1.3 rest views) into Project.images. */
 export async function loadProject(id: string): Promise<{ rec: StoredProject; project: Project }> {
@@ -41,6 +42,7 @@ export async function loadProject(id: string): Promise<{ rec: StoredProject; pro
   };
   for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');
   for (const it of rec.manifest.items) {
+    for (const h of it.design?.snapshot.imageHashes ?? []) await add(h, `${it.id} source design`);
     for (const h of Object.values(it.dressed ?? {})) await add(h, `${it.id} dressed view`);
     for (const l of it.layers)
       for (const dirs of Object.values(l.cells ?? {}))

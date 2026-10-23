@@ -219,3 +219,31 @@ test('import bounds repeated logical sheet references before decoding their imag
   m.items[0].layers[0].cell!.w = -256
   await expect(readCharacterZip(await zip([{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) }]))).rejects.toThrow('invalid layer size')
 })
+
+
+test.each(['source-only', 'source-exceeds-canonical'] as const)('v2 bounds the actual source sheet references before PNG materialization: %s', async (layout) => {
+  const { project } = await readCharacterZip(await zip(await pixelLabFiles()))
+  const m = structuredClone(project.manifest); m.format = 'pixeldoll/2'
+  m.rig.animations = [{ id: 'idle', cells: 120, loop: true, frames: [{ cell: 0, ms: 100 }] }, { id: 'rest', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }]
+  m.items = Array.from({ length: 200 }, (_, i) => ({ ...structuredClone(m.items[0]), id: i ? `item-${i}` : 'base', slot: i ? 'head' : 'body',
+    layers: [{ id: 'main' as const, role: 'fg' as const, z: 10, cell: { w: 256, h: 256 }, sourceSheets: { idle: 'same.png' }, ...(layout === 'source-exceeds-canonical' ? { sheets: { rest: 'canonical.png' } } : {}) }] }))
+  // No PNG exists: this specific error proves the allocation guard runs before any sheet is decoded/sliced.
+  await expect(readCharacterZip(await zip([{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) }]))).rejects.toThrow('including repeated frame references')
+})
+
+test('v2 sourceSheets-only imports preserve legitimate oversize96px source pixels and shared geometry', async () => {
+  const { project } = await readCharacterZip(await zip(await pixelLabFiles()))
+  const m = structuredClone(project.manifest); m.format = 'pixeldoll/2'
+  m.rig.animations = [{ id: 'idle', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }]
+  m.items = [m.items[0]]
+  m.items[0].layers = [{ id: 'main', role: 'fg', z: 10, cell: { w: 96, h: 96 }, pivot: { x: 48, y: 75 }, sourceSheets: { idle: 'source.png' } }]
+  const sheet = makeImg(96, 96 * m.rig.directions.length)
+  for (let row = 0; row < m.rig.directions.length; row++) sheet.data.set([110 + row, 80, 50, 255], ((row * 96 + 60) * 96 + 47) * 4)
+  const imported = await readCharacterZip(await zip([{ name: 'manifest.json', data: enc.encode(JSON.stringify(m)) }, { name: 'source.png', data: await encodePngBytes(sheet) }]))
+  const layer = imported.project.manifest.items[0].layers[0]
+  expect(layer.cell).toEqual({ w: 96, h: 96 }); expect(layer.pivot).toEqual({ x: 48, y: 75 })
+  for (const [row, dir] of m.rig.directions.entries()) {
+    const image = cellImg(imported.project, layer, 'idle', dir.id, 0)!
+    expect([...image.data.slice((60 * 96 + 47) * 4, (60 * 96 + 47) * 4 + 4)]).toEqual([110 + row, 80, 50, 255])
+  }
+})

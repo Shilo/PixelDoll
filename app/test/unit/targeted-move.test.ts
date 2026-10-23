@@ -19,6 +19,7 @@ async function fixture(fail=false){
  let saved:projects.StoredProject={id:'rig-target',savedAt:'original',manifest,character:{id:'managed',looks:'body'},skeletons:Object.fromEntries(dirs.flatMap(d=>[0,1,2,3].map(i=>[`idle/${d}/${i}`,{NOSE:{x:3,y:4,z:0}}]))),rigQa:{warnings:['idle/east: old failure','idle/south: retained'],clips:Object.fromEntries(dirs.map(d=>[`idle/${d}`,{adherence:1,feetDrift:0,paletteFit:1,border:0,stray:0,fails:[]}]))}}
  const original=structuredClone(saved),blobs=new Map<string,Blob>();let requested:Keypoint[][]=[]
  vi.spyOn(projects,'loadProject').mockImplementation(async()=>{const rec=structuredClone(saved);return{rec,project:{manifest:rec.manifest,images:new Map([[hash,im]])}}})
+ vi.spyOn(db,'updateCharacter').mockImplementation(async(_id,_blobs,change)=>{saved=change(structuredClone(saved)) as projects.StoredProject});
  vi.spyOn(db,'get').mockImplementation(async()=>structuredClone(saved));vi.spyOn(db,'getBlob').mockImplementation(async h=>blobs.get(h))
  const put=vi.spyOn(db,'put').mockResolvedValue(undefined),update=vi.spyOn(db,'update').mockImplementation(async(_s,_id,change)=>{saved=change(structuredClone(saved)) as projects.StoredProject})
  const enqueue=vi.spyOn(queue,'enqueue').mockImplementation(async req=>{

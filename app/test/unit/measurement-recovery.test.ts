@@ -50,6 +50,7 @@ async function fixture(palette:boolean|'partial'=false) {
  vi.spyOn(queue,'snapshot').mockImplementation(()=>q.snapshot());vi.spyOn(queue,'settled').mockImplementation(id=>q.settled(id))
  const enqueue=vi.spyOn(queue,'enqueue').mockImplementation(async(...args)=>{const r=await q.enqueue(...args);queueMicrotask(()=>void q.tick());return r})
  vi.spyOn(projects,'loadProject').mockImplementation(async()=>{const rec=structuredClone(saved);return{rec,project:{manifest:rec.manifest,images:new Map([[hash,im]])}}})
+ vi.spyOn(db,'updateCharacter').mockImplementation(async(_id,_blobs,change)=>{saved=change(structuredClone(saved)) as projects.StoredProject});
  vi.spyOn(db,'get').mockImplementation(async()=>structuredClone(saved));vi.spyOn(db,'getBlob').mockImplementation(async h=>blobs.get(h));const put=vi.spyOn(db,'put').mockResolvedValue(undefined),update=vi.spyOn(db,'update').mockImplementation(async(_s,_id,fn)=>{saved=fn(structuredClone(saved)) as projects.StoredProject})
  return{spec,q,records,blobs,lostIds,finishOriginalChecks,before,saved:()=>saved,posts:()=>posts,max:()=>maxInflight,enqueue,put,update,bad:()=>{bad=true},failCheck:()=>{failOnce=true},changeRig:()=>{saved.manifest.rig.pivot.x++},addItem:()=>{const it=structuredClone(saved.manifest.items[0]);it.id='hat';it.slot='head';saved.manifest.items.push(it);spec.items=['hat']},recovery:async()=>{const plan=await measurementRecoveryPlan('rig-recover',spec);return{...spec,measurementRecovery:{id:'explicit-review',recordIds:plan.recordIds,rigVersion:plan.rigVersion}}}}
 }

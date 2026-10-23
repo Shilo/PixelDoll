@@ -23,9 +23,13 @@ import { repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, clipQa, largestComponent, loops, rawClip, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
 import { poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
-import type { CellKey, Manifest, Provenance } from '../lib/store/manifest.ts';
+import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { basePrompt, looksOf } from './model.ts';
 import { affectedMoveDirections, clearMovePoseData, invalidateMoveItems, moveRigVersion } from './replaceMove.ts';
+import { prepareExtensionFit } from '../lib/equipment/index.ts';
+import { splitBase } from '../lib/dress/regions.ts';
+import { deriveMaterials } from '../lib/dress/dress.ts';
+import { saveSplit } from '../lib/dress/project.ts';
 
 /** Missing dirs means four views; missing directionPolicy preserves mirrored legacy recovery and its request hashes. */
 export type DirectionPolicy = 'independent' | 'mirrored';
@@ -357,7 +361,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const errs = validateRig(rig, Object.fromEntries(Object.entries(built.cells).map(([key, c]) => [key, c.hash])));
   if (errs.length) throw new Error(`rig not valid: ${errs.join('; ')}`);
   const manifest: Manifest = {
-    format: 'pixeldoll/1', name: spec.name, app: 'PixelDoll 0.1.0', rig, materials: [],
+    format: CURRENT_FORMAT, name: spec.name, app: 'PixelDoll 0.1.0', rig, materials: [],
     slots: [{ id: 'body', z: 10, class: 'base', required: true }],
     items: [{ id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: rig.directions.some((d) => d.mirrorOf) ? 'flip' : 'generate', materials: [], prompt: spec.description, baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance }],
     presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }],
@@ -375,7 +379,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; seed: number; replace?: boolean; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; seed: number; replace?: boolean; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined }));
 export const MOVE_STEPS = [
   { id: 'animate', label: 'Animating the body' },
@@ -401,7 +405,7 @@ export async function bodyPaletteRepairPlan(projectId: string, spec: MoveSpec): 
     bodyPaletteRepair: { id: 'palette-review', version: 'near-rest-v1', rigVersion: moveRigVersion(rec) } });
   if (!plan.palette?.directions.length) throw new Error('No palette-only body failure can be matched safely.');
   if (plan.recordIds.length) throw new Error('Review unknown joint-check outcomes before matching these body colours.');
-  return { ...plan, ...plan.palette, itemGens: poseGens(spec.items.length, moveFrames(rec.manifest, spec), moveDirections(rec.manifest, spec.dirs).length) };
+  return { ...plan, ...plan.palette, itemGens: poseGens(spec.items.filter(id => !rec.manifest.items.find(item => item.id === id)?.design).length, moveFrames(rec.manifest, spec), moveDirections(rec.manifest, spec.dirs).length) };
 }
 /** API-free review of exact cached body renders. Consent never applies to an unrelated image or regenerated body. */
 export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec): Promise<MeasurementRecoveryPlan> {
@@ -469,20 +473,22 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
 };
 export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace'>) {
   const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = s.itemMethod === 'grid' && !s.replace ? 0 : dirs * (RAW_GENS + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
-  const items = s.itemMethod === 'grid' ? s.items.reduce((sum, id) => {
+  const directItems = s.items.filter(id => !m.items.find(item => item.id === id)?.design);
+  const items = s.itemMethod === 'grid' ? directItems.reduce((sum, id) => {
     const item = m.items.find(i => i.id === id);
     if (!item) throw new Error('The selected equipment is no longer available.');
     const cell = item.layers[0]?.cell ?? m.rig.cell;
     return sum + gridEstimate(cell, n, Object.keys(item.dressed ?? {}).length).gens * dirs;
-  }, 0) : poseGens(s.items.length, n, dirs);
-  return { gens: body + items, body, items, frames: n, minutes: 4 + s.items.length * 3 };
+  }, 0) : poseGens(directItems.length, n, dirs);
+  return { gens: body + items, body, items, frames: n, minutes: 4 + directItems.length * 3 };
+
 }
 
 /**
  * Authored (raw skeleton-v3 with keypoints from the rest pose) or text (pixminimax motion source -> raw re-render) move, then
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
-export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<void> {
+export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<{ fitIds: string[]; warnings: string[] }> {
   const { rec } = await loadProject(projectId);
   if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
   const dirs = moveDirections(rec.manifest, spec.dirs), existing = rec.manifest.rig.animations.find(a => a.id === spec.id);
@@ -494,22 +500,40 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
     receipt.specHash === await recoverySpecHash(spec) && receipt.bodyRigVersion === moveRigVersion(rec);
   const recovery = intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
   if (!published && (spec.replace || !existing)) await addBodyClip(projectId, spec, onProgress, recovery);
+  // Freeze durable garment-region colours before either direct posing or shared-fit target stamps.
+  // saveSplit also advances an exact audit recovery receipt, so interrupted equipment work can resume safely.
+  const normalized = await loadProject(projectId), split = await splitBase(normalized.project);
+  deriveMaterials(normalized.project);
+  if (split.dirty) await saveSplit(projectId, normalized.project.manifest, split);
   const fresh = await loadProject(projectId), frames = fresh.rec.manifest.rig.animations.find(a => a.id === spec.id)!.cells;
-  const plans = spec.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !it.layers.every(l => l.cells?.[spec.id]?.[d]?.length === frames)) }] : []; });
+  const plans = spec.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it && !it.design ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !it.layers.every(l => l.cells?.[spec.id]?.[d]?.length === frames)) }] : []; });
   const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0); let posed = 0;
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
   const tick = () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
   for (const plan of plans) {
     if (!plan.dirs.length) continue;
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find(i => i.id === plan.id);
-    if (!it) throw new Error('This item was removed while the move was being prepared.');
+    if (!it || it.design) throw new Error('This item changed or was removed while the move was being prepared.');
     if (spec.itemMethod === 'grid') for (const d of plan.dirs) {
-      const current = await loadProject(projectId), item = current.rec.manifest.items.find(i => i.id === plan.id)!;
+      const current = await loadProject(projectId), item = current.rec.manifest.items.find(i => i.id === plan.id);
+      if (!item || item.design) throw new Error('This item changed or was removed while the move was being prepared.');
       const result = await regridClip(current, item, spec.id, d, spec.seed); tick();
       if (!result.saved) throw new Error(`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`);
     }
     else await poseItemClip(ctx, it, spec.id, tick, spec.seed, plan.dirs);
+
   }
+  // Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.
+  const shared = (await loadProject(projectId)).rec;
+  const sharedIds = [...new Set([...(spec.sharedItems ?? []), ...spec.items.filter((id) => shared.manifest.items.find((item) => item.id === id)?.design)])];
+  const fitIds: string[] = [], warnings: string[] = [];
+  for (const id of sharedIds) {
+    const item = shared.manifest.items.find((i) => i.id === id);
+    if (!item?.design) continue;
+    try { fitIds.push((await prepareExtensionFit(projectId, id, { anims: [spec.id], dirs })).id); }
+    catch (e) { warnings.push(`${item.name}: ${e instanceof Error ? e.message : 'The equipment fit could not be prepared.'}`); }
+  }
+  return { fitIds, warnings };
 }
 
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void, recovery?: MeasurementRecoveryPlan) {

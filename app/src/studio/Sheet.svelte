@@ -8,6 +8,7 @@
   let dlg: HTMLDialogElement
   // The native `close` event from our own unmount fires after a replacement sheet is already set; ignore it.
   let unmounting = false
+  $effect(() => { ui.sheetBusy = cancelDisabled; return () => { ui.sheetBusy = false } })
   $effect(() => {
     // focus goes back to what opened the sheet (a menu item -> its menu button); text sheets start in their first field
     const from = document.activeElement as HTMLElement | null, pop = from?.closest<HTMLElement>('[popover]')
@@ -36,3 +37,8 @@
   <div class="sheet-body">{@render children()}</div>
   {#if footer}<footer class="sheet-foot">{@render footer()}</footer>{/if}
 </dialog>
+
+<style>
+  .sheet-head { grid-template-columns: minmax(52px, 1fr) minmax(0, auto) minmax(52px, 1fr); }
+  .sheet-title { min-width: 0; overflow-wrap: anywhere; }
+</style>

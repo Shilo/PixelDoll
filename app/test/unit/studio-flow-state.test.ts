@@ -2,12 +2,13 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColours: mocks.match }))
 vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: mocks.load }))
 vi.mock('../../src/lib/dress/project.ts', async original => ({ ...await original<typeof import('../../src/lib/dress/project.ts')>(), openSource: mocks.source }))
+vi.mock('../../src/lib/equipment/index.ts', async original => ({ ...await original<typeof import('../../src/lib/equipment/index.ts')>(), listFits: mocks.fits }))
 
 vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
@@ -16,7 +17,7 @@ vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', sub
 beforeEach(() => {
   vi.resetModules()
   Object.values(mocks).forEach((m) => m.mockReset())
-  mocks.put.mockResolvedValue(undefined); mocks.get.mockResolvedValue(undefined); mocks.del.mockResolvedValue(undefined)
+  mocks.put.mockResolvedValue(undefined); mocks.get.mockResolvedValue(undefined); mocks.del.mockResolvedValue(undefined); mocks.fits.mockResolvedValue([])
   // Isolate asynchronous controller logic; no rendering or Svelte reactivity is under test.
   const identity = <T>(value: T) => value
   vi.stubGlobal('$state', Object.assign(identity, { raw: identity, snapshot: identity }))
@@ -307,4 +308,31 @@ test('free item palette applies only the newest refresh when two item correction
   newer.resolve({ project: currentProject }); await second
   older.resolve({ project: { manifest: { name: 'Older snapshot' }, images: new Map() } }); await first
   expect(s.store.project).toBe(currentProject)
+})
+
+
+test('merged move flow keeps durable guards while publishing separately reviewed shared fit results', async () => {
+  const body = pending<{ fitIds: string[]; warnings: string[] }>(), fits = pending<any[]>()
+  let callback!: (p: Progress) => void
+  mocks.move.mockImplementation((_project, _spec, onProgress) => { callback = onProgress; return body.promise })
+  mocks.fits.mockReturnValueOnce(fits.promise)
+  const s = await import('../../src/studio/state.svelte.ts')
+  s.moving.fitIds = ['old-review']; s.moving.warnings = ['old-warning']
+  const spec = { ...recoverySpec, sharedItems: ['shared-helmet'] }
+  const run = s.startMove('other-project', spec)
+  await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+  expect(mocks.put.mock.calls[0][2]).toMatchObject({ status: 'running', spec })
+  expect(s.moving.fitIds).toEqual([]); expect(s.moving.warnings).toEqual([])
+  callback(progress('animate', 3))
+  body.resolve({ fitIds: ['new-review'], warnings: ['Review equipment separately'] })
+  await vi.waitFor(() => expect(mocks.fits).toHaveBeenCalledOnce())
+  expect(s.moving.fitIds).toEqual(['new-review']); expect(s.moving.warnings).toEqual(['Review equipment separately'])
+  await s.startMove('other-project', { ...spec, seed: 987 })
+  expect(mocks.move).toHaveBeenCalledOnce()
+  fits.resolve([]); await run
+  expect(s.moving.done).toBe(true); expect(mocks.del).toHaveBeenCalledWith('projects', 'studio-move')
+  callback(progress('animate', 99))
+  expect(s.moving.progress).toEqual(progress('animate', 3))
+  await s.dismissMove()
+  expect(s.moving.fitIds).toEqual([]); expect(s.moving.warnings).toEqual([])
 })

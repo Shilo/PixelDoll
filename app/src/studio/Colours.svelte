@@ -18,7 +18,7 @@
     return mat && it ? `${it.name} ${namesOf(it, matsOf(it.id))[matsOf(it.id).indexOf(mat)].toLowerCase()}` : mat?.label
   }
   // the picker opens on the colour in use (T1 P3), not a fixed grey
-  const custom = (mat: Material) => { const v = doc.variants[mat.id]; return v?.startsWith('#') ? v : (variantRampOf(mat, v ?? '') ?? mat.ramp)[Math.floor(mat.ramp.length / 2)] }
+  const custom = (mat: Material) => { const v = chosen(mat); return v?.startsWith('#') ? v : (variantRampOf(mat, v ?? '') ?? mat.ramp)[Math.floor(mat.ramp.length / 2)] }
 </script>
 
 <div class="colours">
@@ -46,13 +46,13 @@
             <span class="faint small">Follows {nameOf(mat.linkTo)}</span>
           {:else}
             <div class="swatches" role="radiogroup" aria-label="{names[mi]} colour">
-              <button class="swatch" role="radio" aria-checked={!pick} tabindex={!pick || pick.startsWith('#') ? 0 : -1} title="Original" aria-label="Original" onclick={() => setVariant(mat.id, null)}>
-                {#each mat.ramp as c, i (i)}<i style:background={c}></i>{/each}
+              <button class="swatch" role="radio" aria-checked={!doc.variants[mat.id]} tabindex={!doc.variants[mat.id] || doc.variants[mat.id]?.startsWith('#') ? 0 : -1} title={mat.defaultVariant ? 'Saved colour' : 'Original'} aria-label={mat.defaultVariant ? 'Saved colour' : 'Original'} onclick={() => setVariant(mat.id, null)}>
+                {#each (mat.defaultVariant ? variantRampOf(mat, mat.defaultVariant) ?? mat.ramp : mat.ramp) as c, i (i)}<i style:background={c}></i>{/each}
               </button>
               {#each Object.keys(SWATCHES) as name (name)}
                 {@const r = variantRampOf(mat, name)}
                 {#if r}
-                  <button class="swatch" role="radio" aria-checked={pick === name} tabindex={pick === name ? 0 : -1} title={name} aria-label={name} onclick={() => setVariant(mat.id, name)}>
+                  <button class="swatch" role="radio" aria-checked={doc.variants[mat.id] === name} tabindex={doc.variants[mat.id] === name ? 0 : -1} title={name} aria-label={name} onclick={() => setVariant(mat.id, name)}>
                     {#each r as c, i (i)}<i style:background={c}></i>{/each}
                   </button>
                 {/if}

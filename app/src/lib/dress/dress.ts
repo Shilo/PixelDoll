@@ -1,7 +1,7 @@
 // Dress-up model (architecture §4, §6): per-item materials, variant resolution with linkTo, recoloured project view,
 // random outfits, coverage and layer outlines. Pure over Project; the M4 UI and the baked export share recolour().
 import type { Img } from '../image/png.ts';
-import type { DirectionName, Hex, Item, Manifest, Material, Preset, Project } from '../store/manifest.ts';
+import type { DirectionName, Hex, Item, Layer, Manifest, Material, Preset, Project } from '../store/manifest.ts';
 import { applyIndex, autoRamps, colourCounts, deriveRamps, fromHex, hueName, indexImg, lab, tintRamp, toHex, variantRamp } from './palette.ts';
 import { isGarment, isShorts } from './regions.ts';
 
@@ -59,8 +59,9 @@ export function materialNames(it: Pick<Item, 'slot' | 'prompt' | 'name'>, ramps:
 export function deriveMaterials(p: Project, items = p.manifest.items.filter((i) => !i.materials.length), k: Record<string, number> = {}) {
   const m = p.manifest, ids = new Set(items.map((i) => i.id));
   m.materials = m.materials.filter((x) => !ids.has(x.owner));
-  const claimed = new Set(m.materials.flatMap((x) => x.ramp.map(fromHex)));
+  const globalClaims = new Set(m.materials.flatMap((x) => x.ramp.map(fromHex)));
   for (const it of [...items].sort((a, b) => +(b.id === m.rig.baseItem) - +(a.id === m.rig.baseItem))) {
+    const claimed = m.format === 'pixeldoll/2' ? new Set<number>() : globalClaims;
     const counts = colourCounts(itemImgs(p, it));
     let ramps: Hex[][], names: string[];
     if (it.regions === 'shirt-shorts') { // B15: garment greys by region bit (lib/dress/regions.ts), the rest as usual (Skin)
@@ -88,7 +89,7 @@ export function variantOf(m: Manifest, variants: Preset['variants'], id: string,
   const mat = m.materials.find((x) => x.id === id);
   if (!mat || seen.has(id)) return undefined;
   seen.add(id);
-  return mat.linkTo ? variantOf(m, variants, mat.linkTo, seen) : variants[id];
+  return mat.linkTo ? variantOf(m, variants, mat.linkTo, seen) : variants[id] ?? mat.defaultVariant;
 }
 
 /** Variant names: a swatch name, "#rrggbb", or "tint:<swatch|#hex>" (grayscale × tint). Stored names win. */
@@ -112,12 +113,12 @@ export function storeVariants(m: Manifest, ...selections: Preset['variants'][]) 
 const cache = new WeakMap<Img, { sig: string; idx: Int16Array }>();
 
 /** Project view with the selected variants swapped in (exact index swap). Same cell hashes, so compose is unchanged. */
-// ponytail: images are replaced per hash; two items sharing an identical cell image would share its recolour.
 export function recolour(p: Project, variants: Preset['variants']): Project {
   const m = p.manifest;
   let images: Map<string, Img> | null = null;
+  const layerImages = new Map<Layer, Map<string, Img>>();
   for (const it of m.items) {
-    const mats = it.materials.flatMap((id) => m.materials.find((x) => x.id === id) ?? []);
+    const mats = it.materials.flatMap((id) => m.materials.find((x) => x.id === id && (x.owner === it.id || x.owner === it.variantOf)) ?? []);
     const ids = new Map<number, number>(), table: number[] = [];
     for (const mat of mats) {
       const name = variantOf(m, variants, mat.id), r = name ? variantRampOf(mat, name) : undefined;
@@ -126,17 +127,32 @@ export function recolour(p: Project, variants: Preset['variants']): Project {
     if (!table.some((c) => c >= 0)) continue;
     images ??= new Map(p.images);
     const sig = mats.map((x) => x.ramp.join()).join('|'), t = Int32Array.from(table);
-    for (const l of it.layers)
+    for (const l of it.layers) {
+      const local = new Map<string, Img>();
       for (const d of Object.values(l.cells ?? {}))
         for (const h of Object.values(d ?? {}).flat()) {
           const im = h && p.images.get(h);
           if (!im) continue;
           let c = cache.get(im);
           if (!c || c.sig !== sig) cache.set(im, (c = { sig, idx: indexImg(im, ids) }));
-          images.set(h!, applyIndex(im, c.idx, t));
+          const rendered = applyIndex(im, c.idx, t);
+          local.set(h!, rendered);
+          // Preserve the traditional map for consumers inspecting a single item's images; composition uses owner-local refs.
+          images.set(h!, rendered);
         }
+      layerImages.set(l, local);
+    }
   }
-  return images ? { manifest: m, images } : p;
+  // Every layer, including unmodified layers, gets an explicit raw override when any item is recoloured. Otherwise an
+  // uncoloured copy sharing a hash with a coloured one would accidentally read that copy's palette from `images`.
+  if (images) for (const it of m.items) for (const l of it.layers) if (!layerImages.has(l)) {
+    const local = new Map<string, Img>();
+    for (const dirs of Object.values(l.cells ?? {})) for (const cells of Object.values(dirs ?? {})) for (const h of cells ?? []) {
+      const im = h && p.images.get(h); if (h && im) local.set(h, im);
+    }
+    layerImages.set(l, local);
+  }
+  return images ? { manifest: m, images, layerImages } : p;
 }
 
 /** Random outfit: each non-body slot gets none or one of its items; each unlinked material keeps its source or gets a swatch. */

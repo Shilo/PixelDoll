@@ -282,7 +282,7 @@ draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg be
 
 ## 6. Colour model [M4]
 
-Materials = indexed ramps, shadow → highlight, unique across materials; derived per item from its layers (OKLab k-means,
+Materials = indexed ramps, shadow → highlight, disjoint within each item owner in `pixeldoll/2` (globally in legacy `pixeldoll/1`); derived per item from its layers (OKLab k-means,
 k ≤ 4 auto) and from the base. **Base regions (B15):** the base's shirt and shorts share one grey ramp (M4), so
 `lib/dress/regions.ts` splits them by position: garment greys (C < 0.04, L ≥ 0.18) form 4-connected components (outlines and
 skin separate the garments), each component goes to the shorts when ≥ 75 % of it lies at or below hip − 1.5 px along the

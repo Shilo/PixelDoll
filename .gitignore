@@ -32,3 +32,4 @@ design-mockups/
 
 # local agent session handoffs
 .claude/handoffs/
+debug.log

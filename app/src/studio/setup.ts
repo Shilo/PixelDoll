@@ -40,6 +40,10 @@ export async function setupCharacter(spec: SetupSpec, progress: (p: Progress) =>
   provenance.push(provOf(managed));
   progress({ step: 'check', done: 0, total: 1, recIds: [] });
   const result = await attachImportedRig(project, plan, measured, provenance);
+  // Persist the actual registration profile used above. Legacy ZIPs lack these fields; future fitting must distinguish
+  // a successfully set-up low top-down mannequin from artwork whose camera/template are still unknown.
+  result.manifest.rig.view = project.manifest.rig.view ?? 'low top-down';
+  result.manifest.rig.template = 'mannequin';
   // A single transaction publishes new rest blobs and metadata together; current outfits/items are retained.
   const blobs = new Map<string, Blob>();
   for (const rest of Object.values(result.manifest.rig.rest ?? {})) if (rest) {

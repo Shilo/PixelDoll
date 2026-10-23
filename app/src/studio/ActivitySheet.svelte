@@ -3,7 +3,7 @@
   import { queue, type JobRec } from '../lib/pixellab/queue.ts'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { fmtNum } from './model.ts'
-  import { ui, cleanUp, toast } from './state.svelte.ts'
+  import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts'
   async function clear() {
     const n = await cleanUp()
     toast(`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused images` : ''}. Jobs your drafts or a running create or move still use are kept.`)
@@ -12,9 +12,18 @@
 
   let now = $state(Date.now())
   $effect(() => { const t = setInterval(() => (now = Date.now()), 1000); return () => clearInterval(t) })
+  const refreshEquipment = () => { void refreshFits().catch(() => toast('Could not load saved equipment fits.')) }
+  $effect(() => { refreshEquipment() })
+  const fits = $derived(equipment.fits.filter((f) => f.stage !== 'accepted' && f.stage !== 'discarded'))
+  const fitLabel = (stage: string) => ({ ready: 'Ready to preview', 'rest-running': 'Fitting at rest', 'rest-review': 'Review rest fit', 'pose-running': 'Animating fit', 'fit-review': 'Review fitted copy', 'needs-attention': 'Needs attention' })[stage] ?? stage
   const jobs = $derived([...$queue.jobs].reverse())
   const running = $derived(jobs.filter((r) => r.state === 'running' || r.state === 'submitting'))
   const queued = $derived(jobs.filter((r) => r.state === 'queued'))
+  $effect(() => {
+    if (!equipment.running.length && !fits.some((f) => f.stage.endsWith('running')) && !running.length && !queued.length) return
+    const t = setInterval(refreshEquipment, 2000)
+    return () => clearInterval(t)
+  })
   const done = $derived(jobs.filter((r) => !['running', 'submitting', 'queued'].includes(r.state)).slice(0, 12))
   const nice = (r: JobRec) => r.label.replace(/^M3 /, '').replace(/^skeleton sha256:.{8}.*/, 'Finding joints')
   const pct = (r: JobRec) => { const ps = r.jobs.map((s) => (s.done ? 1 : Math.min(1, s.progress ?? 0))); return ps.length ? Math.round((ps.reduce((a, b) => a + b, 0) / ps.length) * 100) : 0 }
@@ -36,6 +45,11 @@
     {#if $queue.paused}
       <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn't accept the key. Jobs wait until you connect again." : $queue.paused === 'offline' ? "You're offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs." : 'PixelLab credits are insufficient. Jobs wait until credits are available.'}
         {#if $queue.paused !== 'offline'}<button class="btn sm" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button>{/if}</p>
+    {/if}
+    {#if fits.length}
+      <section class="act-group"><span class="sec-title">Equipment fits</span><ul>{#each fits as fit (fit.id)}
+        <li><CircleAlert size={16} /><span class="act-main"><b>{fit.name}</b><span class="muted small">{store.projects.find((p) => p.id === fit.targetId)?.name ?? 'Character'} · {fitLabel(fit.stage)} · {+fit.spentGens.toFixed(2)} gens{fit.spentUsd && fit.spentUsd > 0 ? ` + $${fit.spentUsd.toFixed(3)}` : ''} spent</span></span><button class="btn sm" onclick={() => openFit(fit.id)}>{fit.stage.endsWith('running') ? 'View' : 'Continue'}</button></li>
+      {/each}</ul></section>
     {/if}
     {#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
     {#if running.length}

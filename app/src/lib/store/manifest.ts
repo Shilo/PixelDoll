@@ -1,13 +1,16 @@
 // pixeldoll/1 manifest types (docs/manifest-spec.md §2). Rig types live in rig/rig.ts.
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Rig, Sha256 } from '../rig/rig.ts';
+import type { EquipmentLineage } from '../equipment/types.ts';
 export type { ClipSource, DirectionName, Keypoint, RestView, Rig, RigAnimation, RigDirection, Sha256 } from '../rig/rig.ts';
 
 export type Hex = `#${string}`;
 export type CellKey = `${string}/${DirectionName}/${number}`;
+export const CURRENT_FORMAT = 'pixeldoll/2' as const;
+export const supportedFormat = (value: unknown): value is Manifest['format'] => value === 'pixeldoll/1' || value === CURRENT_FORMAT;
 
 export interface Manifest {
-  format: 'pixeldoll/1';
+  format: 'pixeldoll/1' | 'pixeldoll/2';
   name: string;
   app: string;
   rig: Rig;
@@ -25,6 +28,8 @@ export interface Material {
   variants: Record<string, Hex[]>;
   linkTo?: string;
   owner: string;
+  /** v2 approved baseline, used when an outfit has no explicit selection. */
+  defaultVariant?: string;
 }
 
 export interface Slot {
@@ -42,6 +47,8 @@ export interface Slot {
 export interface ZOverride { layer: 'fg' | 'bg'; z: number; dir?: DirectionName; anim?: string; cell?: number }
 
 export interface Item {
+  /** Explicit reviewed/generated target cells, including intentional transparent cells; absence is legacy coverage. */
+  coverage?: CellKey[];
   id: string;
   name: string;
   slot: string;
@@ -64,6 +71,7 @@ export interface Item {
   designWarnings?: string[]; // explicitly accepted keyframe design issues, retained when move QA is replaced
   paletteRepairs?: ItemPaletteRepair[]; // explicit local edits; paid source provenance and historical QA remain intact
   qa?: ItemQa; // not read by compose/export
+  design?: EquipmentLineage;
 }
 /** Original and corrected layer references for an explicit free colour edit. Historical source blobs need not remain loaded. */
 export interface ItemPaletteRepair {
@@ -75,6 +83,8 @@ export interface ItemPaletteRepair {
 }
 /** Scalar checks for one evaluation; extrema or totals over its frames. */
 export interface QaSummary {
+  /** Contains reused cells without a new API measurement; aggregate numeric checks are incomplete. */
+  unmeasured?: boolean;
   minKeyKept: number;
   maxKeyOutside: number;
   minAreaRatio: number;
@@ -109,6 +119,7 @@ export interface Layer {
   z: number;
   cells?: Record<string, Partial<Record<DirectionName, (Sha256 | null)[]>>>; // project; null = transparent
   sheets?: Record<string, string>; // export manifest; anim -> sheet path
+  sourceSheets?: Record<string, string>; // v2 original source-ramp sheets when canonical sheets render defaults
   cell?: { w: number; h: number }; // v1.3.1 oversize layer (held items: 96x96); default rig.cell; always written in manifest.json
   pivot?: { x: number; y: number }; // same body point in this layer's cell (rig.pivot + pad); default rig.pivot
 }
@@ -140,4 +151,9 @@ export interface ExportInfo {
 }
 
 /** In-memory project: the manifest plus decoded cell images keyed by hash. */
-export interface Project { manifest: Manifest; images: Map<string, Img> }
+export interface Project {
+  manifest: Manifest;
+  images: Map<string, Img>;
+  /** Render-only owner-local palettes. Original content hashes and persisted PNGs never change. */
+  layerImages?: Map<Layer, Map<string, Img>>;
+}

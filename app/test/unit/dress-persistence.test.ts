@@ -88,3 +88,30 @@ test('a stale body receipt cannot be blessed by a later colour-region split', as
   expect(next.moveRecovery).toEqual(receipt)
   expect(next.moveRecovery?.bodyRigVersion).not.toBe(stableStringify({ rig: next.manifest.rig, character: next.character }))
 })
+
+
+test('a delayed snapshot retains newly fitted current equipment and its independent colour variant', async () => {
+  const live = record(), snapshot = structuredClone(live.manifest)
+  snapshot.items = snapshot.items.filter(it => it.id !== 'hat')
+  snapshot.materials = snapshot.materials.filter(mat => mat.owner !== 'hat')
+  records.set(live.id, live)
+  await saveDress(live.id, snapshot, { items: { body: 'base', head: null }, variants: {} })
+  const saved = records.get(live.id) as ReturnType<typeof record>
+  expect(saved.dress.current.items.head).toBe('hat')
+  expect(saved.dress.current.variants).toEqual({ hat_1: 'gold' })
+  expect(saved.manifest.items.find(it => it.id === 'hat')!.materials).toEqual(['hat_1'])
+})
+
+test('covered items can still be deliberately unequipped and stale links to deleted materials stay removed', async () => {
+  const live = record(), snapshot = structuredClone(live.manifest)
+  records.set(live.id, live)
+  await saveDress(live.id, snapshot, { items: { head: null }, variants: {} })
+  let saved = records.get(live.id) as ReturnType<typeof record>
+  expect(saved.dress.current.items.head).toBeNull(); expect(saved.dress.current.variants).toEqual({})
+  snapshot.materials[0].linkTo = 'hat_1'
+  await deleteItem(live.id, 'hat')
+  await saveDress(live.id, snapshot, { items: { head: 'hat' }, variants: { hat_1: 'gold' } })
+  saved = records.get(live.id) as ReturnType<typeof record>
+  expect(saved.manifest.materials[0].linkTo).toBeUndefined()
+  expect(saved.dress.current.items.head).toBeNull(); expect(saved.dress.current.variants).toEqual({})
+})

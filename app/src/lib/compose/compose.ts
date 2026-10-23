@@ -80,11 +80,12 @@ export async function withTuckVariants(p: Project): Promise<Project> {
       for (const it of m.items.filter((x) => x.slot === slot && !x.variantOf)) {
         const v: Item = { ...structuredClone(it), id: tuckedId(it.id, over.id), name: `${it.name} under ${over.name}`, variantOf: it.id, under: over.id };
         delete v.qa;
-        for (const l of v.layers)
+        for (const [li, l] of v.layers.entries())
           for (const [anim, dirs] of Object.entries(l.cells ?? {}))
             for (const [dir, cells] of Object.entries(dirs ?? {}) as [DirectionName, (Sha256 | null)[]][])
               dirs![dir] = await Promise.all(cells.map(async (h, i) => {
-                const t = tucked(p, h ? p.images.get(h) ?? null : null, l, [over], anim, dir, i);
+                const original = it.layers[li];
+                const t = tucked(p, h ? cellImg(p, original, anim, dir, i) : null, original, [over], anim, dir, i);
                 if (!t?.data.some((x, j) => j % 4 === 3 && x)) return null;
                 const k = await cellHash(t);
                 images.set(k, t);
@@ -92,7 +93,7 @@ export async function withTuckVariants(p: Project): Promise<Project> {
               }));
         add.push(v);
       }
-  return add.length ? { manifest: { ...m, items: [...m.items, ...add] }, images } : p;
+  return add.length ? { manifest: { ...m, items: [...m.items, ...add] }, images, layerImages: p.layerImages } : p;
 }
 
 /** Most specific matching zOverride (cell > anim > dir > none; later wins on ties), else layer.z. */
@@ -124,7 +125,7 @@ export function cellImg(p: Project, layer: Layer, anim: string, dir: DirectionNa
   const stored = layer.cells?.[anim]?.[dir];
   if (stored) {
     const h = stored[cell];
-    return h ? p.images.get(h) ?? null : null;
+    return h ? p.layerImages?.get(layer)?.get(h) ?? p.images.get(h) ?? null : null;
   }
   const src = p.manifest.rig.directions.find((d) => d.id === dir)?.mirrorOf;
   const im = src ? cellImg(p, layer, anim, src, cell) : null;

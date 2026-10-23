@@ -25,7 +25,8 @@
   let text = $state(draft?.text ?? '')
   const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24)
   const id = $derived(text.trim() ? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) : action)
-  const items = $derived(m ? posable(m) : [])
+  const items = $derived(m ? posable(m).filter((item) => !item.design) : [])
+  const sharedItems = $derived(m?.items.filter((item) => item.design && item.status === 'accepted') ?? [])
   const replacing = $derived(have.has(id))
   const availableDirs = $derived(m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? [])
   let selectedDirs = $state<DirectionName[]>(draft?.dirs ?? untrack(() => [...availableDirs]))
@@ -33,6 +34,7 @@
   const frames = $derived(m?.rig.animations.find((a) => a.id === id)?.cells ?? 8)
   let skip = $state<string[]>(draft?.skip ?? [])
   const chosen = $derived(items.filter((i) => !skip.includes(i.id)).map((i) => i.id))
+  const sharedChosen = $derived(sharedItems.filter((i) => !skip.includes(i.id)).map((i) => i.id))
   const est = $derived(m && id && targetDirs.length ? moveEstimate(m, { action: text.trim() ? undefined : action, frames, items: chosen, dirs: targetDirs, replace: replacing }) : null)
   const dirs = $derived(targetDirs.length)
   const mine = $derived(!!moving.spec && moving.projectId === doc.id)
@@ -75,7 +77,7 @@
 
   function go() {
     const projectId = doc.id
-    const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, poseStyle: 'visible-side-v1' as const, seed: 1 + Math.floor(Math.random() * 1_000_000), ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) }
+    const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1' as const, seed: 1 + Math.floor(Math.random() * 1_000_000), ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) }
     formDrafts.move = { projectId, action, text, skip: $state.snapshot(skip), dirs: [...selectedDirs], poseStyle: 'visible-side-v1' }
     withKey(() => { formDrafts.move = undefined; void startMove(projectId, spec); ui.sheet = 'move' })
   }
@@ -126,6 +128,8 @@
         <p class="notice warn small">Match {colourRepair.changedPixels} nearby colour pixels to the standing palette across {colourRepair.changedFrames} cached {colourRepair.directions.map(nice).join(', ')} frames. The body shape stays fixed; other colours are left alone. Recheck {colourRepair.checks} changed frames · estimated {colourRepair.gens.toFixed(1)} gens or ${colourRepair.usd.toFixed(3)}.{#if colourRepair.itemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(colourRepair.itemGens)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails.</p>
       {/if}
       {#if recoveryError}<p class="notice bad small"><CircleAlert size={14} />{recoveryError}</p>{/if}
+      {#if moving.done && moving.fitIds.length}<p class="notice small"><Check size={14} /><span>The body move is ready. {moving.fitIds.length} shared equipment {moving.fitIds.length === 1 ? 'copy needs' : 'copies need'} a separately priced animation review.</span><button class="btn sm" onclick={() => (ui.sheet = 'activity')}>Review equipment fits</button></p>{/if}
+      {#each moving.warnings as warning (warning)}<p class="notice warn small"><CircleAlert size={14} />{warning}</p>{/each}
     </div>
   {:else if isDemo() || !ok}
     <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.'}</p>
@@ -159,6 +163,13 @@
               <span class="faint small">{poseGens(1, est?.frames ?? 8, dirs)} gens</span></label>
           {/each}
           <p class="faint small">Items you leave out stay hidden in this move until they are made again.</p>
+        </div>
+      {/if}
+      {#if sharedItems.length}
+        <div class="field">
+          <span class="label">Prepare shared equipment reviews</span>
+          {#each sharedItems as it (it.id)}<label class="check"><input type="checkbox" checked={!skip.includes(it.id)} onchange={(e) => (skip = e.currentTarget.checked ? skip.filter((x) => x !== it.id) : [...skip, it.id])} />{it.name}<span class="faint small">No charge now</span></label>{/each}
+          <p class="faint small">After the body move is ready, review each fitted copy in Activity. Its animation price is shown before you start. Existing item frames stay unchanged until you keep the reviewed result.</p>
         </div>
       {/if}
       <p class="faint small">PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.</p>

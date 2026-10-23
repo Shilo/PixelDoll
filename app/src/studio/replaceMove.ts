@@ -27,6 +27,7 @@ export function invalidateMoveItems(manifest: Manifest, anim: string, dirs?: rea
       if (layer.sheets) delete layer.sheets[anim];
     }
     if (item.anchorCell && belongs(item.anchorCell)) delete item.anchorCell;
+    if (item.coverage) item.coverage = item.coverage.filter((key) => !belongs(key));
     const old = item.qa;
     if (!old) continue;
     const remaining = original.filter((key) => !belongs(key));

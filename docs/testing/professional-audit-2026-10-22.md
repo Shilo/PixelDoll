@@ -214,3 +214,22 @@ Exact-token staged/bundle scans passed. The final source adds no package depende
 Two shield east-walk drafts retain hard QA flags and remain unaccepted; stored cape smudges and helmet hurt-frame artwork also require correction or explicit review. Independent body directions/actions are implemented for new characters. The original failed Slash remains historical evidence; the new targeted repair passes body gates and manual artwork review, with soft item warnings retained. Existing and economy-mode mirrored rigs still flip asymmetric attacks. No item-only toggle was presented as an anatomical fix.
 
 Unity live editor and Godot Aseprite Wizard remain unverified here. Physical-device and screen-reader certification are not claimed. Existing PWA, final-origin and theme decisions remain deferred. Passing this bounded audit does not certify all possible archives, provider artwork or engine customizations.
+
+
+## Main-branch integration follow-up
+
+The user requested integration into `main` and removal of the audit branch/worktree. Main had advanced independently with
+shared equipment designs, reviewed fitting, default colourways and wardrobe changes. Conflicts were resolved by retaining
+both feature sets. Shared copies use reviewed fit drafts instead of direct paid posing; audit direction selection,
+measurement recovery, publication receipts, palette correction and atomic storage protections remain active.
+
+The combined review found and fixed scoped integration issues: replacing body views now clears only their shared-item
+coverage; extension fitting respects the selected directions and exact pending target cells, refusing a partial fit that
+would require unreviewed broader standing-reference work. Import allocation checks count the original source sheets that
+are actually decoded. Engine-only imports preserve rendered equipment while warning when unavailable reusable-design
+snapshot lineage cannot be restored. Full editable design archives retain their reusable lineage.
+
+Original ignored evidence was preserved and byte-verified before worktree cleanup: 5,107 files plus the local handoff,
+under `C:/Programming_Files/Shilocity/PixelLab/PixelDoll/docs/testing/img/audit-worktree-39533f7/`. The `testing-img` subtree
+retains original relative evidence paths. This avoids losing live-generation/engine evidence when removing dependencies,
+build products and the audit checkout. The unrelated UI-redesign checkout, branch and uncommitted files are preserved.

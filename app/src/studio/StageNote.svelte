@@ -4,7 +4,7 @@
   import type { DirectionName, Item } from '../lib/store/manifest.ts'
   import { posable, poseGens } from '../lib/items/run.ts'
   import { groupOf } from './model.ts'
-  import { ui, doc, store, isDemo, moving, startMove, withKey, openNewItem } from './state.svelte.ts'
+  import { ui, doc, store, isDemo, moving, startMove, withKey, openNewItem, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { TriangleAlert } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
@@ -20,10 +20,11 @@
     if (!m || !anim) return []
     return [...new Set(views.filter((dir) => missingAt(m!, { [item.slot]: item.id }, anim!.id, dir).some((i) => i.id === item.id)).map((dir) => m!.rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir))]
   }
-  const pose = $derived(m && anim ? posable(m).filter((i) => missing.includes(i) && missingDirs(i).length) : [])
+  const pose = $derived(m && anim ? posable(m).filter((i) => !i.design && missing.includes(i) && missingDirs(i).length) : [])
   const targetDirs = $derived([...new Set(pose.flatMap(missingDirs))])
   const cost = $derived(anim ? pose.reduce((sum, i) => sum + poseGens(1, anim.cells, missingDirs(i).length), 0) : 0)
-  const remake = $derived(missing.find((i) => i.prompt))
+  const shared = $derived(missing.find((i) => i.design))
+  const remake = $derived(missing.find((i) => !i.design && i.prompt))
   const busy = $derived(!!moving.spec && moving.projectId === doc.id && moving.spec.id === anim?.id && !moving.done && !moving.error)
 
   function makePose() {
@@ -41,6 +42,8 @@
       <button class="btn sm" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span>Making…</button>
     {:else if isDemo()}
       <button class="btn sm" onclick={() => (ui.sheet = 'create')}>Make your own</button>
+    {:else if shared}
+      <button class="btn sm" disabled={extensionPreparing(shared.id)} onclick={() => openItemExtension(shared.id, [anim!.id])}>{extensionPreparing(shared.id) ? 'Checking fit…' : 'Review equipment fit'}</button>
     {:else if pose.length === missing.length}
       <button class="btn sm primary" disabled={!!moving.spec && !moving.done} onclick={makePose}>Make it <span class="cost">Est. {cost} gens</span></button>
     {:else if remake}

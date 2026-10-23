@@ -94,3 +94,17 @@ test('direction-scoped pose cleanup retains unrelated measured tracks byte-for-b
   expect(Object.keys(skeletons)).toEqual(['slash/south/0','slash/north/0'])
   expect(m.rig.anchors.hand_r).toEqual({slash:{south:[[1,2]],north:[[7,8]]},idle:{south:[[9,10]]}})
 })
+
+
+test('scoped replacement clears shared design coverage even without QA and preserves other views/moves', () => {
+  const m = fixture(), item = m.items[0]
+  m.rig.directions = [{ id: 'south' }, { id: 'east' }, { id: 'west', mirrorOf: 'east' }, { id: 'north' }]
+  item.coverage = ['idle/south/0', 'slash/south/0', 'slash/east/0', 'slash/west/0', 'slash/north/0']
+  delete item.qa
+  const dressed = structuredClone(item.dressed), provenance = structuredClone(item.provenance)
+  invalidateMoveItems(m, 'slash', ['east'])
+  expect(item.coverage).toEqual(['idle/south/0', 'slash/south/0', 'slash/north/0'])
+  expect(item.dressed).toEqual(dressed); expect(item.provenance).toEqual(provenance)
+  const before = structuredClone(item.coverage); invalidateMoveItems(m, 'slash', ['east'])
+  expect(item.coverage).toEqual(before)
+})

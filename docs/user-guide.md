@@ -67,6 +67,24 @@ known job ID and reuse saved results. If a submitted request has an unknown outc
 **Activity**; it is never automatically sent again. **Try again** starts a new paid attempt and may incur additional charges.
 When creation is done, press **Start dressing up**.
 
+## Share equipment designs between characters
+
+Select an accepted equipment item and press **Save as shared design**. Check the current colours in the preview and name the design. This saves an independent local snapshot of its artwork and references.
+
+On another character, choose **New item → Saved designs**:
+
+- **Review free copy** reuses frames whose frozen body pixels and geometry match. If only some frames match, **Review available copy · Free** shows the available coverage and its gaps. Copying uses no PixelLab generations.
+- **View fit** checks whether a different body can use a reference fit. The initial paid trial supports single-material headwear on known 64 px low top-down humanoid rigs with complete standing references. Other slots and multi-material designs still support compatible free copies.
+- Paid fitting has separate prices and reviews: preview the standing fit first, then approve animation. Inspect every direction and move before **Keep and wear** or **Keep in wardrobe**. Failed attempts can still be billed; retries require a separate priced action. PixelLab may report charges in generations or dollars. The displayed generation estimate is not a dollar spending cap; reported charges remain visible after failures and retries.
+
+Each kept copy has its own wardrobe entry, colours and outfit choices. Changing the source or removing its library entry leaves existing copies intact. **Export** on a design card downloads a portable `.pixeldoll-design.zip`; **Import design** restores it. Character exports also keep their accepted copies and pinned references.
+
+When you add a move, shared equipment gets a separate review for its missing frames. Matching frames copy for free; approved standing references can be reused without another standing-fit charge. Unaccepted or failed drafts do not replace wardrobe artwork. An export can therefore contain the new body move while warning that an item has no equipment frames for it.
+
+Paid fitting is experimental: a successful standing fit does not guarantee every move will preserve the design. Visible deformation blocks keeping the result; an occlusion warning still needs visual review. Broader item classes and recovery of missing old equipment references remain on the [shared equipment backlog](../TODO.md#shared-equipment-remaining-work).
+
+The library lives in this browser's storage, with no account sync. Download design and character ZIPs to keep backups or move them to another device. A design ZIP contains equipment references; use a character ZIP to preserve the whole editable character.
+
 ## Import an existing character
 
 Choose **Import an existing character** on the welcome screen or character menu → **Import character…**. Importing is free and saves a new copy on this device.
@@ -91,7 +109,7 @@ Artwork keeps its original pixels and directions. Existing clothes and hair in a
 
 Leave **Set up the pose rig next** checked to prepare imported artwork for the same equipment and move pipeline used by created characters. You can also choose character menu → **Set up character…** later. Review the existing appearance and standing reference, then check the estimated price before starting. Setup finds joints on every unique body frame (0.1 gen each) and connects the supplied standing views to your current PixelLab account (0.25 gen). It keeps existing pixels, layers, colours and outfits intact. Saved standing views stay fixed to preserve existing equipment alignment.
 
-Each character has its own fitted equipment layers. Imported and created characters use the same tools to make those layers; sharing an equipment design between different bodies is a future feature.
+Each character has its own fitted equipment layers. Imported and created characters use the same tools to make those layers, including the [shared design library](#share-equipment-designs-between-characters) within its current compatibility and experimental fitting limits.
 
 Setup supports 64 × 64 humanoid bodies with all four cardinal views or all eight views, and the same headroom needed by created characters. Missing views, empty frames and insufficient headroom are reported before spending. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their real measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
 

@@ -28,8 +28,15 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   pixel repair. A forearm-covered helmet can now require review instead of an H4 retry when head-aligned observed arm
   pixels explain the mismatch; true deformations still fail. Appended move QA now links to the selected source record
   by produced frame key, including grid fallbacks and prior history. See `docs/testing/item-quality-follow-up-2026-10-22.md`.
-- **PixelLab credits:** shield validation spent 99 generations (34 + 65). Subsequent professional-audit live tests changed
-  the shared balance; query before further paid work. Unknown outcomes may have charged; see the audit report.
+- **Shared equipment:** local immutable design library, portable design ZIPs, free compatible copies and independent
+  target palettes are implemented. Paid cross-body fitting remains an experimental single-material headwear trial.
+  Live idle/walk and Cast export/reimport passed; a Hurt helmet extension failed and remains blocked. Broader classes,
+  reliability and validation work are tracked in [TODO](TODO.md#shared-equipment-remaining-work); see the
+  [verification report](docs/testing/shared-equipment-2026-10-22.md) for scope and actual charges.
+- **PixelLab credits:** the ≈212 balance was an earlier free-GET snapshot, not the balance after subsequent shared-fit
+  tests. Shield validation spent 99 generations (34 + 65); later fitting can report USD as well as generations, with
+  three unknown Cast measurement outcomes retained without resubmission. Professional-audit tests also changed the
+  shared balance; query before further paid work, since unknown outcomes may have charged.
 - **Move QA summaries:** new evaluations retain checks per move/direction, including H4 review status. Adding or replacing
   a direction recomputes current extrema and counts, preserves accepted exceptions and source links, and survives ZIP
   export. Older indivisible checks remain explicitly incomplete until their coverage is replaced. Both CI jobs now use
@@ -54,7 +61,10 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
    see docs/research/handedness-implementation-scope-2026-10-22.md).
 4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
 5. **Theming** — runtime theme tokens + "Paper" theme inspired by design look D (deferred by user).
-6. **Housekeeping** — CI runner pinned to `ubuntu-24.04`; PixelLab OpenAPI snapshot refresh when
+6. **Shared equipment fitting** — improve the rejected Hurt case; qualify more bodies/motions, then additional item
+   classes and profiles with separate cost/review gates. Missing-reference recovery and shared-copy engine execution
+   remain open. The [canonical backlog](TODO.md#shared-equipment-remaining-work) separates these from completed behavior.
+7. **Housekeeping** — CI runner pinned to `ubuntu-24.04`; PixelLab OpenAPI snapshot refresh when
    endpoints change. Releases: bump `app/package.json`, annotated tag `vX.Y.Z`, `gh release create`.
 
 ## Decisions log

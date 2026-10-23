@@ -2,6 +2,7 @@
   import Sheet from './Sheet.svelte'
   import { formDrafts } from './formDrafts.ts'
   import GroupIcon from './GroupIcon.svelte'
+  import DesignLibrary from './DesignLibrary.svelte'
   import { GROUPS, slotLabel, itemNameFrom } from './model.ts'
   import { itemRoute } from './itemRoute.ts'
   import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts'
@@ -60,8 +61,12 @@
       <button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button>
 {/snippet}
 
-<Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() ? undefined : foot}>
-  {#if isDemo()}
+<Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() || ui.newItemTab === 'designs' ? undefined : foot}>
+  <div class="seg full" role="tablist" aria-label="Item source"><button role="tab" aria-selected={ui.newItemTab === 'create'} onclick={() => (ui.newItemTab = 'create')}>Create</button><button role="tab" aria-selected={ui.newItemTab === 'designs'} onclick={() => (ui.newItemTab = 'designs')}>Saved designs</button></div>
+  {#if ui.newItemTab === 'designs'}
+    {#if isDemo()}<p class="notice small"><Sparkles size={16} /><span>Make an editable copy of the demo before adding a fitted item.</span><button class="btn sm" disabled={busy} onclick={useCopy}>Copy demo body</button></p>{/if}
+    {#key doc.id}<DesignLibrary />{/key}
+  {:else if isDemo()}
     <div class="notice small">
       <Sparkles size={16} />
       <span>Items are drawn for your own character. Create one, or make an editable copy of the demo body to add items to it.</span>
