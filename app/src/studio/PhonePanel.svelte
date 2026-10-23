@@ -30,8 +30,11 @@
     <div class="chip-row">
       <div class="slot-chips" role="tablist" aria-label="Slots" bind:this={chips}>
         {#each GROUPS as s (s.id)}
+          {@const itemCount = m?.items.filter((i) => s.slots.includes(i.slot)).length ?? 0}
+          {@const pendingCount = gens.filter((x) => x.draft.rigId === doc.id && s.slots.includes(x.input.slot)).length}
           <button role="tab" class="slot-chip" aria-selected={ui.group === s.id} onclick={() => (ui.group = s.id)}>
             <GroupIcon group={s.id} size={18} /><span>{s.id}</span>
+            {#if m}<span class="category-count small num">{itemCount + pendingCount}<span class="sr"> items{pendingCount ? ` (${pendingCount} pending)` : ''}</span></span>{/if}
           </button>
         {/each}
         <button role="tab" class="slot-chip" aria-selected={outfits} onclick={() => (ui.group = 'Outfits')}><Bookmark size={18} /><span>Outfits</span></button>
@@ -73,10 +76,11 @@
           <Colours only={sel.id} heading={false} />
         {/if}
       {:else}
-        <div class="empty">
-          <GroupIcon group={g.id} size={28} />
-          <p class="empty-title">No {g.empty} yet</p>
-          <button class="btn primary" onclick={() => openNewItem(g.id)}><Plus size={16} />Make one</button>
+        <div class="category-empty" role="group" aria-label="{g.id} items">
+          <GroupIcon group={g.id} size={18} />
+          <span>{g.id}</span>
+          <span class="category-count small num">0<span class="sr"> items</span></span>
+          <button class="btn icon plain add" aria-label="New {g.id.toLowerCase()} item" title="New {g.id.toLowerCase()} item" onclick={() => openNewItem(g.id)}><Plus size={20} /></button>
         </div>
       {/if}
     {/if}
