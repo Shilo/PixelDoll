@@ -83,14 +83,6 @@ New characters wear a light grey shirt and dark grey shorts, so you can tell the
 You can keep working or close the tab while it runs. It picks up where it left off. When it is done, press
 **Start dressing up**.
 
-## Align standing directions
-
-Character menu → **Align directions…** is free and runs entirely on this device. Review **Before / Aligned**, choose the direction groups to correct, then **Create aligned copy**. The original stays unchanged. Mirrored views stay linked.
-
-Each selected direction receives one whole-pixel vertical correction across **every move and every equipment layer**, including unequipped and oversized items. Standing references, joints and attachment points move with the artwork; frame size, pivots and motion stay fixed. The Move selector only changes the preview. Per-animation switches are intentionally absent: mixing corrected and original baselines would make transitions jump.
-
-Alignment requires a stable idle baseline (or a standing reference when idle is absent). It refuses any correction that would clip visible artwork or move a rig point outside its frame. Leave that direction unchanged if it cannot fit. It corrects direction placement, not bent limbs, pose errors or variation within an animation; those warnings remain. Copies retain the correction when exported, imported or used for new moves.
-
 ## Share equipment designs between characters
 
 Select an accepted equipment item and press **Save as shared design**. Check the current colours in the preview and name the design. This saves an independent local snapshot of its artwork and references.

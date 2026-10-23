@@ -10,7 +10,7 @@ const frame = (bottom: number) => {
 test('a fixed direction baseline is not described as idle foot drift', async () => {
   const b = await buildRig([{ id: 'idle', dirs: { south: [frame(60), frame(60)], north: [frame(55), frame(55)] } }], { directions: [{ id: 'south' }, { id: 'north' }] })
   expect(b.errors).toEqual([])
-  expect(b.warnings).toContain('idle/north: ground line is 5 px above the shared pivot')
+  expect(b.warnings.some(w => /ground line is|shared pivot/.test(w))).toBe(false)
   expect(b.warnings.some(w => /feet drift/.test(w))).toBe(false)
 })
 test('stride footprint movement is distinguished from planted-foot drift', async () => {

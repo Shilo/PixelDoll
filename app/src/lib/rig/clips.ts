@@ -5,7 +5,25 @@ import { binaryAlpha, makeImg, type Img } from '../image/png.ts';
 import { feetY, opaqueBox } from './normalize.ts';
 import { adherence, fromApi, hasAll, LABELS } from './poses.ts';
 import { routes, png, type Direction, type Req } from '../pixellab/routes.ts';
-import type { Keypoint } from './rig.ts';
+import { DIRECTIONS, type DirectionName, type Keypoint } from './rig.ts';
+
+// Previously saved aligned copies contain transformed pixels/rest poses, but their server character
+// remains in its original coordinates. Keep those copies usable; no new alignment is suggested/applied.
+export function managedMotionOffsets(character: { motionOffsets?: Partial<Record<DirectionName, number>> } | undefined, size: number): Partial<Record<DirectionName, number>> {
+  const offsets = character?.motionOffsets ?? {};
+  if (typeof offsets !== 'object' || Array.isArray(offsets)) throw new Error('The saved managed-motion alignment is invalid.');
+  for (const [dir, dy] of Object.entries(offsets)) if (!DIRECTIONS.includes(dir as DirectionName) || !Number.isSafeInteger(dy) || Math.abs(dy!) > size) throw new Error('The saved managed-motion alignment is invalid.');
+  return offsets;
+}
+export function shiftMotionPoses(poses: Keypoint[][], dy: number, size: number): Keypoint[][] {
+  if (!Number.isSafeInteger(dy) || Math.abs(dy) > size) throw new Error('Invalid managed-motion alignment offset.');
+  if (!dy) return poses;
+  return poses.map(pose => pose.map(k => {
+    const y = k.y + dy / size;
+    if (!Number.isFinite(k.x) || !Number.isFinite(y) || k.x < 0 || k.x > 1 || y < 0 || y > 1) throw new Error('Managed motion: alignment moves a rig point outside its frame.');
+    return { ...k, y };
+  }));
+}
 
 /** The `action` label of a clip. Base frames and item poses send the same one (same request shape, S3). */
 export const actionOf = (anim: string) => (anim.includes('idle') ? 'breathing idle' : anim.includes('walk') ? 'walking' : anim.includes('run') ? 'running' : anim);

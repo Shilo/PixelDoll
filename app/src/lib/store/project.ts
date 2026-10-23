@@ -13,7 +13,7 @@ export interface StoredProject {
   manifest: Manifest;
   skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
   rigQa?: unknown;
-  character?: { id: string; looks: string; motionOffsets?: Partial<Record<DirectionName, number>> }; // server motion -> locally aligned rest, in pixels
+  character?: { id: string; looks: string; motionOffsets?: Partial<Record<DirectionName, number>> }; // retained for previously saved aligned copies
   origin?: 'studio' | 'dev'; // T2: who made it; the Studio's character menu lists only 'studio' rigs (dev rigs: M2 pages)
 }
 

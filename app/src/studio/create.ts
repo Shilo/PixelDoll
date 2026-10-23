@@ -18,12 +18,11 @@ import { ANCHORS, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, playlist,
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
-import { actionOf, clipQa, largestComponent, loops, rawClip, type ClipQa } from '../lib/rig/clips.ts';
+import { actionOf, clipQa, largestComponent, loops, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { poseGens, poseItemClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { BASE_BODY, basePrompt, looksOf } from './model.ts';
 import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
-import { managedMotionOffsets, shiftMotionPoses } from '../lib/rig/align.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
 import { planDirections } from '../lib/rig/mirror.ts';
 import { prepareExtensionFit } from '../lib/equipment/index.ts';

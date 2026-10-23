@@ -61,8 +61,8 @@ export async function buildRig(anims: SourceAnim[], { size = 64, mode = '4', dir
   const ground = new Map(dirs.map(d => {
     const reference = pa && cells[cellKey(pa.id, d.id, 0)]?.img;
     const y = reference ? feetY(reference) : pivot.y;
-    const delta = y - pivot.y;
-    if (Math.abs(delta) > 1) warnings.push(`${pa.id}/${d.id}: ground line is ${Math.abs(delta)} px ${delta < 0 ? 'above' : 'below'} the shared pivot`);
+    // Different rotation silhouettes need not share a bottom edge: toes/heels project differently.
+    // This is only a within-direction motion reference, never evidence of a misplaced rotation origin.
     return [d.id, y];
   }));
   for (const a of animations)

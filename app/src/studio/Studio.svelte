@@ -22,7 +22,6 @@
   import ImportSheet from './ImportSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
   import SetupSheet from './SetupSheet.svelte'
-  import AlignDirectionsSheet from './AlignDirectionsSheet.svelte'
   import DesignSaveSheet from './DesignSaveSheet.svelte'
   import FitDesignSheet from './FitDesignSheet.svelte'
   import StageNote from './StageNote.svelte'
@@ -190,7 +189,6 @@
   {#if ui.sheet === 'import'}<ImportSheet />{/if}
   {#if ui.sheet === 'delete'}<DeleteSheet />{/if}
   {#if ui.sheet === 'setup'}<SetupSheet />{/if}
-  {#if ui.sheet === 'align'}<AlignDirectionsSheet />{/if}
   {#if ui.sheet === 'savedesign'}<DesignSaveSheet />{/if}
   {#if ui.sheet === 'fitdesign'}<FitDesignSheet />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
