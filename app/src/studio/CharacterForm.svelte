@@ -22,6 +22,11 @@
   const preset = $derived(presetOf(d))
   const errors = $derived(draftErrors(d))
   const enhanceTarget = $derived(d.tab === 'appearance' ? 'details' : 'prompt')
+  let editorHelp: { show: () => Promise<void>; hide: () => void }
+  const editorHelpId = $props.id()
+  const editorHelpText = $derived(d.tab === 'appearance'
+    ? 'Describe distinctive features, then choose appearance hints below. These choices build the linked prompt. Hair, clothes and gear are added later.'
+    : 'This exact text is sent to V3. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; prose is never guessed as a trait.')
   const enhanceInput = (target: 'details' | 'prompt') => ({ description: target === 'prompt' ? d.prompt : d.details, image_size: { width: d.body || 0, height: d.body || 0 }, view: d.view })
   const canEnhance = (target: 'details' | 'prompt') => !busy && !!enhanceInput(target).description.trim() && Number.isInteger(d.body) && d.body! >= 32 && d.body! <= 256 && enhanceInput(target).description.length <= 2000
   const canUndo = (target: 'details' | 'prompt') => undo?.target === target && undo.after === d.prompt
@@ -70,17 +75,20 @@
 <div class="creator-grid">
   <section class="appearance" aria-label="Character appearance">
     <div class="editor-toolbar">
-      <div class="creator-tabs" role="tablist" aria-label="Prompt editor">
+      <div class="creator-tabs" role="tablist" tabindex="-1" aria-label="Prompt editor" aria-describedby={editorHelpId}
+        onpointerenter={(e) => { if (e.pointerType === 'mouse') void editorHelp.show() }} onpointerleave={(e) => { if (e.pointerType === 'mouse') editorHelp.hide() }}
+        onfocusin={(e) => { if ((e.target as HTMLElement).matches(':focus-visible')) void editorHelp.show() }} onfocusout={() => editorHelp.hide()}>
         <button role="tab" id="appearance-tab" aria-controls="appearance-panel" tabindex={d.tab === 'appearance' ? 0 : -1} aria-selected={d.tab === 'appearance'} onkeydown={tabKey} onclick={() => d.tab = 'appearance'}>Appearance</button>
         <button role="tab" id="prompt-tab" aria-controls="prompt-panel" tabindex={d.tab === 'prompt' ? 0 : -1} aria-selected={d.tab === 'prompt'} onkeydown={tabKey} onclick={() => d.tab = 'prompt'}>Prompt</button>
       </div>
       <span class="prompt-actions">
+        <Help bind:this={editorHelp} iconOnly tooltipId={editorHelpId} title={d.tab === 'appearance' ? 'Appearance help' : 'Prompt help'} text={editorHelpText} />
+        <ApiPeek scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'} label={d.tab === 'appearance' ? 'Enhance details' : 'Enhance exact prompt'} plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput(enhanceTarget)), label: d.tab === 'appearance' ? 'Enhance character details' : 'Enhance exact character prompt', generations: 0.05 }]} activityScope={scope} />
+        <button class="btn icon copy" aria-label={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'} title={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'} onclick={() => copy(enhanceTarget)}>{#if copied === enhanceTarget}<Check size={14} />{:else}<Copy size={14} />{/if}</button>
         <button class="btn small enhance" aria-label={canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'} aria-busy={busy} title={canUndo(enhanceTarget) ? 'Restore the previous prompt' : 'Enhance with V3 (~0.05 gens)'} disabled={busy || (!canUndo(enhanceTarget) && !canEnhance(enhanceTarget))} onclick={() => enhance(enhanceTarget)}>
           {#if canUndo(enhanceTarget)}<Undo2 size={13} />{:else}<WandSparkles size={13} />{/if}
           <span class="enhance-label"><span class="enhance-sizer" aria-hidden="true">Enhance</span><span class="enhance-text">{canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'}</span></span>
         </button>
-        <ApiPeek scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'} label={d.tab === 'appearance' ? 'Enhance details' : 'Enhance exact prompt'} plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput(enhanceTarget)), label: d.tab === 'appearance' ? 'Enhance character details' : 'Enhance exact character prompt', generations: 0.05 }]} activityScope={scope} />
-        <button class="btn icon copy" aria-label={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'} title={d.tab === 'appearance' ? 'Copy details' : 'Copy exact prompt'} onclick={() => copy(enhanceTarget)}>{#if copied === enhanceTarget}<Check size={14} />{:else}<Copy size={14} />{/if}</button>
       </span>
     </div>
     {#if d.tab === 'appearance'}
@@ -183,4 +191,7 @@
   @media (max-width:599px), (max-height:499px) { .creator-grid { display:flex; flex-direction:column; gap:22px; } section { width:100%; } .editor-panel { min-height:0; } .creator-tabs button { height:40px; } .editor-toolbar { min-height:46px; } .trait-row { grid-template-columns:90px minmax(0,1fr); } .input { min-height:44px; font-size:16px; } .body-presets .btn, .frame-controls .btn, .direction-presets .btn { min-height:44px; } .mirror { flex-basis:44px; } .direction-tile { height:56px; } .compass { grid-template-columns:1fr 44px 1fr; max-width:360px; } .facing { max-width:none; } .exact-input { min-height:300px; } .direction-presets .btn { font-size:12px; } .prompt-excerpt { font-size:12px; height:54px; } }
   @container (max-width:290px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } }
   @media (pointer:coarse) { @container (max-width:340px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } } }
+  @container (max-width:310px) { .creator-tabs { gap:2px; padding:3px; } .creator-tabs button { min-width:0; padding-inline:4px; font-size:var(--fs-sm); } .creator-tabs button:first-child { flex:1.6; } .prompt-actions { gap:1px; } .editor-toolbar { gap:4px; } }
+  @media (pointer:coarse) { .editor-toolbar .creator-tabs button { min-width:44px; } }
+  @media (max-width:599px), (max-height:499px), (pointer:coarse) { @container (max-width:400px) { .editor-toolbar :global(.help-title.icon-only), .editor-toolbar :global(.api-peek-trigger), .editor-toolbar .copy { width:32px; min-width:32px; } } }
 </style>

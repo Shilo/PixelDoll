@@ -68,6 +68,21 @@ test('linked prompt is lossless, copy is exact, and keyboard tabs work', async (
   await expect(prompt).toHaveValue(exact.replace('Build: Broad', 'Build: Rounded'))
 })
 
+test('editor help opens from either the toggle or help icon and follows the active tab', async ({ page }) => {
+  const sheet = await open(page), toggle = sheet.getByRole('tablist', { name: 'Prompt editor', exact: true })
+  await toggle.hover()
+  await expect(sheet.getByRole('tooltip')).toContainText('Describe distinctive features')
+  await sheet.getByRole('button', { name: 'Appearance help', exact: true }).hover()
+  await expect(sheet.getByRole('tooltip')).toContainText('Describe distinctive features')
+  await page.keyboard.press('Escape'); await expect(sheet.getByRole('tooltip')).toHaveCount(0)
+  await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
+  await toggle.hover()
+  await expect(sheet.getByRole('tooltip')).toContainText('This exact text is sent to V3')
+  await sheet.getByRole('button', { name: 'Prompt help', exact: true }).click()
+  await expect(sheet.getByRole('tooltip')).toContainText('This exact text is sent to V3')
+  await page.keyboard.press('Escape'); await expect(sheet).toBeVisible()
+})
+
 test('all direction presets, reverse mirrors and source promotion keep a valid plan', async ({ page }) => {
   const sheet = await open(page)
   for (const [preset, unique, selected] of [['Top-down 8', 5, 8], ['Top-down 4', 3, 4], ['Diagonal 4', 2, 4], ['Side-scroller 2', 1, 2], ['Unique 8', 8, 8]] as const) {
@@ -148,11 +163,11 @@ test.describe('touch tablet', () => {
   test.use({ hasTouch: true, viewport: { width: 768, height: 1024 } })
   test('mirror controls retain 44px targets without overflowing the two-column layout', async ({ page }) => {
     const sheet = await open(page)
-    const tab = await sheet.getByRole('tab', { name: 'Prompt', exact: true }).boundingBox(), enhance = await sheet.getByRole('button', { name: 'Enhance', exact: true }).boundingBox()
-    expect(tab!.x + tab!.width).toBeLessThanOrEqual(enhance!.x)
+    const tab = await sheet.getByRole('tab', { name: 'Prompt', exact: true }).boundingBox(), help = await sheet.getByRole('button', { name: 'Appearance help', exact: true }).boundingBox()
+    expect(tab!.x + tab!.width).toBeLessThanOrEqual(help!.x)
     await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
     const buttons = await sheet.locator('.mirror, .creator-tabs button').evaluateAll(elements => elements.map(el => { const r = el.getBoundingClientRect(); return { w: r.width, h: r.height } }))
-    expect(buttons.every(b => b.w >= 44 && b.h >= 44)).toBe(true)
+    expect(buttons.filter(b => b.w < 44 || b.h < 44)).toEqual([])
     expect(await sheet.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
   })
 })
@@ -178,13 +193,18 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
   const footer = await sheet.getByRole('button', { name: 'Create character', exact: true }).boundingBox()
   expect(footer!.y + footer!.height).toBeLessThanOrEqual(viewport.height)
   const appearanceGap = await sheet.getByRole('textbox', { name: 'Details', exact: true }).evaluate(el => el.getBoundingClientRect().top - el.closest('.appearance')!.querySelector('.editor-toolbar')!.getBoundingClientRect().bottom)
-  const appearanceActions = await sheet.locator('.prompt-actions').evaluate(el => [...el.children].map(child => { const r = child.getBoundingClientRect(); return { x: r.x, w: r.width } }))
+  const appearanceActions = await sheet.locator('.prompt-actions').evaluate(el => [...el.querySelectorAll(':scope > button')].map(child => { const r = child.getBoundingClientRect(); return { x: r.x, w: r.width } }))
   await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
   const promptGap = await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).evaluate(el => el.getBoundingClientRect().top - el.closest('.appearance')!.querySelector('.editor-toolbar')!.getBoundingClientRect().bottom)
   expect(promptGap).toBe(appearanceGap)
-  const promptActions = await sheet.locator('.prompt-actions').evaluate(el => [...el.children].map(child => { const r = child.getBoundingClientRect(); return { x: r.x, w: r.width } }))
+  const promptActions = await sheet.locator('.prompt-actions').evaluate(el => [...el.querySelectorAll(':scope > button')].map(child => { const r = child.getBoundingClientRect(); return { x: r.x, w: r.width } }))
   expect(promptActions).toEqual(appearanceActions)
-  expect(await sheet.locator('.prompt-actions > button, .prompt-actions > .api-peek-trigger').evaluateAll(elements => elements.map(el => el.getAttribute('aria-label')))).toEqual(['Enhance', 'Inspect API calls', 'Copy exact prompt'])
+  expect(await sheet.locator('.creator-tabs button').evaluateAll(elements => elements.every(el => {
+    const range = document.createRange(); range.selectNodeContents(el)
+    const text = range.getBoundingClientRect(), button = el.getBoundingClientRect()
+    return text.left >= button.left && text.right <= button.right
+  }))).toBe(true)
+  expect(await sheet.locator('.prompt-actions > button').evaluateAll(elements => elements.map(el => el.getAttribute('aria-label')))).toEqual(['Prompt help', 'Inspect API calls', 'Copy exact prompt', 'Enhance'])
   const toolbar = await sheet.locator('.editor-toolbar').evaluate(el => {
     const row = el.getBoundingClientRect()
     return [...el.querySelectorAll('button')].every(button => { const r = button.getBoundingClientRect(); return r.left >= row.left && r.right <= row.right + 1 && r.top >= row.top && r.bottom <= row.bottom })
