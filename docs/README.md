@@ -10,6 +10,12 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 **Superseded** marks a result that later work replaced. The doc is still accurate as a record of what was tested.
 [architecture.md §4.3](architecture.md) lists every replaced route.
 
+## Character creator redesign (2026-10-22 proposal)
+
+[Round two — pixel worlds and prototype stages](design/2026-10-22-redesign/round-2/README.md): six curated alternatives, desktop/phone selection, creation and customization, Asemulator-inspired future walking studies, source research and the updated Calibration Yard recommendation.
+
+[Design review package](design/2026-10-22-redesign/README.md): current UI audit with 23 screenshots, research into 12 game families and two creator tools, three curated concepts, 18 desktop/mobile mockups, and an offline interactive prototype. The lead recommends Moonlit Camp. This is a new proposal; it does not replace the implemented design or prior decisions until adopted. Its screenshots are included alongside the proposal rather than in the historical tag.
+
 ## Spec
 
 | Doc | What |

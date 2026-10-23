@@ -1,0 +1,56 @@
+{
+  "passed": true,
+  "checks": [
+    "Search filters the six-character library",
+    "Library selection chooses the intended character",
+    "Headgear selection updates",
+    "Palette preview changes rendered pixels",
+    "Mirrored west direction disclosed",
+    "Four native-size direction previews available",
+    "Escape closes inspection",
+    "Grid toggle updates",
+    "Bounds toggle updates",
+    "Export is an explicit simulation",
+    "Unavailable eight-view sample disclosed",
+    "Creation includes cost and appearance review",
+    "Phone all-parts and labeled new-item actions work",
+    "Phone movement preview discoverable from Moves",
+    "Phone can switch both future projections",
+    "Top-down direction input changes position and pose",
+    "Side study responds to touch movement",
+    "Physics limits remain visible"
+  ],
+  "layouts": [
+    {
+      "device": "small",
+      "screen": "select",
+      "overflow": false
+    },
+    {
+      "device": "small",
+      "screen": "create",
+      "overflow": false
+    },
+    {
+      "device": "small",
+      "screen": "dress",
+      "overflow": false
+    },
+    {
+      "device": "landscape",
+      "screen": "select",
+      "overflow": false
+    },
+    {
+      "device": "landscape",
+      "screen": "create",
+      "overflow": false
+    },
+    {
+      "device": "landscape",
+      "screen": "dress",
+      "overflow": false
+    }
+  ],
+  "errors": []
+}
