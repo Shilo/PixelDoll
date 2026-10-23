@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-23T17:59:32.776Z",
+  "date": "2026-10-23T18:54:50.637Z",
   "node": "v24.22.1",
   "package": {
     "name": "@shilo/bronze-ui",
@@ -270,7 +270,7 @@
     "Installed package token and recipe CSS loaded; no GlassKit runtime or inline palette",
     "Eight theme/viewport combinations; all five screens retain responsive bounds",
     "Text, muted text and accent >=4.5:1 over worst-case floating surfaces; primary label >=4.5:1",
-    "Native creator inputs/selects use package fields, visible focus, 15px phone text and no nested blur",
+    "Native creator inputs/selects use package fields, visible focus, 16px creator text and no nested blur",
     "One 12px playback blur; open navigation; package panel geometry",
     "Menu bounds and Backspace; native named modal, focus containment, Escape and opener return",
     "Independent reduced-motion duration and contrast/forced-color/reduced-transparency material fallbacks"

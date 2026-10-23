@@ -49,7 +49,7 @@ export class World {
     async prepare() { for (const t of Object.values(THEMES))
         await Promise.all(Object.values(t.backgrounds).map(url => this.load(url))); }
     layout(state) {
-        const w = innerWidth, h = innerHeight, mobile = w <= 760, short = h < 540;
+        const w = innerWidth, h = innerHeight, mobile = w <= 760, short = h <= 540 && w >= h;
         const panel = mobile ? 0 : Math.min(470, w * .29), x = mobile ? w * .5 : (w - panel) * .55;
         const studio = state.screen === 'studio';
         const y = mobile ? (short ? h * .65 : h * (studio ? .52 : .575)) : h * (studio ? .755 : .77);

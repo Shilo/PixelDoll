@@ -70,3 +70,7 @@ Browser checks cover animation playback, background reuse, exact opaque source R
 Two GPT-6.1 Sol / High researchers supplied [fixture/geometry findings](asset-review.md) and a [visual review](visual-review.md); the lead implemented and tested the proof. Actual-device camera comfort, long touch sessions, seam shimmer across GPUs, zoom/legibility and non-drag touch access still need evaluation before production integration. WebGL 2 is required by this prototype.
 
 Generated backgrounds and screenshots remain local and ignored under repository policy. Source, documentation and provenance are committed. A fresh checkout must restore the local round-five PNGs before running; generation prompts alone do not reproduce identical artwork.
+
+## Regression review
+
+See [regression-repair.md](regression-repair.md) for the current layout/theme contract and [regression-review.html](http://127.0.0.1:5202/regression-review.html) for the preserved baseline, reported version and repaired UI. Run `node docs/design/2026-10-22-redesign/round-6-prototype/verify-regressions.mjs` for control-level regression checks.

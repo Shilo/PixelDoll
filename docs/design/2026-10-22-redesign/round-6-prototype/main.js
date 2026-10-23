@@ -60,7 +60,7 @@ function menus() {
     if (state.menu === 'description')
         return `<section class="popover description" data-ui aria-label="Character prompt"><div class="popover-head"><h2>Character prompt</h2>${iconButton('Close prompt', 'dismiss', 'x')}</div><p>${esc(current().prompt)}</p>${button('Copy prompt', 'copy-description', { icon: 'copy' })}<small>Walk available. Idle absent; live views use a still frame.</small></section>`;
     if (state.menu === 'parts')
-        return `<div class="popover" data-ui style="top:31%"><small>Equipment parts</small>${EQUIPMENT_SLOTS.map(s => [s.id, s.label]).map(([id, n]) => button(n, 'slot:' + id, { pressed: state.slot === id })).join('')}</div>`;
+        return `<div class="popover parts-popover" data-ui><small>Equipment parts</small>${EQUIPMENT_SLOTS.map(s => [s.id, s.label]).map(([id, n]) => button(n, 'slot:' + id, { pressed: state.slot === id })).join('')}</div>`;
     return '';
 }
 function render() { if (!demo)
@@ -283,8 +283,10 @@ document.addEventListener('input', e => { const el = e.target; if (el.dataset.fi
         document.querySelectorAll('[data-guide]').forEach(n => n.textContent = n.dataset.guide === 'size' ? draft.size + ' px' : draft.frame + ' × ' + draft.frame + ' px');
     }
 } });
-document.addEventListener('change', e => { if (e.target.dataset.field === 'clip')
-    chooseClip(e.target.value); });
+document.addEventListener('change', e => { if (e.target.dataset.field === 'clip') {
+    chooseClip(e.target.value);
+    ui.querySelector('[data-field=clip]')?.focus({ preventScroll: true });
+} });
 dialog.addEventListener('close', () => {
     stop();
     if (dialogReturnAction) ui.querySelector(`[data-action="${CSS.escape(dialogReturnAction)}"]`)?.focus({ preventScroll: true });
@@ -295,6 +297,8 @@ window.addEventListener('keydown', e => {
     if (!demo || e.ctrlKey || e.altKey || e.metaKey)
         return;
     const k = e.key.toLowerCase();
+    // A native select owns Escape; dismissing its picker must not leave the screen.
+    if (k === 'escape' && e.target.closest('select')) return;
     if (k === 'escape' || (k === 'backspace' && !editTarget(e.target))) {
     e.preventDefault();
     if (e.repeat)

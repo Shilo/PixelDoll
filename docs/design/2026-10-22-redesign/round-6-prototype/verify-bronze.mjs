@@ -68,7 +68,7 @@ try {
     for (const selector of ['[data-draft=name]', '[data-draft=details]', '[data-draft=size]', '[data-draft=camera]']) {
       assert.ok(await page.locator(selector).evaluate(el => el.classList.contains('bu-input')));
       assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).backdropFilter), 'none');
-      if (viewport.width === 450) assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).fontSize), '15px');
+      if (viewport.width === 450) assert.equal(await page.locator(selector).evaluate(el => getComputedStyle(el).fontSize), '16px');
     }
     await page.locator('[data-draft=name]').focus();
     assert.equal(await page.locator('[data-draft=name]').evaluate(el => getComputedStyle(el).outlineStyle), 'solid');
@@ -107,7 +107,7 @@ try {
     report.cases.push({ theme, viewport, tokens, nativeTheme, contrastRatios, result: 'passed' }); await context.close();
   }
   assert.deepEqual(report.errors, []); assert.deepEqual(report.external, []);
-  report.checks = ['Installed package token and recipe CSS loaded; no GlassKit runtime or inline palette', 'Eight theme/viewport combinations; all five screens retain responsive bounds', 'Text, muted text and accent >=4.5:1 over worst-case floating surfaces; primary label >=4.5:1', 'Native creator inputs/selects use package fields, visible focus, 15px phone text and no nested blur', 'One 12px playback blur; open navigation; package panel geometry', 'Menu bounds and Backspace; native named modal, focus containment, Escape and opener return', 'Independent reduced-motion duration and contrast/forced-color/reduced-transparency material fallbacks'];
+  report.checks = ['Installed package token and recipe CSS loaded; no GlassKit runtime or inline palette', 'Eight theme/viewport combinations; all five screens retain responsive bounds', 'Text, muted text and accent >=4.5:1 over worst-case floating surfaces; primary label >=4.5:1', 'Native creator inputs/selects use package fields, visible focus, 16px creator text and no nested blur', 'One 12px playback blur; open navigation; package panel geometry', 'Menu bounds and Backspace; native named modal, focus containment, Escape and opener return', 'Independent reduced-motion duration and contrast/forced-color/reduced-transparency material fallbacks'];
 } catch (error) { report.result = 'failed'; report.errors.push(String(error)); throw error; }
 finally { await writeFile(new URL('./bronze-verification.json', import.meta.url), JSON.stringify(report, null, 2) + '\n'); await browser.close(); }
 console.log(JSON.stringify({ result: report.result, package: report.package, cases: report.cases.length, checks: report.checks }, null, 2));
