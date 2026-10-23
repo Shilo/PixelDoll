@@ -41,3 +41,22 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+Godot Engine Logo
+Copyright (c) 2017 Andrea Calabró
+
+This work is licensed under the Creative Commons Attribution 4.0 International
+license (CC BY 4.0 International): https://creativecommons.org/licenses/by/4.0/
+
+Unity SVG: Simple Icons (CC0 1.0 Universal).
+https://github.com/simple-icons/simple-icons/blob/develop/LICENSE.md
+Trademark rights are separate from the icon collection license.
+
+GDevelop pinned-tab SVG: sourced from the official GDevelop website.
+GDevelop name and logo are the property of Florian Rival.
+https://github.com/4ian/GDevelop/blob/master/LICENSE.md
+
+Custom Phaser P identifier and smooth Aseprite-style face: PixelDoll contributors, MIT (repository LICENSE).
+These are locally drawn identifiers, not official brand assets or claims of endorsement.
