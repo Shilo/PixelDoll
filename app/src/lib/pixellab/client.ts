@@ -12,11 +12,13 @@ export class ApiError extends Error {
   status: number;
   kind: ErrorKind;
   body: unknown;
-  constructor(status: number, kind: ErrorKind, message: string, body?: unknown) {
+  retryAfterMs?: number;
+  constructor(status: number, kind: ErrorKind, message: string, body?: unknown, retryAfterMs?: number) {
     super(message);
     this.status = status;
     this.kind = kind;
     this.body = body;
+    this.retryAfterMs = retryAfterMs;
   }
 }
 
@@ -33,9 +35,16 @@ export function classify(status: number, body?: unknown): ErrorKind {
 /** No connection at all (fetch never got an answer, not a timeout): the queue pauses instead of trying the next job (B15). */
 export const isNetwork = (e: unknown) => e instanceof ApiError && e.status === 0 && !!(e.body as { network?: boolean } | undefined)?.network;
 
-/** The server refused before creating a job (OpenAPI: 429/529 rate limit, 503 renderer busy; 423 locked): safe to resubmit.
+/** The server refused before creating a job (OpenAPI: 429/529 rate limit; 423 locked): safe to resubmit.
  * Any other 5xx or a network error (status 0) may come after the job was created, so a paid POST is never resent on those. */
-export const rejected = (status: number) => status === 423 || status === 429 || status === 503 || status === 529;
+export const rejected = (status: number) => status === 423 || status === 429 || status === 529;
+
+/** Retry-After is a lower bound; accept both seconds and an HTTP date when CORS exposes it. */
+export function retryAfter(value: string | null, now = Date.now()): number | undefined {
+  if (!value?.trim()) return undefined;
+  const delay = /^\d+(\.\d+)?$/.test(value.trim()) ? Number(value) * 1000 : Date.parse(value) - now;
+  return Number.isFinite(delay) && delay >= 0 ? delay : undefined;
+}
 
 // Content-policy refusal: code 5000 at top level or in a job's last_response. Never retried.
 export function isPolicy(body: unknown): boolean {
@@ -72,7 +81,7 @@ export async function api<T>(key: string, method: string, path: string, body?: u
   let json: unknown;
   try { json = text ? JSON.parse(text) : null; } catch { json = text.slice(0, 500); }
   finishActivityCall(activityId, r.status, r.ok, json);
-  if (!r.ok) throw new ApiError(r.status, classify(r.status, json), `${method} ${path} -> ${r.status}: ${errorText(json)}`, json);
+  if (!r.ok) throw new ApiError(r.status, classify(r.status, json), `${method} ${path} -> ${r.status}: ${errorText(json)}`, json, retryAfter(r.headers.get('retry-after')));
   return json as T;
 }
 
@@ -80,6 +89,6 @@ export function selfTest() {
   console.assert(classify(401) === 'auth' && classify(402) === 'credits' && classify(422) === 'invalid', 'classify 4xx');
   console.assert(classify(429) === 'retry' && classify(529) === 'retry' && classify(503) === 'retry' && classify(0) === 'retry', 'classify retry');
   console.assert(classify(422, { last_response: { code: 5000 } }) === 'policy' && classify(200, { code: 5000 }) === 'policy', 'classify policy');
-  console.assert(rejected(429) && rejected(503) && !rejected(0) && !rejected(502) && !rejected(504) && !rejected(500), 'rejected = no job created');
+  console.assert(rejected(429) && rejected(529) && !rejected(503) && !rejected(0) && !rejected(502) && !rejected(504) && !rejected(500), 'rejected = no job created');
   console.assert(errorText({ detail: 'Maximum 20 concurrent' }) === 'Maximum 20 concurrent', 'errorText');
 }

@@ -273,8 +273,13 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
 - IndexedDB `projects` / `blobs` (SHA-256 of RGBA) / `jobs`; project zip = `project.json` + `cells/<sha>.png`; native-stream
   zip and pure PNG encoder, no dependencies. Store **every** generated frame, reference, keypoint sequence and request: they
   cannot be reproduced.
-- Queue: persisted ledger; Pro/skeleton-v3 jobs default concurrency 8 (Tier 3 cap observed at 22 jobs [S4]),
-  `estimate-skeleton` 3 (code default 3, max 8). Backoff 2 → 60 s and resubmit only on refusals (423/429/503/529); a paid POST
+- Queue: persisted ledger; active `/balance` plan selects 10 background jobs for Tier 2 or 20 for Tier 3, with a conservative
+  default of 3 for plans without a verified published limit. Count remote jobs rather than requests. The leader shares
+  capacity and cooldown with other tabs. Capacity refusals (429/529, or explicit no-jobs-started responses) apply a
+  queue-wide jittered backoff up to 60 s, honoring longer exposed `Retry-After` values; after waiting, single in-flight
+  probes refill the account ceiling. Accepted jobs keep polling. Initial balance detection gates submission; periodic
+  refreshes do not interrupt work using a known ceiling. Cooldowns survive reload and first connection.
+  Resubmit only on explicit refusals (423/429/529 or the observed no-jobs-started message); a paid POST
   that gets a network error, timeout (120 s) or another 5xx is marked `lost` ("may have run, check pixellab.ai") and never
   resent automatically [B13]. **Re-poll** the same job id on network errors and timeouts; result downloads back off and give up
   after 10 tries (URLs kept). Server 502/504/CUDA asserts happen [S3, S4]; whether they are charged is unknown. 401/402 pause; 422 and policy `code 5000` terminal. Verify
@@ -283,7 +288,9 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
   (`paused: 'offline'`): nothing is submitted or polled, so no paid call can be lost to a dead connection. The leader probes a
   free `GET /balance` every 15 s and resumes on any answer; the Studio shows a non-blocking banner.
 - A paid POST answered `500 "Failed to start any animation jobs"` (B15 live, 6 parallel jobs on a busy account) is a refusal
-  in words: re-queued with backoff like 429/503, not marked lost.
+  in words: re-queued with shared backoff like 429/529, not marked lost. Arbitrary paid 503 responses remain ambiguous and
+  are never automatically resent. See [account concurrency research](research/pixellab-concurrency-2026-10-22.md) for the
+  public API's limits: plan detection is available, exact live occupancy/custom account capacity is not.
 - Key: memory by default, opt-in `localStorage`, never serialized; CSP `connect-src` limited to PixelLab hosts.
 
 ## 8. UI [D9]
@@ -345,7 +352,7 @@ integer zoom. Theming ("Paper" look) deferred.
 
 **Settled**: allowed models [D8]; rig = skeleton-v3 clips stored as frames + reference + keypoints [S3]; base v3 48 → 64
 [S4, D4]; item default `skeleton-pose`, alternative `inpaint-grid` [S4]; chroma extraction [S2]; held bg z above back bg
-[M4]; UI look A, dark default [D9]; concurrency 8 / skeleton 3.
+[M4]; UI look A, dark default [D9]; account-based automatic concurrency (Tier 2: 10, Tier 3: 20, unknown-plan fallback: 3).
 
 **Open**
 

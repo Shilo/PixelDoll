@@ -79,7 +79,7 @@
   <label><input type="checkbox" bind:checked={remember} /> remember on this device</label>
   <button onclick={saveKey} disabled={!keyInput.trim()}>use key</button>
   <button onclick={forgetKey} disabled={!app.key}>forget key</button>
-  <label>concurrency <input type="number" min="1" max="8" value={$queue.concurrency} onchange={(e) => queue.setConcurrency(+e.currentTarget.value)} style="width:3rem" /></label>
+  <span>automatic concurrency: {$queue.concurrency}</span>
 </section>
 
 <section>

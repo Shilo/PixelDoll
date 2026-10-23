@@ -42,6 +42,10 @@
         {:else if app.key}Balance unavailable{:else}Not connected{/if}</span>
       {#if app.key}<span class="api-action"><ApiPeek scope="balance-refresh" label="Refresh balance" plan={balancePlan()} activityScope={balanceScope} /><button class="btn icon plain" aria-label="Refresh balance" onclick={() => refreshBalance({ activityScope: balanceScope, label: 'Refresh balance', background: false })}><RefreshCw size={14} /></button></span>{:else}<button class="btn sm" onclick={() => (ui.sheet = 'connect')}>Connect</button>{/if}
     </div>
+    <p class="muted small" data-testid="queue-capacity">Automatic parallel jobs: up to {$queue.concurrency}. {$queue.capacityPlan ?? 'Conservative default; PixelLab does not publish a limit for this plan.'}</p>
+    {#if $queue.capacityRetryAt > now}
+      <p class="notice small" role="status">PixelLab is busy, possibly in another app. Waiting {Math.ceil(($queue.capacityRetryAt - now) / 1000)} s before trying again. Your jobs stay queued.</p>
+    {/if}
     {#if $queue.role === 'follower'}
       <p class="notice small"><CircleAlert size={14} />Running in another tab. PixelDoll is open twice: the other tab sends and checks the jobs (also the ones you start here). Keep it open, or close it to run them here.</p>
     {/if}
@@ -66,7 +70,7 @@
     {#if queued.length}
       <section class="act-group"><span class="sec-title">Waiting</span>
         <ul>{#each queued as r (r.id)}
-          <li><span class="ring"></span><span class="act-main"><b>{nice(r)}</b><span class="muted small">{r.nextAt > now ? `retry in ${Math.ceil((r.nextAt - now) / 1000)} s` : !app.key ? 'needs your key' : 'queued'}</span></span>
+          <li><span class="ring"></span><span class="act-main"><b>{nice(r)}</b><span class="muted small">{Math.max(r.nextAt, $queue.capacityRetryAt) > now ? `retry in ${Math.ceil((Math.max(r.nextAt, $queue.capacityRetryAt) - now) / 1000)} s` : !app.key ? 'needs your key' : 'queued'}</span></span>
             <span class="act-meta"><button class="btn link small" onclick={() => queue.cancel(r.id)}>Cancel</button></span></li>
         {/each}</ul>
       </section>
@@ -85,7 +89,7 @@
       <summary><ChevronRight size={14} />Details</summary>
       <div>
         <div class="field-row small">
-          <label class="check">Parallel calls <input class="input" style="width:64px" type="number" min="1" max="8" value={$queue.concurrency} onchange={(e) => queue.setConcurrency(+e.currentTarget.value)} /></label>
+          <span>Parallel jobs are managed automatically across PixelDoll tabs.</span>
           <button class="btn sm" onclick={clear} disabled={$queue.role === 'follower'} title={$queue.role === 'follower' ? 'Clear it in the PixelDoll tab that runs the jobs' : undefined}>Clear finished</button>
         </div>
         <div style="overflow:auto;max-height:240px">

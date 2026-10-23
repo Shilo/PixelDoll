@@ -47,11 +47,16 @@ export function forgetKey() {
 
 export async function refreshBalance(activity?: ActivityContext | Event) {
   if (!app.key) return;
+  const key = app.key;
   try {
-    app.balance = await api<Balance>(app.key, 'GET', '/balance', undefined, undefined, activity instanceof Event ? { label: 'Refresh balance', background: false } : activity);
+    const balance = await api<Balance>(key, 'GET', '/balance', undefined, undefined, activity instanceof Event ? { label: 'Refresh balance', background: false } : activity);
+    if (key !== app.key) return;
+    app.balance = balance;
+    queue.setBalance(balance, key);
     app.balanceError = '';
     app.balanceAt = Date.now();
   } catch (e) {
+    if (key !== app.key) return;
     app.balanceError = (e as Error).message;
     if (e instanceof ApiError && e.kind === 'auth') app.keyRejected = true;
   }

@@ -187,6 +187,10 @@ Each zip has a `README.txt` with a quick start for that engine. Copy the whole f
 ## Good to know
 
 - **Activity** (toolbar) lists running jobs with **Stop** and **Cancel**, and your balance.
+- Parallel jobs adjust automatically to your active PixelLab plan: up to 10 for Tier 2 or 20 for Tier 3. Other plans use a
+  conservative default of 3 because the public API does not expose their exact limit. Activity shows the detected setting.
+  If PixelLab is busy with work from its website, Aseprite or another app, your requests stay queued and retry after a
+  wait. Accepted generations keep running; unknown outcomes are not automatically resent, to avoid duplicate charges.
 - With PixelDoll open in two tabs, one tab runs the jobs ("Working in another tab"). Keep it open.
 - Keys: Space play/pause · 1–4 face south/east/north/west (1–8 on 8-direction characters, in the order of the direction
   buttons) · 0 all directions · , and . step one frame.

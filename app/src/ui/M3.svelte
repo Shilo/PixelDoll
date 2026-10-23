@@ -140,7 +140,7 @@
   </select>
   {#if !projects.length}<span class="note">no frozen rig: make a base in <a href="#/m1">M1</a> (S2 clothed 48 px preset) and freeze it in <a href="#/m2">M2</a></span>{/if}
   {#if rig}<span class="note">pivot ({rig.pivot.x}, {rig.pivot.y}) · anchors {rig.anchors ? Object.keys(rig.anchors).join(', ') : 'none (run skeletons in M2 for G8)'} · {accepted.length} accepted items</span>{/if}
-  <label>concurrency <input type="number" min="1" max="8" value={$queue.concurrency} onchange={(e) => queue.setConcurrency(+e.currentTarget.value)} style="width:3rem" /></label>
+  <span>automatic concurrency: {$queue.concurrency}</span>
   {#if !app.key}<span class="bad">no API key (set one in <a href="#/m1">M1</a>)</span>{/if}
 </section>
 {#if msg}<p class="note" data-testid="msg">{msg}</p>{/if}
