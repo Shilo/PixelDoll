@@ -113,7 +113,7 @@
     {:else}
       <p class="muted">Browse your account’s available characters, 20 per page, or paste a character link. Importing uses no generations.</p>
       {#if !app.key || app.keyRejected}
-        <button class="btn" disabled={busy} onclick={() => withKey(() => { ui.importSource = 'pixellab'; ui.sheet = 'import' })}><KeyRound size={16} />Connect PixelLab to browse your characters</button>
+        <button class="btn" disabled={busy} onclick={() => withKey(() => { ui.importSource = 'pixellab'; ui.sheet = 'import' }, false)}><KeyRound size={16} />Connect PixelLab to browse your characters</button>
       {:else}
         <div class="library-head"><span class="label">Your PixelLab characters</span><span class="api-action"><ApiPeek scope="library-refresh" label="Refresh character library" plan={libraryPlan(offset)} activityScope={listScope(offset)} /><button class="btn plain small" disabled={busy || loading} onclick={() => load(offset)}>Refresh</button></span></div>
         {#if loading}<p class="muted" role="status">Loading characters…</p>

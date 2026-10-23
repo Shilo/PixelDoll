@@ -37,8 +37,11 @@ function harness(tier = 3) {
 test('plan detection is based on active plan names, never generation balances', () => {
   expect(planCapacity(balance(3)).limit).toBe(20);
   expect(planCapacity(balance(2)).limit).toBe(10);
-  expect(planCapacity(balance(3, 'expired'))).toEqual({ limit: 3, plan: null });
-  for (const plan of [null, undefined, 'Enterprise', 'Tier 30: custom', 'Free trial', 'Tier 1: Pixel Apprentice']) {
+  expect(planCapacity(balance(1)).limit).toBe(8);
+  expect(planCapacity(balance(30)).limit).toBe(20);
+  expect(planCapacity(balance(3, 'expired'))).toEqual({ limit: 1, plan: 'Free / Trial' });
+  expect(planCapacity({ ...balance(), subscription: { ...balance().subscription, plan: 'Free trial' } }).limit).toBe(1);
+  for (const plan of [null, undefined, 'Enterprise']) {
     expect(planCapacity({ ...balance(), subscription: { ...balance().subscription, plan } }).limit).toBe(3);
   }
 });

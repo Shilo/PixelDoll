@@ -59,7 +59,7 @@ export function estimate(choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' 
 
 // ---------- queue helpers ----------
 export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = false, activityScope?: string): Promise<JobRec> {
-  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, activityScope });
+  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, activityScope, minimumTier: 1 });
   const r = live(rec) ? await queue.settled(rec.id) : rec;
   if (r.state !== 'done') throw new Error(`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Setup stopped without resending. Review this request in Jobs before starting again.' : ''}`);
   return r;

@@ -54,7 +54,7 @@
   function go() {
     formDrafts.item = { projectId: doc.id, sourceGroup: ui.newItem.group, group, slot, prompt, colour, name }
     const i = $state.snapshot(input)
-    withKey(() => void make(i))
+    withKey(() => void make(i), !!plan?.minimumTier)
   }
 </script>
 

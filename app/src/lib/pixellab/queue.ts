@@ -11,6 +11,7 @@
 import { api as realApi, ApiError, errorText, isNetwork, isPolicy, rejected } from './client.ts';
 import { jobIdsOf, jobImages, type Balance, type Job, type Req, type SubmitResponse, type Usage } from './routes.ts';
 import { planCapacity, requestedSlots } from './capacity.ts';
+import { PLAN_JOB_LIMITS, planRestriction } from './plans.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { base64ToBytes, bytesToBase64, pngSize } from '../image/png.ts';
 import * as db from '../store/db.ts';
@@ -49,6 +50,8 @@ export interface JobRec {
   requestStarted?: boolean; // persisted immediately before transport; false means preparation never reached a request
   nextAt: number;
   waitingForCapacity?: boolean;
+  minimumTier?: number;
+  waitingForPlan?: string;
   createdAt: number;
   submittedAt?: number;
   finishedAt?: number;
@@ -142,6 +145,7 @@ export class Queue {
   private capacityProbe: object | null = null;
   private capacityRead: Promise<void> | null = null;
   private capacityKnown = false;
+  private accountBalance: Balance | null = null;
   private throttled = false;
   private capacityFailures = 0;
   private capacitySuccesses = 0;
@@ -157,8 +161,8 @@ export class Queue {
   role: Role = 'solo';
   key = '';
   paused: QueueSnapshot['paused'] = null;
-  concurrency = 3;
-  current = 3;
+  concurrency: number = PLAN_JOB_LIMITS.unknown;
+  current: number = PLAN_JOB_LIMITS.unknown;
   capacityPlan: string | null = null;
   capacityRetryAt = 0;
   sessionGens = 0;
@@ -383,8 +387,9 @@ export class Queue {
         this.throttled = false;
         this.capacityFailures = 0;
       }
-      this.concurrency = 3;
-      this.current = this.throttled ? 1 : 3;
+      this.concurrency = PLAN_JOB_LIMITS.unknown;
+      this.current = this.throttled ? 1 : PLAN_JOB_LIMITS.unknown;
+      this.accountBalance = null;
       this.capacityPlan = null;
       this.capacityCheckedAt = -Infinity;
       this.capacityKnown = false;
@@ -406,6 +411,7 @@ export class Queue {
   setBalance(balance: Balance, key: string) {
     if (key !== this.key) return;
     const { limit, plan } = planCapacity(balance);
+    this.accountBalance = balance;
     this.concurrency = limit;
     this.current = this.throttled ? Math.min(this.current, limit) : limit;
     this.capacityPlan = plan;
@@ -441,7 +447,7 @@ export class Queue {
   // ---- enqueue ----
   // Identical request (same endpoint + params + input images, explicit seed) reuses the stored record instead of paying again.
   // meta.cache: also reuse unseeded done records (deterministic routes: estimate-skeleton, GET /characters).
-  async enqueue(req: Req, meta: { label?: string; tag?: string; activityScope?: string; cache?: boolean; resumeSafe?: boolean } = {}): Promise<JobRec> {
+  async enqueue(req: Req, meta: { label?: string; tag?: string; activityScope?: string; cache?: boolean; resumeSafe?: boolean; minimumTier?: number } = {}): Promise<JobRec> {
     const inputs: string[] = [];
     const params = await mapDeep(req.body ?? null, (o) => {
       if (!isB64(o)) return undefined;
@@ -455,7 +461,10 @@ export class Queue {
     const seeded = typeof (params as { seed?: unknown } | null)?.seed === 'number';
     for (const r of this.recs.values()) {
       if (r.requestHash !== requestHash) continue;
-      if (r.state === 'queued' || r.state === 'submitting' || r.state === 'running') return r; // double click
+      if (r.state === 'queued' || r.state === 'submitting' || r.state === 'running') {
+        if (r.state === 'queued' && (meta.minimumTier ?? 0) > (r.minimumTier ?? 0)) { r.minimumTier = meta.minimumTier; await this.save(r); }
+        return r; // double click; strengthen retained workflow requirements before transport
+      }
       if ((seeded || meta.cache) && r.state === 'done') return r; // ponytail: cache only seeded requests; unseeded = intentional re-roll
       // Resuming a multi-step paid flow must never turn a terminal/unknown outcome into another submission.
       if (meta.resumeSafe) return r;
@@ -466,6 +475,7 @@ export class Queue {
       label: meta.label ?? req.path,
       tag: meta.tag,
       activityScope: meta.activityScope,
+      minimumTier: meta.minimumTier,
       method: req.method,
       endpoint: req.path,
       params,
@@ -531,6 +541,14 @@ export class Queue {
       for (const r of [...this.recs.values()].sort((a, b) => a.createdAt - b.createdAt)) {
         if (active >= this.concurrency) break;
         if (r.state !== 'queued' || r.nextAt > now || this.busy.has(r.id)) continue;
+        const restriction = planRestriction(this.accountBalance, r);
+        if (restriction) {
+          if (r.waitingForPlan !== restriction) {
+            r.waitingForPlan = restriction;
+            ops.push(this.guard(r.id, () => this.save(r)));
+          }
+          continue; // Hold restricted work; allowed requests and accepted-job polling continue.
+        }
         const slots = requestedSlots(r.endpoint, r.params);
         // Oversized legacy batches may run alone; the server is the final authority on acceptance.
         if (active && active + slots > this.concurrency) continue;
@@ -561,6 +579,7 @@ export class Queue {
 
   private async submit(r: JobRec, probe: boolean) {
     const key = this.key;
+    r.waitingForPlan = undefined;
     r.state = 'submitting';
     r.attempts++;
     r.requestStarted = false;
@@ -575,14 +594,14 @@ export class Queue {
           return { ...rest, base64: bytesToBase64(new Uint8Array(await blob.arrayBuffer())) };
         })();
       });
-      if (key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt) {
+      if (key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt || planRestriction(this.accountBalance, r)) {
         r.state = 'queued'; r.attempts--; r.nextAt = Math.max(r.nextAt, this.capacityRetryAt);
         await this.save(r); return;
       }
       r.requestStarted = true;
       try { await this.save(r); } // a crash from this point has an unknown transport outcome; never auto-resubmit it
       catch { r.requestStarted = false; throw new Error('request could not be saved; nothing was sent'); }
-      if (key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt) {
+      if (key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt || planRestriction(this.accountBalance, r)) {
         r.requestStarted = false; r.state = 'queued'; r.attempts--; r.nextAt = Math.max(r.nextAt, this.capacityRetryAt);
         await this.save(r); return;
       }

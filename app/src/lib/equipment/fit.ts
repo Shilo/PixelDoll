@@ -221,7 +221,7 @@ async function submitStage(id:string,stage:'rest'|'pose',requests:GeneratedFitCa
   });
   for(const[i,c]of calls.entries()){
     await targetOf(await getFit(id));
-    const rec=await queue.enqueue(requests[i].req,{label:`Fit ${stage}: ${(await getFit(id)).name}`,tag:`${id}:${c.id}`,resumeSafe:true});
+    const rec=await queue.enqueue(requests[i].req,{label:`Fit ${stage}: ${(await getFit(id)).name}`,tag:`${id}:${c.id}`,resumeSafe:true,minimumTier:1});
     await db.update<FitDraft>('projects',id,f=>({...f!,calls:f!.calls.map(call=>call.id===c.id?{...call,recId:rec.id}:call),updatedAt:now()}));
   }return finishStage(id,stage);
 }

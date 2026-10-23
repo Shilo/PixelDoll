@@ -31,7 +31,7 @@
     if (!m || !plan || !looks.trim()) return
     const spec = { projectId: doc.id, baseHash: m.rig.baseHash, restAnim: plan.restAnim, looks: looks.trim(), seed: 1 + Math.floor(Math.random() * 2_000_000) }
     formDrafts.setup = { projectId: doc.id, looks, restAnim }
-    withKey(() => { formDrafts.setup = undefined; void startSetup(spec); ui.sheet = 'setup' })
+    withKey(() => { formDrafts.setup = undefined; void startSetup(spec); ui.sheet = 'setup' }, true)
   }
 </script>
 
@@ -58,7 +58,7 @@
   {/if}
   {#snippet footer()}
     {#if mine && settingUp.done}<button class="btn primary" onclick={async () => { await dismissSetup(); ui.sheet = null }}>Start dressing up</button>
-    {:else if mine && settingUp.error}<ApiPeek scope="character-setup-resume" label="Resume rig setup" plan={setupPeekPlan(plan, settingUp.spec?.looks ?? looks)} activityScope={settingUp.spec?.activityScope} /><button class="btn plain" onclick={dismissSetup}>Dismiss setup</button><span class="api-action"><button class="btn primary" onclick={() => settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)))}>Resume setup</button></span>
+    {:else if mine && settingUp.error}<ApiPeek scope="character-setup-resume" label="Resume rig setup" plan={setupPeekPlan(plan, settingUp.spec?.looks ?? looks)} activityScope={settingUp.spec?.activityScope} /><button class="btn plain" onclick={dismissSetup}>Dismiss setup</button><span class="api-action"><button class="btn primary" onclick={() => settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)), true)}>Resume setup</button></span>
     {:else if active}<span class="foot-note">You can keep working. Setup resumes after reload.</span><button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
     {:else}<span class="foot-note">Existing pixels stay unchanged</span><span class="api-action"><ApiPeek scope="character-setup" label="Set up rig" plan={setupPeekPlan(plan, looks)} /><button class="btn primary" disabled={!plan || !looks.trim() || busyElsewhere} onclick={go}>Set up <span class="cost">{plan?.gens ?? '–'} gens</span></button></span>{/if}
   {/snippet}

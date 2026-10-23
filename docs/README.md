@@ -25,6 +25,7 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 | [architecture.md](architecture.md) | v1.3: allowed models (D8), rig contract, item pipeline (chroma mannequin + skeleton-posed keyframe, 96 px held items), slots and z ladder, colour model, queue/storage/key, cost model, risks. |
 | [manifest-spec.md](manifest-spec.md) | `pixeldoll/1` manifest v1.3.1: TypeScript types, invariants checked before export, example, zip layout, per-engine mapping. |
 | [user-guide.md](user-guide.md) | The Studio in plain language. |
+| [pixellab-plans.md](pixellab-plans.md) | Editable tier limits, Free/Trial handling, and the plan requirements of the REST endpoints PixelDoll calls. |
 
 ## Research (R1–R5, 2026-10-20)
 

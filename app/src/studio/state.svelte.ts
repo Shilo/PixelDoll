@@ -11,6 +11,7 @@ import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib
 import { evaluateItem, loadDrafts, type Draft, type ItemResult } from '../lib/items/run.ts';
 import { SLOTS } from '../lib/items/items.ts';
 import { app } from '../lib/app.svelte.ts';
+import { accountTier } from '../lib/pixellab/plans.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
 import { addMove, createCharacter, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
@@ -64,7 +65,7 @@ export const ui = $state({
   bg: 'checker' as 'checker' | 'solid',
   toast: '',
 });
-let afterConnect: (() => void) | null = null;
+let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
 
 export function initUi() {
   const on = () => { ui.size = sizeNow(); ui.dpr = devicePixelRatio || 1; };
@@ -82,18 +83,20 @@ export function toast(s: string) { ui.toast = s; clearTimeout(toastT); toastT = 
 const follower = () => queue.role === 'follower' && (toast('PixelDoll is open in another tab. Generate there, or close it to generate here.'), true);
 
 /** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. */
-export function withKey(fn: () => void) {
+export function withKey(fn: () => void, requiresRig = false) {
   if (follower()) return;
+  if (requiresRig && app.key && accountTier(app.balance) === 0) { afterConnect = null; ui.sheet = 'connect'; return; }
   if (app.key && !app.keyRejected) return fn();
-  afterConnect = fn;
+  afterConnect = { run: fn, requiresRig };
   ui.sheet = 'connect';
 }
 export function connected() {
   const f = afterConnect;
   afterConnect = null;
   ui.sheet = null;
-  f?.();
+  f?.run();
 }
+export const pendingConnectionAllowsFree = () => !!afterConnect && !afterConnect.requiresRig;
 /** Closing Connect cancels its spending action, including when the balance request is still in flight. */
 export function clearPendingConnection() { afterConnect = null; }
 

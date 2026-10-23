@@ -25,7 +25,7 @@
 
   function makePose() {
     const spec = { id: anim!.id, frames: anim!.cells, items: pose.map((i) => i.id), seed: 1 + Math.floor(Math.random() * 1_000_000) }
-    withKey(() => { void startMove(doc.id, spec); ui.sheet = 'move' })
+    withKey(() => { void startMove(doc.id, spec); ui.sheet = 'move' }, true)
   }
 </script>
 

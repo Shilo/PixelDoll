@@ -25,7 +25,7 @@
     const draft = $state.snapshot(d)
     delete draft.enhanceOnConnect
     formDrafts.character = draft
-    withKey(() => { formDrafts.character = { ...draft, enhanceOnConnect: target }; ui.sheet = 'create' })
+    withKey(() => { formDrafts.character = { ...draft, enhanceOnConnect: target }; ui.sheet = 'create' }, false)
   }
   const running = $derived(!!creating.spec && !creating.projectId && !creating.error)
   const stepIx = $derived(STEPS.findIndex((s) => s.id === creating.progress?.step))
@@ -39,7 +39,7 @@
     if (errors.length || enhancing) return
     formDrafts.character = $state.snapshot(d)
     const spec = { ...$state.snapshot(formSpec), seed: d.seed ? Number(d.seed) : freshSeed() }
-    withKey(() => { formDrafts.character = undefined; void startCreate(spec); ui.sheet = 'create' })
+    withKey(() => { formDrafts.character = undefined; void startCreate(spec); ui.sheet = 'create' }, true)
   }
   async function open() {
     const id = creating.projectId
@@ -96,7 +96,7 @@
       <button class="btn primary lg" onclick={open}>Start dressing up</button>
     {:else if creating.error}
       <button class="btn plain" onclick={cancelCreate}>Start over</button>
-      <span class="api-action"><ApiPeek scope="character-create-retry" label="Create character again" plan={creating.spec ? createPlan(creating.spec, true) : []} /><button class="btn primary" onclick={() => creating.spec && withKey(() => void startCreate({ ...$state.snapshot(creating.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }))}>Try again</button></span><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
+      <span class="api-action"><ApiPeek scope="character-create-retry" label="Create character again" plan={creating.spec ? createPlan(creating.spec, true) : []} /><button class="btn primary" onclick={() => creating.spec && withKey(() => void startCreate({ ...$state.snapshot(creating.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }), true)}>Try again</button></span><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
     {:else if running}
       <span class="foot-note">Spending {lo}–{hi} gens</span>
       <button class="btn" onclick={() => (ui.sheet = null)}>Keep working</button>

@@ -1,5 +1,7 @@
 # PixelLab account concurrency — 2026-10-22
 
+Historical implementation note: the maintained tier table and current Free/Trial policy are now in [PixelLab plan policy](../pixellab-plans.md); edit `PLAN_JOB_LIMITS` in `app/src/lib/pixellab/plans.ts`.
+
 ## What the public API can detect
 
 Primary sources checked live, alongside the repository API snapshot:

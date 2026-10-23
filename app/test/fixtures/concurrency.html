@@ -1,13 +1,13 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PixelDoll queue verification</title></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><base href="/"><title>PixelDoll queue verification</title></head>
 <body style="margin:0">
   <div id="fixture" style="position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#202632;color:#fff;padding:8px;font:12px system-ui;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <b>Offline queue verification</b>
-    <button id="tier2">Tier 2</button><button id="tier3">Tier 3</button>
+    <button id="tier0">Free / Trial</button><button id="tier1">Tier 1</button><button id="tier2">Tier 2</button><button id="tier3">Tier 3</button>
     <button id="enqueue">Queue 25 jobs</button><button id="busy">Fill external slots</button>
     <button id="release">Release external slots</button><button id="complete">Complete accepted jobs</button>
-    <button id="activity">Activity</button><output id="stats">Starting…</output>
+    <button id="activity">Activity</button><button id="connect">Connection</button><output id="stats">Starting…</output>
   </div>
   <div id="app"></div>
-  <script type="module" src="./concurrency.ts"></script>
+  <script type="module" src="/test/fixtures/concurrency.ts"></script>
 </body></html>

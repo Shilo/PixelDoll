@@ -99,7 +99,7 @@
     withKey(() => {
       ui.sheet = 'fitdesign'
       void runFitStage(id, stage, budget).then(() => { if (mounted) void refresh() })
-    })
+    }, true)
   }
   async function accept(wear: boolean) {
     if (!reviewed || busy) return
@@ -125,7 +125,7 @@
     withKey(() => {
       ui.sheet = 'fitdesign'
       void retryFitStage(id, stage, budget).then(() => { if (mounted) void refresh() })
-    })
+    }, true)
   }
   async function discard() {
     if (!draftId || running) return

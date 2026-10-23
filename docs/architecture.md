@@ -273,8 +273,10 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
 - IndexedDB `projects` / `blobs` (SHA-256 of RGBA) / `jobs`; project zip = `project.json` + `cells/<sha>.png`; native-stream
   zip and pure PNG encoder, no dependencies. Store **every** generated frame, reference, keypoint sequence and request: they
   cannot be reproduced.
-- Queue: persisted ledger; active `/balance` plan selects 10 background jobs for Tier 2 or 20 for Tier 3, with a conservative
-  default of 3 for plans without a verified published limit. Count remote jobs rather than requests. The leader shares
+- Queue: persisted ledger; `/balance` identity selects maintained concurrency defaults: Free/Trial 1, Tier 1 8,
+  Tier 2 10, Tier 3+ 20, and a fallback of 3 for unknown plans. These maintained defaults live in
+  `app/src/lib/pixellab/plans.ts`; see [plan policy and endpoint audit](pixellab-plans.md). Restricted workflows declare
+  their minimum tier before their first paid request and remain queued until eligible. Count remote jobs rather than requests. The leader shares
   capacity and cooldown with other tabs. Capacity refusals (429/529, or explicit no-jobs-started responses) apply a
   queue-wide jittered backoff up to 60 s, honoring longer exposed `Retry-After` values; after waiting, single in-flight
   probes refill the account ceiling. Accepted jobs keep polling. Initial balance detection gates submission; periodic
@@ -352,7 +354,7 @@ integer zoom. Theming ("Paper" look) deferred.
 
 **Settled**: allowed models [D8]; rig = skeleton-v3 clips stored as frames + reference + keypoints [S3]; base v3 48 → 64
 [S4, D4]; item default `skeleton-pose`, alternative `inpaint-grid` [S4]; chroma extraction [S2]; held bg z above back bg
-[M4]; UI look A, dark default [D9]; account-based automatic concurrency (Tier 2: 10, Tier 3: 20, unknown-plan fallback: 3).
+[M4]; UI look A, dark default [D9]; maintained plan concurrency (Free/Trial: 1, Tier 1: 8, Tier 2: 10, Tier 3+: 20, unknown: 3).
 
 **Open**
 

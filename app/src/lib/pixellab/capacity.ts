@@ -1,13 +1,12 @@
 import type { Balance } from './routes.ts';
+import { accountTier, PLAN_JOB_LIMITS } from './plans.ts';
 
-// Public /balance identifies the plan, but does not expose live free slots or custom account limits.
-// Published tier ceilings: https://www.pixellab.ai/#pricing (verified 2026-10-22).
+// Numeric defaults live in plans.ts. /balance reports identity, not a numeric concurrency limit.
 export function planCapacity(balance: Balance): { limit: number; plan: string | null } {
-  const { status, plan } = balance.subscription ?? {};
-  if (status === 'active' && /^Tier 3\s*:/i.test(plan ?? '')) return { limit: 20, plan: plan! };
-  if (status === 'active' && /^Tier 2\s*:/i.test(plan ?? '')) return { limit: 10, plan: plan! };
-  // Free, Tier 1, expired, enterprise and unknown plans have no verified public numeric ceiling.
-  return { limit: 3, plan: null };
+  const tier = accountTier(balance);
+  const limit = tier === null ? PLAN_JOB_LIMITS.unknown : tier >= 3 ? PLAN_JOB_LIMITS.tier3Plus
+    : tier === 2 ? PLAN_JOB_LIMITS.tier2 : tier === 1 ? PLAN_JOB_LIMITS.tier1 : PLAN_JOB_LIMITS.freeTrial;
+  return { limit, plan: tier === null ? null : tier === 0 ? 'Free / Trial' : balance.subscription.plan! };
 }
 
 /** Reserve remote jobs, not HTTP requests. Studio submits animation directions separately. */

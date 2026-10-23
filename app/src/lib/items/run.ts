@@ -131,7 +131,7 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
     // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
     req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, anchored(k, c.kind) ? d.calls[0].cells[0] : undefined), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
-  c.recId = (await queue.enqueue(req, { label, tag: 'm3' })).id;
+  c.recId = (await queue.enqueue(req, { label, tag: 'm3', minimumTier: d.spec.method === 'skel' ? 1 : 0 })).id;
 }
 async function runCall(d: Draft, k: number, ctx: RigCtx, persist: () => Promise<unknown>): Promise<JobRec> {
   if (!recOf(d.calls[k].recId)) { await submit(d, k, ctx); await persist(); }
@@ -394,7 +394,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     for (let attempt = 0; attempt < 2; attempt++) {
       const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`);
       const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad, view: rig.view });
-      const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope });
+      const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope, minimumTier: 1 });
       const r = terminal(rec) ? rec : await settled(rec.id);
       onCall();
       if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
@@ -455,7 +455,7 @@ async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: Directio
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot);
   const cells = selectedCells ?? Array.from({ length: clipKeypoints(rig, anim, dir)?.length ?? rig.animations.find((a) => a.id === anim)!.cells }, (_, i) => `${anim}/${dir}/${i}`), n = cells.length;
   const refs = await Promise.all((Object.entries(item.dressed ?? {}) as [DirectionName, string][]).map(async ([d, h]) => ({ dir: d, im: await img(h.slice(7)) })));
-  const rec = await queue.enqueue(await gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key! }, cells, refs, seed), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope });
+  const rec = await queue.enqueue(await gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key! }, cells, refs, seed), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope, minimumTier: 1 });
   const r = terminal(rec) ? rec : await settled(rec.id);
   if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
   const cut = cutGrid(await img(outputsOf(r)[0].sha), n, rig.cell.w, rig.cell.h);

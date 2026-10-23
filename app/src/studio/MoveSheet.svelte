@@ -39,7 +39,7 @@
     const projectId = doc.id
     const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames: 8, items: chosen, sharedItems: sharedChosen, seed: 1 + Math.floor(Math.random() * 1_000_000) }
     formDrafts.move = { projectId, action, text, skip: $state.snapshot(skip) }
-    withKey(() => { formDrafts.move = undefined; void startMove(projectId, spec); ui.sheet = 'move' })
+    withKey(() => { formDrafts.move = undefined; void startMove(projectId, spec); ui.sheet = 'move' }, true)
   }
 </script>
 
@@ -48,7 +48,7 @@
     <button class="btn primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
   {:else if mine && moving.error}
     <button class="btn plain" onclick={dismissMove}>Start over</button>
-    <span class="api-action"><ApiPeek scope="move-retry" label="Try move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, seed: undefined }) : []} /><button class="btn primary" onclick={() => moving.spec && withKey(() => void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }))}>Try again</button></span><!-- new seed re-rolls body + item poses (R6 P2-7) -->
+    <span class="api-action"><ApiPeek scope="move-retry" label="Try move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, seed: undefined }) : []} /><button class="btn primary" onclick={() => moving.spec && withKey(() => void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), seed: 1 + Math.floor(Math.random() * 1_000_000) }), true)}>Try again</button></span><!-- new seed re-rolls body + item poses (R6 P2-7) -->
   {:else if mine}
     <span class="foot-note">You can keep working.</span>
     <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
