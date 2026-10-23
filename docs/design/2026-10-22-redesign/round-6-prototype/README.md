@@ -2,7 +2,9 @@
 
 2026-10-23. Implements the user-approved visual proof using Obsidian / Porcelain Bronze and the actual bundled S2 demo sprites. Production Studio is not integrated or changed by this prototype.
 
-**Visual refinement:** [Direct mockup/live comparisons and exact change record](comparisons.md) cover all five screens in both themes and viewport layouts, plus mobile creator scroll states. Larger typography, restored hierarchy, south-facing character thumbnails and one conventional Light mode / Dark mode action supersede the first playable iteration. Latest verification: eight unit tests and **15 browser checks** passed.
+**Shared implementation contract:** [Immersive design system](../../immersive-design-system.md) documents theme values, typography, geometry, responsive rules, Preview keyboard behavior and module ownership. Shared controls, creator/equipment renderers, input/direction rules and theme tokens now have dedicated modules; styles.css replaces the previous two-sheet override stack. Latest verification: **12 unit tests and 18 browser checks**.
+
+**Visual refinement:** [Direct mockup/live comparisons and exact change record](comparisons.md) cover all five screens in both themes and viewport layouts, plus mobile creator scroll states. Larger typography, restored hierarchy, south-facing character thumbnails and one conventional Light mode / Dark mode action supersede the first playable iteration. Latest verification: 12 unit tests and **18 browser checks** passed.
 
 ## Run and try it
 
@@ -15,7 +17,7 @@ node docs/design/2026-10-22-redesign/round-6-prototype/run.mjs
 Open **http://127.0.0.1:5202**. The server binds only to localhost, disables Vite environment-file loading and uses neither the app server configuration nor PixelLab credentials. It imports the existing fixture loader/compositor directly. There are no paid requests, project writes or production storage changes. Only this prototype's appearance preference persists.
 
 1. Select an actor in the world, then Customize. The three actors are outfit variants of the same genuine demo body, not newly generated characters. Click the character name to switch actors.
-2. In Preview, select Walk or Cross-punch, play/pause and choose an available direction. Preview reports actual stored coverage.
+2. In Preview, select Walk or Cross-punch, play/pause and use WASD/arrows or the facing buttons. Directions come from the character, not the selected animation. Missing clip/facing frames show an explicitly identified still for that facing; the requested clip remains selected and the world stays still.
 3. In Top-down, use WASD/arrows or press and drag anywhere in the world outside controls. Side-scroller uses horizontal movement. Position changes continuously while authored animation frames play at their stored timing; the camera follows.
 4. Change equipment while moving. On touch screens, the first world finger owns movement and a second finger can operate equipment. Release stops movement. Modal opening, blur, hiding the page, view changes and resizing also clear input.
 5. Open the overflow menu and choose **Light mode** or **Dark mode**. One action shows the destination mode; there is no Appearance category or named-theme selector. New character opens the editable visual form; generation is deliberately disabled.
@@ -49,7 +51,7 @@ node --test docs/design/2026-10-22-redesign/round-6-prototype/motion.test.mjs
 node docs/design/2026-10-22-redesign/round-6-prototype/verify.mjs
 ```
 
-Playwright uses the existing app dependency and installed managed Chromium. Set `PLAYWRIGHT_BROWSERS_PATH` to the local managed-browser directory if necessary. Final validation under Node **24.22.1**: **8 unit tests and 15 browser checks passed**. [Machine-readable report](verification.json).
+Playwright uses the existing app dependency and installed managed Chromium. Set `PLAYWRIGHT_BROWSERS_PATH` to the local managed-browser directory if necessary. Final validation under Node **24.22.1**: **12 unit tests and 18 browser checks passed**. [Machine-readable report](verification.json).
 
 Browser checks cover animation playback, background reuse, exact opaque source RGB in both appearances, continuous movement/camera, normalized diagonals, stopping/blur, item hiding/restoration, reflection disabling without actor changes, responsive overflow, real multi-touch equipment use and pointer cancellation. No page errors or external requests occurred in the primary test context. This is isolated-prototype validation, not a production app build or full accessibility/performance audit.
 

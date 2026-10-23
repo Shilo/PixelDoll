@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {unit,nearest,resolveMotion,frameAt,advance} from './motion.mjs';
+import {resolvePreview} from './motion.mjs';
+import {DIRECTIONS,facingFromVector} from './directions.mjs';
+import {keyboardVector} from './input.mjs';
 test('two-direction mapping retains a side for vertical travel',()=>{
   assert.equal(nearest(['east','west'],unit(1,1),'west'),'east');
   assert.equal(nearest(['east','west'],unit(1,-1),'west'),'east');
@@ -36,4 +39,29 @@ test('authored durations and independent position/camera simulation',()=>{
   const p={x:0,y:0},c={x:0,y:0};for(let i=0;i<20;i++)advance(p,c,unit(1,1),.05,100,9);
   assert.ok(Math.abs(Math.hypot(p.x,p.y)-100)<1e-8);assert.ok(c.x>0&&c.x<p.x);
   const x=p.x;advance(p,c,[0,0],.05,100,9);assert.equal(p.x,x);assert.ok(c.x<p.x);
+});
+
+test('canonical rig diagonal IDs work in both facing and locomotion',()=>{
+  const dirs=DIRECTIONS.map(d=>d.id);
+  assert.equal(facingFromVector(dirs,[1,1],'south'),'north-east');
+  assert.equal(resolveMotion({velocity:[-1,-1],dirs,available:{walk:dirs}}).dir,'south-west');
+  assert.equal(facingFromVector(['northeast','southwest'],[1,1],'southwest'),'northeast');
+});
+test('every nonempty compass subset supports facing independently of clip availability',()=>{
+  for(let mask=1;mask<256;mask++){
+    const dirs=DIRECTIONS.filter((_,i)=>mask&(1<<i)).map(d=>d.id);
+    for(const d of DIRECTIONS){const result=facingFromVector(dirs,d.vector,dirs[0]);assert.ok(dirs.includes(result));if(dirs.includes(d.id))assert.equal(result,d.id);}
+    assert.equal(facingFromVector(dirs,[0,0],dirs[0]),dirs[0]);
+  }
+});
+test('keyboard aliases, opposite keys and diagonal normalization share one vector',()=>{
+  assert.deepEqual(keyboardVector(new Set(['d','ArrowRight'.toLowerCase(),'w'])),unit(1,1));
+  assert.deepEqual(keyboardVector(new Set(['a','d','w','s'])),[0,0]);
+  assert.deepEqual(keyboardVector(new Set(['w','d']),true),[1,0]);
+});
+test('Preview preserves requested facing and clip intent when only another facing is animated',()=>{
+  const args={clip:'punch',dir:'north',available:{punch:['south']},still:{north:{clip:'walk',cell:0}}};
+  const p=resolvePreview(args);assert.equal(p.dir,'north');assert.equal(p.requestedClip,'punch');assert.equal(p.clip,'walk');assert.equal(p.still,true);assert.equal(p.missing,true);
+  assert.equal(resolvePreview({...args,dir:'south'}).missing,false);
+  assert.equal(resolvePreview({...args,still:{}}).clip,null);
 });

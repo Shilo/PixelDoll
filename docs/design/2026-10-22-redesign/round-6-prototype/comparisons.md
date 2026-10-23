@@ -62,4 +62,10 @@ Both versions already used **Georgia headings and Segoe UI controls**. The regre
 
 Run `node docs/design/2026-10-22-redesign/round-6-prototype/capture-parity.mjs after` with the prototype server active. The script checks both images have matching native dimensions before creating each pair. It suppresses transient toasts for clear static comparison; movement and coverage notices are separately exercised by verify.mjs. Mobile captures use touch-capable browser emulation. Source screenshots remain alongside each pair.
 
-Final interaction regression: eight motion tests and 15 browser checks, including new thumbnail/update and single-theme-action checks. Research reviews: [all-screen parity](parity-review.md), [creator parity](creator-parity-review.md). Images remain local/ignored under repository policy; scripts, docs and verification are committed.
+Initial parity regression: eight motion tests and 15 browser checks, including thumbnail/update and single-theme-action checks. Research reviews: [all-screen parity](parity-review.md), [creator parity](creator-parity-review.md). Images remain local/ignored under repository policy; scripts, docs and verification are committed.
+
+## Shared controls refinement — 2026-10-23
+
+The latest pass preserves this visual hierarchy and consolidates colors, geometry, markup and direction handling under the [shared design-system contract](../../immersive-design-system.md). Preview WASD/arrows now select declared character facings independently of clip coverage. Missing clip directions keep the chosen facing and show a valid still with an explicit coverage note. The palette selection ring now paints outside the content edge without shifting the swatches; hover preserves artwork colors.
+
+All 24 comparison pairs were recaptured after the refactor. Latest verification: **12 unit tests and 18 browser checks passed**; [modularity review](modularity-review.md) found no critical regression. Focused evidence: [dark palette](evidence/palette-ring-dark.png), [light palette](evidence/palette-ring-light.png), [Preview keyboard facing](evidence/preview-keyboard-north-light.png), [mobile shared controls](evidence/mobile-shared-controls-light.png). Screenshots remain local and ignored.

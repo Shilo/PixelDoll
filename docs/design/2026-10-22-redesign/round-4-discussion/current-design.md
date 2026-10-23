@@ -8,6 +8,8 @@ Updated 2026-10-23 after the user's movement-fallback correction and palette cho
 
 ## Accepted visual and screen direction
 
+Reusable styling, tokens and implementation ownership are maintained in the [immersive design system](../../immersive-design-system.md). It supersedes prototype-specific duplicated styling while preserving the approved visual direction.
+
 - Full-screen immersive HD prototype world; Obsidian Holodeck is the chosen direction. Use **Obsidian / Porcelain Bronze** for coordinated dark/light backgrounds and UI. Frost and Sage remain historical alternatives, not additional product requirements.
 - Theme switching changes background assets, text, accents, control surfaces and local gradients only. Characters remain unlit, unfiltered and untinted. Preserve their source pixels, including existing painted shading. Intentional equipment/palette editing remains independent of theming.
 - Latest user correction: overflow contains **one ordinary Light mode / Dark mode button**, with sun/moon icon and the destination mode as its label. No Appearance heading, no Obsidian/Porcelain labels in the control. Those names identify the art direction internally. The button applies the change immediately. South-facing thumbnails of the current outfit belong in character lists and the character switcher.
@@ -17,6 +19,7 @@ Updated 2026-10-23 after the user's movement-fallback correction and palette cho
 - Start at Characters: bundled demo plus saved characters, selected last-used character on return, direct Customize, New character and Import, with paging/search for larger libraries.
 - Create character remains a separate complete form. Preserve linked Appearance/Prompt, traits, exact prompt, Help/API/Copy, Enhance/Undo, name, body/frame controls and size guide, camera, five direction presets, individual directions/mirroring, seed and cost. Creation includes idle/walk and saves before result review; no invented Imagine/Review/Animate wizard or extra Save step.
 - One studio with **Preview / Top-down / Side-scroller** at top center. Character name switches characters. Wardrobe, Colours and Outfits remain available in each view. Preview includes clip selection/playback/facing and contextual detailed inspection. Live views hide manual playback/facing and move authoring. No duplicate Customize/Play buttons in the studio.
+- Latest Preview refinement: WASD/arrows change facing using the character's declared directions, independently of current animation coverage. Direction buttons follow the same rule. Keep the selected clip and stationary world; missing clip/facing artwork uses an explicitly identified still for that facing when available. Native mode buttons share the same component and selected-state treatment across the creator and studio. Palette selection/focus rings may paint outside the content edge without moving swatches.
 - Selection and Preview share a retained background by default, with configurable per-screen alternatives. Live views need continuing surfaces and their own camera-appropriate backgrounds. No Grid/Bounds/Proof controls, required props, combat, platforms or jumping are introduced.
 
 ## Accepted correction: movement and animation availability are separate
