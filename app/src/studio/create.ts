@@ -58,7 +58,7 @@ export function estimate(choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' 
 }
 
 // ---------- queue helpers ----------
-export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = false, activityScope?: string): Promise<JobRec> {
+export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = true, activityScope?: string): Promise<JobRec> {
   const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, activityScope, minimumTier: 1 });
   const r = live(rec) ? await queue.settled(rec.id) : rec;
   if (r.state !== 'done') throw new Error(`${label}: ${r.state}${r.error ? ` (${r.error.slice(0, 160)})` : ''}${resumeSafe ? '. Setup stopped without resending. Review this request in Activity before starting again.' : ''}`);
@@ -103,7 +103,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
   let best: ClipOut | null = null;
   for (let attempt = 0; attempt < 2 && (!best || best.qa.fails.length); attempt++) { // fail -> one re-roll (new seed), keep the better
     const r = await run(rawClip({ first: restB64, rest: j.restKps, keypoints: j.keypoints, description: j.looks, action: actionOf(j.anim), dir: j.dir, seed: j.seed + attempt * 7919, view: j.view }),
-      `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig', false, false, j.activityScope);
+      `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig', false, true, j.activityScope);
     recs.push(r);
     j.tick();
     const outs = await imagesOf(r);
@@ -126,7 +126,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
 
 /** Managed motion source on the rest character -> frames on the 64 cell -> estimated keypoint sequence. */
 async function motion(req: Req, dir: Direction, label: string, tick: () => void, activityScope?: string, size = CELL): Promise<Keypoint[][]> {
-  const r = await run(req, label, 'studio-rig', false, false, activityScope);
+  const r = await run(req, label, 'studio-rig', false, true, activityScope);
   tick();
   const got = (r.response as SubmitResponse | undefined)?.directions;
   if (got && !got.includes(dir)) throw new Error(`${label}: PixelLab dropped the direction (busy). Try again.`); // S4 truncation
@@ -166,7 +166,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const modern = !!spec.exactPrompt || spec.frame !== undefined || spec.directions !== undefined;
   // 1. base character, text only (8 rotations)
   onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
-  const base = await run(routes.createCharacterV3({ description: spec.exactPrompt ? spec.description : basePrompt(spec.description), image_size: { width: spec.size, height: spec.size }, view, template_id: 'mannequin', seed: spec.seed, no_background: true }), `${spec.name} · creating`, 'studio-base', false, false, spec.activityScope);
+  const base = await run(routes.createCharacterV3({ description: spec.exactPrompt ? spec.description : basePrompt(spec.description), image_size: { width: spec.size, height: spec.size }, view, template_id: 'mannequin', seed: spec.seed, no_background: true }), `${spec.name} · creating`, 'studio-base', false, true, spec.activityScope);
 
   // 2. rest views: rotations on the 64 cell with the floor pad, mirrored directions = flips; re-import for the rest keypoints
   onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
@@ -186,7 +186,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   // Register all eight ORIGINAL views, including south when it isn't selected. Never overwrite these with mirrors.
   const registered = modern ? rest : Object.fromEntries(directions.map(d => [d.id, d.mirrorOf ? flipH(rest[d.mirrorOf]) : rest[d.id]])) as Record<DirectionName, Img>;
   const others = Object.fromEntries(await Promise.all((Object.keys(registered) as Direction[]).filter((d) => d !== 'south').map(async (d) => [d, png(await b64(registered[d]))])));
-  const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(registered.south)), direction_images: others, n_directions: modern ? 8 : spec.dirs ?? 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base', false, false, spec.activityScope);
+  const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(registered.south)), direction_images: others, n_directions: modern ? 8 : spec.dirs ?? 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base', false, true, spec.activityScope);
   const charId = (imp.response as { character_id?: string })?.character_id;
   if (!charId) throw new Error('PixelLab did not return a character id');
   const ch = await run(routes.getCharacter(charId), `${spec.name} · skeleton`, 'studio-base', true, false, spec.activityScope);
