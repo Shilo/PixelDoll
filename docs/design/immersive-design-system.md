@@ -64,6 +64,8 @@ Keep the selection ring and focus outline external to the swatch. Do not shift p
 
 Preview and live modes share keyboard vectors, compass metadata and nearest-direction mathematics. WASD/arrows support chords; opposite keys cancel, diagonals normalize, and ties retain the previous supported facing. On release, preserve facing. Shortcuts ignore text/select inputs, open menus and dialogs; blur and context changes clear held input.
 
+Character selection reuses the same key mapping: A/W/Left/Up select the previous character; D/S/Right/Down select the next. Each key press advances once, with existing wraparound; held-key repeats do not race through characters. Enter opens customization. Search fields, menus, dialogs and modified shortcuts retain their normal behavior.
+
 Preview changes **facing only**. It does not translate the actor or camera, change the selected clip, reset playback preference, or derive permitted directions from the current animation. Every declared character direction remains selectable by keyboard and button.
 
 If the requested Preview clip lacks the requested direction, retain both selections, show a valid stored still for that facing when available, display **Still** in playback and show a persistent coverage note. If no artwork exists for that facing, say so rather than display another direction as if it matched. Normal gameplay has its own continuous movement/fallback policy. Preview fallback does not manufacture export coverage.

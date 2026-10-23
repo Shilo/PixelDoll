@@ -285,10 +285,12 @@ window.addEventListener('keydown', e => { if (e.key === 'Escape') {
     }
     return;
 } if (editTarget(e.target) || dialog.open || state.menu || e.ctrlKey || e.altKey || e.metaKey)
-    return; const k = e.key.toLowerCase(); if (state.screen === 'selection' && ['arrowleft', 'arrowright', 'enter'].includes(k)) {
+    return; const k = e.key.toLowerCase(); if (state.screen === 'selection' && (MOVEMENT_KEYS.has(k) || k === 'enter')) {
     e.preventDefault();
-    if (!e.repeat)
-        action(k === 'enter' ? 'customize' : k === 'arrowleft' ? 'previous' : 'next');
+    if (!e.repeat) {
+        const [horizontal, vertical] = keyboardVector(new Set([k]));
+        action(k === 'enter' ? 'customize' : horizontal - vertical < 0 ? 'previous' : 'next');
+    }
     return;
 } if (state.screen === 'studio' && MOVEMENT_KEYS.has(k)) {
     e.preventDefault();
