@@ -5,7 +5,11 @@ import { applyDress, dressOf, openSource, saveDress, saveSplit, type DressState 
 import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials, randomOutfit, recolour, storeVariants } from '../lib/dress/dress.ts';
 import { drawList } from '../lib/compose/compose.ts';
-import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
+import { deleteItem, listProjects, loadProject, originOf, type StoredProject } from '../lib/store/project.ts';
+import { alignCharacter, type AlignedCharacter } from '../lib/rig/align.ts';
+import { imageHashes } from '../lib/equipment/design.ts';
+import { encodePngBytes } from '../lib/image/pngraw.ts';
+import { stableStringify } from '../lib/image/hash.ts';
 import * as db from '../lib/store/db.ts';
 import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
 import { evaluateItem, loadDrafts, type Draft, type ItemResult } from '../lib/items/run.ts';
@@ -27,7 +31,7 @@ export const DEMO = 'fixture:s2';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
-export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup' | 'savedesign' | 'fitdesign';
+export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup' | 'savedesign' | 'fitdesign' | 'align';
 const sizeNow = (): Size => {
   const w = innerWidth, h = innerHeight;
   if (h < 500 && w > h) return 'landscape';
@@ -404,6 +408,55 @@ export async function copyDemo(): Promise<string> {
   await refreshProjects();
   await openProject(id);
   return id;
+}
+
+export interface AlignmentSource {
+  id: string;
+  project: Project;
+  record: StoredProject;
+  stamp: string;
+  outfit: Preset;
+}
+export function alignmentBlocked(): string {
+  if (isDemo()) return 'Copy the demo before aligning directions.';
+  return deletionBlocked().replace('deleting', 'aligning');
+}
+export async function prepareAlignmentSource(): Promise<AlignmentSource> {
+  await refreshFits();
+  const reason = alignmentBlocked();
+  if (reason) throw new Error(reason);
+  await flushSave();
+  const id = doc.id, { rec, project } = await loadProject(id);
+  if (id !== doc.id) throw new Error('The character changed. Reopen Align directions.');
+  return { id, project, record: rec, stamp: stableStringify(rec), outfit: { id: 'alignment-preview', name: 'Current', items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) } };
+}
+export async function saveAlignmentCopy(source: AlignmentSource, reviewed: AlignedCharacter, name: string): Promise<void> {
+  await refreshFits();
+  const reason = alignmentBlocked();
+  if (reason) throw new Error(reason);
+  if (source.id !== doc.id) throw new Error('The character changed. Reopen Align directions.');
+  if (!name.trim() || name.trim().length > 80) throw new Error('Enter a name of 1–80 characters.');
+  await flushSave();
+  const current = await db.get<StoredProject>('projects', source.id);
+  if (!current || stableStringify(current) !== source.stamp) throw new Error('The character changed since this preview. Reopen Align directions.');
+  // Revalidate the exact reviewed offsets before publication; this operation never enters the API queue.
+  const aligned = await alignCharacter(source.project, source.record, reviewed.offsets);
+  const rec = aligned.record, id = `rig-${crypto.randomUUID()}`, blobs = new Map<string, Blob>();
+  rec.id = id; rec.savedAt = new Date().toISOString(); rec.manifest.name = name.trim(); rec.origin = 'studio';
+  for (const hash of imageHashes(rec.manifest)) {
+    const image = aligned.project.images.get(hash);
+    if (!image) throw new Error('An aligned image is missing. Reopen Align directions.');
+    blobs.set(hash.slice(7), new Blob([(await encodePngBytes(image)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  }
+  if (source.id !== doc.id || alignmentBlocked() || stableStringify(await db.get('projects', source.id)) !== source.stamp) throw new Error('The character changed during alignment. Reopen Align directions.');
+  await db.updateCharacter<StoredProject>(id, blobs, existing => {
+    if (existing) throw new Error('The copy identity is already in use. Reopen Align directions.');
+    return rec;
+  });
+  await refreshProjects();
+  await openProject(id);
+  ui.sheet = null;
+  toast('Created aligned copy');
 }
 
 /** Rename the open (own) character: the manifest name is also the exported name. */

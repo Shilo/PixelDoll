@@ -84,6 +84,7 @@
   <button class="row" role="menuitem" aria-label="Import character…" onclick={() => { ui.importSource = 'device'; sheet('import') }}><Download size={16} /><span class="row-name">Import character…</span></button>
   {#if !isDemo()}<button class="row" role="menuitem" aria-label="Rename character…" onclick={() => sheet('rename')}><Pencil size={16} /><span class="row-name">Rename…</span></button>{/if}
   {#if !isDemo()}<button class="row" role="menuitem" aria-label="Set up character…" onclick={() => sheet('setup')}><PersonStanding size={16} /><span class="row-name">Set up character…</span></button>{/if}
+  {#if !isDemo()}<button class="row" role="menuitem" aria-label="Align directions…" onclick={() => sheet('align')}><span class="row-name">Align directions…</span></button>{/if}
   {#if !isDemo()}<button class="row" role="menuitem" aria-label="Delete character…" onclick={() => sheet('delete')}><Trash size={16} /><span class="row-name">Delete character…</span></button>{/if}
   <hr />
   <button class="row" role="menuitem" aria-label={app.key ? 'PixelLab key' : 'Connect PixelLab…'} onclick={() => sheet('connect')}><KeyRound size={16} /><span class="row-name">{app.key ? 'PixelLab key' : 'Connect PixelLab…'}</span>

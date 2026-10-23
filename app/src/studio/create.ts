@@ -23,6 +23,7 @@ import { poseGens, poseItemClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { BASE_BODY, basePrompt, looksOf } from './model.ts';
 import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
+import { managedMotionOffsets, shiftMotionPoses } from '../lib/rig/align.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
 import { planDirections } from '../lib/rig/mirror.ts';
 import { prepareExtensionFit } from '../lib/equipment/index.ts';
@@ -339,6 +340,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
 
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void) {
   const { rec, project } = await loadProject(projectId), m = rec.manifest, rig = m.rig;
+  const motionOffsets = managedMotionOffsets(rec.character, rig.cell.h);
   const dirs = genDirs(m) as Direction[], n = moveFrames(m, spec), name = m.name;
   const total = dirs.length * (1 + n + (spec.action && ACTIONS[spec.action] ? 0 : 1 + n));
   let done = 0;
@@ -351,7 +353,7 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
     if (spec.action && ACTIONS[spec.action]) keypoints = authoredPoses(spec.action, fromApi(restKps, rig.cell), d, rig.cell.w).map((p) => toApi(p, rig.cell));
     else {
       const req = routes.animateCharacter(spec.action === 'walk' ? baseAnimation('skeleton-v3', rec.character!.id, BASE_ANIMS.find((a) => a.name === 'walk')!, [d], spec.seed) : { character_id: rec.character!.id, mode: 'pixminimax', action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`, frame_count: n, keep_first_frame: false, animation_name: spec.id, directions: [d], seed: spec.seed });
-      keypoints = await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, tick, spec.activityScope, rig.cell.w);
+      keypoints = shiftMotionPoses(await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, tick, spec.activityScope, rig.cell.w), motionOffsets[d] ?? 0, rig.cell.h);
       extra[k] = [(await queue.enqueue(req)) as JobRec];
     }
     return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, looks: rec.character!.looks, seed: spec.seed + 101, name, tick, view: rig.view, activityScope: spec.activityScope }) };

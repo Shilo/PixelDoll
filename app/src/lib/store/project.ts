@@ -4,7 +4,7 @@ import { decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import * as db from './db.ts';
-import type { Item, Manifest, Project, Sha256, Slot } from './manifest.ts';
+import type { DirectionName, Item, Manifest, Project, Sha256, Slot } from './manifest.ts';
 import { supportedFormat } from './manifest.ts';
 
 export interface StoredProject {
@@ -13,7 +13,7 @@ export interface StoredProject {
   manifest: Manifest;
   skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
   rigQa?: unknown;
-  character?: { id: string; looks: string }; // v1.3: managed rest character (motion source) + the base's looks description
+  character?: { id: string; looks: string; motionOffsets?: Partial<Record<DirectionName, number>> }; // server motion -> locally aligned rest, in pixels
   origin?: 'studio' | 'dev'; // T2: who made it; the Studio's character menu lists only 'studio' rigs (dev rigs: M2 pages)
 }
 

@@ -19,7 +19,7 @@ export default defineConfig({
     { command: `npm run dev -- --host 127.0.0.1 --port ${devPort} --strictPort`, url: devURL, reuseExistingServer: false },
   ],
   projects: [
-    { name: 'studio', testMatch: ['studio.spec.ts', 'characters.spec.ts', 'shared-equipment.spec.ts', 'api-peek.spec.ts', 'character-creator.spec.ts', 'creator-request-matrix.spec.ts'], use: { baseURL, viewport: { width: 1440, height: 900 }, acceptDownloads: true } },
+    { name: 'studio', testMatch: ['studio.spec.ts', 'characters.spec.ts', 'shared-equipment.spec.ts', 'api-peek.spec.ts', 'character-creator.spec.ts', 'creator-request-matrix.spec.ts', 'direction-alignment.spec.ts'], use: { baseURL, viewport: { width: 1440, height: 900 }, acceptDownloads: true } },
     { name: 'browser-selftests', testMatch: ['selftests.spec.ts', 'concurrency.spec.ts'], use: { baseURL: devURL } },
   ],
 })
