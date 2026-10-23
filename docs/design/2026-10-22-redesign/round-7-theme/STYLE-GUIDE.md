@@ -1,6 +1,8 @@
-# Bronze theme style guide
+# Historical Bronze theme style guide
 
-2026-10-23. Implementation contract for the isolated component showcase. Preserve the approved immersive design; production integration remains a separate step. See the [inventory](control-inventory.md), [research and challenge](research-review.md), and [coverage review](coverage-review.md).
+**Historical evidence — not the current theme owner.** New theme work belongs in [Bronze UI](https://github.com/Shilo/bronze-ui), following its [current style guide](https://github.com/Shilo/bronze-ui/blob/main/docs/STYLE-GUIDE.md) and [live showcase](https://shilo.github.io/bronze-ui/). This frozen guide records the pre-extraction implementation; retain its tokens, component contracts and evidence as originally reviewed.
+
+2026-10-23. Original implementation contract for the isolated component showcase. See the [inventory](control-inventory.md), [research and challenge](research-review.md), and [coverage review](coverage-review.md). Ownership and extension instructions below describe that historical source, not a second maintained theme implementation.
 
 ## Ownership and native appearance
 

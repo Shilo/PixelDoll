@@ -184,10 +184,20 @@ Moves are added to your own characters (not the demo).
 
 ## Export
 
-Press **Export** (toolbar), choose **For which engine?**: Godot, Unity, Phaser or PNG + JSON, and download the zip. Export is
+Press **Export** (toolbar), choose **For which engine?**: Godot, Unity, Phaser, Aseprite or PNG + JSON, and download the zip. Export is
 free and runs on your device. Tick **Also export finished characters** to also get one ready-made sheet per outfit.
 
 Each zip has a `README.txt` with a quick start for that engine. Copy the whole folder into your project.
+
+Godot includes a native scene, animation resources and an equipment runtime. Unity includes an Editor importer that creates
+a layered prefab, sliced sprites and animation assets; follow its package requirements before importing. Phaser includes
+native atlas data and a Container runtime. These integrations keep the layers synchronized and expose equipment and outfit controls.
+
+Use Aseprite for an editable layered animation, or PNG + JSON for other engines and custom runtimes such as MonoGame.
+The JSON records each layer's size and pivot, frame timing, direction order and equipment rules. Your integration must read
+those rules to preserve the paperdoll; importing images alone does not reproduce equipment behavior. Finished character
+sheets are useful when your game does not need to swap equipment. See the [2026 target review](research/export-targets-2026-10-23.md)
+for why there are dedicated exports for these engines and when more would be useful.
 
 ## Good to know
 

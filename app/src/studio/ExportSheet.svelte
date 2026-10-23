@@ -10,14 +10,14 @@
   import { ChevronRight, Download, TriangleAlert } from './icons.ts'
 
   const ENGINES: { id: Engine; name: string; sub: string }[] = [
-    { id: 'godot', name: 'Godot', sub: '4.x scenes' },
-    { id: 'unity', name: 'Unity', sub: '6 importer' },
-    { id: 'phaser', name: 'Phaser', sub: '3 / 4 atlases' },
+    { id: 'godot', name: 'Godot', sub: '4.x scene + runtime' },
+    { id: 'unity', name: 'Unity', sub: '6 prefab importer' },
+    { id: 'phaser', name: 'Phaser', sub: '3 / 4 atlas + runtime' },
     { id: 'generic', name: 'PNG + JSON', sub: 'any engine' },
     { id: 'aseprite', name: 'Aseprite', sub: '.aseprite layers' },
   ]
   const LS = 'pixeldoll.export.engine'
-  let engine = $state<Engine>((() => { try { return (localStorage.getItem(LS) as Engine) || 'godot' } catch { return 'godot' } })())
+  let engine = $state<Engine>((() => { try { return ENGINES.find((e) => e.id === localStorage.getItem(LS))?.id ?? 'godot' } catch { return 'godot' } })())
   let baked = $state(true)
   let result = $state.raw<{ zip: Uint8Array | null; files: string[]; warnings: string[]; errors: string[] } | null>(null)
   let busy = $state(false)

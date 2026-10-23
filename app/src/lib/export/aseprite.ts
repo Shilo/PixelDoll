@@ -7,16 +7,25 @@
 //  - canvas = export.bakedCell (bakedFrame: every layer fits around the shared pivot); a layer's cel sits at
 //    bakedPivot − layer.pivot, so a 96 sword and the 64 body line up by pivot. Slice "pivot" = canvas + bakedPivot.
 //  - zOverrides become cel z-indexes (Aseprite ≥ 1.3: draw order = layer index + z-index), so the flattened frame equals
-//    composeCell on the baked frame. Pixels come from the layer sheets (source ramps; preset variants are not applied).
+//    composeCell on the baked frame. Colours and visibility match the first outfit (including default/linked ramps).
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Item, Layer, Manifest, Slot } from '../store/manifest.ts';
 import { bakedFrame, equipped, hiddenSlots, layerFrame, resolveZ, shownItems } from '../compose/compose.ts';
 import type { OutFile } from './generic.ts';
+import { variantOf, variantRampOf } from '../dress/dress.ts';
+import { applyIndex, fromHex, indexImg } from '../dress/palette.ts';
 
 type Bytes = ArrayLike<number>;
 const w16 = (v: number) => [v & 255, (v >> 8) & 255]; // also SHORT (two's complement)
 const w32 = (v: number) => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255]; // also LONG
-const str = (s: string) => { const b = new TextEncoder().encode(s); return [...w16(b.length), ...b]; };
+const str = (s: string) => {
+  const b = new TextEncoder().encode(s);
+  if (b.length > 65535) throw new Error('Aseprite names must fit in 65535 UTF-8 bytes.');
+  return [...w16(b.length), ...b];
+};
+const range = (name: string, v: number, min: number, max: number) => {
+  if (!Number.isInteger(v) || v < min || v > max) throw new Error(`Aseprite ${name} must be an integer from ${min} to ${max} (got ${v}).`);
+};
 function cat(parts: Bytes[]): Uint8Array {
   const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
   let o = 0;
@@ -33,6 +42,13 @@ const sortLayers = (ls: L[], z: (l: L) => number) => [...ls].sort((a, b) => z(a)
 export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promise<Uint8Array> {
   const { rig } = m, bf = bakedFrame(m);
   const all: L[] = m.items.flatMap((item) => item.layers.map((layer) => ({ item, layer, slotIx: m.slots.findIndex((s) => s.id === item.slot), slot: m.slots.find((s) => s.id === item.slot) })));
+  range('canvas width', bf.w, 1, 65535); range('canvas height', bf.h, 1, 65535);
+  range('layer count', all.length, 1, 65535);
+  for (const l of all) {
+    const f = layerFrame(rig, l.layer);
+    range('cel width', f.w, 1, 65535); range('cel height', f.h, 1, 65535);
+    range('cel x', bf.x - f.x, -32768, 32767); range('cel y', bf.y - f.y, -32768, 32767);
+  }
   const stack = sortLayers(all, (l) => l.layer.z);
   const worn = equipped(m, m.presets[0]?.items ?? {}), hidden = hiddenSlots(m, worn), on = shownItems(m, worn); // B14: a tucked variant replaces its item
   const visible = (l: L) => on.includes(l.item) && !hidden.has(l.item.slot);
@@ -42,12 +58,38 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
   // timeline: playlist entries of every move × direction it has
   const frames: { anim: string; dir: DirectionName; row: number; cell: number; ms: number }[] = [], tags: Bytes[] = [];
   for (const a of rig.animations) {
+    if (!a.frames.length) continue;
     const dirs = (a as { directions?: DirectionName[] }).directions ?? rig.directions.map((d) => d.id);
     for (const dir of dirs) {
       const from = frames.length, row = rig.directions.findIndex((d) => d.id === dir);
-      for (const f of a.frames) frames.push({ anim: a.id, dir, row, cell: f.cell, ms: f.ms });
+      if (row < 0) throw new Error(`Aseprite animation ${a.id} has an unknown direction ${dir}.`);
+      for (const f of a.frames) {
+        range('frame duration (milliseconds)', f.ms, 1, 65535);
+        frames.push({ anim: a.id, dir, row, cell: f.cell, ms: f.ms });
+      }
+      range('frame count', frames.length, 1, 65535);
       tags.push(cat([w16(from), w16(frames.length - 1), [0], w16(a.loop ? 0 : 1), [0, 0, 0, 0, 0, 0], [0, 0, 0], [0], str(`${a.id}_${dir}`)]));
     }
+  }
+  if (!frames.length) throw new Error('Aseprite export needs at least one animation frame with an available direction.');
+  range('tag count', tags.length, 1, 65535);
+  // Start from raw sheets when defaults are baked into layers/. Never map a default colour as though it were a source.
+  const coloured = new Map<L, Map<string, Img>>();
+  for (const l of all) {
+    const ids = new Map<number, number>(), colours: number[] = [];
+    for (const id of l.item.materials ?? []) {
+      const mat = m.materials.find((x) => x.id === id && (x.owner === l.item.id || x.owner === l.item.variantOf));
+      if (!mat) continue;
+      const name = variantOf(m, m.presets[0]?.variants ?? {}, id), ramp = name ? variantRampOf(mat, name) : undefined;
+      mat.ramp.forEach((h, i) => { ids.set(fromHex(h), colours.length); colours.push(ramp ? fromHex(ramp[i]) : -1); });
+    }
+    const local = new Map<string, Img>();
+    for (const anim of new Set(frames.map((fr) => fr.anim))) {
+      const path = l.layer.sourceSheets?.[anim] ?? l.layer.sheets?.[anim], sheet = path && sheets.get(path);
+      if (!sheet) throw new Error(`Aseprite missing sheet for ${l.item.id}.${l.layer.id}/${anim}.`);
+      local.set(anim, colours.some((c) => c >= 0) ? applyIndex(sheet, indexImg(sheet, ids), Int32Array.from(colours)) : sheet);
+    }
+    coloured.set(l, local);
   }
   const first = new Map<string, number>(); // "<layer>/<anim>/<dir>/<cell>" -> first frame with that cel (linked cels)
   const out: Bytes[] = [];
@@ -56,7 +98,8 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
     const chunks: Bytes[] = fi ? [] : [...layerChunks, chunk(0x2018, w16(tags.length), [0, 0, 0, 0, 0, 0, 0, 0], ...tags),
       chunk(0x2022, w32(1), w32(2), w32(0), str('pivot'), w32(0), w32(0), w32(0), w32(bf.w), w32(bf.h), w32(bf.x), w32(bf.y))];
     for (const [li, l] of stack.entries()) {
-      const f = layerFrame(rig, l.layer), sheet = sheets.get(l.layer.sheets![fr.anim])!;
+      const f = layerFrame(rig, l.layer), sheet = coloured.get(l)!.get(fr.anim)!;
+      range('cel z-index', z.get(l)! - li, -32768, 32767);
       const head = [w16(li), w16(bf.x - f.x), w16(bf.y - f.y), [255]], zi = w16(z.get(l)! - li), pad = [0, 0, 0, 0, 0];
       const key = `${li}/${fr.anim}/${fr.dir}/${fr.cell}`, link = first.get(key);
       if (link != null) { chunks.push(chunk(0x2005, ...head, w16(1), zi, pad, w16(link))); continue; }
@@ -83,11 +126,12 @@ export async function asepriteFiles(m: Manifest, sheets: Map<string, Img>): Prom
       name: 'aseprite/README.txt',
       data: `${name}.aseprite: the whole paperdoll as one layered Aseprite file (Aseprite 1.3+), no code needed.
 Layers: one per item layer, "<slot>.<item>" (".fg"/".bg" for items drawn in front of and behind the body), in draw order.
-Visible = the first outfit in manifest.json; show or hide layers to dress the character. Tags: "<move>_<direction>".
+Visible layers and colours match the first outfit in manifest.json (including default and linked colourways).
+Show or hide layers to dress the character. Tags: "<move>_<direction>".
 Canvas ${bakedFrame(m).w}x${bakedFrame(m).h} (fits every layer); slice "pivot" marks the feet. Frame durations are the move's timing.
-Per-frame draw-order exceptions (slots[].zOverrides) are cel z-indexes; Unity applies them, per-layer exports ignore them.
-Unity: Aseprite Importer, Import Mode Individual Layers, Generate Model Prefab on, Pivot Space Canvas.
-Godot: Aseprite Wizard, one SpriteFrames per layer. Colours are the source ramps (outfit recolours are not applied).
+Per-frame draw-order exceptions (slots[].zOverrides) are cel z-indexes. Other importers must support these to match the composite.
+Use the dedicated Unity or Godot export for a ready-made game-engine character; this file is an editable Aseprite document.
+Limits: at most 65535 frames, layers and tags; each frame duration is 1-65535 ms. Unsupported values produce an export error.
 `,
     },
   ];

@@ -3,6 +3,7 @@ import { chromium, webkit } from '../../../../app/node_modules/playwright/index.
 import { mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
+throw new Error('Historical Bronze verification is frozen, including --capture and --no-report. Use https://github.com/Shilo/bronze-ui for current checks, or reproduce PixelDoll commit 003bef2 in a separate checkout. Existing reports and screenshots must not be overwritten.');
 const engine = process.argv.includes('--webkit') ? webkit : chromium;
 const capture = process.argv.includes('--capture');
 const evidence = new URL('./evidence/', import.meta.url); await mkdir(evidence,{recursive:true});

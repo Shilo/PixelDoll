@@ -1,3 +1,4 @@
+/* Historical study source. The active entry uses bronze-theme.css. */
 @import url('./vendor/glasskit/glasskit.css') layer(glasskit);
 
 /* PixelDoll adapter for unmodified GlassKit 1.30.0. Layout/type stay in styles.css.

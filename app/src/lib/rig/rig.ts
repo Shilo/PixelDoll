@@ -24,6 +24,8 @@ export interface ClipSource {
 }
 export interface RigAnimation {
   id: string;
+  /** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
+  directions?: DirectionName[];
   cells: number;
   loop: boolean;
   frames: { cell: number; ms: number }[];

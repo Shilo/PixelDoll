@@ -1,5 +1,4 @@
 import { THEMES, REFLECTION, MOTION } from './config.js';
-import { APPEARANCES } from './theme.mjs';
 const vertex = `#version 300 es
 in vec2 p;void main(){gl_Position=vec4(p,0,1);}`;
 const fragment = `#version 300 es
@@ -113,7 +112,7 @@ export class World {
         }
         else {
             const dh = l.mobile ? l.h * .70 : l.h, dw = l.mobile ? image.width * dh / image.height : l.w;
-            g.fillStyle = APPEARANCES[state.theme].ui.surface;
+            g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bu-surface').trim();
             g.fillRect(0, 0, l.w, l.h);
             g.drawImage(image, (l.w - dw) / 2, 0, dw, dh);
         }

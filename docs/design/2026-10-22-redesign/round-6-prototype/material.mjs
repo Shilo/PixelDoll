@@ -1,3 +1,4 @@
+// Historical GlassKit study, no longer imported by the active prototype.
 // Review-only variants; the app's only appearance preference remains Light/Dark.
 const requested = new URLSearchParams(location.search).get('material');
 export const material = ['baseline', 'rounded'].includes(requested) ? requested : 'restrained';

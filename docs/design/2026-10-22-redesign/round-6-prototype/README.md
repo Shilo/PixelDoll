@@ -1,6 +1,6 @@
 # Isolated immersive character playground
 
-**Latest material study:** [GlassKit research, decisions and verification](glasskit-study.md) · [before/after screenshot gallery](http://127.0.0.1:5202/glass-review.html). Restrained GlassKit 1.30.0 is the default prototype treatment. Larger-radius and original variants remain review-only URL options; production Studio is unchanged.
+**Current UI foundation:** [Bronze UI dependency integration](bronze-integration.md) · [all-screen before/after gallery](http://127.0.0.1:5202/bronze-review.html). The prototype now consumes MIT `@shilo/bronze-ui` tokens and CSS recipes through one layout-preserving adapter. Dark/light modes come from the installed package. Production Studio is unchanged. The [GlassKit study](glasskit-study.md), source and captures remain historical evidence; its material URL variants are superseded.
 
 2026-10-23. Implements the user-approved visual proof using Obsidian / Porcelain Bronze and the actual bundled S2 demo sprites. Production Studio is not integrated or changed by this prototype.
 
@@ -51,9 +51,10 @@ Run while the isolated server is active:
 ```powershell
 node --test docs/design/2026-10-22-redesign/round-6-prototype/motion.test.mjs
 node docs/design/2026-10-22-redesign/round-6-prototype/verify.mjs
+node docs/design/2026-10-22-redesign/round-6-prototype/verify-bronze.mjs
 ```
 
-Playwright uses the existing app dependency and installed managed Chromium. Set `PLAYWRIGHT_BROWSERS_PATH` to the local managed-browser directory if necessary. Final validation under Node **24.22.1**: **12 unit tests and 18 browser checks passed**. [Machine-readable report](verification.json).
+Playwright uses the existing app dependency and installed managed Chromium. Set `PLAYWRIGHT_BROWSERS_PATH` to the local managed-browser directory if necessary. Validation under Node **24.22.1**: **12 unit tests, 18 existing browser checks and eight Bronze theme/viewport cases passed**. [Behavior report](verification.json) · [dependency/theme report](bronze-verification.json).
 
 Browser checks cover animation playback, background reuse, exact opaque source RGB in both appearances, continuous movement/camera, normalized diagonals, stopping/blur, item hiding/restoration, reflection disabling without actor changes, responsive overflow, real multi-touch equipment use and pointer cancellation. No page errors or external requests occurred in the primary test context. This is isolated-prototype validation, not a production app build or full accessibility/performance audit.
 

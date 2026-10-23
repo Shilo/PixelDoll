@@ -422,9 +422,9 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells
   baked/<preset>/<anim>.png                       # optional composites, same grid on export.bakedCell (RPG Maker, crowds)
-  godot/      <item>_<layer>.tres, Paperdoll.tscn, paperdoll.gd
-  unity/      Editor/PixelDollImporter.cs, Runtime/Paperdoll.cs, Runtime/PaperdollLayer.cs
-  phaser/     <item>_<layer>_<anim>.json, PaperdollContainer.js
+  godot/      <item>_<layer>.tres, library.tres, Paperdoll.tscn, paperdoll.gd
+  unity/      Editor/PixelDollImporter.cs, Runtime/Paperdoll.cs, Editor/Runtime asmdefs
+  phaser/     <length>-<item>_<length>-<layer>_<length>-<anim>.json, PaperdollContainer.js
   generic/    <item>_<layer>/<anim>_<dir>_strip<N>.png
   aseprite/   <name>.aseprite, README.txt          # B11: layered, zero-code path (§6.5)
 ```
@@ -460,44 +460,58 @@ z override, and renders 0 differing px vs `baked/`.
 - `Paperdoll.tscn`: `Node2D` root with `paperdoll.gd`; one `AnimatedSprite2D` per (slot, role) named `<slot>_<role>`,
   `centered = false`, `offset = -layer.pivot` (of the equipped layer; `equip` re-sets it, so a 96 sword and a 64 item can share a
   slot), `z_index = layer z`, `texture_filter = NEAREST`. `body_fg` is the master clock. Verified with a 96 sword [B8].
-- `paperdoll.gd` (~60 lines): master `frame_changed`/`animation_changed` → every other layer `set_frame_and_progress`;
-  `equip(slot, item_id)` swaps `sprite_frames` for the slot's fg/bg nodes and applies `hides`; `play(anim, dir)` sets the
-  animation on all layers and applies `zOverrides` (per-cell overrides re-applied in the sync callback). The manifest is
-  read at runtime from `manifest.json` (JSON.parse_string), so the script contains no per-project data.
+- `paperdoll.gd`: master `frame_changed`/`animation_changed` → every other layer `set_frame_and_progress`;
+  `equip(slot, item_id)` swaps the slot's fg/bg resources and applies `hides`; `play_anim(anim, dir)` selects a supported
+  move/view and applies `zOverrides`. `set_preset(id)` and `set_variant(material_id, name)` perform exact owner-local
+  source-ramp swaps, including linked/default variants. Palette refresh preserves the clock's frame, progress and playback.
+- Native `library.tres` stores manifest metadata and references every equipment resource, so alternate items survive
+  selected-scene game packaging. Resource IDs encode names without collapsing hyphens and underscores.
 - Project settings noted in the README: default texture filter Nearest, 2D pixel snap on, import Lossless.
+
+2026-10-23 regression: Godot 4.7.1 headless import, palette/equipment/clock checks and selected-scene PCK runtime passed.
+This new test inspects native resource/image data; it does not repeat the historical GPU pixel comparison above.
 
 ### 6.3 Unity (2022.3 LTS / Unity 6) — Editor importer, no hand-written `.meta`
 
-Status [M5]: compiles with 0 errors/warnings against Unity 6000.4.0f1 (+ 2D Sprite, optional 2D Animation 14.0.3 via
-`PIXELDOLL_2D_ANIMATION`); the importer has **not run yet** (batchmode license-blocked). Export adds `pixeldoll_unity.json` (manifest
-flattened for `JsonUtility`) and two asmdefs.
+2026-10-23 status: generated C# compiles against installed Unity 6000.4.0f1 assemblies plus official Sprite package interface
+sources and a signature-only factory shim. A deprecated `GetInstanceID` compatibility warning remains. The importer has
+**not run in an activated editor** (batchmode exits 198: no valid license). Native rendering, runtime palette behavior and
+asset-reference persistence remain unverified in Unity. Only `com.unity.2d.sprite` is required; 2D Animation is not referenced.
+Export adds `pixeldoll_unity.json` (flattened for `JsonUtility`) and two per-character asmdefs/namespaces.
 
 
-- `PixelDollImporter.cs` (`AssetPostprocessor` + a menu command reading `manifest.json`): for each sheet sets Sprite Mode
+- `PixelDollImporter.cs` (`AssetPostprocessor` + a menu command reading `pixeldoll_unity.json`): for each sheet sets Sprite Mode
   Multiple, Filter Point, Compression None, PPU = `export.pixelsPerUnit`; slices via `ISpriteEditorDataProvider.SetSpriteRects`
   with names `<anim>_<dir>_<cell>`, each layer by its own cell + custom pivot (§6.1, `pixeldoll_unity.json` layer
-  `cellW/cellH/pivotX/pivotY`), new `GUID` per rect. Builds body `AnimationClip`s `<anim>_<dir>`
+  `cellW/cellH/pivotX/pivotY`), retaining existing Sprite IDs on reimport. Builds body `AnimationClip`s `<anim>_<dir>`
   with `ObjectReferenceKeyframe`s on `SpriteRenderer.sprite` from the playlist (cumulative ms), an Animator Controller, and a
-  prefab: root with **Sorting Group** + `Paperdoll.cs`, one child `SpriteRenderer` per (slot, role), `sortingOrder = z`.
-- `PaperdollLayer.cs`: `LateUpdate` name-match — each layer shows its own sprite with the body's current sprite name, from a
-  cached `Dictionary<string, Sprite>`; no 2D Animation package needed [R3]. `Paperdoll.cs`: `Equip(slot, itemId)`,
-  `SetDirection(dir)` applies `zOverrides` and `hides`.
-- Sprite Library variant (Category `<anim>_<dir>`, Label `<cell>`, swap `SpriteLibraryAsset` per item) is optional and
-  skipped in v1; add if users ask for Sprite Resolver workflows.
+  prefab: root with **Sorting Group** + `Paperdoll.cs`, a hidden animation clock and one visible `SpriteRenderer` per
+  (slot, role). Sorting ranks preserve resolved z and slot/role ties. Clip/controller assets are updated in place.
+- `Paperdoll.cs`: `Play(anim, dir)`, `Equip(slot, itemId)`, `ApplyPreset(id)`, `SetVariant(materialId, name)`.
+  `LateUpdate` synchronizes visible source sprites to the hidden clock. Runtime palette swaps use original sheets,
+  owner-local RGB maps and cached textures/sprites. Default material selections and linked selections are supported.
+  Keep source textures readable and unpacked (no Sprite Atlas); see the generated README for project setup.
+- Different characters receive distinct deterministic namespaces/assembly identities. Re-export the same character into
+  its existing folder; importing duplicate copies of that character would duplicate its assemblies.
 
 ### 6.4 Phaser 3 / 4 — atlas JSON with customData
 
 Verified [M5]: Phaser 3.80, 3.90 and 4.2.1 render 0 differing px vs `baked/`; layer frame names match the body every step.
 
 
-- One TexturePacker **JSON-Hash** atlas per sheet (`<item>_<layer>_<anim>.json` → `layers/.../<anim>.png`): frames
+- One TexturePacker **JSON-Hash** atlas per sheet (length-prefixed item/layer/animation identifiers → `layers/.../<anim>.png`): frames
   `<anim>_<dir>_<cell>` with `frame` rect (the layer's cell), `rotated:false`, `trimmed:false`, `sourceSize`, `pivot` (§6.1, per
   layer: sprites at the same container position line up by pivot because `setFrame` applies each frame's custom pivot [B8]). Extra top-level key
   `"pixeldoll": {"item", "layer", "slot", "role", "z", "anim"}` lands in `texture.customData` [R3].
-- `PaperdollContainer.js`: loads `manifest.json` and atlases; creates body animations `body:<anim>_<dir>` from playlists
-  (per-frame `duration` = ms); layers follow the body via `animationupdate` → `setTexture(<layer atlas for anim>,
-  frameName)`; `setDir` assigns `depth` from resolved z and `container.sort('depth')`; `equip/hides` toggle visibility.
-  Game config `pixelArt: true`, `roundPixels: true` (Phaser 4 defaults to false); Phaser 4 tint uses `setTintMode`.
+- `PaperdollContainer.js`: loads manifest/atlases with folder-scoped keys and error reporting; creates supported body
+  animations from playlists. Phaser **adds** per-frame duration to its base interval: set `frameRate = 1000 / minMs` and
+  each `duration = ms - minMs`. Layers follow `animationupdate`; resolved z and stable slot/role order control drawing.
+  `play(anim, dir)`, `equip(slot, itemId)`, `applyPreset(preset)` and `setVariants(selections)` preserve the frozen base,
+  hides, tucked variants and owner-local source-ramp palettes. `destroy()` removes the container; palette textures remain
+  cached until game teardown. Use `pixelArt: true`, `roundPixels: true`.
+
+2026-10-23 smoke: Phaser 3.90.0 and 4.1.0, Canvas and WebGL, passed exact 80/180/100 ms timing, palette switching,
+layer synchronization and oversized pivots with zero page errors. Phaser 3.80 compatibility was source-reviewed only.
 
 ### 6.5 Aseprite — layered `.aseprite` as the zero-code alternative (B11)
 
@@ -507,7 +521,7 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 - **One file per character** (`aseprite/<name>.aseprite`, RGBA): one Aseprite layer per exported (item, layer), named
   `<slot>.<item>` (`<slot>.<item>.fg` / `.bg` for split items), stacked in draw order by static z (inv. 7 tie-breaks; bottom =
   lowest, so bg layers sit below the base). Every item is in the file; **visible** = equipped in `presets[0]` and not hidden
-  (inv. 9). Pixels are the layer sheets' (source ramps; preset variants are not applied).
+  (inv. 9). Pixels apply the first outfit's colours from source sheets, including default and linked material selections.
 - **Timeline**: frames = every playlist entry of every move × each direction the move has (`rig.animations[].directions`), in
   rig order, each with its `ms`; one tag `<anim>_<dir>` per move-direction (forward; repeat 1 when `loop` is false). A cell that
   repeats inside a playlist is a linked cel; a transparent cell has no cel.
@@ -519,12 +533,17 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   Per-layer importers (Godot Aseprite Wizard) ignore z-index; Unity's importer applies it (Order in Layer).
 - Unity: Aseprite Importer → Individual Layers, Generate Model Prefab, Pivot Space Canvas. Godot: Aseprite Wizard, one
   `SpriteFrames` per layer. Not verified in those importers yet (Unity is license-blocked; the Wizard needs a plugin install).
+- Native WORD/SHORT limits are checked before writing; unsupported durations/counts/coordinates and an empty timeline
+  fail clearly. 2026-10-23: Aseprite 1.3.18.6 CLI matched the compositor across nine adversarial frames, including palettes.
 
 ### 6.6 Generic
 
 - `generic/<item>_<layer>/<anim>_<dir>_strip<N>.png` (GameMaker `_stripN` auto-split; strip height = the layer's cell) plus
   `manifest.json`.
-  Any engine: one sprite per layer, same frame index per tick from the body, draw in resolved-z order.
+  Any engine: one sprite per layer. Advance the playlist (`frames[].cell`, held for `frames[].ms`), respecting `loop`;
+  a sheet column is a source cell, not necessarily the next playback frame. Draw in resolved-z order, using
+  `(worldPivot.x - layer.pivot.x, worldPivot.y - layer.pivot.y)` as each layer's top-left. Default colours are baked into
+  canonical sheets; palette-aware integrations start from `sourceSheets` when provided.
 - `baked/<preset>/<anim>.png`: the compositor's output on the same grid with `export.bakedCell` / `bakedPivot` (§2.1), for
   engines without layering (RPG Maker style).
 

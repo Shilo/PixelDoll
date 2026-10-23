@@ -1,6 +1,7 @@
 // Fixed-resolution evidence for the unchanged baseline and two material studies.
 import { chromium } from '../../../../app/node_modules/playwright/index.mjs';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
+if (!(await readFile(new URL('./index.html', import.meta.url), 'utf8')).includes('./glass-theme.css')) throw Error('Historical GlassKit capture: restore the earlier runtime revision before running. Existing comparison evidence must not be overwritten with Bronze UI captures.');
 const variant = process.argv[2] ?? 'restrained';
 if (!['baseline', 'restrained', 'rounded'].includes(variant)) throw Error('Unknown material');
 const root = new URL('./evidence/glass/', import.meta.url);

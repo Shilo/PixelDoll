@@ -1,0 +1,70 @@
+@import '@shilo/bronze-ui/tokens.css';
+@import '@shilo/bronze-ui/components.css' layer(bronze);
+
+/* One consumer adapter. Bronze owns semantic colors/materials; styles.css owns
+   this immersive layout. Deliberately omit Bronze's optional document reset. */
+:root {
+  --bg: var(--bu-canvas);
+  --surface: var(--bu-surface);
+  --text: var(--bu-text);
+  --muted: var(--bu-muted);
+  --accent: var(--bu-accent);
+  --ink: var(--bu-on-accent);
+  --line: var(--bu-line);
+  --font-ui: var(--bu-font);
+  --font-display: var(--bu-display);
+  --radius-control: var(--bu-radius-control);
+  --radius-panel: var(--bu-radius-panel);
+  --radius-dialog: var(--bu-radius-dialog);
+  --focus-outline: 2px solid var(--bu-focus);
+  --border-control: 1px solid var(--bu-line);
+  --modal-backdrop: var(--bu-scrim);
+}
+
+/* Keep the approved screen geometry while using package recipes. */
+.bu-btn.primary {
+  width: auto;
+  height: auto;
+  padding: 8px 11px;
+  border: 0;
+  font-family: inherit;
+  font-weight: 600;
+  line-height: inherit;
+}
+.library .bu-btn.primary, .equipment-tools .bu-btn.primary { width: 100%; }
+.bu-btn.primary svg { fill: none; stroke: currentColor; stroke-width: 1.6; }
+.bu-btn.primary:is(:hover,:active) { transform: none; }
+.bu-input {
+  min-height: 42px;
+  padding: 10px 12px;
+  border-color: var(--bu-border);
+  background: var(--bu-field);
+  font-family: inherit;
+  line-height: inherit;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+textarea.bu-input { min-height: 100px; }
+.creator select { background: var(--bu-field); border-color: var(--bu-border); }
+:is(.item,.none) { border: 0; }
+.popover.bu-floating { left: auto; transform: none; transition: none; }
+#toast.bu-floating { top: auto; min-width: 0; opacity: 1; pointer-events: none; }
+#dialog.bronze-dialog-overlay {
+  width: 100%; height: 100%; max-width: none; max-height: none;
+  display: none; align-items: center; justify-content: center;
+  border: var(--border-control); border-radius: 0; padding: 16px;
+  background: var(--bu-scrim);
+}
+#dialog.bronze-dialog-overlay[open] { display: flex; }
+#dialog.bronze-dialog-overlay::backdrop { background: transparent; }
+.dialog-panel.bu-floating {
+  width: 100%; max-width: 480px; max-height: 80dvh;
+  overflow: auto; padding: 25px;
+  border-radius: var(--bu-radius-dialog);
+  box-shadow: var(--bu-dialog-shadow);
+}
+:is(button,a,input,textarea,select):focus-visible { outline: var(--focus-outline); outline-offset: 3px; }
+@media (forced-colors: active) {
+  :is(button,input,textarea,select,.popover,.playback,.dialog-panel,#toast) { border: 1px solid CanvasText; }
+  button[aria-pressed=true] { outline: 2px solid Highlight; }
+}

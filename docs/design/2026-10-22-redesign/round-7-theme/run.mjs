@@ -3,6 +3,7 @@ import { createServer, build } from '../../../../app/node_modules/vite/dist/node
 import { svelte } from '../../../../app/node_modules/@sveltejs/vite-plugin-svelte/src/index.js';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
+throw new Error('Historical Bronze lab: current theme development is at https://github.com/Shilo/bronze-ui and https://shilo.github.io/bronze-ui/. Reproduce this archived lab from PixelDoll commit 003bef2 in a separate checkout; current runners must not replace historical evidence.');
 const path = relative => fileURLToPath(new URL(relative, import.meta.url));
 const require = createRequire(new URL('../../../../app/package.json', import.meta.url));
 const sharedDependencies = { name: 'existing-app-dependencies', enforce: 'pre', resolveId(id) {

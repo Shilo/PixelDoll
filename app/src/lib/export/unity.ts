@@ -4,24 +4,34 @@ import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
 
+function exportId(m: Manifest): string {
+  // Namespace + assembly identity: importing different characters must not define duplicate C# types.
+  let h = 0xcbf29ce484222325n;
+  for (const c of `${m.name}\0${m.rig.baseHash}`) h = BigInt.asUintN(64, (h ^ BigInt(c.codePointAt(0)!)) * 0x100000001b3n);
+  return `Character_${h.toString(16).padStart(16, '0')}`;
+}
+
 export function unityJson(m: Manifest) {
   const { rig } = m;
   return {
-    name: m.name.replace(/[^A-Za-z0-9_-]/g, '_'),
+    name: m.name.replace(/[^A-Za-z0-9_-]/g, '_') || 'Paperdoll',
+    exportId: exportId(m),
     cellW: rig.cell.w, cellH: rig.cell.h, pivotX: rig.pivot.x, pivotY: rig.pivot.y,
     ppu: m.export?.pixelsPerUnit ?? rig.cell.w,
     baseItem: rig.baseItem,
     directions: rig.directions.map((d) => d.id),
-    animations: rig.animations.map((a) => ({ id: a.id, loop: a.loop, cells: a.cells, frames: a.frames })),
+    animations: rig.animations.map((a) => ({ id: a.id, loop: a.loop, cells: a.cells, frames: a.frames, directions: (a as typeof a & { directions?: string[] }).directions ?? rig.directions.map((d) => d.id) })),
+    materials: (m.materials ?? []).map((mat) => ({ ...mat, variants: Object.entries(mat.variants).map(([id, ramp]) => ({ id, ramp })) })),
+    presets: m.presets.map((p) => ({ id: p.id, items: Object.entries(p.items).map(([slot, item]) => ({ slot, item: item ?? '' })), variants: Object.entries(p.variants ?? {}).map(([id, variant]) => ({ id, variant })) })),
     slots: m.slots.map((s) => ({
       id: s.id, z: s.z, hides: s.hides ?? [],
       zOverrides: (s.zOverrides ?? []).map((o) => ({ layer: o.layer, z: o.z, dir: o.dir ?? '', anim: o.anim ?? '', cell: o.cell ?? -1 })),
     })),
     items: m.items.map((it) => ({
-      id: it.id, slot: it.slot, hasHides: !!it.hides, hides: it.hides ?? [],
+      id: it.id, slot: it.slot, variantOf: it.variantOf ?? '', materials: it.materials ?? [], hasHides: !!it.hides, hides: it.hides ?? [],
       layers: it.layers.map((l) => {
         const f = layerFrame(rig, l); // oversize layers: own cell + pivot; PPU stays the base's, so world scale matches
-        return { id: l.id, role: l.role, z: l.z, cellW: f.w, cellH: f.h, pivotX: f.x, pivotY: f.y, sheets: rig.animations.map((a) => l.sheets![a.id]) };
+        return { id: l.id, role: l.role, z: l.z, cellW: f.w, cellH: f.h, pivotX: f.x, pivotY: f.y, sheets: rig.animations.map((a) => l.sheets![a.id]), sourceSheets: rig.animations.map((a) => l.sourceSheets?.[a.id] ?? l.sheets![a.id]) };
       }),
     })),
     preset: Object.entries(m.presets[0]?.items ?? {}).map(([slot, item]) => ({ slot, item: item ?? '' })),
@@ -35,28 +45,33 @@ using UnityEngine;
 namespace PixelDoll
 {
     [Serializable] public class PdFrame { public int cell; public int ms; }
-    [Serializable] public class PdAnim { public string id; public bool loop; public int cells; public PdFrame[] frames; }
+    [Serializable] public class PdAnim { public string id; public bool loop; public int cells; public PdFrame[] frames; public string[] directions; }
     [Serializable] public class PdZOverride { public string layer; public int z; public string dir; public string anim; public int cell = -1; }
     [Serializable] public class PdSlot { public string id; public int z; public string[] hides; public PdZOverride[] zOverrides; }
-    [Serializable] public class PdLayer { public string id; public string role; public int z, cellW, cellH, pivotX, pivotY; public string[] sheets; }
-    [Serializable] public class PdItem { public string id; public string slot; public bool hasHides; public string[] hides; public PdLayer[] layers; }
+    [Serializable] public class PdLayer { public string id; public string role; public int z, cellW, cellH, pivotX, pivotY; public string[] sheets, sourceSheets; }
+    [Serializable] public class PdItem { public string id, slot, variantOf; public bool hasHides; public string[] hides, materials; public PdLayer[] layers; }
     [Serializable] public class PdEquip { public string slot; public string item; }
-    [Serializable] public class PdSprites { public string item; public string layer; public Sprite[] sprites; }
+    [Serializable] public class PdSprites { public string item; public string layer; public Sprite[] sprites, sources; }
     [Serializable] public class PdNode { public string slot; public string role; public SpriteRenderer renderer; }
+    [Serializable] public class PdVariant { public string id; public string variant; }
+    [Serializable] public class PdRamp { public string id; public string[] ramp; }
+    [Serializable] public class PdMaterial { public string id, owner, linkTo, defaultVariant; public string[] ramp; public PdRamp[] variants; }
+    [Serializable] public class PdPreset { public string id; public PdEquip[] items; public PdVariant[] variants; }
     [Serializable]
     public class PaperdollData
     {
-        public string name, baseItem;
+        public string name, baseItem, exportId;
         public int cellW, cellH, pivotX, pivotY, ppu;
         public string[] directions;
         public PdAnim[] animations;
         public PdSlot[] slots;
         public PdItem[] items;
         public PdEquip[] preset;
+        public PdMaterial[] materials;
+        public PdPreset[] presets;
     }
 
-    /// PixelDoll paperdoll (pixeldoll/1). The Animator drives the body SpriteRenderer ("body_fg"); every LateUpdate each other
-    /// layer shows its own sprite with the body's sprite name ("walk_south_3"), so layers cannot drift. No 2D Animation package needed.
+    /// The Animator drives a hidden clock; visible layers follow its frame name so recolouring cannot disturb playback.
     [DisallowMultipleComponent]
     public class Paperdoll : MonoBehaviour
     {
@@ -64,30 +79,62 @@ namespace PixelDoll
         public List<PdSprites> library = new List<PdSprites>();
         public List<PdNode> nodes = new List<PdNode>();
         public List<PdEquip> equipped = new List<PdEquip>();
+        public List<PdVariant> variants = new List<PdVariant>();
+        public SpriteRenderer clock;
         Dictionary<string, Dictionary<string, Sprite>> maps;
+        readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
+        readonly Dictionary<string, Sprite> coloured = new Dictionary<string, Sprite>();
         Sprite last;
         bool dirty = true;
 
         public SpriteRenderer Body => nodes.Find(n => n.slot == "body" && n.role == "fg")?.renderer;
 
         /// Plays the "<anim>_<dir>" state of the generated Animator Controller.
-        public void Play(string anim, string dir) => GetComponent<Animator>().Play(anim + "_" + dir);
+        public void Play(string anim, string dir)
+        {
+            var move = Array.Find(data.animations, a => a.id == anim);
+            if (move == null || Array.IndexOf(move.directions, dir) < 0) return;
+            GetComponent<Animator>().Play(anim + "_" + dir);
+        }
 
         /// Equips itemId in slot (null or "" = empty); hides are re-applied on the next LateUpdate.
         public void Equip(string slot, string itemId)
         {
+            var item = Item(itemId);
+            if (slot == "body" || Slot(slot) == null || (!string.IsNullOrEmpty(itemId) && (item == null || item.slot != slot || !string.IsNullOrEmpty(item.variantOf)))) return;
             var e = equipped.Find(x => x.slot == slot);
             if (e == null) equipped.Add(e = new PdEquip { slot = slot });
             e.item = itemId ?? "";
             dirty = true;
         }
 
+        /// Uses exported exact palette ramps. null removes an explicit selection and restores the material default.
+        public void SetVariant(string id, string variant)
+        {
+            if (Array.Find(data.materials, m => m.id == id) == null) return;
+            variants.RemoveAll(v => v.id == id);
+            if (variant != null) variants.Add(new PdVariant { id = id, variant = variant });
+            dirty = true;
+        }
+
+        public void ApplyPreset(string id)
+        {
+            var p = Array.Find(data.presets, x => x.id == id);
+            if (p == null) return;
+            equipped = new List<PdEquip>();
+            foreach (var e in p.items) if (e.slot != "body") equipped.Add(new PdEquip { slot = e.slot, item = e.item });
+            equipped.Add(new PdEquip { slot = "body", item = data.baseItem });
+            variants = new List<PdVariant>();
+            foreach (var v in p.variants) variants.Add(new PdVariant { id = v.id, variant = v.variant });
+            dirty = true;
+        }
+
         void LateUpdate() => Sync();
+        void OnEnable() { maps = null; last = null; dirty = true; }
 
         public void Sync()
         {
-            var body = Body;
-            var s = body ? body.sprite : null;
+            var s = clock ? clock.sprite : null;
             if (s == null || (s == last && !dirty)) return;
             last = s;
             dirty = false;
@@ -97,7 +144,7 @@ namespace PixelDoll
                 foreach (var l in library)
                 {
                     var d = new Dictionary<string, Sprite>();
-                    foreach (var sp in l.sprites) d[sp.name] = sp;
+                    foreach (var sp in Application.isPlaying ? l.sources : l.sprites) d[sp.name] = sp;
                     maps[l.item + "/" + l.layer] = d;
                 }
             }
@@ -107,22 +154,83 @@ namespace PixelDoll
             string anim = name.Substring(0, c1), dir = name.Substring(c1 + 1, c2 - c1 - 1);
             int cell = int.Parse(name.Substring(c2 + 1));
             var hidden = new HashSet<string>();
+            var baseItem = Item(data.baseItem);
+            if (baseItem != null)
+                foreach (var h in baseItem.hasHides ? baseItem.hides : Slot("body")?.hides ?? Array.Empty<string>()) hidden.Add(h);
             foreach (var e in equipped)
             {
+                if (e.slot == "body") continue;
                 var it = Item(e.item);
                 if (it == null) continue;
                 foreach (var h in it.hasHides ? it.hides : Slot(it.slot)?.hides ?? Array.Empty<string>()) hidden.Add(h);
             }
+            var visible = new List<KeyValuePair<PdNode, int>>();
             foreach (var n in nodes)
             {
                 var it = Item(n.slot == "body" ? data.baseItem : Shown(equipped.Find(x => x.slot == n.slot)?.item));
                 var layer = it == null ? null : Array.Find(it.layers, l => l.role == n.role);
                 n.renderer.enabled = layer != null && !hidden.Contains(n.slot);
                 if (layer == null) continue;
-                n.renderer.sortingOrder = Z(Slot(n.slot), layer, anim, dir, cell);
-                if (n.renderer != body)
-                    n.renderer.sprite = maps.TryGetValue(it.id + "/" + layer.id, out var m) && m.TryGetValue(name, out var sp) ? sp : null;
+                visible.Add(new KeyValuePair<PdNode, int>(n, Z(Slot(n.slot), layer, anim, dir, cell)));
+                n.renderer.sprite = maps.TryGetValue(it.id + "/" + layer.id, out var m) && m.TryGetValue(name, out var sp) ? Colour(it, sp) : null;
             }
+            // nodes follow manifest slot order, bg before fg; tie-break is independent of camera distance.
+            visible.Sort((a, b) => a.Value != b.Value ? a.Value.CompareTo(b.Value) : nodes.IndexOf(a.Key).CompareTo(nodes.IndexOf(b.Key)));
+            for (int i = 0; i < visible.Count; i++) visible[i].Key.renderer.sortingOrder = i;
+        }
+
+        string Variant(PdMaterial mat, HashSet<string> seen)
+        {
+            if (mat == null || !seen.Add(mat.id)) return null;
+            if (!string.IsNullOrEmpty(mat.linkTo)) return Variant(Array.Find(data.materials, x => x.id == mat.linkTo), seen);
+            return variants.Find(v => v.id == mat.id)?.variant ?? mat.defaultVariant;
+        }
+
+        static int RGB(string hex) => Convert.ToInt32(hex.Substring(1), 16);
+
+        Sprite Colour(PdItem item, Sprite source)
+        {
+            if (!Application.isPlaying) return source; // prefab preview uses persistent canonical sprites
+            var swaps = new Dictionary<int, int>();
+            foreach (var id in item.materials)
+            {
+                var mat = Array.Find(data.materials, x => x.id == id && (x.owner == item.id || x.owner == item.variantOf));
+                if (mat == null) continue;
+                string choice = Variant(mat, new HashSet<string>());
+                var ramp = Array.Find(mat.variants, x => x.id == choice)?.ramp;
+                if (ramp == null || ramp.Length != mat.ramp.Length) continue;
+                for (int i = 0; i < ramp.Length; i++) swaps[RGB(mat.ramp[i])] = RGB(ramp[i]);
+            }
+            if (swaps.Count == 0) return source;
+            string signature = "";
+            foreach (var swap in swaps) signature += swap.Key + ":" + swap.Value + ",";
+            string textureKey = item.id + "/" + source.texture.GetInstanceID() + "/" + signature;
+            string spriteKey = textureKey + "/" + source.name;
+            if (coloured.TryGetValue(spriteKey, out var cached)) return cached;
+            if (!textures.TryGetValue(textureKey, out var texture))
+            {
+                var pixels = source.texture.GetPixels32();
+                for (int i = 0; i < pixels.Length; i++)
+                {
+                    var c = pixels[i];
+                    if (c.a != 0 && swaps.TryGetValue((c.r << 16) | (c.g << 8) | c.b, out var rgb))
+                        pixels[i] = new Color32((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb, c.a);
+                }
+                texture = new Texture2D(source.texture.width, source.texture.height, TextureFormat.RGBA32, false) { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
+                texture.SetPixels32(pixels);
+                texture.Apply(false, true);
+                textures[textureKey] = texture;
+            }
+            var sprite = Sprite.Create(texture, source.rect, new Vector2(source.pivot.x / source.rect.width, source.pivot.y / source.rect.height), source.pixelsPerUnit, 0, SpriteMeshType.FullRect);
+            sprite.name = source.name;
+            coloured[spriteKey] = sprite;
+            return sprite;
+        }
+
+        void OnDestroy()
+        {
+            foreach (var sprite in coloured.Values) Destroy(sprite);
+            foreach (var texture in textures.Values) Destroy(texture);
         }
 
         /// Most specific zOverride (cell > anim > dir > none, later wins on ties), else the layer's z.
@@ -160,19 +268,17 @@ using UnityEditor.Animations;
 using UnityEditor.U2D.Sprites;
 using UnityEngine;
 using UnityEngine.Rendering;
-#if PIXELDOLL_2D_ANIMATION
-using UnityEngine.U2D.Animation;
-#endif
 
 namespace PixelDoll.Editor
 {
     /// Imports a PixelDoll export folder placed anywhere under Assets/: slices every layer sheet (Point, uncompressed, PPU,
     /// custom pivot), builds body clips + an Animator Controller + a prefab (Sorting Group, Paperdoll, one SpriteRenderer per
-    /// slot/role) and, with com.unity.2d.animation, one SpriteLibraryAsset per item layer (Category = anim_dir, Label = cell).
+    /// slot/role). Requires only the 2D Sprite package, no 2D Animation package.
     /// Output: <export>/unity/Generated/. Runs on import of unity/pixeldoll_unity.json and from Tools > PixelDoll.
     public class PixelDollImporter : AssetPostprocessor
     {
         const string Json = "/unity/pixeldoll_unity.json";
+        const string ExportId = "__EXPORT_ID__";
 
         static void OnPostprocessAllAssets(string[] imported, string[] deleted, string[] moved, string[] movedFrom)
         {
@@ -180,7 +286,7 @@ namespace PixelDoll.Editor
                 EditorApplication.delayCall += () => Import(p);
         }
 
-        [MenuItem("Tools/PixelDoll/Import All Exports")]
+        [MenuItem("Tools/PixelDoll/__EXPORT_ID__/Import")]
         public static void ImportAll()
         {
             foreach (var p in AssetDatabase.FindAssets("pixeldoll_unity").Select(AssetDatabase.GUIDToAssetPath).Where(p => p.EndsWith(Json)))
@@ -192,6 +298,7 @@ namespace PixelDoll.Editor
             var unityDir = Path.GetDirectoryName(jsonPath).Replace('\\\\', '/');
             var root = Path.GetDirectoryName(unityDir).Replace('\\\\', '/');
             var d = JsonUtility.FromJson<PaperdollData>(File.ReadAllText(jsonPath));
+            if (d.exportId != ExportId) return; // other exported characters have independent assemblies/importers
             var outDir = unityDir + "/Generated";
             if (!AssetDatabase.IsValidFolder(outDir)) AssetDatabase.CreateFolder(unityDir, "Generated");
 
@@ -200,25 +307,26 @@ namespace PixelDoll.Editor
                 foreach (var l in it.layers)
                 {
                     var sprites = new List<Sprite>();
-                    for (int a = 0; a < d.animations.Length; a++) sprites.AddRange(Slice(root + "/" + l.sheets[a], d, l, d.animations[a]));
-                    library.Add(new PdSprites { item = it.id, layer = l.id, sprites = sprites.ToArray() });
-#if PIXELDOLL_2D_ANIMATION
-                    var lib = ScriptableObject.CreateInstance<SpriteLibraryAsset>();
-                    foreach (var s in sprites)
+                    var sources = new List<Sprite>();
+                    for (int a = 0; a < d.animations.Length; a++)
                     {
-                        int c = s.name.LastIndexOf('_');
-                        lib.AddCategoryLabel(s, s.name.Substring(0, c), s.name.Substring(c + 1));
+                        var sliced = Slice(root + "/" + l.sheets[a], d, l, d.animations[a]);
+                        sprites.AddRange(sliced);
+                        sources.AddRange(l.sourceSheets[a] == l.sheets[a] ? sliced : Slice(root + "/" + l.sourceSheets[a], d, l, d.animations[a]));
                     }
-                    Save(lib, outDir + "/" + it.id + "_" + l.id + ".asset");
-#endif
+                    library.Add(new PdSprites { item = it.id, layer = l.id, sprites = sprites.ToArray(), sources = sources.ToArray() });
                 }
 
-            var body = library.Find(x => x.item == d.baseItem).sprites.ToDictionary(s => s.name);
+            var bodyLayer = d.items.First(i => i.id == d.baseItem).layers.First(l => l.role == "fg");
+            var body = library.Find(x => x.item == d.baseItem && x.layer == bodyLayer.id).sprites.ToDictionary(s => s.name);
             var ctrlPath = outDir + "/" + d.name + ".controller";
-            AssetDatabase.DeleteAsset(ctrlPath);
-            var controller = AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ctrlPath);
+            if (controller == null) controller = AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
+            var machine = controller.layers[0].stateMachine;
+            foreach (var state in machine.states) machine.RemoveState(state.state);
+            bool firstState = true;
             foreach (var a in d.animations)
-                foreach (var dir in d.directions)
+                foreach (var dir in a.directions)
                 {
                     int gcd = a.frames.Aggregate(0, (g, f) => Gcd(g, f.ms));
                     var clip = new AnimationClip { name = a.id + "_" + dir, frameRate = 1000f / gcd };
@@ -230,12 +338,13 @@ namespace PixelDoll.Editor
                         t += f.ms / 1000f;
                     }
                     keys.Add(new ObjectReferenceKeyframe { time = t, value = keys[keys.Count - 1].value }); // hold the last frame its ms
-                    AnimationUtility.SetObjectReferenceCurve(clip, EditorCurveBinding.PPtrCurve("body_fg", typeof(SpriteRenderer), "m_Sprite"), keys.ToArray());
+                    AnimationUtility.SetObjectReferenceCurve(clip, EditorCurveBinding.PPtrCurve("clock", typeof(SpriteRenderer), "m_Sprite"), keys.ToArray());
                     var settings = AnimationUtility.GetAnimationClipSettings(clip);
                     settings.loopTime = a.loop;
                     AnimationUtility.SetAnimationClipSettings(clip, settings);
-                    Save(clip, outDir + "/" + clip.name + ".anim");
+                    clip = Save(clip, outDir + "/" + clip.name + ".anim");
                     controller.AddMotion(clip);
+                    if (firstState) { machine.defaultState = machine.states.Last().state; firstState = false; }
                 }
 
             var go = new GameObject(d.name);
@@ -244,7 +353,12 @@ namespace PixelDoll.Editor
             var doll = go.AddComponent<Paperdoll>();
             doll.data = d;
             doll.library = library;
-            doll.equipped = d.preset.ToList();
+            if (d.presets.Length > 0) doll.ApplyPreset(d.presets[0].id);
+            else doll.equipped.Add(new PdEquip { slot = "body", item = d.baseItem });
+            var clock = new GameObject("clock");
+            clock.transform.SetParent(go.transform, false);
+            doll.clock = clock.AddComponent<SpriteRenderer>();
+            doll.clock.enabled = false;
             foreach (var s in d.slots)
                 foreach (var role in new[] { "bg", "fg" })
                 {
@@ -253,7 +367,8 @@ namespace PixelDoll.Editor
                     child.transform.SetParent(go.transform, false);
                     doll.nodes.Add(new PdNode { slot = s.id, role = role, renderer = child.AddComponent<SpriteRenderer>() });
                 }
-            doll.Body.sprite = body[d.animations[0].id + "_" + d.directions[0] + "_" + d.animations[0].frames[0].cell];
+            var initial = d.animations.First(a => a.directions.Length > 0);
+            doll.clock.sprite = body[initial.id + "_" + initial.directions[0] + "_" + initial.frames[0].cell];
             doll.Sync();
             PrefabUtility.SaveAsPrefabAsset(go, outDir + "/" + d.name + ".prefab");
             Object.DestroyImmediate(go);
@@ -264,14 +379,25 @@ namespace PixelDoll.Editor
         /// Each layer is sliced by its own cell (oversize layers, e.g. 96x96) with its own pivot; PPU is the base's for all.
         static Sprite[] Slice(string png, PaperdollData d, PdLayer l, PdAnim a)
         {
+            int size = Mathf.Max(a.cells * l.cellW, d.directions.Length * l.cellH);
+            if (size > 16384) throw new System.InvalidOperationException("PixelDoll sheet exceeds Unity's 16384-pixel import limit: " + png);
             var ti = (TextureImporter)AssetImporter.GetAtPath(png);
             ti.textureType = TextureImporterType.Sprite;
             ti.spriteImportMode = SpriteImportMode.Multiple;
             ti.filterMode = FilterMode.Point;
             ti.textureCompression = TextureImporterCompression.Uncompressed;
+            ti.crunchedCompression = false;
+            ti.npotScale = TextureImporterNPOTScale.None;
+            ti.wrapMode = TextureWrapMode.Clamp;
+            ti.maxTextureSize = Mathf.Max(32, Mathf.NextPowerOfTwo(size));
+            ti.isReadable = true; // exact source-ramp swaps, cached per item/selection at runtime
             ti.mipmapEnabled = false;
             ti.alphaIsTransparency = true;
             ti.spritePixelsPerUnit = d.ppu;
+            var textureSettings = new TextureImporterSettings();
+            ti.ReadTextureSettings(textureSettings);
+            textureSettings.spriteMeshType = SpriteMeshType.FullRect;
+            ti.SetTextureSettings(textureSettings);
             var factories = new SpriteDataProviderFactories();
             factories.Init();
             var dp = factories.GetSpriteEditorDataProviderFromObject(ti);
@@ -300,10 +426,14 @@ namespace PixelDoll.Editor
             return AssetDatabase.LoadAllAssetsAtPath(png).OfType<Sprite>().ToArray();
         }
 
-        static void Save(Object asset, string path)
+        static T Save<T>(T asset, string path) where T : Object
         {
-            AssetDatabase.DeleteAsset(path);
-            AssetDatabase.CreateAsset(asset, path);
+            var existing = AssetDatabase.LoadAssetAtPath<T>(path);
+            if (existing == null) { AssetDatabase.CreateAsset(asset, path); return asset; }
+            EditorUtility.CopySerialized(asset, existing);
+            EditorUtility.SetDirty(existing);
+            Object.DestroyImmediate(asset);
+            return existing;
         }
 
         static int Gcd(int a, int b) => b == 0 ? a : Gcd(b, a % b);
@@ -314,28 +444,40 @@ namespace PixelDoll.Editor
 const asmdef = (o: object) => JSON.stringify(o, null, 2) + '\n';
 
 export function unityFiles(m: Manifest): OutFile[] {
+  const identity = exportId(m), ns = `PixelDoll.${identity}`;
+  const runtime = PAPERDOLL_CS.replace('namespace PixelDoll', `namespace ${ns}`);
+  const importer = IMPORTER_CS.replace('namespace PixelDoll.Editor', `namespace ${ns}.Editor`).replaceAll('__EXPORT_ID__', identity);
   return [
     { name: 'unity/pixeldoll_unity.json', data: JSON.stringify(unityJson(m), null, 1) + '\n' },
-    { name: 'unity/Runtime/Paperdoll.cs', data: PAPERDOLL_CS },
-    { name: 'unity/Runtime/PixelDoll.Runtime.asmdef', data: asmdef({ name: 'PixelDoll.Runtime' }) },
-    { name: 'unity/Editor/PixelDollImporter.cs', data: IMPORTER_CS },
+    { name: 'unity/Runtime/Paperdoll.cs', data: runtime },
+    { name: 'unity/Runtime/PixelDoll.Runtime.asmdef', data: asmdef({ name: `${ns}.Runtime` }) },
+    { name: 'unity/Editor/PixelDollImporter.cs', data: importer },
     {
       name: 'unity/Editor/PixelDoll.Editor.asmdef',
       data: asmdef({
-        name: 'PixelDoll.Editor',
-        references: ['PixelDoll.Runtime', 'Unity.2D.Sprite.Editor', 'Unity.2D.Animation.Runtime'],
+        name: `${ns}.Editor`,
+        references: [`${ns}.Runtime`, 'Unity.2D.Sprite.Editor'],
         includePlatforms: ['Editor'],
-        versionDefines: [{ name: 'com.unity.2d.animation', expression: '1.0.0', define: 'PIXELDOLL_2D_ANIMATION' }],
       }),
     },
     {
       name: 'unity/README.txt',
-      data: `Copy the whole export folder anywhere under Assets/. Requires com.unity.2d.sprite (2D Sprite); com.unity.2d.animation is
-optional (adds one SpriteLibraryAsset per item layer: Category = <anim>_<dir>, Label = <cell>).
-The importer runs when unity/pixeldoll_unity.json is imported, or via Tools > PixelDoll > Import All Exports.
+      data: `Unity 2022.3 / Unity 6. Install com.unity.2d.sprite (2D Sprite) with Package Manager, then copy the whole export folder
+under Assets/. No 2D Animation package is required. Keep this character in one folder: re-export into that same folder.
+Different characters use independent namespaces and assemblies; do not import two copies of the same character.
+If replacing an older PixelDoll exporter, remove its unity/Runtime and unity/Editor scripts first to avoid stale assembly definitions.
+The importer runs on unity/pixeldoll_unity.json import. After scripts finish compiling, use
+Tools > PixelDoll > ${identity} > Import if no prefab appeared.
 Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export?.pixelsPerUnit ?? m.rig.cell.w}, pivot at the feet),
-<anim>_<dir>.anim clips, ${m.name}.controller and ${m.name}.prefab (Sorting Group + Paperdoll + one SpriteRenderer per slot/role).
-Runtime: Paperdoll.Play(anim, dir), Paperdoll.Equip(slot, itemId). Use a Pixel Perfect Camera for crisp pixels.
+<anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
+(Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
+Runtime namespace: ${ns}. Paperdoll.Play(anim, dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
+SetVariant uses the exported exact ramps (including linked material defaults); null restores the default.
+Palettes are owner-local, use the original source sheets and cache recoloured textures/sprites per doll until it is destroyed.
+Source textures are readable for these swaps. Do not put them in a Sprite Atlas (packing/rotation changes their source coordinates).
+Default preview colours are persistent sprite assets; changing presets/colours is applied during Play Mode.
+Use a Pixel Perfect Camera and a sprite-compatible material for your render pipeline (including URP 2D).
+Verify target platform texture overrides preserve full sheet dimensions, RGBA colour and uncompressed pixels.
 `,
     },
   ];

@@ -5,14 +5,14 @@ import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
 
 const q = JSON.stringify;
-/** Resource ids: Godot allows letters, digits and _ only (B15: "walk_south-east_0" logged an error per sub_resource). */
-const rid = (s: string) => q(s.replace(/[^A-Za-z0-9_]/g, '_'));
+/** Encode instead of sanitize: valid move names walk-fast and walk_fast must remain distinct. */
+const rid = (s: string) => q('r_' + Array.from(s, (c) => c.codePointAt(0)!.toString(16)).join('_'));
 const num = (n: number) => (Number.isInteger(n) ? n.toFixed(1) : String(n));
 
 export function spriteFramesTres(m: Manifest, itemId: string, layerId: string): string {
   const { rig } = m;
   const layer = m.items.find((i) => i.id === itemId)!.layers.find((l) => l.id === layerId)!, { w, h } = layerFrame(rig, layer);
-  const ext = rig.animations.map((a) => `[ext_resource type="Texture2D" path=${q('../' + layer.sheets![a.id])} id=${rid(a.id)}]`);
+  const ext = rig.animations.map((a) => `[ext_resource type="Texture2D" path=${q('../' + (layer.sourceSheets?.[a.id] ?? layer.sheets![a.id]))} id=${rid(a.id)}]`);
   const subs: string[] = [], anims: string[] = [];
   for (const a of rig.animations) {
     const msBase = Math.min(...a.frames.map((f) => f.ms));
@@ -40,13 +40,15 @@ export function paperdollTscn(m: Manifest): string {
         nodes.set(key, n);
       }
   const res = [...new Set([...nodes.values()].flatMap((n) => (n.res ? [n.res] : [])))];
-  const first = `${rig.animations[0].id}_${rig.directions[0].id}`;
+  const initial = rig.animations.find((a) => (a.directions ?? rig.directions.map((d) => d.id)).length);
+  const first = initial ? `${initial.id}_${(initial.directions ?? rig.directions.map((d) => d.id))[0]}` : '';
   const out = [
     '[gd_scene format=3]\n',
     '[ext_resource type="Script" path="paperdoll.gd" id="script"]',
+    '[ext_resource type="Resource" path="library.tres" id="library"]',
     ...res.map((r) => `[ext_resource type="SpriteFrames" path=${q(r + '.tres')} id=${rid(r)}]`),
     '',
-    `[node name=${q(m.name.replace(/[^A-Za-z0-9_]/g, '_') || 'Paperdoll')} type="Node2D"]\ntexture_filter = 1\nscript = ExtResource("script")\n`,
+    `[node name=${q(m.name.replace(/[^A-Za-z0-9_]/g, '_') || 'Paperdoll')} type="Node2D"]\ntexture_filter = 1\nscript = ExtResource("script")\nlibrary = ExtResource("library")\n`,
   ];
   // B14: equal z_index draws in tree order, so the tree follows compose's tie-break (slot order, bg before fg): hair bg and a
   // held bg both at z 5 (south) drew the hair over the blade in Godot, the blade over the hair in PixelDoll (4 px, Ranger)
@@ -68,34 +70,43 @@ export function paperdollTscn(m: Manifest): string {
 
 export const PAPERDOLL_GD = `extends Node2D
 ## PixelDoll paperdoll (pixeldoll/1). body_fg is the clock: every other layer copies its animation, frame and
-## progress on frame_changed, so layers cannot drift. Reads ../manifest.json; no per-project data in this script.
+## progress on frame_changed, so layers cannot drift. library.tres retains every equipment dependency in game builds.
 ## Oversize layers (e.g. a 96x96 sword) have their own cell and pivot: equip sets each node's offset to -layer.pivot, so
 ## every layer's pivot lands on the node origin.
 
 signal equipment_changed
 
+@export var library: Resource
 var manifest: Dictionary
 var equipped := {} # slot id -> item id ("" = empty)
+var variants := {}
 var anim := ""
 var dir := ""
-var _here := ""
+var _refreshing := false
+var _frame_cache := {}
+var _texture_cache := {}
 @onready var body: AnimatedSprite2D = $body_fg
 
 
 func _ready() -> void:
-	_here = (get_script() as Script).resource_path.get_base_dir()
-	manifest = JSON.parse_string(FileAccess.get_file_as_string(_here.path_join("../manifest.json").simplify_path()))
-	var items: Dictionary = manifest["presets"][0]["items"]
-	for slot in items:
-		equipped[slot] = items[slot] if items[slot] != null else ""
+	manifest = library.get_meta("manifest")
 	body.frame_changed.connect(_sync)
 	body.animation_changed.connect(_sync)
-	_refresh()
-	play_anim(manifest["rig"]["animations"][0]["id"], manifest["rig"]["directions"][0]["id"])
+	set_preset(manifest["presets"][0]["id"] if not manifest["presets"].is_empty() else "")
+	for move in manifest["rig"]["animations"]:
+		var directions: Array = move.get("directions", manifest["rig"]["directions"].map(func(d): return d["id"]))
+		if not directions.is_empty():
+			play_anim(move["id"], directions[0])
+			break
 
 
 ## Plays "<anim>_<dir>" on the body; layers follow.
 func play_anim(a: String, d: String) -> void:
+	var move := _find(manifest["rig"]["animations"], a)
+	if move.is_empty() or (move.has("directions") and not move["directions"].has(d)):
+		return
+	if not body.sprite_frames.has_animation("%s_%s" % [a, d]):
+		return
 	anim = a
 	dir = d
 	body.play("%s_%s" % [a, d])
@@ -104,11 +115,45 @@ func play_anim(a: String, d: String) -> void:
 
 ## Equips item_id in slot ("" = empty), then re-applies hides.
 func equip(slot: String, item_id: String) -> void:
+	if slot == "body" or _find(manifest["slots"], slot).is_empty():
+		return
+	var item := _find(manifest["items"], item_id)
+	if not item_id.is_empty() and (item.is_empty() or item["slot"] != slot or item.has("variantOf")):
+		return
 	equipped[slot] = item_id
 	_refresh()
 
 
+## Outfit palettes are exact source-ramp swaps; names must exist in the exported materials' variants.
+func set_preset(preset_id: String) -> void:
+	var preset := _find(manifest["presets"], preset_id)
+	if preset.is_empty() and not preset_id.is_empty():
+		return
+	var items: Dictionary = preset.get("items", {})
+	for slot in manifest["slots"]:
+		equipped[slot["id"]] = items.get(slot["id"], "") if items.get(slot["id"]) != null else ""
+	equipped["body"] = manifest["rig"]["baseItem"]
+	variants = preset.get("variants", {}).duplicate()
+	_frame_cache.clear()
+	_texture_cache.clear()
+	_refresh()
+
+
+func set_variant(material_id: String, variant_name: String) -> void:
+	if _find(manifest["materials"], material_id).is_empty():
+		return
+	variants[material_id] = variant_name
+	_frame_cache.clear()
+	_texture_cache.clear()
+	_refresh()
+
+
 func _refresh() -> void:
+	_refreshing = true
+	var clock_frame := body.frame
+	var clock_progress := body.frame_progress
+	var clock_playing := body.is_playing()
+	var clock_speed := body.get_playing_speed() / body.speed_scale if body.speed_scale != 0.0 else 1.0
 	var hidden := {}
 	for slot in equipped:
 		var it := _find(manifest["items"], equipped[slot])
@@ -119,17 +164,24 @@ func _refresh() -> void:
 		var layer := _layer_of(node)
 		node.visible = not layer.is_empty() and not hidden.has(node.get_meta("slot"))
 		if not layer.is_empty():
-			var frames: SpriteFrames = load(_here.path_join("%s_%s.tres" % [_shown(node.get_meta("slot")), layer["id"]]))
+			var frames := _coloured_frames(_find(manifest["items"], _shown(node.get_meta("slot"))), layer)
 			if node.sprite_frames != frames:
 				node.sprite_frames = frames
 			var pv: Dictionary = layer.get("pivot", manifest["rig"]["pivot"])
 			node.offset = -Vector2(pv["x"], pv["y"])
+	if not anim.is_empty():
+		if clock_playing:
+			body.play("%s_%s" % [anim, dir], clock_speed)
+		else:
+			body.animation = "%s_%s" % [anim, dir]
+		body.set_frame_and_progress(clock_frame, clock_progress)
+	_refreshing = false
 	_sync()
 	equipment_changed.emit()
 
 
 func _sync() -> void:
-	if anim.is_empty():
+	if anim.is_empty() or _refreshing:
 		return
 	var frames: Array = _find(manifest["rig"]["animations"], anim)["frames"]
 	var cell := int(frames[mini(body.frame, frames.size() - 1)]["cell"])
@@ -142,6 +194,63 @@ func _sync() -> void:
 			if node.animation != body.animation:
 				node.animation = body.animation
 			node.set_frame_and_progress(body.frame, body.frame_progress)
+
+
+func _variant_of(id: String, seen: Dictionary) -> String:
+	var material := _find(manifest["materials"], id)
+	if material.is_empty() or seen.has(id):
+		return ""
+	seen[id] = true
+	if material.has("linkTo") and not material["linkTo"].is_empty():
+		return _variant_of(material["linkTo"], seen)
+	return variants.get(id, material.get("defaultVariant", ""))
+
+
+func _coloured_frames(item: Dictionary, layer: Dictionary) -> SpriteFrames:
+	var key: String = "%s_%s" % [item["id"], layer["id"]]
+	if _frame_cache.has(key):
+		return _frame_cache[key]
+	var source: SpriteFrames = library.get_meta("frames")[key]
+	var swaps := {}
+	for material_id in item.get("materials", []):
+		var material := _find(manifest["materials"], material_id)
+		if material.is_empty() or material["owner"] != item.get("variantOf", item["id"]):
+			continue
+		var target: Array = material["variants"].get(_variant_of(material_id, {}), [])
+		for i in mini(target.size(), material["ramp"].size()):
+			var rgb := int(str(material["ramp"][i]).trim_prefix("#").hex_to_int())
+			swaps[rgb] = int(str(target[i]).trim_prefix("#").hex_to_int())
+	if swaps.is_empty():
+		_frame_cache[key] = source
+		return source
+	# SpriteFrames.duplicate() shares nested frame dictionaries; build a fresh resource to keep sources immutable.
+	var result := SpriteFrames.new()
+	result.remove_animation("default")
+	for animation in source.get_animation_names():
+		result.add_animation(animation)
+		result.set_animation_loop(animation, source.get_animation_loop(animation))
+		result.set_animation_speed(animation, source.get_animation_speed(animation))
+		for frame in source.get_frame_count(animation):
+			var atlas := source.get_frame_texture(animation, frame) as AtlasTexture
+			var texture_key: String = "%s:%s" % [item["id"], atlas.atlas.resource_path]
+			if not _texture_cache.has(texture_key):
+				var image := atlas.atlas.get_image().duplicate() as Image
+				image.convert(Image.FORMAT_RGBA8)
+				var bytes := image.get_data()
+				for offset in range(0, bytes.size(), 4):
+					var rgb: int = (bytes[offset] << 16) | (bytes[offset + 1] << 8) | bytes[offset + 2]
+					if bytes[offset + 3] > 0 and swaps.has(rgb):
+						var replacement: int = swaps[rgb]
+						bytes[offset] = (replacement >> 16) & 255
+						bytes[offset + 1] = (replacement >> 8) & 255
+						bytes[offset + 2] = replacement & 255
+				image.set_data(image.get_width(), image.get_height(), false, Image.FORMAT_RGBA8, bytes)
+				_texture_cache[texture_key] = ImageTexture.create_from_image(image)
+			var rendered := atlas.duplicate() as AtlasTexture
+			rendered.atlas = _texture_cache[texture_key]
+			result.add_frame(animation, rendered, source.get_frame_duration(animation, frame))
+	_frame_cache[key] = result
+	return result
 
 
 ## Most specific zOverride (cell > anim > dir > none, later wins on ties), else the layer's z.
@@ -187,13 +296,20 @@ func _find(list: Array, id: String, key := "id") -> Dictionary:
 
 export function godotFiles(m: Manifest): OutFile[] {
   const files: OutFile[] = m.items.flatMap((it) => it.layers.map((l) => ({ name: `godot/${it.id}_${l.id}.tres`, data: spriteFramesTres(m, it.id, l.id) })));
+  // A scene dependency retains every alternate item even when a game's export preset includes selected scenes only.
+  // Store the manifest as native resource metadata too: runtime never depends on unimported JSON/FileAccess paths.
+  const layers = m.items.flatMap((it) => it.layers.map((l) => `${it.id}_${l.id}`));
+  files.push({ name: 'godot/library.tres', data: `[gd_resource type="Resource" format=3]\n\n${layers.map((key, i) => `[ext_resource type="SpriteFrames" path=${q(key + '.tres')} id="f${i}"]`).join('\n')}\n\n[resource]\nmetadata/manifest = ${JSON.stringify(m)}\nmetadata/frames = {${layers.map((key, i) => `${q(key)}: ExtResource("f${i}")`).join(', ')}}\n` });
   files.push({ name: 'godot/Paperdoll.tscn', data: paperdollTscn(m) }, { name: 'godot/paperdoll.gd', data: PAPERDOLL_GD });
   files.push({
     name: 'godot/README.txt',
     data: `Copy the whole export folder into your Godot 4 project, then instance godot/Paperdoll.tscn.
-API: play_anim(anim, dir), equip(slot, item_id) ("" = empty slot). body_fg is the clock; other layers follow it.
+API: play_anim(anim, dir), equip(slot, item_id) ("" = empty slot), set_preset(preset_id), set_variant(material_id, variant_name).
+The frozen base body stays equipped. body_fg is the clock; other layers follow it. Palette swaps use exact source RGBs,
+owner-local materials, linked selections and defaults; variant names must exist in exported materials[].variants.
+library.tres retains the manifest and all equipment resources, including for selected-scene game exports.
 Project settings: Rendering > Textures > Default Texture Filter = Nearest (the scene sets Nearest on its root anyway),
-2D > Snap 2D Transforms To Pixel = on. Export presets: add "*.json" to non-resource files so manifest.json ships.
+2D > Snap 2D Transforms To Pixel = on. Keep the exported folder structure intact.
 `,
   });
   return files;
@@ -210,7 +326,7 @@ export function selfTest() {
     presets: [{ id: 'd', items: { body: 'base', back: null } }],
   } as unknown as Manifest;
   const t = spriteFramesTres(m, 'base', 'main');
-  console.assert(t.includes('path="../layers/body/base/main/walk.png" id="walk"') && t.includes('region = Rect2(64, 64, 64, 64)'), 'tres: relative path, west row 1 col 1');
+  console.assert(t.includes(`path="../layers/body/base/main/walk.png" id=${rid('walk')}`) && t.includes('region = Rect2(64, 64, 64, 64)'), 'tres: relative path, west row 1 col 1');
   console.assert(t.includes('"speed": 10.0') && t.includes('"duration": 2.0') && (t.match(/"duration"/g) ?? []).length === 6, 'tres: msBase speed, relative durations, playlist frames x dirs');
   const s = paperdollTscn(m);
   console.assert(s.includes('[node name="body_fg" type="AnimatedSprite2D" parent="."]') && s.includes('offset = Vector2(-32, -60)'), 'tscn: body node + pivot offset');
@@ -223,5 +339,5 @@ export function selfTest() {
   // B15: 8 directions -> ids without '-', animation names keep the direction id
   m.rig.directions = [{ id: 'south-east' }];
   const t8 = spriteFramesTres(m, 'base', 'main');
-  console.assert(t8.includes('id="walk_south_east_0"') && t8.includes('SubResource("walk_south_east_1")') && t8.includes('&"walk_south-east"') && !/id="[^"]*-/.test(t8), 'tres: resource ids letters/digits/_ only');
+  console.assert(t8.includes(`id=${rid('walk_south-east_0')}`) && t8.includes(`SubResource(${rid('walk_south-east_1')})`) && t8.includes('&"walk_south-east"') && !/id="[^"]*-/.test(t8), 'tres: resource ids letters/digits/_ only');
 }

@@ -1,5 +1,5 @@
 import { esc, icon, button, iconButton, tabs } from './ui.js';
-import { applyMaterial, hasGlass } from './material.mjs';
+import { applyBronze } from './bronze.mjs';
 import { createDraft, renderCreator, exactPrompt, basePrompt, autoFrame } from './creator.js';
 import { applyTheme, themeName } from './theme.mjs';
 import { direction, labelDir, DIRECTION_PRESETS, facingFromVector } from './directions.mjs';
@@ -12,7 +12,7 @@ import { unit, resolveMotion, resolvePreview, clipLabel, frameAt, advance } from
 const $ = s => document.querySelector(s), ui = $('#ui'), dialog = $('#dialog'), stick = $('#joystick');
 const state = { screen: 'selection', view: 'preview', theme: themeName(localStorage.getItem('bronze-prototype-theme')), character: 0, slot: 'head', panel: 'Wardrobe', menu: null, clip: 'walk', direction: 'south', playing: true, expanded: false, hint: false, search: '' };
 applyTheme(state.theme);
-if (hasGlass) $('#toast').className = 'glass-toast is-visible';
+$('#toast').className = 'bu-floating';
 const position = { x: 0, y: 0 }, camera = { x: 0, y: 0 }, keys = new Set(), seenIssues = new Set();
 let joystick = null, toastTimer, toastKey = '', hintTimer, elapsed = 0, last = 0, presentationKey = '', resolved = {}, lastHidden = '', drawnFrames = 0, world, demo, characters, hiddenItems = [], lastFacing = 'south';
 const draft = createDraft();
@@ -26,10 +26,10 @@ function showDialog(title, html) {
     dialogReturnAction = document.activeElement?.dataset.action ?? null;
     stop(); state.menu = null; render();
     const content = `${iconButton('Close', 'close-dialog', 'x')}<h2 id="dialog-title">${esc(title)}</h2>${html}`;
-    dialog.innerHTML = hasGlass ? `<div class="glass-modal dialog-panel">${content}</div>` : content;
-    dialog.className = hasGlass ? 'glass-modal-overlay is-active' : '';
+    dialog.innerHTML = `<div class="bu-floating dialog-panel">${content}</div>`;
+    dialog.className = 'bronze-dialog-overlay';
     dialog.setAttribute('aria-labelledby', 'dialog-title');
-    dialog.querySelector('button').classList.add('close'); applyMaterial(dialog); dialog.showModal();
+    dialog.querySelector('button').classList.add('close'); applyBronze(dialog); dialog.showModal();
 }
 function unavailable(title) { showDialog(title, '<p>This isolated prototype uses the bundled demo artwork. Generation, import, export and account actions are not connected.</p><p>You can switch characters, change demo equipment, inspect animations and move through both test views. No API calls or credits are used.</p>'); }
 function current() { return characters[state.character]; }
@@ -64,7 +64,7 @@ function menus() {
     return '';
 }
 function render() { if (!demo)
-    return; applyTheme(state.theme); document.body.dataset.screen = state.screen; document.body.dataset.view = state.view; ui.innerHTML = top() + (state.screen === 'selection' ? library() : state.screen === 'creation' ? renderCreator(draft, manualPrompt) : viewTabs() + identity() + wardrobe() + (state.view === 'preview' ? playback() : state.hint ? `<p class="hint">${matchMedia('(pointer:coarse)').matches ? 'Drag in the world to move' : 'WASD / arrow keys to move'}</p>` : '')) + menus() + `<p class="footnote">${state.screen === 'creation' ? '' : 'Local visual prototype · demo artwork'}</p>`; applyMaterial(ui); }
+    return; applyTheme(state.theme); document.body.dataset.screen = state.screen; document.body.dataset.view = state.view; ui.innerHTML = top() + (state.screen === 'selection' ? library() : state.screen === 'creation' ? renderCreator(draft, manualPrompt) : viewTabs() + identity() + wardrobe() + (state.view === 'preview' ? playback() : state.hint ? `<p class="hint">${matchMedia('(pointer:coarse)').matches ? 'Drag in the world to move' : 'WASD / arrow keys to move'}</p>` : '')) + menus() + `<p class="footnote">${state.screen === 'creation' ? '' : 'Local visual prototype · demo artwork'}</p>`; applyBronze(ui); }
 function applyOutfit(items) { current().history.push({ ...current().items }); current().items = { ...items }; lastHidden = ''; render(); }
 function equip(id) { applyOutfit({ ...current().items, [state.slot]: id === 'none' ? null : id }); }
 function chooseClip(clip) { state.clip = clip; elapsed = 0; presentationKey = ''; render(); }

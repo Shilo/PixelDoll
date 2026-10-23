@@ -1,16 +1,20 @@
-# Owned Bronze component-state showcase
+# Historical Bronze component-state showcase
 
-Isolated Svelte showcase, 2026-10-23. Implements native light/dark theme roles while preserving the approved Bronze palette, restrained geometry and immersive scene. No GlassKit import, new dependency, production UI migration, backend or PixelLab request. The approved playable reference remains at port 5202.
+**Historical evidence — superseded by [Bronze UI](https://github.com/Shilo/bronze-ui).** Current theme tokens, CSS recipes, reusable Svelte behaviors, style guidance and component verification are maintained in that standalone MIT repository and its [live showcase](https://shilo.github.io/bronze-ui/). This directory preserves the original implementation, reviews and test records; do not update its theme or regenerate its evidence. The [round-six playable prototype](../round-6-prototype/bronze-integration.md) consumes the package for PixelDoll's integration proof.
 
-## Open and run
+The isolated Svelte showcase below was implemented on 2026-10-23, before extraction. It demonstrated native light/dark roles while preserving the approved Bronze palette, restrained geometry and immersive scene. It made no PixelLab requests or production UI changes.
 
-From repository root, using Node 24.22.1 and the existing exact `app/` dependencies:
+## Historical reproduction
+
+The current `run.mjs` and `verify.mjs` entry points stop before starting a server, building or writing evidence. To reproduce the original lab, use pre-extraction commit [`003bef2`](https://github.com/Shilo/PixelDoll/tree/003bef2/docs/design/2026-10-22-redesign/round-7-theme) in a separate checkout and follow the original commands below. For current component development, use the standalone Bronze UI repository.
+
+Original commands, from the repository root with Node 24.22.1 and the exact `app/` dependencies:
 
 ```powershell
 node docs/design/2026-10-22-redesign/round-7-theme/run.mjs
 ```
 
-Open **http://127.0.0.1:5203/**. Choose Scene, Controls, Creator, Library, Feedback or Overlays. Use the ordinary Light mode / Dark mode button. `?theme=light&page=creator` is a reproducible review link; without that override the saved mode is retained. The server binds localhost, ignores environment files and does not start the API agent path.
+The historical server used **http://127.0.0.1:5203/** with Scene, Controls, Creator, Library, Feedback and Overlays sections. `?theme=light&page=creator` selected a reproducible appearance/page; otherwise the saved mode was retained. It bound localhost, ignored environment files and did not start the API agent path.
 
 ```powershell
 node docs/design/2026-10-22-redesign/round-7-theme/run.mjs --build
@@ -18,7 +22,7 @@ node docs/design/2026-10-22-redesign/round-7-theme/verify.mjs --capture
 node docs/design/2026-10-22-redesign/round-7-theme/verify.mjs --webkit
 ```
 
-Use the installed managed Playwright browser location through `PLAYWRIGHT_BROWSERS_PATH` where needed. `--no-report` reruns verification without modifying committed reports. Build/cache/evidence directories are intentionally ignored. Existing round-5 world PNGs are local design media and must be present to run/build; fresh checkouts need those original assets restored. Sprite fixtures and the reused compositor are repository sources. Screenshots can be regenerated with `--capture` and browsed through [review.html](review.html).
+Historical reproduction needs the managed Playwright location through `PLAYWRIGHT_BROWSERS_PATH` where applicable, plus the original local round-five world PNGs. Sprite fixtures and the reused compositor are repository sources. Build/cache/evidence directories remain ignored. Browse existing local screenshots through the [historical gallery](review.html); missing media must be restored from the original evidence, not replaced with captures of the extracted package.
 
 ## What the proof covers
 

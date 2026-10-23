@@ -4,7 +4,7 @@ import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
 import type { Engine, Manifest, Project } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
-import { moveDirs, recolour, variantRampOf } from '../dress/dress.ts';
+import { moveDirs, recolour, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame } from '../compose/compose.ts';
 
 export type OutFile = { name: string; data: string | Img | Uint8Array };
@@ -12,6 +12,10 @@ export type OutFile = { name: string; data: string | Img | Uint8Array };
 /** Invariants checked before export (spec §3); export refuses on any error. Stale items are warnings, not errors. */
 export function validate(p: Project): string[] {
   const m = p.manifest, e = validateRig(m.rig);
+  for (const a of m.rig.animations) {
+    if (!Number.isInteger(a.cells)) e.push(`${a.id}: cell count must be an integer`);
+    for (const f of a.frames) if (!Number.isInteger(f.cell)) e.push(`${a.id}: frame cell ${f.cell} must be an integer`);
+  }
   const bodies = m.items.filter((i) => i.slot === 'body');
   if (bodies.length !== 1 || bodies[0].id !== m.rig.baseItem) e.push('exactly one item in slot "body" must be rig.baseItem');
   const seen = new Map<string, string>(), ids = new Set<string>();
@@ -68,17 +72,43 @@ export function exportManifest(p: Project, o: ManifestOptions): { manifest: Mani
   });
   const ids = new Set(items.map((i) => i.id));
   const m: Manifest = structuredClone({ ...src, items, export: undefined });
+  // Export is also a public API: do not depend on the Studio having materialised procedural swatches first.
+  storeVariants(m, {}, ...m.presets.map((pr) => pr.variants));
+  // A palette link can target a stale item. Freeze its resolved selections before dropping the excluded owner's metadata.
+  const detached = m.materials.filter((mat) => ids.has(mat.owner) && mat.linkTo && !ids.has(m.materials.find((other) => other.id === mat.linkTo)?.owner ?? ''))
+    .map((mat) => ({ mat, baseline: variantOf(m, {}, mat.id), selections: m.presets.map((pr) => variantOf(m, pr.variants, mat.id)) }));
+  for (const { mat, baseline, selections } of detached) {
+    delete mat.linkTo;
+    delete mat.defaultVariant;
+    if (m.format === 'pixeldoll/2' && baseline) mat.defaultVariant = baseline;
+    m.presets.forEach((pr, i) => {
+      if (selections[i]) pr.variants[mat.id] = selections[i];
+      else delete pr.variants[mat.id];
+    });
+  }
+  const materialIds = new Set(m.items.flatMap((it) => it.materials));
+  for (const id of materialIds) {
+    const linked = m.materials.find((mat) => mat.id === id)?.linkTo;
+    if (linked) materialIds.add(linked);
+  }
+  m.materials = m.materials.filter((mat) => ids.has(mat.owner) && materialIds.has(mat.id));
+  for (const pr of m.presets) for (const id of Object.keys(pr.variants)) if (!m.materials.some((mat) => mat.id === id)) delete pr.variants[id];
   for (const it of m.items)
     for (const l of it.layers) {
       const f = layerFrame(m.rig, l);
       delete l.cells;
       l.sheets = Object.fromEntries(m.rig.animations.map((a) => [a.id, sheetPath(it, l, a.id)]));
-      if (it.materials.some((id) => m.materials.find((x) => x.id === id)?.defaultVariant)) l.sourceSheets = Object.fromEntries(m.rig.animations.map((a) => [a.id, `sources/${sheetPath(it, l, a.id)}`]));
+      if (it.materials.some((id) => variantOf(m, {}, id))) l.sourceSheets = Object.fromEntries(m.rig.animations.map((a) => [a.id, `sources/${sheetPath(it, l, a.id)}`]));
+      else delete l.sourceSheets;
       Object.assign(l, { cell: { w: f.w, h: f.h }, pivot: { x: f.x, y: f.y } }); // explicit in manifest.json: readers never default
     }
   for (const pr of m.presets) for (const s in pr.items) if (pr.items[s] && !ids.has(pr.items[s]!)) pr.items[s] = null;
   // B10: the views each move has (the base has frames there); the other rows of its sheets are empty
-  for (const a of m.rig.animations) Object.assign(a, { directions: moveDirs(src, a.id) });
+  for (const a of m.rig.animations) {
+    const directions = moveDirs(src, a.id);
+    Object.assign(a, { directions });
+    if (!directions.length) warnings.push(`${a.id}: no base frames; playback is unavailable for this move`);
+  }
   m.export = {
     exportedAt: o.exportedAt ?? new Date().toISOString(),
     layout: 'pixeldoll-sheets/1',
@@ -153,7 +183,7 @@ export function coreFiles(p: Project, m: Manifest): OutFile[] {
 }
 
 /** generic/<item>_<layer>/<anim>_<dir>_strip<N>.png and baked/<preset>/<anim>.png (reuses the layer sheets already built).
- *  Layer sheets keep source ramps (materials + preset variants are in the manifest); baked sheets apply the preset's variants. */
+ * Canonical layer sheets render approved defaults; sourceSheets retain source ramps. Baked sheets apply each preset. */
 export function genericFiles(p: Project, m: Manifest, sheets: Map<string, Img>, o: { strips: boolean; baked: boolean }): OutFile[] {
   const files: OutFile[] = [];
   const { rig } = m;
@@ -165,12 +195,21 @@ export function genericFiles(p: Project, m: Manifest, sheets: Map<string, Img>, 
           if (strip.data.some((v, i) => i % 4 === 3 && v)) files.push({ name: `generic/${it.id}_${l.id}/${a.id}_${d.id}_strip${a.cells}.png`, data: strip }); // no empty strips
         });
   if (o.strips) files.push({ name: 'generic/README.txt', data: `One PNG strip per item layer, move and direction: <item>_<layer>/<move>_<direction>_strip<frames>.png.
-Frames sit left to right, each one cell of the layer (manifest.json items[].layers[].cell); the feet (pivot) are at layers[].pivot.
-Draw the layers of the worn items in z order (layers[].z, slots[].zOverrides) to rebuild the character. A strip a move does
-not have (rig.animations[].directions) or an item has no frames for is left out.
+Frames sit left to right, each one cell of the layer (manifest.json items[].layers[].cell); columns are zero-based source cell indices.
+Play rig.animations[].frames in order: use each entry's cell column for ms milliseconds, including repeated indices. Repeat only when loop is true.
+The _stripN suffix lets GameMaker split the image on import; it does not encode the playlist, frame durations or origin.
+Place every layer at character position minus layers[].pivot; oversize layers have their own cell and pivot.
+The base is always worn. Resolve slot hiding, tucked variants (variantOf/under) and z order (layers[].z, slots[].zOverrides) from manifest.json.
+A strip a move does not have (rig.animations[].directions) or an item has no frames for is left out. Mirrored rows are already flipped.
+These strips and layers/ render approved default colourways. To recolour, start from sourceSheets when present (otherwise sheets),
+replace each item's material ramp by the selected variant ramp, and follow linkTo/defaultVariant. All outfit ramps are stored in materials[].variants.
+Baked sheets in baked/ apply the outfit's colours and layer visibility; their cell and pivot are export.bakedCell and export.bakedPivot.
+Use nearest-neighbour filtering, whole-pixel positions and straight RGBA alpha. This is a PNG + JSON interchange format; engine playback needs integration.
 ` });
   const bf = bakedFrame(m);
-  if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(recolour(p, pr.variants), pr.items, a.id, bf) });
+  const ids = new Set(m.items.map((it) => it.id));
+  const exported = { ...p, manifest: { ...p.manifest, materials: m.materials, items: p.manifest.items.filter((it) => ids.has(it.id)) } };
+  if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(recolour(exported, pr.variants), pr.items, a.id, bf) });
   return files;
 }
 
@@ -192,7 +231,7 @@ export function selfTest() {
   const errs = validate(p);
   console.assert(errs.length === 1 && errs[0].includes('a.v'), `validate: variant length only (${errs.join('; ')})`);
   const { manifest: m, warnings } = exportManifest(p, { engines: ['generic'], baked: true, exportedAt: 'T' });
-  console.assert(warnings.length === 1 && m.items.length === 1 && m.presets[0].items.head === null, 'stale item excluded and unequipped');
+  console.assert(warnings.some((warning) => warning.includes('old: stale')) && m.items.length === 1 && m.presets[0].items.head === null, 'stale item excluded and unequipped');
   console.assert(!m.items[0].layers[0].cells && m.items[0].layers[0].sheets!.walk === 'layers/body/base/main/walk.png', 'cells -> sheets');
   console.assert(m.export!.pixelsPerUnit === 64 && m.export!.baked![0] === 'default' && !!p.manifest.items[0].layers[0].cells, 'export info, source untouched');
   console.assert(creditsCsv(m).split('\n')[1].includes('"p, ""q"""'), 'csv quoting');
