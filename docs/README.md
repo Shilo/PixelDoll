@@ -32,6 +32,15 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 
 [Design review package](design/2026-10-22-redesign/README.md): current UI audit with 23 screenshots, research into 12 game families and two creator tools, three curated concepts, 18 desktop/mobile mockups, and an offline interactive prototype. The lead recommends Moonlit Camp. This is a new proposal; it does not replace the implemented design or prior decisions until adopted. Its screenshots are included alongside the proposal rather than in the historical tag.
 
+## Current review handoffs and research
+
+- [Claude redesign and Bronze UI review handoff](../.claude/handoffs/2026-10-23-161739-claude-redesign-and-bronze-ui-review.md): independent visual, interaction, accessibility and shared-theme audit brief.
+- [Pre-Bronze/current comparison provenance](design/2026-10-22-redesign/round-6-prototype/pre-bronze-comparison.md): the correct historical baseline for reviewing the redesign.
+- [Frame-repair and pipeline review index](reviews/README.md): preserved audit reports, repair concept source and verification script/result. These are recommendations, not completed production features.
+- [Project repair workflow review](research/project-repair-workflow-review-2026-10-23.md) and [shared-token security review](research/shared-token-security-review-2026-10-23.md): dated research retained for follow-up; findings were not revalidated by repository cleanup. The [storage probe](research/token-storage-probe.mjs) uses synthetic pages/data and intercepts network requests.
+
+Generated screenshots and prototype capture manifests remain local and ignored, together with their existing galleries. Cleanup preserves those files on disk. Source, handoffs, review notes and the compact repair verification record are versioned.
+
 ## Spec
 
 | Doc | What |

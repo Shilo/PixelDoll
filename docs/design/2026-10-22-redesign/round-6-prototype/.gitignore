@@ -1,2 +1,4 @@
 .vite/
-evidence/bronze-dependency/
+# Browser captures and generated manifests belong together locally.
+# Keep them for the live review galleries; commit capture scripts and review notes.
+evidence/
