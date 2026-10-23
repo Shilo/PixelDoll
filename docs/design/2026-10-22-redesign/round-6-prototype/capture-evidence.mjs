@@ -3,18 +3,18 @@ import { chromium } from '../../../../app/node_modules/playwright/index.mjs';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
-export async function captureEvidence({ phase, root, runtimeTheme, labels, supplements = false, protectExisting = false, provenance }) {
+export async function captureEvidence({ phase, root, runtimeTheme, labels, supplements = false, protectExisting = false, provenance, sourceRoot = new URL('./', import.meta.url), extraRuntimeFiles = [] }) {
   assert.ok(['before', 'after'].includes(phase), 'Use before|after');
   if (protectExisting) {
     const exists = await readFile(new URL(phase + '.json', root)).then(() => true, error => { if (error.code === 'ENOENT') return false; throw error; });
     assert.ok(!exists, 'Refusing to overwrite preserved ' + phase + ' evidence: ' + root.href);
   }
-  const entry = await readFile(new URL('./index.html', import.meta.url), 'utf8');
+  const entry = await readFile(new URL('./index.html', sourceRoot), 'utf8');
   assert.ok(entry.includes(runtimeTheme), 'Capture runtime must import ' + runtimeTheme);
   const base = process.env.PROTOTYPE_URL ?? 'http://127.0.0.1:5202';
   await mkdir(new URL(`${phase}/`, root), { recursive: true });
   const report = { phase, capturedAt: new Date().toISOString(), node: process.version, base, deviceScaleFactor: 1, devHotReloadDisabled: true, provenance, captureComplete: false, images: [], supplementalImages: [], errors: [], external: [] };
-  const runtimeFiles = () => Promise.all(['index.html', 'main.js', 'creator.js', 'ui.js', 'equipment.js', 'assets.js', 'world.js', 'config.js', 'theme.mjs', 'directions.mjs', 'input.mjs', 'motion.mjs', 'styles.css', 'creator.css', 'bronze-theme.css', 'bronze.mjs', 'stage-layout.mjs'].map(async file => ({ file, sha256: await readFile(new URL(file, import.meta.url)).then(data => createHash('sha256').update(data).digest('hex'), error => { if (error.code === 'ENOENT') return null; throw error; }) })));
+  const runtimeFiles = () => Promise.all([...new Set(['index.html', 'main.js', 'creator.js', 'ui.js', 'equipment.js', 'assets.js', 'world.js', 'config.js', 'theme.mjs', 'directions.mjs', 'input.mjs', 'motion.mjs', 'styles.css', 'creator.css', 'bronze-theme.css', 'bronze.mjs', 'stage-layout.mjs', runtimeTheme.replace(/^\.\//, ''), ...extraRuntimeFiles])].map(async file => ({ file, sha256: await readFile(new URL(file, sourceRoot)).then(data => createHash('sha256').update(data).digest('hex'), error => { if (error.code === 'ENOENT') return null; throw error; }) })));
   report.runtimeFiles = await runtimeFiles();
   const browser = await chromium.launch({ headless: true });
   report.browser = browser.version();

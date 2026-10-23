@@ -1,5 +1,7 @@
 # Isolated immersive character playground
 
+Requested baseline comparison: [prototype before Bronze UI versus current](http://127.0.0.1:5202/pre-bronze-review.html), with fresh matching desktop/mobile captures. [Provenance](./pre-bronze-comparison.md).
+
 Current ownership contract: [Bronze UI 0.2.0](./theme-ownership-0.2.0.md). Shared appearance, including scene-backing material strengths, is now upstream; consumer layout remains local. Earlier entries below describe their historical state.
 
 **Theme patch 0.1.1:** [Upstream ownership audit and verification](theme-patch-0.1.1.md). Native dropdown recipes now come from the published dependency; the More popup says Additional equipment and phone view tabs have explicit clearance below the prompt.
