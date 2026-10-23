@@ -52,10 +52,15 @@
     {
       "id": "porcelain-side",
       "file": "assets/porcelain-side.png",
-      "generationOriginal": "exec-a366a9b6-4fe0-49b9-b415-bb49a3b90e39.png",
+      "generationOriginal": "exec-f754b4ce-ae96-4d6f-a7ec-6e360bde028e.png",
       "width": 1672,
       "height": 941,
-      "sha256": "6288f9e80dbdca7b9107b60f870df4a4e629c0051bcb5a047fb635ada56d479b"
+      "sha256": "ae3d166bbd1852e1336aad8dfad9f6d164c2e5032c2ff51bd36c86324606850c",
+      "previous": {
+        "generationOriginal": "exec-a366a9b6-4fe0-49b9-b415-bb49a3b90e39.png",
+        "sha256": "6288f9e80dbdca7b9107b60f870df4a4e629c0051bcb5a047fb635ada56d479b"
+      },
+      "correction": "../round-6-prototype/environment-correction.json"
     }
   ]
 }

@@ -70,7 +70,7 @@ $env:PLAYWRIGHT_BROWSERS_PATH = 'C:/Users/shilo/AppData/Local/ms-playwright'
 node docs/design/2026-10-22-redesign/round-5-mockups/render.mjs
 ```
 
-This offline render used the available Node 25.0.0 runtime. It is not application validation under the required Node 24.22.1. Production tests were not run for this documentation/image task.
+The first render used the available Node 25.0.0 runtime. On 2026-10-23, all six environment plates were reviewed, Porcelain Side-scroller was corrected to remove pillar-like architecture, and all 32 screens plus four boards were re-rendered under the required Node **24.22.1**. Source-pixel checks passed again. See [correction provenance](../round-6-prototype/environment-correction.json). Production tests were not run for this documentation/image task.
 
 PNGs remain local and ignored under repository policy. Documentation, prompts, hashes, icon data and rendering source are committed. A fresh checkout needs the local environment assets restored; prompts cannot recreate identical generative output. No unrelated production changes are included, and no PixelLab generations were needed.
 

@@ -15,3 +15,5 @@ This round does not implement the production app or the later isolated playable 
 Completed: **32 full-resolution images and four overview boards**. See the [full image index and delivery review](image-index.md). The main set covers all five screens in both appearances and both desktop/mobile layouts; supplemental images cover the complete mobile form, first visit, overflow and prompt disclosure.
 
 Approval was committed before image production in `d70ff55`. Documentation, prompts, verification records and the offline rendering source are committed; generated media remains local under the repository's media-ignore policy. These images do not implement application behavior.
+
+Follow-up: Porcelain Side-scroller now matches Preview's open ivory environment without pillars. All six plates were reviewed and every screen/board regenerated under Node 24.22.1. The separately implemented [round-six playable proof](../round-6-prototype/README.md) tests these designs with actual demo sprites and continuous movement; production integration remains separate.
