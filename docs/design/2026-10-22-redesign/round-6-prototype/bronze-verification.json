@@ -1,18 +1,18 @@
 {
-  "date": "2026-10-23T19:44:14.223Z",
+  "date": "2026-10-23T20:30:13.336Z",
   "node": "v24.22.1",
   "package": {
     "name": "@shilo/bronze-ui",
-    "version": "0.1.0",
-    "resolved": "https://github.com/Shilo/bronze-ui/releases/download/v0.1.0/shilo-bronze-ui-0.1.0.tgz",
-    "integrity": "sha512-yIG7wArjYFSyRzHgUMGXbnxPNtPTFbHQsEFY3EfoazgN5NWEinmAxALYI/o+WF+EUtFF2VD9Xw7VB5vrBoScSg==",
+    "version": "0.1.1",
+    "resolved": "https://github.com/Shilo/bronze-ui/releases/download/v0.1.1/shilo-bronze-ui-0.1.1.tgz",
+    "integrity": "sha512-bkjHS5LS/37d5zfmUmu7WsX9Io0Ge+w6wQ3cAbukl7op/7Zc/EvJnYtMPZd+7gJuCCwA0t0S+ySiAfc05n6rUQ==",
     "styles": {
       "tokens.css": "5729ae3a6a99dade872d602c73129603e3e58e4a21c637a0e98c67847293eb7c",
-      "components.css": "167ab46204bdebfa949d39dc17d6eb61735766ace2effe57048aad8b4c8a7775"
+      "components.css": "9f7060de140799e2928f6c2003ece0ed5aef93f886219d52279e3f0c9f066580"
     },
     "servedStyles": {
       "tokens.css": "5729ae3a6a99dade872d602c73129603e3e58e4a21c637a0e98c67847293eb7c",
-      "components.css": "167ab46204bdebfa949d39dc17d6eb61735766ace2effe57048aad8b4c8a7775"
+      "components.css": "9f7060de140799e2928f6c2003ece0ed5aef93f886219d52279e3f0c9f066580"
     }
   },
   "result": "passed",

@@ -20,6 +20,8 @@ grid and pivot.
 Client-side only (Svelte 5 + Vite 8 + TypeScript, no backend). The browser calls the PixelLab REST v2 API directly with your own
 key.
 
+The isolated immersive prototype uses [Bronze UI](https://github.com/Shilo/bronze-ui), our MIT theme with native light/dark modes ([component showcase](https://shilo.github.io/bronze-ui/)). It is a versioned dependency in `app/package.json`; the production Studio retains its existing custom CSS.
+
 ## Status
 
 **v0.1.0 released** ([release notes](https://github.com/Shilo/PixelDoll/releases/tag/v0.1.0)), live at

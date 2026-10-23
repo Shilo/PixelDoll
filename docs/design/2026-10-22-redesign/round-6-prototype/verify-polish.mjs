@@ -244,6 +244,7 @@ try {
     assert.equal((await page.locator('[data-action="slot:all"]').innerText()).trim(), 'More', `${currentCase}: additional-parts trigger uses the requested label`);
     await click('slot:all');
     await partsAnchored(page);
+    assert.equal(await page.locator('.parts-popover small').innerText(), 'Additional equipment');
     assert.deepEqual(await page.locator('.parts-popover button').allTextContents().then(values => values.map(v => v.trim())), ['Back', 'Held item'], `${currentCase}: additional parts are not duplicated`);
     await page.locator('.wardrobe-scroll').evaluate(el => el.scrollTop = el.scrollHeight);
     await settle(page); await partsStayBounded(page);
@@ -283,6 +284,8 @@ try {
         return { left: bounds[0].left, identityLeft: document.querySelector('.identity').getBoundingClientRect().left, gaps: bounds.slice(1).map((r, i) => r.left - bounds[i].right), gap: parseFloat(style.columnGap) || 0, intrinsic: buttons.every(el => { const s = getComputedStyle(el); context.font = s.font; return el.getBoundingClientRect().width <= context.measureText(el.textContent.trim()).width + parseFloat(s.paddingLeft) + parseFloat(s.paddingRight) + parseFloat(s.borderLeftWidth) + parseFloat(s.borderRightWidth) + 2; }) };
       });
       assert.ok(Math.abs(tabs.left - tabs.identityLeft) <= 1 && tabs.intrinsic && tabs.gaps.every(gap => gap <= tabs.gap + 1), `${currentCase}: phone tabs remain intrinsic and grouped at the left content edge`);
+      const promptGap = await page.evaluate(() => document.querySelector('.view-tabs').getBoundingClientRect().top - document.querySelector('.prompt-line').getBoundingClientRect().bottom);
+      assert.ok(promptGap >= 8, `${currentCase}: phone view tabs have breathing room below the prompt (${promptGap}px)`);
     }
     for (const view of ['topdown', 'side']) { await click('view:' + view); await stageCenter(page, 'studio'); }
     await click('back'); await click('create');

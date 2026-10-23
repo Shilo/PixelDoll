@@ -1,5 +1,7 @@
 # Isolated immersive character playground
 
+**Theme patch 0.1.1:** [Upstream ownership audit and verification](theme-patch-0.1.1.md). Native dropdown recipes now come from the published dependency; the More popup says Additional equipment and phone view tabs have explicit clearance below the prompt.
+
 **Current UI foundation:** [Bronze UI dependency integration](bronze-integration.md) · [all-screen before/after gallery](http://127.0.0.1:5202/bronze-review.html). The prototype now consumes MIT `@shilo/bronze-ui` tokens and CSS recipes through one layout-preserving adapter. Dark/light modes come from the installed package. Production Studio is unchanged. The [GlassKit study](glasskit-study.md), source and captures remain historical evidence; its material URL variants are superseded.
 
 2026-10-23. Implements the user-approved visual proof using Obsidian / Porcelain Bronze and the actual bundled S2 demo sprites. Production Studio is not integrated or changed by this prototype.

@@ -75,7 +75,7 @@ function menus() {
     if (state.menu === 'description')
         return `<section class="popover description" data-ui aria-label="Character prompt"><div class="popover-head"><h2>Character prompt</h2>${iconButton('Close prompt', 'dismiss', 'x')}</div><p>${esc(current().prompt)}</p>${button('Copy prompt', 'copy-description', { icon: 'copy' })}<small>Walk available. Idle absent; live views use a still frame.</small></section>`;
     if (state.menu === 'parts')
-        return `<div class="popover parts-popover" data-ui><small>Equipment parts</small>${EQUIPMENT_SLOTS.filter(s => !s.tab).map(s => [s.id, s.label]).map(([id, n]) => button(n, 'slot:' + id, { pressed: state.slot === id })).join('')}</div>`;
+        return `<div class="popover parts-popover" data-ui><small>Additional equipment</small>${EQUIPMENT_SLOTS.filter(s => !s.tab).map(s => [s.id, s.label]).map(([id, n]) => button(n, 'slot:' + id, { pressed: state.slot === id })).join('')}</div>`;
     return '';
 }
 function positionPartsMenu() { positionPopover(ui.querySelector('.parts-popover'), ui.querySelector('[data-action="slot:all"]'), ui.querySelector('.mode-tabs')); }

@@ -50,9 +50,6 @@ textarea.bu-input { min-height: 100px; }
 :is(.item,.none,.outline)[aria-pressed=true] { border-color: var(--bu-accent); background: var(--bu-selected); }
 :is(.item,.none,.outline):hover { border-color: var(--bu-border); background: var(--bu-hover); }
 .item { isolation: isolate; }
-/* Native option popups do not reliably inherit their select's surface on Windows. */
-select, option, optgroup { color-scheme: inherit; }
-option, optgroup { color: var(--bu-text); background-color: var(--bu-field); }
 
 #toast.bu-floating { top: auto; min-width: 0; opacity: 1; pointer-events: none; }
 #dialog.bronze-dialog-overlay {
@@ -75,19 +72,9 @@ option, optgroup { color: var(--bu-text); background-color: var(--bu-field); }
   button[aria-pressed=true] { outline: 2px solid Highlight; }
 }
 
-/* Keep native select semantics. Supporting browsers expose a styleable top-layer
-   picker; other engines retain their OS picker with the matched colors above. */
+/* Native picker materials come from Bronze UI. Only playback geometry is local. */
 .playback select { border:1px solid var(--bu-rim); background:var(--bu-field); font-size:16px; }
 @supports (appearance:base-select) and selector(select::picker(select)) {
-  select, select::picker(select) { appearance:base-select; }
-  select::picker(select) {
-    color:var(--bu-text); background:var(--bu-field);
-    border:1px solid var(--bu-border); border-radius:var(--bu-radius-control);
-    box-shadow:var(--bu-shadow); padding:4px; max-height:min(320px, 60dvh);
-  }
-  select option { min-height:44px; padding:8px 12px; border-radius:4px; font:16px/1.5 var(--bu-font); }
-  select option:checked { color:var(--bu-accent); background:var(--bu-selected); }
-  select option:is(:hover,:focus) { color:var(--bu-text); background:var(--bu-hover); outline:2px solid var(--bu-focus); outline-offset:-2px; }
   .playback select { width:140px; max-width:none; flex-shrink:0; }
   @media(max-width:760px) { .playback select { width:128px; } }
 }
