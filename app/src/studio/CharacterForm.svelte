@@ -21,6 +21,7 @@
   const frame = $derived(d.auto && Number.isFinite(d.body) ? autoFrame(d.body!) : d.frame)
   const preset = $derived(presetOf(d))
   const errors = $derived(draftErrors(d))
+  const enhanceTarget = $derived(d.tab === 'appearance' ? 'details' : 'prompt')
   const enhanceInput = (target: 'details' | 'prompt') => ({ description: target === 'prompt' ? d.prompt : d.details, image_size: { width: d.body || 0, height: d.body || 0 }, view: d.view })
   const canEnhance = (target: 'details' | 'prompt') => !busy && !!enhanceInput(target).description.trim() && Number.isInteger(d.body) && d.body! >= 32 && d.body! <= 256 && enhanceInput(target).description.length <= 2000
   const canUndo = (target: 'details' | 'prompt') => undo?.target === target && undo.after === d.prompt
@@ -68,16 +69,19 @@
 
 <div class="creator-grid">
   <section class="appearance" aria-label="Character appearance">
-    <div class="creator-tabs" role="tablist" aria-label="Prompt editor">
-      <button role="tab" id="appearance-tab" aria-controls="appearance-panel" tabindex={d.tab === 'appearance' ? 0 : -1} aria-selected={d.tab === 'appearance'} onkeydown={tabKey} onclick={() => d.tab = 'appearance'}>Appearance</button>
-      <button role="tab" id="prompt-tab" aria-controls="prompt-panel" tabindex={d.tab === 'prompt' ? 0 : -1} aria-selected={d.tab === 'prompt'} onkeydown={tabKey} onclick={() => d.tab = 'prompt'}>Prompt</button>
+    <div class="editor-toolbar">
+      <div class="creator-tabs" role="tablist" aria-label="Prompt editor">
+        <button role="tab" id="appearance-tab" aria-controls="appearance-panel" tabindex={d.tab === 'appearance' ? 0 : -1} aria-selected={d.tab === 'appearance'} onkeydown={tabKey} onclick={() => d.tab = 'appearance'}>Appearance</button>
+        <button role="tab" id="prompt-tab" aria-controls="prompt-panel" tabindex={d.tab === 'prompt' ? 0 : -1} aria-selected={d.tab === 'prompt'} onkeydown={tabKey} onclick={() => d.tab = 'prompt'}>Prompt</button>
+      </div>
+      <span class="prompt-actions">
+        {#if d.tab === 'prompt'}<button class="btn icon copy" aria-label="Copy exact prompt" title="Copy exact prompt" onclick={copy}>{#if copied}<Check size={14} />{:else}<Copy size={14} />{/if}</button>{/if}
+        <span class="api-action"><ApiPeek scope={d.tab === 'appearance' ? 'character-details-enhance' : 'character-prompt-enhance'} label={d.tab === 'appearance' ? 'Enhance details' : 'Enhance exact prompt'} plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput(enhanceTarget)), label: d.tab === 'appearance' ? 'Enhance character details' : 'Enhance exact character prompt', generations: 0.05 }]} activityScope={scope} /><button class="btn small enhance" aria-label={canUndo(enhanceTarget) ? 'Undo' : busy ? 'Enhancing…' : 'Enhance'} title={canUndo(enhanceTarget) ? 'Restore the previous prompt' : 'Enhance with V3 (~0.05 gens)'} disabled={busy || (!canUndo(enhanceTarget) && !canEnhance(enhanceTarget))} onclick={() => enhance(enhanceTarget)}>{#if canUndo(enhanceTarget)}<Undo2 size={13} /><span class="enhance-label">Undo</span>{:else}<WandSparkles size={13} /><span class="enhance-label">{busy ? 'Enhancing…' : 'Enhance'}</span>{/if}</button></span>
+      </span>
     </div>
     {#if d.tab === 'appearance'}
       <div id="appearance-panel" role="tabpanel" aria-labelledby="appearance-tab" class="editor-panel">
         <div class="creator-field">
-          <div class="title-row"><Help title="Details" text="Describe the face and other distinctive features. Appearance choices add precise lines to the same prompt. Hair, clothes and gear are added later as swappable items." />
-            <span class="api-action"><ApiPeek scope="character-details-enhance" label="Enhance details" plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput('details')), label: 'Enhance character details', generations: 0.05 }]} activityScope={scope} /><button class="btn small enhance" title={canUndo('details') ? 'Restore the previous prompt' : 'Enhance with V3 (~0.05 gens)'} disabled={busy || (!canUndo('details') && !canEnhance('details'))} onclick={() => enhance('details')}>{#if canUndo('details')}<Undo2 size={13} />Undo{:else}<WandSparkles size={13} />{busy ? 'Enhancing…' : 'Enhance'}{/if}</button></span>
-          </div>
           <textarea class="input details-input" aria-label="Details" rows="3" maxlength="2000" value={d.details} oninput={(e) => details(e.currentTarget.value)} placeholder="A freckled elf with a kind face"></textarea>
         </div>
         {#each TRAIT_KEYS as key (key)}
@@ -87,7 +91,6 @@
       </div>
     {:else}
       <div id="prompt-panel" role="tabpanel" aria-labelledby="prompt-tab" class="editor-panel">
-        <div class="title-row"><Help title="Exact prompt" text="This text is sent unchanged to V3. Complete lines such as Kind: Elf update Appearance. Other text stays in Details; free prose is never guessed as a trait." /><span class="prompt-actions"><button class="btn icon copy" aria-label="Copy exact prompt" title="Copy exact prompt" onclick={copy}>{#if copied}<Check size={14} />{:else}<Copy size={14} />{/if}</button><span class="api-action"><ApiPeek scope="character-prompt-enhance" label="Enhance exact prompt" plan={[{ ...routes.enhanceCharacterV3Prompt(enhanceInput('prompt')), label: 'Enhance exact character prompt', generations: 0.05 }]} activityScope={scope} /><button class="btn small enhance" title={canUndo('prompt') ? 'Restore the previous prompt' : 'Enhance with V3 (~0.05 gens)'} disabled={busy || (!canUndo('prompt') && !canEnhance('prompt'))} onclick={() => enhance('prompt')}>{#if canUndo('prompt')}<Undo2 size={13} />Undo{:else}<WandSparkles size={13} />{busy ? 'Enhancing…' : 'Enhance'}{/if}</button></span></span></div>
         <textarea class="input exact-input" aria-label="Exact prompt" value={d.prompt} oninput={(e) => { edited(); readPrompt(d, e.currentTarget.value) }} maxlength="2000" spellcheck="false"></textarea>
       </div>
     {/if}
@@ -127,14 +130,13 @@
   .creator-grid { display:grid; grid-template-columns:minmax(250px,1.1fr) minmax(170px,.8fr) minmax(290px,1.15fr); gap:24px; align-items:start; }
   section { min-width:0; display:flex; flex-direction:column; gap:12px; }
   .appearance { gap:10px; }
-  .creator-tabs { display:flex; gap:3px; padding:3px; background:var(--bg-side); border-radius:var(--r-ctl); }
-  .creator-tabs button { flex:1; height:30px; border:0; border-radius:4px; background:none; color:var(--text-3); font:inherit; cursor:pointer; }
+  .editor-toolbar { display:flex; align-items:center; justify-content:space-between; gap:6px; min-height:36px; }
+  .creator-tabs { display:flex; flex:1; min-width:0; gap:3px; padding:3px; background:var(--bg-side); border-radius:var(--r-ctl); }
+  .creator-tabs button { flex:1; height:30px; padding:0 6px; border:0; border-radius:4px; background:none; color:var(--text-3); font:inherit; font-size:var(--fs-sm); cursor:pointer; }
   .creator-tabs [aria-selected=true] { background:var(--bg-hover); color:var(--text); box-shadow:0 1px 3px #0002; }
   .editor-panel { display:flex; flex-direction:column; gap:12px; min-height:336px; }
   .creator-field { display:flex; flex-direction:column; gap:6px; }
-  .title-row { display:flex; align-items:center; justify-content:space-between; gap:4px; min-height:30px; }
-  .title-row :global(.help-title) { align-self:center; }
-  .title-row :global(.api-action) { gap:3px; }
+  .editor-toolbar :global(.api-action) { gap:3px; }
   .enhance { min-width:78px; gap:4px; padding-inline:7px; }
   .prompt-actions { display:flex; align-items:center; gap:3px; }
   .details-input { resize:vertical; min-height:82px; max-height:160px; font-size:var(--fs); }
@@ -172,5 +174,6 @@
   .creator-message, .creator-validation { color:var(--text-2); font-size:var(--fs-sm); line-height:1.5; overflow-wrap:anywhere; }
   .creator-validation { color:var(--danger-text, var(--text-2)); }
   @media (max-width:850px) { .creator-grid { grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:22px; } .facing { grid-column:1/-1; max-width:360px; } }
-  @media (max-width:599px), (max-height:499px) { .creator-grid { display:flex; flex-direction:column; gap:22px; } section { width:100%; } .editor-panel { min-height:0; } .creator-tabs button { height:40px; } .title-row { min-height:44px; } .trait-row { grid-template-columns:90px minmax(0,1fr); } .input { min-height:44px; font-size:16px; } .body-presets .btn, .frame-controls .btn, .direction-presets .btn { min-height:44px; } .mirror { flex-basis:44px; } .direction-tile { height:56px; } .compass { grid-template-columns:1fr 44px 1fr; max-width:360px; } .facing { max-width:none; } .exact-input { min-height:300px; } .direction-presets .btn { font-size:12px; } .prompt-excerpt { font-size:12px; height:54px; } .mirror-summary { font-size:11px; } }
+  @media (max-width:599px), (max-height:499px) { .creator-grid { display:flex; flex-direction:column; gap:22px; } section { width:100%; } .editor-panel { min-height:0; } .creator-tabs button { height:40px; } .editor-toolbar { min-height:46px; } .trait-row { grid-template-columns:90px minmax(0,1fr); } .input { min-height:44px; font-size:16px; } .body-presets .btn, .frame-controls .btn, .direction-presets .btn { min-height:44px; } .mirror { flex-basis:44px; } .direction-tile { height:56px; } .compass { grid-template-columns:1fr 44px 1fr; max-width:360px; } .facing { max-width:none; } .exact-input { min-height:300px; } .direction-presets .btn { font-size:12px; } .prompt-excerpt { font-size:12px; height:54px; } .mirror-summary { font-size:11px; } }
+  @media (max-width:359px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } }
 </style>

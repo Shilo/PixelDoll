@@ -142,6 +142,7 @@ test.describe('touch tablet', () => {
   test.use({ hasTouch: true, viewport: { width: 768, height: 1024 } })
   test('mirror controls retain 44px targets without overflowing the two-column layout', async ({ page }) => {
     const sheet = await open(page)
+    await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
     const buttons = await sheet.locator('.mirror, .creator-tabs button').evaluateAll(elements => elements.map(el => { const r = el.getBoundingClientRect(); return { w: r.width, h: r.height } }))
     expect(buttons.every(b => b.w >= 44 && b.h >= 44)).toBe(true)
     expect(await sheet.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
@@ -162,6 +163,15 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
   await page.keyboard.press('Escape'); await expect(sheet).toBeVisible()
   const footer = await sheet.getByRole('button', { name: 'Create character', exact: true }).boundingBox()
   expect(footer!.y + footer!.height).toBeLessThanOrEqual(viewport.height)
+  const appearanceGap = await sheet.getByRole('textbox', { name: 'Details', exact: true }).evaluate(el => el.getBoundingClientRect().top - el.closest('.appearance')!.querySelector('.editor-toolbar')!.getBoundingClientRect().bottom)
+  await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
+  const promptGap = await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).evaluate(el => el.getBoundingClientRect().top - el.closest('.appearance')!.querySelector('.editor-toolbar')!.getBoundingClientRect().bottom)
+  expect(promptGap).toBe(appearanceGap)
+  const toolbar = await sheet.locator('.editor-toolbar').evaluate(el => {
+    const row = el.getBoundingClientRect()
+    return [...el.querySelectorAll('button')].every(button => { const r = button.getBoundingClientRect(); return r.left >= row.left && r.right <= row.right + 1 && r.top >= row.top && r.bottom <= row.bottom })
+  })
+  expect(toolbar).toBe(true)
 })
 
 for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse: true, unique: 1, rows: 2 }, { preset: 'Diagonal 4', size: 96, frame: 160, reverse: false, unique: 2, rows: 4 }, { preset: 'Unique 8', size: 128, frame: 256, reverse: false, unique: 8, rows: 8 }]) test(`offline creation, persistence and export: ${config.preset}, ${config.frame}px`, async ({ page, context }) => {
