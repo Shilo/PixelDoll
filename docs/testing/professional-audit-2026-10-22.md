@@ -100,6 +100,32 @@ The actual failed-quality attack package also passes export fidelity checks: Pha
 
 Final source validation through `cd1122a`: 321 unit tests across 34 files, 34 browser tests, strict checks with zero errors/warnings, production build (412.16 KB main JavaScript) and credential guard clean. Both offline evidence tools are excluded from production. Exact-token staged scans pass. All paid requests settled before the agent server was stopped; the regular localhost preview remains available. No push, merge or deployment was performed.
 
+## Scoped Slash repair follow-up
+
+`c101df5` adds selected-direction body replacement, missing-direction equipment recovery, a 96px frozen-body masked item
+repair, and explicit measurement-only recovery. New side Slash uses versioned visible front/up targets and a separated
+passive arm. Historical intents retain their original request arrays. Scoped replacements preserve other directions and
+moves and refuse failed body candidates. Item publication checks the current rig and original equipment atomically.
+
+The original West body's thirteen removed pixels were grey motion fragments, not skin: the raw provider image already
+lacked its intended raised hand. A new East/West render visibly fixes the connected-hand/occlusion problem. Both renders
+completed for six gens, but their first two joint requests returned HTTP 500. They remain recorded as unknown, with no
+automatic resend or body publication. The new explicit recovery reused those exact renders, sequentially completed all
+fifteen unique unfinished estimator inputs for 1.5 gens, and retained the unknown originals. All sixteen cells now have
+genuine complete measurements: East adherence 0.78 px and West 0.81 px, both within the unchanged 2 px gate. East passes all
+body checks. West fails only palette fit 0.962 against 0.97, so neither replacement was published. This distinguishes a
+successful pose correction and paid recovery from a complete accepted asset.
+
+Recovery persists reviewed IDs, rig version and consent before submission. Atomic estimate claims prevent duplicate
+forks and stale overwrites across tabs, including first checks with no earlier ledger record. The scheduler cannot send
+a new ordinary request before its first ledger save commits. An atomic body-publication receipt lets an interrupted
+equipment step resume without redrawing the body; legitimate garment colour tagging advances only a matching receipt.
+Independent reviews challenged delayed writes, aborted claims, progressed records, stale tabs and reload boundaries.
+
+Validation at `c101df5`: 383 unit tests across 42 files, 37 browser tests, strict checks with zero errors/warnings and a
+429.49 KB production main bundle with clean credential guard. Exact-token staged and bundle scans passed. Read-only
+raw/cleaned/requested/measured inspection tools remain development-only and cannot call PixelLab or alter projects.
+
 ## Remaining limits
 
 Two shield east-walk drafts retain hard QA flags and remain unaccepted; stored cape smudges and helmet hurt-frame artwork also require correction or explicit review. Independent body directions/actions are implemented for new characters. The live slash execution completed, but its east/west body checks and west weapon artwork failed quality acceptance; it remains review evidence, not a certified attack asset. Existing and economy-mode mirrored rigs still flip asymmetric attacks. No item-only toggle was presented as an anatomical fix.

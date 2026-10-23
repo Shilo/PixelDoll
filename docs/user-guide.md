@@ -171,6 +171,11 @@ reuses the exact completed body images and runs only unfinished measurements, se
 an unknown earlier request may already have charged. Each click records a separate explicit recovery attempt; reloading
 does not grant another retry of an unknown result. **Generate new frames** instead starts a new body attempt.
 
+A failed repair with otherwise valid poses may offer **Match body colours**. It reuses completed renders and makes only
+small, unambiguous changes to nearby colours from the standing reference. It preserves shapes, leaves larger or
+different-hue changes alone, and measures changed images again. The displayed cost includes those measurements and
+selected equipment posing. The previous body remains if any quality check still fails.
+
 ## Export
 
 Press **Export** (toolbar), choose **For which engine?**: Godot, Unity, Phaser, Aseprite or PNG + JSON, and download the zip. Export is

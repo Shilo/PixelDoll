@@ -2,8 +2,8 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
-vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, saveCopy: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
+vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
@@ -200,4 +200,63 @@ test('joint recovery refuses a superseded pending operation and a failed durable
   expect(mocks.move).not.toHaveBeenCalled()
   expect(s.moving.error).toContain('Storage blocked')
   expect(s.moving.error).toContain('Dismiss this operation before reloading')
+})
+
+
+const palettePlan = { ...recoveryPlan, recordIds: [], rawHashes: ['cached-body-hash'], checks: 4, gens: 0.4, usd: 0.02052, directions: ['west'] as import('../../src/lib/store/manifest.ts').DirectionName[], changedPixels: 39, rawOutliers: 177, remainingOutliers: 138, changedFrames: 4, itemGens: 6 }
+const paletteSpec = { ...recoverySpec, measurementRecovery: { id: 'previous-joint-consent', recordIds: ['old-lost'], rigVersion: 'rig-fingerprint' } }
+
+test('body colour consent preserves the raw render identity, clears old check consent, and persists before work', async () => {
+  const persisted = pending<void>()
+  mocks.put.mockImplementationOnce(() => persisted.promise); mocks.palette.mockResolvedValue(palettePlan)
+  mocks.move.mockRejectedValue(new Error('Offline corrected check stopped'))
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(paletteSpec), error: 'Palette fit failed', done: false })
+  const run = s.matchMoveBodyColours('project', structuredClone(paletteSpec), palettePlan)
+  await vi.waitFor(() => expect(mocks.put).toHaveBeenCalledOnce())
+  expect(mocks.palette).toHaveBeenCalledWith('project', { ...paletteSpec, measurementRecovery: undefined })
+  expect(mocks.move).not.toHaveBeenCalled()
+  const stored = mocks.put.mock.calls[0][2]
+  expect(stored).toMatchObject({ status: 'running', spec: { ...recoverySpec, bodyPaletteRepair: { version: 'near-rest-v1', rigVersion: palettePlan.rigVersion } } })
+  expect(stored.spec.bodyPaletteRepair.id).toMatch(/^[a-f0-9-]{36}$/)
+  expect(stored.spec.measurementRecovery).toBeUndefined()
+  persisted.resolve(); await run
+  expect(mocks.move.mock.calls[0][1]).toEqual(stored.spec)
+  expect(mocks.put.mock.calls[1][2]).toMatchObject({ status: 'failed', spec: stored.spec })
+  mocks.move.mockClear(); mocks.palette.mockClear(); vi.resetModules()
+  mocks.get.mockResolvedValue(mocks.put.mock.calls[1][2])
+  const restored = await import('../../src/studio/state.svelte.ts'); await restored.resumeMove()
+  expect(mocks.move).not.toHaveBeenCalled(); expect(mocks.palette).not.toHaveBeenCalled()
+  expect(restored.moving.spec).toEqual(stored.spec)
+})
+
+test.each(['rawHashes', 'rigVersion', 'changedPixels', 'checks', 'itemGens'] as const)('body colour consent rejects changed %s without paid work', async field => {
+  mocks.palette.mockResolvedValue({ ...palettePlan, [field]: field === 'rawHashes' ? ['different-body'] : field === 'rigVersion' ? 'changed-rig' : 999 })
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(paletteSpec), error: 'Palette fit failed', done: false })
+  await expect(s.matchMoveBodyColours('project', structuredClone(paletteSpec), palettePlan)).rejects.toThrow('Review their cost again')
+  expect(mocks.put).not.toHaveBeenCalled(); expect(mocks.move).not.toHaveBeenCalled()
+  expect(s.moving.error).toBe('Palette fit failed')
+})
+
+test('existing body colour intent cannot be applied twice and interrupted resume retains its identity', async () => {
+  const spec = { ...recoverySpec, bodyPaletteRepair: { id: 'existing-colour-consent', version: 'near-rest-v1' as const, rigVersion: palettePlan.rigVersion } }
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec, error: 'A corrected check stopped', done: false })
+  await expect(s.matchMoveBodyColours('project', spec, palettePlan)).rejects.toThrow('Review the body colours again')
+  expect(mocks.palette).not.toHaveBeenCalled(); expect(mocks.move).not.toHaveBeenCalled()
+  vi.resetModules(); mocks.get.mockResolvedValue({ id: 'studio-move', spec, projectId: 'project', status: 'running' })
+  mocks.move.mockRejectedValue(new Error('Interrupted corrected check stopped'))
+  const restored = await import('../../src/studio/state.svelte.ts'); await restored.resumeMove()
+  await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+  expect(mocks.move.mock.calls[0][1]).toEqual(spec)
+})
+
+test('body colour consent storage failure cannot start paid work', async () => {
+  mocks.palette.mockResolvedValue(palettePlan); mocks.put.mockRejectedValue(new Error('Consent storage blocked'))
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(paletteSpec), error: 'Palette fit failed', done: false })
+  await s.matchMoveBodyColours('project', structuredClone(paletteSpec), palettePlan)
+  expect(mocks.move).not.toHaveBeenCalled()
+  expect(s.moving.error).toContain('Consent storage blocked')
 })

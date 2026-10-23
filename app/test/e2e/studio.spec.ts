@@ -1346,3 +1346,82 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
   expect(pending.spec.measurementRecovery.id).toMatch(/^[a-f0-9-]{36}$/)
   expect(posts).toEqual([]); expect(errors).toEqual([])
 })
+
+
+test('bounded body colour correction discloses changed checks and equipment cost before durable consent', async ({ page, context }, info) => {
+  const posts: string[] = []
+  await context.route('https://api.pixellab.ai/**', async r => {
+    if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance')) await r.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 1 } } })
+    else { posts.push(r.request().method()); await r.abort() }
+  })
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await targetedRepairFixture(page)
+  const original = await page.evaluate(async itemId => {
+    const sPath = '/src/studio/state.svelte.ts', s = await import(sPath), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    const pPath = '/src/lib/store/project.ts', projectModule = await import(pPath), posePath = '/src/lib/rig/poses.ts', poses = await import(posePath)
+    const clipPath = '/src/lib/rig/clips.ts', clips = await import(clipPath), cPath = '/src/studio/create.ts', create = await import(cPath)
+    const qPath = '/src/lib/pixellab/queue.ts', q = await import(qPath), rPath = '/src/lib/pixellab/routes.ts', routes = await import(rPath)
+    const pngPath = '/src/lib/image/png.ts', png = await import(pngPath), rawPath = '/src/lib/image/pngraw.ts', rawPng = await import(rawPath)
+    const restImage = png.makeImg(64, 64)
+    for (let y = 12; y < 60; y++) for (let x = 25; x < 39; x++) restImage.data.set([0, 0, 0, 255], (y * 64 + x) * 4)
+    for (let i = 0; i < 8; i++) restImage.data.set([32 * i, 32 * i, 32 * i, 255], (13 * 64 + 25 + i) * 4)
+    const rec = await db.get('projects', s.doc.id)
+    rec.manifest.rig.rest.west.image = 'sha256:' + await db.putBlob(await rawPng.encodePngBytes(restImage))
+    await db.put('projects', s.doc.id, rec)
+    const { project } = await projectModule.loadProject(s.doc.id), rig = rec.manifest.rig, rest = rig.rest.west, image = project.images.get(rest.image)
+    const spec = { id: 'slash', action: 'slash', frames: 8, items: [itemId], seed: 421, replace: true, dirs: ['west'], poseStyle: 'visible-side-v1' }
+    const keypoints = poses.authoredPoses(spec.action, poses.fromApi(rest.keypoints, rig.cell), 'west', rig.cell.w, spec.poseStyle).map((p: unknown) => poses.toApi(p, rig.cell))
+    const req = clips.rawClip({ first: await create.b64(image), rest: rest.keypoints, keypoints, description: rec.character.looks, action: 'slash, empty hands, no weapon, no props, no effects', dir: 'west', seed: spec.seed + 101, view: rig.view })
+    const results = []
+    for (let i = 0; i < keypoints.length; i++) {
+      const frame = { ...image, data: new Uint8ClampedArray(image.data) }
+      frame.data.set([32 * i, 32 * i, 32 * i, 255], (14 * 64 + 25) * 4)
+      for (let n = 0; n < 27; n++) frame.data.set([13, 5, 2, 255], ((20 + Math.floor(n / 14)) * 64 + 25 + n % 14) * 4)
+      results.push({ label: String(i), sha: await db.putBlob(await rawPng.encodePngBytes(frame)) })
+      const estimate = routes.routes.estimateSkeleton(routes.png(await create.b64(frame)))
+      const row = { id: 'palette-original-check-' + i, tag: 'studio-rig', method: estimate.method, endpoint: estimate.path, ...await q.requestIdentity(estimate), state: 'done', attempts: 1, nextAt: 0, createdAt: Date.now(), jobs: [], response: { keypoints: keypoints[i] }, gens: 0.1, usd: 0 }
+      await db.put('jobs', row.id, row)
+    }
+    await db.put('jobs', 'palette-cached-body', { id: 'palette-cached-body', tag: 'studio-rig', method: req.method, endpoint: req.path, ...await q.requestIdentity(req), state: 'done', attempts: 1, nextAt: 0, createdAt: Date.now(), jobs: [{ id: 'palette-offline-results', status: 'done', done: true, results }], gens: 3, usd: 0 })
+    await db.put('projects', 'studio-move', { id: 'studio-move', projectId: s.doc.id, spec, status: 'failed', error: 'Palette fit failed; existing body kept' })
+    return { spec, projectId: s.doc.id }
+  }, fixture.itemId)
+  await page.reload()
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await expect.poll(async () => page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.error })).toBe('Palette fit failed; existing body kept')
+  await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
+  const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true })
+  await expect(sheet).toContainText('Palette fit failed; existing body kept')
+  const action = sheet.getByRole('button', { name: 'Match body colours', exact: true })
+  await expect(action).toBeVisible()
+  await expect(sheet).toContainText('Match 216 nearby colour pixels')
+  await expect(sheet).toContainText('8 cached West frames')
+  await expect(sheet).toContainText('estimated 0.8 gens or $0.041')
+  await expect(sheet).toContainText('estimated 3 additional gens')
+  await expect(sheet).toContainText('Existing body views are kept if a check still fails')
+  await action.click()
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab' })
+  await connect.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
+  await expect(action).toBeVisible()
+  await page.evaluate(() => {
+    const put = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move' && value.status === 'running') throw new Error('Colour consent storage blocked'); return put.call(this, value, key) }
+  })
+  await action.click()
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-body-colour-key')
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(sheet).toContainText('Colour consent storage blocked')
+  const consent = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.spec })
+  expect(consent).toMatchObject(original.spec)
+  expect(consent.bodyPaletteRepair).toMatchObject({ version: 'near-rest-v1' })
+  expect(consent.bodyPaletteRepair.id).toMatch(/^[a-f0-9-]{36}$/)
+  expect(consent.measurementRecovery).toBeUndefined()
+  await sheet.getByRole('button', { name: 'Try again', exact: true }).click()
+  const fresh = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.spec })
+  expect(fresh.seed).not.toBe(original.spec.seed)
+  expect(fresh.bodyPaletteRepair).toBeUndefined(); expect(fresh.measurementRecovery).toBeUndefined()
+  expect(posts).toEqual([]); expect(errors).toEqual([])
+})

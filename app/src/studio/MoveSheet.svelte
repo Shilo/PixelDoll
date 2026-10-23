@@ -10,8 +10,8 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
-  import { MOVE_STEPS, isV13, measurementRecoveryPlan, moveEstimate } from './create.ts'
-  import { ui, doc, store, isDemo, moving, settingUp, startMove, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
+  import { MOVE_STEPS, isV13, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
+  import { ui, doc, store, isDemo, moving, settingUp, startMove, matchMoveBodyColours, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
@@ -40,14 +40,17 @@
   const nice = (s: string) => s[0].toUpperCase() + s.slice(1).replace(/-/g, ' ')
   let recovery = $state<Awaited<ReturnType<typeof measurementRecoveryPlan>> | null>(null)
   let recoveryError = $state('')
+  let colourRepair = $state<Awaited<ReturnType<typeof bodyPaletteRepairPlan>> | null>(null)
+  const recoveryItemGens = $derived(recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0)
   const ledgerStates = $derived($queue.jobs.map((r) => `${r.id}:${r.state}`).join('|'))
   $effect(() => {
     void ledgerStates // Re-check finished siblings without decoding PNGs on every progress poll.
     const projectId = moving.projectId, spec = moving.spec && $state.snapshot(moving.spec), error = moving.error
     let current = true
-    recovery = null; recoveryError = ''
+    recovery = null; colourRepair = null; recoveryError = ''
     if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
       void measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined }).then((plan) => { if (current && plan.checks > 0 && plan.recordIds.length > 0) recovery = plan }).catch(() => {})
+      if (!spec.bodyPaletteRepair) void bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined }).then((plan) => { if (current && plan.changedPixels > 0 && plan.changedFrames > 0 && plan.directions.length) colourRepair = plan }).catch(() => {})
     }
     return () => { current = false }
   })
@@ -57,6 +60,15 @@
     withKey(() => {
       ui.sheet = 'move'
       void retryMoveMeasurements(projectId, spec, reviewed).catch((e) => { recoveryError = e instanceof Error ? e.message : String(e) })
+    })
+  }
+
+  function matchColours() {
+    if (!moving.spec || !colourRepair) return
+    const projectId = moving.projectId, spec = $state.snapshot(moving.spec), reviewed = $state.snapshot(colourRepair)
+    withKey(() => {
+      ui.sheet = 'move'
+      void matchMoveBodyColours(projectId, spec, reviewed).catch((e) => { recoveryError = e instanceof Error ? e.message : String(e) })
     })
   }
 
@@ -80,8 +92,9 @@
     <button class="btn primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
   {:else if mine && moving.error}
     <button class="btn plain" onclick={dismissMove}>Start over</button>
-    <button class="btn" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' })}>{recovery ? 'Generate new frames' : 'Try again'}</button>
-    {#if recovery}<button class="btn primary" onclick={retryChecks}>Retry joint checks</button>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
+    <button class="btn" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' })}>{recovery || colourRepair ? 'Generate new frames' : 'Try again'}</button>
+    {#if recovery}<button class="btn primary" onclick={retryChecks}>Retry joint checks</button>{/if}
+    {#if colourRepair}<button class="btn primary" onclick={matchColours}>Match body colours</button>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
   {:else if mine}
     <span class="foot-note">You can keep working.</span>
     <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
@@ -107,7 +120,10 @@
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
       {#if recovery}
-        <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint checks · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.</p>
+        <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint checks · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>
+      {/if}
+      {#if colourRepair}
+        <p class="notice warn small">Match {colourRepair.changedPixels} nearby colour pixels to the standing palette across {colourRepair.changedFrames} cached {colourRepair.directions.map(nice).join(', ')} frames. The body shape stays fixed; other colours are left alone. Recheck {colourRepair.checks} changed frames · estimated {colourRepair.gens.toFixed(1)} gens or ${colourRepair.usd.toFixed(3)}.{#if colourRepair.itemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(colourRepair.itemGens)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails.</p>
       {/if}
       {#if recoveryError}<p class="notice bad small"><CircleAlert size={14} />{recoveryError}</p>{/if}
     </div>

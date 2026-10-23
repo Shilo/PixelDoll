@@ -12,7 +12,7 @@ import { evaluateItem, loadDrafts, type Draft, type ItemResult } from '../lib/it
 import { SLOTS } from '../lib/items/items.ts';
 import { app } from '../lib/app.svelte.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
-import { addMove, createCharacter, measurementRecoveryPlan, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
+import { addMove, bodyPaletteRepairPlan, createCharacter, measurementRecoveryPlan, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { setupCharacter, type SetupSpec } from './setup.ts';
@@ -663,6 +663,18 @@ export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, r
     throw new Error('The pending joint checks changed. Review their cost again.');
   }
   await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: { id: crypto.randomUUID(), recordIds: [...current.recordIds], rigVersion: current.rigVersion } });
+}
+/** Explicit bounded colour cleanup on the reviewed cached body; all paid measurements still use the changed PNGs. */
+export async function matchMoveBodyColours(projectId: string, spec: MoveSpec, reviewed: Awaited<ReturnType<typeof bodyPaletteRepairPlan>>) {
+  const pending = JSON.stringify($state.snapshot(spec));
+  const unchanged = () => !hmrReloading && !moveRunning && moving.projectId === projectId && !!moving.error && !moving.done && !spec.bodyPaletteRepair && JSON.stringify($state.snapshot(moving.spec)) === pending;
+  if (!unchanged()) throw new Error('This operation changed. Review the body colours again.');
+  const current = await bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined });
+  const review = (plan: typeof current) => JSON.stringify({ ...plan, directions: [...plan.directions].sort(), rawHashes: [...plan.rawHashes].sort(), recordIds: [...plan.recordIds].sort() });
+  if (!unchanged() || current.changedPixels <= 0 || current.changedFrames <= 0 || !current.directions.length || review(current) !== review(reviewed)) {
+    throw new Error('The body colour corrections changed. Review their cost again.');
+  }
+  await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: undefined, bodyPaletteRepair: { id: crypto.randomUUID(), version: 'near-rest-v1', rigVersion: current.rigVersion } });
 }
 let moveResumed = false;
 export async function resumeMove() {

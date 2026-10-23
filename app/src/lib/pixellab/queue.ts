@@ -399,7 +399,7 @@ export class Queue {
       if (this.connectedOnce && (!this.connection || this.connection !== connection)) throw new Error('Queue disconnected. Reload PixelDoll before starting more work.');
     };
     assertConnected();
-    if (meta.estimateRetry && (req.method !== 'POST' || req.path !== '/estimate-skeleton' || !meta.estimateRetry.id || !meta.estimateRetry.recordIds.length)) throw new Error('Explicit measurement recovery is only available for reviewed joint checks.');
+    if (meta.estimateRetry && (req.method !== 'POST' || req.path !== '/estimate-skeleton' || !meta.estimateRetry.id || !Array.isArray(meta.estimateRetry.recordIds))) throw new Error('Explicit measurement recovery is only available for reviewed joint checks.');
     const { params, inputs, requestHash } = await requestIdentity(req, this.deps.putBlob);
     assertConnected(); // obsolete async flows cannot publish another request during disconnect/HMR navigation
     const seeded = typeof (params as { seed?: unknown } | null)?.seed === 'number';

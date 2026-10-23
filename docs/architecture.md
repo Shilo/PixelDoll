@@ -150,6 +150,12 @@ Dependent mirror views are included when their source changes. Failed measured b
 existing scoped clip. New authored side Slash uses persisted `poseStyle: visible-side-v1`: a visible forward high guard
 and separated passive wrist. Missing style retains the original pose arrays and paid request hashes for older jobs.
 
+An explicit `near-rest-v1` body-palette repair reuses completed renders. It changes only outliers beyond the existing
+12/255 channel tolerance with a unique nearest standing colour within 16/255 per channel and a compatible hue family.
+Both raw drift and changed-pixel shares are capped at 5%; unsafe matches stay untouched. Alpha and coordinates never
+change. Only corrected PNGs need new actual measurements. Existing pose, palette, feet and border gates still apply.
+`ClipSource.processing` preserves the version, original fit, correction counts and raw/final estimator-input PNG hashes.
+
 ### 4.3 Superseded or rejected
 
 | Route | Status |

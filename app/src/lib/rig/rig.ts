@@ -20,6 +20,7 @@ export interface ClipSource {
   keypoints?: Keypoint[][]; // [cell][18]: the sequence sent to raw skeleton-v3; items are posed with exactly this
   motion?: string; // "managed-skeleton-v3:walking-8-frames" | "authored:slash" | "pixminimax:<text>"
   measured?: Keypoint[][]; // [cell][18]: re-estimated on the frozen frames (QA, anchors)
+  processing?: { version: 'near-rest-v1'; rawPaletteFit: number; rawOutliers: number; changedPixels: number; remainingOutliers: number; changedFrames: number[]; rawInputHashes: Sha256[]; inputHashes: Sha256[] };
   provenance: number[]; // indexes into the base item's provenance
 }
 export interface RigAnimation {
