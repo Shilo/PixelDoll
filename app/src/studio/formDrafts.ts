@@ -3,5 +3,5 @@ export const formDrafts: {
   item?: { projectId: string; sourceGroup: string; group: string; slot: string; prompt: string; colour: string; name: string }
   character?: { desc: string; skin: number; build: string; name: string; seed: number; dirs: 4 | 8; size: 48 | 56; directionPolicy?: 'independent' | 'mirrored' }
   setup?: { projectId: string; looks: string; restAnim: string }
-  move?: { projectId: string; action: string; text: string; skip: string[] }
+  move?: { projectId: string; action: string; text: string; skip: string[]; dirs?: import('../lib/store/manifest.ts').DirectionName[]; poseStyle?: 'visible-side-v1' }
 } = {}

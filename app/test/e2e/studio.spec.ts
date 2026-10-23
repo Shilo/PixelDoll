@@ -1155,3 +1155,194 @@ test('Export discloses saved item and body review flags without blocking analysi
   await expect(sheet.getByText(/Body frames failed saved checks:/)).toHaveCount(0)
   expect(requests).toEqual([])
 })
+
+
+async function targetedRepairFixture(page: Page) {
+  await page.locator('.stage canvas').first().waitFor()
+  return page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    const posesPath = '/src/lib/rig/poses.ts', poses = await import(posesPath)
+    await s.copyDemo()
+    const rec = await db.get('projects', s.doc.id), m = rec.manifest, base = m.items.find((it: { id: string }) => it.id === m.rig.baseItem)
+    m.rig.directions = m.rig.directions.map((d: { id: string }) => ({ id: d.id }))
+    for (const it of m.items) for (const layer of it.layers) for (const dirs of Object.values(layer.cells ?? {}) as any[]) if (dirs.east && !dirs.west) dirs.west = [...dirs.east]
+    const points = poses.LABELS.map((label: string, i: number) => ({ label, x: 0.3 + i * 0.01, y: 0.2 + i * 0.025 }))
+    m.rig.rest = {}
+    for (const dir of m.rig.directions.map((d: { id: string }) => d.id)) {
+      m.rig.rest[dir] = { image: base.layers[0].cells.walk[dir][0], keypoints: points }
+      for (const a of m.rig.animations) if (base.layers[0].cells[a.id]?.[dir]?.length) {
+        a.sources ??= {}; a.sources[dir] = { route: 'skeleton-v3', keypoints: Array.from({ length: a.cells }, () => points) }
+      }
+    }
+    const sword = m.items.find((it: { slot: string }) => it.slot === 'main_hand')
+    sword.route = 'skeleton-pose'; sword.key = 'green'; sword.dressed = Object.fromEntries(Object.entries(m.rig.rest).map(([d, r]) => [d, (r as { image: string }).image]))
+    rec.character = { id: 'offline-repair-fixture', looks: 'Stored offline fixture' }
+    rec.rigQa = { clips: { 'walk/east': { fails: ['arms off pose'] }, 'walk/west': { fails: ['arms off pose'] } } }
+    await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id)
+    return { itemId: sword.id, itemName: sword.name }
+  })
+}
+
+test('targeted move replacement scopes views, estimates and retained drafts before any paid work', async ({ page, context }, info) => {
+  const posts: string[] = []
+  await context.route('https://api.pixellab.ai/**', async (r) => {
+    if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance')) await r.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 1 } } })
+    else { posts.push(r.request().method()); await r.abort() }
+  })
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await targetedRepairFixture(page)
+  await page.getByRole('tab', { name: 'Moves', exact: true }).click()
+  await page.getByRole('button', { name: 'Add a move', exact: true }).click()
+  await page.getByRole('radio', { name: 'Walk · added', exact: true }).click()
+  const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true })
+  await expect(sheet.getByRole('checkbox', { name: 'East', exact: true })).toBeChecked()
+  await expect(sheet.getByRole('checkbox', { name: 'West', exact: true })).toBeChecked()
+  await expect(sheet.getByRole('checkbox', { name: 'South', exact: true })).not.toBeChecked()
+  await expect(sheet.getByRole('checkbox', { name: 'North', exact: true })).not.toBeChecked()
+  await expect(sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toBeChecked()
+  await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText('Est. 22 gens')
+  await sheet.getByRole('checkbox', { name: 'East', exact: true }).uncheck()
+  await sheet.getByRole('checkbox', { name: 'West', exact: true }).uncheck()
+  await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toBeDisabled()
+  await sheet.getByRole('checkbox', { name: 'East', exact: true }).check()
+  await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText('Est. 11 gens')
+  await sheet.getByRole('button', { name: /^Replace Walk views/ }).click()
+  await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.getByRole('button', { name: 'Add a move', exact: true }).click()
+  await expect(sheet.getByRole('checkbox', { name: 'East', exact: true })).toBeChecked()
+  await expect(sheet.getByRole('checkbox', { name: 'West', exact: true })).not.toBeChecked()
+  await page.evaluate(() => {
+    const original = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move') throw new Error('Offline repair persistence stopped before paid work'); return original.call(this, value, key) }
+  })
+  await sheet.getByRole('button', { name: /^Replace Walk views/ }).click()
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab' })
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-targeted-repair-key')
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(sheet).toContainText('Offline repair persistence stopped before paid work')
+  const scope = await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts', s = await import(path); return s.moving.spec })
+  expect(scope).toMatchObject({ id: 'walk', replace: true, dirs: ['east'], items: [fixture.itemId], poseStyle: 'visible-side-v1' })
+  expect(posts).toEqual([]); expect(errors).toEqual([])
+})
+
+test('partial missing gear and explicit item repair stay on the current move and view', async ({ page, context }, info) => {
+  const posts: string[] = []
+  await context.route('https://api.pixellab.ai/**', async (r) => {
+    if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance')) await r.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 1 } } })
+    else { posts.push(r.request().method()); await r.abort() }
+  })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await targetedRepairFixture(page)
+  await page.evaluate(async (id) => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    const p = s.store.project, item = p.manifest.items.find((it: { id: string }) => it.id === id)
+    for (const layer of item.layers) delete layer.cells.walk.west
+    s.store.project = { ...p, manifest: { ...p.manifest, items: p.manifest.items.map((it: { id: string }) => it.id === id ? { ...item } : it) } }
+    const dbPath = '/src/lib/store/db.ts', db = await import(dbPath), rec = await db.get('projects', s.doc.id)
+    rec.manifest = s.store.project.manifest; await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id)
+    s.ui.anim = 'walk'; s.ui.dir = 'west'; s.ui.all = false; s.pick(id)
+    const original = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move') throw new Error('Scoped repair stopped before paid work'); return original.call(this, value, key) }
+  }, fixture.itemId)
+  const make = page.locator('.stage-note').getByRole('button', { name: /^Make it/ })
+  await expect(make).toContainText('Est. 3 gens')
+  await make.click()
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab' })
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-partial-repair-key')
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+  let sheet = page.getByRole('dialog', { name: 'Add a move', exact: true })
+  await expect(sheet).toContainText('Scoped repair stopped before paid work')
+  const poseScope = await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts', s = await import(path); return s.moving.spec })
+  expect(poseScope).toMatchObject({ id: 'walk', dirs: ['west'], items: [fixture.itemId] })
+  expect(poseScope.replace).toBeUndefined(); expect(poseScope.itemMethod).toBeUndefined()
+  await sheet.getByRole('button', { name: 'Start over', exact: true }).click()
+  await sheet.getByRole('button', { name: 'Cancel', exact: true }).click()
+  const repair = page.getByRole('button', { name: /^Try new item frames/ })
+  await expect(repair).toContainText('Est. 10 gens')
+  await repair.click()
+  sheet = page.getByRole('dialog', { name: 'Repair item frames', exact: true })
+  await expect(sheet).toContainText('Scoped repair stopped before paid work')
+  const gridScope = await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts', s = await import(path); return s.moving.spec })
+  expect(gridScope).toMatchObject({ id: 'walk', dirs: ['west'], items: [fixture.itemId], itemMethod: 'grid' })
+  expect(gridScope.replace).toBeUndefined(); expect(posts).toEqual([])
+})
+
+
+test('reviewed joint-check recovery reuses cached body identity, discloses charges and persists consent before work', async ({ page, context }, info) => {
+  const posts: string[] = []
+  await context.route('https://api.pixellab.ai/**', async r => {
+    if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance')) await r.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 1 } } })
+    else { posts.push(r.request().method()); await r.abort() }
+  })
+  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await targetedRepairFixture(page)
+  const original = await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', s = await import(statePath), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    const projectPath = '/src/lib/store/project.ts', projectModule = await import(projectPath), posePath = '/src/lib/rig/poses.ts', poses = await import(posePath)
+    const clipPath = '/src/lib/rig/clips.ts', clips = await import(clipPath), createPath = '/src/studio/create.ts', create = await import(createPath)
+    const queuePath = '/src/lib/pixellab/queue.ts', q = await import(queuePath), routePath = '/src/lib/pixellab/routes.ts', routes = await import(routePath)
+    const normPath = '/src/lib/rig/normalize.ts', norm = await import(normPath), pngPath = '/src/lib/image/pngraw.ts', pngRaw = await import(pngPath)
+    const spec = { id: 'slash', action: 'slash', frames: 8, items: [], seed: 421, replace: true, dirs: ['west'], poseStyle: 'visible-side-v1' }
+    const { rec, project } = await projectModule.loadProject(s.doc.id), rig = rec.manifest.rig, rest = rig.rest.west, image = project.images.get(rest.image)
+    const keypoints = poses.authoredPoses(spec.action, poses.fromApi(rest.keypoints, rig.cell), 'west', rig.cell.w, spec.poseStyle).map((p: unknown) => poses.toApi(p, rig.cell))
+    const req = clips.rawClip({ first: await create.b64(image), rest: rest.keypoints, keypoints, description: rec.character.looks, action: 'slash, empty hands, no weapon, no props, no effects', dir: 'west', seed: spec.seed + 101, view: rig.view })
+    const sha = await db.putBlob(await pngRaw.encodePngBytes(image))
+    const secondImage = { ...image, data: new Uint8ClampedArray(image.data) }
+    for (let i = 0; i < secondImage.data.length; i += 4) if (secondImage.data[i + 3]) { secondImage.data[i] ^= 32; break }
+    const secondSha = await db.putBlob(await pngRaw.encodePngBytes(secondImage))
+    const raw = { id: 'offline-body-done', tag: 'studio-move', method: req.method, endpoint: req.path, ...await q.requestIdentity(req), state: 'done', attempts: 1, nextAt: 0, createdAt: Date.now(), jobs: [{ id: 'offline-results', status: 'done', done: true, results: keypoints.map((_: unknown, i: number) => ({ label: String(i), sha: i ? secondSha : sha })) }], gens: 3, usd: 0 }
+    await db.put('jobs', raw.id, raw)
+    const clean = clips.largestComponent(norm.normalize(image, 64, 64, 128, 64).img).img
+    const estimate = routes.routes.estimateSkeleton(routes.png(await create.b64(clean)))
+    const lost = { id: 'offline-joint-lost', tag: 'studio-move', method: estimate.method, endpoint: estimate.path, ...await q.requestIdentity(estimate), state: 'lost', attempts: 1, nextAt: 0, createdAt: Date.now() + 1, submittedAt: Date.now(), jobs: [], gens: 0, usd: 0, error: 'Synthetic HTTP 500; unknown paid outcome' }
+    await db.put('jobs', lost.id, lost)
+    const secondClean = clips.largestComponent(norm.normalize(secondImage, 64, 64, 128, 64).img).img
+    const pendingReq = routes.routes.estimateSkeleton(routes.png(await create.b64(secondClean)))
+    await db.put('jobs', 'offline-joint-pending', { ...lost, id: 'offline-joint-pending', state: 'queued', attempts: 0, ...await q.requestIdentity(pendingReq) })
+    await db.put('projects', 'studio-move', { id: 'studio-move', projectId: s.doc.id, spec, status: 'failed', error: 'Joint-check outcome unknown' })
+    return { spec, projectId: s.doc.id }
+  })
+  await page.reload()
+  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
+  const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true })
+  await expect(sheet).toContainText('Joint-check outcome unknown')
+  await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toHaveCount(0)
+  await page.evaluate(async () => {
+    const dbPath = '/src/lib/store/db.ts', db = await import(dbPath), statePath = '/src/studio/state.svelte.ts', s = await import(statePath), qPath = '/src/lib/pixellab/queue.ts', q = await import(qPath)
+    const row = await db.get('jobs', 'offline-joint-pending'), rec = await db.get('projects', s.doc.id)
+    row.state = 'done'; row.response = { keypoints: rec.manifest.rig.rest.west.keypoints }
+    await db.put('jobs', row.id, row); await q.queue.load()
+  })
+  const diagnosis = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p), c = '/src/studio/create.ts', create = await import(c); try { return await create.measurementRecoveryPlan(s.moving.projectId, s.moving.spec) } catch(e) { return String(e) } })
+  expect(diagnosis).toMatchObject({ checks: 1, recordIds: ['offline-joint-lost'] })
+  await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toBeVisible()
+  await expect(sheet).toContainText('Retry 1 unfinished joint checks')
+  await expect(sheet).toContainText('estimated 0.1 gens or $0.005')
+  await expect(sheet).toContainText('Unknown checks may already have charged; retrying can charge again')
+  await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click()
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab' })
+  await expect(connect).toBeVisible()
+  await connect.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
+  await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toBeVisible()
+  await page.evaluate(() => {
+    const put = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move' && value.status === 'running') throw new Error('Offline consent storage blocked'); return put.call(this, value, key) }
+  })
+  await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click()
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-measurement-recovery-key')
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(sheet).toContainText('Offline consent storage blocked')
+  const pending = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return { spec: s.moving.spec, projectId: s.moving.projectId } })
+  expect(pending.projectId).toBe(original.projectId)
+  expect(pending.spec).toMatchObject(original.spec)
+  expect(pending.spec.measurementRecovery).toMatchObject({ recordIds: ['offline-joint-lost'] })
+  expect(pending.spec.measurementRecovery.id).toMatch(/^[a-f0-9-]{36}$/)
+  expect(posts).toEqual([]); expect(errors).toEqual([])
+})

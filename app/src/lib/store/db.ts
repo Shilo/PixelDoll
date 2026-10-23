@@ -101,6 +101,24 @@ export async function update<T>(s: StoreName, key: string, fn: (v: T | undefined
   });
 }
 
+/** Atomically claim one ledger record. Selection runs against the latest jobs in the same transaction as insert;
+ * returning an existing record never rewrites it. The callback must be synchronous and may throw to abort. */
+export async function claimJob<T extends { id: string }>(record: T, chooseExisting: (records: T[]) => T | undefined): Promise<T> {
+  const database = await open();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction('jobs', 'readwrite'), jobs = transaction.objectStore('jobs'), read = jobs.getAll();
+    let result: T, error: unknown;
+    read.onsuccess = () => {
+      try {
+        const existing = chooseExisting(read.result as T[]);
+        result = existing ?? record;
+        if (!existing) jobs.add(record, record.id);
+      } catch (e) { error = e; transaction.abort(); }
+    };
+    transaction.oncomplete = () => resolve(result);
+    transaction.onerror = transaction.onabort = () => reject(error ?? transaction.error);
+  });
+}
 /** Mark-and-sweep in one transaction over all stores: a blob survives when any project/draft/job record mentions its hash
  * (as "<hex>" or "sha256:<hex>"). Returns the number of blobs deleted.
  * ponytail: conservative deep string scan (a requestHash can keep a blob alive; harmless). Callers run it only while this tab
@@ -154,5 +172,19 @@ export async function selfTest() {
   console.assert((await get<{ n: number }>('projects', k))?.n === 3, 'db update is atomic');
   await update('projects', k, () => { throw new Error('x'); }).catch(() => {});
   console.assert((await get<{ n: number }>('projects', k))?.n === 3, 'db update aborts on throw');
+  const claimGroup = 'selftest-claim-' + Math.random(), candidates = Array.from({ length: 10 }, (_, i) => ({ id: `${claimGroup}-${i}`, group: claimGroup, state: 'done', jobs: [], createdAt: Date.now(), progress: 0 }));
+  const choose = (records: typeof candidates) => records.find(r => r.group === claimGroup);
+  try {
+    const claims = await Promise.all(candidates.map(candidate => claimJob(candidate, choose)));
+    console.assert(claims.every(r => r.id === claims[0].id), 'db claim serializes concurrent insert-if-absent requests');
+    const winner = claims[0];
+    await update<typeof winner>('jobs', winner.id, current => ({ ...current!, progress: 2 }));
+    const resumed = await claimJob({ ...winner, progress: 0 }, choose);
+    console.assert(resumed.progress === 2 && (await get<typeof winner>('jobs', winner.id))?.progress === 2, 'db claim never overwrites progressed existing work');
+    const forbidden = { ...winner, id: `${claimGroup}-forbidden` };
+    let rejected = false;
+    try { await claimJob(forbidden, () => { throw new Error('stale consent'); }); } catch { rejected = true; }
+    console.assert(rejected && !(await get('jobs', forbidden.id)), 'db claim callback failure inserts no record');
+  } finally { await Promise.all(candidates.map(candidate => del('jobs', candidate.id))); }
   await del('projects', k); // gcBlobs is not run here: it sweeps the whole origin's store (probe in B13 report)
 }

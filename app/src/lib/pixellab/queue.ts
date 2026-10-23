@@ -50,6 +50,7 @@ export interface JobRec {
   response?: unknown; // submit response, long strings stripped
   jobs: SubJob[];
   error?: string;
+  estimateRecovery?: { id: string; retryOf?: string }; // explicit, persisted measurement-only retry; original unknown record is retained
   autoCancelledAttempts?: number[]; // known automatic pre-submit cancellation; only a distinct explicit attempt may reopen
   gens: number;
   usd: number;
@@ -69,6 +70,7 @@ export interface QueueSnapshot {
 export interface Deps {
   api: <T>(key: string, method: string, path: string, body?: unknown) => Promise<T>;
   put: (key: string, rec: JobRec) => Promise<void>;
+  claimEstimate: (rec: JobRec, chooseExisting: (records: JobRec[]) => JobRec | undefined) => Promise<JobRec>;
   get: (key: string) => Promise<JobRec | undefined>;
   del: (key: string) => Promise<unknown>;
   all: () => Promise<JobRec[]>;
@@ -124,6 +126,28 @@ async function mapDeep(v: unknown, fn: (o: Record<string, unknown>) => Promise<u
   return out;
 }
 
+/** The same canonical request identity used by enqueue, without writing blobs during recovery preflight. */
+export async function requestIdentity(req: Req, putBlob: (bytes: Uint8Array) => Promise<string> = sha256) {
+  const inputs: string[] = [];
+  const params = await mapDeep(req.body ?? null, (o) => {
+    if (!isB64(o)) return undefined;
+    return (async () => {
+      const sha = await putBlob(base64ToBytes(o.base64));
+      inputs.push(sha);
+      return { ...o, base64: undefined, $blob: sha };
+    })();
+  });
+  const requestHash = await sha256(stableStringify({ method: req.method, endpoint: req.path, params }));
+  return { params, inputs, requestHash };
+}
+
+export interface EstimateRetryIntent { id: string; recordIds: readonly string[] }
+/** Unknown measurements require a new explicit reviewed intent; accepted background jobs are never cloned. */
+export function retryableEstimate(r: JobRec): boolean {
+  return r.method === 'POST' && r.endpoint === '/estimate-skeleton' && !r.jobs.length && !hasJobEvidence(r.response) &&
+    (r.state === 'lost' || (r.state === 'cancelled' && !!r.autoCancelledAttempts?.length));
+}
+
 /** setInterval that keeps ticking in background tabs (worker-driven); plain setInterval where Worker is missing (node). */
 let ticker: Worker | null | undefined
 const ticks = new Map<number, () => void>()
@@ -144,6 +168,7 @@ function every(ms: number, fn: () => void): () => void {
 
 export class Queue {
   private recs = new Map<string, JobRec>();
+  private persisting = new Set<string>(); // first ledger write must commit before the scheduler may send
   private busy = new Set<string>(); // rec ids / subjob ids with an op in flight
   private listeners = new Set<(s: QueueSnapshot) => void>();
   private timer: (() => void) | null = null;
@@ -170,6 +195,7 @@ export class Queue {
     this.deps = {
       api: realApi,
       put: (k, r) => db.put('jobs', k, r),
+      claimEstimate: (r, choose) => db.claimJob(r, choose),
       get: (k) => db.get<JobRec>('jobs', k),
       del: (k) => db.del('jobs', k),
       all: () => db.all<JobRec>('jobs'),
@@ -314,7 +340,7 @@ export class Queue {
   private adopt(r: JobRec): boolean {
     const mine = this.recs.get(r.id);
     if (!mine) {
-      const dup = r.state === 'queued' && [...this.recs.values()].find((x) => x.requestHash === r.requestHash && (live(x) || (x.state === 'done' && seededOf(x))));
+      const dup = r.state === 'queued' && [...this.recs.values()].find((x) => x.requestHash === r.requestHash && (live(x) || (x.state === 'done' && (seededOf(x) || x.endpoint === '/estimate-skeleton'))));
       this.recs.set(r.id, r);
       if (dup) {
         Object.assign(r, { state: 'cancelled', error: `duplicate of ${dup.id} (sent from two tabs)`, finishedAt: this.deps.now() });
@@ -366,23 +392,15 @@ export class Queue {
   // Identical request (same endpoint + params + input images, explicit seed) reuses the stored record instead of paying again.
   // Paid requests are resume-safe by default; a new seed expresses an intentional re-roll. meta.cache also reuses
   // unseeded done GET records (deterministic routes such as GET /characters).
-  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean; resumeSafe?: boolean; signal?: AbortSignal; attempt?: number } = {}): Promise<JobRec> {
+  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean; resumeSafe?: boolean; signal?: AbortSignal; attempt?: number; estimateRetry?: EstimateRetryIntent } = {}): Promise<JobRec> {
     const connection = this.connection;
     const assertConnected = () => {
       meta.signal?.throwIfAborted(); // orchestration cancellation stops publication, never aborts a paid HTTP request
       if (this.connectedOnce && (!this.connection || this.connection !== connection)) throw new Error('Queue disconnected. Reload PixelDoll before starting more work.');
     };
     assertConnected();
-    const inputs: string[] = [];
-    const params = await mapDeep(req.body ?? null, (o) => {
-      if (!isB64(o)) return undefined;
-      return (async () => {
-        const sha = await this.deps.putBlob(base64ToBytes(o.base64));
-        inputs.push(sha);
-        return { ...o, base64: undefined, $blob: sha };
-      })();
-    });
-    const requestHash = await sha256(stableStringify({ method: req.method, endpoint: req.path, params }));
+    if (meta.estimateRetry && (req.method !== 'POST' || req.path !== '/estimate-skeleton' || !meta.estimateRetry.id || !meta.estimateRetry.recordIds.length)) throw new Error('Explicit measurement recovery is only available for reviewed joint checks.');
+    const { params, inputs, requestHash } = await requestIdentity(req, this.deps.putBlob);
     assertConnected(); // obsolete async flows cannot publish another request during disconnect/HMR navigation
     const seeded = typeof (params as { seed?: unknown } | null)?.seed === 'number';
     // A resumed paid flow must never turn a terminal/unknown outcome into another submission. Explicit re-rolls change seed.
@@ -396,13 +414,25 @@ export class Queue {
     }
     const done = matches.find((r) => r.state === 'done');
     if (done && (seeded || meta.cache || resumeSafe)) return done;
-    if (resumeSafe) {
+    let retryOf: string | undefined;
+    if (meta.estimateRetry) {
+      // Deterministic record identity also prevents two follower tabs from creating two retries for one consent.
+      const previous = matches.find(r => r.estimateRecovery?.id === meta.estimateRetry!.id);
+      if (previous) return previous; // including another unknown outcome: reload never grants a second submission
+      const source = matches.find(r => meta.estimateRetry!.recordIds.includes(r.id));
+      if (source) {
+        if (!retryableEstimate(source) || matches[0]?.id !== source.id) throw new Error('The reviewed joint check changed. Review it again before retrying.');
+        retryOf = source.id;
+      }
+    }
+    if (resumeSafe && !retryOf) {
       const terminal = matches.find((r) => !(r.state === 'cancelled' && Number.isSafeInteger(meta.attempt) && r.autoCancelledAttempts?.length && !r.autoCancelledAttempts.includes(meta.attempt!)));
       if (terminal) return terminal;
     }
     const now = this.deps.now();
     const rec: JobRec = {
-      id: crypto.randomUUID(),
+      id: meta.estimateRetry ? `estimate-recovery-${await sha256(retryOf ?? requestHash)}` : crypto.randomUUID(),
+      ...(meta.estimateRetry ? { estimateRecovery: { id: meta.estimateRetry.id, ...(retryOf ? { retryOf } : {}) } } : {}),
       label: meta.label ?? req.path,
       tag: meta.tag,
       method: req.method,
@@ -418,9 +448,49 @@ export class Queue {
       gens: 0,
       usd: 0,
     };
+    if (meta.estimateRetry) {
+      // The transaction re-reads all matching rows: a stale follower cannot overwrite a progressed retry or pay twice.
+      let inserted = false;
+      const claimed = await this.deps.claimEstimate(rec, records => {
+        assertConnected(); // scope/session changes before the transaction inserts must leave no queued orphan
+        const current = records.filter(r => r.requestHash === requestHash).reverse().sort((a,b) => b.createdAt-a.createdAt);
+        const useful = current.find(live) ?? current.find(r => r.state === 'done');
+        if (useful) return useful;
+        const previous = records.find(r => r.id === rec.id);
+        if (previous) {
+          if (previous.requestHash !== requestHash || previous.endpoint !== '/estimate-skeleton') throw new Error('The joint-check recovery identity does not match.');
+          return previous; // even lost: a reviewed source may be forked only once, regardless of consent UUID
+        }
+        if (retryOf) {
+          const source = current.find(r => r.id === retryOf);
+          if (!source || !retryableEstimate(source) || current[0]?.id !== retryOf) throw new Error('The reviewed joint check changed before it could be retried.');
+        } else if (current.length) throw new Error('A joint check appeared after review. Review it before retrying.');
+        inserted = true;
+        return undefined;
+      });
+      // A concurrent call may already be driving this exact object. A delayed claim snapshot must not roll it back.
+      const owned = this.recs.get(claimed.id);
+      const result = owned ?? claimed;
+      if (!owned) this.recs.set(claimed.id, result);
+      this.observeScope(result.id, meta.signal, meta.attempt);
+      try { assertConnected(); }
+      catch (e) {
+        if (inserted && result.state === 'queued' && (!meta.signal || this.flowAborted(result.id) || (this.connectedOnce && this.connection !== connection))) {
+          result.autoCancelledAttempts = this.cancellationAttempts(result.id);
+          await this.cancel(result.id, true);
+        }
+        throw e;
+      }
+      this.chan?.postMessage({ rec: result.id } satisfies Msg);
+      this.emit();
+      return result;
+    }
+    this.persisting.add(rec.id);
     this.recs.set(rec.id, rec);
     this.observeScope(rec.id, meta.signal, meta.attempt);
-    await this.save(rec);
+    try { await this.save(rec); }
+    catch (e) { if (this.recs.get(rec.id) === rec) this.recs.delete(rec.id); throw e; }
+    finally { this.persisting.delete(rec.id); }
     return rec;
   }
 
@@ -488,7 +558,7 @@ export class Queue {
       let active = [...this.recs.values()].filter((r) => r.state === 'submitting' || r.state === 'running').length;
       for (const r of [...this.recs.values()].sort((a, b) => a.createdAt - b.createdAt)) {
         if (active >= this.current) break;
-        if (r.state !== 'queued' || r.nextAt > now || this.busy.has(r.id)) continue;
+        if (r.state !== 'queued' || r.nextAt > now || this.busy.has(r.id) || this.persisting.has(r.id)) continue;
         active++;
         ops.push(this.guard(r.id, () => this.submit(r)));
       }

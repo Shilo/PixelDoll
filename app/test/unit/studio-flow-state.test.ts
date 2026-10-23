@@ -2,8 +2,8 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
-vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, saveCopy: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
+vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
@@ -120,6 +120,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
     const s = await import('../../src/studio/state.svelte.ts')
     await resume(s)
     await vi.waitFor(() => expect(mocks[kind]).toHaveBeenCalledOnce())
+    if (kind === 'move') expect(mocks.move.mock.calls[0][1]).not.toHaveProperty('poseStyle')
     wait.reject(new Error('Interrupted recovery stopped'))
     await vi.waitFor(() => expect(stateOf(s).error).toBe('Interrupted recovery stopped'))
   })
@@ -142,3 +143,61 @@ for (const kind of ['create', 'move', 'setup'] as const) {
     expect(mocks[kind]).toHaveBeenCalledTimes(2)
   })
 }
+
+
+const recoveryPlan = { recordIds: ['lost-west-0', 'cancelled-west-1'], rigVersion: 'rig-fingerprint', checks: 2, gens: 0.2, usd: 0.01026, rawHashes: [] }
+const recoverySpec = { id: 'slash', action: 'slash', frames: 8, items: ['sword'], seed: 2438, replace: true, dirs: ['east', 'west'] as import('../../src/lib/store/manifest.ts').DirectionName[], poseStyle: 'visible-side-v1' as const }
+
+test('explicit joint-check recovery preserves the body identity and persists one reviewed intent before work', async () => {
+  const persisted = pending<void>()
+  mocks.put.mockImplementationOnce(() => persisted.promise)
+  mocks.recovery.mockResolvedValue(recoveryPlan)
+  mocks.move.mockRejectedValue(new Error('Offline recovery stopped'))
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(recoverySpec), error: 'Unknown joint check', done: false })
+  const run = s.retryMoveMeasurements('project', structuredClone(recoverySpec), recoveryPlan)
+  await vi.waitFor(() => expect(mocks.put).toHaveBeenCalledOnce())
+  expect(mocks.move).not.toHaveBeenCalled()
+  const stored = mocks.put.mock.calls[0][2]
+  expect(stored).toMatchObject({ status: 'running', projectId: 'project', spec: { ...recoverySpec, measurementRecovery: { recordIds: recoveryPlan.recordIds, rigVersion: recoveryPlan.rigVersion } } })
+  expect(stored.spec.measurementRecovery.id).toMatch(/^[a-f0-9-]{36}$/)
+  expect(s.moving.error).toBe('')
+  persisted.resolve(); await run
+  expect(mocks.move).toHaveBeenCalledOnce()
+  expect(mocks.move.mock.calls[0][1]).toEqual(stored.spec)
+  expect(mocks.put.mock.calls[1][2]).toMatchObject({ status: 'failed', spec: stored.spec })
+  mocks.move.mockClear(); mocks.recovery.mockClear(); vi.resetModules()
+  mocks.get.mockResolvedValue(mocks.put.mock.calls[1][2])
+  const reloaded = await import('../../src/studio/state.svelte.ts')
+  await reloaded.resumeMove()
+  expect(mocks.move).not.toHaveBeenCalled()
+  expect(mocks.recovery).not.toHaveBeenCalled()
+  expect(reloaded.moving.spec).toEqual(stored.spec)
+})
+
+test.each(['recordIds', 'rigVersion', 'checks', 'empty'] as const)('joint recovery rejects changed %s without clearing the failed operation or writing consent', async (field) => {
+  mocks.recovery.mockResolvedValue(field === 'empty' ? { ...recoveryPlan, recordIds: [], checks: 0 } : { ...recoveryPlan, [field]: field === 'recordIds' ? ['another-record'] : field === 'checks' ? 3 : 'changed-rig' })
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(recoverySpec), error: 'Original failure', done: false })
+  await expect(s.retryMoveMeasurements('project', structuredClone(recoverySpec), recoveryPlan)).rejects.toThrow('Review their cost again')
+  expect(s.moving.error).toBe('Original failure')
+  expect(mocks.move).not.toHaveBeenCalled(); expect(mocks.put).not.toHaveBeenCalled()
+})
+
+test('joint recovery refuses a superseded pending operation and a failed durable-intent write cannot start paid work', async () => {
+  const check = pending<typeof recoveryPlan>()
+  mocks.recovery.mockReturnValue(check.promise)
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(recoverySpec), error: 'Original failure', done: false })
+  const run = s.retryMoveMeasurements('project', structuredClone(recoverySpec), recoveryPlan)
+  s.moving.spec = { ...recoverySpec, seed: 9832 }
+  check.resolve(recoveryPlan)
+  await expect(run).rejects.toThrow('Review their cost again')
+  expect(mocks.put).not.toHaveBeenCalled(); expect(mocks.move).not.toHaveBeenCalled()
+  s.moving.spec = structuredClone(recoverySpec)
+  mocks.recovery.mockResolvedValue(recoveryPlan); mocks.put.mockRejectedValue(new Error('Storage blocked'))
+  await s.retryMoveMeasurements('project', structuredClone(recoverySpec), recoveryPlan)
+  expect(mocks.move).not.toHaveBeenCalled()
+  expect(s.moving.error).toContain('Storage blocked')
+  expect(s.moving.error).toContain('Dismiss this operation before reloading')
+})

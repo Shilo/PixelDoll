@@ -10,6 +10,7 @@ export interface StoredProject {
   id: string;
   savedAt: string;
   creationSpec?: string; // internal creation-attempt fingerprint; never exported or used as clone identity
+  moveRecovery?: { id: string; originalRigVersion: string; bodyRigVersion: string; specHash: string }; // internal atomic body-publication receipt; never exported
   manifest: Manifest;
   skeletons?: Record<string, Skeleton>; // cell key -> keypoints (mirrored cells flipped)
   rigQa?: unknown;
@@ -53,11 +54,12 @@ export async function loadProject(id: string): Promise<{ rec: StoredProject; pro
  * Add or replace an item (same id) in the project record, store its cell PNGs, and insert its slot (ladder order) if missing.
  * Publish blobs and references in one transaction, so garbage collection cannot sweep the gap between them.
  */
-export async function saveItem(id: string, item: Item, images: Map<Sha256, Img>, ladder: Slot[]): Promise<void> {
+export async function saveItem(id: string, item: Item, images: Map<Sha256, Img>, ladder: Slot[], check?: (rec: StoredProject) => void): Promise<void> {
   const blobs = new Map<string, Blob>();
   for (const [h, im] of images) blobs.set(h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
   await db.updateCharacter<StoredProject>(id, blobs, (rec) => {
     if (!rec) throw new Error(`project ${id} not found`);
+    check?.(rec);
     const m = rec.manifest;
     m.items = [...m.items.filter((i) => i.id !== item.id), item];
     // T3: slots stored before the ladder had default z overrides (held bg over the cape) get them; a user's own overrides stay

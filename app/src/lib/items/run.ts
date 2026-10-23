@@ -4,12 +4,13 @@
 import { queue, type JobRec } from '../pixellab/queue.ts';
 import { keyAllowed, other } from '../image/chroma.ts';
 import { binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
+import { stableStringify } from '../image/hash.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import * as db from '../store/db.ts';
 import { saveItem, type StoredProject } from '../store/project.ts';
 import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifest.ts';
 import type { DirectionName, Rig } from '../rig/rig.ts';
-import { fromApi } from '../rig/poses.ts';
+import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
 import { chromaLayer, type Key } from '../image/chroma.ts';
@@ -99,12 +100,25 @@ const skelOf = (ctx: RigCtx, k: string, restView = false) => {
 // ---------- calls ----------
 /** B14 grid request (S4 inv3 / S5 H3): the clip-direction's chroma cells masked to the slot band, then the dressed keyframes
  *  (kept, black mask) as the reference design. Rig cell only (held items keep their oversize S5 route). */
-async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>, cells: string[], refs: { dir: DirectionName; im: Img }[], seed: number): Promise<Req> {
-  const { rig } = ctx.rec.manifest, { w, h } = rig.cell, [anim, dir] = cells[0].split('/') as [string, DirectionName];
-  const g = packGrid([...cells.map((k) => inputCell(baseCell(ctx, k), spec.key)), ...refs.map((r) => r.im)], [...cells.map((k) => bandMask(bandOf(spec.slot, skelOf(ctx, k), h), w, h)), ...refs.map(() => null)]);
+async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>, cells: string[], refs: { dir: DirectionName; im: Img }[], seed: number, pad = 0): Promise<Req> {
+  const { rig } = ctx.rec.manifest, w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, [anim, dir] = cells[0].split('/') as [string, DirectionName];
+  if (GRID_COLS * w > 512 || Math.ceil((cells.length + refs.length) / GRID_COLS) * h > 512) throw new Error('This repair grid exceeds PixelLab’s 512 px canvas limit. Choose a shorter move.');
+  if (refs.some(r => r.im.w !== w || r.im.h !== h)) throw new Error('Equipment reference dimensions do not match its repair canvas.');
+  const held = slotOf(spec.slot).class === 'held';
+  const masks = cells.map(k => {
+    if (!held) return bandMask(bandOf(spec.slot, skelOf(ctx, k), h), w, h);
+    const [a, d, i] = k.split('/') as [string, DirectionName, string], measured = rig.animations.find(a0 => a0.id === a)?.sources?.[d]?.measured?.[+i];
+    const observed = skelOf(ctx, k) ?? (hasAll(measured) ? fromApi(measured!, rig.cell) : undefined);
+    const point = observed?.[spec.slot === 'off_hand' ? 'LEFT ARM' : 'RIGHT ARM'];
+    if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < 0 || point.x > rig.cell.w || point.y < 0 || point.y > rig.cell.h) throw new Error('Held-item repair needs valid measured hand positions on every frozen body frame.');
+    const mask = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (Math.hypot(x + 0.5 - point.x - pad, y + 0.5 - point.y - pad) <= 34) mask[y * w + x] = 1;
+    return mask;
+  });
+  const g = packGrid([...cells.map((k) => inputCell(padImg(baseCell(ctx, k), pad), spec.key)), ...refs.map((r) => r.im)], [...masks, ...refs.map(() => null)]);
   const b64 = async (im: Img) => png(bytesToBase64(await encodePngBytes(im)));
   return routes.inpaintV3({
-    description: gridPrompt({ item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim, dir, n: cells.length, refs: refs.map((r) => r.dir), cell: rig.cell }),
+    description: gridPrompt({ item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim, dir, n: cells.length, refs: refs.map((r) => r.dir), cell: { w, h } }),
     inpainting_image: { image: await b64(g.image), size: { width: g.image.w, height: g.image.h } }, mask_image: { image: await b64(g.mask), size: { width: g.mask.w, height: g.mask.h } }, no_background: true, seed,
   });
 }
@@ -393,9 +407,11 @@ const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeA
  * reload re-attaches to the ledger. `moveSeed` (the move's seed) joins the seed, so a move's "Try again" re-rolls the poses
  * instead of re-reading the cached ones (R6 P2-7). Returns the clip QA.
  */
-export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number): Promise<QaResult> {
+export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number, selectedDirs?: DirectionName[]): Promise<QaResult> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
-  const dirs = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
+  const available = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
+  if (selectedDirs && (!selectedDirs.length || new Set(selectedDirs).size !== selectedDirs.length || selectedDirs.some(d => !available.includes(d)))) throw new Error('Choose supported independently drawn equipment directions.');
+  const dirs = selectedDirs ?? available;
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
   let rerolls = 0; // actual additional attempted calls, independent of which candidate wins
   for (const d of dirs) keys[d] = chromaLayer(await img(item.dressed![d]!.slice(7)), key, padImg(baseCell(ctx, restKey(d), true), pad)).layer;
@@ -448,6 +464,7 @@ const failCount = (q: QaResult) => [...q.failCalls.values()].flat().length;
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
 export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
   const { rig } = ctx.rec.manifest, key = item.key!;
+  const version = stableStringify({ rig, character: ctx.rec.character }), originalItem = stableStringify(item);
   const count = rig.animations.find((a) => a.id === anim)?.cells;
   const expected = new Set(dirs.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`)));
   if (!count || !expected.size || cells.length !== expected.size || new Set(cells.map((c) => c.key)).size !== expected.size || cells.some((c) => !expected.has(c.key))
@@ -468,21 +485,35 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
   }));
   out.provenance = [...out.provenance, ...prov];
   out.qa = mergeQa(item, q.qa, qaCells);
-  await saveItem(ctx.rec.id, out, built.images, SLOTS);
+  await saveItem(ctx.rec.id, out, built.images, SLOTS, current => {
+    if (stableStringify({ rig: current.manifest.rig, character: current.character }) !== version || stableStringify(current.manifest.items.find(i => i.id === item.id)) !== originalItem) throw new Error('This character or item changed while the repair was generating. Existing artwork was kept. Reopen it before trying again.');
+  });
 }
-/** B14: one clip-direction of an accepted item as an inpaint-v3 grid (its dressed keyframes as the reference cells). */
+/** Prepare a bounded frozen-frame edit without making an API call, for visible review and execution. */
+export async function gridRepairRequest(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, seed: number, selectedCells?: string[]): Promise<Req> {
+  const { rig } = ctx.rec.manifest;
+  if (!item.key || !item.dressed?.[dir] || !rig.directions.some(d => d.id === dir && !d.mirrorOf) || item.baseHash !== rig.baseHash) throw new Error('This equipment cannot be repaired against the current character view.');
+  const cells = selectedCells ?? Array.from({ length: rig.animations.find(a => a.id === anim)?.cells ?? 0 }, (_, i) => `${anim}/${dir}/${i}`);
+  const count = rig.animations.find(a => a.id === anim)?.cells ?? 0;
+  if (!cells.length || new Set(cells).size !== cells.length || cells.some(k => { const parts = k.split('/'); return parts.length !== 3 || parts[0] !== anim || parts[1] !== dir || !/^(0|[1-9][0-9]*)$/.test(parts[2]) || +parts[2] >= count; })) throw new Error('Choose unique existing frames from this move and direction to repair.');
+  const pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
+  if (!Number.isInteger(pad) || pad < 0 || item.layers.some(l => (l.cell?.w ?? rig.cell.w) !== rig.cell.w + 2 * pad || (l.cell?.h ?? rig.cell.h) !== rig.cell.h + 2 * pad)) throw new Error('Equipment layers use incompatible repair dimensions.');
+  const refs = await Promise.all((Object.entries(item.dressed) as [DirectionName, string][]).map(async ([d, h]) => ({ dir: d, im: await img(h.slice(7)) })));
+  return gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key }, cells, refs, seed, pad);
+}
+/** One clip-direction edited on its own canvas; body frames remain frozen and reference cells are protected. */
 async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?: string[]): Promise<{ cells: CellOut[]; prov: Provenance }> {
-  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot);
-  const cells = selectedCells ?? Array.from({ length: clipKeypoints(rig, anim, dir)?.length ?? rig.animations.find((a) => a.id === anim)!.cells }, (_, i) => `${anim}/${dir}/${i}`), n = cells.length;
-  const refs = await Promise.all((Object.entries(item.dressed ?? {}) as [DirectionName, string][]).map(async ([d, h]) => ({ dir: d, im: await img(h.slice(7)) })));
-  const rec = await queue.enqueue(await gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key! }, cells, refs, seed), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
+  const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
+  const cells = selectedCells ?? Array.from({ length: rig.animations.find(a => a.id === anim)!.cells }, (_, i) => `${anim}/${dir}/${i}`), n = cells.length;
+  const rec = await queue.enqueue(await gridRepairRequest(ctx, item, anim, dir, seed, cells), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
   const r = terminal(rec) ? rec : await settled(rec.id);
   if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
-  const g = await img(outputsOf(r)[0].sha), rows = Math.ceil((n + refs.length) / GRID_COLS);
-  if (g.w !== GRID_COLS * rig.cell.w || g.h !== rows * rig.cell.h) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned a grid with the wrong frame layout`);
-  const cut = cutGrid(g, n, rig.cell.w, rig.cell.h);
-  const out = cells.map((c, i) => extractCell({ key: c, call, base: baseCell(ctx, c), out: cut[i], route: item.key!, band: bandOf(item.slot, skelOf(ctx, c), rig.cell.h), posed: true, clip: slot.band }));
-  postProcess(rig, slot, out, keys, 0);
+  if (outputsOf(r).length !== 1) throw new Error('PixelLab returned a malformed repair grid. Existing artwork was kept.');
+  const g = await img(outputsOf(r)[0].sha), w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, rows = Math.ceil((n + Object.keys(item.dressed!).length) / GRID_COLS);
+  if (g.w !== GRID_COLS * w || g.h !== rows * h) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned a grid with the wrong frame layout`);
+  const cut = cutGrid(g, n, w, h);
+  const out = cells.map((c, i) => extractCell({ key: c, call, base: padImg(baseCell(ctx, c), pad), out: cut[i], route: item.key!, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), h), posed: true, clip: slot.band }));
+  postProcess(rig, slot, out, keys, pad);
   return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };
 }
 /**
@@ -491,13 +522,14 @@ async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: Directio
  */
 export async function regridClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, seedN = seed()): Promise<{ qa: QaResult; saved: boolean; cells: CellOut[] }> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!;
-  if (!gridable(item) || !item.dressed?.[dir]) throw new Error(`${item.name}: no grid fallback for this item`);
+  if (!item.key || !item.dressed?.[dir]) throw new Error(`${item.name}: no grid reference for this item`);
+  const pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const keys: Partial<Record<DirectionName, Img>> = {};
-  for (const [d, h] of Object.entries(item.dressed) as [DirectionName, string][]) keys[d] = chromaLayer(await img(h.slice(7)), key, baseCell(ctx, restKey(d), true)).layer;
+  for (const [d, h] of Object.entries(item.dressed) as [DirectionName, string][]) keys[d] = chromaLayer(await img(h.slice(7)), key, padImg(baseCell(ctx, restKey(d), true), pad)).layer;
   const g = await gridItemClip(ctx, item, anim, dir, 0, keys, seedN);
-  const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed), slot, g.cells, keys, rig);
+  const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed, pad), slot, g.cells, keys, rig);
   const saved = !qa.failCalls.size;
-  if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa);
+  if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa, pad);
   return { qa, saved, cells: g.cells };
 }
 

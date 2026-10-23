@@ -137,6 +137,19 @@ outside ≤ 0.003 on helmet/vest), design varies slightly per call (palDist 4–
 
 For capes on text clips, `edit-animation-v2` with S2's anchor cell is the second choice.
 
+Accepted-item repair also supports oversize held layers. `gridRepairRequest` pads each frozen body frame into the item's
+existing cell without scaling, adds protected dressed reference cells, and refuses a canvas above 512 px on either side.
+Eight 96 px frames plus four references form a 384×288 grid. Held masks use a 34 px radius around the actual measured
+wrist; missing or out-of-cell measurements fail before enqueue. The held prompt requests exactly one weapon in the
+intended hand. `regridClip` publishes only complete, correctly sized output with no failed quality checks, and verifies
+the current rig and original item inside the same atomic save transaction. Other directions and moves remain intact.
+
+Scoped move replacement persists explicit source directions in `MoveSpec.dirs`. It replaces their body cells, sources,
+measurements and anchors together, invalidates equipment coverage only there, and re-poses selected items only there.
+Dependent mirror views are included when their source changes. Failed measured body candidates cannot replace an
+existing scoped clip. New authored side Slash uses persisted `poseStyle: visible-side-v1`: a visible forward high guard
+and separated passive wrist. Missing style retains the original pose arrays and paid request hashes for older jobs.
+
 ### 4.3 Superseded or rejected
 
 | Route | Status |

@@ -1,0 +1,20 @@
+import { expect, test, vi } from 'vitest';
+import { bodySourceRecords, inspectBodyEvidence } from '../../dev-fixtures/audit-pose-inspection/body-inspection.ts';
+import type { RecoveryJob } from '../../dev-fixtures/audit-recovery/recovery.ts';
+import { makeImg } from '../../src/lib/image/png.ts';
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
+import { sha256, stableStringify } from '../../src/lib/image/hash.ts';
+import { largestComponent } from '../../src/lib/rig/clips.ts';
+import { cellHash } from '../../src/lib/rig/rig.ts';
+import { LABELS } from '../../src/lib/rig/poses.ts';
+import type { Project, Item } from '../../src/lib/store/manifest.ts';
+async function fixture(){
+ const raw=makeImg(64,64);for(let y=20;y<50;y++)for(let x=26;x<36;x++)raw.data.set([120,90,60,255],(y*64+x)*4);raw.data.set([170,130,90,255],(10*64+45)*4);
+ const clean=largestComponent(raw).img,hash=await cellHash(clean),restHash=await cellHash(raw),png=await encodePngBytes(raw),pngHash=await sha256(png),kps=LABELS.map(label=>({label,x:.5,y:.5})),params={description:'plain body',action:'slash',direction:'west',first_frame:{type:'base64',format:'png',$blob:pngHash},first_frame_keypoints:kps,keypoints:[kps,kps,kps],seed:1},requestHash=await sha256(stableStringify({method:'POST',endpoint:'/animate-with-skeleton-v3',params}));
+ const r:RecoveryJob={id:'raw-body',method:'POST',endpoint:'/animate-with-skeleton-v3',params,requestHash,state:'done',createdAt:1,gens:0,usd:.01,jobs:[{id:'body-job',done:true,status:'completed',results:[0,1,2].map(i=>({label:`west/${i}`,sha:pngHash}))}]};
+ const body:Item={id:'base',name:'Body',slot:'body',status:'accepted',mirror:'generate',materials:[],layers:[{id:'main',role:'fg',z:10,cells:{slash:{west:[hash,hash,hash]}}}],prompt:'plain body',baseHash:hash,provenance:[{endpoint:r.endpoint,params,requestHash:`sha256:${requestHash}`,jobId:'body-job',produced:['slash/west/0','slash/west/1','slash/west/2'],createdAt:'test',seed:1,usage:{generations:0,usd:.01}}]};
+ const project:Project={manifest:{format:'pixeldoll/1',app:'test',name:'Test',rig:{cell:{w:64,h:64},pivot:{x:32,y:50},baseItem:'base',baseHash:hash,directions:[{id:'west'}],rest:{west:{image:restHash,keypoints:kps}},animations:[{id:'slash',cells:3,loop:false,frames:[{cell:0,ms:100}],sources:{west:{route:'skeleton-v3',reference:restHash,keypoints:[kps,kps,kps],provenance:[0]}}}]},items:[body],slots:[],materials:[],presets:[]},images:new Map([[hash,clean],[restHash,raw]])};
+ return {project,jobs:[r],r,read:vi.fn(async(h:string)=>h===pngHash?new Blob([png as Uint8Array<ArrayBuffer>]):undefined)};
+}
+test('body evidence proves original/processed/removed pixels offline without mutating requests or project',async()=>{const f=await fixture(),before=structuredClone({project:f.project,jobs:f.jobs}),network=vi.spyOn(globalThis,'fetch').mockRejectedValue(Error('No network'));try{const result=await inspectBodyEvidence({...f,readBlob:f.read,anim:'slash',dirs:['west']});expect(result.report.rolls).toMatchObject([{matchesStoredPixels:true,frames:[{stray:1,pixelDifferencesVsStored:0},{stray:1,pixelDifferencesVsStored:0},{stray:1,pixelDifferencesVsStored:0}]}]);expect(result.views).toHaveLength(1);expect(result.zip.length).toBeGreaterThan(1000);expect({project:f.project,jobs:f.jobs}).toEqual(before);expect(network).not.toHaveBeenCalled();}finally{network.mockRestore();}});
+test.each(['hash','job','rest','pose','unknown','extra-field']as const)('body provenance rejects conflicting identity: %s',async(kind)=>{const f=await fixture();if(kind==='hash')f.r.requestHash='f'.repeat(64);if(kind==='job')f.project.manifest.items[0].provenance[0].jobId='wrong';if(kind==='rest')f.project.manifest.rig.animations[0].sources!.west!.reference='sha256:wrong';if(kind==='pose')(f.r.params as Record<string,unknown>).keypoints=[];if(kind==='unknown')f.r.state='lost';if(kind==='extra-field')(f.r.params as Record<string,unknown>).authorization='not-exported';await expect(bodySourceRecords(f.project,'slash','west',f.jobs)).rejects.toThrow();});

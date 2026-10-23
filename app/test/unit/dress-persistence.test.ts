@@ -63,3 +63,28 @@ test('region preparation cannot overwrite a newer frozen base, and metadata-only
   await saveSplit(live.id, incoming, { oldHash: 'sha256:newer', images: new Map() })
   expect((records.get(live.id) as StoredProject).manifest.items[0].regions).toBe('shirt-shorts')
 })
+
+test('legitimate colour-region preparation advances only the exact current body publication receipt', async () => {
+  const { stableStringify } = await import('../../src/lib/image/hash.ts')
+  const live = record(); live.manifest.rig.baseHash = 'sha256:before'; live.character = { id: 'managed', looks: 'body' }
+  live.moveRecovery = { id: 'consent', originalRigVersion: 'original', bodyRigVersion: stableStringify({ rig: live.manifest.rig, character: live.character }), specHash: 'exact-spec' }
+  const incoming = structuredClone(live.manifest); incoming.rig.baseHash = 'sha256:regions'; incoming.items[0].regions = 'shirt-shorts'
+  records.set(live.id, live)
+  await saveSplit(live.id, incoming, { oldHash: 'sha256:before', images: new Map() })
+  const next = records.get(live.id) as StoredProject
+  expect(next.moveRecovery).toEqual({ ...live.moveRecovery, bodyRigVersion: stableStringify({ rig: next.manifest.rig, character: next.character }) })
+  expect(next.moveRecovery?.bodyRigVersion).not.toBe(live.moveRecovery.bodyRigVersion)
+})
+test('a stale body receipt cannot be blessed by a later colour-region split', async () => {
+  const { stableStringify } = await import('../../src/lib/image/hash.ts')
+  const live = record(); live.manifest.rig.baseHash = 'sha256:before'
+  live.moveRecovery = { id: 'consent', originalRigVersion: 'original', bodyRigVersion: stableStringify({ rig: live.manifest.rig, character: live.character }), specHash: 'exact-spec' }
+  const receipt = structuredClone(live.moveRecovery)
+  live.manifest.rig.rest = { south: { image: 'sha256:changed-reference', keypoints: [] } }
+  const incoming = structuredClone(live.manifest); incoming.rig.baseHash = 'sha256:regions'; incoming.items[0].regions = 'shirt-shorts'
+  records.set(live.id, live)
+  await saveSplit(live.id, incoming, { oldHash: 'sha256:before', images: new Map() })
+  const next = records.get(live.id) as StoredProject
+  expect(next.moveRecovery).toEqual(receipt)
+  expect(next.moveRecovery?.bodyRigVersion).not.toBe(stableStringify({ rig: next.manifest.rig, character: next.character }))
+})

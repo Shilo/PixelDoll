@@ -12,7 +12,7 @@ import { evaluateItem, loadDrafts, type Draft, type ItemResult } from '../lib/it
 import { SLOTS } from '../lib/items/items.ts';
 import { app } from '../lib/app.svelte.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
-import { addMove, createCharacter, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
+import { addMove, createCharacter, measurementRecoveryPlan, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import { setupCharacter, type SetupSpec } from './setup.ts';
@@ -651,6 +651,18 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   } finally {
     if (revision === moveRevision) moveRunning = false;
   }
+}
+/** Explicit consent to retry only the reviewed joint checks, keeping the original body request identity. */
+export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, reviewed: Awaited<ReturnType<typeof measurementRecoveryPlan>>) {
+  const pending = JSON.stringify($state.snapshot(spec));
+  const unchanged = () => !hmrReloading && !moveRunning && moving.projectId === projectId && !!moving.error && !moving.done && JSON.stringify($state.snapshot(moving.spec)) === pending;
+  if (!unchanged()) throw new Error('This operation changed. Review the joint checks again.');
+  const current = await measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined });
+  const ids = (value: string[]) => JSON.stringify([...value].sort());
+  if (!unchanged() || current.checks <= 0 || !current.recordIds.length || current.rigVersion !== reviewed.rigVersion || current.checks !== reviewed.checks || ids(current.recordIds) !== ids(reviewed.recordIds)) {
+    throw new Error('The pending joint checks changed. Review their cost again.');
+  }
+  await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: { id: crypto.randomUUID(), recordIds: [...current.recordIds], rigVersion: current.rigVersion } });
 }
 let moveResumed = false;
 export async function resumeMove() {

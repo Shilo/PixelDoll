@@ -74,12 +74,13 @@ export const bandMask = (r: Rect, w: number, h: number) => { const m = new Uint8
 /** S5 H3 wording: what the grid is, which cells are the reference design, one design everywhere; back items hang behind the arms. */
 export function gridPrompt(o: { item: string; slot: string; key: Key; anim: string; dir: DirectionName; n: number; refs: DirectionName[]; cell: { w: number; h: number } }): string {
   const cols = GRID_COLS, rows = Math.ceil((o.n + o.refs.length) / cols), colour = o.key === 'green' ? 'bright green' : 'magenta';
-  const hint = o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : '';
+  const held = slotOf(o.slot).class === 'held';
+  const instruction = held ? `Add the identical ${o.item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${oneHeld(o.slot)}; no effects. ` : `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
   return `This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${colour} mannequin. ` +
     `The first ${o.n} frames (left to right, top to bottom) are a ${o.n}-frame ${actionOf(o.anim)} animation ${facing(o.dir)}. ` +
     `The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${o.item}. ` +
     `The ${colour} colour is intentional (a chroma key) and must stay exactly the same ${colour}. ` +
-    `Draw the identical ${o.item} on every animation frame, following each frame's pose${hint}; empty hands, no weapon, no effects. ` +
+    instruction +
     `Keep every other pixel, the poses, the outlines, the grid layout and the transparent background unchanged.`;
 }
 

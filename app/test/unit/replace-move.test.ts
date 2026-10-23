@@ -73,3 +73,24 @@ test('move input version detects same-body rig/reference changes while allowing 
   source.manifest.rig.animations[0].sources = { south: { route: 'import', reference: hash, provenance: [] } }
   expect(moveRigVersion(source)).not.toBe(version)
 })
+
+
+test('direction-scoped replacement invalidates the target and mirror children while preserving other coverage', () => {
+  const m = fixture(), item = m.items[0], h = item.layers[0].cells!.slash!.south![0]
+  m.rig.directions = [{id:'south'},{id:'east'},{id:'west',mirrorOf:'east'},{id:'north'}]
+  for (const d of ['east','west','north'] as const) { item.layers[0].cells!.slash![d] = [h]; item.qa!.clips![`slash/${d}`] = structuredClone(item.qa!.clips!['slash/south']); item.qa!.cells[`slash/${d}/0`] = structuredClone(item.qa!.cells['slash/south/0']); }
+  const south = structuredClone(item.layers[0].cells!.slash!.south), idle = structuredClone(item.layers[0].cells!.idle)
+  invalidateMoveItems(m,'slash',['east'])
+  expect(item.layers[0].cells!.slash).toEqual({south,north:[h]}); expect(item.layers[0].cells!.idle).toEqual(idle)
+  expect(item.qa!.clips!['slash/south']).toBeDefined(); expect(item.qa!.clips!['slash/north']).toBeDefined(); expect(item.qa!.clips!['slash/east']).toBeUndefined(); expect(item.qa!.cells['slash/west/0']).toBeUndefined()
+  expect(item.anchorCell).toBe('slash/south/0')
+})
+
+test('direction-scoped pose cleanup retains unrelated measured tracks byte-for-byte', () => {
+  const m=fixture();m.rig.directions=[{id:'south'},{id:'east'},{id:'west',mirrorOf:'east'},{id:'north'}]
+  m.rig.anchors={hand_r:{slash:{south:[[1,2]],east:[[3,4]],west:[[5,6]],north:[[7,8]]},idle:{south:[[9,10]]}}}
+  const skeletons=Object.fromEntries(['south','east','west','north'].map(d=>[`slash/${d}/0`,{NOSE:{x:1,y:2,z:0}}]))
+  clearMovePoseData(m.rig,skeletons,'slash',['east'])
+  expect(Object.keys(skeletons)).toEqual(['slash/south/0','slash/north/0'])
+  expect(m.rig.anchors.hand_r).toEqual({slash:{south:[[1,2]],north:[[7,8]]},idle:{south:[[9,10]]}})
+})

@@ -156,6 +156,21 @@ a note on the stage with **Make it** and its price.
 Moves are added to your own characters (not the demo), using their existing direction policy. Older mirrored characters
 stay mirrored; the new-character setting does not rebuild their frozen artwork.
 
+To repair an existing move, choose it again in **Add a move**, then tick the views to replace. Views with failed body
+checks are selected initially. Other directions and moves keep their existing pixels. Selected equipment is re-posed
+only for the replaced views; other equipment stays hidden there until **Make it** fills the missing views. A replacement
+that still fails body checks keeps the previous artwork.
+
+For an accepted item that has bad frames, select the move and facing direction in the preview, then use **Try new item
+frames** in the Item tab. This redraws that item's frames on the frozen body, preserving its saved design and the other
+views and moves. Review the displayed estimate before starting. Failed quality checks keep the previous item frames;
+successful generation still needs a visual check for grip, missing parts and extra blades.
+
+If a body render finished but its joint measurements failed, the failed move may offer **Retry joint checks**. This
+reuses the exact completed body images and runs only unfinished measurements, sequentially. Review the count and cost:
+an unknown earlier request may already have charged. Each click records a separate explicit recovery attempt; reloading
+does not grant another retry of an unknown result. **Generate new frames** instead starts a new body attempt.
+
 ## Export
 
 Press **Export** (toolbar), choose **For which engine?**: Godot, Unity, Phaser, Aseprite or PNG + JSON, and download the zip. Export is

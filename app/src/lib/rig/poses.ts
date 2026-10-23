@@ -52,6 +52,15 @@ function armSeq(rest: Skeleton, dir: string, frames: Frame[]): Skeleton[] {
   });
 }
 
+/** A visible high guard in profile: the active wrist stays in front of the face rather than behind the head.
+ * The other arm counterbalances outside the torso so image-based joint measurement can distinguish both wrists.
+ * These are authored targets before generation, never substitutes for the independently measured output joints. */
+function sideSlash(rest: Skeleton, dir: string): Skeleton[] {
+  const brace: Arm = rest['LEFT SHOULDER'].x >= rest.NECK.x ? [65, 75] : [115, 105];
+  return armSeq(rest, dir, [[null, null], [[-35, -35], brace], [[-45, -35], brace], [[0, 0], brace],
+    [[35, 55], brace], [[70, 90], null], [[88, 78], null], [null, null]]);
+}
+
 /** S3 K1 tables (adherence 0.4-1.1 px, right hand moved in 100 % of slash frames). */
 export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]> = {
   // B9: base idle authored from the rest pose (B7: the managed breathing-idle copied a hunched forward lean into the side
@@ -103,11 +112,12 @@ export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]
 export const AUTHORED = Object.keys(ACTIONS).filter((a) => a !== 'idle');
 
 /** Use eastern action math on the actual western rest pose, reflecting coordinates without changing art or joint labels. */
-export function authoredPoses(action: string, rest: Skeleton, dir: DirectionName, width = 64): Skeleton[] {
+export function authoredPoses(action: string, rest: Skeleton, dir: DirectionName, width = 64, poseStyle?: 'visible-side-v1'): Skeleton[] {
   const source = ({ west: 'east', 'south-west': 'south-east', 'north-west': 'north-east' } as Partial<Record<DirectionName, DirectionName>>)[dir];
   const fn = ACTIONS[action];
   if (!fn) throw new Error(`Unknown authored action: ${action}`);
-  return source ? fn(flipSkeleton(rest, width), source).map((p) => flipSkeleton(p, width)) : fn(rest, dir);
+  const pose = (r: Skeleton, d: DirectionName) => action === 'slash' && poseStyle === 'visible-side-v1' && d === 'east' ? sideSlash(r, d) : fn(r, d);
+  return source ? pose(flipSkeleton(rest, width), source).map((p) => flipSkeleton(p, width)) : pose(rest, dir);
 }
 
 /** Mean px distance of `labels` between requested and measured poses (pose adherence, rig QA §3.2). */
