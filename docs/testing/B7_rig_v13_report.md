@@ -72,7 +72,7 @@ Screenshots / sheets:
   stray blade is visible in slash E f1–f7 and N f1/f4/f5);
 - `img/b7_7_slash_helmet_fixed.png` — after the fix (§4).
 
-Visual judgement: the rig is clean (no specks, no clipped feet, identical face/shirt/shorts in every clip). Walk strides read
+Visual judgment: the rig is clean (no specks, no clipped feet, identical face/shirt/shorts in every clip). Walk strides read
 well in all directions. **Idle east/west leans forward** (the managed breathing-idle motion is hunched in the side view and the
 raw re-render follows it faithfully) — a motion-source quality issue, not a pipeline one. Slash reads in S/E/N; the right arm
 leads (character's right). The helmet is the same object in every idle/walk frame.

@@ -78,7 +78,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
     e.g. `AMTRLITNUHTH.dcc`.
 - **Slots [src]** (`d2enum/composite_type.go`): 16 composite types, `HD` head, `TR` torso, `LG` legs, `RA` right arm, `LA` left arm,
   `RH` right hand (weapon), `LH` left hand, `SH` shield, and `S1..S8` specials (shoulder pads, extra parts and effects; per unit).
-  - For armour layers the "equip" code is an **armour class** `lit`/`med`/`hvy`. It comes from `armor.txt` columns `Torso`, `Legs`,
+  - For armor layers the "equip" code is an **armor class** `lit`/`med`/`hvy`. It comes from `armor.txt` columns `Torso`, `Legs`,
     `rArm`, `lArm`, `rSPad`, `lSPad`, so many armors share 3 visual weights.
   - For RH/LH/SH the code is the item's code.
   - Weapon class (HTH, 1HS, 2HS, BOW, ...) selects a *whole different animation set*.
@@ -150,7 +150,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 - **Draw order.** Fixed: mount, base, addons. No per-direction logic.
 - **Anchoring.** Shared canvas (32 px tile units, displacement per thing type).
 - **Directions [src].** 4 stored (N, E, S, W). Diagonals use E/W. No mirroring.
-- **Lesson [inferred].** Tibia is the cheapest "customisable" model: one outfit drawing + one 4-channel mask gives a large color space.
+- **Lesson [inferred].** Tibia is the cheapest "customizable" model: one outfit drawing + one 4-channel mask gives a large color space.
   It is *outfit-swapping plus tint*, not true slot paperdolling.
 
 ## 6. Stardew Valley (farmer)

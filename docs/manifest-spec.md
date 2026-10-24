@@ -429,11 +429,12 @@ are preserved; use the character root's depth for positioning among scene object
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells
   baked/<preset>/<anim>.png                       # optional composites, same grid on export.bakedCell (RPG Maker, crowds)
-  godot/      <item>_<layer>.tres, library.tres, Paperdoll.tscn, paperdoll.gd
-  unity/      Editor/PixelDollImporter.cs, Runtime/Paperdoll.cs, Editor/Runtime asmdefs
-  phaser/     <length>-<item>_<length>-<layer>_<length>-<anim>.json, PaperdollContainer.js
-  gdevelop/   game.json, Paperdoll.js, images/<registered-frame>.png
-  generic/    <item>_<layer>/<anim>_<dir>_strip<N>.png
+  project.json, cells/<rgba-sha256>.png           # editable import copy (§7)
+  godot/      <item>_<layer>.tres, library.tres, Paperdoll.tscn, paperdoll.gd, README.txt
+  unity/      Editor/PixelDollImporter.cs, Runtime/Paperdoll.cs, Editor/Runtime asmdefs, README.txt
+  phaser/     <length>-<item>_<length>-<layer>_<length>-<anim>.json, PaperdollContainer.js, README.txt
+  gdevelop/   game.json, Paperdoll.js, images/<registered-frame>.png, README.txt
+  generic/    <item>_<layer>/<anim>_<dir>_strip<N>.png, README.txt
   aseprite/   <name>.aseprite, README.txt          # B11: layered, zero-code path (§6.5)
 ```
 

@@ -45,10 +45,10 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 
 | Property | Decision | Evidence |
 |---|---|---|
-| Cell | **64×64** square. | Pro editors fit 16 frames at ≤64 px [S1]. |
-| Base character | `create-character-v3` text at **48 px**, clothed (plain grey t-shirt + grey shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded to 64 (x+8, y+12: 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
+| Cell | Square frame sized by the creator: default **80×80** around a 64 px body (body presets 48/64/96/128 px or custom; auto frame or manual, up to 256 px). Legacy rigs: 64×64 around 48 px. | Legacy 64 px cell: Pro editors fit 16 frames at ≤64 px [S1]. |
+| Base character | `create-character-v3` text at the chosen body size (default **64 px**; legacy rigs **48 px**), clothed (plain grey t-shirt + grey shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded into the frame (legacy 48→64: x+8, y+12, 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
 | Rest views | The padded S/E/N rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
-| Directions | New forms default to independent 4/8 views: preserve original western rotations and render every direction. Optional mirrored economy and policy-less saved specs keep 3/5 authored views plus western flips. The initial text-only v3 request retains default eight rotations; reference import uses 4/8. Exact direction/policy coverage is required before freezing. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
+| Directions | New forms default to the **Top-down 8** preset: five drawn views plus western flips. Other presets (Top-down 4, Diagonal 4, Side-scroller 2, Unique 8) and per-direction mirror toggles choose which views are drawn; Unique 8 preserves original western rotations. Policy-less saved specs keep 3/5 authored views plus western flips. The initial text-only v3 request retains default eight rotations; reference import uses 4/8. Exact direction/policy coverage is required before freezing. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalized 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
 | Clips | New Studio characters start with **`idle` (4), `walk` (8)**. Add moves such as `slash` (8), `hurt` (6), `run`, `cast` or `death` separately. Older evidence rigs include additional moves. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
 | Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of the south rest view. Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
@@ -270,7 +270,7 @@ draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg be
 | `facial_hair` | head | head | 100 | — | — |
 | `hair` | head | head | 110 | 3 (5 via `zOverrides`: over the cape's bg, T3) | — |
 | `face_acc` | head | head | 120 | — | — |
-| `head` | head | head | 130 | — | none; tucks `hair` under it (`clips`, B14); a hood ticks hide hair (`item.hides`) |
+| `head` | head | head | 130 | — | none; tucks `hair` under it (`clips`, B14); a hood checks hide hair (`item.hides`) |
 | `off_hand` | held | hand_l | 140 | 2 (5 in S/E/W) | — |
 | `main_hand` | held | hand_r | 150 | 1 (5 in S/E/W) | — |
 
@@ -339,7 +339,7 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
 
 Look **A (native minimal)**, **dark mode by default** with a visible, persisted dark/light switch; system UI font stack;
 **Lucide icons** (`@lucide/svelte`) everywhere; no pixel fonts or pixel icons. Sprites render `image-rendering: pixelated` at
-integer zoom. Theming ("Paper" look) deferred.
+integer zoom. Theming ("Paper" look) deferred. The shipped Studio has since moved to the Bronze UI immersive experience; see [production experience](design/production-experience.md).
 
 ## 9. Modules (`app/src/lib`)
 

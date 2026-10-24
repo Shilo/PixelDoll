@@ -48,7 +48,7 @@ Touch density comes from `pointer: coarse`.
 | 3 | `create`, `review`, `connect` | Describe → Moves → Generate. Review with 4 animated directions and a warning in words. The connect-key sheet is asked in context, at Generate |
 | 4 | `export` | Godot / Unity / Phaser / PNG cards, includes line, clip warning, Download zip · 340 KB |
 | 5 | `activity` | Phone: accessory → Activity bottom sheet. Desktop: popover |
-| 6 | `colours` | Recolor view: the Colors tab in phone landscape, the inspector tab on desktop |
+| 6 | `colours` | Recolor view: the Colours tab in phone landscape, the inspector tab on desktop |
 | 7 | `empty` | First run: the demo character walks on the hero stage, with New character / Try the demo / Import |
 
 ## 2. The looks, honestly, after seeing them rendered
@@ -66,7 +66,7 @@ Touch density comes from `pointer: coarse`.
 
 **Build the MVP on A+E** (this agrees with D1 and D7). Reasons, all visible in the screenshots:
 - the sprite stays the hero;
-- the chrome is quiet and neutral, so recolor judgements stay fair;
+- the chrome is quiet and neutral, so recolor judgments stay fair;
 - the brand comes through in a few cheap places;
 - AA contrast holds for every token pair in both schemes;
 - it needs no UI kit, and the Pixelify font is about 20 KB;

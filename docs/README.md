@@ -1,7 +1,7 @@
 # PixelDoll docs index
 
 Start with [architecture.md](architecture.md) (v1.3, current pipeline) and [manifest-spec.md](manifest-spec.md) (export
-format). Project state and decisions D1–D9: [PLAN.md](../PLAN.md). Casual users: [user-guide.md](user-guide.md).
+format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Casual users: [user-guide.md](user-guide.md).
 
 **Evidence media lives at tag [v0.1.0](https://github.com/Shilo/PixelDoll/tree/v0.1.0).** Spike outputs (`spikes/api/out/`), test
 screenshots (`testing/img/`), design screenshots (`design/screenshots/`) and the D2 mockup app (`design-mockups/`) are no longer
@@ -110,7 +110,6 @@ Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo
 | [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |
 | [Character import compatibility](testing/character-import-compatibility-2026-10-22.md) | Actual PixelLab raw/default ZIPs, format boundaries, pagination, Cancel regression and shared-equipment planning. |
 | [Shared equipment verification](testing/shared-equipment-2026-10-22.md) | Library/copy lifecycle, paid rest and animation reviews, independent palettes, new moves, adversarial fixes and real exported artifacts. |
-| [Equipment QA summaries](testing/qa-summaries-2026-10-22.md) | Current-clip aggregate checks, persisted replacements/export, historical coverage labels and runner pin. |
 | [M1](testing/M1_report.md) | Key + job queue: resume after reload, IndexedDB ledger. |
 | [M2](testing/M2_report.md) | Rig freeze: normalize, pivot, mirror, anchors, `baseHash`. Built for template frames, later updated by B7. |
 | [M3](testing/M3_report.md) | Item lab: chroma extraction, QA gates G1–G10, automatic re-roll, fg/bg split. |
@@ -123,4 +122,4 @@ Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo
 | [B10](testing/B10_ux_fixes_report.md) | T1 P1/P2 UX fixes and the e2e smoke test. |
 | [T1](testing/T1_ux_qa_report.md) | Independent UX/QA review: 6/10, P0–P2 list. |
 | [T2](testing/T2_final_regression_report.md) | Final regression: every T1 item passes, 8.5/10. |
-| T3, B11 | In progress: full item coverage (T3) and a layered `.aseprite` export (B11). |
+| [T3](testing/T3_item_coverage_report.md), [B11](testing/B11_aseprite_export_report.md) | Full item coverage (T3) and a layered `.aseprite` export (B11). |

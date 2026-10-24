@@ -149,7 +149,7 @@ The feel is iOS 26 / visionOS: floating, translucent chrome, pill shapes and the
 - **Pros:** most "2026", very attractive on phones, matches Apple's current direction, and GlassKit gives the mobile pieces for
   free (sheet, floating tab bar + accessory, segmented with droplet, steps, toast with action).
 - **Cons:**
-  - Fights the medium: blur behind or near pixel art smears colors and tints color judgement.
+  - Fights the medium: blur behind or near pixel art smears colors and tints color judgment.
   - Contrast isn't fixed: dark-glass text over a light checker measured **1.14:1**.
   - The backdrop re-blurs on every sprite frame (mobile perf).
   - Mobile-sized controls are too big for a desktop inspector.
@@ -202,7 +202,7 @@ The feel is a friendly character maker: rounded, warm, slightly toy-like but cle
 - **Canvas:** the character stands on a soft pastel "stage" with a contact shadow. The checker is hidden by default and
   toggled on to inspect transparency.
 - **Pros:** most inviting for the casual target, and the Picrew mental model ("tap parts to dress") is well known.
-- **Cons:** reads as "toy" to game devs exporting to Godot or Unity. Pastel surround and a floor shadow bias color judgement.
+- **Cons:** reads as "toy" to game devs exporting to Godot or Unity. Pastel surround and a floor shadow bias color judgment.
   It needs a web font for the rounded look on Windows and Android.
 
 ### 3.5 E: Pixel-accent minimal

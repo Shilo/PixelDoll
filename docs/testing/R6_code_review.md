@@ -229,7 +229,7 @@ round-trip; slots without overrides are written as `[]`, items without hides as 
 
 Other P3 notes:
 - `vite.config.ts:334` `/__dev/save` lacks the Host check that `/__dev/pixellab-key` has. Vite 8's `allowedHosts` already blocks
-  DNS rebinding, so this is defence in depth only.
+  DNS rebinding, so this is defense in depth only.
 - XSS: every remote or user string (item names, prompts, `r.error`, server `errorText`) goes through Svelte text interpolation.
   No `{@html}`, `innerHTML` or `eval`. OK.
 

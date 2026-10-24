@@ -4,14 +4,14 @@
 with PixelLab AI and export them to any game engine. · [Open PixelDoll](https://shilo.github.io/PixelDoll/)
 
 <p>
-  <img src="docs/media/studio-dark.png" width="49%" alt="PixelDoll Studio in dark mode: wardrobe slots on the left, the dressed demo character on a checkerboard canvas, item colors and layer order on the right">
+  <img src="docs/media/studio-dark.png" width="49%" alt="PixelDoll Studio in dark mode: the dressed demo character in the world with Preview controls below it, and the Wardrobe panel with equipment cards, a color ramp and New head item on the right">
   <img src="docs/media/outfit-slash-sheet.png" width="49%" alt="Full-outfit slash sheet: helmet, leather vest, red cape and steel longsword layered on the base, 8 frames in 4 directions">
 </p>
 <p>
   <img src="docs/media/godot-render-slash.png" width="49%" alt="The same slash exported and rendered in Godot 4, one sprite per layer, pixel-identical to PixelDoll's compositor">
 </p>
 
-Paperdolling for [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armor, hair and weapons as
+Paper dolling for [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armor, hair and weapons as
 **separate frame-aligned layers**, recolor them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser, GDevelop** or any
 engine (PNG + JSON). Source artwork comes from PixelLab; PixelDoll extracts layers, cleans keyed pixels and applies exact
 color changes to turn PixelLab's one-image-per-call output into a
@@ -33,8 +33,9 @@ and concerns).
   move → automatic checks → layers. Held items use a 96 px canvas with the same pivot.
 - Godot 4.7.1 and Phaser 3.80 / 3.90 / 4.2.1 render the exports pixel-identical to PixelDoll's own compositor.
   Unity: the C# importer compiles, live import not yet verified.
-- In the current checkout, new characters draw every direction independently by default; optional mirrored economy mode
-  and older mirrored rigs swap held-item handedness. Automated direction/persistence/export checks pass; live independent
+- New characters default to the **Top-down 8** preset, which mirrors the three western views from their eastern partners
+  (mirrored views and older mirrored rigs swap held-item handedness); **Unique 8** or turning off a view's mirror draws it
+  independently. Automated direction/persistence/export checks pass; live independent
   full creation stopped safely on unknown skeleton-estimation outcomes. Idle-only recovery passed with 16 genuinely measured frames. A primary 96px sword passed reload, keyless ZIP reimport and engine runtime checks with a west-profile grip warning retained; targeted Slash repairs now pass every body gate and manual review of all 32 sword frames; automated item review warnings remain visible. This is separate from the released v0.1.0 evidence above.
 - Known quality limits: two shield east-walk drafts remain unaccepted; generated artwork still needs visual review.
   PWA is deferred (see PLAN.md). The bundled demo uses the team's own PixelLab outputs.
@@ -50,7 +51,7 @@ npm run dev        # http://localhost:5173
 ```
 
 Open `#/` for character selection; the bundled demo needs no key. Choose **Customize** to dress it or try **Top-down** and **Side-scroller** movement. To generate, open **More options → Connect PixelLab** and paste a key from
-<https://pixellab.ai/account>. It stays in memory unless you tick *Remember on this device*, and is only sent to
+<https://pixellab.ai/account>. It stays in memory unless you check *Remember on this device*, and is only sent to
 `api.pixellab.ai`. `npm run dev` handles the key exactly like the deployed site: there is no key file, endpoint or button.
 
 Remembered keys use `localStorage['pixellabApiKey']`, shared with PixelLab Backpack and other apps on the same origin
@@ -98,7 +99,7 @@ Set `PLAYWRIGHT_CHANNEL=msedge` for an optional installed-Edge run. That is a se
 
 ## Export targets
 
-The Studio's **Export** sheet groups **Engines & frameworks** separately from **Asset formats**, and builds one zip per selected
+The Studio's **Export** sheet groups **Engines and frameworks** separately from **Assets**, and builds one zip per selected
 target, on your device, for free. Each zip contains `README.txt` (quick start), `manifest.json` ([spec](docs/manifest-spec.md)),
 `CREDITS.txt` (CSV text with PixelLab provenance), `layers/` (one sheet per item layer and
 move; rows = directions, columns = frames) and, optionally, `baked/` (finished characters per outfit).
@@ -109,9 +110,8 @@ move; rows = directions, columns = frames) and, optionally, `baked/` (finished c
 | Unity 6 | Editor importer + `unity/pixeldoll_unity.json` | Copy under `Assets/`; the importer builds sliced sheets, clips, a controller and a prefab in `unity/Generated/`. See `unity/README.txt`. |
 | Phaser 3.80+ / 4 | `phaser/PaperdollContainer.js` + TexturePacker-hash atlases | Copy into your assets, `loadPaperdoll(scene, dir)` then `new Paperdoll(...)`; serve over http. See `phaser/README.txt`. |
 | GDevelop | `gdevelop/game.json`, registered Sprite frames and an embedded controller event | Open the native project and Preview, or copy its Sprite objects and controller event into an existing project. See `gdevelop/README.txt`. |
-| Aseprite | Layered `.aseprite` file, animation tags and pivot slice | Open in Aseprite 1.3+; colors and visibility match the exported current look. |
+| Aseprite | `aseprite/<character>.aseprite`: layered file, move/direction tags, frame timing and pivot slice | Open in Aseprite 1.3+; colors and visibility match the exported current look. |
 | PNG + JSON | `generic/` strips per layer, move and direction | Any engine: one sprite per layer, same grid and pivot, one clock. See `generic/README.txt`. |
-| Aseprite | `aseprite/<character>.aseprite` | Open the layered character file in Aseprite 1.3+; move/direction tags and frame timing are retained, with the first outfit visible. |
 
 GameMaker is deferred by user decision until a modern runtime is available for native compile/render verification.
 Unreal support is possible through Paper2D plus a dedicated importer/component, but is not currently implemented.

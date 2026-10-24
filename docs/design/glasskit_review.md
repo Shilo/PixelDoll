@@ -133,7 +133,7 @@ if (matchMedia('(prefers-reduced-transparency: reduce)').matches) document.docum
    wardrobe and the inspector on solid surfaces. Screenshot both themes on desktop and phone.
 2. **MVP:** unless the user prefers B after seeing it, build on the recommended **Native + pixel-accent** token set (plain CSS
    custom properties). Borrow GlassKit's ideas, not its file: density tokens, a `data-surface` switch, the sheet's detent
-   behaviour and the accessory-capsule pattern for job progress.
+   behavior and the accessory-capsule pattern for job progress.
 3. If B wins, then:
    - vendor or pin the exact version;
    - set `--gl-color-on-primary` to a dark ink (or pick a darker primary) so the primary button reaches AA;

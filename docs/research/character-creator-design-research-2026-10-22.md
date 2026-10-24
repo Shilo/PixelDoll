@@ -24,7 +24,7 @@ The LPC repository describes its original [64×64 format and later oversized equ
 
 ## Essential controls should remain visible
 
-Apple recommends keeping frequently used controls visible while disclosing detail when relevant. Its [disclosure-control guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls) supports retaining size and directions in the primary hierarchy and reserving disclosure for infrequent details. Its [layout guidance](https://developer.apple.com/design/human-interface-guidelines/layout) also favours grouping related settings and giving essential content sufficient space.
+Apple recommends keeping frequently used controls visible while disclosing detail when relevant. Its [disclosure-control guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls) supports retaining size and directions in the primary hierarchy and reserving disclosure for infrequent details. Its [layout guidance](https://developer.apple.com/design/human-interface-guidelines/layout) also favors grouping related settings and giving essential content sufficient space.
 
 Recommended visible sequence:
 

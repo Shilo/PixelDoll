@@ -82,8 +82,8 @@ cases live in the [delivery plan](docs/design/frame-editor/delivery-plan.md).
   A compromise in any such app can expose it. Keep scripts and deployments trustworthy; app-generated channel notifications contain
   no token, and Forget clears cooperating open apps. Origin isolation and encryption are not part of the current UX.
 - [!] **PixelLab credits.** The shared balance changed during live audit testing; query it before further paid work.
-  New independent characters are estimated at 46–80 gens (4 directions) or 90–150 (8); optional mirrored economy mode
-  remains 35–60 / 57–95. Item/move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps.
+  New characters default to Top-down 8, estimated at 57–94 gens; Top-down 4 is 35–57 and Unique 8 (all independent)
+  90–149. Item/move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps.
   Lost responses may have run or charged and are never auto-resent. See the professional audit report.
 - [!] **PixelLab credits and dollar billing.** The earlier ≈212-gen balance was a historical snapshot before later live
   work, not a current balance. Fitting records both reported generations and USD, including rejected attempts and explicit
@@ -102,8 +102,8 @@ cases live in the [delivery plan](docs/design/frame-editor/delivery-plan.md).
   recheck or silent reconstruction is performed. Historical source-call indices are also left untouched.
 - [!] **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
-- [!] **Mirrored directions flip handedness** (west holds the sword in the left hand). New forms now default to independent
-  body views/actions; old projects and optional economy mode remain mirrored. Independent views avoid the forced flip,
+- [!] **Mirrored directions flip handedness** (west holds the sword in the left hand). New forms default to the Top-down 8
+  preset, which mirrors the west views; Unique 8 or turning off a mirror gives independent views, and old projects stay mirrored. Independent views avoid the forced flip,
   but generated anatomy and grip still need review: idle sword retains west-profile ambiguity; targeted Slash corrections pass manual review and body gates while retaining item review warnings. An item-only toggle cannot repair old flipped actions.
 - [!] **Unity and Godot Aseprite Wizard paths unverified**; Godot 4.7.1 + Phaser 3.80/3.90/4.2.1 + Aseprite CLI verified.
 - [!] **Agent-only key mode is a convention.** `npm run dev:agent` reads `.env` for AI agents; humans must use `npm run dev`

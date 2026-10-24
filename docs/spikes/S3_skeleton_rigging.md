@@ -92,7 +92,7 @@ Comparisons on the same base (slash S unless noted; sheet [`k1_routes_slash_sout
 | legacy `/animate-with-skeleton` (baseline only, now disallowed) | 3 frames only, adherence 0.6–2.2 px, **41 colors, palette fit 0.83–0.89, height drift 2.3–3.3 px**; pixel coordinates fail. |
 | `mode: "template"` (baseline only, now disallowed) | falling-back-death / taking-punch: black smear artifacts, torso dev 0.15. |
 
-Visual judgement (contact sheets read):
+Visual judgment (contact sheets read):
 
 - [`k1_v3_actions`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_overview/k1_v3_actions.png): every action reads; the arm chain follows the authored
   keypoints closely; **the face, shirt, shorts and proportions stay those of the base**; legs do not move unless asked.

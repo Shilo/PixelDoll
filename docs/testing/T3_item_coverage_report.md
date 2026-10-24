@@ -77,7 +77,7 @@ I measured occlusion as "item px that one item hides from another", summed over 
 |---|---|---|---|
 | Sword under cape | S idle 80, **walk 220**, slash 79 px hidden; N 63–185 | S/E/W 0 (sword over cape); N unchanged (cape over the blade from behind) | **Fixed (§3.5)**. The M4 fix was in the demo fixture only, not in the Studio's slot ladder. |
 | Hair under cape | **walk E 359**, slash E 370, hurt E 374, N 94–191, S 22–224 px hidden | 0: the hair's bg is now drawn over the cape's bg | **Fixed (§3.5)**. Long hair lies over the cape in every view. |
-| Trousers under chest | S 88–168, N 36–74, E 7–23 px | — | Correct: the armour hem sits over the waistband. |
+| Trousers under chest | S 88–168, N 36–74, E 7–23 px | — | Correct: the armor hem sits over the waistband. |
 | Hair under helmet | Helmet `hides: [hair]`, so **long hair disappears completely** ([walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_combo1_walk.png)) | Unchanged default | With the hide unticked, long hair hangs naturally below the helmet ([no hide](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_combo1_nohide_walk.png), [zoom](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_helmet_hair_nohide_zoom.png)). Short spiky hair pokes through without the hide (M4), so I kept the default (§6, P1). |
 | Chest pauldrons vs cape (N) | The pauldrons draw over the cape's shoulders | — | Plausible (the cape sits under the shoulder plates). |
 

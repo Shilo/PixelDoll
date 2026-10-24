@@ -76,7 +76,7 @@ layer over the real base), then the final compose for S/E/N/W.
 QA values are the item's worst over all 36 cells (key kept = min, key outside = max, area ratio = min over clips, CV = max
 clip CV, palette distance = max call). "Calls" counts every paid call including re-rolls and early-rule mistakes.
 
-| Item (slot, layers) | Calls / gens | Key kept | Key out | Area min/med | Area CV | Pal. dist | Specks / pinholes | Result | Visual judgement (sheet) |
+| Item (slot, layers) | Calls / gens | Key kept | Key out | Area min/med | Area CV | Pal. dist | Specks / pinholes | Result | Visual judgment (sheet) |
 |---|---|---|---|---|---|---|---|---|---|
 | Iron helmet (head, main z130) | 3 / 30 | 0.989 | 0.000 | 0.97 | 0.017 | 8.3 | 1 / 0 | **pass, accepted** | nasal helmet, empty face opening, identical in all clips/dirs |
 | Leather vest (torso_outer, main z60) | 3 / 30 | 0.998 | 0.000 | 0.94 | 0.048 | 11.4 | 1 / 0 | **pass, accepted** | clean; swinging arm correctly occludes it in the east walk |
@@ -119,7 +119,7 @@ Sheets: `img/m3_skel_iron_helmet.png`, `m3_skel_red_cape.png`, `m3_skel_steel_sw
 dressed keyframes `img/m3_skel_dressed_keyframes.png`. Failure evidence: `img/m3_debug_skel_align.png` (estimated keypoints:
 1 px wider body + a hallucinated sword in a helmet slash) and `img/m3_debug_g10.png` (walk/south/7 posed 1 px right).
 
-Visual judgement:
+Visual judgment:
 
 - **Design lock is the best of any route** (palette distance 0.5–3.3 vs 7–22 for the anchor-cell route): the helmet, cape and
   sword are the same object in every clip and direction. Walk clips are excellent for all three items.

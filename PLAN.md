@@ -134,9 +134,8 @@ Installable, offline-capable Studio. Tasks in `TODO.md` "PWA".
 
 ## Professional audit follow-up: independent directions
 
-Implemented in the current checkout: new character forms select independent artwork by default, preserving provider
-western originals and rendering each selected action direction independently. More options offers mirrored economy mode
-with an explicit hand-switching warning. Historical specs/drafts without `directionPolicy` retain mirrored behavior;
+Superseded by the creator's direction presets: new forms default to Top-down 8 (west views mirrored from their eastern
+partners); Unique 8 or turning off a view's mirror keeps independent artwork, preserving provider western originals. Historical specs/drafts without `directionPolicy` retain mirrored behavior;
 existing projects keep their frozen pixels. Active or interrupted specs determine their own estimates.
 
 The initial text-only v3 request still uses its supported default eight views, selecting cardinal originals for a four-view

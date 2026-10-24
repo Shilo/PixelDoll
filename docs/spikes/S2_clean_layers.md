@@ -134,7 +134,7 @@ Zooms:
 - [`helmet_f0`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_zoom/helmet_f0.png): base / key composite / chroma layer / S1 layer.
 - [`despill`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_zoom/despill.png): the olive edge on the vest disappears after despill.
 
-### Visual judgement (read from the sheets)
+### Visual judgment (read from the sheets)
 
 - **Helmet, chest and boots on green or magenta are production-clean.** There are no face pixels, no skin specks and no
   arm slivers. Helmets are complete, and the face opening is genuinely empty. Pre-occlusion is correct: a swinging arm in the

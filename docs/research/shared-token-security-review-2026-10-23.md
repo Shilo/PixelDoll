@@ -19,7 +19,7 @@ If the actual requirement is that application JavaScript must never obtain the u
 - Reviewed the committed PixelLab v2 OpenAPI authentication scheme and current public API documentation, plus primary guidance from WHATWG, W3C, OWASP, IETF, MDN, and browser/authenticator vendors.
 - Fetched the two public production HTML pages and inspected their response headers without credentials.
 - Ran existing targeted tests: PixelDoll API client, queue, and agent-request guard: **3 passed**; Backpack HTTP/credential and agent-mode/guard suites: **66 passed**. Requests in these tests are mocked.
-- Ran the companion [offline browser probe](<C:/Programming_Files/Shilocity/PixelLab/PixelDoll/docs/research/token-storage-probe.mjs>) in managed Chromium 156.0.8078.4: **7 checks passed**, using only synthetic pages and values, with network requests intercepted.
+- Ran the companion [offline browser probe](token-storage-probe.mjs) in managed Chromium 156.0.8078.4: **7 checks passed**, using only synthetic pages and values, with network requests intercepted.
 
 No real token or `.env` was read, no authenticated PixelLab request was sent, and no generations were purchased. Application source and configuration were not changed. The test host has Node 25.0.0/npm 11.16.0, rather than the repositories' pinned Node 24.22.1/npm 11.19.1; these targeted results are not a release certification. Initial sandbox cache-write failures were resolved by rerunning the same mocked tests with normal cache access. The browser probe used the already installed browser cache through `PLAYWRIGHT_BROWSERS_PATH`.
 
@@ -41,7 +41,7 @@ This review found concrete exposure paths and lifecycle gaps. It did not establi
 
 ### 1. High: the shared trust boundary includes every project on the account's Pages origin
 
-PixelDoll reads `localStorage['pixellabApiKey']` on module load and writes it when Remember is enabled: [app.svelte.ts:7](<C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/src/lib/app.svelte.ts:7>) and [line 33](<C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/src/lib/app.svelte.ts:33>). Backpack reads/writes the same name: [http.ts:8](<C:/Programming_Files/Shilocity/PixelLab/pixellab-gallery/src/lib/api/http.ts:8>) and [line 103](<C:/Programming_Files/Shilocity/PixelLab/pixellab-gallery/src/lib/api/http.ts:103>).
+PixelDoll reads `localStorage['pixellabApiKey']` on module load and writes it when Remember is enabled: [app.svelte.ts:7](../../app/src/lib/app.svelte.ts) and [line 33](../../app/src/lib/app.svelte.ts). Backpack reads/writes the same name: http.ts:8 (`pixellab-gallery/src/lib/api/http.ts:8`) and line 103 (`pixellab-gallery/src/lib/api/http.ts:103`).
 
 The deployed URLs are `https://shilo.github.io/PixelDoll/` and `https://shilo.github.io/pixellab-backpack/`. Their different paths do not isolate them. A vulnerable old demo, compromised project deployment, or malicious code published under a third path on that origin could access the remembered token. The browser probe reproduced cross-path reads and cross-origin isolation.
 
@@ -49,15 +49,15 @@ Both apps already warn about this. The warnings are accurate disclosures, but do
 
 ### 2. High: PixelDoll sends the raw token through an origin-wide broadcast
 
-[queue.ts:413](<C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/src/lib/pixellab/queue.ts:413>) posts `{ key }` to the `pixeldoll-queue` BroadcastChannel when the user connects from a follower tab. The intended recipient is the queue leader, but BroadcastChannel is a broadcast to other eligible same-origin subscribers, not a private connection to that tab. A sibling project can subscribe before the connection and receive the token, even with Remember disabled. [MDN: Broadcast Channel API](https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API)
+[queue.ts:413](../../app/src/lib/pixellab/queue.ts) posts `{ key }` to the `pixeldoll-queue` BroadcastChannel when the user connects from a follower tab. The intended recipient is the queue leader, but BroadcastChannel is a broadcast to other eligible same-origin subscribers, not a private connection to that tab. A sibling project can subscribe before the connection and receive the token, even with Remember disabled. [MDN: Broadcast Channel API](https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API)
 
-The existing self-test opens a spy **after** the initial key transfer and confirms that an unsolicited `ask` gets no response: [queue.ts:1044](<C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/src/lib/pixellab/queue.ts:1044>). That is useful, but does not test passive interception of a future legitimate transfer. The companion probe confirms the underlying broadcast behavior; the application call site establishes that a real credential takes that path.
+The existing self-test opens a spy **after** the initial key transfer and confirms that an unsolicited `ask` gets no response: [queue.ts:1044](../../app/src/lib/pixellab/queue.ts). That is useful, but does not test passive interception of a future legitimate transfer. The companion probe confirms the underlying broadcast behavior; the application call site establishes that a real credential takes that path.
 
 Remove raw credentials from BroadcastChannel. For a small first fix, require the tab running jobs to unlock locally. If transparent cross-tab operation remains a requirement, separately design a request broker; do not substitute an easily discovered channel name or claim that a public channel is authenticated. Memory-only broker designs can reduce direct disclosure but still authorize use by compromised trusted clients.
 
 ### 3. Medium: shared persistence does not mean shared sign-out
 
-PixelDoll removes the shared saved entry and clears its own state in [app.svelte.ts:40](<C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/src/lib/app.svelte.ts:40>). Its queue channel differs from Backpack's `pixellab-backpack` channel. Backpack sends `signed-out` and `key-changed` only on its own channel: [http.ts:585](<C:/Programming_Files/Shilocity/PixelLab/pixellab-gallery/src/lib/api/http.ts:585>). Neither credential module handles cross-app `storage` events.
+PixelDoll removes the shared saved entry and clears its own state in [app.svelte.ts:40](../../app/src/lib/app.svelte.ts). Its queue channel differs from Backpack's `pixellab-backpack` channel. Backpack sends `signed-out` and `key-changed` only on its own channel: http.ts:585 (`pixellab-gallery/src/lib/api/http.ts:585`). Neither credential module handles cross-app `storage` events.
 
 Consequently, removing a remembered key in one app does not immediately clear an already-open other app's memory. Backpack can also retain its sessionStorage copy. Within PixelDoll, a follower's empty-key message clears the leader, but a leader clearing its own key does not broadcast that change to every follower. “Forget” is not presently a suite-wide lock or revocation operation.
 
@@ -65,7 +65,7 @@ Define separate operations: **Lock all open apps**, **Forget the saved credentia
 
 ### 4. Medium: Backpack session storage is less persistent, but is still readable
 
-Backpack defaults to `sessionStorage['pixellab-backpack:key']`: [http.ts:60](<C:/Programming_Files/Shilocity/PixelLab/pixellab-gallery/src/lib/api/http.ts:60>). PixelDoll defaults to memory. Session storage survives reload, and another page on the same origin reached in the same tab can read it; the browser probe reproduced this. It should not be described as a secure vault. OWASP recommends avoiding sensitive data in JavaScript-readable local storage and notes that one XSS can expose it. [OWASP HTML5 security guidance](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#storage-apis)
+Backpack defaults to `sessionStorage['pixellab-backpack:key']`: http.ts:60 (`pixellab-gallery/src/lib/api/http.ts:60`). PixelDoll defaults to memory. Session storage survives reload, and another page on the same origin reached in the same tab can read it; the browser probe reproduced this. It should not be described as a secure vault. OWASP recommends avoiding sensitive data in JavaScript-readable local storage and notes that one XSS can expose it. [OWASP HTML5 security guidance](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#storage-apis)
 
 For the new contract, use memory-only consistently unless the user explicitly creates the encrypted saved record. Do not promise that tab closure is a cryptographic deletion mechanism or that dropping JS references guarantees memory zeroization.
 
@@ -73,7 +73,7 @@ For the new contract, use memory-only consistently unless the user explicitly cr
 
 Both live pages returned HTTP 200. Neither inspected response contained `Content-Security-Policy`, `X-Frame-Options`, or `Cross-Origin-Opener-Policy` headers. Both contained CSP meta tags.
 
-Backpack's [public/_headers:2](<C:/Programming_Files/Shilocity/PixelLab/pixellab-gallery/public/_headers:2>) declares `frame-ancestors 'none'`, and its local preview serves those headers. Its [vite.config.ts:24](<C:/Programming_Files/Shilocity/PixelLab/pixellab-gallery/vite.config.ts:24>) correctly explains that GitHub Pages ignores `_headers` and removes unsupported directives from the CSP meta tag. PixelDoll uses a [CSP meta tag](<C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/index.html:5>) too. `frame-ancestors` cannot be enforced through a meta tag. [MDN: frame-ancestors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors)
+Backpack's public/_headers:2 (`pixellab-gallery/public/_headers:2`) declares `frame-ancestors 'none'`, and its local preview serves those headers. Its vite.config.ts:24 (`pixellab-gallery/vite.config.ts:24`) correctly explains that GitHub Pages ignores `_headers` and removes unsupported directives from the CSP meta tag. PixelDoll uses a [CSP meta tag](../../app/index.html) too. `frame-ancestors` cannot be enforced through a meta tag. [MDN: frame-ancestors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors)
 
 The agent auto-connect checks `window.top === window`, but that restriction covers agent startup, not ordinary production connections. Framing is relevant to clickjacking and, for a same-origin parent, DOM access to a credential input. A parent on another origin does not gain DOM access merely by framing.
 
@@ -81,7 +81,7 @@ Use a static hosting/CDN configuration that can deliver real response headers; n
 
 ### 6. Medium: live key replacement bypasses Backpack's normal account transition
 
-On `key-changed`, a kept Backpack tab assigns `key = saved` directly: [http.ts:610](<C:/Programming_Files/Shilocity/PixelLab/pixellab-gallery/src/lib/api/http.ts:610>). That path does not notify the library to perform the fingerprint/account checks that startup and `connect()` use: [library.svelte.ts:166](<C:/Programming_Files/Shilocity/PixelLab/pixellab-gallery/src/lib/data/library.svelte.ts:166>).
+On `key-changed`, a kept Backpack tab assigns `key = saved` directly: http.ts:610 (`pixellab-gallery/src/lib/api/http.ts:610`). That path does not notify the library to perform the fingerprint/account checks that startup and `connect()` use: library.svelte.ts:166 (`pixellab-gallery/src/lib/data/library.svelte.ts:166`).
 
 This is a source-level account-consistency finding: an open tab can start authorizing requests with a replacement credential while retaining previous in-memory library state. The complete visible effect was not reproduced end to end in this review. Treat credential replacement as a full account transition, invalidate old-account work, and then verify/load the new account. A change in another app currently has the separate stale-memory problem in finding 3.
 
