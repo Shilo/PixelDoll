@@ -3,15 +3,12 @@ import { api, ApiError } from './pixellab/client.ts';
 import type { Balance } from './pixellab/routes.ts';
 import { queue } from './pixellab/queue.ts';
 import type { ActivityContext } from './pixellab/activity.ts';
+import { SAVED_KEY, readSavedKey, watchSharedAuth } from './shared-auth.ts';
 
-const LS_KEY = 'pixellabApiKey'; // shared across apps on this origin
-const lsGet = () => {
-  try { return localStorage.getItem(LS_KEY) ?? ''; } catch { return ''; }
-};
-const clearSavedKey = () => { try { localStorage.removeItem(LS_KEY); } catch {} };
+const clearSavedKey = () => { try { localStorage.removeItem(SAVED_KEY); } catch {} };
 
 let keyRevision = 0;
-const stored = lsGet();
+const stored = readSavedKey();
 export const app = $state({
   key: stored,
   remembered: !!stored,
@@ -28,31 +25,50 @@ queue.subscribe(() => {
   Object.assign(app, { key: queue.key, keyRejected: false, balance: null, balanceError: '', balanceAt: 0, ...(!queue.key ? { remembered: false } : {}) });
 });
 
+const sharedAuth = watchSharedAuth(() => clearLocalKey(), () => {
+  if (!app.remembered) return; // a session-only key remains local; future apps can read the saved key on load
+  const saved = readSavedKey();
+  if (saved === app.key) return;
+  if (!saved) clearLocalKey();
+  else app.remembered = false; // keep this account in memory; never silently run its paid work with another key
+});
+import.meta.hot?.dispose(() => sharedAuth.close());
+
 export function setKey(key: string, remember: boolean, activity?: ActivityContext) {
+  sharedAuth.acknowledge(); // a fresh connection supersedes any already-persisted Forget notification
   keyRevision++;
   app.key = key.trim();
   app.keyRejected = false;
   app.balance = null; // never show another key's balance
   app.balanceError = '';
-  app.remembered = remember && !!app.key;
+  app.remembered = false;
   try {
-    if (app.remembered) localStorage.setItem(LS_KEY, app.key);
-    else clearSavedKey();
-  } catch {}
+    if (remember && app.key) {
+      localStorage.setItem(SAVED_KEY, app.key);
+      app.remembered = true;
+    } else clearSavedKey();
+  } catch { clearSavedKey(); }
+  sharedAuth.changed();
   queue.setKey(app.key);
   void refreshBalance(activity);
 }
 
 export function forgetKey() {
-  keyRevision++;
   clearSavedKey();
+  clearLocalKey();
+  sharedAuth.forget();
+}
+
+// A remote notification must never delete a newer saved credential written by another app.
+function clearLocalKey() {
+  keyRevision++;
   app.key = '';
   app.remembered = false;
   app.balance = null;
   app.balanceError = '';
   app.keyRejected = false;
   app.balanceAt = 0;
-  queue.setKey('');
+  queue.setKey('', false);
 }
 
 export async function refreshBalance(activity?: ActivityContext | Event) {

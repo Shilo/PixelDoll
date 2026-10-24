@@ -5,6 +5,10 @@ import type { Balance } from '../../src/lib/pixellab/routes.ts'
 const mocks = vi.hoisted(() => ({ api: vi.fn(), listeners: [] as (() => void)[], queue: { key: '', setKey: vi.fn(), subscribe: vi.fn() } }))
 vi.mock('../../src/lib/pixellab/client.ts', async (importOriginal) => ({ ...await importOriginal<object>(), api: mocks.api }))
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: mocks.queue }))
+vi.mock('../../src/lib/shared-auth.ts', async (original) => ({
+  ...await original<object>(),
+  watchSharedAuth: () => ({ acknowledge() {}, changed() {}, forget() {}, close() {} }),
+}))
 
 beforeEach(() => {
   vi.resetModules()

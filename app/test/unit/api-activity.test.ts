@@ -28,6 +28,7 @@ test('records exact sent bodies without auth and reconciles repeated polls to on
   expect(activityTotals(snapshot())).toEqual({ generations: 10, usd: 0, unknown: 0, pending: 0 });
   expect(exportActivityJson()).not.toContain('unit-test-credential');
   expect(fetchMock.mock.calls[0]![1].headers.authorization).toBe('Bearer unit-test-credential');
+  expect(fetchMock.mock.calls[0]![1]).toMatchObject({ credentials: 'omit', redirect: 'error', cache: 'no-store' });
 });
 
 test('paid automatic measurements remain foreground and failed calls have unknown cost', async () => {

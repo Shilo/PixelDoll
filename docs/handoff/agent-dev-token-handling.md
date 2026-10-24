@@ -44,7 +44,9 @@ development**, generating images without a human pasting the token into the runn
     "Remember on this device" (localStorage) is opt-in. It is sent only as `Authorization: Bearer` to `https://api.pixellab.ai`, and never put
     in URLs, logs, exports, project files, job ledgers or provenance.
     Both apps use only `localStorage['pixellabApiKey']` for remembered keys. Do not read, migrate, write or remove older
-    app-specific API-key entries. Forget removes the shared saved key; other apps pick it up on load.
+    app-specific API-key entries. Forget removes the shared saved key and notifies cooperating open apps using the
+    credential-free protocol in `docs/shared-token-security.md`. Keys remain plaintext by explicit user decision;
+    Remember is optional, with no passphrase or extra unlock step.
 12. **Agents never print, log, screenshot or commit the token.** Agents check `GET /balance` (free) unless the task needs
     generations.
 

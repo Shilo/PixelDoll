@@ -117,7 +117,7 @@ const noAnimationJobsStarted = (endpoint: string, error: ApiError): boolean => {
 export const live = (r?: JobRec) => !!r && (r.state === 'queued' || r.state === 'submitting' || r.state === 'running');
 const seededOf = (r: JobRec) => typeof (r.params as { seed?: unknown } | null)?.seed === 'number';
 type CapacityState = Pick<QueueSnapshot, 'concurrency' | 'current' | 'capacityPlan' | 'capacityRetryAt'>;
-type Msg = { forget?: boolean; rec?: string; sync?: boolean; capacity?: CapacityState; capacitySync?: boolean };
+type Msg = { forget?: boolean; keyReady?: boolean; rec?: string; sync?: boolean; capacity?: CapacityState; capacitySync?: boolean };
 
 export const backoff = (attempt: number, rnd = Math.random()) => Math.min(60_000, 2000 * 2 ** Math.max(0, attempt - 1)) * (0.5 + 0.5 * rnd);
 
@@ -270,6 +270,7 @@ export class Queue {
     await this.deps.put(r.id, r);
     this.chan?.postMessage({ rec: r.id } satisfies Msg); // other tabs read just this record
     this.emit();
+    this.requestLeadership();
   }
   /** Resolves with the record once it is finished (done, failed, cancelled or lost). */
   settled(id: string): Promise<JobRec> {
@@ -298,9 +299,11 @@ export class Queue {
         if (signal.aborted) return;
         const m = e.data ?? {};
         if (m.forget === true) this.setKey('', false);
+        // Let a connected tab drive its work without sending its credential to this keyless tab.
+        if (m.keyReady === true && this.role === 'leader' && this.release && !this.key && !this.busy.size) void this.connect();
         if (typeof m.rec === 'string') void this.pull(m.rec);
         if (m.sync && this.role === 'follower') void this.sync();
-        if (m.capacity && this.role === 'follower') { Object.assign(this, m.capacity); this.emit(); }
+        if (m.capacity && this.role === 'follower') { Object.assign(this, m.capacity); this.emit(); this.requestLeadership(); }
         if (m.capacitySync && this.role === 'leader') this.emit();
       };
     }
@@ -331,6 +334,7 @@ export class Queue {
       await this.lead(connection);
       if (!signal.aborted) return hold();
     }).catch((e) => { if (!signal.aborted) console.error('queue lock', e); });
+    this.requestLeadership();
   }
   private async lead(connection: AbortController) {
     if (connection.signal.aborted) return;
@@ -487,6 +491,10 @@ export class Queue {
     if (!key && notifyForget) this.chan?.postMessage({ forget: true } satisfies Msg);
     if (key && this.paused === 'auth') this.paused = null;
     this.emit();
+    this.requestLeadership();
+  }
+  private requestLeadership() {
+    if (this.role === 'follower' && this.key && [...this.recs.values()].some(live)) this.chan?.postMessage({ keyReady: true } satisfies Msg);
   }
   resume() {
     this.paused = null;
@@ -774,7 +782,10 @@ export class Queue {
   }
   private async guard(id: string, fn: () => Promise<void>) {
     this.busy.add(id);
-    try { await fn(); } catch (e) { console.error('queue', e); } finally { this.busy.delete(id); }
+    try { await fn(); } catch (e) { console.error('queue', e); } finally {
+      this.busy.delete(id);
+      if (this.role === 'leader' && !this.key && !this.busy.size) this.emit(); // a waiting connected follower can retry handoff
+    }
   }
 
   private async submit(r: JobRec, probe: boolean) {
@@ -1309,7 +1320,7 @@ async function lockTest() {
 }
 
 
-// A keyless leader cannot borrow a follower key; closing it lets that follower resume safely with its own key.
+// A keyless leader yields automatically; the follower runs its work without sharing its key or extra user steps.
 async function handoffTest() {
   const store = new Map<string, JobRec>(), locks = fakeLocks(), tick = () => new Promise((r) => setTimeout(r, 0));
   let t = 1000, posts = 0, usedKey = '';
@@ -1324,16 +1335,20 @@ async function handoffTest() {
   };
   const a = new Queue(deps), b = new Queue(deps);
   await a.connect(); await b.connect();
+  let finishBusy!: () => void;
+  const busy = (a as unknown as { guard(id: string, run: () => Promise<void>): Promise<void> }).guard('handoff-busy', () => new Promise<void>(resolve => { finishBusy = resolve; }));
   b.setKey('synthetic-private-handoff-key');
   const rec = await b.enqueue({ method: 'POST', path: '/handoff', body: { seed: 123 } });
   t += FULL_SYNC_MS + 1;
   await a.tick(); await b.tick();
-  console.assert(posts === 0 && a.key === '' && store.get(rec.id)?.state === 'queued', 'keyless leader leaves follower work queued without borrowing its key');
-  a.disconnect();
+  await tick(); await tick();
+  console.assert(a.role === 'leader' && posts === 0, 'a keyless leader does not hand off until its existing work settles');
+  console.assert(a.key === '', 'keyless leader never borrows the follower credential');
+  finishBusy(); await busy; // no ledger save: guard completion must still notify waiting followers
   await tick(); await tick(); await tick();
   await b.tick(); await b.tick();
   console.assert(b.role === 'leader' && posts === 1 && usedKey === 'synthetic-private-handoff-key' && store.get(rec.id)?.state === 'done', 'connected follower takes over and submits its queued work exactly once with its own key');
-  b.disconnect();
+  a.disconnect(); b.disconnect();
 }
 
 // A follower disconnected while waiting for the Web Lock must never become an active queue later (HMR/remount).

@@ -68,6 +68,9 @@ export async function api<T>(key: string, method: string, path: string, body?: u
   try {
     r = await fetch(API_BASE + path, {
       method,
+      credentials: 'omit',
+      redirect: 'error', // an authenticated call must not follow an unexpected redirect
+      cache: 'no-store',
       headers: { authorization: `Bearer ${key}`, ...(body !== undefined ? { 'content-type': 'application/json' } : {}) },
       body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: signal ?? AbortSignal.timeout(timeoutFor(method, path)), // a hung request never holds a queue slot forever
