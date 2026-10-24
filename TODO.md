@@ -75,15 +75,6 @@ cases live in the [delivery plan](docs/design/frame-editor/delivery-plan.md).
       editor (E6/S6). No paid generation was requested or performed for the planning package.
 
 ## Concerns
-- [ ] **Deferred: scope the persisted queue to its credential.** Open tabs now retain their current account when
-  another app changes the saved key. Reloading can still attach an existing ledger to a replacement saved key.
-  Design durable nonsecret credential ownership across enqueue, deduplication, recovery and polling; preserve
-  accepted job IDs and quarantine ambiguous legacy work instead of assigning it to a new account automatically.
-- [ ] **Deferred: reassess encryption of `pixellabApiKey`.** User decision (2026-10-23): keep the token plaintext,
-  shared with all apps on this origin, with Remember optional and no additional unlock step. A bundled encryption key
-  or a locally saved automatic-decryption key would not protect against same-origin malicious scripts; a passphrase
-  would add unwanted friction. Revisit only if a concrete threat model and a convenient independent unlock mechanism
-  (or provider-issued scoped credentials) justify it. See [shared token contract](docs/shared-token-security.md).
 - [!] **Merged bundle size.** The combined audit/shared-equipment build is 535.36 KB minified (180.56 KB gzip),
   crossing Vite's default 500 KB chunk warning. Profile startup before deciding whether shared-design UI should load
   on demand; keep the warning visible instead of raising the threshold. Build and credential guard still pass.
@@ -188,6 +179,20 @@ despite the shared-equipment test suite passing.
       CI guard on the precache list
 
 ## Deferred (user)
+- [ ] **Optional: persisted queue credential ownership (2026-10-23).** User explicitly deferred this account-switch
+      edge case; no implementation is scheduled and it is not a release blocker. Open tabs keep their current account
+      when another app changes the saved key, but reloading can attach an existing queue ledger to the replacement key.
+      Revisit only if requested. Future scope: nonsecret ownership across enqueue, deduplication, recovery and polling;
+      preserve accepted job IDs and keep unowned saved work separate instead of assigning it to another account.
+      See [shared token contract](docs/shared-token-security.md).
+- [ ] **Optional: reassess encryption of `pixellabApiKey` (2026-10-23).** Keep the token plaintext and shared with all
+      apps on this origin, with Remember optional and no extra unlock step. A bundled encryption key or a locally saved
+      automatic-decryption key would not protect against same-origin malicious scripts; a passphrase adds unwanted
+      friction. Revisit only if a concrete threat model and convenient independent unlock mechanism (or provider-issued
+      scoped credentials) justify it. No encryption work is scheduled.
+- [ ] **Optional: hosting support for security response headers.** If hosting is revisited, consider a static host/CDN
+      that can send CSP `frame-ancestors` headers; GitHub Pages ignores `_headers`. Keep the existing frame startup
+      guard meanwhile. No hosting migration or backend is planned; see the [current protection and limitation](docs/shared-token-security.md#security-boundary).
 - [ ] **Native Unreal Engine export (2026-10-23).** Paper2D supports native Sprites/Flipbooks, but image descriptors alone
       do not implement a swappable paperdoll. A complete target needs an Editor importer plus a Blueprint-callable
       Actor/component for shared timing, equipment/hides/tucking, per-frame ordering, oversize pivots and exact palette
