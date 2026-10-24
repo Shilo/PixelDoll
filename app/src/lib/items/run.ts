@@ -129,7 +129,7 @@ const gridable = (spec: { slot: string; key?: ItemSpec['key'] }) => !!spec.key &
 
 const blobB64 = async (sha: string) => bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
 async function submit(d: Draft, k: number, ctx: RigCtx) {
-  const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method);
+  const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method, rig.cell);
   const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${c.cells[0].split('/').slice(0, 2).join('/')}` : ''})`;
   let req;
   if (c.kind === 'grid') { // B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
@@ -152,7 +152,7 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
     // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
     req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, anchored(k, c.kind) ? d.calls[0].cells[0] : undefined), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
-  c.recId = (await queue.enqueue(req, { label, tag: 'm3' })).id;
+  c.recId = (await queue.enqueue(req, { label, tag: 'm3', minimumTier: d.spec.method === 'skel' ? 1 : 0 })).id;
 }
 async function runCall(d: Draft, k: number, ctx: RigCtx, persist: () => Promise<unknown>): Promise<JobRec> {
   if (!recOf(d.calls[k].recId)) { await submit(d, k, ctx); await persist(); }
@@ -286,7 +286,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
   type Out = { k: number; key: string; out: Img; posed: boolean };
   const { rig } = ctx.rec.manifest, route = d.spec.key, g1 = new Map<number, string>(), outs: Out[] = [], dressOuts: Out[] = [];
-  const pad = padOf(d.spec.slot, d.spec.method), slot = slotOf(d.spec.slot), W = rig.cell.w + 2 * pad, H = rig.cell.h + 2 * pad;
+  const pad = padOf(d.spec.slot, d.spec.method, rig.cell), slot = slotOf(d.spec.slot), W = rig.cell.w + 2 * pad, H = rig.cell.h + 2 * pad;
   for (const [k, c] of d.calls.entries()) {
     const r = recOf(c.recId);
     if (r?.state !== 'done') continue;
@@ -357,7 +357,7 @@ export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<
 }
 /** The rig project with this draft equipped (for compose previews in every direction, mirrored ones included). */
 async function previewProject(d: Draft, ctx: RigCtx, cells: CellOut[], qa: QaResult): Promise<Project> {
-  const { item, images } = await buildItem({ spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells, route: d.spec.key, provenance: [], qa: qa.qa, pad: padOf(d.spec.slot, d.spec.method) });
+  const { item, images } = await buildItem({ spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells, route: d.spec.key, provenance: [], qa: qa.qa, pad: padOf(d.spec.slot, d.spec.method, ctx.rec.manifest.rig.cell) });
   const m: Manifest = structuredClone(ctx.rec.manifest);
   m.items = [...m.items.filter((i) => i.id !== item.id), item];
   if (!m.slots.some((s) => s.id === item.slot)) m.slots = [...m.slots, slotOf(item.slot)];
@@ -386,7 +386,7 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
   const dress = d.calls[0].kind === 'dress', dressed: Partial<Record<DirectionName, Img>> = {};
   if (dress) for (const [k, o] of dressedOf(d.calls)) dressed[k.split('/')[1] as DirectionName] = await img(o.sha);
   const { item, images } = await buildItem({
-    spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(dress ? { dressed } : {}), pad: padOf(d.spec.slot, d.spec.method),
+    spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(dress ? { dressed } : {}), pad: padOf(d.spec.slot, d.spec.method, ctx.rec.manifest.rig.cell),
     provenance: d.calls.map((c) => toProv(recOf(c.recId)!, c)), anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined,
   });
   const designWarnings = [...new Set([...r.g1.values()].flatMap((why) => why.split(/;\s*/)))];
@@ -409,7 +409,7 @@ const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeA
  * reload re-attaches to the ledger. `moveSeed` (the move's seed) joins the seed, so a move's "Try again" re-rolls the poses
  * instead of re-reading the cached ones (R6 P2-7). Returns the clip QA.
  */
-export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number, selectedDirs?: DirectionName[]): Promise<QaResult> {
+export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number, selectedDirs?: DirectionName[], activityScope?: string): Promise<QaResult> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const available = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   if (selectedDirs && (!selectedDirs.length || new Set(selectedDirs).size !== selectedDirs.length || selectedDirs.some(d => !available.includes(d)))) throw new Error('Choose supported independently drawn equipment directions.');
@@ -427,7 +427,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     for (let attempt = 0; attempt < 2; attempt++) {
       const seed = seedOf(`${item.id}/${anim}/${dir}/${attempt}${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`);
       const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad, view: rig.view });
-      const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
+      const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope, minimumTier: 1 });
       const r = terminal(rec) ? rec : await settled(rec.id);
       onCall();
       if (attempt) rerolls++;
@@ -446,7 +446,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     }
     if (!best.length) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames twice. Try again.`); // R6 P2-13: never save a direction with empty cells
     if (bestFails && gridable(item)) { // B14: still failing after the re-roll -> one inpaint-v3 grid, kept only if it is better
-      const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells);
+      const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells, activityScope);
       onCall();
       rerolls++;
       if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys, rig)) < bestFails) { best = g.cells; bestProv = g.prov; }
@@ -504,10 +504,10 @@ export async function gridRepairRequest(ctx: RigCtx, item: Item, anim: string, d
   return gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key }, cells, refs, seed, pad);
 }
 /** One clip-direction edited on its own canvas; body frames remain frozen and reference cells are protected. */
-async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?: string[]): Promise<{ cells: CellOut[]; prov: Provenance }> {
+async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?: string[], activityScope?: string): Promise<{ cells: CellOut[]; prov: Provenance }> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const cells = selectedCells ?? Array.from({ length: rig.animations.find(a => a.id === anim)!.cells }, (_, i) => `${anim}/${dir}/${i}`), n = cells.length;
-  const rec = await queue.enqueue(await gridRepairRequest(ctx, item, anim, dir, seed, cells), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move' });
+  const rec = await queue.enqueue(await gridRepairRequest(ctx, item, anim, dir, seed, cells), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope, minimumTier: 1 });
   const r = terminal(rec) ? rec : await settled(rec.id);
   if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
   if (outputsOf(r).length !== 1) throw new Error('PixelLab returned a malformed repair grid. Existing artwork was kept.');

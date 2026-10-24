@@ -10,6 +10,37 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 **Superseded** marks a result that later work replaced. The doc is still accurate as a record of what was tested.
 [architecture.md §4.3](architecture.md) lists every replaced route.
 
+## Character creator redesign (2026-10-22 proposal)
+
+**Current accepted direction: [Obsidian / Porcelain Bronze](design/2026-10-22-redesign/round-4-discussion/current-design.md).** Source-verified creator workflow; exact unlit sprites; Preview/Top-down/Side-scroller; continuous movement with animation/direction fallbacks; contextual toasts; one-line prompt expansion; and a dynamic mobile joystick. This record supersedes incompatible earlier proposals. [Full desktop/mobile image mockups](design/2026-10-22-redesign/round-5-mockups/image-index.md) are complete: 32 screens and four overview boards. The [isolated playable proof](design/2026-10-22-redesign/round-6-prototype/README.md) now tests screen switching, continuous movement, camera following, equipment, touch and reflections. Production integration remains separate. [Direct mockup/live comparisons](design/2026-10-22-redesign/round-6-prototype/comparisons.md) document the readability refinement, south-facing list thumbnails and simplified Light/Dark action.
+
+[Dynamic animation resolver](design/2026-10-22-redesign/round-4-discussion/animation-resolver.md): velocity-based state, nearest-direction mathematics, intended-versus-available coverage, fallback/notification rules, equipment synchronization and acceptance scenarios.
+
+**Shared styling contract:** [Immersive design system](design/immersive-design-system.md) documents theme tokens, type, control states, paint overflow, reusable modules and Preview/live direction behavior for future integration.
+
+**Material study history:** [GlassKit evaluation](design/2026-10-22-redesign/round-6-prototype/glasskit-study.md) records the earlier selective adoption, baseline/rounded comparisons, independent review and accessibility/rendering checks. Bronze UI supersedes its active prototype styling.
+
+**Current theme owner:** [Bronze UI](https://github.com/Shilo/bronze-ui) maintains the MIT package, [style guide](https://github.com/Shilo/bronze-ui/blob/main/docs/STYLE-GUIDE.md) and [standalone component showcase](https://shilo.github.io/bronze-ui/). The [round-six dependency integration](design/2026-10-22-redesign/round-6-prototype/bronze-integration.md) applies it to PixelDoll's playable prototype; production migration remains separate. The [round-seven lab](design/2026-10-22-redesign/round-7-theme/README.md) preserves historical source, app inventory, independent reviews and browser evidence. Its local theme and runners are frozen.
+
+**Full-app theme recommendation history:** [Theme foundation and component/state catalog](design/2026-10-22-redesign/round-6-prototype/theme-foundation.md), with [independent challenge](design/2026-10-22-redesign/round-6-prototype/theme-foundation-review.md). Evaluates GlassKit CSS/Elements and defines coverage and parity gates. The active playable reference now consumes Bronze UI; earlier GlassKit source and captures remain historical evidence.
+
+**Decision history and palette evidence:** [earlier direction review](design/2026-10-22-redesign/round-4-discussion/README.md), [decision log and corrections](design/2026-10-22-redesign/round-4-discussion/decisions-2026-10-23.md), [Bronze/Frost/Sage studies with exact demo sprites](design/2026-10-22-redesign/round-4-discussion/palette-studies/README.md). Bronze is selected; themes change background/UI only and optional reflection is code-only.
+
+**Current imagery: [round three — immersive HD simulation worlds](design/2026-10-22-redesign/round-3/README.md).** Image-only design: 11 selected screenshots across three world directions, a shared customization/gameplay shell, desktop and phone selection/creation, research and continuous-gameplay requirements. Supersedes round two's visual recommendation; no production implementation. The direction review above corrects these images' outdated workflow labels and controls.
+
+[Round two — pixel worlds and prototype stages](design/2026-10-22-redesign/round-2/README.md): six curated alternatives, desktop/phone selection, creation and customization, Asemulator-inspired future walking studies, source research and the updated Calibration Yard recommendation.
+
+[Design review package](design/2026-10-22-redesign/README.md): current UI audit with 23 screenshots, research into 12 game families and two creator tools, three curated concepts, 18 desktop/mobile mockups, and an offline interactive prototype. The lead recommends Moonlit Camp. This is a new proposal; it does not replace the implemented design or prior decisions until adopted. Its screenshots are included alongside the proposal rather than in the historical tag.
+
+## Current review handoffs and research
+
+- [Claude redesign and Bronze UI review handoff](../.claude/handoffs/2026-10-23-161739-claude-redesign-and-bronze-ui-review.md): independent visual, interaction, accessibility and shared-theme audit brief.
+- [Pre-Bronze/current comparison provenance](design/2026-10-22-redesign/round-6-prototype/pre-bronze-comparison.md): the correct historical baseline for reviewing the redesign.
+- [Frame-repair and pipeline review index](reviews/README.md): preserved audit reports, repair concept source and verification script/result. These are recommendations, not completed production features.
+- [Project repair workflow review](research/project-repair-workflow-review-2026-10-23.md) and [shared-token security review](research/shared-token-security-review-2026-10-23.md): dated research retained for follow-up; findings were not revalidated by repository cleanup. The [storage probe](research/token-storage-probe.mjs) uses synthetic pages/data and intercepts network requests.
+
+Generated screenshots and prototype capture manifests remain local and ignored, together with their existing galleries. Cleanup preserves those files on disk. Source, handoffs, review notes and the compact repair verification record are versioned.
+
 ## Spec
 
 | Doc | What |
@@ -17,6 +48,7 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 | [architecture.md](architecture.md) | v1.3: allowed models (D8), rig contract, item pipeline (chroma mannequin + skeleton-posed keyframe, 96 px held items), slots and z ladder, colour model, queue/storage/key, cost model, risks. |
 | [manifest-spec.md](manifest-spec.md) | `pixeldoll/2` manifest with legacy `pixeldoll/1` reading: owner-local palettes, shared-copy lineage, source sheets, invariants, ZIP layout and per-engine mapping. |
 | [user-guide.md](user-guide.md) | The Studio in plain language. |
+| [pixellab-plans.md](pixellab-plans.md) | Editable tier limits, Free/Trial handling, and the plan requirements of the REST endpoints PixelDoll calls. |
 
 ## Research (R1–R5, 2026-10-20)
 

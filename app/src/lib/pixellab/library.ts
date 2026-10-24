@@ -1,10 +1,11 @@
 // Read-only character library. The ZIP endpoint is public; never send an account token to an artwork URL.
 import { api, API_BASE } from './client.ts';
 import { MAX_ZIP_BYTES } from '../store/zip.ts';
+import { beginActivityCall, finishActivityCall, type ActivityContext } from './activity.ts';
 
 export interface LibraryCharacter { id: string; name: string; prompt?: string; directions: number; animation_count: number; preview_url?: string; size?: { width: number; height: number } }
 export interface CharacterPage { characters: LibraryCharacter[]; total: number }
-export const listCharacters = (key: string, offset = 0, signal?: AbortSignal) => api<CharacterPage>(key, 'GET', `/characters?limit=20&offset=${offset}`, undefined, signal ? AbortSignal.any([signal, AbortSignal.timeout(120_000)]) : undefined);
+export const listCharacters = (key: string, offset = 0, signal?: AbortSignal, context: ActivityContext = {}) => api<CharacterPage>(key, 'GET', `/characters?limit=20&offset=${offset}`, undefined, signal ? AbortSignal.any([signal, AbortSignal.timeout(120_000)]) : undefined, { label: 'Browse characters', background: false, ...context });
 
 /** Accept only an ID or an actual PixelLab creator link, never arbitrary fetch destinations. */
 export function characterId(value: string): string {
@@ -19,20 +20,27 @@ export function characterId(value: string): string {
   return id;
 }
 
-export async function downloadCharacter(id: string, signal?: AbortSignal): Promise<Uint8Array> {
+export async function downloadCharacter(id: string, signal?: AbortSignal, context: ActivityContext = {}): Promise<Uint8Array> {
   const safe = characterId(id);
   const timeout = AbortSignal.timeout(120_000);
-  const response = await fetch(`${API_BASE}/characters/${safe}/zip?states=${safe}`, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout, credentials: 'omit' });
-  if (!response.ok) throw new Error(response.status === 423 ? 'PixelLab is still generating this character. Try importing again when it finishes.' : response.status === 404 ? 'PixelLab could not find this character.' : `PixelLab export failed (${response.status}). Try again later.`);
-  if (Number(response.headers.get('content-length')) > MAX_ZIP_BYTES) throw new Error('This character ZIP exceeds the 64 MB import limit.');
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error('PixelLab returned an empty export.');
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  try { for (;;) { const r = await reader.read(); if (r.done) break; size += r.value.length; if (size > MAX_ZIP_BYTES) throw new Error('This character ZIP exceeds the 64 MB import limit.'); chunks.push(r.value); } }
-  finally { await reader.cancel(); }
-  const bytes = new Uint8Array(size);
-  let at = 0;
-  for (const chunk of chunks) { bytes.set(chunk, at); at += chunk.length; }
-  return bytes;
+  const url = `${API_BASE}/characters/${safe}/zip?states=${safe}`;
+  const activityId = beginActivityCall('GET', url, undefined, { label: 'Import character', background: false, ...context }, 'download');
+  let status: number | null = null;
+  try {
+    const response = await fetch(url, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout, credentials: 'omit' });
+    status = response.status;
+    if (!response.ok) throw new Error(response.status === 423 ? 'PixelLab is still generating this character. Try importing again when it finishes.' : response.status === 404 ? 'PixelLab could not find this character.' : `PixelLab export failed (${response.status}). Try again later.`);
+    if (Number(response.headers.get('content-length')) > MAX_ZIP_BYTES) throw new Error('This character ZIP exceeds the 64 MB import limit.');
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error('PixelLab returned an empty export.');
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    try { for (;;) { const r = await reader.read(); if (r.done) break; size += r.value.length; if (size > MAX_ZIP_BYTES) throw new Error('This character ZIP exceeds the 64 MB import limit.'); chunks.push(r.value); } }
+    finally { await reader.cancel(); }
+    const bytes = new Uint8Array(size);
+    let at = 0;
+    for (const chunk of chunks) { bytes.set(chunk, at); at += chunk.length; }
+    finishActivityCall(activityId, status, true);
+    return bytes;
+  } catch (e) { finishActivityCall(activityId, status, false); throw e; }
 }

@@ -28,6 +28,12 @@ export interface CreateCharacterV3 {
   reference_image?: B64Image; // import mode: south view; with every other direction in direction_images = 0.25 gen, pixel-exact (S3)
   direction_images?: Partial<Record<Direction, B64Image>>;
 }
+export interface EnhanceCharacterV3Prompt {
+  description: string;
+  image_size: Size;
+  view?: CreateCharacterV3['view'];
+}
+export interface EnhancedCharacterV3Prompt { enhanced_prompt: string; usage?: Usage | null }
 export interface CharacterAnimation {
   character_id: string;
   mode?: BaseAnimMode; // newer models only: legacy template/pro modes do not type-check (D8, user rule 2026-10-21)
@@ -75,6 +81,7 @@ export interface AnimateSkeletonV3 {
 
 export const routes = {
   createCharacterV3: (b: CreateCharacterV3) => post('/create-character-v3', b),
+  enhanceCharacterV3Prompt: (b: EnhanceCharacterV3Prompt) => post('/enhance-character-v3-prompt', b),
   animateCharacter: (b: CharacterAnimation) => post('/characters/animations', b),
   getCharacter: (id: string) => get(`/characters/${encodeURIComponent(id)}`),
   estimateSkeleton: (image: B64Image) => post('/estimate-skeleton', { image }),

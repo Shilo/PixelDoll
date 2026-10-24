@@ -1,8 +1,8 @@
-// Create character + add a move: rig v1.3 (architecture §3). Base = create-character-v3 at 48 px -> rotations padded to the
-// 64 cell with the floor pad (lib/rig/normalize: x+8, y+12) = rest views -> re-imported as a managed character (0.25 gen,
+// Create character + add a move: rig v1.3 (architecture §3). V3 originals are padded without scaling to the chosen cell
+// with the floor pad (lib/rig/normalize), then registered as a managed character (0.25 gen,
 // pixel-exact; its skeletons["2d_references"] are the rest keypoints) -> per clip x direction: a MOTION SOURCE (managed
 // skeleton-v3 template, pixminimax text, or authored keypoints) -> keypoint sequence -> raw /animate-with-skeleton-v3 on the
-// rest view (the request shape items are posed with) -> largest component -> re-estimate -> freeze gate (1 re-roll) -> stored
+// rest view (the request shape items are posed with) -> preserve normalized pixels -> re-estimate -> review notes -> stored
 // frames + reference + keypoints + route + provenance. Every paid call is seeded and every free one cached, so re-running the
 // same spec after a reload re-attaches to the ledger instead of paying again.
 import { live, queue, requestIdentity, retryableEstimate, type EstimateRetryIntent, type JobRec } from '../lib/pixellab/queue.ts';
@@ -15,25 +15,29 @@ import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig, type SourceAnim } from '../lib/rig/freeze.ts';
 import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
-import { ANCHORS, baseHashOf, cellHash, cellKey, cellKeys, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type Rig, type Sha256 } from '../lib/rig/rig.ts';
+import { ANCHORS, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
 import { repairBodyPalette } from '../lib/rig/palette.ts';
-import { RIG_GATES, actionOf, clipQa, largestComponent, loops, rawClip, type ClipQa } from '../lib/rig/clips.ts';
+import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
 import { poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
-import { basePrompt, looksOf } from './model.ts';
+import { BASE_BODY, basePrompt, looksOf } from './model.ts';
 import { affectedMoveDirections, clearMovePoseData, invalidateMoveItems, moveRigVersion } from './replaceMove.ts';
+import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
+import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
+import { planDirections } from '../lib/rig/mirror.ts';
 import { prepareExtensionFit } from '../lib/equipment/index.ts';
 import { splitBase } from '../lib/dress/regions.ts';
 import { deriveMaterials } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
 
-/** Missing dirs means four views; missing directionPolicy preserves mirrored legacy recovery and its request hashes. */
 export type DirectionPolicy = 'independent' | 'mirrored';
-export interface CreateSpec { description: string; name: string; seed: number; size: number; dirs?: 4 | 8; directionPolicy?: DirectionPolicy; projectId?: string }
+/** New forms send an exact prompt, frame, camera and explicit direction plan. Old saved in-flight specs retain their
+ * original 64 px / 4-or-8-direction registration payload so resuming does not create a differently keyed paid pipeline. */
+export interface CreateSpec { description: string; name: string; seed: number; size: number; frame?: number; directions?: RigDirection[]; view?: Rig['view']; exactPrompt?: boolean; dirs?: 4 | 8; directionPolicy?: DirectionPolicy; activityScope?: string; projectId?: string }
 export type CreateStep = 'draw' | 'rest' | 'animate' | 'save';
 export const STEPS: { id: CreateStep; label: string }[] = [
   { id: 'draw', label: 'Drawing your character' },
@@ -56,14 +60,17 @@ export const SIZES = [48, 56] as const;
 const authoredBase = (anim: string) => (anim in ACTIONS ? ACTIONS[anim] : undefined);
 /** Cost from measured prices: base 2 + import 0.25, per clip-direction raw 3 (+ managed motion 3 unless authored), joints 0.1
  * per raw frame (+ per managed motion frame). */
-export function estimate(dirs: 4 | 8 = 4, policy: DirectionPolicy = 'mirrored') {
+export const creationDirections = (spec: Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy'>): RigDirection[] => spec.directions ?? planDirections(spec.directionPolicy === 'independent' ? 'all' : spec.dirs === 8 ? '8' : '4', genDirsOf(spec.dirs, spec.directionPolicy)).dirs;
+export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => looksOf(spec.exactPrompt ? spec.description.replace(BASE_BODY, '').trim() || 'humanoid base body' : spec.description);
+export function estimate(choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy' | 'size'> = 4, policy: DirectionPolicy = 'mirrored') {
   const render = (a: (typeof BASE_ANIMS)[number]) => RAW_GENS + a.frames * EST;
   const per = (a: (typeof BASE_ANIMS)[number]) => render(a) + (authoredBase(a.name) ? 0 : 3 + a.frames * EST);
-  const n = genDirsOf(dirs, policy).length; // base 2 + exact rest import 0.25; source motions are created once
-  const gens = +(2.25 + n * BASE_ANIMS.reduce((sum, a) => sum + per(a), 0)).toFixed(2);
+  const n = typeof choice === 'number' ? genDirsOf(choice, policy).length : creationDirections(choice).filter(d => !d.mirrorOf).length;
+  const size = typeof choice === 'number' ? 48 : choice.size;
+  const gens = +(1.25 + Math.ceil(size * size * 8 / 65536) + n * BASE_ANIMS.reduce((sum, a) => sum + per(a), 0)).toFixed(2);
   // Every clip-direction can reroll, and missing managed rest joints may require one estimate per direction.
   const extra = n * ((CLIP_ATTEMPTS - 1) * BASE_ANIMS.reduce((sum, a) => sum + render(a), 0) + EST);
-  return { gens, maxGens: +(gens + extra).toFixed(2), minutes: Math.ceil((dirs === 8 ? 18 : 12) * n / genDirsOf(dirs).length) };
+  return { gens, maxGens: +(gens + extra).toFixed(2), minutes: Math.max(5, 3 + n * 3) };
 }
 
 /** Retain provider artwork for every independently requested view; legacy specs keep their original flips. */
@@ -108,14 +115,14 @@ export async function parallelGeneration<T>(tasks: ((signal: AbortSignal) => Pro
   }));
 }
 
-export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = req.method === 'POST', signal?: AbortSignal): Promise<JobRec> {
+export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = req.method === 'POST', signal?: AbortSignal, activityScope?: string): Promise<JobRec> {
   signal?.throwIfAborted();
   const recovery = signal ? measurementRecoveries.get(signal) : undefined;
   if (recovery && req.path !== '/estimate-skeleton') {
     const { requestHash } = await requestIdentity(req);
     if (!recovery.rawHashes.has(requestHash) || !queue.snapshot().jobs.some(r => r.requestHash === requestHash && r.state === 'done')) throw new Error('Joint-check recovery cannot generate or re-roll body artwork. Existing results were kept.');
   }
-  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, signal, attempt: signal ? generationAttempts.get(signal) : undefined,
+  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, signal, activityScope, minimumTier: 1, attempt: signal ? generationAttempts.get(signal) : undefined,
     ...(recovery && req.path === '/estimate-skeleton' ? { estimateRetry: recovery.intent } : {}) });
   // Queue cancellation is consumer-aware: a failed flow cannot cancel deduplicated work another flow still needs.
   signal?.throwIfAborted();
@@ -165,11 +172,13 @@ export function managedRestKeypoints(refs: unknown, directions: readonly Directi
   return out;
 }
 /** estimate-skeleton (deterministic, 0.1 gen, cached by request) -> API keypoints in LABELS order; undefined on failure. */
-export async function joints(im: Img, resumeSafe = true, signal?: AbortSignal): Promise<Keypoint[] | undefined> {
+export async function joints(im: Img, resumeSafe = true, signal?: AbortSignal, activityScope?: string): Promise<Keypoint[] | undefined> {
   try {
     const measure = async () => {
-      const r = await run(routes.estimateSkeleton(png(await b64(im))), 'Finding joints', 'm2-skel', true, resumeSafe, signal);
-      return checkedKeypoints((r.response as { keypoints?: unknown } | undefined)?.keypoints);
+      const input = skeletonInput(im);
+      const r = await run(routes.estimateSkeleton(png(await b64(input.image))), 'Finding joints', 'm2-skel', true, resumeSafe, signal, activityScope);
+      const points = checkedKeypoints((r.response as { keypoints?: unknown } | undefined)?.keypoints);
+      return points ? checkedKeypoints(unpadSkeleton(points, input, im)) : undefined;
     };
     const recovery = signal ? measurementRecoveries.get(signal) : undefined;
     if (!recovery) return await measure();
@@ -182,47 +191,54 @@ export async function joints(im: Img, resumeSafe = true, signal?: AbortSignal): 
   } catch (e) { if (resumeSafe) throw e; return undefined; }
 }
 
-// ---------- one clip-direction: raw skeleton-v3 on the rest view + cleanup + gate ----------
-interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void; view?: Manifest['rig']['view']; signal?: AbortSignal; unarmed?: boolean; paletteRepair?: boolean }
+/** A malformed managed reference must fall back to estimation, never become a fabricated/clamped pose. */
+export function managedPose(points?: Record<string, { x: number; y: number }>): Keypoint[] | undefined {
+  const pose = LABELS.map(label => ({ label, x: points?.[label]?.x, y: points?.[label]?.y })) as Keypoint[];
+  return hasAll(pose) ? pose.map(k => kp4(k.label, k.x, k.y)) : undefined;
+}
+// ---------- one clip-direction: raw skeleton-v3 on the rest view + structural checks + observations ----------
+interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void; view?: Manifest['rig']['view']; activityScope?: string; signal?: AbortSignal; unarmed?: boolean; paletteRepair?: boolean }
 interface ClipOut { frames: Img[]; measured: (Keypoint[] | undefined)[]; qa: ClipQa; recs: JobRec[]; processing?: ClipSource['processing'] }
 async function renderClip(j: ClipJob): Promise<ClipOut> {
   const restB64 = await b64(j.rest), recs: JobRec[] = [];
-  let best: ClipOut | null = null, measurementFailure = '';
-  for (let attempt = 0; attempt < (j.paletteRepair ? 1 : CLIP_ATTEMPTS) && (!best || best.qa.fails.length); attempt++) { // fail -> one re-roll (new seed), keep the better
+  for (let attempt = 0; attempt < (j.paletteRepair ? 1 : CLIP_ATTEMPTS); attempt++) { // Only empty output or a wrong frame count may retry with a new seed.
     const r = await run(rawClip({ first: restB64, rest: j.restKps, keypoints: j.keypoints, description: j.looks, action: actionOf(j.anim) + (j.unarmed ? ', empty hands, no weapon, no props, no effects' : ''), dir: j.dir, seed: j.seed + attempt * 7919, view: j.view }),
-      `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig', false, true, j.signal);
+      `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig', false, true, j.signal, j.activityScope);
     recs.push(r);
     j.tick();
     const outs = await imagesOf(r);
     if (outs.length !== j.keypoints.length) continue;
-    const clean = outs.map((o) => largestComponent(normalize(o.img, CELL, CELL, 128, CELL).img));
-    const candidate = j.paletteRepair ? await paletteCandidate(j.anim, j.dir, j.rest, clean.map(c => c.img), j.keypoints, clean.reduce((n,c) => n+c.stray,0)) : { frames: clean.map(c => c.img) };
-    const measured = await Promise.all(candidate.frames.map(async (frame) => { const k = await joints(frame, true, j.signal); j.tick(); return k; }));
-    const missing = measured.findIndex((k) => !hasAll(k));
-    if (measured.length !== j.keypoints.length || missing !== -1) {
-      measurementFailure = `${j.anim} ${j.dir}: joints could not be measured on frame ${missing === -1 ? measured.length : missing}. No body clip was saved.`;
-      continue; // incomplete measurements cannot outrank a complete clip with ordinary artwork warnings
-    }
+    const normalized = outs.map(o => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
+    if (normalized.some(n => n.cutPx)) throw new Error(`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`);
+    const rawFrames = normalized.map(n => n.img);
+    // Empty art is a rendering failure; do not pay to estimate joints on it. One art re-roll is allowed.
+    if (rawFrames.some(f => !opaqueBox(f))) continue;
+    const candidate = j.paletteRepair ? await paletteCandidate(j.anim, j.dir, j.rest, rawFrames, j.keypoints, 0) : { frames: rawFrames };
     const frames = candidate.frames;
-    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: clean.reduce((s, c) => s + c.stray, 0) });
-    if (!best || qa.fails.length < best.qa.fails.length) best = { frames, measured, qa, recs, ...('processing' in candidate ? { processing: candidate.processing } : {}) };
+    // Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
+    const measured = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, j.signal, j.activityScope); j.tick(); return k; }));
+    if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`);
+    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: 0, disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0) });
+    return { frames, measured, qa, recs, ...('processing' in candidate ? { processing: candidate.processing } : {}) };
   }
-  if (!best) throw new Error(measurementFailure || `${j.anim} ${j.dir}: PixelLab returned the wrong number of frames`);
-  return { ...best, recs };
+  throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames or the wrong number of frames`);
 }
 
 /** A palette repair is available only after complete original measurements prove every other body gate passed. */
 async function paletteCandidate(anim: string, dir: DirectionName, rest: Img, frames: Img[], requested: Keypoint[][], stray: number): Promise<{ frames: Img[]; processing?: ClipSource['processing'] }> {
   const jobs = queue.snapshot().jobs;
   const measured = await Promise.all(frames.map(async frame => {
-    const hash = (await requestIdentity(routes.estimateSkeleton(png(await b64(frame))))).requestHash;
+    const input = skeletonInput(frame);
+    const hash = (await requestIdentity(routes.estimateSkeleton(png(await b64(input.image))))).requestHash;
     const record = jobs.find(r => r.requestHash === hash && r.state === 'done');
-    return record && checkedKeypoints((record.response as { keypoints?: unknown })?.keypoints);
+    const points = record && checkedKeypoints((record.response as { keypoints?: unknown })?.keypoints);
+    return points ? checkedKeypoints(unpadSkeleton(points, input, frame)) : undefined;
   }));
   if (measured.some(k => !hasAll(k))) throw new Error(`${dir}: match body colours only after all original joint checks have completed.`);
   const rawQa = clipQa({ anim, rest, frames, requested, measured, stray });
-  if (!rawQa.fails.length) return { frames }; // already-good views are bit-for-bit unchanged
-  if (rawQa.fails.some(f => !f.startsWith('palette fit '))) throw new Error(`${dir}: colour matching cannot repair pose, feet or border failures.`);
+  if (rawQa.paletteFit >= RIG_GATES.paletteFit) return { frames }; // already-good views are bit-for-bit unchanged
+  // Observations no longer trigger redraws, but an explicit palette-only repair still requires other checks to pass.
+  if (rawQa.fails.length || rawQa.adherence === null || rawQa.adherence > RIG_GATES.adherence || rawQa.feetDrift > RIG_GATES.silhouetteBottomDelta || rawQa.border > RIG_GATES.border) throw new Error(`${dir}: colour matching cannot repair pose, feet or border failures.`);
   const fixed = repairBodyPalette(rest, frames);
   if (!fixed.changedPixels) throw new Error(`${dir}: the colour drift is outside the bounded reference-palette repair.`);
   if (fixed.paletteFit < RIG_GATES.paletteFit) throw new Error(`${dir}: bounded colour matching still fails the palette quality check. No new joint checks were started.`);
@@ -233,13 +249,18 @@ async function paletteCandidate(anim: string, dir: DirectionName, rest: Img, fra
 }
 
 /** Managed motion source on the rest character -> frames on the 64 cell -> estimated keypoint sequence. */
-async function motion(req: Req, dir: Direction, label: string, tick: () => void, signal?: AbortSignal): Promise<Keypoint[][]> {
-  const r = await run(req, label, 'studio-rig', false, true, signal);
+async function motion(req: Req, dir: Direction, label: string, tick: () => void, signal?: AbortSignal, activityScope?: string, size = CELL): Promise<Keypoint[][]> {
+  const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
   tick();
   const got = (r.response as SubmitResponse | undefined)?.directions;
   if (got && !got.includes(dir)) throw new Error(`${label}: PixelLab dropped the direction (busy). Try again.`); // S4 truncation
-  const frames = (await imagesOf(r)).map((o) => normalize(o.img, CELL, CELL, 128, CELL).img); // 96/84 -> 64, centred
-  const kps = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, signal); tick(); return k; }));
+  const frames = (await imagesOf(r)).map((o) => {
+    const normalized = normalize(o.img, size, size, 128, size);
+    if (normalized.cutPx) throw new Error(`${label}: motion exceeds the ${size} px frame. Increase Frame or reduce Body size before creating again.`);
+    return normalized.img;
+  });
+  if (frames.some(f => !opaqueBox(f))) throw new Error(`${label}: PixelLab returned an empty motion frame`);
+  const kps = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, signal, activityScope); tick(); return k; }));
   if (kps.some((k) => !k)) throw new Error(`${label}: joints not found on every frame`);
   if (kps.length < 3 || kps.length > 15) throw new Error(`${label}: ${kps.length} frames (skeleton-v3 takes 3-15)`);
   return kps as Keypoint[][];
@@ -253,7 +274,7 @@ export const provOf = (r: JobRec, produced: CellKey[] = []): Provenance => {
   };
 };
 const putCell = async (h: Sha256, im: Img) => { if (!(await db.getBlob(h.slice(7)))) await db.put('blobs', h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })); };
-const warn = (clip: string, qa: ClipQa) => qa.fails.map((f) => `${clip}: ${f}`);
+const warn = (clip: string, qa: ClipQa) => [...qa.fails, ...(qa.warnings ?? [])].map((f) => `${clip}: ${f}`);
 
 /** A published attempt is authoritative even after its user changes outfits, equipment, name or body moves. */
 async function completedCreation(id: string, creationSpec: string): Promise<StoredProject | undefined> {
@@ -279,25 +300,47 @@ export interface Progress { step: string; done: number; total: number; recIds: s
 export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress) => void = () => {}): Promise<string> {
   const projectId = spec.projectId ?? `rig-${crypto.randomUUID()}`;
   if (!/^rig-[a-z0-9-]+$/.test(projectId)) throw new Error('This creation attempt has an invalid project identity. Start a new character.');
-  const creationSpec = await sha256(stableStringify({ ...spec, projectId: undefined }));
+  const cell = spec.frame ?? CELL, directions = creationDirections(spec), DIRS = directions.filter(d => !d.mirrorOf).map(d => d.id);
+  const errors = [...facingErrors(directions), ...(spec.frame !== undefined ? sizeErrors(spec.size, cell) : []),
+    ...(spec.frame === undefined && !validBodySize(spec.size) ? ['Body size must be 32–256 pixels in 4 px steps.'] : []),
+    ...(!spec.description.trim() || spec.description.length > 2000 ? ['Enter a prompt of 1–2,000 characters.'] : []),
+    ...(!Number.isSafeInteger(spec.seed) || spec.seed < 0 || spec.seed > Number.MAX_SAFE_INTEGER - 100_000 ? ['Invalid seed.'] : []),
+    ...(spec.view && !['low top-down', 'high top-down', 'side'].includes(spec.view) ? ['Invalid camera.'] : [])];
+  if (errors.length) throw new Error(errors.join(' '));
+  const creationSpec = await sha256(stableStringify({ ...spec, projectId: undefined, activityScope: undefined }));
   if (await completedCreation(projectId, creationSpec)) return projectId; // completion may have committed before its UI acknowledgement
-  const looks = looksOf(spec.description), view = 'low top-down' as const, DIRS = genDirsOf(spec.dirs, spec.directionPolicy);
+  const looks = creationLooks(spec), view = spec.view ?? 'low top-down';
+  const modern = !!spec.exactPrompt || spec.frame !== undefined || spec.directions !== undefined;
   // 1. base character, text only (8 rotations)
   onProgress({ step: 'draw', done: 0, total: 1, recIds: [] });
-  const base = await run(routes.createCharacterV3({ description: basePrompt(spec.description), image_size: { width: spec.size, height: spec.size }, view, template_id: 'mannequin', seed: spec.seed, no_background: true }), `${spec.name} · drawing`, 'studio-base');
+  const base = await run(routes.createCharacterV3({ description: spec.exactPrompt ? spec.description : basePrompt(spec.description), image_size: { width: spec.size, height: spec.size }, view, template_id: 'mannequin', seed: spec.seed, no_background: true }), `${spec.name} · creating`, 'studio-base', false, true, undefined, spec.activityScope);
 
   // 2. selected original rotations on the 64 cell; legacy western views are flips. Re-import for rest keypoints.
   onProgress({ step: 'rest', done: 0, total: 1, recIds: [] });
-  const { rest, pad } = prepareRestViews(await imagesOf(base), spec);
-  const others = Object.fromEntries(await Promise.all((Object.keys(rest) as Direction[]).filter((d) => d !== 'south').map(async (d) => [d, png(await b64(rest[d]))])));
-  const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(rest.south)), direction_images: others, n_directions: spec.dirs === 8 ? 8 : 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base');
+  const rots = await imagesOf(base), rest = {} as Record<DirectionName, Img>, restWarnings: string[] = [];
+  let pad: [number, number] = [0, 0];
+  for (const d of DIRECTIONS) {
+    const r = rots.find((x) => x.label === d);
+    if (!r) throw new Error(`PixelLab returned no ${d} view`);
+    const n = normalize(r.img, cell, cell);
+    if (n.cutPx) throw new Error(`The ${d} view does not fit the ${cell} px frame. Increase Frame or reduce Body size before creating again.`);
+    const top = opaqueBox(n.img)?.y0 ?? cell;
+    if (!opaqueBox(n.img)) throw new Error(`PixelLab returned an empty ${d} view.`);
+    if ((modern || DIRS.includes(d)) && top < HEADROOM_MIN) restWarnings.push(`${d}: standing headroom ${top} px; tall hair or hats may need a larger frame`);
+    rest[d] = n.img;
+    pad = n.offset;
+  }
+  // Register all eight ORIGINAL views, including south when it isn't selected. Never overwrite these with mirrors.
+  const registered = modern ? rest : Object.fromEntries(directions.map(d => [d.id, d.mirrorOf ? flipH(rest[d.mirrorOf]) : rest[d.id]])) as Record<DirectionName, Img>;
+  const others = Object.fromEntries(await Promise.all((Object.keys(registered) as Direction[]).filter((d) => d !== 'south').map(async (d) => [d, png(await b64(registered[d]))])));
+  const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(registered.south)), direction_images: others, n_directions: modern ? 8 : spec.dirs ?? 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base', false, true, undefined, spec.activityScope);
   const charId = (imp.response as { character_id?: string })?.character_id;
   if (!charId) throw new Error('PixelLab did not return a character id');
-  const ch = await run(routes.getCharacter(charId), `${spec.name} · skeleton`, 'studio-base', true);
+  const ch = await run(routes.getCharacter(charId), `${spec.name} · skeleton`, 'studio-base', true, false, undefined, spec.activityScope);
   const refs = (ch.response as { skeletons?: { '2d_references'?: Record<string, { keypoints?: Record<string, { x: number; y: number }> }> } })?.skeletons?.['2d_references'];
   const restKps = {} as Record<DirectionName, Keypoint[]>, managed = managedRestKeypoints(refs, DIRS);
   for (const d of DIRS) {
-    const kps = managed[d] ?? (await joints(rest[d])); // only absent references use the existing bounded estimate fallback
+    const kps = managed[d] ?? (await joints(rest[d], true, undefined, spec.activityScope)); // only absent references use the existing bounded estimate fallback
     if (!hasAll(kps)) throw new Error(`no valid joints found on the ${d} view`);
     restKps[d] = kps!;
   }
@@ -313,20 +356,20 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     const checkedTick = () => { signal.throwIfAborted(); tick(); };
     const authored = authoredBase(a.name);
     let keypoints: Keypoint[][];
-    if (authored) keypoints = authoredPoses(a.name, fromApi(restKps[d], { w: CELL, h: CELL }), d).map((p) => toApi(p, { w: CELL, h: CELL }));
+    if (authored) keypoints = authoredPoses(a.name, fromApi(restKps[d], { w: cell, h: cell }), d, cell).map((p) => toApi(p, { w: cell, h: cell }));
     else {
       const req = routes.animateCharacter(baseAnimation('skeleton-v3', charId, a, [d], spec.seed));
-      keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, checkedTick, signal);
+      keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, checkedTick, signal, spec.activityScope, cell);
       motions.set(`${a.name}/${d}`, (await queue.enqueue(req, { signal })) as JobRec); // cache hit: the record for provenance
     }
-    return { a, d, keypoints, out: await renderClip({ anim: a.name, dir: d, rest: rest[d], restKps: restKps[d], keypoints, looks, seed: spec.seed + 101, name: spec.name, tick: checkedTick, signal }) };
+    return { a, d, keypoints, out: await renderClip({ anim: a.name, dir: d, rest: rest[d], restKps: restKps[d], keypoints, looks, seed: spec.seed + 101, name: spec.name, tick: checkedTick, signal, view, activityScope: spec.activityScope }) };
   }), spec.seed);
 
   // 4. freeze
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
   const anims: SourceAnim[] = BASE_ANIMS.map((a) => ({ id: a.name, dirs: Object.fromEntries(clips.filter((c) => c.a === a).map((c) => [c.d, c.out.frames])) }));
-  const built = await buildRig(anims, { size: CELL, mode: spec.directionPolicy === 'independent' ? 'all' : spec.dirs === 8 ? '8' : '4' });
-  assertCreatedDirections(built.rig, spec.dirs, spec.directionPolicy);
+  const built = await buildRig(anims, { size: cell, directions });
+  if (!modern) assertCreatedDirections(built.rig, spec.dirs, spec.directionPolicy);
   if (built.errors.length) throw new Error(`The animation frames do not fit together: ${built.errors.slice(0, 3).join('; ')}`);
   const rig = built.rig;
   rig.view = view;
@@ -336,6 +379,10 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const at = (r: JobRec, produced: CellKey[] = []) => provenance.push(provOf(r, produced)) - 1;
   rig.rest = {};
   for (const d of DIRS) rig.rest[d] = { image: await cellHash(rest[d]), keypoints: restKps[d] };
+  // Retain unselected originals for a future account reconnection, without estimating unused joints or animating them.
+  if (modern) for (const d of DIRECTIONS.filter(d => !DIRS.includes(d))) {
+    rig.rest[d] = { image: await cellHash(rest[d]), keypoints: managedPose(refs?.[d]?.keypoints) ?? [] };
+  }
   for (const c of clips) {
     const anim = rig.animations.find((x) => x.id === c.a.name)!;
     anim.loop = loops(anim.id);
@@ -356,7 +403,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     const [a, d, i] = k.split('/') as [string, DirectionName, string], c = built.cells[k];
     ((cells[a] ??= {})[d] ??= [])[+i] = c.hash;
     const s = c.mirrorOf ? skel[built.cells[cellKey(a, c.mirrorOf, +i)].hash] : skel[c.hash];
-    if (s) skeletons[k] = c.mirrorOf ? flipSkeleton(s, CELL) : s;
+    if (s) skeletons[k] = c.mirrorOf ? flipSkeleton(s, cell) : s;
   }
   const errs = validateRig(rig, Object.fromEntries(Object.entries(built.cells).map(([key, c]) => [key, c.hash])));
   if (errs.length) throw new Error(`rig not valid: ${errs.join('; ')}`);
@@ -368,10 +415,10 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   };
   const rec: StoredProject = {
     id: projectId, creationSpec, savedAt: new Date().toISOString(), manifest, skeletons, character: { id: charId, looks }, origin: 'studio',
-    rigQa: { warnings: built.warnings, pivotFrom: built.pivotFrom, clips: Object.fromEntries(clips.map((c) => [`${c.a.name}/${c.d}`, c.out.qa])), tracks: tracks.stats.map(({ points: _, ...t }) => t) },
+    rigQa: { warnings: [...restWarnings, ...built.warnings], pivotFrom: built.pivotFrom, clips: Object.fromEntries(clips.map((c) => [`${c.a.name}/${c.d}`, c.out.qa])), tracks: tracks.stats.map(({ points: _, ...t }) => t) },
   };
   const images = new Map<Sha256, Img>(Object.values(built.cells).map((c) => [c.hash, c.img]));
-  for (const d of DIRS) images.set(rig.rest[d]!.image, rest[d]);
+  for (const d of Object.keys(rig.rest) as DirectionName[]) images.set(rig.rest[d]!.image, rest[d]);
   await publishCreatedCharacter(rec, images);
   db.askPersist();
   return rec.id;
@@ -379,8 +426,8 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; seed: number; replace?: boolean; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
-const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined }));
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
+const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
 export const MOVE_STEPS = [
   { id: 'animate', label: 'Animating the body' },
   { id: 'items', label: 'Posing your items' },
@@ -432,21 +479,28 @@ export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec)
       const outputs = await imagesOf(raw);
       if (outputs.length !== keypoints.length || outputs.some(o => !o.img.w || !o.img.h)) throw new Error(`${d}: the cached body render is incomplete.`);
       rawHashes.push(rawHash);
-      const cleaned = outputs.map(out => largestComponent(normalize(out.img, CELL, CELL, 128, CELL).img));
-      const candidate = spec.bodyPaletteRepair ? await paletteCandidate(spec.id, d, restImg, cleaned.map(c => c.img), keypoints, cleaned.reduce((n,c) => n+c.stray,0)) : { frames: cleaned.map(c => c.img) };
+      const normalized = outputs.map(out => normalize(out.img, rig.cell.w, rig.cell.h, 128, rig.cell.w));
+      if (normalized.some(n => n.cutPx || !opaqueBox(n.img))) throw new Error(`${d}: the cached body frames do not fit this character. No body was regenerated.`);
+      const frames = normalized.map(n => n.img);
+      const candidate = spec.bodyPaletteRepair ? await paletteCandidate(spec.id, d, restImg, frames, keypoints, 0) : { frames };
       if ('processing' in candidate && candidate.processing) {
         palette.directions.push(d); palette.changedPixels += candidate.processing.changedPixels; palette.rawOutliers += candidate.processing.rawOutliers;
         palette.remainingOutliers += candidate.processing.remainingOutliers; palette.changedFrames += candidate.processing.changedFrames.length;
       }
       for (const frame of candidate.frames) {
-        const hash = (await requestIdentity(routes.estimateSkeleton(png(await b64(frame))))).requestHash;
+        const input = skeletonInput(frame);
+        const hash = (await requestIdentity(routes.estimateSkeleton(png(await b64(input.image))))).requestHash;
         if (seen.has(hash)) continue;
         seen.add(hash);
         const matches = jobs.filter(r => r.requestHash === hash).reverse().sort((a,b) => b.createdAt-a.createdAt);
         const reviewed = approved ? matches.filter(r => approved.includes(r.id)) : [];
         for (const old of reviewed) { if (!retryableEstimate(old)) throw new Error('A reviewed joint check is no longer eligible for explicit recovery.'); recordIds.add(old.id); }
         const done = matches.find(r => r.state === 'done');
-        if (done) { if (!checkedKeypoints((done.response as {keypoints?:unknown})?.keypoints)) throw new Error('A completed joint check has invalid measurements.'); continue; }
+        if (done) {
+          const points = checkedKeypoints((done.response as {keypoints?:unknown})?.keypoints);
+          if (!points || !checkedKeypoints(unpadSkeleton(points, input, frame))) throw new Error('A completed joint check has invalid measurements.');
+          continue;
+        }
         const active = matches.find(live);
         if (active) {
           if (!spec.measurementRecovery || active.estimateRecovery?.id !== spec.measurementRecovery.id) throw new Error('Wait for the current joint checks to finish before recovering them.');
@@ -468,8 +522,9 @@ export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec)
 
 /** Frames of a move: the authored table's length, or the text frame count. */
 export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) => {
-  const r = m.rig.rest?.south;
-  return s.action === 'walk' ? 8 : s.action && ACTIONS[s.action] && r ? ACTIONS[s.action](fromApi(r.keypoints, m.rig.cell), 'south').length : s.frames;
+  const dir = m.rig.directions.find(d => !d.mirrorOf && m.rig.rest?.[d.id])?.id;
+  const r = dir && m.rig.rest?.[dir];
+  return s.action === 'walk' ? 8 : s.action && ACTIONS[s.action] && r && dir ? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length : s.frames;
 };
 export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace'>) {
   const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = s.itemMethod === 'grid' && !s.replace ? 0 : dirs * (RAW_GENS + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
@@ -520,20 +575,22 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
       const result = await regridClip(current, item, spec.id, d, spec.seed); tick();
       if (!result.saved) throw new Error(`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`);
     }
-    else await poseItemClip(ctx, it, spec.id, tick, spec.seed, plan.dirs);
+    else await poseItemClip(ctx, it, spec.id, tick, spec.seed, plan.dirs, spec.activityScope);
 
   }
   // Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.
   const shared = (await loadProject(projectId)).rec;
   const sharedIds = [...new Set([...(spec.sharedItems ?? []), ...spec.items.filter((id) => shared.manifest.items.find((item) => item.id === id)?.design)])];
-  const fitIds: string[] = [], warnings: string[] = [];
+  const clipQa = (shared.rigQa as { clips?: Record<string, ClipQa> } | undefined)?.clips ?? {};
+  // Include this move's current nested observations, including after resume. Flattened historical notes may be stale.
+  const fitIds: string[] = [], warnings: string[] = Object.entries(clipQa).filter(([clip]) => clip.startsWith(`${spec.id}/`)).flatMap(([clip, qa]) => warn(clip, qa));
   for (const id of sharedIds) {
     const item = shared.manifest.items.find((i) => i.id === id);
     if (!item?.design) continue;
     try { fitIds.push((await prepareExtensionFit(projectId, id, { anims: [spec.id], dirs })).id); }
     catch (e) { warnings.push(`${item.name}: ${e instanceof Error ? e.message : 'The equipment fit could not be prepared.'}`); }
   }
-  return { fitIds, warnings };
+  return { fitIds, warnings: [...new Set(warnings)] };
 }
 
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void, recovery?: MeasurementRecoveryPlan) {
@@ -542,6 +599,7 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
   const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
   const receiptSpecHash = intent ? await recoverySpecHash(spec) : undefined;
   const dirs = moveDirections(m, spec.dirs) as Direction[], affected = affectedMoveDirections(rig, dirs), n = moveFrames(m, spec), name = m.name;
+  const motionOffsets = managedMotionOffsets(rec.character, rig.cell.h);
   const total = dirs.length * (1 + n + (spec.action && ACTIONS[spec.action] ? 0 : 1 + n));
   let done = 0;
   const tick = () => onProgress({ step: 'animate', done: Math.min(total, ++done), total, recIds: [] });
@@ -554,10 +612,10 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
     if (spec.action && ACTIONS[spec.action]) keypoints = authoredPoses(spec.action, fromApi(restKps, rig.cell), d, rig.cell.w, spec.poseStyle).map((p) => toApi(p, rig.cell));
     else {
       const req = routes.animateCharacter(spec.action === 'walk' ? baseAnimation('skeleton-v3', rec.character!.id, BASE_ANIMS.find((a) => a.name === 'walk')!, [d], spec.seed) : { character_id: rec.character!.id, mode: 'pixminimax', action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`, frame_count: n, keep_first_frame: false, animation_name: spec.id, directions: [d], seed: spec.seed });
-      keypoints = await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, checkedTick, signal);
+      keypoints = shiftMotionPoses(await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, checkedTick, signal, spec.activityScope, rig.cell.w), motionOffsets[d] ?? 0, rig.cell.h);
       extra[k] = [(await queue.enqueue(req, { signal })) as JobRec];
     }
-    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, looks: rec.character!.looks, seed: spec.seed + 101, name, tick: checkedTick, view: rig.view, signal, unarmed: spec.poseStyle === 'visible-side-v1', paletteRepair: !!spec.bodyPaletteRepair }) };
+    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, looks: rec.character!.looks, seed: spec.seed + 101, name, tick: checkedTick, view: rig.view, signal, activityScope: spec.activityScope, unarmed: spec.poseStyle === 'visible-side-v1', paletteRepair: !!spec.bodyPaletteRepair }) };
   }), spec.seed, recovery && { intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] }, rawHashes: new Set(recovery.rawHashes), tail: Promise.resolve() });
 
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
@@ -567,7 +625,7 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
   const old = frig.animations.find((a) => a.id === spec.id);
   const anim: RigAnimation = { ...old, id: spec.id, cells: n, loop: loops(spec.id), frames: old?.cells === n ? old.frames : playlist(n, 100), sources: { ...old?.sources } };
   for (const d of affected) delete anim.sources![d];
-  if (spec.dirs && clips.some(c => c.out.qa.fails.length)) throw new Error('The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.');
+  if (spec.dirs && clips.some(({ out: { qa } }) => qa.fails.length || qa.adherence === null || qa.adherence > RIG_GATES.adherence || qa.feetDrift > RIG_GATES.silhouetteBottomDelta || qa.paletteFit < RIG_GATES.paletteFit || qa.border > RIG_GATES.border)) throw new Error('The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.');
   const layer = baseIt.layers[0], cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = { ...baseIt.layers[0].cells?.[spec.id] };
   const skeletons = (fresh.skeletons ??= {}), warnings: string[] = [];
   clearMovePoseData(frig, skeletons, spec.id, dirs);
@@ -631,7 +689,8 @@ export async function saveCopy(p: { manifest: Manifest; images: Map<string, Img>
   m.name = name;
   const id = `rig-${m.rig.baseHash.slice(7, 19)}`;
   if (await db.get('projects', id)) return id;
-  for (const [h, im] of p.images) await putCell(h as Sha256, im);
-  await db.put('projects', id, { id, savedAt: new Date().toISOString(), manifest: m, skeletons: {}, rigQa: { warnings: [], pivotFrom: '', tracks: [] }, origin: 'studio' });
+  const blobs = new Map<string, Blob>();
+  for (const [h, im] of p.images) blobs.set(h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  await db.updateCharacter<StoredProject>(id, blobs, current => current ?? { id, savedAt: new Date().toISOString(), manifest: m, skeletons: {}, rigQa: { warnings: [], pivotFrom: '', tracks: [] }, origin: 'studio' });
   return id;
 }

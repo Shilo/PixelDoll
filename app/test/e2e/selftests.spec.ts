@@ -32,3 +32,19 @@ test('move QA survives real storage, ZIP export and directional replacements', a
   await run('roundtrip'); await run('legacy'); await expect(value('status')).toHaveText('warn'); await expect(value('legacy')).toContainText('"clips"')
   expect(errors).toEqual([]); expect(paid).toEqual([])
 })
+
+test('copying a demo publishes its images atomically against concurrent garbage collection', async ({ page }) => {
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.route('https://*.pixellab.ai/**', route => route.abort())
+  await page.goto('/'); await expect(page.locator('.stage canvas').first()).toBeVisible()
+  const result = await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', projectPath = '/src/lib/store/project.ts'
+    const state = await import(statePath), db = await import(dbPath), project = await import(projectPath)
+    let done = false
+    const copying = state.copyDemo().finally(() => { done = true })
+    while (!done) await db.gcBlobs()
+    const id = await copying, saved = await project.loadProject(id)
+    return { current: state.doc.id, id, name: saved.rec.manifest.name, images: saved.project.images.size }
+  })
+  expect(result.current).toBe(result.id); expect(result.name).toBe('Adventurer copy'); expect(result.images).toBeGreaterThan(0)
+})

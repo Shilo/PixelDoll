@@ -24,7 +24,7 @@ test('freeze gate reports incomplete pose observations as a failure', () => {
   rest.data.set([100, 100, 100, 255], (32 * 64 + 32) * 4)
   const poses = [0, 1].map(() => LABELS.map((label) => ({ label, x: 0.5, y: 0.5 })))
   const qa = clipQa({ anim: 'idle', rest, frames: [rest, rest], requested: poses, measured: [poses[0], undefined], stray: 0 })
-  expect(qa.fails).toContain('pose measurements incomplete')
+  expect(qa.fails).toContain('missing or invalid frame joints')
 })
 
 test('joint sets reject duplicate, unknown, nonfinite and conflicting observations', () => {

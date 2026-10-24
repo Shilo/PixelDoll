@@ -1,3 +1,4 @@
+import { accountBalance } from './account-fixture.ts'
 import { expect, test } from 'vitest'
 import { ApiError, classify, errorText } from '../../src/lib/pixellab/client.ts'
 import { Queue, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
@@ -8,7 +9,8 @@ function fixture(status: number, body?: unknown, endpoint = '/characters/animati
   const deps: Partial<Deps> = { locks: null, online: () => true, now: () => now,
     put: async (id, r) => { records.set(id, structuredClone(r)) }, get: async (id) => records.get(id),
     all: async () => [...records.values()].map((r) => structuredClone(r)),
-    api: async <T>(): Promise<T> => {
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T;
       if (++calls === 1) throw new ApiError(status, classify(status, body), `${method} ${endpoint} -> ${status}: ${errorText(body)}`, body)
       return { usage: { type: 'generations', generations: 0.1 } } as T
     },

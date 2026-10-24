@@ -1,0 +1,49 @@
+/* Owned semantic roles. Dark/light are first-class, not an inversion filter.
+   Only this file defines UI colors, shared geometry, type and material values. */
+:root {
+  color-scheme: dark;
+  --pd-canvas: #111317; --pd-surface: #202329; --pd-field: #202329;
+  --pd-text: #f2eee6; --pd-muted: #b8b5ad;
+  --pd-accent: #c9a66b; --pd-on-accent: #111317;
+  --pd-success: #84c79a; --pd-warning: #e7bc75; --pd-danger: #f2a099; --pd-info: #9bbce5;
+  --pd-shadow: 0 8px 28px rgb(0 0 0 / .18); --pd-dialog-shadow: 0 20px 64px rgb(0 0 0 / .32);
+  --pd-scrim: rgb(0 0 0 / .5);
+  --pd-font: 'Segoe UI', system-ui, sans-serif; --pd-display: Georgia, 'Times New Roman', serif;
+  --pd-mono: ui-monospace, Consolas, monospace;
+  --pd-radius-control: 8px; --pd-radius-panel: 12px; --pd-radius-dialog: 16px;
+  --pd-space-1: 4px; --pd-space-2: 8px; --pd-space-3: 12px; --pd-space-4: 16px; --pd-space-6: 24px; --pd-space-8: 32px;
+  --pd-control: 44px; --pd-text-size: 16px; --pd-small: 14px; --pd-line-height: 1.5;
+  --pd-duration: 140ms; --pd-blur: 12px;
+}
+:root[data-theme=light] {
+  color-scheme: light;
+  --pd-canvas: #eeeae2; --pd-surface: #faf7f0; --pd-field: #faf7f0;
+  --pd-text: #25282d; --pd-muted: #5e625f;
+  --pd-accent: #76562f; --pd-on-accent: #fff;
+  --pd-success: #226c43; --pd-warning: #775319; --pd-danger: #a3312f; --pd-info: #345f8e;
+  --pd-shadow: 0 8px 28px rgb(0 0 0 / .1); --pd-dialog-shadow: 0 20px 64px rgb(0 0 0 / .2);
+  --pd-scrim: rgb(0 0 0 / .34);
+}
+/* Derived roles resolve at the same scope as the scheme. */
+:root {
+  --pd-line: color-mix(in srgb, var(--pd-muted) 27%, var(--pd-surface));
+  --pd-border: color-mix(in srgb, var(--pd-muted) 80%, var(--pd-surface));
+  --pd-rim: color-mix(in srgb, var(--pd-muted) 38%, transparent);
+  --pd-hover: color-mix(in srgb, var(--pd-text) 7%, var(--pd-surface));
+  --pd-selected: color-mix(in srgb, var(--pd-accent) 13%, var(--pd-surface));
+  --pd-floating: color-mix(in srgb, var(--pd-surface) 92%, transparent);
+  --pd-focus: var(--pd-accent);
+  --pd-scroll-thumb: color-mix(in srgb, var(--pd-muted) 60%, var(--pd-accent));
+  --pd-scroll-track: transparent;
+}
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  :root { --pd-floating: var(--pd-surface); --pd-blur: 0px; --pd-rim: var(--pd-muted); --pd-border: var(--pd-muted); }
+  .pd-floating { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { :root { --pd-floating: var(--pd-surface); } }
+@media (prefers-reduced-motion: reduce) { :root { --pd-duration: 0ms; } *, *::before, *::after { animation: none !important; scroll-behavior: auto !important; } }
+@media (forced-colors: active) {
+  :root, :root[data-theme] { --pd-canvas: Canvas; --pd-surface: Canvas; --pd-field: Canvas; --pd-floating: Canvas; --pd-text: CanvasText; --pd-muted: CanvasText; --pd-accent: Highlight; --pd-on-accent: HighlightText; --pd-border: ButtonText; --pd-line: GrayText; --pd-rim: CanvasText; --pd-focus: Highlight; --pd-success: CanvasText; --pd-warning: CanvasText; --pd-danger: CanvasText; --pd-info: CanvasText; --pd-selected: Canvas; --pd-hover: Canvas; }
+  .pd-floating { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+  [aria-pressed=true], [aria-selected=true], [aria-checked=true] { outline: 2px solid Highlight; }
+}

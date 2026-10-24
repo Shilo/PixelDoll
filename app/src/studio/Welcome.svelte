@@ -1,5 +1,6 @@
 <script lang="ts">
   import Sprite from './Sprite.svelte'
+  import ApiPeek from './ApiPeek.svelte'
   import { composeCell } from '../lib/compose/compose.ts'
   import { ui, doc, view, DEMO, openProject, dismissWelcome, toggleTheme } from './state.svelte.ts'
   import { Moon, Sun, Sparkles, Download } from './icons.ts'
@@ -19,7 +20,7 @@
 <div class="welcome">
   <div class="welcome-bar">
     <span class="logo"><span class="mark" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><rect x="5" y="1" width="4" height="4" rx="1" /><rect x="3" y="6" width="8" height="4" rx="1" /><rect x="4" y="10" width="2" height="3" /><rect x="8" y="10" width="2" height="3" /></svg></span>PixelDoll</span>
-    <button class="btn icon plain" aria-label={ui.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onclick={toggleTheme}>{#if ui.theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}</button>
+    <span class="api-action"><ApiPeek scope="all" all /><button class="btn icon plain" aria-label={ui.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} onclick={toggleTheme}>{#if ui.theme === 'dark'}<Sun size={18} />{:else}<Moon size={18} />{/if}</button></span>
   </div>
   <main class="welcome-main">
     <div class="hero-stage" style:width="{heroPx + 32}px" style:height="{heroPx + 32}px">

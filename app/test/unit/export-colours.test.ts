@@ -1,3 +1,4 @@
+import { atlasName } from '../../src/lib/export/phaser.ts'
 import { expect, test } from 'vitest'
 import { makeImg } from '../../src/lib/image/png.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
@@ -41,22 +42,22 @@ test('all engine exports preserve body and equipment palettes, tuck masks, mirro
   for (const [i, preset] of p.manifest.presets.entries()) for (const dir of ['south', 'east', 'west'] as const) {
     const expected = composeCell(recolour(p, preset.variants), preset.items, 'idle', dir, 0, bakedFrame(p.manifest))
     const restored = engineOnly.project.manifest.presets[i]
-    expect(composeCell(engineOnly.project, restored.items, 'idle', dir, 0, bakedFrame(engineOnly.project.manifest))).toEqual(expected)
+    expect(composeCell(recolour(engineOnly.project, restored.variants), restored.items, 'idle', dir, 0, bakedFrame(engineOnly.project.manifest))).toEqual(expected)
     const baked = await decodePngBytes(files.get(`baked/${preset.id}/idle.png`)!)
     const row = p.manifest.rig.directions.findIndex((d) => d.id === dir)
     expect(baked.data.slice(row * 64 * 64 * 4, (row + 1) * 64 * 64 * 4)).toEqual(expected.data)
   }
-  const overlay = m.items.find((it) => it.id === m.presets[0].items.body_colour)!
-  expect(overlay.hides).toContain('body')
+  const overlay = m.items.find((it) => it.id === m.presets[0].items.body)!
+  expect(overlay.slot).toBe('body')
   expect(m.items.filter((it) => it.slot === 'body')).toHaveLength(1)
   expect(text.decode(files.get(`godot/${overlay.id}_main.tres`))).toContain(overlay.layers[0].sheets!.idle)
   const unity = JSON.parse(text.decode(files.get('unity/pixeldoll_unity.json')))
-  expect(unity.preset).toContainEqual({ slot: 'body_colour', item: overlay.id })
-  expect(unity.items.find((it: { id: string }) => it.id === overlay.id).hides).toContain('body')
-  const phaser = JSON.parse(text.decode(files.get(`phaser/${overlay.id}_main_idle.json`)))
+  expect(unity.preset).toContainEqual({ slot: 'body', item: overlay.id })
+  expect(unity.items.find((it: { id: string }) => it.id === overlay.id)).toBeTruthy()
+  const phaser = JSON.parse(text.decode(files.get(`phaser/${atlasName(overlay.id, 'main', 'idle')}`)))
   expect(phaser.frames.idle_west_0.pivot).toEqual({ x: 0.5, y: 60 / 64 })
   const ase = await readAseprite(files.get('aseprite/Coloured.aseprite')!)
-  expect(ase.layers.find((l) => l.name === 'body.base')!.visible).toBe(false)
+  expect(ase.layers.find((l) => l.name === 'body.base')!.visible).toBe(true)
   const flat = makeImg(ase.w, ase.h)
   for (const cel of [...ase.frames[0].cels].sort((a, b) => (a.layer + a.z) - (b.layer + b.z))) if (ase.layers[cel.layer].visible && cel.img) over(flat, cel.img, cel.x, cel.y)
   expect(flat).toEqual(composeCell(recolour(p, p.manifest.presets[0].variants), p.manifest.presets[0].items, 'idle', 'south', 0))
@@ -106,6 +107,6 @@ test('body-colour overlays preserve body hiding and clipping from equipped gear'
     const out = await exportFiles(p, { engines: ['generic'], baked: false })
     expect(out.errors).toEqual([])
     const restored = await readCharacterZip(await zip(out.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))))
-    for (const [i, preset] of p.manifest.presets.entries()) expect(composeCell(restored.project, restored.project.manifest.presets[i].items, 'idle', 'south', 0)).toEqual(composeCell(recolour(p, preset.variants), preset.items, 'idle', 'south', 0))
+    for (const [i, preset] of p.manifest.presets.entries()) expect(composeCell(recolour(restored.project, restored.project.manifest.presets[i].variants), restored.project.manifest.presets[i].items, 'idle', 'south', 0)).toEqual(composeCell(recolour(p, preset.variants), preset.items, 'idle', 'south', 0))
   }
 })

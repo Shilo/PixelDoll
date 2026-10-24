@@ -44,10 +44,10 @@ export function opaqueBox(im: Img): Box | null {
   return x1 < 0 ? null : { x0, y0, x1, y1 };
 }
 
-/** Feet line in pixel-edge coords = bottom edge of the lowest opaque row. */
+/** Historical name: bottom silhouette edge in pixel-edge coords, not an estimate of foot contact or rotation origin. */
 export const feetY = (im: Img) => (opaqueBox(im)?.y1 ?? im.h - 1) + 1;
-/** Rig pivot from the reference cell (idle/south/0): x = w/2, y = feet line. */
-export const pivotOf = (im: Img) => ({ x: im.w / 2, y: feetY(im) });
+/** Shared frame pivot metadata from the reference cell; this does not estimate a physical rotation origin. */
+export const pivotOf = (im: Img) => ({ x: Math.floor(im.w / 2), y: feetY(im) });
 
 export function selfTest() {
   const src = makeImg(6, 6);

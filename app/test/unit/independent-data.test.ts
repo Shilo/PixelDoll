@@ -1,3 +1,4 @@
+import { atlasName } from '../../src/lib/export/phaser.ts'
 import { expect, test } from 'vitest'
 import { buildRig, type SourceAnim } from '../../src/lib/rig/freeze.ts'
 import { DIRECTIONS, cellHash, cellKey, cellKeys, type DirectionName } from '../../src/lib/rig/rig.ts'
@@ -110,14 +111,14 @@ test.each(cases)('$count directions independent=$independent preserve explicit w
   for (const [i, preset] of p.manifest.presets.entries()) {
     const expected = recolour(p, preset.variants), pr = engineOnly.project.manifest.presets[i]
     for (const anim of rig.animations) for (const dir of requested) for (let frame = 0; frame < anim.cells; frame++)
-      expect(composeCell(engineOnly.project, pr.items, anim.id, dir, frame)).toEqual(composeCell(expected, preset.items, anim.id, dir, frame))
+      expect(composeCell(recolour(engineOnly.project, pr.variants), pr.items, anim.id, dir, frame)).toEqual(composeCell(expected, preset.items, anim.id, dir, frame))
   }
   const files = new Map(out.entries.map((e) => [e.name, e.data])), text = new TextDecoder()
   const m = JSON.parse(text.decode(files.get('manifest.json'))) as Manifest
   const unity = JSON.parse(text.decode(files.get('unity/pixeldoll_unity.json')))
   expect(unity.directions).toEqual(requested)
-  const visibleBody = m.items.find((it) => it.id === m.presets[0].items.body_colour)!
-  const atlas = JSON.parse(text.decode(files.get(`phaser/${visibleBody.id}_main_idle.json`)))
+  const visibleBody = m.items.find((it) => it.id === m.presets[0].items.body)!
+  const atlas = JSON.parse(text.decode(files.get(`phaser/${atlasName(visibleBody.id, 'main', 'idle')}`)))
   expect(atlas.frames.idle_west_0.frame.y).toBe(requested.indexOf('west') * 64)
   expect(text.decode(files.get(`godot/${visibleBody.id}_main.tres`))).toContain('&"idle_west"')
   const ase = await readAseprite(out.entries.find((e) => e.name.endsWith('.aseprite'))!.data)

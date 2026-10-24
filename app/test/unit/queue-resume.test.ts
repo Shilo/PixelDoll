@@ -1,3 +1,4 @@
+import { accountBalance } from './account-fixture.ts'
 import { expect, test } from 'vitest'
 import { Queue, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import { ApiError } from '../../src/lib/pixellab/client.ts'
@@ -9,7 +10,8 @@ function fixture(status: number) {
     locks: null, online: () => true, now: () => 1000,
     put: async (id, r) => { records.set(id, structuredClone(r)) }, get: async (id) => structuredClone(records.get(id)),
     all: async () => [...records.values()].map((r) => structuredClone(r)),
-    api: async <T>(): Promise<T> => {
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T;
       posts++
       if (posts === 1) throw new ApiError(status, status === 422 ? 'invalid' : 'retry', 'synthetic outcome')
       return { usage: { type: 'generations', generations: 1 } } as T
@@ -134,7 +136,8 @@ test('queued-only cancellation never sends DELETE for an already submitted paid 
   const q = new Queue({ locks: null, online: () => true,
     put: async (id, r) => { records.set(id, structuredClone(r)) },
     all: async () => [...records.values()].map((r) => structuredClone(r)),
-    api: async <T>(_key: string, method: string): Promise<T> => {
+    api: async <T>(_key: string, method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T;
       methods.push(method)
       return (method === 'POST' ? { background_job_id: 'synthetic-job' } : { id: 'synthetic-job', status: 'processing', created_at: '' }) as T
     },
@@ -156,7 +159,8 @@ test('disconnect during submitting persistence prevents HTTP leaving the old que
   const release = new Promise<void>((resolve) => { finish = resolve })
   const q = new Queue({ locks: null, all: async () => [], online: () => true,
     put: async (id, r) => { records.set(id, structuredClone(r)); if (r.state === 'submitting') { entered(); await release } },
-    api: async <T>(): Promise<T> => { posts++; return {} as T },
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T; posts++; return {} as T },
   })
   await q.connect(); q.setKey('synthetic-key')
   const record = await q.enqueue(request)
@@ -177,7 +181,8 @@ test('failed sibling during submitting image rehydration prevents the paid POST'
     put: async (id, r) => { records.set(id, structuredClone(r)) },
     putBlob: async () => 'synthetic-image-hash',
     getBlob: () => new Promise<Blob>((resolve) => { finish = resolve; entered() }),
-    api: async <T>(): Promise<T> => { posts++; return {} as T },
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T; posts++; return {} as T },
   })
   q.setKey('synthetic-key')
   const imageRequest = { ...request, body: { ...request.body, image: { type: 'base64', base64: 'AQ==' } } }
@@ -198,7 +203,8 @@ test('scope cancellation after HTTP invocation preserves the paid job response a
   const sent = new Promise<void>((resolve) => { entered = resolve })
   const q = new Queue({ locks: null, all: async () => [], online: () => true,
     put: async (id, r) => { records.set(id, structuredClone(r)) },
-    api: async <T>(_key: string, method: string): Promise<T> => {
+    api: async <T>(_key: string, method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T;
       methods.push(method); entered()
       return await new Promise<T>((resolve) => { finish = resolve as typeof finish })
     },
@@ -220,7 +226,8 @@ test('one failed scoped consumer cannot cancel a shared queued request still nee
   let posts = 0
   const q = new Queue({ locks: null, online: () => true,
     put: async (id, r) => { records.set(id, structuredClone(r)) },
-    api: async <T>(): Promise<T> => { posts++; return { usage: { type: 'generations', generations: 0.1 } } as T },
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T; posts++; return { usage: { type: 'generations', generations: 0.1 } } as T },
   })
   q.setKey('synthetic-key')
   const shared = await q.enqueue(request, { signal: a.signal })
@@ -236,7 +243,8 @@ test('all scoped consumers failing cancels a shared queued request without a POS
   const a = new AbortController(), b = new AbortController()
   let posts = 0
   const q = new Queue({ locks: null, online: () => true, put: async () => {},
-    api: async <T>(): Promise<T> => { posts++; return {} as T },
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T; posts++; return {} as T },
   })
   q.setKey('synthetic-key')
   const shared = await q.enqueue(request, { signal: a.signal })
@@ -250,7 +258,8 @@ test('all scoped consumers failing cancels a shared queued request without a POS
 test('a live unscoped consumer pins shared work when a scoped consumer fails', async () => {
   let posts = 0
   const scope = new AbortController(), q = new Queue({ locks: null, online: () => true, put: async () => {},
-    api: async <T>(): Promise<T> => { posts++; return { usage: { type: 'generations', generations: 0.1 } } as T },
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T; posts++; return { usage: { type: 'generations', generations: 0.1 } } as T },
   })
   q.setKey('synthetic-key')
   const shared = await q.enqueue(request)
@@ -279,7 +288,8 @@ test('a new explicit attempt can recover automatic unsent cancellation; the same
   const deps: Partial<Deps> = { locks: null, online: () => true,
     put: async (id, r) => { records.set(id, structuredClone(r)) },
     all: async () => [...records.values()].map((r) => structuredClone(r)),
-    api: async <T>(): Promise<T> => { posts++; return { usage: { type: 'generations', generations: 0.1 } } as T },
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T; posts++; return { usage: { type: 'generations', generations: 0.1 } } as T },
   }
   const original = new Queue(deps); original.setKey('synthetic-key')
   const cancelled = await original.enqueue(request, { signal: firstScope.signal, attempt: 123 })
@@ -327,7 +337,8 @@ test('synchronous requests publish their HTTP start while pending and retain the
   const records = new Map<string, JobRec>()
   const q = new Queue({ locks: null, now: () => now, online: () => true,
     put: async (id, r) => { records.set(id, structuredClone(r)) },
-    api: async <T>(): Promise<T> => {
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T;
       posts++; sent()
       return await new Promise<T>((resolve) => { finish = resolve as typeof finish })
     },
@@ -354,7 +365,8 @@ test('submission-start notification occurs after HTTP invocation even when a sub
   let posts = 0, finished!: (response: { background_job_id: string }) => void, sent!: () => void
   const entered = new Promise<void>((resolve) => { sent = resolve })
   const q = new Queue({ locks: null, all: async () => [], online: () => true, put: async () => {},
-    api: async <T>(): Promise<T> => { posts++; sent(); return await new Promise<T>((resolve) => { finished = resolve as typeof finished }) },
+    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T; posts++; sent(); return await new Promise<T>((resolve) => { finished = resolve as typeof finished }) },
   })
   await q.connect(); q.setKey('synthetic-key')
   const un = q.subscribe((s) => { if (s.jobs.some((r) => r.state === 'submitting' && r.submittedAt !== undefined)) { expect(posts).toBe(1); q.disconnect() } })

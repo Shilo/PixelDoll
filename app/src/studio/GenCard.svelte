@@ -10,6 +10,8 @@
   import { ui, store, genProgress, acceptGen, discardGen, retryGen, type Gen } from './state.svelte.ts'
   import { CircleAlert, CircleCheck, ChevronRight, TriangleAlert } from './icons.ts'
   import { app } from '../lib/app.svelte.ts'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { draftPlan, draftQueueIds } from './apiPlans.ts'
 
   let { g }: { g: Gen } = $props()
   const p = $derived(genProgress(g, $queue.jobs))
@@ -47,7 +49,7 @@
 
 <div class="gen">
   <header class="insp-head">
-    <h2 class="insp-title">{g.input.name}</h2>
+    <div class="api-action"><h2 class="insp-title">{g.input.name}</h2><ApiPeek scope={`item-generation-${g.draft.spec.id}`} label={`Generate ${g.input.name}`} plan={draftPlan(g.draft)} queueIds={draftQueueIds(g.draft)} /></div>
     <p class="insp-sub">
       <span>{groupOf(g.input.slot).id}</span>
       {#if g.phase === 'review'}
@@ -91,13 +93,13 @@
     {/if}
     <div class="actions">
       <button class="btn primary" onclick={accept} disabled={busy || !res?.qa || hasStructuralFailure(res)}>Keep it</button>
-      <button class="btn" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button>
+      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="btn" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
       <button class="btn plain danger" onclick={() => discardGen(g)} disabled={busy}>Discard</button>
     </div>
   {:else if g.phase === 'failed'}
     <p class="notice bad small"><CircleAlert size={14} />{g.error?.includes('5000') || g.error?.toLowerCase().includes('policy') ? 'PixelLab declined this prompt. Try different words.' : 'This item could not be made.'}</p>
     <div class="actions">
-      <button class="btn primary" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button>
+      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="btn primary" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
       <button class="btn plain danger" onclick={() => discardGen(g)}>Discard</button>
     </div>
   {/if}

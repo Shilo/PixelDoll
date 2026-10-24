@@ -11,6 +11,7 @@ import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib
 import { evaluateItem, loadDrafts, matchItemColours as applyItemColours, type ItemPaletteRepairPlan, type Draft, type ItemResult } from '../lib/items/run.ts';
 import { SLOTS } from '../lib/items/items.ts';
 import { app } from '../lib/app.svelte.ts';
+import { accountTier } from '../lib/pixellab/plans.ts';
 import { itemRoute, type NewItemInput } from './itemRoute.ts';
 import { addMove, bodyPaletteRepairPlan, createCharacter, measurementRecoveryPlan, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
@@ -73,7 +74,7 @@ export const ui = $state({
   bg: 'checker' as 'checker' | 'solid',
   toast: '',
 });
-let afterConnect: (() => void) | null = null;
+let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
 
 export function initUi() {
   const on = () => { ui.size = sizeNow(); ui.dpr = devicePixelRatio || 1; };
@@ -95,18 +96,20 @@ const follower = () => {
 };
 
 /** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. */
-export function withKey(fn: () => void) {
+export function withKey(fn: () => void, requiresRig = false) {
   if (follower()) return;
+  if (requiresRig && app.key && accountTier(app.balance) === 0) { afterConnect = null; ui.sheet = 'connect'; return; }
   if (app.key && !app.keyRejected) return fn();
-  afterConnect = fn;
+  afterConnect = { run: fn, requiresRig };
   ui.sheet = 'connect';
 }
 export function connected() {
   const f = afterConnect;
   afterConnect = null;
   ui.sheet = null;
-  f?.();
+  f?.run();
 }
+export const pendingConnectionAllowsFree = () => !!afterConnect && !afterConnect.requiresRig;
 /** Closing Connect cancels its spending action, including when the balance request is still in flight. */
 export function clearPendingConnection() { afterConnect = null; }
 
@@ -610,8 +613,7 @@ const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'studio-setup', '
  * Activity "Clear finished" (maxAge 0, sweeps blobs) and the leader's start-up prune (a week, records only). Deletes finished ledger records that no draft
  * references and no pending create/move may re-attach to (R6 P1-2), then, only while nothing is generating or being saved
  * in this tab, the blobs nothing references any more (R6 P2-15).
- * ponytail: a follower tab's copyDemo/M-page writes its blobs one transaction before its record; a sweep exactly in between
- * would drop them. Followers cannot generate, so the window is a demo copy; add a "recent blobs" grace list if that bites.
+ * Demo copying publishes its record and blobs atomically, including when a follower copies during a leader's sweep.
  */
 export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number; blobs: number }> {
   if (queue.role === 'follower') return { jobs: 0, blobs: 0 };
@@ -658,6 +660,11 @@ async function persistFlowFailure(key: string, record: object, error: unknown): 
 }
 
 // ---------- create character ----------
+// Persist the inspector identity with the resumable spec. A new seed starts a distinct run.
+function withActivityScope<T extends { seed: number; activityScope?: string }>(spec: T, kind: string): T {
+  const prefix = `${kind}:${spec.seed}:`;
+  return { ...spec, activityScope: spec.activityScope?.startsWith(prefix) ? spec.activityScope : `${prefix}${crypto.randomUUID()}` };
+}
 export const creating = $state({ spec: null as CreateSpec | null, progress: null as Progress | null, error: '', projectId: '', warnings: [] as string[] });
 const CREATE_KEY = 'studio-create';
 let createRunning = false, createRevision = 0;
@@ -666,7 +673,7 @@ export async function startCreate(spec: CreateSpec) {
   createRunning = true;
   const revision = ++createRevision, current = () => revision === createRevision && createRunning;
   let failed = false;
-  spec = { ...spec, projectId: spec.projectId ?? `rig-${crypto.randomUUID()}` }; // persisted before paid work; legacy pending specs migrate once
+  spec = withActivityScope({ ...spec, projectId: spec.projectId ?? `rig-${crypto.randomUUID()}` }, 'create'); // persisted before paid work; legacy pending specs migrate once
   creating.spec = spec;
   creating.error = '';
   creating.projectId = '';
@@ -707,6 +714,8 @@ export async function cancelCreate() {
   creating.spec = null;
   creating.progress = null;
   creating.error = '';
+  creating.projectId = '';
+  creating.warnings = [];
   await db.del('projects', CREATE_KEY);
 }
 
@@ -717,6 +726,7 @@ const MOVE_KEY = 'studio-move';
 let moveRunning = false, moveRevision = 0;
 export async function startMove(projectId: string, spec: MoveSpec) {
   if (hmrReloading || moveRunning) return;
+  spec = withActivityScope(spec, 'move');
   moveRunning = true;
   const revision = ++moveRevision, current = () => revision === moveRevision && moveRunning;
   let failed = false;
@@ -790,6 +800,7 @@ const SETUP_KEY = 'studio-setup';
 let setupRunning = false, setupResumed = false, setupRevision = 0;
 export async function startSetup(spec: SetupSpec) {
   if (hmrReloading || setupRunning) return;
+  spec = withActivityScope(spec, 'setup');
   setupRunning = true;
   const revision = ++setupRevision, current = () => revision === setupRevision && setupRunning;
   let failed = false;

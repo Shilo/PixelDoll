@@ -72,7 +72,7 @@ test('creation identity is persisted before paid work, survives failed resume, a
   expect(mocks.create).not.toHaveBeenCalled()
   const migrated = mocks.put.mock.calls[0][2].spec
   expect(migrated.projectId).toMatch(/^rig-[a-f0-9-]+$/)
-  expect(migrated).toEqual({ ...legacy, projectId: migrated.projectId })
+  expect(migrated).toEqual({ ...legacy, projectId: migrated.projectId, activityScope: expect.any(String) })
   persisted.resolve(); await run
   expect(mocks.create.mock.calls[0][0].projectId).toBe(migrated.projectId)
   await s.startCreate(structuredClone(migrated))
@@ -254,7 +254,7 @@ test('existing body colour intent cannot be applied twice and interrupted resume
   mocks.move.mockRejectedValue(new Error('Interrupted corrected check stopped'))
   const restored = await import('../../src/studio/state.svelte.ts'); await restored.resumeMove()
   await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
-  expect(mocks.move.mock.calls[0][1]).toEqual(spec)
+  expect(mocks.move.mock.calls[0][1]).toEqual({ ...spec, activityScope: expect.any(String) })
 })
 
 test('body colour consent storage failure cannot start paid work', async () => {

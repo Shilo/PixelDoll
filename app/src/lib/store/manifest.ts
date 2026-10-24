@@ -90,7 +90,7 @@ export interface QaSummary {
   minAreaRatio: number;
   maxAreaCV: number;
   maxPaletteDist: number;
-  clipPx: number;
+  clipPx: number; // historical name: border-contact observations, not a measurement of pixels lost outside the frame
   handedness?: 'ok' | 'switched';
   shiftedFrames?: number; // cells whose silhouette fits the base better at a non-zero 1 px shift
   grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
@@ -139,7 +139,7 @@ export interface Preset {
   items: Record<string, string | null>; // slot -> item id
   variants: Record<string, string>;
 }
-export type Engine = 'generic' | 'godot' | 'unity' | 'phaser' | 'aseprite';
+export type Engine = 'generic' | 'godot' | 'unity' | 'phaser' | 'gdevelop' | 'aseprite';
 export interface ExportInfo {
   exportedAt: string;
   layout: 'pixeldoll-sheets/1';

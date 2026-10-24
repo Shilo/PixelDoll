@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Historical Bronze theme · screenshot review</title>
+<link rel="stylesheet" href="./theme.css"><link rel="stylesheet" href="./components.css">
+<style>
+ body{max-width:1680px;margin:auto;padding:32px} header{display:grid;gap:16px;margin-bottom:40px} nav{display:flex;gap:16px;flex-wrap:wrap}
+ section{margin:48px 0} h2{margin-bottom:16px} .comparison{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+ figure{margin:0;min-width:0} figcaption{margin-bottom:12px;color:var(--pd-muted)} img{display:block;width:100%;border:1px solid var(--pd-line);border-radius:var(--pd-radius-control)}
+ .phones{max-width:820px;margin:24px auto}.missing{padding:24px;border:1px solid var(--pd-border)}
+ @media(max-width:700px){body{padding:20px}.comparison{grid-template-columns:1fr}.phones{max-width:390px}}
+</style>
+<header><h1>Historical Bronze theme review</h1><p><strong>Historical evidence.</strong> Current theme development and verification live in <a href="https://github.com/Shilo/bronze-ui">Bronze UI</a> and its <a href="https://shilo.github.io/bronze-ui/">standalone showcase</a>. This gallery preserves the pre-extraction captures; do not regenerate them from the current package.</p><p>Actual browser captures of the original isolated component showcase. Each pair uses the same viewport: desktop 1920 × 1080, phone 390 × 844. Long component pages are full-page captures; dialogs and popovers are viewport captures.</p><nav><a href="https://shilo.github.io/bronze-ui/">Current interactive showcase</a><a href="./STYLE-GUIDE.md">Historical style guide</a><a href="./research-review.md">Independent challenge</a><a href="http://127.0.0.1:5202/">Current playable integration</a></nav><p class="pd-muted">This gallery reviews historical component states, not a replacement app layout. Source character pixels remain unchanged between appearances. Screenshots remain local; reproduce the original runner only from the pre-extraction revision described in the README.</p><nav id="jump" aria-label="Screenshot sections"></nav></header>
+<main id="gallery"></main>
+<script type="module">
+ const sections=['Scene','Controls','Creator','Library','Feedback','Overlays','Validation','Dialog','Popover'];
+ const gallery=document.getElementById('gallery'),jump=document.getElementById('jump');
+ for(const title of sections){
+   const key=title.toLowerCase(),section=document.createElement('section');section.id=key;
+   const heading=document.createElement('h2');heading.textContent=title;section.append(heading);
+   const link=document.createElement('a');link.href='#'+key;link.textContent=title;jump.append(link);
+   for(const device of ['desktop','mobile']){
+     const row=document.createElement('div');row.className='comparison'+(device==='mobile'?' phones':'');
+     for(const theme of ['dark','light']){
+       const figure=document.createElement('figure'),caption=document.createElement('figcaption'),a=document.createElement('a'),img=document.createElement('img');
+       caption.textContent=`${device==='desktop'?'Desktop · 1920 × 1080':'Phone · 390 × 844'} · ${theme}`;
+       a.href=`./evidence/${device}-${theme}-${key}.png`;a.target='_blank';img.src=a.href;img.alt=`${title}, ${device}, ${theme} appearance`;img.loading='lazy';
+       img.onerror=()=>{img.remove();const note=document.createElement('p');note.className='missing';note.textContent='Historical local evidence is missing. Restore the original capture; see README.md for reproduction from the pre-extraction revision.';a.replaceWith(note);};
+       a.append(img);figure.append(caption,a);row.append(figure);
+     }
+     section.append(row);
+   }
+   gallery.append(section);
+ }
+</script>
+</html>

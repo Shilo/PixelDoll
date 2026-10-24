@@ -9,4 +9,4 @@
   const k = $derived(im ? Math.max(1, Math.floor((size * ui.dpr) / Math.max(im.w, im.h))) : 1)
 </script>
 
-{#if im}<Sprite img={im} {k} w={im.w} h={im.h} label={item.name} />{/if}
+{#if im}<Sprite img={im} {k} w={im.w} h={im.h} limit={size} label={item.name} />{/if}

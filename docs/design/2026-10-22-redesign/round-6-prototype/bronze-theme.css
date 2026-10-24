@@ -1,0 +1,60 @@
+@import '@shilo/bronze-ui/tokens.css';
+@import '@shilo/bronze-ui/components.css';
+
+/* One consumer adapter. Bronze owns semantic colors/materials; styles.css owns
+   this immersive layout. Deliberately omit Bronze's optional document reset. */
+:root {
+  --bg: var(--bu-canvas);
+  --surface: var(--bu-surface);
+  --text: var(--bu-text);
+  --muted: var(--bu-muted);
+  --accent: var(--bu-accent);
+  --ink: var(--bu-on-accent);
+  --line: var(--bu-line);
+  --font-ui: var(--bu-font);
+  --font-display: var(--bu-display);
+  --radius-control: var(--bu-radius-control);
+  --radius-panel: var(--bu-radius-panel);
+  --radius-dialog: var(--bu-radius-dialog);
+  --focus-outline: 2px solid var(--bu-focus);
+  --border-control: 1px solid var(--bu-line);
+  --modal-backdrop: var(--bu-scrim);
+}
+
+/* Keep the approved screen geometry while using package recipes. */
+.library .primary, .equipment-tools .primary { width: 100%; }
+.bu-input {
+  min-height: 42px;
+}
+textarea.bu-input { min-height: 100px; }
+.item { isolation: isolate; }
+
+#toast.bu-floating { top: auto; min-width: 0; opacity: 1; pointer-events: none; }
+#dialog.bronze-dialog-overlay {
+  width: 100%; height: 100%; max-width: none; max-height: none;
+  display: none; align-items: center; justify-content: center;
+  border: var(--border-control); border-radius: 0; padding: 16px;
+  background: var(--bu-scrim);
+}
+#dialog.bronze-dialog-overlay[open] { display: flex; }
+#dialog.bronze-dialog-overlay::backdrop { background: transparent; }
+.dialog-panel {
+  width: 100%; max-width: 480px; max-height: 80dvh;
+  overflow: auto; padding: 25px;
+}
+
+/* Native picker materials come from Bronze UI. Only playback geometry is local. */
+@supports (appearance:base-select) and selector(select::picker(select)) {
+  .playback select { width:140px; max-width:none; flex-shrink:0; }
+  @media(min-width:1101px) and (min-height:541px) { .playback select { width:180px; } }
+  @media(max-width:760px) { .playback select { width:128px; } }
+}
+
+/* Dense creator labels retain muted hierarchy with measured minimum backing:
+   dark 85% over white >=4.76:1; light 90% over black >=4.62:1.
+   Bronze owns these material values; this file only places the gradients. */
+body[data-screen=creation] .scrims { background:linear-gradient(90deg,var(--bu-tile),var(--bu-reading-start) 19%,var(--bu-reading-end)); }
+.creation-workspace .size-guide, .creation-workspace .size-guide small { color:var(--bu-text); }
+@media(max-width:1000px), (max-height:540px) and (min-width:541px) {
+  body[data-screen=creation] .scrims { background:linear-gradient(180deg,var(--bu-reading-start),var(--bu-reading-end)); }
+}

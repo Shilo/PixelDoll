@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PixelDoll · Before Bronze UI / current prototype</title>
+<link rel="stylesheet" href="./bronze-theme.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:var(--bu-canvas);color:var(--bu-text);font:16px/1.5 var(--bu-font)}main{max-width:2200px;margin:auto;padding:24px}h1{font:32px/1.2 var(--bu-display)}p{max-width:1000px}a{color:var(--bu-accent)}nav{display:flex;flex-wrap:wrap;gap:16px;margin:24px 0}label{display:grid;gap:6px}select.bu-input{width:auto}figure{margin:0}figcaption{margin:12px 0;color:var(--bu-muted)}.comparison{overflow:auto}.comparison img{display:block;width:100%;height:auto}.comparison[data-size=actual] img{width:auto;max-width:none}details{margin:24px 0}summary{cursor:pointer}code{font-family:var(--bu-mono)}@media(max-width:600px){main{padding:16px}h1{font-size:26px}}
+</style>
+<main>
+<h1>Before Bronze UI / current prototype</h1>
+<p><strong>Left:</strong> the playable prototype at <code>003bef2</code>, immediately before Bronze UI was added. <strong>Right:</strong> the current prototype at <code>274f737</code>, using Bronze UI 0.2.0. Both are fresh browser screenshots at identical resolutions.</p>
+<nav aria-label="Comparison settings">
+<label>Viewport<select class="bu-input" id="device"><option value="desktop">Desktop · 1920 × 1080 each</option><option value="mobile">Phone · 450 × 800 each</option></select></label>
+<label>Appearance<select class="bu-input" id="theme"><option value="obsidian">Dark</option><option value="porcelain">Light</option></select></label>
+<label>Screen<select class="bu-input" id="screen"></select></label>
+<label>Image size<select class="bu-input" id="size"><option value="fit">Fit both side by side</option><option value="actual">Actual pixels · scroll</option></select></label>
+</nav>
+<p id="status" role="status">Loading verified captures…</p>
+<figure><div id="comparison" class="comparison"><img id="pair" alt=""></div><figcaption>One joined image keeps the before and after directly adjacent, including on phones. Choose actual pixels to inspect fine text and control edges.</figcaption></figure>
+<p><a id="full-pair">Open full-resolution pair</a> · <a id="before-image">Before image</a> · <a id="after-image">Current image</a></p>
+<details class="bu-details"><summary>Baseline and capture provenance</summary><p>The integration commit is <code>e2f2006</code>. Its parent <code>003bef2</code> still loads the earlier GlassKit study, with no Bronze UI dependency in the prototype. The historical runtime was restored into an isolated local snapshot; source and fixture bytes were checked against Git. Existing generated backgrounds were shared unchanged. The current checkout was left intact. This comparison includes subsequent layout and interaction repairs as well as the theme migration; it is not a theme-only experiment.</p><p><a href="./evidence/pre-bronze-current/before.json">Before capture manifest</a> · <a href="./evidence/pre-bronze-current/after.json">Current capture manifest</a> · <a href="./pre-bronze-comparison.md">Capture notes</a></p></details>
+<nav aria-label="All-screen boards"><a href="./evidence/pre-bronze-current/boards/obsidian-desktop.png">Dark desktop board</a><a href="./evidence/pre-bronze-current/boards/porcelain-desktop.png">Light desktop board</a><a href="./evidence/pre-bronze-current/boards/obsidian-mobile.png">Dark phone board</a><a href="./evidence/pre-bronze-current/boards/porcelain-mobile.png">Light phone board</a></nav>
+<p><a href="./">Open current playable prototype</a></p>
+</main>
+<script type="module">
+const $=id=>document.getElementById(id),params=new URLSearchParams(location.search),root='./evidence/pre-bronze-current/';
+try{
+ const [before,after]=await Promise.all(['before','after'].map(async phase=>{const r=await fetch(root+phase+'.json');if(!r.ok)throw Error('Capture manifest unavailable');return r.json()}));
+ if(!before.captureComplete||!after.captureComplete)throw Error('Evidence capture is incomplete');
+ for(const id of ['device','theme','size'])if(params.has(id)&&[...$(id).options].some(o=>o.value===params.get(id)))$(id).value=params.get(id);
+ function render(){
+  const file=`${$('theme').value}-${$('device').value}-${$('screen').value}.png`,entries=[before,after].map(m=>m.images.find(i=>i.file===file));
+  if(entries.some(e=>!e)||JSON.stringify(entries[0].viewport)!==JSON.stringify(entries[1].viewport))throw Error('Missing or mismatched comparison');
+  $('comparison').dataset.size=$('size').value;
+  $('pair').src=root+'pairs/'+file;$('pair').alt=`Before Bronze UI (left) and current prototype (right): ${$('screen').value}, ${$('theme').value}`;
+  for(const [id,phase] of [['full-pair','pairs'],['before-image','before'],['after-image','after']])$(id).href=root+phase+'/'+file;
+  $('status').textContent=`${entries[0].viewport.width} × ${entries[0].viewport.height} each · ${after.images.length} matched states · left before Bronze UI / right current Bronze UI`;
+  history.replaceState(null,'',`?device=${$('device').value}&theme=${$('theme').value}&screen=${$('screen').value}&size=${$('size').value}`);
+ }
+ function options(){const previous=$('screen').value||params.get('screen')||'preview';$('screen').replaceChildren(...after.images.filter(i=>i.theme===$('theme').value&&i.file.includes('-'+$('device').value+'-')).map(i=>new Option(i.screen,i.screen)));if([...$('screen').options].some(o=>o.value===previous))$('screen').value=previous;render()}
+ for(const id of ['device','theme'])$(id).addEventListener('change',options);
+ for(const id of ['screen','size'])$(id).addEventListener('change',render);
+ options();
+}catch(error){$('status').textContent=error.message}
+</script>
+</html>

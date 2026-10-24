@@ -9,10 +9,13 @@
 // Credentials stay in the connected tab. BroadcastChannel is origin-wide (including sibling Pages sites), so it carries
 // only ledger notifications and a credential-free forget signal; keys are never broadcast or accepted from messages.
 import { api as realApi, ApiError, errorText, isNetwork, isPolicy, rejected } from './client.ts';
-import { jobIdsOf, jobImages, type Job, type Req, type SubmitResponse, type Usage } from './routes.ts';
+import { jobIdsOf, jobImages, type Balance, type Job, type Req, type SubmitResponse, type Usage } from './routes.ts';
+import { planCapacity, requestedSlots } from './capacity.ts';
+import { PLAN_JOB_LIMITS, planRestriction, requestTier } from './plans.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { base64ToBytes, bytesToBase64, pngSize } from '../image/png.ts';
 import * as db from '../store/db.ts';
+import { activityRequest, beginActivityCall, finishActivityCall, restoreActivityRequest, type ActivityContext } from './activity.ts';
 
 export type RecState = 'queued' | 'submitting' | 'running' | 'done' | 'failed' | 'cancelled' | 'lost';
 export interface Result { label: string; sha: string; w?: number; h?: number }
@@ -36,6 +39,7 @@ export interface JobRec {
   id: string;
   label: string;
   tag?: string;
+  activityScope?: string;
   method: Req['method'];
   endpoint: string;
   params: unknown; // request body; images replaced by {$blob: sha256}; never the key
@@ -43,7 +47,11 @@ export interface JobRec {
   requestHash: string;
   state: RecState;
   attempts: number;
+  requestStarted?: boolean; // persisted immediately before transport; false means preparation never reached a request
   nextAt: number;
+  waitingForCapacity?: boolean;
+  minimumTier?: number;
+  waitingForPlan?: string;
   createdAt: number;
   submittedAt?: number;
   finishedAt?: number;
@@ -62,13 +70,15 @@ export interface QueueSnapshot {
   paused: null | 'auth' | 'credits' | 'offline'; // offline (B15): browser offline or a request got no answer; nothing is sent
   concurrency: number;
   current: number;
+  capacityPlan: string | null;
+  capacityRetryAt: number;
   sessionGens: number;
   sessionUsd: number;
   counts: Record<'pending' | 'running' | 'failed' | 'done', number>;
 }
 
 export interface Deps {
-  api: <T>(key: string, method: string, path: string, body?: unknown) => Promise<T>;
+  api: <T>(key: string, method: string, path: string, body?: unknown, signal?: AbortSignal, context?: ActivityContext) => Promise<T>;
   put: (key: string, rec: JobRec) => Promise<void>;
   claimEstimate: (rec: JobRec, chooseExisting: (records: JobRec[]) => JobRec | undefined) => Promise<JobRec>;
   get: (key: string) => Promise<JobRec | undefined>;
@@ -76,7 +86,7 @@ export interface Deps {
   all: () => Promise<JobRec[]>;
   putBlob: (bytes: Uint8Array) => Promise<string>;
   getBlob: (sha: string) => Promise<Blob | undefined>;
-  fetchBytes: (url: string) => Promise<Uint8Array>;
+  fetchBytes: (url: string, context?: ActivityContext) => Promise<Uint8Array>;
   now: () => number;
   locks: Pick<LockManager, 'request'> | null; // Web Locks (null = single tab)
   online: () => boolean; // navigator.onLine
@@ -106,7 +116,8 @@ const noAnimationJobsStarted = (endpoint: string, error: ApiError): boolean => {
 
 export const live = (r?: JobRec) => !!r && (r.state === 'queued' || r.state === 'submitting' || r.state === 'running');
 const seededOf = (r: JobRec) => typeof (r.params as { seed?: unknown } | null)?.seed === 'number';
-type Msg = { forget?: boolean; rec?: string; sync?: boolean };
+type CapacityState = Pick<QueueSnapshot, 'concurrency' | 'current' | 'capacityPlan' | 'capacityRetryAt'>;
+type Msg = { forget?: boolean; rec?: string; sync?: boolean; capacity?: CapacityState; capacitySync?: boolean };
 
 export const backoff = (attempt: number, rnd = Math.random()) => Math.min(60_000, 2000 * 2 ** Math.max(0, attempt - 1)) * (0.5 + 0.5 * rnd);
 
@@ -172,7 +183,17 @@ export class Queue {
   private busy = new Set<string>(); // rec ids / subjob ids with an op in flight
   private listeners = new Set<(s: QueueSnapshot) => void>();
   private timer: (() => void) | null = null;
-  private streak = 0;
+  private ticking = false;
+  private disconnected = false;
+  private capacityProbe: object | null = null;
+  private capacityRead: Promise<void> | null = null;
+  private capacityKnown = false;
+  private accountBalance: Balance | null = null;
+  private throttled = false;
+  private capacityFailures = 0;
+  private capacitySuccesses = 0;
+  private capacityCheckedAt = -Infinity;
+  private detectCapacity = false;
   private deps: Deps;
   private follower: (() => void) | null = null;
   private release: (() => void) | null = null;
@@ -183,11 +204,14 @@ export class Queue {
   private merged = 0;
   private probeAt = 0;
   private chan: BroadcastChannel | null = null;
+  private activityInspection = new Map<string, Promise<void>>();
   role: Role = 'solo';
   key = '';
   paused: QueueSnapshot['paused'] = null;
-  concurrency = 3;
-  current = 3;
+  concurrency: number = PLAN_JOB_LIMITS.unknown;
+  current: number = PLAN_JOB_LIMITS.unknown;
+  capacityPlan: string | null = null;
+  capacityRetryAt = 0;
   sessionGens = 0;
   sessionUsd = 0;
 
@@ -201,10 +225,17 @@ export class Queue {
       all: () => db.all<JobRec>('jobs'),
       putBlob: (b) => db.putBlob(b),
       getBlob: db.getBlob,
-      fetchBytes: async (url) => {
-        const r = await fetch(url); // storage CDN: no auth header, ever
-        if (!r.ok) throw new Error(`GET ${url} -> ${r.status}`);
-        return new Uint8Array(await r.arrayBuffer());
+      fetchBytes: async (url, context) => {
+        const id = beginActivityCall('GET', url, undefined, context, 'download');
+        let status: number | null = null;
+        try {
+          const r = await fetch(url); // storage CDN: no auth header, ever
+          status = r.status;
+          if (!r.ok) throw new Error(`GET ${url} -> ${r.status}`);
+          const bytes = new Uint8Array(await r.arrayBuffer());
+          finishActivityCall(id, status, true);
+          return bytes;
+        } catch (e) { finishActivityCall(id, status, false); throw e; }
       },
       now: Date.now,
       locks: globalThis.navigator?.locks ?? null,
@@ -228,11 +259,12 @@ export class Queue {
       else if (r.state === 'done') counts.done++;
       else if (r.state === 'failed' || r.state === 'lost') counts.failed++;
     }
-    return { jobs, role: this.role, paused: this.paused, concurrency: this.concurrency, current: this.current, sessionGens: this.sessionGens, sessionUsd: this.sessionUsd, counts };
+    return { jobs, role: this.role, paused: this.paused, concurrency: this.concurrency, current: this.current, capacityPlan: this.capacityPlan, capacityRetryAt: this.capacityRetryAt, sessionGens: this.sessionGens, sessionUsd: this.sessionUsd, counts };
   }
   private emit() {
     const s = this.snapshot();
     for (const l of this.listeners) l(s);
+    if (this.role === 'leader') this.chan?.postMessage({ capacity: { concurrency: this.concurrency, current: this.current, capacityPlan: this.capacityPlan, capacityRetryAt: this.capacityRetryAt } } satisfies Msg);
   }
   private async save(r: JobRec) {
     await this.deps.put(r.id, r);
@@ -257,6 +289,7 @@ export class Queue {
     this.disconnect();
     const connection = new AbortController(), { signal } = connection;
     this.connection = connection;
+    this.disconnected = false;
     const locks = this.deps.locks;
     if (!locks) { await this.load(); if (!signal.aborted) this.start(); return; }
     if (typeof BroadcastChannel !== 'undefined') {
@@ -267,6 +300,8 @@ export class Queue {
         if (m.forget === true) this.setKey('', false);
         if (typeof m.rec === 'string') void this.pull(m.rec);
         if (m.sync && this.role === 'follower') void this.sync();
+        if (m.capacity && this.role === 'follower') { Object.assign(this, m.capacity); this.emit(); }
+        if (m.capacitySync && this.role === 'leader') this.emit();
       };
     }
     await this.sync(); // the UI has the ledger at once, whoever leads
@@ -288,6 +323,7 @@ export class Queue {
     if (signal.aborted) return;
     if (got) return this.lead(connection);
     this.role = 'follower';
+    this.chan?.postMessage({ capacitySync: true } satisfies Msg);
     this.follower = every(this.chan ? FULL_SYNC_MS : SYNC_MS, () => void this.sync());
     this.emit();
     void locks.request(LOCK, { signal }, async () => {
@@ -301,6 +337,8 @@ export class Queue {
     this.follower?.();
     this.follower = null;
     this.role = 'leader';
+    this.capacityCheckedAt = -Infinity;
+    this.capacityKnown = false;
     this.recs.clear();
     await this.load();
     if (!connection.signal.aborted) this.start();
@@ -309,6 +347,7 @@ export class Queue {
   disconnect() {
     this.connection?.abort();
     this.connection = null;
+    this.disconnected = true;
     this.stop();
     this.follower?.();
     this.follower = null;
@@ -322,6 +361,14 @@ export class Queue {
     this.recs = new Map((await this.deps.all()).map((r) => [r.id, r]));
     this.emit();
   }
+  /** Inspect mirrored/persisted submissions without making requests or eagerly decoding every saved input. */
+  async inspectActivity(ids: string[], activityScope?: string): Promise<void> {
+    const selected = new Set(ids);
+    for (const rec of this.recs.values()) {
+      if ((selected.has(rec.id) || activityScope && rec.activityScope === activityScope) && this.wasRequested(rec)) await this.restoreActivity(rec);
+    }
+  }
+  private wasRequested(r: JobRec) { return r.attempts > 0 && r.requestStarted !== false && !/nothing was sent/i.test(r.error ?? ''); }
   /** One record another tab saved: a follower mirrors it, the leader adopts it. */
   private async pull(id: string) {
     const r = await this.deps.get(id);
@@ -343,25 +390,70 @@ export class Queue {
       const dup = r.state === 'queued' && [...this.recs.values()].find((x) => x.requestHash === r.requestHash && (live(x) || (x.state === 'done' && (seededOf(x) || x.endpoint === '/estimate-skeleton'))));
       this.recs.set(r.id, r);
       if (dup) {
+        this.strengthenPlan(dup, r);
         Object.assign(r, { state: 'cancelled', error: `duplicate of ${dup.id} (sent from two tabs)`, finishedAt: this.deps.now() });
         void this.save(r).catch((e) => console.error('queue', e));
       }
       return true;
     }
     if (mine.state === 'queued' && r.state === 'cancelled' && !this.busy.has(r.id)) { Object.assign(mine, { state: r.state, finishedAt: r.finishedAt }); return true; }
-    return false;
+    return r.state === 'queued' && this.strengthenPlan(mine, r);
+  }
+  /** A follower can strengthen eligibility, but must never replace the leader's transport state or payload. */
+  private strengthenPlan(mine: JobRec, incoming: JobRec): boolean {
+    const minimum = requestTier(incoming);
+    if (mine.state !== 'queued' || mine.requestHash !== incoming.requestHash || minimum <= (mine.minimumTier ?? 0)) return false;
+    mine.minimumTier = minimum;
+    void this.save(mine).catch((e) => console.error('queue', e));
+    return true;
   }
   async load() {
     for (const r of await this.deps.all()) {
       // Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
       if (r.state === 'submitting') {
-        r.state = 'lost';
-        r.error = 'page closed during submit; the job may have run (check pixellab.ai). Not resubmitted.';
+        r.state = r.requestStarted === false ? 'failed' : 'lost';
+        r.error = r.requestStarted === false ? 'page closed before request preparation finished; nothing was sent.' : 'page closed during submit; the job may have run (check pixellab.ai). Not resubmitted.';
         await this.deps.put(r.id, r);
       }
       this.recs.set(r.id, r);
     }
+    for (const r of this.recs.values()) if (r.state === 'queued' && r.waitingForCapacity) {
+      this.capacityRetryAt = Math.max(this.capacityRetryAt, r.nextAt);
+      this.throttled = true;
+    }
+    // Reattach known remote jobs before polling, so reported usage belongs to their original paid submission.
+    if (this.deps.api === realApi) for (const r of [...this.recs.values()].filter((r) => this.wasRequested(r)).sort((a, b) => a.createdAt - b.createdAt).slice(-200)) await this.restoreActivity(r);
     this.emit();
+  }
+  private async restoreActivity(r: JobRec) {
+    const pending = this.activityInspection.get(r.id);
+    if (pending) await pending;
+    const task = this.restoreActivityRecord(r);
+    this.activityInspection.set(r.id, task);
+    try { await task; } finally { if (this.activityInspection.get(r.id) === task) this.activityInspection.delete(r.id); }
+  }
+  private async restoreActivityRecord(r: JobRec) {
+    const existing = activityRequest(r.id);
+    if (existing && !existing.restored) return;
+    let body = existing ? existing.body : r.params;
+    let bodyUnavailable = existing?.bodyUnavailable ?? false;
+    if (!existing) try {
+      body = await mapDeep(r.params, (o) => typeof o.$blob === 'string' ? (async () => {
+        const blob = await this.deps.getBlob(o.$blob as string);
+        if (!blob) throw new Error('stored input unavailable');
+        const { $blob: _, ...rest } = o;
+        return { ...rest, base64: bytesToBase64(new Uint8Array(await blob.arrayBuffer())) };
+      })() : undefined);
+    } catch { bodyUnavailable = true; }
+    // A sync may have supplied newer remote usage while the original PNG was being read.
+    const current = this.recs.get(r.id) ?? r;
+    // The live client records this request next. Only restore interrupted submissions after load marks them lost.
+    if (current.state === 'submitting') return;
+    if (!this.wasRequested(current)) return;
+    restoreActivityRequest({ queueId: current.id, queueTag: current.tag, activityScope: current.activityScope, label: current.label, method: current.method, endpoint: current.endpoint, body,
+      bodyUnavailable,
+      startedAt: current.submittedAt ?? current.createdAt, state: current.jobs.length || current.state === 'done' ? 'completed' : 'failed',
+      jobs: current.jobs, usage: (current.response as { usage?: unknown } | undefined)?.usage });
   }
   start() {
     this.timer ??= every(1000, () => void this.tick());
@@ -373,6 +465,24 @@ export class Queue {
   /** Forget stops connected tabs without sharing credentials. A new key belongs only to this tab. */
   setKey(key: string, notifyForget = true) {
     this.keyRevision++;
+    if (key !== this.key) {
+      // First connection happens AFTER ledger restore for memory-only keys. Keep that restored cooldown.
+      if (key && this.key) {
+        this.capacityRetryAt = 0;
+        this.throttled = false;
+        this.capacityFailures = 0;
+      }
+      this.concurrency = PLAN_JOB_LIMITS.unknown;
+      this.current = this.throttled ? 1 : PLAN_JOB_LIMITS.unknown;
+      this.accountBalance = null;
+      this.capacityPlan = null;
+      this.capacityCheckedAt = -Infinity;
+      this.capacityKnown = false;
+      this.capacityRead = null; // an old credential's read must not block the new one
+      this.capacityProbe = null;
+      this.capacitySuccesses = 0;
+    }
+    this.detectCapacity = !!key;
     this.key = key;
     if (!key && notifyForget) this.chan?.postMessage({ forget: true } satisfies Msg);
     if (key && this.paused === 'auth') this.paused = null;
@@ -382,17 +492,59 @@ export class Queue {
     this.paused = null;
     this.emit();
   }
-  setConcurrency(n: number) {
-    if (!Number.isFinite(n)) return; // preserve the last valid capacity; NaN would bypass the scheduler limit
-    this.concurrency = this.current = Math.max(1, Math.min(8, Math.round(n)));
+  /** Free account reads can update the published ceiling, never erase a busy-account cooldown. */
+  setBalance(balance: Balance, key: string) {
+    if (key !== this.key) return;
+    const { limit, plan } = planCapacity(balance);
+    this.accountBalance = balance;
+    this.concurrency = limit;
+    this.current = this.throttled ? Math.min(this.current, limit) : limit;
+    this.capacityPlan = plan;
+    this.capacityKnown = true;
+    this.capacityCheckedAt = this.deps.now();
     this.emit();
+  }
+
+  private activeSlots() {
+    return [...this.recs.values()].reduce((n, r) => n + (r.state === 'submitting' ? requestedSlots(r.endpoint, r.params)
+      : r.state === 'running' ? r.jobs.filter((s) => !s.done && !s.remoteDone).length : 0), 0);
+  }
+
+  private async refreshCapacity() {
+    const key = this.key, revision = this.keyRevision;
+    this.capacityCheckedAt = this.deps.now(); // failure uses the fallback and is not hammered every second
+    try {
+      const balance = await this.deps.api<Balance>(key, 'GET', '/balance', undefined, undefined, { label: 'Check account concurrency', background: true });
+      if (revision === this.keyRevision) this.setBalance(balance, key);
+    }
+    catch (e) {
+      if (revision !== this.keyRevision || key !== this.key) return;
+      this.capacityKnown = true; // retain the last ceiling (or fallback) when an account read fails
+      if (e instanceof ApiError && e.kind === 'auth') this.paused = 'auth';
+    }
+  }
+
+  private planWait(r: JobRec): string | null {
+    if (this.detectCapacity && requestTier(r) > 0) {
+      if (this.capacityRead) return 'Checking PixelLab plan before starting this workflow…';
+      if (!this.accountBalance) return 'Waiting to verify your PixelLab plan. Retrying automatically…';
+    }
+    return planRestriction(this.accountBalance, r);
+  }
+
+  private async hasPreparedInputs(): Promise<boolean> {
+    // A broken stored request should fail locally without even an account lookup.
+    for (const r of this.recs.values()) if (r.state === 'queued' && !this.persisting.has(r.id)) {
+      if ((await Promise.all(r.inputs.map((sha) => this.deps.getBlob(sha)))).every(Boolean)) return true;
+    }
+    return false;
   }
 
   // ---- enqueue ----
   // Identical request (same endpoint + params + input images, explicit seed) reuses the stored record instead of paying again.
   // Paid requests are resume-safe by default; a new seed expresses an intentional re-roll. meta.cache also reuses
   // unseeded done GET records (deterministic routes such as GET /characters).
-  async enqueue(req: Req, meta: { label?: string; tag?: string; cache?: boolean; resumeSafe?: boolean; signal?: AbortSignal; attempt?: number; estimateRetry?: EstimateRetryIntent } = {}): Promise<JobRec> {
+  async enqueue(req: Req, meta: { label?: string; tag?: string; activityScope?: string; minimumTier?: number; cache?: boolean; resumeSafe?: boolean; signal?: AbortSignal; attempt?: number; estimateRetry?: EstimateRetryIntent } = {}): Promise<JobRec> {
     const connection = this.connection;
     const assertConnected = () => {
       meta.signal?.throwIfAborted(); // orchestration cancellation stops publication, never aborts a paid HTTP request
@@ -409,6 +561,7 @@ export class Queue {
     // Historical duplicates can exist from older versions. Prefer useful newer work before considering an old failure.
     const active = matches.find(live);
     if (active) {
+      if (active.state === 'queued' && (meta.minimumTier ?? 0) > (active.minimumTier ?? 0)) { active.minimumTier = meta.minimumTier; await this.save(active); }
       if (active.state !== 'running') this.observeScope(active.id, meta.signal, meta.attempt);
       return active;
     }
@@ -435,6 +588,8 @@ export class Queue {
       ...(meta.estimateRetry ? { estimateRecovery: { id: meta.estimateRetry.id, ...(retryOf ? { retryOf } : {}) } } : {}),
       label: meta.label ?? req.path,
       tag: meta.tag,
+      activityScope: meta.activityScope,
+      minimumTier: meta.minimumTier,
       method: req.method,
       endpoint: req.path,
       params,
@@ -442,6 +597,7 @@ export class Queue {
       requestHash,
       state: 'queued',
       attempts: 0,
+      requestStarted: false,
       nextAt: 0,
       createdAt: now,
       jobs: [],
@@ -535,7 +691,7 @@ export class Queue {
     if (now < this.probeAt) return false;
     this.probeAt = now + PROBE_MS;
     const credentialRevision = this.keyRevision;
-    try { await this.deps.api(this.key, 'GET', '/balance'); } catch (e) {
+    try { await this.deps.api(this.key, 'GET', '/balance', undefined, undefined, { label: 'Connection recovery', background: true }); } catch (e) {
       if (credentialRevision !== this.keyRevision) return false;
       if (isNetwork(e)) return false;
       if (e instanceof ApiError && (e.kind === 'auth' || e.kind === 'credits')) { this.paused = e.kind; this.emit(); return false; }
@@ -545,22 +701,53 @@ export class Queue {
     return true;
   }
   async tick(): Promise<void> {
+    if (this.ticking) return;
+    this.ticking = true;
+    let work: { ops: Promise<void>[]; capacity?: Promise<void> };
+    try { work = await this.work(); } finally { this.ticking = false; }
+    await Promise.all(work.ops);
+    if (work.capacity) { await work.capacity; await this.tick(); }
+  }
+  private async work(): Promise<{ ops: Promise<void>[]; capacity?: Promise<void> }> {
     const connection = this.connection;
-    const disconnected = () => this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted);
-    if (disconnected()) return;
+    const disconnected = () => this.disconnected || this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted);
+    if (disconnected()) return { ops: [] };
     const now = this.deps.now();
-    if (!(await this.network(now)) || disconnected()) return;
-    if (this.role === 'follower') return; // the leader tab submits and polls
+    if (!(await this.network(now)) || disconnected()) return { ops: [] };
+    if (this.role === 'follower') return { ops: [] }; // the leader tab submits and polls
     if (this.role === 'leader' && now - this.merged >= (this.chan ? FULL_SYNC_MS : SYNC_MS)) { this.merged = now; await this.merge(); }
-    if (disconnected()) return; // a suspended tick cannot drive jobs after its lock/session was released
+    if (disconnected()) return { ops: [] }; // a suspended tick cannot drive jobs after its lock/session was released
     const ops: Promise<void>[] = [];
-    if (this.key && !this.paused) {
-      let active = [...this.recs.values()].filter((r) => r.state === 'submitting' || r.state === 'running').length;
+    let capacity: Promise<void> | undefined;
+    if (this.key && !this.paused && this.detectCapacity && !this.capacityRead && now - this.capacityCheckedAt >= 60_000 && await this.hasPreparedInputs()) {
+      const read = this.refreshCapacity();
+      this.capacityRead = read;
+      const refreshed = read.finally(() => { if (this.capacityRead === read) this.capacityRead = null; });
+      if (!this.capacityKnown) capacity = refreshed;
+    }
+    if (this.key && !this.paused && (!this.capacityRead || this.capacityKnown) && !this.capacityProbe && now >= this.capacityRetryAt) {
+      let active = this.activeSlots();
       for (const r of [...this.recs.values()].sort((a, b) => a.createdAt - b.createdAt)) {
-        if (active >= this.current) break;
+        if (active >= this.concurrency) break;
         if (r.state !== 'queued' || r.nextAt > now || this.busy.has(r.id) || this.persisting.has(r.id)) continue;
-        active++;
-        ops.push(this.guard(r.id, () => this.submit(r)));
+        const restriction = this.planWait(r);
+        if (restriction) {
+          if (r.waitingForPlan !== restriction) {
+            r.waitingForPlan = restriction;
+            ops.push(this.guard(r.id, () => this.save(r)));
+          }
+          continue; // Hold restricted work; allowed requests and accepted-job polling continue.
+        }
+        const slots = requestedSlots(r.endpoint, r.params);
+        // Oversized legacy batches may run alone; the server is the final authority on acceptance.
+        if (active && active + slots > this.concurrency) continue;
+        active += slots;
+        const probe = this.throttled ? {} : null;
+        if (probe) this.capacityProbe = probe;
+        ops.push(this.guard(r.id, async () => {
+          try { await this.submit(r, !!probe); } finally { if (probe && this.capacityProbe === probe) this.capacityProbe = null; }
+        }));
+        if (this.throttled) break; // one probe at a time until external tools release capacity
       }
     }
     if (this.key && this.paused !== 'auth')
@@ -572,18 +759,21 @@ export class Queue {
           else if (!s.lastPoll || now - s.lastPoll >= POLL_MS) ops.push(this.guard(s.id, () => this.poll(r, s)));
         }
       }
-    await Promise.all(ops);
+    return { ops, capacity };
   }
   private async guard(id: string, fn: () => Promise<void>) {
     this.busy.add(id);
     try { await fn(); } catch (e) { console.error('queue', e); } finally { this.busy.delete(id); }
   }
 
-  private async submit(r: JobRec) {
+  private async submit(r: JobRec, probe: boolean) {
     const connection = this.connection;
-    let credentialRevision: number | undefined;
+    const credentialRevision = this.keyRevision;
+    const key = this.key;
+    r.waitingForPlan = undefined;
     r.state = 'submitting';
     r.attempts++;
+    r.requestStarted = false;
     await this.save(r); // persisted before the request leaves
     try {
       const body = await mapDeep(r.params, (o) => { // inside the try: a missing input fails the record, never sticks it in `submitting`
@@ -596,29 +786,54 @@ export class Queue {
         })();
       });
       // Persisting and rehydrating inputs await storage. A released queue or failed sibling must not send afterward.
-      if ((this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted)) || this.flowAborted(r.id)) {
-        Object.assign(r, { state: 'cancelled', error: 'Request stopped before sending. No API request was made.', finishedAt: this.deps.now(), autoCancelledAttempts: this.cancellationAttempts(r.id) });
+      const cancelled = () => (this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted)) || this.flowAborted(r.id);
+      const cancelBeforeSend = async () => {
+        Object.assign(r, { state: 'cancelled', requestStarted: false, error: 'Request stopped before sending. No API request was made.', finishedAt: this.deps.now(), autoCancelledAttempts: this.cancellationAttempts(r.id) });
         this.submitScopes.delete(r.id);
         await this.save(r);
-        return;
+      };
+      if (cancelled()) { await cancelBeforeSend(); return; }
+      const held = () => credentialRevision !== this.keyRevision || key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt || this.planWait(r);
+      if (held()) {
+        r.waitingForPlan = this.planWait(r) ?? undefined;
+        r.state = 'queued'; r.attempts--; r.nextAt = Math.max(r.nextAt, this.capacityRetryAt);
+        await this.save(r); return;
+      }
+      r.requestStarted = true;
+      try { await this.save(r); } // a crash from this point has an unknown transport outcome; never auto-resubmit it
+      catch { r.requestStarted = false; throw new Error('request could not be saved; nothing was sent'); }
+      if (cancelled()) { await cancelBeforeSend(); return; }
+      if (held()) {
+        r.waitingForPlan = this.planWait(r) ?? undefined;
+        r.requestStarted = false; r.state = 'queued'; r.attempts--; r.nextAt = Math.max(r.nextAt, this.capacityRetryAt);
+        await this.save(r); return;
       }
       // Once invoked, HTTP may have left the browser. Scope cancellation never aborts it or changes uncertainty handling.
       r.submittedAt = this.deps.now();
-      credentialRevision = this.keyRevision;
-      const response = this.deps.api<SubmitResponse>(this.key, r.method, r.endpoint, body ?? undefined);
+      const response = this.deps.api<SubmitResponse>(key, r.method, r.endpoint, body ?? undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: r.label });
       this.emit(); // notify only after HTTP invocation; listeners cannot reopen the guarded pre-submit boundary
       const res = await response;
       r.response = strip(res);
       const ids = jobIdsOf(res);
+      r.error = undefined;
+      r.waitingForCapacity = false;
       r.jobs = ids.map((id) => ({ id, status: 'submitted', done: false, results: [] }));
       if (ids.length) r.state = 'running';
       else this.finish(r, res.usage); // synchronous route (estimate-skeleton, balance)
-      if (++this.streak >= 5 && this.current < this.concurrency) { this.current++; this.streak = 0; }
+      if (credentialRevision === this.keyRevision && key === this.key && this.throttled && this.deps.now() >= this.capacityRetryAt) {
+        this.capacityFailures = 0;
+        this.current = Math.min(this.concurrency, Math.max(1, this.activeSlots()));
+        // Short/synchronous jobs may never fill every slot. Five accepted probes restore full throughput too.
+        if (this.current >= this.concurrency || probe && ++this.capacitySuccesses >= 5) {
+          this.throttled = false;
+          this.current = this.concurrency;
+        }
+      }
     } catch (e) {
       const err = e instanceof ApiError ? e : new ApiError(-1, 'other', (e as Error)?.message ?? String(e));
       const currentCredential = credentialRevision === this.keyRevision;
+      if (err.message === 'no API key set') r.requestStarted = false; // client guard rejected before fetch
       r.error = err.message;
-      this.streak = 0;
       // refused before any job existed; B15 live: a 500 "Failed to start any animation jobs" (busy account) said so in words
       if (r.method === 'POST' && hasJobEvidence(err.body)) {
         // Accepted-job evidence outranks every error classification, including auth/credits that normally wait for reconnection.
@@ -628,9 +843,17 @@ export class Queue {
         r.error = `PixelLab returned job evidence with an error (${err.message}). The request may have run and been charged; not resent.`;
         r.finishedAt = this.deps.now();
       } else if (err.kind === 'retry' && (r.method !== 'POST' || rejected(err.status) || noAnimationJobsStarted(r.endpoint, err))) {
-        if (err.status === 429) this.current = Math.max(1, this.current - 1);
         r.state = 'queued';
-        r.nextAt = this.deps.now() + backoff(r.attempts);
+        if (currentCredential && key === this.key && (err.status === 429 || noAnimationJobsStarted(r.endpoint, err))) {
+          const now = this.deps.now();
+          if (now >= this.capacityRetryAt) this.capacityFailures++;
+          this.capacityRetryAt = Math.max(this.capacityRetryAt, now + Math.max(backoff(this.capacityFailures), err.retryAfterMs ?? 0));
+          this.throttled = true;
+          this.capacitySuccesses = 0;
+          this.current = Math.max(1, Math.min(this.current - 1, this.activeSlots()));
+          r.waitingForCapacity = true;
+          r.nextAt = this.capacityRetryAt;
+        } else r.nextAt = this.deps.now() + Math.max(backoff(r.attempts), err.retryAfterMs ?? 0);
       } else if (err.kind === 'retry') { // R6 P1-3: the paid job may exist; resending could pay twice
         r.state = 'lost';
         r.error = `no clear answer from PixelLab (${err.message}). The job may have run and been charged (check pixellab.ai); not resent.`;
@@ -649,11 +872,13 @@ export class Queue {
   }
 
   private async poll(r: JobRec, s: SubJob) {
+    const key = this.key;
+    if (this.deps.api === realApi) await this.restoreActivity(r);
     s.lastPoll = this.deps.now();
     let job: Job;
     const credentialRevision = this.keyRevision;
     try {
-      job = await this.deps.api<Job>(this.key, 'GET', `/background-jobs/${encodeURIComponent(s.id)}`);
+      job = await this.deps.api<Job>(key, 'GET', `/background-jobs/${encodeURIComponent(s.id)}`, undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: r.label, background: true });
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
       if (e.kind === 'auth') { s.error = e.message; if (credentialRevision === this.keyRevision) this.paused = 'auth'; }
@@ -713,7 +938,7 @@ export class Queue {
     try {
       while (s.pendingUrls?.length) {
         const { label, url } = s.pendingUrls[0];
-        await this.saveResult(s, label, await this.deps.fetchBytes(url));
+        await this.saveResult(s, label, await this.deps.fetchBytes(url, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: `${r.label} · ${label}`, background: true }));
         s.pendingUrls.shift();
         await this.save(r);
       }
@@ -758,7 +983,7 @@ export class Queue {
     if (!r || (queuedOnly && r.state !== 'queued')) return;
     if (!queuedOnly) delete r.autoCancelledAttempts; // an explicit user cancellation is never reopened by recovery
     if (this.role === 'follower' && r.state === 'running') { // the leader's next poll sees the cancel; never write its record
-      for (const s of r.jobs.filter((s) => !s.done)) await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`).catch(() => {});
+      for (const s of r.jobs.filter((s) => !s.done)) await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`, undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: `Stop ${r.label}`, background: false }).catch(() => {});
       return;
     }
     if (r.state === 'queued') {
@@ -768,7 +993,7 @@ export class Queue {
     } else if (r.state === 'running') {
       for (const s of r.jobs.filter((s) => !s.done && !s.remoteDone)) {
         try {
-          await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`);
+          await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`, undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: `Stop ${r.label}`, background: false });
           s.done = true;
           s.status = 'cancelled';
         } catch (e) {
@@ -837,7 +1062,7 @@ export async function selfTest() {
   const rec = await q.enqueue(req);
   console.assert(!JSON.stringify(store.get(rec.id)).includes(pngB64), 'ledger stores blob refs, not base64');
   await q.tick();
-  console.assert(store.get(rec.id)?.state === 'queued' && q.current === 2 && store.get(rec.id)!.nextAt > t, '429 -> requeue with backoff, concurrency down');
+  console.assert(store.get(rec.id)?.state === 'queued' && q.current === 1 && store.get(rec.id)!.nextAt > t, '429 -> requeue with shared backoff and single probes');
   t += 60_000;
   await q.tick();
   console.assert(submits === 1 && store.get(rec.id)?.jobs.map((s) => s.id).join() === 'j1,j2', 'job ids persisted after submit');
@@ -1079,7 +1304,10 @@ async function handoffTest() {
     locks, now: () => t,
     put: async (k, r) => void store.set(k, structuredClone(r)), get: async (k) => structuredClone(store.get(k)),
     all: async () => [...store.values()].map((r) => structuredClone(r)),
-    api: async <T>(key: string): Promise<T> => { posts++; usedKey = key; return { usage: { type: 'generations', generations: 0.1 } } as T; },
+    api: async <T>(key: string, _method: string, path: string): Promise<T> => {
+      if (path === '/balance') return {} as T;
+      posts++; usedKey = key; return { usage: { type: 'generations', generations: 0.1 } } as T;
+    },
   };
   const a = new Queue(deps), b = new Queue(deps);
   await a.connect(); await b.connect();

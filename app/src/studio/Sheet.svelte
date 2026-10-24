@@ -2,8 +2,8 @@
   // One sheet at a time (HIG): centred on desktop, bottom sheet with a grabber on phones, trailing panel in phone landscape.
   import type { Snippet } from 'svelte'
   import { ui } from './state.svelte.ts'
-  let { title, children, footer, onclose, cancel = 'Cancel', cancelDisabled = false, wide = false }: {
-    title: string; children: Snippet; footer?: Snippet; onclose: () => void; cancel?: string; cancelDisabled?: boolean; wide?: boolean
+  let { title, children, footer, heading, onclose, cancel = 'Cancel', cancelDisabled = false, wide = false, className = '' }: {
+    title: string; children: Snippet; footer?: Snippet; heading?: Snippet; onclose: () => void; cancel?: string; cancelDisabled?: boolean; wide?: boolean; className?: string
   } = $props()
   let dlg: HTMLDialogElement
   // The native `close` event from our own unmount fires after a replacement sheet is already set; ignore it.
@@ -26,12 +26,12 @@
   const kind = $derived(ui.size === 'compact' ? 'bottom' : ui.size === 'landscape' ? 'side' : 'center')
 </script>
 
-<dialog bind:this={dlg} class="sheet {kind}" class:wide aria-labelledby="sheet-title" onclose={() => { if (!unmounting && !cancelDisabled) onclose() }} oncancel={(e) => { e.preventDefault(); if (!cancelDisabled) onclose() }}
+<dialog bind:this={dlg} class="sheet {kind} {className}" class:wide aria-labelledby="sheet-title" onclose={() => { if (!unmounting && !cancelDisabled) onclose() }} oncancel={(e) => { e.preventDefault(); if (!cancelDisabled) onclose() }}
   onclick={(e) => { if (e.target === dlg && !cancelDisabled) onclose() }}>
   {#if kind === 'bottom'}<div class="grabber" aria-hidden="true"></div>{/if}
   <header class="sheet-head">
     {#if trailing}<span></span>{:else}<button class="btn plain link" disabled={cancelDisabled} onclick={onclose}>{cancel}</button>{/if}
-    <h2 id="sheet-title" class="sheet-title">{title}</h2>
+    <div class="sheet-heading"><h2 id="sheet-title" class="sheet-title">{title}</h2>{#if heading}{@render heading()}{/if}</div>
     {#if trailing}<button class="btn plain link done" disabled={cancelDisabled} onclick={onclose}>{cancel}</button>{:else}<span></span>{/if}
   </header>
   <div class="sheet-body">{@render children()}</div>
@@ -41,4 +41,5 @@
 <style>
   .sheet-head { grid-template-columns: minmax(52px, 1fr) minmax(0, auto) minmax(52px, 1fr); }
   .sheet-title { min-width: 0; overflow-wrap: anywhere; }
+  .sheet-heading { min-width:0; display:flex; align-items:center; justify-content:center; gap:12px; }
 </style>

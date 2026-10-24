@@ -1,4 +1,5 @@
 // fetch wrapper for PixelLab REST v2. The key only ever goes into the Authorization header.
+import { beginActivityCall, finishActivityCall, type ActivityContext } from './activity.ts';
 
 export const API_BASE = 'https://api.pixellab.ai/v2';
 const TIMEOUT_MS = 120_000, SKELETON_TIMEOUT_MS = 600_000;
@@ -14,11 +15,13 @@ export class ApiError extends Error {
   status: number;
   kind: ErrorKind;
   body: unknown;
-  constructor(status: number, kind: ErrorKind, message: string, body?: unknown) {
+  retryAfterMs?: number;
+  constructor(status: number, kind: ErrorKind, message: string, body?: unknown, retryAfterMs?: number) {
     super(message);
     this.status = status;
     this.kind = kind;
     this.body = body;
+    this.retryAfterMs = retryAfterMs;
   }
 }
 
@@ -39,6 +42,13 @@ export const isNetwork = (e: unknown) => e instanceof ApiError && e.status === 0
  * Known route-specific no-job refusals are checked separately in queue.submit; free GET requests still retry transient errors. */
 export const rejected = (status: number) => status === 429;
 
+/** Retry-After is a lower bound; accept both seconds and an HTTP date when CORS exposes it. */
+export function retryAfter(value: string | null, now = Date.now()): number | undefined {
+  if (!value?.trim()) return undefined;
+  const delay = /^\d+(\.\d+)?$/.test(value.trim()) ? Number(value) * 1000 : Date.parse(value) - now;
+  return Number.isFinite(delay) && delay >= 0 ? delay : undefined;
+}
+
 // Content-policy refusal: code 5000 at top level or in a job's last_response. Never retried.
 export function isPolicy(body: unknown): boolean {
   const b = body as { code?: unknown; last_response?: { code?: unknown } } | null;
@@ -51,8 +61,9 @@ export function errorText(body: unknown): string {
   return (typeof d === 'string' ? d : JSON.stringify(d) ?? '').slice(0, 400);
 }
 
-export async function api<T>(key: string, method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
+export async function api<T>(key: string, method: string, path: string, body?: unknown, signal?: AbortSignal, context?: ActivityContext): Promise<T> {
   if (!key) throw new ApiError(401, 'auth', 'no API key set');
+  const activityId = beginActivityCall(method, API_BASE + path, body, context);
   let r: Response;
   try {
     r = await fetch(API_BASE + path, {
@@ -62,14 +73,18 @@ export async function api<T>(key: string, method: string, path: string, body?: u
       signal: signal ?? AbortSignal.timeout(timeoutFor(method, path)), // a hung request never holds a queue slot forever
     });
   } catch (e) {
+    finishActivityCall(activityId, null, false);
     // B15: `network` = no connection (offline banner, queue pauses); a timeout or abort is not one
     const name = (e as Error)?.name;
     throw new ApiError(0, 'retry', `network error: ${(e as Error).message}`, { network: name !== 'TimeoutError' && name !== 'AbortError' });
   }
-  const text = await r.text();
+  let text: string;
+  try { text = await r.text(); }
+  catch (e) { finishActivityCall(activityId, r.status, false); throw e; }
   let json: unknown;
   try { json = text ? JSON.parse(text) : null; } catch { json = text.slice(0, 500); }
-  if (!r.ok) throw new ApiError(r.status, classify(r.status, json), `${method} ${path} -> ${r.status}: ${errorText(json)}`, json);
+  finishActivityCall(activityId, r.status, r.ok, json);
+  if (!r.ok) throw new ApiError(r.status, classify(r.status, json), `${method} ${path} -> ${r.status}: ${errorText(json)}`, json, retryAfter(r.headers.get('retry-after')));
   return json as T;
 }
 

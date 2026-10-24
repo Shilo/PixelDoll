@@ -3,7 +3,7 @@ import { sha256, stableStringify } from '../../src/lib/image/hash.ts';
 import { decodePng, makeImg, type Img } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { authoredPoses, fromApi, toApi, hasAll, LABELS, adherence } from '../../src/lib/rig/poses.ts';
-import { rawClip, actionOf, largestComponent, clipQa } from '../../src/lib/rig/clips.ts';
+import { RIG_GATES, rawClip, actionOf, largestComponent, clipQa } from '../../src/lib/rig/clips.ts';
 import { normalize, opaqueBox } from '../../src/lib/rig/normalize.ts';
 import { contactSheet } from '../../src/lib/items/items.ts';
 import { zip } from '../../src/lib/store/zip.ts';
@@ -33,7 +33,7 @@ export async function inspectPendingMove(input:{record:StoredProject;project:Pro
  rawImages.push(raw);processedImages.push(clean.img);requestedImages.push(overlay(clean.img,requested[c]));measuredImages.push(overlay(clean.img,measured));measurements.push(measured);let count=0;for(let i=3;i<clean.img.data.length;i+=4)if(clean.img.data[i])count++;frames.push({cell:c,rawPngHash:r.sha,estimatorInputPngHash:cleanHash,opaquePixels:count,bounds:opaqueBox(clean.img),stray:clean.stray,estimateRecords:evidence,measured,requested:requested[c],adherence:measured?adherence([fromApi(requested[c],{w:64,h:64})],[fromApi(measured,{w:64,h:64})]):null});files.push({name:`${folder}/raw-${c}.png`,data:png},{name:`${folder}/estimator-input-${c}.png`,data:cleanedPng});}
  const rawComplete=measurements.every((m):m is Keypoint[]=>!!m),rawQa=rawComplete?clipQa({anim:'slash',rest:restImage,frames:processedImages,requested,measured:measurements,stray}):null;
  let palettePreview:unknown;
- if(attempt===0&&rawQa?.fails.length&&rawQa.fails.every(f=>f.startsWith('palette fit '))){
+ if(attempt===0&&rawQa&&!rawQa.fails.length&&rawQa.adherence!==null&&rawQa.adherence<=RIG_GATES.adherence&&rawQa.feetDrift<=RIG_GATES.silhouetteBottomDelta&&rawQa.border<=RIG_GATES.border&&rawQa.paletteFit<RIG_GATES.paletteFit){
   const profile=pending.spec.bodyPaletteRepair;
   if(profile&&(profile.version!=='near-rest-v1'||!profile.id||profile.rigVersion!==stableStringify({rig:project.manifest.rig,character:record.character})))throw Error('The pending palette profile does not match this exact saved body.');
   const repair=repairBodyPalette(restImage,processedImages),correctedMeasurements:(Keypoint[]|null)[]=[],correctedFrames=[],correctedMarked:Img[]=[];

@@ -2,28 +2,33 @@
   import { onDestroy } from 'svelte'
   import { app, setKey, forgetKey, refreshBalance } from '../lib/app.svelte.ts'
   import Sheet from './Sheet.svelte'
-  import { ui, connected, clearPendingConnection } from './state.svelte.ts'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { balancePlan } from './apiPlans.ts'
+  import { ui, connected, clearPendingConnection, pendingConnectionAllowsFree } from './state.svelte.ts'
   import { ExternalLink, KeyRound, Check } from './icons.ts'
   import { fmtNum } from './model.ts'
+  import { accountTier, FREE_PLAN_NOTICE } from '../lib/pixellab/plans.ts'
 
   let key = $state('')
   let remember = $state(false)
   let msg = $state('')
   let checking = $state(false)
   let closed = false
+  const activityScope = crypto.randomUUID()
   onDestroy(() => { closed = true; clearPendingConnection() })
   // R6 P1-4: a *.github.io project path (user.github.io/PixelDoll/) shares its origin, and so localStorage, with every other Pages project of that account
   const sharedOrigin = location.hostname.endsWith('.github.io') && location.pathname.split('/').filter(Boolean).length > 0
   async function use(k: string, rem: boolean) {
     checking = true
     msg = ''
-    setKey(k, rem)
+    setKey(k, rem, { activityScope, label: 'Connect PixelLab', background: false })
     key = ''
-    await refreshBalance()
+    await refreshBalance({ activityScope, label: 'Connect PixelLab', background: false })
     if (closed) return
     checking = false
     if (app.keyRejected) msg = "PixelLab didn't accept this key."
     else if (app.balanceError) msg = `Couldn't reach PixelLab: ${app.balanceError}`
+    else if (accountTier(app.balance) === 0 && !pendingConnectionAllowsFree()) clearPendingConnection()
     else connected()
   }
 </script>
@@ -44,6 +49,10 @@
     <p class="notice ok small"><Check size={14} />Connected{app.remembered ? ' and remembered on this device' : ' for this tab'}{app.balance ? ` · ${fmtNum(app.balance.subscription.generations)} of ${fmtNum(app.balance.subscription.total)} gens left` : ''}.
       <button class="btn sm" onclick={forgetKey}>Forget key</button></p>
   {/if}
+  {#if app.key && !app.keyRejected && accountTier(app.balance) === 0}
+    <p class="notice warn small" role="status">{FREE_PLAN_NOTICE}</p>
+    <div class="field-row"><a class="btn sm" href="https://www.pixellab.ai/#pricing" target="_blank" rel="noreferrer">View PixelLab plans <ExternalLink size={12} /></a><button class="btn sm" onclick={() => { clearPendingConnection(); connected() }}>Continue with limited access</button></div>
+  {/if}
   <form class="form" onsubmit={(e) => { e.preventDefault(); if (key.trim()) void use(key, remember) }}>
     <label class="field">
       <span class="label">API key</span>
@@ -55,7 +64,7 @@
     <div class="field-row">
       <a class="small" href="https://pixellab.ai/account" target="_blank" rel="noreferrer">Get a key <ExternalLink size={12} style="display:inline" /></a>
       <span class="actions">
-        <button class="btn primary" type="submit" disabled={!key.trim() || checking}>{checking ? 'Checking…' : 'Connect'}</button>
+        <span class="api-action"><ApiPeek scope="account-connect" label="Connect PixelLab" plan={balancePlan()} {activityScope} /><button class="btn primary" type="submit" disabled={!key.trim() || checking}>{checking ? 'Checking…' : 'Connect'}</button></span>
       </span>
     </div>
   </form>

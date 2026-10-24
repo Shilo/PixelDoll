@@ -1,3 +1,4 @@
+import { accountBalance } from './account-fixture.ts'
 import { expect, test } from 'vitest'
 import { Queue, requestIdentity, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import { ApiError } from '../../src/lib/pixellab/client.ts'
@@ -11,7 +12,7 @@ function fixture() {
   put:async(id,r)=>{records.set(id,structuredClone(r))},get:async id=>structuredClone(records.get(id)),all:async()=>[...records.values()].map(r=>structuredClone(r)),
   putBlob:sha256,getBlob:async()=>new Blob([new Uint8Array([1,2,3])]),
   claimEstimate:async(r,choose)=>{const existing=choose([...records.values()].map(v=>structuredClone(v)));if(existing)return existing;if(records.has(r.id))throw Error('collision');records.set(r.id,structuredClone(r));return r},
-  api:async<T>():Promise<T>=>{posts++;if(fail)throw new ApiError(500,'retry','HTTP 500');return{keypoints:[],usage:{type:'generations',generations:.1}} as T}}
+  api:async<T>(_key:string,_method:string,path:string):Promise<T>=>{if(path==='/balance')return accountBalance as T;posts++;if(fail)throw new ApiError(500,'retry','HTTP 500');return{keypoints:[],usage:{type:'generations',generations:.1}} as T}}
  const make=()=>{const q=new Queue(deps);q.setKey('synthetic-key');return q}
  return{records,deps,make,posts:()=>posts,succeed:()=>{fail=false}}
 }
@@ -56,9 +57,9 @@ test('accepted job evidence and unrelated terminal records never become explicit
 
 test('ordinary enqueue cannot dispatch during a delayed or failed first ledger write',async()=>{
  let finish!:()=>void,fail!: (e:Error)=>void,posts=0;const blocked=new Promise<void>((resolve,reject)=>{finish=resolve;fail=reject})
- const q=new Queue({locks:null,online:()=>true,put:async()=>blocked,api:async<T>()=>{posts++;return{} as T}});q.setKey('synthetic')
+ const q=new Queue({locks:null,online:()=>true,put:async()=>blocked,api:async<T>(_key:string,_method:string,path:string)=>{if(path==='/balance')return accountBalance as T;posts++;return{} as T}});q.setKey('synthetic')
  const creating=q.enqueue({method:'POST',path:'/ordinary',body:{}});await new Promise(r=>setTimeout(r,0));await q.tick();expect(posts).toBe(0);finish();await creating;await q.tick();expect(posts).toBe(1)
- const broken=new Queue({locks:null,online:()=>true,put:async()=>{throw Error('quota')},api:async<T>()=>{posts++;return{} as T}});broken.setKey('synthetic');await expect(broken.enqueue({method:'POST',path:'/ordinary',body:{}})).rejects.toThrow('quota');await broken.tick();expect(posts).toBe(1);expect(broken.snapshot().jobs).toHaveLength(0);void fail
+ const broken=new Queue({locks:null,online:()=>true,put:async()=>{throw Error('quota')},api:async<T>(_key:string,_method:string,path:string)=>{if(path==='/balance')return accountBalance as T;posts++;return{} as T}});broken.setKey('synthetic');await expect(broken.enqueue({method:'POST',path:'/ordinary',body:{}})).rejects.toThrow('quota');await broken.tick();expect(posts).toBe(1);expect(broken.snapshot().jobs).toHaveLength(0);void fail
 })
 
 test('failed atomic recovery claim publishes nothing schedulable and leaves the unknown source intact',async()=>{

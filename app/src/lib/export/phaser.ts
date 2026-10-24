@@ -3,6 +3,8 @@ import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
 import { layerFrame } from '../compose/compose.ts';
 
+export const atlasName = (...parts: string[]) => parts.map((part) => `${part.length}-${part}`).join('_') + '.json';
+
 export function atlasJson(m: Manifest, itemId: string, layerId: string, anim: string) {
   const { rig } = m;
   const it = m.items.find((i) => i.id === itemId)!, l = it.layers.find((x) => x.id === layerId)!, { w, h, x: px, y: py } = layerFrame(rig, l);
@@ -29,36 +31,98 @@ export const PAPERDOLL_JS = `// PixelDoll runtime for Phaser 3.80+ and Phaser 4 
 //   const doll = new Paperdoll(scene, 200, 150, m); doll.play('walk', 'south'); doll.equip('head', null);
 // Game config: pixelArt: true, roundPixels: true (Phaser 4 defaults roundPixels to false).
 
-export const texKey = (m, item, layer, anim) => \`pd:\${m.name}:\${item}:\${layer}:\${anim}\`;
-export const animKey = (m, anim, dir) => \`pd:\${m.name}:\${anim}_\${dir}\`;
+export const texKey = (m, item, layer, anim) => 'pd:' + JSON.stringify([m._base ?? m.name, item, layer, anim]);
+export const animKey = (m, anim, dir) => 'pd:' + JSON.stringify([m._base ?? m.name, anim, dir]);
+const loads = new WeakMap();
+const atlasName = (...parts) => parts.map((part) => part.length + '-' + part).join('_') + '.json';
+const available = (m, a) => m.rig.directions.filter((d) => !a.directions || a.directions.includes(d.id));
+async function json(url) {
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('PixelDoll: HTTP ' + response.status + ' loading ' + url);
+  return response.json();
+}
 
 /** Loads manifest.json and every layer atlas, creates the body animations. Call from create() (it runs the loader). */
 export async function loadPaperdoll(scene, base) {
-  const m = await (await fetch(base + 'manifest.json')).json();
-  for (const it of m.items) for (const l of it.layers) for (const a of m.rig.animations)
-    scene.load.atlas(texKey(m, it.id, l.id, a.id), base + l.sheets[a.id], \`\${base}phaser/\${it.id}_\${l.id}_\${a.id}.json\`);
-  await new Promise((done) => { scene.load.once('complete', done); scene.load.start(); });
-  const body = m.items.find((i) => i.id === m.rig.baseItem).layers[0];
-  for (const a of m.rig.animations) for (const d of m.rig.directions) {
-    const key = animKey(m, a.id, d.id);
-    if (!scene.anims.exists(key)) scene.anims.create({
-      key, repeat: a.loop ? -1 : 0,
-      frames: a.frames.map((f) => ({ key: texKey(m, m.rig.baseItem, body.id, a.id), frame: \`\${a.id}_\${d.id}_\${f.cell}\`, duration: f.ms })),
+  base = new URL(base.endsWith('/') ? base : base + '/', document.baseURI).href;
+  // Textures and animations are game-global: concurrent scenes must share the same load.
+  let cache = loads.get(scene.textures);
+  if (!cache) loads.set(scene.textures, cache = new Map());
+  if (cache.has(base)) return cache.get(base);
+  const work = (async () => {
+    const m = await json(base + 'manifest.json');
+    m._base = base;
+    m._atlases = {};
+    const entries = [];
+    for (const it of m.items) for (const l of it.layers) for (const a of m.rig.animations) {
+      const key = texKey(m, it.id, l.id, a.id);
+      entries.push({ key, sheet: l.sourceSheets?.[a.id] ?? l.sheets[a.id], path: atlasName(it.id, l.id, a.id) });
+    }
+    // Fetch all metadata before mutating Phaser's caches.
+    await Promise.all(entries.map(async (e) => { m._atlases[e.key] = await json(base + 'phaser/' + e.path); }));
+    const queued = entries.filter((e) => !scene.textures.exists(e.key));
+    if (queued.length) await new Promise((resolve, reject) => {
+      const failed = [], keys = new Set(queued.map((e) => e.key));
+      const onError = (file) => { if (keys.has(file.key)) failed.push(file.src ?? file.key); };
+      scene.load.on('loaderror', onError);
+      scene.load.once('complete', () => {
+        scene.load.off('loaderror', onError);
+        for (const e of queued) if (!scene.textures.exists(e.key) && !failed.includes(e.key)) failed.push(e.key);
+        if (failed.length) {
+          for (const e of queued) if (scene.textures.exists(e.key)) scene.textures.remove(e.key);
+          reject(new Error('PixelDoll: failed to load ' + failed.join(', ')));
+        } else resolve();
+      });
+      for (const e of queued) scene.load.atlas(e.key, base + e.sheet, m._atlases[e.key]);
+      if (!scene.load.isLoading()) scene.load.start();
     });
+    const body = m.items.find((i) => i.id === m.rig.baseItem).layers.find((l) => l.role === 'fg');
+    for (const a of m.rig.animations) for (const d of available(m, a)) {
+      const key = animKey(m, a.id, d.id);
+      if (!scene.anims.exists(key)) {
+        // Phaser adds frame.duration to its base interval: subtract it for exact timing.
+        const interval = Math.min(...a.frames.map((f) => f.ms));
+        scene.anims.create({ key, repeat: a.loop ? -1 : 0, frameRate: 1000 / interval,
+          frames: a.frames.map((f) => ({ key: texKey(m, m.rig.baseItem, body.id, a.id), frame: a.id + '_' + d.id + '_' + f.cell, duration: f.ms - interval })),
+        });
+      }
+    }
+    return m;
+  })();
+  cache.set(base, work);
+  try { return await work; } catch (error) { cache.delete(base); throw error; }
+}
+
+/** Exact source-RGB swaps, local to an item's materials (including tucked variants). */
+export function paletteMap(m, item, variants) {
+  const table = new Map();
+  const variant = (id, seen = new Set()) => {
+    const mat = m.materials.find((x) => x.id === id);
+    if (!mat || seen.has(id)) return undefined;
+    seen.add(id);
+    return mat.linkTo ? variant(mat.linkTo, seen) : variants[id] ?? mat.defaultVariant;
+  };
+  for (const id of item.materials) {
+    const mat = m.materials.find((x) => x.id === id && (x.owner === item.id || x.owner === item.variantOf));
+    if (!mat) continue;
+    const ramp = mat.variants[variant(id)];
+    if (ramp) mat.ramp.forEach((color, i) => table.set(parseInt(color.slice(1), 16), parseInt(ramp[i].slice(1), 16)));
   }
-  return m;
+  return table;
 }
 
 export class Paperdoll {
   constructor(scene, x, y, manifest, preset = manifest.presets[0]) {
+    this.scene = scene;
     this.m = manifest;
-    this.equipped = { ...preset.items, body: manifest.rig.baseItem };
+    this.equipped = { ...preset?.items, body: manifest.rig.baseItem };
+    this.variants = { ...preset?.variants };
     this.container = scene.add.container(x, y);
     this.nodes = []; // one sprite per (slot, role) any item uses
     for (const s of manifest.slots) {
       const roles = new Set(manifest.items.filter((i) => i.slot === s.id).flatMap((i) => i.layers.map((l) => l.role)));
       for (const role of [...roles].sort((a, b) => (a === 'bg' ? -1 : 0) - (b === 'bg' ? -1 : 0))) { // bg before fg (compose tie-break)
-        const sprite = scene.add.sprite(0, 0, '__DEFAULT').setName(\`\${s.id}_\${role}\`);
+        const sprite = scene.add.sprite(0, 0, '__DEFAULT').setName(\`\${s.id}_\${role}\`).setVisible(false);
         sprite.pdOrder = this.nodes.length; // B14: equal depth keeps compose's order (slot, bg before fg), never the last frame's
         this.nodes.push({ slot: s, role, sprite });
         this.container.add(sprite);
@@ -69,12 +133,48 @@ export class Paperdoll {
   }
 
   play(anim, dir) {
+    const move = this.m.rig.animations.find((a) => a.id === anim);
+    if (!move || !available(this.m, move).some((d) => d.id === dir)) throw new Error('PixelDoll: unavailable move/direction ' + anim + '/' + dir);
     this.anim = anim; this.dir = dir;
     this.body.play(animKey(this.m, anim, dir));
     this.sync();
   }
 
-  equip(slot, itemId) { this.equipped[slot] = itemId; this.sync(); }
+  equip(slot, itemId) {
+    if (slot === 'body' || !this.m.slots.some((s) => s.id === slot) || (itemId != null && !this.m.items.some((i) => i.id === itemId && i.slot === slot && !i.variantOf))) throw new Error('PixelDoll: invalid equipment for ' + slot);
+    this.equipped[slot] = itemId; this.sync();
+  }
+
+  applyPreset(preset) {
+    this.equipped = { ...preset.items, body: this.m.rig.baseItem };
+    this.setVariants(preset.variants);
+  }
+
+  setVariants(variants) { this.variants = { ...variants }; this.sync(); }
+
+  texture(item, layer) {
+    const original = texKey(this.m, item.id, layer.id, this.anim);
+    const table = paletteMap(this.m, item, this.variants);
+    if (!table.size) return original;
+    const key = original + ':palette:' + JSON.stringify([...table]);
+    if (!this.scene.textures.exists(key)) {
+      const source = this.scene.textures.get(original).getSourceImage();
+      const canvas = document.createElement('canvas');
+      canvas.width = source.width; canvas.height = source.height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(source, 0, 0);
+      const image = ctx.getImageData(0, 0, canvas.width, canvas.height), pixels = image.data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        if (!pixels[i + 3]) continue;
+        const color = table.get((pixels[i] << 16) | (pixels[i + 1] << 8) | pixels[i + 2]);
+        if (color != null) { pixels[i] = color >> 16; pixels[i + 1] = (color >> 8) & 255; pixels[i + 2] = color & 255; }
+      }
+      ctx.putImageData(image, 0, 0);
+      const texture = this.scene.textures.addCanvas(key, canvas);
+      this.scene.textures.addAtlasJSONHash(key, texture, this.m._atlases[original]);
+    }
+    return key;
+  }
 
   /** The item drawn in a slot: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists. */
   shown(slot) {
@@ -113,10 +213,12 @@ export class Paperdoll {
       n.sprite.setVisible(!!hit?.layer && !hidden.has(n.slot.id));
       if (!hit?.layer) continue;
       n.sprite.depth = this.z(n.slot, hit.layer, cell);
-      if (n.sprite !== this.body) n.sprite.setTexture(texKey(this.m, hit.item.id, hit.layer.id, this.anim), name);
+      n.sprite.setTexture(this.texture(hit.item, hit.layer), name);
     }
     this.container.sort('depth', (a, b) => a.depth - b.depth || a.pdOrder - b.pdOrder);
   }
+
+  destroy() { this.container.destroy(); }
 }
 `;
 
@@ -124,9 +226,10 @@ export function phaserFiles(m: Manifest): OutFile[] {
   const files: OutFile[] = [];
   for (const it of m.items)
     for (const l of it.layers)
-      for (const a of m.rig.animations) files.push({ name: `phaser/${it.id}_${l.id}_${a.id}.json`, data: JSON.stringify(atlasJson(m, it.id, l.id, a.id), null, 1) + '\n' });
+      for (const a of m.rig.animations) files.push({ name: `phaser/${atlasName(it.id, l.id, a.id)}`, data: JSON.stringify(atlasJson(m, it.id, l.id, a.id), null, 1) + '\n' });
   files.push({ name: 'phaser/PaperdollContainer.js', data: PAPERDOLL_JS });
   const dir = `assets/${m.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`;
+  const initial = m.rig.animations.find((a) => (a.directions ?? m.rig.directions).length > 0);
   files.push({
     name: 'phaser/README.txt',
     data: `1. Copy the whole export folder into your game's assets, e.g. ${dir}
@@ -136,10 +239,13 @@ export function phaserFiles(m: Manifest): OutFile[] {
      async create() {
        const m = await loadPaperdoll(this, '${dir}')   // the folder with manifest.json
        const doll = new Paperdoll(this, 200, 150, m)
-       doll.play('${m.rig.animations[0]?.id ?? 'walk'}', '${m.rig.directions[0]?.id ?? 'south'}'); doll.equip('head', null)
+       doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
      }
+Switch outfits with doll.applyPreset(m.presets[1]); recolour with doll.setVariants({ material_id: "stored_variant" }).
+Palette swaps use exact source RGBs and stored material ramps in Canvas or WebGL.
+Call doll.destroy() when removing a character. Palette textures are cached until Phaser game teardown.
 PaperdollContainer.js is an ES module and fetches manifest.json: serve the game over http (a dev server), not file://.
-Atlases: phaser/<item>_<layer>_<move>.json (TexturePacker hash), frames named <move>_<direction>_<frame>.
+Atlases: phaser/<length>-<item>_<length>-<layer>_<length>-<move>.json (TexturePacker hash), frames named <move>_<direction>_<frame>.
 `,
   });
   return files;

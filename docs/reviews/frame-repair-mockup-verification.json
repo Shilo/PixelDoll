@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-23",
+  "checks": [
+    "One-frame nudge changes selected raster; another cell stays unedited; undo restores original pixels",
+    "Detection and desired-pose drafts are separate; keyboard joint edit leaves raster identical; request is a local preview",
+    "Pointer dragging moves a guide without moving artwork",
+    "Eraser changes sword pixel and undo restores exact canvas",
+    "Explicit clip-scope position edit updates all selected frames in one undo step",
+    "320px and 390px light layouts have no root horizontal overflow and expose touch-size apply controls",
+    "Guided alternative switches problem type and offers working local position adjustment"
+  ],
+  "pageErrors": [],
+  "pixellabRequests": [],
+  "limitations": [
+    "UI concept only; no production integration or paid-model validation",
+    "Joint locations are illustrative, not provider estimates",
+    "Existing S2 demo images demonstrate UI only"
+  ]
+}

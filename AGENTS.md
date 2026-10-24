@@ -30,6 +30,7 @@ Old evidence media (spike output, screenshots): git tag v0.1.0
 
 Studio UI: app/src/studio/
 PixelLab client and job queue: app/src/lib/pixellab/
+PixelLab tier concurrency defaults and tool access rules: app/src/lib/pixellab/plans.ts (`PLAN_JOB_LIMITS`; edit values here). Policy, endpoint audit and sources: docs/pixellab-plans.md. Free/Trial = local tier 0; the API does not return a numeric concurrency limit.
 Rig, clips and poses: app/src/lib/rig/
 Item generation and quality gates: app/src/lib/items/
 Image pipeline and chroma key: app/src/lib/image/

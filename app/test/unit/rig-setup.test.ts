@@ -5,7 +5,7 @@ import { readCharacterZip } from '../../src/lib/store/import.ts'
 import { zip } from '../../src/lib/store/zip.ts'
 import { attachImportedRig, rigReady, setupPlan } from '../../src/lib/rig/setup.ts'
 import { LABELS, ACTIONS, authoredPoses, fromApi, hasAll } from '../../src/lib/rig/poses.ts'
-import { cellHash, type Keypoint } from '../../src/lib/rig/rig.ts'
+import { DIRECTIONS, cellHash, type Keypoint } from '../../src/lib/rig/rig.ts'
 import { flipSkeleton } from '../../src/lib/rig/skeleton.ts'
 import { paddedPoses, poseBatches, rawClip } from '../../src/lib/rig/clips.ts'
 import { itemRoute, padOf, planItem } from '../../src/lib/items/items.ts'
@@ -85,6 +85,54 @@ test('independent western authored moves use reflected math on their own rest sk
   const expected = ACTIONS.slash(flipSkeleton(west, 64), 'east').map((p) => flipSkeleton(p, 64))
   expect(authoredPoses('slash', west, 'west')).toEqual(expected)
   expect(authoredPoses('slash', west, 'west')).not.toEqual(ACTIONS.slash(west, 'south'))
+})
+
+test('authored actions are invariant to frame padding in every direction', () => {
+  const rest = fromApi(pose(), { w: 64, h: 64 })
+  const padded = Object.fromEntries(Object.entries(rest).map(([label, k]) => [label, { ...k, x: k.x + 48, y: k.y + 48 }]))
+  for (const action of Object.keys(ACTIONS)) for (const dir of DIRECTIONS) {
+    const a = authoredPoses(action, rest, dir), b = authoredPoses(action, padded, dir, 160)
+    for (let i = 0; i < a.length; i++) for (const label of LABELS) {
+      expect(b[i][label].x - a[i][label].x).toBeCloseTo(48)
+      expect(b[i][label].y - a[i][label].y).toBeCloseTo(48)
+    }
+  }
+})
+
+test('death keeps each leg length when the large body falls and kneels at its own floor', () => {
+  const rest = fromApi(pose(), { w: 64, h: 64 })
+  for (const side of ['RIGHT', 'LEFT']) {
+    rest[`${side} HIP`] = { x: 80, y: 95, z: 0 }
+    rest[`${side} KNEE`] = { x: 80, y: 120, z: 0 }
+    rest[`${side} LEG`] = { x: 80, y: 148, z: 0 }
+  }
+  const frames = authoredPoses('death', rest, 'south', 160)
+  expect(frames[2]['RIGHT KNEE'].y).toBeCloseTo(122.8)
+  expect(frames[2]['RIGHT LEG'].y).toBe(148)
+  for (const p of frames.slice(5)) for (const side of ['RIGHT', 'LEFT']) {
+    const h = p[`${side} HIP`], k = p[`${side} KNEE`], a = p[`${side} LEG`]
+    expect(Math.hypot(k.x - h.x, k.y - h.y)).toBeCloseTo(25)
+    expect(Math.hypot(a.x - k.x, a.y - k.y)).toBeCloseTo(28)
+  }
+})
+
+test('custom directions reconnect with retained originals at 160px without inventing missing views', async () => {
+  const p = await source(), im = makeImg(160, 160)
+  for (let y = 40; y < 148; y++) for (let x = 70; x < 90; x++) im.data.set([180, 100, 90, 255], (y * 160 + x) * 4)
+  const hash = await cellHash(im); p.images.set(hash, im)
+  const rig = p.manifest.rig
+  rig.cell = { w: 160, h: 160 }; rig.directions = [{ id: 'east', mirrorOf: 'west' }, { id: 'west' }]
+  rig.animations = [{ id: 'rest', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }]
+  rig.rest = Object.fromEntries(DIRECTIONS.map(d => [d, { image: hash, keypoints: [] }]))
+  p.manifest.items[0].layers[0].cells = { rest: { east: [hash], west: [hash] } }
+  const plan = await setupPlan(p)
+  expect(plan.registrationDirections).toBe(8); expect(plan.frames.size).toBe(1)
+  const result = await attachImportedRig(p, plan, new Map([[hash, pose()]]), [])
+  expect(Object.keys(result.manifest.rig.rest!)).toHaveLength(8)
+  expect(result.manifest.rig.rest?.south?.image).toBe(hash)
+  expect(result.skeletons['rest/east/0']).toEqual(flipSkeleton(result.skeletons['rest/west/0'], 160))
+  delete rig.rest.south
+  await expect(setupPlan(p)).rejects.toThrow('cardinal views')
 })
 
 test('repair keeps saved reference pixels and declares them fixed for compatible equipment', async () => {

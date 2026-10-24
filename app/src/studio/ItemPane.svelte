@@ -108,7 +108,7 @@
     {#if anim}
       <div class="dir-strip" style:--preview-width="{Math.max(60, (strip[0]?.w ?? 0) * k / ui.dpr)}px" aria-label="{it.name} in every direction">
         {#each m.rig.directions as d, i (d.id)}
-          {#if strip[i] && made.includes(d.id)}<figure><Sprite img={strip[i]} {k} w={strip[i].w} h={strip[i].h} label="{it.name} facing {d.id}" />{d.id.split('-').map((s) => s[0].toUpperCase()).join('')}</figure>{/if}
+          {#if strip[i] && made.includes(d.id)}<figure><Sprite img={strip[i]} {k} w={strip[i].w} h={strip[i].h} limit={72} label="{it.name} facing {d.id}" />{d.id.split('-').map((s) => s[0].toUpperCase()).join('')}</figure>{/if}
         {/each}
       </div>
     {/if}

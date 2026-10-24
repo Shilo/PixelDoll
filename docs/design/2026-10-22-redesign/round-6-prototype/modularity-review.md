@@ -1,0 +1,46 @@
+# Prototype modularity and direction-input review
+
+2026-10-23. Review of the current round-six snapshot before the lead's requested refactor. Research only: no implementation, stylesheet or verification changes. The lead owns shared UI primitives, creator extraction, direction input and centralized theme work; findings below are review targets, not claims those changes remain unfixed afterward.
+
+## Important correctness findings
+
+1. **Preview direction input currently depends on animation coverage.** In [`main.js`](main.js), the keyboard branch excludes Preview; `playback()` disables direction buttons outside `demo.available[state.clip]`; `chooseClip()` silently rewrites the requested direction to the first available facing. Cross-punch therefore locks selection to south. Requested facing should come from `demo.dirs` / declared `rig.directions`, independently of the selected animation. Preview WASD/arrows changes facing only: no position, camera travel or joystick. Keep requested facing distinct from the resolved available presentation; apply an explicit fallback/notice rather than erasing the request or drawing an empty body. Suppress direction shortcuts in text controls, dialogs and open menus. Opposite held keys should cancel, diagonal choices should retain stable tie memory, and key repeat must not reset the animation clock.
+
+2. **Diagonal IDs differ from the actual rig contract.** [`motion.mjs`](motion.mjs) and creator data currently use `northeast` / `northwest`; [`Rig.DirectionName`](../../../../app/src/lib/rig/rig.ts) uses `north-east` / `north-west`. A direct offline invocation confirmed that `nearest()` returns null for a production diagonal-only direction set, while an eight-direction rig silently resolves NE motion to east. Use canonical rig IDs in the shared direction source, with a deliberate boundary adapter only if legacy prototype spelling remains necessary. Playback's current first-letter labels also collapse diagonals to duplicate N/S; share explicit N/NE/E/SE/S/SW/W/NW labels with the compass.
+
+3. **Selected palette ring is outside the scrollable content edge.** [`style.css`](style.css) sets `.wardrobe { overflow:auto }` without desktop inline padding. Its first `.swatch` starts at the left content edge, while its selection outline extends four pixels outward (`1px` plus `3px` offset). That decoration is clipped by the scrollport; keyboard focus extends farther. Reserve approximately six pixels of internal space around the palette/focus decoration, rather than changing the whole wardrobe to visible overflow. Check selected and keyboard-focused swatches after vertical scrolling, at desktop, portrait and short landscape sizes. This is a static CSS finding; no fresh screenshot was captured in this review.
+
+4. **Verification currently enforces the old direction behavior.** [`verify.mjs`](verify.mjs) asserts that north is disabled during Cross-punch. Replace that assertion when the behavior changes. Verify that selecting/typing a declared direction keeps that requested direction even when the chosen clip lacks it, produces a truthful nonempty fallback and leaves Preview position/camera unchanged. Existing tests use prototype-spelled diagonal IDs and cannot catch finding 2; add at least one actual hyphenated rig-ID case.
+
+## Smallest useful modular boundaries
+
+- Preserve the existing fixture/compositor boundary in [`assets.js`](assets.js), pure direction/motion math in [`motion.mjs`](motion.mjs), and scene drawing in [`world.js`](world.js). Those are useful separations already; avoid a new application framework or generic component system.
+- Extract creator draft/prompt/compass rendering and its actions together. Currently description synchronization, size/frame computation and direction presets are distributed between `creator()`, the action dispatcher and the input handler. Moving only its markup leaves the most important coupled rules duplicated in `main.js`.
+- Keep one small primitive module for escaping, Lucide SVGs, buttons, icon buttons, fields and repeated tab-strip markup/selection semantics. Creator, scene tabs and wardrobe currently each assemble tab attributes separately. Fix semantics once there, rather than multiplying almost-identical attributes and selectors. Do not turn every short rendering function into a separate module.
+- Keep selection/Preview/Top-down/Side-scroller on the same wardrobe renderer. Share data and small functions where behavior is actually the same; body-slot/category labels and action copy can remain explicit configuration.
+
+## Theme and CSS consistency risks
+
+The appearance is currently spread across `style.css` root/Porcelain variables, `config.js` floor/seam/fog colors and image maps, plus hardcoded theme-dependent fallback fills in `World.backdrop()`. Centralize the two theme definitions and apply semantic UI tokens from that source; let world material colors remain separately named art values within the same definition. A scene floor need not equal a UI surface color. Keep appearance changes out of actor RGBA.
+
+**Preload hazard during that refactor:** `World.prepare()` treats every string-valued property of a theme as an image URL. Adding top-level strings such as a color, mode or display name would trigger bogus image requests. Enumerate the background map explicitly; preload only its URL values. Retain URL-based decoding reuse when selection and Preview share an asset.
+
+The CSS currently accumulates base layout, later mobile corrections, then `parity.css` overrides. Wardrobe portrait top position is successively set to 64%, 62% and 60%; item sizes and creator spacing are similarly reassigned. Once the visual result is retained, consolidate each component's final values by breakpoint and remove superseded declarations. Avoid another override layer or additional `!important` rules. The existing portrait/short-landscape branches should remain deliberate. Align the JS short-layout boundary (`h < 540`) with CSS (`max-height:540px`) when touching this code.
+
+The generic `button:hover` has greater specificity than `.swatch` and replaces its palette fill with a theme surface. Palette artwork should keep its swatch color on hover, with focus/selection supplied by the dedicated primitive decoration. Check icon-only controls and disabled primary actions in both appearances when centralizing button styles.
+
+## Focused completion checks
+
+Preserve the approved layout while checking: actual rig direction IDs and sparse sets; Preview WASD with Walk and south-only Cross-punch; no world travel in Preview; no direction capture while editing; theme switching on every screen without a new image request for shared URLs; original opaque actor RGB unchanged; selected/focused palette ring fully visible in the scrollable wardrobe; and no stale old-direction assertion in verification. No production tests or runtime/browser checks were run for this audit; only the pure diagonal resolver reproduction was executed.
+
+## Final review after refactor
+
+**Verdict: no critical regression or remaining blocker found in the requested modularity, theme and Preview-facing scope.** This section supersedes the initial snapshot findings where addressed below.
+
+Reviewed the completed `main.js`, `ui.js`, `creator.js`, `equipment.js`, `directions.mjs`, `input.mjs`, `theme.mjs`, `config.js`, `motion.mjs`, `world.js`, `styles.css` and updated verification source. Shared UI primitives, creator rendering/data helpers, equipment rendering, compass arithmetic/key vectors and appearance definitions now have clear small modules. Main retains application orchestration. The HTML loads one stylesheet; selected-tab selectors correctly follow the shared native buttons' `aria-pressed` state.
+
+Preview keyboard input now selects from declared demo rig directions, leaves position/velocity unchanged, preserves the selected clip and requested facing, and explicitly displays a still/coverage message when that clip lacks the facing. Buttons remain available independently of clip coverage. Canonical hyphenated IDs and compact aliases resolve through one compass vocabulary with unambiguous short labels. Repeated the prior failing pure case: canonical diagonal-only NE now returns `north-east`; compact IDs retain their supplied identity; north Cross-punch resolves the real north Walk still without changing the request.
+
+`APPEARANCES` now supplies semantic UI colors and named world colors, including the backdrop fallback. World preloading explicitly enumerates `backgrounds`, preserving URL-based reuse without interpreting color strings as URLs. The wardrobe's outer frame and inner scrollport reserve eight pixels of paint room without shifting the content alignment; swatch hover explicitly preserves its authored color. Updated verification no longer asserts the superseded disabled-direction behavior and adds Preview, input-exclusion and palette-ring checks.
+
+The lead's machine-readable report records **12 unit tests and 18 browser checks passed**, with no page errors or external requests. This final review inspected the report and test source and ran the focused pure resolver reproduction; it did not independently rerun browser screenshots or the full suite. No implementation files were changed by the reviewer.

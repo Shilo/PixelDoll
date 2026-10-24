@@ -10,7 +10,7 @@ export interface NewItemInput { name: string; slot: string; prompt: string }
 export interface ItemRoute {
   label: string;
   /** Calls and cost before anything is spent ("Make · N gens"). */
-  plan(rig: Rig, ctx: RigCtx, input: NewItemInput): { calls: number; cells: number; gens: number; minutes: number; cell?: number };
+  plan(rig: Rig, ctx: RigCtx, input: NewItemInput): { calls: number; cells: number; gens: number; minutes: number; minimumTier: number; cell?: number };
   /** New persisted job description (not started). */
   draft(ctx: RigCtx, input: NewItemInput, taken: string[]): Draft;
   /** Generate + QA (+ automatic re-rolls). Resumable from the ledger with the same draft. */
@@ -33,9 +33,9 @@ const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({ name: i.
 export const chromaEdit: ItemRoute = {
   label: `chroma mannequin + ${libRoute.name}`,
   plan(rig, ctx, input) {
-    const s = spec(ctx, input), method = defaultMethod(ctx, s), p = planItem(rig, { ...s, method }), pad = padOf(s.slot, method);
+    const s = spec(ctx, input), method = defaultMethod(ctx, s), p = planItem(rig, { ...s, method }), pad = padOf(s.slot, method, rig.cell);
     // held slots route to S5's 96 px oversize canvas automatically (same price: pose calls bill by frames, not canvas)
-    return { calls: p.length, cells: p.reduce((n, c) => n + c.cells.length, 0), gens: planGens(p, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad }), minutes: 3 + Math.ceil(p.length / 3) * 2, ...(pad ? { cell: rig.cell.w + 2 * pad } : {}) };
+    return { calls: p.length, cells: p.reduce((n, c) => n + c.cells.length, 0), gens: planGens(p, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad }), minutes: 3 + Math.ceil(p.length / 3) * 2, minimumTier: method === 'skel' ? 1 : 0, ...(pad ? { cell: rig.cell.w + 2 * pad } : {}) };
   },
   draft: (ctx, input, taken) => newDraft(ctx, spec(ctx, input), taken),
   run: (d, ctx, hooks) => runItem(d, ctx, hooks),

@@ -25,6 +25,8 @@ export interface ClipSource {
 }
 export interface RigAnimation {
   id: string;
+  /** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
+  directions?: DirectionName[];
   cells: number;
   loop: boolean;
   frames: { cell: number; ms: number }[];
@@ -43,7 +45,7 @@ export interface Rig {
   baseItem: string;
   baseHash: Sha256;
   pad?: { x: number; y: number }; // translation applied at freeze (48 px base padded to 64: x 8, y 12)
-  rest?: Partial<Record<DirectionName, RestView>>; // v1.3: generated directions only
+  rest?: Partial<Record<DirectionName, RestView>>; // original standing views, including unused views retained for account reconnection
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 
@@ -70,7 +72,7 @@ const ID = /^[a-z0-9][a-z0-9_-]*$/;
 export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[] {
   const e: string[] = [];
   const { w, h } = rig.cell;
-  if (w !== h || (w !== 64 && w !== 32)) e.push(`cell ${w}x${h}: must be 64x64 or 32x32`);
+  if (w !== h || !Number.isInteger(w) || w < 32 || w > 256) e.push(`cell ${w}x${h}: must be a square of 32–256 whole pixels`);
   const { x, y } = rig.pivot;
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 0 || x > w || y < 0 || y > h) e.push(`pivot ${x},${y} outside 0..${w}`);
   const ids = rig.directions.map((d) => d.id);
@@ -117,7 +119,7 @@ export async function selfTest() {
   console.assert(validateRig(rig, hashes).length === 0, `valid rig: ${validateRig(rig, hashes).join('; ')}`);
   const swapped = { ...hashes, 'idle/south/0': 'sha256:other' as Sha256 };
   console.assert((await baseHashOf(rig, swapped)) !== rig.baseHash, 'baseHash depends on cells');
-  const bad: Rig = { ...rig, cell: { w: 48, h: 48 }, directions: [{ id: 'west', mirrorOf: 'east' }], animations: [{ id: 'Walk', cells: 2, loop: true, frames: [{ cell: 2, ms: 0 }] }] };
+  const bad: Rig = { ...rig, cell: { w: 31, h: 31 }, directions: [{ id: 'west', mirrorOf: 'east' }], animations: [{ id: 'Walk', cells: 2, loop: true, frames: [{ cell: 2, ms: 0 }] }] };
   console.assert(validateRig(bad).length === 5, `invalid rig errors: ${validateRig(bad).join('; ')}`);
   console.assert(rig.animations[0].frames[0].ms === 150 && defaultMs('walk') === 100, 'default ms');
 }

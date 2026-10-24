@@ -53,7 +53,8 @@ async function fixture(modes: Mode[], directions: ('south' | 'west')[] = ['west'
 }
 const selected = (item:Item) => item.provenance.map(p=>p.jobId)
 
-test.each([{modes:['damaged','worse'], winner:0},{modes:['damaged','damaged'],winner:0},{modes:['damaged','clean'],winner:1},{modes:['worse','damaged'],winner:1}] as const)('keeps strictly better complete cells with matching provenance, preserving first on tie: %o', async ({modes,winner}) => {
+// Border contact is a review note, not proof of clipping; equal hard-failure counts keep the first candidate.
+test.each([{modes:['damaged','worse'], winner:0},{modes:['damaged','damaged'],winner:0},{modes:['damaged','clean'],winner:1},{modes:['worse','damaged'],winner:0}] as const)('keeps strictly better complete cells with matching provenance, preserving first on tie: %o', async ({modes,winner}) => {
   const f = await fixture([...modes]), q = await f.run(), saved = f.saved()
   expect(f.seen).toHaveLength(2); expect(f.save).toHaveBeenCalledOnce()
   expect(selected(saved)).toEqual([`job-west-${winner}`])

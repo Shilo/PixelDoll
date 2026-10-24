@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PixelDoll · composition polish comparison</title>
+<link rel="stylesheet" href="./bronze-theme.css">
+<style>
+*{box-sizing:border-box}body{margin:0;background:var(--bu-canvas);color:var(--bu-text);font:16px/1.5 var(--bu-font)}main{padding:24px;max-width:2200px;margin:auto}h1{font:32px var(--bu-display)}p{max-width:1000px}nav{display:flex;flex-wrap:wrap;gap:16px;margin:24px 0}label{display:grid;gap:6px}select{font:inherit;padding:8px;color:var(--bu-text);background:var(--bu-field);border:1px solid var(--bu-border);border-radius:var(--bu-radius-control)}a{color:var(--bu-accent)}.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}figure{margin:0;min-width:0}figcaption{margin:8px 0}img{display:block;width:100%;height:auto;border:1px solid var(--bu-line)}.image{display:block;overflow:auto}.actual img{width:auto;max-width:none}details{margin:24px 0}summary{cursor:pointer}@media(max-width:700px){.pair{grid-template-columns:1fr}main{padding:16px}}
+</style>
+<main><h1>Composition and interaction polish</h1>
+<p>Before and after at identical resolutions: desktop 1920 × 1080, phone 450 × 800. Review centering, creator controls, menus and tab layout. Character artwork, world themes and fonts are unchanged.</p>
+<nav aria-label="Comparison filters"><label>Viewport<select class="bu-select" id="device"><option value="desktop">Desktop</option><option value="mobile">Phone</option></select></label><label>Theme<select class="bu-select" id="theme"><option value="obsidian">Dark</option><option value="porcelain">Light</option></select></label><label>Screen<select class="bu-select" id="screen"></select></label><label>Size<select class="bu-select" id="size"><option value="fit">Fit column</option><option value="actual">Actual pixels · scroll</option></select></label></nav>
+<p id="status" role="status">Loading evidence…</p><div id="pair" class="pair"></div>
+<details><summary>Evidence provenance</summary><p>The before images come from the completed repair at <code>878321a</code>; all 16 original runtime hashes matched the unchanged starting checkout. The after manifest records this follow-up. Original historical files remain intact. Moving poses may differ; screenshots are visual evidence, not a substitute for interaction tests.</p><a href="./evidence/polish/before.json">Before manifest</a> · <a href="./evidence/polish/after.json">After manifest</a> · <a href="./composition-polish.md">Decisions and verification</a></details>
+<p><a href="./">Open playable prototype</a> · <a href="./regression-review.html">Earlier dependency migration comparison</a></p>
+</main>
+<script type="module">
+const $=id=>document.getElementById(id), params=new URLSearchParams(location.search);
+const round=['theme-0.1.1','theme-0.2.0'].includes(params.get('round'))?params.get('round'):'polish';
+if(round==='theme-0.1.1'){
+ document.title='PixelDoll · Bronze UI 0.1.1 comparison';
+ document.querySelector('h1').textContent='Bronze UI 0.1.1 and mobile spacing';
+ document.querySelector('details p').textContent='The before set preserves the completed bc856ea composition-polish captures with Bronze UI 0.1.0. The after set uses the published 0.1.1 dependency. Both sets retain their original capture dates and hashes; historical evidence is unchanged.';
+ for(const a of document.querySelectorAll('details a'))a.href=a.getAttribute('href').replace('evidence/polish/','evidence/theme-0.1.1/').replace('composition-polish.md','theme-patch-0.1.1.md');
+}
+if(round==='theme-0.2.0'){
+ document.title='PixelDoll · Bronze UI 0.2.0 ownership comparison';
+ document.querySelector('h1').textContent='Bronze UI 0.2.0 · shared appearance';
+ document.querySelector('details p').textContent='Before preserves ac192d3 with Bronze UI 0.1.1. After uses the published 0.2.0 package with shared appearance extracted upstream. Dates and hashes remain in each manifest; original historical evidence is unchanged.';
+ for(const a of document.querySelectorAll('details a'))a.href=a.getAttribute('href').replace('evidence/polish/','evidence/theme-0.2.0/').replace('composition-polish.md','theme-ownership-0.2.0.md');
+}
+try {
+ const [before,after]=await Promise.all(['before','after'].map(async phase=>{const r=await fetch(`./evidence/${round}/${phase}.json`);if(!r.ok)throw Error('Capture manifest unavailable');return r.json()}));
+ if(!before.captureComplete||!after.captureComplete)throw Error('Evidence capture is incomplete');
+ for(const id of ['device','theme'])if(params.has(id))$(id).value=params.get(id);
+ function render(){
+  const file=`${$('theme').value}-${$('device').value}-${$('screen').value}.png`;
+  const entries=[before,after].map(m=>m.images.find(i=>i.file===file));
+  if(entries.some(e=>!e)||JSON.stringify(entries[0].viewport)!==JSON.stringify(entries[1].viewport))throw Error('Missing or mismatched comparison');
+  $('pair').className='pair '+($('size').value==='actual'?'actual':'');
+  $('pair').replaceChildren(...['before','after'].map((phase,i)=>{const figure=document.createElement('figure'),caption=document.createElement('figcaption'),link=document.createElement('a'),image=document.createElement('img');caption.textContent=round==='theme-0.2.0'?(i?'After · Bronze UI 0.2.0':'Before · Bronze UI 0.1.1'):round==='theme-0.1.1'?(i?'After · Bronze UI 0.1.1':'Before · Bronze UI 0.1.0'):(i?'After · polished':'Before · reported follow-up');link.className='image';link.href=`./evidence/${round}/${phase}/${file}`;image.src=link.href;image.alt=`${phase}: ${$('screen').value}, ${$('theme').value}`;link.append(image);figure.append(caption,link);return figure}));
+  $('status').textContent=`${entries[0].viewport.width} × ${entries[0].viewport.height} each · ${after.images.length} matched states captured`;
+  history.replaceState(null,'',`?round=${round}&device=${$('device').value}&theme=${$('theme').value}&screen=${$('screen').value}`);
+ }
+ function options(){const previous=$('screen').value||params.get('screen');$('screen').replaceChildren(...after.images.filter(i=>i.theme===$('theme').value&&i.file.includes('-'+$('device').value+'-')).map(i=>new Option(i.screen,i.screen)));if([...$('screen').options].some(o=>o.value===previous))$('screen').value=previous;render()}
+ for(const id of ['device','theme'])$(id).addEventListener('change',options);
+ for(const id of ['screen','size'])$(id).addEventListener('change',render);
+ options();
+}catch(error){$('status').textContent=error.message}
+</script>
+</html>

@@ -1,0 +1,27 @@
+{
+  "date": "2026-10-23",
+  "node": "v24.22.1",
+  "result": "passed",
+  "checks": [
+    "All character rows show actual 64 px south-facing outfit thumbnails",
+    "One conventional theme action switches both ways with Light mode / Dark mode labels",
+    "Preview plays authored frames and pauses",
+    "Selection and Preview reuse decoded background without another image load",
+    "Preview WASD/arrows select declared facings without movement or changing the chosen clip; missing frames use an explicit still",
+    "Palette ring has paint room without shifting its left alignment; hovering preserves the equipment color",
+    "Preview direction shortcuts leave focused form controls and open menus alone",
+    "Original fixture RGB verified in both themes (997 opaque source pixels in first comparison)",
+    "Side movement, camera follow and immediate stop; real still fallback",
+    "Top-down continuous diagonal movement normalized",
+    "Wizard north coverage hides gear without unequipping, south restores it",
+    "Character switcher thumbnail updates when its equipment changes",
+    "Code-only reflection can be disabled without changing actor pixels",
+    "Blur cancels movement",
+    "Mobile world drag controls movement; release hides stick and stops",
+    "Portrait and landscape layouts render without horizontal page overflow",
+    "Real touch drag, second-finger equipment use, release and pointer cancellation",
+    "No page errors and no external requests in primary isolated browser context"
+  ],
+  "errors": [],
+  "external": []
+}

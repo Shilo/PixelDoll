@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import Sheet from './Sheet.svelte'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { fitPlan, fitRetryPlan } from './apiPlans.ts'
   import DesignPreview from './DesignPreview.svelte'
   import { assessDesign, loadDesign, designPreview, prepareCopy, acceptCopy, planFit, createFit, getFit, reviewFit, acceptFit, discardFit, type EquipmentDesign, type FitAssessment, type FitCandidate, type FitDraft, type FitPlan } from '../lib/equipment/index.ts'
   import type { Project } from '../lib/store/manifest.ts'
@@ -97,7 +99,7 @@
     withKey(() => {
       ui.sheet = 'fitdesign'
       void runFitStage(id, stage, budget).then(() => { if (mounted) void refresh() })
-    })
+    }, true)
   }
   async function accept(wear: boolean) {
     if (!reviewed || busy) return
@@ -123,7 +125,7 @@
     withKey(() => {
       ui.sheet = 'fitdesign'
       void retryFitStage(id, stage, budget).then(() => { if (mounted) void refresh() })
-    })
+    }, true)
   }
   async function discard() {
     if (!draftId || running) return
@@ -164,19 +166,19 @@
     {#if preview && itemId}<DesignPreview project={preview} {itemId} itemOnly={!candidate && stage !== 'fit-review' && stage !== 'rest-review'} />{/if}
     {#if reference && design && (candidate || draft)}<details class="disclosure"><summary>Compare saved design reference</summary><div><DesignPreview project={reference} itemId={design.itemId} itemOnly /></div></details>{/if}
     {#if candidate || stage === 'rest-review' || stage === 'fit-review'}<label class="check review-check"><input type="checkbox" bind:checked={reviewed} />I checked every move and direction shown above.</label>{/if}
-    {#if draft}<p class="faint small">Spent: {+draft.spentGens.toFixed(2)} gens{draft.spentUsd && draft.spentUsd > 0 ? ` + $${draft.spentUsd.toFixed(3)}` : ''}. Approved generation estimate: {draft.budget.previewGens} gens for rest fitting + {draft.budget.poseGens} gens for animation.</p>{/if}
+    {#if draft}<p class="faint small">Spent: {+draft.spentGens.toFixed(2)} gens{draft.spentUsd && draft.spentUsd > 0 ? ` + $${draft.spentUsd.toFixed(3)}` : ''}. Approved generation estimate: {draft.budget.previewGens} gens for rest fitting + {draft.budget.poseGens} gens for animation.<ApiPeek scope="equipment-fit-current" label="Current equipment fit" plan={[]} queueIds={draft.calls.flatMap(c => c.recId ? [c.recId] : [])} /></p>{/if}
     {#if plan && !candidate}<p class="faint small">PixelLab may bill usage in dollars instead of generations. Actual charges appear in Activity.</p>{/if}
     <div class="actions fit-actions">
       {#if candidate || stage === 'fit-review'}
         <button class="btn primary" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => accept(true)}>Keep and wear</button><button class="btn" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => accept(false)}>Keep in wardrobe</button>
       {:else if stage === 'rest-review'}
-        <button class="btn primary" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => paid('pose')}>Animate fit <span class="cost">up to {plan?.poseGens} gens</span></button>
+        <span class="api-action"><ApiPeek scope="equipment-fit-animate" label="Animate approved fit" plan={fitPlan(plan, 'pose', undefined, false, target?.manifest)} /><button class="btn primary" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => paid('pose')}>Animate fit <span class="cost">up to {plan?.poseGens} gens</span></button></span>
       {:else if stage === 'needs-attention' && draft?.resumeStage}
-        <button class="btn primary" disabled={busy || running} onclick={() => paid(draft!.resumeStage!)}>Continue checking submitted fit <span class="cost">No new charge</span></button>
+        <span class="api-action"><ApiPeek scope="equipment-fit-resume" label="Continue checking submitted fit" plan={fitPlan(plan, draft.resumeStage, draft, true)} queueIds={draft.calls.flatMap(c => c.recId ? [c.recId] : [])} /><button class="btn primary" disabled={busy || running} onclick={() => paid(draft!.resumeStage!)}>Continue checking submitted fit <span class="cost">No new charge</span></button></span>
       {:else if !running && plan && assessment.status === 'fit'}
-        <button class="btn primary" disabled={busy} onclick={() => paid('rest')}>Preview fit <span class="cost">up to {plan.previewGens} gens</span></button>
+        <span class="api-action"><ApiPeek scope="equipment-fit-preview" label="Preview standing fit" plan={fitPlan(plan, 'rest')} /><button class="btn primary" disabled={busy} onclick={() => paid('rest')}>Preview fit <span class="cost">up to {plan.previewGens} gens</span></button></span>
       {/if}
-      {#if draft?.retryStage && draft.retryGens && !running}<button class="btn" disabled={busy} onclick={retry}>Try {draft.retryStage === 'rest' ? 'rest fit' : 'failed animation frames'} again <span class="cost">up to {draft.retryGens} additional gens</span></button>{/if}
+      {#if draft?.retryStage && draft.retryGens && !running}<span class="api-action"><ApiPeek scope="equipment-fit-retry" label="Retry failed fitting coverage" plan={fitRetryPlan(draft)} /><button class="btn" disabled={busy} onclick={retry}>Try {draft.retryStage === 'rest' ? 'rest fit' : 'failed animation frames'} again <span class="cost">up to {draft.retryGens} additional gens</span></button></span>{/if}
       {#if draftId && !running && stage !== 'accepted'}<button class="btn plain danger" disabled={busy} onclick={discard}>Discard fit</button>{/if}
     </div>
   {/if}

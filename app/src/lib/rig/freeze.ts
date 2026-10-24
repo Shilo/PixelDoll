@@ -2,7 +2,7 @@
 import { makeImg, type Img } from '../image/png.ts';
 import { normalize, opaqueBox, feetY, pivotOf, type Box } from './normalize.ts';
 import { planDirections, flipH, flipX, type DirMode } from './mirror.ts';
-import { ANCHORS, baseHashOf, cellHash, cellKey, defaultMs, playlist, validateRig, type AnchorTrack, type DirectionName, type Rig, type RigAnimation, type Sha256 } from './rig.ts';
+import { ANCHORS, baseHashOf, cellHash, cellKey, defaultMs, playlist, validateRig, type AnchorTrack, type DirectionName, type Rig, type RigAnimation, type RigDirection, type Sha256 } from './rig.ts';
 import { anchorsOf, flipSkeleton, PATCH_R, refineAnchor, type Skeleton } from './skeleton.ts';
 
 export interface SourceAnim { id: string; dirs: Partial<Record<DirectionName, Img[]>>; source?: RigAnimation['source'] }
@@ -11,20 +11,23 @@ export interface Built { rig: Rig; cells: Record<string, Cell>; errors: string[]
 
 export const HEADROOM_MIN = 6;
 
-export async function buildRig(anims: SourceAnim[], { size = 64, mode = '4' as DirMode } = {}): Promise<Built> {
+export async function buildRig(anims: SourceAnim[], { size = 64, mode = '4', directions }: { size?: number; mode?: DirMode; directions?: RigDirection[] } = {}): Promise<Built> {
   const errors: string[] = [], warnings: string[] = [];
   const dirsOf = (a: SourceAnim) => (Object.keys(a.dirs) as DirectionName[]).filter((d) => a.dirs[d]?.length);
   const common = anims.length ? dirsOf(anims[0]).filter((d) => anims.every((a) => dirsOf(a).includes(d))) : [];
   for (const a of anims) for (const d of dirsOf(a)) if (!common.includes(d)) warnings.push(`${a.id}/${d}: direction missing in other animations, dropped`);
-  const { dirs, missing } = planDirections(mode, common);
+  const { dirs, missing } = directions ? { dirs: directions.map(d => ({ ...d })), missing: directions.filter(d => !d.mirrorOf && !common.includes(d.id)).map(d => d.id) } : planDirections(mode, common);
+  if (directions && missing.length) errors.push(`selected directions have missing frames: ${missing.join(', ')}`);
   if (missing.length) warnings.push(`directions not available for the ${mode}-dir plan: ${missing.join(', ')}`);
 
   const cells: Record<string, Cell> = {};
   const animations: RigAnimation[] = [];
   for (const a of anims) {
-    const counts = common.map((d) => a.dirs[d]!.length);
-    const n = Math.min(...counts);
-    if (new Set(counts).size > 1) errors.push(`${a.id}: frame count differs between directions (${common.map((d, i) => `${d} ${counts[i]}`).join(', ')})`);
+    const generated = dirs.filter(d => !d.mirrorOf).map(d => d.id);
+    const counts = generated.map(d => a.dirs[d]?.length ?? 0);
+    const n = counts.length ? Math.min(...counts) : 0;
+    if (!n) errors.push(`${a.id}: no frames for the selected directions`);
+    if (new Set(counts).size > 1) errors.push(`${a.id}: frame count differs between directions (${generated.map((d, i) => `${d} ${counts[i]}`).join(', ')})`);
     animations.push({ id: a.id, cells: n, loop: true, frames: playlist(n, defaultMs(a.id)), ...(a.source ? { source: a.source } : {}) });
     for (const d of dirs.filter((d) => !d.mirrorOf)) {
       let semi = 0;
@@ -51,16 +54,23 @@ export async function buildRig(anims: SourceAnim[], { size = 64, mode = '4' as D
   const pa = animations.find((a) => a.id === 'idle') ?? animations[0];
   const pd = dirs.find((d) => d.id === 'south') ?? dirs[0];
   const pivotFrom = pa && pd ? cellKey(pa.id, pd.id, 0) : '';
-  if (pivotFrom && pivotFrom !== 'idle/south/0') warnings.push(`no idle/south/0: pivot taken from ${pivotFrom}`);
+  if (!directions && pivotFrom && pivotFrom !== 'idle/south/0') warnings.push(`no idle/south/0: pivot taken from ${pivotFrom}`);
   const ref = cells[pivotFrom]?.img;
-  const pivot = ref ? pivotOf(ref) : { x: size / 2, y: size };
+  const pivot = ref ? pivotOf(ref) : { x: Math.floor(size / 2), y: size };
+  const ground = new Map(dirs.map(d => {
+    const reference = pa && cells[cellKey(pa.id, d.id, 0)]?.img;
+    const y = reference ? feetY(reference) : pivot.y;
+    // Different rotation silhouettes need not share a bottom edge: toes/heels project differently.
+    // This is only a within-direction motion reference, never evidence of a misplaced rotation origin.
+    return [d.id, y];
+  }));
   for (const a of animations)
     for (const d of dirs) {
       const cs = Array.from({ length: a.cells }, (_, i) => cells[cellKey(a.id, d.id, i)]).filter(Boolean);
-      const drift = Math.max(0, ...cs.map((c) => Math.abs(feetY(c.img) - pivot.y)));
-      if (drift > 1) warnings.push(`${a.id}/${d.id}: feet drift ${drift} px from pivot y ${pivot.y}`);
+      const drift = Math.max(0, ...cs.map((c) => Math.abs(feetY(c.img) - ground.get(d.id)!)));
+      if (drift > 1) warnings.push(`${a.id}/${d.id}: silhouette bottom differs up to ${drift} px from the ${pa.id} reference`);
       const head = Math.min(...cs.map((c) => c.box?.y0 ?? size));
-      if (head < HEADROOM_MIN) warnings.push(`${a.id}/${d.id}: headroom ${head} px < ${HEADROOM_MIN} (hats/hair will clip)`);
+      if (head < HEADROOM_MIN) warnings.push(`${a.id}/${d.id}: headroom ${head} px; tall hair or hats may need a larger frame`);
       if (cs.some((c) => !c.box)) warnings.push(`${a.id}/${d.id}: empty cell`);
     }
 

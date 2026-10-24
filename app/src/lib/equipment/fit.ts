@@ -9,7 +9,7 @@ import { imageHashes, designRevision, createDesign } from './design.ts';
 import { assessDesign, targetAudit } from './compatibility.ts';
 import { publishCandidate, targetStamp, extensionStamp, restStamp } from './copy.ts';
 import { assertDesign, encodedImages, loadImages, snapshotDesign } from './store.ts';
-import { qualifiedFit, restFitRequests, poseFitRequests, evaluateRestFit, evaluatePoseFit, type FitRecord, type GeneratedFitCall } from './generate.ts';
+import { qualifiedFit, fitFramingWarnings, restFitRequests, poseFitRequests, evaluateRestFit, evaluatePoseFit, type FitRecord, type GeneratedFitCall } from './generate.ts';
 import type { EquipmentDesign, FitCall, FitCandidate, FitDraft, FitPlan, FitReview } from './types.ts';
 import type { Img } from '../image/png.ts';
 import type { Project, Item, ItemQa, Material, CellKey } from '../store/manifest.ts';
@@ -85,7 +85,7 @@ async function priceFit(design:EquipmentDesign,targetId:string,options:{reuseApp
   if(options.reuseApprovedRest&&restStamp(source.manifest)!==restStamp(project.manifest))throw new Error('The approved standing reference contract changed.');
   const requests=options.reuseApprovedRest?[]:await restFitRequests(design,source,project,1),directions=rig.directions.filter(d=>!d.mirrorOf).map(d=>d.id),body=project.manifest.items.find(it=>it.id===rig.baseItem)!;
   const poseGens=rig.animations.reduce((n,a)=>n+directions.filter(d=>body.layers[0].cells?.[a.id]?.[d]?.some(Boolean)&&!(a.cells===1&&a.sources?.[d]?.motion==='imported-rest')).length*poseBatches(a.cells).reduce((s,b)=>s+(b.count<=3?2:b.count<=8?3:4),0),0);
-  assessment.warnings.push('Experimental headwear fitting: review every view and move. Failed attempts still cost generations.');
+  assessment.warnings.push('Experimental headwear fitting: review every view and move. Failed attempts still cost generations.', ...fitFramingWarnings(project));
   return{design:snapshotDesign(design),targetId,targetAudit:await targetAudit(project),targetStamp:targetStamp(project.manifest,design.slot),assessment,previewGens:requests.reduce((n,r)=>n+r.limit,0),poseGens,directions,createdAt:now()};
 }
 export const planFit=(design:EquipmentDesign,targetId:string):Promise<FitPlan>=>priceFit(design,targetId);
@@ -221,7 +221,7 @@ async function submitStage(id:string,stage:'rest'|'pose',requests:GeneratedFitCa
   });
   for(const[i,c]of calls.entries()){
     await targetOf(await getFit(id));
-    const rec=await queue.enqueue(requests[i].req,{label:`Fit ${stage}: ${(await getFit(id)).name}`,tag:`${id}:${c.id}`,resumeSafe:true});
+    const rec=await queue.enqueue(requests[i].req,{label:`Fit ${stage}: ${(await getFit(id)).name}`,tag:`${id}:${c.id}`,resumeSafe:true,minimumTier:1});
     await db.update<FitDraft>('projects',id,f=>({...f!,calls:f!.calls.map(call=>call.id===c.id?{...call,recId:rec.id}:call),updatedAt:now()}));
   }return finishStage(id,stage);
 }

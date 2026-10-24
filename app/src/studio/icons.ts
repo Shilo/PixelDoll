@@ -49,3 +49,7 @@ export { default as ArrowUp } from '@lucide/svelte/icons/arrow-up';
 export { default as ArrowDown } from '@lucide/svelte/icons/arrow-down';
 export { default as Pencil } from '@lucide/svelte/icons/pencil';
 export { default as WifiOff } from '@lucide/svelte/icons/wifi-off';
+export { default as CodeXml } from '@lucide/svelte/icons/code-xml';
+export { default as Copy } from '@lucide/svelte/icons/copy';
+export { default as ListPlus } from '@lucide/svelte/icons/list-plus';
+export { default as ListMinus } from '@lucide/svelte/icons/list-minus';

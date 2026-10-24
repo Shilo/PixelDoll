@@ -82,9 +82,11 @@ concurrency cap (200 with `directions: ["south"]`): send one direction per call 
 
 ### 3.2 Rig QA (freeze gate)
 
-Per skeleton clip, every frame re-estimated: arm adherence ≤ 2 px mean vs requested; feet drift ≤ 1 px on standing clips;
-palette fit ≥ 0.97 (colours within 12 of the rest palette); no opaque pixel on the cell border; stray px removed and logged.
-Skip the L/R label check on lying frames. Fail → re-roll (new seed), then soften the pose (shorter reach) [S3].
+Every body frame must be nonempty, fit its frame without opaque cropping, have the expected frame count and yield complete valid measured joints. Empty/wrong-count rendering may retry once with a new seed. Missing joint observations stop setup and retain the generated art; they do not redraw it.
+
+Estimated arm-joint difference, silhouette-bottom displacement, palette similarity, border contact and disconnected pixels are **review observations**, not proof of bad art and never automatic body-redraw triggers. The 2 px arm threshold highlights estimates for review; it is not a scale-independent accuracy guarantee. Silhouette bottoms do not identify foot contact or a rotation origin. The historical `feetDrift` storage field records this bottom displacement only. Optional hat/hair headroom is advisory when the body itself fits.
+
+Body output keeps all normalized components, including detached details. Binary-alpha normalization remains the pixel-art contract. Component counts are reported without deleting artwork. Item chroma extraction and its independently documented checks retain their existing policy. Genuine body-pose deviation can still affect later equipment fitting; review notes remain visible and measurements are retained.
 
 ---
 
@@ -185,7 +187,7 @@ grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of
 | Grip side (held) | Requested wrist keypoints, or tracked hand anchors as fallback. A frame votes only within 6 px of a wrist and with a > 2 px side margin; at least half the clip's frames must decide. A decided opposite-hand clip fails (G8). Each missing-position, unclear-side or no-contact clip retains a review warning; silhouette proximity is not anatomical proof. |
 | Shape (held, locomotion) | G9 principal-axis turn relative to the forearm ≤ 30° when keypoints and a reliable axis exist; otherwise adjacent-frame aligned IoU ≥ 0.3. With keypoints, pairs containing a mask below 6 pixels retain the minimum-sample skip. Near-round masks (normalized covariance eigenvalue gap < 0.2) use IoU because a one-pixel silhouette change can swap their axis by 90°. |
 | Anchor spread (head items) | layer centroid − head keypoint ≤ 3 px in front/back views |
-| Clip | no layer pixel on the cell border |
+| Framing review | border contact is reported for review; it cannot prove unseen pixels were cropped and does not trigger a G7 retry |
 | Stray px | removed and logged |
 
 For posed held items with wrist tracks, G5/G9 failures may be inconclusive because the body hides part of the item.
@@ -194,8 +196,12 @@ Compare masks in wrist coordinates: missing pixels can be hidden only inside the
 body-hidden differences as visibly unexplained differences. G5 also requires every frame to match the largest observed
 silhouette and its area plus potentially hidden reference pixels to meet the original CV limit. Such cases produce an
 explicit occlusion review warning, never a clean pass or a paid G5/G9 retry. Original metrics and exported pixels stay
-unchanged; hard presence, body integrity, alignment, border and grip checks remain. Hidden geometry is not reconstructed
+unchanged; hard presence, body integrity, alignment and grip checks remain. Hidden geometry is not reconstructed
 or proven by this heuristic, and unexplained changes retain their hard failure.
+
+Border contact and optional headwear padding are review policies, not export constraints. A contained layer can legitimately
+reach a cell edge. Keep the contact count and a framing warning; reject actual normalization pixel loss, wrong dimensions,
+missing frames or invalid required joints as before. Reference fitting warns about low headroom before a paid trial.
 
 Fail → re-roll the call once (new seed), then switch to the alternative route, then the user decides. When a call is out of
 re-rolls it keeps its roll with the fewest failed checks, not the last one (free ledger re-evaluation; same inputs only) [T3].
@@ -299,9 +305,15 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
   PNG or raw bytes. These hashes are not interchangeable. Project zip = `project.json` + `cells/<sha>.png`; native-stream
   zip and pure PNG encoder, no dependencies. Store **every** generated frame, reference, keypoint sequence and request: they
   cannot be reproduced.
-- Queue: persisted ledger, one global concurrency setting (default 3, finite rounded/clamped range 1–8). Nonfinite
-  updates preserve the last valid capacity. Nominal backoff is 2–60 s with 0.5–1 jitter. Free GETs may retry transient failures; generic paid
-  retry requires a documented 429 refusal. Generic 423/503/529, network uncertainty and ambiguous 5xx responses leave
+- Queue: persisted ledger; `/balance` identity selects maintained concurrency defaults: Free/Trial 1, Tier 1 8,
+  Tier 2 10, Tier 3+ 20, and a fallback of 3 for unknown plans. These maintained defaults live in
+  `app/src/lib/pixellab/plans.ts`; see [plan policy and endpoint audit](pixellab-plans.md). Restricted workflows declare
+  their minimum tier before their first paid request and remain queued until eligible. Count remote jobs rather than requests. The leader shares
+  capacity and cooldown with other tabs. Proven capacity refusals (429 or the narrowly validated no-jobs-started response) apply a
+  queue-wide jittered backoff up to 60 s, honoring longer exposed `Retry-After` values; after waiting, single in-flight
+  probes refill the account ceiling. Accepted jobs keep polling. Initial balance detection gates submission; periodic
+  refreshes do not interrupt work using a known ceiling. Cooldowns survive reload and first connection.
+  Paid retry requires a documented 429 refusal. Generic 423/503/529, network uncertainty and ambiguous 5xx responses leave
   a paid POST `lost` ("may have run, check pixellab.ai"), never automatically resent. Accepted background-job identifiers
   override every error classification, including 401/402, and remain in the ledger without paid resubmission. Ordinary
   auth/credit refusals without accepted-job evidence leave submission waiting for the current credential to recover.
@@ -335,7 +347,7 @@ integer zoom. Theming ("Paper" look) deferred.
 |---|---|
 | `pixellab/` (client, routes, queue) | built [M1]; add raw/managed skeleton-v3, pixminimax, `create-character-v3` import, `res.directions` check, re-poll policy |
 | `store/` (manifest, db, zip, project) | built; manifest gains `Clip` sources (§manifest-spec) |
-| `image/` (png, pngraw, hash, chroma, diff) | built; add `largestComponent`, `gripSide`, registration shift check |
+| `image/` (png, pngraw, hash, chroma, diff) | built; body connectivity observations, item grip and registration checks |
 | `rig/` (rig, normalize, mirror, skeleton, freeze) | built for template frames [M2]; **update**: rest-view import, clip routes, pose presets (`setArm`/`rotate`/`shift`, port of `spikes/api/lib/skel.mjs`), canvas re-centring 68/80/96 → 64, rig QA §3.2 |
 | `items/` (items, run) | update to `skeleton-pose` (dress + pose) and `inpaint-grid` routes |
 | `dress/`, `compose/`, `export/` | built [M4, M5] |
@@ -363,7 +375,7 @@ USD billing and unknown charges prevent treating any estimate as an account spen
 | Risk | Mitigation |
 |---|---|
 | Non-deterministic generation | Store everything; never regenerate base frames; items reference stored frames and keypoints. |
-| Motion-smear FX, specks | Largest-component filter; avoid identical final poses; QA logs stray px. |
+| Motion-smear FX, specks | Body components are preserved and reported for review; item extraction retains its slot-specific cleanup. |
 | Pose not followed / wrong hand | Adherence + `gripSide` gates; re-roll; author an armed variant. |
 | North action frames lose back items (cape) | QA re-roll; `inpaint-grid` fallback. |
 | Side-view grip ambiguity | Retain ambiguity warnings and visually inspect grips and trajectories in every direction. |
@@ -387,7 +399,7 @@ USD billing and unknown charges prevent treating any estimate as an account spen
 
 **Settled**: allowed models [D8]; rig = skeleton-v3 clips stored as frames + reference + keypoints [S3]; base v3 48 → 64
 [S4, D4]; item default `skeleton-pose`, alternative `inpaint-grid` [S4]; chroma extraction [S2]; held bg z above back bg
-[M4]; UI look A, dark default [D9]; concurrency 8 / skeleton 3.
+[M4]; UI look A, dark default [D9]; maintained plan concurrency (Free/Trial: 1, Tier 1: 8, Tier 2: 10, Tier 3+: 20, unknown: 3).
 
 **Open**
 

@@ -1,0 +1,200 @@
+[
+  {
+    "device": "desktop",
+    "concept": "camp",
+    "screen": "select",
+    "overflow": false,
+    "visibleControls": 11,
+    "errors": []
+  },
+  {
+    "device": "desktop",
+    "concept": "camp",
+    "screen": "create",
+    "overflow": false,
+    "visibleControls": 10,
+    "errors": []
+  },
+  {
+    "device": "desktop",
+    "concept": "camp",
+    "screen": "dress",
+    "overflow": false,
+    "visibleControls": 38,
+    "errors": []
+  },
+  {
+    "device": "desktop",
+    "concept": "atelier",
+    "screen": "select",
+    "overflow": false,
+    "visibleControls": 12,
+    "errors": []
+  },
+  {
+    "device": "desktop",
+    "concept": "atelier",
+    "screen": "create",
+    "overflow": false,
+    "visibleControls": 7,
+    "errors": []
+  },
+  {
+    "device": "desktop",
+    "concept": "atelier",
+    "screen": "dress",
+    "overflow": false,
+    "visibleControls": 34,
+    "errors": []
+  },
+  {
+    "device": "desktop",
+    "concept": "quiet",
+    "screen": "select",
+    "overflow": false,
+    "visibleControls": 12,
+    "errors": []
+  },
+  {
+    "device": "desktop",
+    "concept": "quiet",
+    "screen": "create",
+    "overflow": false,
+    "visibleControls": 10,
+    "errors": []
+  },
+  {
+    "device": "desktop",
+    "concept": "quiet",
+    "screen": "dress",
+    "overflow": false,
+    "visibleControls": 38,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "camp",
+    "screen": "select",
+    "overflow": false,
+    "visibleControls": 10,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "camp",
+    "screen": "create",
+    "overflow": false,
+    "visibleControls": 6,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "camp",
+    "screen": "dress",
+    "overflow": false,
+    "visibleControls": 29,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "atelier",
+    "screen": "select",
+    "overflow": false,
+    "visibleControls": 8,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "atelier",
+    "screen": "create",
+    "overflow": false,
+    "visibleControls": 6,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "atelier",
+    "screen": "dress",
+    "overflow": false,
+    "visibleControls": 29,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "quiet",
+    "screen": "select",
+    "overflow": false,
+    "visibleControls": 8,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "quiet",
+    "screen": "create",
+    "overflow": false,
+    "visibleControls": 6,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "concept": "quiet",
+    "screen": "dress",
+    "overflow": false,
+    "visibleControls": 29,
+    "errors": []
+  },
+  {
+    "interactionChecks": "PASS",
+    "checks": [
+      "character selection",
+      "equip wizard hat",
+      "direction change",
+      "export dialog",
+      "library search",
+      "creation cost gate",
+      "appearance review",
+      "recolour",
+      "four-view inspection",
+      "plain backdrop",
+      "mirrored-state notice",
+      "phone all-parts picker",
+      "phone new-item access"
+    ]
+  },
+  {
+    "device": "small",
+    "concept": "camp",
+    "screen": "select",
+    "overflow": false
+  },
+  {
+    "device": "small",
+    "concept": "camp",
+    "screen": "create",
+    "overflow": false
+  },
+  {
+    "device": "small",
+    "concept": "camp",
+    "screen": "dress",
+    "overflow": false
+  },
+  {
+    "device": "landscape",
+    "concept": "camp",
+    "screen": "select",
+    "overflow": false
+  },
+  {
+    "device": "landscape",
+    "concept": "camp",
+    "screen": "create",
+    "overflow": false
+  },
+  {
+    "device": "landscape",
+    "concept": "camp",
+    "screen": "dress",
+    "overflow": false
+  }
+]

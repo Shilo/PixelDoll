@@ -53,9 +53,15 @@ export function qualifiedFit(design: EquipmentDesign, target: Project): string |
   if (!canPose(rig, { anims: rig.animations.filter(a => clipDirs[a.id].length).map(a => a.id), dirs: directions(target), clipDirs })) return 'Set up complete target standing joints and stored animation poses before fitting.';
   for (const d of directions(target)) {
     const rest = rig.rest?.[d], image = rest && target.images.get(rest.image);
-    if (!rest || !hasAll(rest.keypoints) || !image || image.w !== 64 || image.h !== 64 || (opaqueBox(image)?.y0 ?? 0) < HEADROOM_MIN) return 'The target standing views need complete joints and sufficient space above the head.';
+    if (!rest || !hasAll(rest.keypoints) || !image || image.w !== 64 || image.h !== 64 || !opaqueBox(image)) return 'The target standing views need complete joints and nonempty 64 × 64 images.';
   }
   return null;
+}
+export function fitFramingWarnings(target: Project): string[] {
+  return directions(target).flatMap(d => {
+    const rest = target.manifest.rig.rest?.[d], im = rest && target.images.get(rest.image), box = im && opaqueBox(im);
+    return box && box.y0 < HEADROOM_MIN ? [`${d}: headroom ${box.y0} px; tall headwear may need a larger frame.`] : [];
+  });
 }
 function fitKey(design: EquipmentDesign): Key {
   const colours = designColours(design).map(fromHex);
@@ -111,7 +117,7 @@ async function decoded(record: FitRecord): Promise<Img[]> {
 }
 const provenance = (records: FitRecord[]): Provenance[] => records.map(({ call, rec }) => ({ endpoint: rec.endpoint, params: JSON.parse(JSON.stringify(rec.params, (_key, value) => value && typeof value === 'object' && '$blob' in value ? { sha256: value.$blob } : value)), seed: call.seed, requestHash: `sha256:${rec.requestHash}`, jobId: rec.jobs[0]?.id, usage: { generations: rec.gens, usd: rec.usd }, createdAt: new Date(rec.submittedAt ?? rec.createdAt).toISOString(), produced: [...call.cells] as Provenance['produced'] }));
 export async function evaluateRestFit(design: EquipmentDesign, target: Project, records: FitRecord[]): Promise<{ project: Project; itemId: string; rest: Partial<Record<DirectionName, Img>>; warnings: string[]; fails: string[] }> {
-  const key = fitKey(design), rig = target.manifest.rig, rest: Partial<Record<DirectionName, Img>> = {}, cells: CellOut[] = [], fails: string[] = [], warnings: string[] = ['Experimental reference fit: review design identity, all views and alignment. Failed attempts still cost generations.'];
+  const key = fitKey(design), rig = target.manifest.rig, rest: Partial<Record<DirectionName, Img>> = {}, cells: CellOut[] = [], fails: string[] = [], warnings: string[] = ['Experimental reference fit: review design identity, all views and alignment. Failed attempts still cost generations.', ...fitFramingWarnings(target)];
   for (const [call, record] of records.entries()) {
     const images = await decoded(record);
     if (images.length !== record.call.cells.length || images.some(im => im.w !== 64 || im.h !== 64)) throw new Error('The rest fit returned an invalid frame count or canvas.');
@@ -122,7 +128,7 @@ export async function evaluateRestFit(design: EquipmentDesign, target: Project, 
       const c = extractCell({ key: path, call, base, out: images[n], route: key, band: bandOf('head', fromApi(reference.keypoints, rig.cell), 64) });
       cells.push(c); rest[dir] = images[n];
       if (g2Fails(c) || (c.keyOutside ?? 0) > GATES.keyOutside || !c.area || c.outBand || c.shifted) fails.push(`${dir}: the fitted rest view failed body preservation, presence or alignment checks.`);
-      const border=borderPx(c.layer);if(border)fails.push(`G7 ${dir}: ${border} headwear pixels touch the canvas border and may be clipped.`);
+      const border=borderPx(c.layer);if(border)warnings.push(`G7 ${dir}: ${border} headwear pixels touch the canvas border; review framing.`);
       if(c.specks||c.pinholes||components(c.mask,64,64).length>1)warnings.push(`${dir}: inspect detached pieces, stray pixels and small holes in the fitted headwear.`);
     }
   }

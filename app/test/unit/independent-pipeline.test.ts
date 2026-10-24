@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { assertCreatedDirections, createCharacter, estimate, genDirsOf, prepareRestViews } from '../../src/studio/create.ts'
+import { assertCreatedDirections, createCharacter, creationDirections, estimate, genDirsOf, prepareRestViews } from '../../src/studio/create.ts'
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import * as db from '../../src/lib/store/db.ts'
 import { DIRECTIONS, type DirectionName, type Rig } from '../../src/lib/rig/rig.ts'
@@ -29,9 +29,12 @@ test('omitted policy preserves legacy four/eight direction planning and prices',
   for (const n of [4, 8] as const) expect(estimate(n)).toEqual(estimate(n, 'mirrored'))
 })
 
-test.each([[4, 46.25, 75.45, 16], [8, 90.25, 148.65, 29]] as const)('independent %i view costs include all original directions, retries and rest fallback', (n, gens, maxGens, minutes) => {
+test.each([[4, 46.25, 75.45, 15], [8, 90.25, 148.65, 27]] as const)('independent %i view costs include all original directions, retries and rest fallback', (n, gens, maxGens, minutes) => {
   expect(genDirsOf(n, 'independent')).toEqual(n === 8 ? DIRECTIONS : ['south', 'east', 'north', 'west'])
   expect(estimate(n, 'independent')).toEqual({ gens, maxGens, minutes })
+  const spec = { ...options, dirs: n, directionPolicy: 'independent' as const }
+  expect(creationDirections(spec)).toEqual(genDirsOf(n, 'independent').map(id => ({ id })))
+  expect(estimate(spec)).toEqual(estimate(n, 'independent'))
 })
 
 test('independent rest preparation keeps provider western pixels while legacy specs preserve old flips', () => {

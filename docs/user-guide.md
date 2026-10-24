@@ -22,8 +22,7 @@ Open **Connect PixelLab…** from the character menu (top left), or press the ge
 
 ## What "gens" cost
 
-A gen is one PixelLab generation from your account's monthly allowance. Before you spend anything, every button that spends
-shows an estimate, for example **Create 46–80 gens** or **Make · Est. 34 gens**. Typical estimates:
+A gen is one PixelLab generation from your account's monthly allowance. Creation and item actions show an estimated price beside or inside their button. Enhance uses about 0.05 gens per request. Typical prices:
 
 | Action | About |
 |---|---|
@@ -35,30 +34,52 @@ shows an estimate, for example **Create 46–80 gens** or **Make · Est. 34 gens
 | Try again on an item | shown on the button |
 | Dress up, recolour, outfits, export | free |
 
+The price is an estimate. Empty body output or a wrong frame count may retry once. Body pose estimates, silhouette movement, colour differences and border contact are review notes and do not trigger paid redraws. Equipment fitting keeps its separate automatic checks and retry budget.
 PixelLab may bill some calls in dollars. Automatic quality retries and fallbacks cost extra; queue and generation time vary.
 **Activity** shows reported job usage in gens and dollars, plus your balance. Usage can arrive after a job finishes; an unknown
 request may still have run or charged. Estimates are not spending caps.
+
+## Inspect API calls
+
+Press the **code brackets** icon beside a PixelLab action to peek at its requests without running it. Before generation,
+the list shows estimated costs and the fields already known; dependent images and poses become available when prepared.
+Expand a call for readable fields, with nested objects and lists you can open individually.
+
+The toolbar's code brackets icon shows recorded calls, including automatic generation and quality repairs. Each call shows
+its cost, with a total below. Pending or unreported charges are marked explicitly; dollar charges stay separate from gens.
+The list-plus icon reveals background checks, polling and image downloads. **Copy all calls** copies structured JSON,
+including hidden background calls and full available request images; authentication credentials are excluded. If copying
+is unavailable, PixelDoll downloads the JSON instead.
+
+On phones the same peek fits the screen and closes back to your unchanged form. Recorded history is local to this tab;
+the latest 500 foreground and 2,000 background calls are retained. A notice identifies omitted older calls. After a reload,
+saved queue submissions can be reconstructed, but earlier attempts and background history are not a complete archive.
 
 ## Create a character
 
 Character menu → **New character…**
 
-1. Describe the body under **Who is it?**, for example "a stocky dwarf with a friendly face". Describe only
-   the body. Hair, clothes and gear come later as separate items.
-2. Pick **Skin** and **Build** (slim, average, stocky) if you like.
-3. Press **Create**. You get idle and walk, facing south, east, north and west, as 64 × 64 pixel sprites. Each direction
-   has its own artwork by default, avoiding automatic left/right hand swaps. Generated artwork can still get hands or
-   poses wrong, so inspect every view and move before relying on it.
+1. Enter a **Name** in the title bar for your library and exports. It is not sent as part of the prompt.
+2. In **Appearance**, add **Details** and choose Kind, Build, Proportions or Skin. **Not set** adds no extra hint.
+   Switch to **Prompt** to edit the exact V3 text. Complete lines such as `Kind: Elf` update the matching control; other
+   prose stays in Details. The muted preview and Copy button always use the complete prompt.
+3. Choose a **Body size** preset (48, 64, 96 or 128 px), or type 32–256 pixels in 4px increments. This is V3's source canvas,
+   not a guaranteed opaque body height. **Frame → Auto** adds padding; type a larger frame for more room, up to 256 px.
+   Neither padding nor export rescale the artwork.
+4. Choose **Directions**: Top-down 8 (default), Top-down 4, Diagonal 4, Side-scroller 2 or Unique 8. Individual arrows
+   toggle retained views. Attached mirror buttons derive that view from its horizontal partner. Select the opposite
+   mirror button to reverse the source. Removing a source makes its remaining partner independent. **Unique 8** has no mirrors.
+5. Check **Camera** and leave **Seed** blank for a fresh variation, or enter a non-negative whole seed. The seed affects
+   generation and animations rather than one appearance trait; reuse can give similar results but does not guarantee identical pixels.
+6. Press **Create character** for idle and walk in the selected directions. The muted cost includes the whole pipeline.
 
-**More options** (folded away; the defaults suit most games):
+Hover a title on desktop, or tap it on mobile, for help. **Enhance** uses the V3 prompt endpoint with the current body size
+and camera; the same button becomes **Undo**. It never runs automatically during creation. A failed or stale response keeps
+your text, and no enhancement is automatically retried.
 
-- **Directions**: **4** (default) or **8**, including diagonals. The estimate updates with the number of independently drawn views.
-- **Mirror left-facing views to save credits**: optional economy mode. Western views flip their eastern counterparts, so
-  held items switch hands. Older saved creation drafts retain this behavior; changing the setting does not alter existing characters.
-- **Body size**: **48 px** (default) or **56 px** tall inside the same 64 × 64 sprite. 56 px gives a bigger figure but less room
-  above the head for tall hats. If a 56 px character comes out too tall to leave 6 px above its head, PixelDoll stops after the
-  first drawing and asks you to try again with 48 px or another seed.
-- **Name** and **Seed**. A matching completed request can be reused; new PixelLab generations may differ even with the same seed.
+V3 always creates all eight original views. PixelDoll pads and registers them, animates only the selected independent
+sources, then derives the selected mirrors. Asymmetric details change sides in a mirrored view; use an independent view
+when that matters. A result that does not fit the chosen frame stops with a size error instead of silently cropping it.
 
 New characters wear a light grey shirt and dark grey shorts, so you can tell them apart and recolour them separately.
 
@@ -111,7 +132,7 @@ Leave **Set up the pose rig next** checked to prepare imported artwork for the s
 
 Each character has its own fitted equipment layers. Imported and created characters use the same tools to make those layers, including the [shared design library](#share-equipment-designs-between-characters) within its current compatibility and experimental fitting limits.
 
-Setup supports 64 × 64 humanoid bodies with all four cardinal views or all eight views, and the same headroom needed by created characters. Missing views, empty frames and insufficient headroom are reported before spending. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their real measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
+Setup supports square 32–256 px humanoid frames with all four cardinal views or saved original views for reconnection. Missing views and empty frames are reported before spending. Little space above the head produces a warning about tall hair or hats, without rejecting a contained body. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
 
 New PixelDoll exports include an editable copy with their original rig, equipment keyframes, layers, colours and outfits. Older exports restore their sheets and outfits; setup can recover the body pose rig, but equipment without its original dressed reference must be made again before it can follow future moves. Unknown or failed setup requests stop for review in **Activity** instead of being sent again after reload.
 
@@ -203,15 +224,26 @@ selected equipment posing. The previous body remains if any quality check still 
 
 ## Export
 
-Press **Export** (toolbar), choose **For which engine?**: Godot, Unity, Phaser, Aseprite or PNG + JSON, and download the zip. Export is
+Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines & frameworks** lists Godot, Unity,
+Phaser and GDevelop; **Asset formats** lists Aseprite and PNG + JSON. Export is
 free and runs on your device. Tick **Also export finished characters** to also get one ready-made sheet per outfit.
 
 Each zip has a `README.txt` with a quick start for that engine. Copy the whole folder into your project.
 
-Exported outfits keep their selected colours on separate item layer copies, including skin, shirts and shorts. Matching
-colour combinations share a copy. Original source-colour layers stay available, and importing the ZIP back into PixelDoll
-restores the original editable colours and outfits. In engine assets, a coloured body layer follows a hidden original
-body that provides the shared animation clock.
+Godot includes a native scene, animation resources and an equipment runtime. Unity includes an Editor importer that creates
+a layered prefab, sliced sprites and animation assets; follow its package requirements before importing. Phaser includes
+native atlas data and a Container runtime. GDevelop includes an editable project with registered Sprite frames and an embedded
+controller event: open `gdevelop/game.json` and Preview, or follow its README to copy the objects and event into your project.
+These integrations keep the layers synchronized and expose equipment and outfit controls.
+
+The selected format's description stays visible; hover a card for more detail. Arrow keys move between native radio choices.
+GameMaker is deferred until native runtime verification is available. Unreal is not currently an export option.
+
+Use Aseprite for an editable layered animation, or PNG + JSON for other engines and custom runtimes such as MonoGame.
+The JSON records each layer's size and pivot, frame timing, direction order and equipment rules. Your integration must read
+those rules to preserve the paperdoll; importing images alone does not reproduce equipment behavior. Finished character
+sheets are useful when your game does not need to swap equipment. See the [2026 target review](research/export-targets-2026-10-23.md)
+for why there are dedicated exports for these engines and when more would be useful.
 
 ## Good to know
 
@@ -221,6 +253,13 @@ body that provides the shared animation clock.
 - With PixelDoll open in two tabs, one tab runs the jobs ("Working in another tab"). Keys are not passed between tabs.
   Connect in the active queue tab, or close it to let this tab take over. A blocked generation action opens **Activity**
   with this guidance and keeps the form draft.
+- Parallel jobs use maintained plan defaults: Free/Trial 1, Tier 1 8, Tier 2 10, and Tier 3+ 20. Unknown plans use a
+  fallback of 3. Activity shows a short “jobs at once” footnote; there is no setting to change.
+  If PixelLab is busy with work from its website, Aseprite or another app, your requests stay queued and retry after a
+  wait. Accepted generations keep running; unknown outcomes are not automatically resent, to avoid duplicate charges.
+- A Free/Trial key is valid. Connect warns that skeleton animation and inpainting need Tier 1 or higher; you can continue
+  using available tools and all local dressing, recolouring and export features. Restricted workflows wait before their
+  first paid request, so creating a base cannot spend generations before a required animation is blocked.
 - Keys: Space play/pause · 1–4 face south/east/north/west (1–8 on 8-direction characters, in the order of the direction
   buttons) · 0 all directions · , and . step one frame.
 - **Offline?** The offline banner pauses new submissions and polling until the connection returns. Requests already sent

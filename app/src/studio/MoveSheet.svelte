@@ -3,6 +3,8 @@
   // re-rendered through raw skeleton-v3), plus one pose call per worn item x direction so the items follow the new clip.
   import Sheet from './Sheet.svelte'
   import { untrack } from 'svelte'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { movePlan } from './apiPlans.ts'
   import { formDrafts } from './formDrafts.ts'
   import * as db from '../lib/store/db.ts'
   import type { StoredProject } from '../lib/store/project.ts'
@@ -12,6 +14,7 @@
   import { AUTHORED } from '../lib/rig/poses.ts'
   import { MOVE_STEPS, isV13, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
   import { ui, doc, store, isDemo, moving, settingUp, startMove, matchMoveBodyColours, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
+  import { bodyQualityNote } from './model.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
@@ -79,7 +82,7 @@
     const projectId = doc.id
     const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1' as const, seed: 1 + Math.floor(Math.random() * 1_000_000), ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) }
     formDrafts.move = { projectId, action, text, skip: $state.snapshot(skip), dirs: [...selectedDirs], poseStyle: 'visible-side-v1' }
-    withKey(() => { formDrafts.move = undefined; void startMove(projectId, spec); ui.sheet = 'move' })
+    withKey(() => { formDrafts.move = undefined; void startMove(projectId, spec); ui.sheet = 'move' }, true)
   }
   function chooseAction(next: string) {
     action = next; text = ''
@@ -94,7 +97,7 @@
     <button class="btn primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
   {:else if mine && moving.error}
     <button class="btn plain" onclick={dismissMove}>Start over</button>
-    <button class="btn" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' })}>{recovery || colourRepair ? 'Generate new frames' : 'Try again'}</button>
+    <span class="api-action"><ApiPeek scope="move-retry" label="Generate move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : []} /><button class="btn" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' }, true)}>{recovery || colourRepair ? 'Generate new frames' : 'Try again'}</button></span>
     {#if recovery}<button class="btn primary" onclick={retryChecks}>Retry joint checks</button>{/if}
     {#if colourRepair}<button class="btn primary" onclick={matchColours}>Match body colours</button>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
   {:else if mine}
@@ -102,14 +105,14 @@
     <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
     <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
-    <button class="btn primary lg" disabled={!id || !targetDirs.length || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>{replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button>
+    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) })} /><button class="btn primary lg" disabled={!id || !targetDirs.length || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>{replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
   {/if}
 {/snippet}
 
 <Sheet title={mine && moving.spec?.itemMethod === 'grid' ? 'Repair item frames' : (mine ? moving.spec?.replace : replacing) ? 'Replace move views' : 'Add a move'} cancel={mine && !moving.done ? 'Hide' : 'Cancel'} onclose={() => (ui.sheet = null)} footer={isDemo() || (!ok && !mine) ? undefined : foot}>
   {#if mine}
     <div class="form">
-      <p style="font-weight:600">{nice(moving.spec!.id)}{moving.spec?.dirs ? ` · ${moving.spec.dirs.map(nice).join(', ')}` : ''}</p>
+      <p style="font-weight:600">{nice(moving.spec!.id)}{moving.spec?.dirs ? ` · ${moving.spec.dirs.map(nice).join(', ')}` : ''}<ApiPeek scope="move-progress" label="Current move generation" plan={moving.spec ? movePlan(rec, moving.spec) : []} activityScope={moving.spec?.activityScope} /></p>
       {#if moving.spec?.itemMethod === 'grid'}<p class="muted small">Only the selected item frames are redrawn; the body stays fixed. Results that fail hard checks keep the previous item frames.</p>{/if}
       <ol class="steps-list">
         {#each MOVE_STEPS as s, i (s.id)}
@@ -129,7 +132,7 @@
       {/if}
       {#if recoveryError}<p class="notice bad small"><CircleAlert size={14} />{recoveryError}</p>{/if}
       {#if moving.done && moving.fitIds.length}<p class="notice small"><Check size={14} /><span>The body move is ready. {moving.fitIds.length} shared equipment {moving.fitIds.length === 1 ? 'copy needs' : 'copies need'} a separately priced animation review.</span><button class="btn sm" onclick={() => (ui.sheet = 'activity')}>Review equipment fits</button></p>{/if}
-      {#each moving.warnings as warning (warning)}<p class="notice warn small"><CircleAlert size={14} />{warning}</p>{/each}
+      {#each moving.warnings as warning (warning)}<p class="notice warn small"><CircleAlert size={14} />{bodyQualityNote(warning)}</p>{/each}
     </div>
   {:else if isDemo() || !ok}
     <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.'}</p>
@@ -176,7 +179,7 @@
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
-          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ' (west mirrored)' : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · failed checks re-roll once.</p>
+          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ' (west mirrored)' : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes do not trigger redraws.</p>
         </div>
       </details>
     </div>

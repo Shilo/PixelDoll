@@ -86,10 +86,10 @@ export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]
       [[130, 110], [50, 70], { lean: -6 }], [[105, 95], [75, 85], { lean: -2 }], [[98, 90], [82, 90]]]),
   // death, 8 frames: stagger -> kneel -> fall over (upper body rotates about the hips) -> lie still. Falls toward -x.
   death: (rest, dir) => {
+    const floor = Math.max(rest['RIGHT LEG'].y, rest['LEFT LEG'].y);
     const kneel = (dy: number) => {
       const p = shift(rest, [...UPPER, ...HIPS], 0, dy);
-      for (const k of ['RIGHT KNEE', 'LEFT KNEE']) p[k].y = Math.min(rest[k].y + dy * 0.7, 58);
-      for (const k of ['RIGHT LEG', 'LEFT LEG']) p[k].y = Math.min(rest[k].y, 60);
+      for (const k of ['RIGHT KNEE', 'LEFT KNEE']) p[k].y = Math.min(rest[k].y + dy * 0.7, floor - 2);
       return p;
     };
     const n = backView(dir), limp = (p: Skeleton) => setArm(setArm(p, 'RIGHT', n ? 80 : 100, n ? 85 : 95), 'LEFT', n ? 100 : 80, n ? 95 : 85);
@@ -98,8 +98,10 @@ export const ACTIONS: Record<string, (rest: Skeleton, dir: string) => Skeleton[]
       const p = limp(kneel(dy));
       if (lg != null) for (const side of ['RIGHT', 'LEFT']) {
         const hp = p[`${side} HIP`], a = (lg * Math.PI) / 180;
-        p[`${side} KNEE`] = { ...p[`${side} KNEE`], x: hp.x + 8 * Math.cos(a), y: hp.y + 8 * Math.sin(a) };
-        p[`${side} LEG`] = { ...p[`${side} LEG`], x: hp.x + 15 * Math.cos(a), y: hp.y + 15 * Math.sin(a) };
+        const hip = rest[`${side} HIP`], knee = rest[`${side} KNEE`], ankle = rest[`${side} LEG`];
+        const thigh = Math.hypot(knee.x - hip.x, knee.y - hip.y), leg = thigh + Math.hypot(ankle.x - knee.x, ankle.y - knee.y);
+        p[`${side} KNEE`] = { ...p[`${side} KNEE`], x: hp.x + thigh * Math.cos(a), y: hp.y + thigh * Math.sin(a) };
+        p[`${side} LEG`] = { ...p[`${side} LEG`], x: hp.x + leg * Math.cos(a), y: hp.y + leg * Math.sin(a) };
       }
       out.push(rotate(p, mid(p, HIPS), UPPER, up));
     }

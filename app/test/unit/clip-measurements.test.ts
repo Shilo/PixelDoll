@@ -51,21 +51,23 @@ async function fixture(validAttempts: boolean[]) {
   return { run: () => addMove(saved.id, { id: 'idle', action: 'idle', seed: 7, frames: 4, items: [], replace: true }), original, saved: () => saved, raws: () => raws, put, update, atomic }
 }
 
-test('two incomplete measurement candidates cannot replace a saved body or publish any cell', async () => {
+test('incomplete measurements stop without buying a replacement body or publishing any cell', async () => {
   const f = await fixture([false, false])
-  await expect(f.run()).rejects.toThrow('idle south: joints could not be measured on frame 0')
-  expect(f.raws()).toBe(2); expect(f.put).not.toHaveBeenCalled(); expect(f.update).not.toHaveBeenCalled(); expect(f.atomic).not.toHaveBeenCalled(); expect(f.saved()).toEqual(f.original)
+  await expect(f.run()).rejects.toThrow('valid joints were not found on every frame')
+  expect(f.raws()).toBe(1); expect(f.put).not.toHaveBeenCalled(); expect(f.update).not.toHaveBeenCalled(); expect(f.atomic).not.toHaveBeenCalled(); expect(f.saved()).toEqual(f.original)
 })
 
-test.each([{ valid: [false, true] }, { valid: [true, false] }])('a complete art-warning candidate wins over missing measurements regardless of attempt order: %o', async ({ valid }) => {
-  // Complete candidate intentionally has two real artwork flags; incomplete candidate has only the old measurement flag.
+test('complete artwork with review notes is saved without buying another candidate', async () => {
   const qa = clipQa({ anim: 'idle', rest: body(), frames: [body(true)], requested: [points()], measured: [points()], stray: 0 })
-  expect(qa.fails).toHaveLength(2)
-  const f = await fixture(valid)
-  await expect(f.run()).resolves.toEqual({ fitIds: [], warnings: [] })
-  expect(f.raws()).toBe(2); expect(f.update).toHaveBeenCalledOnce(); expect(f.atomic).toHaveBeenCalledOnce()
+  expect(qa.fails).toHaveLength(0)
+  expect(qa.warnings).toHaveLength(2)
+  const f = await fixture([true, false])
+  const result = await f.run()
+  expect(result.fitIds).toEqual([])
+  expect(result.warnings).toEqual(expect.arrayContaining([expect.stringContaining('palette similarity'), expect.stringContaining('frame border')]))
+  expect(f.raws()).toBe(1); expect(f.atomic).toHaveBeenCalledOnce()
   const saved = f.saved(), source = saved.manifest.rig.animations[0].sources!.south!
   expect(source.measured).toHaveLength(4); expect(source.measured!.every(hasAll)).toBe(true)
   expect(Object.keys(saved.skeletons!)).toHaveLength(4)
-  expect((saved.rigQa as { warnings: string[] }).warnings).toEqual(expect.arrayContaining([expect.stringContaining('palette fit'), expect.stringContaining('cell border')]))
+  expect((saved.rigQa as { warnings: string[] }).warnings).toEqual(expect.arrayContaining([expect.stringContaining('palette similarity'), expect.stringContaining('frame border')]))
 })

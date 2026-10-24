@@ -1,5 +1,7 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { itemPlan } from './apiPlans.ts'
   import { formDrafts } from './formDrafts.ts'
   import GroupIcon from './GroupIcon.svelte'
   import DesignLibrary from './DesignLibrary.svelte'
@@ -52,13 +54,13 @@
   function go() {
     formDrafts.item = { projectId: doc.id, sourceGroup: ui.newItem.group, group, slot, prompt, colour, name }
     const i = $state.snapshot(input)
-    withKey(() => void make(i))
+    withKey(() => void make(i), !!plan?.minimumTier)
   }
 </script>
 
 {#snippet foot()}
       <span class="foot-note">{plan ? `About ${plan.minutes + 2} min. You can keep working.` : ''}</span>
-      <button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button>
+      <span class="api-action"><ApiPeek scope="item-make" label="Make item" plan={itemPlan(m && rec ? { rec: { ...rec, manifest: m } } as RigCtx : null, input)} /><button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button></span>
 {/snippet}
 
 <Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() || ui.newItemTab === 'designs' ? undefined : foot}>

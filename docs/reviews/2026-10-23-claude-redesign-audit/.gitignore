@@ -1,0 +1,3 @@
+# Preserve captures and raw probe outputs locally alongside the original audit.
+# Commit the report, disposition and reproducible scripts instead.
+evidence/

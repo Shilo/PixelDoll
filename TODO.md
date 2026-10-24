@@ -26,7 +26,17 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
       ([follow-up](docs/testing/item-quality-follow-up-2026-10-22.md)). Keep both drafts unaccepted.
 2. [ ] Item quality polish: stored cape back-hem grey smudges and actual helmet hurt-frame deformations. The forearm
       occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recoloured.
-3. [ ] Unity export live verification (needs Unity Hub sign-in; C# already compiles).
+3. [ ] **Unity native engine verification — blocked (2026-10-23).** Unity Editor 6000.4.0f1 is installed, but has no
+      activated license; the batch-mode attempt exited 198. Missing prerequisite: an activated compatible Unity Editor
+      (Unity Hub sign-in/license setup by the user). Existing generated-C# compilation against installed assemblies and
+      official Sprite interfaces, plus JSON/structural tests, do not establish actual Editor import or runtime correctness.
+      Before calling the Unity export fully verified, import a fresh exported character into a real Unity project with
+      the required 2D Sprite package, compile without errors, and verify generated sprites, pivots, prefab and Animator.
+      Run rendered assertions for playlist timing/repeated cells/nonlooping playback, synchronized layers, oversized
+      alignment, equipment/hides/tucking/per-cell depth, source/default/linked/preset palettes, fractional pixels-per-unit
+      and independent characters. Reimport must preserve existing asset references; a standalone player build must retain
+      all equipment resources and pass the same runtime checks. Record Editor/package versions, commands and results in
+      [export verification](docs/testing/export-challenge-2026-10-23.md) before marking this complete.
 4. [ ] Complete a fresh independent four-direction idle + walk live validation. The previous full run stopped on
       two unknown `/estimate-skeleton` HTTP 500 outcomes. Preserve those records and never automatically resend them;
       distinguish a successful new full creation from the verified idle-only recovery and repaired Slash artifact.
@@ -152,6 +162,19 @@ despite the shared-equipment test suite passing.
       CI guard on the precache list
 
 ## Deferred (user)
+- [ ] **Native Unreal Engine export (2026-10-23).** Paper2D supports native Sprites/Flipbooks, but image descriptors alone
+      do not implement a swappable paperdoll. A complete target needs an Editor importer plus a Blueprint-callable
+      Actor/component for shared timing, equipment/hides/tucking, per-frame ordering, oversize pivots and exact palette
+      materials/textures. Binary `.uasset` generation from the browser is not a portable substitute for that importer.
+      No runnable Unreal Editor is installed here (the old UE 5.1 registration points to a missing directory), so native
+      import, rendering and cooked-build dependency retention cannot currently be verified. Defer the public export
+      option until the plugin/runtime exists and passes those engine tests. See [native export concerns and scope](docs/research/native-export-expansion-2026-10-23.md#unreal-possible-but-not-currently-implemented).
+- [ ] **Native GameMaker export (2026-10-23).** Deferred because the user will not install the runtime needed for actual
+      engine verification. Do not advertise a GameMaker target based on PNG strips or ProjectTool validation alone.
+      Future scope: native `.yyp`/`.yy` resources or `.yymps`, reusable GML paperdoll runtime, sprite origins, shared timing,
+      equipment/hides/tucking/z order and exact owner-local palettes. Acceptance requires Igor compile/run and rendered
+      alignment/timing/outfit assertions. Official IDE 2026.0.0.16 / ProjectTool 2024.14.165 were inspected; matching runtime
+      2026.0.0.23 is absent. See [native export expansion](docs/research/native-export-expansion-2026-10-23.md).
 - [ ] PWA and final-origin decision (custom domain vs shilo.github.io/PixelDoll/); retain the plan above for later
 - [ ] Theming support (token-based themes switchable at runtime)
 - [ ] "Paper" theme inspired by look D: modern, clean, paper-like surfaces; may be playful but must read as paper (brand)

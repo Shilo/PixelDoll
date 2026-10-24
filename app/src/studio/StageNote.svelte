@@ -6,6 +6,8 @@
   import { groupOf } from './model.ts'
   import { ui, doc, store, isDemo, moving, startMove, withKey, openNewItem, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { TriangleAlert } from './icons.ts'
+  import { default as ApiPeek } from './ApiPeek.svelte'
+  import { movePlan } from './apiPlans.ts'
 
   const m = $derived(store.project?.manifest)
   const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim))
@@ -30,7 +32,7 @@
   function makePose() {
     const projectId = doc.id
     const spec = { id: anim!.id, frames: anim!.cells, items: pose.map((i) => i.id), dirs: [...targetDirs], seed: 1 + Math.floor(Math.random() * 1_000_000) }
-    withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
+    withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' }, true)
   }
 </script>
 
@@ -45,7 +47,7 @@
     {:else if shared}
       <button class="btn sm" disabled={extensionPreparing(shared.id)} onclick={() => openItemExtension(shared.id, [anim!.id])}>{extensionPreparing(shared.id) ? 'Checking fit…' : 'Review equipment fit'}</button>
     {:else if pose.length === missing.length}
-      <button class="btn sm primary" disabled={!!moving.spec && !moving.done} onclick={makePose}>Make it <span class="cost">Est. {cost} gens</span></button>
+      <span class="api-action"><ApiPeek scope="equipment-missing-move" label="Make missing equipment frames" plan={m && anim ? movePlan({ manifest: m }, { id: anim.id, frames: anim.cells, items: pose.map(i => i.id), dirs: [...targetDirs] }) : []} /><button class="btn sm primary" disabled={!!moving.spec && !moving.done} onclick={makePose}>Make it <span class="cost">Est. {cost} gens</span></button></span>
     {:else if remake}
       <button class="btn sm" onclick={() => withKey(() => openNewItem(groupOf(remake.slot).id, { slot: remake.slot, prompt: remake.prompt }))}>Make it again…</button>
     {/if}

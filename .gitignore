@@ -28,6 +28,22 @@ Thumbs.db
 spikes/api/out/
 docs/testing/img/
 docs/design/screenshots/
+# Generated design/test media stays local; source fixtures required by the app are retained.
+docs/design/**/*.png
+docs/design/**/*.jpg
+docs/design/**/*.jpeg
+docs/design/**/*.webp
+docs/design/**/*.gif
+# Review screenshots follow the same local-media policy as design evidence.
+docs/reviews/**/*.png
+docs/reviews/**/*.jpg
+docs/reviews/**/*.jpeg
+docs/reviews/**/*.webp
+docs/reviews/**/*.gif
+docs/testing/**/*.png
+docs/testing/**/*.zip
+docs/testing/live-creator-2026-10-23/*.json
+docs/testing/live-creator-2026-10-23/*.txt
 design-mockups/
 
 # local agent session handoffs

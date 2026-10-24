@@ -17,5 +17,5 @@
   })
   const k = $derived(image ? Math.max(1, Math.floor(Math.min(64 / image.w, 72 / image.h) * ui.dpr)) : 1)
 </script>
-<span class="thumb">{#if image}<Sprite img={image} {k} w={image.w} h={image.h} label="{design.name}, saved colourway" />{/if}</span>
+<span class="thumb">{#if image}<Sprite img={image} {k} w={image.w} h={image.h} limit={72} label="{design.name}, saved colourway" />{/if}</span>
 <style>.thumb { display: grid; place-items: center; width: 80px; min-height: 80px; flex: none; border-radius: var(--r-ctl); background: var(--stage); overflow: hidden; }</style>

@@ -2,6 +2,7 @@
 import { api, ApiError } from './pixellab/client.ts';
 import type { Balance } from './pixellab/routes.ts';
 import { queue } from './pixellab/queue.ts';
+import type { ActivityContext } from './pixellab/activity.ts';
 
 const LS_KEY = 'pixellabApiKey'; // shared across apps on this origin
 const lsGet = () => {
@@ -27,7 +28,7 @@ queue.subscribe(() => {
   Object.assign(app, { key: queue.key, keyRejected: false, balance: null, balanceError: '', balanceAt: 0, ...(!queue.key ? { remembered: false } : {}) });
 });
 
-export function setKey(key: string, remember: boolean) {
+export function setKey(key: string, remember: boolean, activity?: ActivityContext) {
   keyRevision++;
   app.key = key.trim();
   app.keyRejected = false;
@@ -39,7 +40,7 @@ export function setKey(key: string, remember: boolean) {
     else clearSavedKey();
   } catch {}
   queue.setKey(app.key);
-  void refreshBalance();
+  void refreshBalance(activity);
 }
 
 export function forgetKey() {
@@ -54,17 +55,18 @@ export function forgetKey() {
   queue.setKey('');
 }
 
-export async function refreshBalance() {
+export async function refreshBalance(activity?: ActivityContext | Event) {
   if (!app.key) return;
-  const requestedKey = app.key, revision = keyRevision;
+  const key = app.key, revision = keyRevision;
   try {
-    const balance = await api<Balance>(requestedKey, 'GET', '/balance');
-    if (revision !== keyRevision || requestedKey !== app.key) return;
+    const balance = await api<Balance>(key, 'GET', '/balance', undefined, undefined, activity instanceof Event ? { label: 'Refresh balance', background: false } : activity);
+    if (revision !== keyRevision || key !== app.key) return;
     app.balance = balance;
+    queue.setBalance(balance, key);
     app.balanceError = '';
     app.balanceAt = Date.now();
   } catch (e) {
-    if (revision !== keyRevision || requestedKey !== app.key) return;
+    if (revision !== keyRevision || key !== app.key) return;
     app.balanceError = (e as Error).message;
     if (e instanceof ApiError && e.kind === 'auth') app.keyRejected = true;
   }
