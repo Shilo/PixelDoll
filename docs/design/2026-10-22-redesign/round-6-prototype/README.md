@@ -34,6 +34,8 @@ Open **http://127.0.0.1:5202**. The server binds only to localhost, disables Vit
 
 Tab/Shift+Tab traverse UI controls. With the world focused, 1/2/3 switch views; Escape or Backspace returns to selection. Editable controls keep their normal keys.
 
+On character selection, wheel down anywhere selects the next character; wheel up selects the previous one, wrapping at the ends. Search results constrain wheel, arrow-button and keyboard navigation. The selected desktop row stays visible. Pixel/line/page wheel deltas share a small threshold and 180 ms rate limit to tame trackpad bursts. Open menus/dialogs, browser zoom and other screens retain normal wheel behavior.
+
 Views and character changes reset world position for repeatable comparisons. This proof has no jumping, combat, collisions, elevation or scene objects.
 
 ## Consistent world and exact actors

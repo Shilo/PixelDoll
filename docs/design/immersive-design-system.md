@@ -70,6 +70,8 @@ Preview and live modes share keyboard vectors, compass metadata and nearest-dire
 
 Character selection reuses the same key mapping: A/W/Left/Up select the previous character; D/S/Right/Down select the next. Each key press advances once, with existing wraparound; held-key repeats do not race through characters. Enter opens customization only when the world has focus; on a focused control it performs native activation. Search fields, menus, dialogs and modified shortcuts retain their normal behavior.
 
+The selection screen also accepts vertical wheel input anywhere: down selects next, up previous. Wheel, arrow buttons and selection shortcuts navigate the current search results, wrapping at their ends. Wheel input normalizes pixel/line/page deltas, accumulates a 40px threshold and caps changes at one per 180ms without queuing large bursts. Reveal the chosen desktop row without moving focus. Open menus/dialogs and modified wheel gestures retain native behavior; other screens keep normal scrolling. This is consumer navigation, not a Bronze theme recipe.
+
 Escape dismisses the topmost menu/dialog or returns a non-editing screen to selection. Editable controls retain Escape and Backspace. Backspace dismisses a popover or returns from the focused world; on ordinary controls it must not navigate the page or browser history. Repeats do not cascade through navigation levels.
 
 Tab/Shift+Tab always traverse controls. With the world focused, 1/2/3 select Preview/Top-down/Side-scroller. View changes stop movement and reset the camera. Native button activation survives UI updates, popovers receive focus on opening, and closing overlays returns focus to a surviving trigger. A full-window world uses Bronze's inset focus-offset option so its ring remains visible.

@@ -65,7 +65,8 @@ function library() { return `<section class="identity"><h1>Characters</h1><p cla
 const characterThumbs = new WeakMap();
 function characterThumbnail(c) { const canvas = demo.sprite(c.items, 'walk', 'south', 0).canvas; if (!characterThumbs.has(canvas))
     characterThumbs.set(canvas, canvas.toDataURL()); return characterThumbs.get(canvas); }
-function characterButtons() { const filtered = characters.map((c, i) => ({ c, i })).filter(({ c }) => c.name.toLowerCase().includes(state.search.toLowerCase())); return filtered.length ? filtered.map(({ c, i }) => button(`<img class="character-thumb" src="${characterThumbnail(c)}" alt=""><span class="character-copy"><span>${esc(c.name)}</span><small>Demo outfit</small></span>`, 'character:' + i, { cls: 'character-row', pressed: i === state.character })).join('') : '<p class="muted">No matching demo outfits.</p>'; }
+function matchingCharacters() { return characters.map((c, i) => ({ c, i })).filter(({ c }) => c.name.toLowerCase().includes(state.search.toLowerCase())); }
+function characterButtons() { const filtered = matchingCharacters(); return filtered.length ? filtered.map(({ c, i }) => button(`<img class="character-thumb" src="${characterThumbnail(c)}" alt=""><span class="character-copy"><span>${esc(c.name)}</span><small>Demo outfit</small></span>`, 'character:' + i, { cls: 'character-row', pressed: i === state.character })).join('') : '<p class="muted">No matching demo outfits.</p>'; }
 function equipmentCoverage() { return hiddenItems.length ? hiddenItems.map(i => i.name).join(', ') + ' hidden — missing ' + (resolved.clip ?? '') + ' / ' + (resolved.dir ?? '') + ' frames' : ''; }
 function coverageText() { const preview = state.view === 'preview' && state.screen === 'studio' ? previewPresentation() : null; return [preview?.missing ? `${labelDir[state.direction]} ${clipLabel(state.clip)} unavailable — ${preview.clip ? 'showing a still pose' : 'no artwork for this facing'}.` : '', equipmentCoverage()].filter(Boolean).join(' '); }
 const previewPresentation = () => resolvePreview({ clip: state.clip, dir: state.direction, available: demo.available, still: demo.still });
@@ -151,7 +152,10 @@ async function action(action, trigger = document.activeElement) {
         return;
     }
     if (name === 'previous' || name === 'next') {
-        changeCharacter((state.character + (name === 'next' ? 1 : characters.length - 1)) % characters.length);
+        const choices = matchingCharacters(), step = name === 'next' ? 1 : -1;
+        if (!choices.length) return;
+        const index = choices.findIndex(({ i }) => i === state.character);
+        changeCharacter(choices[index < 0 ? (step > 0 ? 0 : choices.length - 1) : (index + step + choices.length) % choices.length].i);
         return;
     }
     if (['more', 'characters', 'description'].includes(name)) {
@@ -345,6 +349,26 @@ dialog.addEventListener('keydown', e => {
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
 });
 const editTarget = el => el?.closest('input,textarea,select,[contenteditable=true]');
+let wheelDelta = 0, wheelAt = 0, wheelStepAt = -Infinity;
+window.addEventListener('wheel', e => {
+    if (!demo || state.screen !== 'selection' || state.menu || dialog.open || e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) {
+        wheelDelta = 0;
+        return;
+    }
+    if (!e.deltaY || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+    e.preventDefault();
+    const now = performance.now(), delta = e.deltaY * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? innerHeight : 1);
+    if (now - wheelAt > 180 || Math.sign(delta) !== Math.sign(wheelDelta)) wheelDelta = 0;
+    wheelAt = now;
+    // Normalize mouse/trackpad input, discard bursts during the cooldown, and
+    // never queue multiple selections from one large wheel event.
+    if (now - wheelStepAt < 180) { wheelDelta = 0; return; }
+    wheelDelta += delta;
+    if (Math.abs(wheelDelta) < 40) return;
+    action(wheelDelta > 0 ? 'next' : 'previous');
+    wheelDelta = 0; wheelStepAt = now;
+    ui.querySelector(`.library [data-action="character:${state.character}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}, { passive: false });
 window.addEventListener('keydown', e => {
     if (!demo || e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return;
     const k = e.key.toLowerCase(), worldFocused = e.target === $('#actors');
