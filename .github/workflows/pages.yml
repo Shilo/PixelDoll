@@ -29,8 +29,8 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npx playwright install --with-deps chromium
-      - run: npm run e2e # builds + dist guard, then keyless production and browser self-tests
-        timeout-minutes: 5
+      - run: npm run e2e -- --reporter=list # show each result even if a later test or the step times out
+        timeout-minutes: 15 # expanded creator/export suites run serially; keep per-test timeouts unchanged
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v6
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
