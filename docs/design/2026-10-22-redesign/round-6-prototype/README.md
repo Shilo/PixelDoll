@@ -2,7 +2,9 @@
 
 Requested baseline comparison: [prototype before Bronze UI versus current](http://127.0.0.1:5202/pre-bronze-review.html), with fresh matching desktop/mobile captures. [Provenance](./pre-bronze-comparison.md).
 
-Current ownership contract: [Bronze UI 0.2.0](./theme-ownership-0.2.0.md). Shared appearance, including scene-backing material strengths, is now upstream; consumer layout remains local. Earlier entries below describe their historical state.
+**Latest review repairs:** [Challenged Claude audit and accepted fixes](../../../reviews/2026-10-23-claude-redesign-audit/response.md). Bronze UI 0.2.1 adds shared control fixes; keyboard, focus, compact-stage and device-pixel corrections stay in the consumer. See that report for current verification; older galleries retain their recorded snapshot hashes.
+
+Ownership contract: [Bronze UI 0.2.0](./theme-ownership-0.2.0.md). Shared appearance, including scene-backing material strengths, is now upstream; consumer layout remains local. Earlier entries below describe their historical state.
 
 **Theme patch 0.1.1:** [Upstream ownership audit and verification](theme-patch-0.1.1.md). Native dropdown recipes now come from the published dependency; the More popup says Additional equipment and phone view tabs have explicit clearance below the prompt.
 
@@ -25,10 +27,12 @@ node docs/design/2026-10-22-redesign/round-6-prototype/run.mjs
 Open **http://127.0.0.1:5202**. The server binds only to localhost, disables Vite environment-file loading and uses neither the app server configuration nor PixelLab credentials. It imports the existing fixture loader/compositor directly. There are no paid requests, project writes or production storage changes. Only this prototype's appearance preference persists.
 
 1. Select an actor in the world, then Customize. The three actors are outfit variants of the same genuine demo body, not newly generated characters. Click the character name to switch actors.
-2. In Preview, select Walk or Cross-punch, play/pause and use WASD/arrows or the facing buttons. Directions come from the character, not the selected animation. Missing clip/facing frames show an explicitly identified still for that facing; the requested clip remains selected and the world stays still.
-3. In Top-down, use WASD/arrows or press and drag anywhere in the world outside controls. Side-scroller uses horizontal movement. Position changes continuously while authored animation frames play at their stored timing; the camera follows.
+2. In Preview, select Walk or Cross-punch, play/pause and focus the world to use WASD/arrows, or use the facing buttons. Directions come from the character, not the selected animation. Missing clip/facing frames show an explicitly identified still for that facing; the requested clip remains selected and the world stays still.
+3. In Top-down, focus the world to use WASD/arrows or press and drag anywhere in the world outside controls. Side-scroller uses horizontal movement. Position changes continuously while authored animation frames play at their stored timing; the camera follows.
 4. Change equipment while moving. On touch screens, the first world finger owns movement and a second finger can operate equipment. Release stops movement. Modal opening, blur, hiding the page, view changes and resizing also clear input.
 5. Open the overflow menu and choose **Light mode** or **Dark mode**. One action shows the destination mode; there is no Appearance category or named-theme selector. New character opens the editable visual form; generation is deliberately disabled.
+
+Tab/Shift+Tab traverse UI controls. With the world focused, 1/2/3 switch views; Escape or Backspace returns to selection. Editable controls keep their normal keys.
 
 Views and character changes reset world position for repeatable comparisons. This proof has no jumping, combat, collisions, elevation or scene objects.
 

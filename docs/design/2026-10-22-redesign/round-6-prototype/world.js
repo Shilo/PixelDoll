@@ -51,11 +51,18 @@ export class World {
         await Promise.all(Object.values(t.backgrounds).map(url => this.load(url))); }
     layout(state) {
         const w = innerWidth, h = innerHeight, mobile = w <= 760, short = h <= 540 && w >= h;
-        const { width: stageWidth, center: x } = stageLayout();
+        const { width: stageWidth, center: x, top, bottom } = stageLayout();
         const studio = state.screen === 'studio';
-        const y = mobile ? (short ? h * .65 : h * (studio ? .52 : .575)) : h * (studio ? .755 : .77);
-        const scale = Math.max(2, Math.floor(Math.min(mobile ? stageWidth / (studio ? 110 : 100) : stageWidth / 130, h * (mobile ? (studio ? .24 : .26) : (studio ? .40 : .43)) / 50)));
-        return { w, h, mobile, x, y, scale, stageWidth };
+        let y = mobile ? (short ? h * .65 : h * (studio ? .52 : .575)) : h * (studio ? .755 : .77);
+        let scale = Math.max(2, Math.floor(Math.min(mobile ? stageWidth / (studio ? 110 : 100) : stageWidth / 130, h * (mobile ? (studio ? .24 : .26) : (studio ? .40 : .43)) / 50)));
+        const dpr = devicePixelRatio || 1;
+        // Keep the approved roomy composition. Compact stages must fit the whole
+        // frame, including the raised neighbouring characters on selection.
+        const compact = mobile || short, raised = studio ? 0 : 30;
+        if (compact) scale = Math.min(scale, Math.max(1 / dpr, (bottom - top - raised) / 64));
+        scale = Math.max(1, Math.floor(scale * dpr)) / dpr;
+        if (compact) y = Math.min(bottom, Math.max(top + 64 * scale + raised, y));
+        return { w, h, mobile, x, y, scale, stageWidth, dpr };
     }
     projection(state, camera) { const l = this.layout(state), side = state.view === 'side'; const horizon = side ? l.y - l.h * .13 : -l.h * .40, focal = l.h * 1.1, height = side ? 95 : 600, depth = focal * height / (l.y - horizon); return { ...l, horizon, focal, height, depth, camera }; }
     point(x, y, p) { const z = p.depth + y - p.camera.y; return { x: p.x + (x - p.camera.x) * p.focal / z, y: p.horizon + p.focal * p.height / z }; }
@@ -88,17 +95,21 @@ export class World {
     }
     async backdrop(state) {
         const l = this.layout(state), view = state.screen === 'studio' ? state.view : state.screen, t = THEMES[state.theme], url = t.backgrounds[view] ?? t.backgrounds.preview;
-        const stamp = [url, view, l.w, l.h].join('|');
+        const stamp = [url, view, l.w, l.h, l.dpr].join('|');
         if (stamp === this.stamp)
             return;
         this.stamp = stamp;
         const image = await this.load(url);
         if (stamp !== this.stamp)
             return;
-        const dpr = Math.min(devicePixelRatio || 1, 2);
+        const dpr = l.dpr;
         for (const c of [this.sky, this.ground, this.actors]) {
             c.width = Math.round(l.w * dpr);
             c.height = Math.round(l.h * dpr);
+            // A fractional CSS viewport can round the backing store up. Match
+            // its CSS size so the browser does not resample our device pixels.
+            c.style.width = `${c.width / dpr}px`;
+            c.style.height = `${c.height / dpr}px`;
         }
         this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         this.dpr = dpr;
@@ -109,9 +120,12 @@ export class World {
         if (live) {
             const p = this.projection(state, { x: 0, y: 0 });
             g.drawImage(image, 0, 0, image.width, image.height * t.horizon, 0, 0, l.w, Math.max(p.horizon + 24, 1));
+            this.liveSkyImage = image;
+            this.skyHorizon = p.horizon;
             this.currentTexture = this.texture(state.theme, image);
         }
         else {
+            this.liveSkyImage = null;
             const dh = l.mobile ? l.h * .70 : l.h, dw = l.mobile ? image.width * dh / image.height : l.w;
             g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bu-surface').trim();
             g.fillRect(0, 0, l.w, l.h);
@@ -120,6 +134,14 @@ export class World {
     }
     floor(state, camera) {
         const p = this.projection(state, camera), gl = this.gl, t = THEMES[state.theme], d = this.dpr || 1;
+        // Sheet expansion and hint dismissal can move the measured stage without
+        // changing the viewport. Repaint cached sky only when its horizon moves.
+        if (this.liveSkyImage && this.skyHorizon !== p.horizon) {
+            const image = this.liveSkyImage, g = this.sky.getContext('2d');
+            g.clearRect(0, 0, p.w, p.h);
+            g.drawImage(image, 0, 0, image.width, image.height * t.horizon, 0, 0, p.w, Math.max(p.horizon + 24, 1));
+            this.skyHorizon = p.horizon;
+        }
         gl.viewport(0, 0, this.ground.width, this.ground.height);
         gl.useProgram(this.program);
         const set = (name, fn, ...args) => gl[fn](gl.getUniformLocation(this.program, name), ...args);
@@ -141,7 +163,8 @@ export class World {
         return p;
     }
     drawSprite(canvas, cx, feet, scale, reflection) {
-        const g = this.ctx, x = Math.round(cx - 32 * scale), y = Math.round(feet - 64 * scale);
+        const dpr = this.dpr || 1, snap = value => Math.round(value * dpr) / dpr;
+        const g = this.ctx, x = snap(cx - 32 * scale), y = snap(feet - 64 * scale);
         g.imageSmoothingEnabled = false;
         if (reflection && REFLECTION.enabled) {
             let r = this.reflections.get(canvas);
@@ -163,7 +186,7 @@ export class World {
                 this.reflections.set(canvas, r);
             }
             g.globalAlpha = REFLECTION.opacity;
-            g.drawImage(r, x, Math.round(feet), 64 * scale, 64 * scale * REFLECTION.compression);
+            g.drawImage(r, x, snap(feet), 64 * scale, 64 * scale * REFLECTION.compression);
             g.globalAlpha = 1;
         }
         g.drawImage(canvas, x, y, 64 * scale, 64 * scale);
@@ -177,13 +200,14 @@ export class World {
             return;
         if (state.screen === 'selection') {
             const n = characters.length, selected = state.character;
+            const neighborScale = Math.min(l.scale, Math.max(1, Math.round(Math.max(2, Math.round(l.scale * .56)) * l.dpr)) / l.dpr);
             for (const [offset, smaller] of [[-1, true], [1, true], [0, false]]) {
                 if (n < 2 && smaller)
                     continue;
                 const ix = (selected + offset + n) % n;
                 if (n === 2 && offset === 1)
                     continue;
-                const c = characters[ix], sc = smaller ? Math.max(2, Math.round(l.scale * .56)) : l.scale, xx = l.x + offset * (l.stageWidth * (l.mobile ? .32 : .25)), yy = l.y - (smaller ? 30 : 0);
+                const c = characters[ix], sc = smaller ? neighborScale : l.scale, xx = l.x + offset * (l.stageWidth * (l.mobile ? .32 : .25)), yy = l.y - (smaller ? 30 : 0);
                 const spr = demo.sprite(c.items, 'walk', 'south', 0);
                 const r = this.drawSprite(spr.canvas, xx, yy, sc, REFLECTION.selection);
                 this.hitAreas.push({ ...r, index: ix });

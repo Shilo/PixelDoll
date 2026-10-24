@@ -1,0 +1,93 @@
+import { chromium, webkit } from '../../../../app/node_modules/playwright/index.mjs';
+import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+const engine = process.env.BROWSER === 'webkit' ? 'webkit' : 'chromium';
+import { fileURLToPath } from 'node:url';
+const base = process.env.PROTOTYPE_URL ?? 'http://127.0.0.1:5202/';
+assert.equal(new URL(base).hostname, '127.0.0.1');
+const browser = await ({ chromium, webkit })[engine].launch();
+const cases = [], errors = [];
+const out = new URL('./evidence/claude-remediation/', import.meta.url);
+await mkdir(out, { recursive: true });
+try {
+  for (const theme of ['obsidian', 'porcelain']) for (const [width, height] of [[1366,768],[390,844]]) {
+    const page = await browser.newPage({ viewport: { width, height } });
+    page.on('pageerror', e => errors.push(e.message));
+    await page.addInitScript(theme => localStorage.setItem('bronze-prototype-theme', theme), theme);
+    const open = async () => { await page.goto(base); await page.waitForFunction(() => window.prototype?.ready); };
+    const click = a => page.locator(`[data-action="${a}"]:visible`).first().click();
+    const focus = () => page.evaluate(() => document.activeElement?.dataset.action ?? document.activeElement?.id);
+    const screen = () => page.evaluate(() => window.prototype.snapshot().state.screen);
+    await open();
+    assert.equal(await page.locator('html').getAttribute('data-theme'), theme === 'porcelain' ? 'light' : 'dark');
+    await page.locator('[data-action=create]:visible').first().focus(); await page.keyboard.press('Enter');
+    assert.equal(await screen(), 'creation', 'Enter activates the focused New control');
+    await page.locator('[data-draft=name]').fill('Draft retained'); await page.keyboard.press('Escape');
+    assert.equal(await screen(), 'creation', 'Escape never abandons text editing');
+    if (width < 760) {
+      const size = page.locator('[data-action="size:96"]');
+      await size.scrollIntoViewIfNeeded(); await size.focus();
+      const before = await page.locator('.creator').evaluate(el => el.scrollTop);
+      await page.keyboard.press(' ');
+      assert.equal(await page.locator('.creator').evaluate(el => el.scrollTop), before, 'Creator rerender preserves scrolling');
+      assert.equal(await focus(), 'size:96');
+    }
+    await click('back');
+    if (width > 760) {
+      await page.locator('.library [data-field=search]').fill('Mira');
+      assert.equal(await page.locator('.library .character-row').getAttribute('data-variant'), 'row', 'Filtered rows retain shared theme recipe');
+      await page.locator('.library [data-field=search]').fill('');
+      await page.locator('.library [data-action="character:1"]').focus(); await page.keyboard.press('Enter');
+      assert.equal(await screen(), 'selection'); assert.equal(await focus(), 'character:1');
+      await page.keyboard.press('Enter'); assert.equal(await screen(), 'studio');
+    } else await click('customize');
+    assert.equal(await page.locator('[data-field=clip]').evaluate(el => getComputedStyle(el).fontSize), width > 1100 ? '20px' : '16px');
+    await page.locator('#actors').focus(); await page.keyboard.press('Tab');
+    assert.equal(await focus(), 'back', 'Tab leaves world and reaches UI');
+    assert.equal(await page.evaluate(() => window.prototype.snapshot().state.view), 'preview');
+    await page.locator('[data-action="slot:hair"]').focus(); await page.keyboard.press(' ');
+    assert.equal(await focus(), 'slot:hair', 'Rerender retains activated control focus');
+    await page.keyboard.press('Backspace'); assert.equal(await screen(), 'studio');
+    await page.keyboard.press('d');
+    assert.equal(await page.evaluate(() => window.prototype.snapshot().state.direction), 'south', 'Movement does not hijack focused controls');
+    await page.locator('#actors').focus(); await page.keyboard.press('d');
+    assert.equal(await page.evaluate(() => window.prototype.snapshot().state.direction), 'east');
+    await click('export'); await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.activeElement?.dataset.action === 'export');
+    await click('more'); assert.ok((await focus()).startsWith('theme:'), 'Popover receives focus');
+    await page.keyboard.press('Escape'); assert.equal(await focus(), 'more');
+    await click('more'); await click('about');
+    assert.equal(await focus(), 'close-dialog'); await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.activeElement?.dataset.action === 'more');
+    await click('slot:all'); assert.equal(await focus(), 'slot:back');
+    await page.keyboard.press('Escape'); assert.equal(await focus(), 'slot:all');
+    await click('slot:head');
+    await page.locator('[data-action="equip:none"]:visible').focus(); await page.keyboard.press('Enter');
+    assert.equal(await focus(), 'equip:none');
+    assert.ok(await page.locator('[data-action=undo]').isVisible(), 'Undo available on phones');
+    assert.ok(await page.locator('[data-action=undo]').isEnabled()); await click('undo');
+    await page.locator('#actors').focus(); await page.keyboard.press('2');
+    assert.equal(await page.evaluate(() => window.prototype.snapshot().state.view), 'topdown');
+    assert.ok(await page.locator('#toast').isHidden(), 'No fixture idle notice on entry');
+    await page.keyboard.down('d'); await page.waitForTimeout(160); await page.keyboard.up('d');
+    await page.waitForFunction(() => !document.querySelector('#toast').hidden);
+    assert.match(await page.locator('#toast').innerText(), /Idle missing/);
+    await page.keyboard.down('d'); await page.waitForTimeout(100);
+    assert.ok(await page.locator('#toast').isHidden(), 'Stale idle notice clears when walking');
+    await page.keyboard.up('d'); await page.keyboard.press('3');
+    assert.match(await page.locator('.hint').innerText(), /A\/D/);
+    await page.keyboard.press('1');
+    await page.screenshot({ path: fileURLToPath(new URL(`${engine}-${theme}-${width}-preview.png`, out)) });
+    await page.keyboard.press('Backspace'); assert.equal(await screen(), 'selection');
+    cases.push({ theme, width, height, passed: true }); await page.close();
+  }
+  // Hold the module graph: the HTML alone must choose the stored light scheme.
+  const paint = await browser.newPage();
+  await paint.addInitScript(() => localStorage.setItem('bronze-prototype-theme', 'porcelain'));
+  await paint.route('**/main.js', route => route.abort());
+  await paint.goto(base); assert.equal(await paint.locator('html').getAttribute('data-theme'), 'light');
+  await paint.close();
+  assert.deepEqual(errors, []);
+  await writeFile(new URL(`${engine}.json`, out), JSON.stringify({ engine, cases, errors, firstPaint: 'pass' }, null, 2));
+  console.log(`${engine}: ${cases.length} interaction cases + first-paint check passed`);
+} finally { await browser.close(); }

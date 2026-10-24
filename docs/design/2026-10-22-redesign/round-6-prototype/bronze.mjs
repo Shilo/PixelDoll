@@ -18,6 +18,7 @@ export function applyBronze(root) {
         field.classList.add('bu-input');
     for (const select of root.querySelectorAll('select'))
         select.classList.add('bu-select');
+    for (const select of root.querySelectorAll('.playback select')) select.dataset.variant = 'quiet';
     for (const surface of root.querySelectorAll('.popover, .playback'))
         surface.classList.add('bu-floating');
     for (const pair of root.querySelectorAll('.compass>div:has(.mirror)'))

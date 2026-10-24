@@ -1,5 +1,6 @@
 import { esc, icon, button, iconButton, tabs, positionPopover } from './ui.js';
 import { applyBronze } from './bronze.mjs';
+import { focusIdentity, restoreFocus } from './focus.mjs';
 import { createDraft, renderCreator, exactPrompt, basePrompt, autoFrame } from './creator.js';
 import { applyTheme, themeName } from './theme.mjs';
 import { direction, labelDir, DIRECTION_PRESETS, facingFromVector } from './directions.mjs';
@@ -11,7 +12,7 @@ import { measureStage } from './stage-layout.mjs';
 import { MOTION, REFLECTION } from './config.js';
 import { unit, resolveMotion, resolvePreview, clipLabel, frameAt, advance } from './motion.mjs';
 const $ = s => document.querySelector(s), ui = $('#ui'), dialog = $('#dialog'), stick = $('#joystick');
-const state = { screen: 'selection', view: 'preview', theme: themeName(localStorage.getItem('bronze-prototype-theme')), character: 0, slot: 'head', panel: 'Wardrobe', menu: null, clip: 'walk', direction: 'south', playing: true, expanded: false, hint: false, search: '' };
+const state = { screen: 'selection', view: 'preview', theme: document.documentElement.dataset.theme === 'light' ? 'porcelain' : 'obsidian', character: 0, slot: 'head', panel: 'Wardrobe', menu: null, clip: 'walk', direction: 'south', playing: true, expanded: false, hint: false, search: '' };
 applyTheme(state.theme);
 $('#toast').className = 'bu-floating';
 const position = { x: 0, y: 0 }, camera = { x: 0, y: 0 }, keys = new Set(), seenIssues = new Set();
@@ -19,12 +20,15 @@ let joystick = null, toastTimer, toastKey = '', hintTimer, elapsed = 0, last = 0
 const draft = createDraft();
 const prompt = () => exactPrompt(draft);
 let manualPrompt = '';
-let dialogReturnAction = null;
+let dialogReturnFocus = null, renderedScreen = null, renderedMenu = null;
+const movedCharacters = new Set();
+const menuTrigger = menu => menu === 'parts' ? 'slot:all' : menu;
+const focusWorld = () => $('#actors').focus({ preventScroll: true });
 function notify(message, key = message) { if (seenIssues.has(key))
     return; seenIssues.add(key); toastKey = key; const toast = $('#toast'); toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.hidden = true, 4800); }
 function stop() { keys.clear(); joystick = null; stick.hidden = true; }
-function showDialog(title, html) {
-    dialogReturnAction = document.activeElement?.dataset.action ?? null;
+function showDialog(title, html, trigger = document.activeElement) {
+    dialogReturnFocus = state.menu ? { selector: `[data-action="${menuTrigger(state.menu)}"]`, index: 0 } : focusIdentity(trigger, ui);
     stop(); state.menu = null; render();
     const content = `${iconButton('Close', 'close-dialog', 'x')}<h2 id="dialog-title">${esc(title)}</h2>${html}`;
     dialog.innerHTML = `<div class="bu-dialog-surface dialog-panel">${content}</div>`;
@@ -32,7 +36,7 @@ function showDialog(title, html) {
     dialog.setAttribute('aria-labelledby', 'dialog-title');
     dialog.querySelector('button').classList.add('close'); applyBronze(dialog); dialog.showModal();
 }
-function unavailable(title) { showDialog(title, '<p>This isolated prototype uses the bundled demo artwork. Generation, import, export and account actions are not connected.</p><p>You can switch characters, change demo equipment, inspect animations and move through both test views. No API calls or credits are used.</p>'); }
+function unavailable(title, trigger) { showDialog(title, '<p>This isolated prototype uses the bundled demo artwork. Generation, import, export and account actions are not connected.</p><p>You can switch characters, change demo equipment, inspect animations and move through both test views. No API calls or credits are used.</p>', trigger); }
 function current() { return characters[state.character]; }
 function changeScreen(screen) { stop(); $('#toast').hidden = true; state.screen = screen; state.menu = null; state.expanded = false; elapsed = 0; presentationKey = ''; if (screen === 'studio')
     state.view = 'preview'; render(); world.backdrop(state); }
@@ -52,7 +56,7 @@ function activateCharacter(index) {
     if (state.screen === 'selection' && index === state.character) changeScreen('studio');
     else changeCharacter(index);
 }
-function top() { const select = state.screen === 'selection', create = state.screen === 'creation'; return `<header>${button(select ? 'PixelDoll' : 'Characters', select ? 'home' : 'back', { icon: select ? 'person-standing' : 'arrow-left' })}<div class="top-actions">${create ? button('Cancel', 'back') : select ? `${button('<span class="label">Import</span>', 'import', { icon: 'upload', cls: 'desktop-only', title: 'Import (not connected in prototype)' })}${button('<span class="label">New character</span>', 'create', { icon: 'plus', cls: 'outline desktop-only', title: 'New character' })}${iconButton('More options', 'more', 'ellipsis')}` : `${button('<span class="label">Undo</span>', 'undo', { icon: 'undo-2', cls: 'desktop-only', disabled: !current().history.length, title: 'Undo equipment change' })}${button('<span class="label">Export</span>', 'export', { icon: 'download', title: 'Export (not connected in prototype)' })}${iconButton('More options', 'more', 'ellipsis')}`}</div></header>`; }
+function top() { const select = state.screen === 'selection', create = state.screen === 'creation'; return `<header>${select ? `<span class="brand">${icon('person-standing')}PixelDoll</span>` : button('Characters', 'back', { icon: 'arrow-left' })}<div class="top-actions">${create ? button('Cancel', 'back') : select ? `${button('<span class="label">Import</span>', 'import', { icon: 'upload', cls: 'desktop-only', title: 'Import (not connected in prototype)' })}${button('<span class="label">New character</span>', 'create', { icon: 'plus', cls: 'outline desktop-only', title: 'New character' })}${iconButton('More options', 'more', 'ellipsis')}` : `${button('<span class="label">Undo</span>', 'undo', { icon: 'undo-2', disabled: !current().history.length, title: 'Undo equipment change' })}${button('<span class="label">Export</span>', 'export', { icon: 'download', title: 'Export (not connected in prototype)' })}${iconButton('More options', 'more', 'ellipsis')}`}</div></header>`; }
 const STUDIO_VIEWS = [['preview', 'Preview'], ['topdown', 'Top-down'], ['side', 'Side-scroller']];
 function viewTabs() { return tabs(STUDIO_VIEWS, state.view, { cls: 'view-tabs', label: 'Character view', action: 'view' }); }
 function identity() { return `<section class="identity"><p class="eyebrow">Customize character</p><h1>${button(esc(current().name) + icon('chevron-down'), 'characters', { cls: 'name-switch', extra: 'aria-label="Switch character" aria-expanded="' + (state.menu === 'characters') + '"' })}</h1>${button(`<span>${esc(current().prompt)}</span>${icon('chevron-down')}`, 'description', { cls: 'prompt-line', title: 'Read character prompt', extra: `aria-expanded="${state.menu === 'description'}"` })}</section>`; }
@@ -79,8 +83,30 @@ function menus() {
     return '';
 }
 function positionPartsMenu() { positionPopover(ui.querySelector('.parts-popover'), ui.querySelector('[data-action="slot:all"]'), ui.querySelector('.mode-tabs')); }
-function render() { if (!demo)
-    return; applyTheme(state.theme); document.body.dataset.screen = state.screen; document.body.dataset.view = state.view; ui.innerHTML = top() + (state.screen === 'selection' ? library() : state.screen === 'creation' ? renderCreator(draft, manualPrompt) : viewTabs() + identity() + wardrobe() + (state.view === 'preview' ? playback() : state.hint ? `<p class="hint">${matchMedia('(pointer:coarse)').matches ? 'Drag in the world to move' : 'WASD / arrow keys to move'}</p>` : '')) + menus() + `<p class="footnote">${state.screen === 'creation' ? '' : 'Local visual prototype · demo artwork'}</p>`; applyBronze(ui); measureStage(state.screen, ui); positionPartsMenu(); }
+function render() {
+    if (!demo) return;
+    const active = document.activeElement, previousFocus = focusIdentity(active, ui);
+    const wasInMenu = !!active?.closest('.popover'), previousMenu = renderedMenu;
+    const changedScreen = state.screen !== renderedScreen;
+    const scroll = [...ui.querySelectorAll('.wardrobe-scroll,.creator')].map(el => [el.className, el.scrollTop]);
+    applyTheme(state.theme); document.body.dataset.screen = state.screen; document.body.dataset.view = state.view;
+    const hint = matchMedia('(pointer:coarse)').matches ? 'Drag in the world to move' : state.view === 'side' ? 'Focus world · A/D or ←/→ to move' : 'Focus world · WASD or arrow keys to move';
+    ui.innerHTML = top() + (state.screen === 'selection' ? library() : state.screen === 'creation' ? renderCreator(draft, manualPrompt) : viewTabs() + identity() + wardrobe() + (state.view === 'preview' ? playback() : state.hint ? `<p class="hint">${hint}</p>` : '')) + menus() + `<p class="footnote">${state.screen === 'creation' ? '' : 'Local visual prototype · demo artwork'}</p>`;
+    applyBronze(ui); measureStage(state.screen, ui); positionPartsMenu();
+    const actors = $('#actors');
+    actors.tabIndex = state.screen === 'creation' ? -1 : 0;
+    actors.setAttribute('aria-label', state.screen === 'selection' ? 'Character stage. Arrow keys or WASD select; Enter customizes.' : state.view === 'preview' ? 'Character preview. Arrow keys or WASD change facing. Keys 1, 2, 3 switch views.' : 'Test world. Use movement keys; keys 1, 2, 3 switch views.');
+    for (const [cls, top] of scroll) { const el = ui.getElementsByClassName(cls)[0]; if (el) el.scrollTop = top; }
+    if (changedScreen) {
+        if (state.screen === 'creation') ui.querySelector('[data-draft=name]')?.focus({ preventScroll: true });
+        else focusWorld();
+    } else if (state.menu && state.menu !== previousMenu) {
+        ui.querySelector('.popover button:not(:disabled),.popover a')?.focus({ preventScroll: true });
+    } else if (previousMenu && !state.menu && wasInMenu) {
+        restoreFocus({ selector: `[data-action="${menuTrigger(previousMenu)}"]`, index: 0 }, ui, actors);
+    } else if (previousFocus) restoreFocus(previousFocus, ui, ui.querySelector('[data-action=back]') ?? actors);
+    renderedScreen = state.screen; renderedMenu = state.menu;
+}
 function applyOutfit(items) { current().history.push({ ...current().items }); current().items = { ...items }; lastHidden = ''; render(); }
 function equip(id) { applyOutfit({ ...current().items, [state.slot]: id === 'none' ? null : id }); }
 function chooseClip(clip) { state.clip = clip; elapsed = 0; presentationKey = ''; render(); }
@@ -88,7 +114,7 @@ function setFacing(dir) { if (!demo.dirs.includes(dir) || state.direction === di
     return; state.direction = dir; render(); }
 function previewFacing() { if (demo && state.screen === 'studio' && state.view === 'preview' && !dialog.open && !state.menu)
     setFacing(facingFromVector(demo.dirs, keyboardVector(keys), state.direction)); }
-async function action(action) {
+async function action(action, trigger = document.activeElement) {
     const [name, value] = action.split(':');
     if (name === 'close-dialog') {
         dialog.close();
@@ -113,7 +139,7 @@ async function action(action) {
     if (name === 'theme') {
         state.theme = themeName(value);
         $('#toast').hidden = true;
-        localStorage.setItem('bronze-prototype-theme', value);
+        try { localStorage.setItem('bronze-prototype-theme', value); } catch { /* Session appearance still works without storage. */ }
         state.menu = null;
         stop();
         render();
@@ -242,18 +268,18 @@ async function action(action) {
         return;
     }
     if (name === 'animation-info') {
-        showDialog('Animation details', '<p>Walk: 8 frames at 100 ms each, four directions. Cross-punch: 6 frames at 100 ms each, south only.</p><p>The demo has no Idle animation. Live modes hold a real Walk frame when stopped. Missing equipment stays equipped and returns when compatible.</p>');
+        showDialog('Animation details', '<p>Walk: 8 frames at 100 ms each, four directions. Cross-punch: 6 frames at 100 ms each, south only.</p><p>The demo has no Idle animation. Live modes hold a real Walk frame when stopped. Missing equipment stays equipped and returns when compatible.</p>', trigger);
         return;
     }
     if (name === 'about') {
-        showDialog('Bronze visual prototype', '<p>Test the approved interface with original demo sprites. Use WASD or arrow keys in Top-down and Side-scroller; on touch screens, drag in any open area of the world.</p><p>Equipment changes work while moving. Characters are separate demo outfit copies. Creation is an editable visual draft; paid generation and project storage are disconnected.</p><p>Reflections and per-screen backgrounds are configured in <code>config.js</code>. This prototype does not modify your saved PixelDoll projects.</p>');
+        showDialog('Bronze visual prototype', '<p>Test the approved interface with original demo sprites. Focus the world to use WASD or arrow keys in Top-down, or A/D and left/right in Side-scroller. Keys 1, 2 and 3 switch views; Tab moves between controls. On touch screens, drag in any open area of the world.</p><p>Equipment changes work while moving. Characters are separate demo outfit copies. Creation is an editable visual draft; paid generation and project storage are disconnected.</p><p>Reflections and per-screen backgrounds are configured in <code>config.js</code>. This prototype does not modify your saved PixelDoll projects.</p>', trigger);
         return;
     }
     if (name === 'creator-help') {
-        showDialog('Create character', '<p>Appearance and Prompt edit the same draft. Body size uses 4 px increments; the frame adds space around it. Direction buttons select views; the attached controls mirror paired views.</p><p>This screen tests layout and navigation only. Generation, enhancement, pricing and saving are not connected.</p>');
+        showDialog('Create character', '<p>Appearance and Prompt edit the same draft. Body size uses 4 px increments; the frame adds space around it. Direction buttons select views; the attached controls mirror paired views.</p><p>This screen tests layout and navigation only. Generation, enhancement, pricing and saving are not connected.</p>', trigger);
         return;
     }
-    unavailable({ 'import': 'Import character', 'export': 'Export character', 'new-item': 'Create equipment', 'saved-design': 'Saved equipment designs', 'palette': 'Equipment palette', 'api-info': 'API details' }[name] ?? 'Prototype scope');
+    unavailable({ 'import': 'Import character', 'export': 'Export character', 'new-item': 'Create equipment', 'saved-design': 'Saved equipment designs', 'palette': 'Equipment palette', 'api-info': 'API details' }[name] ?? 'Prototype scope', trigger);
 }
 // Browsers do not consistently synthesize click for a non-primary touch. A second finger
 // can operate equipment while the first owns movement; scroll/drag gestures are not taps.
@@ -263,13 +289,13 @@ document.addEventListener('pointerdown', e => { const b = e.target.closest('[dat
     secondaryTouches.set(e.pointerId, { button: b, x: e.clientX, y: e.clientY }); });
 document.addEventListener('pointerup', e => { const touch = secondaryTouches.get(e.pointerId); secondaryTouches.delete(e.pointerId); if (!touch)
     return; const under = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-action]'); if (under !== touch.button || Math.hypot(e.clientX - touch.x, e.clientY - touch.y) > 8)
-    return; e.preventDefault(); consumedTouch = { x: e.clientX, y: e.clientY, until: performance.now() + 500 }; action(touch.button.dataset.action); });
+    return; e.preventDefault(); consumedTouch = { x: e.clientX, y: e.clientY, until: performance.now() + 500 }; action(touch.button.dataset.action, touch.button); });
 document.addEventListener('pointercancel', e => secondaryTouches.delete(e.pointerId));
 document.addEventListener('click', e => { if (consumedTouch && performance.now() < consumedTouch.until && Math.hypot(e.clientX - consumedTouch.x, e.clientY - consumedTouch.y) < 8) {
     consumedTouch = null;
     return;
 } const b = e.target.closest('[data-action]'); if (b && !b.disabled) {
-    action(b.dataset.action);
+    action(b.dataset.action, b);
     return;
 } if (state.menu && !e.target.closest('.popover') && !e.target.closest('.name-switch,.prompt-line')) {
     stop();
@@ -279,8 +305,10 @@ document.addEventListener('click', e => { if (consumedTouch && performance.now()
 document.addEventListener('input', e => { const el = e.target; if (el.dataset.field === 'search') {
     state.search = el.value;
     const list = $('.character-list');
-    if (list)
+    if (list) {
         list.innerHTML = characterButtons();
+        applyBronze(list);
+    }
     return;
 } if (el.dataset.draft) {
     const k = el.dataset.draft;
@@ -306,62 +334,61 @@ document.addEventListener('change', e => { if (e.target.dataset.field === 'clip'
 } });
 dialog.addEventListener('close', () => {
     stop();
-    if (dialogReturnAction) ui.querySelector(`[data-action="${CSS.escape(dialogReturnAction)}"]`)?.focus({ preventScroll: true });
-    dialogReturnAction = null;
+    restoreFocus(dialogReturnFocus, ui, ui.querySelector('[data-action=more]') ?? $('#actors'));
+    dialogReturnFocus = null;
+});
+dialog.addEventListener('keydown', e => {
+    if (e.key !== 'Tab') return;
+    const controls = [...dialog.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled)')].filter(el => el.checkVisibility());
+    const first = controls[0], last = controls.at(-1);
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
 });
 const editTarget = el => el?.closest('input,textarea,select,[contenteditable=true]');
 window.addEventListener('keydown', e => {
-    if (!demo || e.ctrlKey || e.altKey || e.metaKey)
+    if (!demo || e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return;
+    const k = e.key.toLowerCase(), worldFocused = e.target === $('#actors');
+    // Native dialogs and editable controls own Escape and text-editing keys.
+    if (dialog.open || editTarget(e.target)) return;
+    // WebKit may interpret Backspace on a button as browser history navigation.
+    if (k === 'backspace' && !worldFocused && !state.menu) { e.preventDefault(); return; }
+    if (k === 'escape' || (k === 'backspace' && (worldFocused || state.menu))) {
+        e.preventDefault();
+        if (e.repeat) return;
+        stop();
+        if (state.menu) { state.menu = null; render(); }
+        else if (state.screen !== 'selection') changeScreen('selection');
         return;
-    const k = e.key.toLowerCase();
-    // A native select owns Escape; dismissing its picker must not leave the screen.
-    if (k === 'escape' && e.target.closest('select')) return;
-    if (k === 'escape' || (k === 'backspace' && !editTarget(e.target))) {
-    e.preventDefault();
-    if (e.repeat)
+    }
+    if (state.menu || !worldFocused) return;
+    // Tab keeps native focus navigation. View shortcuts are local to the world.
+    if (state.screen === 'studio' && ['1', '2', '3'].includes(k)) {
+        e.preventDefault();
+        if (!e.repeat) changeView(STUDIO_VIEWS[Number(k) - 1][0]);
         return;
-    stop();
-    if (dialog.open)
-        dialog.close();
-    else if (state.menu) {
-        state.menu = null;
-        render();
     }
-    else if (state.screen !== 'selection')
-        changeScreen('selection');
-    return;
-} if (editTarget(e.target) || dialog.open || state.menu)
-    return;
-if (state.screen === 'studio' && k === 'tab' && (!e.target.closest('button,a,[tabindex]') || e.target.closest('.view-tabs'))) {
-    e.preventDefault();
-    if (!e.repeat) {
-        const index = STUDIO_VIEWS.findIndex(([id]) => id === state.view);
-        changeView(STUDIO_VIEWS[(index + (e.shiftKey ? -1 : 1) + STUDIO_VIEWS.length) % STUDIO_VIEWS.length][0]);
-    }
-    return;
-} if (state.screen === 'selection' && (MOVEMENT_KEYS.has(k) || k === 'enter')) {
-    e.preventDefault();
-    if (!e.repeat) {
-        const [horizontal, vertical] = keyboardVector(new Set([k]));
-        action(k === 'enter' ? 'customize' : horizontal - vertical < 0 ? 'previous' : 'next');
-    }
-    return;
-} if (state.screen === 'studio' && MOVEMENT_KEYS.has(k)) {
-    e.preventDefault();
-    if (e.repeat && !keys.has(k))
+    if (state.screen === 'selection' && (MOVEMENT_KEYS.has(k) || k === 'enter')) {
+        e.preventDefault();
+        if (!e.repeat) {
+            const [horizontal, vertical] = keyboardVector(new Set([k]));
+            action(k === 'enter' ? 'customize' : horizontal - vertical < 0 ? 'previous' : 'next');
+        }
         return;
-    keys.add(k);
-    previewFacing();
-} });
+    }
+    if (state.screen === 'studio' && MOVEMENT_KEYS.has(k)) {
+        e.preventDefault();
+        if (e.repeat && !keys.has(k)) return;
+        keys.add(k); previewFacing();
+    }
+});
 window.addEventListener('keyup', e => { keys.delete(e.key.toLowerCase()); previewFacing(); });
 window.addEventListener('blur', stop);
 document.addEventListener('visibilitychange', () => { stop(); last = 0; });
 window.addEventListener('resize', () => { stop(); measureStage(state.screen, ui); positionPartsMenu(); world?.backdrop(state); });
 ui.addEventListener('scroll', e => { if (e.target.classList.contains('wardrobe-scroll')) positionPartsMenu(); }, true);
 
-document.addEventListener('focusin', e => { if (editTarget(e.target))
-    stop(); });
-$('#actors').addEventListener('pointerdown', e => { if (dialog.open)
+document.addEventListener('focusin', e => { if (e.target !== $('#actors')) keys.clear(); if (editTarget(e.target)) stop(); });
+$('#actors').addEventListener('pointerdown', e => { focusWorld(); if (dialog.open)
     return; if (state.menu) {
     state.menu = null;
     stop();
@@ -401,7 +428,10 @@ function tick(now) {
             elapsed += dt * 1000;
         if (!resolved.still)
             resolved.cell = frameAt(demo.m.rig.animations.find(a => a.id === resolved.clip)?.frames ?? [], elapsed);
-        if (live && resolved.issue)
+        const issueKey = resolved.issue ? `${state.character}:${resolved.issue}` : '';
+        if (live && resolved.moving) movedCharacters.add(state.character);
+        if (toastKey.includes(':idle:') || toastKey.includes(':walk:')) { if (!live || issueKey !== toastKey) $('#toast').hidden = true; }
+        if (live && resolved.issue && (resolved.request !== 'idle' || movedCharacters.has(state.character)))
             notify(`${resolved.request === 'idle' ? 'Idle' : 'Walk'} missing — showing ${resolved.still ? 'a still pose' : resolved.clip}`, `${state.character}:${resolved.issue}`);
         if (resolved.clip && resolved.dir) {
             hiddenItems = demo.sprite(current().items, resolved.clip, resolved.dir, resolved.cell).hidden;

@@ -8,9 +8,11 @@ Updated 2026-10-23 after the user's movement-fallback correction and palette cho
 
 ## Accepted visual and screen direction
 
-Latest user-authorized experiment: [restrained GlassKit material study](../round-6-prototype/glasskit-study.md). Adopted in the isolated prototype after research and independent review; retains Bronze colors, open navigation and world-first composition. The previous no-GlassKit restriction is superseded for this experiment only. Production migration is not part of this change.
+Historical experiment: [restrained GlassKit material study](../round-6-prototype/glasskit-study.md). It informed the material research but has been superseded by the user's approved standalone Bronze UI theme and dependency integration. GlassKit is not loaded by the current prototype. Production migration remains separate.
 
-Subsequent full-app research: [theme foundation recommendation](../round-6-prototype/theme-foundation.md) favors PixelDoll-owned production styling and shared native-first Svelte components while preserving this approved appearance. It records the component/state coverage and required parity proof; it does not remove GlassKit from the current prototype or record user approval of a production migration.
+Subsequent full-app research: [theme foundation recommendation](../round-6-prototype/theme-foundation.md) records component/state coverage. Shared appearance now belongs to the independent MIT Bronze UI repository. The prototype imports its published archive; production Studio still uses its existing CSS.
+
+Independent review repairs: [finding-by-finding challenge](../../../reviews/2026-10-23-claude-redesign-audit/response.md). Tab/Shift+Tab retain native focus traversal; world-focused 1/2/3 switch views. Movement shortcuts require world focus, and editable controls retain their keys. Shared theme fixes go upstream; compact-stage composition, focus and sprite device-pixel scaling remain local. These bounded corrections preserve the approved typography, worlds and configurable reflections. Drag-only pointer input remains an open accessibility gap.
 
 Reusable styling, tokens and implementation ownership are maintained in the [immersive design system](../../immersive-design-system.md). It supersedes prototype-specific duplicated styling while preserving the approved visual direction.
 

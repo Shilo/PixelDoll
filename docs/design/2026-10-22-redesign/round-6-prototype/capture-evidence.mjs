@@ -66,7 +66,7 @@ export async function captureEvidence({ phase, root, runtimeTheme, labels, suppl
       await click('more'); await click('about'); await record('dialog-about'); await page.keyboard.press('Escape');
       await click('view:topdown'); await record('topdown');
       const originalHead = await page.evaluate(() => window.prototype.snapshot().equipped.head);
-      await click('equip:hat_wizard'); await page.keyboard.down('w'); await page.waitForTimeout(180); await page.keyboard.up('w'); await record('toast'); await click('equip:' + originalHead);
+      await click('equip:hat_wizard'); await page.locator('#actors').focus(); await page.keyboard.down('w'); await page.waitForTimeout(180); await page.keyboard.up('w'); await record('toast'); await click('equip:' + originalHead);
       await click('view:side'); await record('side');
       if (supplements) {
         await click('view:preview');

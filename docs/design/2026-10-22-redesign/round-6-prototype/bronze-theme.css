@@ -44,9 +44,9 @@ textarea.bu-input { min-height: 100px; }
 }
 
 /* Native picker materials come from Bronze UI. Only playback geometry is local. */
-.playback select { font-size:16px; }
 @supports (appearance:base-select) and selector(select::picker(select)) {
   .playback select { width:140px; max-width:none; flex-shrink:0; }
+  @media(min-width:1101px) and (min-height:541px) { .playback select { width:180px; } }
   @media(max-width:760px) { .playback select { width:128px; } }
 }
 

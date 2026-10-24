@@ -117,7 +117,7 @@ a {
 #actors {
   z-index: 3;
   touch-action: none;
-  outline: none;
+  --bu-focus-offset: -3px;
 }
 
 .scrims {
@@ -182,7 +182,7 @@ header {
 }
 
 .identity .eyebrow {
-  color: var(--muted);
+  color: var(--text);
   font-size: 13px;
   margin-bottom: 9px;
 }
@@ -260,7 +260,7 @@ header {
   gap: 10px;
   font-size: 12px;
   min-width: 60px;
-  color: var(--muted);
+  color: var(--text);
 }
 
 .panel-heading {
@@ -364,6 +364,7 @@ header {
 }
 
 .playback select {
+  font-size:16px;
   width: auto;
   min-height: 36px;
   padding: 4px 6px;
@@ -639,7 +640,7 @@ dialog button {
     width: calc(100% - 40px);
   }
   .identity .eyebrow {
-    font-size: 11px;
+    font-size: 12px;
     margin-bottom: 4px;
   }
   .identity h1 {
@@ -652,7 +653,7 @@ dialog button {
     width: 16px;
   }
   .prompt-line {
-    font-size: 11px;
+    font-size: 12px;
     padding: 4px 0;
     min-height: 32px;
     width: 100%;
@@ -683,7 +684,7 @@ dialog button {
     overscroll-behavior: contain;
   }
   .wardrobe.expanded {
-    top: 34%;
+    top: 50%;
   }
   .sheet-handle {
     display: flex;
@@ -711,7 +712,7 @@ dialog button {
     margin-bottom: 13px;
   }
   .categories button {
-    font-size: 11px;
+    font-size: 12px;
     gap: 4px;
     min-height: 50px;
     min-width: 55px;
@@ -728,7 +729,7 @@ dialog button {
     font-size: 14px;
   }
   .panel-heading small {
-    font-size: 11px;
+    font-size: 12px;
   }
   .items {
     gap: 8px;
@@ -762,8 +763,8 @@ dialog button {
     min-height: 35px;
   }
   .playback select {
-    max-width: 100px;
-    font-size: 12px;
+    max-width: 128px;
+    font-size: 16px;
   }
   .playback svg {
     width: 17px;
@@ -771,7 +772,7 @@ dialog button {
   .footnote {
     left: 20px;
     bottom: 12px;
-    font-size: 10px;
+    font-size: 12px;
   }
   body[data-screen=studio] .footnote {
     display: none;
@@ -833,7 +834,7 @@ dialog button {
     left: 20px;
     top: 205px;
     bottom: auto;
-    font-size: 11px;
+    font-size: 12px;
     max-width: 210px;
   }
   #toast {
@@ -1008,7 +1009,7 @@ body:has(#toast:not([hidden])) .hint {
   }
   #toast {
     top: auto;
-    font-size: 11px;
+    font-size: 12px;
   }
   .hint {
     top: 201px;
@@ -1022,7 +1023,7 @@ body:has(#toast:not([hidden])) .hint {
     bottom: 10px;
     top: auto;
     max-width: 250px;
-    font-size: 11px;
+    font-size: 12px;
   }
 }
 
@@ -1210,8 +1211,8 @@ body:has(#toast:not([hidden])) .hint {
     min-height: 54px;
   }
   .playback select {
-    font-size: 21px;
-    max-width: 155px;
+    font-size: 20px;
+    max-width: 180px;
   }
   .playback .dir {
     font-size: 20px;
@@ -1295,6 +1296,7 @@ body:has(#toast:not([hidden])) .hint {
 }
 
 @media (max-width:760px) and (orientation:portrait) {
+  .hint { top:230px; max-width:calc(100% - 40px); }
   .identity .eyebrow {
     font-size: 12.5px;
   }
@@ -1333,7 +1335,7 @@ body:has(#toast:not([hidden])) .hint {
     font-size: 12px;
   }
   .playback select {
-    font-size: 14px;
+    font-size: 16px;
   }
   .playback .dir {
     font-size: 13px;
@@ -1342,7 +1344,7 @@ body:has(#toast:not([hidden])) .hint {
     gap: 5px;
   }
   .wardrobe.expanded {
-    top: 34%;
+    top: 50%;
   }
   .character-popover {
     width: auto;
@@ -1362,8 +1364,8 @@ body:has(#toast:not([hidden])) .hint {
     padding-bottom: max(12px,env(safe-area-inset-bottom));
   }
   .sheet-handle {
-    height: 12px;
-    min-height: 12px;
+    height: 24px;
+    min-height: 24px;
   }
   .categories {
     margin-bottom: 8px;
@@ -1396,6 +1398,7 @@ body:has(#toast:not([hidden])) .hint {
   .playback {
     top: 55%;
   }
+  body:has(.wardrobe.expanded) .playback { top:auto; bottom:calc(50dvh + 8px); }
   #toast {
     bottom: calc(40dvh + 6px);
   }
@@ -1412,7 +1415,7 @@ body:has(#toast:not([hidden])) .hint {
     height: 56px;
   }
   .character-copy small {
-    font-size: 11px;
+    font-size: 12px;
   }
   .library .character-list button {
     font-size: 15px;
@@ -1446,3 +1449,26 @@ body:has(#toast:not([hidden])) .hint {
 }
 .menu-link { gap:12px; }
 .menu-link>svg:last-child { margin-left:auto; }
+
+.brand { display:inline-flex; align-items:center; gap:8px; }
+
+/* Reserve an actual stage on short phones, including browser zoom. The
+   equipment sheet still scrolls; headings never occupy the actor's rectangle. */
+@media (max-width:760px) and (max-height:650px) and (orientation:portrait) {
+  .identity { top:60px; }
+  .identity .eyebrow { display:none; }
+  .identity h1 { font-size:26px; }
+  .view-tabs { top:140px; }
+  .wardrobe { top:70%; }
+  .wardrobe.expanded { top:64%; }
+  .playback { top:auto; bottom:calc(30dvh + 8px); }
+  body:has(.wardrobe.expanded) .playback { bottom:calc(36dvh + 8px); }
+  body:has(.wardrobe.expanded) .prompt-line { display:none; }
+  body:has(.wardrobe.expanded) .view-tabs { top:100px; }
+  .hint { top:186px; }
+  body[data-screen=selection] .mobile-library-actions { top:132px; }
+}
+
+/* Scene metadata uses the stronger semantic role; hierarchy comes from size. */
+.character-copy small { color:var(--text); }
+.hint { color:var(--text); }

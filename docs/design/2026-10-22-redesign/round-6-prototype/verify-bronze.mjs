@@ -8,7 +8,7 @@ import { createRequire } from 'node:module';
 const pkg = JSON.parse(await readFile(new URL('../../../../app/node_modules/@shilo/bronze-ui/package.json', import.meta.url), 'utf8'));
 const lock = JSON.parse(await readFile(new URL('../../../../app/package-lock.json', import.meta.url), 'utf8')).packages['node_modules/@shilo/bronze-ui'];
 assert.equal(lock.version, pkg.version);
-assert.equal(lock.resolved, 'https://github.com/Shilo/bronze-ui/releases/download/v0.2.0/shilo-bronze-ui-0.2.0.tgz');
+assert.equal(lock.resolved, 'https://github.com/Shilo/bronze-ui/releases/download/v0.2.1/shilo-bronze-ui-0.2.1.tgz');
 const resolvePackage = createRequire(new URL('../../../../app/package.json', import.meta.url)).resolve;
 const styleURLs = Object.fromEntries(['tokens.css', 'components.css'].map(entry => [entry, '/@fs/' + resolvePackage('@shilo/bronze-ui/' + entry).replaceAll('\\', '/') + '?raw']));
 const styles = Object.fromEntries(await Promise.all(['tokens.css', 'components.css'].map(async entry => [entry, createHash('sha256').update(await readFile(resolvePackage('@shilo/bronze-ui/' + entry))).digest('hex')])));
@@ -90,7 +90,7 @@ try {
     assert.equal(await page.getByRole('dialog', { name: 'Export character' }).count(), 1);
     assert.equal(await page.locator('#dialog').evaluate(el => el.open && el.matches(':modal')), true);
     assert.equal(await page.evaluate(() => !!document.activeElement.closest('#dialog')), true);
-    for (let i = 0; i < 3; i++) { await page.keyboard.press('Tab'); assert.equal(await page.evaluate(() => document.activeElement === document.body || !!document.activeElement.closest('#dialog')), true); }
+    for (let i = 0; i < 3; i++) { await page.keyboard.press('Tab'); assert.equal(await page.evaluate(() => !!document.activeElement.closest('#dialog')), true); }
     const panel = await page.locator('.dialog-panel').boundingBox();
     assert.ok(panel.x >= 0 && panel.y >= 0 && panel.x + panel.width <= viewport.width + 1 && panel.y + panel.height <= viewport.height + 1);
     await page.keyboard.press('Escape'); await page.waitForFunction(() => document.activeElement?.dataset.action === 'export');
