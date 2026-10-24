@@ -59,6 +59,10 @@ Standalone Studio compatibility entry: node scripts/e2e-studio.mjs (existing bui
 
 ## Rules
 
+Remembered PixelLab credentials remain plaintext in optional `localStorage['pixellabApiKey']`, intentionally shared
+with every app on this origin. Never broadcast credentials. Follow `docs/shared-token-security.md` for credential-free
+Forget/replacement notifications; do not introduce encryption or an extra unlock step. The TODO records encryption as deferred.
+
 Follow KISS and YAGNI: no feature, dependency or abstraction without a real need.
 Keep the existing custom CSS and visuals; do not introduce GlassKit.
 Keep the app client-only; never add a backend.

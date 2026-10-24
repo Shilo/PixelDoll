@@ -1,5 +1,8 @@
 # Shared PixelLab token security review
 
+**Decision update:** the user subsequently chose plaintext shared storage and no additional unlock step. The vault
+recommendation below is historical; the current decision and implementation contract are in [shared-token-security](../shared-token-security.md).
+
 Reviewed: 2026-10-23. Scope: PixelDoll and `pixellab-gallery`, whose product and deployed repository are now named PixelLab Backpack. This is a storage, credential-lifecycle, and deployment review, not a complete application penetration test.
 
 ## Recommendation

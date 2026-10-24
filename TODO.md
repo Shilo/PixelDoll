@@ -58,12 +58,21 @@ Physical-phone testing is out of scope by user decision (2026-10-22). The live s
 in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
 
 ## Concerns
+- [ ] **Deferred: scope the persisted queue to its credential.** Open tabs now retain their current account when
+  another app changes the saved key. Reloading can still attach an existing ledger to a replacement saved key.
+  Design durable nonsecret credential ownership across enqueue, deduplication, recovery and polling; preserve
+  accepted job IDs and quarantine ambiguous legacy work instead of assigning it to a new account automatically.
+- [ ] **Deferred: reassess encryption of `pixellabApiKey`.** User decision (2026-10-23): keep the token plaintext,
+  shared with all apps on this origin, with Remember optional and no additional unlock step. A bundled encryption key
+  or a locally saved automatic-decryption key would not protect against same-origin malicious scripts; a passphrase
+  would add unwanted friction. Revisit only if a concrete threat model and a convenient independent unlock mechanism
+  (or provider-issued scoped credentials) justify it. See [shared token contract](docs/shared-token-security.md).
 - [!] **Merged bundle size.** The combined audit/shared-equipment build is 535.36 KB minified (180.56 KB gzip),
   crossing Vite's default 500 KB chunk warning. Profile startup before deciding whether shared-design UI should load
   on demand; keep the warning visible instead of raising the threshold. Build and credential guard still pass.
-- [!] **Key safety on a shared origin.** All `*.github.io/<repo>` sites of one account share an origin, so another of your
-  Pages sites could read a remembered key (localStorage/IndexedDB). Mitigated: key is memory-only by default, never sent
-  over BroadcastChannel, Connect warns on `*.github.io`. Fix: serve from a custom domain. (R6 P1-4, B13)
+- [!] **Intentional shared-origin trust.** Every app on this origin may use the optional remembered `pixellabApiKey`.
+  A compromise in any such app can expose it. Keep scripts and deployments trustworthy; app-generated channel notifications contain
+  no token, and Forget clears cooperating open apps. Origin isolation and encryption are not part of the current UX.
 - [!] **PixelLab credits.** The shared balance changed during live audit testing; query it before further paid work.
   New independent characters are estimated at 46–80 gens (4 directions) or 90–150 (8); optional mirrored economy mode
   remains 35–60 / 57–95. Item/move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps.
