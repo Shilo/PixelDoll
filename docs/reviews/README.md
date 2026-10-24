@@ -8,6 +8,7 @@ These 2026-10-23 reports inform future work. They do not replace the approved im
 | [Pipeline audit](2026-10-23-pipeline-audit.md) | Generation, rigging, compatibility and recoverable correction concerns |
 | [Skeletal-tools research](2026-10-23-skeletal-tools-research.md) | External tool patterns, model boundaries and licensing considerations |
 | [Studio/docs audit](2026-10-23-studio-docs-audit.md) | Existing workflow, persistence, repair and documentation findings |
+| [Redesign and Bronze UI audit](2026-10-23-claude-redesign-audit/README.md) | Independent review of the immersive prototype and Bronze UI 0.2.0: verdict, prioritized findings, [coverage matrix](2026-10-23-claude-redesign-audit/coverage-matrix.md), reproduction scripts |
 | [Repair concept source](frame-repair-mockup.html) | Original offline HTML fragment with bundled demo artwork, preserved without visual changes |
 | [Verification script](verify-frame-repair-mockup.mjs) and [historical result](frame-repair-mockup-verification.json) | Tests for that concept, not the production Studio or current character playground |
 
