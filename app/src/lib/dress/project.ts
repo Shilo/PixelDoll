@@ -25,7 +25,7 @@ export async function listSources(): Promise<{ id: string; label: string }[]> {
 }
 
 /** Material labels derived by earlier versions. */
-const currentLabels = (project: Project) => { for (const m of project.manifest.materials) m.label = m.label.replace(/^Grey\b/, 'Gray'); return project; };
+const currentLabels = (project: Project) => { for (const m of project.manifest.materials) if (typeof m.label === 'string') m.label = m.label.replace(/^Grey\b/, 'Gray'); return project; };
 
 export async function openSource(id: string): Promise<{ project: Project; current?: Outfit }> {
   if (id.startsWith('fixture:')) {
