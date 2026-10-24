@@ -25,7 +25,7 @@ Compare the prototype on port 5202 against the production build on port 5208 usi
 
 ## Theme and implementation boundaries
 
-These corrections belong to the production consumer: layout dimensions, responsive rules, workflow markup, canvas fitting and input coordination. Bronze UI 0.2.1 still owns shared colors, surfaces, borders, radii, focus, controls and scrollbar appearance. No copied color palette, GlassKit, lighting shader or tint has been added. Exported sprites and PixelLab generation code are unchanged.
+These corrections belong to the production consumer: layout dimensions, responsive rules, workflow markup, canvas fitting and input coordination. Bronze UI 0.2.2 owns shared colors, surfaces, borders, radii, focus, controls and scrollbar appearance. No copied color palette, GlassKit, lighting shader or tint has been added. Exported sprites and PixelLab generation code are unchanged.
 
 `bounds.ts` computes a cached stable painted union; `ground.ts` fits that union; the existing compositor still draws full frames at their original pivots. A separate reflected copy receives the reflection mask. Selection thumbnails use the same real presentation path as the world. Background URLs remain modular and reuse cached assets.
 
@@ -40,13 +40,13 @@ npm run build
 # Serve the build on 5208; keep the approved prototype on 5202.
 # PowerShell: $env:BASE='http://127.0.0.1:5208'
 npx playwright test --config playwright.experience.config.ts
-node scripts/compare-experience.mjs --phase after
+node scripts/compare-experience.mjs --phase final --dialogs
 ```
 
 Local evidence is ignored by Git under `app/test-results/experience-comparison/`: `gallery-before.html` preserves the original integration; `gallery-after.html` compares the approved prototype directly with corrected production. The JSON manifests record dimensions, build assets and browser/API errors. Never cite an earlier gallery as evidence of a later build.
 
 The [input verification](../testing/production-parity-input-verification.md) records dedicated behavior tests. Final visual review and suite results must be recorded after the final build; this document's decision matrix is not itself a claim that every control has passed.
 
-## User-requested stopping checkpoint
+## Final review
 
-The user paused work for transfer to Claude before final visual approval. Latest build `bootstrap-DNqv5yzi.js` / `bootstrap-1aqQx-Rl.css` passed all 23 focused browser cases (54.5s); type check/build passed and the unit run passed 770 with one existing skip. The final `after` comparison and supplemental dialog captures were **not run**; `index.html` remains the intermediate iteration1 gallery. The standard 98-workflow suite has not been rerun against these corrections. See the [independent review checkpoint](../testing/production-parity-review-checkpoint.md) and [Claude continuation handoff](../../.claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md). A confirmed remaining issue is desktop creator focus skipping Name in the heading and selecting Details instead.
+The checkpoint left by the previous session (build `bootstrap-DNqv5yzi.js`, 23 focused cases, final comparison not run) is superseded. Claude completed the 40-pair, dialog and supplemental-viewport review, fixed the confirmed defects (including two shared Bronze recipe defects released as Bronze UI 0.2.2) and recorded results, intentional differences and the remaining copy follow-up in the [final review](../testing/production-parity-final-review.md). Final evidence is `gallery-final.html`; `gallery-after.html` is the pre-fix build reviewed first.

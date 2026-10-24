@@ -16,7 +16,7 @@
     const from = openingTrigger(), pop = from?.closest<HTMLElement>('[popover]')
     const opener = pop ? document.querySelector<HTMLElement>(`[popovertarget="${pop.id}"]`) : from
     dlg.showModal()
-    if (matchMedia('(pointer: fine)').matches) dlg.querySelector<HTMLElement>('.sheet-body :is(textarea, input:is([type=text], [type=password], :not([type])))')?.focus()
+    if (matchMedia('(pointer: fine)').matches) dlg.querySelector<HTMLElement>(':is(.sheet-heading, .sheet-body) :is(textarea, input:is([type=text], [type=password], :not([type])))')?.focus()
     return () => {
       unmounting = true
       dlg.close()

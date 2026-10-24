@@ -38,9 +38,7 @@ export async function equipmentGroup(page: Page, name: string) {
 
 export async function newItem(page: Page, group = 'Head') {
   await equipmentGroup(page, group)
-  const tile = page.locator('.equipment-scroll .tile.new')
-  if (await tile.count()) await tile.click()
-  else await page.getByRole('button', { name: `New ${group.toLowerCase()} item`, exact: true }).click()
+  await page.getByRole('button', { name: `New ${group === 'Hands' ? 'held' : group.toLowerCase()} item`, exact: true }).click()
 }
 
 export async function selectedItemDetails(page: Page) {
@@ -48,10 +46,14 @@ export async function selectedItemDetails(page: Page) {
   if (await existing.count()) return existing
   await equipmentMode(page, 'Wardrobe')
   // Fixture-driven tests may select a real item in a different category. Reach
-  // that selection through the same category controls available to a person.
-  for (const group of ['Head', 'Hair', 'Body', 'Face', 'Legs', 'Feet', 'Back', 'Hands']) {
-    if (await page.locator('.equipment-scroll .sel-row').count()) break
-    await equipmentGroup(page, group)
+  // that selection through the same category controls available to a person;
+  // every category shows its equipped item's row, so look for the selected tile first.
+  for (const target of ['.equipment-scroll .tile.sel', '.equipment-scroll .sel-row']) {
+    for (const group of ['Head', 'Hair', 'Body', 'Face', 'Legs', 'Feet', 'Back', 'Hands']) {
+      if (await page.locator(target).count()) break
+      await equipmentGroup(page, group)
+    }
+    if (await page.locator(target).count()) break
   }
   await page.locator('.equipment-scroll .sel-row').getByRole('button', { name: / details$/ }).click()
   const dialog = page.getByRole('dialog')

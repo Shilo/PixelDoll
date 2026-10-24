@@ -24,7 +24,7 @@
         {@const base = m.items.find((i) => i.id === m.rig.baseItem)}
         {@const dirs = m.rig.directions.filter((d) => !d.mirrorOf && base?.layers[0].cells?.[a.id]?.[d.id]?.some(Boolean))}
         {@const nDirs = dirs.length + m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf)).length}
-        <button class="move-row" aria-pressed={ui.anim === a.id} onclick={() => { ui.anim = a.id; ui.frame = 0 }}>
+        <button class="move-row bu-action" data-variant="row" aria-pressed={ui.anim === a.id} onclick={() => { ui.anim = a.id; ui.frame = 0 }}>
           <span class="move-thumb"><Sprite img={win(composeCell(view.project, doc.items, a.id, dirs[0]?.id ?? 'south', a.frames[ui.frame % a.frames.length].cell))} {k} limit={56} label="{nice(a.id)} preview" /></span>
           <span class="move-text"><b>{nice(a.id)}</b><span class="muted small">{a.cells} frames · {nDirs === 1 ? `${dirs[0]?.id ?? 'one'} only` : `${nDirs} directions`}</span></span>
         </button>

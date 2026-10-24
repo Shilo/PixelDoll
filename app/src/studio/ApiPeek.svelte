@@ -6,9 +6,9 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { CodeXml, Copy, Check, ListPlus, ListMinus, X, ChevronRight } from './icons.ts'
 
-  let { scope, plan = [], label = '', queueIds = [], activityScope, all = false }: {
+  let { scope, plan = [], label = '', queueIds = [], activityScope, all = false, menu = false }: {
     scope: string; plan?: PeekCall[]; label?: string; queueIds?: string[];
-    activityScope?: string; all?: boolean
+    activityScope?: string; all?: boolean; menu?: boolean // menu: a labelled row inside an options menu
   } = $props()
   const id = $props.id()
   let panel: HTMLDivElement
@@ -90,7 +90,7 @@
   }
 </script>
 
-<button bind:this={opener} type="button" class="bu-action btn icon plain api-peek-trigger" data-variant="quiet" aria-label={all ? 'Inspect all API calls' : 'Inspect API calls'} title="PixelLab API calls" aria-expanded={open} aria-controls={id} popovertarget={id}><CodeXml size={17} /></button>
+<button bind:this={opener} type="button" class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'} data-variant="quiet" aria-label={all ? 'Inspect all API calls' : 'Inspect API calls'} title="PixelLab API calls" aria-expanded={open} aria-controls={id} popovertarget={id}><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name">API calls</span>{/if}</button>
 <div bind:this={panel} {id} popover="auto" class="api-peek" role="dialog" aria-label="API calls" tabindex="-1" ontoggle={toggled} onkeydown={keydown} style:left="{left}px" style:top="{top}px" style:max-height="{height}px">
   {#if open}
   <header class="peek-head">

@@ -103,7 +103,7 @@
     </div><button class="bu-action customize-action" data-variant="primary" onclick={customize} disabled={doc.loading||!m||!list.length}>Customize {name}<ChevronRight size={16}/></button></aside>
   {:else}
     <div class="scene-identity"><p>Customize character</p><button class="project-btn" popovertarget="project-menu" aria-haspopup="menu" onclick={()=>void refreshProjects()}><h1>{name}</h1><ChevronDown size={18}/></button>
-      {#if prompt}<details class="prompt-disclosure" ontoggle={()=>copyMessage=''}><summary>{prompt}</summary><div><p>{prompt}</p><button class="bu-action" data-variant="outline" onclick={copyPrompt}><Copy size={16}/>{copyMessage||'Copy prompt'}</button></div></details>{/if}
+      {#if prompt}<details class="prompt-disclosure" ontoggle={()=>copyMessage=''}><summary>{prompt}<ChevronDown size={16}/></summary><div><p>{prompt}</p><button class="bu-action" data-variant="outline" onclick={copyPrompt}><Copy size={16}/>{copyMessage||'Copy prompt'}</button></div></details>{/if}
       <nav class="view-modes" aria-label="Character view">{#each modes as [id,label]}<button class="bu-action" data-variant="tab" aria-pressed={experience.mode===id} onclick={()=>changeMode(id as WorldMode)}>{label}</button>{/each}</nav>
     </div>
     <div class="experience-stage">
@@ -114,7 +114,7 @@
         <button class="bu-action" data-variant="quiet" aria-label={ui.playing?'Pause':'Play'} onclick={()=>ui.playing=!ui.playing}>{#if ui.playing}<Pause size={18}/>{:else}<Play size={18}/>{/if}</button>
         <label><span class="sr">Move</span><select class="bu-select" data-variant="quiet" bind:value={ui.anim} onchange={()=>ui.frame=0}>{#each m.rig.animations as a}<option value={a.id}>{a.id[0].toUpperCase()+a.id.slice(1).replaceAll('-',' ')}</option>{/each}</select></label>
         {#if experience.presentation!=='animation'}<span class="small muted">{experience.presentation==='unavailable'?'Unavailable':'Still'}</span>{/if}
-        <div class="facing-buttons" role="group" aria-label="Direction">{#each m.rig.directions as d}<button class="bu-action" data-variant="quiet" aria-pressed={ui.dir===d.id} aria-label="Face {d.id}" onclick={()=>ui.dir=d.id}>{directionInfo(d.id)?.short??d.id}</button>{/each}</div>
+        <div class="facing-buttons" role="group" aria-label="Direction">{#each m.rig.directions as d}<button class="bu-action" data-variant="direction" aria-pressed={ui.dir===d.id} aria-label="Face {d.id}" onclick={()=>ui.dir=d.id}>{directionInfo(d.id)?.short??d.id}</button>{/each}</div>
         <button class="bu-action" data-variant="quiet" onclick={()=>ui.sheet='inspect'}><Grid2x2 size={16}/><span>Inspect</span></button>
       </div></div>
     {/if}

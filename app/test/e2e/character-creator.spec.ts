@@ -372,9 +372,11 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 350, height: 800 }
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf')
   const horizontal = await sheet.evaluate(element => ({ client: element.clientWidth, scroll: element.scrollWidth }))
   expect(horizontal.scroll).toBeLessThanOrEqual(horizontal.client)
+  // Approved creator: the size readout sits under its guide image (hidden on shallow landscape).
   const readoutFits = await sheet.locator('.size-guide').evaluate(el => {
+    if (!el.getClientRects().length) return true
     const image = el.querySelector('.preview-box')!.getBoundingClientRect(), readout = el.querySelector('.sizes')!.getBoundingClientRect()
-    return readout.left > image.right && readout.right <= el.getBoundingClientRect().right + 1 && Math.abs(readout.top - image.top) < 1
+    return readout.top >= image.bottom - 1 && readout.left >= image.left - 1 && readout.right <= image.right + 1
   })
   expect(readoutFits).toBe(true)
   await expect(sheet.locator('.mirror-summary')).toHaveCount(0)
@@ -382,8 +384,11 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 350, height: 800 }
   const frameHeight = await sheet.getByRole('spinbutton', { name: 'Frame size', exact: true }).boundingBox()
   expect(autoHeight!.height).toBeCloseTo(frameHeight!.height, 0)
   const arrowWidths = await sheet.locator('.direction').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().width))
+  const tileWidths = await sheet.locator('.direction-tile').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().width))
+  const spread = (widths: number[]) => Math.max(...widths) - Math.min(...widths)
   expect(arrowWidths.every(width => width >= 44)).toBe(true)
-  expect(Math.max(...arrowWidths) - Math.min(...arrowWidths)).toBeLessThanOrEqual(1) // Attached mirror borders may add one CSS pixel.
+  // Approved compass: equal tiles with attached mirrors; the narrowest phones equalize arrows instead. One CSS pixel of border slack.
+  expect(Math.min(spread(tileWidths), spread(arrowWidths))).toBeLessThanOrEqual(1)
   const copyRight = async () => sheet.locator('.prompt-note').evaluate(el => ({ copy: el.querySelector('.copy')!.getBoundingClientRect().right, row: el.getBoundingClientRect().right }))
   const shortCopy = await copyRight()
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf with freckles and a broad nose, expressive eyebrows, small ears and a calm expression')

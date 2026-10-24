@@ -92,10 +92,13 @@ for (const theme of ['dark', 'light'] as const) for (const size of ['desktop', '
     const caption = (await page.locator('.selected-caption h2').boundingBox())!
     const selection = (await page.locator('.selection-world').boundingBox())!
     expect(Math.abs(caption.x + caption.width / 2 - selection.x - selection.width / 2), 'Center the character name itself within the selection world').toBeLessThanOrEqual(1)
+    if (size === 'phone') expect(await page.locator('.scene-backdrop').evaluate(el => getComputedStyle(el).backgroundSize), 'Characters has no equipment sheet; the world fills the screen').toBe('cover')
     await screenshot(page, `${size}-${theme}-characters`)
     await page.getByRole('button', { name: 'New character', exact: true }).click()
     const creator = page.getByRole('dialog', { name: 'New character', exact: true })
     await expect(creator.getByLabel('Details', { exact: true })).toBeVisible()
+    // Name sits above the form in the heading; fine pointers start there, phones avoid forcing the keyboard
+    if (size === 'desktop') await expect(creator.getByRole('textbox', { name: 'Name', exact: true })).toBeFocused()
     if (size === 'phone') {
       const appearance = creator.getByRole('tab', { name: 'Appearance', exact: true })
       const prompt = creator.getByRole('tab', { name: 'Prompt', exact: true })
@@ -140,15 +143,19 @@ for (const theme of ['dark', 'light'] as const) for (const size of ['desktop', '
       const headerSize = await page.getByRole('button', { name: 'Characters', exact: true }).evaluate(el => parseFloat(getComputedStyle(el).fontSize))
       expect(headerSize).toBe(16)
     }
+    const playback = page.getByRole('toolbar', { name: 'Preview controls' })
+    expect(await playback.getByRole('combobox', { name: 'Move', exact: true }).evaluate(el => getComputedStyle(el).alignItems), 'Host-sized move picker centers its value').toBe('center')
+    expect(await playback.getByRole('button', { name: 'Face south', exact: true }).evaluate(el => getComputedStyle(el).backgroundColor), 'Selected facing shows the direction chip').not.toBe('rgba(0, 0, 0, 0)')
     await screenshot(page, `${size}-${theme}-preview`)
     for (const [label, name] of [['Top-down', 'topdown'], ['Side-scroller', 'side']] as const) {
       await modes(page).getByRole('button', { name: label, exact: true }).click()
       await expect(modes(page).getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-pressed', 'true')
       await expect(page.getByRole('toolbar', { name: 'Preview controls' })).toHaveCount(0)
       await expect(panels(page).getByRole('button', { name: 'Moves', exact: true })).toHaveCount(0)
+      await expect(page.locator('.world-hint'), 'Live views name their movement controls on entry').toBeVisible()
       if (size === 'phone') {
         // The demo lacks Idle: its persistent explanation must occupy usable world space.
-        const coverage = page.locator('.world-coverage summary')
+        const coverage = page.locator('.world-coverage')
         await expect(coverage).toBeVisible()
         const note = (await coverage.boundingBox())!
         const views = (await modes(page).boundingBox())!
@@ -252,6 +259,9 @@ test('all production extra categories, native menu focus, mode controls and Tab 
   await options.click()
   const optionMenu = page.locator('#experience-options')
   await expect.poll(() => optionMenu.evaluate((node) => node.contains(document.activeElement))).toBe(true)
+  // Built CSS must keep the standard blur (a minifier once kept only the -webkit- alias, letting panels show through).
+  expect(await optionMenu.evaluate(el => getComputedStyle(el).backdropFilter)).toContain('blur')
+  await expect(optionMenu.getByRole('button', { name: 'Inspect all API calls', exact: true })).toHaveText('API calls')
   await page.keyboard.press('Escape')
   await expect(optionMenu).not.toBeVisible()
   await expect(options).toBeFocused()

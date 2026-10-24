@@ -22,6 +22,10 @@
   function release(){if(stick&&host?.hasPointerCapture(stick.id))host.releasePointerCapture(stick.id);stick=null;secondaryTouches.clear()}
   let reset = () => { keys.clear(); release(); position={x:0,y:0};camera={x:0,y:0};previous=undefined;clock=undefined;noticed.clear();note='';hasMoved=false }
   $effect(() => { void doc.id; void experience.mode; untrack(reset) })
+  // Live views briefly name their movement controls, as in the approved prototype; moving or 6.5s dismisses it.
+  let hint = $state(false)
+  const coarse = matchMedia('(pointer:coarse)').matches
+  $effect(() => { void doc.id; const live=experience.mode!=='preview'; hint=live; if(!live)return; const t=setTimeout(()=>hint=false,6500); return ()=>clearTimeout(t) })
   $effect(() => { void doc.rev; noticed.clear() })
   $effect(() => { if(ui.sheet) {keys.clear();release()} })
   function previewFacing() {
@@ -116,7 +120,7 @@
         }
         const result=imageCache, img=result?.image
         note=[p.issue,result?.hiddenItems.length?`${result.hiddenItems.length} equipped item${result.hiddenItems.length===1?'':'s'} hidden for this view`:''].filter(Boolean).join(' · ')
-        if(velocity.x||velocity.y)hasMoved=true
+        if((velocity.x||velocity.y)&&!hasMoved){hasMoved=true;hint=false}
         if(live&&hasMoved){const issues=[[p.issueKey,p.issue],[result?.issueKey,result?.issue]];for(const [id,text] of issues)if(id&&text&&!noticed.has(id)){noticed.add(id);toast(text)}}
         if(img&&result){
           const frame=result.frame, point=live?project(position,options):anchor
@@ -152,5 +156,6 @@
   <canvas class="world-actors" bind:this={canvas} aria-hidden="true"></canvas>
   {#if doc.loading}<span class="world-loading">Loading character…</span>{/if}
 </div>
-{#if note||rendererWarning}<details class="world-coverage"><summary>{rendererWarning||'View details'}</summary><p>{note||rendererWarning}</p></details>{/if}
+{#if hint}<p class="world-hint">{coarse?'Drag in the world to move':experience.mode==='side'?'Focus world · A/D or ←/→ to move':'Focus world · WASD or arrow keys to move'}</p>{/if}
+{#if note||rendererWarning}<p class="world-coverage">{[rendererWarning,note].filter(Boolean).join(' · ')}</p>{/if}
 {#if stick}<div class="world-stick" style:left="{stick.x}px" style:top="{stick.y}px" aria-hidden="true"><span style:transform="translate({Math.max(-40,Math.min(40,stick.dx))}px,{Math.max(-40,Math.min(40,stick.dy))}px)"></span></div>{/if}

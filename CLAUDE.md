@@ -2,7 +2,7 @@
 
 ## Current redesign continuation
 
-Start with the [UI/UX continuation handoff](.claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md). Claude takes over as lead game character-creator UI/UX designer, using **Claude Browser** for live prototype/production comparison. The checkpoint is tested but final visual review is unfinished; the handoff identifies exact evidence, remaining work and the approved design contract.
+The production/prototype visual review is complete: see the [final review](docs/testing/production-parity-final-review.md) for fixes, intentional differences, verification and the open copy follow-up. The [UI/UX continuation handoff](.claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md) keeps the approved design contract. Use **Claude Browser** for live prototype/production comparison (`.claude/launch.json` has `prototype-5202`, `app-build-5208` and `app-dev-5207`).
 
 ## Bronze UI theme
 

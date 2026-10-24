@@ -30,7 +30,7 @@
     <ul class="rows">
       {#each m.presets as p (p.id)}
         <li>
-          <button class="row" onclick={() => applyPreset(p)}><span class="row-name">{p.name}</span>{#if sameOutfit(p)}<span class="badge">Current</span>{/if}</button>
+          <button class="row bu-action" data-variant="outline" onclick={() => applyPreset(p)}><span class="row-name">{p.name}</span>{#if sameOutfit(p)}<span class="badge">Current</span>{/if}</button>
           <button class="bu-action btn icon plain sm row-del" data-variant="quiet" aria-label="Delete outfit {p.name}" title="Delete outfit" onclick={() => deletePreset(p.id)}><Trash size={14} /></button>
         </li>
       {:else}

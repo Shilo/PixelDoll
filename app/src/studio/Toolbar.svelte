@@ -43,7 +43,7 @@
   {#if experience.screen==='studio'}<button class="row bu-action mobile-redo" data-variant="quiet" disabled={!redoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); redo() }}><Redo2 size={18}/><span class="row-name">{redoLabel?'Redo '+redoLabel:'Redo'}</span></button>{/if}
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='connect' }}><KeyRound size={18}/><span class="row-name">{app.key ? app.keyRejected ? 'Key not accepted' : 'PixelLab account' : 'Connect PixelLab'}</span></button>
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='activity' }}><Activity size={18}/><span class="row-name">Activity</span>{#if $queue.role==='follower'}<span class="small">Other tab</span>{/if}</button>
-  <ApiPeek scope="all" all />
+  <ApiPeek scope="all" all menu />
   <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noreferrer"><Github size={18}/><span class="row-name">GitHub</span><ExternalLink size={16}/></a>
 </div>
 

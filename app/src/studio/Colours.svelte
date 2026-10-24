@@ -24,7 +24,7 @@
 <div class="colours">
   {#if heading}
     <div class="sec-head">
-      <span class="sec-title">{only ? 'Colors' : 'Everything you wear'}</span>
+      <span class="sec-title">{only ? 'Colors' : 'Character colors'}</span>
       {#if !only}
         <span class="actions">
           <button class="bu-action btn sm plain" data-variant="quiet" onclick={randomize} title="Random look"><Shuffle size={14} />Random</button>
