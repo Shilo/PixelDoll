@@ -1,6 +1,6 @@
 import { cellImg, layerFrame, over } from '../compose/compose.ts';
 import { variantOf, variantRampOf } from '../dress/dress.ts';
-import { fromHex, toHex, colourCounts, autoRamps } from '../dress/palette.ts';
+import { fromHex, toHex, colorCounts, autoRamps } from '../dress/palette.ts';
 import { chromaLayer, pickKey, toChroma, type Key } from '../image/chroma.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
@@ -49,9 +49,9 @@ export async function createDesign(project: Project, itemId: string, variants: P
     // A design owns resolved appearance; links to other equipment/skin are target-local, never portable pointers.
     delete mat.linkTo;
   }
-  // Legacy v1 derivation sometimes omitted RGBs claimed by the body. Make those item colours independently owned now.
+  // Legacy v1 derivation sometimes omitted RGBs claimed by the body. Make those item colors independently owned now.
   const claimed = new Set(m.materials.filter((x) => x.owner === item.id).flatMap((x) => x.ramp.map(fromHex)));
-  const counts = colourCounts(item.layers.flatMap((l) => Object.values(l.cells ?? {}).flatMap((ds) => Object.values(ds ?? {}).flatMap((cs) => cs ?? []))).flatMap((h) => h && project.images.get(h) || []));
+  const counts = colorCounts(item.layers.flatMap((l) => Object.values(l.cells ?? {}).flatMap((ds) => Object.values(ds ?? {}).flatMap((cs) => cs ?? []))).flatMap((h) => h && project.images.get(h) || []));
   let detail = 1;
   for (const ramp of autoRamps(counts, claimed)) {
     while (m.materials.some((mat) => mat.id === `${item.id}_saved_detail_${detail}`)) detail++;
@@ -71,7 +71,7 @@ export async function createDesign(project: Project, itemId: string, variants: P
   return { kind: 'equipment-design', format: 'pixeldoll-design/1', id: `equipment-design:${crypto.randomUUID()}`, revision, name: m.name, slot: item.slot, itemId, createdAt: new Date().toISOString(), source: m, imageHashes: refs, variants: selected, warnings, images };
 }
 
-function applyColourway(im: Img, design: EquipmentDesign): Img {
+function applyColorway(im: Img, design: EquipmentDesign): Img {
   const pixels = new Uint8ClampedArray(im.data), table = new Map<number, number>();
   for (const mat of design.source.materials.filter((m) => m.owner === design.itemId)) {
     const variant = design.variants[mat.id], ramp = variant && variantRampOf(mat, variant);
@@ -115,10 +115,10 @@ export function designRestReferences(design: EquipmentDesign, project: Project, 
     }
     if (!base || !layer) continue;
     if (d.mirrorOf) { base = flipH(base); layer = flipH(layer); }
-    const image = toChroma(base, key); over(image, applyColourway(layer, design));
+    const image = toChroma(base, key); over(image, applyColorway(layer, design));
     refs.push({ direction: d.id, image, body: base, key, complete: !!dressed });
   }
   return refs;
 }
 
-export const designColours = (design: EquipmentDesign) => design.source.materials.filter((m) => m.owner === design.itemId).flatMap((m) => (design.variants[m.id] && variantRampOf(m, design.variants[m.id])) || m.ramp).map((h) => toHex(fromHex(h)));
+export const designColors = (design: EquipmentDesign) => design.source.materials.filter((m) => m.owner === design.itemId).flatMap((m) => (design.variants[m.id] && variantRampOf(m, design.variants[m.id])) || m.ramp).map((h) => toHex(fromHex(h)));

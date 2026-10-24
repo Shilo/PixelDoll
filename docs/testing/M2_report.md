@@ -9,7 +9,7 @@ the S1 frames (`spikes/api/out/e2_anim/{idle,walk}_{south,east}_*.png`, plus the
 | Area | Files |
 |---|---|
 | Rig contract types (manifest-spec `Rig`), cell keys, playlists (walk 100 ms / idle 150 ms), per-cell SHA-256 of RGBA, `baseHash` = sha256 over cell hashes in (anim, dir, cell) order, `validateRig` | `app/src/lib/rig/rig.ts` |
-| Normalize: canvas-centre crop/pad to the cell, never rescale; reports opaque px cut by the crop (= crop failure) and semi-alpha px; binary alpha ≥ 128; opaque bbox; feet line; pivot `x = w/2`, `y` = bottom edge of the lowest opaque row | `app/src/lib/rig/normalize.ts` |
+| Normalize: canvas-center crop/pad to the cell, never rescale; reports opaque px cut by the crop (= crop failure) and semi-alpha px; binary alpha ≥ 128; opaque bbox; feet line; pivot `x = w/2`, `y` = bottom edge of the lowest opaque row | `app/src/lib/rig/normalize.ts` |
 | Direction plans: 4-dir (S, E, N + W⇐E), 8-dir (5 + 3 mirrored), "all generated"; `flipH` | `app/src/lib/rig/mirror.ts` |
 | Skeleton: parse `estimate-skeleton` keypoints (normalized 0–1 → px), anchors head (mean of nose/eyes/ears), neck, hand_r/l (`RIGHT/LEFT ARM`), hip (mean of hips), foot_r/l (`RIGHT/LEFT LEG`); patch tracking (integer translation ±4 px around the keypoint seed, premultiplied RGBA SAD, head patch 13×13, others 9×9) | `app/src/lib/rig/skeleton.ts` |
 | Build: sources → normalized + mirrored cells, pivot from `idle/south/0`, QA (crop failure, frame-count mismatch, missing frame = errors; feet drift > 1 px, headroom < 6 px, semi-alpha, missing directions, empty cells = warnings); anchor tracks (keyframe = `idle/<dir>/0`, mirrored dirs flip the source track) | `app/src/lib/rig/freeze.ts` |
@@ -32,7 +32,7 @@ M1 ledger), skeletons (cell key → keypoints, mirrored cells flipped), rigQa {w
 | 5 | Mirrored west | every west cell == pixel flip of the east cell (0 px differ, checked in-page); visually correct (`img/m2_3_walk_west_mirror.jpg`) |
 | 6 | Pivot | one pivot for the rig; feet line per cell vs pivot: idle 0 px; walk drift **south 2, east 4, north 2, west 4 px** (stride foot lands lower) → QA warnings |
 | 7 | Headroom | M1 base ≥ 6 px everywhere (no warning); S1 frames **5 px** → warnings on idle/* and walk/south |
-| 8 | Head anchor tracking (M1 rig) | tracked vs keypoint anchor ≤ **1 px** in every anim/dir; tracked offset vs an independent silhouette reference (head top row + centre of the top 8 rows) ≤ **1.0 px**; frame-to-frame step ≤ 1 px. Walk/south track `31,16 31,16 30,16 30,16 30,16 31,17 31,16 32,16` |
+| 8 | Head anchor tracking (M1 rig) | tracked vs keypoint anchor ≤ **1 px** in every anim/dir; tracked offset vs an independent silhouette reference (head top row + center of the top 8 rows) ≤ **1.0 px**; frame-to-frame step ≤ 1 px. Walk/south track `31,16 31,16 30,16 30,16 30,16 31,17 31,16 32,16` |
 | 9 | Head anchor tracking (S1 rig, 24 cells, 2.4 gens) | vs keypoints ≤ 1 px; vs silhouette ≤ 1.0 px (south), 0.2–0.4 px (east/west); max step 1 px |
 | 10 | Freeze | `rig-403de7c16482`, baseHash `sha256:403de7c16482f4a8c60cd97b3d81349ae104b7a6ed621c762251363772049ab8`; every cell PNG round-trip re-hashed before storing |
 | 11 | Persistence | full page reload (memory key gone) → "open" decodes all 48 blobs, recomputes cell hashes + baseHash → "stored rig verified"; anchors and QA identical (`img/m2_4_reload_verified.jpg`) |
@@ -65,7 +65,7 @@ Note: architecture §3.1/§12 say estimate-skeleton is "~0 gens"; it is **0.1 ge
 
 - Slot rects (architecture §4, listed under M2 "must prove") are not drawn: they belong to `image/slots.ts` for M3; keypoints
   and anchors are stored in the rig record for it.
-- Canvas-centre alignment only: a larger canvas whose character is off-centre fails the crop instead of being shifted to fit.
+- Canvas-center alignment only: a larger canvas whose character is off-center fails the crop instead of being shifted to fit.
 - Mirrored directions keep keypoint labels (hand_r on west = flipped east hand_r), i.e. handedness flips with the pixels (§2).
 - Playlist ms are defaults, not editable in the UI. No delete for stored rigs.
 - Patch-tracking SAD residuals are high on walk (65–124 per px) because templates redraw the whole body each frame; the

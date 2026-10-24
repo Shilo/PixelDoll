@@ -18,7 +18,7 @@ Final verification uses the published **0.1.0** [GitHub release archive](https:/
 
 ## Before and after evidence
 
-Before changing the active runtime, `capture-bronze.mjs before` captured **68 browser images** from actual screen controls: both appearances at desktop **1920 × 1080** and phone **450 × 800**, device scale **1** in every capture. The set contains all five screens, Colours/Moves/Outfits panels, More/character/prompt/parts menus, export/animation/about dialogs, the missing-equipment toast and two phone creation scroll details. No external requests or page errors occurred.
+Before changing the active runtime, `capture-bronze.mjs before` captured **68 browser images** from actual screen controls: both appearances at desktop **1920 × 1080** and phone **450 × 800**, device scale **1** in every capture. The set contains all five screens, Colors/Moves/Outfits panels, More/character/prompt/parts menus, export/animation/about dialogs, the missing-equipment toast and two phone creation scroll details. No external requests or page errors occurred.
 
 The ignored `evidence/bronze-dependency/` directory holds **68 untouched before PNGs, 68 after PNGs, 68 equal-size comparison pairs and four complete review boards**, with JSON manifests containing image SHA-256 digests, capture dates, viewport metadata and major layout bounding boxes. The after manifest reports geometry differences above 1 px: **none** across the captured major surfaces. All four boards were visually reviewed. Screenshots are evidence from live scenes; moving-toast actor position may vary slightly with browser scheduling.
 

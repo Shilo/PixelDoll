@@ -1,4 +1,4 @@
-// Source frame -> rig cell: centre-align canvases, crop/pad (never rescale), binary alpha. Plus bbox / pivot / feet line.
+// Source frame -> rig cell: center-align canvases, crop/pad (never rescale), binary alpha. Plus bbox / pivot / feet line.
 import { binaryAlpha, makeImg, type Img } from '../image/png.ts';
 
 export interface Box { x0: number; y0: number; x1: number; y1: number } // inclusive pixel indices
@@ -10,11 +10,11 @@ export interface Normalized {
 }
 
 // The ONE placement rule for every source (M2 imports, Studio create, managed/raw renders). `char` = size of the character
-// canvas the source centres (default: the source itself, capped at the cell). A character canvas smaller than the cell is
-// padded centred in x, bottom-aligned in y with a FLOOR px margin (48 -> 64 = x+8, y+12); a bigger render canvas around it
-// (managed skeleton-v3 80/96, text modes 68, B6 saw 64 for a 48 character) is re-centred first. M3: with S2's y+16 the feet sat
+// canvas the source centers (default: the source itself, capped at the cell). A character canvas smaller than the cell is
+// padded centered in x, bottom-aligned in y with a FLOOR px margin (48 -> 64 = x+8, y+12); a bigger render canvas around it
+// (managed skeleton-v3 80/96, text modes 68, B6 saw 64 for a 48 character) is re-centered first. M3: with S2's y+16 the feet sat
 // on row 63, blades pointing down were cut at the cell edge and PixelLab erased the outermost row.
-// ponytail: no shift-to-fit for off-centre larger canvases.
+// ponytail: no shift-to-fit for off-center larger canvases.
 export const FLOOR = 4;
 export function normalize(src: Img, w: number, h: number, thr = 128, char = Math.min(src.w, w)): Normalized {
   const ox = Math.floor((w - src.w) / 2), oy = Math.max(0, h - char - FLOOR) + Math.floor((char - src.h) / 2);
@@ -59,10 +59,10 @@ export function selfTest() {
   const big = normalize(src, 2, 2);
   console.assert(big.cutPx === 1, 'crop cutting opaque px is reported');
   const pad = normalize(makeImg(2, 2), 4, 4);
-  console.assert(pad.offset.join() === '1,0' && pad.img.w === 4, 'pad: centred x, floor margin capped by the free space');
+  console.assert(pad.offset.join() === '1,0' && pad.img.w === 4, 'pad: centered x, floor margin capped by the free space');
   console.assert(normalize(makeImg(48, 48), 64, 64).offset.join() === '8,12' && normalize(makeImg(64, 64), 64, 64).offset.join() === '0,0', '48 -> 64 pad keeps a 4 px floor');
   const at = (W: number, c: number) => normalize(makeImg(W, W), 64, 64, 128, c).offset.map((v) => v + (W - c) / 2).join(); // where the character canvas lands
-  console.assert(at(80, 48) === '8,12' && at(68, 48) === '8,12' && at(64, 48) === '8,12' && at(96, 64) === '0,0' && at(80, 64) === '0,0', 'render canvases re-centre onto the same floor pad');
+  console.assert(at(80, 48) === '8,12' && at(68, 48) === '8,12' && at(64, 48) === '8,12' && at(96, 64) === '0,0' && at(80, 64) === '0,0', 'render canvases re-center onto the same floor pad');
   console.assert(JSON.stringify(opaqueBox(n.img)) === '{"x0":1,"y0":3,"x1":1,"y1":3}' && opaqueBox(makeImg(2, 2)) === null, 'opaqueBox');
   const p = pivotOf(n.img);
   console.assert(p.x === 2 && p.y === 4, `pivot ${p.x},${p.y}`);

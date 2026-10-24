@@ -65,7 +65,7 @@
 </script>
 
 <div class="library">
-  <div class="field-row"><p class="muted small">Shared designs stay in this browser. Each fitted copy has its own colours, moves and outfit choices.</p><button class="bu-action btn sm" data-variant="outline" disabled={!!busy} onclick={() => file.click()}><Plus size={14} />Import design</button></div>
+  <div class="field-row"><p class="muted small">Shared designs stay in this browser. Each fitted copy has its own colors, moves and outfit choices.</p><button class="bu-action btn sm" data-variant="outline" disabled={!!busy} onclick={() => file.click()}><Plus size={14} />Import design</button></div>
   <input class="file" type="file" accept=".zip,application/zip" bind:this={file} onchange={importFile} aria-label="Import shared design zip" />
   {#if error}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{error}</p>{/if}
   {#if loading}<p class="muted" role="status">Checking shared designs…</p>

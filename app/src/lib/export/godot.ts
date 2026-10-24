@@ -168,7 +168,7 @@ func _refresh() -> void:
 		var layer := _layer_of(node)
 		node.visible = not layer.is_empty() and not hidden.has(node.get_meta("slot"))
 		if not layer.is_empty():
-			var frames := _coloured_frames(_find(manifest["items"], _shown(node.get_meta("slot"))), layer)
+			var frames := _colored_frames(_find(manifest["items"], _shown(node.get_meta("slot"))), layer)
 			if node.sprite_frames != frames:
 				node.sprite_frames = frames
 			var pv: Dictionary = layer.get("pivot", manifest["rig"]["pivot"])
@@ -217,7 +217,7 @@ func _variant_of(id: String, seen: Dictionary) -> String:
 	return variants.get(id, material.get("defaultVariant", ""))
 
 
-func _coloured_frames(item: Dictionary, layer: Dictionary) -> SpriteFrames:
+func _colored_frames(item: Dictionary, layer: Dictionary) -> SpriteFrames:
 	var key: String = "%s_%s" % [item["id"], layer["id"]]
 	if _frame_cache.has(key):
 		return _frame_cache[key]

@@ -26,11 +26,11 @@ ganis, a MZ-generator reimplementation).
      - a full **per-direction, per-frame** priority table (Diablo 2 COF, Ragnarok IMF, Graal gani),
      - 3D depth sorting (Habbo).
   3. **Tinting.** One of these:
-     - grey-ramp remap (UO hues, 32-colour ramps; RPG Maker gradient ramps),
-     - multi-channel mask multiply (Tibia 4-colour template: head/body/legs/feet),
-     - palette swap (Ragnarok, LPC palette JSON, Stardew colour identification, Diablo 2 colormaps),
-     - multiply on grey textures (Terraria clothes, Habbo),
-     - separately drawn colour variants (MapleStory hair/face IDs).
+     - gray-ramp remap (UO hues, 32-color ramps; RPG Maker gradient ramps),
+     - multi-channel mask multiply (Tibia 4-color template: head/body/legs/feet),
+     - palette swap (Ragnarok, LPC palette JSON, Stardew color identification, Diablo 2 colormaps),
+     - multiply on gray textures (Terraria clothes, Habbo),
+     - separately drawn color variants (MapleStory hair/face IDs).
   4. **Directions.** Stored vs. shown directions, and how mirroring handles asymmetric items:
      - 8 shown / 5 stored (UO, Habbo, RuneScape Classic),
      - 4 stored (LPC, Tibia, Graal, RPG Maker),
@@ -64,8 +64,8 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 - **Anchoring [src].** Each frame of each layer stores `CenterX/CenterY/Width/Height` (tightly cropped frames). All layers are drawn
   relative to one mobile anchor point. If an equipment animation has fewer frames than the body, the frame index is clamped to
   its last frame.
-- **Tint [src].** `hues.mul` stores 32-colour ramps. The pixel's red channel indexes the ramp. *Partial hue* recolours only pure-grey
-  pixels, so trims and gems keep their colour.
+- **Tint [src].** `hues.mul` stores 32-color ramps. The pixel's red channel indexes the ramp. *Partial hue* recolors only pure-gray
+  pixels, so trims and gems keep their color.
 - **Directions [src].** 8 shown, 5 stored (down, down-left, left, up-left, up in screen terms). The other 3 are horizontal mirrors.
 - **Frame counts [src].** Frame counts are per entry (action × direction) and read from the file. UOP equipment assumes at least 10 frames.
 
@@ -79,7 +79,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 - **Slots [src]** (`d2enum/composite_type.go`): 16 composite types, `HD` head, `TR` torso, `LG` legs, `RA` right arm, `LA` left arm,
   `RH` right hand (weapon), `LH` left hand, `SH` shield, and `S1..S8` specials (shoulder pads, extra parts and effects; per unit).
   - For armour layers the "equip" code is an **armour class** `lit`/`med`/`hvy`. It comes from `armor.txt` columns `Torso`, `Legs`,
-    `rArm`, `lArm`, `rSPad`, `lSPad`, so many armours share 3 visual weights.
+    `rArm`, `lArm`, `rSPad`, `lSPad`, so many armors share 3 visual weights.
   - For RH/LH/SH the code is the item's code.
   - Weapon class (HTH, 1HS, 2HS, BOW, ...) selects a *whole different animation set*.
 - **COF binary [src]** (`d2fileformats/d2cof/cof.go`), in this order:
@@ -101,7 +101,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 ## 3. Ragnarok Online (.spr/.act)
 
 - **Asset structure [web][src].** `.spr` holds the images (palette or RGBA). `.act` holds actions, frames, and *layers per frame*: sprite index, x/y,
-  mirror flag, RGBA colour, scale, rotation. It also holds **anchor points per frame**, an event id, and per-action intervals (rdw-archive ACT spec).
+  mirror flag, RGBA color, scale, rotation. It also holds **anchor points per frame**, an event id, and per-action intervals (rdw-archive ACT spec).
 - **Layers [web].** Shadow, Body, Head, Lower/Middle/Upper Headgear, Weapon, Weapon Slash, Shield, Garment (robe/wings).
 - **Anchoring [web][src].** *Anchor-graph model.* Body, head, headgear, weapon and shield ACTs each carry anchor points. The head is placed so
   that its anchor coincides with the body's anchor **every frame**. roBrowser computes `pos = bodyAnchor − partAnchor`
@@ -112,7 +112,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
   - The shield is drawn *behind* the body for directions 2..5 (roBrowser hardcode, "seems hardcoded by the client").
   - The **head-vs-body priority per action/direction/frame comes from `.imf` files**, another per-frame priority table like D2's.
   - Garment goes first or last per frame, from Lua tables (`_New_2DLayerDir_F.lub`).
-- **Tint [mem].** Hair and clothing palettes are swapped from `.pal` files. ACT layers can also carry a colour multiply.
+- **Tint [mem].** Hair and clothing palettes are swapped from `.pal` files. ACT layers can also carry a color multiply.
 - **Directions [web][src].** 8 directions, camera-relative (`(camera.dir + entity.dir) % 8`). Many directions reuse mirrored layers via the ACT
   mirror flag. The head also has 3 "look" directions (left/forward/right) while idle or sitting.
 
@@ -130,7 +130,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 - **Draw order [src].** `Base.wz/zmap.img` is one **global ordered list of z-names**. Parts are sorted by the index of their `z`.
 - **Coverage [src].** `Base.wz/smap.img` maps z-names to 2-character slot codes. Each item's `info.vslot` lists the slots it visually occupies.
   A hat whose vslot intersects a part's slots hides that part, e.g. a full helmet hides hair layers.
-- **Tint [mem].** Mostly pre-drawn colour variants (hair/face colour is encoded in the item ID). It is not runtime tinting.
+- **Tint [mem].** Mostly pre-drawn color variants (hair/face color is encoded in the item ID). It is not runtime tinting.
 - **Directions [src].** Side view. Art faces left; facing right = horizontal flip, with origins and map x negated. Some frames carry `flip`.
 - **Why it matters [inferred].** This is the most flexible model (items can be reused across body shapes and animations because they snap to
   points). But it needs **part-segmented art per frame**: body, arm and head as separate canvases. PixelLab generates whole figures, so
@@ -140,9 +140,9 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 
 - **Asset structure [src]** (`src/client/thingtype.cpp`, `creature.cpp`): an outfit is one *thing type* with a pattern grid:
   `xPattern` = direction (4), `yPattern` = addon (0 base, 1 addon 1, 2 addon 2), `zPattern` = mounted (0/1), × animation phases.
-  There are 2 layers: the coloured base and a **template mask**.
-- **Tint [src].** The template mask uses 4 flat key colours: **yellow = head, red = body (primary), green = legs, blue = feet**. The client
-  splits it into 4 masks. Each mask is drawn over the base in **multiply** mode with the chosen colour, from 133 colours
+  There are 2 layers: the colored base and a **template mask**.
+- **Tint [src].** The template mask uses 4 flat key colors: **yellow = head, red = body (primary), green = legs, blue = feet**. The client
+  splits it into 4 masks. Each mask is drawn over the base in **multiply** mode with the chosen color, from 133 colors
   (`HSI_H_STEPS 19 × HSI_SI_VALUES 7`, `outfit.cpp getColor`). Each server-side outfit carries `lookHead/Body/Legs/Feet` (0–132) and
   an `addons` bitmask.
 - **Addons [src].** These are not separate items. They are extra pre-drawn overlays inside the *same* outfit's sprite grid, drawn after the base
@@ -150,7 +150,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 - **Draw order.** Fixed: mount, base, addons. No per-direction logic.
 - **Anchoring.** Shared canvas (32 px tile units, displacement per thing type).
 - **Directions [src].** 4 stored (N, E, S, W). Diagonals use E/W. No mirroring.
-- **Lesson [inferred].** Tibia is the cheapest "customisable" model: one outfit drawing + one 4-channel mask gives a large colour space.
+- **Lesson [inferred].** Tibia is the cheapest "customisable" model: one outfit drawing + one 4-channel mask gives a large color space.
   It is *outfit-swapping plus tint*, not true slot paperdolling.
 
 ## 6. Stardew Valley (farmer)
@@ -165,16 +165,16 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
   tables). PNG edits can only shift art inside its cell. So the shirt is a small sticker moved by a per-frame offset, not a full-frame layer.
 - **Coverage [web].** A hat swaps the hairstyle to a hat-compatible variant (e.g., hairstyles 0, 2, 4, 8, ... → 30). This is *substitution* rather than
   hiding.
-- **Tint [web].** Skin, eyes, boots, pants, arms and sleeves are recoloured by identifying specific colours in the base sheet (palette swap).
+- **Tint [web].** Skin, eyes, boots, pants, arms and sleeves are recolored by identifying specific colors in the base sheet (palette swap).
 - **Directions [web].** Down, up, and one side; left = mirrored right ("universally mirror images").
 
 ## 7. Terraria (tModLoader `PlayerDrawLayers`)
 
 - **Asset structure [src][mem]:**
   - Player frames are **40×56**, stacked vertically (frame = `bodyFrame.Y / bodyFrame.Height`).
-  - Armour head/body/legs sheets use the **identical frame grid**, so the same `bodyFrame` rectangle is used for every layer (tModLoader ExampleMod
+  - Armor head/body/legs sheets use the **identical frame grid**, so the same `bodyFrame` rectangle is used for every layer (tModLoader ExampleMod
     `EarringsDrawLayer.cs`).
-  - Body armour since 1.4 is a "composite" sheet with separate torso, back-arm, front-arm and shoulder regions [mem].
+  - Body armor since 1.4 is a "composite" sheet with separate torso, back-arm, front-arm and shoulder regions [mem].
 - **Draw order [src]** (`PlayerDrawLayers.tML.cs` `FixedVanillaLayers`): about 40 fixed layers, back to front:
   - behind the body: JimsCloak, MountBack, ..., Backpacks, Tails, Wings, **HairBack**, BackAcc, **HeadBack**, BalloonAcc;
   - the body itself: Skin, Leggings / **Robe** (mutually exclusive by condition), Shoes, SkinLongCoat, ArmorLongCoat, Torso, OffhandAcc,
@@ -184,7 +184,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
   - Mods insert layers with `Between(A,B)` / `AfterParent(X)` positions.
 - **Anchoring [src].** Shared frame plus a **per-frame headgear offset table** (`Main.OffsetsPlayerHeadgear[frameIndex]`), so hats and hair bob with
   the walk cycle.
-- **Tint [src][mem].** Clothes, skin and hair are grey textures multiplied by player-chosen colours. Armour is recoloured with **dye shaders**
+- **Tint [src][mem].** Clothes, skin and hair are gray textures multiplied by player-chosen colors. Armor is recolored with **dye shaders**
   per layer (`drawData.shader`).
 - **Directions.** Side view only. Left = `SpriteEffects.FlipHorizontally` (`playerEffect`).
 
@@ -203,9 +203,9 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
   - cape `fg zPos 85` / `bg zPos 5`,
   - arming sword `fg 140` / `bg 9`, with attack slash `fg 150` / `bg 8`,
   - body `10`, backpack `110`.
-- **Anchoring.** Shared 64×64 canvas, no offsets (oversize sheets are centred on the same body).
-- **Tint [src].** Historically pre-coloured `variants` (one PNG per colour). The newer `PALETTE_RECOLOR_GUIDE.md` adds palette JSON ramps (1–32
-  colours) with tolerance-based colour matching, done in WebGL.
+- **Anchoring.** Shared 64×64 canvas, no offsets (oversize sheets are centered on the same body).
+- **Tint [src].** Historically pre-colored `variants` (one PNG per color). The newer `PALETTE_RECOLOR_GUIDE.md` adds palette JSON ramps (1–32
+  colors) with tolerance-based color matching, done in WebGL.
 - **Directions.** 4 stored, no mirroring.
 - **License [src].** Each image is CC0 / CC-BY / CC-BY-SA / OGA-BY / GPL (often multi-licensed), with mandatory attribution via `CREDITS.csv`. The README notes
   CC-BY-SA's DRM clause concerns for Steam/iOS and suggests CC0/OGA-BY for those platforms. **PixelDoll should never mix LPC art into AI outputs
@@ -221,7 +221,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 - **Draw order [src].** **3D depth sort.** `AvatarModelGeometry.getBodyPartsAtAngle` rotates each body part's 3D position around Y by the
   direction and sorts by distance to camera. Parts inside a body part are sorted the same way. The order is computed, not authored.
 - **Coverage [src].** Partsets carry `hiddenLayers`. `hrb` (hair under a hat) has `removeSetType: 'hr'`.
-- **Tint [src].** Per set type there is a palette, and parts with `colorLayerIndex > 0` are multiplied by the chosen palette colour.
+- **Tint [src].** Per set type there is a palette, and parts with `colorLayerIndex > 0` are multiplied by the chosen palette color.
 - **Directions [src].** 8 directions (0–7). **Directions 4, 5, 6 reuse the assets of 2, 1, 0** with a horizontal flip *and* a **left/right
   part-type swap** (`flippedSetType`: rh↔lh, rs↔ls, rc↔lc). Hand items and chest prints are flipped without swapping, so prints don't read
   backwards (`AvatarImageCache.ts`).
@@ -236,7 +236,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 - **Mirroring [src].** Directions 5, 6, 7 → 3, 2, 1 flipped. While mirrored:
   - items with F frames use them;
   - otherwise the weapon and shield slots (3/4) get **hardcoded x/y offsets** and a phase-shifted walk frame, to fake handedness.
-- **Tint [src].** Fixed palettes: 10 hair colours, 15 top/bottom colours, 5 skin colours (`characterHairColours` etc.).
+- **Tint [src].** Fixed palettes: 10 hair colors, 15 top/bottom colors, 5 skin colors (`characterHairColours` etc.).
 
 ## 11. Graal Online (.gani)
 
@@ -249,7 +249,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 - **Draw order and anchoring.** Explicit per direction and per frame, written into the animation. For example, the carried item is drawn *before* the body when facing up and after it otherwise.
   The x/y per sprite per frame make the animation file the anchor table.
 - **Swapping.** Equipment swaps the *image file in a slot* (`HEAD`, `ATTR1`...). The gani never changes.
-- **Tint [mem].** Body colours (skin, coat, sleeves, shoes, belt) replace fixed palette colours in `body.png`.
+- **Tint [mem].** Body colors (skin, coat, sleeves, shoes, belt) replace fixed palette colors in `body.png`.
 - **Directions.** 4 stored, no mirroring.
 
 ## 12. RPG Maker MV/MZ character generator
@@ -261,7 +261,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
     Families include Cloak1/2, RearHair1/2, FrontHair1/2, Wing1/2, Tail1/2 and Clothing1/2.
 - **Draw order [src].** A fixed back-to-front list per view. TV example: Tail2, Wing2, Cloak2, RearHair2, FrontHair2, **Body**, Ears, FacialMark,
   Beard, Clothing1, Clothing2, Cloak1, RearHair1, FrontHair1, BeastEars, AccA, Glasses, AccB, Wing1, Tail1. This is the LPC fg/bg idea again.
-- **Tint [src].** The mask's **flat key colours mark colour slots**. Each slot is recoloured with a ramp from gradient files (`grad_common`, `eyes`,
+- **Tint [src].** The mask's **flat key colors mark color slots**. Each slot is recolored with a ramp from gradient files (`grad_common`, `eyes`,
   `hair`, `skin`), read as 4-px bands, light to dark.
 - **Directions.** 4 stored (TV), no mirroring.
 
@@ -276,18 +276,18 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 
 | Game | Granularity | Slots (≈) | Z-order model | Anchor model | Tint model | Dirs stored → shown | Mirroring |
 |---|---|---|---|---|---|---|---|
-| Ultima Online | full-frame layers per item, all actions | 25 | 3 base tables + per-item rules + cloak-by-dir; hardcoded culling | per-frame stored center vs shared anchor | 32-colour ramp by red channel; partial hue = grey only | 5 → 8 | yes (3 dirs), no handedness swap |
-| Diablo II | per-body-part layers (16 types) × armour class | 16 | **per-direction × per-frame COF priority** | per-frame offsets around unit origin | colormap transforms + draw effects | 8/16/32 → same | no |
-| Ragnarok Online | body/head/3 headgear/weapon/shield/garment | 9 | fixed + shield-by-dir + IMF per-frame head/body + garment Lua | **anchor points per frame** | palette swap + layer colour | 8 (mirror flags) | partial (ACT mirror flag) |
-| MapleStory | per-part canvases (body, arm, head, hair...) | ~15 + | global zmap name list | **named map points graph** (navel/neck/hand/brow) | pre-drawn colour IDs | 1 side → 2 | yes (flip) |
+| Ultima Online | full-frame layers per item, all actions | 25 | 3 base tables + per-item rules + cloak-by-dir; hardcoded culling | per-frame stored center vs shared anchor | 32-color ramp by red channel; partial hue = gray only | 5 → 8 | yes (3 dirs), no handedness swap |
+| Diablo II | per-body-part layers (16 types) × armor class | 16 | **per-direction × per-frame COF priority** | per-frame offsets around unit origin | colormap transforms + draw effects | 8/16/32 → same | no |
+| Ragnarok Online | body/head/3 headgear/weapon/shield/garment | 9 | fixed + shield-by-dir + IMF per-frame head/body + garment Lua | **anchor points per frame** | palette swap + layer color | 8 (mirror flags) | partial (ACT mirror flag) |
+| MapleStory | per-part canvases (body, arm, head, hair...) | ~15 + | global zmap name list | **named map points graph** (navel/neck/hand/brow) | pre-drawn color IDs | 1 side → 2 | yes (flip) |
 | Tibia | whole outfit + 2 addons + template | outfit + 2 addons | fixed | shared tile canvas | **4-channel mask multiply (head/body/legs/feet)** | 4 → 8 (diagonals reuse E/W) | no |
-| Stardew Valley | base sheet + small shirt/hair/hat stickers | 7 | fixed (arms on top) | **per-frame offset table in code** | palette colour identification | 3 → 4 | yes (left = flipped right) |
-| Terraria | full-frame layers on shared grid | ~40 draw layers | fixed list + conditional items (HeldItem ×3, Robe) | shared frame + per-frame headgear offsets | grey × colour; dye shaders | 1 side → 2 | yes |
+| Stardew Valley | base sheet + small shirt/hair/hat stickers | 7 | fixed (arms on top) | **per-frame offset table in code** | palette color identification | 3 → 4 | yes (left = flipped right) |
+| Terraria | full-frame layers on shared grid | ~40 draw layers | fixed list + conditional items (HeldItem ×3, Robe) | shared frame + per-frame headgear offsets | gray × color; dye shaders | 1 side → 2 | yes |
 | LPC / ULPC | full-frame layers, fg/bg splits | ~12 categories | **static zPos per layer**, fg/bg split items | shared 64×64 canvas | variants / palette JSON ramps | 4 → 4 | no |
-| Habbo | per-part assets, per-asset offsets | ~20 set types | **3D geometry depth sort per direction** | per-asset offset (registration) | palette multiply on grey | 5 → 8 | yes, **with L/R part swap** |
+| Habbo | per-part assets, per-asset offsets | ~20 set types | **3D geometry depth sort per direction** | per-asset offset (registration) | palette multiply on gray | 5 → 8 | yes, **with L/R part swap** |
 | RuneScape Classic | full-frame layers per slot | 12 | **8 × 12 per-direction slot table** | shared canvas | fixed palettes | 5 → 8 | yes, **F override frames / offsets** |
-| Graal | image slots cut by gani | ~6 | **per-direction × per-frame list in gani** | per-frame x/y in gani | palette colour replace | 4 → 4 | no |
-| RPG Maker MZ gen | parts with layer 1/2 (front/back) | ~18 families | fixed list per view | shared canvas | key-colour mask → gradient ramps | 4 → 4 | no |
+| Graal | image slots cut by gani | ~6 | **per-direction × per-frame list in gani** | per-frame x/y in gani | palette color replace | 4 → 4 | no |
+| RPG Maker MZ gen | parts with layer 1/2 (front/back) | ~18 families | fixed list per view | shared canvas | key-color mask → gradient ramps | 4 → 4 | no |
 
 ---
 
@@ -299,7 +299,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
   tail).
 - **Default slot taxonomy** (small; games use 7–25):
   `body` · `hair_back` · `hair_front` · `facial_hair` · `head` (helmet/hat) · `face_acc` (glasses/mask) · `neck` · `torso_inner`
-  (shirt) · `torso_outer` (armour/robe) · `back` (cape/backpack/quiver; usually fg+bg) · `arms` (gloves/bracers) · `waist` · `legs`
+  (shirt) · `torso_outer` (armor/robe) · `back` (cape/backpack/quiver; usually fg+bg) · `arms` (gloves/bracers) · `waist` · `legs`
   (pants) · `feet` · `main_hand` · `off_hand`.
 - `body` is the rig. Everything else is optional.
 
@@ -325,12 +325,12 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
   produce.
 
 ### R-4 Tint model: ramp remap with up to 4 regions, plus a "partial" flag
-- Store a **region mask** per layer, with at most 4 regions like Tibia's head/body/legs/feet or RPG Maker's key colours. Each region gets a
-  **colour ramp** (UO-style 32 or LPC-style 1–32 steps). Recolouring = map the pixel's luminance/ramp index into the target ramp.
-- Add a **`partial`** flag (UO partial hue): only pixels in the mask (or near-grey pixels) are recoloured. Metal, gems and outlines keep their colour.
-- PixelLab output is full-colour, so the pipeline must **quantize each region to its ramp** before export. Multiply on coloured art
-  muddies colours. The Tibia forum attempt at simple overlay recolouring lost outlines and shading.
-- Do not generate one PixelLab variant per colour unless the recolour fails QA. One generation plus a ramp swap is the efficient path.
+- Store a **region mask** per layer, with at most 4 regions like Tibia's head/body/legs/feet or RPG Maker's key colors. Each region gets a
+  **color ramp** (UO-style 32 or LPC-style 1–32 steps). Recoloring = map the pixel's luminance/ramp index into the target ramp.
+- Add a **`partial`** flag (UO partial hue): only pixels in the mask (or near-gray pixels) are recolored. Metal, gems and outlines keep their color.
+- PixelLab output is full-color, so the pipeline must **quantize each region to its ramp** before export. Multiply on colored art
+  muddies colors. The Tibia forum attempt at simple overlay recoloring lost outlines and shading.
+- Do not generate one PixelLab variant per color unless the recolor fails QA. One generation plus a ramp swap is the efficient path.
 
 ### R-5 Directions and mirroring: mirror by default for symmetric items, with handedness swap and per-item opt-out
 - Store what PixelLab generates (4 or 8 directions). Offer **"mirror east side from west"** as a cost-saver: 8 shown from 5 stored, like UO, Habbo
@@ -358,7 +358,7 @@ Full verification with file references: [`ultima_online/ultima_online_paperdolli
 3. Per-part anchor graphs with segmented art (MapleStory, RO) when the generator produces whole figures.
 4. Mirroring asymmetric items without a swap or opt-out.
 5. Authoring full per-frame priority tables by hand (D2 COF). Use sparse overrides plus an fg/bg split.
-6. Recolour by multiplying full-colour art. Use ramp quantize-and-remap.
+6. Recolor by multiplying full-color art. Use ramp quantize-and-remap.
 7. Mixing third-party CC-BY-SA/GPL art (LPC) into outputs without per-asset credit tracking.
 
 ---

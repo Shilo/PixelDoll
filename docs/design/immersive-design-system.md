@@ -68,7 +68,7 @@ Keep the selection ring and focus outline external to the swatch. Do not shift p
 
 ## Direction and presentation contracts
 
-Preview and live modes share keyboard vectors, compass metadata and nearest-direction mathematics. WASD/arrows support chords; opposite keys cancel, diagonals normalize, and ties retain the previous supported facing. On release, preserve facing. Letter/arrow shortcuts require focus on the labelled world canvas. Focusing UI controls clears held keyboard input; blur and context changes clear all movement. Touch movement may continue while a second finger operates equipment.
+Preview and live modes share keyboard vectors, compass metadata and nearest-direction mathematics. WASD/arrows support chords; opposite keys cancel, diagonals normalize, and ties retain the previous supported facing. On release, preserve facing. Letter/arrow shortcuts require focus on the labeled world canvas. Focusing UI controls clears held keyboard input; blur and context changes clear all movement. Touch movement may continue while a second finger operates equipment.
 
 Character selection reuses the same key mapping: A/W/Left/Up select the previous character; D/S/Right/Down select the next. Each key press advances once, with existing wraparound; held-key repeats do not race through characters. Enter opens customization only when the world has focus; on a focused control it performs native activation. Search fields, menus, dialogs and modified shortcuts retain their normal behavior.
 

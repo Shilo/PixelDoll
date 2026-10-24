@@ -72,7 +72,7 @@ namespace PixelDoll
         public PdPreset[] presets;
     }
 
-    /// The Animator drives a hidden clock; visible layers follow its frame name so recolouring cannot disturb playback.
+    /// The Animator drives a hidden clock; visible layers follow its frame name so recoloring cannot disturb playback.
     [DisallowMultipleComponent]
     public class Paperdoll : MonoBehaviour
     {
@@ -84,7 +84,7 @@ namespace PixelDoll
         public SpriteRenderer clock;
         Dictionary<string, Dictionary<string, Sprite>> maps;
         readonly Dictionary<string, Texture2D> textures = new Dictionary<string, Texture2D>();
-        readonly Dictionary<string, Sprite> coloured = new Dictionary<string, Sprite>();
+        readonly Dictionary<string, Sprite> colored = new Dictionary<string, Sprite>();
         Sprite last;
         bool dirty = true;
 
@@ -173,7 +173,7 @@ namespace PixelDoll
                 n.renderer.enabled = layer != null && !hidden.Contains(n.slot);
                 if (layer == null) continue;
                 visible.Add(new KeyValuePair<PdNode, int>(n, Z(Slot(n.slot), layer, anim, dir, cell)));
-                n.renderer.sprite = maps.TryGetValue(it.id + "/" + layer.id, out var m) && m.TryGetValue(name, out var sp) ? Colour(it, sp) : null;
+                n.renderer.sprite = maps.TryGetValue(it.id + "/" + layer.id, out var m) && m.TryGetValue(name, out var sp) ? Recolor(it, sp) : null;
             }
             // nodes follow manifest slot order, bg before fg; tie-break is independent of camera distance.
             visible.Sort((a, b) => a.Value != b.Value ? a.Value.CompareTo(b.Value) : nodes.IndexOf(a.Key).CompareTo(nodes.IndexOf(b.Key)));
@@ -189,7 +189,7 @@ namespace PixelDoll
 
         static int RGB(string hex) => Convert.ToInt32(hex.Substring(1), 16);
 
-        Sprite Colour(PdItem item, Sprite source)
+        Sprite Recolor(PdItem item, Sprite source)
         {
             if (!Application.isPlaying) return source; // prefab preview uses persistent canonical sprites
             var swaps = new Dictionary<int, int>();
@@ -207,7 +207,7 @@ namespace PixelDoll
             foreach (var swap in swaps) signature += swap.Key + ":" + swap.Value + ",";
             string textureKey = item.id + "/" + source.texture.GetInstanceID() + "/" + signature;
             string spriteKey = textureKey + "/" + source.name;
-            if (coloured.TryGetValue(spriteKey, out var cached)) return cached;
+            if (colored.TryGetValue(spriteKey, out var cached)) return cached;
             if (!textures.TryGetValue(textureKey, out var texture))
             {
                 var pixels = source.texture.GetPixels32();
@@ -224,13 +224,13 @@ namespace PixelDoll
             }
             var sprite = Sprite.Create(texture, source.rect, new Vector2(source.pivot.x / source.rect.width, source.pivot.y / source.rect.height), source.pixelsPerUnit, 0, SpriteMeshType.FullRect);
             sprite.name = source.name;
-            coloured[spriteKey] = sprite;
+            colored[spriteKey] = sprite;
             return sprite;
         }
 
         void OnDestroy()
         {
-            foreach (var sprite in coloured.Values) Destroy(sprite);
+            foreach (var sprite in colored.Values) Destroy(sprite);
             foreach (var texture in textures.Values) Destroy(texture);
         }
 
@@ -474,11 +474,11 @@ Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
 SetVariant uses the exported exact ramps (including linked material defaults); null restores the default.
-Palettes are owner-local, use the original source sheets and cache recoloured textures/sprites per doll until it is destroyed.
+Palettes are owner-local, use the original source sheets and cache recolored textures/sprites per doll until it is destroyed.
 Source textures are readable for these swaps. Do not put them in a Sprite Atlas (packing/rotation changes their source coordinates).
-Default preview colours are persistent sprite assets; changing presets/colours is applied during Play Mode.
+Default preview colors are persistent sprite assets; changing presets/colors is applied during Play Mode.
 Use a Pixel Perfect Camera and a sprite-compatible material for your render pipeline (including URP 2D).
-Verify target platform texture overrides preserve full sheet dimensions, RGBA colour and uncompressed pixels.
+Verify target platform texture overrides preserve full sheet dimensions, RGBA color and uncompressed pixels.
 `,
     },
   ];

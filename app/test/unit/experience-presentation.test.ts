@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { makeImg } from '../../src/lib/image/png.ts';
-import { recolour } from '../../src/lib/dress/dress.ts';
+import { recolor } from '../../src/lib/dress/dress.ts';
 import type { DirectionName, Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts';
 import { advancePlayback, buildPresentation, renderPresentation, resolveLive, resolvePreview, southStill } from '../../src/studio/experience/presentation.ts';
 
@@ -182,7 +182,7 @@ describe('synchronized production equipment', () => {
     expect(exact.image?.data[4]).toBe(90);
   });
 
-  test('original rest fallbacks use current body variants without recolouring shared gear hashes or persisted pixels', () => {
+  test('original rest fallbacks use current body variants without recoloring shared gear hashes or persisted pixels', () => {
     const raw = fixture(['south'], []);
     raw.manifest.rig.rest = { south: { image: restHash, keypoints: [] } };
     raw.manifest.materials = [
@@ -192,8 +192,8 @@ describe('synchronized production equipment', () => {
     raw.manifest.items[0].materials = ['body-palette'];
     raw.manifest.items[1].materials = ['gear-palette'];
     raw.manifest.items[1].layers[0].cells = { rest: { south: [restHash] } };
-    const variants = { 'body-palette': 'cool' }, view = recolour(raw, variants);
-    // The global image map now contains the gear owner's colour for this shared hash.
+    const variants = { 'body-palette': 'cool' }, view = recolor(raw, variants);
+    // The global image map now contains the gear owner's color for this shared hash.
     expect([...view.images.get(restHash)!.data.slice(0, 3)]).toEqual([0, 0, 70]);
     const a = buildPresentation(view, { sourceProject: raw, variants });
     const pose = resolvePreview(a, { clip: 'idle', direction: 'south' });
@@ -206,12 +206,12 @@ describe('synchronized production equipment', () => {
     expect(raw.manifest.rig.rest.south!.image).toBe(restHash);
   });
 
-  test('approved default body variants also apply to rest originals when no explicit outfit colour is selected', () => {
+  test('approved default body variants also apply to rest originals when no explicit outfit color is selected', () => {
     const raw = fixture(['south'], []);
     raw.manifest.rig.rest = { south: { image: restHash, keypoints: [] } };
     raw.manifest.materials = [{ id: 'skin', owner: 'base', label: 'Skin', ramp: ['#460000'], variants: { moss: ['#004600'] }, defaultVariant: 'moss' }];
     raw.manifest.items[0].materials = ['skin'];
-    const a = buildPresentation(recolour(raw, {}), { sourceProject: raw });
+    const a = buildPresentation(recolor(raw, {}), { sourceProject: raw });
     const image = renderPresentation(a, {}, resolveLive(a, { velocity: { x: 0, y: 0 } })).image;
     expect([...image!.data.slice(0, 3)]).toEqual([0, 70, 0]);
   });

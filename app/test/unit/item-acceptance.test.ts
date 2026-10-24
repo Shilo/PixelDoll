@@ -41,7 +41,7 @@ test.each(['G1 1 outputs for 2 requested frames', 'G1 grid 128x64, expected 256x
   expect(draft.acceptedAt).toBeUndefined()
 })
 
-test.each(['G2 keyframe rest/south/0 key kept 0.8', 'G3 keyframe rest/south/0 key outside 0.3', 'G4 keyframe rest/south/0: item missing', 'D1 keyframe rest/south/0: 20 % grey smudges'])('complete flagged artwork remains explicitly acceptable: %s', async (why) => {
+test.each(['G2 keyframe rest/south/0 key kept 0.8', 'G3 keyframe rest/south/0 key outside 0.3', 'G4 keyframe rest/south/0: item missing', 'D1 keyframe rest/south/0: 20 % gray smudges'])('complete flagged artwork remains explicitly acceptable: %s', async (why) => {
   const { draft, ctx, result } = fixture()
   result.g1.set(0, why)
   expect(hasStructuralFailure(result)).toBe(false)
@@ -85,9 +85,9 @@ test('missing expected frame coverage blocks saving even without a G1 diagnostic
 
 test('accepted keyframe design reasons are retained individually without rewriting clean clip QA', async () => {
   const { draft, ctx, result } = fixture()
-  result.g1.set(0, 'G2 keyframe rest/south/0 key kept 0.8; D1 keyframe rest/south/0: grey smudges')
+  result.g1.set(0, 'G2 keyframe rest/south/0 key kept 0.8; D1 keyframe rest/south/0: gray smudges')
   const saved = await acceptItem(draft, ctx, result)
-  expect(saved.item.designWarnings).toEqual(['G2 keyframe rest/south/0 key kept 0.8', 'D1 keyframe rest/south/0: grey smudges'])
+  expect(saved.item.designWarnings).toEqual(['G2 keyframe rest/south/0 key kept 0.8', 'D1 keyframe rest/south/0: gray smudges'])
   expect(saved.item.qa?.status).toBe('pass')
   expect(saved.item.qa?.clips?.['idle/south'].status).toBe('pass')
 })

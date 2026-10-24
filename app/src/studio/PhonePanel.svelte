@@ -6,7 +6,7 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import Thumb from './Thumb.svelte'
   import GroupIcon from './GroupIcon.svelte'
-  import Colours from './Colours.svelte'
+  import Colors from './Colors.svelte'
   import Moves from './Moves.svelte'
   import GenCard from './GenCard.svelte'
   import Outfits from './Outfits.svelte'
@@ -71,7 +71,7 @@
             {#if h !== 'demo' || isDemo()}<span class="badge {h}">{HEALTH_LABEL[h]}</span>{/if}
             <button class="bu-action btn icon plain" data-variant="quiet" aria-label="{sel.name} details" onclick={() => { ui.selected = sel.id; ui.sheet = 'item' }}><Info size={20} /></button>
           </div>
-          <Colours only={sel.id} heading={false} />
+          <Colors only={sel.id} heading={false} />
         {/if}
       {:else}
         <div class="category-empty" role="group" aria-label="{g.id} items">
@@ -83,8 +83,8 @@
     {/if}
   {:else if ui.tab === 'outfits'}
     <Outfits />
-  {:else if ui.tab === 'colours'}
-    <Colours />
+  {:else if ui.tab === 'colors'}
+    <Colors />
   {:else}
     <Moves />
   {/if}

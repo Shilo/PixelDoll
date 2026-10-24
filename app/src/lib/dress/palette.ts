@@ -1,5 +1,5 @@
-// Colour model (architecture §6): OKLab, material ramps by weighted k-means, variant ramps from a hue, exact index swap.
-// Colours are 24-bit ints (0xRRGGBB) inside, Hex strings in the manifest.
+// Color model (architecture §6): OKLab, material ramps by weighted k-means, variant ramps from a hue, exact index swap.
+// Colors are 24-bit ints (0xRRGGBB) inside, Hex strings in the manifest.
 import type { Img } from '../image/png.ts';
 
 export type Hex = `#${string}`;
@@ -36,8 +36,8 @@ function lch(L: number, C: number, h: number): number {
 }
 const chroma = ([, a, b]: Lab) => Math.hypot(a, b);
 
-/** Opaque colour -> pixel count over a set of images. */
-export function colourCounts(imgs: Iterable<Img>): Map<number, number> {
+/** Opaque color -> pixel count over a set of images. */
+export function colorCounts(imgs: Iterable<Img>): Map<number, number> {
   const out = new Map<number, number>();
   for (const im of imgs)
     for (let i = 0; i < im.data.length; i += 4)
@@ -54,17 +54,17 @@ function feat(c: number): number[] {
 }
 
 /**
- * Material ramps (dark -> light) from a colour histogram: weighted k-means in OKLab hue space (feat), so a ramp is one
- * hue family. Near-neutral darks (L < OUTLINE_L and C < OUTLINE_C: shared outlines) and colours in `claimed` (other materials)
+ * Material ramps (dark -> light) from a color histogram: weighted k-means in OKLab hue space (feat), so a ramp is one
+ * hue family. Near-neutral darks (L < OUTLINE_L and C < OUTLINE_C: shared outlines) and colors in `claimed` (other materials)
  * are left out, which keeps ramps disjoint across materials (spec §3 inv. 5). Tinted dark outlines (a red cape's) stay in.
  */
-// ponytail: fixed thresholds; a black-hair item keeps its darkest shade unrecolourable.
+// ponytail: fixed thresholds; a black-hair item keeps its darkest shade unrecolorable.
 export function deriveRamps(counts: Map<number, number>, k: number, claimed = new Set<number>()): Hex[][] {
   const cols = [...counts].filter(([c]) => !claimed.has(c) && (lab(c)[0] >= OUTLINE_L || chroma(lab(c)) >= OUTLINE_C)).sort((x, y) => y[1] - x[1]);
   if (!cols.length) return [];
   const pts = cols.map(([c]) => feat(c));
   const d2 = (p: number[], q: number[]) => (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2;
-  const cent = [pts[0]]; // deterministic farthest-point init from the most used colour
+  const cent = [pts[0]]; // deterministic farthest-point init from the most used color
   while (cent.length < Math.min(k, pts.length)) cent.push(pts.reduce((best, p) => (Math.min(...cent.map((c) => d2(p, c))) > Math.min(...cent.map((c) => d2(best, c))) ? p : best)));
   let as: number[] = [];
   for (let it = 0; it < 12; it++) {
@@ -91,7 +91,7 @@ export function autoRamps(counts: Map<number, number>, claimed?: Set<number>, mi
   return best;
 }
 
-/** Variant ramp from a picked colour: hue of the pick, the source's lightness steps shifted to the pick's mean, chroma scaled. */
+/** Variant ramp from a picked color: hue of the pick, the source's lightness steps shifted to the pick's mean, chroma scaled. */
 export function variantRamp(ramp: Hex[], pick: Hex): Hex[] {
   const src = ramp.map((h) => lab(fromHex(h))), p = lab(fromHex(pick));
   const mL = src.reduce((s, c) => s + c[0], 0) / src.length, mC = src.reduce((s, c) => s + chroma(c), 0) / src.length;
@@ -99,7 +99,7 @@ export function variantRamp(ramp: Hex[], pick: Hex): Hex[] {
   return src.map((c) => toHex(lch(c[0] + p[0] - mL, mC > 0.03 ? (pC * chroma(c)) / mC : pC, h)));
 }
 
-/** "Grayscale + tint" (multiply) ramp, for comparison with variantRamp: grey = source lightness, times the pick. */
+/** "Grayscale + tint" (multiply) ramp, for comparison with variantRamp: gray = source lightness, times the pick. */
 export function tintRamp(ramp: Hex[], pick: Hex): Hex[] {
   const t = fromHex(pick);
   return ramp.map((h) => {
@@ -108,7 +108,7 @@ export function tintRamp(ramp: Hex[], pick: Hex): Hex[] {
   });
 }
 
-/** Pixel -> colour id (index into `ids` order) or -1. Precomputed once per (image, material set); recolour is then a table write. */
+/** Pixel -> color id (index into `ids` order) or -1. Precomputed once per (image, material set); recolor is then a table write. */
 export function indexImg(im: Img, ids: Map<number, number>): Int16Array {
   const out = new Int16Array(im.w * im.h).fill(-1);
   for (let i = 0, p = 0; i < im.data.length; i += 4, p++)
@@ -116,7 +116,7 @@ export function indexImg(im: Img, ids: Map<number, number>): Int16Array {
   return out;
 }
 
-/** Exact swap: colour id j -> table[j] (0xRRGGBB, or -1 = keep). Only table colours are introduced. */
+/** Exact swap: color id j -> table[j] (0xRRGGBB, or -1 = keep). Only table colors are introduced. */
 export function applyIndex(im: Img, idx: Int16Array, table: Int32Array): Img {
   const d = new Uint8ClampedArray(im.data);
   for (let p = 0; p < idx.length; p++) {
@@ -127,10 +127,10 @@ export function applyIndex(im: Img, idx: Int16Array, table: Int32Array): Img {
 }
 
 const HUES: [string, number][] = [['red', 20], ['orange', 60], ['yellow', 100], ['green', 140], ['cyan', 200], ['blue', 260], ['purple', 310], ['pink', 350]];
-/** Short colour word for a ramp (used for default material labels). */
+/** Short color word for a ramp (used for default material labels). */
 export function hueName(ramp: Hex[]): string {
   const c = ramp.map((h) => lab(fromHex(h))), a = c.reduce((s, x) => s + x[1], 0) / c.length, b = c.reduce((s, x) => s + x[2], 0) / c.length;
-  if (Math.hypot(a, b) < 0.03) return 'grey';
+  if (Math.hypot(a, b) < 0.03) return 'gray';
   const deg = ((Math.atan2(b, a) * 180) / Math.PI + 360) % 360;
   return HUES.reduce((best, h) => (Math.abs(((deg - h[1] + 540) % 360) - 180) < Math.abs(((deg - best[1] + 540) % 360) - 180) ? h : best))[0];
 }
@@ -140,17 +140,17 @@ export function selfTest() {
   const counts = new Map([[0x4a0d12, 5], [0x7d1820, 9], [0xb02832, 7], [0x2b2f36, 1], [0x4d535d, 6], [0x7a828e, 6], [0x101010, 30], [0x360a06, 2]]);
   const ramps = deriveRamps(counts, 2);
   console.assert(ramps.length === 2 && ramps[0].join() === '#360a06,#4a0d12,#7d1820,#b02832' && ramps[1].join() === '#2b2f36,#4d535d,#7a828e', `ramps by hue, dark->light, outline out: ${JSON.stringify(ramps)}`);
-  console.assert(!deriveRamps(counts, 2, new Set([0x4a0d12, 0x7d1820])).flat().some((h) => h === '#4a0d12' || h === '#7d1820'), 'claimed colours excluded');
+  console.assert(!deriveRamps(counts, 2, new Set([0x4a0d12, 0x7d1820])).flat().some((h) => h === '#4a0d12' || h === '#7d1820'), 'claimed colors excluded');
   console.assert(autoRamps(counts).length === 2, `autoRamps finds 2 hue families: ${JSON.stringify(autoRamps(counts))}`);
   const v = variantRamp(ramps[0], '#2a48b0'), vl = v.map((h) => lab(fromHex(h))[0]);
   console.assert(v.length === 4 && vl.every((l, i) => !i || l > vl[i - 1]) && hueName(v) === 'blue', `variant keeps steps, takes hue: ${v}`);
-  console.assert(hueName(variantRamp(ramps[1], '#b02832')) === 'red', 'grey ramp gets the pick chroma');
+  console.assert(hueName(variantRamp(ramps[1], '#b02832')) === 'red', 'gray ramp gets the pick chroma');
   console.assert(tintRamp(['#000000', '#ffffff'], '#ff8000').join() === '#000000,#ff8000', 'multiply tint');
   const im: Img = { w: 3, h: 1, data: new Uint8ClampedArray([0x7d, 0x18, 0x20, 255, 1, 2, 3, 255, 0x7d, 0x18, 0x20, 0]) };
   const idx = indexImg(im, new Map([[0x7d1820, 1]]));
   const out = applyIndex(im, idx, new Int32Array([-1, 0x1b2f7d]));
   console.assert(idx.join() === '1,-1,-1', `index ${idx.join()}`);
   console.assert(out.data.join() === '27,47,125,255,1,2,3,255,125,24,32,0', `exact swap, others untouched: ${out.data.join()}`);
-  const outCols = new Set(colourCounts([out]).keys());
-  console.assert([...outCols].every((c) => c === 0x1b2f7d || c === 0x010203), 'no colours beyond the ramp');
+  const outCols = new Set(colorCounts([out]).keys());
+  console.assert([...outCols].every((c) => c === 0x1b2f7d || c === 0x010203), 'no colors beyond the ramp');
 }

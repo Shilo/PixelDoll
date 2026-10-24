@@ -1,5 +1,5 @@
 Local, monochrome export identifiers. All SVGs are served from public/ and rendered
-as CSS masks, using the same theme colour and 28px (mobile 24px) square icon boxes.
+as CSS masks, using the same theme color and 28px (mobile 24px) square icon boxes.
 Lucide remains the navigation/action icon library; no JavaScript dependency added.
 
 godot.svg: official Godot mascot, monochrome press-kit SVG.

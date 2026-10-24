@@ -1,5 +1,5 @@
 import { bakedFrame, composeCell, equipped, hiddenSlots, shownItems, type Frame } from '../../lib/compose/compose.ts';
-import { recolour } from '../../lib/dress/dress.ts';
+import { recolor } from '../../lib/dress/dress.ts';
 import type { Img } from '../../lib/image/png.ts';
 import type { DirectionName, Item, Layer, Preset, Project, RigAnimation, Sha256 } from '../../lib/store/manifest.ts';
 import { directionInfo, directionLabel, dot, nearestDirection, unit, type Vector } from './movement.ts';
@@ -105,11 +105,11 @@ export function buildPresentation(project: Project, options: PresentationOptions
   };
   const body = m.items.find(item => item.id === m.rig.baseItem);
   const animations = new Map<string, Map<DirectionName, BodySequence>>(), rests = new Map<DirectionName, Sha256>(), restImages = new Map<DirectionName, Img>(), stills = new Map<DirectionName, { clip: string; cell: number }>();
-  // recolour() deliberately visits layer cells, so add a transient body-only layer
-  // for original standing views. Never recolour already-rendered clip pixels twice.
+  // recolor() deliberately visits layer cells, so add a transient body-only layer
+  // for original standing views. Never recolor already-rendered clip pixels twice.
   const restLayer: Layer = { id: 'main', role: 'fg', z: body?.layers[0]?.z ?? 0, cells: { rest: Object.fromEntries(Object.entries(m.rig.rest ?? {}).flatMap(([id, rest]) => rest ? [[id, [rest.image]]] : [])) } };
   const restSource = options.sourceProject && body
-    ? recolour({ manifest: { ...m, items: [{ ...body, layers: [restLayer] }] }, images: options.sourceProject.images }, options.variants ?? {})
+    ? recolor({ manifest: { ...m, items: [{ ...body, layers: [restLayer] }] }, images: options.sourceProject.images }, options.variants ?? {})
     : null;
   for (const [id, rest] of Object.entries(m.rig.rest ?? {}) as [DirectionName, NonNullable<typeof m.rig.rest>[DirectionName]][]) {
     const image = rest && (restSource?.layerImages?.get(restLayer)?.get(rest.image) ?? restSource?.images.get(rest.image)
@@ -234,7 +234,7 @@ export function advancePlayback(presentation: Presentation, previous: PlaybackCl
 }
 
 export interface RenderedPresentation { image: Img | null; frame: Frame; hiddenItems: Item[]; issue: string | null; issueKey: string | null }
-/** Consume the production recoloured project and current outfit map (DressState.current.items). */
+/** Consume the production recolored project and current outfit map (DressState.current.items). */
 export function renderPresentation(a: PresentationAvailability, items: Preset['items'], presentation: Presentation, cell = presentation.cell): RenderedPresentation {
   const p = a.project, m = p.manifest, frame = bakedFrame(m);
   const result: RenderedPresentation = { image: null, frame, hiddenItems: [], issue: null, issueKey: null };

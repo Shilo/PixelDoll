@@ -47,7 +47,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 
 | Doc | What |
 |---|---|
-| [architecture.md](architecture.md) | v1.3: allowed models (D8), rig contract, item pipeline (chroma mannequin + skeleton-posed keyframe, 96 px held items), slots and z ladder, colour model, queue/storage/key, cost model, risks. |
+| [architecture.md](architecture.md) | v1.3: allowed models (D8), rig contract, item pipeline (chroma mannequin + skeleton-posed keyframe, 96 px held items), slots and z ladder, color model, queue/storage/key, cost model, risks. |
 | [manifest-spec.md](manifest-spec.md) | `pixeldoll/2` manifest with legacy `pixeldoll/1` reading: owner-local palettes, shared-copy lineage, source sheets, invariants, ZIP layout and per-engine mapping. |
 | [user-guide.md](user-guide.md) | The Studio in plain language. |
 | [pixellab-plans.md](pixellab-plans.md) | Editable tier limits, Free/Trial handling, and the plan requirements of the REST endpoints PixelDoll calls. |
@@ -85,7 +85,7 @@ Code: `spikes/api/`. Evidence: [`spikes/api/out/` at v0.1.0](https://github.com/
 | Doc | Conclusion |
 |---|---|
 | [S1 API feasibility](spikes/S1_api_feasibility.md) | Edit base → local diff → layer works only with slot masking. Batch edits keep the design but redraw the body. **Superseded:** the diff route is now a fallback only (D3). Its template animations are banned (D8). |
-| [S2 clean layers](spikes/S2_clean_layers.md) | The chroma mannequin (base recoloured to a key ramp, then dressed) gives clean layers. **Superseded in part:** `edit-animation-v2` over all cells is no longer the primary route. It now dresses only the 3 rest views (S3/S4). |
+| [S2 clean layers](spikes/S2_clean_layers.md) | The chroma mannequin (base recolored to a key ramp, then dressed) gives clean layers. **Superseded in part:** `edit-animation-v2` over all cells is no longer the primary route. It now dresses only the 3 rest views (S3/S4). |
 | [S3 skeleton rigging](spikes/S3_skeleton_rigging.md) | Skeleton-v3 is the rig. Posing a dressed keyframe with the base's keypoints gives pixel-aligned item frames for every move. |
 | [S4 model routing](spikes/S4_model_routing.md) | Under D8: base = `create-character-v3` 48 px padded to 64. Items = dress the rest views (Pro `edit-animation-v2`), then pose them with raw skeleton-v3. Its §Q4 routing table is authoritative. |
 | [S5 held items](spikes/S5_held_items.md) | Weapons use a 96 px oversize canvas with the same pivot, and slash frame 0 is sent last. The direction gate catches flips. `inpaint-v3` works but costs too much as the default. |
@@ -114,7 +114,7 @@ Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo
 | [M1](testing/M1_report.md) | Key + job queue: resume after reload, IndexedDB ledger. |
 | [M2](testing/M2_report.md) | Rig freeze: normalize, pivot, mirror, anchors, `baseHash`. Built for template frames, later updated by B7. |
 | [M3](testing/M3_report.md) | Item lab: chroma extraction, QA gates G1–G10, automatic re-roll, fg/bg split. |
-| [M4](testing/M4_report.md) | Dress-up: z ladder, hides, exact ramp recolour, presets. |
+| [M4](testing/M4_report.md) | Dress-up: z ladder, hides, exact ramp recolor, presets. |
 | [M5](testing/M5_report.md) | Export round trip: Godot 4.7.1 and Phaser 3.80/3.90/4.2.1 pixel-identical. Unity compile-only. |
 | [MVP (B6)](testing/MVP_report.md) | First Studio UI (look A) on the M1–M5 libraries. |
 | [B7](testing/B7_rig_v13_report.md) | Rig v1.3 in the Studio (skeleton-v3 clips + keypoints), Add a move, cross-tab queue lock. |

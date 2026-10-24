@@ -23,7 +23,7 @@ warnings against the real Unity 6000.4.0f1 assemblies, with 2D Sprite and with 2
 | `app/src/lib/image/pngraw.ts` | Pure PNG encode/decode using `CompressionStream`, so export works in node. B2 now uses it for bulk encodes too. |
 | `app/src/ui/M5.svelte` | Loads the fixture, offers preset and per-slot equip, previews all directions with the same compose function and playlist timing, lets you pick targets plus baked composites, and downloads the zip. |
 | `app/scripts/build-fixture.ts`, `export-fixture.ts` | Rebuild the fixture from `spikes/api/out`, and run the browser export code in node. |
-| `app/public/fixtures/s1/` (34 KB) | Real S1 outputs. The base is walk (8 cells) and idle (4 cells) for south and east, plus the leather vest (walk, south), the iron helmet (walk, south and east) and the steel sword (walk, south; split into fg/bg at load). West mirrors east. Items have no idle cells, which exercises the transparent-cell path. The `main_hand` slot has a visually neutral per-cell override (`fg` z 45 on walk/south/4) so the engines must honour per-cell z. |
+| `app/public/fixtures/s1/` (34 KB) | Real S1 outputs. The base is walk (8 cells) and idle (4 cells) for south and east, plus the leather vest (walk, south), the iron helmet (walk, south and east) and the steel sword (walk, south; split into fg/bg at load). West mirrors east. Items have no idle cells, which exercises the transparent-cell path. The `main_hand` slot has a visually neutral per-cell override (`fg` z 45 on walk/south/4) so the engines must honor per-cell z. |
 
 Zip layout follows spec §5. It contains 71 files and is 149 KiB:
 `manifest.json, CREDITS.csv, layers/<slot>/<item>/<layer>/<anim>.png, baked/<preset>/<anim>.png, generic/…, godot/…, phaser/…, unity/…`.
@@ -99,7 +99,7 @@ Frame `duration` replaces `msPerFrame` (checked in the 3.90 `Animation.js` sourc
 
 ## Remaining gaps
 
-- Unity importer behaviour (see above). Aseprite export (spec §6.5, second wave) is not built.
+- Unity importer behavior (see above). Aseprite export (spec §6.5, second wave) is not built.
 - M5 only exports the fixture. Wiring in B2's frozen rig from IndexedDB (`projects/rig-*`) plus M3 items is the next step.
 - Godot exported games need `*.json` in the export filter for `manifest.json` (noted in `godot/README.txt`).
 - Hides are taken from every equipped item, even one that is itself hidden, and hide chains are not resolved (`ponytail:` note).

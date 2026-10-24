@@ -38,7 +38,7 @@ Each pair was reviewed as a direct side-by-side composite at 1:1 pixels, then co
 
 The handoff's accepted differences stand (real library, real palette ramps, full category coverage, account/API/Activity, Inspect, export, outfit CRUD, compact phone creator footer). Additionally:
 
-- **Landscape view tabs** stay inline under the character name. The prototype's icon-only header leaves room that production's labelled Undo/Redo/Export does not at common phone-landscape widths (~667px).
+- **Landscape view tabs** stay inline under the character name. The prototype's icon-only header leaves room that production's labeled Undo/Redo/Export does not at common phone-landscape widths (~667px).
 - **Phone More popover** opens upward over the world: production lists five extra categories, which do not fit below the button inside the lower sheet. It is now opaque.
 - **Move rows** keep thumbnails, frame counts and direction coverage; **outfit rows** keep the delete affordance (it reserves its column on desktop and appears on hover/focus).
 - **Short phones** start with the equipment sheet expanded and hide the prompt line, as recorded in the [integration record](production-experience-2026-10-23.md).
@@ -51,7 +51,7 @@ The handoff's accepted differences stand (real library, real palette ramps, full
 - Popovers can extend a few pixels past the desktop rail edge.
 - Intermittent queue self-test under full-suite load (see Verification).
 
-Production copy still uses British "colour" in about 40 interface strings across 20 files (for example "Colour hint", "Saved colour"), against the contract's American "Colors". Several are asserted by tests and some sit beside PixelLab prompt text that must not change, so this is left for a dedicated copy sweep.
+Resolved after this review: a follow-up sweep converted British spellings to American across interface copy, source identifiers, tests and docs (for example "Colour hint" is now "Color hint"). PixelLab request text keeps its original wording because the job ledger reuses finished calls by exact text; quoted evidence, logs and the persisted `cancelled` queue state are also unchanged.
 
 ## Verification
 
@@ -59,7 +59,7 @@ Pinned Node 24.22.1 / npm 11.19.1. Final build `bootstrap-DAZ5bj3y.js` / `bootst
 
 - `npm run check`: zero errors and warnings.
 - `npm test`: 79 files, **770 passed / 1 existing skip**.
-- Focused experience suite (`playwright.experience.config.ts`, BASE 5208): **23/23 passed**, now also asserting desktop creator Name focus, phone backdrop fill, centered playback picker, direction chip, live hint, standard menu blur and the labelled API row.
+- Focused experience suite (`playwright.experience.config.ts`, BASE 5208): **23/23 passed**, now also asserting desktop creator Name focus, phone backdrop fill, centered playback picker, direction chip, live hint, standard menu blur and the labeled API row.
 - Standard production suite (`playwright.config.ts`, BASE 5208, 98 workflows): **96 passed, 2 failed** on the final build. Neither failure is in code this review changed, and both pass on rerun:
   - `studio.spec.ts:989` (reload restores failed create/move/setup) timed out waiting for the studio to load; it passed 2/2 in isolation.
   - The browser self-test page's queue check "connected follower takes over and submits its queued work exactly once" failed intermittently: 2 of 9 runs under full-suite load, 6/6 in isolation. No `app/src/lib` file changed since `f7d8d72`. Recorded as a follow-up timing flake.

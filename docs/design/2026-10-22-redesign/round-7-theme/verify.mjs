@@ -58,8 +58,8 @@ for(const size of sizes) for(const theme of ['dark','light']) {
   await page.getByRole('searchbox').fill('');
   assert.equal(await page.getByRole('button',{name:/Mira Demo/}).getAttribute('aria-pressed'),'true');
   const color=await page.locator('input[type=color]').boundingBox();assert.ok(color.width>=44&&color.height>=44);
-  await page.getByRole('button',{name:'Colour #a73933',exact:true}).click();
-  await page.getByRole('button',{name:'Reset colours',exact:true}).click();
+  await page.getByRole('button',{name:'Color #a73933',exact:true}).click();
+  await page.getByRole('button',{name:'Reset colors',exact:true}).click();
   assert.equal(await page.locator('input[type=color]').inputValue(),'#858581');
   await page.getByRole('switch',{name:'Transparent background'}).uncheck();
   assert.equal(await page.getByRole('switch').isChecked(),false);

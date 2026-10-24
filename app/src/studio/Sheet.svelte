@@ -1,5 +1,5 @@
 <script lang="ts">
-  // One sheet at a time (HIG): centred on desktop, bottom sheet with a grabber on phones, trailing panel in phone landscape.
+  // One sheet at a time (HIG): centered on desktop, bottom sheet with a grabber on phones, trailing panel in phone landscape.
   import { openingTrigger,restoreTrigger } from './experience/focus.ts'
   import type { Snippet } from 'svelte'
   import { WORLDS } from './experience/config.ts'

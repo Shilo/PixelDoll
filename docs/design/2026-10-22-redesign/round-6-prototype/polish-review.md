@@ -12,7 +12,7 @@
 - Facing and mirror buttons already share a flex row without a gap, but both keep all four rounded corners. Their internal corners need to be square and their outer corners rounded, with a flush shared seam.
 - Creator fields have opaque fills; several preset/Auto/facing/mirror buttons retain transparent backgrounds or accent mixed with transparency. A bright or patterned world can show through and weaken their boundaries. Text contrast must be assessed after compositing the effective control backing over possible scene colors, rather than against token colors alone.
 
-At the previously measured 1469 px viewport, the actual rail began at x1109.4, making the free-stage center x554.7. The separate formulas placed the actor near x573.6, caption at x594.9 and playback at x617.0. Correcting their shared center also requires checking that a wide playback bar still fits the smaller free space in narrow landscape. Overlapping carousel hit targets must resolve in reverse paint order so a neighbour behind the selected actor cannot steal its activation.
+At the previously measured 1469 px viewport, the actual rail began at x1109.4, making the free-stage center x554.7. The separate formulas placed the actor near x573.6, caption at x594.9 and playback at x617.0. Correcting their shared center also requires checking that a wide playback bar still fits the smaller free space in narrow landscape. Overlapping carousel hit targets must resolve in reverse paint order so a neighbor behind the selected actor cannot steal its activation.
 
 ## Verification contract
 

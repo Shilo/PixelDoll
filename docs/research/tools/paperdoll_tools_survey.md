@@ -219,7 +219,7 @@ and that niche is PixelDoll.
 
 ### 4.1 Features to copy
 
-- An item-definition JSON modelled on LPC's `SheetDefinition`, but **generated**, not hand-written (see §4.3).
+- An item-definition JSON modeled on LPC's `SheetDefinition`, but **generated**, not hand-written (see §4.3).
 - **Multiple z-layers per item** (behind/front), plus PixelDoll's addition: **per-direction (optionally per-frame) z
   override**, which LPC lacks and works around by splitting.
 - **Playback `cycle` arrays**, separate from stored frames. Holds and ping-pong cost no extra generations.
@@ -286,7 +286,7 @@ There are three options, from best fit to worst for pixel art:
    - **How to get AI output into exact ramps:** pass the combined source ramps as PixelLab's **forced palette `color_image`**,
      which most create/animate endpoints accept per the saved OpenAPI spec. Then run a local **ramp-snap** (nearest color in
      OKLab, restricted to the region's material ramp) to clean up stray colors. S1/R2 should verify how strictly PixelLab
-     honours the forced palette.
+     honors the forced palette.
 2. **Grayscale → gradient map (the user's idea; a good *authoring* path and fallback)**
    - Convert a colored PixelLab layer to luminance, quantize to N bands per region, and map the bands to a ramp. This
      *produces* the indexed form in (1) from arbitrary generated colors: "turn colored char to grayscale, then set the color on

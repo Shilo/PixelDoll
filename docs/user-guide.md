@@ -35,9 +35,9 @@ A gen is one PixelLab generation from your account's monthly allowance. Creation
 | Make an item | about 34 gens for a new 4-view idle/walk rig; varies with coverage |
 | Add a move | depends on the move, views and selected items; shown before spending |
 | Try again on an item | shown on the button |
-| Dress up, recolour, outfits, export | free |
+| Dress up, recolor, outfits, export | free |
 
-The price is an estimate. Empty body output or a wrong frame count may retry once. Body pose estimates, silhouette movement, colour differences and border contact are review notes and do not trigger paid redraws. Equipment fitting keeps its separate automatic checks and retry budget.
+The price is an estimate. Empty body output or a wrong frame count may retry once. Body pose estimates, silhouette movement, color differences and border contact are review notes and do not trigger paid redraws. Equipment fitting keeps its separate automatic checks and retry budget.
 PixelLab may bill some calls in dollars. Automatic quality retries and fallbacks cost extra; queue and generation time vary.
 **Activity** shows reported job usage in gens and dollars, plus your balance. Usage can arrive after a job finishes; an unknown
 request may still have run or charged. Estimates are not spending caps.
@@ -84,7 +84,7 @@ V3 always creates all eight original views. PixelDoll pads and registers them, a
 sources, then derives the selected mirrors. Asymmetric details change sides in a mirrored view; use an independent view
 when that matters. A result that does not fit the chosen frame stops with a size error instead of silently cropping it.
 
-New characters wear a light grey shirt and dark grey shorts, so you can tell them apart and recolour them separately.
+New characters wear a light gray shirt and dark gray shorts, so you can tell them apart and recolor them separately.
 
 Keep this tab open while PixelLab responds; you can keep dressing existing characters. After reopening, PixelDoll can resume requests with a
 known job ID and reuse saved results. If a submitted request has an unknown outcome, generation stops for review in
@@ -93,7 +93,7 @@ When creation is done, press **Start dressing up**.
 
 ## Share equipment designs between characters
 
-Select an accepted equipment item and press **Save as shared design**. Check the current colours in the preview and name the design. This saves an independent local snapshot of its artwork and references.
+Select an accepted equipment item and press **Save as shared design**. Check the current colors in the preview and name the design. This saves an independent local snapshot of its artwork and references.
 
 On another character, choose **New item → Saved designs**:
 
@@ -101,7 +101,7 @@ On another character, choose **New item → Saved designs**:
 - **View fit** checks whether a different body can use a reference fit. The initial paid trial supports single-material headwear on known 64 px low top-down humanoid rigs with complete standing references. Other slots and multi-material designs still support compatible free copies.
 - Paid fitting has separate prices and reviews: preview the standing fit first, then approve animation. Inspect every direction and move before **Keep and wear** or **Keep in wardrobe**. Failed attempts can still be billed; retries require a separate priced action. PixelLab may report charges in generations or dollars. The displayed generation estimate is not a dollar spending cap; reported charges remain visible after failures and retries.
 
-Each kept copy has its own wardrobe entry, colours and outfit choices. Changing the source or removing its library entry leaves existing copies intact. **Export** on a design card downloads a portable `.pixeldoll-design.zip`; **Import design** restores it. Character exports also keep their accepted copies and pinned references.
+Each kept copy has its own wardrobe entry, colors and outfit choices. Changing the source or removing its library entry leaves existing copies intact. **Export** on a design card downloads a portable `.pixeldoll-design.zip`; **Import design** restores it. Character exports also keep their accepted copies and pinned references.
 
 When you add a move, shared equipment gets a separate review for its missing frames. Matching frames copy for free; approved standing references can be reused without another standing-fit charge. Unaccepted or failed drafts do not replace wardrobe artwork. An export can therefore contain the new body move while warning that an item has no equipment frames for it.
 
@@ -131,13 +131,13 @@ These layouts may sit inside enclosing folders. Several candidate enclosing char
 
 Artwork keeps its original pixels and directions. Existing clothes and hair in a PixelLab character are part of its base and cannot be removed as separate items. Frames that would crop visible pixels in PixelDoll’s 64 px cell are refused. Standalone PNGs are not supported because they do not describe the direction and animation layout.
 
-Leave **Set up the pose rig next** checked to prepare imported artwork for the same equipment and move pipeline used by created characters. You can also choose character menu → **Set up character…** later. Review the existing appearance and standing reference, then check the estimated price before starting. Setup finds joints on every unique body frame (0.1 gen each) and connects the supplied standing views to your current PixelLab account (0.25 gen). It keeps existing pixels, layers, colours and outfits intact. Saved standing views stay fixed to preserve existing equipment alignment.
+Leave **Set up the pose rig next** checked to prepare imported artwork for the same equipment and move pipeline used by created characters. You can also choose character menu → **Set up character…** later. Review the existing appearance and standing reference, then check the estimated price before starting. Setup finds joints on every unique body frame (0.1 gen each) and connects the supplied standing views to your current PixelLab account (0.25 gen). It keeps existing pixels, layers, colors and outfits intact. Saved standing views stay fixed to preserve existing equipment alignment.
 
 Each character has its own fitted equipment layers. Imported and created characters use the same tools to make those layers, including the [shared design library](#share-equipment-designs-between-characters) within its current compatibility and experimental fitting limits.
 
 Setup supports square 32–256 px humanoid frames with all four cardinal views or saved original views for reconnection. Missing views and empty frames are reported before spending. Little space above the head produces a warning about tall hair or hats, without rejecting a contained body. Imported clothes and hair remain part of the base, and must be described as such. After setup, new equipment uses the shared chroma-key, skeleton posing, quality checks and oversize weapon pipeline; new moves use the existing appearance and camera view. Original clips retain their measured joints; pose adherence is unavailable because those frames have no original requested pose to compare against.
 
-New PixelDoll exports include an editable copy with their original rig, equipment keyframes, layers, colours and outfits. Older exports restore their sheets and outfits; setup can recover the body pose rig, but equipment without its original dressed reference must be made again before it can follow future moves. Unknown or failed setup requests stop for review in **Activity** instead of being sent again after reload.
+New PixelDoll exports include an editable copy with their original rig, equipment keyframes, layers, colors and outfits. Older exports restore their sheets and outfits; setup can recover the body pose rig, but equipment without its original dressed reference must be made again before it can follow future moves. Unknown or failed setup requests stop for review in **Activity** instead of being sent again after reload.
 
 ## Delete a character
 
@@ -150,7 +150,7 @@ In the wardrobe, press **+** next to a slot group (Head, Hair, Face, Body, Legs,
 1. **What is it?** Describe the item, for example "leather hat", or tap an idea.
 2. **Where does it go?** Pick the group. **Details** lets you choose the exact slot (a beard goes under Hair, a shield in the
    off hand).
-3. Add an optional **Colour hint**, then press **Make**.
+3. Add an optional **Color hint**, then press **Make**.
 
 Items are drawn for your own character. On the demo, use **Copy the demo body** to get an editable copy first.
 
@@ -180,18 +180,18 @@ Then choose **Keep it**, **Try again** (starts another paid attempt, in gens or 
 Changes save automatically in this browser on this device. If storage fails, follow the visible error and retry. Export
 a copy for backup; clearing browser data removes local projects.
 
-## Recolour
+## Recolor
 
-Open the **Colours** tab. Pick a swatch for each colour of the item (or of **Everything you wear**), or **Pick any colour**.
-The body has three: **Shirt**, **Shorts** and **Skin** (characters made before this came with one shared grey; PixelDoll
+Open the **Colors** tab. Pick a swatch for each color of the item (or of **Everything you wear**), or **Pick any color**.
+The body has three: **Shirt**, **Shorts** and **Skin** (characters made before this came with one shared gray; PixelDoll
 splits it into shirt and shorts the next time you open them, nothing is regenerated).
-**Original** restores one colour and **Reset** restores them all. Recolouring swaps exact colours,
+**Original** restores one color and **Reset** restores them all. Recoloring swaps exact colors,
 so pixel art stays crisp, and it is free.
 
 If a saved item's new frames contain nearby steel shades outside its existing palette, the **Item** tab may offer
-**Match item colours · Free**. Select the move and facing view first, then review the displayed pixel and frame counts.
-It matches only small, unambiguous neutral colour differences to that item's existing palette. Other views and moves,
-body pixels, existing palette colours, material ramps, saved recolours and quality warnings stay intact. Larger or ambiguous differences
+**Match item colors · Free**. Select the move and facing view first, then review the displayed pixel and frame counts.
+It matches only small, unambiguous neutral color differences to that item's existing palette. Other views and moves,
+body pixels, existing palette colors, material ramps, saved recolors and quality warnings stay intact. Larger or ambiguous differences
 remain unchanged. This runs locally and makes no PixelLab call; export a backup before editing artwork.
 
 ## Add a move
@@ -220,8 +220,8 @@ reuses the exact completed body images and runs only unfinished measurements, se
 an unknown earlier request may already have charged. Each click records a separate explicit recovery attempt; reloading
 does not grant another retry of an unknown result. **Generate new frames** instead starts a new body attempt.
 
-A failed repair with otherwise valid poses may offer **Match body colours**. It reuses completed renders and makes only
-small, unambiguous changes to nearby colours from the standing reference. It preserves shapes, leaves larger or
+A failed repair with otherwise valid poses may offer **Match body colors**. It reuses completed renders and makes only
+small, unambiguous changes to nearby colors from the standing reference. It preserves shapes, leaves larger or
 different-hue changes alone, and measures changed images again. The displayed cost includes those measurements and
 selected equipment posing. The previous body remains if any quality check still fails.
 
@@ -261,12 +261,12 @@ for why there are dedicated exports for these engines and when more would be use
   If PixelLab is busy with work from its website, Aseprite or another app, your requests stay queued and retry after a
   wait. Accepted generations keep running; unknown outcomes are not automatically resent, to avoid duplicate charges.
 - A Free/Trial key is valid. Connect warns that skeleton animation and inpainting need Tier 1 or higher; you can continue
-  using available tools and all local dressing, recolouring and export features. Restricted workflows wait before their
+  using available tools and all local dressing, recoloring and export features. Restricted workflows wait before their
   first paid request, so creating a base cannot spend generations before a required animation is blocked.
 - Keys: Space play/pause · 1–4 face south/east/north/west (1–8 on 8-direction characters, in the order of the direction
   buttons) · 0 all directions · , and . step one frame.
 - **Offline?** The offline banner pauses new submissions and polling until the connection returns. Requests already sent
   to PixelLab may finish and charge while you are offline. Known jobs can resume; unknown paid outcomes stop for review
-  rather than being sent again. Dressing up, recolouring, outfits and export work with locally saved artwork while the
+  rather than being sent again. Dressing up, recoloring, outfits and export work with locally saved artwork while the
   app is open. Offline reload/install support is not implemented yet.
 - PixelLab may decline some descriptions. Try different words.

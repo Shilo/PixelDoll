@@ -6,11 +6,11 @@ cost is in `out/s2_x1|s2_x2|s2_x4/costs.jsonl`, and the request/response log (ba
 
 ## Verdict
 
-**The chroma mannequin solves the clean-layer problem.** Recolour the frozen base cells to a key-colour ramp, then let
-`edit-animation-v2` dress the *key mannequin*. Item pixels are then "opaque and not key-coloured", and the layer is drawn over the
+**The chroma mannequin solves the clean-layer problem.** Recolor the frozen base cells to a key-color ramp, then let
+`edit-animation-v2` dress the *key mannequin*. Item pixels are then "opaque and not key-colored", and the layer is drawn over the
 **real** base cell.
 
-PixelLab keeps the key. Across the 17 X1 calls (green and magenta keys), 97.6–99.9 % of mannequin pixels stayed key-coloured, ≤0.4 % were erased, and the
+PixelLab keeps the key. Across the 17 X1 calls (green and magenta keys), 97.6–99.9 % of mannequin pixels stayed key-colored, ≤0.4 % were erased, and the
 silhouette did not move (≤1.3 % of key pixels fell outside the base alpha).
 
 The resulting layers contain **no face, skin or arm pixels by construction**:
@@ -55,7 +55,7 @@ Showcases:
 
 ### Method (`s2_x1.mjs`, eval `s2_x1_eval.mjs`)
 
-1. **Recolour.** Per cell, compute the luminance of every opaque pixel and normalise it to t ∈ [0,1] over that cell's opaque
+1. **Recolor.** Per cell, compute the luminance of every opaque pixel and normalize it to t ∈ [0,1] over that cell's opaque
    range. Map it to a ramp:
 
    | Key | Ramp (R, G, B) |
@@ -89,7 +89,7 @@ Showcases:
 
 ### Results (per direction, 8 cells; metrics after the final extractor)
 
-"Key kept" = the share of base-opaque pixels outside the item that are still key-coloured. "Pal J" = adjacent-frame palette
+"Key kept" = the share of base-opaque pixels outside the item that are still key-colored. "Pal J" = adjacent-frame palette
 Jaccard. Specks = components of ≤2 px. Pinholes = enclosed empty regions of ≤2 px. All counts are summed over 8 frames.
 
 | Run | Dir | Layer px | Area CV | Pal J | Specks | Pinholes | Key kept | Notes |
@@ -117,9 +117,9 @@ Jaccard. Specks = components of ≤2 px. Pinholes = enclosed empty regions of �
 Other measurements:
 
 - **Silhouette drift:** key pixels outside the base alpha were 0.01–0.15 % for every green or magenta run, 1.3 % for the green
-  sword and 2 % for grey.
-- **Item colour count:** chroma layers have 6–8 colours. S1 layers have 11–17, but those include body leakage.
-  `edit-animation-v2` quantizes the whole grid to ~17–19 colours, and the key ramp uses ~5–8 of them.
+  sword and 2 % for gray.
+- **Item color count:** chroma layers have 6–8 colors. S1 layers have 11–17, but those include body leakage.
+  `edit-animation-v2` quantizes the whole grid to ~17–19 colors, and the key ramp uses ~5–8 of them.
 
 Sheets, each row showing a layer and then the layer over the real base:
 
@@ -142,9 +142,9 @@ Zooms:
 - **Cape on green is clean.** In the south view the layer contains only the parts visible beside the body, plus the shoulder
   straps. In the north view (X4) it contains the full back.
 - **Sword on green is clean.** In the east view the hand correctly occludes the grip, which leaves 1–2 hilt fragments.
-- **Grey key fails on grey items, and magenta fails on red items.** Pick the key far from the item hue.
-- **Item quality:** the style matches S1 items (same 16-colour quantization). Before despill, leather edges were olive, from
-  green bounce light; after despill they are dark brown. Helmet interiors on magenta were purple; after despill they are grey.
+- **Gray key fails on gray items, and magenta fails on red items.** Pick the key far from the item hue.
+- **Item quality:** the style matches S1 items (same 16-color quantization). Before despill, leather edges were olive, from
+  green bounce light; after despill they are dark brown. Helmet interiors on magenta were purple; after despill they are gray.
 
 ## X2: Two-pass batch remove (`s2_x2.mjs`)
 
@@ -177,8 +177,8 @@ are needed.** Even there, the chroma north view already gives a full cape.
 
 **Variants tested:**
 
-- ±1 px neighbourhood-tolerant matching (`maskNbr`);
-- body-palette rejection (all base colours, or skin-only colours with r−b>30);
+- ±1 px neighborhood-tolerant matching (`maskNbr`);
+- body-palette rejection (all base colors, or skin-only colors with r−b>30);
 - pinhole fill;
 - outline growth;
 - temporal consensus: votes in anchor-aligned coordinates, keep a pixel at ≥3 of 8 votes, fill one at ≥6 of 8 when it changed.
@@ -201,10 +201,10 @@ are needed.** Even there, the chroma north view already gives a full cape.
 
 **Real S1 composites** ([`real_s1_skinrej_sheet`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x3/real_s1_skinrej_sheet.png)): skin rejection with
 pinhole fill brings pinholes to 0 (helmet 11→0, chest 12–23→0). But **the arm slivers and the redrawn eyes stay.** Redrawn skin
-is more than 10 levels from every base colour, and widening the tolerance eats leather.
+is more than 10 levels from every base color, and widening the tolerance eats leather.
 
 **Verdict:** local diffing has hit its ceiling at about 9–12 false body pixels per cell. Keep it only as the fallback for items
-whose colour matches both keys, using `auto` + skin-only rejection + pinhole fill.
+whose color matches both keys, using `auto` + skin-only rejection + pinhole fill.
 
 ## X4: Coverage on the clothed base (`s2_x4.mjs`)
 
@@ -216,7 +216,7 @@ All runs use the green key. The A, B and C runs below use the padded 48→64 bas
   - `ea2a` (**anchor-cell** `edit-animation-v2`): frame 1 = A's dressed cell 0, then 14 new key cells, and output 0 is dropped.
 - **C run:** cross-punch east (6 cells), `to2`.
 
-"Pal dist" is the mean distance from each layer colour to the nearest colour of the A call's layer (max-channel, 0 = identical
+"Pal dist" is the mean distance from each layer color to the nearest color of the A call's layer (max-channel, 0 = identical
 palette). It measures design lock across calls.
 
 | Run | Cells | Layer px | Area CV | Specks / pinholes | Key kept | Top y | Pal dist to A |
@@ -294,13 +294,13 @@ grey t-shirt + grey shorts, bald, barefoot. Animate with templates at 48 px, the
 freezing. Never rescale. This gives 16–20 px of headroom. For 64 px detail when tall hats are not needed, the 64 base works
 with 6–7 px headroom.
 
-**1. Choose the key.** Default to `green`. Use `magenta` if the item's colour words match
+**1. Choose the key.** Default to `green`. Use `magenta` if the item's color words match
 /green|emerald|lime|olive|jade|teal|mint|forest/. Never use `grey`. If QA fails twice, re-roll with the other key.
 
-**2. Recolour (`toChroma`).**
+**2. Recolor (`toChroma`).**
 
 - Per cell: luminance `L = 0.299R + 0.587G + 0.114B` over the opaque pixels.
-- Normalise: `t = (L − Lmin) / (Lmax − Lmin)`.
+- Normalize: `t = (L − Lmin) / (Lmax − Lmin)`.
 - Green: `(round(110t²), round(60 + 195t), round(110t²))`.
 - Magenta: `(round(70 + 185t), round(110t²), round(70 + 185t))`.
 - Alpha is unchanged.
@@ -329,14 +329,14 @@ with 6–7 px headroom.
    - held: whole cell.
 3. Rim guard (`dropKeyOutline`): drop a mask pixel when all of these hold:
    - B is opaque there;
-   - the pixel is on the silhouette edge ring (it has a transparent 4-neighbour in B) **or** the base pixel is dark (mean < 60);
-   - at least 2 of its base-opaque 4-neighbours are key in C.
+   - the pixel is on the silhouette edge ring (it has a transparent 4-neighbor in B) **or** the base pixel is dark (mean < 60);
+   - at least 2 of its base-opaque 4-neighbors are key in C.
 4. Drop 8-connected components smaller than 2 px.
 5. `L` = the C pixels under the mask.
 6. Despill:
    - tint = `ex ≥ 5 ? 100·ex / max : 0`, measured on the raw excess with no 12-level floor;
    - core = layer pixels with tint ≤ 10;
-   - for each pixel with tint > 10: snap to the core colour with the nearest luminance if `|Δlum| ≤ 0.08`, otherwise remove the
+   - for each pixel with tint > 10: snap to the core color with the nearest luminance if `|Δlum| ≤ 0.08`, otherwise remove the
      excess (green: `G := max(R,B)`).
 7. Output: `L` is the layer cell. It is pre-occluded against `B`, so draw it over the real base. The fg/bg split and z-ladder
    rules from the architecture apply unchanged.
@@ -380,9 +380,9 @@ Latency: `edit-animation-v2` and `transfer-outfit-v2` took 96–196 s per call w
 3. **Design lock across calls is approximate.** Anchor-cell `edit-animation-v2` is close (palette distance ~10) but not
    identical. Keep an item's cells in as few calls as possible: 16 cells is one call per direction-pair. Budget per item for
    4 dirs × (idle 4 + walk 8) = 48 cells ≈ 3–4 calls ≈ 30–40 generations.
-4. **The key colour must avoid the item hue.** Grey failed on steel and magenta failed on red. A two-colour item that collides
+4. **The key color must avoid the item hue.** Gray failed on steel and magenta failed on red. A two-color item that collides
    with both keys needs the X3 fallback.
-5. **Fewer colours per item.** The key ramp takes ~5–8 of the ~17–19 quantized colours, so items get 6–8 colours. Untested
+5. **Fewer colors per item.** The key ramp takes ~5–8 of the ~17–19 quantized colors, so items get 6–8 colors. Untested
    knob: a 3-step ramp to free palette slots.
 6. **The mannequin hides the face and skin from the model.** "Face visible" helmets worked. Hair, glasses, masks and makeup are
    untested and may need the face context: try a key body with the real face, or the X3 fallback.

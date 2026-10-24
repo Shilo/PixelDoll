@@ -41,16 +41,16 @@ Foundational work may be developed behind an internal gate. An equipment-only in
 - [ ] Verify current source seams before coding, because the checkout is evolving. Preserve existing structural guards, atomic `saveItem`, replacement-move invalidation, palette-repair records and candidate stamps.
 - [ ] Refine editor labels/layout from task failures. Keep one document/session rather than adding a second novice wizard.
 
-Exit: no unresolved contract blocker for body editing, source roles, conflict-safe Save or portable recovery. Failed optional custom-colour/IK/mask experiments can defer those enhancements, not the core body/item requirement.
+Exit: no unresolved contract blocker for body editing, source roles, conflict-safe Save or portable recovery. Failed optional custom-color/IK/mask experiments can defer those enhancements, not the core body/item requirement.
 
 ## E1 — Revision and save foundation
 
 Proposed owners: small `app/src/lib/editor/` pure operation/domain module and existing storage/import/export modules. Exact files should follow current closest patterns at implementation time. Do not create a generic command framework, second queue or backend.
 
 - [ ] Stable cell addresses, source-cell resolution, declared read/write sets, project/session draft IDs and expected input stamps.
-- [ ] Copy-on-write pixel edits, image hashing/caching and bounded editor-session history, reconciled with existing narrow colour-repair history.
+- [ ] Copy-on-write pixel edits, image hashing/caching and bounded editor-session history, reconciled with existing narrow color-repair history.
 - [ ] Recovery draft autosave separate from accepted data; checkpoint Save; Undo after Save creates a new dirty draft.
-- [ ] Multi-target atomic publication through existing IndexedDB primitives; idempotent acknowledgement and meaningful overlap/dependency conflict detection.
+- [ ] Multi-target atomic publication through existing IndexedDB primitives; idempotent acknowledgment and meaningful overlap/dependency conflict detection.
 - [ ] All publishing writers honor editor-sensitive revisions. Preserve unrelated nonoverlapping outfit/item work; late paid output remains a candidate if stale.
 - [ ] Original/history/candidate reachability and loading; atomic history trimming and GC.
 - [ ] Versioned editable-project envelope/migration, full accepted editable recovery and explicitly filtered engine projection, plus optional draft recovery export. Validate limits, no dangling references and old/new reader behavior.
@@ -74,12 +74,12 @@ Exit: users can select and inspect any valid body/item frame through one session
 
 - [ ] Move selected item/body artwork, integer nudges/numeric input, known metadata translation and original comparison.
 - [ ] Whole character/all wardrobe alternatives: stamped membership, complete pieces, source/mirror vector preview, one pending transform, and rejection of any member's clipping.
-- [ ] Single-pixel Draw/Erase, source-role colour selection and picker, existing fixed source shades and B15 region-aware body writes.
+- [ ] Single-pixel Draw/Erase, source-role color selection and picker, existing fixed source shades and B15 region-aware body writes.
 - [ ] Minimal rectangular selection for bounded move/edit; explicit single-frame painting scope. General cross-pose stamping remains deferred.
 - [ ] Restore from actual retained sources only. Logical fg/bg pieces move coherently; front/back transfer ships only after its union/composition tests pass.
 - [ ] Clear reset/cancel and one-gesture Undo; untouched cells and palette roles remain byte-identical.
 
-Exit: body-only drift, sword shift, stray pixel, missing contour and source-colour repair can be performed in one draft. Core source-palette limits are disclosed; arbitrary custom RGB is not silently approximated.
+Exit: body-only drift, sword shift, stray pixel, missing contour and source-color repair can be performed in one draft. Core source-palette limits are disclosed; arbitrary custom RGB is not silently approximated.
 
 ## E4 — Joints, fitting review and coherent local release
 
@@ -97,7 +97,7 @@ Exit: release the coherent local Frame Editor, including Body. Publish accurate 
 
 - [ ] Mapped PNG replace/export package with fixed geometry, stable target mapping, expected source stamps, source palette/ownership validation and diff review.
 - [ ] Explicit range transforms, pose copy and occurrence-only cell duplication only after complete coverage/mirror semantics are validated.
-- [ ] New fixed/custom colours or new material roles after the palette-ownership spike; no global ramp rebuild.
+- [ ] New fixed/custom colors or new material roles after the palette-ownership spike; no global ramp rebuild.
 - [ ] Optional per-pair outfit masks only with complete compositor/runtime/export semantics.
 - [ ] Optional finer per-cell export of partially reviewed items only with an audited portable coverage contract.
 
@@ -125,7 +125,7 @@ If single-frame pose replacement produces poor seams/identity, offer honest full
 | Paint one of two deduplicated cells | Other addressed cell stays exact. Repeated logical occurrences disclose their linkage. |
 | Correct a wrist with no complete estimate | No raster/paid call changes; original measurement retained; valid manually reviewed metadata can rescue readiness. |
 | Draft a different pose | Old art remains; no charge until explicit Generate; desired versus detected values remain distinct. |
-| Paint a recoloured shirt or outline | Correct source role/B15 identity retained; other ramps/variants/items unchanged. |
+| Paint a recolored shirt or outline | Correct source role/B15 identity retained; other ramps/variants/items unchanged. |
 | Move fg/bg item or transfer a pixel | Defined visible union and occlusion result preserved; no slot-wide ordering surprise. |
 | Inspect tucked hair | Source art stays independent of outfit mask; no permanent deletion to fit one hat. |
 | Save, then Undo | Accepted project remains saved; Undo creates a dirty draft requiring Save to publish reversal. |

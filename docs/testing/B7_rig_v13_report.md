@@ -16,7 +16,7 @@ port of S5's H4 keyframe-consistency gate plus a prompt fix, and was re-run live
 | Area | Files |
 |---|---|
 | v1.3 rig types: `Keypoint`, `RestView`, `ClipSource`, `Rig.rest`, `RigAnimation.sources` (manifest-spec §2) | `lib/rig/rig.ts`, `lib/store/manifest.ts` (re-export only) |
-| **One placement rule** for M2 / M3 / Studio: `normalize(src, w, h, thr, char)` — the character canvas (`char`, default = source) is padded x-centred with the 4 px floor (48 → x+8, y+12); larger render canvases (managed 80/96, text 68, B6's 64) re-centre first. Studio's own `place()` (y+16) is deleted. | `lib/rig/normalize.ts`, `studio/model.ts` |
+| **One placement rule** for M2 / M3 / Studio: `normalize(src, w, h, thr, char)` — the character canvas (`char`, default = source) is padded x-centered with the 4 px floor (48 → x+8, y+12); larger render canvases (managed 80/96, text 68, B6's 64) re-center first. Studio's own `place()` (y+16) is deleted. | `lib/rig/normalize.ts`, `studio/model.ts` |
 | Keypoint authoring, port of S3 `skel.mjs` + `s3_poses.mjs`: `setArm`, `rotate`, `shift`, `ACTIONS` slash / cast / hurt / death (north mirrors south), `toApi`/`fromApi`, `adherence`. Death's last frame is a 1 px settle instead of S3's duplicate pose (duplicate final poses caused smear FX). | `lib/rig/poses.ts` |
 | Clip helpers: `rawClip` (the raw `/animate-with-skeleton-v3` request shared by base and items), `actionOf`, `largestComponent`, `paletteFit`, `borderPx`, **freeze gate `clipQa`** (arms ≤ 2 px vs requested, feet drift ≤ 1 px on standing clips, palette fit ≥ 0.97, 0 border px; lying clips 3 px) | `lib/rig/clips.ts` |
 | Create flow: v3 48 px → rest views (floor pad, west = flip east) → **re-import** (0.25) → rest keypoints from `skeletons["2d_references"]` (estimate as fallback) → per clip × dir: managed skeleton-v3 on the rest character (motion source; `res.directions` checked) → `estimate-skeleton` per frame → raw skeleton-v3 on the rest view → largest component → re-estimate → gate (1 re-roll, keep the better) → freeze with `rig.rest`, `sources[dir]` {route, reference, keypoints, motion, measured, provenance}, `rig.pad`, anchors, `character` {id, looks}. Seeded + cached → resumable. | `studio/create.ts`, `CreateSheet.svelte` |
@@ -25,7 +25,7 @@ port of S5's H4 keyframe-consistency gate plus a prompt fix, and was re-run live
 | **H4 keyframe-consistency gate** (port of S5 `s5_dircheck.mjs`, 0 gens): rigid/head items must look like their own direction's dressed keyframe (own ≥ 0.75, any view) → else fail + re-roll; worn items: front/back warning only; off for feet and held. Item pose description now also says "empty hands, no weapon". | `lib/items/items.ts` (`simAligned`, `dirGate`), `run.ts` (`withH4`) |
 | Head-band clip for posed head items (`slot.band`: head, face_acc): layer px below neck + 3 are dropped (invented props/smears) | `lib/items/items.ts` (`extractCell` `clip`) |
 | **Queue cross-tab lock**: `navigator.locks.request('pixeldoll-queue')`; the holder (leader) loads, submits and polls; other tabs mirror the ledger every 1.5 s, only enqueue/cancel, never mark records `lost`; the leader merges records enqueued elsewhere; when the leader closes the next tab takes over (and only then cleans orphaned submits). The in-memory key reaches the leader over a same-origin `BroadcastChannel` (never stored). UI: "Running in another tab" (toolbar + Activity). `enqueue(..., {cache})` reuses deterministic unseeded calls (estimate-skeleton, GET character). | `lib/pixellab/queue.ts`, `main.ts`, `Toolbar.svelte`, `ActivitySheet.svelte`, `ConnectSheet.svelte` |
-| **Material names** from description nouns, then slot, then hue ("iron knight helmet with a red plume" → Metal, Feather; boots → Leather; base → Skin, Clothes); shown for old projects too. Swatches show the **full ramp** with an inset light ring so near-black ramps stay visible on dark. | `lib/dress/dress.ts` (`materialNames`), `Colours.svelte`, `studio.css` |
+| **Material names** from description nouns, then slot, then hue ("iron knight helmet with a red plume" → Metal, Feather; boots → Leather; base → Skin, Clothes); shown for old projects too. Swatches show the **full ramp** with an inset light ring so near-black ramps stay visible on dark. | `lib/dress/dress.ts` (`materialNames`), `Colors.svelte`, `studio.css` |
 | `itemCell` aligns oversize layers by pivot (B8's v1.3.1 frames) | `studio/model.ts` |
 | Self-tests: `rig/poses`, `rig/clips`, queue two-tab fake-lock test, normalize render canvases, material names, H4 | `lib/selftests.ts` + modules |
 
@@ -58,7 +58,7 @@ Stored-data checks (read from IndexedDB in the page):
   slash 8), `measured` [cells × 18] on every frame, `motion` `managed-skeleton-v3:breathing-idle` / `walking-8-frames` /
   `authored:slash`, `provenance` indexes into the base's 17 provenance entries (create, import, managed, raw);
 - managed skeleton-v3 on the **64 px imported** character came back on **80 × 80** (S3 saw 96 for 64): same scale (figure
-  height 45 px in both), centred +8/+8 → `normalize(…, char = 64)` crops it exactly;
+  height 45 px in both), centered +8/+8 → `normalize(…, char = 64)` crops it exactly;
 - adding slash changed `baseHash` (`…` → `sha256:81ef8a5a…`); the helmet moved to the new hash and stayed "Clean".
 
 Screenshots / sheets:
@@ -90,8 +90,8 @@ over and only then marks the orphan lost, and the leader adopts a key entered in
 ## 4. Defect found live: a blade in the helmet's slash frames
 
 The first pose of the helmet onto slash passed every gate (key kept ≥ 0.978, G2–G10, status pass), but the model drew a
-grey scimitar into **east f1–f7 and north f1/f4/f5** (`b7_6`). Area and shape gates are off on action clips (a swing legitimately
-changes area), and the blade is item-coloured, not key. Two changes:
+gray scimitar into **east f1–f7 and north f1/f4/f5** (`b7_6`). Area and shape gates are off on action clips (a swing legitimately
+changes area), and the blade is item-colored, not key. Two changes:
 
 1. **H4 gate** (S5's direction gate, extended): a rigid item's posed layer must match its own direction's dressed keyframe
    (centroid-aligned appearance similarity, mannequin-occluded keyframe px skipped) — own < 0.75 fails in any view. Re-checked
@@ -129,7 +129,7 @@ the hip-height specks of north f6/f7.
 | `npm run check` | 0 errors, 0 warnings |
 | `npm run build` | ok |
 | `npm run selftest` | all pass (new: `rig/poses`, `rig/clips`; queue two-tab test; normalize render canvases; material names; H4) |
-| `node app/scripts/e2e-studio.mjs` (Playwright, demo) | all passed (wear, undo/redo, recolour, outfit, keys, theme, reload, export) |
+| `node app/scripts/e2e-studio.mjs` (Playwright, demo) | all passed (wear, undo/redo, recolor, outfit, keys, theme, reload, export) |
 
 ## 7. Known gaps / not done
 
@@ -146,5 +146,5 @@ the hip-height specks of north f6/f7.
   visible (or the queue should move to a worker later).
 - HMR: editing lib modules while a run is active can remount the Studio; drafts/moves are guarded per module instance only —
   reload between code edits (pre-existing, B6).
-- H4 thresholds are from S5's one labelled helmet run plus this one; a south slash frame with the forearm across the visor
+- H4 thresholds are from S5's one labeled helmet run plus this one; a south slash frame with the forearm across the visor
   scores 0.52 and re-rolls once.

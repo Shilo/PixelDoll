@@ -1,5 +1,5 @@
-// Chroma mannequin (S2, architecture §3.1–3.2): recolour the frozen base to a key ramp, let PixelLab dress the key mannequin,
-// then item = opaque pixels that are not key-coloured. Port of spikes/api/lib/chroma.mjs. Pure over Img; masks = Uint8Array(w*h).
+// Chroma mannequin (S2, architecture §3.1–3.2): recolor the frozen base to a key ramp, let PixelLab dress the key mannequin,
+// then item = opaque pixels that are not key-colored. Port of spikes/api/lib/chroma.mjs. Pure over Img; masks = Uint8Array(w*h).
 import { makeImg, type Img } from './png.ts';
 
 export type Key = 'green' | 'magenta';
@@ -14,12 +14,12 @@ const RAMP: Record<Key, (t: number) => [number, number, number]> = {
 };
 
 const HUES: Record<Key, RegExp> = { green: /green|emerald|lime|olive|jade|teal|mint|forest/i, magenta: /red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|magenta|fuchsia/i };
-/** May this key be used for an item? A key must stay far from the item hue (magenta failed on a red cape, grey on steel [S2]). */
+/** May this key be used for an item? A key must stay far from the item hue (magenta failed on a red cape, gray on steel [S2]). */
 export const keyAllowed = (prompt: string, k: Key) => !HUES[k].test(prompt);
-/** Green unless the item's colour words collide with green (S2 rule). Grey is never used. */
+/** Green unless the item's color words collide with green (S2 rule). Gray is never used. */
 export const pickKey = (prompt: string): Key => (keyAllowed(prompt, 'green') ? 'green' : 'magenta');
 
-/** Every opaque pixel -> key ramp by luminance normalised over the cell's opaque range. Alpha (silhouette) unchanged. */
+/** Every opaque pixel -> key ramp by luminance normalized over the cell's opaque range. Alpha (silhouette) unchanged. */
 export function toChroma(B: Img, key: Key): Img {
   const o: Img = { w: B.w, h: B.h, data: new Uint8ClampedArray(B.data) }, d = B.data;
   let lo = 1, hi = 0;
@@ -48,7 +48,7 @@ export function chromaMask(C: Img, key: Key, kT = KT): Uint8Array {
 }
 
 /**
- * Rim guard: drop mask px on the base silhouette ring (or a dark base px) whose base-opaque 4-neighbours are mostly key in C
+ * Rim guard: drop mask px on the base silhouette ring (or a dark base px) whose base-opaque 4-neighbors are mostly key in C
  * (S2: a mannequin outline redrawn off-key, olive 48,46,11). M3 refinement: a candidate that touches item px which are not
  * candidates themselves is the item's own outline (hair tips, trouser edges over dark base lines) and is kept.
  */
@@ -120,7 +120,7 @@ export function fillHoles(m: Uint8Array, C: Img, maxArea = 4): Uint8Array {
   return o;
 }
 
-/** De-spill: key-tinted layer px snap to the luminance-nearest clean colour (|Δlum| <= 0.08), else lose the key excess. */
+/** De-spill: key-tinted layer px snap to the luminance-nearest clean color (|Δlum| <= 0.08), else lose the key excess. */
 export function despill(L: Img, key: Key, sT = 10): Img {
   const o: Img = { w: L.w, h: L.h, data: new Uint8ClampedArray(L.data) }, d = L.data, core: number[][] = [];
   for (let i = 0; i < d.length; i += 4) if (d[i + 3] && tint(key, d[i], d[i + 1], d[i + 2]) <= sT) core.push([d[i], d[i + 1], d[i + 2]]);
@@ -139,10 +139,10 @@ export function despill(L: Img, key: Key, sT = 10): Img {
 }
 
 /**
- * Item px drawn in the key's dark shade: edit-animation-v2 quantizes the grid to ~17–19 colours, so an item outline or fold
- * line (cape) can come back as the key ramp's darkest colour and would be keyed out (holes over the body, missing outline).
+ * Item px drawn in the key's dark shade: edit-animation-v2 quantizes the grid to ~17–19 colors, so an item outline or fold
+ * line (cape) can come back as the key ramp's darkest color and would be keyed out (holes over the body, missing outline).
  * A dark key px (lum <= 0.3) is item when (a) it lies outside the base silhouette and touches the item (the mannequin cannot be
- * there), or (b) at least 5 of its 8 neighbours are item (a 1-px line inside the item). Two passes.
+ * there), or (b) at least 5 of its 8 neighbors are item (a 1-px line inside the item). Two passes.
  */
 export function absorbOutline(mask: Uint8Array, B: Img, C: Img, key: Key, kT = KT, lumMax = 0.3): Uint8Array {
   const { w, h } = C;
@@ -178,7 +178,7 @@ export function chromaLayer(C: Img, key: Key, B: Img, { kT = KT, minPx = 2 } = {
 }
 
 /**
- * Share of base-opaque, non-item px still key-coloured (G2) and erased (alpha < 128). The 1-px cell border is skipped:
+ * Share of base-opaque, non-item px still key-colored (G2) and erased (alpha < 128). The 1-px cell border is skipped:
  * PixelLab drops the outermost row, and the padded 48 -> 64 rig puts walk feet on row 63 (12 erased px ≈ 3 % of a cell, M3).
  */
 export function keyKept(B: Img, C: Img, key: Key, mask: Uint8Array, kT = KT, tol = 0) {
@@ -212,7 +212,7 @@ function near(w: number, h: number, x: number, y: number, r: number, f: (q: numb
   return false;
 }
 
-/** Heatmap of the key score: item px (score < kT) in their own colour, key px from dark blue (score 35) to white (100). */
+/** Heatmap of the key score: item px (score < kT) in their own color, key px from dark blue (score 35) to white (100). */
 export function keyHeatmap(C: Img, key: Key, kT = KT): Img {
   const o = makeImg(C.w, C.h);
   for (let p = 0; p < C.w * C.h; p++) {
@@ -225,6 +225,7 @@ export function keyHeatmap(C: Img, key: Key, kT = KT): Img {
   return o;
 }
 
+// British "colour" in request text stays: the job ledger reuses finished calls by exact request text, so rewording would re-pay resumed work.
 /** S2 prompt template (verbatim structure). `anchor` = frame 1 is a dressed reference cell from the design call. */
 export function chromaPrompt(item: string, key: Key, cellsNote: string, anchor = false): string {
   const n = KEY_NAME[key];

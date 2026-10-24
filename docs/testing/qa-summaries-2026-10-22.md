@@ -83,6 +83,6 @@ Both build and deploy jobs use `ubuntu-24.04`; Node/npm/dependencies and job per
 GitHub's [official runner image documentation](https://github.com/actions/runner-images) recommends a versioned OS
 label to avoid the gradual migration of `*-latest` labels. The pin does not freeze every tool preinstalled on the runner.
 
-The two shield east-walk drafts remain unaccepted, cape grey smudges and actual helmet deformations remain open for
+The two shield east-walk drafts remain unaccepted, cape gray smudges and actual helmet deformations remain open for
 targeted artwork correction, and mirrored handedness remains deferred. Older metadata is deliberately incomplete;
 future new/replaced checks are accurate at the stored clip granularity.

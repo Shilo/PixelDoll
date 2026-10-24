@@ -44,7 +44,7 @@ equipment/hides/tucking, z overrides and owner-local palettes. Separate dolls re
 include name and frozen-base hash so two character libraries sharing the same item IDs can coexist.
 
 The released GDevelop 5.6.285 editor-core WASM importer and official HTML exporter accepted the generated project.
-Its shipped GDJS/PIXI runtime rendered the native Sprite resources and passed timing, pixel, origin, colour and equipment
+Its shipped GDJS/PIXI runtime rendered the native Sprite resources and passed timing, pixel, origin, color and equipment
 assertions in Chromium. The portable Electron desktop executable failed at crashpad startup, so desktop GUI verification
 is not claimed. The actual editor core/exporter/runtime path is documented in the [test report](../testing/gdevelop-export-2026-10-23.md).
 

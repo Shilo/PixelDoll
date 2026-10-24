@@ -47,7 +47,7 @@ The type is `SheetDefinition` in `scripts/generateSources/items.ts`. Example (`b
 
 Key fields and how they behave:
 
-| Field | Meaning | PixelDoll analogue |
+| Field | Meaning | PixelDoll analog |
 |---|---|---|
 | `type_name` | Slot. Selecting a new item replaces the old one for that type | `slot` |
 | `layer_N` (1–9) | One item can have **several z-layers**, e.g. `fg`/`bg` tail, a flail's `behind` layer (z 9, under the body) plus its front layer (z 140) | item → `layers[]` |

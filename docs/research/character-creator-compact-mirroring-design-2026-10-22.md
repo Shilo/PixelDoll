@@ -53,14 +53,14 @@ Verified against the current [PixelLab OpenAPI](https://api.pixellab.ai/v2/opena
 
 Production should enhance Details explicitly using the current source size and camera, preserve the original for Undo, then refresh the exact final prompt. Do not also enable automatic enhancement on Draw, which would make the approved prompt diverge or enhance twice. An in-flight response must not overwrite text edited after submission, and paid failures must not be automatically resent.
 
-The interactive mock-ups demonstrate Enhance/Undo with clearly labelled example text and make no API call. This is not a live endpoint integration or a validation of enhancement output quality.
+The interactive mock-ups demonstrate Enhance/Undo with clearly labeled example text and make no API call. This is not a live endpoint integration or a validation of enhancement output quality.
 
 ## Verification
 
 - JavaScript syntax checks passed.
 - Offline model checks covered every preset, source reversal, unlinking, source/target deselection and 500 further mirror-state transitions with invariant assertions.
 - Codex browser checks verified all five preset counts, reversing all three pairs, promoting a dependent after source deselection, tile reversal/unlinking, side-wide changes and individual pair overrides.
-- Seed summary/input behaviour, Enhance/Undo, appearance-to-prompt updates and desktop help disclosure were exercised. A native-select event-order issue found during testing was corrected in the mock-ups.
+- Seed summary/input behavior, Enhance/Undo, appearance-to-prompt updates and desktop help disclosure were exercised. A native-select event-order issue found during testing was corrected in the mock-ups.
 - All three mobile variants were checked at 375 and 320 px browser widths, including product windows as narrow as 273 px after preview-shell padding. No child controls extended outside the product window. Direction buttons were 58 px high; pair reverse/toggle and tile-mode controls were 44 px high.
 - Desktop and mobile browser logs had no warnings or errors during final checks. No generation credits were spent.
 
@@ -99,7 +99,7 @@ The user selected Linked prompt. The latest desktop/mobile prototypes remove the
 
 The guided tab provisionally reads **Design**, and the neutral option **Default**. These names remain open for feedback. Tab alternatives are Appearance, Character, Builder and Guided; neutral alternatives are Not set, Unspecified and No preference. The neutral value always means no additional trait clause, regardless of its display name.
 
-A small muted three-line prompt preview sits below Skin with a copy button. It contains the exact prompt text; visual truncation keeps the form compact. Clicking the text opens the full Prompt editor. Copy preserves the complete prompt, including line breaks. The exact editor has Undo followed by Enhance; enhancement updates the linked fields and Undo restores the exact prior prompt. Enhancement remains a labelled local demonstration, not a live API call.
+A small muted three-line prompt preview sits below Skin with a copy button. It contains the exact prompt text; visual truncation keeps the form compact. Clicking the text opens the full Prompt editor. Copy preserves the complete prompt, including line breaks. The exact editor has Undo followed by Enhance; enhancement updates the linked fields and Undo restores the exact prior prompt. Enhancement remains a labeled local demonstration, not a live API call.
 
 Frame controls now precede the preview. The preview image starts at the controls' left edge. Its row has a stable height and top alignment; its text uses reserved vertical slots for body size, frame size and caption. Changes to one text line cannot vertically recenter the image or the other lines.
 

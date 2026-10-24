@@ -49,7 +49,7 @@ export function keyboardVector(keys: ReadonlySet<string>, horizontalOnly = false
   return unit({ x: Number(held('d', 'arrowright')) - Number(held('a', 'arrowleft')), y: horizontalOnly ? 0 : Number(held('w', 'arrowup')) - Number(held('s', 'arrowdown')) });
 }
 
-/** Pointer displacement uses screen coordinates; preserve analogue strength outside the dead zone. */
+/** Pointer displacement uses screen coordinates; preserve analog strength outside the dead zone. */
 export function pointerVector(x: number, y: number, radius: number, deadZone = 0.12, horizontalOnly = false): Vector {
   if (![x, y, radius, deadZone].every(Number.isFinite) || radius <= 0) return { x: 0, y: 0 };
   const vector = { x: x / radius, y: horizontalOnly ? 0 : -y / radius }, length = Math.hypot(vector.x, vector.y);

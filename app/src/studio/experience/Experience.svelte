@@ -21,7 +21,7 @@
   $effect(()=>{if(search&&list.length&&!doc.loading&&!list.some(p=>p.id===doc.id))void openProject(list[0].id)})
   const index=$derived(list.findIndex(p=>p.id===doc.id))
   const neighbors=$derived(list.length>1?[-1,0,1].filter(n=>!(list.length===2&&n===1)).map(offset=>({offset,p:list[(Math.max(0,index)+offset+list.length)%list.length]})):list.map(p=>({offset:0,p})))
-  const tabs=[['wardrobe','Wardrobe'],['colours','Colors'],['outfits','Outfits'],['moves','Moves']] as const
+  const tabs=[['wardrobe','Wardrobe'],['colors','Colors'],['outfits','Outfits'],['moves','Moves']] as const
   const modes=[['preview','Preview'],['topdown','Top-down'],['side','Side-scroller']] as const
   const castScale=$derived.by(()=>{
     const mobile=viewportWidth<=760,short=viewportHeight<=540

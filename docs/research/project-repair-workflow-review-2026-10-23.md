@@ -12,7 +12,7 @@ This recommendation is supported by current defects and comparable products. It 
 
 ## Scope and evidence limits
 
-Three sub-agents independently examined (1) generation, skeletons, extraction and QA; (2) Studio, composition, storage, recolour and exports; and (3) current official competitor documentation. The primary review examined their findings, core documentation, current source, historical experiments and recent body/rotation audits, and ran local verification.
+Three sub-agents independently examined (1) generation, skeletons, extraction and QA; (2) Studio, composition, storage, recolor and exports; and (3) current official competitor documentation. The primary review examined their findings, core documentation, current source, historical experiments and recent body/rotation audits, and ran local verification.
 
 The review covers the product's complete asset lifecycle and its supporting documentation. It is not a line-by-line security audit of every module, a new visual review of every historical generated frame, or a fresh verification of every engine runtime. Findings distinguish reproduced defects, source-established limitations, historical evidence and recommendations.
 
@@ -71,7 +71,7 @@ The accepted-item Stage can inspect moves later, but that does not substitute fo
 
 Current TODO entries explicitly retain unresolved shield east-walk discontinuities, cape hem smudges and real helmet hurt-frame deformation (`TODO.md:8–12`). The saved shield audit reports a centroid shift of approximately 13.55 px while the requested wrist moves 0.68 px, while carefully declining to infer a unique root cause ([item quality follow-up](../testing/item-quality-follow-up-2026-10-22.md)).
 
-Historical T3 testing records both false paid retries and a false pass for armour smears, plus a cape wrapping the wrong anatomy despite repeated rolls ([T3 report](../testing/T3_item_coverage_report.md)). Later fixes supersede several of those particular failures; the report remains evidence that threshold scores and repeated sampling are fallible. Historical cost figures are not current API price promises.
+Historical T3 testing records both false paid retries and a false pass for armor smears, plus a cape wrapping the wrong anatomy despite repeated rolls ([T3 report](../testing/T3_item_coverage_report.md)). Later fixes supersede several of those particular failures; the report remains evidence that threshold scores and repeated sampling are fallible. Historical cost figures are not current API price promises.
 
 **Action:** provide local correction for bounded visible defects. Do not solve every exception with another heuristic, another paid roll, or a weakened threshold. Preserve the original and allow a reviewed revision.
 
@@ -79,7 +79,7 @@ Historical T3 testing records both false paid retries and a false pass for armou
 
 Current undo stores dressing state, not image/cell history (`app/src/studio/state.svelte.ts:237–253`; `app/src/lib/dress/project.ts:35–43`). `saveDress()` persists dressing data (`:72–89`). Wrapping a pixel change in the current commit helper would not make it safely undoable or persistent.
 
-Images are shared by content hash (`app/src/lib/store/manifest.ts:143–148`), and recolour indexing caches by image object (`app/src/lib/dress/dress.ts:112–143`). Editing `Img.data` in place could change multiple cells or copies and leave stale recolour caches. Export validation checks image presence/dimensions, while editable import recomputes hashes and rejects mismatches (`app/src/lib/export/generic.ts:40–50`; `app/src/lib/store/import.ts:93–98`).
+Images are shared by content hash (`app/src/lib/store/manifest.ts:143–148`), and recolor indexing caches by image object (`app/src/lib/dress/dress.ts:112–143`). Editing `Img.data` in place could change multiple cells or copies and leave stale recolor caches. Export validation checks image presence/dimensions, while editable import recomputes hashes and rejects mismatches (`app/src/lib/export/generic.ts:40–50`; `app/src/lib/store/import.ts:93–98`).
 
 **Action:** immutable cells, fresh hashes, before/after references, one stroke per undo command, atomic publication of blobs and manifest references, and persisted original references for revert. The existing `db.updateCharacter()` is a useful transaction primitive (`app/src/lib/store/db.ts:49–65`). Keep original/history references reachable so blob garbage collection cannot remove them.
 
@@ -141,11 +141,11 @@ Never propagate a painted patch to different poses by default. Even a rigid hat'
 
 Frozen-body pixels determine `baseHash`, body silhouettes, stored references, measured joints, anchors and item compatibility (`app/src/lib/rig/rig.ts:17–26`, `:39–64`; `app/src/lib/export/generic.ts:60–66`). A body edit cannot safely be treated like changing a hat pixel.
 
-For the first release, lock the body in the repair workspace. Future base correction should create a reviewed revision/copy and distinguish cosmetic colour changes from silhouette/pose changes. Reassess affected geometry and equipment compatibility; retain originals and pending-job revision guards. Do not silently stamp every item with a new `baseHash` or regenerate the wardrobe.
+For the first release, lock the body in the repair workspace. Future base correction should create a reviewed revision/copy and distinguish cosmetic color changes from silhouette/pose changes. Reassess affected geometry and equipment compatibility; retain originals and pending-job revision guards. Do not silently stamp every item with a new `baseHash` or regenerate the wardrobe.
 
 ## Challenge extraction and layering
 
-### Colour-key separation is classification, not true semantic layers
+### Color-key separation is classification, not true semantic layers
 
 The model returns composites. Keying can identify likely visible equipment, not reconstruct hidden fabric or prove that every non-key pixel is equipment. The G2 key-preservation check excludes pixels already classified as item (`app/src/lib/image/chroma.ts:181–196`). An offline counterexample with a 3 × 3 off-key body redraw produced a nine-pixel “item” while reporting key kept = 1 and lost = 0. This demonstrates circular evidence in that case, not failure of every real item.
 
@@ -203,7 +203,7 @@ Primary official sources accessed 2026-10-23. This is documentation research, no
 | --- | --- | --- |
 | [Game Character Hub](https://www.gamecharacterhub.com/portfolio-edition-features/) | Character assembly plus layers, per-frame/pixel selections, pen/eraser, undo/history and animation preview | Pixel correction can coherently belong in a character creator. Its extensive toolbox is not an MVP requirement. |
 | [Universal LPC Generator](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator) | Standardized parts, animation preview, export and explicit asset/animation compatibility gaps | Curated assembly needs coverage and compatibility discipline too. The examined source does not establish arbitrary in-app painting. |
-| [Aseprite](https://www.aseprite.org/docs/animation/), [drawing](https://www.aseprite.org/docs/drawing/), [onion skinning](https://www.aseprite.org/docs/onion-skinning/) | Frames/layers/cels, pixel correction and neighbouring-frame reference | Strong external finishing and useful small interaction patterns. Native export alone does not supply a safe paperdoll reimport. |
+| [Aseprite](https://www.aseprite.org/docs/animation/), [drawing](https://www.aseprite.org/docs/drawing/), [onion skinning](https://www.aseprite.org/docs/onion-skinning/) | Frames/layers/cels, pixel correction and neighboring-frame reference | Strong external finishing and useful small interaction patterns. Native export alone does not supply a safe paperdoll reimport. |
 | [LibreSprite](https://github.com/LibreSprite/LibreSprite) | Open-source pixel tools, layers/frames, palettes, onion skin and animation preview | An external workflow can have a free editor option; verify actual interchange rather than assuming modern Aseprite parity. |
 | [Piskel](https://www.piskelapp.com/), [official editor](https://piskelapp.github.io/piskel-embed/editor/index.html) | Browser pixel editing, frames/layers, onion skin, preview and sheet export | Browser repair is plausible; a complete mobile editor remains a substantial interaction problem. |
 | [PixelLab's interface comparison](https://www.pixellab.ai/docs/ways-to-use-pixellab) | Full Pixelorama browser editing plus AI; Aseprite integration | The broad AI pixel-editor category is already served by PixelLab. PixelDoll's distinctive value is synchronized equipment, repair context and safe export. |
@@ -224,7 +224,7 @@ Do not copy extension/UI tool limits into the REST v2 contract. For example, Pix
 
 ### First user-visible workflow
 
-From an accepted item or generation-review warning, choose **Fix frame**. Pause playback and select item → move → direction → actual cell. Keep the body locked. Show the full composite immediately and allow isolation of the editable piece. Offer pixel grid, nearest-neighbour zoom/pan, previous/next-frame ghosts, original comparison, pencil, eraser, source-palette picker and one-pixel nudges. Where the item already has fg/bg pieces, add an explicit front/back pixel transfer after its semantics are validated.
+From an accepted item or generation-review warning, choose **Fix frame**. Pause playback and select item → move → direction → actual cell. Keep the body locked. Show the full composite immediately and allow isolation of the editable piece. Offer pixel grid, nearest-neighbor zoom/pan, previous/next-frame ghosts, original comparison, pencil, eraser, source-palette picker and one-pixel nudges. Where the item already has fg/bg pieces, add an explicit front/back pixel transfer after its semantics are validated.
 
 Make the affected scope visible: one cell, a deliberately selected set, or a source cell with a derived mirror. Save as a reversible local revision; show “manually edited/reviewed.” Return to animation playback for acceptance. A no-op session creates no revision and makes no network request.
 
@@ -238,7 +238,7 @@ General brushes/shapes/gradients, effects/blend modes, arbitrary new layers, fre
 
 1. **Cell identity:** edit the actual `animation.frames[ui.frame % animation.frames.length].cell`, not playback index; the playback counter can grow beyond the playlist length. Respect the layer's real size/pivot, especially oversize held items; thumbnail crop coordinates are unsuitable.
 2. **Immutable raster revisions:** clone, paint, hash, encode, then atomically publish cell references. Store before/after references and operation scope. Commit a stroke once, not every pointer event. Retain originals across reload/export. Extend `loadProject()` and ZIP import/export reference traversal for hashes reachable only from repair history: current loading visits current cells/rest/dressed/design images (`app/src/lib/store/project.ts:28–49`), and project export includes only loaded `p.images` (`app/src/lib/store/import.ts:43–45`). Persisting an original hash protects it from garbage collection but does not alone ensure it is loaded, verified or exported after reopening.
-3. **Palette identity:** paint in source colours with recoloured preview. Begin with existing source ramps. Arbitrary RGB needs a material role or an explicit fixed-colour detail; do not rebuild every material/variant after one stroke.
+3. **Palette identity:** paint in source colors with recolored preview. Begin with existing source ramps. Arbitrary RGB needs a material role or an explicit fixed-color detail; do not rebuild every material/variant after one stroke.
 4. **Mirrors:** editing a source can affect its derived mirror. Editing only a mirrored direction requires deliberate independent materialization. Because a present row suppresses source fallback, materialize the complete affected row/pieces before editing, preserving all other cells (`app/src/lib/compose/compose.ts:123–133`).
 5. **Fixed geometry:** bake integer nudges into pixels while preserving the shared pivot. Preview/reject loss at cell edges. Do not silently crop or use pivot changes as frame-local movement.
 6. **QA:** preserve original generation checks as history; invalidate pixel-dependent current checks. Recompute applicable offline checks on final cells. Key-retention scores cannot be reconstructed honestly from only a repaired transparent layer. Manual acceptance is separate from automatic pass.
@@ -259,13 +259,13 @@ Do not weaken backup hash validation to make editing appear supported. Add a sep
 4. **Add mapped replacement import:** allow mature external editors to handle extensive drawing. Keep project recovery distinct.
 5. **Evaluate upstream control separately:** rig overlays first; then joint/pose/reference corrections only with measured examples and safe dependency invalidation. Base-art revision remains a separate project.
 
-Use saved defects rather than new paid generations for the initial trial. Include a stray pixel, missing contour, small colour error, one-pixel item shift, incorrect front/back overlap, helmet/cape deformation and shield drift. Also include failures the editor should not pretend to solve: wrong anatomy, wrong handedness across views, missing geometry and an entirely wrong design.
+Use saved defects rather than new paid generations for the initial trial. Include a stray pixel, missing contour, small color error, one-pixel item shift, incorrect front/back overlap, helmet/cape deformation and shield drift. Also include failures the editor should not pretend to solve: wrong anatomy, wrong handedness across views, missing geometry and an entirely wrong design.
 
 Compare current workflow, focused repair and external roundtrip. Measure successful task completion, repair time, number of cells touched, accidental damage, final animation quality, export agreement and whether the user understands edit scope. Include users who can dress a character but do not identify as pixel artists. Inspect all relevant directions/moves, not only the repaired still.
 
 No numerical demand or time-savings threshold is established by this review. Define the acceptance targets before the trial. Continue only if ordinary local defects are quick and safe to fix. If most frames need substantial drawing, investigate generation/rig/extraction and narrow the advertised support envelope; adding tools would merely transfer the pipeline's cost to users.
 
-Required regressions for implementation: incomplete-batch acceptance, shared-hash isolation, actual-cell versus playback index, source/mirror scope, oversize pivot coordinates, fg/bg transfer, source-palette recolour, undo/reload/ZIP recovery, blob garbage collection, concurrent generation conflicts, source QA versus current repair status, and repaired preview/export equality. Add engine runtime checks only for changed manifest/compositing semantics; raster-only replacements should already flow through existing exporters.
+Required regressions for implementation: incomplete-batch acceptance, shared-hash isolation, actual-cell versus playback index, source/mirror scope, oversize pivot coordinates, fg/bg transfer, source-palette recolor, undo/reload/ZIP recovery, blob garbage collection, concurrent generation conflicts, source QA versus current repair status, and repaired preview/export equality. Add engine runtime checks only for changed manifest/compositing semantics; raster-only replacements should already flow through existing exporters.
 
 ## Verification during this review
 

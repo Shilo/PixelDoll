@@ -15,7 +15,7 @@
     { id: 'engines', name: 'Engines and frameworks', targets: [
       { id: 'godot', name: 'Godot', sub: 'Scene + runtime', detail: 'Godot 4 scene and animation resources with synchronized equipment and outfit controls.' },
       { id: 'unity', name: 'Unity', sub: 'Prefab importer', detail: 'Unity Editor importer creates a layered prefab and animation assets. Requires the 2D Sprite package.' },
-      { id: 'phaser', name: 'Phaser', sub: 'Atlas + runtime', detail: 'Phaser 3 / 4 atlases and a Container runtime for equipment, colours and synchronized playback.' },
+      { id: 'phaser', name: 'Phaser', sub: 'Atlas + runtime', detail: 'Phaser 3 / 4 atlases and a Container runtime for equipment, colors and synchronized playback.' },
       { id: 'gdevelop', name: 'GDevelop', sub: 'Editable project', detail: 'Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game.' },
     ] },
     { id: 'assets', name: 'Assets', targets: [

@@ -23,7 +23,7 @@ Executed assertions:
 - Native Sprite frame pixels switch at the exact 80 ms boundary in an 80/180/100 ms repeated-cell playlist; distinct
   green/yellow markers are checked through PIXI GPU pixel extraction, beyond inspecting the controller's frame number.
 - A canonical default sheet intentionally differs from its raw source sheet. The expected blue body and cyan linked hair
-  prove original source-ramp recolouring; a second doll becomes red/magenta without modifying the first doll or its source.
+  prove original source-ramp recoloring; a second doll becomes red/magenta without modifying the first doll or its source.
 - Native Sprite bounds share one pivot: a 2 px body starts at `(319,238)` and a 4 px oversized layer at `(318,237)` when
   the common position is `(320,240)`.
 - Per-cell z overrides cross the body correctly; tucked variants replace hair; explicit hide rules and unequipping work.

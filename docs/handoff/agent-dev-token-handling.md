@@ -185,7 +185,7 @@ server-side read of `.env`, a compile-time guard on the client code, a refused a
 5. [ ] Register that endpoint only for `serve` + `agent` mode, and make an agent-mode build throw.
 6. [ ] Gate client auto-connect behind `import.meta.env.DEV && import.meta.env.MODE === 'agent'` (or the stack's equivalent
        compile-time constant) and `window.top === window` (no auto-connect when framed). Store the token in memory only.
-       Honour the `localStorage` kill switch.
+       Honor the `localStorage` kill switch.
 7. [ ] Remove every human-visible dev-token affordance ("use dev key" buttons, auto-fill in normal dev).
 8. [ ] Add the "Agent mode" badge.
 9. [ ] Human token UX: kept per tab by default (memory or sessionStorage), opt-in Remember, Bearer header only to the PixelLab API, never in URLs, logs or exports;
@@ -220,7 +220,7 @@ Concrete changes for pixellab-gallery:
    server-side.
 4. `src/main.ts`: a gated block `if (import.meta.env.DEV && import.meta.env.MODE === 'agent')` that fetches the token and
    passes it through the **same verify-then-keep path a human uses** (`library.svelte.ts`), in the memory/session store,
-   never "remembered". Honour a kill switch (e.g. `localStorage['backpack.agentKey'] = 'off'`).
+   never "remembered". Honor a kill switch (e.g. `localStorage['backpack.agentKey'] = 'off'`).
 5. Add an "Agent mode" badge in `App.svelte` behind the same guard.
 6. Confirm the dev CSP allows the same-origin fetch (`connect-src 'self'`), so `public/_headers` needs no change for production.
 7. Playwright: existing e2e specs run against mocks and must stay keyless. If a real-token smoke test is wanted, add a

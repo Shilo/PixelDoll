@@ -1,8 +1,8 @@
 <script lang="ts">
   import { cellImg, composeCell, drawList, equipped, hiddenSlots } from '../lib/compose/compose.ts'
   import { exportZip } from '../lib/export/export.ts'
-  import { colourCounts, toHex } from '../lib/dress/palette.ts'
-  import { SWATCHES, coverageGaps, deriveMaterials, edges, randomOutfit, recolour, storeVariants, variantOf, variantRampOf } from '../lib/dress/dress.ts'
+  import { colorCounts, toHex } from '../lib/dress/palette.ts'
+  import { SWATCHES, coverageGaps, deriveMaterials, edges, randomOutfit, recolor, storeVariants, variantOf, variantRampOf } from '../lib/dress/dress.ts'
   import { listSources, openSource, saveDress } from '../lib/dress/project.ts'
   import type { DirectionName, Manifest, Material, Preset, ZOverride } from '../lib/store/manifest.ts'
   import type { Img } from '../lib/image/png.ts'
@@ -33,9 +33,9 @@
   const cell = $derived(rigAnim ? rigAnim.frames[frame % rigAnim.frames.length].cell : 0)
   const view = $derived.by(() => {
     if (!manifest) return null
-    // plain snapshot: recolour/compose over the deep-state proxy took seconds (one tracked read per cell hash)
+    // plain snapshot: recolor/compose over the deep-state proxy took seconds (one tracked read per cell hash)
     const t0 = performance.now(), snap = $state.snapshot(manifest) as Manifest, v = $state.snapshot(variants), t = performance.now()
-    const p = recolour({ manifest: snap, images }, v)
+    const p = recolor({ manifest: snap, images }, v)
     return { p, ms: performance.now() - t, snapMs: t - t0 }
   })
   const on = $derived(m ? equipped(m, items) : [])
@@ -97,7 +97,7 @@
   const small = (d: DirectionName) => (canvas: HTMLCanvasElement) => {
     if (view && rigAnim) paint(composeCell(view.p, items, anim, d, cell))(canvas)
   }
-  // debug: each drawn layer's edge pixels in its slot colour
+  // debug: each drawn layer's edge pixels in its slot color
   const outline = (canvas: HTMLCanvasElement) => {
     const g = canvas.getContext('2d')!
     g.clearRect(0, 0, canvas.width, canvas.height)
@@ -113,7 +113,7 @@
     }
   }
 
-  // ---- colour ----
+  // ---- color ----
   const vname = (name: string) => (tint ? `tint:${name}` : name)
   function pick(mat: Material, name: string | null) {
     if (name == null) delete variants[mat.id]
@@ -135,7 +135,7 @@
     for (const x of m!.materials) if (x.linkTo && !m!.materials.some((y) => y.id === x.linkTo)) delete x.linkTo
   }
   const rampOf = (mat: Material) => { const n = variantOf(m!, variants, mat.id); return (n && variantRampOf(mat, n)) || mat.ramp }
-  const uniq = (im: typeof big) => (im ? colourCounts([im]).size : 0)
+  const uniq = (im: typeof big) => (im ? colorCounts([im]).size : 0)
 
   // ---- outfit ----
   function cycle(slot: string, step: number) {
@@ -177,7 +177,7 @@
   }
   const ovText = (o: ZOverride) => `${o.layer} z ${o.z}${o.dir ? ` · ${o.dir}` : ''}${o.anim ? ` · ${o.anim}` : ''}${o.cell != null ? ` · cell ${o.cell}` : ''}`
 
-  // ---- export (layer sheets keep source ramps; materials + preset variants go in the manifest; baked sheets are recoloured) ----
+  // ---- export (layer sheets keep source ramps; materials + preset variants go in the manifest; baked sheets are recolored) ----
   let exporting = $state('')
   async function doExport() {
     const presets = [{ id: 'current', name: 'Current outfit', items: $state.snapshot(items), variants: $state.snapshot(variants) }, ...m!.presets.filter((p) => p.id !== 'current')]
@@ -266,7 +266,7 @@
         <canvas class="px" width={m.rig.cell.w} height={m.rig.cell.h} style:width="{m.rig.cell.w * zoom}px" {@attach paint(big)} data-testid="big"></canvas>
         <canvas class="ov" width={m.rig.cell.w * zoom} height={m.rig.cell.h * zoom} {@attach outline}></canvas>
       </div>
-      <p class="muted" data-testid="stats">frame {frame % rigAnim.frames.length} · cell {cell} · {uniq(big)} colours · recolour {view.ms.toFixed(1)} ms (snapshot {view.snapMs.toFixed(1)} ms)</p>
+      <p class="muted" data-testid="stats">frame {frame % rigAnim.frames.length} · cell {cell} · {uniq(big)} colors · recolor {view.ms.toFixed(1)} ms (snapshot {view.snapMs.toFixed(1)} ms)</p>
       <div class="dirs">
         {#each m.rig.directions as d (d.id)}
           <figure class:on={dir === d.id}>
@@ -303,7 +303,7 @@
     </section>
 
     <section class="panel">
-      <h2>Colours</h2>
+      <h2>Colors</h2>
       {#each on as it (it.id)}
         <div class="item">
           <b>{it.name}</b>

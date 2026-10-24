@@ -82,7 +82,7 @@ On desktop, use the **Repair workspace** concept: canvas, filmstrip and contextu
 
 ### Joint-specific controls
 
-- Retain the provider's 18 labelled points internally. Use familiar UI terms: “Right hand (character's right)” maps to `RIGHT ARM`; “Right foot” maps to `RIGHT LEG`. Head landmarks can be a collapsed group.
+- Retain the provider's 18 labeled points internally. Use familiar UI terms: “Right hand (character's right)” maps to `RIGHT ARM`; “Right foot” maps to `RIGHT LEG`. Head landmarks can be a collapsed group.
 - Start with direct joint placement, a selectable named joint list, numeric source-pixel coordinates, arrow-key nudges and parent/joint pins. Keep handle hit regions in screen pixels and usable when side-view points overlap.
 - Allow continuous/subpixel landmark positions; only raster paint/translation snaps to whole pixels. Do not round joint data just because the artwork is pixel art.
 - Add optional two-bone IK for hand/foot posing after direct placement is reliable: pinned shoulder/hip, explicit bend side, reach feedback and no silent stretch. Projected limb lengths vary with foreshortening; length locks must be optional.
@@ -141,7 +141,7 @@ Candidate stamps should include the affected body image hashes, relevant rest/re
 
 ### Publication and rendering rules
 
-1. Clone source pixels; never edit shared `Img.data` in place. Paint using source palette identities while previewing the user's selected recolour. Recompute the final hash and invalidate image/palette caches.
+1. Clone source pixels; never edit shared `Img.data` in place. Paint using source palette identities while previewing the user's selected recolor. Recompute the final hash and invalidate image/palette caches.
 2. Retain generated composite, extracted result and available cleanup-removal masks. Manual edits operate on final authoring data after the automatic recipe. Restored details must not be deleted by rerunning cleanup.
 3. Store output blobs, then atomically check expected revisions and publish cell references, corrected metadata, QA/review state and history. Reject stale acceptance without losing the candidate. Use changed-cell merges rather than whole-item stale snapshots.
 4. Preserve originals and accepted history through reload and editable ZIP export/import. Extend the explicit `projectData`/import schema; adding only IndexedDB fields is insufficient. Mark history/candidate blobs live during garbage collection. Bound optional history, but retain the original/current accepted state.

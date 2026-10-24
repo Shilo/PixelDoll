@@ -60,7 +60,7 @@ Move Draw Erase Joints    │  optional joint overlay    │     Clip warning if
                  Play  [frame][frame][selected][frame] ...  Changes (3)
 ```
 
-Use existing custom CSS, themes and typography. On narrow screens, keep the canvas and scope visible; objects and inspector become labelled sheets. Explicit Draw versus Pan and pinch navigation must work without a modifier key. A keyboard joint list with numeric coordinates must provide an alternative to small overlapping handles. Restrict single-key shortcuts while typing in inputs; distinguish frame navigation from arrow-key nudging.
+Use existing custom CSS, themes and typography. On narrow screens, keep the canvas and scope visible; objects and inspector become labeled sheets. Explicit Draw versus Pan and pinch navigation must work without a modifier key. A keyboard joint list with numeric coordinates must provide an alternative to small overlapping handles. Restrict single-key shortcuts while typing in inputs; distinguish frame navigation from arrow-key nudging.
 
 ## Objections the design must resolve
 
@@ -76,7 +76,7 @@ When body pixels translate, the associated corrected joint observation and relev
 
 Within Joints distinguish **Correct joints on this image** from **Draft a pose**. Correcting observations changes guides/metadata only. Pose drafting also changes no pixels until an explicit generation request produces a candidate. An item attachment/grip adjustment is a separate named value under Move/Joints; it must not secretly modify anatomy or every item in that slot.
 
-Direct dragging, labelled point selection, numeric coordinates and nudge controls are sufficient first. Optional two-bone IK belongs to pose drafting after direct editing works. Keep joints continuous; do not quantize observations to raster indexes. Reference calibration, measured observations, manual corrections and desired poses remain distinct records.
+Direct dragging, labeled point selection, numeric coordinates and nudge controls are sufficient first. Optional two-bone IK belongs to pose drafting after direct editing works. Keep joints continuous; do not quantize observations to raster indexes. Reference calibration, measured observations, manual corrections and desired poses remain distinct records.
 
 ### “Save” must not discard the rest of the wardrobe
 
@@ -92,15 +92,15 @@ Move can apply an explicit delta to selected cells after preview. Pixel painting
 
 Two different cells sharing one content hash are not linked edits. Two playback entries referencing the same source cell are linked. Explain the latter once and offer a deliberate duplicate-cell operation later; do not accidentally expand the painting target set.
 
-### Displayed colour is not authoring colour
+### Displayed color is not authoring color
 
-Default to the selected target's source palette/material roles; let users view active outfit colours while preserving authoring identity. Picking a displayed colour must resolve its source role and shade. If two source roles display the same colour, ask for the role rather than guessing.
+Default to the selected target's source palette/material roles; let users view active outfit colors while preserving authoring identity. Picking a displayed color must resolve its source role and shade. If two source roles display the same color, ask for the role rather than guessing.
 
-Support deliberate unmatched source colours as explicit fixed colours, with a warning that they will not follow material recolours. If initially deferred, label the limit and add it to the follow-on plan; do not pretend a permanently palette-locked editor can correct every asset. Do not silently add colours to global ramps, broaden their ownership or destroy the existing encoded shirt/shorts region semantics.
+Support deliberate unmatched source colors as explicit fixed colors, with a warning that they will not follow material recolors. If initially deferred, label the limit and add it to the follow-on plan; do not pretend a permanently palette-locked editor can correct every asset. Do not silently add colors to global ramps, broaden their ownership or destroy the existing encoded shirt/shorts region semantics.
 
 ### Hidden pixels and clipping are not the same as missing pixels
 
-Provide **As worn / Source artwork** view and target isolation. The user must be able to see pixels hidden by another item, hair tuck rules or foreground/background split. A source-art erasure affects every outfit using that art; an outfit-specific tuck adjustment is a different operation. Do not paint a rendered tucked variant back over its reusable source. Keep per-item occlusion authoring deferred until its compositor/export contract is complete; existing slot-wide z controls must be labelled honestly.
+Provide **As worn / Source artwork** view and target isolation. The user must be able to see pixels hidden by another item, hair tuck rules or foreground/background split. A source-art erasure affects every outfit using that art; an outfit-specific tuck adjustment is a different operation. Do not paint a rendered tucked variant back over its reusable source. Keep per-item occlusion authoring deferred until its compositor/export contract is complete; existing slot-wide z controls must be labeled honestly.
 
 ### Save versus recovery versus export
 
@@ -149,7 +149,7 @@ Resolved differences:
 - **Group membership:** adopted Whole character = body plus all compatible wardrobe alternatives at selected cells. This deliberately replaces my initial equipped-only proposal; visible membership and atomic rejection naming any clipping item/cell make the wider scope reviewable.
 - **Clipping:** adopted core rejection of nontransparent edge loss instead of a destructive-apply option. Region movement/painting still cover anatomy corrections without resizing pivots or cells.
 - **Body compatibility/export:** agree that body edits can save unfinished while preserving old gear for review. The first export policy excludes an entire item until every affected relationship is proven or reviewed compatible. Unaffected cells remain editable/stored, but the plan does not pretend today's global `baseHash` implements partial-cell compatibility/export.
-- **Palette scope:** agree with existing source colours, explicit material role selection and B15-aware region writes in the core. Arbitrary new fixed/custom colours are an explicit extension gated by ownership evidence; this is a delivery boundary, not permanent exclusion.
+- **Palette scope:** agree with existing source colors, explicit material role selection and B15-aware region writes in the core. Arbitrary new fixed/custom colors are an explicit extension gated by ownership evidence; this is a delivery boundary, not permanent exclusion.
 - **Joint meaning:** agree on observation/reference/desired-pose/attachment separation, no implicit redraw, and image-bound correction/derived translation with immutable request history.
 - **Durability:** agree on separate autosaved draft and accepted revision, stamped atomic publication, no destructive wardrobe deletion, bounded documented history, editable-archive versioning and recovery under quota/conflicts.
 

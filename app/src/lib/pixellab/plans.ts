@@ -23,7 +23,7 @@ export function accountTier(balance: Balance | null): number | null {
   return null;
 }
 
-export const FREE_PLAN_NOTICE = 'Your key is valid. Skeleton animation and inpainting need PixelLab Tier 1 or higher. You can still browse and import characters, dress up, recolour, export and use available tools. Buying credits alone does not unlock paid-plan tools.';
+export const FREE_PLAN_NOTICE = 'Your key is valid. Skeleton animation and inpainting need PixelLab Tier 1 or higher. You can still browse and import characters, dress up, recolor, export and use available tools. Buying credits alone does not unlock paid-plan tools.';
 
 /** Only restrictions relevant to our current REST calls; see docs/pixellab-plans.md. */
 export function requestTier(req: Pick<Req, 'method'> & { endpoint: string; params: unknown; minimumTier?: number; tag?: string }): number {

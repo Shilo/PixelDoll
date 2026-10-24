@@ -1,5 +1,5 @@
 // Rendered-scene text contrast: screenshot each label region with its text hidden, then compare the
-// computed text colour against the worst (closest-luminance) background pixel and the median pixel.
+// computed text color against the worst (closest-luminance) background pixel and the median pixel.
 import { chromium } from '../../../../app/node_modules/playwright/index.mjs';
 import { writeFileSync } from 'node:fs';
 const base = process.env.PROTOTYPE_URL ?? 'http://127.0.0.1:5202/';

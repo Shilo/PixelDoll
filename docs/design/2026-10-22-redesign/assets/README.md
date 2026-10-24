@@ -10,7 +10,7 @@ The two environment plates were generated with the built-in image generation too
 - `data.js`: seven existing fixture sheets embedded for offline use, plus icon SVG data extracted from the already installed `@lucide/svelte` package. Lucide is ISC-licensed; see `lucide-LICENSE`.
 - Sprite source: `app/public/fixtures/s2/layers/`, with body, vest, cape, hair, helmet, wizard hat and sword. Original frame alignment is retained in character previews. Item thumbnails crop their transparent padding for legibility only.
 
-The six names are mock content. Their visual similarity reflects reuse of the same fixture base, not a claim that six unique bodies were generated. The creation guide is explicitly an example, not a prediction of the prompt. Prototype recolouring uses an illustrative deterministic mapping, not the app's production material-ramp implementation.
+The six names are mock content. Their visual similarity reflects reuse of the same fixture base, not a claim that six unique bodies were generated. The creation guide is explicitly an example, not a prediction of the prompt. Prototype recoloring uses an illustrative deterministic mapping, not the app's production material-ramp implementation.
 
 The environment plates are intentionally richer than the recommended final backdrops. Simplify their texture and test contrast against many sprites before production. Neither background is part of exported character artwork.
 

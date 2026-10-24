@@ -167,7 +167,7 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
   delete m.rig.rest;
   for (const a of m.rig.animations) delete a.sources;
   delete m.export;
-  return { project: { manifest: m, images }, extra: {}, warnings: ['This older export restores layers, moves, colours and outfits. Set up its pose rig to add new moves. Existing equipment keeps its original frames.', ...(removedDesignLinks ? ['Original saved-design reference images were not included, so unavailable reusable-design links were removed. Existing equipment frames and colours are preserved.'] : [])] };
+  return { project: { manifest: m, images }, extra: {}, warnings: ['This older export restores layers, moves, colors and outfits. Set up its pose rig to add new moves. Existing equipment keeps its original frames.', ...(removedDesignLinks ? ['Original saved-design reference images were not included, so unavailable reusable-design links were removed. Existing equipment frames and colors are preserved.'] : [])] };
 }
 
 async function pixelLab(files: Map<string, Uint8Array>, stateId?: string): Promise<ImportedCharacter> {

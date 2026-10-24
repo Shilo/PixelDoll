@@ -11,9 +11,9 @@ One schema serves two files:
 
 The API key never appears in either file.
 
-Current projects use `pixeldoll/2`. Readers also accept `pixeldoll/1`; its original global palette constraint remains enforced. Version 2 gives every item independent materials: material IDs remain globally unique, while source RGB ramps need only be disjoint within the same owner. Two items may therefore share both original pixels and RGB values and still recolour independently. Engines must apply material swaps to the owning item, including its tucked variants.
+Current projects use `pixeldoll/2`. Readers also accept `pixeldoll/1`; its original global palette constraint remains enforced. Version 2 gives every item independent materials: material IDs remain globally unique, while source RGB ramps need only be disjoint within the same owner. Two items may therefore share both original pixels and RGB values and still recolor independently. Engines must apply material swaps to the owning item, including its tucked variants.
 
-Version 2 also permits `Material.defaultVariant`: the approved baseline when an outfit has no explicit colour selection. For affected items, canonical `Layer.sheets` render that baseline for all supplied engine runtimes, while optional `Layer.sourceSheets` point to the original source-ramp PNGs under `sources/`. Palette-aware consumers must start from `sourceSheets` when present. Original material ramps remain disjoint even when two selected variants share a colour. Editable `project.json` always retains original raw cells and the complete material definitions.
+Version 2 also permits `Material.defaultVariant`: the approved baseline when an outfit has no explicit color selection. For affected items, canonical `Layer.sheets` render that baseline for all supplied engine runtimes, while optional `Layer.sourceSheets` point to the original source-ramp PNGs under `sources/`. Palette-aware consumers must start from `sourceSheets` when present. Original material ramps remain disjoint even when two selected variants share a color. Editable `project.json` always retains original raw cells and the complete material definitions.
 
 An accepted shared copy may carry `Item.design` lineage: the design ID/revision, immutable minimal source snapshot, palette-role mapping and target audit. Its referenced source images travel in `cells/` alongside the target frames. Library deletion therefore does not remove the copy's artwork or its portable reference. A separate equipment archive uses `pixeldoll-design/1` in `design.json`; it is not a character ZIP.
 
@@ -27,7 +27,7 @@ An accepted shared copy may carry `Item.design` lineage: the design ID/revision,
 - **ids** match `^[a-z0-9][a-z0-9_-]*$`, unique within their list, stable forever (rename = new `name`, same `id`).
 - **Cell key** for per-cell data: `"<anim>/<dir>/<cell>"`, e.g. `"walk/south/3"`.
 - **Hashes**: `"sha256:<hex>"` of the raw RGBA bytes (row-major, w·h·4), not of the PNG file, so re-encoding does not change it.
-- **Colours**: `"#rrggbb"` lower case. All exported pixels have alpha 0 or 255.
+- **Colors**: `"#rrggbb"` lower case. All exported pixels have alpha 0 or 255.
 
 ---
 
@@ -43,7 +43,7 @@ export type AnchorId = 'head' | 'neck' | 'hand_r' | 'hand_l' | 'hip' | 'foot_r' 
 /** estimate-skeleton / skeleton-v3 labels; LEFT/RIGHT = the character's side; ARM = wrist, LEG = ankle. */
 export type JointLabel =
   | 'NOSE' | 'NECK' | `${'RIGHT' | 'LEFT'} ${'SHOULDER' | 'ELBOW' | 'ARM' | 'HIP' | 'KNEE' | 'LEG' | 'EYE' | 'EAR'}`;
-export interface Keypoint { label: JointLabel; x: number; y: number } // normalised 0..1 of the rig cell; no z_index
+export interface Keypoint { label: JointLabel; x: number; y: number } // normalized 0..1 of the rig cell; no z_index
 
 export interface Manifest {
   format: 'pixeldoll/1' | 'pixeldoll/2';
@@ -98,7 +98,7 @@ export interface ClipSource {
 /** points[anim][dir][cell] = [x, y] in pixel coords. Mirrored directions included. */
 export type AnchorTrack = Record<string, Partial<Record<DirectionName, [number, number][]>>>;
 
-// ---------- colour ----------
+// ---------- color ----------
 export interface Material {
   id: string;                            // "skin", "hair", "sword_metal"
   label: string;
@@ -141,7 +141,7 @@ export interface Item {
   variantOf?: string;                     // B14, export only: this item is the baked "<variantOf>~<under>" copy of item variantOf,
   under?: string;                         //   tucked under item `under` (invariant 11)
   materials: string[];                    // recolor regions present in this item's pixels
-  regions?: 'shirt-shorts';               // base only (B15): garment greys carry their region in the blue LSB (even = shirt, odd = shorts)
+  regions?: 'shirt-shorts';               // base only (B15): garment grays carry their region in the blue LSB (even = shirt, odd = shorts)
   prompt: string;                         // the user's item description
   layers: Layer[];                        // 1 layer ("main", role fg) or 2 ("fg" + "bg")
   baseHash: Sha256;                       // base the layers were extracted against
@@ -238,7 +238,7 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
   `bakedPivot` = the smallest frame holding every exported layer around the shared pivot, one size per export (all presets),
   so an engine reads one fixed cell for all baked sheets. Engine node positions do not change: every layer's pivot lands on the
   node origin.
-- **Mirrored directions** flip the whole layer cell, so an oversize cell must be centred on the rig cell
+- **Mirrored directions** flip the whole layer cell, so an oversize cell must be centered on the rig cell
   (`2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w = rig.cell.w`; inv. 10).
 - **World scale** stays the base's: Unity PPU = `export.pixelsPerUnit` (default `rig.cell.w`) for every layer, never the
   layer's width, or a 96 sword renders at 2/3 scale.
@@ -257,14 +257,14 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
    layer has exactly the layer's cell size; cell and pivot are integers.
 3. Every `frames[].cell < cells`. Every `frames[].ms` is a positive integer.
 4. `item.baseHash === rig.baseHash` for exported items (stale items are excluded with a warning).
-5. Material IDs are globally unique. Ramps are pairwise disjoint within an owner in `pixeldoll/2`, and globally in `pixeldoll/1`; `variants[*].length === ramp.length`. Source and variant colours use six-digit `#RRGGBB` values.
+5. Material IDs are globally unique. Ramps are pairwise disjoint within an owner in `pixeldoll/2`, and globally in `pixeldoll/1`; `variants[*].length === ramp.length`. Source and variant colors use six-digit `#RRGGBB` values.
 6. Exactly one item has `slot: "body"`; it is `rig.baseItem`. Every item has either one `main` layer with role `fg`, or an `fg`/`bg` pair with matching roles. Import and export reject other layouts because native playback uses the foreground body as its clock.
 7. Draw order: ascending resolved z; ties broken by `slots` order, then `role` (bg before fg), then item id. Slot, layer and override depths must be signed 32-bit integers; native consumers store integer depths.
 8. Resolved z for a cell = the most specific matching `zOverride` (cell > anim > dir > none; on equal specificity the later entry
    wins), else `layer.z`.
 9. A visible item hides every layer of each slot in `item.hides ?? slot.hides` (hidden layers are not drawn; their cells still exist).
-10. If any direction is mirrored, every layer cell is centred on the rig cell: `2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w
-    = rig.cell.w` (v1.3.1; a flip of an off-centre cell would move the item).
+10. If any direction is mirrored, every layer cell is centered on the rig cell: `2 · (rig.pivot.x − layer.pivot.x) + layer.cell.w
+    = rig.cell.w` (v1.3.1; a flip of an off-center cell would move the item).
 11. Tuck-under (B14): while an item of slot S is worn, the layers of every item in `slots[S].clips` drop their px at or above the
     covering item's lowest opaque row, per column (columns beside the cover use the nearest covered column); `hides` wins.
     Exports bake one item `"<item>~<cover>"` (`variantOf`, `under`) per pair; a runtime draws that item instead of `<item>`
@@ -453,7 +453,7 @@ at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Fram
 | Unity | normalized from **bottom-left**: `pivot = (x / w, 1 − y / h)`; sprite rect `y_unity = texH − (row + 1) · h` |
 | Phaser 3/4 | atlas frame `"pivot": {"x": x / w, "y": y / h}` (auto `setOrigin` [R3]) |
 | Aseprite | slice `"pivot"` (pixels, relative to the slice bounds = the cell) |
-| Mirrored direction | already baked into pixels; the pivot is unchanged because the cell is centred (inv. 10) |
+| Mirrored direction | already baked into pixels; the pivot is unchanged because the cell is centered (inv. 10) |
 | Oversize layer | same formulas with the layer's `w, h, x, y`; Unity PPU stays the base's |
 
 ### 6.2 Godot 4 — `SpriteFrames` `.tres` + scene + sync script
@@ -529,7 +529,7 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 - **One file per character** (`aseprite/<name>.aseprite`, RGBA): one Aseprite layer per exported (item, layer), named
   `<slot>.<item>` (`<slot>.<item>.fg` / `.bg` for split items), stacked in draw order by static z (inv. 7 tie-breaks; bottom =
   lowest, so bg layers sit below the base). Every item is in the file; **visible** = equipped in `presets[0]` and not hidden
-  (inv. 9). Pixels apply the first outfit's colours from source sheets, including default and linked material selections.
+  (inv. 9). Pixels apply the first outfit's colors from source sheets, including default and linked material selections.
 - **Timeline**: frames = every playlist entry of every move × each direction the move has (`rig.animations[].directions`), in
   rig order, each with its `ms`; one tag `<anim>_<dir>` per move-direction (forward; repeat 1 when `loop` is false). A cell that
   repeats inside a playlist is a linked cel; a transparent cell has no cel.
@@ -550,7 +550,7 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   `manifest.json`.
   Any engine: one sprite per layer. Advance the playlist (`frames[].cell`, held for `frames[].ms`), respecting `loop`;
   a sheet column is a source cell, not necessarily the next playback frame. Draw in resolved-z order, using
-  `(worldPivot.x - layer.pivot.x, worldPivot.y - layer.pivot.y)` as each layer's top-left. Default colours are baked into
+  `(worldPivot.x - layer.pivot.x, worldPivot.y - layer.pivot.y)` as each layer's top-left. Default colors are baked into
   canonical sheets; palette-aware integrations start from `sourceSheets` when provided.
 - `baked/<preset>/<anim>.png`: the compositor's output on the same grid with `export.bakedCell` / `bakedPivot` (§2.1), for
   engines without layering (RPG Maker style).
@@ -581,21 +581,21 @@ Import assigns a fresh local ID, writes blobs and project in one IndexedDB trans
 Explicit rig setup measures every unique frozen body image with `estimate-skeleton`, registers all supplied rest views with `create-character-v3`, and atomically attaches the same rest/keypoint/anchor/character contract as creation. Existing artwork is not regenerated. Source camera `rig.view` and humanoid `rig.template` are retained. Imported sources use `route: "import"`, `motion: "estimated:frozen-import"` (or `"imported-rest"` for a matching one-cell rest), and actual measured keypoints. Their QA adherence is `null`; palette, feet and border checks still run. New moves use the normal skeleton-v3 render and independent adherence checks. Short item clips are padded to the API's three-frame minimum and trimmed; long clips are batched to at most fifteen poses with original cell indices preserved.
 
 
-## Outfit-colour export normalization (2026-10-22)
+## Outfit-color export normalization (2026-10-22)
 
 Before building engine files, PixelDoll makes an ordinary item copy for each distinct item/palette combination actually
 used by an exported preset. Copy IDs are deterministic `<item>-colour-<palette hash>` values (with a suffix when needed
 for an existing ID); matching outfits reuse a copy. Preset item selections point to those copies and their engine-facing
-`variants` maps are empty because the colours are already pixels. Original source-colour items and material definitions
-remain available. Tuck variants are built afterward, so coloured hair and helmets preserve the same masking as Studio.
+`variants` maps are empty because the colors are already pixels. Original source-color items and material definitions
+remain available. Tuck variants are built afterward, so colored hair and helmets preserve the same masking as Studio.
 
 The canonical base stays the single item in slot `body` and remains every runtime's animation clock. When any outfit
-recolours the body, or equipped items can clip it, every exported outfit receives a body copy (including identity-colour
+recolors the body, or equipped items can clip it, every exported outfit receives a body copy (including identity-color
 copies for original palettes). A body copy
 uses an export-only `body_colour` slot immediately after `body` (a collision gets a numbered slot suffix), the same layer
 z values, geometry and overrides, and `hides: ["body"]` in addition to the base's existing hide rules. The hidden clock
 continues animating; the ordinary synced layer displays its pixels. Existing body hide and clipping rules target the
-visible copy as well. No engine-specific colour shader is needed.
+visible copy as well. No engine-specific color shader is needed.
 
 This normalization affects `manifest.json` and engine assets only. `project.json` and `cells/` preserve the original
 editable items, material ramps, outfit variant selections, rig and provenance. Body dimensions of 48/56 px inside a 64 px
@@ -613,12 +613,12 @@ checks remain `pass`; Studio separately labels the accepted appearance warnings.
 
 ### Explicit item palette repair history
 
-An item may contain `paletteRepairs`: local, explicit colour edits under the fixed `neutral-owned-v1` policy. Each entry
+An item may contain `paletteRepairs`: local, explicit color edits under the fixed `neutral-owned-v1` policy. Each entry
 records `materialId`, `anim`, authored `dir`, and changed frames (`cell`, `changedPixels`, layer `id` plus `before`/`after`
 SHA-256 image references). Current cells point to corrected images. Historical hashes are audit references and do not
 require obsolete blobs in the editable ZIP; later clip replacements may supersede them. Original paid provenance and
 historical QA remain intact. The operation preserves alpha and pixel coordinates, changes no material definition or
-variant, and matches only unclaimed neutral/cool colours to the one eligible item-owned neutral ramp within 24/255 per
-channel. Ambiguous or unsupported colours stay unchanged. No PixelLab request or synthetic clean QA claim is implied.
+variant, and matches only unclaimed neutral/cool colors to the one eligible item-owned neutral ramp within 24/255 per
+channel. Ambiguous or unsupported colors stay unchanged. No PixelLab request or synthetic clean QA claim is implied.
 The optional field does not change `pixeldoll/1`. Imports validate bounded history arrays, known policy version, safe
 IDs, direction/frame/layer shapes, unique frame/layer entries, positive pixel counts and distinct valid hashes.

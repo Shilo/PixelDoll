@@ -388,7 +388,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     await s.copyDemo()
     const it = s.store.project.manifest.items.find((x: { slot: string }) => x.slot !== 'body')
-    it.designWarnings = ['D1 keyframe rest/south/0: grey smudges', 'G2 keyframe rest/south/0: changed pixels']
+    it.designWarnings = ['D1 keyframe rest/south/0: gray smudges', 'G2 keyframe rest/south/0: changed pixels']
     it.qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'pass', rerolls: 0, cells: {}, clips: {} }
     it.provenance = [{ endpoint: '/test', params: {}, seed: 1, requestHash: 'sha256:test', createdAt: new Date().toISOString(), produced: [], usage: { generations: 10, usd: 0.08 } }]
     s.store.project = { ...s.store.project, manifest: { ...s.store.project.manifest, items: s.store.project.manifest.items.map((x: { id: string }) => x.id === it.id ? { ...it } : x) } }
@@ -399,7 +399,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
   const pane = await selectedItemDetails(page)
   await expect(pane.locator('.badge.look')).toContainText('Needs a look')
   await expect(pane.getByText('Accepted appearance warnings', { exact: true })).toBeVisible()
-  await expect(pane.getByText('The design has grey smudges', { exact: true })).toBeVisible()
+  await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible()
   await expect(pane.getByText('Some body pixels were changed by the model', { exact: true })).toBeVisible()
   await pane.getByText('Details', { exact: true }).click()
   await expect(pane.getByText('10 gens · $0.080 · 1 PixelLab calls', { exact: true })).toBeVisible()
@@ -411,5 +411,5 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
     s.doc.rev++
   }, id)
   await expect(pane.locator('.badge.look')).toContainText('Needs a look')
-  await expect(pane.getByText('The design has grey smudges', { exact: true })).toBeVisible()
+  await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible()
 })

@@ -43,7 +43,7 @@ policy refusals**. Sheets:
 [`pf48c`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_base/pf48c_sheet.png) (adult prompt),
 [`pf64`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_base/pf64_sheet.png).
 
-| Run | Stored canvas | Figure height (S) | Headroom | Colours (S) | Cost | Time |
+| Run | Stored canvas | Figure height (S) | Headroom | Colors (S) | Cost | Time |
 |---|---|---|---|---|---|---|
 | v3 48, seed 4321 (S2 `b48`) | 48×48 | 44 | 1–2 | 30 | 2 | ~200 s |
 | v3 48, seed 99 | 48×48 | 44 (all 8 dirs) | 2 | 24–34 | 2 | 200 s |
@@ -77,24 +77,24 @@ policy refusals**. Sheets:
 - managed modes for walk 8, idle 4, run 8, slash 8, hurt 4 and death 8, on S/E/N;
 - raw routes for walk and slash, S/E, with `first_frame` = rotation padded to 64.
 
-**Metrics** (`anim.jsonl`; frames re-centred onto rotation coordinates):
+**Metrics** (`anim.jsonl`; frames re-centered onto rotation coordinates):
 
-- feet line and centre-x range;
+- feet line and center-x range;
 - head-top range;
-- colour count;
-- palette distance and off-palette share against the rotation palette (identity/colour stability);
+- color count;
+- palette distance and off-palette share against the rotation palette (identity/color stability);
 - first-frame exact pixels and IoU against the rotation (body redraw).
 
 Reference values come from S2's template frames, with no new template calls.
 
-| Clip | Mode | Frames returned | Canvas | Feet (rotation = 46) | Colours max (rotation 30/28/23) | Off-palette | Gens / dir | Median time | Visual |
+| Clip | Mode | Frames returned | Canvas | Feet (rotation = 46) | Colors max (rotation 30/28/23) | Off-palette | Gens / dir | Median time | Visual |
 |---|---|---|---|---|---|---|---|---|---|
 | walk | pixminimax | 8/8 | 68×68 | 45–48 | 28/42/22 | **0–0.7 %** | 1 | 88 s | strong E stride; S slightly turns on f6–7 |
 | walk | v3 | 8/8 | 68×68 | 45–47 | 43/41/29 | 0.3–1.2 % | 1 | 130 s | good S/E/N cycle, softer |
 | idle | pixminimax | 4/4 | 68×68 | 46 | 28/27/21 | 0 % | 1 | 62 s | **subtle stable breathing, IoU 1.0** |
 | idle | v3 | 4/4 | 68×68 | 46 | 40/32/27 | 0.2–1.3 % | 1 | 83 s | arms drift out to a T-pose; not a loop |
 | run | pixminimax | 8/8 | 68×68 | 44–48 | 29/42/23 | 0–1 % | 1 | 87 s | **excellent dynamic run** |
-| run | v3 | 8/8 | 68×68 | 42–46 | 43/46/35 | 0.6–2.6 % | 1 | 125 s | walk-like run, leg colour flicker |
+| run | v3 | 8/8 | 68×68 | 42–46 | 43/46/35 | 0.6–2.6 % | 1 | 125 s | walk-like run, leg color flicker |
 | slash ("slash with the right arm, empty fist as if gripping a sword") | pixminimax | 8/8 | 68×68 | 46–53 | — | ~0 % | 1 | 85 s | **FAIL: a sword is added into the base**, and S turns to a side view |
 | slash2 ("unarmed … no weapon, no effects") | pixminimax | 8/8 | 68×68 | 46 | 37/37/23 | 0–0.3 % | 1 | 66 s | good overhead chop, right arm, no props |
 | slash / slash2 | v3 | 8/8 | 68×68 | 46 | 38/34/29 | 0.2–0.7 % | 1 | 114 s | readable S; E punch-like; N weak |
@@ -105,7 +105,7 @@ Reference values come from S2's template frames, with no new template calls.
 | death | v3 | 8/8 | 68×68 | lying | 44/42/35 | 1.7–2.2 % | 1 | 141 s | good S/E; N turns to a side view |
 | raw walk | `/animate-pixminimax` | 9 (echo exact 2/2) | **64×64** (rig) | 61–63 (rotation 62) | 28–34 | 0–0.1 % | 1 | 125 s | E good; **S barely walks** |
 | raw walk | `/animate-with-text-v3` | 9 (echo not exact 2/2) | 64×64 | 61–62 | 30–31 | 0–0.2 % | 1 | 159 s | E good; S nearly static |
-| raw slash | pixminimax / v3 | 9 / 9 | 64×64 | 62 | 28–37 | ≤0.8 % | 1 | 92–159 s | readable, but both lunge (centre-x 29→45) |
+| raw slash | pixminimax / v3 | 9 / 9 | 64×64 | 62 | 28–37 | ≤0.8 % | 1 | 92–159 s | readable, but both lunge (center-x 29→45) |
 
 Sheets: `out/s4_anim/<tag>_sheet.png`, for example
 [`a48_pixminimax_walk`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/a48_pixminimax_walk_sheet.png),
@@ -124,19 +124,19 @@ Sheets: `out/s4_anim/<tag>_sheet.png`, for example
   - The raw pixminimax echo was pixel-exact 4/4.
   - The raw v3 echo was never exact (0/4).
 - **Canvas.**
-  - Managed modes return a **68×68 canvas for a 48 px character, rotation centred at +10/+10**. Normalise by centring, then
+  - Managed modes return a **68×68 canvas for a 48 px character, rotation centered at +10/+10**. Normalize by centering, then
     pad.
-  - Raw routes keep the 64 rig canvas exactly, so no normalisation is needed.
+  - Raw routes keep the 64 rig canvas exactly, so no normalization is needed.
   - Pro Flash bases come back at 52 or 56 depending on direction.
-- **Identity and colour.**
-  - pixminimax stays inside the rotation palette: 0–1.7 % off-palette, often exactly 0, with colour counts at or below the
+- **Identity and color.**
+  - pixminimax stays inside the rotation palette: 0–1.7 % off-palette, often exactly 0, with color counts at or below the
     rotation's.
-  - v3 adds 10–15 new colours (off-palette 0.2–2.6 %).
+  - v3 adds 10–15 new colors (off-palette 0.2–2.6 %).
   - Both keep the face and clothes.
   - The body is always redrawn: frame 0 shares only 21–90 % of rotation pixels, with no "moves instead of redraws"
-    behaviour.
+    behavior.
 - **Foot line.** Stable within 0–2 px on standing clips (templates were 1 px below the rotation's feet). Lunges move the
-  centre-x 5–16 px. The rig QA must tolerate this or re-centre.
+  center-x 5–16 px. The rig QA must tolerate this or re-center.
 - **Handedness.** Unarmed slash2 used the character's right arm in S/E/N for pixminimax, and mostly for v3. Text
   routes cannot be trusted with *which* hand when held items are involved (S3: animate-with-text-v3 swung the wrong hand).
 - **Multi-direction silent truncation (new, important).** At the **22-job Tier 3 cap**,
@@ -198,7 +198,7 @@ S/E/N, 8 frames each, strays removed (`out/s4_items/sk_<dir>.base0-15`). Every r
 - area CV;
 - anchor spread: item centroid relative to its keypoint (head / neck+hips / ankles / neck / right wrist), max−min in dx+dy;
 - adjacent palette Jaccard;
-- **palDist**: mean colour distance to the S-walk frame-0 layer of the same route (design lock across clips and
+- **palDist**: mean color distance to the S-walk frame-0 layer of the same route (design lock across clips and
   directions);
 - sword grip side (S3 `gripSide`, R/L/amb/none).
 

@@ -64,7 +64,7 @@ for(const palette of palettes) {
    text('Adventurer',x+28,y+83,34,ink,'Georgia');
    text('Demo',x+30,y+112,15,muted);
    const rx=x+510,ry=y+58;
-   text('Wardrobe',rx,ry,18,accent,'Segoe UI',600);text('Colours',rx+127,ry,18,muted);
+   text('Wardrobe',rx,ry,18,accent,'Segoe UI',600);text('Colors',rx+127,ry,18,muted);
    g.fillStyle=accent;g.fillRect(rx,ry+13,86,2);
    text('Headwear',rx,ry+66,18,ink,'Segoe UI',600);
    for(let k=0;k<2;k++) {

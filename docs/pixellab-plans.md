@@ -41,7 +41,7 @@ Primary documentation cross-checks:
 
 ## Free accounts and queued work
 
-A valid Free/Trial key remains connected. Connect explains the unavailable tools and offers **Continue with limited access**; it is not reported as an invalid key. Free users retain library imports, local dressing/recolour/export, prompt enhancement and eligible anchor-cell editing. Buying credits does not change a subscription's tool entitlement.
+A valid Free/Trial key remains connected. Connect explains the unavailable tools and offers **Continue with limited access**; it is not reported as an invalid key. Free users retain library imports, local dressing/recolor/export, prompt enhancement and eligible anchor-cell editing. Buying credits does not change a subscription's tool entitlement.
 
 New Studio character/move/rig-setup and skeleton-equipment workflows declare `minimumTier: 1` before their first paid request. This prevents spending on an allowed first step and getting stranded at the restricted animation step. Eligible free operations use `withKey(..., false)`; actions known to need the rig tools use `withKey(..., true)`. A blocked connection discards its pending spending callback and retains the form draft; upgrading does not silently replay a previously cancelled action.
 

@@ -20,7 +20,7 @@ Confidence tags: **[src]** read in source code, **[web]** from an online source,
 | 11 | "Some opposite directions can be obtained by mirroring." | Exact rule: **8 facing directions, 5 stored, 3 mirrored.** Stored file directions 0..4 = UO directions 3 (Down), 4 (South), 5 (Left), 6 (West), 7 (Up). UO directions 2, 1, 0 are horizontal mirrors of 4, 5, 6. All equipment follows the same rule. **[src]** `ClassicUO.Renderer/Animations/Animation.cs` `GetAnimDirection` |
 | 12 | Direction-dependent order is a general concept ("render order(direction)"). | In the current ClassicUO, **only the Cloak moves by direction** in the world view (`ApplyDirectionCloak`): dir 0 = cloak drawn last (on top), dir 3 = drawn first (behind), every other dir = just below the Helmet. A legacy 8×23 table `LayerOrder.UsedLayers` still exists but nothing references it any more. Its rows differ mainly in where Cloak, Helmet and TwoHanded sit. **[src]** |
 | 13 | "Frame origin... body and equipment must refer to the same character-space location." | Correct, and the mechanism is now known. **Every frame of every layer stores its own `CenterX, CenterY, Width, Height`.** All layers are drawn at the same mobile anchor point: `x = anchorX − CenterX` (mirrored: `x = anchorX − (Width − CenterX)`), `y = anchorY − (Height + CenterY)`. Frames are tightly cropped, and the center is the stored offset. If an equipment animation has fewer frames than the body, the frame index is **clamped to the last frame**. **[src]** `MobileView.DrawInternal`, `AnimationsLoader.ReadSpriteData` |
-| 15 | "The system can distinguish full or partial hue." | Exact rule (shader `IsometricWorld.fx`): **HUED** remaps *every* pixel by its **red channel** (5-bit, 0..31) into the hue's 32-colour ramp. **PARTIAL_HUED** remaps only pixels where `r == g == b` (pure grey); coloured pixels stay as drawn. In gump mode, near-black pixels (`r < 0.02`) are never hued. So hueable art must be authored in greys, and the grey level picks the ramp index. **[src]** |
+| 15 | "The system can distinguish full or partial hue." | Exact rule (shader `IsometricWorld.fx`): **HUED** remaps *every* pixel by its **red channel** (5-bit, 0..31) into the hue's 32-color ramp. **PARTIAL_HUED** remaps only pixels where `r == g == b` (pure gray); colored pixels stay as drawn. In gump mode, near-black pixels (`r < 0.02`) are never hued. So hueable art must be authored in grays, and the gray level picks the ramp index. **[src]** |
 | 18 | `Body.def / Bodyconv.def / Equipconv.def / gump.def` remap assets. | Correct. Details are in §5. `Equipconv.def` is **per body**: a body (e.g., elf or gargoyle) can map an item AnimID to a different animation + gump + hue. `tileart.uop` "appearance" can also override the paperdoll gump in newer clients. **[src]** |
 | 20 | UOP replaces MUL with "similar conceptual relationships". | Specifics: `AnimationFrame1..N.uop`, one entry per (animID, group), hashed name `build/animationlegacyframe/{animID:D6}/{group:D2}.bin`, holding **all 5 directions** in one entry. `AnimationSequence.uop` remaps action groups per body. For UOP equipment, the loader assumes **at least 10 frames per direction**. **[src]** `ClassicUO.Assets/AnimationsLoader.cs` |
 | 6 | Male gump = AnimID + 50000, female = AnimID + 60000. | **Verified** (`Constants.MALE_GUMP_OFFSET = 50000`, `FEMALE_GUMP_OFFSET = 60000`). Extra detail: if the gendered gump is missing, the client **falls back to the other gender's** gump. **[src]** |
@@ -123,11 +123,11 @@ The High group has 22 actions (Walk, Stand, Die1/2, Attack1–3, Misc, Cast, Get
 
 ## 6. Hue system **[src]**
 - `hues.mul` = N groups of `{ uint Header; HuesBlock Entries[8] }`, with `HuesBlock = { ushort ColorTable[32]; ushort TableStart; ushort TableEnd;
-  char Name[20] }`. Hue ID = group × 8 + entry, so every hue is a **32-colour ramp** (dark → light).
+  char Name[20] }`. Hue ID = group × 8 + entry, so every hue is a **32-color ramp** (dark → light).
 - The renderer uploads every ramp into a hue texture (16 columns × 32 px wide). The pixel's **red channel** (0..1 → 0..31) indexes into the ramp.
-- Modes: `HUED` (all pixels), `PARTIAL_HUED` (only grey pixels, `r == g == b`), `GUMP` (paperdoll; near-black pixels are never hued), plus
+- Modes: `HUED` (all pixels), `PARTIAL_HUED` (only gray pixels, `r == g == b`), `GUMP` (paperdoll; near-black pixels are never hued), plus
   spectral, shadow and light modes.
-- Partial hue lets one item keep fixed-colour details (gems, metal trim) while its grey cloth takes the hue.
+- Partial hue lets one item keep fixed-color details (gems, metal trim) while its gray cloth takes the hue.
 
 ---
 

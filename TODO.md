@@ -12,8 +12,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
   browser checks, editable ZIP roundtrip and engine verification. All 32 repaired Slash frames were reviewed;
   467 unit tests and 42 browser tests passed, with strict checks and the production build passing.
   Evidence and verification limits: [audit report](docs/testing/professional-audit-2026-10-22.md).
-- [x] Free item colour matching completed and verified on the actual repaired project: 475 RGB-only corrections
-  across 17 frames, preserving body/alpha/geometry, existing palettes, saved recolours and review warnings.
+- [x] Free item color matching completed and verified on the actual repaired project: 475 RGB-only corrections
+  across 17 frames, preserving body/alpha/geometry, existing palettes, saved recolors and review warnings.
 
 - [x] Reconciled the audit with newer main-branch shared-equipment and wardrobe changes. Integrated validation:
   521 unit tests across 53 files, 48 browser tests, strict checks and production credential guard pass. The audit
@@ -24,8 +24,8 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 1. [ ] Shield quality: two east-walk drafts still need visual acceptance or targeted artwork correction. Offline
       occlusion and joint/centroid audits are complete; no safe automatic pixel repair is supported by the evidence
       ([follow-up](docs/testing/item-quality-follow-up-2026-10-22.md)). Keep both drafts unaccepted.
-2. [ ] Item quality polish: stored cape back-hem grey smudges and actual helmet hurt-frame deformations. The forearm
-      occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recoloured.
+2. [ ] Item quality polish: stored cape back-hem gray smudges and actual helmet hurt-frame deformations. The forearm
+      occlusion false H4 retry is fixed; D1 already detects the smudged cape design, but existing art is not recolored.
 3. [ ] **Unity native engine verification — blocked (2026-10-23).** Unity Editor 6000.4.0f1 is installed, but has no
       activated license; the batch-mode attempt exited 198. Missing prerequisite: an activated compatible Unity Editor
       (Unity Hub sign-in/license setup by the user). Existing generated-C# compilation against installed assemblies and
@@ -70,7 +70,7 @@ cases live in the [delivery plan](docs/design/frame-editor/delivery-plan.md).
 - [ ] Add body/item Move, Draw/Erase/source palette and reviewed all-wardrobe group alignment (E3).
 - [ ] Add direct joint correction/rescue, body fitting review and honest preview/export/recovery states; verify the
       coherent local editor before release (E4). Preserve current structural guards and atomic publication safeguards.
-- [ ] Qualify mapped PNG replacement, custom-colour ownership and other deliberate power tools (E5).
+- [ ] Qualify mapped PNG replacement, custom-color ownership and other deliberate power tools (E5).
 - [ ] Only when a later task needs it, qualify explicitly priced v3 pose candidates and optional IK in the same
       editor (E6/S6). No paid generation was requested or performed for the planning package.
 
@@ -100,7 +100,7 @@ cases live in the [delivery plan](docs/design/frame-editor/delivery-plan.md).
   replaceable checks; after an edit they stay marked for review, with an explicit incomplete-check notice. Retained
   historical totals may omit old additions or include replaced frames until all older coverage is replaced. No paid
   recheck or silent reconstruction is performed. Historical source-call indices are also left untouched.
-- [!] **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colours disjoint (D10). Invisible, but it alters
+- [!] **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 - [!] **Mirrored directions flip handedness** (west holds the sword in the left hand). New forms now default to independent
   body views/actions; old projects and optional economy mode remain mirrored. Independent views avoid the forced flip,
@@ -109,7 +109,7 @@ cases live in the [delivery plan](docs/design/frame-editor/delivery-plan.md).
 - [!] **Agent-only key mode is a convention.** `npm run dev:agent` reads `.env` for AI agents; humans must use `npm run dev`
   (no key path). Builds refuse agent mode; CI guard fails if key code or `.env` reaches `dist/`.
 - [!] **Releasing.** Bump `app/package.json` version, annotated tag `vX.Y.Z`, `gh release create`; CI deploys `main`.
-- [!] **PixelLab API drift.** Template list, prices and Pro/Pro Flash behaviour change; the OpenAPI snapshot in
+- [!] **PixelLab API drift.** Template list, prices and Pro/Pro Flash behavior change; the OpenAPI snapshot in
   `docs/research/pixellab/` is from 2026-10-20.
 
 ## Shared equipment remaining work
@@ -133,7 +133,7 @@ records what actually passed and failed. Items below distinguish missing capabil
   Record per-case calls, actual charges, raw pixels, checks and visual decisions before widening the supported claim.
 - [ ] **SE3 — Add further paid fitting classes individually (not implemented).** Hair, face/body/leg/foot equipment,
   capes/back layers, held weapons/shields, multiple material roles and 96 px/split layers need their own validated routes.
-  Test pivots, grip/handedness, front/back occlusion, palette-role mapping and independent recolouring. Other camera,
+  Test pivots, grip/handedness, front/back occlusion, palette-role mapping and independent recoloring. Other camera,
   template and cell-geometry profiles also need explicit qualification. Keep these cross-body paid routes disabled until
   their preflight, cost/review flow, extraction, quality gates and export round trip are demonstrated. Compatible free
   copies for supported layer contracts already work; this is not a request to regenerate those frames.
@@ -147,10 +147,10 @@ records what actually passed and failed. Items below distinguish missing capabil
   joint-measurement submissions through existing API/account evidence if available. Record final usage only when
   confirmed; leave genuinely unrecoverable outcomes explicitly unknown. Keep their existing no-resend protection.
   A trustworthy USD preflight/cap would require reliable provider pricing/usage support; the current generation estimate
-  must continue to be labelled as an estimate, with actual USD retained across failure, reload and manual retry.
+  must continue to be labeled as an estimate, with actual USD retained across failure, reload and manual retry.
 - [ ] **SE6 — Exercise shared-copy exports in engines (validation gap).** All five export formats were generated and
   round-tripped offline; actual Godot ZIPs were independently inspected and reimported in the normal browser. That is
-  not a new shared-copy runtime test in each engine. Verify independent palettes/default colourways, source-sheet use,
+  not a new shared-copy runtime test in each engine. Verify independent palettes/default colorways, source-sheet use,
   sparse coverage warnings and subsequent moves in Godot, Phaser and Aseprite; Unity still needs the live verification
   listed above. Add oversize/multi-role cases when those paid routes are qualified, rather than claiming them now.
 
@@ -223,12 +223,12 @@ proper post-processing and proper layering — frontier-standard paperdolling wo
       direction coverage, 4/8-view costs and mirrored-economy disclosure. Missing policy in saved drafts retains legacy
       behavior. Offline/browser/export regressions pass; live handedness acceptance remains open above.
 - [x] Professional audit: independent primary-source research and adversarial pipeline/data/Studio review; credential
-      isolation, paid resume/lifecycle safety, import bounds, atomic persistence, fitted move invalidation, colour-faithful
+      isolation, paid resume/lifecycle safety, import bounds, atomic persistence, fitted move invalidation, color-faithful
       engine exports and recoverable responsive Studio workflows. See [audit evidence](docs/testing/professional-audit-2026-10-22.md).
 
 - [x] Shared design library and portable archives, free exact/partial copies, independent palettes and reviewed
       experimental headwear fitting; durable retries/charges and missing-move extension. Real PixelLab helmet → imported
-      Ranger → rig → fit/recolour → Cast → export/reimport passed; rejected Hurt output remains blocked. Independent
+      Ranger → rig → fit/recolor → Cast → export/reimport passed; rejected Hurt output remains blocked. Independent
       adversarial review and automated checks are recorded in [the report](docs/testing/shared-equipment-2026-10-22.md).
 - [x] Replaceable move/direction QA summaries, accepted-exception handling, complete-frame guards, real IndexedDB/ZIP
       browser regression and Codex browser inspection; adversarial review findings independently verified and fixed.

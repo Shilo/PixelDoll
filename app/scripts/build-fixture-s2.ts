@@ -1,7 +1,7 @@
 // One-off: builds app/public/fixtures/s2/ from S2's chroma-mannequin outputs (spikes/api/out/s2_base + s2_x4).
 // Base = b48 clothed character padded 48 -> 64 (x+8, y+16, never rescaled); walk S/E/N + cross-punch S/E; west mirrored at load.
 // Items = chroma layers (green key, edit-animation-v2; B runs = anchor-cell or transfer-outfit-v2 for N walk + punch S).
-// Colours an item shares with an earlier item are nudged by ±1 in blue so material ramps can stay disjoint (spec §3 inv. 5).
+// Colors an item shares with an earlier item are nudged by ±1 in blue so material ramps can stay disjoint (spec §3 inv. 5).
 // `node scripts/build-fixture-s2.ts`
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { decodePngBytes, encodePngBytes } from '../src/lib/image/pngraw.ts';
@@ -46,7 +46,7 @@ const ITEMS = [
   { id: 'sword_steel', name: 'Steel longsword', slot: 'main_hand', runs: ['sword48_A', 'sword48_Ba', 'sword48_C'], what: "a steel longsword held in the character's right hand, blade pointing down and slightly outward" },
 ];
 
-const used = new Set<number>(); // colours of earlier items (base first)
+const used = new Set<number>(); // colors of earlier items (base first)
 const key = (d: Uint8ClampedArray, i: number) => (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
 function claim(imgs: Img[]) {
   const mine = new Map<number, number>(); // original -> nudged
@@ -92,7 +92,7 @@ for (const it of ITEMS) {
     layers: [{ id: 'main', role: 'fg', z: 0, sheets }], ...(it.hides ? { hides: it.hides } : {}),
     provenance: it.runs.map((r) => ({ endpoint: r.endsWith('_B') || r.endsWith('_C') ? '/transfer-outfit-v2' : '/edit-animation-v2', params: { s2Run: r, chromaKey: 'green' }, seed: 7, requestHash: '', usage: { generations: 10 }, createdAt: mtime, produced: [] })),
   });
-  console.log(it.id, Object.keys(cells).join(' '), nudged ? `(${nudged} colours nudged)` : '');
+  console.log(it.id, Object.keys(cells).join(' '), nudged ? `(${nudged} colors nudged)` : '');
 }
 
 const SLOTS = [

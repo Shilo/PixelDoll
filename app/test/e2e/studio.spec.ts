@@ -89,10 +89,10 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
 
   const before = await stage()
   await equipmentMode(page, 'Colors')
-  await page.locator('.colours .swatch[aria-label="azure"]').first().click()
+  await page.locator('.colors .swatch[aria-label="azure"]').first().click()
   await expect.poll(stage).not.toBe(before)
-  assert.equal(await page.locator('.colours .swatch[aria-label="azure"]').first().getAttribute('aria-checked'), 'true')
-  step('recolour changes the stage pixels')
+  assert.equal(await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'), 'true')
+  step('recolor changes the stage pixels')
 
   await equipmentMode(page, 'Outfits')
   await page.locator('[aria-label="Save current look"]').click()
@@ -124,7 +124,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   await equipmentMode(page, 'Outfits')
   assert.ok(await page.locator('.outfits .row', { hasText: 'Smoke look' }).isVisible())
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light')
-  step('outfit, colours, presets and theme survive a reload')
+  step('outfit, colors, presets and theme survive a reload')
 
   await page.getByRole('button', { name: 'Export' }).first().click()
   const dl = page.getByRole('button', { name: /Download zip · \d+ KB/ })
@@ -140,10 +140,10 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename())
   await page.waitForFunction(() => !document.querySelector('dialog[open]') && document.querySelector('.toast')?.textContent?.startsWith('Downloaded'))
 
-  // ---- B15: base colours, Create options, offline banner ----
+  // ---- B15: base colors, Create options, offline banner ----
   await equipmentMode(page, 'Colors')
-  assert.deepEqual((await page.locator('.equipment-scroll .colours .mat > .muted').allTextContents()).slice(0, 3), ['Shirt', 'Shorts', 'Skin'])
-  step('base colours: Shirt, Shorts and Skin recolour separately')
+  assert.deepEqual((await page.locator('.equipment-scroll .colors .mat > .muted').allTextContents()).slice(0, 3), ['Shirt', 'Shorts', 'Skin'])
+  step('base colors: Shirt, Shorts and Skin recolor separately')
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'New character…' }).click()
   const cost = async () => {
@@ -568,13 +568,13 @@ test('setup and move drafts survive cancelled connection and stay scoped to thei
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click()
   const setup = page.getByRole('dialog', { name: 'Set up character', exact: true })
-  await setup.getByRole('textbox', { name: /Existing appearance/ }).fill('Blue vest, bald, grey shorts')
+  await setup.getByRole('textbox', { name: /Existing appearance/ }).fill('Blue vest, bald, gray shorts')
   await setup.getByRole('button', { name: /^Set up ·/ }).click()
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click()
-  await expect(setup.getByRole('textbox', { name: /Existing appearance/ })).toHaveValue('Blue vest, bald, grey shorts')
+  await expect(setup.getByRole('textbox', { name: /Existing appearance/ })).toHaveValue('Blue vest, bald, gray shorts')
   await setup.getByRole('button', { name: 'Later', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await equipmentMode(page, 'Moves')
@@ -777,10 +777,10 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
   await page.evaluate(() => {
     const s = (window as unknown as { __studio: { ui: { selected: string }; store: { results: Record<string, any> } } }).__studio
     const id = s.ui.selected.slice(4), r = s.store.results[id]
-    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % grey smudges in a colourful design']]) } }
+    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % gray smudges in a colorful design']]) } }
   })
   await expect(review.locator('.badge.look')).toHaveText('Needs a look')
-  await expect(review.getByText('The design has grey smudges', { exact: true })).toBeVisible()
+  await expect(review.getByText('The design has gray smudges', { exact: true })).toBeVisible()
   await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeEnabled()
   for (const [warning, reason] of [
     ['G8 idle/west: hand positions are missing for 4 of 4 frames; set up the character’s pose rig and check this view', 'Hand positions are unavailable; set up the pose rig and check this view (idle, west)'],
@@ -1094,8 +1094,8 @@ test('Export discloses saved item and body review flags without blocking analysi
     const qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, rerolls: 0, cells: {}, clips: {} }
     items[0].qa = { ...qa, status: 'fail' }
     items[1].qa = { ...qa, status: 'warn' }
-    items[2].qa = { ...qa, status: 'accepted' }; items[2].designWarnings = ['D1 keyframe rest/west/0: grey smudges']
-    items[3].qa = { ...qa, status: 'pass' }; items[3].designWarnings = ['D1 keyframe rest/south/0: grey smudges']; items[3].baseHash = 'sha256:' + 'f'.repeat(64)
+    items[2].qa = { ...qa, status: 'accepted' }; items[2].designWarnings = ['D1 keyframe rest/west/0: gray smudges']
+    items[3].qa = { ...qa, status: 'pass' }; items[3].designWarnings = ['D1 keyframe rest/south/0: gray smudges']; items[3].baseHash = 'sha256:' + 'f'.repeat(64)
     rec.rigQa = { clips: { 'walk/east': { fails: ['arms 2.77 px off the requested pose'] }, 'walk/west': { fails: ['arms 2.10 px off the requested pose'] }, 'idle/south': { fails: [] }, 'removed/south': { fails: ['historical removed clip'] }, 'cross-punch/west': { fails: ['historical unavailable view'] } } }
     await db.put('projects', s.doc.id, rec)
     return items.map((it: { name: string }) => it.name)
@@ -1347,7 +1347,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 })
 
 
-test('bounded body colour correction discloses changed checks and equipment cost before durable consent', async ({ page, context }, info) => {
+test('bounded body color correction discloses changed checks and equipment cost before durable consent', async ({ page, context }, info) => {
   const posts: string[] = []
   await context.route('https://api.pixellab.ai/**', async r => {
     if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance')) await r.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 1 } } })
@@ -1393,9 +1393,9 @@ test('bounded body colour correction discloses changed checks and equipment cost
   await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
   const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true })
   await expect(sheet).toContainText('Palette fit failed; existing body kept')
-  const action = sheet.getByRole('button', { name: 'Match body colours', exact: true })
+  const action = sheet.getByRole('button', { name: 'Match body colors', exact: true })
   await expect(action).toBeVisible()
-  await expect(sheet).toContainText('Match 216 nearby colour pixels')
+  await expect(sheet).toContainText('Match 216 nearby color pixels')
   await expect(sheet).toContainText('8 cached West frames')
   await expect(sheet).toContainText('estimated 0.8 gens or $0.041')
   await expect(sheet).toContainText('estimated 3 additional gens')
@@ -1407,12 +1407,12 @@ test('bounded body colour correction discloses changed checks and equipment cost
   await expect(action).toBeVisible()
   await page.evaluate(() => {
     const put = IDBObjectStore.prototype.put
-    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move' && value.status === 'running') throw new Error('Colour consent storage blocked'); return put.call(this, value, key) }
+    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move' && value.status === 'running') throw new Error('Color consent storage blocked'); return put.call(this, value, key) }
   })
   await action.click()
-  await connect.getByLabel('API key', { exact: true }).fill('synthetic-body-colour-key')
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-body-color-key')
   await connect.getByRole('button', { name: 'Connect', exact: true }).click()
-  await expect(sheet).toContainText('Colour consent storage blocked')
+  await expect(sheet).toContainText('Color consent storage blocked')
   const consent = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.spec })
   expect(consent).toMatchObject(original.spec)
   expect(consent.bodyPaletteRepair).toMatchObject({ version: 'near-rest-v1' })
@@ -1477,7 +1477,7 @@ async function freePaletteFixture(page: Page, shared = false) {
     ]
     rec.manifest.materials = [...rec.manifest.materials.filter((m: { owner: string }) => m.owner !== id), ...materials]
     item.materials = materials.map(m => m.id); item.status = 'accepted'; item.baseHash = rec.manifest.rig.baseHash
-    item.designWarnings = ['D1 keyframe rest/west/0: grey smudges']
+    item.designWarnings = ['D1 keyframe rest/west/0: gray smudges']
     if (item.qa) item.qa.status = 'warn'
     const image = png.makeImg(96, 96)
     for (const [offset, rgb] of [[0, [133, 133, 133]], [1, [240, 240, 240]], [2, [192, 128, 96]], [3, [16, 16, 16]]] as [number, number[]][]) image.data.set([...rgb, 255], (40 * 96 + 40 + offset) * 4)
@@ -1502,7 +1502,7 @@ async function freePaletteFixture(page: Page, shared = false) {
   return { ...fixture, ...before }
 }
 
-test('free item colour matching is offline, scoped, persistent and preserves saved recolours and warnings', async ({ page, context }, info) => {
+test('free item color matching is offline, scoped, persistent and preserves saved recolors and warnings', async ({ page, context }, info) => {
   const requests: string[] = []
   context.on('request', r => { if (r.url().startsWith('https://api.pixellab.ai/')) requests.push(r.method()) })
   await context.route('https://api.pixellab.ai/**', r => r.abort())
@@ -1513,7 +1513,7 @@ test('free item colour matching is offline, scoped, persistent and preserves sav
   expect(eligibility).toMatchObject({ route: 'skeleton-pose', key: 'green', dressed: true, frames: 8, shared: true })
   await expect(pane.getByRole('button', { name: /^Try new item frames/ })).toHaveCount(0)
   await expect(pane.getByRole('button', { name: 'View saved design', exact: true })).toBeVisible()
-  const action = pane.getByRole('button', { name: /^Match item colours.*Free$/ })
+  const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ })
   await expect(action).toBeVisible()
   await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west')
   await expect(pane).toContainText('2 unmatched eligible pixels stay unchanged')
@@ -1542,7 +1542,7 @@ test('free item colour matching is offline, scoped, persistent and preserves sav
   await selectedItemDetails(page)
   await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
   await expect(pane.getByRole('radio', { name: 'azure', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
-  await expect(pane.getByRole('button', { name: /^Match item colours.*Free$/ })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0)
   await pane.getByRole('button', { name: 'Done', exact: true }).click()
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
@@ -1558,13 +1558,13 @@ test('free item colour matching is offline, scoped, persistent and preserves sav
   expect(requests).toEqual([])
 })
 
-for (const changed of ['item', 'rig'] as const) test(`free item colour matching refuses a stale ${changed} review without changing any pixels`, async ({ page, context }, info) => {
+for (const changed of ['item', 'rig'] as const) test(`free item color matching refuses a stale ${changed} review without changing any pixels`, async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', r => { requests.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
   await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   const fixture = await freePaletteFixture(page), pane = await selectedItemDetails(page)
-  const action = pane.getByRole('button', { name: /^Match item colours.*Free$/ })
+  const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ })
   await expect(action).toBeVisible()
   await page.evaluate(async ({ id, changed }) => {
     const p = '/src/studio/state.svelte.ts', s = await import(p), dbPath = '/src/lib/store/db.ts', db = await import(dbPath), rec = await db.get('projects', s.doc.id)
@@ -1573,7 +1573,7 @@ for (const changed of ['item', 'rig'] as const) test(`free item colour matching 
     await db.put('projects', s.doc.id, rec)
   }, { id: fixture.itemId, changed })
   await action.click()
-  await expect(pane).toContainText('This item or its colours changed. Review the colour match again.')
+  await expect(pane).toContainText('This item or its colors changed. Review the color match again.')
   const saved = await page.evaluate(async id => {
     const p = '/src/studio/state.svelte.ts', s = await import(p), dbPath = '/src/lib/store/db.ts', db = await import(dbPath), rec = await db.get('projects', s.doc.id), it = rec.manifest.items.find((i: { id: string }) => i.id === id)
     return { hash: it.layers[0].cells.walk.west[0], audit: it.paletteRepairs }

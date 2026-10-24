@@ -9,7 +9,7 @@ tool, casual users, desktop + mobile) use it as a theme foundation? Companion to
 judge glass from real screenshots. Treat it as a reference for tokens (density, surface presets) and for mobile patterns
 (sheet, floating tab bar plus accessory, empty state, toast with action). If the user picks glass after the screenshots, pin
 an exact version and limit it to the chrome (toolbar, tab bar, sheets, popovers). The pixel canvas, the wardrobe and the
-colour pickers stay on solid, neutral surfaces.
+color pickers stay on solid, neutral surfaces.
 
 ---
 
@@ -25,7 +25,7 @@ colour pickers stay on solid, neutral surfaces.
 | Size (measured) | `glasskit.css` 151,467 B raw / **30.8 KB gzip**. Minified with clean-css `-O2`: 92.7 KB / **13.7 KB gzip**. The README still claims "51 KB raw / 39 KB minified / 6.5 KB gzipped", which is stale by about 3×. |
 | Components (34) | Background (aurora), nav bar, pill button, tab bar (fixed, floating, with accessory capsule, droplet), accordion, divider, title, card (+glow), badge/chip, avatar, status, grouped list, skeleton, table, prose, segmented, steps, sheet (bottom), empty state, buttons (primary/secondary/tertiary, sm/lg), modal (native `<dialog>`), toast (with action and close), popover, input (+prefix/suffix), textarea, select, search, toggle, checkbox, radio, range, progress, date strip, calendar, image picker, theme toggle, plus a few utilities (`gl-stack`, `gl-row`, spacing, text). |
 | Theming | `data-theme="dark"` (default, also `:root`) / `"light"` on `<html>`. Rebrand with two tokens (`--gl-color-primary`, `--gl-color-primary-dark`). Everything else is derived with `color-mix()`. `data-density="compact"` turns controls down (inputs 52 → 40 px, buttons 56 → 40 px). `data-surface="solid"` gives opaque surfaces with blur and gloss off. `data-surface="tint"` gives see-through tints with no blur. |
-| Browser floor | `color-mix()` sets it: Chrome/Edge 111, Safari 16.4, Firefox 113, Samsung 22. Later features (`lh`, `:has()`, `:dir()`) fall back quietly. Without `backdrop-filter`, surfaces fall back to their background colours. |
+| Browser floor | `color-mix()` sets it: Chrome/Edge 111, Safari 16.4, Firefox 113, Samsung 22. Later features (`lh`, `:has()`, `:dir()`) fall back quietly. Without `backdrop-filter`, surfaces fall back to their background colors. |
 | Maintenance | Repo created **2026-03-21**. 68 commits, 42 changelog releases in 7 months (latest 1.29.0, 2026-10-21 CEST), effectively **one contributor** (`dobexx`), 15 stars, 0 forks, 0 open issues. The changelog is very detailed and claims additive changes ("No class was renamed or removed"). High velocity, bus factor 1. |
 | Docs | `docs.html` (live previews), `showcase.html`, German translations, and `SKILL.md` (114 KB LLM-oriented reference with markup rules and common mistakes). |
 
@@ -42,8 +42,8 @@ Counts are taken from `glasskit.css`.
 | Focus | 18 `:focus-visible` rules plus a primary-derived focus ring. |
 | Touch targets | 44 px minimum is a stated rule, and toast close / action keep 44 px hit areas. |
 | Text contrast (vendor-measured) | Badges were raised to WCAG AA in 1.7.0 (4.6–4.9:1). **The primary button is knowingly left at 2.03:1** (white on amber) in dark and 2.68:1 in light. The documented escape hatch is a dark `--gl-color-on-primary`. |
-| Text contrast (D1 calculation, alpha-composited, blur ignored) | Dark theme muted text (60 % white) on `--gl-surface-2` over the GlassKit background: **4.26:1**, below AA. Light theme muted text (55 % ink) on a 0.55 white surface: **2.4–3.5:1**, below AA. Glass contrast depends on the backdrop: dark-theme white text on a dark glass card over a **light checkerboard (#eee) is 1.14:1**, and over a skin-coloured sprite area 1.33:1. The light theme survives light backdrops (13.8:1) but its muted text fails everywhere. |
-| RTL, print | Handled (`:dir(rtl)` pairs, print colour preservation). |
+| Text contrast (D1 calculation, alpha-composited, blur ignored) | Dark theme muted text (60 % white) on `--gl-surface-2` over the GlassKit background: **4.26:1**, below AA. Light theme muted text (55 % ink) on a 0.55 white surface: **2.4–3.5:1**, below AA. Glass contrast depends on the backdrop: dark-theme white text on a dark glass card over a **light checkerboard (#eee) is 1.14:1**, and over a skin-colored sprite area 1.33:1. The light theme survives light backdrops (13.8:1) but its muted text fails everywhere. |
+| RTL, print | Handled (`:dir(rtl)` pairs, print color preservation). |
 
 Apple's own guidance makes the same point: use the regular (more opaque) variant for text-heavy surfaces, use clear glass only
 over visually rich media, add a ~35 % dimming layer under bright content, and respect Reduce Transparency and Increase Contrast
@@ -80,15 +80,15 @@ between "regular" and "clear" and have no automatic adaptation.
 
 **Cons**
 
-- **Glass behind or around pixel art fights the medium.** Blur smears the sprite's colours under the chrome, and the tinted,
-  aurora-lit surfaces (teal/amber `--gl-bg-aurora-*`) shift how the colours next to them read. Recolouring materials needs a
+- **Glass behind or around pixel art fights the medium.** Blur smears the sprite's colors under the chrome, and the tinted,
+  aurora-lit surfaces (teal/amber `--gl-bg-aurora-*`) shift how the colors next to them read. Recoloring materials needs a
   **neutral surround**, as in photo editors. PixelDoll must not use `.glass-bg`.
 - **Mobile-first sizing.** Default inputs are 52 px and buttons 56 px. Compact is still 40 px. A desktop inspector wants
   28–32 px rows. Every panel would need overrides.
 - **Missing desktop structure.** There is no sidebar or split view, no resizable inspector, no toolbar with groups, no tooltip,
-  no menu, no tree or selectable list at desktop density, no colour-ramp picker, no number stepper. These make up most of
+  no menu, no tree or selectable list at desktop density, no color-ramp picker, no number stepper. These make up most of
   PixelDoll's desktop UI, so they would be custom CSS in a second vocabulary next to `glass-*`.
-- **Accessibility gaps** (§2): no colour-scheme, contrast or transparency media queries, a sub-AA primary button and muted text.
+- **Accessibility gaps** (§2): no color-scheme, contrast or transparency media queries, a sub-AA primary button and muted text.
   Text over glass has no fixed contrast, which is worst on a light checkerboard.
 - **Dark-by-default** with an attribute toggle only. The app must add OS sync.
 - **Size.** 13.7 KB gzip of CSS, most of it unused (calendar, date strip, prose, table…). That is acceptable but not "tiny".

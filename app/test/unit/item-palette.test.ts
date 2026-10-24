@@ -1,6 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { itemPaletteMatcher } from '../../src/lib/dress/item-palette.ts';
-import { itemPaletteRepairPlan, matchItemColours, type RigCtx } from '../../src/lib/items/run.ts';
+import { itemPaletteRepairPlan, matchItemColors, type RigCtx } from '../../src/lib/items/run.ts';
 import * as store from '../../src/lib/store/project.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
@@ -13,21 +13,21 @@ const ramp: Hex[] = ['#3e4143','#505558','#7e8488','#8c9295','#a4acb1','#bdcbd1'
 const material = (cols: Hex[] = ramp, id = 'metal'): Material => ({ id, label:'Metal',owner:'sword',ramp:cols,variants:{} });
 const owner = {id:'sword',materials:['metal']};
 function pixels(cols: string[]) { const im=makeImg(cols.length,1);cols.forEach((h,i)=>{const c=fromHex(h);im.data.set([c>>16,(c>>8)&255,c&255,255],4*i)});return im; }
-const colours = (im: Img) => Array.from({length:im.w*im.h},(_,i)=>[...im.data.slice(i*4,i*4+3)]);
-test('matches only the eleven known eligible steel colours while preserving warm guard, outline and already owned RGB',()=>{
+const colors = (im: Img) => Array.from({length:im.w*im.h},(_,i)=>[...im.data.slice(i*4,i*4+3)]);
+test('matches only the eleven known eligible steel colors while preserving warm guard, outline and already owned RGB',()=>{
  const source=pixels(['#4b525c','#2e3c46','#394753','#dfe3e5','#b8c1c9','#9da6b1','#717882','#6c757d','#ffffff','#bec1c4','#626063','#352f17','#555a49','#665a51','#000000','#433f1f']);
  const mats=[material(),{...material(['#433f1f'],'wood'),owner:'sword'}],before=source.data.slice();
  const r=itemPaletteMatcher(owner,mats).apply(source);
  expect(r.changedPixels).toBe(11);expect(r.unmatchedPixels).toBe(0);expect(source.data).toEqual(before);
- expect(colours(r.image).slice(11)).toEqual(colours(source).slice(11));expect([...r.image.data].filter((_,i)=>i%4===3)).toEqual([...source.data].filter((_,i)=>i%4===3));
- expect(colours(r.image).slice(0,11)).toEqual(colours(pixels(['#505558','#3e4143','#3e4143','#ebebe9','#bdcbd1','#a4acb1','#7e8488','#7e8488','#ebebe9','#bdcbd1','#505558'])));
+ expect(colors(r.image).slice(11)).toEqual(colors(source).slice(11));expect([...r.image.data].filter((_,i)=>i%4===3)).toEqual([...source.data].filter((_,i)=>i%4===3));
+ expect(colors(r.image).slice(0,11)).toEqual(colors(pixels(['#505558','#3e4143','#3e4143','#ebebe9','#bdcbd1','#a4acb1','#7e8488','#7e8488','#ebebe9','#bdcbd1','#505558'])));
 });
 test('fixed24-channel bound accepts24 and refuses25 and the dark-edge counterexample',()=>{
  const r=itemPaletteMatcher(owner,[material(['#7c7c7c'])]).apply(pixels(['#646464','#636363']));
- expect(r.changedPixels).toBe(1);expect(r.unmatchedPixels).toBe(1);expect(colours(r.image)[1]).toEqual([99,99,99]);
+ expect(r.changedPixels).toBe(1);expect(r.unmatchedPixels).toBe(1);expect(colors(r.image)[1]).toEqual([99,99,99]);
  const edge=itemPaletteMatcher(owner,[material()]).apply(pixels(['#24282b']));expect(edge.changedPixels).toBe(0);expect(edge.unmatchedPixels).toBe(1);
 });
-test('global material claims, transparent RGB, tied nearest colours and unsupported families stay byte exact',()=>{
+test('global material claims, transparent RGB, tied nearest colors and unsupported families stay byte exact',()=>{
  const src=pixels(['#2e3c46','#646464','#a84f30']);src.data.set([255,255,255,0],4);
  const r=itemPaletteMatcher(owner,[material(),{...material(['#2e3c46'],'body_shirt'),owner:'body'}]).apply(src);
  expect(r.image.data).toEqual(src.data);expect(r.changedPixels).toBe(0);
@@ -51,7 +51,7 @@ async function fixture(){
 test('free scoped publication preserves old shared pixels, QA, source, material ramps, custom variants and other views',async()=>{
  const f=await fixture(),before=structuredClone(f.current),oldCustom=variantRampOf(f.mat,'custom'),oldPick=variantRampOf(f.mat,'#234567');
  const plan=await itemPaletteRepairPlan('rig-test','sword','slash','south');expect(plan).toMatchObject({changedPixels:4,changedFrames:[0,1],unmatchedPixels:0,materialId:'metal'});
- await matchItemColours('rig-test','sword','slash','south',plan);
+ await matchItemColors('rig-test','sword','slash','south',plan);
  const out=f.current.manifest.items[1];expect(out.layers[0].cells!.slash!.south![0]).not.toBe(f.h);expect(out.layers[0].cells!.idle).toEqual(f.item.layers[0].cells!.idle);expect(out.layers[0].cells!.slash!.east).toEqual(f.item.layers[0].cells!.slash!.east);expect(f.images.get(f.h)!.data).toEqual(f.raw.data);
  expect(f.current.manifest.materials).toEqual(before.manifest.materials);expect(f.current.manifest.presets).toEqual(before.manifest.presets);expect(f.current.manifest.items[0]).toEqual(before.manifest.items[0]);expect(f.current.manifest.rig).toEqual(before.manifest.rig);
  expect(out.qa).toEqual(f.item.qa);expect(out.designWarnings).toEqual(f.item.designWarnings);expect(out.provenance).toEqual(f.item.provenance);expect(variantRampOf(f.current.manifest.materials[0],'custom')).toEqual(oldCustom);expect(variantRampOf(f.current.manifest.materials[0],'#234567')).toEqual(oldPick);
@@ -60,17 +60,17 @@ test('free scoped publication preserves old shared pixels, QA, source, material 
 });
 test('reviewed counts or material/rig/item changes refuse before publication',async()=>{
  const f=await fixture(),plan=await itemPaletteRepairPlan('rig-test','sword','slash','south');
- await expect(matchItemColours('rig-test','sword','slash','south',{...plan,changedPixels:999})).rejects.toThrow('changed');expect(f.save).not.toHaveBeenCalled();
- f.current.manifest.materials[0].variants.custom[0]='#abcdef';await expect(matchItemColours('rig-test','sword','slash','south',plan)).rejects.toThrow('changed');expect(f.posts).not.toHaveBeenCalled();
+ await expect(matchItemColors('rig-test','sword','slash','south',{...plan,changedPixels:999})).rejects.toThrow('changed');expect(f.save).not.toHaveBeenCalled();
+ f.current.manifest.materials[0].variants.custom[0]='#abcdef';await expect(matchItemColors('rig-test','sword','slash','south',plan)).rejects.toThrow('changed');expect(f.posts).not.toHaveBeenCalled();
 });
 test.each(['item','rig','material'] as const)('atomic %s edits cannot be overwritten after reviewed preparation',async kind=>{
  const f=await fixture(),plan=await itemPaletteRepairPlan('rig-test','sword','slash','south');
  f.setRace(()=>{if(kind==='item')f.current.manifest.items[1].name='Latest';else if(kind==='rig')f.current.manifest.rig.pivot.x++;else f.current.manifest.materials[0].ramp[0]='#313131';});
- await expect(matchItemColours('rig-test','sword','slash','south',plan)).rejects.toThrow('Existing colours were kept');expect(f.current.manifest.items[1].paletteRepairs).toBeUndefined();expect(f.posts).not.toHaveBeenCalled();
+ await expect(matchItemColors('rig-test','sword','slash','south',plan)).rejects.toThrow('Existing colors were kept');expect(f.current.manifest.items[1].paletteRepairs).toBeUndefined();expect(f.posts).not.toHaveBeenCalled();
 });
 test('unrelated latest outfit/name changes survive the atomic free edit',async()=>{
  const f=await fixture(),plan=await itemPaletteRepairPlan('rig-test','sword','slash','south');f.setRace(()=>{f.current.manifest.name='Latest';f.current.manifest.presets[0].name='Latest outfit'});
- await matchItemColours('rig-test','sword','slash','south',plan);expect(f.current.manifest.name).toBe('Latest');expect(f.current.manifest.presets[0].name).toBe('Latest outfit');expect(f.posts).not.toHaveBeenCalled();
+ await matchItemColors('rig-test','sword','slash','south',plan);expect(f.current.manifest.name).toBe('Latest');expect(f.current.manifest.presets[0].name).toBe('Latest outfit');expect(f.posts).not.toHaveBeenCalled();
 });
 
 const historyEntry = (before: `sha256:${string}`, after = `sha256:${'1'.repeat(64)}` as const) => ({version:'neutral-owned-v1' as const,materialId:'old_material',anim:'removed_move',dir:'west' as const,frames:[{cell:4096,changedPixels:1,layers:[{id:'fg',before,after}]}]});
@@ -87,6 +87,6 @@ test.each(['material','animation'] as const)('new history with an overlong %s id
 });
 test('valid historical removed references and cell4096 remain importable and survive a new bounded correction',async()=>{
  const f=await fixture(),history=historyEntry(f.h);f.current.manifest.items[1].paletteRepairs=[history];
- const plan=await itemPaletteRepairPlan('rig-test','sword','slash','south');await matchItemColours('rig-test','sword','slash','south',plan);
+ const plan=await itemPaletteRepairPlan('rig-test','sword','slash','south');await matchItemColors('rig-test','sword','slash','south',plan);
  expect(f.current.manifest.items[1].paletteRepairs).toHaveLength(2);expect(f.current.manifest.items[1].paletteRepairs![0]).toEqual(history);expect(f.posts).not.toHaveBeenCalled();
 });

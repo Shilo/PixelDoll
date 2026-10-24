@@ -7,7 +7,7 @@
 //  - canvas = export.bakedCell (bakedFrame: every layer fits around the shared pivot); a layer's cel sits at
 //    bakedPivot − layer.pivot, so a 96 sword and the 64 body line up by pivot. Slice "pivot" = canvas + bakedPivot.
 //  - zOverrides become cel z-indexes (Aseprite ≥ 1.3: draw order = layer index + z-index), so the flattened frame equals
-//    composeCell on the baked frame. Colours and visibility match the first outfit (including default/linked ramps).
+//    composeCell on the baked frame. Colors and visibility match the first outfit (including default/linked ramps).
 import type { Img } from '../image/png.ts';
 import type { DirectionName, Item, Layer, Manifest, Slot } from '../store/manifest.ts';
 import { bakedFrame, equipped, hiddenSlots, layerFrame, resolveZ, shownItems } from '../compose/compose.ts';
@@ -73,23 +73,23 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
   }
   if (!frames.length) throw new Error('Aseprite export needs at least one animation frame with an available direction.');
   range('tag count', tags.length, 1, 65535);
-  // Start from raw sheets when defaults are baked into layers/. Never map a default colour as though it were a source.
-  const coloured = new Map<L, Map<string, Img>>();
+  // Start from raw sheets when defaults are baked into layers/. Never map a default color as though it were a source.
+  const colored = new Map<L, Map<string, Img>>();
   for (const l of all) {
-    const ids = new Map<number, number>(), colours: number[] = [];
+    const ids = new Map<number, number>(), colors: number[] = [];
     for (const id of l.item.materials ?? []) {
       const mat = m.materials.find((x) => x.id === id && (x.owner === l.item.id || x.owner === l.item.variantOf));
       if (!mat) continue;
       const name = variantOf(m, m.presets[0]?.variants ?? {}, id), ramp = name ? variantRampOf(mat, name) : undefined;
-      mat.ramp.forEach((h, i) => { ids.set(fromHex(h), colours.length); colours.push(ramp ? fromHex(ramp[i]) : -1); });
+      mat.ramp.forEach((h, i) => { ids.set(fromHex(h), colors.length); colors.push(ramp ? fromHex(ramp[i]) : -1); });
     }
     const local = new Map<string, Img>();
     for (const anim of new Set(frames.map((fr) => fr.anim))) {
       const path = l.layer.sourceSheets?.[anim] ?? l.layer.sheets?.[anim], sheet = path && sheets.get(path);
       if (!sheet) throw new Error(`Aseprite missing sheet for ${l.item.id}.${l.layer.id}/${anim}.`);
-      local.set(anim, colours.some((c) => c >= 0) ? applyIndex(sheet, indexImg(sheet, ids), Int32Array.from(colours)) : sheet);
+      local.set(anim, colors.some((c) => c >= 0) ? applyIndex(sheet, indexImg(sheet, ids), Int32Array.from(colors)) : sheet);
     }
-    coloured.set(l, local);
+    colored.set(l, local);
   }
   const first = new Map<string, number>(); // "<layer>/<anim>/<dir>/<cell>" -> first frame with that cel (linked cels)
   const out: Bytes[] = [];
@@ -98,7 +98,7 @@ export async function asepriteFile(m: Manifest, sheets: Map<string, Img>): Promi
     const chunks: Bytes[] = fi ? [] : [...layerChunks, chunk(0x2018, w16(tags.length), [0, 0, 0, 0, 0, 0, 0, 0], ...tags),
       chunk(0x2022, w32(1), w32(2), w32(0), str('pivot'), w32(0), w32(0), w32(0), w32(bf.w), w32(bf.h), w32(bf.x), w32(bf.y))];
     for (const [li, l] of stack.entries()) {
-      const f = layerFrame(rig, l.layer), sheet = coloured.get(l)!.get(fr.anim)!;
+      const f = layerFrame(rig, l.layer), sheet = colored.get(l)!.get(fr.anim)!;
       range('cel z-index', z.get(l)! - li, -32768, 32767);
       const head = [w16(li), w16(bf.x - f.x), w16(bf.y - f.y), [255]], zi = w16(z.get(l)! - li), pad = [0, 0, 0, 0, 0];
       const key = `${li}/${fr.anim}/${fr.dir}/${fr.cell}`, link = first.get(key);
@@ -126,7 +126,7 @@ export async function asepriteFiles(m: Manifest, sheets: Map<string, Img>): Prom
       name: 'aseprite/README.txt',
       data: `${name}.aseprite: the whole paperdoll as one layered Aseprite file (Aseprite 1.3+), no code needed.
 Layers: one per item layer, "<slot>.<item>" (".fg"/".bg" for items drawn in front of and behind the body), in draw order.
-Visible layers and colours match the first outfit in manifest.json (including default and linked colourways).
+Visible layers and colors match the first outfit in manifest.json (including default and linked colorways).
 Show or hide layers to dress the character. Tags: "<move>_<direction>".
 Canvas ${bakedFrame(m).w}x${bakedFrame(m).h} (fits every layer); slice "pivot" marks the feet. Frame durations are the move's timing.
 Per-frame draw-order exceptions (slots[].zOverrides) are cel z-indexes. Other importers must support these to match the composite.

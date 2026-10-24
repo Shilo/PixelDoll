@@ -6,7 +6,7 @@ import { prepareCopy,targetStamp,publishCandidate,extensionStamp,restStamp } fro
 import { saveCreatedDesign } from '../../src/lib/equipment/store.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import { cellImg } from '../../src/lib/compose/compose.ts';
-import { recolour } from '../../src/lib/dress/dress.ts';
+import { recolor } from '../../src/lib/dress/dress.ts';
 import type { DirectionName } from '../../src/lib/store/manifest.ts';
 import { mergeQa } from '../../src/lib/items/qa-summary.ts';
 
@@ -18,7 +18,7 @@ test('same frozen cells copy despite renamed moves and playback metadata; target
   const candidate=await prepareCopy(design,target);
   expect(candidate.project.manifest.rig.animations[0].frames[0].ms).toBe(987);
   const item=candidate.project.manifest.items.find(i=>i.id===candidate.itemId)!;
-  const rendered=cellImg(recolour(candidate.project,{}),item.layers[0],'standing','south',0)!;
+  const rendered=cellImg(recolor(candidate.project,{}),item.layers[0],'standing','south',0)!;
   expect([...rendered.data.slice((18*64+20)*4,(18*64+20)*4+4)]).toEqual([0,0,255,255]);
   const stamp=targetStamp(target.manifest,'head');target.manifest.rig.animations[0].frames[0].ms=500;expect(targetStamp(target.manifest,'head')).toBe(stamp);
 });

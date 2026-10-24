@@ -6,10 +6,10 @@
 
 | Review claim | Decision and evidence |
 | --- | --- |
-| F4: actors overlap controls on compact screens | Accepted. At 320×500 the original view tabs ended at y=220 while playback began at y=213, leaving no vertical stage at all. A renderer change alone cannot repair overlapping UI boundaries. The coordinated compact portrait CSS now supplies room; measured top/bottom boundaries constrain actor size and feet only on mobile or short screens. Selection also reserves its neighbours' 30px raised position. |
+| F4: actors overlap controls on compact screens | Accepted. At 320×500 the original view tabs ended at y=220 while playback began at y=213, leaving no vertical stage at all. A renderer change alone cannot repair overlapping UI boundaries. The coordinated compact portrait CSS now supplies room; measured top/bottom boundaries constrain actor size and feet only on mobile or short screens. Selection also reserves its neighbors' 30px raised position. |
 | F9: integer CSS scaling gives uneven physical pixels | Accepted. For example, six CSS pixels at DPR1.25 equal 7.5 physical pixels. Sprite scale now uses an integer physical-pixel step and both draw coordinates snap to that grid. DPR participates in canvas invalidation through the existing resize path. Rounded backing-store dimensions get matching CSS dimensions, avoiding a fractional viewport resampling the whole canvas. |
 | Top-down reflection is a rendering error | Rejected as an automatic defect. It is a configurable stylized floor reflection already approved as a separate layer. The review explicitly labels this subjective. No reflected pixels enter the original sprite; removing it changes the art direction. Preserved. |
-| Selection backdrop must follow the free stage centre | Rejected as an automatic defect. The painted scenery fills the viewport while actors occupy the stage beside the rail. A vertical seam need not be the actor's ground anchor. No alignment or functional failure was demonstrated, and shifting the backdrop changes the approved composition. Preserved. |
+| Selection backdrop must follow the free stage center | Rejected as an automatic defect. The painted scenery fills the viewport while actors occupy the stage beside the rail. A vertical seam need not be the actor's ground anchor. No alignment or functional failure was demonstrated, and shifting the backdrop changes the approved composition. Preserved. |
 
 ## Verification
 

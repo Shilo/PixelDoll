@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { DESIGN, GREYISH, greyShare, dirGate, itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts'
+import { DESIGN, GRAYISH, grayShare, dirGate, itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts'
 import { withH4 } from '../../src/lib/items/run.ts'
 import { makeImg } from '../../src/lib/image/png.ts'
 import type { Rig } from '../../src/lib/rig/rig.ts'
@@ -77,9 +77,9 @@ test('an unrelated forearm cannot excuse extra parts through head alignment alon
 })
 
 test('the saved cape hem is already rejected by the design gate; clean views are preserved', () => {
-  expect(GREYISH.test('red cape')).toBe(false)
-  expect(greyShare(decode(fixture.capeKeys.north))).toBeCloseTo(0.1128, 4)
-  expect(greyShare(decode(fixture.capeKeys.north))).toBeGreaterThan(DESIGN.grey)
-  expect(greyShare(decode(fixture.capeKeys.south))).toBe(0)
-  expect(greyShare(decode(fixture.capeKeys.east))).toBe(0)
+  expect(GRAYISH.test('red cape')).toBe(false)
+  expect(grayShare(decode(fixture.capeKeys.north))).toBeCloseTo(0.1128, 4)
+  expect(grayShare(decode(fixture.capeKeys.north))).toBeGreaterThan(DESIGN.gray)
+  expect(grayShare(decode(fixture.capeKeys.south))).toBe(0)
+  expect(grayShare(decode(fixture.capeKeys.east))).toBe(0)
 })

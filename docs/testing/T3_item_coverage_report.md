@@ -39,15 +39,15 @@ W is the mirror of E.
 | | walk | ✓ | ✓ | ✓ | Sits on the head in every frame; no offset. |
 | | slash | ~ | ~ | ✓ | S/E f1–5: the raised forearm covers part of the hair, and the layer is pre-occluded correctly. H4 warns (own 0.36–0.74). In S the right strand is drawn very dark while the arm is up. |
 | | hurt | ~ | ~ | ✓ | The hair swings outward with the flinch (plausible). H4 warns. |
-| **Red cape** (green, 68 gens) | idle | ✓ | ✓ | ~ | N: the dressed design has grey-brown smudges at the hem (in PixelLab's own output, not an extraction artefact). Roll 1 of the dress was clean but was rejected by a false G2 (§3.1). |
+| **Red cape** (green, 68 gens) | idle | ✓ | ✓ | ~ | N: the dressed design has gray-brown smudges at the hem (in PixelLab's own output, not an extraction artifact). Roll 1 of the dress was clean but was rejected by a false G2 (§3.1). |
 | | walk | ~ | ✓ | ~ | E: natural swing ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_cape_comp.png)). S: only the cape edges show, so H4 warns on 4 frames. |
 | | slash | ~ | ✓ | **✗** | E: big flare behind the lunge (plausible). Slash E f2–3 put 1–3 px on the cell border (G7 warn). **N f1–5: the cape wraps the raised arm and uncovers the back in all 3 rolls** (G4 43–49 %); the S4 weakness is confirmed. The best roll is kept (§3.6) ([rolls](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_cape_slash_north_rolls.png)). |
 | | hurt | ~ | ✓ | ~ | N f1–2: the cape balloons into a round shape over the flung-out arms; odd, but in sync. |
 | **Leather chest armour** (green, 46 gens, 0 re-rolls) | idle | ✓ | ~ | ✓ | E is thin, showing mostly a shoulder plate and a side strap; the dressed E keyframe is thin too (same as S4's vest) ([dress](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_dress.png)). |
 | | walk | ✓ | ~ | ✓ | Same thin E. |
-| | slash | ~ | ✓ (fixed) | ✓ | E f2/f4/f5 had a grey swoosh and brown streaks. These were **motion smears extracted as armour, and QA passed them (false pass)**; removed by §3.3 ([before](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_slash_east.png) / [after](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_slash_east_fixed.png)). |
+| | slash | ~ | ✓ (fixed) | ✓ | E f2/f4/f5 had a gray swoosh and brown streaks. These were **motion smears extracted as armour, and QA passed them (false pass)**; removed by §3.3 ([before](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_slash_east.png) / [after](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_slash_east_fixed.png)). |
 | | hurt | ~ | ✓ | ~ | H4 warnings only; the frames look right ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_comp.png)). |
-| **Cloth trousers** (green, 55 gens) | idle | ✓ | ✓ | ✓ | **Full-length trousers** on the grey-shorts base; no shorts showing ([dress](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_trousers_dress.png)). |
+| **Cloth trousers** (green, 55 gens) | idle | ✓ | ✓ | ✓ | **Full-length trousers** on the gray-shorts base; no shorts showing ([dress](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_trousers_dress.png)). |
 | | walk | ~ | ✓ | ~ | E failed G5 on 3 seeds (CV 0.20–0.22): a **false fail**, fixed in §3.4. S/N: H4 warnings while the legs move. |
 | | slash | ✓ | ✓ | ✓ | E re-rolled once on G3 0.052 (borderline); both rolls look the same ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_trousers_comp_roll1.png)). |
 | | hurt | ✓ | ✓ | ✓ | |
@@ -158,7 +158,7 @@ export matches Godot exactly.
   G5.
 - **Boots: not made.** All 215 gens were spent on the four items above.
 
-## 6. Remaining issues (prioritised)
+## 6. Remaining issues (prioritized)
 
 - **P1 — Cape slash N.** The cape wraps the raised arm in all 3 rolls (and in S4). Options:
   - the `inpaint-grid` fallback for back items on action clips
@@ -170,8 +170,8 @@ export matches Godot exactly.
   - Hair: aligning H4 by the requested head move (as `trimToKeyframe` does) lifts 4 of 12 hair flags above 0.75; tested
     offline, not shipped.
   - Cloth: consider warning only on "looks like the opposite view".
-- **P2 — Dress design defects pass every gate.** Examples: the chest armour is thin in E, and the cape's N hem has grey
-  smudges. A dress-level check, such as item area per view relative to the body or colour outliers, could re-roll the dress
+- **P2 — Dress design defects pass every gate.** Examples: the chest armour is thin in E, and the cape's N hem has gray
+  smudges. A dress-level check, such as item area per view relative to the body or color outliers, could re-roll the dress
   before 36 gens of poses are spent.
 - **P2 — Live-run robustness (fixed by B13, re-test):**
   - hidden or background tabs are throttled: my scripts timed out, and the 15 s storage-open screen appeared

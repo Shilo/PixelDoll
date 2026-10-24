@@ -172,7 +172,7 @@ Rules:
 | S5 sword / axe, even with the rotation-tolerant held variant (keyframe rotated in 15° steps) | many | many | **not applicable to held items** |
 
 Use: head class (`fail` + `review`); torso and back (`review` only); off for feet and held. The thresholds come from one
-labelled helmet run. Without the occlusion term, the arm crossing a helmet or vest raised false flags (chest 3 → 1).
+labeled helmet run. Without the occlusion term, the arm crossing a helmet or vest raised false flags (chest 3 → 1).
 
 ## Why the M3 sword failed, now explained
 
@@ -241,7 +241,7 @@ Engines (current exporter code paths that assume `rig.cell` / `rig.pivot`):
 | Unity (`export/unity.ts`) | Sprite rect and pivot per layer sheet. **PPU must stay the base's (64), not the layer width**, or the weapon renders at 2/3 scale. |
 | Generic strips | Strip height = layer cell. `generic.ts` currently rejects any layer cell ≠ rig cell (the size check must use the layer's own cell). |
 | Aseprite (2nd wave) | Canvas = largest layer cell. 64 layers are placed as cels at (+16, +16). |
-| Mirrored west | Pixel flip of the 96 cell about x = 48. The pivot is unchanged because it stays centred. |
+| Mirrored west | Pixel flip of the 96 cell about x = 48. The pivot is unchanged because it stays centered. |
 
 ## Honest gaps
 
@@ -251,7 +251,7 @@ Engines (current exporter code paths that assume `rig.cell` / `rig.pivot`):
   keyframe might rescue upright designs. Not pursued: it changes the arm, so the item no longer matches the base arm anyway.
 - The "send frame 0 last" fix rests on 2 runs (S, N) plus 4 failing controls. Re-verify in the app across more seeds.
 - The H3 grid was run once (east only). Its design drift is larger than posing, and its cost was measured at 480×384 only.
-- The H4 thresholds come from one labelled run. Back items get review noise, and the gate is unusable for held items and feet.
+- The H4 thresholds come from one labeled run. Back items get review noise, and the gate is unusable for held items and feet.
 - Mirrored west still swaps the hand (O13, out of scope).
 - The pose description for the axe used "exactly one held weapon". The axe dress call still said "exactly one sword", with no
   visible effect.

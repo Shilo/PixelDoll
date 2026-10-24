@@ -19,10 +19,10 @@ The primary object is a character document containing a body, fitted equipment a
 Recommended screen:
 
 - **Header:** character name, current target, move/direction/frame, unsaved/draft state, Undo/Redo, Back and Save & return.
-- **Main canvas:** nearest-neighbour pixels, shared pivot, optional joint/anchor overlays, optional grid/onion skins; a 1× check alongside magnification.
+- **Main canvas:** nearest-neighbor pixels, shared pivot, optional joint/anchor overlays, optional grid/onion skins; a 1× check alongside magnification.
 - **Targets:** Character body and equipment items; visibility, lock and solo are preview controls. Selecting an item selects its logical visible artwork, with existing front/back pieces accessible under it.
 - **Filmstrip:** all frames in the selected direction/move; warning markers, derived-mirror badge, standing-reference entry where relevant, and optional all-direction comparison.
-- **Small tool set:** Move, Pencil, Eraser, Restore, Pick colour, Joints. Inspector options depend on target/tool. Existing front/back transfer can be a layer action rather than another primary mode.
+- **Small tool set:** Move, Pencil, Eraser, Restore, Pick color, Joints. Inspector options depend on target/tool. Existing front/back transfer can be a layer action rather than another primary mode.
 
 The editor opens from a character, item, paused frame or issue. It restores the exact originating character/outfit/move/direction/frame on return. An empty layer click must not silently select the body. Context layers remain visible but locked until explicitly selected/unlocked.
 
@@ -49,7 +49,7 @@ Editing just the body in a frame and carrying the entire outfit are both useful.
 
 ## Joints: one tool, clearly different records
 
-The inspector for Joints needs **Detected joints** and **Pose for generation** as plainly labelled choices. A small purpose selector is necessary here because their effects differ; it does not justify separate screens.
+The inspector for Joints needs **Detected joints** and **Pose for generation** as plainly labeled choices. A small purpose selector is necessary here because their effects differ; it does not justify separate screens.
 
 | Record | What it describes | Editing behavior |
 | --- | --- | --- |
@@ -100,13 +100,13 @@ The other planning chat owns the final persistence UX choice. If it prefers one 
 
 ## Pixels, palettes, occlusion and mirrors
 
-### Paint source artwork while previewing recolours
+### Paint source artwork while previewing recolors
 
-Keep the existing exact-ramp model. Pick a material shade or source colour while viewing the current outfit's recolour. A source/preview toggle and material indicator prevent the user from painting a preview RGB that later recolours incorrectly. The picker must identify the selected target's source colour; sampling an overlying cape cannot silently become a body material.
+Keep the existing exact-ramp model. Pick a material shade or source color while viewing the current outfit's recolor. A source/preview toggle and material indicator prevent the user from painting a preview RGB that later recolors incorrectly. The picker must identify the selected target's source color; sampling an overlying cape cannot silently become a body material.
 
-Free custom RGB is reasonable for a capable editor, but new colours need an explicit destination: existing/new material role or fixed detail. A safe minimal implementation may offer existing source colours first and custom fixed colours with a clear label, without rebuilding every palette or changing unrelated variants. Do not claim every arbitrary RGB can unambiguously map back into a ramp when two selected variants share the same colour.
+Free custom RGB is reasonable for a capable editor, but new colors need an explicit destination: existing/new material role or fixed detail. A safe minimal implementation may offer existing source colors first and custom fixed colors with a clear label, without rebuilding every palette or changing unrelated variants. Do not claim every arbitrary RGB can unambiguously map back into a ramp when two selected variants share the same color.
 
-Body skin/shirt/shorts regions currently use special colour identity. The editor must preserve or deliberately update that identity instead of blindly deriving a new palette after a stroke. Existing palette repair metadata is not automatically a general manual-edit history format.
+Body skin/shirt/shorts regions currently use special color identity. The editor must preserve or deliberately update that identity instead of blindly deriving a new palette after a stroke. Existing palette repair metadata is not automatically a general manual-edit history format.
 
 ### Layer control without a general scene graph
 
@@ -139,7 +139,7 @@ I would challenge a consolidated plan if it:
 1. Calls body editing a future non-goal again, rather than including it with revision/invalidation safeguards.
 2. Treats a joint drag as raster deformation, or overwrites original requested poses when correcting a detection.
 3. Uses generic “alignment” without defining viewport movement, item translation, body translation and global pivot changes.
-4. Publishes a new body while old affected gear appears automatically refitted, or blocks every colour-only repair on a paid rebuild.
+4. Publishes a new body while old affected gear appears automatically refitted, or blocks every color-only repair on a paid rebuild.
 5. Implements separate pixel and skeleton documents/history or multiple independent repair editors.
 6. Promises safe autosave/undo without image immutability, transaction-time revision checks and reload/ZIP/GC history reachability.
 7. Claims guaranteed one-frame paid repair from structural API batching support alone.
@@ -154,9 +154,9 @@ These are concrete design choices for the planning team, not permission question
 | Decision | My preferred choice | Acceptable alternative |
 | --- | --- | --- |
 | Publishing local edits | Recoverable draft autosave; Save & return publishes once | Explicit Save plus Back, with equally clear draft/accepted distinction |
-| Default Move target | Selected logical body/item, fixed pivot; explicit multi-target selection | A clearly labelled contextual “Move body + equipped items” command |
+| Default Move target | Selected logical body/item, fixed pivot; explicit multi-target selection | A clearly labeled contextual “Move body + equipped items” command |
 | Body edit effect on gear | Changed cells receive fit review/invalidation; explicit reviewed reuse; no forced paid work | Finer per-cell geometry compatibility proof with equivalent honesty |
-| Free custom colours | Source ramps first; custom colour with material/fixed-detail destination | Limit first delivery to source palette if disclosed as a tool limitation, not claimed arbitrary colour authoring |
+| Free custom colors | Source ramps first; custom color with material/fixed-detail destination | Limit first delivery to source palette if disclosed as a tool limitation, not claimed arbitrary color authoring |
 | Rest-image editing | Explicit standing-reference target in same frame selector, revision-sensitive | A contextual reference subpanel within the same editor session |
 | Conflict result | Keep candidate; list overlapping targets; reload/rebase or save copy | Simpler reject-and-preserve-draft flow initially |
 | First pose interaction | Direct joint placement, detection correction and desired-pose draft | Optional IK after direct placement works |
@@ -168,7 +168,7 @@ No live spike is authorized or performed by this peer review. Plan these bounded
 - **Offline publication spike:** body/item pixel plus detected-joint edit, save, reload, ZIP, GC, stale-tab conflict and delayed candidate. Assert all non-target hashes and original provenance remain unchanged.
 - **Coordinate/mirror spike:** actual-cell versus playback index, pixel-edge joints, 64/96 and larger source geometry, item-specific mirror independence, full-row materialization and edge-loss prevention. Never normalize origins using silhouette-bottom guesses.
 - **Body compatibility spike:** paint RGB only, erase alpha, nudge pixels, move body plus selected gear, edit a standing reference. Demonstrate exact equipment review/coverage and generation-eligibility consequences for each; do not infer anatomical correctness from hash equality.
-- **Palette/occlusion spike:** body region identities, recoloured shade picking, equal preview colours from different ramps, fg/bg transfer and hair/hat pair handling. Verify rendered preview/export parity using the current compositor.
+- **Palette/occlusion spike:** body region identities, recolored shade picking, equal preview colors from different ramps, fg/bg transfer and hair/hat pair handling. Verify rendered preview/export parity using the current compositor.
 - **UX prototype:** one desktop/phone editor for body and gear; user identifies the target/frame, distinguishes detection from desired pose, understands move scope, undoes one gesture, saves and returns to the same outfit context. Browser-emulated touch only; no physical-phone testing.
 - **Later paid generation spike, separately authorized:** selected-frame pose candidates using permitted v3 routes, real batch/cost disclosure, neighboring-frame continuity, identity and selective merge. No promise of production single-frame quality before results. Keep any failed candidate and successful original calls recoverable without automatic resubmission.
 
@@ -194,14 +194,14 @@ The final safety contract must settle these details:
 2. **No silent partial group success.** If any included body's/item's pixels would leave their own cell, reject that candidate as stated in the README. Name the blocking item/cell, including an unequipped hat or oversize sword, and offer reduced displacement or switching to a narrower target. Do not silently skip the blocker and still call the result Whole character.
 3. **Transforms preserve coordinate meaning.** Apply the same character-space integer translation through each layer's real cell/pivot coordinates and to all owned fg/bg pieces. Translate applicable current observations/anchors/attachment markers coherently; retain original requested-pose provenance. Missing joint observations remain missing. Do not pretend the operation calibrated a standing reference that was outside the selected scope.
 4. **Source mirrors need an explicit vector rule.** Translating an authored source by `(dx, dy)` and deriving its horizontal mirror moves that mirrored result by `(-dx, dy)` in screen coordinates. This differs from moving both displayed views by `(dx, dy)`. The linked-view preview must show this consequence; same-screen-vector movement of both directions requires deliberate independent materialization or another clearly specified representation. Resolve each logical source target once; never double-transform it through a source and its derived view.
-5. **Fit preservation needs a bounded proof.** Lossless identical group translation can preserve existing local body/item overlap when every relevant current dependency is transformed consistently. It does not establish a universal physical ground origin, improve anatomy, recover hidden pixels, or make stale artwork current. Preserve only already-supported compatibility for the selected cells. Check rendered before/after against the known translation, including fg/bg/tuck behavior; do not rely on bounding boxes or matching hash relabelling.
+5. **Fit preservation needs a bounded proof.** Lossless identical group translation can preserve existing local body/item overlap when every relevant current dependency is transformed consistently. It does not establish a universal physical ground origin, improve anatomy, recover hidden pixels, or make stale artwork current. Preserve only already-supported compatibility for the selected cells. Check rendered before/after against the known translation, including fg/bg/tuck behavior; do not rely on bounding boxes or matching hash relabeling.
 6. **Avoid expensive work on pointer movement.** Large wardrobes can include many layers per cell. Dragging should preview one pending transform, then evaluate/hash/encode once per completed operation or save, not rewrite every item for every pointer event. This is a performance constraint, not a new rendering framework requirement. The candidate remains all-or-nothing across its actual listed members.
 
 ### Other concrete clarifications for the complete package
 
 - **Keep draft and return:** name the character/draft on re-entry; normal Studio/export/generation must continue using the accepted project. Multiple drafts/tabs need explicit ownership/revision handling, not a single global draft record that overwrites another session. No new credential-bearing messages are needed.
 - **Body edits with pending fit review:** the README correctly permits saving the body. Specify whether an unresolved item is hidden in normal playback/export, previewed only with a badge, or exportable after an explicit reviewed exception. Never silently output old affected cells as compatible. The user must be able to return without being forced into a paid refit.
-- **Existing source colours:** source-palette limitation is acceptable for the core tools. Permit picking existing raw target colours such as outlines even when they are not assigned a recolourable material; preserving an existing exact fixed shade is different from introducing arbitrary new RGB. If restricted, disclose the limitation before a user tries to restore an outline.
+- **Existing source colors:** source-palette limitation is acceptable for the core tools. Permit picking existing raw target colors such as outlines even when they are not assigned a recolorable material; preserving an existing exact fixed shade is different from introducing arbitrary new RGB. If restricted, disclose the limitation before a user tries to restore an outline.
 - **Reference targets:** clearly distinguish animation body cells from standing-reference images. If editing references is supported in the core screen, the same save review must identify future generation eligibility and whether server-side registration needs a later explicit action. An already saved animation-frame edit must not silently update the managed character remotely.
 - **Historical findings:** research/delivery should identify acceptance guards, atomic item publication and body-move invalidation as current reuse seams. Earlier reports should stay linked as historical motivation, rather than being copied as an unchanged bug list.
 - **Undo after Save:** decide whether undoing a saved operation creates a new dirty draft against the saved revision, rather than rolling back persisted state invisibly. This is the least surprising behavior for the explicit-save model.
@@ -212,7 +212,7 @@ No README-level objection remains if these details are resolved consistently in 
 
 Reviewed [data-and-safety.md](data-and-safety.md) with the README on 2026-10-23. **I agree with the proposed storage/publication model and explicitly accept the conservative whole-item engine-export exclusion policy.** Saving a body revision with unfinished equipment is supported; it does not force a paid refit and does not certify old gear. Unaffected cells remain stored and available for inspection/editing. Finer partial-item runtime compatibility can be deferred.
 
-The contract resolves major earlier objections: source colours include existing fixed outlines, B15 identity is explicit, detected/desired/reference data stay distinct, atomic saves check current data, all writers must participate, editor image reachability extends beyond GC scanning, and old safeguards are acknowledged as current foundations. Restricting newly introduced fixed RGB to a later qualified ownership extension is an acceptable core limitation; it must remain visible to users rather than implying unrestricted colour authoring.
+The contract resolves major earlier objections: source colors include existing fixed outlines, B15 identity is explicit, detected/desired/reference data stay distinct, atomic saves check current data, all writers must participate, editor image reachability extends beyond GC scanning, and old safeguards are acknowledged as current foundations. Restricting newly introduced fixed RGB to a later qualified ownership extension is an acceptable core limitation; it must remain visible to users rather than implying unrestricted color authoring.
 
 ### Concrete agreement blockers to resolve in the complete package
 
@@ -220,7 +220,7 @@ The contract resolves major earlier objections: source colours include existing 
 2. **Define the two export projections.** Ordinary engine `manifest.json`, sheets, presets, equipment/outfit rules and importer/runtime metadata must have a coherent filtered item set, with no dangling equipped-item/material/variant references. Disclose removed items and any resulting outfit changes before downloading. The accompanying editable `project.json` recovery content must retain unresolved gear, its original pixels, history and compatibility status; it must not become the filtered engine projection. An item excluded from runtime must not disappear from its portable backup. Validate each projection against its own contract.
 3. **Guard Whole character membership against phantom additions.** Comparing read/write stamps for already-listed cells does not detect a compatible item added while a draft is open. Include the disclosed membership set/predicate in transaction-time checking, or conservatively a wardrobe-membership revision. If membership changed, preserve the draft and require a fresh group review; do not silently include or omit new compatible alternatives. Body-only and single-item operations can still preserve unrelated new items under their explicitly narrower scope.
 4. **Specify mirror translation algebra rather than only “preview both.”** A source-linked horizontal translation `(dx,dy)` yields `(-dx,dy)` on its reflected view. Same-screen-vector movement of both directions is a different operation requiring independence or another explicit representation. State how group target resolution handles this once per unique logical source and prevents double transformation. This affects both body and all participating wardrobe alternatives.
-5. **Define the return-to-Studio behavior for Needs fitting review.** Engine exclusion is clear; ordinary dressing playback is not yet equally explicit. Choose a predictable policy for unresolved gear: for example, do not automatically wear it on affected body cells, keep its card/outfit selection recoverable, show an actionable review badge, and allow an explicitly labelled editor/WIP comparison. If another policy is chosen, it must not silently show unresolved overlap as the normal verified outfit. State how a saved outfit referencing an excluded item is displayed and exported.
+5. **Define the return-to-Studio behavior for Needs fitting review.** Engine exclusion is clear; ordinary dressing playback is not yet equally explicit. Choose a predictable policy for unresolved gear: for example, do not automatically wear it on affected body cells, keep its card/outfit selection recoverable, show an actionable review badge, and allow an explicitly labeled editor/WIP comparison. If another policy is chosen, it must not silently show unresolved overlap as the normal verified outfit. State how a saved outfit referencing an excluded item is displayed and exported.
 
 These are specification-completeness blockers to **final package agreement**, not objections to implementing body editing or reasons to reopen the general scope decision. They can be resolved through documentation; no code experiment or paid work is needed for this round.
 
@@ -248,9 +248,9 @@ The five material objections are resolved in the shared specification:
 | Runtime filtering could lose unfinished work or leave broken references | Two projections: filtered, validated engine assets/rules/presets without dangling references, and full accepted editable recovery retaining unresolved gear, observations and history. Exclusions and outfit changes are disclosed before download. |
 | Group membership can change after a draft starts | Whole character uses disclosed, revision-stamped all-compatible-wardrobe membership; new/changed alternatives require review and can prevent publication. Group clipping is all-or-nothing. |
 | Source/mirror displacement was ambiguous | Source `(dx,dy)` implies mirror `(-dx,dy)`; same-screen-vector movement requires explicit independence. Unique logical source resolution prevents double application. |
-| Returning with unfinished gear lacked a normal-display rule | Studio suppresses unreviewed gear on affected cells, retains its outfit selection/card and gives a persistent actionable note. The editor provides explicitly labelled WIP comparison; unaffected cells remain available. |
+| Returning with unfinished gear lacked a normal-display rule | Studio suppresses unreviewed gear on affected cells, retains its outfit selection/card and gives a persistent actionable note. The editor provides explicitly labeled WIP comparison; unaffected cells remain available. |
 
-The package also incorporates the required precision: modulo playback-to-cell mapping, independent session draft IDs, Undo after Save producing a new dirty draft, existing fixed outline colours, B15 role-aware writes and relevant material/reference/pose stamps. Body editing is included in the first coherent local editor release rather than permanently deferred. Detected-joint corrections, reference calibration and desired-pose drafts remain distinct; local actions never imply raster deformation or a paid call.
+The package also incorporates the required precision: modulo playback-to-cell mapping, independent session draft IDs, Undo after Save producing a new dirty draft, existing fixed outline colors, B15 role-aware writes and relevant material/reference/pose stamps. Body editing is included in the first coherent local editor release rather than permanently deferred. Detected-joint corrections, reference calibration and desired-pose drafts remain distinct; local actions never imply raster deformation or a paid call.
 
 The research document distinguishes primary-source behavior from design inferences and identifies completed read-only investigations separately from unrun experiments. Its proposed small user trial is explicitly an acceptance proposal, not observed usability or statistical evidence. S1–S5 and E0–E4 gate the local editor; optional power/external interchange and paid-candidate work extend the same editor only after their own evidence. Current structural guards, atomic item publication and replacement invalidation are treated as foundations to preserve.
 

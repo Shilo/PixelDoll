@@ -41,7 +41,7 @@ fixed). The fixes that matter most downstream:
 | Gate | Rule | On fail |
 |---|---|---|
 | G1 | output count = cells, every output = cell size | re-roll |
-| G2 | key kept ≥ 0.97 (base-opaque, non-item, non-border px still key) | re-roll; after 2 re-rolls switch key (only if the item colour allows it) |
+| G2 | key kept ≥ 0.97 (base-opaque, non-item, non-border px still key) | re-roll; after 2 re-rolls switch key (only if the item color allows it) |
 | G3 | key px outside the base alpha ≤ 0.02 (≤ 0.05 for posed cells, S4) | re-roll |
 | G4 | every cell ≥ 50 % of its clip's median area; clip median > 0 | re-roll |
 | G5 | clip area CV ≤ max(0.15, body-band CV + 0.05) | re-roll |
@@ -124,7 +124,7 @@ Visual judgement:
 - **Design lock is the best of any route** (palette distance 0.5–3.3 vs 7–22 for the anchor-cell route): the helmet, cape and
   sword are the same object in every clip and direction. Walk clips are excellent for all three items.
 - Helmet slash north f3–f6 shows a **front-facing visor on a back view** (the model turned the helmet with the crossing arm).
-  No gate catches a wrong-facing item. Slash east f2 keeps a small detached grey streak.
+  No gate catches a wrong-facing item. Slash east f2 keeps a small detached gray streak.
 - Cape: swings convincingly in the east slash. North slash f0 has an olive smear inside the cape, and f2–3 lose part of the
   cape (S4 saw the same; G4 re-rolled a missing frame once).
 - Sword: follows the swing in S/E/N slash (right hand in 36 of 48 cells). In walk east f4–7 the blade drops/flips and leaves
@@ -154,11 +154,11 @@ Observation: the ladder draws `legs` (z 30) over `feet` (z 20), so trousers cove
 
 ## Bugs found and fixed
 
-1. **Dark key-shade outlines and folds were keyed out.** `edit-animation-v2` quantizes the grid to ~17–19 colours, so the
-   red cape's outline and fold lines came back as the key ramp's darkest green (9,39,7): holes through which the grey shirt
+1. **Dark key-shade outlines and folds were keyed out.** `edit-animation-v2` quantizes the grid to ~17–19 colors, so the
+   red cape's outline and fold lines came back as the key ramp's darkest green (9,39,7): holes through which the gray shirt
    showed (north idle) and outline gaps. G3 also read the outline outside the silhouette as "mannequin moved" (0.19–0.28) and
    re-rolled good capes. Fix: `absorbOutline` (dark key px outside the base alpha touching the item, or with ≥5 of 8 item
-   neighbours, 2 passes). Cape north holes gone, G3 0.0016.
+   neighbors, 2 passes). Cape north holes gone, G3 0.0016.
 2. **Rim guard ate item outlines.** S2's guard drops dark item px over dark base lines (hair tips, trouser edges). Fix: a
    candidate touching non-candidate item px is the item's own outline and is kept (selftest keeps the olive-rim drop).
 3. **G2 false failures from the cell edge.** PixelLab erases the outermost row; with S2's y+16 pad the walking feet sit on

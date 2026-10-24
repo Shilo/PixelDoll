@@ -158,7 +158,7 @@ export async function selfTest() {
   console.assert(again.rig.baseHash === b.rig.baseHash && /^sha256:[0-9a-f]{64}$/.test(b.rig.baseHash), 'baseHash deterministic');
   const bad = await buildRig([{ id: 'walk', dirs: { south: [frame(0), frame(1)], east: [frame(0)] } }]);
   console.assert(bad.errors.some((e) => e.includes('frame count')), 'frame count mismatch is an error');
-  // anchors: fake skeleton = neck at the body top-centre of each cell
+  // anchors: fake skeleton = neck at the body top-center of each cell
   const skel: Record<string, Skeleton> = {};
   for (const c of Object.values(b.cells)) if (!c.mirrorOf) skel[c.hash] = { NECK: { x: (c.box!.x0 + c.box!.x1 + 1) / 2, y: 20, z: 0 } };
   const { anchors, stats } = anchorTracks(b, skel);

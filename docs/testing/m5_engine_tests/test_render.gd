@@ -1,6 +1,6 @@
 extends SceneTree
 # Windowed (needs a GPU): renders the exported Paperdoll.tscn for every walk frame in south/east/west and compares each
-# 64x64 cell pixel-exactly with PixelDoll's own composite baked/knight/walk.png (over the black clear colour).
+# 64x64 cell pixel-exactly with PixelDoll's own composite baked/knight/walk.png (over the black clear color).
 # Saves the captured frames as a 3x contact sheet.
 const ROOT := "res://pixeldoll/s1_knight/"
 var fails := 0

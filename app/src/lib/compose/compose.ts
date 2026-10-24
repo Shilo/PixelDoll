@@ -196,7 +196,7 @@ export function selfTest() {
   console.assert(cellImg(p, e, 'walk', 'west', 0)?.data.join() === '2,0,0,255,1,0,0,255', 'mirrored dir = flip of source');
   console.assert(cellImg(p, e, 'walk', 'south', 0) === null && cellImg(p, e, 'idle', 'east', 0) === null, 'missing anim/dir = transparent');
 
-  // oversize: a 3x3 layer with pivot (2,2) over a 1x1 rig cell with pivot (1,1) -> its centre pixel lands on the rig cell
+  // oversize: a 3x3 layer with pivot (2,2) over a 1x1 rig cell with pivot (1,1) -> its center pixel lands on the rig cell
   const big: Img = { w: 3, h: 3, data: new Uint8ClampedArray(36).map((_, i) => (i % 4 === 3 ? 255 : i % 4 === 0 ? 10 + (i >> 2) : 0)) };
   images.set('sha256:o', big);
   const sword = { id: 'main', role: 'fg', z: 150, cell: { w: 3, h: 3 }, pivot: { x: 2, y: 2 }, cells: { walk: { south: ['sha256:o', null] } } } as Layer;

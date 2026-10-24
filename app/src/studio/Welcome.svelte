@@ -12,7 +12,7 @@
   const img = $derived(view.project && view.anim ? composeCell(view.project, doc.items, ui.anim, 'south', view.cell) : null)
   function create() { dismissWelcome(); ui.sheet = 'create' }
   function demo() { dismissWelcome(); if (doc.id !== DEMO) void openProject(DEMO) }
-  const STEPS = [['Create', 'Describe the body'], ['Add items', 'Hats, tops, weapons'], ['Dress up', 'Wear, recolour, play'], ['Export', 'Any game engine']]
+  const STEPS = [['Create', 'Describe the body'], ['Add items', 'Hats, tops, weapons'], ['Dress up', 'Wear, recolor, play'], ['Export', 'Any game engine']]
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />

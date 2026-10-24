@@ -53,7 +53,7 @@ test('reference fitting does not reject a contained target solely for optional h
   expect(fitFramingWarnings(target)).toHaveLength(4);
   expect(fitFramingWarnings(target).every(w=>w.includes('headroom 2 px'))).toBe(true);
 });
-test('paid fitting fails closed for unknown profiles, offsets, missing references and unsafe colourways',async()=>{
+test('paid fitting fails closed for unknown profiles, offsets, missing references and unsafe colorways',async()=>{
   const source=await project(5,true), target=await project(7), design=await createDesign(source,'helmet');
   expect(qualifiedFit(design,target)).toBeNull();
   design.source.materials.push({id:'accent',owner:design.itemId,label:'Accent',ramp:['#ff0000'],variants:{}});expect(qualifiedFit(design,target)).toContain('single-material');design.source.materials.pop();
@@ -120,7 +120,7 @@ test('uniform palette drift across all posed outputs is checked against the appr
   expect(result.fails.some(f=>f.includes('approved rest'))).toBe(true);expect(item.qa!.maxPaletteDist).toBe(20);
   expect(Object.values(item.qa!.clips!).every(c=>c.maxPaletteDist===20&&c.status==='fail')).toBe(true);
 });
-test('extension reuses approved raw references only with exact body, pose, profile and colour baseline proof',async()=>{
+test('extension reuses approved raw references only with exact body, pose, profile and color baseline proof',async()=>{
   const source=await project(5,true);
   source.manifest.items[1].provenance.push({endpoint:'/edit-animation-v2',params:{},seed:1,requestHash:`sha256:${'a'.repeat(64)}`,produced:dirs.map(d=>cellKey('rest',d,0) as CellKey),createdAt:'2026-10-22T00:00:00Z'});
   const design=await createDesign(source,'helmet'), target=await project(5), refs=Object.fromEntries(dirs.map(d=>[d,source.images.get(source.manifest.items[1].dressed![d]!)!]));

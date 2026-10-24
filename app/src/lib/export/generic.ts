@@ -4,7 +4,7 @@ import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
 import type { Engine, Manifest, Project } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
-import { moveDirs, recolour, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
+import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame } from '../compose/compose.ts';
 import { validPaletteRepairs } from '../dress/item-palette.ts';
 
@@ -53,15 +53,15 @@ export function validate(p: Project): string[] {
     ids.add(mat.id);
     if (!m.items.some((it) => it.id === mat.owner)) e.push(`${mat.id}: unknown material owner ${mat.owner}`);
     for (const c of mat.ramp) {
-      if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) { e.push(`${mat.id}: ramp colours must be six-digit #RRGGBB values`); continue; }
+      if (typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c)) { e.push(`${mat.id}: ramp colors must be six-digit #RRGGBB values`); continue; }
       const key = m.format === 'pixeldoll/2' ? `${mat.owner}:${c.toLowerCase()}` : c.toLowerCase();
-      seen.has(key) ? e.push(`colour ${c} in ramps ${seen.get(key)} and ${mat.id}`) : seen.set(key, mat.id);
+      seen.has(key) ? e.push(`color ${c} in ramps ${seen.get(key)} and ${mat.id}`) : seen.set(key, mat.id);
     }
     for (const [v, r] of Object.entries(mat.variants)) {
-      if (r.length !== mat.ramp.length) e.push(`${mat.id}.${v}: ${r.length} colours for a ${mat.ramp.length}-colour ramp`);
-      if (r.some((c) => typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c))) e.push(`${mat.id}.${v}: variant colours must be six-digit #RRGGBB values`);
+      if (r.length !== mat.ramp.length) e.push(`${mat.id}.${v}: ${r.length} colors for a ${mat.ramp.length}-color ramp`);
+      if (r.some((c) => typeof c !== 'string' || !/^#[0-9a-f]{6}$/i.test(c))) e.push(`${mat.id}.${v}: variant colors must be six-digit #RRGGBB values`);
     }
-    if (mat.defaultVariant && mat.ramp.every((c) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) && (m.format !== 'pixeldoll/2' || !variantRampOf(mat, mat.defaultVariant))) e.push(`${mat.id}: invalid default colourway`);
+    if (mat.defaultVariant && mat.ramp.every((c) => typeof c === 'string' && /^#[0-9a-f]{6}$/i.test(c)) && (m.format !== 'pixeldoll/2' || !variantRampOf(mat, mat.defaultVariant))) e.push(`${mat.id}: invalid default colorway`);
   }
   for (const mat of m.materials) if (mat.linkTo && !ids.has(mat.linkTo)) e.push(`${mat.id}: unknown linked material ${mat.linkTo}`);
   const mirrored = m.rig.directions.some((d) => d.mirrorOf);
@@ -79,8 +79,8 @@ export function validate(p: Project): string[] {
       const f = layerFrame(m.rig, l);
       if (!['main', 'fg', 'bg'].includes(l.id) || !['fg', 'bg'].includes(l.role)) e.push(`${it.id}: invalid layer id or role`);
       if (![f.w, f.h, f.x, f.y].every(Number.isInteger) || f.w < 1 || f.h < 1 || f.w > 256 || f.h > 256 || f.x < 0 || f.x > f.w || f.y < 0 || f.y > f.h) e.push(`${it.id}.${l.id}: cell ${f.w}x${f.h} must be 1–256 px with an integer pivot inside the cell`);
-      // a mirrored row is a flip of the whole layer cell: only correct if that cell is centred on the rig cell
-      if (mirrored && 2 * (m.rig.pivot.x - f.x) + f.w !== m.rig.cell.w) e.push(`${it.id}.${l.id}: cell ${f.w} with pivot x ${f.x} is not centred on the rig cell (mirrored directions flip it)`);
+      // a mirrored row is a flip of the whole layer cell: only correct if that cell is centered on the rig cell
+      if (mirrored && 2 * (m.rig.pivot.x - f.x) + f.w !== m.rig.cell.w) e.push(`${it.id}.${l.id}: cell ${f.w} with pivot x ${f.x} is not centered on the rig cell (mirrored directions flip it)`);
       for (const [anim, dirs] of Object.entries(l.cells ?? {})) {
         const a = m.rig.animations.find((x) => x.id === anim);
         if (!a) { e.push(`${it.id}.${l.id}: unknown animation ${anim}`); continue; }
@@ -110,7 +110,7 @@ export function exportManifest(p: Project, o: ManifestOptions): { manifest: Mani
   });
   const ids = new Set(items.map((i) => i.id));
   const m: Manifest = structuredClone({ ...src, items, export: undefined });
-  // Export is also a public API: do not depend on the Studio having materialised procedural swatches first.
+  // Export is also a public API: do not depend on the Studio having materialized procedural swatches first.
   storeVariants(m, {}, ...m.presets.map((pr) => pr.variants));
   // A palette link can target a stale item. Freeze its resolved selections before dropping the excluded owner's metadata.
   const detached = m.materials.filter((mat) => ids.has(mat.owner) && mat.linkTo && !ids.has(m.materials.find((other) => other.id === mat.linkTo)?.owner ?? ''))
@@ -191,7 +191,7 @@ Quick start
 ${(m.export?.engines ?? []).map((e) => `  ${ENGINE_START[e] ?? e}`).join('\n')}
 
 What is inside
-  manifest.json   rig (cell ${m.rig.cell.w}x${m.rig.cell.h}, pivot ${m.rig.pivot.x},${m.rig.pivot.y}), moves, slots, items, colours and outfits
+  manifest.json   rig (cell ${m.rig.cell.w}x${m.rig.cell.h}, pivot ${m.rig.pivot.x},${m.rig.pivot.y}), moves, slots, items, colors and outfits
   layers/         one sheet per item layer and move: layers/<slot>/<item>/<layer>/<move>.png
                   rows = directions (${m.rig.directions.map((d) => d.id).join(', ')}), columns = frames${m.export?.baked ? `
   baked/          the finished character per outfit: baked/<outfit>/<move>.png` : ''}
@@ -199,12 +199,12 @@ What is inside
   project.json   editable character for importing back into PixelDoll
   cells/         original frame and rest images for the editable copy
 
-Outfit colours are baked into additional item layers, reused by matching outfits. The source layers remain available.
-A coloured body is a synced body_colour layer; its hidden original body remains the animation clock.
+Outfit colors are baked into additional item layers, reused by matching outfits. The source layers remain available.
+A colored body is a synced body_colour layer; its hidden original body remains the animation clock.
 
 Moves: ${moves.join(', ')}.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.
-Pixel art: use nearest-neighbour filtering and whole-pixel positions.
+Pixel art: use nearest-neighbor filtering and whole-pixel positions.
 `;
 }
 
@@ -212,7 +212,7 @@ Pixel art: use nearest-neighbour filtering and whole-pixel positions.
 export function coreFiles(p: Project, m: Manifest): OutFile[] {
   const files: OutFile[] = [{ name: 'README.txt', data: readme(m) }, { name: 'manifest.json', data: JSON.stringify(m, null, 2) + '\n' }, { name: 'CREDITS.txt', data: creditsCsv(m) }];
   const byId = new Map(p.manifest.items.map((i) => [i.id, i]));
-  const defaults = recolour(p, {});
+  const defaults = recolor(p, {});
   for (const it of m.items)
     for (const l of it.layers) {
       const srcLayer = byId.get(it.id)!.layers.find((x) => x.id === l.id)!;
@@ -243,15 +243,15 @@ The _stripN suffix lets GameMaker split the image on import; it does not encode 
 Place every layer at character position minus layers[].pivot; oversize layers have their own cell and pivot.
 The base is always worn. Resolve slot hiding, tucked variants (variantOf/under) and z order (layers[].z, slots[].zOverrides) from manifest.json.
 A strip a move does not have (rig.animations[].directions) or an item has no frames for is left out. Mirrored rows are already flipped.
-These strips and layers/ render approved default colourways. To recolour, start from sourceSheets when present (otherwise sheets),
+These strips and layers/ render approved default colorways. To recolor, start from sourceSheets when present (otherwise sheets),
 replace each item's material ramp by the selected variant ramp, and follow linkTo/defaultVariant. All outfit ramps are stored in materials[].variants.
-Baked sheets in baked/ apply the outfit's colours and layer visibility; their cell and pivot are export.bakedCell and export.bakedPivot.
-Use nearest-neighbour filtering, whole-pixel positions and straight RGBA alpha. This is a PNG + JSON interchange format; engine playback needs integration.
+Baked sheets in baked/ apply the outfit's colors and layer visibility; their cell and pivot are export.bakedCell and export.bakedPivot.
+Use nearest-neighbor filtering, whole-pixel positions and straight RGBA alpha. This is a PNG + JSON interchange format; engine playback needs integration.
 ` });
   const bf = bakedFrame(m);
   const ids = new Set(m.items.map((it) => it.id));
   const exported = { ...p, manifest: { ...p.manifest, materials: m.materials, items: p.manifest.items.filter((it) => ids.has(it.id)) } };
-  if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(recolour(exported, pr.variants), pr.items, a.id, bf) });
+  if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(recolor(exported, pr.variants), pr.items, a.id, bf) });
   return files;
 }
 
@@ -294,7 +294,7 @@ export function selfTest() {
   img(96);
   p.manifest.rig.directions.push({ id: 'west', mirrorOf: 'south' });
   L96.pivot.x = 40;
-  console.assert(validate(p).some((x) => x.includes('not centred')), 'oversize: off-centre cell rejected when mirrored');
+  console.assert(validate(p).some((x) => x.includes('not centered')), 'oversize: off-center cell rejected when mirrored');
   L96.pivot.x = 48;
   const m2 = exportManifest(p, { engines: ['generic'], baked: true }).manifest;
   console.assert(m2.export!.bakedCell!.w === 96 && m2.export!.bakedPivot!.y === 76 && m2.items[1].layers[0].cell!.h === 96, 'oversize: baked cell = union of layers');

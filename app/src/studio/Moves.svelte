@@ -7,7 +7,7 @@
   const m = $derived(store.project?.manifest)
   const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
   const k = $derived(Math.max(1, Math.floor(ui.dpr)))
-  // fixed 56 px window (bottom-centred, no per-frame jitter) so the thumbnail is shown 1:1 instead of shrunk
+  // fixed 56 px window (bottom-centered, no per-frame jitter) so the thumbnail is shown 1:1 instead of shrunk
   const win = (im: Img) => {
     if (im.w < 56 || im.h < 56 || im.w > 64 || im.h > 64) return im
     const o = makeImg(56, 56), x0 = (im.w - 56) >> 1, y0 = im.h - 56
@@ -16,7 +16,7 @@
   }
 </script>
 
-<div class="colours">
+<div class="colors">
   <span class="sec-title">Moves</span>
   {#if m && view.project}
     <div class="move-list">

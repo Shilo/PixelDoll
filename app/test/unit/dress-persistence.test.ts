@@ -64,7 +64,7 @@ test('region preparation cannot overwrite a newer frozen base, and metadata-only
   expect((records.get(live.id) as StoredProject).manifest.items[0].regions).toBe('shirt-shorts')
 })
 
-test('legitimate colour-region preparation advances only the exact current body publication receipt', async () => {
+test('legitimate color-region preparation advances only the exact current body publication receipt', async () => {
   const { stableStringify } = await import('../../src/lib/image/hash.ts')
   const live = record(); live.manifest.rig.baseHash = 'sha256:before'; live.character = { id: 'managed', looks: 'body' }
   live.moveRecovery = { id: 'consent', originalRigVersion: 'original', bodyRigVersion: stableStringify({ rig: live.manifest.rig, character: live.character }), specHash: 'exact-spec' }
@@ -75,7 +75,7 @@ test('legitimate colour-region preparation advances only the exact current body 
   expect(next.moveRecovery).toEqual({ ...live.moveRecovery, bodyRigVersion: stableStringify({ rig: next.manifest.rig, character: next.character }) })
   expect(next.moveRecovery?.bodyRigVersion).not.toBe(live.moveRecovery.bodyRigVersion)
 })
-test('a stale body receipt cannot be blessed by a later colour-region split', async () => {
+test('a stale body receipt cannot be blessed by a later color-region split', async () => {
   const { stableStringify } = await import('../../src/lib/image/hash.ts')
   const live = record(); live.manifest.rig.baseHash = 'sha256:before'
   live.moveRecovery = { id: 'consent', originalRigVersion: 'original', bodyRigVersion: stableStringify({ rig: live.manifest.rig, character: live.character }), specHash: 'exact-spec' }
@@ -90,7 +90,7 @@ test('a stale body receipt cannot be blessed by a later colour-region split', as
 })
 
 
-test('a delayed snapshot retains newly fitted current equipment and its independent colour variant', async () => {
+test('a delayed snapshot retains newly fitted current equipment and its independent color variant', async () => {
   const live = record(), snapshot = structuredClone(live.manifest)
   snapshot.items = snapshot.items.filter(it => it.id !== 'hat')
   snapshot.materials = snapshot.materials.filter(mat => mat.owner !== 'hat')

@@ -22,7 +22,7 @@ There was no physical-device testing and no assistive-technology testing (screen
 
 Engine: Chromium (A + M). A WebKit pass covered the existing regression and polish suites and the keyboard probe ([suites](evidence/suites/)).
 
-| Screen | Dark | Light | Phone portrait | Short landscape | Tablet | Desktop | 200% zoom | Forced colours | Verdict |
+| Screen | Dark | Light | Phone portrait | Short landscape | Tablet | Desktop | 200% zoom | Forced colors | Verdict |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Selection | ✔ M/A | ✔ M/A | ◐ overlap at 320×500 (F4) | ◐ heading overlaps actors | ✔ | ✔ | ◐ overlap | ✔ | **Keep desktop/tablet; improve small screens and keyboard (F2, F4)** |
 | Creator | ✔ | ✔ | ✔ scrolls; cramped at 320×500 | ✔ | ✔ | ✔ | ✔ | ✔ | **Improve** (F10 select icon, F17, F18); representative only |
@@ -43,9 +43,9 @@ Engine: Chromium (A + M). A WebKit pass covered the existing regression and poli
 
 "—" means the state was covered at the other sizes and not recaptured for this column.
 
-## 2. Input and behaviour
+## 2. Input and behavior
 
-| Behaviour | Result | Evidence |
+| Behavior | Result | Evidence |
 | --- | --- | --- |
 | Tab order, selection screen | ✔ logical, wraps through body | A, keyboard-probe case A |
 | Tab in studio | ✘ **trapped**: switches views (F1) | A, case D |
@@ -67,7 +67,7 @@ Engine: Chromium (A + M). A WebKit pass covered the existing regression and poli
 | Hat hide on north / restore on south, notice | ✔ | A |
 | Idle-missing notice lifecycle | ✘ stale while walking (F8) | A + M |
 | 1/2/4/8-direction and irregular rigs | ◐ unit tests only (12 pass) | A, motion.test.mjs |
-| Reduced motion | ◐ not honoured; Pause exists | A |
+| Reduced motion | ◐ not honored; Pause exists | A |
 | Theme persistence and first paint | ◐ persists; dark flash (F11) | A |
 | Frame pacing | ◐ headless p50 16.7 ms, p95 16.8 ms, max 50 ms; not GPU-representative | A |
 | DPR 1 / 1.25 / 1.5 / 2 sprite integrity | ✘ uneven at 1.25 (F9) | A |
@@ -85,10 +85,10 @@ The production evidence is in the Studio inventory below.
 | --- | --- | --- | --- | --- |
 | Buttons/links/icon buttons | default, hover, pressed, disabled, busy text, danger, cost suffix, focus | a (pressed, disabled) | e (busy only in g; no cost or link) | **Keep** visuals; add busy and cost recipes |
 | Text/search/password/textarea | default, disabled, long, maxlength | a (no password) | e, f Field (readonly, invalid) | **Keep**; F13 box-sizing |
-| Number/unit/Auto/joined | px suffix, Auto toggle → manual on type, joined mirror | b (readonly Auto: diverges) | e (`bu-unit`, `bu-joined`); g shows a third Auto behaviour | **Improve**: unify Auto semantics |
+| Number/unit/Auto/joined | px suffix, Auto toggle → manual on type, joined mirror | b (readonly Auto: diverges) | e (`bu-unit`, `bu-joined`); g shows a third Auto behavior | **Improve**: unify Auto semantics |
 | Select | toolbar-quiet, boxed, disabled, disabled options | a | e (base-select) | **Improve** (F10) |
 | File | visible, hidden-behind-button, size error | c | e, g | Insufficient evidence |
-| Colour picker | native picker over swatch | c | e (separate input only) | **Improve** (needs overlay variant) |
+| Color picker | native picker over swatch | c | e (separate input only) | **Improve** (needs overlay variant) |
 | Checkbox/switch | gating actions, disabled | c | e | **Keep** |
 | Radio/choice groups | icon cards, disabled "added" chips, pressed chips | a (presets, compass) | e; f ChoiceGroup is text-only | **Improve** |
 | Tabs | segmented (5+ places), icon tab bar, chips with counts, roving creator tabs | a (pressed buttons, not tablist) | e (underline only) | **Improve**: segmented recipe |
@@ -109,7 +109,7 @@ The production evidence is in the Studio inventory below.
 | Installed 0.2.0 equals `d811d35` byte-for-byte; exports resolve; `.d.ts` present | ✔ H (ran) |
 | Hostile host without `base.css` (Chromium, WebKit) | ✘ box-sizing and font leaks (F13), H (ran) |
 | Busy Dialog repeated Escape | ✘ closes on third press (F12), H (ran) |
-| Forced colours, reduced transparency, `@supports` fallbacks | ✔ H (ran) + A (prototype) |
+| Forced colors, reduced transparency, `@supports` fallbacks | ✔ H (ran) + A (prototype) |
 | Showcase tabs × dark/light × 1440/390, no horizontal scroll | ✔ A + M |
 | Showcase fidelity to the product | ✘ (F14) M + R |
 | Docs vs source | ✘ drift (F15) H + R |

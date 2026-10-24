@@ -17,7 +17,7 @@ import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
 import { chromaLayer, type Key } from '../image/chroma.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { DESIGN, GATES, GRID_COLS, anchored, planGens, GREYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, greyShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { DESIGN, GATES, GRID_COLS, anchored, planGens, GRAYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, grayShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 /** fallback: B14, a pose call redone as an inpaint-v3 grid keeps its best pose roll (and that roll's failed-check count). */
@@ -182,7 +182,7 @@ function switchKey(d: Draft) {
 export const failsOf = (res: ItemResult, k: number) => [...(res.g1.has(k) ? [res.g1.get(k)!] : []), ...(res.qa?.failCalls.get(k) ?? [])];
 function retry(d: Draft, k: number, why: string[]): boolean {
   if (d.calls[k].rerolls < MAX_REROLLS) rerollCall(d, k, why.join('; '));
-  // the other key only helps a key/item colour collision (G2); moved arms, missing or clipped items are generation problems
+  // the other key only helps a key/item color collision (G2); moved arms, missing or clipped items are generation problems
   else if (!d.keySwitched && d.calls[k].kind !== 'grid' && d.spec.key !== 'none' && why.some((w) => w.startsWith('G2')) && keyAllowed(d.spec.prompt, other(d.spec.key))) switchKey(d);
   else { d.log.push(`call ${k + 1} still fails after re-rolls and key switch: ${why.join('; ')} -> needs review`); return false; }
   return true;
@@ -327,7 +327,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
       !c.area && `G4 keyframe ${o.key}: item missing`,
       // B14: re-roll a smudged design (10 gens) before 36 gens of poses copy it (T3: red cape north hem)
-      !GREYISH.test(d.spec.prompt) && greyShare(c.layer) > DESIGN.grey && `D1 keyframe ${o.key}: ${(greyShare(c.layer) * 100).toFixed(0)} % grey smudges in a colourful design`].filter(Boolean);
+      !GRAYISH.test(d.spec.prompt) && grayShare(c.layer) > DESIGN.gray && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
   }
   const run = (useCc?: boolean) => outs.filter((o) => !structuralReason(g1.get(o.k) ?? '')).map((o) => ex(o, useCc));
@@ -576,42 +576,42 @@ const paletteVersion = (rec: StoredProject, itemId: string) => stableStringify({
 async function prepareItemPalette(projectId: string, itemId: string, anim: string, dir: DirectionName) {
   const ctx = await loadProject(projectId), { rig } = ctx.rec.manifest, item = ctx.rec.manifest.items.find(i => i.id === itemId);
   const count = rig.animations.find(a => a.id === anim)?.cells;
-  if (!item || item.slot === 'body' || item.status !== 'accepted' || item.baseHash !== rig.baseHash || !count || !rig.directions.some(d => d.id === dir && !d.mirrorOf)) throw new Error('Choose an accepted item and an authored view of an existing move to match colours.');
+  if (!item || item.slot === 'body' || item.status !== 'accepted' || item.baseHash !== rig.baseHash || !count || !rig.directions.some(d => d.id === dir && !d.mirrorOf)) throw new Error('Choose an accepted item and an authored view of an existing move to match colors.');
   const matcher = itemPaletteMatcher(item, ctx.rec.manifest.materials), next = structuredClone(item), images = new Map<Sha256, Img>();
   const frames = new Map<number, { cell: number; changedPixels: number; layers: { id: string; before: Sha256; after: Sha256 }[] }>();
   let changedPixels = 0, unmatchedPixels = 0;
   for (const [j, layer] of item.layers.entries()) {
     const row = layer.cells?.[anim]?.[dir];
-    if (!row || row.length !== count) throw new Error('Colour matching needs every stored frame in this view.');
+    if (!row || row.length !== count) throw new Error('Color matching needs every stored frame in this view.');
     for (const [i, before] of row.entries()) {
       if (!before) continue;
       const original = ctx.project.images.get(before);
-      if (!original) throw new Error('An equipment frame is missing. Existing colours were kept.');
+      if (!original) throw new Error('An equipment frame is missing. Existing colors were kept.');
       const r = matcher.apply(original); unmatchedPixels += r.unmatchedPixels;
       if (!r.changedPixels) continue;
       // Only RGB can change; exact dimensions, alpha and all pixel positions are retained.
-      if (r.image.w !== original.w || r.image.h !== original.h || r.image.data.some((v, k) => k % 4 === 3 && v !== original.data[k])) throw new Error('Colour matching cannot change equipment geometry.');
+      if (r.image.w !== original.w || r.image.h !== original.h || r.image.data.some((v, k) => k % 4 === 3 && v !== original.data[k])) throw new Error('Color matching cannot change equipment geometry.');
       const after = await cellHash(r.image); images.set(after, r.image); next.layers[j].cells![anim][dir]![i] = after;
       const frame = frames.get(i) ?? { cell: i, changedPixels: 0, layers: [] };
       frame.changedPixels += r.changedPixels; frame.layers.push({ id: layer.id, before, after }); frames.set(i, frame); changedPixels += r.changedPixels;
     }
   }
-  if (!changedPixels) throw new Error('No eligible colours need matching in this view.');
+  if (!changedPixels) throw new Error('No eligible colors need matching in this view.');
   const version = paletteVersion(ctx.rec, itemId), edits = [...frames.values()].sort((a, b) => a.cell - b.cell);
   const plan: ItemPaletteRepairPlan = { version: ITEM_PALETTE_POLICY, fingerprint: await sha256(stableStringify({ projectId, anim, dir, version })), materialId: matcher.materialId, changedPixels, changedFrames: edits.map(f => f.cell), unmatchedPixels };
   next.paletteRepairs = [...(next.paletteRepairs ?? []), { version: ITEM_PALETTE_POLICY, materialId: matcher.materialId, anim, dir, frames: edits }];
-  if (!validPaletteRepairs(next.paletteRepairs)) throw new Error('This colour correction exceeds the supported history format. Existing colours were kept.');
+  if (!validPaletteRepairs(next.paletteRepairs)) throw new Error('This color correction exceeds the supported history format. Existing colors were kept.');
   return { plan, version, next, images };
 }
-/** A free, explicit preview; unsupported/ambiguous colour families remain unchanged. */
+/** A free, explicit preview; unsupported/ambiguous color families remain unchanged. */
 export async function itemPaletteRepairPlan(projectId: string, itemId: string, anim: string, dir: DirectionName): Promise<ItemPaletteRepairPlan> {
   return (await prepareItemPalette(projectId, itemId, anim, dir)).plan;
 }
 /** Apply exactly the reviewed free edit, atomically. Historical QA flags and original paid provenance are preserved. */
-export async function matchItemColours(projectId: string, itemId: string, anim: string, dir: DirectionName, reviewed: ItemPaletteRepairPlan): Promise<void> {
+export async function matchItemColors(projectId: string, itemId: string, anim: string, dir: DirectionName, reviewed: ItemPaletteRepairPlan): Promise<void> {
   const prepared = await prepareItemPalette(projectId, itemId, anim, dir);
-  if (stableStringify(prepared.plan) !== stableStringify(reviewed)) throw new Error('This item or its colours changed. Review the colour match again.');
+  if (stableStringify(prepared.plan) !== stableStringify(reviewed)) throw new Error('This item or its colors changed. Review the color match again.');
   await saveItem(projectId, prepared.next, prepared.images, [], current => {
-    if (paletteVersion(current, itemId) !== prepared.version) throw new Error('This item, body or material changed. Existing colours were kept; review again.');
+    if (paletteVersion(current, itemId) !== prepared.version) throw new Error('This item, body or material changed. Existing colors were kept; review again.');
   });
 }

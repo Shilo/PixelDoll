@@ -41,7 +41,7 @@ describe('shared world movement', () => {
     expect(pointerVector(NaN, 1, 40)).toEqual({ x: 0, y: 0 });
   });
 
-  test('joystick displacement converts screen y and preserves analogue speed without diagonal overspeed', () => {
+  test('joystick displacement converts screen y and preserves analog speed without diagonal overspeed', () => {
     expect(pointerVector(2, 2, 40)).toEqual({ x: 0, y: 0 });
     expect(pointerVector(20, 0, 40)).toEqual({ x: 0.5, y: -0 });
     const diagonal = pointerVector(40, -40, 40);

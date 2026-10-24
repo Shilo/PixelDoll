@@ -115,7 +115,7 @@ test('concurrent scenes share a folder load through the game-global TextureManag
   expect(vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith('manifest.json'))).toHaveLength(1);
 });
 
-test('generated Phaser runtime recolours source pixels per owner, resolves linked presets and tucked layers, and restores defaults', async () => {
+test('generated Phaser runtime recolors source pixels per owner, resolves linked presets and tucked layers, and restores defaults', async () => {
   const m = fixture(), api = runtime(), h = sceneHarness(); browserHarness(m);
   const loaded = await api.loadPaperdoll(h.scene, '/hero/');
   const doll = new api.Paperdoll(h.scene, 0, 0, loaded);

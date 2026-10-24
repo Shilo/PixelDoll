@@ -53,11 +53,11 @@ Evidence levels used below:
 | Route | Directions | Size | Templates | Cost | Notes |
 |---|---|---|---|---|---|
 | `POST /create-character-v3` (default; "most-used endpoint") | 8, or 4 via `n_directions` (reference mode only) | from scratch 32–256 (default 64); `reference_image` ≤256 | `template_id` mannequin \| bear \| cat \| dog \| horse \| lion | ref: `ceil(w*h*8/65536)` gens; scratch: 1 + `ceil(s*s*8/65536)` | Reference must face **south**. Non-square output is padded to a square. `direction_images` freezes directions you drew yourself; a fully covered import costs 0.25 gens. `view`: low top-down \| high top-down \| side |
-| `POST /create-character-pro` | 8 | `image_size` 32–168; persisted square canvas may grow to 256 | same | "typically 10–25 gens" | `style_character_id` reuses an existing character's style. `target_palette` (≤64 colours) |
+| `POST /create-character-pro` | 8 | `image_size` 32–168; persisted square canvas may grow to 256 | same | "typically 10–25 gens" | `style_character_id` reuses an existing character's style. `target_palette` (≤64 colors) |
 | `POST /create-character-pro-flash` | 8 (`n_directions`) | native 16 (exp.)/24/32/32×48/48/64/96×64/96/128; custom 16–256 beta | + `custom` | provisional; `GET /pro-flash/cost` | Query `GET /pro-flash/capabilities` (auth) for native shapes |
 | `POST /create-character-with-4-directions` / `-8-directions` (template/legacy) | 4 / 8 | 16–128; canvas ~40% larger | mannequin + quadrupeds; `proportions` presets | standard 1 gen; 8-dir `mode=pro` 10–25 | Per-direction reference images are frozen as-is. Style hints (outline/shading/detail) are "soft guidance" |
 | `POST /create-character-state` | applies the same edit across all 4/8 **rotations** | `override_frame_size` (multiples of 4, ≥ source) | inherits | 10–25 gens [mcp] | Saves a **new character** in the same `group_id`. `use_color_palette_from_reference` locks the palette. The spec text covers rotations only: existing animations are **not** carried over (verify in S1) |
-| Export | `GET /characters/{id}/spritesheet` (ZIP: uniform-grid PNG + layout JSON, frames centred, "pivot is always the cell centre", never rescaled), `GET /characters/{id}/zip` | | | free | **No auth: the character UUID is the key.** Rotation URLs on `supabase.pixellab.ai` are public |
+| Export | `GET /characters/{id}/spritesheet` (ZIP: uniform-grid PNG + layout JSON, frames centered, "pivot is always the cell centre", never rescaled), `GET /characters/{id}/zip` | | | free | **No auth: the character UUID is the key.** Rotation URLs on `supabase.pixellab.ai` are public |
 
 Docs: "Create 8-directional sprite (Pro)" in the editor/Creator: ≤168 px, 10/15/25 gens for 1–85/86–113/114–168 px, Tier 1
 ([docs](https://www.pixellab.ai/docs/tools/create-8-rotations-pro)).
@@ -67,12 +67,12 @@ Docs: "Create 8-directional sprite (Pro)" in the editor/Creator: ≤168 px, 10/1
 | Route / mode | Frames | Size | Cost | Notes |
 |---|---|---|---|---|
 | `/characters/animations` or `/animate-character`, `mode=template` | fixed by template | — | 1 gen/direction; canvases over ~100 px are billed per batch | `template_animation_id`; skeleton-based |
-| `mode=skeleton-v3` (beta) | template | — | 2–4 gens/direction, ~3–5 min | "Moves the character instead of redrawing it each frame", which gives steadier identity and colours. **Best candidate for a stable base body** |
+| `mode=skeleton-v3` (beta) | template | — | 2–4 gens/direction, ~3–5 min | "Moves the character instead of redrawing it each frame", which gives steadier identity and colors. **Best candidate for a stable base body** |
 | `mode=v3` (default when no template) | 4–16, even | ≤256 | size × frames | `custom_start_frame`, `end_frame` (interpolation), `keep_first_frame` (default true, so you get N+1 frames) |
 | `mode=pixminimax` (beta) | multiples of 4, up to 40 | any | 64×64: 8 frames = 1 gen, 40 frames = 6 | Tier 1+ per [prior] |
 | `mode=pro` (legacy) | — | — | 10–25 gens/direction | |
-| `POST /animate-with-text-v3` (raw frames) | 4–16, even | ≤256; budget `w*h*frames ≤ 524,288` | — | So the maximum is 16 frames at 64²/128², 14 at 192², 8 at 256². `drift_threshold` colour de-flicker |
-| `POST /animate-with-skeleton-v3` (beta, raw) | 3–15 | ≤256 | 3 frames = 2 gens, 8 = 3, 15 = 4 (longer clips are nearly free); USD ≈ $0.0436/$0.0513/$0.0622 ([pixellab-api](https://www.pixellab.ai/pixellab-api)) | 18 labelled joints, x/y in 0–1, optional depth 0–255 and z_index. Needs `first_frame_keypoints`. Returns exactly `len(keypoints)` frames. 3–5 min |
+| `POST /animate-with-text-v3` (raw frames) | 4–16, even | ≤256; budget `w*h*frames ≤ 524,288` | — | So the maximum is 16 frames at 64²/128², 14 at 192², 8 at 256². `drift_threshold` color de-flicker |
+| `POST /animate-with-skeleton-v3` (beta, raw) | 3–15 | ≤256 | 3 frames = 2 gens, 8 = 3, 15 = 4 (longer clips are nearly free); USD ≈ $0.0436/$0.0513/$0.0622 ([pixellab-api](https://www.pixellab.ai/pixellab-api)) | 18 labeled joints, x/y in 0–1, optional depth 0–255 and z_index. Needs `first_frame_keypoints`. Returns exactly `len(keypoints)` frames. 3–5 min |
 | `POST /estimate-skeleton` | — | **only** 16/32/64/128/256 square | ~0.1 gen [prior] | The v3 text says "`GET /v2/estimate-skeleton`", but the spec defines **POST** (doc inconsistency) |
 | `POST /interpolation-v2` (Pro) | "typically 4–8" | 16–128 | — | |
 
@@ -84,10 +84,10 @@ hard-code it.** It is [unverified]; S1 should capture the current list.
 
 ### 2.3 Editing / outfit routes (the paperdoll-relevant core)
 
-| Route | Inputs | Size | Frames per call | Cost | Preservation behaviour |
+| Route | Inputs | Size | Frames per call | Cost | Preservation behavior |
 |---|---|---|---|---|---|
 | `POST /edit-animation-v2` (Pro) | text + 2–16 frames | output 16–256 | 16–64 px: **16** (4×4); 65–80: **9**; 81–256: **4** | 10 (≤128) / 15 (129–170) / 25 (171–256) gens [docs] | Claims "frame-to-frame consistency". **No pixel-preservation guarantee.** Optional `target_palette` |
-| `POST /transfer-outfit-v2` (Pro) | reference image + 2–16 frames | output 32–256 | 32–64: **15**; 65–80: **8**; 81–256: **3** (the reference uses one grid slot) | same 10/15/25 tiers; "2 frames cost the same as more" [mcp] | Keeps the motion. [mcp]: the reference should be **the same character in the new outfit**; a different character can freeze the motion or change almost nothing. Smaller frames are centred and padded, never scaled. `additional_instructions` takes direction hints |
+| `POST /transfer-outfit-v2` (Pro) | reference image + 2–16 frames | output 32–256 | 32–64: **15**; 65–80: **8**; 81–256: **3** (the reference uses one grid slot) | same 10/15/25 tiers; "2 frames cost the same as more" [mcp] | Keeps the motion. [mcp]: the reference should be **the same character in the new outfit**; a different character can freeze the motion or change almost nothing. Smaller frames are centered and padded, never scaled. `additional_instructions` takes direction hints |
 | `POST /edit-images-v2` (Pro) | `edit_with_text` or `edit_with_reference`; 1–16 images | output 32–512; inputs ≤512 | 32–64: 16 (15 with ref); 65–80: 9/8; 81–128: 4/3; 129–512: 1 | 10–25 [mcp] | "Preserves original structure and poses" (claimed, not guaranteed) |
 | `POST /edit-image-pixen` | text, 1 image | source ≤256/side; target area ≤256²; **sides must be multiples of 4** | 1 | **1 gen** | "Only what you asked for changes" (claimed). Re-renders at the target size |
 | `POST /edit-image-pro-flash` | text or reference | native sizes only | 1 | provisional | "Source canvas never grows or resizes" |
@@ -95,7 +95,7 @@ hard-code it.** It is [unverified]; S1 should capture the current list.
 | `POST /inpaint-v3` (Pro) | image + mask (**white = generate**) | 32–512 (docs: ≤256 Tier 1, ≤512 Tier 2+) | 1 | 10 gens [docs] | `crop_to_mask` default true. [mcp] `inpaint_image` "keeps the rest pixel-identical" |
 | `POST /inpaint-image-pro-flash` | image + pure B/W mask | native sizes; source and mask identical | 1 | provisional | **Exact RGBA preserved outside the mask. `output_method` changes-only gives a result transparent outside the mask** |
 | `POST /inpaint` (legacy) | | area ≤200×200 | 1 | — | |
-| Try On (editor, experimental) | subject + garment image | 16–320 area | 1 | 1 gen, **Tier 2+** | **No REST endpoint.** The functional API analogue is `edit-images-v2 method=edit_with_reference` ([docs](https://www.pixellab.ai/docs/tools/try-on)) |
+| Try On (editor, experimental) | subject + garment image | 16–320 area | 1 | 1 gen, **Tier 2+** | **No REST endpoint.** The functional API analog is `edit-images-v2 method=edit_with_reference` ([docs](https://www.pixellab.ai/docs/tools/try-on)) |
 
 Editor docs ([options/general](https://www.pixellab.ai/docs/options/general)) list the output methods **New layer with
 changes / Modify current layer / New frame**, plus "Paint in selection" and "Force symmetry". They do not say which tools
@@ -147,7 +147,7 @@ mask convention is **white = generate**. Do not mix them up.
 | Claim | Status |
 |---|---|
 | PixelLab returns composites; no semantic layers anywhere | **Verified** (spec, MCP, docs) |
-| Changes-only output exists in public REST/MCP | **Verified in spec text** (`inpaint-image-pro-flash`). Live behaviour **unverified** (S1) |
+| Changes-only output exists in public REST/MCP | **Verified in spec text** (`inpaint-image-pro-flash`). Live behavior **unverified** (S1) |
 | Exact preservation outside the mask (pro-flash inpaint; MCP `inpaint_image`) | Documented claim. **Unverified live** |
 | `edit-animation-v2` / `transfer-outfit-v2` / `edit-images-v2` preserve unchanged body pixels | **Not claimed** by PixelLab. Expect redraw drift; the diff/QA pipeline is required |
 | Frame/size tiers for the Pro edit routes | **Verified** (spec + docs agree) |
@@ -180,7 +180,7 @@ mask convention is **white = generate**. Do not mix them up.
 | 11 | §13 Option A Pixelorama "in the browser" | Add: **desktop browsers only** (no mobile) | [docs](https://www.pixellab.ai/docs/ways-to-use-pixellab) |
 | 12 | §5 / §7 "Create 8-directional sprite" as the direction route | Still valid (Pro, ≤168 px, Tier 1), but the current default is `create-character-v3` (≤256 px, 4 or 8 dirs, south reference, frozen `direction_images`) | [OpenAPI](https://api.pixellab.ai/v2/openapi.json) |
 | 13 | §5.1 Rotation tutorial (two approaches, fix with inpaint) | **Verified correct** | [docs](https://www.pixellab.ai/docs/guides/rotating-a-character) |
-| 14 | (missing) canvas assumptions | Add: animations may get a larger canvas than rotations. The official spritesheet export centres frames in uniform cells ("pivot = cell centre"). The legacy 4/8-dir characters use a canvas ~40% larger than the requested size | [OpenAPI](https://api.pixellab.ai/v2/openapi.json) |
+| 14 | (missing) canvas assumptions | Add: animations may get a larger canvas than rotations. The official spritesheet export centers frames in uniform cells ("pivot = cell centre"). The legacy 4/8-dir characters use a canvas ~40% larger than the requested size | [OpenAPI](https://api.pixellab.ai/v2/openapi.json) |
 
 ### 4.2 `proper_paperdolling_in_pixellab.md`
 
@@ -200,7 +200,7 @@ mask convention is **white = generate**. Do not mix them up.
    and 10–25 gens each. Compute the real canvas from the returned frames, never from `image_size`.
 2. **Base body: `create-character-v3` plus template/`skeleton-v3` animations.** Skeleton-v3 "moves rather than redraws", which
    suits a stable base. Normalize all rotations and animations to one padded canvas with an explicit pivot. Match the official
-   spritesheet convention (centred cells) or record offsets.
+   spritesheet convention (centered cells) or record offsets.
 3. **Equipment route candidates, ranked for S1:**
    - (a) **Region items** (hat, helmet, held weapon): `inpaint-image-pro-flash` with a changes-only `output_method`. The layer
      arrives directly, transparent outside the mask. Still diff against the base inside the mask so redrawn skin/hair is not

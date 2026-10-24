@@ -6,10 +6,10 @@ import type { CellKey, Item, ItemQa } from '../../src/lib/store/manifest.ts'
 import type { Rig } from '../../src/lib/rig/rig.ts'
 
 const rig: Rig = { cell: { w: 8, h: 8 }, pivot: { x: 4, y: 7 }, baseItem: 'base', baseHash: 'sha256:test', directions: [{ id: 'south' }, { id: 'east' }], animations: [] }
-function cell(key: CellKey, bad = false, call = 0, colour = 90): CellOut {
+function cell(key: CellKey, bad = false, call = 0, color = 90): CellOut {
   const base = makeImg(8, 8), layer = makeImg(8, 8), mask = new Uint8Array(64)
   const points = bad ? [0] : [18, 19, 20, 26, 27, 28, 34, 35, 36]
-  for (const p of points) { mask[p] = 1; layer.data.set([colour, colour, colour, 255], p * 4) }
+  for (const p of points) { mask[p] = 1; layer.data.set([color, color, color, 255], p * 4) }
   return { key, call, base, input: base, out: layer, layer, mask, area: points.length, outBand: 0, baseBand: 0, specks: 0, pinholes: 0, shifted: bad, offset: [0, 0], stray: bad ? 5 : 0, posed: true, keyKept: bad ? .8 : 1, keyOutside: bad ? .2 : 0 }
 }
 const check = (cells: CellOut[], retries = 0) => itemQa(rig, slotOf('head'), 'green', cells, retries)

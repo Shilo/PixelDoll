@@ -18,7 +18,7 @@ Base: S2's 48 px clothed character `5352683c…` (b48), rotations and template f
    produced the missing RPG actions (slash, cast, hurt, death; S/E/N) from **one reference image** with:
    - pose adherence 0.4–1.1 px mean (re-estimated vs requested, standing actions; 2.1 px on death);
    - the requested hand moving in 100 % of slash frames (right-hand displacement 78–96 px vs left 11–28 px);
-   - feet drift 0 px, canvas = the 64 rig cell, palette fit 1.00 (every colour within 12 of the base palette), 21–27 colours;
+   - feet drift 0 px, canvas = the 64 rig cell, palette fit 1.00 (every color within 12 of the base palette), 21–27 colors;
    - 3 generations per ≤8-frame clip, ~2 min.
 2. **NEW, most important for paperdolling: posing a DIFFERENT keyframe with the SAME skeleton sequence gives pixel-ALIGNED
    frames.** Raw v3 on the chroma mannequin vs the base: silhouette IoU 0.988 (S) / 0.977 (E), best shift 0,0 on every frame.
@@ -46,7 +46,7 @@ Showcases: [`k1_v3_actions`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spik
 |---|---|---|---|---|
 | Labels | 18: NOSE, NECK, {RIGHT,LEFT} {SHOULDER, ELBOW, ARM (=wrist), HIP, KNEE, LEG (=ankle), EYE, EAR} | same 18, each once per pose | none (template poses) | same 18 |
 | Left/right | **character's** side (south view: RIGHT = viewer's left; north: viewer's right) | same | — | same |
-| Coords | x, y normalised 0–1 of the image | 0–1 (schema min/max) | — | 0–1 (pixel coords fail: adherence 3.1 px, wrong hand) |
+| Coords | x, y normalized 0–1 of the image | 0–1 (schema min/max) | — | 0–1 (pixel coords fail: adherence 3.1 px, wrong hand) |
 | z | `z_index` **float** (−3.5, −0.5 in side views) | `z_index` int (optional), `depth` 0–255 (optional, defaults to the template standing pose) | — | `z_index` int: floats → **422** |
 | Frames | 1 pose | 3–15 (`first_frame_keypoints` + `keypoints[]`) | template's count | exactly 3 |
 | Size | 16/32/48*/64/128/256 (*48 accepted) | first_frame ≤256; output = first_frame size | character canvas → bigger animation canvas | 16–256 |
@@ -63,7 +63,7 @@ Showcases: [`k1_v3_actions`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spik
 ## K1: Custom actions on the frozen base
 
 **Method.** `estimate-skeleton` on the padded rotations S/E/N → rest pose (px). `s3_poses.mjs` builds sequences procedurally
-(`lib/skel.mjs`: `setArm(side, upperDeg, foreDeg)` with the estimated bone lengths, `rotate()` about the hip centre, `shift()`):
+(`lib/skel.mjs`: `setArm(side, upperDeg, foreDeg)` with the estimated bone lengths, `rotate()` about the hip center, `shift()`):
 slash (right arm wind-up → overhead → diagonal down across → recover, 8 f), cast (both arms raise → thrust → release, 8 f),
 hurt (recoil lean + arms fling, 6 f), death (stagger → kneel → fall over, 8 f). North mirrors the south angle tables
 (a → 180 − a). Previews: `out/s3_k1/*_preview_s7.png`. Then `animate-with-skeleton-v3` with `first_frame` = padded rotation
@@ -72,7 +72,7 @@ no z/depth, seed 7. Every output frame was re-estimated (`s3_k1_eval.mjs`) to me
 
 **Results** (`out/s3_k1/eval_table.json`; sheets `out/s3_k1/<clip>.eval.png` rows = frames / measured skeleton / requested):
 
-| Clip (v3 raw) | adherence all / arms (px) | hand moved R/L (px) | feet drift | lower-body IoU vs rotation | torso / shoulder dev | pal fit | colours | stray px per frame |
+| Clip (v3 raw) | adherence all / arms (px) | hand moved R/L (px) | feet drift | lower-body IoU vs rotation | torso / shoulder dev | pal fit | colors | stray px per frame |
 |---|---|---|---|---|---|---|---|---|
 | slash S (s7 / s11 / repeat) | 0.5 / 0.9 (0.6 / 1.2) | 96 / 15 | 0 | 0.90 | 0.03 / 0.02 | 1.00 | 26 | 0 |
 | slash E (s7 / s11) | 0.9 / 1.6 (1.3 / 2.7) | 87 / 28 | 0 | 0.99 | 0.03 / 0.13 | 1.00 | 25 | 0 (s11: 30 on f2) |
@@ -87,9 +87,9 @@ Comparisons on the same base (slash S unless noted; sheet [`k1_routes_slash_sout
 | Route | Result |
 |---|---|
 | `animate-with-text-v3` "overhead slash attack with the right arm …" (1 gen, 9 frames incl. reference) | **wrong hand** in S (left hand moved 105 px vs right 18), smoke FX, no slash; E: 144 px of FX; height drift 5.8–7.9 px. Unusable for controlled weapon actions. |
-| `/characters/animations` `mode: "v3"` (1 gen) | 9 frames on a **68×68** canvas (`keep_first_frame: false` still returned 9), both hands move (64 / 51), 32–37 colours. |
-| managed `mode: "skeleton-v3"` templates (3 gens/dir) | walking-8 S/E, falling-back-death, taking-punch on the b48 character: **80×80** canvas (re-centred exactly onto the rig), identity OK, one black glitch patch on the head (walk f6, f8), death falls past the rig bottom (feet clipped), head/neck proportion off on hurt/death (head-neck dev 0.41–0.43). |
-| legacy `/animate-with-skeleton` (baseline only, now disallowed) | 3 frames only, adherence 0.6–2.2 px, **41 colours, palette fit 0.83–0.89, height drift 2.3–3.3 px**; pixel coordinates fail. |
+| `/characters/animations` `mode: "v3"` (1 gen) | 9 frames on a **68×68** canvas (`keep_first_frame: false` still returned 9), both hands move (64 / 51), 32–37 colors. |
+| managed `mode: "skeleton-v3"` templates (3 gens/dir) | walking-8 S/E, falling-back-death, taking-punch on the b48 character: **80×80** canvas (re-centered exactly onto the rig), identity OK, one black glitch patch on the head (walk f6, f8), death falls past the rig bottom (feet clipped), head/neck proportion off on hurt/death (head-neck dev 0.41–0.43). |
+| legacy `/animate-with-skeleton` (baseline only, now disallowed) | 3 frames only, adherence 0.6–2.2 px, **41 colors, palette fit 0.83–0.89, height drift 2.3–3.3 px**; pixel coordinates fail. |
 | `mode: "template"` (baseline only, now disallowed) | falling-back-death / taking-punch: black smear artifacts, torso dev 0.15. |
 
 Visual judgement (contact sheets read):
@@ -98,15 +98,15 @@ Visual judgement (contact sheets read):
   keypoints closely; **the face, shirt, shorts and proportions stay those of the base**; legs do not move unless asked.
   Death lies down cleanly in S and E. Weak frames: the slash "strike high" frame covers the face with the forearm (as authored),
   east overhead frame squashes the head slightly.
-- Grey **motion-smear streaks** (detached components) appear along fast arm paths (cast f0–1, slash N f0) and on the final frame
+- Gray **motion-smear streaks** (detached components) appear along fast arm paths (cast f0–1, slash N f0) and on the final frame
   when the last two poses are identical (all three deaths). Keeping the largest 8-connected component removes them.
 - [`k1_retarget`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_overview/k1_retarget.png): re-running a template's estimated skeletons through raw v3
   on the one reference gives a clean walk (east stride clearly readable) and punch → **any motion can be stored as
   (reference image, keypoint sequence)**.
 
-**Identity across clips.** Raw v3 clips keep every colour inside the base palette (fit 1.00) and torso/shoulder/head-neck
+**Identity across clips.** Raw v3 clips keep every color inside the base palette (fit 1.00) and torso/shoulder/head-neck
 proportions within 2–6 % of the rest pose (east shoulder width varies 13–30 % because the far shoulder is occluded — a metric
-artefact). Same request + same seed is **not** bit-identical (86 % of opaque px identical, 0/8 frames identical) → generated
+artifact). Same request + same seed is **not** bit-identical (86 % of opaque px identical, 0/8 frames identical) → generated
 frames must be stored, never regenerated.
 
 ## K2: Chroma item route on the new clips
@@ -158,13 +158,13 @@ the sword, and no prompt fixes that. Retro-QA of S2's runs with the same gate re
 - `gripSide(dR, dL, handsDist)`: min distance from held-item pixels to each wrist keypoint; R/L if one is ≤6 px and the
   other is ≥1.5 px further, "amb" if the hands are <3 px apart or the distances are within 1.5 px (side views). Gate: no "L"
   frames for a right-hand item; >25 % "amb" in a front/back view → review.
-- Helmet anchor: (layer centroid − head-keypoint centre) spread per clip: 0.2–0.7 px on walk/slash S, 2–4 px in side views and
+- Helmet anchor: (layer centroid − head-keypoint center) spread per clip: 0.2–0.7 px on walk/slash S, 2–4 px in side views and
   punches. Gate ≤3 px front/back.
 - Pose adherence (re-estimate vs requested, arms mean ≤2 px) for every skeleton-v3 clip.
 - Stray px (opaque px outside the largest component) → auto-remove, and log.
 
 Keypoint anchors also place rigid items without AI: the K6 dressed keyframes were built by moving S2's walk-frame helmet and
-sword layers by the head-centre / right-wrist delta onto the rotations ([`preview_rotations`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/preview_rotations.png)).
+sword layers by the head-center / right-wrist delta onto the rotations ([`preview_rotations`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/preview_rotations.png)).
 
 ## K6 (added for the constraint): skeleton-v3 alignment across keyframes
 
@@ -179,7 +179,7 @@ Each posed with the same skeleton: managed `mode: "skeleton-v3"` (walking-8-fram
 | managed walk E | 0.38 | 0.928 / 0.49 | 0.930 (0.895), 0,0 | 6.4 % | aligned; sword 4 R / 4 amb |
 | managed cross-punch S / E | 0.30 / 0.24 | — | 0.895 / 0.873, ≤1 px | 4.2 / 8.3 % | helmet OK, **sword lost or wrong** on 3–4 of 6 |
 | raw v3 slash S | 0.66 | — | **0.988 (0.974)**, 0,0 | **1.3 %** (seed 11: 1.4 %) | **sword swings in the right hand, helmet locked** ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/items_raw_slash_south_s7.png)) |
-| raw v3 slash E | 0.54 | — | 0.977 (0.957), 0,0 | 0.7 % | correct; 2 frames with grey motion smears ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/items_raw_slash_east_s7.png)) |
+| raw v3 slash E | 0.54 | — | 0.977 (0.957), 0,0 | 0.7 % | correct; 2 frames with gray motion smears ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s3_k6/items_raw_slash_east_s7.png)) |
 
 References for "stable body pixels": S2 template walk 0.35 (S) / 0.23 (E) consecutive-frame exact px. **Skeleton-v3 is about
 twice as stable but not pixel-locked**: a managed walk frame shares only 35–44 % (S) / 10–36 % (E) exact px with the rotation;
@@ -216,7 +216,7 @@ deterministic-design item route with no `edit-animation-v2` call per clip.
 
 **Explicit v3-vs-legacy answers (PM):**
 
-1. **Authoring custom actions:** raw skeleton-v3. Legacy is 3 frames, drifts palette (41 colours, fit 0.83–0.89) and size,
+1. **Authoring custom actions:** raw skeleton-v3. Legacy is 3 frames, drifts palette (41 colors, fit 0.83–0.89) and size,
    rejects float z, and is now disallowed. Text animation (`animate-with-text-v3`, character `v3`) cannot be trusted with the
    hand or with FX.
 2. **Per-frame keypoints for anchors/QA:** `estimate-skeleton` (the only estimator; shared by both, 0.1 gen, deterministic).
@@ -235,9 +235,9 @@ fell 4350.5 → 3218.9 during the spike, but other agents (B4/B5/S4) were spendi
 
 | Failure | Detection | Handling |
 |---|---|---|
-| Motion-smear FX (detached grey streaks) | stray px > 0 | drop all but the largest component; avoid duplicate final poses |
+| Motion-smear FX (detached gray streaks) | stray px > 0 | drop all but the largest component; avoid duplicate final poses |
 | Pose not followed / wrong hand | adherence > 2 px arms, handOk < 1 | re-roll (different seed), then soften the pose (shorter arm reach) |
-| Managed canvas larger than the rig | output w/h ≠ 64 | re-centre ((w−64)/2); falling motions may clip → use raw v3 with an authored death |
+| Managed canvas larger than the rig | output w/h ≠ 64 | re-center ((w−64)/2); falling motions may clip → use raw v3 with an authored death |
 | Sword lost / wrong hand on unarmed templates | gripSide L or none | author an armed variant with raw v3, or exclude the held item from that clip |
 | Mannequin redrawn off-silhouette | keyOutside > 0.05 | re-roll; accept ≤0.03 |
 | Server `failed` / poll timeout | job status / network error | re-poll the same id; resubmit only on `failed` |

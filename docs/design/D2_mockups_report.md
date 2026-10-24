@@ -18,15 +18,15 @@ Author: D2 (design builder) · Date: 2026-10-20 · Input: [D1 design research](D
 **Real data.** The character is the S2 "adventurer" fixture (`app/public/fixtures/s2`, copied to `public/sprites/layers`):
 base body, steel helmet, wizard hat, messy hair, leather vest, red cape, longsword. Walk (8 frames, S/E/N, W mirrored) and
 cross-punch (6 frames) are composited live on a 64 × 64 canvas with z order and `hides` (the helmet hides the hair). One
-100 ms clock drives every sprite. Wardrobe clicks wear and unwear items. Recolour swatches change the canvas, but the mockup
+100 ms clock drives every sprite. Wardrobe clicks wear and unwear items. Recolor swatches change the canvas, but the mockup
 uses a CSS `filter` per material where the real app remaps ramps. The "generating" state shows the real S2 x4 run
 `b5_chest48_A`: 10 of 16 cells (base plus the extracted layer) and 6 skeleton cells.
 
 **One component set** (`src/lib`, 20 small components): Toolbar, Wardrobe sidebar, Stage (checkerboard aligned to sprite
 pixels, integer zoom from 1× up to a 7× cap, floating canvas bar: play, move, S/E/N/W, all directions, zoom, background),
-Inspector (Item / Colours / Moves), GenCard (progress), Panel (phone tabs), TabBar plus accessory capsule, Sheet (native
-`<dialog>`: a centred dialog on desktop, a bottom sheet with a grabber on phones, a trailing panel in phone landscape), New item,
-Export, Connect PixelLab, Activity, Create flow, Home (first run), Colours swatches, Moves list, Thumb (crop to pixels, integer
+Inspector (Item / Colors / Moves), GenCard (progress), Panel (phone tabs), TabBar plus accessory capsule, Sheet (native
+`<dialog>`: a centered dialog on desktop, a bottom sheet with a grabber on phones, a trailing panel in phone landscape), New item,
+Export, Connect PixelLab, Activity, Create flow, Home (first run), Colors swatches, Moves list, Thumb (crop to pixels, integer
 scale). All looks are token blocks in `src/styles/tokens.css`. Component CSS is `src/styles/app.css`. Control visuals use
 `:where()`, so GlassKit's classes win in look B.
 
@@ -48,25 +48,25 @@ Touch density comes from `pointer: coarse`.
 | 3 | `create`, `review`, `connect` | Describe → Moves → Generate. Review with 4 animated directions and a warning in words. The connect-key sheet is asked in context, at Generate |
 | 4 | `export` | Godot / Unity / Phaser / PNG cards, includes line, clip warning, Download zip · 340 KB |
 | 5 | `activity` | Phone: accessory → Activity bottom sheet. Desktop: popover |
-| 6 | `colours` | Recolour view: the Colours tab in phone landscape, the inspector tab on desktop |
+| 6 | `colours` | Recolor view: the Colors tab in phone landscape, the inspector tab on desktop |
 | 7 | `empty` | First run: the demo character walks on the hero stage, with New character / Try the demo / Import |
 
 ## 2. The looks, honestly, after seeing them rendered
 
 | Look | What it is | Verdict from the screenshots |
 |---|---|---|
-| **A Native minimal** | macOS/iPadOS: white/graphite, grey sidebar, system type, Apple blue | Calm, very legible, and the sprite clearly dominates. Correct, but it has no identity: it could be any settings app. |
+| **A Native minimal** | macOS/iPadOS: white/graphite, gray sidebar, system type, Apple blue | Calm, very legible, and the sprite clearly dominates. Correct, but it has no identity: it could be any settings app. |
 | **A+E** (recommended) | A plus 5 pixel touches: pixel-doll logo and Pixelify Sans wordmark, pixel display headings (empty state, flow titles), stepped primary button with an inset "pixel" shadow, pixelarticons slot glyphs, block-segment progress with `steps()` | A's clarity, and it reads as "a tool for pixel art" at first glance. The pixel font only appears in about 6 places, so it never hurts legibility. Light and dark are both strong. It works at every size, including the 375 px phone. |
-| **B Liquid Glass** | GlassKit 1.29.0 (pinned, MIT), rebranded blue, neutral backdrop: floating toolbar, panels, canvas bar, tab bar, sheets | The most "2026" and the prettiest on a phone (blurred sheets over the dimmed character, floating tab bar). Downsides you can see: chrome uses 30–40 % more space (52–64 px controls; desktop needs `data-density=compact`); content shows through the frosted footer of the create flow; and two vocabularies (GlassKit plus ours) had to be reconciled (steps, segmented, tab bar). In dark, the milky secondary buttons look heavy. The canvas itself stays solid, so the pixel colours are not affected. |
+| **B Liquid Glass** | GlassKit 1.29.0 (pinned, MIT), rebranded blue, neutral backdrop: floating toolbar, panels, canvas bar, tab bar, sheets | The most "2026" and the prettiest on a phone (blurred sheets over the dimmed character, floating tab bar). Downsides you can see: chrome uses 30–40 % more space (52–64 px controls; desktop needs `data-density=compact`); content shows through the frosted footer of the create flow; and two vocabularies (GlassKit plus ours) had to be reconciled (steps, segmented, tab bar). In dark, the milky secondary buttons look heavy. The canvas itself stays solid, so the pixel colors are not affected. |
 | **C Pro dark** | Dense zinc-dark, violet accent, 12 px type | Best for long sessions and closest to Aseprite/Figma. Intimidating as a first impression. Keep it as a density/dark option, not as the product's face. |
-| **D Soft playful** | Cream and berry, Nunito, rounded cards, no checker, soft floor shadow | Warm and inviting. The cream stage tints how colours are judged, and the berry accent fights red capes. It reads more like a toy than an export tool. |
+| **D Soft playful** | Cream and berry, Nunito, rounded cards, no checker, soft floor shadow | Warm and inviting. The cream stage tints how colors are judged, and the berry accent fights red capes. It reads more like a toy than an export tool. |
 | **E Pixel-accent** | Sweetie-16 navy/blue palette, square corners, 2 px outlines, hard shadows, pixel section titles | Distinctive and on-topic. At full strength it is busier: outlines everywhere compete with the sprite's own outlines. It is good as an optional "Pixel" theme. |
 
 ## 3. Recommendation
 
 **Build the MVP on A+E** (this agrees with D1 and D7). Reasons, all visible in the screenshots:
 - the sprite stays the hero;
-- the chrome is quiet and neutral, so recolour judgements stay fair;
+- the chrome is quiet and neutral, so recolor judgements stay fair;
 - the brand comes through in a few cheap places;
 - AA contrast holds for every token pair in both schemes;
 - it needs no UI kit, and the Pixelify font is about 20 KB;
@@ -94,7 +94,7 @@ as 3 rules on 3 surfaces.
 
 ## 5. Open issues (not fixed, worth knowing)
 
-- **Recolour is faked** with CSS filters (good enough to judge the UI). The real ramp remap is M4's job.
+- **Recolor is faked** with CSS filters (good enough to judge the UI). The real ramp remap is M4's job.
 - **DPR-exact integer zoom** (D1 §3.6: `cell × k / devicePixelRatio`) is not implemented. The CSS size is an integer multiple,
   which is exact at DPR 1 and 2 (the screenshots) but not at 1.25 or 1.5.
 - **Landscape phone** is tight. The create form, the Export warning and the Activity footer need a scroll at 812 × 375. That is

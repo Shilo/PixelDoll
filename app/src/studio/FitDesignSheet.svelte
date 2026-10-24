@@ -6,7 +6,7 @@
   import DesignPreview from './DesignPreview.svelte'
   import { assessDesign, loadDesign, designPreview, prepareCopy, acceptCopy, planFit, createFit, getFit, reviewFit, acceptFit, discardFit, type EquipmentDesign, type FitAssessment, type FitCandidate, type FitDraft, type FitPlan } from '../lib/equipment/index.ts'
   import type { Project } from '../lib/store/manifest.ts'
-  import { recolour } from '../lib/dress/dress.ts'
+  import { recolor } from '../lib/dress/dress.ts'
   import { ui, doc, store, equipment, refreshFits, runFitStage, retryFitStage, withKey, flushSave, openProject, toast } from './state.svelte.ts'
   import { CircleCheck, Sparkles, TriangleAlert } from './icons.ts'
 
@@ -47,7 +47,7 @@
     assessment = draft.plan.assessment
     design = draft.plan.design
     if (!reference) reference = await designPreview(design)
-    preview = result.project ? recolour(result.project, draft.candidate?.variants ?? {}) : null
+    preview = result.project ? recolor(result.project, draft.candidate?.variants ?? {}) : null
     itemId = result.itemId ?? draft.candidate?.itemId ?? ''
     if (previous !== draft.updatedAt) reviewed = false
   }
@@ -63,7 +63,7 @@
           assessment = await assessDesign(design, target)
           if (assessment.canCopy && mode === 'copy') {
             candidate = await prepareCopy(design, target)
-            preview = recolour(candidate.project, candidate.variants); itemId = candidate.itemId
+            preview = recolor(candidate.project, candidate.variants); itemId = candidate.itemId
           } else {
             preview = reference; itemId = design.itemId
             if (assessment.status === 'fit') { await flushSave(); plan = await planFit(design, targetId); assessment = plan.assessment }
@@ -148,8 +148,8 @@
     {:else if stage === 'needs-attention'}
       <p class="notice warn small"><TriangleAlert size={16} /><span>{draft?.error || 'This fit needs attention.'} No paid request is retried automatically.</span></p>
     {:else if stage === 'rest-review'}
-      <p class="notice small"><CircleCheck size={16} /><span>Review the rest fit in every direction before paying to animate it. Check shape, colours, grip and alignment.</span></p>
-      {#if plan?.extension}<p class="muted small">{plan.extension.reuseRest ? 'Reuses this character’s approved standing references for free.' : 'Review the new standing fit before animating.'} Only missing frames of {plan.extension.anims.join(', ')} will be generated; existing item frames and outfit colours stay intact.</p>{/if}
+      <p class="notice small"><CircleCheck size={16} /><span>Review the rest fit in every direction before paying to animate it. Check shape, colors, grip and alignment.</span></p>
+      {#if plan?.extension}<p class="muted small">{plan.extension.reuseRest ? 'Reuses this character’s approved standing references for free.' : 'Review the new standing fit before animating.'} Only missing frames of {plan.extension.anims.join(', ')} will be generated; existing item frames and outfit colors stay intact.</p>{/if}
     {:else if stage === 'fit-review' || candidate}
       <p class="notice small"><CircleCheck size={16} /><span>{candidate ? 'Free copy: 0 generations.' : 'Animation is ready.'} Check every move and direction before keeping this copy.</span></p>
       {#if candidate && assessment.missingCells}<p class="notice warn small"><TriangleAlert size={14} /><span>This is a partial copy: {assessment.freeCells} verified frames are included; {assessment.missingCells} target frames have no item. Fitting the missing frames is a separate step.</span></p>{/if}

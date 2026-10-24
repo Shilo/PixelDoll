@@ -5,7 +5,7 @@
   import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
   import { moveEstimate } from './create.ts'
   import Sprite from './Sprite.svelte'
-  import Colours from './Colours.svelte'
+  import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
   import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
@@ -40,30 +40,30 @@
     const projectId = doc.id, spec = { ...$state.snapshot(repairSpec), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
   }
-  let colourPlan = $state<ItemPaletteRepairPlan | null>(null)
-  let colourBusy = $state(false)
-  let colourError = $state('')
-  let colourDone = $state('')
-  const colourScope = $derived(`${doc.id}|${it?.id ?? ''}|${anim?.id ?? ''}|${sourceDir}`)
-  $effect(() => { void colourScope; colourError = ''; colourDone = '' })
+  let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
+  let colorBusy = $state(false)
+  let colorError = $state('')
+  let colorDone = $state('')
+  const colorScope = $derived(`${doc.id}|${it?.id ?? ''}|${anim?.id ?? ''}|${sourceDir}`)
+  $effect(() => { void colorScope; colorError = ''; colorDone = '' })
   $effect(() => {
     const projectId = doc.id, itemId = it?.id, animId = anim?.id, dir = sourceDir
     void doc.rev
     let current = true
-    colourPlan = null
-    if (!isDemo() && itemId && animId) void itemPaletteRepairPlan(projectId, itemId, animId, dir).then((plan) => { if (current) colourPlan = plan }).catch(() => {})
+    colorPlan = null
+    if (!isDemo() && itemId && animId) void itemPaletteRepairPlan(projectId, itemId, animId, dir).then((plan) => { if (current) colorPlan = plan }).catch(() => {})
     return () => { current = false }
   })
-  async function matchColours() {
-    if (!colourPlan || !it || !anim || colourBusy) return
-    const projectId = doc.id, itemId = it.id, animId = anim.id, dir = sourceDir, reviewed = $state.snapshot(colourPlan)
+  async function matchColors() {
+    if (!colorPlan || !it || !anim || colorBusy) return
+    const projectId = doc.id, itemId = it.id, animId = anim.id, dir = sourceDir, reviewed = $state.snapshot(colorPlan)
     const sameView = () => doc.id === projectId && it?.id === itemId && anim?.id === animId && sourceDir === dir
-    colourBusy = true; colourError = ''; colourDone = ''
+    colorBusy = true; colorError = ''; colorDone = ''
     try {
       await matchItemPalette(projectId, itemId, animId, dir, reviewed)
-      if (sameView()) colourDone = `Matched ${reviewed.changedPixels} ${reviewed.changedPixels === 1 ? 'pixel' : 'pixels'} in ${reviewed.changedFrames.length} ${reviewed.changedFrames.length === 1 ? 'frame' : 'frames'}.`
-    } catch (e) { if (sameView()) colourError = e instanceof Error ? e.message : String(e) }
-    finally { colourBusy = false }
+      if (sameView()) colorDone = `Matched ${reviewed.changedPixels} ${reviewed.changedPixels === 1 ? 'pixel' : 'pixels'} in ${reviewed.changedFrames.length} ${reviewed.changedFrames.length === 1 ? 'frame' : 'frames'}.`
+    } catch (e) { if (sameView()) colorError = e instanceof Error ? e.message : String(e) }
+    finally { colorBusy = false }
   }
   const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
   const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0)
@@ -103,7 +103,7 @@
         {#if hiddenNow}<span class="badge">Hidden by another item</span>{/if}
       </p>
     </header>
-    {#if it.design}<p class="muted small">Independent copy of “{it.design.snapshot.name}”. Its colours and outfits belong to this character.</p>{/if}
+    {#if it.design}<p class="muted small">Independent copy of “{it.design.snapshot.name}”. Its colors and outfits belong to this character.</p>{/if}
 
     {#if anim}
       <div class="dir-strip" style:--preview-width="{Math.max(60, (strip[0]?.w ?? 0) * k / ui.dpr)}px" aria-label="{it.name} in every direction">
@@ -150,16 +150,16 @@
       </div>
     {/if}
 
-    {#if !isDemo() && colourPlan}
+    {#if !isDemo() && colorPlan}
       <div class="field">
-        <button class="bu-action btn" data-variant="outline" disabled={colourBusy || repairBusy} onclick={matchColours}>{colourBusy ? 'Matching colours…' : 'Match item colours'} <span class="cost">Free</span></button>
-        <p class="faint small">Match {colourPlan.changedPixels} pixels in {colourPlan.changedFrames.length} saved {moveName} {colourPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item's existing colour palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolours stay fixed. {#if colourPlan.unmatchedPixels}{colourPlan.unmatchedPixels} unmatched eligible pixels stay unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
+        <button class="bu-action btn" data-variant="outline" disabled={colorBusy || repairBusy} onclick={matchColors}>{colorBusy ? 'Matching colors…' : 'Match item colors'} <span class="cost">Free</span></button>
+        <p class="faint small">Match {colorPlan.changedPixels} pixels in {colorPlan.changedFrames.length} saved {moveName} {colorPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item's existing color palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolors stay fixed. {#if colorPlan.unmatchedPixels}{colorPlan.unmatchedPixels} unmatched eligible pixels stay unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
       </div>
     {/if}
-    {#if colourError}<p class="notice bad small"><TriangleAlert size={14} />{colourError}</p>{/if}
-    {#if colourDone}<p class="notice small">{colourDone}</p>{/if}
+    {#if colorError}<p class="notice bad small"><TriangleAlert size={14} />{colorError}</p>{/if}
+    {#if colorDone}<p class="notice small">{colorDone}</p>{/if}
 
-    <Colours only={it.id} />
+    <Colors only={it.id} />
 
     <div class="field">
       <span class="sec-title">Layer order</span>

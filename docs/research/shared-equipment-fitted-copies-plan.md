@@ -13,11 +13,11 @@ An equipment **design** is its approved visual identity and source evidence. A *
 
 Use one familiar flow:
 
-1. An accepted item offers **Save as shared design**. Preview exactly the item and colourway being saved.
+1. An accepted item offers **Save as shared design**. Preview exactly the item and colorway being saved.
 2. **New item** offers **Create** and **Saved designs**. Users do not need to visit a separate technical library manager.
 3. A saved design is **Ready**, **Needs fitting**, **Needs setup**, or **Not supported yet** for the current character, with a short reason.
 4. Ready equipment previews and copies locally for **0 generations**. Other equipment offers **Fit to this character**, with the cost and review stages shown before spending.
-5. The accepted result becomes an ordinary target-local wardrobe item. Wearing, recolouring, outfits, undo, exports and later moves continue to use that item.
+5. The accepted result becomes an ordinary target-local wardrobe item. Wearing, recoloring, outfits, undo, exports and later moves continue to use that item.
 
 The library is local to this browser origin. “Shared” means available to the user's other local characters; it does not imply a server, public gallery, account sync, or universal sprite compatibility. A versioned design ZIP is the explicit sharing mechanism.
 
@@ -42,7 +42,7 @@ Evidence labels used below:
 | Measured: [S3](../spikes/S3_skeleton_rigging.md), [S4](../spikes/S4_model_routing.md) | Target-owned rest references and stored skeleton sequences can produce aligned item clips, with extraction and QA still necessary. | Reuse the target's actual rig contract; never send source-body artwork with target-body joints. |
 | Measured: [S1](../spikes/S1_api_feasibility.md), [PixelLab Pip review](tools/pixellab_pip/pixellab_pip_paperdolling_review.md) | Unmasked outfit/edit routes redraw body pixels. Early transfer results were composites, not equipment layers. | Reference transfer is a candidate fitting operation, never a finished layer or a body-preservation guarantee. |
 | Measured: [shield validation](../testing/shields-2026-10-22.md), [quality follow-up](../testing/item-quality-follow-up-2026-10-22.md) | Occlusion can explain some size/shape flags; real grip/shape defects remain. Hidden geometry cannot be verified from the visible composite. | Keep occlusion warnings and hard failures distinct. Never complete hidden shields/capes by copying a larger visible mask. |
-| Code: `dress/dress.ts`, `export/generic.ts` | Recolour works per item, but material derivation and validation currently require globally disjoint RGB ramps. | Independent recolouring needs the ownership prerequisite in section 8. Copying material IDs is unsafe. |
+| Code: `dress/dress.ts`, `export/generic.ts` | Recolor works per item, but material derivation and validation currently require globally disjoint RGB ramps. | Independent recoloring needs the ownership prerequisite in section 8. Copying material IDs is unsafe. |
 | Code: `store/db.ts`, `store/project.ts` | The `projects` object store already holds namespaced project/draft records; garbage collection scans project/job references. | Add typed design/fit records without a database-version bump, while auditing all readers and lifecycle guards. |
 
 The coordinating agent completed live official-documentation verification in the Codex browser on 2026-10-22; those findings are incorporated below. The document author also inspected the committed schema and current implementation. No credentials, paid tests or capability requests were used for this research. Live Pro Flash preset shapes were not queried; they remain a supported-target preflight requirement.
@@ -53,11 +53,11 @@ Primary sources: [official API documentation](https://api.pixellab.ai/v2/docs), 
 
 | Candidate | Verified documentation contract | Appropriate role | Limitation / required experiment |
 |---|---|---|---|
-| [`POST /transfer-outfit-v2`](https://api.pixellab.ai/v2/docs#tag/animate/POST/transfer-outfit-v2) | `reference_image`, `frames`, `image_size`; at least 2 target frames; `additional_instructions`, optional palette; actual size-specific target caps 15 / 8 / 3 at <=64 / <=80 / >80 px. The separate reference consumes one grid slot. | Candidate for fitting an approved source item onto target chroma **rest views**, followed by review and the normal target pose pipeline. | Transfers appearance broadly; no explicit isolated-item mask. It may copy source anatomy, clothes, skin, view or key colours. Source chroma improves isolation but is not a segmentation guarantee. |
+| [`POST /transfer-outfit-v2`](https://api.pixellab.ai/v2/docs#tag/animate/POST/transfer-outfit-v2) | `reference_image`, `frames`, `image_size`; at least 2 target frames; `additional_instructions`, optional palette; actual size-specific target caps 15 / 8 / 3 at <=64 / <=80 / >80 px. The separate reference consumes one grid slot. | Candidate for fitting an approved source item onto target chroma **rest views**, followed by review and the normal target pose pipeline. | Transfers appearance broadly; no explicit isolated-item mask. It may copy source anatomy, clothes, skin, view or key colors. Source chroma improves isolation but is not a segmentation guarantee. |
 | [`POST /edit-animation-v2`](https://api.pixellab.ai/v2/docs#tag/animate/POST/edit-animation-v2) | Text-guided edit; no separate `reference_image`; caps 16 / 9 / 4 at the same tiers; at least 2 input frames. | Existing dressing/anchor animation route; candidate retained-reference grid cell for design conditioning. | A prompt alone does not preserve a particular saved design. A source cell mixed into the grid is an experiment, not equivalent to a typed reference parameter. |
 | [`POST /inpaint-v3`](https://api.pixellab.ai/v2/docs#tag/inpaint/POST/inpaint-v3) | 32–512 px inpainting image plus same-size mask; white edits, black preserves. Typed `context_image` and `bounding_box` fields are deprecated despite prose still advertising them. | Candidate packed target rest cells with masked item regions and approved source reference cells kept black in the same image. | Prefer the typed contract; do not assume a current reference-context guarantee. Packed-grid identity transfer and sizes/costs must be qualified. Do not rely on deprecated context fields. |
 | [`POST /edit-images-v2`](https://api.pixellab.ai/v2/docs#tag/edit/POST/edit-images-v2), reference method | `edit_with_reference`; inputs <=512 px, output 32–512 px; reference-mode caps 15 at <=64, 8 at <=80, 3 at <=128, 1 above 128 px. Documented reference behavior is style matching. | Comparison candidate only if simpler candidates fail. | Style matching does not guarantee saved-item identity. Existing S4 evidence showed geometry shift; structure-preservation prose is insufficient. |
-| [`POST /edit-image-pro-flash`](https://api.pixellab.ai/v2/docs#tag/edit/POST/edit-image-pro-flash), reference method | `method` is `text` or `reference`; fixed source canvas, no resize, reference must fit it. [`GET /pro-flash/capabilities`](https://api.pixellab.ai/v2/docs#tag/create-image/GET/pro-flash/capabilities) is authenticated and exposes a generic-object response schema. | Optional comparison candidate for target rest fitting. | Exact live native preset shapes were not queried. Existing whole-image colour redraw, per-direction coherence and cost need qualification. Not the default quality route. |
+| [`POST /edit-image-pro-flash`](https://api.pixellab.ai/v2/docs#tag/edit/POST/edit-image-pro-flash), reference method | `method` is `text` or `reference`; fixed source canvas, no resize, reference must fit it. [`GET /pro-flash/capabilities`](https://api.pixellab.ai/v2/docs#tag/create-image/GET/pro-flash/capabilities) is authenticated and exposes a generic-object response schema. | Optional comparison candidate for target rest fitting. | Exact live native preset shapes were not queried. Existing whole-image color redraw, per-direction coherence and cost need qualification. Not the default quality route. |
 | [`POST /animate-with-skeleton-v3`](https://api.pixellab.ai/v2/docs#tag/skeleton-animation/POST/animate-with-skeleton-v3) | Beta; actual first-frame pose in `first_frame_keypoints`; 18 joints; 3–15 output frames, <=256 px. Documented generation costs: 2 / 3 / 4 for 3 / 8 / 15 frames, independent of canvas size. | Pose an approved **target-fitted** chroma rest reference through target-owned clips. | This redraws the reference internally. Correct joints, scale and camera remain mandatory; no source-to-target body retargeting guarantee. |
 | [`POST /estimate-skeleton`](https://api.pixellab.ai/v2/docs#tag/skeleton-animation/POST/estimate-skeleton) | Paid measurement; allowed square sizes include 64. The actual endpoint is POST; skeleton-v3 prose mentioning GET is a documentation typo. | Explicit missing-rig setup/measurement where supported. | Measurement adds metadata, not proof that regenerated equipment matches arbitrary imported frozen body frames. Never adopt the GET typo or call a measurement during free browsing. |
 
@@ -83,10 +83,10 @@ Compare source fitted evidence against the target's resolved frozen base, not ag
 
 All of the following must hold for each reused cell:
 
-1. Equal body RGBA pixels and dimensions after resolving real mirrored cells. Compare original stored bodies, before non-destructive display recolours.
+1. Equal body RGBA pixels and dimensions after resolving real mirrored cells. Compare original stored bodies, before non-destructive display recolors.
 2. An unambiguous mapping to the target's direction and stored frame/pose cell. A same-named clip does not establish a match. Different names can match exact canonical signatures; ambiguous duplicate poses require explicit mapping/preview or conservative refusal.
 3. Compatible rig cell and integer pivot; equal layer cell/pivot geometry, foreground/background meaning, slot class, anatomical grip contract, camera/template and relevant occlusion semantics. Different re-estimated joint floats alone do not make an already identical frozen raster need repainting. Unknown anatomy/slot semantics require a free preview/manual acceptance or an unsupported state, not an automatic paid fit.
-4. The same visual design revision and pinned colourway, with a valid target-local material mapping. A different colourway can reuse raw pixels with an exact local palette swap; it does not require AI merely to change colours.
+4. The same visual design revision and pinned colorway, with a valid target-local material mapping. A different colorway can reuse raw pixels with an exact local palette swap; it does not require AI merely to change colors.
 5. Source evidence is accepted and complete for those cells. Missing/failed cells are not reusable simply because another cell matches.
 6. Target slot bindings can preserve the item's body-relative layering. Do not copy source project-wide z overrides, outfit hides, or baked helmet/hair variants into unrelated target settings.
 
@@ -105,9 +105,9 @@ Keep **existing-raster compatibility** separate from **future-reference compatib
 
 If a target has new moves or directions, keep verified existing cells. Generate only the missing or changed target cells. Continue from that target copy's saved dressed references when compatible; do not refit its rest design on every added move.
 
-The plan shows which coverage is free, which needs generation and which is unavailable. Default to all currently supported target moves/directions, with a clear advanced coverage choice if needed. Empty body directions stay empty. An intentionally partial fit is labelled with its exact coverage; it is never labelled ready for all moves.
+The plan shows which coverage is free, which needs generation and which is unavailable. Default to all currently supported target moves/directions, with a clear advanced coverage choice if needed. Empty body directions stay empty. An intentionally partial fit is labeled with its exact coverage; it is never labeled ready for all moves.
 
-Changes to target body pixels, proportions, view, pivot, grip policy or rest poses invalidate the affected cells/references. Do not replace the target body to make equipment fit. Changing outfit colours or unrelated equipment does not invalidate the body's fitted pixels.
+Changes to target body pixels, proportions, view, pivot, grip policy or rest poses invalidate the affected cells/references. Do not replace the target body to make equipment fit. Changing outfit colors or unrelated equipment does not invalidate the body's fitted pixels.
 
 ### 4.3 Needs fitting / needs setup
 
@@ -123,10 +123,10 @@ Saving a design captures only the accepted item, not the current entire outfit. 
 - Existing isolated extracted layers may be pre-occluded by the source body. They do not contain verified complete hidden cape/shield geometry. Keep reference provenance and occlusion limitations.
 - Do not turn an engine-only `<hair>~<helmet>` tuck variant into a canonical hair design. Recover the editable original where available; otherwise explain that the imported reference is partial.
 - An item missing dressed references may still be saved with isolated visible references and an exact source-fit snapshot. Its eligibility for cross-body fitting depends on the qualified route; do not invent original references or require a paid regeneration merely to save it.
-- Save preview defaults to the current visible item-only colourway. Pin raw source fit plus the explicit selected variants. Generate fitting references by applying colour changes to item pixels only, with chroma body/key unchanged.
+- Save preview defaults to the current visible item-only colorway. Pin raw source fit plus the explicit selected variants. Generate fitting references by applying color changes to item pixels only, with chroma body/key unchanged.
 - Retain a minimal immutable source fit: relevant rig, source base cells, accepted item's cells/QA/materials and required reference images. Do not retain unrelated items, outfit names, connection state or tokens.
 
-Art-changing edits produce a new immutable revision. Name/description organization may change separately without silently changing accepted artwork. Existing fitted copies stay pinned to their selected revision and colourway. A new revision is offered deliberately, not pushed into outfits.
+Art-changing edits produce a new immutable revision. Name/description organization may change separately without silently changing accepted artwork. Existing fitted copies stay pinned to their selected revision and colorway. A new revision is offered deliberately, not pushed into outfits.
 
 ## 6. Fitting flow, price and review
 
@@ -169,7 +169,7 @@ Illustrations from existing measured 64/96 px routes, not a quote for an unteste
 - A four-direction rig with three generated rest views, idle + walk, and six 8-or-fewer-frame pose jobs had 10 design + 18 pose = 28 planned generations for a non-oversize item. Cross-body fitting must separately establish its own rest-stage price.
 - At 96 px, outfit transfer holds only **three target frames plus its separate reference**. Five target rest views require at least two transfer calls. Plain edit holds four inputs, and a later kept anchor consumes one of them. Neither case is a single-call five-view fit.
 - Skeleton-v3 live-documented costs are 2 for 3 frames, 3 for 8, 4 for 15, independent of canvas size. Sum real batches; do not multiply by an assumed fixed clip charge.
-- Exact compatible reuse and local recolour cost zero. An added move charges only its new target coverage. Setup is shown and authorized independently.
+- Exact compatible reuse and local recolor cost zero. An added move charges only its new target coverage. Setup is shown and authorized independently.
 
 The verified documentation does not establish a generic accurate price estimator for every candidate. Do not treat a Pro Flash cost endpoint as a quote for Pro transfer/inpaint. Larger packed inpaint grids require verified size/cost evidence before showing a fixed price.
 
@@ -187,7 +187,7 @@ Preserve current extraction/QA and add cross-design checks without weakening exi
 - Foreground/background and target-body occlusion; cape/hair extent; interaction with target headgear, hair and simultaneous held items.
 - Existing D1/H4/G5/G8/G9 checks and relevant per-class checks remain active. Occlusion-explained evidence is review-only; unseen shapes are not marked verified.
 - Aggregate summaries are recomputed from selected per-clip outputs. Do not reuse the known historical aggregate-QA limitation when adding new fitting coverage.
-- A palette-role mapping that cannot preserve independent recolouring blocks ready/accepted status until corrected, rather than silently omitting colours.
+- A palette-role mapping that cannot preserve independent recoloring blocks ready/accepted status until corrected, rather than silently omitting colors.
 
 Machine gates are necessary, not sufficient. Mandatory human design/rest review confirms source identity and any newly inferred direction; final animation review confirms the local fitted copy. Hard failures do not become clean passes through threshold relaxation.
 
@@ -205,20 +205,20 @@ Candidate A is source-reference transfer onto target chroma rest views. Candidat
 | Motion | Rest; walk/idle; overhead action; hurt/death or other substantial occlusion. Include short, long, sparse and repeated-pose clips. |
 | Grip/mirroring | Main/off hand, simultaneous sword + shield, mirrored baseline and independently generated western equipment. Do not call a flipped anatomical grip preserved. |
 | Geometry | 64 worn layers; 96 held layers with correct pivot and full uncropped preview/export. |
-| Colour | Colourful cape with deliberate trim, green item/key collision, target body and equipment sharing exact RGBs, multiple material roles, chosen source colourway. |
+| Color | Colorful cape with deliberate trim, green item/key collision, target body and equipment sharing exact RGBs, multiple material roles, chosen source colorway. |
 | Incomplete source | Missing rear reference and pre-occluded source item; explicitly show inferred/unknown views and require review. |
 
-Record frozen requests, selected outputs, all spend, QA, contact sheets and per-class decision in a research report. A claim such as “works for armour” requires the target rest and animation gates for that class/profile, not one attractive frame. If no candidate qualifies, report that limitation and do not ship a prompt-only substitute labelled as the saved design.
+Record frozen requests, selected outputs, all spend, QA, contact sheets and per-class decision in a research report. A claim such as “works for armour” requires the target rest and animation gates for that class/profile, not one attractive frame. If no candidate qualifies, report that limitation and do not ship a prompt-only substitute labeled as the saved design.
 
-## 8. Independent recolour prerequisite
+## 8. Independent recolor prerequisite
 
 ### Problem
 
-`deriveMaterials` currently excludes RGBs claimed by other target items, while `recolour` already resolves materials by `owner`. A shared helmet and a target sword may intentionally use the same grey; the current global rule can omit one item's colours. Source IDs, ramp lengths and inferred labels are not portable semantic mappings.
+`deriveMaterials` currently excludes RGBs claimed by other target items, while `recolor` already resolves materials by `owner`. A shared helmet and a target sword may intentionally use the same gray; the current global rule can omit one item's colors. Source IDs, ramp lengths and inferred labels are not portable semantic mappings.
 
 ### Proposed concrete change
 
-Adopt item-scoped material ownership: RGB ramps are disjoint **within one owner**, and different items may use equal RGB values independently. Material IDs remain unique within the project. A colour appearing in multiple roles of one item still needs a genuine region/index mask or a deliberate shared role; do not pretend a flat RGB image can distinguish identical pixels semantically.
+Adopt item-scoped material ownership: RGB ramps are disjoint **within one owner**, and different items may use equal RGB values independently. Material IDs remain unique within the project. A color appearing in multiple roles of one item still needs a genuine region/index mask or a deliberate shared role; do not pretend a flat RGB image can distinguish identical pixels semantically.
 
 Because `pixeldoll/1` explicitly specifies globally disjoint ramps, introduce `pixeldoll/2` for this semantic change, rather than silently weakening the old invariant. This is a manifest version change, not an IndexedDB version change.
 
@@ -228,12 +228,12 @@ Implementation tasks:
 2. `dress/dress.ts`: derive each item's roles using only that owner's existing claims; preserve exact raw pixels. Keep palette swapping owner-local. Explicitly map design-role IDs to target material IDs; never copy source `linkTo` IDs across projects.
 3. `export/generic.ts`: v1 validation remains globally disjoint; v2 validates `(owner, RGB)` uniqueness, owner/item references, unique material IDs, exact variant lengths and non-dangling links. Missing/ambiguous role mappings are actionable review errors.
 4. `store/project.ts`, `store/import.ts`, `dress/project.ts`, `compose/fixture.ts`, `ui/M2.svelte`, creation/import constructors and fixture scripts: recognize both formats. V1 -> v2 migration copies existing raw images, ramps, variants and presets unchanged; it never repaints old art or guesses missing source roles. Do not destructively rewrite archival ZIPs.
-5. `export/godot.ts`, `phaser.ts`, `unity.ts`, `aseprite.ts`, `sheets.ts` and generic output/readmes: audit all palette consumers and hardcoded format metadata. Any consumer doing a project-wide RGB lookup must become owner-local or receive baked, explicitly scoped data. Do not claim engine runtime recolour if it is not implemented there.
+5. `export/godot.ts`, `phaser.ts`, `unity.ts`, `aseprite.ts`, `sheets.ts` and generic output/readmes: audit all palette consumers and hardcoded format metadata. Any consumer doing a project-wide RGB lookup must become owner-local or receive baked, explicitly scoped data. Do not claim engine runtime recolor if it is not implemented there.
 6. Update `docs/manifest-spec.md` and import/export tests before v2 output ships. Historical v1 fixtures/archives stay readable. New archives carry the explicit v2 contract; old external readers are told the format version changed.
 
-A source design's semantic palette roles and saved colourway are distinct from fitted-copy material IDs. Refit can change quantization and ramp lengths; map exact resulting roles deliberately, with a visible correction step if ambiguous. Do not silently snap body colours, alter outlines, or reuse source array indices on a different ramp.
+A source design's semantic palette roles and saved colorway are distinct from fitted-copy material IDs. Refit can change quantization and ramp lengths; map exact resulting roles deliberately, with a visible correction step if ambiguous. Do not silently snap body colors, alter outlines, or reuse source array indices on a different ramp.
 
-Required regressions: body/helmet/sword sharing the exact same grey can recolour one item without changing any other pixel; two roles within one owner cannot claim the same RGB without a supported mask; source/target ramps of different lengths cannot silently mis-map; source-linked beard/hair roles never create a dangling or unintended body link; archive + engine/baked output preserve the selected colourway exactly.
+Required regressions: body/helmet/sword sharing the exact same gray can recolor one item without changing any other pixel; two roles within one owner cannot claim the same RGB without a supported mask; source/target ramps of different lengths cannot silently mis-map; source-linked beard/hair roles never create a dangling or unintended body link; archive + engine/baked output preserve the selected colorway exactly.
 
 ## 9. Storage and type boundaries
 
@@ -271,7 +271,7 @@ interface DesignRevision {
 interface FittedCopyLineage {
   designId: string;
   revisionId: string;
-  colourway: Record<string, string>;
+  colorway: Record<string, string>;
   snapshot: DesignSnapshot;      // enough canonical assets to restore/share independently
   roleMaterials: Record<string, string[]>;
   compatibility: FitCompatibility;
@@ -294,7 +294,7 @@ interface EquipmentFitDraft {
 }
 ```
 
-`DesignView` records whether it is a dressed chroma composite, isolated layer, original body/reference, or derived colourway; direction and mirroring origin; cell/pivot; source pose hash; blob hashes and visible/occluded coverage. There is no implicit “complete item” flag on a pre-occluded layer.
+`DesignView` records whether it is a dressed chroma composite, isolated layer, original body/reference, or derived colorway; direction and mirroring origin; cell/pivot; source pose hash; blob hashes and visible/occluded coverage. There is no implicit “complete item” flag on a pre-occluded layer.
 
 Target fitted Items keep the existing layers/materials/QA/provenance and add `design` lineage. Target presets continue to reference local item IDs. A library entry is not a live pointer that the compositor must dereference.
 
@@ -334,7 +334,7 @@ Exact reuse can go from preflight to reviewing-fit and acceptance without a queu
 
 **Occlusion:** derive foreground/background against the actual target base and use target slot/clips/hides semantics. Never paste source body-occluded fragments to imply a full fitted cape/shield. Preview held items together and headgear with hair. Do not copy source outfit state into the target.
 
-**Recolour:** retain raw target copy pixels and item-local exact ramps. Recolour variants and selected target outfits do not alter design revisions. A user can explicitly save a new visible colourway/revision.
+**Recolor:** retain raw target copy pixels and item-local exact ramps. Recolor variants and selected target outfits do not alter design revisions. A user can explicitly save a new visible colorway/revision.
 
 **Outfits:** keep `Preset.items[slot] = localItemId`. A fit review never replaces another outfit's selected item as a side effect. Removing the shared design or source character does not invalidate any existing outfit. A cross-character global outfit library is outside this change.
 
@@ -353,7 +353,7 @@ Use a strict, versioned `design.json` schema, size/pixel/ZIP path/CRC/hash bound
 
 Character engine exports still contain only target-fitted layer sheets and target playback. The editable `project.json` includes pinned design lineage/reference snapshot and every blob needed for restoring, adding moves and re-saving the design. Reimport needs neither the original library entry nor the source character. Engine adapters can ignore design lineage; generic/Aseprite/manifest output remains target-specific. Baked tuck variants stay export artifacts, not canonical designs.
 
-Provenance distinguishes original design generation, exact copy, rest fitting, target posing and retry selection. Per-cell QA indices must reference the selected records that actually produced those cells. Attribution does not assert ownership or an art licence from the app's MIT code licence.
+Provenance distinguishes original design generation, exact copy, rest fitting, target posing and retry selection. Per-cell QA indices must reference the selected records that actually produced those cells. Attribution does not assert ownership or an art license from the app's MIT code license.
 
 Design ZIPs intentionally omit unrelated character/outfit names, other items, connection settings, agent flags, tokens and environment files. Retain only disclosed artwork/provenance necessary for the design; show archive contents before sharing. Character backup remains a self-contained archival artifact. Do not automatically publish library entries or upload them outside explicit PixelLab fitting calls.
 
@@ -361,7 +361,7 @@ Design ZIPs intentionally omit unrelated character/outfit names, other items, co
 
 - Reuse the existing custom CSS, native `Sheet` dialog and Lucide icons; preserve dark/light and compact/landscape/tablet layouts.
 - Tabs have correct tab/tabpanel semantics, keyboard navigation and focus restoration. Source selection cannot trigger spending.
-- Design cards show name, slot, thumbnail and text eligibility; status is never colour-only. Search/filter is local and optional; no folders/tags taxonomy is required initially.
+- Design cards show name, slot, thumbnail and text eligibility; status is never color-only. Search/filter is local and optional; no folders/tags taxonomy is required initially.
 - The main action reads **Wear · Free**, **Copy to wardrobe · Free**, **Preview fit · ~N gens**, **Animate fit · ~N gens**, or **Set up character**, as appropriate. Avoid a misleading unconditional Wear button.
 - Rest/final review uses the same direction/move controls and enlarged pixel preview, plus explicit source comparison and flag navigation. A static frame and pause control support reduced motion; all preview information has readable labels.
 - Progress announces stage changes through a polite live region, not every frame. Lost jobs and rejected candidates have recoverable visible states.
@@ -373,11 +373,11 @@ Design ZIPs intentionally omit unrelated character/outfit names, other items, co
 | Milestone | Owned changes to plan for | Acceptance |
 |---|---|---|
 | M0 — frozen evidence and contract | This plan; focused spike report; compatibility fixtures and endpoint verification. | Distinguish measured behavior from API promises; no paid work without a separate cap/authorization; exact compatibility counterexamples cover matching skeleton/different body and same hash/different pivot. |
-| M1 — ownership and format prerequisite | `store/manifest.ts`, `dress/dress.ts`, `export/generic.ts`, format readers/constructors listed in section 8, relevant exporters/docs/tests. | Both manifest versions round-trip; independent item recolour with overlapping RGBs; no silent role loss, body changes or dangling links. |
+| M1 — ownership and format prerequisite | `store/manifest.ts`, `dress/dress.ts`, `export/generic.ts`, format readers/constructors listed in section 8, relevant exporters/docs/tests. | Both manifest versions round-trip; independent item recolor with overlapping RGBs; no silent role loss, body changes or dangling links. |
 | M2 — designs and free reuse | New `lib/equipment/design.ts`, `compatibility.ts`, `store.ts`; narrow db/project/import/export integration; accepted-item save action; New item Saved designs UI. | Source deletion safe; zero-generation exact copies preserve every layer pixel and target playback; same-name/different-pose rejects; exact differently named unique mapping works; partial/new-move reuse retained; unknown cases explain limitation. |
 | M3 — route qualification spike | Developer-only bounded harness/report using current queue and existing source/target art. | Matrix gate in section 7 passes per advertised class/profile; all inputs/outputs/usage stored; no source-body changes, hidden geometry assertions or automatic paid route cascades. |
 | M4 — resumable target fitting | New `lib/equipment/fit.ts`, `fitPlan.ts`; qualified route builders; persisted fit drafts/budgets; state/Activity integration; rest and final review sheets. | Explicit two-stage spend; reload/leader takeover do not duplicate requests; missing/changed target data pauses safely; reviewed output atomically becomes one local item. |
-| M5 — complete workflows | `Wardrobe`, `PhonePanel`, `ItemPane`, `NewItemSheet`/design picker, `Outfits`, `MoveSheet`, exports/imports and lifecycle guards. | All supported classes/targets usable with 64/96 geometry, sparse/long clips, all directions, preserved grip policy, independent colours/outfits; source/library deletion leaves target copies functional. |
+| M5 — complete workflows | `Wardrobe`, `PhonePanel`, `ItemPane`, `NewItemSheet`/design picker, `Outfits`, `MoveSheet`, exports/imports and lifecycle guards. | All supported classes/targets usable with 64/96 geometry, sparse/long clips, all directions, preserved grip policy, independent colors/outfits; source/library deletion leaves target copies functional. |
 | M6 — adversarial and browser verification | Focused Vitest/IndexedDB/queue tests, managed Playwright and Codex browser visual/keyboard review, engine artifact verification. | No paid endpoint in keyless tests; every advertised flow passes dark/light desktop, phone portrait/landscape and tablet; no token exposure, duplicate charge or invalid export. |
 
 The proposed new module names are responsibilities, not a mandate for many abstractions. Combine files if smaller functions remain readable. Keep existing item runner/compositor/export machinery where the contracts actually match; separate fit policy from legacy automatic spending behavior.
@@ -389,7 +389,7 @@ The proposed new module names are responsibilities, not a mandate for many abstr
 3. Existing target outfit edited during fit; target body/rig changed; new move added; two tabs accept the same draft; page reload between POST and job-ID persistence.
 4. Only one source direction; no target back view; no reference keyframe; body-occluded shield/cape; old engine ZIP with no dressed references; green design with green key.
 5. 96 px held fit with five views exceeding one-call caps; independent west hand; simultaneous sword/shield; long batch boundaries; short/rest clips; sparse clips.
-6. Shared body/equipment RGB; different role/ramp lengths; tied/linked hair/beard; source current colourway; recolour target copy without changing another item.
+6. Shared body/equipment RGB; different role/ramp lengths; tied/linked hair/beard; source current colorway; recolor target copy without changing another item.
 7. Exact duplicate design import; conflicting IDs; malformed/oversized archive; missing referenced cells; wrong RGBA hash; restore character backup after library deletion.
 8. Real shield and helmet-occlusion saved failures remain failures/review warnings; no quality-threshold relaxation introduced to make fitting appear successful.
 
@@ -401,7 +401,7 @@ The proposed new module names are responsibilities, not a mandate for many abstr
 - **Agreed:** `baseHash` alone is inadequate; exact frozen per-cell/geometry/slot compatibility permits free existing-raster reuse, while timing/project IDs and re-estimated joint floats alone do not force repainting. Future dressed-reference reuse separately requires target-rest/keypoint compatibility and fresh target-side QA.
 - **Agreed:** source snapshots and canonical references survive source deletion; target copies/outfits survive library changes.
 - **Agreed:** existing namespaced object store is sufficient, with comprehensive reader/GC/lifecycle audits and atomic publication.
-- **Agreed:** independently recolourable equipment cannot ship with silently omitted overlapping colours. The narrow palette ownership prerequisite and format implications are part of the plan.
+- **Agreed:** independently recolorable equipment cannot ship with silently omitted overlapping colors. The narrow palette ownership prerequisite and format implications are part of the plan.
 - **Verified:** live official endpoint contracts were checked in the coordinating agent's Codex browser on 2026-10-22. Typed contracts take precedence over the documented transfer frame-limit generalization, deprecated inpaint context prose and skeleton-estimation GET typo.
 - **Scheduled qualification gates:** execute the bounded matrix to select the eligible reference-fitting route per class/profile and verify actual costs for new packed reference layouts. These are defined experimental milestones, not undecided implementation behavior. Exact live Pro Flash preset shapes are checked only if that optional candidate is pursued.
 

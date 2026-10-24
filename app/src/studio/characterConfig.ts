@@ -6,7 +6,7 @@ export const TRAITS = {
   kind: { label: 'Kind', options: ['Human', 'Elf', 'Dwarf', 'Orc', 'Undead'], help: 'The kind of humanoid. Leave Not set to add no extra hint.' },
   build: { label: 'Build', options: ['Slender', 'Broad', 'Muscular', 'Rounded'], help: 'Slender: narrow frame. Broad: wide torso. Muscular: defined muscles. Rounded: soft, rounded torso.' },
   proportions: { label: 'Proportions', options: ['Natural', 'Chibi'], help: 'Natural head-to-body proportions, or Chibi with a larger head and shorter limbs. Separate from size in pixels.' },
-  skin: { label: 'Skin', options: ['Deep brown', 'Brown', 'Tan', 'Light tan', 'Light', 'Pale'], help: 'Skin-tone guidance. Leave Not set to add no extra hint; exact palette colours can be edited later.' },
+  skin: { label: 'Skin', options: ['Deep brown', 'Brown', 'Tan', 'Light tan', 'Light', 'Pale'], help: 'Skin-tone guidance. Leave Not set to add no extra hint; exact palette colors can be edited later.' },
 } as const;
 export type Trait = keyof typeof TRAITS;
 export const TRAIT_KEYS = Object.keys(TRAITS) as Trait[];

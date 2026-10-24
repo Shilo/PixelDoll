@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { bakedFrame, cellImg, composeCell } from '../../src/lib/compose/compose.ts';
-import { recolour } from '../../src/lib/dress/dress.ts';
+import { recolor } from '../../src/lib/dress/dress.ts';
 import { exportFiles, exportZip } from '../../src/lib/export/export.ts';
 import { exportManifest, validate } from '../../src/lib/export/generic.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
@@ -56,7 +56,7 @@ async function fixture(): Promise<Project> {
   };
 }
 
-test('public export materialises procedural defaults, linked defaults and every preset without changing the source', async () => {
+test('public export materializes procedural defaults, linked defaults and every preset without changing the source', async () => {
   const p = await fixture(), before = structuredClone(p.manifest);
   const { manifest: m } = exportManifest(p, opts());
   for (const mat of m.materials) {
@@ -73,7 +73,7 @@ test('public export materialises procedural defaults, linked defaults and every 
     const canonical = await decodePngBytes(files.get(l.sheets!.walk)!);
     const source = await decodePngBytes(files.get(l.sourceSheets!.walk)!);
     const w = l.cell!.w, h = l.cell!.h;
-    expect(crop(canonical, 0, 0, w, h)).toEqual(cellImg(recolour(p, {}), src, 'walk', 'south', 0));
+    expect(crop(canonical, 0, 0, w, h)).toEqual(cellImg(recolor(p, {}), src, 'walk', 'south', 0));
     expect(crop(source, 0, 0, w, h)).toEqual(cellImg(p, src, 'walk', 'south', 0));
   }
 });
@@ -88,7 +88,7 @@ test('encoded strips and oversized baked sheets match the compositor, including 
   for (const pr of m.presets) for (const a of m.rig.animations) {
     const baked = await decodePngBytes(files.get(`baked/${pr.id}/${a.id}.png`)!);
     for (const [row, d] of m.rig.directions.entries()) for (let c = 0; c < a.cells; c++) {
-      expect(crop(baked, c * 96, row * 96, 96, 96)).toEqual(composeCell(recolour(p, pr.variants), pr.items, a.id, d.id, c, bakedFrame(m)));
+      expect(crop(baked, c * 96, row * 96, 96, 96)).toEqual(composeCell(recolor(p, pr.variants), pr.items, a.id, d.id, c, bakedFrame(m)));
     }
   }
   const strips = [...files.keys()].filter((path) => path.startsWith('generic/') && path.endsWith('.png'));
@@ -96,7 +96,7 @@ test('encoded strips and oversized baked sheets match the compositor, including 
   expect(strips).not.toContain('generic/sword_main/strike_south_strip2.png');
   expect(strips).not.toContain('generic/base_main/strike_east_strip2.png');
   const west = await decodePngBytes(files.get('generic/sword_main/walk_west_strip2.png')!);
-  const expected = cellImg(recolour(p, {}), p.manifest.items[1].layers[0], 'walk', 'west', 0)!;
+  const expected = cellImg(recolor(p, {}), p.manifest.items[1].layers[0], 'walk', 'west', 0)!;
   expect(crop(west, 0, 0, 96, 96)).toEqual(expected);
   expect(m.rig.animations[0].frames).toEqual(p.manifest.rig.animations[0].frames);
   expect(new TextDecoder().decode(files.get('generic/README.txt'))).toContain('including repeated indices');
@@ -107,8 +107,8 @@ test('raw export round-trips through editable and source-sheet-only archives wit
   for (const entries of [result.entries, result.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))]) {
     const restored = (await readCharacterZip(await zip(entries))).project;
     for (const pr of p.manifest.presets) for (const dir of p.manifest.rig.directions) for (let c = 0; c < 2; c++) {
-      expect(composeCell(recolour(restored, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)))
-        .toEqual(composeCell(recolour(p, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)));
+      expect(composeCell(recolor(restored, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)))
+        .toEqual(composeCell(recolor(p, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)));
     }
   }
 });
@@ -135,8 +135,8 @@ test('stale exclusion preserves linked outfit palettes while removing dangling o
   expect(m.presets[0].items.main_hand).toBeNull();
   const restored = (await readCharacterZip(await zip(result.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))))).project;
   for (const [i, pr] of m.presets.entries()) {
-    const expected = composeCell(recolour({ ...p, manifest: { ...p.manifest, items: p.manifest.items.filter((it) => it.id !== 'old') } }, p.manifest.presets[i].variants), pr.items, 'walk', 'south', 0, bakedFrame(m));
-    expect(composeCell(recolour(restored, pr.variants), pr.items, 'walk', 'south', 0, bakedFrame(m))).toEqual(expected);
+    const expected = composeCell(recolor({ ...p, manifest: { ...p.manifest, items: p.manifest.items.filter((it) => it.id !== 'old') } }, p.manifest.presets[i].variants), pr.items, 'walk', 'south', 0, bakedFrame(m));
+    expect(composeCell(recolor(restored, pr.variants), pr.items, 'walk', 'south', 0, bakedFrame(m))).toEqual(expected);
     expect(crop(await decodePngBytes(files.get(`baked/${pr.id}/walk.png`)!), 0, 0, 96, 96)).toEqual(expected);
   }
 });

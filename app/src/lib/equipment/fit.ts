@@ -14,8 +14,8 @@ import type { EquipmentDesign, FitCall, FitCandidate, FitDraft, FitPlan, FitRevi
 import type { Img } from '../image/png.ts';
 import type { Project, Item, ItemQa, Material, CellKey } from '../store/manifest.ts';
 import { variantRampOf, variantOf } from '../dress/dress.ts';
-import { colourCounts, fromHex } from '../dress/palette.ts';
-import { normaliseItemPalette } from './palette.ts';
+import { colorCounts, fromHex } from '../dress/palette.ts';
+import { normalizeItemPalette } from './palette.ts';
 import { chromaLayer } from '../image/chroma.ts';
 import { cellImg } from '../compose/compose.ts';
 
@@ -165,28 +165,28 @@ async function finishStage(id:string,stage:'rest'|'pose'):Promise<FitDraft>{
   item.design={designId:fit.plan.design.id,revision:fit.plan.design.revision,snapshot:snapshotDesign(fit.plan.design),roleMaterials,unmappedRoles,targetAudit:fit.plan.targetAudit,targetStamp:fit.plan.targetStamp,dressedStamp:restStamp(fullTarget.manifest)};
   await appendFreeCells(fit,r.project,item);
   if(fit.plan.extension?.freeMatches?.length)r.warnings.push('Exact matching poses were reused for free. Those cells have no new API body-preservation measurements; review their target appearance.');
-  if(unmappedRoles.length)r.warnings.push('Some source colour roles could not be matched exactly. This fitted copy has its own independent materials.');
+  if(unmappedRoles.length)r.warnings.push('Some source color roles could not be matched exactly. This fitted copy has its own independent materials.');
   if(fit.plan.extension){
     const existing=fullTarget.manifest.items.find(it=>it.id===fit.plan.extension!.itemId)!;
     const palette=new Set(fullTarget.manifest.materials.filter(m=>m.owner===existing.id).flatMap(m=>m.ramp.map(fromHex)));
-    const known=colourCounts(existing.layers.flatMap(l=>Object.values(l.cells??{}).flatMap(ds=>Object.values(ds??{}).flatMap(cs=>(cs??[]).flatMap(h=>h&&fullTarget.images.get(h)||[])))));
-    // Fixed outline pixels may intentionally have no material ramp; identical existing raw colours remain valid.
-    for(const colour of known.keys())palette.add(colour);
+    const known=colorCounts(existing.layers.flatMap(l=>Object.values(l.cells??{}).flatMap(ds=>Object.values(ds??{}).flatMap(cs=>(cs??[]).flatMap(h=>h&&fullTarget.images.get(h)||[])))));
+    // Fixed outline pixels may intentionally have no material ramp; identical existing raw colors remain valid.
+    for(const color of known.keys())palette.add(color);
     let adjusted=0,unmatched=0;
     for(const l of item.layers)for(const[a,ds]of Object.entries(l.cells??{}))for(const[d,cs]of Object.entries(ds))for(const[i,h]of(cs??[]).entries())if(h){
-      const raw=r.project.images.get(h)!,normal=normaliseItemPalette(raw,palette);adjusted+=normal.changed;unmatched+=normal.unmatched;
+      const raw=r.project.images.get(h)!,normal=normalizeItemPalette(raw,palette);adjusted+=normal.changed;unmatched+=normal.unmatched;
       if(normal.changed){const hash=await cellHash(normal.image);r.project.images.set(hash,normal.image);cs![i]=hash;const q=item.qa?.cells[`${a}/${d}/${i}` as keyof NonNullable<typeof item.qa>['cells']];if(q)q.snappedPct=normal.changed/Math.max(1,normal.pixels);}
     }
     if(!fit.plan.extension.reuseRest&&item.key)for(const[d,h]of Object.entries(item.dressed??{}))if(h){
       const raw=r.project.images.get(h)!,base=fullTarget.images.get(fullTarget.manifest.rig.rest![d as DirectionName]!.image)!;
-      const extracted=chromaLayer(raw,item.key,base).layer,normal=normaliseItemPalette(extracted,palette),data=new Uint8ClampedArray(raw.data);
+      const extracted=chromaLayer(raw,item.key,base).layer,normal=normalizeItemPalette(extracted,palette),data=new Uint8ClampedArray(raw.data);
       adjusted+=normal.changed;unmatched+=normal.unmatched;
       // Change only extracted item RGBs on the actual returned frame. Original key/body pixels and alpha remain intact.
       for(let i=0;i<data.length;i+=4)if(extracted.data[i+3]){data[i]=normal.image.data[i];data[i+1]=normal.image.data[i+1];data[i+2]=normal.image.data[i+2];}
       if(normal.changed){const image={...raw,data},hash=await cellHash(image);r.project.images.set(hash,image);item.dressed![d as DirectionName]=hash;}
     }
     if(adjusted)r.warnings.push(`${adjusted} new item pixels were matched to this copy’s original palette. Actual API body-preservation checks and raw job images are retained.`);
-    if(unmatched){r.fails.push('New frames contain ambiguous or distant colours outside this item’s original palette. They cannot be merged while preserving independent recolouring.');r.failedCells=[...new Set(completed.flatMap(x=>x.call.cells))];}
+    if(unmatched){r.fails.push('New frames contain ambiguous or distant colors outside this item’s original palette. They cannot be merged while preserving independent recoloring.');r.failedCells=[...new Set(completed.flatMap(x=>x.call.cells))];}
     // Review exactly the eventual merged raster, including original known-transparent cells and other directions.
     const additions=new Set<string>(item.coverage??[]);
     for(const[i,l]of item.layers.entries()){
@@ -287,7 +287,7 @@ export async function prepareExtensionFit(targetId:string,itemId:string,options:
   const signature=(ramps:string[][])=>JSON.stringify(ramps.flat().map(h=>h.toLowerCase()).sort());
   const rawMatches=signature(sourceMaterials.map(m=>m.ramp))===signature(targetMaterials.map(m=>m.ramp));
   const visibleMatches=signature(sourceMaterials.map(m=>{const name=design.variants[m.id]??m.defaultVariant;return(name&&variantRampOf(m,name))||m.ramp;}))===signature(targetMaterials.map(m=>m.ramp));
-  if(!reuseRest&&!rawMatches&&!visibleMatches)throw new Error('The original source colourway cannot be matched exactly to this copy’s raw palette. No fitting request was sent.');
+  if(!reuseRest&&!rawMatches&&!visibleMatches)throw new Error('The original source colorway cannot be matched exactly to this copy’s raw palette. No fitting request was sent.');
   if(reuseRest||rawMatches){design.variants={};design.source.presets.forEach(p=>{p.variants={};});sourceMaterials.forEach(m=>{delete m.defaultVariant;});}
   design.revision=await designRevision(design.source,design.variants,design.imageHashes);
   const plan=await priceFit(design,targetId,{reuseApprovedRest:reuseRest});plan.directions=dirs;plan.extension={itemId,anims,cells,stamp,reuseRest,freeMatches,freeSource:freeMatches.length?snapshotDesign(freeDesign):undefined};
@@ -297,7 +297,7 @@ export async function prepareExtensionFit(targetId:string,itemId:string,options:
   const fit=await createFit(plan,{previewGens:plan.previewGens,poseGens:0});
   if(reuseRest){
     const materials=project.manifest.materials.filter(m=>m.owner===itemId),variants=await extensionPreviewVariants(targetId,materials,materials);
-    await db.update<FitDraft>('projects',fit.id,current=>({...current!,stage:'rest-review',rest:structuredClone(item.dressed),candidate:{manifest:structuredClone(project.manifest),imageHashes:imageHashes(project.manifest),itemId,materials:[],variants},warnings:['Existing target standing references are reused for free. Only missing cells will be generated; existing approved cells and outfit colours are kept.'],updatedAt:now()}));
+    await db.update<FitDraft>('projects',fit.id,current=>({...current!,stage:'rest-review',rest:structuredClone(item.dressed),candidate:{manifest:structuredClone(project.manifest),imageHashes:imageHashes(project.manifest),itemId,materials:[],variants},warnings:['Existing target standing references are reused for free. Only missing cells will be generated; existing approved cells and outfit colors are kept.'],updatedAt:now()}));
   }
   return getFit(fit.id);
 }

@@ -74,26 +74,26 @@ test('body publication receipt survives a failed item step and resumes only miss
 })
 
 
-test('bounded colour plan is API-free and reuses complete real original measurements',async()=>{
+test('bounded color plan is API-free and reuses complete real original measurements',async()=>{
  const f=await fixture(true);await expect(bodyPaletteRepairPlan('rig-recover',f.spec)).rejects.toThrow('all original joint checks');await f.finishOriginalChecks();const before=f.posts(),plan=await bodyPaletteRepairPlan('rig-recover',f.spec)
  expect(plan.directions).toEqual(['west']);expect(plan.changedPixels).toBe(90);expect(plan.rawOutliers).toBe(90);expect(plan.remainingOutliers).toBe(0);expect(plan.changedFrames).toBe(3);expect(plan.checks).toBe(3);expect(plan.gens).toBeCloseTo(.3);expect(f.posts()).toBe(before)
 })
 
-test('colour repair remeasures only changed PNGs and persists exact raw/final provenance without body generation',async()=>{
+test('color repair remeasures only changed PNGs and persists exact raw/final provenance without body generation',async()=>{
  const f=await fixture(true);await f.finishOriginalChecks();const plan=await bodyPaletteRepairPlan('rig-recover',f.spec),before=f.posts()
- const spec:MoveSpec={...f.spec,bodyPaletteRepair:{id:'colour-consent',version:'near-rest-v1',rigVersion:plan.rigVersion}};await addMove('rig-recover',spec)
+ const spec:MoveSpec={...f.spec,bodyPaletteRepair:{id:'color-consent',version:'near-rest-v1',rigVersion:plan.rigVersion}};await addMove('rig-recover',spec)
  expect(f.posts()-before).toBe(3);expect(f.max()).toBe(1);const source=f.saved().manifest.rig.animations[0].sources!.west!,processing=source.processing!
  expect(processing).toMatchObject({version:'near-rest-v1',changedPixels:90,rawOutliers:90,remainingOutliers:0,changedFrames:[1,2,3]});expect(processing.rawPaletteFit).toBeLessThan(.97)
  expect(processing.inputHashes[0]).toBe(processing.rawInputHashes[0]);for(const i of [1,2,3])expect(processing.inputHashes[i]).not.toBe(processing.rawInputHashes[i]);expect(source.measured).toHaveLength(4);expect(f.saved().manifest.rig.animations[0].sources!.east!.processing).toBeUndefined()
- const calls=f.enqueue.mock.calls.length;await addMove('rig-recover',spec);expect(f.posts()-before).toBe(3);expect(f.enqueue.mock.calls).toHaveLength(calls);expect(f.saved().moveRecovery?.id).toBe('colour-consent')
+ const calls=f.enqueue.mock.calls.length;await addMove('rig-recover',spec);expect(f.posts()-before).toBe(3);expect(f.enqueue.mock.calls).toHaveLength(calls);expect(f.saved().moveRecovery?.id).toBe('color-consent')
 })
 
-test('palette-only repair refuses failed real pose checks before buying any colour check',async()=>{const f=await fixture(true);f.bad();await f.finishOriginalChecks();const before=f.posts();await expect(bodyPaletteRepairPlan('rig-recover',f.spec)).rejects.toThrow('cannot repair pose');expect(f.posts()).toBe(before);expect(f.update).not.toHaveBeenCalled()})
+test('palette-only repair refuses failed real pose checks before buying any color check',async()=>{const f=await fixture(true);f.bad();await f.finishOriginalChecks();const before=f.posts();await expect(bodyPaletteRepairPlan('rig-recover',f.spec)).rejects.toThrow('cannot repair pose');expect(f.posts()).toBe(before);expect(f.update).not.toHaveBeenCalled()})
 
 
 test('unknown corrected-PNG checks require new explicit consent and never reopen body renders',async()=>{
  const f=await fixture(true);await f.finishOriginalChecks();const plan=await bodyPaletteRepairPlan('rig-recover',f.spec),before=f.posts()
- const spec:MoveSpec={...f.spec,bodyPaletteRepair:{id:'colour-consent',version:'near-rest-v1',rigVersion:plan.rigVersion}};f.failCheck();await expect(addMove('rig-recover',spec)).rejects.toThrow('lost');expect(f.posts()-before).toBe(1);expect(f.update).not.toHaveBeenCalled()
+ const spec:MoveSpec={...f.spec,bodyPaletteRepair:{id:'color-consent',version:'near-rest-v1',rigVersion:plan.rigVersion}};f.failCheck();await expect(addMove('rig-recover',spec)).rejects.toThrow('lost');expect(f.posts()-before).toBe(1);expect(f.update).not.toHaveBeenCalled()
  await expect(addMove('rig-recover',spec)).rejects.toThrow('lost');expect(f.posts()-before).toBe(1)
  const retry=await measurementRecoveryPlan('rig-recover',spec);expect(retry.recordIds).toHaveLength(1);expect(retry.checks).toBe(3)
  await addMove('rig-recover',{...spec,measurementRecovery:{id:'explicit-corrected-checks',recordIds:retry.recordIds,rigVersion:retry.rigVersion}})
@@ -101,7 +101,7 @@ test('unknown corrected-PNG checks require new explicit consent and never reopen
 })
 
 
-test('known insufficient bounded colour correction refuses new paid measurements before enqueue',async()=>{
+test('known insufficient bounded color correction refuses new paid measurements before enqueue',async()=>{
  const f=await fixture('partial');await f.finishOriginalChecks();const before=f.posts(),enqueues=f.enqueue.mock.calls.length
  await expect(bodyPaletteRepairPlan('rig-recover',f.spec)).rejects.toThrow('still fails the palette quality check')
  expect(f.posts()).toBe(before);expect(f.enqueue.mock.calls).toHaveLength(enqueues);expect(f.update).not.toHaveBeenCalled()

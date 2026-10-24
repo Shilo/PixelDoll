@@ -1,6 +1,6 @@
 <script lang="ts">
   import { openSource } from '../../lib/dress/project.ts'
-  import { recolour } from '../../lib/dress/dress.ts'
+  import { recolor } from '../../lib/dress/dress.ts'
   import { buildPresentation,southStill,renderPresentation } from './presentation.ts'
   import type { Project, Preset } from '../../lib/store/manifest.ts'
   import Sprite from '../Sprite.svelte'
@@ -12,7 +12,7 @@
   let items = $state<Preset['items']>({})
   $effect(() => {
     const key = id; let alive = true
-    void openSource(key).then(r => { if (alive) { const outfit=r.current ?? r.project.manifest.presets[0]; rawProject=r.project; variants=outfit?.variants??{}; project=recolour(r.project, variants); items=outfit?.items ?? {} } }).catch(() => {})
+    void openSource(key).then(r => { if (alive) { const outfit=r.current ?? r.project.manifest.presets[0]; rawProject=r.project; variants=outfit?.variants??{}; project=recolor(r.project, variants); items=outfit?.items ?? {} } }).catch(() => {})
     return () => { alive=false }
   })
   const p = $derived(id===doc.id ? view.project : project)

@@ -157,7 +157,7 @@
         </select>
       </label>
     </div>
-    <textarea bind:value={form.prompt} rows="2" placeholder="a simple grey steel knight helmet covering the top and sides of the head, face visible" data-testid="prompt"></textarea>
+    <textarea bind:value={form.prompt} rows="2" placeholder="a simple gray steel knight helmet covering the top and sides of the head, face visible" data-testid="prompt"></textarea>
     <div class="row">
       anims {#each rig.animations as a (a.id)}<label><input type="checkbox" value={a.id} bind:group={form.anims} /> {a.id} ({a.cells})</label>{/each}
       · dirs {#each generatedDirs as d (d)}<label><input type="checkbox" value={d} bind:group={form.dirs} /> {d}</label>{/each}

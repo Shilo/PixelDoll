@@ -15,7 +15,7 @@ The visual direction holds up. On desktop and tablet, selection and Preview look
 3. **Every activation drops focus to `<body>`** because the whole UI is re-rendered through `innerHTML`. Popovers never receive focus (F3).
 4. **On small and short screens the character is painted underneath the UI**: invisible behind the view tabs and playback at 320×500; overlapped by the prompt line in short landscape and at 200% zoom (F4).
 
-Bronze UI 0.2.0 is a clean, honest artifact with good token contrast and forced-colour behaviour. As a reusable contract it still has an unthemed native picker icon, a select border below its own boundary rule, a busy Dialog that closes on the third Escape press, host-reset fragility, documentation drift, and a showcase that does not show the controls the product actually uses (F10, F12–F15).
+Bronze UI 0.2.0 is a clean, honest artifact with good token contrast and forced-color behavior. As a reusable contract it still has an unthemed native picker icon, a select border below its own boundary rule, a busy Dialog that closes on the third Escape press, host-reset fragility, documentation drift, and a showcase that does not show the controls the product actually uses (F10, F12–F15).
 
 ## Representative evidence
 
@@ -28,7 +28,7 @@ Bronze UI 0.2.0 is a clean, honest artifact with good token contrast and forced-
 | Top-down in motion: a "showing a still pose" toast stays up while the character walks | [motion-topdown-sequence](evidence/motion-topdown-sequence.png) |
 | Side-scroller moving west; Wizard hat hidden on north walk with a notice | [motion-side-and-hat](evidence/motion-side-and-hat.png) |
 | Round-five mockup (top) vs current (bottom), same screen and resolution | [Preview](evidence/mockup-vs-current-obsidian-preview.png), [Porcelain Top-down](evidence/mockup-vs-current-porcelain-topdown.png) |
-| 200% zoom (683×384 CSS) and forced colours | [zoom200-sheet](evidence/zoom200-sheet.png), [forced-preview](evidence/forced-preview-small.png) |
+| 200% zoom (683×384 CSS) and forced colors | [zoom200-sheet](evidence/zoom200-sheet.png), [forced-preview](evidence/forced-preview-small.png) |
 | Wrong-theme first paint with light mode stored | [theme-first-paint](evidence/gameplay/theme-first-paint-light-stored.png) |
 | Bronze showcase, all tabs × appearances × 1440/390 | [evidence/showcase/](evidence/showcase/) |
 
@@ -88,7 +88,7 @@ Severity: **Blocker** (prevents a core task or fails WCAG A/AA on a primary path
 
 **F6 — Movement keys are global.** Medium · confirmed · screen · needs agreement.
 - Observed: WASD/arrows are handled on `window` for every non-editable target. WCAG 2.1.4 (Character Key Shortcuts, A) is satisfied only when the shortcut is active just while its component has focus, or can be turned off or remapped.
-- Fix: make the world canvas focusable (`tabindex=0`, labelled) and scope movement to it; or add an off switch in Help. Keep Preview's arrow facing on the playback group.
+- Fix: make the world canvas focusable (`tabindex=0`, labeled) and scope movement to it; or add an off switch in Help. Keep Preview's arrow facing on the playback group.
 - Verify: with focus on a header button, `d` does nothing; with focus on the world, `d` moves the actor.
 
 **F7 — No Undo on phones.** Medium · confirmed · screen.
@@ -106,7 +106,7 @@ Severity: **Blocker** (prevents a core task or fails WCAG A/AA on a primary path
 - Observed: the scale is an integer in CSS pixels, not device pixels. At DPR 1.25, one art pixel is 7.5 device pixels, and the measured sprite columns alternate 7 and 8 px wide. At DPR 1.5 the sprite origin falls on half device pixels (x = 481.5) ([gameplay-probe.json](evidence/gameplay-probe.json), `actor-dpr-*.png`).
 - Why it matters: 125% and 150% are common Windows laptop defaults, and the sprite is the product.
 - Fix: choose `scale` so that `scale × devicePixelRatio` is an integer (in device pixels) and snap draw positions to `1/dpr`.
-- Verify: horizontal run-length analysis of a flat colour row shows a single width at DPR 1, 1.25, 1.5 and 2.
+- Verify: horizontal run-length analysis of a flat color row shows a single width at DPR 1, 1.25, 1.5 and 2.
 
 **F10 — Native select: unthemed picker icon, weak boundary, regressed playback select.** Medium · confirmed · theme + consumer.
 - Observed:
@@ -123,7 +123,7 @@ Severity: **Blocker** (prevents a core task or fails WCAG A/AA on a primary path
 - Fix: a two-line inline head script that reads `bronze-prototype-theme` before the stylesheets apply.
 
 **F12 — Bronze `Dialog` busy guard fails on repeated Escape.** High for production · confirmed in Chromium and WebKit (helper agent) · theme.
-- Observed: `Dialog.svelte:18` blocks Escape only through `cancel` `preventDefault`. Browsers stop honouring that after repeated presses without user activation, and the third Escape closed a busy dialog. `tests/showcase.mjs:105` presses Escape once.
+- Observed: `Dialog.svelte:18` blocks Escape only through `cancel` `preventDefault`. Browsers stop honoring that after repeated presses without user activation, and the third Escape closed a busy dialog. `tests/showcase.mjs:105` presses Escape once.
 - Impact: a paid generation or export dialog can be dismissed mid-operation.
 - Fix: add a keydown Escape `preventDefault` while `busy`, and test four presses.
 
@@ -136,9 +136,9 @@ Severity: **Blocker** (prevents a core task or fails WCAG A/AA on a primary path
 ### B. Demonstrable visual regressions and composition
 
 - **Playback bar** (F10): heavier and less legible than both the pre-Bronze prototype and the mockup.
-- **Palette label lost its meaning.** The mockup's "Metal" (the ramp of the selected item) became the generic "Palette". The swatches look selectable, show a selected ring, and then open a "not connected" dialog. Either label them by ramp and show them as unavailable, or remove them until recolouring is connected. Owner: content/screen. Low.
+- **Palette label lost its meaning.** The mockup's "Metal" (the ramp of the selected item) became the generic "Palette". The swatches look selectable, show a selected ring, and then open a "not connected" dialog. Either label them by ramp and show them as unavailable, or remove them until recoloring is connected. Owner: content/screen. Low.
 - **Reflection in Top-down.** A flipped reflection under an overhead-camera actor reads as a rendering error; the mockup had none. `REFLECTION.topdown = false` is a one-line code change and keeps the approved code-only control. Owner: renderer. Low, **subjective**.
-- **Selection perspective.** The background's vanishing point and central floor seam are centred on the window, but actors are centred on the free stage (correctly, per the approved rule). In Porcelain a bright vertical seam therefore runs beside the hero rather than under it ([image](evidence/matrix-chromium/porcelain-1366x768-selection.png)). Owner: renderer (horizontally offset the backdrop by the stage centre). Low, **subjective**.
+- **Selection perspective.** The background's vanishing point and central floor seam are centered on the window, but actors are centered on the free stage (correctly, per the approved rule). In Porcelain a bright vertical seam therefore runs beside the hero rather than under it ([image](evidence/matrix-chromium/porcelain-1366x768-selection.png)). Owner: renderer (horizontally offset the backdrop by the stage center). Low, **subjective**.
 
 ### C. Information architecture and content (needs user agreement)
 
@@ -157,9 +157,9 @@ Severity: **Blocker** (prevents a core task or fails WCAG A/AA on a primary path
 
 From the Studio inventory ([coverage-matrix.md](coverage-matrix.md) §3):
 - The prototype represents selection, equipping, playback, undo and a visual creator draft.
-- It does not represent connect/token, rig setup and repair, add moves, item generation, quality review (keep/retry/discard), item details, recolour editing, shared designs, import, export, activity/queue, or API inspection.
+- It does not represent connect/token, rig setup and repair, add moves, item generation, quality review (keep/retry/discard), item details, recolor editing, shared designs, import, export, activity/queue, or API inspection.
 - The creator does not validate. You can deselect every direction, mirror an unselected direction or both sides of a pair, and type a body size of 7 px.
-- Its Auto frame behaviour (readonly field) differs from production (typing switches to manual) and from the showcase (checkbox, disabled field).
+- Its Auto frame behavior (readonly field) differs from production (typing switches to manual) and from the showcase (checkbox, disabled field).
 
 Bronze lacks a sheet shell matching `Sheet.svelte`, a segmented control, a selected-vs-worn split for rows and tiles, job/queue states, a menu (`menuitemradio`) recipe, notice actions, and pill/count badges. ChoiceGroup has no icons, disabled options or counts. Help has no text trigger or `show()`. These must be closed before claiming Bronze can serve the Studio.
 
@@ -215,19 +215,19 @@ These pass at typical pixels but leave no margin. Raise light `--bu-muted` sligh
 
 ### Target sizes (measured)
 
-- **Phone palette chips:** 19×19 with a 9px gap. They pass WCAG 2.5.8 through the spacing exception (28px centre distance), but are far from a comfortable 44px touch target; they are also non-functional.
+- **Phone palette chips:** 19×19 with a 9px gap. They pass WCAG 2.5.8 through the spacing exception (28px center distance), but are far from a comfortable 44px touch target; they are also non-functional.
 - **Phone sheet handle:** measures 12px tall across the full width. It is the only expand control, so it does not qualify for the "equivalent" exception; give it a 24px+ hit area.
 - **Other controls:** every other visible control met 24×24 at all sizes.
 
 ## Keep (and why)
 
 - **Composition** on desktop and tablet: the selection and Preview stage with the actor in the measured free stage (verified across 1024–2560 widths). It is the approved Moonlight Camp / Quiet Stage direction and it works.
-- **Sprite rendering:** real, unshaded sprites with nearest-neighbour rendering; theme-independent pixels (existing RGB test, rechecked visually in both appearances and forced colours). Reflection as a separate layer with code-only control.
+- **Sprite rendering:** real, unshaded sprites with nearest-neighbor rendering; theme-independent pixels (existing RGB test, rechecked visually in both appearances and forced colors). Reflection as a separate layer with code-only control.
 - **Movement:** continuous movement, a normalized diagonal (0.707, 0.707), smooth camera follow, Side-scroller ignoring W/S, joystick release outside the world stopping movement, and drags starting on UI not moving the actor ([gameplay-probe.json](evidence/gameplay-probe.json)).
 - **Equipment coverage:** equipment hides on missing north frames and restores on south.
-- **Selected markers:** the selected tile carries a check mark, a non-colour cue that survives forced colours.
+- **Selected markers:** the selected tile carries a check mark, a non-color cue that survives forced colors.
 - **Theme switching:** one Light mode / Dark mode action naming the destination; native `<dialog>`; status toasts use `role="status"`.
-- **Bronze UI:** the exact published artifact; strong token contrast (text 13.6/13.8:1, accent 6.9/6.3:1); forced-colour mapping; `@supports`-gated base-select and backdrop fallbacks; native controls rather than JS replacements.
+- **Bronze UI:** the exact published artifact; strong token contrast (text 13.6/13.8:1, accent 6.9/6.3:1); forced-color mapping; `@supports`-gated base-select and backdrop fallbacks; native controls rather than JS replacements.
 - **Hierarchy:** the two-level hierarchy of identity (left) and wardrobe (right) on desktop; equipment remains reachable across views.
 
 ## Action order
@@ -262,7 +262,7 @@ These pass at typical pixels but leave no margin. Raise light `--bu-muted` sligh
 
 ## Ownership boundary
 
-Fix shared appearance and behaviour in Bronze UI, release a new immutable version, then bump the pinned archive and lockfile here: F10 (icon/border), F12, F13, F14, F15, a quiet select variant, light `--bu-muted` margin, and any segmented/worn-state recipe. Fix layout, workflow, input, renderer and copy in the prototype: F1–F9, F11, F16–F18, the playback select placement, reflection config. Neither repo should copy the other's fixes.
+Fix shared appearance and behavior in Bronze UI, release a new immutable version, then bump the pinned archive and lockfile here: F10 (icon/border), F12, F13, F14, F15, a quiet select variant, light `--bu-muted` margin, and any segmented/worn-state recipe. Fix layout, workflow, input, renderer and copy in the prototype: F1–F9, F11, F16–F18, the playback select placement, reflection config. Neither repo should copy the other's fixes.
 
 ## Sources (accessed 2026-10-23)
 
@@ -303,7 +303,7 @@ The other scripts in `scripts/` run the same way:
 | `matrix.mjs` | 2 themes × 12 viewports × 5 screens, with layout metrics; `BROWSER=webkit` and `SIZES=` supported |
 | `contrast.mjs` | Rendered-scene text contrast |
 | `gameplay-probe.mjs` | Motion, joystick, DPR pixel integrity, first paint, reduced motion |
-| `modes-probe.mjs` | Forced colours, `prefers-contrast`, 200% zoom |
+| `modes-probe.mjs` | Forced colors, `prefers-contrast`, 200% zoom |
 | `showcase-capture.mjs` | Bronze showcase tabs |
 
 All captures were taken with Playwright Chromium 156.0.8078.4 headless at device scale 1 (except the DPR cases), from source `a0c9990` / Bronze `d811d35`, on 2026-10-23. Screenshots and raw probe outputs stay local under `evidence/`, which is git-ignored by this folder's `.gitignore` under the repository's generated-media policy. In a fresh checkout, the `evidence/` links resolve only after rerunning the scripts above.

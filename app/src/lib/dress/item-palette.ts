@@ -1,4 +1,4 @@
-// Explicit, local colour matching for an existing item. Source ramps and variants never change.
+// Explicit, local color matching for an existing item. Source ramps and variants never change.
 import type { Img } from '../image/png.ts';
 import type { Item, Material } from '../store/manifest.ts';
 import { fromHex, lab, OUTLINE_C, OUTLINE_L } from './palette.ts';
@@ -11,11 +11,11 @@ const neutral = (c: number) => {
 };
 export function itemPaletteMatcher(item: Pick<Item, 'id' | 'materials'>, materials: Material[]) {
   const candidates = materials.filter(m => m.owner === item.id && item.materials.includes(m.id) && m.ramp.length && m.ramp.every(h => neutral(fromHex(h))));
-  if (candidates.length !== 1) throw new Error('Colour matching needs exactly one neutral material owned by this item. Existing colours were kept.');
+  if (candidates.length !== 1) throw new Error('Color matching needs exactly one neutral material owned by this item. Existing colors were kept.');
   const material = candidates[0], ramp = material.ramp.map(fromHex), claimed = new Set(materials.flatMap(m => m.ramp.map(fromHex)));
   const cache = new Map<number, number | null | undefined>();
   const match = (c: number): number | null | undefined => {
-    // undefined = already owned or outside the supported colour family; null = eligible but unsafe/ambiguous.
+    // undefined = already owned or outside the supported color family; null = eligible but unsafe/ambiguous.
     if (cache.has(c)) return cache.get(c);
     let result: number | null | undefined;
     if (!claimed.has(c) && neutral(c)) {

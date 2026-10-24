@@ -60,7 +60,7 @@ const rgbOf = (im: Img) => {
   return [...s];
 };
 const near = (a: number, b: number, t: number) => Math.abs((a >> 16) - (b >> 16)) <= t && Math.abs(((a >> 8) & 255) - ((b >> 8) & 255)) <= t && Math.abs((a & 255) - (b & 255)) <= t;
-/** Share of opaque px whose colour is within `tol` (max channel) of a rest-view colour. */
+/** Share of opaque px whose color is within `tol` (max channel) of a rest-view color. */
 export function paletteFit(rest: Img, frames: Img[], tol = 12): number {
   const ref = rgbOf(rest), memo = new Map<number, boolean>();
   let n = 0, ok = 0;
@@ -81,7 +81,7 @@ export const borderPx = (im: Img) => {
   return n;
 };
 
-// Review thresholds only. Estimator error, silhouette extents, colour changes and border contact cannot prove bad art.
+// Review thresholds only. Estimator error, silhouette extents, color changes and border contact cannot prove bad art.
 export const RIG_GATES = { adherence: 2, silhouetteBottomDelta: 1, paletteFit: 0.97, border: 0 };
 export interface ClipQa { adherence: number | null; feetDrift: number; paletteFit: number; border: number; stray: number; disconnectedPixels: number; fails: string[]; warnings: string[] }
 /** `feetDrift` is the historical storage field for silhouette-bottom displacement, not measured foot contact/sliding. */

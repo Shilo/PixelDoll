@@ -18,14 +18,14 @@
   let group = $state(draft?.group ?? ui.newItem.group)
   let slot = $state(draft?.slot ?? ui.newItem.slot)
   let prompt = $state(draft?.prompt ?? ui.newItem.prompt)
-  let colour = $state(draft?.colour ?? '')
+  let color = $state(draft?.color ?? '')
   let name = $state(draft?.name ?? '')
   let busy = $state(false)
   const g = $derived(GROUPS.find((x) => x.id === group)!)
   $effect(() => { if (!g.slots.includes(slot)) slot = g.slots[0] })
 
   const m = $derived(store.project?.manifest)
-  const fullPrompt = $derived(`${prompt.trim()}${colour ? `, ${colour} coloured` : ''}`)
+  const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`)
   const itemName = $derived(name.trim() || itemNameFrom(prompt) || 'New item')
   const input = $derived({ name: itemName, slot, prompt: fullPrompt })
   // the project record (skeletons decide the route); pixels are not needed for the plan
@@ -52,7 +52,7 @@
     try { await copyDemo() } finally { busy = false }
   }
   function go() {
-    formDrafts.item = { projectId: doc.id, sourceGroup: ui.newItem.group, group, slot, prompt, colour, name }
+    formDrafts.item = { projectId: doc.id, sourceGroup: ui.newItem.group, group, slot, prompt, color, name }
     const i = $state.snapshot(input)
     withKey(() => void make(i), !!plan?.minimumTier)
   }
@@ -102,11 +102,11 @@
         {/each}
       </div>
       <div class="field">
-        <span class="label">Colour hint <span class="faint">(optional)</span></span>
-        <div class="dots" role="radiogroup" aria-label="Colour hint">
-          <button class="dot-swatch none" role="radio" aria-checked={!colour} tabindex={!colour ? 0 : -1} onclick={() => (colour = '')}>Any</button>
+        <span class="label">Color hint <span class="faint">(optional)</span></span>
+        <div class="dots" role="radiogroup" aria-label="Color hint">
+          <button class="dot-swatch none" role="radio" aria-checked={!color} tabindex={!color ? 0 : -1} onclick={() => (color = '')}>Any</button>
           {#each Object.entries(SWATCHES) as [n, hex] (n)}
-            <button class="dot-swatch" role="radio" aria-checked={colour === n} tabindex={colour === n ? 0 : -1} aria-label={n} title={n} style:background={hex} onclick={() => (colour = n)}></button>
+            <button class="dot-swatch" role="radio" aria-checked={color === n} tabindex={color === n ? 0 : -1} aria-label={n} title={n} style:background={hex} onclick={() => (color = n)}></button>
           {/each}
         </div>
       </div>

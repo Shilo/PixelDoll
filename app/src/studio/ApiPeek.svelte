@@ -8,7 +8,7 @@
 
   let { scope, plan = [], label = '', queueIds = [], activityScope, all = false, menu = false }: {
     scope: string; plan?: PeekCall[]; label?: string; queueIds?: string[];
-    activityScope?: string; all?: boolean; menu?: boolean // menu: a labelled row inside an options menu
+    activityScope?: string; all?: boolean; menu?: boolean // menu: a labeled row inside an options menu
   } = $props()
   const id = $props.id()
   let panel: HTMLDivElement

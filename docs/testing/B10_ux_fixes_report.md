@@ -40,12 +40,12 @@ New e2e steps:
 
 | # | Issue | Fix | Evidence |
 |---|---|---|---|
-| P1-1 data | Demo Cross punch: E/W bald body with a doubled sword, N empty | The demo's S2 items only exist for cross-punch **south**. `build-fixture-s2.ts` now ships cross-punch south-only (`ANIMS[..].dirs`). The colour claim order is unchanged, so material ramps are unchanged. The doubled blade was in the source frames (east cell 4), and the trim removes it. Only the base and sword `cross-punch.png` changed. | `mvp_dark_moves_desktop.png` ("Cross punch · 6 frames · south only") |
+| P1-1 data | Demo Cross punch: E/W bald body with a doubled sword, N empty | The demo's S2 items only exist for cross-punch **south**. `build-fixture-s2.ts` now ships cross-punch south-only (`ANIMS[..].dirs`). The color claim order is unchanged, so material ramps are unchanged. The doubled blade was in the source frames (east cell 4), and the trim removes it. Only the base and sword `cross-punch.png` changed. | `mvp_dark_moves_desktop.png` ("Cross punch · 6 frames · south only") |
 | P1-1 UI | Views a move doesn't have stayed clickable and empty | New `moveDirs(m, anim)` in `lib/dress/dress.ts`: the views where the base has frames, with mirrors following their source. On the Stage, S/E/N/W buttons the move lacks are disabled with the tooltip "This move has no north view", and the all-directions grid shows only real views. `Studio.svelte` switches to a valid view when the move changes, and the 1–8 keys skip missing views. | e2e "cross punch is south only" |
 | P1-1 items | A worn item without frames vanished silently (wizard hat walking north) | New `missingAt()` and `StageNote.svelte`, a pill on the stage: "Wizard hat isn't made for Walk facing north yet". It has one action. On own skeleton-rig items that have none of the move: **Make it · N gens**, which runs `startMove` with items only (`addMove` skips the existing body clip). Otherwise: **Make it again…** (New item, prefilled). Demo: **Make your own** (Create). The ItemPane shows the same line, and its direction strip lists only the move's views. | `mvp_dark_notmade_desktop.png`, `mvp_dark_notmade_tablet.png`, `mvp_light_notmade_phone.png` |
 | P1-1 export | Blank north row, doubled sword, empty strips | The exported `manifest.json` now gives each `rig.animations[]` a `directions` list (`walk: S,E,N,W`, `cross-punch: south`). PNG + JSON skips fully transparent strips. The root `README.txt` says "cross-punch (6 frames, south only)". The Export sheet adds a notice: "Cross punch has south only · Wizard hat has no walk north, cross punch south frames. Those frames stay empty in the sheets; manifest.json lists the directions of each move." The row layout is unchanged, so engines keep fixed rows. | `mvp_dark_export_desktop.png` |
 | P1-2 | Phone and landscape had no Outfits, Random look or Redo | An **Outfits** chip after the slot chips shows the shared `Outfits.svelte` list (save the current look, apply, delete). The same list is used by the desktop wardrobe, so the code is de-duplicated. A **Random look** (shuffle) button sits next to the chips. **Redo** sits next to Undo in the compact toolbar. | `mvp_dark_outfits_phone.png`, `mvp_dark_outfits_landscape.png`, `mvp_dark_studio_phone.png` |
-| P1-3 | Tablet portrait: the drawer covered the stage | Portrait under 1024 px (`h > w`) now uses the stacked layout: stage on top, chips and tiles below, inspector as the item sheet. Medium landscape keeps the wardrobe as an in-flow pane that pushes the stage. It is open by default from 900 px, and there is no scrim. Bottom sheets are capped at 640 px and centred. | `mvp_dark_studio_tablet.png`, `mvp_light_studio_tablet.png` |
+| P1-3 | Tablet portrait: the drawer covered the stage | Portrait under 1024 px (`h > w`) now uses the stacked layout: stage on top, chips and tiles below, inspector as the item sheet. Medium landscape keeps the wardrobe as an in-flow pane that pushes the stage. It is open by default from 900 px, and there is no scrim. Bottom sheets are capped at 640 px and centered. | `mvp_dark_studio_tablet.png`, `mvp_light_studio_tablet.png` |
 
 ## P2
 
@@ -81,7 +81,7 @@ New e2e steps:
   - The Activity dollars line.
   - "64 × 64 pixel sprites".
 - Under reduced motion, the app starts paused.
-- The colour picker opens on the colour in use.
+- The color picker opens on the color in use.
 - Fit zoom is capped at 10×.
 - The narrow move picker keeps its chevron.
 - At 320 px the project name truncates instead of overlapping Undo.

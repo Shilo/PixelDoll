@@ -131,7 +131,7 @@ try {
     });
     assert.equal(playbackBounds.inside, true, `${currentCase}: playback stays within the viewport`);
     assert.equal(playbackBounds.overflow, false, `${currentCase}: playback controls fit their surface`);
-    assert.deepEqual(playbackBounds.obscured, [], `${currentCase}: every playback control has a reachable centre`);
+    assert.deepEqual(playbackBounds.obscured, [], `${currentCase}: every playback control has a reachable center`);
     for (const action of ['more', 'characters', 'description', 'slot:all']) {
       await click(action);
       const bounds = await page.locator('.popover').evaluate(el => {

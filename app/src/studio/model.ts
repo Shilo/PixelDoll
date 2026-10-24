@@ -86,7 +86,7 @@ export function itemPreviewFrames(p: Project, it: Item, anim: string): Img[][] {
 }
 
 /** Base prompt (S2 winner): the user's words + a plain clothed mannequin so items have a clean body to sit on. B15: a light
- * shirt over dark shorts, so the two garments get their own shades (lib/dress/regions.ts splits them into Shirt and Shorts). */
+ * shirt over dark shorts, so the two garments get their own shades (lib/dress/regions.ts splits them into Shirt and Shorts). Its "grey" stays: saved character prompts embed it verbatim and characterConfig.ts matches it on load. */
 export const BASE_BODY = 'plain bald paperdoll base body, wearing a plain light grey t-shirt and plain dark grey shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso';
 export const basePrompt = (desc: string) => `${desc.trim().replace(/[.\s]+$/, '')}, ${BASE_BODY}`;
 /** What the base LOOKS like (raw skeleton-v3 `description`, S3): no pose words, empty hands. */
@@ -123,7 +123,7 @@ export function plainReason(s: string): string {
   if (s.startsWith('G2') || s.startsWith('G3')) return 'Some body pixels were changed by the model';
   if (s.startsWith('G4')) return 'The item is missing in some frames';
   if (s.startsWith('G5')) return 'The item changes size between frames';
-  if (s.startsWith('G6')) return 'Colours drift between directions';
+  if (s.startsWith('G6')) return 'Colors drift between directions';
   if (s.startsWith('G7')) return 'The item touches the frame edge (may be cut off)';
   if (s.startsWith('G8')) {
     const clip = /^G8 ([^ :]+\/[^ :]+):/.exec(s)?.[1];
@@ -137,7 +137,7 @@ export function plainReason(s: string): string {
   }
   if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
   if (s.startsWith('H4')) return 'Some frames do not look like the design (e.g. a cape wrapped around an arm)';
-  if (s.startsWith('D1')) return 'The design has grey smudges';
+  if (s.startsWith('D1')) return 'The design has gray smudges';
   return s;
 }
 

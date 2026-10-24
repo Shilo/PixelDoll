@@ -70,7 +70,7 @@ export async function saveSplit(id: string, m: Manifest, split: { oldHash: strin
     if (!rec?.manifest) throw new Error(`project ${id} vanished`);
     const cur = rec.manifest, cb = cur.items.find((i) => i.id === cur.rig.baseItem)!;
     if (cur.rig.baseHash === m.rig.baseHash && cur.rig.baseHash !== split.oldHash && cb.regions === base.regions) return rec; // another tab completed the same split
-    if (cur.rig.baseHash !== split.oldHash && cur.rig.baseHash !== m.rig.baseHash) throw new Error('This character changed while preparing its colours. Open it again before editing.');
+    if (cur.rig.baseHash !== split.oldHash && cur.rig.baseHash !== m.rig.baseHash) throw new Error('This character changed while preparing its colors. Open it again before editing.');
     const receiptMatches = rec.moveRecovery?.bodyRigVersion === stableStringify({ rig: cur.rig, character: rec.character });
     cb.layers = structuredClone(base.layers);
     cb.regions = base.regions;

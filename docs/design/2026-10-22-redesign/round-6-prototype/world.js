@@ -57,7 +57,7 @@ export class World {
         let scale = Math.max(2, Math.floor(Math.min(mobile ? stageWidth / (studio ? 110 : 100) : stageWidth / 130, h * (mobile ? (studio ? .24 : .26) : (studio ? .40 : .43)) / 50)));
         const dpr = devicePixelRatio || 1;
         // Keep the approved roomy composition. Compact stages must fit the whole
-        // frame, including the raised neighbouring characters on selection.
+        // frame, including the raised neighboring characters on selection.
         const compact = mobile || short, raised = studio ? 0 : 30;
         if (compact) scale = Math.min(scale, Math.max(1 / dpr, (bottom - top - raised) / 64));
         scale = Math.max(1, Math.floor(scale * dpr)) / dpr;

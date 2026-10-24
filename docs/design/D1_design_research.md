@@ -7,9 +7,9 @@ mockups `app/src/ui/` (M1, M2, M5), Apple HIG (fetched 2026-10-20), and the Glas
 
 ## TL;DR
 
-- **Product shape:** one main screen, the **Studio**. The character is always centre stage, the **Wardrobe** (slots → items)
+- **Product shape:** one main screen, the **Studio**. The character is always center stage, the **Wardrobe** (slots → items)
   is on the left, and an **Inspector** for the selection is on the right. Three tasks open as sheets: **create character**,
-  **new item** and **export**. Everything technical (rig freeze, QA gates, key colour, seeds, routes, concurrency, ledger) is
+  **new item** and **export**. Everything technical (rig freeze, QA gates, key color, seeds, routes, concurrency, ledger) is
   automatic and sits behind "Details" disclosures or a Developer setting.
 - **Happy path:** *Create character → Add items → Dress up → Export.* There are 4 user decisions and every one has a default.
   No API key is needed until the first generation: a bundled **demo character** (the S1 fixture) lets people dress up and
@@ -39,7 +39,7 @@ mockups `app/src/ui/` (M1, M2, M5), Apple HIG (fetched 2026-10-20), and the Glas
 | Base | `create-character-v3` at 48 px padded to 64. Templates idle (4) + walk (8) × S/E/N. West mirrored. | ≈ 12 gens; ~4–5 min base + 1–2.5 min per template batch | "Describe your character" → one progress card → animated review → "Looks good". |
 | Freeze (M2) | Normalize, pivot, headroom, `estimate-skeleton` (0.1 gen per cell), anchors, `baseHash`. | 3.6 gens, ~1 min | Nothing. It runs automatically as part of "Looks good". Plain-language warnings only (e.g. "Little room above the head — tall hats may be cut off"). |
 | Item (M3) | Chroma mannequin + `edit-animation-v2` ≤ 16 cells per call. Design call, then anchor-cell calls. `chromaLayer`. G1–G8 gates. Up to 2 automatic re-rolls. Optional rigid budget mode. | 30 gens per item (10 in budget mode); ~2–3 min per call | Pick slot → "What is it?" → card with live preview → badge "Clean" / "Needs a look". |
-| Dress-up (M4) | z ladder, fg/bg split, overrides, hides, material ramps, recolor. | free, instant | Tap items to wear, tap swatches to recolour, play animations, turn the character around. |
+| Dress-up (M4) | z ladder, fg/bg split, overrides, hides, material ramps, recolor. | free, instant | Tap items to wear, tap swatches to recolor, play animations, turn the character around. |
 | Export (M5) | Manifest + per-layer sheets + baked composites + Godot/Phaser/Unity glue → zip. | free, < 1 s | "Export for… Godot / Unity / Phaser / PNG" → Download. |
 
 Current mockups are developer test benches: a nav of M1–M5 links, a raw ledger table, checkboxes for overlays, a 4× canvas with
@@ -56,17 +56,17 @@ honesty**: costs, times and failures stay visible, and the internals don't.
 
 | Principle (source) | Apple says | PixelDoll rule |
 |---|---|---|
-| Hierarchy: content vs controls ([Liquid Glass overview](https://developer.apple.com/documentation/technologyoverviews/liquid-glass)) | Controls and navigation form a distinct functional layer above the content. | The **sprite is the content**. Chrome is quiet and monochrome, and colour lives in the art. |
+| Hierarchy: content vs controls ([Liquid Glass overview](https://developer.apple.com/documentation/technologyoverviews/liquid-glass)) | Controls and navigation form a distinct functional layer above the content. | The **sprite is the content**. Chrome is quiet and monochrome, and color lives in the art. |
 | Glass only on the control layer ([HIG Materials](https://developer.apple.com/design/human-interface-guidelines/materials)) | Never use Liquid Glass in the content layer. Use it sparingly. Use clear glass only over visually rich media, with a ~35 % dimmer under bright content. | If glass is used at all: toolbar, tab bar, sheets, popovers. **Never** over the canvas, the swatches or the item thumbnails. |
 | Sidebars ([HIG Sidebars](https://developer.apple.com/design/human-interface-guidelines/sidebars)) | Top-level navigation, **≤ 2 levels**. Collapse automatically when the window narrows. Don't hide by default. Don't put critical actions at the bottom. | Wardrobe = slot groups (level 1) → items (level 2). It auto-collapses below 1024 px. "New item" sits at the top of each slot, never at the bottom of the sidebar. |
 | Split views + inspector ([HIG Split views](https://developer.apple.com/design/human-interface-guidelines/split-views), [Adopting](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)) | Sidebar + content + trailing inspector. Let people hide the inspector, with several ways to reveal it (button, menu, shortcut). Avoid multi-pane layouts on iPhone. | Three panes from 1024 px up, two on tablets, one plus sheets on phones. Inspector toggle via button and `⌘/Ctrl+Alt+I`. |
-| Toolbars ([HIG Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars)) | Leading / centre / trailing zones, ≤ 3 groups, symbols over text, **one prominent primary action on the trailing side**, monochrome labels. Not for switching app areas. | Leading: sidebar toggle + project name menu. Centre: undo/redo group. Trailing: activity + **Export** (the one primary). Areas switch in the sidebar (desktop) or the tab bar (phone). |
-| Tab bars ([HIG Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars)) | Navigation, not actions. ≤ 5 tabs, single-word labels. Never hide or disable tabs: explain empty sections instead. iOS 26 has a floating bar with an **accessory** (MiniPlayer) above it. | Phone: 3 tabs (**Wardrobe · Colours · Moves**). Job progress lives in the **accessory capsule**. Empty tabs show an empty state. |
-| Sheets ([HIG Sheets](https://developer.apple.com/design/human-interface-guidelines/sheets)) | For a short, self-contained task. One sheet at a time. Medium detent for progressive disclosure. Grabber on resizable sheets. Cancel leading, Done trailing. Confirm before discarding edits. | New item, Export, Connect key and Activity are sheets: centred on desktop, bottom sheets with medium/large detents on phones. |
+| Toolbars ([HIG Toolbars](https://developer.apple.com/design/human-interface-guidelines/toolbars)) | Leading / center / trailing zones, ≤ 3 groups, symbols over text, **one prominent primary action on the trailing side**, monochrome labels. Not for switching app areas. | Leading: sidebar toggle + project name menu. Center: undo/redo group. Trailing: activity + **Export** (the one primary). Areas switch in the sidebar (desktop) or the tab bar (phone). |
+| Tab bars ([HIG Tab bars](https://developer.apple.com/design/human-interface-guidelines/tab-bars)) | Navigation, not actions. ≤ 5 tabs, single-word labels. Never hide or disable tabs: explain empty sections instead. iOS 26 has a floating bar with an **accessory** (MiniPlayer) above it. | Phone: 3 tabs (**Wardrobe · Colors · Moves**). Job progress lives in the **accessory capsule**. Empty tabs show an empty state. |
+| Sheets ([HIG Sheets](https://developer.apple.com/design/human-interface-guidelines/sheets)) | For a short, self-contained task. One sheet at a time. Medium detent for progressive disclosure. Grabber on resizable sheets. Cancel leading, Done trailing. Confirm before discarding edits. | New item, Export, Connect key and Activity are sheets: centered on desktop, bottom sheets with medium/large detents on phones. |
 | Onboarding ([HIG Onboarding](https://developer.apple.com/design/human-interface-guidelines/onboarding)) | Teach by doing, keep it optional and brief, use sensible defaults, ask for permissions **in context**, and don't make people wait (bundle content). | **Demo character first.** The key is asked for at the first generation. No tutorial carousel: inline tips appear once and can be dismissed. |
 | Progress ([HIG Progress indicators](https://developer.apple.com/design/human-interface-guidelines/progress-indicators), [Loading](https://developer.apple.com/design/human-interface-guidelines/loading)) | Prefer determinate. Report accurately, never fast-then-stalled. Explain stalls. Short, specific labels (not "Loading"). Consistent location. Let people keep working. Offer cancel. | Each job shows a step label ("Animating walk"), an honest time estimate from measured durations, and a consistent location (item card + activity). The UI is never blocked. |
-| Undo ([HIG Undo and redo](https://developer.apple.com/design/human-interface-guidelines/undo-and-redo)) | Unlimited undo, descriptive labels ("Undo Colour Change"), show the result, batch related changes, standard shortcuts. | Command history over the project store. Slider drags batch into one entry. Toast "Removed Iron helmet · Undo". |
-| Colour and accessibility ([Adopting](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)) | Light, dark and increased-contrast variant for every custom colour. Accessibility label for every icon. Test with Reduce Transparency and Reduce Motion. | Tokens defined in light, dark and `prefers-contrast: more` variants. `aria-label` on every icon button. Reduced-motion and reduced-transparency paths. |
+| Undo ([HIG Undo and redo](https://developer.apple.com/design/human-interface-guidelines/undo-and-redo)) | Unlimited undo, descriptive labels ("Undo Color Change"), show the result, batch related changes, standard shortcuts. | Command history over the project store. Slider drags batch into one entry. Toast "Removed Iron helmet · Undo". |
+| Color and accessibility ([Adopting](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)) | Light, dark and increased-contrast variant for every custom color. Accessibility label for every icon. Test with Reduce Transparency and Reduce Motion. | Tokens defined in light, dark and `prefers-contrast: more` variants. `aria-label` on every icon button. Reduced-motion and reduced-transparency paths. |
 | Concentric shapes ([Adopting](https://developer.apple.com/documentation/technologyoverviews/adopting-liquid-glass)) | Nested radii are concentric with their container. | `inner radius = outer radius − padding`, encoded as tokens. |
 
 Context: Apple's own glass needed a legibility retreat. iOS 26.1 added a **Clear/Tinted** Liquid Glass setting after legibility
@@ -98,13 +98,13 @@ The feel is Finder, Notes or Pixelmator Pro: a quiet sidebar, a white or graphit
 | `--accent` | `#0071e3` | `#0a84ff` |
 | `--ok` / `--warn` / `--bad` | `#1a7f37` / `#b25000` / `#d70015` | `#30d158` / `#ff9f0a` / `#ff453a` |
 
-Contrast was checked with the WCAG formula for A's text and status colours on `--bg`, and for the accent and ink pairs in C,
+Contrast was checked with the WCAG formula for A's text and status colors on `--bg`, and for the accent and ink pairs in C,
 D and E. All are at least 4.5:1. The dark accent `#0a84ff` on `#1e1e1f` only just passes at 4.57:1. Two pairs fail on `--bg-side`:
 the light accent (4.31:1) and the dark `--bad` (4.43:1). So add an `--accent-text` token (`#0066cc` light, 5.1:1) and use
 `--bad` `#ff6961` in dark (5.4:1) for small text in the sidebar and inspector.
 
 - **Type:** `system-ui, -apple-system, "Segoe UI Variable", "Segoe UI", Roboto, sans-serif`, which gives SF Pro on Apple
-  devices and Segoe on Windows with no font download. Don't self-host SF Pro: its licence is tied to Apple platforms.
+  devices and Segoe on Windows with no font download. Don't self-host SF Pro: its license is tied to Apple platforms.
   - Desktop: 13 px body, 11 px captions, 15 px panel titles, 22 px page titles; weights 400/510/600.
   - Touch (`pointer: coarse`): 15–17 px body.
   - Numbers use `font-variant-numeric: tabular-nums`.
@@ -113,7 +113,7 @@ the light accent (4.31:1) and the dark `--bad` (4.43:1). So add an `--accent-tex
 - **Control heights:** 28 px on desktop, 44 px on touch.
 - **Sidebar and inspector widths:** 240 px and 280 px, resizable between 200 and 360.
 - **Radius:** controls 6, cards 10, sheets 14, popovers 10. Concentric rule: inner = outer − padding.
-- **Icons:** Lucide (ISC) at a 16 px grid, 1.5 stroke, `currentColor`, monochrome. Colour only for status (QA, errors).
+- **Icons:** Lucide (ISC) at a 16 px grid, 1.5 stroke, `currentColor`, monochrome. Color only for status (QA, errors).
   Suggested about 25 icons, inlined: `panel-left`, `panel-right`, `undo-2`, `redo-2`, `play`, `pause`, `step-forward`,
   `download`, `plus`, `x`, `check`, `triangle-alert`, `loader-circle`, `sparkles`, `palette`, `shirt`, `crown`, `glasses`,
   `footprints`, `sword`, `shield`, `backpack`, `scissors` (hair), `layers`, `key-round`, `coins`, `settings`, `rotate-cw`
@@ -121,9 +121,9 @@ the light accent (4.31:1) and the dark `--bad` (4.43:1). So add an `--accent-tex
 - **Motion:**
   - 120 ms hover and press, 200 ms panels, 280 ms sheets on `cubic-bezier(.2, .8, .2, 1)`.
   - Under `prefers-reduced-motion: reduce`, durations go to 0 and sprite playback is kept (the user controls it).
-- **Canvas:** sits on `--stage`, a flat neutral grey. The checker is two near-equal neutral greys. The selected item gets a
+- **Canvas:** sits on `--stage`, a flat neutral gray. The checker is two near-equal neutral grays. The selected item gets a
   1 px accent outline drawn *outside* the sprite pixels.
-- **Pros:** most familiar and accessible, cheapest to build (no fonts, no libraries), colour-neutral for recolouring, and it
+- **Pros:** most familiar and accessible, cheapest to build (no fonts, no libraries), color-neutral for recoloring, and it
   scales to "pro" with a density switch. Dark mode is solid.
 - **Cons:** generic, with no brand memory. It risks looking like "another settings app" unless E's accents are added.
 
@@ -149,7 +149,7 @@ The feel is iOS 26 / visionOS: floating, translucent chrome, pill shapes and the
 - **Pros:** most "2026", very attractive on phones, matches Apple's current direction, and GlassKit gives the mobile pieces for
   free (sheet, floating tab bar + accessory, segmented with droplet, steps, toast with action).
 - **Cons:**
-  - Fights the medium: blur behind or near pixel art smears colours and tints colour judgement.
+  - Fights the medium: blur behind or near pixel art smears colors and tints color judgement.
   - Contrast isn't fixed: dark-glass text over a light checker measured **1.14:1**.
   - The backdrop re-blurs on every sprite frame (mobile perf).
   - Mobile-sized controls are too big for a desktop inspector.
@@ -177,7 +177,7 @@ The feel is a dense, dark, panel-heavy creative tool that puts the art first.
 - **Motion:** 80–120 ms fades only.
 - **Canvas:** dark surround, rulers optional, pixel grid overlay from 8× zoom, onion skin, and frame strip with per-frame ms
   under the stage.
-- **Pros:** the best fit for power users and long sessions, colour-accurate, very cheap to render.
+- **Pros:** the best fit for power users and long sessions, color-accurate, very cheap to render.
 - **Cons:** intimidating for casual users ("this is Blender"), and it invites exposing every knob. **Use it as A's dark mode
   plus `data-density="compact"`, not as the product's face.**
 
@@ -202,14 +202,14 @@ The feel is a friendly character maker: rounded, warm, slightly toy-like but cle
 - **Canvas:** the character stands on a soft pastel "stage" with a contact shadow. The checker is hidden by default and
   toggled on to inspect transparency.
 - **Pros:** most inviting for the casual target, and the Picrew mental model ("tap parts to dress") is well known.
-- **Cons:** reads as "toy" to game devs exporting to Godot or Unity. Pastel surround and a floor shadow bias colour judgement.
+- **Cons:** reads as "toy" to game devs exporting to Godot or Unity. Pastel surround and a floor shadow bias color judgement.
   It needs a web font for the rounded look on Windows and Android.
 
 ### 3.5 E: Pixel-accent minimal
 
 The feel is A's calm structure plus a few deliberate pixel-art signatures, so the tool feels made *for* pixel art.
 
-- **Palette:** A's neutrals, plus an accent ramp taken from a classic 16-colour palette (Sweetie-16-like): `--accent #3b5dc9`,
+- **Palette:** A's neutrals, plus an accent ramp taken from a classic 16-color palette (Sweetie-16-like): `--accent #3b5dc9`,
   `--accent-hi #41a6f6`, `--spark #ffcd75`, `--ok #38b764`, `--bad #b13e53`. Check every pairing for 4.5:1 on its surface;
   for example, use `#2f4bb0` for accent text on white.
 - **Type:**
@@ -223,7 +223,7 @@ The feel is A's calm structure plus a few deliberate pixel-art signatures, so th
 - **Motion:** `steps(4)` timing for small brand animations (a sparkle on job done, the progress fill advancing in "frames").
   This echoes frame-based animation. Normal easing everywhere else.
 - **Canvas:** the hero. The checker is aligned to sprite pixels (one square = 4 × 4 sprite pixels), the pixel grid appears from
-  8×, and a pivot crosshair and ground line are optional. **Empty states use the user's own character** (e.g. a grey
+  8×, and a pivot crosshair and ground line are optional. **Empty states use the user's own character** (e.g. a gray
   silhouette of the frozen base in an empty slot).
 - **Pros:** distinctive and on-topic at near-zero cost. It keeps A's accessibility and performance, and gives a strong brand
   without fighting the art.
@@ -237,11 +237,11 @@ The feel is A's calm structure plus a few deliberate pixel-art signatures, so th
    *device* pixels per sprite pixel. On a 1.25/1.5 DPR Windows laptop this keeps pixels even. Never use a CSS `transform:
    scale` on sprites.
 2. **Neutral surround:** no blur, no tint, no gradient behind the art. Background modes: checker (default in the item lab),
-   solid neutral (default in dress-up), custom colour (preview against the game background).
+   solid neutral (default in dress-up), custom color (preview against the game background).
 3. **Checker:** two neutrals ≤ 6 % apart in luminance (light `#e9e9ec`/`#f4f4f6`, dark `#2a2a2d`/`#323235`), with each square
    a multiple of the sprite pixel size so it doesn't moiré.
 4. **Overlays** are drawn on a second canvas at device resolution: pixel grid from 8×, pivot, slot rect, QA heatmap
-   (S1 colours: green added, red body changed, blue drift, magenta erased). They are off by default and live under "Details".
+   (S1 colors: green added, red body changed, blue drift, magenta erased). They are off by default and live under "Details".
 5. **One playback clock** per animation drives every visible direction (as in M5). Space toggles play/pause, `,`/`.` step a
    frame, `1–4` pick a direction, `0` shows all directions.
 6. **Accessibility:** the canvas gets `role="img"` and an `aria-label` such as "Knight, walking, facing south, wearing Iron
@@ -258,7 +258,7 @@ Project ("Knight")                      ← one character = one frozen rig (base
 ├── Character (base body + moves + directions)          [rig, freeze, skeleton: hidden]
 ├── Wardrobe
 │   ├── Slot group  Head · Hair · Face · Body · Legs · Feet · Back · Hands
-│   │   └── Item  ("Iron helmet")  — versions, colours (materials), layer order, QA status   [routes, key colour: hidden]
+│   │   └── Item  ("Iron helmet")  — versions, colors (materials), layer order, QA status   [routes, key color: hidden]
 ├── Outfits  (saved combinations = manifest presets)
 └── Exports  (last settings remembered)
 App-level: Activity (job queue + costs), Account (PixelLab key, balance), Settings
@@ -281,9 +281,9 @@ prompt plus a "Where does it go?" picker, defaulted, in Details:
 | S0 | **Home / Projects** | page | – | Character cards (animated thumbnails), New character, Open demo, Import .zip | storage usage, persist status |
 | S1 | **Create character** | full-page flow with 3 steps | M1 + M2 | Describe → Moves → Generate → Review → "Looks good" | seed, view, base size (48/64, O14), mannequin template, rig QA table, keypoints, anchors |
 | S2 | **Studio** (main) | sidebar + canvas + inspector | M4 | Wardrobe, live preview, inspector for the selection | z override per direction, hides matrix |
-| S3 | **New item** | sheet | M3 | Slot, "What is it?", optional colour hint, Make · 30 gens | key colour, budget (rigid) mode, which moves, seed, extractor knob |
-| S4 | **Item inspector** | inspector pane / phone sheet | M3 + M4 | Preview, colours, "In front of / behind", Try again, Remove | QA gates + heatmap per cell, versions, provenance, layer split |
-| S5 | **Colours** | inspector tab / phone tab | M4 | Material swatch rows (Skin, Hair, Eyes, item materials), link toggles, Randomize | ramp editor, OKLab snap stats |
+| S3 | **New item** | sheet | M3 | Slot, "What is it?", optional color hint, Make · 30 gens | key color, budget (rigid) mode, which moves, seed, extractor knob |
+| S4 | **Item inspector** | inspector pane / phone sheet | M3 + M4 | Preview, colors, "In front of / behind", Try again, Remove | QA gates + heatmap per cell, versions, provenance, layer split |
+| S5 | **Colors** | inspector tab / phone tab | M4 | Material swatch rows (Skin, Hair, Eyes, item materials), link toggles, Randomize | ramp editor, OKLab snap stats |
 | S6 | **Moves** | inspector tab / phone tab | M2 | Animation list with play, Add move (cost shown), direction count | playlist ms, frame order, cells |
 | S7 | **Outfits** | sidebar section / phone list | M4 | Saved looks, Save current | preset ids |
 | S8 | **Export** | sheet | M5 | Engine cards (Godot, Unity, Phaser, PNG sheets), Download | split mode, baked toggle, file list, warnings |
@@ -297,10 +297,10 @@ The M1–M5 benches stay reachable under **Settings → Developer**. They are th
 
 | Size class | Breakpoint (CSS) | Layout | Areas | Tasks |
 |---|---|---|---|---|
-| **Expanded** desktop / laptop / iPad landscape | `width ≥ 1024px` | 3 panes: sidebar 240, canvas flex, inspector 280. Toolbar 44 px. | Sidebar sections: Wardrobe, Outfits, Character | Centred sheets (max 560 px), popovers for Activity and menus |
+| **Expanded** desktop / laptop / iPad landscape | `width ≥ 1024px` | 3 panes: sidebar 240, canvas flex, inspector 280. Toolbar 44 px. | Sidebar sections: Wardrobe, Outfits, Character | Centered sheets (max 560 px), popovers for Activity and menus |
 | **Medium** tablet portrait / small laptop window | `600–1023px` | 2 panes: canvas + inspector (320). Sidebar is an overlay drawer (toolbar toggle, edge swipe). | same | same |
-| **Compact** phone portrait | `width < 600px` | Canvas pinned at the top (~42 % of height, integer zoom), panel scrolling below, floating tab bar (3 tabs) + accessory. Toolbar 44 px. | Tabs: **Wardrobe · Colours · Moves** | Bottom sheets with medium/large detents and a grabber |
-| **Compact height** phone landscape | `height < 500px and orientation: landscape` | Canvas square on the leading side (full height). Trailing column with a segmented control (Wardrobe / Colours / Moves). Toolbar merges into the column header. **No bottom tab bar.** | Segmented control instead of tabs | Sheets become trailing side panels (max 60 % width), so the canvas stays visible |
+| **Compact** phone portrait | `width < 600px` | Canvas pinned at the top (~42 % of height, integer zoom), panel scrolling below, floating tab bar (3 tabs) + accessory. Toolbar 44 px. | Tabs: **Wardrobe · Colors · Moves** | Bottom sheets with medium/large detents and a grabber |
+| **Compact height** phone landscape | `height < 500px and orientation: landscape` | Canvas square on the leading side (full height). Trailing column with a segmented control (Wardrobe / Colors / Moves). Toolbar merges into the column header. **No bottom tab bar.** | Segmented control instead of tabs | Sheets become trailing side panels (max 60 % width), so the canvas stays visible |
 
 Touch vs mouse is decided by `@media (pointer: coarse)` (44 px targets, larger type) and not by width, so a touch laptop or an
 iPad with a keyboard gets the right density. Safe areas use `env(safe-area-inset-*)`, and `100dvh` sets heights.
@@ -314,7 +314,7 @@ iPad with a keyboard gets the right density. Safe areas use `env(safe-area-inset
 ```
 Home (empty) ──▶ "Try the demo knight" ──▶ Studio (demo, read-only rig, items: helmet, vest, sword)
      │                                         │  tip (once): "Tap an item to wear it"
-     │                                         ├─▶ Dress up / recolour / play / turn  (free, instant)
+     │                                         ├─▶ Dress up / recolor / play / turn  (free, instant)
      │                                         └─▶ Export ▸ Godot ▸ Download   (works without a key)
      └──▶ "New character" ──▶ S1 Describe ──▶ [Generate · ≈12 gens] ──▶ no key? ──▶ S10 Connect PixelLab (sheet)
                                                                                     └─▶ back to Generate, nothing lost
@@ -334,7 +334,7 @@ Home (empty) ──▶ "Try the demo knight" ──▶ Studio (demo, read-only r
 1 Create character                 2 Add items                        3 Dress up                   4 Export
 ──────────────────                 ───────────                        ──────────                   ────────
 Describe ─▶ Moves ─▶ Generate      Wardrobe ▸ Head ▸ + New            tap item = wear              Export ▸ Godot
-"A stocky dwarf,   Idle ✓ Walk ✓   "What is it?"  [Iron helmet ]      tap swatch = recolour        [Download zip]
+"A stocky dwarf,   Idle ✓ Walk ✓   "What is it?"  [Iron helmet ]      tap swatch = recolor        [Download zip]
  tan skin"         Punch □ (+20)   [Make · 30 gens · ~5 min]          ⟲ turn  ▶ play  ⚄ random     (remembers choice)
                    4 directions    ──▶ card appears in the slot with   Save as outfit
 [Generate · 12 gens · ~6 min]          a progress ring; keep working
@@ -349,7 +349,7 @@ Defaults that remove decisions:
 - Directions: 4 (west mirrored).
 - Moves: idle + walk.
 - Base size: 48 + pad.
-- Key colour: chosen from the prompt.
+- Key color: chosen from the prompt.
 - Budget mode: on automatically for rigid slots in idle/walk.
 - Item route: chroma.
 - Re-rolls: 2 automatic.
@@ -406,7 +406,7 @@ an OK. That is architecture §11's "one optional design approval".
 | 429 / 5xx / network | Nothing at first (auto backoff). After 30 s: "Waiting for PixelLab…" in Activity. | Automatic. |
 | Offline | Banner: "You're offline — generations will continue when you're back." | Automatic. |
 | Content policy (`code 5000`) | Card: "PixelLab declined this prompt. Try different words (avoid describing the body)." | Edit the prompt. Never auto-retried. |
-| QA fail after 2 re-rolls | Badge "Needs a look". The inspector shows the best version with a plain reason ("Parts of the helmet flicker between frames"). | Keep anyway / Try again · 30 / Try with another key colour (Details). |
+| QA fail after 2 re-rolls | Badge "Needs a look". The inspector shows the best version with a plain reason ("Parts of the helmet flicker between frames"). | Keep anyway / Try again · 30 / Try with another key color (Details). |
 | Stale item (base changed) | Badge "Made for an older body". | Regenerate for this body · 30. |
 | Export warning (e.g. clipped weapon) | Inline in the Export sheet. | Export anyway. |
 
@@ -415,9 +415,9 @@ The tone is plain, blame-free and specific. Every error offers one next step.
 ### 5.6 Undo
 
 - One **command history** per project (store `project.ts` is already planned to be command-based):
-  - Covered: wear/unwear, recolour (a slider or picker drag batches into one entry), layer order, hides, rename, outfit save,
+  - Covered: wear/unwear, recolor (a slider or picker drag batches into one entry), layer order, hides, rename, outfit save,
     delete item (soft delete).
-  - Shortcuts: `⌘/Ctrl+Z`, `⇧⌘Z` / `Ctrl+Y`. Toolbar ↶ ↷ on all sizes. Labels like "Undo Colour Change" appear in the
+  - Shortcuts: `⌘/Ctrl+Z`, `⇧⌘Z` / `Ctrl+Y`. Toolbar ↶ ↷ on all sizes. Labels like "Undo Color Change" appear in the
     tooltip and menu.
 - **Generations can't be undone** (gens are spent), but nothing is thrown away:
   - "Try again" keeps the previous result as **Version 1 / 2 / 3** in the item inspector, so going back to a previous version
@@ -430,7 +430,7 @@ The tone is plain, blame-free and specific. Every error offers one next step.
 | Where | Content |
 |---|---|
 | Home, no projects | Pixel hero (E) + "Make a pixel character you can dress up" + **New character** (primary) + Try the demo · Import |
-| Wardrobe slot, no items | Grey silhouette of the user's base in that slot + "No hats yet" + "+ Make one" |
+| Wardrobe slot, no items | Gray silhouette of the user's base in that slot + "No hats yet" + "+ Make one" |
 | Outfits, none | "Save a look to switch between outfits in your game." + Save current look |
 | Activity, idle | "Nothing generating." + balance |
 | Moves, idle + walk only | List + "Add a move · from 20 gens" with template chips (Run, Punch, Jump…) |
@@ -452,7 +452,7 @@ Legend: `▣` item thumbnail, `◔` progress ring, `░▒` checker, `[ ]` butto
 │ Head           +   │                ░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒                     │ ┌────────────────┐ │
 │  ▣ none ▣ Iron ▣ Wiz│                ▒                          ░                     │ │ ░▒ ▣ ▣ ▣ ▣ ░▒ │ │
 │ Hair           +   │                ░        64 × 64 sprite    ▒                     │ └────────────────┘ │
-│  ▣ none ▣ Bob      │                ▒          at 6×           ░                     │ Colours            │
+│  ▣ none ▣ Bob      │                ▒          at 6×           ░                     │ Colors            │
 │ Face           +   │                ░                          ▒                     │  Metal  ■■■■■ ▾    │
 │ Body           +   │                ▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░                     │  Trim   ■■■   ▾    │
 │  ▣ none ◔ Vest 2:40│                                                                 │ Layer              │
@@ -465,7 +465,7 @@ Legend: `▣` item thumbnail, `◔` progress ring, `░▒` checker, `[ ]` butto
  ◧ / ◨ toggle sidebar / inspector · ⊞ all directions · ▦ background (checker / solid / custom)
 ```
 
-### 6.2 Desktop: New item (centred sheet over the Studio)
+### 6.2 Desktop: New item (centered sheet over the Studio)
 
 ```
                  ┌──────────────────────────────────────────────┐
@@ -477,10 +477,10 @@ Legend: `▣` item thumbnail, `◔` progress ring, `░▒` checker, `[ ]` butto
                  │ │ an iron knight helmet with a visor        │ │
                  │ └───────────────────────────────────────────┘ │
                  │ Ideas: (wizard hat) (crown) (hood) (bandana)  │
-                 │ Colour hint (optional)  ○ ● ● ● ● +           │
+                 │ Color hint (optional)  ○ ● ● ● ● +           │
                  │                                               │
                  │ ▸ Details  (moves: Idle, Walk · budget mode   │
-                 │            on · key colour: auto · seed)      │
+                 │            on · key color: auto · seed)      │
                  │                                               │
                  │ About 5 min. You can keep working.            │
                  │                         (• Make · 30 gens )   │
@@ -531,7 +531,7 @@ Legend: `▣` item thumbnail, `◔` progress ring, `░▒` checker, `[ ]` butto
 │ │ ◔ Leather vest · 2 min left ⌃│ │  accessory → Activity sheet
 │ ╰──────────────────────────────╯ │
 │ ╭──────────────────────────────╮ │
-│ │   Wardrobe   Colours   Moves  │ │  floating tab bar
+│ │   Wardrobe   Colors   Moves  │ │  floating tab bar
 │ ╰──────────────────────────────╯ │
 └──────────────────────────────────┘
 ```
@@ -563,7 +563,7 @@ Legend: `▣` item thumbnail, `◔` progress ring, `░▒` checker, `[ ]` butto
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────┐
 │ ┌───────────────────────────┐  ‹ Knight ▾              ↶ ↷   ◔2   ( ⤓ Export )   │
-│ │ ░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒ │  [ Wardrobe | Colours | Moves ]                     │
+│ │ ░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒░▒ │  [ Wardrobe | Colors | Moves ]                     │
 │ │ ▒                       ░ │  Head  Hair  Face  Body  Legs  Feet  Back  Hands →  │
 │ │ ░     sprite 4×         ▒ │  ┌──────┐┌──────┐┌──────┐┌──────┐┌──────┐          │
 │ │ ▒                       ░ │  │ none ││▣ Iron││▣ Wiz ││  +   ││      │          │
@@ -616,7 +616,7 @@ Scores run from 1 (poor) to 5 (best).
 | Criterion (weight) | A Native | B Glass | C Pro dark | D Soft | E Pixel-accent |
 |---|---|---|---|---|---|
 | Casual friendliness (×3) | 5 | 4 | 2 | 5 | 4 |
-| Pixel-art fit: colour neutrality, crispness (×3) | 4 | 2 | 5 | 3 | 5 |
+| Pixel-art fit: color neutrality, crispness (×3) | 4 | 2 | 5 | 3 | 5 |
 | Accessibility out of the box (×2) | 5 | 2 | 4 | 4 | 4 |
 | Mobile performance (×1) | 5 | 2 | 5 | 4 | 5 |
 | Build cost and maintenance (×2) | 5 | 3 | 4 | 4 | 4 |
@@ -627,7 +627,7 @@ Scores run from 1 (poor) to 5 (best).
 
 1. **A Native minimal + E pixel accents (recommended).**
    - Apple's structure and restraint carry the IA (sidebar / canvas / inspector, sheets, tab bar + accessory).
-   - It is neutral for colour work, accessible by default, and costs no dependencies.
+   - It is neutral for color work, accessible by default, and costs no dependencies.
    - E adds the identity in about five places: logo, pixel display font for headings, stepped primary button,
      pixelarticons for slot glyphs and empty states, and `steps()` sparkle on job done.
    - C's dark palette becomes A's dark mode, and C's density becomes `data-density="compact"` for power users.
@@ -680,7 +680,7 @@ Scores run from 1 (poor) to 5 (best).
 3. Is it OK to bundle the S1 knight fixture as the public demo (it is PixelLab output from the team's account)?
 4. Base size O14: is the smaller 48 + pad figure acceptable in the studio preview? It affects the default zoom and the hero
    look.
-5. Branding: name, logo and accent colour (E proposes a Sweetie-16-style blue + gold).
+5. Branding: name, logo and accent color (E proposes a Sweetie-16-style blue + gold).
 
 ## 10. Sources
 

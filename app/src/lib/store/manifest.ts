@@ -58,7 +58,7 @@ export interface Item {
   variantOf?: string; // B14 export only: baked "<item>~<under>" copy of item `variantOf` tucked under item `under` (slot.clips)
   under?: string;
   materials: string[];
-  regions?: 'shirt-shorts'; // B15 base only: garment greys carry their region in the blue LSB (even = shirt, odd = shorts)
+  regions?: 'shirt-shorts'; // B15 base only: garment grays carry their region in the blue LSB (even = shirt, odd = shorts)
   prompt: string;
   layers: Layer[];
   baseHash: Sha256;
@@ -73,7 +73,7 @@ export interface Item {
   qa?: ItemQa; // not read by compose/export
   design?: EquipmentLineage;
 }
-/** Original and corrected layer references for an explicit free colour edit. Historical source blobs need not remain loaded. */
+/** Original and corrected layer references for an explicit free color edit. Historical source blobs need not remain loaded. */
 export interface ItemPaletteRepair {
   version: 'neutral-owned-v1';
   materialId: string;

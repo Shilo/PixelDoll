@@ -5,7 +5,7 @@ import { expect, test } from 'vitest';
 import { asepriteFile, readAseprite } from '../../src/lib/export/aseprite.ts';
 import { coreFiles, exportManifest } from '../../src/lib/export/generic.ts';
 import { bakedFrame, composeCell, withTuckVariants } from '../../src/lib/compose/compose.ts';
-import { recolour } from '../../src/lib/dress/dress.ts';
+import { recolor } from '../../src/lib/dress/dress.ts';
 import { makeImg, type Img } from '../../src/lib/image/png.ts';
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
@@ -86,10 +86,10 @@ test.skipIf(!existsSync(native))('native Aseprite renders every frame exactly li
   expect(metadata.frames.map((f) => f.duration)).toEqual([125, 50, 75, 125, 50, 75, 125, 50, 75]);
   expect(metadata.meta.frameTags.map((t) => t.name)).toEqual(['walk_south', 'walk_east', 'walk_west']);
   expect(metadata.meta.slices[0].keys[0].pivot).toEqual({ x: 3, y: 5 });
-  const coloured = recolour(project, m.presets[0].variants), bf = bakedFrame(m);
+  const colored = recolor(project, m.presets[0].variants), bf = bakedFrame(m);
   let frame = 0;
   for (const dir of m.rig.directions) for (const entry of m.rig.animations[0].frames) {
-    const expected = composeCell(coloured, m.presets[0].items, 'walk', dir.id, entry.cell, bf), actual = makeImg(bf.w, bf.h);
+    const expected = composeCell(colored, m.presets[0].items, 'walk', dir.id, entry.cell, bf), actual = makeImg(bf.w, bf.h);
     for (let y = 0; y < bf.h; y++) actual.data.set(sheet.data.subarray((y * sheet.w + frame * bf.w) * 4, (y * sheet.w + (frame + 1) * bf.w) * 4), y * bf.w * 4);
     expect(actual.data, `${dir.id} cell ${entry.cell}`).toEqual(expected.data);
     frame++;
