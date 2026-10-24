@@ -33,7 +33,7 @@ by the stored head move and masking only observed mannequin pixels along the for
 real hurt visor/streak cases still fail the unchanged 0.75 floor.
 
 The new H4 path applies only to failed band-item checks with complete rest/move poses and at least six visible item
-pixels. Possible occlusion must be a key-coloured pixel in the output, on the frozen body, absent from the item mask,
+pixels. Possible occlusion must be a key-colored pixel in the output, on the frozen body, absent from the item mask,
 and within the elbow-to-wrist capsule (radius 3 px at a 64 px cell, including 1 px tolerance). Both scores use the same
 head-joint-aligned ±1 px search: the unmasked score must fail and the arm-masked score must pass. This produces an
 explicit **occlusion review warning**, never a verified hidden shape or a clean pass. All item/new-move H4 call sites
@@ -48,10 +48,10 @@ pixels retain hard failures.
 
 ## Cape hem
 
-The saved north idle cape has 11.28% near-grey pixels; south/east controls have 0%. The existing D1 design gate already
-rejects that colourful design above 5%, before posing new items. A regression now preserves that evidence. This does
-not repair accepted historical art. Automatically mapping grey pixels to red could erase intentional outlines,
-shading or trim, so no recolouring rule or new paid generation was introduced.
+The saved north idle cape has 11.28% near-gray pixels; south/east controls have 0%. The existing D1 design gate already
+rejects that colorful design above 5%, before posing new items. A regression now preserves that evidence. This does
+not repair accepted historical art. Automatically mapping gray pixels to red could erase intentional outlines,
+shading or trim, so no recoloring rule or new paid generation was introduced.
 
 ## Appended move source links
 

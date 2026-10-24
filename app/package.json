@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@lucide/svelte": "1.61.0",
-    "@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.2.1/shilo-bronze-ui-0.2.1.tgz"
+    "@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.2.2/shilo-bronze-ui-0.2.2.tgz"
   },
   "packageManager": "npm@11.19.1",
   "engines": {

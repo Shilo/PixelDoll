@@ -1,6 +1,6 @@
 # Character creator design research — 2026-10-22
 
-Status: research and design proposal, prepared for desktop/mobile mock-ups. No application implementation, paid PixelLab generation, token access or model-output validation was performed for this research. Proposed behaviours below are not existing product capabilities.
+Status: research and design proposal, prepared for desktop/mobile mock-ups. No application implementation, paid PixelLab generation, token access or model-output validation was performed for this research. Proposed behaviors below are not existing product capabilities.
 
 ## Recommendation
 
@@ -10,21 +10,21 @@ The key distinction is between appearance intent, requested generation canvas, f
 
 ## Evidence from comparable tools
 
-| Comparator | Verified behaviour | Design implication — our inference |
+| Comparator | Verified behavior | Design implication — our inference |
 | --- | --- | --- |
 | [Universal LPC Spritesheet Generator](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/?match_body-color=compact) | Visible Body Type choices include Male, Female, Teen, Child, Muscular and Pregnant. Parts have named categories; current selections and an animation preview are available. | Keep body appearance visible and use understandable categories with examples. Avoid copying its body-type vocabulary directly: it combines age, sex and shape in one category. |
-| [RPG Maker MZ Character Generator](https://rpgmakerofficial.com/product/MZ_help-en/01_05.html) | Male/Female/Kid tabs; variation, colour and offset choices per feature; a preview reflects selections. Exports distinguish face, walking character, damaged character and battler. Settings can be saved and reloaded. | Show understandable appearance choices next to feedback. Separate appearance from output configuration. |
-| [Character Creator 2D by mochakingup](https://mochakingup.itch.io/cc2d) | Adjustable body sliders, expressions, colourable equipment, included animations and PNG/sequence export. The Unity version supports runtime equipment and colour changes. | Separate proportions, expression and equipment. Do not copy precise-looking rig sliders into a probabilistic prompt interface. |
-| [Kenney Avatar Mixer](https://kenney.itch.io/avatar-mixer) / [Creature Mixer](https://kenney.itch.io/creature-mixer) | Category tabs select parts; separate palette tabs choose colours; arrows reposition parts. Creature Mixer lets users pause and step through animation by clicking the character. | Use a small number of visible, direct controls and a preview. Keep appearance controls distinct from navigation and output settings. |
+| [RPG Maker MZ Character Generator](https://rpgmakerofficial.com/product/MZ_help-en/01_05.html) | Male/Female/Kid tabs; variation, color and offset choices per feature; a preview reflects selections. Exports distinguish face, walking character, damaged character and battler. Settings can be saved and reloaded. | Show understandable appearance choices next to feedback. Separate appearance from output configuration. |
+| [Character Creator 2D by mochakingup](https://mochakingup.itch.io/cc2d) | Adjustable body sliders, expressions, colorable equipment, included animations and PNG/sequence export. The Unity version supports runtime equipment and color changes. | Separate proportions, expression and equipment. Do not copy precise-looking rig sliders into a probabilistic prompt interface. |
+| [Kenney Avatar Mixer](https://kenney.itch.io/avatar-mixer) / [Creature Mixer](https://kenney.itch.io/creature-mixer) | Category tabs select parts; separate palette tabs choose colors; arrows reposition parts. Creature Mixer lets users pause and step through animation by clicking the character. | Use a small number of visible, direct controls and a preview. Keep appearance controls distinct from navigation and output settings. |
 | [SmallScaleInt Fantasy Character Creator](https://smallscaleint.itch.io/character-creator-2d-fantasy) | Modular body/gear selection, Human/Undead/Spirit body types, eight-direction animation, live previews, chosen animations, and 64×64 or 128×128 exports. Its [Modern version](https://smallscaleint.itch.io/character-creator-2d-modern) also exposes output resolution, outlines and frame-count choices. | Make game-facing output decisions explicit. Let users see selected directions/animations before spending or exporting. |
 
-These are primarily deterministic part-based creators. Their instant previews are evidence for the value of visual feedback, not proof that equivalent AI prompt controls will produce exact shapes or colours.
+These are primarily deterministic part-based creators. Their instant previews are evidence for the value of visual feedback, not proof that equivalent AI prompt controls will produce exact shapes or colors.
 
 The LPC repository describes its original [64×64 format and later oversized equipment frames](https://github.com/LiberatedPixelCup/Universal-LPC-Spritesheet-Character-Generator). SmallScaleInt documents 64×64/128×128 output frames. These are frame conventions, not proven universal opaque-body-height standards.
 
 ## Essential controls should remain visible
 
-Apple recommends keeping frequently used controls visible while disclosing detail when relevant. Its [disclosure-control guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls) supports retaining size and directions in the primary hierarchy and reserving disclosure for infrequent details. Its [layout guidance](https://developer.apple.com/design/human-interface-guidelines/layout) also favours grouping related settings and giving essential content sufficient space.
+Apple recommends keeping frequently used controls visible while disclosing detail when relevant. Its [disclosure-control guidance](https://developer.apple.com/design/human-interface-guidelines/disclosure-controls) supports retaining size and directions in the primary hierarchy and reserving disclosure for infrequent details. Its [layout guidance](https://developer.apple.com/design/human-interface-guidelines/layout) also favors grouping related settings and giving essential content sufficient space.
 
 Recommended visible sequence:
 
@@ -45,7 +45,7 @@ Proposed high-value hints are character kind, body shape, proportions and skin t
 - **Character kind:** examples such as Human, Elf, Dwarf and Orc, plus From description/Custom. These are text hints within a humanoid rig, not new skeleton-template support.
 - **Body shape:** optional Slender, Broad, Muscular or Rounded choices, supported by silhouettes and short descriptions. Default to From description. Avoid calling an empty hint Average.
 - **Proportions:** Natural, Heroic or Chibi is a separate concept from shape, height in pixels and camera angle. Add it only if examples make the distinction understandable.
-- **Skin tone:** use swatches with text labels. State that they guide generation; they do not guarantee exact pixel colours. Exact palette editing remains a separate operation.
+- **Skin tone:** use swatches with text labels. State that they guide generation; they do not guarantee exact pixel colors. Exact palette editing remains a separate operation.
 
 Do not imply numerical precision through body-width or muscle sliders unless their output is deterministic. Avoid a permanent grid of tiny facial controls whose effects will be unreadable at low resolutions. Prompt hints need model-output evaluation before claiming consistent results.
 
@@ -76,7 +76,7 @@ Unity's [isometric tilemap manual](https://docs.unity3d.com/6000.0/Documentation
 
 Keep the view control explicit even when a preset supplies a sensible initial value. Avoid silently resetting it whenever a direction is toggled. Manual direction changes mark the preset Custom while retaining the selected view.
 
-Arrange eight outward arrows around a noninteractive centre, with selected states, accessible names and a visible count. Label the group **Facing directions** and explain **Views to animate and export**. Allow any nonempty subset, including one direction and asymmetric subsets. Prevent an empty selection with inline feedback rather than allowing a later paid failure.
+Arrange eight outward arrows around a noninteractive center, with selected states, accessible names and a visible count. Label the group **Facing directions** and explain **Views to animate and export**. Allow any nonempty subset, including one direction and asymmetric subsets. Prevent an empty selection with inline feedback rather than allowing a later paid failure.
 
 The current [v3 API schema](https://api.pixellab.ai/v2/openapi.json) makes eight views from scratch; four-direction selection applies to reference mode. Preserve all eight real source/rest views behind the scenes and limit animation/export to the chosen subset. Do not silently replace independent views with flips. State that selecting fewer views reduces downstream animation work, not the initial eight-view drawing step.
 
@@ -129,7 +129,7 @@ Independent opposite views increase animation work relative to today's mirrored 
 
 These alternatives should share semantics and validation so the comparison evaluates layout rather than three incompatible feature sets. None should hide size or directions under More options.
 
-The actual mock-ups are interactive design proposals in the chat. Their size illustration responds to body shape and Chibi proportions, and is explicitly labelled as an illustration. The generation action demonstrates the proposed draw/review/animate sequence without calling any API. Only Seed options uses disclosure. The primary action quotes the eight-view body drawing stage, not the later animation/equipment cost.
+The actual mock-ups are interactive design proposals in the chat. Their size illustration responds to body shape and Chibi proportions, and is explicitly labeled as an illustration. The generation action demonstrates the proposed draw/review/animate sequence without calling any API. Only Seed options uses disclosure. The primary action quotes the eight-view body drawing stage, not the later animation/equipment cost.
 
 ## Mock-up verification
 
@@ -148,6 +148,6 @@ These are UI/simulation checks, not live model-quality or production pipeline ve
 - Name helper, exact composed prompt, structured request summary and copy action agree with the submitted specification. Editing the name leaves the prompt unchanged.
 - Shape and skin choices clearly describe intent and can revert to From description; no numerical proportion guarantee is implied.
 - The cost plan includes larger-cell edit batches, selected independent directions and optional retries. No automatic paid resend is introduced.
-- All directions, cell geometry, pivots, oversize layers, hand side, recolours, storage reloads and engine exports receive offline coverage before paid validation.
-- Desktop, narrow mobile portrait and short landscape have reachable controls, readable prompt text, clear selected states and no horizontal overflow. Test keyboard focus, arrow selection and real mobile keyboard behaviour.
+- All directions, cell geometry, pivots, oversize layers, hand side, recolors, storage reloads and engine exports receive offline coverage before paid validation.
+- Desktop, narrow mobile portrait and short landscape have reachable controls, readable prompt text, clear selected states and no horizontal overflow. Test keyboard focus, arrow selection and real mobile keyboard behavior.
 - Base appearance and measured fit can be reviewed before the expensive animation stage; remaining QA failures are presented accurately.

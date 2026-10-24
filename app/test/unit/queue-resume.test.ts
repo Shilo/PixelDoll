@@ -37,6 +37,18 @@ for (const status of [0, 500, 422]) test(`automatic paid flow resume cannot rese
   expect(f.posts()).toBe(2)
 })
 
+test('records saved with the previous canceled state and field names load and still block a resend', async () => {
+  const f = fixture(500), q = f.make()
+  const old = await q.enqueue(request)
+  await q.tick()
+  f.records.set(old.id, { ...f.records.get(old.id)!, state: 'cancelled', autoCancelledAttempts: [1] } as unknown as JobRec)
+  const resumed = f.make(); await resumed.load()
+  const saved = f.records.get(old.id) as JobRec & { autoCancelledAttempts?: number[] }
+  expect(saved.state).toBe('canceled'); expect(saved.autoCanceledAttempts).toEqual([1]); expect(saved.autoCancelledAttempts).toBeUndefined()
+  expect((await resumed.enqueue(request)).id).toBe(old.id)
+  await resumed.tick()
+  expect(f.posts()).toBe(1)
+})
 test('historical old lost records cannot hide a newer queued or successful request during resume', async () => {
   const f = fixture(500), q = f.make()
   const old = await q.enqueue(request)
@@ -168,7 +180,7 @@ test('disconnect during submitting persistence prevents HTTP leaving the old que
   await preparing
   q.disconnect(); finish(); await pending
   expect(posts).toBe(0)
-  expect(records.get(record.id)?.state).toBe('cancelled')
+  expect(records.get(record.id)?.state).toBe('canceled')
   expect(records.get(record.id)?.error).toContain('No API request was made')
   expect(record.submittedAt).toBeUndefined()
 })
@@ -194,7 +206,7 @@ test('failed sibling during submitting image rehydration prevents the paid POST'
   original.abort(new Error('first consumer failed')); scope.abort(new Error('sibling failed')); finish(new Blob([new Uint8Array([1])]))
   await pending
   expect(posts).toBe(0)
-  expect(records.get(record.id)?.state).toBe('cancelled')
+  expect(records.get(record.id)?.state).toBe('canceled')
 })
 
 test('scope cancellation after HTTP invocation preserves the paid job response and never sends DELETE', async () => {
@@ -252,7 +264,7 @@ test('all scoped consumers failing cancels a shared queued request without a POS
   a.abort(); b.abort()
   await q.tick()
   expect(posts).toBe(0)
-  expect(shared.state).toBe('cancelled')
+  expect(shared.state).toBe('canceled')
 })
 
 test('a live unscoped consumer pins shared work when a scoped consumer fails', async () => {
@@ -278,7 +290,7 @@ test('scoped recovery can adopt a historical queued record with no live in-memor
   scope.abort()
   await recovered.tick()
   expect(f.posts()).toBe(0)
-  expect(f.records.get(saved.id)?.state).toBe('cancelled')
+  expect(f.records.get(saved.id)?.state).toBe('canceled')
 })
 
 
@@ -292,21 +304,21 @@ test('a new explicit attempt can recover automatic unsent cancellation; the same
       if (path === '/balance') return accountBalance as T; posts++; return { usage: { type: 'generations', generations: 0.1 } } as T },
   }
   const original = new Queue(deps); original.setKey('synthetic-key')
-  const cancelled = await original.enqueue(request, { signal: firstScope.signal, attempt: 123 })
+  const canceled = await original.enqueue(request, { signal: firstScope.signal, attempt: 123 })
   firstScope.abort()
   const recovered = new Queue(deps); recovered.setKey('synthetic-key'); await recovered.load()
-  expect((await recovered.enqueue(request, { signal: new AbortController().signal, attempt: 123 })).id).toBe(cancelled.id)
+  expect((await recovered.enqueue(request, { signal: new AbortController().signal, attempt: 123 })).id).toBe(canceled.id)
   await recovered.tick(); expect(posts).toBe(0)
   const next = await recovered.enqueue(request, { signal: new AbortController().signal, attempt: 124 })
-  expect(next.id).not.toBe(cancelled.id)
+  expect(next.id).not.toBe(canceled.id)
   await recovered.tick(); expect(posts).toBe(1)
 })
 
 test('distinct explicit attempts cannot reopen a user cancellation or uncertain paid outcome', async () => {
   const f = fixture(500), q = f.make(), scope = new AbortController()
-  const cancelled = await q.enqueue(request, { signal: scope.signal, attempt: 123 })
-  await q.cancel(cancelled.id) // deliberate user intent, distinct from failed-sibling cleanup
-  expect((await q.enqueue(request, { signal: new AbortController().signal, attempt: 124 })).id).toBe(cancelled.id)
+  const canceled = await q.enqueue(request, { signal: scope.signal, attempt: 123 })
+  await q.cancel(canceled.id) // deliberate user intent, distinct from failed-sibling cleanup
+  expect((await q.enqueue(request, { signal: new AbortController().signal, attempt: 124 })).id).toBe(canceled.id)
   const other = { ...request, body: { ...request.body, seed: 125 } }
   const lost = await q.enqueue(other, { signal: new AbortController().signal, attempt: 125 })
   await q.tick(); expect(lost.state).toBe('lost')
@@ -324,7 +336,7 @@ test('automatic shared cancellation remembers every failed attempt across reload
   const shared = await original.enqueue(request, { signal: a.signal, attempt: 1 })
   await original.enqueue(request, { signal: b.signal, attempt: 2 })
   a.abort(); b.abort()
-  expect(records.get(shared.id)?.autoCancelledAttempts?.sort()).toEqual([1, 2])
+  expect(records.get(shared.id)?.autoCanceledAttempts?.sort()).toEqual([1, 2])
   const recovered = new Queue(deps); await recovered.load()
   for (const attempt of [1, 2]) expect((await recovered.enqueue(request, { signal: new AbortController().signal, attempt })).id).toBe(shared.id)
   expect((await recovered.enqueue(request, { signal: new AbortController().signal, attempt: 3 })).id).not.toBe(shared.id)

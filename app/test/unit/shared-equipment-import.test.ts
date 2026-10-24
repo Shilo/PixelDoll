@@ -7,7 +7,7 @@ import { readCharacterZip, saveImportedCharacter } from '../../src/lib/store/imp
 import { loadProject } from '../../src/lib/store/project.ts'
 import { zip } from '../../src/lib/store/zip.ts'
 import { composeCell } from '../../src/lib/compose/compose.ts'
-import { recolour } from '../../src/lib/dress/dress.ts'
+import { recolor } from '../../src/lib/dress/dress.ts'
 const memory = vi.hoisted(() => ({ records: new Map<string, unknown>(), blobs: new Map<string, Blob>() }))
 vi.mock('../../src/lib/store/db.ts', () => ({
   get: async (_s: string, id: string) => structuredClone(memory.records.get(id)),
@@ -37,8 +37,8 @@ test.each(['engine-only', 'engine-with-source-blobs', 'editable'] as const)('sav
     expect(item.design).toEqual(candidate.project.manifest.items.find(i => i.id === candidate.itemId)!.design)
     for (const hash of item.design!.snapshot.imageHashes) expect(restored.project.images.has(hash)).toBe(true)
   }
-  const expected = composeCell(recolour(restored.project, {}), restored.project.manifest.presets[0].items, 'rest', 'south', 0)
+  const expected = composeCell(recolor(restored.project, {}), restored.project.manifest.presets[0].items, 'rest', 'south', 0)
   // Reopen from only the newly persisted records/blobs, not the export's in-memory image map.
   const id = await saveImportedCharacter(restored, 'Restored shared equipment'), reopened = await loadProject(id)
-  expect(composeCell(recolour(reopened.project, {}), reopened.project.manifest.presets[0].items, 'rest', 'south', 0)).toEqual(expected)
+  expect(composeCell(recolor(reopened.project, {}), reopened.project.manifest.presets[0].items, 'rest', 'south', 0)).toEqual(expected)
 })

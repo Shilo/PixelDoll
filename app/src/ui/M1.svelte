@@ -8,8 +8,8 @@
   // Base presets. S2 winner: clothed, generated at 48 and padded to 64 at freeze (16-20 px headroom). S1: bare 64 px.
   // v3 text-only always makes 8 dirs: n_directions 4 needs reference_image (422).
   const PRESETS = {
-    s2: { size: 48, seed: 4321, desc: 'plain bald human mannequin for a paperdoll base, light skin tone, wearing a plain grey t-shirt and plain grey shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso' },
-    s1: { size: 64, seed: 1234, desc: 'plain bald human base body for a paperdoll, light skin, simple plain grey underwear shorts, barefoot, no hair, no clothing, no accessories, standing straight in a neutral pose with arms slightly away from the body' },
+    s2: { size: 48, seed: 4321, desc: 'plain bald human mannequin for a paperdoll base, light skin tone, wearing a plain gray t-shirt and plain gray shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso' },
+    s1: { size: 64, seed: 1234, desc: 'plain bald human base body for a paperdoll, light skin, simple plain gray underwear shorts, barefoot, no hair, no clothing, no accessories, standing straight in a neutral pose with arms slightly away from the body' },
   }
   let preset = $state<keyof typeof PRESETS>('s2')
   const DIRS: Direction[] = ['south', 'east', 'north'] // west = mirror of east (architecture §2)
@@ -74,7 +74,7 @@
 
 <section>
   <h2>API key</h2>
-  <p class="note">Kept in memory unless "remember" is ticked (then localStorage on this device). Sent only to api.pixellab.ai. The API accepts any origin, so a leaked key is usable anywhere — rotate it at pixellab.ai if in doubt.</p>
+  <p class="note">Kept in memory unless "remember" is checked (then localStorage on this device). Sent only to api.pixellab.ai. The API accepts any origin, so a leaked key is usable anywhere — rotate it at pixellab.ai if in doubt.</p>
   <input type="password" placeholder="PixelLab API key" bind:value={keyInput} autocomplete="off" />
   <label><input type="checkbox" bind:checked={remember} /> remember on this device</label>
   <button onclick={saveKey} disabled={!keyInput.trim()}>use key</button>

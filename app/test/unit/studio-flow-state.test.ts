@@ -5,7 +5,7 @@ import type { Progress } from '../../src/studio/create.ts'
 const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
-vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColours: mocks.match }))
+vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
 vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: mocks.load }))
 vi.mock('../../src/lib/dress/project.ts', async original => ({ ...await original<typeof import('../../src/lib/dress/project.ts')>(), openSource: mocks.source }))
 vi.mock('../../src/lib/equipment/index.ts', async original => ({ ...await original<typeof import('../../src/lib/equipment/index.ts')>(), listFits: mocks.fits }))
@@ -150,7 +150,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 }
 
 
-const recoveryPlan = { recordIds: ['lost-west-0', 'cancelled-west-1'], rigVersion: 'rig-fingerprint', checks: 2, gens: 0.2, usd: 0.01026, rawHashes: [] }
+const recoveryPlan = { recordIds: ['lost-west-0', 'canceled-west-1'], rigVersion: 'rig-fingerprint', checks: 2, gens: 0.2, usd: 0.01026, rawHashes: [] }
 const recoverySpec = { id: 'slash', action: 'slash', frames: 8, items: ['sword'], seed: 2438, replace: true, dirs: ['east', 'west'] as import('../../src/lib/store/manifest.ts').DirectionName[], poseStyle: 'visible-side-v1' as const }
 
 test('explicit joint-check recovery preserves the body identity and persists one reviewed intent before work', async () => {
@@ -211,13 +211,13 @@ test('joint recovery refuses a superseded pending operation and a failed durable
 const palettePlan = { ...recoveryPlan, recordIds: [], rawHashes: ['cached-body-hash'], checks: 4, gens: 0.4, usd: 0.02052, directions: ['west'] as import('../../src/lib/store/manifest.ts').DirectionName[], changedPixels: 39, rawOutliers: 177, remainingOutliers: 138, changedFrames: 4, itemGens: 6 }
 const paletteSpec = { ...recoverySpec, measurementRecovery: { id: 'previous-joint-consent', recordIds: ['old-lost'], rigVersion: 'rig-fingerprint' } }
 
-test('body colour consent preserves the raw render identity, clears old check consent, and persists before work', async () => {
+test('body color consent preserves the raw render identity, clears old check consent, and persists before work', async () => {
   const persisted = pending<void>()
   mocks.put.mockImplementationOnce(() => persisted.promise); mocks.palette.mockResolvedValue(palettePlan)
   mocks.move.mockRejectedValue(new Error('Offline corrected check stopped'))
   const s = await import('../../src/studio/state.svelte.ts')
   Object.assign(s.moving, { projectId: 'project', spec: structuredClone(paletteSpec), error: 'Palette fit failed', done: false })
-  const run = s.matchMoveBodyColours('project', structuredClone(paletteSpec), palettePlan)
+  const run = s.matchMoveBodyColors('project', structuredClone(paletteSpec), palettePlan)
   await vi.waitFor(() => expect(mocks.put).toHaveBeenCalledOnce())
   expect(mocks.palette).toHaveBeenCalledWith('project', { ...paletteSpec, measurementRecovery: undefined })
   expect(mocks.move).not.toHaveBeenCalled()
@@ -235,20 +235,20 @@ test('body colour consent preserves the raw render identity, clears old check co
   expect(restored.moving.spec).toEqual(stored.spec)
 })
 
-test.each(['rawHashes', 'rigVersion', 'changedPixels', 'checks', 'itemGens'] as const)('body colour consent rejects changed %s without paid work', async field => {
+test.each(['rawHashes', 'rigVersion', 'changedPixels', 'checks', 'itemGens'] as const)('body color consent rejects changed %s without paid work', async field => {
   mocks.palette.mockResolvedValue({ ...palettePlan, [field]: field === 'rawHashes' ? ['different-body'] : field === 'rigVersion' ? 'changed-rig' : 999 })
   const s = await import('../../src/studio/state.svelte.ts')
   Object.assign(s.moving, { projectId: 'project', spec: structuredClone(paletteSpec), error: 'Palette fit failed', done: false })
-  await expect(s.matchMoveBodyColours('project', structuredClone(paletteSpec), palettePlan)).rejects.toThrow('Review their cost again')
+  await expect(s.matchMoveBodyColors('project', structuredClone(paletteSpec), palettePlan)).rejects.toThrow('Review their cost again')
   expect(mocks.put).not.toHaveBeenCalled(); expect(mocks.move).not.toHaveBeenCalled()
   expect(s.moving.error).toBe('Palette fit failed')
 })
 
-test('existing body colour intent cannot be applied twice and interrupted resume retains its identity', async () => {
-  const spec = { ...recoverySpec, bodyPaletteRepair: { id: 'existing-colour-consent', version: 'near-rest-v1' as const, rigVersion: palettePlan.rigVersion } }
+test('existing body color intent cannot be applied twice and interrupted resume retains its identity', async () => {
+  const spec = { ...recoverySpec, bodyPaletteRepair: { id: 'existing-color-consent', version: 'near-rest-v1' as const, rigVersion: palettePlan.rigVersion } }
   const s = await import('../../src/studio/state.svelte.ts')
   Object.assign(s.moving, { projectId: 'project', spec, error: 'A corrected check stopped', done: false })
-  await expect(s.matchMoveBodyColours('project', spec, palettePlan)).rejects.toThrow('Review the body colours again')
+  await expect(s.matchMoveBodyColors('project', spec, palettePlan)).rejects.toThrow('Review the body colors again')
   expect(mocks.palette).not.toHaveBeenCalled(); expect(mocks.move).not.toHaveBeenCalled()
   vi.resetModules(); mocks.get.mockResolvedValue({ id: 'studio-move', spec, projectId: 'project', status: 'running' })
   mocks.move.mockRejectedValue(new Error('Interrupted corrected check stopped'))
@@ -257,17 +257,17 @@ test('existing body colour intent cannot be applied twice and interrupted resume
   expect(mocks.move.mock.calls[0][1]).toEqual({ ...spec, activityScope: expect.any(String) })
 })
 
-test('body colour consent storage failure cannot start paid work', async () => {
+test('body color consent storage failure cannot start paid work', async () => {
   mocks.palette.mockResolvedValue(palettePlan); mocks.put.mockRejectedValue(new Error('Consent storage blocked'))
   const s = await import('../../src/studio/state.svelte.ts')
   Object.assign(s.moving, { projectId: 'project', spec: structuredClone(paletteSpec), error: 'Palette fit failed', done: false })
-  await s.matchMoveBodyColours('project', structuredClone(paletteSpec), palettePlan)
+  await s.matchMoveBodyColors('project', structuredClone(paletteSpec), palettePlan)
   expect(mocks.move).not.toHaveBeenCalled()
   expect(s.moving.error).toContain('Consent storage blocked')
 })
 
 
-const itemColourPlan = { version: 'neutral-owned-v1' as const, fingerprint: 'reviewed-item-and-rig', materialId: 'sword-metal', changedPixels: 20, changedFrames: [0, 1], unmatchedPixels: 0 }
+const itemColorPlan = { version: 'neutral-owned-v1' as const, fingerprint: 'reviewed-item-and-rig', materialId: 'sword-metal', changedPixels: 20, changedFrames: [0, 1], unmatchedPixels: 0 }
 
 test('free item palette refresh preserves the outfit, selected view and inspector without invoking paid flow', async () => {
   const s = await import('../../src/studio/state.svelte.ts')
@@ -275,8 +275,8 @@ test('free item palette refresh preserves the outfit, selected view and inspecto
   s.ui.selected = 'sword'; s.ui.anim = 'slash'; s.ui.dir = 'west'; s.ui.frame = 3
   const project = { manifest: { name: 'Refreshed palette' }, images: new Map() }
   mocks.match.mockResolvedValue(undefined); mocks.load.mockResolvedValue({ project })
-  await s.matchItemPalette('project', 'sword', 'slash', 'west', itemColourPlan)
-  expect(mocks.match).toHaveBeenCalledWith('project', 'sword', 'slash', 'west', itemColourPlan)
+  await s.matchItemPalette('project', 'sword', 'slash', 'west', itemColorPlan)
+  expect(mocks.match).toHaveBeenCalledWith('project', 'sword', 'slash', 'west', itemColorPlan)
   expect(s.store.project).toBe(project)
   expect(s.doc.items).toEqual({ main_hand: 'sword' }); expect(s.doc.variants).toEqual({ 'sword-metal': 'azure' })
   expect(s.ui).toMatchObject({ selected: 'sword', anim: 'slash', dir: 'west', frame: 3 })
@@ -287,7 +287,7 @@ test('free item palette cannot replace a newer pending navigation even while the
   const work = pending<void>(), navigation = pending<never>()
   mocks.match.mockReturnValue(work.promise); mocks.source.mockReturnValue(navigation.promise)
   const s = await import('../../src/studio/state.svelte.ts'); s.doc.id = 'old-project'
-  const run = s.matchItemPalette('old-project', 'sword', 'slash', 'west', itemColourPlan)
+  const run = s.matchItemPalette('old-project', 'sword', 'slash', 'west', itemColorPlan)
   await vi.waitFor(() => expect(mocks.match).toHaveBeenCalledOnce())
   void s.openProject('new-project')
   await vi.waitFor(() => expect(mocks.source).toHaveBeenCalledOnce())
@@ -300,9 +300,9 @@ test('free item palette applies only the newest refresh when two item correction
   const older = pending<{ project: any }>(), newer = pending<{ project: any }>()
   mocks.match.mockResolvedValue(undefined); mocks.load.mockReturnValueOnce(older.promise).mockReturnValueOnce(newer.promise)
   const s = await import('../../src/studio/state.svelte.ts'); s.doc.id = 'project'
-  const first = s.matchItemPalette('project', 'first-item', 'slash', 'west', itemColourPlan)
+  const first = s.matchItemPalette('project', 'first-item', 'slash', 'west', itemColorPlan)
   await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(1))
-  const second = s.matchItemPalette('project', 'second-item', 'slash', 'west', itemColourPlan)
+  const second = s.matchItemPalette('project', 'second-item', 'slash', 'west', itemColorPlan)
   await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledTimes(2))
   const currentProject = { manifest: { name: 'Both corrections' }, images: new Map() }
   newer.resolve({ project: currentProject }); await second

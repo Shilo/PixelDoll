@@ -35,7 +35,7 @@ Export staleness checks only hash equality (`app/src/lib/export/generic.ts:62–
 
 The raw API draws new raster frames from a first image and 18 joint targets; `rawClip` submits those coordinates (`app/src/lib/rig/clips.ts:42–48`). There are no meshes, weights or deterministic attachment transforms for generated worn layers. The stored snapshot describes the route as beta and explicitly says it draws one frame per skeleton (`docs/research/pixellab/pixellab-openapi-v2.json`, JSON pointer `/paths/~1animate-with-skeleton-v3/post/description`).
 
-Moving a wrist in metadata cannot fix a bent visor, missing shield, wrong-facing helmet, grey cape hem or erased detail. Conversely, correcting an estimate on an otherwise good raster should not redraw that raster. Build two distinct operations:
+Moving a wrist in metadata cannot fix a bent visor, missing shield, wrong-facing helmet, gray cape hem or erased detail. Conversely, correcting an estimate on an otherwise good raster should not redraw that raster. Build two distinct operations:
 
 1. **Correct joints on this image**: free metadata edit, independent “observed / manually corrected” record, recalculate anchors and relevant QA, leave raster and original requested pose unchanged.
 2. **Change the intended pose**: edit a draft target pose, then explicitly regenerate selected body/equipment candidates or apply a limited local rigid transform. Show cost and dependencies before sending anything.
@@ -153,7 +153,7 @@ The API minimum is three frames (`paddedPoses`, `app/src/lib/rig/clips.ts:126–
 - QA is recomputed at correct scope: selected-cell checks, affected clip comparisons and summary aggregation. A human review status never becomes a clean measurement pass merely because the user accepted an exception.
 - Stale candidate acceptance fails safely; reload/retry reattaches existing jobs; no automatic resend of uncertain paid requests.
 - Cleanup can be toggled/overridden and a user-restored detail survives re-evaluation and export.
-- Validate against the saved shield, forearm-covered helmet, real malformed helmet and grey cape cases, plus a tiny legitimate disconnected detail. Separate offline behavioral tests from any later live-model quality study.
+- Validate against the saved shield, forearm-covered helmet, real malformed helmet and gray cape cases, plus a tiny legitimate disconnected detail. Separate offline behavioral tests from any later live-model quality study.
 
 ## Decision
 

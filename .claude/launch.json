@@ -50,6 +50,64 @@
         "8765"
       ],
       "port": 8765
+    },
+    {
+      "name": "prototype-5202",
+      "runtimeExecutable": "C:/Programming_Files/Shilocity/PixelLab/PixelDoll/.runtime.tmp/node-v24.22.1-win-x64/node.exe",
+      "runtimeArgs": [
+        "docs/design/2026-10-22-redesign/round-6-prototype/run.mjs"
+      ],
+      "port": 5202,
+      "url": "http://127.0.0.1:5202"
+    },
+    {
+      "name": "app-build-5208",
+      "runtimeExecutable": "C:/Programming_Files/Shilocity/PixelLab/PixelDoll/.runtime.tmp/node-v24.22.1-win-x64/node.exe",
+      "runtimeArgs": [
+        "app/node_modules/vite/bin/vite.js",
+        "preview",
+        "app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5208",
+        "--strictPort"
+      ],
+      "port": 5208,
+      "url": "http://127.0.0.1:5208"
+    },
+    {
+      "name": "app-dev-5207",
+      "runtimeExecutable": "C:/Programming_Files/Shilocity/PixelLab/PixelDoll/.runtime.tmp/node-v24.22.1-win-x64/node.exe",
+      "runtimeArgs": [
+        "app/node_modules/vite/bin/vite.js",
+        "app",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5207",
+        "--strictPort"
+      ],
+      "port": 5207,
+      "url": "http://127.0.0.1:5207"
+    },
+    {
+      "name": "bronze-preview-5204",
+      "runtimeExecutable": "C:/Programming_Files/Shilocity/PixelLab/PixelDoll/.runtime.tmp/node-v24.22.1-win-x64/node.exe",
+      "runtimeArgs": [
+        "C:/Programming_Files/Shilocity/bronze-ui/node_modules/vite/bin/vite.js",
+        "preview",
+        "C:/Programming_Files/Shilocity/bronze-ui/showcase",
+        "--config",
+        "C:/Programming_Files/Shilocity/bronze-ui/vite.config.js",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5204",
+        "--strictPort"
+      ],
+      "port": 5204,
+      "url": "http://127.0.0.1:5204"
     }
   ]
 }

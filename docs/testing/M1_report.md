@@ -18,7 +18,7 @@ against the Vite dev server (`npm run dev`, port 5173), plus the production buil
 | M1 page | `src/ui/M1.svelte`, `src/ui/BlobImg.svelte` |
 | Self-checks: `npm run selftest` (node 25, native TS type stripping, no dep) and `#/selftest` (browser, adds PNG + IndexedDB) | `src/lib/selftests.ts`, `scripts/selftest.ts` |
 
-Queue behaviour: concurrency default 3 (user 1–8), 429 → `max(1, n−1)` and +1 back after 5 clean submits; backoff
+Queue behavior: concurrency default 3 (user 1–8), 429 → `max(1, n−1)` and +1 back after 5 clean submits; backoff
 2 s → 60 s with jitter on 429/423/5xx/network submit errors; 401 / 402 pause the queue; 422 and policy code 5000 are terminal;
 polling every 5 s; record persisted (`submitting`) before the POST, job ids persisted right after; inline base64 results go to
 `blobs` in the same handler that sees `completed`, storage URLs are persisted first and then downloaded (retried on failure);

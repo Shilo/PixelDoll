@@ -1,12 +1,14 @@
 <script lang="ts">
+  import { ui } from './state.svelte.ts'
   let { body, frame }: { body: number; frame: number } = $props()
   let canvas: HTMLCanvasElement
   $effect(() => {
+    void ui.theme
     const ctx = canvas.getContext('2d')!
     const cell = Math.max(32, Math.min(256, frame || 80)), size = Math.max(1, Math.min(cell, body || 64))
     canvas.width = canvas.height = cell
     ctx.clearRect(0, 0, cell, cell)
-    ctx.fillStyle = '#afbad1'
+    ctx.fillStyle = getComputedStyle(canvas).getPropertyValue('--bu-muted').trim()
     const u = size / 16, x = Math.floor((cell - size) / 2), y = Math.max(0, cell - size - 4)
     const rect = (a: number, b: number, w: number, h: number) => ctx.fillRect(x + Math.round(a * u), y + Math.round(b * u), Math.max(1, Math.round(w * u)), Math.max(1, Math.round(h * u)))
     rect(6, 1, 4, 4); rect(5, 6, 6, 5); rect(3, 6, 2, 6); rect(11, 6, 2, 6); rect(5, 11, 2, 5); rect(9, 11, 2, 5)

@@ -65,7 +65,7 @@ Call 2 = anchor (call 1's dressed S) + N.)
 ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_dress_chunks.png)
 
 - Call 1 sent 4 frames at 96 px and call 2 sent 2. Both passed the dress gates on the first roll (G2, G3, presence, D1).
-- **Consistent across chunks:** the N keyframe from chunk 2 has the same grey blade, dark crossguard and hilt as the chunk 1
+- **Consistent across chunks:** the N keyframe from chunk 2 has the same gray blade, dark crossguard and hilt as the chunk 1
   views. The sword points down and slightly outward in the right hand in all 5 views, and the arms are unchanged.
 - PixelLab redrew the anchor cell a little in its output (not pixel-identical to the input); that output is dropped.
 
@@ -114,7 +114,7 @@ Godot's own render of sword/walk: ![](https://github.com/Shilo/PixelDoll/raw/v0.
   - QA `warn`: one H4 warning on f2 (own 0.46), where the hem swings out to one side during the hit. It reads as cloth motion,
     not a balloon.
   - Top row = body + cape; bottom row = the full outfit: ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b16_cape_hurt_north_after.png)
-- The grid redrew all 6 frames. The grey hem smudges that came from the T3 dress are also gone in this clip, so hurt N is
+- The grid redrew all 6 frames. The gray hem smudges that came from the T3 dress are also gone in this clip, so hurt N is
   now slightly cleaner than walk/idle N.
 
 ## 5. Notes and open items

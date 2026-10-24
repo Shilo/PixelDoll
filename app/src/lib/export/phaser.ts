@@ -241,7 +241,7 @@ export function phaserFiles(m: Manifest): OutFile[] {
        const doll = new Paperdoll(this, 200, 150, m)
        doll.play(${JSON.stringify(initial?.id ?? 'walk')}, ${JSON.stringify(initial?.directions?.[0] ?? m.rig.directions[0]?.id ?? 'south')})
      }
-Switch outfits with doll.applyPreset(m.presets[1]); recolour with doll.setVariants({ material_id: "stored_variant" }).
+Switch outfits with doll.applyPreset(m.presets[1]); recolor with doll.setVariants({ material_id: "stored_variant" }).
 Palette swaps use exact source RGBs and stored material ramps in Canvas or WebGL.
 Call doll.destroy() when removing a character. Palette textures are cached until Phaser game teardown.
 PaperdollContainer.js is an ES module and fetches manifest.json: serve the game over http (a dev server), not file://.

@@ -1,7 +1,7 @@
 <script lang="ts">
   import ItemPane from './ItemPane.svelte'
   import GenCard from './GenCard.svelte'
-  import Colours from './Colours.svelte'
+  import Colors from './Colors.svelte'
   import Moves from './Moves.svelte'
   import { ui, doc, store, genOf, openNewItem } from './state.svelte.ts'
   import { Plus } from './icons.ts'
@@ -14,15 +14,15 @@
 <div class="inspector">
   <div class="inspector-tabs">
     <div class="seg full" role="tablist" aria-label="Inspector">
-      {#each [['item', 'Item'], ['colours', 'Colours'], ['moves', 'Moves']] as [id, label] (id)}
+      {#each [['item', 'Item'], ['colors', 'Colors'], ['moves', 'Moves']] as [id, label] (id)}
         <button role="tab" aria-selected={ui.inspTab === id} tabindex={ui.inspTab === id ? 0 : -1} onclick={() => (ui.inspTab = id as typeof ui.inspTab)}>{label}</button>
       {/each}
     </div>
   </div>
   {#key contentKey}
     <div class="inspector-content">
-      {#if ui.inspTab === 'colours'}
-        <Colours />
+      {#if ui.inspTab === 'colors'}
+        <Colors />
       {:else if ui.inspTab === 'moves'}
         <Moves />
       {:else if g}
@@ -34,10 +34,10 @@
           {#if bare}
             <p class="empty-title">Your character is ready</p>
             <p class="small">Add a hat, a top or a weapon. Each item becomes its own layer.</p>
-            <button class="btn primary" onclick={() => openNewItem('Head')}><Plus size={16} />Add your first item</button>
+            <button class="bu-action btn primary" data-variant="primary" onclick={() => openNewItem('Head')}><Plus size={16} />Add your first item</button>
           {:else}
             <p class="empty-title">Nothing selected</p>
-            <p class="small">Pick an item in the wardrobe to wear it and change its colours.</p>
+            <p class="small">Pick an item in the wardrobe to wear it and change its colors.</p>
           {/if}
         </div>
       {/if}

@@ -1,3 +1,4 @@
+import { openStudio } from './immersive-helpers.ts';
 import { expect, test } from '@playwright/test';
 
 test('account capacity, two-tab leadership, busy waiting and recovery work through Studio', async ({ page, context }) => {
@@ -51,7 +52,7 @@ test('Free/Trial is a valid connection, blocked character creation never charges
     await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
     return page.getByRole('dialog', { name: 'New character', exact: true });
   };
-  await page.goto('/');
+  await openStudio(page, '/');
   let sheet = await open();
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly elf');
   await sheet.getByRole('button', { name: 'Create character', exact: true }).click();
@@ -77,7 +78,7 @@ test('a Free/Trial connection resumes a permitted pending enhancement', async ({
     posts.push(new URL(route.request().url()).pathname);
     return route.fulfill({ json: { enhanced_prompt: 'A patient elf with freckles', usage: { type: 'generations', generations: 0.05 } } });
   });
-  await page.goto('/'); await page.locator('.project-btn').click();
+  await openStudio(page, '/'); await page.locator('.project-btn').click();
   await page.getByRole('menuitem', { name: 'New character…', exact: true }).click();
   const sheet = page.getByRole('dialog', { name: 'New character', exact: true });
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A patient elf');

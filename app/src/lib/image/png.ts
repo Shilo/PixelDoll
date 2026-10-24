@@ -6,7 +6,7 @@ export interface Img { w: number; h: number; data: Uint8ClampedArray }
 export const makeImg = (w: number, h: number): Img => ({ w, h, data: new Uint8ClampedArray(w * h * 4) });
 
 // 8-bit RGB/RGBA (every PixelLab output so far) decodes with the pure decoder: createImageBitmap(Blob) can stall for
-// minutes in a throttled/hidden tab (seen in M3). Other PNG flavours fall back to the canvas.
+// minutes in a throttled/hidden tab (seen in M3). Other PNG flavors fall back to the canvas.
 export async function decodePng(src: Blob | Uint8Array): Promise<Img> {
   const bytes = src instanceof Blob ? new Uint8Array(await src.arrayBuffer()) : src;
   if (bytes[24] === 8 && (bytes[25] === 6 || bytes[25] === 2) && !bytes[28]) return decodePngBytes(bytes);

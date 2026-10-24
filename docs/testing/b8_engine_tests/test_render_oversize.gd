@@ -2,7 +2,7 @@ extends SceneTree
 # B8 windowed render test (needs a GPU). Usage: godot --resolution <dirs*bakedW>x<bakedH> -s test_render_oversize.gd -- <export dir>
 # For every preset and every animation: one doll per direction, each placed so its pivot sits at the baked pivot of its
 # baked cell (manifest export.bakedCell / bakedPivot = union of all layers, 96x96 here); freezes each playlist frame and
-# compares every pixel with PixelDoll's own composite baked/<preset>/<anim>.png (over the black clear colour).
+# compares every pixel with PixelDoll's own composite baked/<preset>/<anim>.png (over the black clear color).
 var diff_px := 0
 var total_px := 0
 

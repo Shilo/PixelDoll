@@ -5,7 +5,7 @@
   import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
   import { moveEstimate } from './create.ts'
   import Sprite from './Sprite.svelte'
-  import Colours from './Colours.svelte'
+  import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
   import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
@@ -40,30 +40,30 @@
     const projectId = doc.id, spec = { ...$state.snapshot(repairSpec), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
   }
-  let colourPlan = $state<ItemPaletteRepairPlan | null>(null)
-  let colourBusy = $state(false)
-  let colourError = $state('')
-  let colourDone = $state('')
-  const colourScope = $derived(`${doc.id}|${it?.id ?? ''}|${anim?.id ?? ''}|${sourceDir}`)
-  $effect(() => { void colourScope; colourError = ''; colourDone = '' })
+  let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
+  let colorBusy = $state(false)
+  let colorError = $state('')
+  let colorDone = $state('')
+  const colorScope = $derived(`${doc.id}|${it?.id ?? ''}|${anim?.id ?? ''}|${sourceDir}`)
+  $effect(() => { void colorScope; colorError = ''; colorDone = '' })
   $effect(() => {
     const projectId = doc.id, itemId = it?.id, animId = anim?.id, dir = sourceDir
     void doc.rev
     let current = true
-    colourPlan = null
-    if (!isDemo() && itemId && animId) void itemPaletteRepairPlan(projectId, itemId, animId, dir).then((plan) => { if (current) colourPlan = plan }).catch(() => {})
+    colorPlan = null
+    if (!isDemo() && itemId && animId) void itemPaletteRepairPlan(projectId, itemId, animId, dir).then((plan) => { if (current) colorPlan = plan }).catch(() => {})
     return () => { current = false }
   })
-  async function matchColours() {
-    if (!colourPlan || !it || !anim || colourBusy) return
-    const projectId = doc.id, itemId = it.id, animId = anim.id, dir = sourceDir, reviewed = $state.snapshot(colourPlan)
+  async function matchColors() {
+    if (!colorPlan || !it || !anim || colorBusy) return
+    const projectId = doc.id, itemId = it.id, animId = anim.id, dir = sourceDir, reviewed = $state.snapshot(colorPlan)
     const sameView = () => doc.id === projectId && it?.id === itemId && anim?.id === animId && sourceDir === dir
-    colourBusy = true; colourError = ''; colourDone = ''
+    colorBusy = true; colorError = ''; colorDone = ''
     try {
       await matchItemPalette(projectId, itemId, animId, dir, reviewed)
-      if (sameView()) colourDone = `Matched ${reviewed.changedPixels} ${reviewed.changedPixels === 1 ? 'pixel' : 'pixels'} in ${reviewed.changedFrames.length} ${reviewed.changedFrames.length === 1 ? 'frame' : 'frames'}.`
-    } catch (e) { if (sameView()) colourError = e instanceof Error ? e.message : String(e) }
-    finally { colourBusy = false }
+      if (sameView()) colorDone = `Matched ${reviewed.changedPixels} ${reviewed.changedPixels === 1 ? 'pixel' : 'pixels'} in ${reviewed.changedFrames.length} ${reviewed.changedFrames.length === 1 ? 'frame' : 'frames'}.`
+    } catch (e) { if (sameView()) colorError = e instanceof Error ? e.message : String(e) }
+    finally { colorBusy = false }
   }
   const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
   const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0)
@@ -103,7 +103,7 @@
         {#if hiddenNow}<span class="badge">Hidden by another item</span>{/if}
       </p>
     </header>
-    {#if it.design}<p class="muted small">Independent copy of “{it.design.snapshot.name}”. Its colours and outfits belong to this character.</p>{/if}
+    {#if it.design}<p class="muted small">Independent copy of “{it.design.snapshot.name}”. Its colors and outfits belong to this character.</p>{/if}
 
     {#if anim}
       <div class="dir-strip" style:--preview-width="{Math.max(60, (strip[0]?.w ?? 0) * k / ui.dpr)}px" aria-label="{it.name} in every direction">
@@ -114,19 +114,19 @@
     {/if}
 
     <div class="actions">
-      <button class="btn {on ? '' : 'primary'}" onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button>
-      {#if it.status === 'accepted' && it.slot !== 'body'}<button class="btn" onclick={() => openSaveDesign(it.id)}><Bookmark size={14} />Save as shared design</button>{/if}
-      {#if it.design && !isDemo()}<button class="btn" onclick={() => openPinnedDesign(it.id)}>View saved design</button>{/if}
-      {#if it.design && gaps.length && !isDemo()}<button class="btn" disabled={extensionPreparing(it.id)} onclick={() => openItemExtension(it.id)}>{extensionPreparing(it.id) ? 'Checking fit…' : 'Fit missing frames'}</button>{/if}
+      <button class="bu-action btn {on ? '' : 'primary'}" data-variant="outline" onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button>
+      {#if it.status === 'accepted' && it.slot !== 'body'}<button class="bu-action btn" data-variant="outline" onclick={() => openSaveDesign(it.id)}><Bookmark size={14} />Save as shared design</button>{/if}
+      {#if it.design && !isDemo()}<button class="bu-action btn" data-variant="outline" onclick={() => openPinnedDesign(it.id)}>View saved design</button>{/if}
+      {#if it.design && gaps.length && !isDemo()}<button class="bu-action btn" data-variant="outline" disabled={extensionPreparing(it.id)} onclick={() => openItemExtension(it.id)}>{extensionPreparing(it.id) ? 'Checking fit…' : 'Fit missing frames'}</button>{/if}
       {#if !isDemo() && it.prompt && !it.design}
-        <button class="btn" onclick={() => withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}><RefreshCw size={14} />Try again</button>
+        <button class="bu-action btn" data-variant="outline" onclick={() => withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}><RefreshCw size={14} />Try again</button>
       {/if}
       {#if !isDemo()}
         {#if confirmRemove}
-          <button class="btn danger" onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button>
-          <button class="btn plain" onclick={() => (confirmRemove = false)}>Keep</button>
+          <button class="bu-action btn danger" data-variant="outline" onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button>
+          <button class="bu-action btn plain" data-variant="quiet" onclick={() => (confirmRemove = false)}>Keep</button>
         {:else}
-          <button class="btn plain danger" onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button>
+          <button class="bu-action btn plain danger" data-variant="quiet" onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button>
         {/if}
       {/if}
     </div>
@@ -145,30 +145,30 @@
 
     {#if !isDemo() && repairSpec}
       <div class="field">
-        <button class="btn" disabled={repairBusy} onclick={repairFrames}>Try new item frames <span class="cost">Est. {Math.ceil(repairCost)} gens</span></button>
+        <button class="bu-action btn" data-variant="outline" disabled={repairBusy} onclick={repairFrames}>Try new item frames <span class="cost">Est. {Math.ceil(repairCost)} gens</span></button>
         <p class="faint small">Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard failures keep the previous frames. PixelLab may bill dollars; queue time varies.</p>
       </div>
     {/if}
 
-    {#if !isDemo() && colourPlan}
+    {#if !isDemo() && colorPlan}
       <div class="field">
-        <button class="btn" disabled={colourBusy || repairBusy} onclick={matchColours}>{colourBusy ? 'Matching colours…' : 'Match item colours'} <span class="cost">Free</span></button>
-        <p class="faint small">Match {colourPlan.changedPixels} pixels in {colourPlan.changedFrames.length} saved {moveName} {colourPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item's existing colour palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolours stay fixed. {#if colourPlan.unmatchedPixels}{colourPlan.unmatchedPixels} unmatched eligible pixels stay unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
+        <button class="bu-action btn" data-variant="outline" disabled={colorBusy || repairBusy} onclick={matchColors}>{colorBusy ? 'Matching colors…' : 'Match item colors'} <span class="cost">Free</span></button>
+        <p class="faint small">Match {colorPlan.changedPixels} {colorPlan.changedPixels === 1 ? 'pixel' : 'pixels'} in {colorPlan.changedFrames.length} saved {moveName} {colorPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item’s existing color palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolors stay fixed. {#if colorPlan.unmatchedPixels}{colorPlan.unmatchedPixels} unmatched eligible {colorPlan.unmatchedPixels === 1 ? 'pixel stays' : 'pixels stay'} unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
       </div>
     {/if}
-    {#if colourError}<p class="notice bad small"><TriangleAlert size={14} />{colourError}</p>{/if}
-    {#if colourDone}<p class="notice small">{colourDone}</p>{/if}
+    {#if colorError}<p class="notice bad small"><TriangleAlert size={14} />{colorError}</p>{/if}
+    {#if colorDone}<p class="notice small">{colorDone}</p>{/if}
 
-    <Colours only={it.id} />
+    <Colors only={it.id} />
 
     <div class="field">
       <span class="sec-title">Layer order</span>
       <div class="actions">
-        <button class="btn sm" onclick={() => moveLayer(it.id, 1, onlyDir)} title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button>
-        <button class="btn sm" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
-        {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(SLOTS.find((s) => s.id === it.slot)?.zOverrides ?? [])}<button class="btn sm plain" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
+        <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, 1, onlyDir)} title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button>
+        <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
+        {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(SLOTS.find((s) => s.id === it.slot)?.zOverrides ?? [])}<button class="bu-action btn sm plain" data-variant="quiet" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
       </div>
-      <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir}</label>
+      <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir.replaceAll('-', ' ')}</label>
     </div>
 
     {#if others.length}
@@ -188,7 +188,7 @@
       <summary><ChevronRight size={14} />Details</summary>
       <div>
         <dl class="kv">
-          <dt>Id</dt><dd class="mono">{it.id}</dd>
+          <dt>ID</dt><dd class="mono">{it.id}</dd>
           <dt>Slot</dt><dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
           {#if it.prompt}<dt>Prompt</dt><dd>{it.prompt}</dd>{/if}
           {#if it.extractor}<dt>Extractor</dt><dd>{it.extractor}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
@@ -207,7 +207,7 @@
             {/if}
             <dt>Re-rolls</dt><dd>{it.qa.rerolls}</dd>
           {/if}
-          <dt>Source calls</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent ? `$${usdSpent.toFixed(3)} · ` : ''}{it.provenance.length} PixelLab calls</dd>
+          <dt>Source calls</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent ? `$${usdSpent.toFixed(3)} · ` : ''}{it.provenance.length} PixelLab {it.provenance.length === 1 ? 'call' : 'calls'}</dd>
           {#if gaps.length}<dt>No frames for</dt><dd>{gaps.join(', ')}</dd>{/if}
           <dt>Method</dt><dd>{it.route ? routeNames[it.route] : 'Not recorded'}</dd>
         </dl>

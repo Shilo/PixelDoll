@@ -1,7 +1,7 @@
 # PixelDoll docs index
 
 Start with [architecture.md](architecture.md) (v1.3, current pipeline) and [manifest-spec.md](manifest-spec.md) (export
-format). Project state and decisions D1–D9: [PLAN.md](../PLAN.md). Casual users: [user-guide.md](user-guide.md).
+format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Casual users: [user-guide.md](user-guide.md).
 
 **Evidence media lives at tag [v0.1.0](https://github.com/Shilo/PixelDoll/tree/v0.1.0).** Spike outputs (`spikes/api/out/`), test
 screenshots (`testing/img/`), design screenshots (`design/screenshots/`) and the D2 mockup app (`design-mockups/`) are no longer
@@ -10,17 +10,19 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 **Superseded** marks a result that later work replaced. The doc is still accurate as a record of what was tested.
 [architecture.md §4.3](architecture.md) lists every replaced route.
 
-## Character creator redesign (2026-10-22 proposal)
+## Character creator redesign and production integration
 
-**Current accepted direction: [Obsidian / Porcelain Bronze](design/2026-10-22-redesign/round-4-discussion/current-design.md).** Source-verified creator workflow; exact unlit sprites; Preview/Top-down/Side-scroller; continuous movement with animation/direction fallbacks; contextual toasts; one-line prompt expansion; and a dynamic mobile joystick. This record supersedes incompatible earlier proposals. [Full desktop/mobile image mockups](design/2026-10-22-redesign/round-5-mockups/image-index.md) are complete: 32 screens and four overview boards. The [isolated playable proof](design/2026-10-22-redesign/round-6-prototype/README.md) now tests screen switching, continuous movement, camera following, equipment, touch and reflections. Production integration remains separate. [Direct mockup/live comparisons](design/2026-10-22-redesign/round-6-prototype/comparisons.md) document the readability refinement, south-facing list thumbnails and simplified Light/Dark action.
+**Current accepted direction: [Obsidian / Porcelain Bronze](design/2026-10-22-redesign/round-4-discussion/current-design.md).** Source-verified creator workflow; exact unlit sprites; Preview/Top-down/Side-scroller; continuous movement with animation/direction fallbacks; contextual toasts; one-line prompt expansion; and a dynamic mobile joystick. This record supersedes incompatible earlier proposals. [Full desktop/mobile image mockups](design/2026-10-22-redesign/round-5-mockups/image-index.md) are complete: 32 screens and four overview boards. The [isolated playable proof](design/2026-10-22-redesign/round-6-prototype/README.md) now tests screen switching, continuous movement, camera following, equipment, touch and reflections. The [production experience](design/production-experience.md) now integrates this direction with the real Studio workflows on the feature branch. [Direct mockup/live comparisons](design/2026-10-22-redesign/round-6-prototype/comparisons.md) document the readability refinement, south-facing list thumbnails and simplified Light/Dark action.
 
 [Dynamic animation resolver](design/2026-10-22-redesign/round-4-discussion/animation-resolver.md): velocity-based state, nearest-direction mathematics, intended-versus-available coverage, fallback/notification rules, equipment synchronization and acceptance scenarios.
 
 **Shared styling contract:** [Immersive design system](design/immersive-design-system.md) documents theme tokens, type, control states, paint overflow, reusable modules and Preview/live direction behavior for future integration.
 
+**Production fidelity:** [Direct prototype parity review](design/production-prototype-parity.md) records corrected integration regressions, intentional production differences and the reproducible 40-pair desktop/mobile light/dark comparison matrix.
+
 **Material study history:** [GlassKit evaluation](design/2026-10-22-redesign/round-6-prototype/glasskit-study.md) records the earlier selective adoption, baseline/rounded comparisons, independent review and accessibility/rendering checks. Bronze UI supersedes its active prototype styling.
 
-**Current theme owner:** [Bronze UI](https://github.com/Shilo/bronze-ui) maintains the MIT package, [style guide](https://github.com/Shilo/bronze-ui/blob/main/docs/STYLE-GUIDE.md) and [standalone component showcase](https://shilo.github.io/bronze-ui/). The [round-six dependency integration](design/2026-10-22-redesign/round-6-prototype/bronze-integration.md) applies it to PixelDoll's playable prototype; production migration remains separate. The [round-seven lab](design/2026-10-22-redesign/round-7-theme/README.md) preserves historical source, app inventory, independent reviews and browser evidence. Its local theme and runners are frozen.
+**Current theme owner:** [Bronze UI](https://github.com/Shilo/bronze-ui) maintains the MIT package, [style guide](https://github.com/Shilo/bronze-ui/blob/main/docs/STYLE-GUIDE.md) and [standalone component showcase](https://shilo.github.io/bronze-ui/). The [round-six dependency integration](design/2026-10-22-redesign/round-6-prototype/bronze-integration.md) applies it to PixelDoll's playable prototype; the [production adapter](../app/src/studio/experience/theme.css) uses the same package without its document reset. The [round-seven lab](design/2026-10-22-redesign/round-7-theme/README.md) preserves historical source, app inventory, independent reviews and browser evidence. Its local theme and runners are frozen.
 
 **Full-app theme recommendation history:** [Theme foundation and component/state catalog](design/2026-10-22-redesign/round-6-prototype/theme-foundation.md), with [independent challenge](design/2026-10-22-redesign/round-6-prototype/theme-foundation-review.md). Evaluates GlassKit CSS/Elements and defines coverage and parity gates. The active playable reference now consumes Bronze UI; earlier GlassKit source and captures remain historical evidence.
 
@@ -45,7 +47,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 
 | Doc | What |
 |---|---|
-| [architecture.md](architecture.md) | v1.3: allowed models (D8), rig contract, item pipeline (chroma mannequin + skeleton-posed keyframe, 96 px held items), slots and z ladder, colour model, queue/storage/key, cost model, risks. |
+| [architecture.md](architecture.md) | v1.3: allowed models (D8), rig contract, item pipeline (chroma mannequin + skeleton-posed keyframe, 96 px held items), slots and z ladder, color model, queue/storage/key, cost model, risks. |
 | [manifest-spec.md](manifest-spec.md) | `pixeldoll/2` manifest with legacy `pixeldoll/1` reading: owner-local palettes, shared-copy lineage, source sheets, invariants, ZIP layout and per-engine mapping. |
 | [user-guide.md](user-guide.md) | The Studio in plain language. |
 | [pixellab-plans.md](pixellab-plans.md) | Editable tier limits, Free/Trial handling, and the plan requirements of the REST endpoints PixelDoll calls. |
@@ -83,7 +85,7 @@ Code: `spikes/api/`. Evidence: [`spikes/api/out/` at v0.1.0](https://github.com/
 | Doc | Conclusion |
 |---|---|
 | [S1 API feasibility](spikes/S1_api_feasibility.md) | Edit base → local diff → layer works only with slot masking. Batch edits keep the design but redraw the body. **Superseded:** the diff route is now a fallback only (D3). Its template animations are banned (D8). |
-| [S2 clean layers](spikes/S2_clean_layers.md) | The chroma mannequin (base recoloured to a key ramp, then dressed) gives clean layers. **Superseded in part:** `edit-animation-v2` over all cells is no longer the primary route. It now dresses only the 3 rest views (S3/S4). |
+| [S2 clean layers](spikes/S2_clean_layers.md) | The chroma mannequin (base recolored to a key ramp, then dressed) gives clean layers. **Superseded in part:** `edit-animation-v2` over all cells is no longer the primary route. It now dresses only the 3 rest views (S3/S4). |
 | [S3 skeleton rigging](spikes/S3_skeleton_rigging.md) | Skeleton-v3 is the rig. Posing a dressed keyframe with the base's keypoints gives pixel-aligned item frames for every move. |
 | [S4 model routing](spikes/S4_model_routing.md) | Under D8: base = `create-character-v3` 48 px padded to 64. Items = dress the rest views (Pro `edit-animation-v2`), then pose them with raw skeleton-v3. Its §Q4 routing table is authoritative. |
 | [S5 held items](spikes/S5_held_items.md) | Weapons use a 96 px oversize canvas with the same pivot, and slash frame 0 is sent last. The direction gate catches flips. `inpaint-v3` works but costs too much as the default. |
@@ -108,11 +110,10 @@ Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo
 | [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |
 | [Character import compatibility](testing/character-import-compatibility-2026-10-22.md) | Actual PixelLab raw/default ZIPs, format boundaries, pagination, Cancel regression and shared-equipment planning. |
 | [Shared equipment verification](testing/shared-equipment-2026-10-22.md) | Library/copy lifecycle, paid rest and animation reviews, independent palettes, new moves, adversarial fixes and real exported artifacts. |
-| [Equipment QA summaries](testing/qa-summaries-2026-10-22.md) | Current-clip aggregate checks, persisted replacements/export, historical coverage labels and runner pin. |
 | [M1](testing/M1_report.md) | Key + job queue: resume after reload, IndexedDB ledger. |
 | [M2](testing/M2_report.md) | Rig freeze: normalize, pivot, mirror, anchors, `baseHash`. Built for template frames, later updated by B7. |
 | [M3](testing/M3_report.md) | Item lab: chroma extraction, QA gates G1–G10, automatic re-roll, fg/bg split. |
-| [M4](testing/M4_report.md) | Dress-up: z ladder, hides, exact ramp recolour, presets. |
+| [M4](testing/M4_report.md) | Dress-up: z ladder, hides, exact ramp recolor, presets. |
 | [M5](testing/M5_report.md) | Export round trip: Godot 4.7.1 and Phaser 3.80/3.90/4.2.1 pixel-identical. Unity compile-only. |
 | [MVP (B6)](testing/MVP_report.md) | First Studio UI (look A) on the M1–M5 libraries. |
 | [B7](testing/B7_rig_v13_report.md) | Rig v1.3 in the Studio (skeleton-v3 clips + keypoints), Add a move, cross-tab queue lock. |
@@ -121,4 +122,4 @@ Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo
 | [B10](testing/B10_ux_fixes_report.md) | T1 P1/P2 UX fixes and the e2e smoke test. |
 | [T1](testing/T1_ux_qa_report.md) | Independent UX/QA review: 6/10, P0–P2 list. |
 | [T2](testing/T2_final_regression_report.md) | Final regression: every T1 item passes, 8.5/10. |
-| T3, B11 | In progress: full item coverage (T3) and a layered `.aseprite` export (B11). |
+| [T3](testing/T3_item_coverage_report.md), [B11](testing/B11_aseprite_export_report.md) | Full item coverage (T3) and a layered `.aseprite` export (B11). |

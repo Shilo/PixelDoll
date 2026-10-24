@@ -20,14 +20,14 @@ Started on normal Vite `localhost:5173`, then used production preview `localhost
 | --- | --- |
 | Inspector animation and overflow | Selected cape, helmet, hat, sword, hair and vest while playing. Each eight-direction preview wrapped inside its panel. For each item, 100 read-only geometry samples yielded one strip/action position and no canvas overflow. Blank north hat preview matches its missing-frame warning. |
 | Oversize equipment | Imported the stored S5 fixture with genuine 96 × 96 weapon layers. Walk and Slash, all four directions, desktop Inspector and phone Item sheet stayed contained. Another 100 mobile samples yielded one geometry state, no overflow. |
-| Inspector navigation | Item/Colours/Moves, long scrolls, item changes, Details disclosures. Tabs remained at y=60 while content scrolled 819 px; switching item/tab returned the new heading to the top, scrollTop=0. |
+| Inspector navigation | Item/Colors/Moves, long scrolls, item changes, Details disclosures. Tabs remained at y=60 while content scrolled 819 px; switching item/tab returned the new heading to the top, scrollTop=0. |
 | Dressing and layers | Wear/take off, same-slot replacement, None, Forward/Backward/Reset, direction-specific ordering, hide Hair, Undo/Redo, Remove → Keep. Visible stage and controls updated. |
-| Colours | Per-item and global palettes, Original, custom colour input, Random and Reset; base Shirt/Shorts/Skin and multiple item materials. Checked desktop and phone. |
+| Colors | Per-item and global palettes, Original, custom color input, Random and Reset; base Shirt/Shorts/Skin and multiple item materials. Checked desktop and phone. |
 | Outfits | Save named look, switch to Base only, restore saved look, delete outfit and undo deletion. Reload retained saved local state. |
 | Playback | Play/Pause, Space, comma/period stepping, numbered direction keys, all-direction grid and click-to-focus, Walk/Cross punch/Slash. Sparse Cross punch disabled unavailable directions and returned to south. |
 | Stage controls | Zoom out/in/fit, checker/plain background, panel toggles, portrait/landscape transitions. Narrow desktop Move and Direction controls remained separately usable after the fix. |
 | Character form | Description, skin, build, four/eight directions, 48/56 px, name and seed. Estimate changed from 35–50 to 57–75 gens. Keyless handoff and cancellation preserved choices. No generation submitted. |
-| Item form | All eight categories and their suggestions, shield suggestion → Off hand, exact slot, name, colour hint, empty-prompt disabled state, estimates and Details. Demo gate and free editable demo copy worked. Keyless handoff retained the draft. |
+| Item form | All eight categories and their suggestions, shield suggestion → Off hand, exact slot, name, color hint, empty-prompt disabled state, estimates and Details. Demo gate and free editable demo copy worked. Keyless handoff retained the draft. |
 | Move/setup forms | Imported an explicitly offline fixture combining stored S5 artwork with S4 keypoints to reach the full move form. Authored/described move estimates and already-added disabled choices worked. Setup rejected a standing clip missing directions. Retested both draft fixes manually. |
 | Device import | Valid editable fixture and downloaded Godot ZIP, new local name, setup-next opt-out, import preview and editable result. A PNG file was rejected without replacing the current character. |
 | PixelLab import | Keyless library gate, direct-link form, invalid-link error and connection cancellation. No live library/account request in this task. |
@@ -40,7 +40,7 @@ Started on normal Vite `localhost:5173`, then used production preview `localhost
 
 Desktop: 1920 × 1080, 1440 × 900, 1280 × 720, 1024 × 768. Intermediate: 700 × 650, 600 × 600. Tablet portrait: 768 × 1024. Phone portrait: 390 × 844 and 320 × 568. Phone landscape: 844 × 390. Checked dark and light appearance, scrolling sheets and fixed actions. Viewport overrides reset after testing.
 
-The latest fixed grid uses compass positions with an empty centre for eight directions. On short phone stages it scrolls; the top warning stays outside that scroll area, and the bottom views can be brought completely above the preview toolbar.
+The latest fixed grid uses compass positions with an empty center for eight directions. On short phone stages it scrolls; the top warning stays outside that scroll area, and the bottom views can be brought completely above the preview toolbar.
 
 ## Validation and limits
 

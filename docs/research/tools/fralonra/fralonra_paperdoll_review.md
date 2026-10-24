@@ -172,7 +172,7 @@ toward index 0, and the canvas and `render()` iterate from index 0).*
   5. Raise/Lower semantics are inverted relative to common layer UIs (see §5).
   6. No animation, frames, directions, body types, compatibility rules, credits/licensing, or per-slot multiple layers. Hair
      behind *and* in front of the head needs two separate slots, with nothing linking them.
-  7. Single-threaded CPU blend in u8 maths. Fine for stills, but it would not scale to 8 directions × N animations × M frames.
+  7. Single-threaded CPU blend in u8 math. Fine for stills, but it would not scale to 8 directions × N animations × M frames.
 
 ## 8. What PixelDoll should copy vs. avoid
 

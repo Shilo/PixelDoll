@@ -4,11 +4,11 @@ Scope: review the current New character sheet, request construction, sizing, dir
 
 ## What creation actually does
 
-| Control / behaviour | Current implementation |
+| Control / behavior | Current implementation |
 | --- | --- |
 | Description | Up to 300 characters. Empty input falls back to `a human adventurer`. The app appends a bald, barefoot body wearing a light grey t-shirt and dark grey shorts, with arms slightly away from the torso. |
 | Build | Slim appends `slim build`; Stocky appends `stocky build`; Average appends nothing. These are prompt hints, with no numerical body proportions, predefined meshes or measured shape checks. Average therefore does not override a description that already says stocky. Conflicting description/control choices are concatenated. |
-| Skin | Any adds no instruction; the six swatches append descriptive words from `deep brown skin` through `pale skin`. The displayed colours are not an exact generation palette constraint. |
+| Skin | Any adds no instruction; the six swatches append descriptive words from `deep brown skin` through `pale skin`. The displayed colors are not an exact generation palette constraint. |
 | Body size | Requests a **48×48 or 56×56 generation canvas**, rather than a guaranteed measured character height. Frames are padded without rescaling into a fixed 64×64 cell. Offsets are `(8,12)` and `(4,4)`, respectively. |
 | Directions | Defaults to 4: south, east and north, with west flipped from east. The 8-direction choice generates/animates south, south-east, east, north-east and north, and flips the three west-facing directions. Asymmetric details therefore change sides in mirrored views. |
 | Camera / skeleton | Fixed to `low top-down` and the bipedal `mannequin` template. There is no camera, quadruped template or model selector. |
@@ -16,7 +16,7 @@ Scope: review the current New character sheet, request construction, sizing, dir
 | Name / seed | Name is a local project label, falling back to a heuristic from the description. Seed starts as a random positive integer and is passed to generation calls. |
 | Cost display | 4 directions: about 12 minutes, 35–50 gens. 8 directions: about 18 minutes, 57–75 gens. Changing 48 to 56 does not change this estimate. These are estimates, not enforced spending limits. |
 
-The first text-only `create-character-v3` call makes eight rotations even for a four-direction project. PixelDoll selects the needed source views, pads them, makes its mirrors and reimports all selected rest views for a managed character and skeleton. It then builds both moves, cleans frames, checks poses/colours/borders and saves the character. There is no appearance approval step between drawing the body and animating it.
+The first text-only `create-character-v3` call makes eight rotations even for a four-direction project. PixelDoll selects the needed source views, pads them, makes its mirrors and reimports all selected rest views for a managed character and skeleton. It then builds both moves, cleans frames, checks poses/colors/borders and saves the character. There is no appearance approval step between drawing the body and animating it.
 
 ## PixelLab capabilities versus PixelDoll choices
 

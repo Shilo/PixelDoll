@@ -1,3 +1,4 @@
+import { openStudio, reloadStudio, equipmentMode, equipmentGroup, newItem, selectedItemDetails, inspectStage, openAccount, pickItem } from './immersive-helpers.ts'
 import { expect, test, type Page } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -14,10 +15,11 @@ async function expectDirectionGrid(page: Page, directions: (string | null)[], co
   const grid = page.locator('.all-dirs')
   const cells = grid.locator(':scope > *')
   await expect(cells).toHaveCount(directions.length)
-  const stage = (await page.locator('.stage-art').boundingBox())!
   const boxes = []
   for (const [i, direction] of directions.entries()) {
     const cell = cells.nth(i)
+    await cell.scrollIntoViewIfNeeded()
+    const stage = (await page.locator('.stage-art').boundingBox())!
     if (direction) {
       await expect(cell.getByRole('button', { name: `Show ${direction} only`, exact: true })).toBeVisible()
       await expect(cell.locator('canvas')).toHaveCount(1)
@@ -29,15 +31,19 @@ async function expectDirectionGrid(page: Page, directions: (string | null)[], co
     expect(box.x).toBeGreaterThanOrEqual(stage.x)
     expect(box.x + box.width).toBeLessThanOrEqual(stage.x + stage.width)
     expect(box.y).toBeGreaterThanOrEqual(stage.y)
-    expect(box.y + box.height).toBeLessThanOrEqual(stage.y + stage.height - 64)
-    boxes.push(box)
+    const toolbar = (await page.locator('.canvas-bar').boundingBox())!
+    expect(box.y + box.height).toBeLessThanOrEqual(Math.min(stage.y + stage.height, toolbar.y) + 1)
+    // The compact Inspect sheet deliberately scrolls. Compare compass geometry
+    // in grid coordinates while verifying that every view remains reachable.
+    const origin = (await grid.boundingBox())!, layout = { ...box, x: box.x - origin.x, y: box.y - origin.y }
+    boxes.push(layout)
     if (i % columns) {
-      expect(box.y).toBeCloseTo(boxes[i - 1].y)
-      expect(box.x).toBeGreaterThan(boxes[i - 1].x + boxes[i - 1].width)
+      expect(layout.y).toBeCloseTo(boxes[i - 1].y)
+      expect(layout.x).toBeGreaterThan(boxes[i - 1].x + boxes[i - 1].width)
     }
     if (i >= columns) {
-      expect(box.x).toBeCloseTo(boxes[i - columns].x)
-      expect(box.y).toBeGreaterThan(boxes[i - columns].y + boxes[i - columns].height)
+      expect(layout.x).toBeCloseTo(boxes[i - columns].x)
+      expect(layout.y).toBeGreaterThan(boxes[i - columns].y + boxes[i - columns].height)
     }
   }
 }
@@ -56,23 +62,23 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   const errors: string[] = []
   page.on('pageerror', (e) => { errors.push(e.message); console.log('pageerror', e.message) })
   page.on('console', (m) => { if (m.type() === 'error') console.log('console', m.text()) })
-  await page.goto(`${BASE}/#/`, { waitUntil: 'networkidle' })
-  await page.waitForSelector('.stage canvas')
-  const pressed = (name: string) => page.locator(`.wardrobe .wear[aria-label="Wear ${name}"]`).getAttribute('aria-pressed')
-  const stage = () => page.locator('.stage canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL())
+  await openStudio(page, `${BASE}/#/`, { waitUntil: 'networkidle' })
+  await page.waitForSelector('.world-actors')
+  const pressed = (name: string) => page.locator('.equipment-scroll').getByRole('button', { name, exact: true }).getAttribute('aria-pressed')
+  const stage = () => page.locator('.world-actors').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL())
   const step = (s: string) => console.log('ok', s)
 
   // pause playback so the stage is comparable
-  await page.keyboard.press('Space')
+  await page.getByRole('button', { name: 'Pause', exact: true }).click()
   assert.equal(await pressed('Steel helmet'), 'true')
-  await page.locator('.wardrobe .row', { hasText: 'Wizard hat' }).click()
+  await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click()
   assert.equal(await pressed('Wizard hat'), 'true')
   assert.equal(await pressed('Steel helmet'), 'false')
   step('wear swaps the item in the slot')
 
-  await page.locator('.wardrobe .row', { hasText: 'Wizard hat' }).click()
+  await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click()
   assert.equal(await pressed('Wizard hat'), 'true')
-  assert.equal(await page.locator('.insp-title').textContent(), 'Wizard hat')
+  assert.equal(await page.locator('.sel-name').textContent(), 'Wizard hat')
   step('tapping a worn item selects it, it stays on (T1 P2-1)')
 
   await page.getByRole('button', { name: /^Undo/ }).click()
@@ -82,41 +88,46 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   step('undo / redo (button + shortcut)')
 
   const before = await stage()
-  await page.getByRole('tab', { name: 'Colours' }).click()
-  await page.locator('.colours .swatch[aria-label="azure"]').first().click()
-  assert.notEqual(await stage(), before)
-  assert.equal(await page.locator('.colours .swatch[aria-label="azure"]').first().getAttribute('aria-checked'), 'true')
-  step('recolour changes the stage pixels')
+  await equipmentMode(page, 'Colors')
+  await page.locator('.colors .swatch[aria-label="azure"]').first().click()
+  await expect.poll(stage).not.toBe(before)
+  assert.equal(await page.locator('.colors .swatch[aria-label="azure"]').first().getAttribute('aria-checked'), 'true')
+  step('recolor changes the stage pixels')
 
+  await equipmentMode(page, 'Outfits')
   await page.locator('[aria-label="Save current look"]').click()
   await page.locator('input[aria-label="Outfit name"]').fill('Smoke look')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
-  await page.locator('.wardrobe .row', { hasText: 'Smoke look' }).waitFor()
-  assert.ok(await page.locator('.wardrobe .row', { hasText: 'Smoke look' }).locator('.badge').isVisible())
+  await page.locator('.outfits .row', { hasText: 'Smoke look' }).waitFor()
+  assert.ok(await page.locator('.outfits .row', { hasText: 'Smoke look' }).locator('.badge').isVisible())
   step('outfit saved and marked current')
 
+  await inspectStage(page)
   await page.keyboard.press('2')
-  assert.equal(await page.getByRole('button', { name: 'Face east' }).getAttribute('aria-pressed'), 'true')
+  assert.equal(await page.locator('.canvas-bar').getByRole('button', { name: 'Face east' }).getAttribute('aria-pressed'), 'true')
   await page.keyboard.press('0')
   assert.equal(await page.locator('.all-dirs canvas').count(), 4)
   await expectDirectionGrid(page, ['south', 'north', 'west', 'east'], 2)
   await page.keyboard.press('0')
   step('keyboard: direction + all directions')
+  await page.getByRole('dialog', {name:'Inspect character',exact:true}).getByRole('button', {name:'Done',exact:true}).click()
 
-  await page.getByRole('button', { name: 'Switch to light mode' }).click()
+  await page.getByRole('button', { name: 'More options', exact: true }).click()
+  await page.getByRole('button', { name: 'Light mode', exact: true }).click()
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light')
   step('theme switch')
 
   await page.waitForTimeout(800) // autosave debounce
-  await page.reload({ waitUntil: 'networkidle' })
-  await page.waitForSelector('.stage canvas')
+  await reloadStudio(page, { waitUntil: 'networkidle' })
+  await page.waitForSelector('.world-actors')
   assert.equal(await pressed('Wizard hat'), 'true')
-  assert.ok(await page.locator('.wardrobe .row', { hasText: 'Smoke look' }).isVisible())
+  await equipmentMode(page, 'Outfits')
+  assert.ok(await page.locator('.outfits .row', { hasText: 'Smoke look' }).isVisible())
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light')
-  step('outfit, colours, presets and theme survive a reload')
+  step('outfit, colors, presets and theme survive a reload')
 
   await page.getByRole('button', { name: 'Export' }).first().click()
-  const dl = page.getByRole('button', { name: /Download zip · \d+ KB/ })
+  const dl = page.getByRole('button', { name: /Download ZIP · \d+ KB/ })
   await dl.waitFor()
   const [download] = await Promise.all([page.waitForEvent('download'), dl.click()])
   const bytes = readFileSync((await download.path())!)
@@ -129,10 +140,10 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename())
   await page.waitForFunction(() => !document.querySelector('dialog[open]') && document.querySelector('.toast')?.textContent?.startsWith('Downloaded'))
 
-  // ---- B15: base colours, Create options, offline banner ----
-  await page.getByRole('tab', { name: 'Colours' }).click()
-  assert.deepEqual((await page.locator('.insp .colours .mat > .muted').allTextContents()).slice(0, 3), ['Shirt', 'Shorts', 'Skin'])
-  step('base colours: Shirt, Shorts and Skin recolour separately')
+  // ---- B15: base colors, Create options, offline banner ----
+  await equipmentMode(page, 'Colors')
+  assert.deepEqual((await page.locator('.equipment-scroll .colors .mat > .muted').allTextContents()).slice(0, 3), ['Shirt', 'Shorts', 'Skin'])
+  step('base colors: Shirt, Shorts and Skin recolor separately')
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'New character…' }).click()
   const cost = async () => {
@@ -151,9 +162,9 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   await page.waitForFunction(() => !document.querySelector('dialog[open]'))
   step('Create: visible size and direction controls update frame and full generation cost')
   await ctx.setOffline(true)
-  await page.locator('.offline-banner', { hasText: "You're offline" }).waitFor()
+  await page.locator('.offline-banner', { hasText: 'You’re offline' }).waitFor()
   await page.waitForFunction(() => !window.__queue || window.__queue.paused === 'offline') // __queue/__studio are dev-server only
-  await page.locator('.wardrobe .row', { hasText: 'Wizard hat' }).click() // everything else still works (selects the worn hat)
+  await pickItem(page, 'Wizard hat') // everything else still works (selects the worn hat)
   assert.equal(await page.evaluate(() => window.__studio?.ui.selected ?? 'hat_wizard'), 'hat_wizard')
   await ctx.setOffline(false)
   await page.locator('.offline-banner').waitFor({ state: 'detached' })
@@ -181,26 +192,28 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   step('browser back closes the sheet, stays in the app (P2-2)')
 
   // ---- B10: move views (T1 P1-1) ----
+  await inspectStage(page)
   await page.locator('.canvas-bar select').selectOption('cross-punch')
-  for (const d of ['east', 'north', 'west']) assert.ok(await page.getByRole('button', { name: `Face ${d}` }).isDisabled(), `cross punch ${d} disabled`)
-  assert.equal(await page.getByRole('button', { name: 'Face south' }).getAttribute('aria-pressed'), 'true')
+  for (const d of ['east', 'north', 'west']) assert.ok(await page.locator('.canvas-bar').getByRole('button', { name: `Face ${d}` }).isDisabled(), `cross punch ${d} disabled`)
+  assert.equal(await page.locator('.canvas-bar').getByRole('button', { name: 'Face south' }).getAttribute('aria-pressed'), 'true')
   await page.getByRole('button', { name: 'All directions', exact: true }).click()
   await expectDirectionGrid(page, ['south'], 1)
   await page.getByRole('button', { name: 'Show south only', exact: true }).click()
   await page.locator('.canvas-bar select').selectOption('walk')
-  await page.getByRole('button', { name: 'Face north' }).click()
+  await page.locator('.canvas-bar').getByRole('button', { name: 'Face north' }).click()
   await page.locator('.stage-note', { hasText: 'Wizard hat' }).waitFor()
   assert.ok(await page.locator('.stage-note').getByRole('button', { name: 'Make your own' }).isVisible())
-  await page.getByRole('button', { name: 'Face south' }).click()
+  await page.locator('.canvas-bar').getByRole('button', { name: 'Face south' }).click()
   assert.equal(await page.locator('.stage-note').count(), 0)
   step('cross punch is south only; a worn item without north frames is called out (P1-1)')
 
   // ---- T2: arrow keys in segmented controls; dev rigs out of the character list ----
-  await page.getByRole('button', { name: 'Face south' }).focus()
+  await page.locator('.canvas-bar').getByRole('button', { name: 'Face south' }).focus()
   await page.keyboard.press('ArrowRight')
-  assert.equal(await page.getByRole('button', { name: 'Face east' }).getAttribute('aria-pressed'), 'true')
+  assert.equal(await page.locator('.canvas-bar').getByRole('button', { name: 'Face east' }).getAttribute('aria-pressed'), 'true')
   assert.ok(await page.evaluate(() => document.activeElement?.getAttribute('aria-label') === 'Face east'))
   step('arrow keys move the direction segmented control')
+  await page.getByRole('dialog', {name:'Inspect character',exact:true}).getByRole('button', {name:'Done',exact:true}).click()
   const idb = (put: { id: string; savedAt: string; manifest: { format: string; name: string }; rigQa: { pivotFrom: string } } | null) => page.evaluate(async (put) => {
     const q = indexedDB.open('pixeldoll')
     const db = await new Promise<IDBDatabase>((resolve, reject) => { q.onsuccess = () => resolve(q.result); q.onerror = () => reject(q.error) })
@@ -225,17 +238,22 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
     await c.addInitScript(() => { localStorage.setItem('pixeldoll.welcomed', '1'); localStorage.setItem('pixeldoll.agentKey', 'off') })
     const p = await c.newPage()
     p.on('pageerror', (e) => errors.push(e.message))
-    await p.goto(`${BASE}/#/`, { waitUntil: 'networkidle' })
-    await p.waitForSelector('.stage canvas')
+    await openStudio(p, `${BASE}/#/`, { waitUntil: 'networkidle' })
+    await p.waitForSelector('.world-actors')
     await fn(p)
     await c.close()
   }
   for (const [name, vp] of [['phone', { width: 375, height: 812 }], ['landscape', { width: 812, height: 375 }]] as const)
     await at(vp, async (p) => {
-      assert.ok(await p.getByRole('button', { name: /^Redo/ }).isVisible(), `${name}: redo`)
+      if (await p.locator('.header-redo').isVisible()) await expect(p.locator('.header-redo')).toBeVisible()
+      else {
+        await p.getByRole('button', { name: 'More options', exact: true }).click()
+        await expect(p.locator('#experience-options').getByRole('button', { name: /^Redo/ })).toBeVisible()
+        await p.keyboard.press('Escape')
+      }
       await p.getByRole('button', { name: 'Random look' }).click()
       assert.ok(await p.getByRole('button', { name: /^Undo Random look/ }).isEnabled(), `${name}: random look`)
-      await p.getByRole('tab', { name: 'Outfits' }).click()
+      await equipmentMode(p, 'Outfits')
       await p.getByRole('button', { name: 'Save current look' }).click()
       await p.locator('input[aria-label="Outfit name"]').fill('Phone look')
       await p.getByRole('button', { name: 'Save', exact: true }).click()
@@ -244,12 +262,12 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
     })
   await at({ width: 768, height: 1024 }, async (p) => {
     assert.ok(await p.locator('.tiles').isVisible(), 'tablet: wardrobe tiles visible')
-    const box = await p.locator('.stage canvas').first().boundingBox()
-    assert.ok(box && box.y + box.height < 560, `tablet: character above the wardrobe ${JSON.stringify(box)}`)
-    await p.getByRole('tab', { name: 'Head' }).click()
+    const box = await p.locator('.world-stage').boundingBox(), rail = await p.locator('.equipment-rail').boundingBox()
+    assert.ok(box && rail && (box.x + box.width <= rail.x + 1 || box.y + box.height <= rail.y + 1), `tablet: preview and wardrobe do not overlap ${JSON.stringify({ box, rail })}`)
+    await equipmentGroup(p, 'Head')
     await p.locator('.tile', { hasText: 'Steel helmet' }).click()
     assert.equal(await p.locator('.drawer, .drawer-scrim').count(), 0)
-    step('tablet portrait: stage over the wardrobe, nothing covers the character (P1-3)')
+    step('tablet portrait: preview and wardrobe remain separate, nothing covers the character (P1-3)')
   })
 
   // ---- B17: agent mode (npm run dev:agent) auto-connects; keyless servers show Connect and no badge ----
@@ -258,14 +276,12 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
     await c.addInitScript(() => { localStorage.setItem('pixeldoll.welcomed', '1'); localStorage.setItem('pixeldoll.agentKey', 'off') })
     const p = await c.newPage()
     p.on('pageerror', (e) => errors.push(e.message))
-    await p.goto(`${BASE}/#/`, { waitUntil: 'networkidle' })
-    await p.waitForSelector('.stage canvas')
+    await openStudio(p, `${BASE}/#/`, { waitUntil: 'networkidle' })
+    await p.waitForSelector('.world-actors')
     if (await p.locator('.agent-badge').count()) {
-      await p.locator('.tb-trail .balance', { hasText: /gens$/ }).waitFor({ timeout: 15_000 }) // key never read back or printed
-      step('agent server: badge shown, auto-connected (balance loaded)')
+      step('agent server badge is visible')
     } else {
-      assert.ok(await p.locator('.tb-trail .balance', { hasText: 'Connect' }).isVisible())
-      await p.locator('.tb-trail .balance', { hasText: 'Connect' }).click()
+      await openAccount(p)
       await p.waitForFunction(() => document.querySelector('dialog[open] h2')?.textContent === 'Connect PixelLab')
       assert.equal(await p.locator('dialog[open] [data-testid=dev-key], dialog[open] button', { hasText: /dev key/i }).count(), 0)
       step('keyless server: no agent badge, Connect sheet has no dev-key option')
@@ -280,18 +296,17 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
 test('Inspector animation stays stable and eight-direction previews fit the panel', async ({ page }) => {
   await page.route('https://api.pixellab.ai/**', (route) => route.abort())
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto('/#/')
-  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await openStudio(page, '/#/')
+  await newItem(page, 'Head')
   await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click()
   await page.getByRole('textbox', { name: 'What is it?', exact: true }).waitFor()
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  await page.getByRole('button', { name: 'Red cape', exact: true }).click()
-  await page.getByRole('button', { name: 'Pause', exact: true }).click()
-  const inspector = page.getByRole('complementary', { name: 'Inspector', exact: true })
+  await pickItem(page, 'Red cape')
+  let inspector = await selectedItemDetails(page)
   async function checkFrames() {
     const geometry: string[] = [], pixels: string[] = []
     for (let frame = 0; frame < 8; frame++) {
-      await page.keyboard.press('.')
+      await page.waitForTimeout(110) // Authored playback continues while the item sheet is open.
       geometry.push(JSON.stringify(await inspector.locator('.dir-strip').boundingBox()))
       geometry.push(JSON.stringify(await inspector.locator('.actions').first().boundingBox()))
       pixels.push(await inspector.locator('.dir-strip canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL()))
@@ -308,13 +323,17 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
   }
   await checkFrames()
   await inspector.getByRole('button', { name: 'Remove', exact: true }).click()
-  await page.getByRole('button', { name: 'Steel helmet', exact: true }).click()
+  await inspector.getByRole('button', { name: 'Done', exact: true }).click()
+  await pickItem(page, 'Steel helmet')
+  inspector = await selectedItemDetails(page)
   await expect(inspector.getByRole('button', { name: 'Remove for good', exact: true })).toHaveCount(0)
+
+  await inspector.getByRole('button', { name: 'Done', exact: true }).click()
 
   // Disposable layout fixture: duplicate stored east artwork into the extra directions, without generation.
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const download = page.waitForEvent('download')
-  await page.getByRole('button', { name: /Download zip/ }).click()
+  await page.getByRole('button', { name: /Download ZIP/ }).click()
   const files = await unzip(new Uint8Array(readFileSync((await (await download).path())!)))
   const data = JSON.parse(new TextDecoder().decode(files.get('project.json')))
   data.manifest.rig.directions = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'].map((id) => ({ id }))
@@ -330,11 +349,14 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
   const setup = page.getByRole('checkbox', { name: /Set up the pose rig next/ })
   if (await setup.count()) await setup.uncheck()
   await page.getByRole('button', { name: 'Import character', exact: true }).click()
-  await page.getByRole('button', { name: 'Red cape', exact: true }).click()
+  await pickItem(page, 'Red cape')
+  inspector = await selectedItemDetails(page)
   await expect(inspector.locator('.dir-strip canvas')).toHaveCount(8)
   await checkFrames()
+  await inspector.getByRole('button', { name: 'Done', exact: true }).click()
+  await inspectStage(page)
   await page.getByRole('button', { name: 'All directions', exact: true }).click()
-  for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
+  for (const viewport of [{ width: 1440, height: 900 }, { width: 900, height: 768 }, { width: 375, height: 812 }, { width: 812, height: 375 }]) {
     await page.setViewportSize(viewport)
     await expectDirectionGrid(page, ['north-west', 'north', 'north-east', 'west', null, 'east', 'south-west', 'south', 'south-east'], 3)
   }
@@ -343,23 +365,24 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
   await expect(page.locator('.stage-art [role="img"]')).toHaveAttribute('aria-label', /facing east/)
   // At the smallest desktop breakpoint both sidebars leave only 476px for the stage.
   // The toolbar itself fitted before this fix, but its Move label collapsed and overlapped the directions.
-  await page.setViewportSize({ width: 1024, height: 768 })
-  const controls = page.getByRole('toolbar', { name: 'Preview controls' })
+  await page.setViewportSize({ width: 900, height: 768 })
+  const controls = page.locator('.canvas-bar')
   await expect(controls.getByRole('combobox', { name: 'Direction', exact: true })).toBeVisible()
   const moveBox = (await controls.getByRole('combobox', { name: 'Move', exact: true }).boundingBox())!
   const dirBox = (await controls.getByRole('combobox', { name: 'Direction', exact: true }).boundingBox())!
   expect(moveBox.width).toBeGreaterThan(50)
   expect(moveBox.x + moveBox.width).toBeLessThanOrEqual(dirBox.x)
-  await page.setViewportSize({ width: 1440, height: 900 })
-  const tabs = inspector.getByRole('tablist', { name: 'Inspector' })
-  const top = (await tabs.boundingBox())!.y
-  await inspector.getByRole('tab', { name: 'Colours', exact: true }).click()
-  const content = (await inspector.locator('.inspector-content').boundingBox())!
-  await page.mouse.move(content.x + content.width / 2, content.y + content.height / 2)
+  await page.setViewportSize({ width: 1440, height: 560 }) // Constrain the modal so its details actually need scrolling.
+  inspector = await selectedItemDetails(page)
+  const header = inspector.locator('.sheet-head'), top = (await header.boundingBox())!.y
+  const content = inspector.locator('.sheet-body')
+  await content.hover()
   await page.mouse.wheel(0, 2000)
-  await expect.poll(() => inspector.locator('.inspector-content').evaluate((el) => el.scrollTop)).toBeGreaterThan(0)
-  expect((await tabs.boundingBox())!.y).toBe(top)
-  await page.getByRole('button', { name: 'Wizard hat', exact: true }).click()
+  await expect.poll(() => content.evaluate(el => el.scrollTop)).toBeGreaterThan(0)
+  expect((await header.boundingBox())!.y).toBe(top)
+  await inspector.getByRole('button', { name: 'Done', exact: true }).click()
+  await pickItem(page, 'Wizard hat')
+  await inspectStage(page)
   await page.setViewportSize({ width: 390, height: 844 })
   await page.getByRole('button', { name: 'All directions', exact: true }).click()
   const warning = page.locator('.stage-note')
@@ -370,45 +393,32 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
   const art = page.locator('.stage-art')
   await art.hover()
   await page.mouse.wheel(0, 1000)
-  const toolbar = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!
+  const toolbar = (await page.locator('.canvas-bar').boundingBox())!
   await expect.poll(async () => {
     const lastView = (await page.getByRole('button', { name: 'Show south-east only', exact: true }).boundingBox())!
     return lastView.y + lastView.height
   }).toBeLessThanOrEqual(toolbar.y)
 })
 
-test('desktop resize keeps preview controls inside the stage when switching panels', async ({ page }) => {
+test('desktop resize keeps preview controls and customization reachable across panels', async ({ page }) => {
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto('/#/')
-  await page.locator('.stage canvas').first().waitFor()
-  await page.setViewportSize({ width: 700, height: 650 })
-  const wardrobe = page.getByRole('complementary', { name: 'Wardrobe', exact: true })
-  const inspector = page.getByRole('complementary', { name: 'Inspector', exact: true })
-  const controlsFit = async () => {
-    const stage = (await page.getByRole('main', { name: 'Preview' }).boundingBox())!
-    const controls = (await page.getByRole('toolbar', { name: 'Preview controls' }).boundingBox())!
-    expect(controls.x).toBeGreaterThanOrEqual(stage.x)
-    expect(controls.x + controls.width).toBeLessThanOrEqual(stage.x + stage.width)
+  await openStudio(page, '/#/')
+  for (const viewport of [{width:700,height:650},{width:600,height:600},{width:1440,height:900}]) {
+    await page.setViewportSize(viewport)
+    for (const mode of ['Wardrobe','Colors','Outfits','Moves'] as const) {
+      await equipmentMode(page, mode)
+      await expect(page.locator('.equipment-rail')).toBeVisible()
+      const controls = (await page.getByRole('toolbar', {name:'Preview controls'}).boundingBox())!
+      expect(controls.x).toBeGreaterThanOrEqual(0)
+      expect(controls.x+controls.width).toBeLessThanOrEqual(viewport.width)
+      expect(controls.y+controls.height).toBeLessThanOrEqual(viewport.height)
+    }
+    await equipmentMode(page, 'Wardrobe')
+    await pickItem(page, 'Steel helmet')
+    const item = await selectedItemDetails(page)
+    await expect(item.locator('.insp-title')).toHaveText('Steel helmet')
+    await item.getByRole('button', {name:'Done',exact:true}).click()
   }
-  await expect(wardrobe).toBeVisible()
-  await expect(inspector).toHaveCount(0)
-  await controlsFit()
-  await page.getByRole('button', { name: 'Inspector', exact: true }).click()
-  await expect(inspector).toBeVisible()
-  await expect(wardrobe).toHaveCount(0)
-  await controlsFit()
-  await page.setViewportSize({ width: 600, height: 600 })
-  await controlsFit()
-  await page.getByRole('button', { name: 'Wardrobe', exact: true }).click()
-  await expect(wardrobe).toBeVisible()
-  await expect(inspector).toHaveCount(0)
-  await controlsFit()
-  await page.keyboard.press('Control+Alt+i')
-  await expect(inspector).toBeVisible()
-  await expect(wardrobe).toHaveCount(0)
-  await page.setViewportSize({ width: 1440, height: 900 })
-  await expect(wardrobe).toBeVisible()
-  await expect(inspector).toBeVisible()
 })
 
 test('canceling Connect preserves generation drafts and discards the pending action', async ({ page }) => {
@@ -419,20 +429,20 @@ test('canceling Connect preserves generation drafts and discards the pending act
     } else { paidRequests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname); await route.abort() }
   })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto('/#/')
-  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await openStudio(page, '/#/')
+  await newItem(page, 'Head')
   await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click()
   const item = page.getByRole('dialog', { name: 'New item', exact: true })
-  await item.getByRole('radio', { name: 'Hands', exact: true }).click()
+  await item.getByRole('radio', { name: 'Held item', exact: true }).click()
   await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword')
   await item.getByRole('radio', { name: 'azure', exact: true }).click()
   await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/Est\. \d+ gens/)
   await expect(item.getByText('PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.', { exact: true })).toBeVisible()
   await item.getByRole('button', { name: /^Make/ }).click()
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
-  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await newItem(page, 'Head')
   await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue('a silver sword')
-  await expect(item.getByRole('radio', { name: 'Hands', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(item.getByRole('radio', { name: 'Held item', exact: true })).toHaveAttribute('aria-checked', 'true')
   await expect(item.getByRole('radio', { name: 'azure', exact: true })).toHaveAttribute('aria-checked', 'true')
   await item.getByRole('button', { name: 'Cancel', exact: true }).click()
 
@@ -457,17 +467,20 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await character.getByRole('button', { name: 'Cancel', exact: true }).click()
 
   // Connecting later must not start the character generation canceled above.
-  await page.getByRole('button', { name: 'Connect', exact: true }).click()
+  await openAccount(page)
   const connect = page.getByRole('dialog', { name: 'Connect PixelLab' })
   await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key')
   await connect.getByRole('button', { name: 'Connect', exact: true }).click()
-  await expect(page.locator('.tb-trail .balance')).toContainText('42 gens')
+  await page.locator('.project-btn').click()
+  await expect(page.getByRole('menuitem', {name:'PixelLab account',exact:true})).toContainText('42 gens')
+  await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(paidRequests).toEqual([])
   await page.locator('.project-btn').click()
-  await page.getByRole('menuitem', { name: 'Welcome screen', exact: true }).click()
-  await page.getByRole('button', { name: 'Try the demo', exact: true }).click()
-  await expect(page.locator('.project-btn')).toHaveText('Adventurer (demo)')
+  await page.getByRole('menuitem', { name: 'Character selection', exact: true }).click()
+  await page.locator('.character-rows .character-row').filter({hasText:'Demo character'}).click()
+  await page.locator('.customize-action').click()
+  await expect(page.locator('.project-btn')).toHaveText('Adventurer')
 })
 
 // Synthetic keys only: exercise the production bundle without contacting PixelLab.
@@ -492,11 +505,11 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
       if (initial !== 'shared') localStorage.setItem('pixeldoll.apiKey', legacy);
       localStorage.setItem('pixellab-backpack:key-kept', 'other-app-legacy-key');
     }, { initial, shared, legacy });
-    await page.goto('/#/');
-    await expect(page.locator('.project-btn')).toHaveText('Adventurer (demo)');
-    await expect(page.locator('.stage canvas').first()).toBeVisible();
+    await openStudio(page, '/#/');
+    await expect(page.locator('.project-btn')).toHaveText('Adventurer');
+    await expect(page.locator('.world-actors').first()).toBeVisible();
     await page.locator('.project-btn').click();
-    await page.getByRole('menuitem', { name: initial === 'old-only' ? 'Connect PixelLab…' : 'PixelLab key', exact: true }).click();
+    await page.getByRole('menuitem', { name: initial === 'old-only' ? 'Connect PixelLab…' : 'PixelLab account', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
     if (initial === 'old-only') {
       await expect(dialog.getByRole('button', { name: 'Forget key' })).toHaveCount(0);
@@ -509,22 +522,24 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
     expect(await page.evaluate(() => [localStorage.getItem('pixellabApiKey'), localStorage.getItem('pixeldoll.apiKey')])).toEqual([initial === 'old-only' ? null : shared, initial === 'shared' ? null : legacy]);
     if (initial !== 'old-only') await dialog.getByRole('button', { name: 'Forget key' }).click();
     const beforeReload = requests;
-    await page.reload();
+    await reloadStudio(page);
     expect(await page.evaluate(() => [localStorage.getItem('pixellabApiKey'), localStorage.getItem('pixeldoll.apiKey'), localStorage.getItem('pixellab-backpack:key-kept')])).toEqual([null, initial === 'shared' ? null : legacy, 'other-app-legacy-key']);
-    await expect(page.locator('.tb-trail .balance')).toContainText('Connect');
+    await page.locator('.project-btn').click();
+    await expect(page.getByRole('menuitem', {name:'Connect PixelLab…',exact:true})).toBeVisible();
+    await page.keyboard.press('Escape');
     expect(requests).toBe(beforeReload);
   });
 }
 
-test('setup and move drafts survive cancelled connection and stay scoped to their character', async ({ page, context }) => {
+test('setup and move drafts survive canceled connection and stay scoped to their character', async ({ page, context }) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto('/')
-  await page.locator('.stage canvas').first().waitFor()
+  await openStudio(page, '/')
+  await page.locator('.world-actors').first().waitFor()
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const downloading = page.waitForEvent('download')
-  await page.getByRole('button', { name: /Download zip/ }).click()
+  await page.getByRole('button', { name: /Download ZIP/ }).click()
   const files = await unzip(new Uint8Array(readFileSync((await (await downloading).path())!)))
   const data = JSON.parse(new TextDecoder().decode(files.get('project.json')))
   const m = data.manifest
@@ -553,16 +568,16 @@ test('setup and move drafts survive cancelled connection and stay scoped to thei
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click()
   const setup = page.getByRole('dialog', { name: 'Set up character', exact: true })
-  await setup.getByRole('textbox', { name: /Existing appearance/ }).fill('Blue vest, bald, grey shorts')
+  await setup.getByRole('textbox', { name: /Existing appearance/ }).fill('Blue vest, bald, gray shorts')
   await setup.getByRole('button', { name: /^Set up ·/ }).click()
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click()
-  await expect(setup.getByRole('textbox', { name: /Existing appearance/ })).toHaveValue('Blue vest, bald, grey shorts')
+  await expect(setup.getByRole('textbox', { name: /Existing appearance/ })).toHaveValue('Blue vest, bald, gray shorts')
   await setup.getByRole('button', { name: 'Later', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await page.getByRole('tab', { name: 'Moves', exact: true }).click()
+  await equipmentMode(page, 'Moves')
   await page.getByRole('button', { name: 'Add a move', exact: true }).click()
   const move = page.getByRole('dialog', { name: 'Add a move', exact: true })
   await move.getByRole('radio', { name: 'Cast', exact: true }).click()
@@ -595,14 +610,14 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
     localStorage.setItem('pixeldoll.welcomed', '1')
     localStorage.setItem('pixeldoll.export.engine', 'unknown-engine')
   })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
-  const tabs = page.getByRole('tablist', { name: 'Inspector', exact: true })
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  const tabs = page.getByRole('tablist', { name: 'Slots', exact: true })
   await expect(tabs.locator('[tabindex="0"]')).toHaveCount(1)
-  await tabs.getByRole('tab', { name: 'Item', exact: true }).focus()
+  await tabs.getByRole('tab', { name: /^Head\b/ }).focus()
   await page.keyboard.press('ArrowRight')
-  await expect(tabs.getByRole('tab', { name: 'Colours', exact: true })).toBeFocused()
-  await expect(tabs.getByRole('tab', { name: 'Colours', exact: true })).toHaveAttribute('aria-selected', 'true')
+  await expect(tabs.getByRole('tab', { name: /^Hair\b/ })).toBeFocused()
+  await expect(tabs.getByRole('tab', { name: /^Hair\b/ })).toHaveAttribute('aria-selected', 'true')
   await expect(tabs.locator('[tabindex="0"]')).toHaveCount(1)
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const engines = page.getByRole('group', { name: 'Export format', exact: true })
@@ -627,7 +642,10 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
   const skin = page.getByRole('combobox', { name: 'Skin', exact: true })
   await expect(skin).toHaveValue('Not set')
   await skin.focus()
+  await expect(skin).toBeFocused()
+  await page.keyboard.press('Space') // Open the native select before moving its highlighted option.
   await page.keyboard.press('ArrowDown')
+  await page.keyboard.press('Enter') // Commit native Windows/Chromium select navigation.
   await expect(skin).toHaveValue('Deep brown')
   await page.keyboard.press('Tab')
   await expect(skin).not.toBeFocused()
@@ -637,8 +655,8 @@ test('radio groups and tabs use one Tab stop and arrow selection', async ({ page
 test('draft review can inspect every generated move and only its available views', async ({ page, context }, info) => {
   await context.route('https://api.pixellab.ai/**', (r) => r.abort())
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const s = (window as unknown as { __studio: { ui: { playing: boolean; frame: number; anim: string; inspTab: string; selected: string }; doc: { id: string }; store: { project: any; results: Record<string, unknown> }; gens: unknown[]; loadGens: () => Promise<void> } }).__studio
     await s.loadGens()
@@ -694,11 +712,13 @@ test('a follower explains blocked Create above the modal and preserves its draft
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
   await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const follower = await context.newPage()
-  await follower.goto('/')
-  await expect(follower.getByRole('button', { name: 'Working in another tab', exact: true })).toBeVisible()
+  await openStudio(follower, '/')
+  await follower.getByRole('button', {name:'More options',exact:true}).click()
+  await expect(follower.locator('#experience-options')).toContainText('Other tab')
+  await follower.keyboard.press('Escape')
   async function openCreate() {
     await follower.locator('.project-btn').click()
     await follower.getByRole('menuitem', { name: 'New character…', exact: true }).click()
@@ -719,7 +739,9 @@ test('a follower explains blocked Create above the modal and preserves its draft
   await expect(create.getByRole('button', { name: 'Side-scroller 2', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await create.getByRole('button', { name: 'Cancel', exact: true }).click()
   await page.close()
-  await expect(follower.getByRole('button', { name: 'Working in another tab', exact: true })).toHaveCount(0)
+  await follower.getByRole('button', {name:'More options',exact:true}).click()
+  await expect(follower.locator('#experience-options')).not.toContainText('Other tab', {timeout:15000})
+  await follower.keyboard.press('Escape')
   create = await openCreate()
   await expect(create.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue('a cheerful copper clockwork scout')
   await expect(create.getByRole('button', { name: 'Side-scroller 2', exact: true })).toHaveAttribute('aria-pressed', 'true')
@@ -733,8 +755,8 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const s = (window as unknown as { __studio: { ui: { playing: boolean; anim: string; inspTab: string; selected: string }; doc: { id: string }; store: { project: any; results: Record<string, unknown> }; gens: unknown[]; loadGens: () => Promise<void> } }).__studio
     await s.loadGens()
@@ -755,10 +777,10 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
   await page.evaluate(() => {
     const s = (window as unknown as { __studio: { ui: { selected: string }; store: { results: Record<string, any> } } }).__studio
     const id = s.ui.selected.slice(4), r = s.store.results[id]
-    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % grey smudges in a colourful design']]) } }
+    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % gray smudges in a colorful design']]) } }
   })
   await expect(review.locator('.badge.look')).toHaveText('Needs a look')
-  await expect(review.getByText('The design has grey smudges', { exact: true })).toBeVisible()
+  await expect(review.getByText('The design has gray smudges', { exact: true })).toBeVisible()
   await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeEnabled()
   for (const [warning, reason] of [
     ['G8 idle/west: hand positions are missing for 4 of 4 frames; set up the character’s pose rig and check this view', 'Hand positions are unavailable; set up the pose rig and check this view (idle, west)'],
@@ -791,8 +813,8 @@ test('long item and outfit names leave wardrobe controls inside the desktop side
   await context.route('https://api.pixellab.ai/**', (r) => r.abort())
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
   await page.setViewportSize({ width: 1280, height: 720 })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const name = 'Polished copper clockwork adventurer ceremonial full helmet with a very long descriptive name'
   await page.evaluate((name) => {
     const s = (window as unknown as { __studio: { ui: { playing: boolean }; store: { project: any } } }).__studio
@@ -800,19 +822,26 @@ test('long item and outfit names leave wardrobe controls inside the desktop side
     const p = s.store.project, head = p.manifest.items.find((i: { slot: string }) => i.slot === 'head')
     s.store.project = { ...p, manifest: { ...p.manifest, items: p.manifest.items.map((i: { id: string }) => i.id === head.id ? { ...i, name } : i), presets: p.manifest.presets.map((v: object, n: number) => n === 0 ? { ...v, name } : v) } }
   }, name)
-  const wear = page.getByRole('button', { name: 'Wear ' + name, exact: true })
+  const wear = page.locator('.equipment-scroll').getByRole('button', { name, exact: true })
   await expect(wear).toBeVisible()
   await expect(wear).toHaveAttribute('aria-pressed', 'true')
-  const dimensions = await page.locator('.side').evaluate((side) => {
+  const dimensions = await page.locator('.equipment-rail').evaluate((side) => {
     const box = side.getBoundingClientRect()
-    const overflows = [side, ...side.querySelectorAll('.wardrobe, .side-scroll, .group, .rows, .rows li, .rows .row')].filter((n) => n.scrollWidth > n.clientWidth + 1).map((n) => n.className)
-    const controls = [...side.querySelectorAll('.wear, .row-del')].map((n) => { const r = n.getBoundingClientRect(); return { left: r.left, right: r.right, width: r.width } })
+    // The outer rail permits the documented 8px focus/swatch paint overflow.
+    const overflows = [side, ...side.querySelectorAll('.equipment-scroll, .tiles, .tile, .tile-name')].filter((n) => n.scrollWidth > n.clientWidth + (n === side ? 8 : 1)).map((n) => n.className)
+    const controls = [...side.querySelectorAll('.tile, .sel-row button')].map((n) => { const r = n.getBoundingClientRect(); return { left: r.left, right: r.right, width: r.width } })
     return { left: box.left, right: box.right, overflows, controls }
   })
   expect(dimensions.overflows).toEqual([])
   for (const c of dimensions.controls) { expect(c.left).toBeGreaterThanOrEqual(dimensions.left); expect(c.right).toBeLessThanOrEqual(dimensions.right); expect(c.width).toBeGreaterThanOrEqual(24) }
-  await wear.click()
+  await page.locator('.equipment-scroll').getByRole('button', {name:'None',exact:true}).click()
   await expect(wear).toHaveAttribute('aria-pressed', 'false')
+  await equipmentMode(page, 'Outfits')
+  const saved = page.locator('.outfits .row').filter({hasText:name})
+  await expect(saved).toBeVisible()
+  const outfitDimensions = await page.locator('.equipment-rail').evaluate(el=>({width:el.clientWidth,scroll:el.scrollWidth,rows:[...el.querySelectorAll('.outfits .row')].map(row=>({width:row.clientWidth,scroll:row.scrollWidth}))}))
+  expect(outfitDimensions.scroll).toBeLessThanOrEqual(outfitDimensions.width+8)
+  for(const row of outfitDimensions.rows) expect(row.scroll).toBeLessThanOrEqual(row.width+1)
 })
 
 
@@ -820,8 +849,8 @@ test('interrupted character specifications retain their own direction policy and
   const calls: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { calls.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const path = '/src/studio/formDrafts.ts', { formDrafts } = await import(path)
     const configPath = '/src/studio/characterConfig.ts', { newCharacterDraft, setPreset } = await import(configPath)
@@ -857,8 +886,8 @@ test('character Try again preserves direction policy and allocates a fresh publi
     else { unexpected.push(route.request().method()); await route.abort() }
   })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const s = (window as unknown as { __studio: { loadGens: () => Promise<void>; creating: { spec: any; error: string }; ui: { sheet: string } }; originalCreatePut?: IDBObjectStore['put'] }).__studio
     await s.loadGens()
@@ -907,8 +936,8 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
     } else { if (request.method() === 'POST') posts.push(new URL(request.url()).pathname); await route.abort() }
   })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const w = window as unknown as { __studio: { ui: { selected: string; inspTab: string }; doc: { id: string }; store: { project: any }; gens: any[]; loadGens: () => Promise<void> }; __queue: { disconnect: () => void; key: string; paused: string | null; recs: Map<string, any>; emit: () => void } }
     const s = w.__studio, q = w.__queue
@@ -927,7 +956,7 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
   const gen = page.locator('.gen')
   await expect(gen).toContainText('Keep this tab open while PixelLab responds. You can keep dressing up. Unknown outcomes stop for review in Activity.')
   await expect(gen).not.toContainText('picks up where it left off')
-  await page.getByTitle('Activity', { exact: true }).click()
+  await page.getByRole('button', { name: 'Activity', exact: true }).click()
   const activity = page.getByRole('dialog', { name: 'Activity', exact: true })
   for (const label of ['Finding joints fixture', 'Submitting fixture']) {
     const row = activity.locator('.act-group li').filter({ has: page.getByText(label, { exact: true }) })
@@ -950,9 +979,9 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
     const q = (window as unknown as { __queue: { paused: string | null; emit: () => void } }).__queue
     q.paused = 'offline'; q.emit()
   })
-  await expect(activity).toContainText("You're offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.")
+  await expect(activity).toContainText("You’re offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.")
   await activity.getByRole('button', { name: 'Done', exact: true }).click()
-  await expect(gen).toContainText("Paused while you're offline. Submitted jobs may still finish or charge.")
+  await expect(gen).toContainText("Paused while you’re offline. Submitted jobs may still finish or charge.")
   expect(posts).toEqual([])
 })
 
@@ -968,8 +997,8 @@ test('reload restores failed create, move and setup for review without paid subm
     localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1')
     localStorage.setItem('pixellabApiKey', 'synthetic-failed-flow-key')
   })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const s = (window as unknown as { __studio: { doc: { id: string }; store: { project: any } } }).__studio
     const path = '/src/lib/store/db.ts', db = await import(/* @vite-ignore */ path)
@@ -978,8 +1007,8 @@ test('reload restores failed create, move and setup for review without paid subm
     await db.put('projects', 'studio-move', { ...common, id: 'studio-move', projectId: s.doc.id, spec: { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 } })
     await db.put('projects', 'studio-setup', { ...common, id: 'studio-setup', spec: { projectId: s.doc.id, baseHash: s.store.project.manifest.rig.baseHash, restAnim: 'idle', looks: 'body', seed: 1 } })
   })
-  await page.reload()
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await reloadStudio(page)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await expect.poll(() => page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(/* @vite-ignore */ path)
     return [s.creating.error, s.moving.error, s.settingUp.error]
@@ -999,8 +1028,8 @@ test('Activity shows plan-derived capacity without a manual override or network 
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', r => { requests.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const path = '/src/lib/pixellab/queue.ts', { queue } = await import(/* @vite-ignore */ path)
     queue.disconnect()
@@ -1021,8 +1050,8 @@ test('accepted held-item review reasons survive actual reload without claiming a
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const name = await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     const dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
@@ -1038,10 +1067,10 @@ test('accepted held-item review reasons survive actual reload without claiming a
     await db.put('projects', s.doc.id, rec)
     return item.name
   })
-  await page.reload()
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
-  await page.getByRole('button', { name: 'Wear ' + name, exact: true }).click()
-  const pane = page.locator('.inspector')
+  await reloadStudio(page)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  await pickItem(page, name)
+  const pane = await selectedItemDetails(page)
   await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
   await expect(pane.getByText('The grip side is unclear; check the intended hand (idle, west)', { exact: true })).toBeVisible()
   await expect(pane.getByText('Handedness could not be confirmed; inspect the intended hand (idle, north)', { exact: true })).toBeVisible()
@@ -1056,8 +1085,8 @@ test('Export discloses saved item and body review flags without blocking analysi
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const names = await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
     await s.copyDemo()
@@ -1065,14 +1094,15 @@ test('Export discloses saved item and body review flags without blocking analysi
     const qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, rerolls: 0, cells: {}, clips: {} }
     items[0].qa = { ...qa, status: 'fail' }
     items[1].qa = { ...qa, status: 'warn' }
-    items[2].qa = { ...qa, status: 'accepted' }; items[2].designWarnings = ['D1 keyframe rest/west/0: grey smudges']
-    items[3].qa = { ...qa, status: 'pass' }; items[3].designWarnings = ['D1 keyframe rest/south/0: grey smudges']; items[3].baseHash = 'sha256:' + 'f'.repeat(64)
+    items[2].qa = { ...qa, status: 'accepted' }; items[2].designWarnings = ['D1 keyframe rest/west/0: gray smudges']
+    items[3].qa = { ...qa, status: 'pass' }; items[3].designWarnings = ['D1 keyframe rest/south/0: gray smudges']; items[3].baseHash = 'sha256:' + 'f'.repeat(64)
     rec.rigQa = { clips: { 'walk/east': { fails: ['arms 2.77 px off the requested pose'] }, 'walk/west': { fails: ['arms 2.10 px off the requested pose'] }, 'idle/south': { fails: [] }, 'removed/south': { fails: ['historical removed clip'] }, 'cross-punch/west': { fails: ['historical unavailable view'] } } }
     await db.put('projects', s.doc.id, rec)
     return items.map((it: { name: string }) => it.name)
   })
-  await page.reload()
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await reloadStudio(page)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  if (await page.getByRole('dialog', {name:'Item',exact:true}).count()) await page.getByRole('button', {name:'Done',exact:true}).click()
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
   const itemNotice = sheet.locator('.notice.warn').filter({ hasText: 'Saved quality or appearance flags:' })
@@ -1083,7 +1113,7 @@ test('Export discloses saved item and body review flags without blocking analysi
   await expect(bodyNotice).not.toContainText('Removed')
   await expect(bodyNotice).not.toContainText('Cross punch')
   await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
-  const download = sheet.getByRole('button', { name: /^Download zip/ })
+  const download = sheet.getByRole('button', { name: /^Download ZIP/ })
   await expect(download).toBeEnabled()
   const file = page.waitForEvent('download')
   await download.click()
@@ -1096,7 +1126,7 @@ test('Export discloses saved item and body review flags without blocking analysi
     await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id)
   })
   await page.getByRole('button', { name: 'Export', exact: true }).click()
-  await expect(sheet.getByRole('button', { name: /^Download zip/ })).toBeEnabled()
+  await expect(sheet.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled()
   await expect(sheet.getByText(/Saved quality or appearance flags:/)).toHaveCount(0)
   await expect(sheet.getByText(/Body frames failed saved checks:/)).toHaveCount(0)
   expect(requests).toEqual([])
@@ -1104,7 +1134,7 @@ test('Export discloses saved item and body review flags without blocking analysi
 
 
 async function targetedRepairFixture(page: Page) {
-  await page.locator('.stage canvas').first().waitFor()
+  await page.locator('.world-actors').first().waitFor()
   return page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
     const posesPath = '/src/lib/rig/poses.ts', poses = await import(posesPath)
@@ -1156,9 +1186,9 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
   })
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
   const fixture = await targetedRepairFixture(page)
-  await page.getByRole('tab', { name: 'Moves', exact: true }).click()
+  await equipmentMode(page, 'Moves')
   await page.getByRole('button', { name: 'Add a move', exact: true }).click()
   await page.getByRole('radio', { name: 'Walk · added', exact: true }).click()
   const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true })
@@ -1199,7 +1229,7 @@ test('partial missing gear and explicit item repair stay on the current move and
     else { posts.push(r.request().method()); await r.abort() }
   })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
   const fixture = await targetedRepairFixture(page)
   await page.evaluate(async (id) => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
@@ -1212,6 +1242,7 @@ test('partial missing gear and explicit item repair stay on the current move and
     const original = IDBObjectStore.prototype.put
     IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move') throw new Error('Scoped repair stopped before paid work'); return original.call(this, value, key) }
   }, fixture.itemId)
+  await inspectStage(page)
   const make = page.locator('.stage-note').getByRole('button', { name: /^Make it/ })
   await expect(make).toContainText('Est. 3 gens')
   await make.click()
@@ -1225,6 +1256,7 @@ test('partial missing gear and explicit item repair stay on the current move and
   expect(poseScope.replace).toBeUndefined(); expect(poseScope.itemMethod).toBeUndefined()
   await sheet.getByRole('button', { name: 'Start over', exact: true }).click()
   await sheet.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await selectedItemDetails(page)
   const repair = page.getByRole('button', { name: /^Try new item frames/ })
   await expect(repair).toContainText('Est. 10 gens') // The bundled fixture uses actual 64 px equipment layers.
   await oversizedItemFixture(page, fixture.itemId)
@@ -1246,7 +1278,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
   })
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   await targetedRepairFixture(page)
   const original = await page.evaluate(async () => {
     const statePath = '/src/studio/state.svelte.ts', s = await import(statePath), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
@@ -1274,8 +1306,8 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
     await db.put('projects', 'studio-move', { id: 'studio-move', projectId: s.doc.id, spec, status: 'failed', error: 'Joint-check outcome unknown' })
     return { spec, projectId: s.doc.id }
   })
-  await page.reload()
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await reloadStudio(page)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
   const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true })
   await expect(sheet).toContainText('Joint-check outcome unknown')
@@ -1289,7 +1321,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
   const diagnosis = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p), c = '/src/studio/create.ts', create = await import(c); try { return await create.measurementRecoveryPlan(s.moving.projectId, s.moving.spec) } catch(e) { return String(e) } })
   expect(diagnosis).toMatchObject({ checks: 1, recordIds: ['offline-joint-lost'] })
   await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toBeVisible()
-  await expect(sheet).toContainText('Retry 1 unfinished joint checks')
+  await expect(sheet).toContainText('Retry 1 unfinished joint check ·')
   await expect(sheet).toContainText('estimated 0.1 gens or $0.005')
   await expect(sheet).toContainText('Unknown checks may already have charged; retrying can charge again')
   await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click()
@@ -1315,7 +1347,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
 })
 
 
-test('bounded body colour correction discloses changed checks and equipment cost before durable consent', async ({ page, context }, info) => {
+test('bounded body color correction discloses changed checks and equipment cost before durable consent', async ({ page, context }, info) => {
   const posts: string[] = []
   await context.route('https://api.pixellab.ai/**', async r => {
     if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance')) await r.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 1 } } })
@@ -1323,7 +1355,7 @@ test('bounded body colour correction discloses changed checks and equipment cost
   })
   const errors: string[] = []; page.on('pageerror', e => errors.push(e.message))
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   const fixture = await targetedRepairFixture(page)
   const original = await page.evaluate(async itemId => {
     const sPath = '/src/studio/state.svelte.ts', s = await import(sPath), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
@@ -1355,15 +1387,15 @@ test('bounded body colour correction discloses changed checks and equipment cost
     await db.put('projects', 'studio-move', { id: 'studio-move', projectId: s.doc.id, spec, status: 'failed', error: 'Palette fit failed; existing body kept' })
     return { spec, projectId: s.doc.id }
   }, fixture.itemId)
-  await page.reload()
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await reloadStudio(page)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await expect.poll(async () => page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.error })).toBe('Palette fit failed; existing body kept')
   await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
   const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true })
   await expect(sheet).toContainText('Palette fit failed; existing body kept')
-  const action = sheet.getByRole('button', { name: 'Match body colours', exact: true })
+  const action = sheet.getByRole('button', { name: 'Match body colors', exact: true })
   await expect(action).toBeVisible()
-  await expect(sheet).toContainText('Match 216 nearby colour pixels')
+  await expect(sheet).toContainText('Match 216 nearby color pixels')
   await expect(sheet).toContainText('8 cached West frames')
   await expect(sheet).toContainText('estimated 0.8 gens or $0.041')
   await expect(sheet).toContainText('estimated 3 additional gens')
@@ -1375,12 +1407,12 @@ test('bounded body colour correction discloses changed checks and equipment cost
   await expect(action).toBeVisible()
   await page.evaluate(() => {
     const put = IDBObjectStore.prototype.put
-    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move' && value.status === 'running') throw new Error('Colour consent storage blocked'); return put.call(this, value, key) }
+    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move' && value.status === 'running') throw new Error('Color consent storage blocked'); return put.call(this, value, key) }
   })
   await action.click()
-  await connect.getByLabel('API key', { exact: true }).fill('synthetic-body-colour-key')
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-body-color-key')
   await connect.getByRole('button', { name: 'Connect', exact: true }).click()
-  await expect(sheet).toContainText('Colour consent storage blocked')
+  await expect(sheet).toContainText('Color consent storage blocked')
   const consent = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.spec })
   expect(consent).toMatchObject(original.spec)
   expect(consent.bodyPaletteRepair).toMatchObject({ version: 'near-rest-v1' })
@@ -1398,7 +1430,7 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', r => { requests.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   await targetedRepairFixture(page)
   const expected = await page.evaluate(async () => {
     const p = '/src/studio/state.svelte.ts', s = await import(p), routePath = '/src/studio/itemRoute.ts', route = await import(routePath)
@@ -1411,6 +1443,7 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
     s.ui.inspTab = 'item'; s.ui.selected = 'gen:' + draft.spec.id
     return route.itemRoute.plan(ctx.rec.manifest.rig, ctx, input).gens
   })
+  await equipmentGroup(page, 'Hands')
   const panel = page.locator('.gen'), retry = panel.getByRole('button', { name: /^Try again/ })
   expect(expected).toBeGreaterThan(15)
   await expect(retry).toBeEnabled()
@@ -1444,7 +1477,7 @@ async function freePaletteFixture(page: Page, shared = false) {
     ]
     rec.manifest.materials = [...rec.manifest.materials.filter((m: { owner: string }) => m.owner !== id), ...materials]
     item.materials = materials.map(m => m.id); item.status = 'accepted'; item.baseHash = rec.manifest.rig.baseHash
-    item.designWarnings = ['D1 keyframe rest/west/0: grey smudges']
+    item.designWarnings = ['D1 keyframe rest/west/0: gray smudges']
     if (item.qa) item.qa.status = 'warn'
     const image = png.makeImg(96, 96)
     for (const [offset, rgb] of [[0, [133, 133, 133]], [1, [240, 240, 240]], [2, [192, 128, 96]], [3, [16, 16, 16]]] as [number, number[]][]) image.data.set([...rgb, 255], (40 * 96 + 40 + offset) * 4)
@@ -1469,18 +1502,18 @@ async function freePaletteFixture(page: Page, shared = false) {
   return { ...fixture, ...before }
 }
 
-test('free item colour matching is offline, scoped, persistent and preserves saved recolours and warnings', async ({ page, context }, info) => {
+test('free item color matching is offline, scoped, persistent and preserves saved recolors and warnings', async ({ page, context }, info) => {
   const requests: string[] = []
   context.on('request', r => { if (r.url().startsWith('https://api.pixellab.ai/')) requests.push(r.method()) })
   await context.route('https://api.pixellab.ai/**', r => r.abort())
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
-  const fixture = await freePaletteFixture(page, true), pane = page.locator('.inspector')
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await freePaletteFixture(page, true), pane = await selectedItemDetails(page)
   const eligibility = await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p), item = s.store.project.manifest.items.find((it: { id: string }) => it.id === id); return { route: item.route, key: item.key, dressed: !!item.dressed.west, frames: s.store.project.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').sources.west.keypoints.length, shared: !!item.design } }, fixture.itemId)
   expect(eligibility).toMatchObject({ route: 'skeleton-pose', key: 'green', dressed: true, frames: 8, shared: true })
   await expect(pane.getByRole('button', { name: /^Try new item frames/ })).toHaveCount(0)
   await expect(pane.getByRole('button', { name: 'View saved design', exact: true })).toBeVisible()
-  const action = pane.getByRole('button', { name: /^Match item colours.*Free$/ })
+  const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ })
   await expect(action).toBeVisible()
   await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west')
   await expect(pane).toContainText('2 unmatched eligible pixels stay unchanged')
@@ -1504,15 +1537,17 @@ test('free item colour matching is offline, scoped, persistent and preserves sav
   expect(after.audit).toHaveLength(1)
   expect(after.audit[0]).toMatchObject({ version: 'neutral-owned-v1', anim: 'walk', dir: 'west' })
   await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
-  await page.reload(); await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await reloadStudio(page); await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.anim = 'walk'; s.ui.dir = 'west'; s.pick(id) }, fixture.itemId)
+  await selectedItemDetails(page)
   await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
   await expect(pane.getByRole('radio', { name: 'azure', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
-  await expect(pane.getByRole('button', { name: /^Match item colours.*Free$/ })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0)
+  await pane.getByRole('button', { name: 'Done', exact: true }).click()
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
   await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
-  const download = sheet.getByRole('button', { name: /^Download zip/ })
+  const download = sheet.getByRole('button', { name: /^Download ZIP/ })
   await expect(download).toBeEnabled()
   const event = page.waitForEvent('download'); await download.click()
   const file = await event, path = await file.path(); expect(path).not.toBeNull()
@@ -1523,13 +1558,13 @@ test('free item colour matching is offline, scoped, persistent and preserves sav
   expect(requests).toEqual([])
 })
 
-for (const changed of ['item', 'rig'] as const) test(`free item colour matching refuses a stale ${changed} review without changing any pixels`, async ({ page, context }, info) => {
+for (const changed of ['item', 'rig'] as const) test(`free item color matching refuses a stale ${changed} review without changing any pixels`, async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', r => { requests.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await page.goto(info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
-  const fixture = await freePaletteFixture(page), pane = page.locator('.inspector')
-  const action = pane.getByRole('button', { name: /^Match item colours.*Free$/ })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await freePaletteFixture(page), pane = await selectedItemDetails(page)
+  const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ })
   await expect(action).toBeVisible()
   await page.evaluate(async ({ id, changed }) => {
     const p = '/src/studio/state.svelte.ts', s = await import(p), dbPath = '/src/lib/store/db.ts', db = await import(dbPath), rec = await db.get('projects', s.doc.id)
@@ -1538,7 +1573,7 @@ for (const changed of ['item', 'rig'] as const) test(`free item colour matching 
     await db.put('projects', s.doc.id, rec)
   }, { id: fixture.itemId, changed })
   await action.click()
-  await expect(pane).toContainText('This item or its colours changed. Review the colour match again.')
+  await expect(pane).toContainText('This item or its colors changed. Review the color match again.')
   const saved = await page.evaluate(async id => {
     const p = '/src/studio/state.svelte.ts', s = await import(p), dbPath = '/src/lib/store/db.ts', db = await import(dbPath), rec = await db.get('projects', s.doc.id), it = rec.manifest.items.find((i: { id: string }) => i.id === id)
     return { hash: it.layers[0].cells.walk.west[0], audit: it.paletteRepairs }

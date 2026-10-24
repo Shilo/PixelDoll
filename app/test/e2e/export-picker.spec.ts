@@ -1,3 +1,4 @@
+import { openStudio } from './immersive-helpers.ts'
 import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
@@ -15,8 +16,8 @@ test('export picker has accessible categories, local icons and a native GDevelop
   })
   const errors: string[] = []
   page.on('pageerror', (error) => errors.push(error.message))
-  await page.goto(testInfo.project.use.baseURL! + '/#/', { waitUntil: 'networkidle' })
-  await page.locator('.stage canvas').first().waitFor()
+  await openStudio(page, testInfo.project.use.baseURL! + '/#/', { waitUntil: 'networkidle' })
+  await page.locator('.world-actors').first().waitFor()
   await page.getByRole('button', { name: 'Export', exact: true }).first().click()
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('group', { name: 'Export format' })).toBeVisible()
@@ -41,9 +42,11 @@ test('export picker has accessible categories, local icons and a native GDevelop
     expect(response.ok()).toBe(true)
     expect(await response.text()).toContain('<svg')
   }
+  // Changing engines prepares a complete ZIP, including baked outfits, asynchronously.
+  await expect(dialog.getByRole('button', { name: /Download ZIP/ })).toBeEnabled({ timeout: 30_000 })
   for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 768, height: 1024 }]) {
     await page.setViewportSize(viewport)
-    await expect(dialog.getByRole('button', { name: /Download zip/ })).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /Download ZIP/ })).toBeVisible()
     expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true)
     await dialog.getByRole('radio', { name: 'GDevelop', exact: true }).scrollIntoViewIfNeeded()
     await expect(dialog.getByRole('radio', { name: 'GDevelop', exact: true })).toBeVisible()
@@ -51,7 +54,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
       await page.screenshot({ path: testInfo.outputPath(`export-picker-${viewport.width}.png`) })
     }
   }
-  const downloadButton = dialog.getByRole('button', { name: /Download zip/ })
+  const downloadButton = dialog.getByRole('button', { name: /Download ZIP/ })
   await expect(downloadButton).toBeEnabled()
   const [download] = await Promise.all([page.waitForEvent('download'), downloadButton.click()])
   expect(download.suggestedFilename()).toContain('-gdevelop.pixeldoll.zip')

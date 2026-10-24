@@ -13,7 +13,7 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   frame cap) → posed per clip with `animate-with-skeleton-v3` → chroma extraction + cleanup → quality gates → layers.
   Held items use a 96 px oversize layer sharing the body pivot. Fallback per clip: Pro `inpaint-v3` packed masked grid.
 - **Studio:** look A, dark default + light switch, Lucide, responsive desktop/tablet/phone/landscape. Wardrobe, stage,
-  inspector, exact palette recolour (incl. Shirt/Shorts/Skin), outfits, undo/redo, create character, new item, add a move,
+  inspector, exact palette recolor (incl. Shirt/Shorts/Skin), outfits, undo/redo, create character, new item, add a move,
   export, activity, offline pause, cross-tab queue lock, worker-driven polling. Dev-only pages `#/m1…#/m5` are excluded
   from production.
 - **Exports verified pixel-identical:** Godot 4.7.1, Phaser 3.80/3.90/4.2.1, Aseprite CLI. Unity compiles only.
@@ -43,7 +43,7 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
   `ubuntu-24.04`. Offline tests and review: `docs/testing/qa-summaries-2026-10-22.md`.
 
 - **Professional audit:** adversarial pipeline/data/Studio reviews fixed credential sharing, unsafe paid recovery and lifecycle,
-  import allocation bounds, persistence/navigation races, animation replacement validity, recoloured engine output and
+  import allocation bounds, persistence/navigation races, animation replacement validity, recolored engine output and
   keyboard/review UX. New independent directions are implemented with automated policy/action/export coverage. The live
   full creation stopped safely after two estimator HTTP 500 unknown outcomes; idle-only recovery and the primary 96px idle sword passed with west grip ambiguity retained. Targeted Slash
   repairs pass body gates and manual review of all 32 sword frames, preserving unrelated artwork and honest item warnings. Fresh evidence and remaining
@@ -81,7 +81,7 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 
 - D1 (2026-10-20): Browser calls PixelLab REST v2 directly with the user's token (CORS verified). No backend, ever.
 - D2 (2026-10-20): ~~Same-canvas edit + local diff extraction~~ — superseded by D3; the diff extractor is a fallback only.
-- D3 (2026-10-21): Item layers come from a chroma mannequin (recoloured frozen base) extracted by colour key (S2).
+- D3 (2026-10-21): Item layers come from a chroma mannequin (recolored frozen base) extracted by color key (S2).
 - D4 (2026-10-21): Base generated at 48 px and padded to a 64 px cell (never rescaled); 56 px is an option.
 - D5 (2026-10-21, user): Unity live verification deferred; Godot + Phaser verified.
 - D6 (2026-10-21, user): Skeleton v3 is the rig (`estimate-skeleton` + `animate-with-skeleton-v3`); legacy skeleton banned.
@@ -93,7 +93,7 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   4/8-direction standard routes, legacy `animate-with-skeleton`, `edit-images-v2` for layers.
 - D9 (2026-10-21, user): UI look A only (no pixel fonts/icons), dark by default with a persisted light switch, Lucide
   icons, system font. Theming + "Paper" theme deferred.
-- D10 (2026-10-21): Shirt/shorts regions are kept colour-disjoint by a 1/255 blue-channel parity nudge (invisible); upgrade
+- D10 (2026-10-21): Shirt/shorts regions are kept color-disjoint by a 1/255 blue-channel parity nudge (invisible); upgrade
   path = per-layer region mask in the manifest.
 - D11 (2026-10-21, user): `PIXELLAB_API_KEY_AGENT_DEV` (repo-root `.env`) is for AI-agent dev automation only
   (`npm run dev:agent`). Humans and every build have no env/key path; CI fails if agent code reaches `dist`.
@@ -134,15 +134,14 @@ Installable, offline-capable Studio. Tasks in `TODO.md` "PWA".
 
 ## Professional audit follow-up: independent directions
 
-Implemented in the current checkout: new character forms select independent artwork by default, preserving provider
-western originals and rendering each selected action direction independently. More options offers mirrored economy mode
-with an explicit hand-switching warning. Historical specs/drafts without `directionPolicy` retain mirrored behavior;
+Superseded by the creator's direction presets: new forms default to Top-down 8 (west views mirrored from their eastern
+partners); Unique 8 or turning off a view's mirror keeps independent artwork, preserving provider western originals. Historical specs/drafts without `directionPolicy` retain mirrored behavior;
 existing projects keep their frozen pixels. Active or interrupted specs determine their own estimates.
 
 The initial text-only v3 request still uses its supported default eight views, selecting cardinal originals for a four-view
 rig. Creation requires exactly the requested direction set before freezing. Item posing, future moves and exports preserve
 explicit western directions. Offline/browser tests cover all four policy/count combinations, western authored action
-trajectories, asymmetric pixels, eight-direction 96 px held-item batching, recolours, tucked layers and ZIP persistence.
+trajectories, asymmetric pixels, eight-direction 96 px held-item batching, recolors, tucked layers and ZIP persistence.
 
 Estimated creation ranges are 46–80 gens for independent four directions and 90–150 for eight; mirrored economy remains
 35–60 / 57–95. PixelLab may also bill dollars, retries/fallbacks add cost, and queue time varies. These are estimates, not caps.

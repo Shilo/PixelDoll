@@ -17,7 +17,7 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
 1. Produce **traditional frame-based paperdoll assets**: one frozen base (directions × clips × frames on one fixed cell and
    pivot) plus any number of **frame-aligned, separately exportable item layers**. Every layer sheet has the base's grid (held items may use an oversize 96 cell around the same pivot: spec §2.1 v1.3.1 [S5, B8]).
    Transparent cells are emitted, never omitted.
-2. **Every pixel comes from PixelLab.** PixelDoll only pads, recolours to a key, keys, drops stray components and composes. It
+2. **Every pixel comes from PixelLab.** PixelDoll only pads, recolors to a key, keys, drops stray components and composes. It
    never draws or resamples.
 3. **Minimal human work**: one prompt per item; everything runs automatically and ends in one accept/re-roll review [D7].
 4. **Correct engine output**: Godot 4.7 and Phaser 3.80/3.90/4.2 render pixel-identical to PixelDoll's compositor [M5];
@@ -45,11 +45,11 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 
 | Property | Decision | Evidence |
 |---|---|---|
-| Cell | **64×64** square. | Pro editors fit 16 frames at ≤64 px [S1]. |
-| Base character | `create-character-v3` text at **48 px**, clothed (plain grey t-shirt + grey shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded to 64 (x+8, y+12: 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
+| Cell | Square frame sized by the creator: default **80×80** around a 64 px body (body presets 48/64/96/128 px or custom; auto frame or manual, up to 256 px). Legacy rigs: 64×64 around 48 px. | Legacy 64 px cell: Pro editors fit 16 frames at ≤64 px [S1]. |
+| Base character | `create-character-v3` text at the chosen body size (default **64 px**; legacy rigs **48 px**), clothed (plain gray t-shirt + gray shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded into the frame (legacy 48→64: x+8, y+12, 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
 | Rest views | The padded S/E/N rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
-| Directions | New forms default to independent 4/8 views: preserve original western rotations and render every direction. Optional mirrored economy and policy-less saved specs keep 3/5 authored views plus western flips. The initial text-only v3 request retains default eight rotations; reference import uses 4/8. Exact direction/policy coverage is required before freezing. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
-| Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalised 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
+| Directions | New forms default to the **Top-down 8** preset: five drawn views plus western flips. Other presets (Top-down 4, Diagonal 4, Side-scroller 2, Unique 8) and per-direction mirror toggles choose which views are drawn; Unique 8 preserves original western rotations. Policy-less saved specs keep 3/5 authored views plus western flips. The initial text-only v3 request retains default eight rotations; reference import uses 4/8. Exact direction/policy coverage is required before freezing. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
+| Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalized 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
 | Clips | New Studio characters start with **`idle` (4), `walk` (8)**. Add moves such as `slash` (8), `hurt` (6), `run`, `cast` or `death` separately. Older evidence rigs include additional moves. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
 | Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of the south rest view. Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
 | Frozen frame | Binary alpha; **largest 8-connected component kept** (skeleton-v3 adds detached motion-smear FX on 7/15 clips); SHA-256 per cell; `baseHash` over all cells. | [S3] |
@@ -69,11 +69,11 @@ pixels outside the base, independent of seed). Managed skeleton-v3 is looser (3�
 rendered by the same raw request shape. Managed skeleton-v3 is only a **motion source**. **Template mode is banned** [D8].
 
 Raw v3 request: `{first_frame: rest view (64×64), first_frame_keypoints: rest, keypoints: sequence (3–15 frames),
-description: looks only ("bald man in a plain grey t-shirt … empty hands, no weapon"), action: short label, direction,
+description: looks only ("bald man in a plain gray t-shirt … empty hands, no weapon"), action: short label, direction,
 view: "low top-down", no_background: true, seed}`. Output = exactly `len(keypoints)` frames on the 64 canvas (no echo).
 
-**Normalisation:** managed skeleton-v3 renders on a larger centred canvas (**80 for a 48 px character, 96 for 64**); managed
-text modes on 68 for 48 px; Pro Flash bases vary by direction (52/56). Re-centre by `(w − 64)/2` before estimating; falling
+**Normalization:** managed skeleton-v3 renders on a larger centered canvas (**80 for a 48 px character, 96 for 64**); managed
+text modes on 68 for 48 px; Pro Flash bases vary by direction (52/56). Re-center by `(w − 64)/2` before estimating; falling
 motions may clip at the rig edge → author death with raw v3 [S3, S4].
 
 **Text-route hygiene [S4]:** pixminimax invents props/attackers ("slash" added a sword, "hurt" a giant fist): always append
@@ -153,7 +153,7 @@ existing scoped clip. New authored side Slash uses persisted `poseStyle: visible
 and separated passive wrist. Missing style retains the original pose arrays and paid request hashes for older jobs.
 
 An explicit `near-rest-v1` body-palette repair reuses completed renders. It changes only outliers beyond the existing
-12/255 channel tolerance with a unique nearest standing colour within 16/255 per channel and a compatible hue family.
+12/255 channel tolerance with a unique nearest standing color within 16/255 per channel and a compatible hue family.
 Both raw drift and changed-pixel shares are capped at 5%; unsafe matches stay untouched. Alpha and coordinates never
 change. Only corrected PNGs need new actual measurements. Existing pose, palette, feet and border gates still apply.
 `ClipSource.processing` preserves the version, original fit, correction counts and raw/final estimator-input PNG hashes.
@@ -173,7 +173,7 @@ change. Only corrected PNGs need new actual measurements. Existing pose, palette
 
 Key score ratio < 35 on opaque pixels, rim guard, drop components < 2 px, despill, layer drawn over the real base frame
 (pre-occluded). Key choice: green; magenta when the prompt matches `/green|emerald|lime|olive|jade|teal|mint|forest/`; never
-grey; switch key after two failures. Colour budget: the key ramp takes ~5–8 of ~17–19 quantized colours → items get 6–8 [S2].
+gray; switch key after two failures. Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
 
 ### 4.5 Item QA (per item over all cells)
 
@@ -209,7 +209,7 @@ H4 (keyframe consistency) fails only band items (helmet, face) [T3]. B14: soft i
 clip-direction where the item covers ≥ 50 % of the body in some frame and own < 0.5 (the cape from behind, not its edges from the
 front); off for legs and feet (S and N look alike). On the Ranger: 6 of the 7 real cape-north frames still flag (the 7th clip fails G4 anyway), 43 false flags are gone.
 For band items with stored rest/move poses, a failed H4 may instead require review when an observed forearm explains
-it. Align by head joints (±1 px), and allow occlusion only at visible key-coloured body pixels within the requested
+it. Align by head joints (±1 px), and allow occlusion only at visible key-colored body pixels within the requested
 elbow-to-wrist capsule (3 px radius at a 64 px cell). Require at least 6 visible item pixels, a failing unmasked score,
 and a masked score ≥ the unchanged 0.75 floor under that same joint alignment. An unrelated arm or head alignment
 alone cannot excuse a failure. This produces an explicit review warning, not verified hidden detail or a clean pass.
@@ -236,9 +236,9 @@ frame; missing positions cannot be reported as merely ambiguous. Conversely, val
 as missing anchors. A confident sibling never hides an uncertain clip. Detached pixels retain `grip.none` diagnostics and
 do not vote for the nearer wrist. The user reviews uncertain grip; no hidden anatomy is inferred. A held frame repaired
 from the keyframe (S5) is not itself a warning.
-D1 (dress, 0 gens): a colourful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-grey px fails the dress call, so the
+D1 (dress, 0 gens): a colorful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-gray px fails the dress call, so the
 design is re-rolled before 36 gens of poses copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks
-for grey/metal/black/white parts. Handedness is set by the
+for gray/metal/black/white parts. Handedness is set by the
 motion: authored weapon-hand actions and dressed keyframes keep it; prompts and hand marks do not [S3].
 
 ### 4.6 fg/bg split, compose, export
@@ -270,7 +270,7 @@ draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg be
 | `facial_hair` | head | head | 100 | — | — |
 | `hair` | head | head | 110 | 3 (5 via `zOverrides`: over the cape's bg, T3) | — |
 | `face_acc` | head | head | 120 | — | — |
-| `head` | head | head | 130 | — | none; tucks `hair` under it (`clips`, B14); a hood ticks hide hair (`item.hides`) |
+| `head` | head | head | 130 | — | none; tucks `hair` under it (`clips`, B14); a hood checks hide hair (`item.hides`) |
 | `off_hand` | held | hand_l | 140 | 2 (5 in S/E/W) | — |
 | `main_hand` | held | hand_r | 150 | 1 (5 in S/E/W) | — |
 
@@ -286,17 +286,17 @@ draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg be
 - Hides and overrides are data (`slot.hides`, `item.hides`, sparse `zOverrides`) [R4]. Items are always generated against the
   bare base; no dress-order generation.
 
-## 6. Colour model [M4]
+## 6. Color model [M4]
 
 Materials = indexed ramps, shadow → highlight, disjoint within each item owner in `pixeldoll/2` (globally in legacy `pixeldoll/1`); derived per item from its layers (OKLab k-means,
-k ≤ 4 auto) and from the base. **Base regions (B15):** the base's shirt and shorts share one grey ramp (M4), so
-`lib/dress/regions.ts` splits them by position: garment greys (C < 0.04, L ≥ 0.18) form 4-connected components (outlines and
+k ≤ 4 auto) and from the base. **Base regions (B15):** the base's shirt and shorts share one gray ramp (M4), so
+`lib/dress/regions.ts` splits them by position: garment grays (C < 0.04, L ≥ 0.18) form 4-connected components (outlines and
 skin separate the garments), each component goes to the shorts when ≥ 75 % of it lies at or below hip − 1.5 px along the
 neck → hip axis (anchor tracks; fixtures: 60 % of the figure height), a straddling component is cut px by px. The region is
 written into the pixel: blue LSB even = shirt, odd = shorts (a 1/255 nudge). Base materials are then Shirt / Shorts / Skin,
-still exact-colour and disjoint, so export and engine swap shaders are unchanged. Idempotent; runs when a project opens
+still exact-color and disjoint, so export and engine swap shaders are unchanged. Idempotent; runs when a project opens
 (existing rigs are migrated once, `baseHash` and the items made for it move to the new hash). New bases are prompted with
-"light grey t-shirt and dark grey shorts". Recolour = exact index swap (`variantRamp`), `linkTo` for linked materials; grayscale × tint
+"light gray t-shirt and dark gray shorts". Recolor = exact index swap (`variantRamp`), `linkTo` for linked materials; grayscale × tint
 only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ swap shader), baked variants per preset.
 
 ## 7. Storage, queue, key [M1, M2]
@@ -339,7 +339,7 @@ only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ 
 
 Look **A (native minimal)**, **dark mode by default** with a visible, persisted dark/light switch; system UI font stack;
 **Lucide icons** (`@lucide/svelte`) everywhere; no pixel fonts or pixel icons. Sprites render `image-rendering: pixelated` at
-integer zoom. Theming ("Paper" look) deferred.
+integer zoom. Theming ("Paper" look) deferred. The shipped Studio has since moved to the Bronze UI immersive experience; see [production experience](design/production-experience.md).
 
 ## 9. Modules (`app/src/lib`)
 
@@ -348,7 +348,7 @@ integer zoom. Theming ("Paper" look) deferred.
 | `pixellab/` (client, routes, queue) | built [M1]; add raw/managed skeleton-v3, pixminimax, `create-character-v3` import, `res.directions` check, re-poll policy |
 | `store/` (manifest, db, zip, project) | built; manifest gains `Clip` sources (§manifest-spec) |
 | `image/` (png, pngraw, hash, chroma, diff) | built; body connectivity observations, item grip and registration checks |
-| `rig/` (rig, normalize, mirror, skeleton, freeze) | built for template frames [M2]; **update**: rest-view import, clip routes, pose presets (`setArm`/`rotate`/`shift`, port of `spikes/api/lib/skel.mjs`), canvas re-centring 68/80/96 → 64, rig QA §3.2 |
+| `rig/` (rig, normalize, mirror, skeleton, freeze) | built for template frames [M2]; **update**: rest-view import, clip routes, pose presets (`setArm`/`rotate`/`shift`, port of `spikes/api/lib/skel.mjs`), canvas re-centering 68/80/96 → 64, rig QA §3.2 |
 | `items/` (items, run) | update to `skeleton-pose` (dress + pose) and `inpaint-grid` routes |
 | `dress/`, `compose/`, `export/` | built [M4, M5] |
 
@@ -405,7 +405,7 @@ USD billing and unknown charges prevent treating any estimate as an account spen
 
 | # | Question | Criterion | Default |
 |---|---|---|---|
-| O7 | Palette: 3-step key ramp to free item colours | colours per item, key kept | 5-step ramp |
+| O7 | Palette: 3-step key ramp to free item colors | colors per item, key kept | 5-step ramp |
 | O11 | Face-context items (hair, glasses) and worn items (chest, cape) on `skeleton-pose` over a full 3-dir × 4-clip set | §4.5 pass rate vs `inpaint-grid` | `skeleton-pose` |
 | O13 | Held items in mirrored west | Superseded for new forms by independent body directions; generated grips still require QA. Legacy/economy rigs retain flips. | independent new forms |
 | O14 | Base scale 48 vs 56 | headroom vs figure size | 48 |

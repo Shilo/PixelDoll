@@ -24,7 +24,7 @@ import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, rawClip, managedMot
 import { gridEstimate } from '../lib/items/items.ts';
 import { poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
-import { BASE_BODY, basePrompt, looksOf } from './model.ts';
+import { basePrompt, looksOf, withoutBaseBody } from './model.ts';
 import { affectedMoveDirections, clearMovePoseData, invalidateMoveItems, moveRigVersion } from './replaceMove.ts';
 import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
@@ -61,7 +61,7 @@ const authoredBase = (anim: string) => (anim in ACTIONS ? ACTIONS[anim] : undefi
 /** Cost from measured prices: base 2 + import 0.25, per clip-direction raw 3 (+ managed motion 3 unless authored), joints 0.1
  * per raw frame (+ per managed motion frame). */
 export const creationDirections = (spec: Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy'>): RigDirection[] => spec.directions ?? planDirections(spec.directionPolicy === 'independent' ? 'all' : spec.dirs === 8 ? '8' : '4', genDirsOf(spec.dirs, spec.directionPolicy)).dirs;
-export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => looksOf(spec.exactPrompt ? spec.description.replace(BASE_BODY, '').trim() || 'humanoid base body' : spec.description);
+export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => looksOf(spec.exactPrompt ? withoutBaseBody(spec.description).trim() || 'humanoid base body' : spec.description);
 export function estimate(choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy' | 'size'> = 4, policy: DirectionPolicy = 'mirrored') {
   const render = (a: (typeof BASE_ANIMS)[number]) => RAW_GENS + a.frames * EST;
   const per = (a: (typeof BASE_ANIMS)[number]) => render(a) + (authoredBase(a.name) ? 0 : 3 + a.frames * EST);
@@ -132,7 +132,7 @@ export async function run(req: Req, label: string, tag: string, cache = false, r
   return r;
 }
 export const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
-/** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labelled by direction). */
+/** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labeled by direction). */
 async function imagesOf(r: JobRec): Promise<{ label: string; img: Img }[]> {
   const res = r.jobs.flatMap((s) => s.results).sort((a, b) => +a.label.split('/').pop()! - +b.label.split('/').pop()!);
   return Promise.all(res.map(async (x) => {
@@ -234,14 +234,14 @@ async function paletteCandidate(anim: string, dir: DirectionName, rest: Img, fra
     const points = record && checkedKeypoints((record.response as { keypoints?: unknown })?.keypoints);
     return points ? checkedKeypoints(unpadSkeleton(points, input, frame)) : undefined;
   }));
-  if (measured.some(k => !hasAll(k))) throw new Error(`${dir}: match body colours only after all original joint checks have completed.`);
+  if (measured.some(k => !hasAll(k))) throw new Error(`${dir}: match body colors only after all original joint checks have completed.`);
   const rawQa = clipQa({ anim, rest, frames, requested, measured, stray });
   if (rawQa.paletteFit >= RIG_GATES.paletteFit) return { frames }; // already-good views are bit-for-bit unchanged
   // Observations no longer trigger redraws, but an explicit palette-only repair still requires other checks to pass.
-  if (rawQa.fails.length || rawQa.adherence === null || rawQa.adherence > RIG_GATES.adherence || rawQa.feetDrift > RIG_GATES.silhouetteBottomDelta || rawQa.border > RIG_GATES.border) throw new Error(`${dir}: colour matching cannot repair pose, feet or border failures.`);
+  if (rawQa.fails.length || rawQa.adherence === null || rawQa.adherence > RIG_GATES.adherence || rawQa.feetDrift > RIG_GATES.silhouetteBottomDelta || rawQa.border > RIG_GATES.border) throw new Error(`${dir}: color matching cannot repair pose, feet or border failures.`);
   const fixed = repairBodyPalette(rest, frames);
-  if (!fixed.changedPixels) throw new Error(`${dir}: the colour drift is outside the bounded reference-palette repair.`);
-  if (fixed.paletteFit < RIG_GATES.paletteFit) throw new Error(`${dir}: bounded colour matching still fails the palette quality check. No new joint checks were started.`);
+  if (!fixed.changedPixels) throw new Error(`${dir}: the color drift is outside the bounded reference-palette repair.`);
+  if (fixed.paletteFit < RIG_GATES.paletteFit) throw new Error(`${dir}: bounded color matching still fails the palette quality check. No new joint checks were started.`);
   return { frames: fixed.frames, processing: { version: 'near-rest-v1', rawPaletteFit: fixed.rawPaletteFit, rawOutliers: fixed.rawOutliers,
     changedPixels: fixed.changedPixels, remainingOutliers: fixed.remainingOutliers, changedFrames: fixed.changedFrames,
     rawInputHashes: await Promise.all(frames.map(async f => `sha256:${await sha256(await encodePngBytes(f))}` as Sha256)),
@@ -308,7 +308,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     ...(spec.view && !['low top-down', 'high top-down', 'side'].includes(spec.view) ? ['Invalid camera.'] : [])];
   if (errors.length) throw new Error(errors.join(' '));
   const creationSpec = await sha256(stableStringify({ ...spec, projectId: undefined, activityScope: undefined }));
-  if (await completedCreation(projectId, creationSpec)) return projectId; // completion may have committed before its UI acknowledgement
+  if (await completedCreation(projectId, creationSpec)) return projectId; // completion may have committed before its UI acknowledgment
   const looks = creationLooks(spec), view = spec.view ?? 'low top-down';
   const modern = !!spec.exactPrompt || spec.frame !== undefined || spec.directions !== undefined;
   // 1. base character, text only (8 rotations)
@@ -335,7 +335,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const others = Object.fromEntries(await Promise.all((Object.keys(registered) as Direction[]).filter((d) => d !== 'south').map(async (d) => [d, png(await b64(registered[d]))])));
   const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(registered.south)), direction_images: others, n_directions: modern ? 8 : spec.dirs ?? 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base', false, true, undefined, spec.activityScope);
   const charId = (imp.response as { character_id?: string })?.character_id;
-  if (!charId) throw new Error('PixelLab did not return a character id');
+  if (!charId) throw new Error('PixelLab did not return a character ID');
   const ch = await run(routes.getCharacter(charId), `${spec.name} · skeleton`, 'studio-base', true, false, undefined, spec.activityScope);
   const refs = (ch.response as { skeletons?: { '2d_references'?: Record<string, { keypoints?: Record<string, { x: number; y: number }> }> } })?.skeletons?.['2d_references'];
   const restKps = {} as Record<DirectionName, Keypoint[]>, managed = managedRestKeypoints(refs, DIRS);
@@ -445,13 +445,13 @@ export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): Di
 interface BodyPaletteStats { directions: DirectionName[]; changedPixels: number; rawOutliers: number; remainingOutliers: number; changedFrames: number }
 export interface MeasurementRecoveryPlan { recordIds: string[]; checks: number; gens: number; usd: number; rigVersion: string; rawHashes: string[]; palette?: BodyPaletteStats }
 export interface BodyPaletteRepairPlan extends MeasurementRecoveryPlan, BodyPaletteStats { itemGens: number }
-/** Preview the fixed, versioned colour repair against cached raw art; no body or joint request is sent. */
+/** Preview the fixed, versioned color repair against cached raw art; no body or joint request is sent. */
 export async function bodyPaletteRepairPlan(projectId: string, spec: MoveSpec): Promise<BodyPaletteRepairPlan> {
   const { rec } = await loadProject(projectId);
   const plan = await measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined,
     bodyPaletteRepair: { id: 'palette-review', version: 'near-rest-v1', rigVersion: moveRigVersion(rec) } });
   if (!plan.palette?.directions.length) throw new Error('No palette-only body failure can be matched safely.');
-  if (plan.recordIds.length) throw new Error('Review unknown joint-check outcomes before matching these body colours.');
+  if (plan.recordIds.length) throw new Error('Review unknown joint-check outcomes before matching these body colors.');
   return { ...plan, ...plan.palette, itemGens: poseGens(spec.items.filter(id => !rec.manifest.items.find(item => item.id === id)?.design).length, moveFrames(rec.manifest, spec), moveDirections(rec.manifest, spec.dirs).length) };
 }
 /** API-free review of exact cached body renders. Consent never applies to an unrelated image or regenerated body. */
@@ -459,7 +459,7 @@ export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec)
   const { rec, project } = await loadProject(projectId);
   const rig = rec.manifest.rig, rigVersion = moveRigVersion(rec);
   if (!spec.replace || spec.itemMethod || !spec.action || !ACTIONS[spec.action] || !spec.dirs?.length) throw new Error('Joint-check recovery needs the original authored body-repair settings.');
-  if (spec.bodyPaletteRepair && (spec.bodyPaletteRepair.version !== 'near-rest-v1' || !spec.bodyPaletteRepair.id || spec.bodyPaletteRepair.rigVersion !== rigVersion)) throw new Error('This character or colour-repair policy changed since review.');
+  if (spec.bodyPaletteRepair && (spec.bodyPaletteRepair.version !== 'near-rest-v1' || !spec.bodyPaletteRepair.id || spec.bodyPaletteRepair.rigVersion !== rigVersion)) throw new Error('This character or color-repair policy changed since review.');
   if (spec.measurementRecovery && spec.measurementRecovery.rigVersion !== rigVersion) throw new Error('This character changed since these joint checks were reviewed.');
   const jobs = queue.snapshot().jobs, approved = spec.measurementRecovery?.recordIds;
   if (approved && (!approved.length || new Set(approved).size !== approved.length || !spec.measurementRecovery?.id)) throw new Error('The joint-check recovery intent is invalid.');
@@ -555,7 +555,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
     receipt.specHash === await recoverySpecHash(spec) && receipt.bodyRigVersion === moveRigVersion(rec);
   const recovery = intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
   if (!published && (spec.replace || !existing)) await addBodyClip(projectId, spec, onProgress, recovery);
-  // Freeze durable garment-region colours before either direct posing or shared-fit target stamps.
+  // Freeze durable garment-region colors before either direct posing or shared-fit target stamps.
   // saveSplit also advances an exact audit recovery receipt, so interrupted equipment work can resume safely.
   const normalized = await loadProject(projectId), split = await splitBase(normalized.project);
   deriveMaterials(normalized.project);

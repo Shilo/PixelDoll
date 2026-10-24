@@ -1,7 +1,7 @@
-// Base colour regions (B15, architecture §6): shirt vs shorts on the base body. PixelLab draws both garments from one grey
-// ramp (M4), so no exact-colour material can tell them apart. Here the base's garment px are split by POSITION (per garment
-// component, above / below the hip line) and the answer is written into the pixels: shirt greys get an even blue channel,
-// shorts greys an odd one (a 1/255 nudge, invisible). Everything downstream stays exact-colour: Shirt = even garment greys,
+// Base color regions (B15, architecture §6): shirt vs shorts on the base body. PixelLab draws both garments from one gray
+// ramp (M4), so no exact-color material can tell them apart. Here the base's garment px are split by POSITION (per garment
+// component, above / below the hip line) and the answer is written into the pixels: shirt grays get an even blue channel,
+// shorts grays an odd one (a 1/255 nudge, invisible). Everything downstream stays exact-color: Shirt = even garment grays,
 // Shorts = odd ones, Skin = the rest; ramps are disjoint (spec inv. 5), engine swap shaders keep working.
 // Idempotent: garment-ness is judged with the region bit cleared, so splitting a split cell changes nothing.
 import { components } from '../image/chroma.ts';
@@ -11,7 +11,7 @@ import { baseHashOf, cellHash, cellKeys, type DirectionName, type Sha256 } from 
 import type { Project } from '../store/manifest.ts';
 import { lab } from './palette.ts';
 
-/** Garment greys: low chroma (skin is warm, C ≥ 0.09; eye whites 0.044) and not the near-black outline (B15 probe on S4 rig). */
+/** Garment grays: low chroma (skin is warm, C ≥ 0.09; eye whites 0.044) and not the near-black outline (B15 probe on S4 rig). */
 export const GARMENT = { minL: 0.18, maxC: 0.04 };
 /** Shorts start ~1.3 px above the hip keypoint (S4 rig, south/east/north): px at or below hip − CUT along the body axis. */
 const CUT = 1.5;
@@ -62,7 +62,7 @@ const shifted = (l: BodyLine, t: number): BodyLine => {
   return { hip: [hx + dx, hy + dy], neck: [nx + dx, ny + dy] };
 };
 const rgbAt = (im: Img, p: number) => (im.data[p * 4] << 16) | (im.data[p * 4 + 1] << 8) | im.data[p * 4 + 2];
-/** Per garment colour (region bit cleared): [shirt px, shorts px] over the given split cells. */
+/** Per garment color (region bit cleared): [shirt px, shorts px] over the given split cells. */
 function tally(pairs: [Img, Img][], t = new Map<number, [number, number]>()) {
   for (const [im, s] of pairs)
     for (let p = 0; p < im.w * im.h; p++) {
@@ -77,7 +77,7 @@ function tally(pairs: [Img, Img][], t = new Map<number, [number, number]>()) {
 }
 /**
  * B15 live (8-dir rig, walk/east/1): a patch-tracked hip anchor sat 4 px below the shorts, so the shorts went to the shirt.
- * Colours that are clearly one garment over the whole rig (>= 75 % of their px) vote: per cell the line moves up to 6 px
+ * Colors that are clearly one garment over the whole rig (>= 75 % of their px) vote: per cell the line moves up to 6 px
  * up / 4 px down to where most of those px agree, ties to the anchor line. Shared shades still split by position.
  */
 function fitLine(im: Img, line: BodyLine, votes: Map<number, [number, number]>): BodyLine {
@@ -99,7 +99,7 @@ function fitLine(im: Img, line: BodyLine, votes: Map<number, [number, number]>):
 
 /**
  * Split every base cell of `p` in place (Studio rigs: hip/neck anchor tracks; fixtures: guessLine; each line fitted by the
- * rig-wide colour votes, fitLine), mark the base `regions: 'shirt-shorts'`, move baseHash (and the items made for the old
+ * rig-wide color votes, fitLine), mark the base `regions: 'shirt-shorts'`, move baseHash (and the items made for the old
  * base) when pixels changed, and drop the base's materials when they predate the split so deriveMaterials makes Shirt /
  * Shorts / Skin. `images`: the new cell images; `dirty`: something to persist (saveSplit). Idempotent: the votes come from
  * the anchor lines, which do not see the region bit.
@@ -142,8 +142,8 @@ export async function splitBase(p: Project): Promise<{ changed: number; dirty: b
 }
 
 export async function selfTest() {
-  // 1 x 12 column: skin head, grey shirt (rows 2-5), outline row 6, grey shorts (rows 7-9) sharing the shirt's greys, skin legs
-  const grey = [0x9eacb1, 0x6d7c87, 0x5f6162], col = [0xc96e4e, 0xc96e4e, ...grey, 0x9eacb1, 0x000000, ...grey, 0xc96e4e, 0xc96e4e];
+  // 1 x 12 column: skin head, gray shirt (rows 2-5), outline row 6, gray shorts (rows 7-9) sharing the shirt's grays, skin legs
+  const gray = [0x9eacb1, 0x6d7c87, 0x5f6162], col = [0xc96e4e, 0xc96e4e, ...gray, 0x9eacb1, 0x000000, ...gray, 0xc96e4e, 0xc96e4e];
   const im: Img = { w: 1, h: col.length, data: new Uint8ClampedArray(col.flatMap((c) => [c >> 16, (c >> 8) & 255, c & 255, 255])) };
   const at = (x: Img, y: number) => (x.data[y * 4] << 16) | (x.data[y * 4 + 1] << 8) | x.data[y * 4 + 2];
   const line = { hip: [0, 8.5] as [number, number], neck: [0, 1] as [number, number] };
@@ -151,15 +151,15 @@ export async function selfTest() {
   console.assert([2, 3, 4, 5].every((y) => !isShorts(at(s, y))) && [7, 8, 9].every((y) => isShorts(at(s, y))), 'shirt even, shorts odd');
   console.assert(at(s, 0) === 0xc96e4e && at(s, 6) === 0 && [2, 7].every((y) => Math.abs(at(s, y) - at(im, y)) <= 1), 'skin / outline untouched, garments nudged by <= 1');
   console.assert(splitCell(s, line).data.join() === s.data.join(), 'idempotent');
-  console.assert(isGarment(0x9eacb1) && isGarment(0x31323d) && !isGarment(0x000000) && !isGarment(0xc96e4e) && !isGarment(0xf9e7c9), 'garment greys');
+  console.assert(isGarment(0x9eacb1) && isGarment(0x31323d) && !isGarment(0x000000) && !isGarment(0xc96e4e) && !isGarment(0xf9e7c9), 'garment grays');
   // shirt and shorts touching (no outline): cut px by px at the line; a sleeve dipping below the line stays shirt
-  const col2 = [...grey, ...grey, 0x9eacb1];
+  const col2 = [...gray, ...gray, 0x9eacb1];
   const im2: Img = { w: 1, h: 7, data: new Uint8ClampedArray(col2.flatMap((c) => [c >> 16, (c >> 8) & 255, c & 255, 255])) };
   const s2 = splitCell(im2, { hip: [0, 5] });
   console.assert([0, 1, 2].every((y) => !isShorts(at(s2, y))) && [4, 5, 6].every((y) => isShorts(at(s2, y))), 'straddling component cut at hip - 1.5');
   const s3 = splitCell(im2, { hip: [0, 7.5] });
   console.assert([0, 1, 2, 3, 4, 5, 6].every((y) => !isShorts(at(s3, y))), 'a component mostly above the line stays shirt');
-  // splitBase: a light shirt over dark shorts touching (one component); cell 3's hip anchor sits 3 px too low, the colour
+  // splitBase: a light shirt over dark shorts touching (one component); cell 3's hip anchor sits 3 px too low, the color
   // votes of the other cells pull its line up (B15 live walk/east/1)
   const light = 0x9eacb0, dark = 0x403f44, colImg = (n: number) => { const c = [...Array(4).fill(light), ...Array(n).fill(dark)]; return { w: 1, h: c.length, data: new Uint8ClampedArray(c.flatMap((x) => [x >> 16, (x >> 8) & 255, x & 255, 255])) } as Img; };
   const proj = { images: new Map<string, Img>(['a', 'b', 'c', 'd'].map((k) => [`sha256:${k}`, colImg(4)])), manifest: {
@@ -169,7 +169,7 @@ export async function selfTest() {
   {
     const cells = proj.manifest.items[0].layers[0].cells!.walk.south!.map((h) => proj.images.get(h!)!);
     console.assert(r.changed === 4 && proj.manifest.items[0].regions === 'shirt-shorts' && proj.manifest.rig.baseHash !== 'sha256:0', 'splitBase marks and rehashes');
-    console.assert(cells.every((c) => [0, 1, 2, 3].every((y) => !isShorts(at(c, y))) && [4, 5, 6, 7].every((y) => isShorts(at(c, y)))), 'the low anchor of cell 3 is pulled up by the colour votes');
+    console.assert(cells.every((c) => [0, 1, 2, 3].every((y) => !isShorts(at(c, y))) && [4, 5, 6, 7].every((y) => isShorts(at(c, y)))), 'the low anchor of cell 3 is pulled up by the color votes');
   }
   console.assert(guessLine(im)!.hip[1] === 6.6 && guessLine({ w: 1, h: 1, data: new Uint8ClampedArray(4) }) === null, 'guessLine');
 }

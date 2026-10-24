@@ -30,7 +30,7 @@ Use the existing compositor as the authority, with a direct fixture load and iso
 ```text
 loadFixture(read fixture files)
   → preset[0].items, edited locally
-  → optional explicit recolour(project, chosenVariants)
+  → optional explicit recolor(project, chosenVariants)
   → composeCell(projectView, visibleCompatibleItems, clip, direction, cell, bakedFrame)
   → reusable native-size canvas / cached image
   → nearest-neighbor actor draw
@@ -50,7 +50,7 @@ Do not copy round five's per-image occupied-pixel crop into an animation loop. B
 
 All 32 default Adventurer Walk composites were assembled offline. No visible composite color fell outside the decoded fixture palette. This checks compositor source-color preservation, not final browser display scaling. The original fixture itself already contains historical palette nudges; preserve its stored pixels rather than trying to reconstruct earlier API outputs.
 
-Draw the actor at full opacity, without filters, blend modes, theme tint, new lighting, shadows or glow. Preserve existing painted shading. Use nearest-neighbor scaling and integer device-pixel placement/scale where practical; evaluate fractional display scaling rather than assuming CSS pixels equal physical pixels. Render atmosphere/scrims behind the actor, and do not put a global theme gradient over its pixels. Intentional palette editing can use the existing exact-ramp `recolour` path independently.
+Draw the actor at full opacity, without filters, blend modes, theme tint, new lighting, shadows or glow. Preserve existing painted shading. Use nearest-neighbor scaling and integer device-pixel placement/scale where practical; evaluate fractional display scaling rather than assuming CSS pixels equal physical pixels. Render atmosphere/scrims behind the actor, and do not put a global theme gradient over its pixels. Intentional palette editing can use the existing exact-ramp `recolor` path independently.
 
 Optional reflection is a **code-only scene configuration**, with no interface toggle/slider. Reuse the current complete dressed frame, reflect about its ground anchor and fade below the feet; keep actor draw state separate so reflection opacity/compositing never leaks onto it. Reuse the effect surface instead of allocating a new canvas every animation tick. It is a subdued raster approximation, not an alternate physical view. The approved stills used a faint Preview reflection; enable other scene reflections only where the proof supports them. Missing/changed gear must update reflection immediately. Do not add a contact shadow: the current approved design expressly excludes new actor shadows.
 

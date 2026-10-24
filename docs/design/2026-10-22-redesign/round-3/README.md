@@ -55,7 +55,7 @@ Customization and gameplay share the same identity, wardrobe, equipment, palette
 | Element | Customize | Play |
 | --- | --- | --- |
 | Rowan name + chevron | Opens the character switcher | Same switcher in the same position |
-| Wardrobe, Colours, Outfits | Available | Available; equipment changes remain immediate |
+| Wardrobe, Colors, Outfits | Available | Available; equipment changes remain immediate |
 | Equipment categories and item choices | Right zone | Same right zone |
 | New item, saved designs, local color | Available | Available |
 | Moves authoring | Available | Hidden |

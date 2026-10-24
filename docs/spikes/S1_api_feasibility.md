@@ -30,21 +30,21 @@ the chest layer, a holey chest on frame 2, and a little face baked into the helm
 | File | What | Browser-portable |
 |---|---|---|
 | `lib/api.mjs` | `client({key})` → `req / run(path, body)` (POST, then poll `/background-jobs/{id}`, 429/529 backoff), `findImages` (base64 or URL anywhere in a payload) | yes (plain `fetch`) |
-| `lib/img.mjs` | RGBA image `{w,h,d:Uint8ClampedArray}` (same layout as `ImageData`), over-compositing, scale, pad/crop, bbox, colours | yes, except `decode/encode` (pngjs) → use canvas |
+| `lib/img.mjs` | RGBA image `{w,h,d:Uint8ClampedArray}` (same layout as `ImageData`), over-compositing, scale, pad/crop, bbox, colors | yes, except `decode/encode` (pngjs) → use canvas |
 | `lib/diff.mjs` | premultiplied deltas, exact / threshold / hysteresis / palette-novelty masks, connected components, morphology, `growInto`, metrics (residual, drift, erasures), heatmap, temporal stats, `selfTest()` | yes |
 | `lib/extract.mjs` | named extraction variants (E6) incl. recommended `slot_novel2_grow1` and `auto` | yes |
-| `lib/sheet.mjs` | contact sheet (nearest-neighbour ×N on a checkerboard) | yes |
+| `lib/sheet.mjs` | contact sheet (nearest-neighbor ×N on a checkerboard) | yes |
 | `lib/run.mjs` | Node-only harness: output dir, call log, balance-delta cost | no (Node) |
 
 Heatmap legend in every sheet: green = pixel added on empty canvas, red = body pixel changed by >18, blue = small drift (≤18),
-magenta = body pixel erased, grey = unchanged base.
+magenta = body pixel erased, gray = unchanged base.
 
 ## E1 — Base body
 
 Prompt: "plain bald human base body for a paperdoll, light skin, simple plain grey underwear shorts, barefoot, no hair…, arms
 slightly away from the body", seed 1234, low top-down.
 
-| Route | Gens | Latency | Stored canvas | Character bbox (south) | Colours | Notes |
+| Route | Gens | Latency | Stored canvas | Character bbox (south) | Colors | Notes |
 |---|---|---|---|---|---|---|
 | `create-character-v3` (from text, 64×64) | 2 | 288 s | **64×64** (not padded) | 26×60 at y=2 → **2 px headroom** | ~30 | 8 clean, consistent rotations, detailed shading. Sheet: [`v3_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e1_base/v3_sheet.png) |
 | `create-character-with-4-directions` (image_size 64) | 1 | 52 s | **92×92** (~40 % pad) | 25×65 at y=13 | 8–10 (quantized) | Flatter, chibi-ish, clean. Too big for multi-frame grids (81+ px → max 4 frames). Sheet: [`d4_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/e1_base/d4_sheet.png) |
@@ -116,15 +116,15 @@ Findings:
   identical to the base: this is **a crop of the inpaint result to the mask, not a semantic layer**. It gives nothing beyond
   local diff of the default output. The job payload carries `images`, `original_images` (identical) and `image_url`. The URL
   version differs slightly inside the mask (0/219 identical), so **use the base64 `images[0]`**. Pro Flash accepts 64×64.
-- `edit-image` (cheap, 1 gen) ignores "add only" (helmet prompt → full plate armour) and moves or erases pixels. **Reject it.**
+- `edit-image` (cheap, 1 gen) ignores "add only" (helmet prompt → full plate armor) and moves or erases pixels. **Reject it.**
 - `edit-images-v2` (10 gens) redraws and shifts the body (green halo in the heatmap). **Reject it.**
-- `edit-image-pro-flash` keeps the geometry but recolours ~100 % of body pixels by small deltas (blue everywhere). It is usable
+- `edit-image-pro-flash` keeps the geometry but recolors ~100 % of body pixels by small deltas (blue everywhere). It is usable
   only with slot masking. A slot rectangle that is too tight cuts weapons that extend beyond it, so weapon slots must be generous.
 
 ## E4 — Animated equipment (THE question): 8-frame base walk, 64×64
 
 Per-frame slot rectangles come from per-frame skeletons. Extraction variant: `auto` (see E6). Metrics are per frame, averaged.
-Areas are layer pixels. "Adj. palette J" is the Jaccard index of layer colour sets between adjacent frames (1 = identical colours).
+Areas are layer pixels. "Adj. palette J" is the Jaccard index of layer color sets between adjacent frames (1 = identical colors).
 
 | Item / dir | Route | Gens | Latency | Frames / order ok | Body px changed outside slot (mean) | Layer px | Area CV | Adj. palette J | Notes |
 |---|---|---|---|---|---|---|---|---|---|
@@ -142,7 +142,7 @@ Areas are layer pixels. "Adj. palette J" is the Jaccard index of layer colour se
 | chest S | edit-animation-v2 | 10 | 119 s | 8 / yes | 415 | 228 | 0.07 | 0.65 | arm speckles in the layer |
 | chest S | transfer-outfit-v2 | 10 | 126 s | 8 / yes | 416 | 220 | 0.10 | 0.74 | |
 | helmet S+E | **edit-animation-v2, 16 frames (8 S + 8 E) in one call** | 10 | 127 s | 16 / yes | — | 141–176 | — | 0.57–0.77 vs S frame 0 | **one design across both directions** |
-| helmet S | edit-animation-v2 + `target_palette` (base palette + 5 greys) | 10 | 99 s | 8 / yes | — | — | — | — | body exact 0 % → **25.6 %**, ≤18 → 73.7 % |
+| helmet S | edit-animation-v2 + `target_palette` (base palette + 5 grays) | 10 | 99 s | 8 / yes | — | — | — | — | body exact 0 % → **25.6 %**, ≤18 → 73.7 % |
 | helmet S | transfer-outfit-v2 + `target_palette` | 10 | 78 s | 8 / yes | — | — | — | — | body exact 0 % → **34.2 %**, ≤18 → 78.4 % |
 
 Body drift distribution below the head (y≥24, 5033 px over 8 frames):
@@ -240,7 +240,7 @@ That gives 5 items × 3 drift sources. Bias warning: L* was itself made with slo
 
 Real composites (`out/e6_diff/e6_results.json`) confirm the ranking: global thresholds pick up drift speckle everywhere (pf-edit
 thr18: 45 components on average, 332 px outside the slot). Slot gating removes every out-of-slot pixel, and novelty filtering
-roughly halves "base-colour leakage" (pf-edit 39.7 % → 14–21 %).
+roughly halves "base-color leakage" (pf-edit 39.7 % → 14–21 %).
 
 **Failure mode of novel2:** leather brown is close to skin shading, so the chest lost 45–53 % of its pixels (holes). The `auto`
 fallback keeps novel_cc when novel2 removes more than 25 % of the area. **Decide this per item across all frames, not per frame.**
@@ -271,7 +271,7 @@ Deciding per frame made chest frame 2 holey in the showcase.
 Validation rejections (400/422) cost nothing. Pro Flash `/pro-flash/cost` predicted 5 for edit and inpaint at 64×64, which was
 correct.
 
-### Async behaviour
+### Async behavior
 
 - Every edit, inpaint and animation route returns 202 with `background_job_id`. Submit takes 0.8–3 s; poll
   `/background-jobs/{id}` until `status: completed`.
@@ -282,7 +282,7 @@ correct.
   - Managed characters and animations return public storage URLs, via `GET /characters/{id}` (`rotation_urls`,
     `animations[].directions[].frames[]`).
 - **No raw RGBA was ever returned; everything was PNG.**
-- **`edit-animation-v2` output equals `quantized_images`: it is quantized to 16 colours** (`original_image_n_colors` 106 →
+- **`edit-animation-v2` output equals `quantized_images`: it is quantized to 16 colors** (`original_image_n_colors` 106 →
   `quantized_image_n_colors` 16). That is one cause of the global body drift.
 
 ### Limits (server messages, verbatim)
@@ -334,8 +334,8 @@ The live template-animation id list is truncated ("…") in the OpenAPI descript
 4. **Extraction (per cell).**
    - Slot rect from the skeleton.
    - Changed pixels = premultiplied max-channel Δ>8 or alpha Δ>16.
-   - Item pixels = base empty **or** colour within ±6 of the item core palette (colours added on empty canvas inside the slot)
-     **or** colour >12 from both the base palette and the composite's redrawn-body palette (learned outside the slot).
+   - Item pixels = base empty **or** color within ±6 of the item core palette (colors added on empty canvas inside the slot)
+     **or** color >12 from both the base palette and the composite's redrawn-body palette (learned outside the slot).
    - Connected components (8-connected), min area 3, must overlap the slot.
    - Grow 1 ring into pixels with Δ>18, then clip to the slot.
    - Fall back to `slot ∩ novel_cc` *per item* when novel2 removes more than 25 % of the area.
@@ -353,8 +353,8 @@ The live template-animation id list is truncated ("…") in the OpenAPI descript
 
 - Extracted layers still contain **some redrawn body pixels inside the slot**: the face under the helmet, arm edges in the chest.
   Masks need to be item-shaped (brow line, torso without arms), or need skin-material rejection with LPC-style ramps.
-- PixelLab's quantization (16 colours) and redraw shift the item palette between calls. Per-item palette lock (`target_palette`
-  / ramp snap) is still needed for recolours.
+- PixelLab's quantization (16 colors) and redraw shift the item palette between calls. Per-item palette lock (`target_palette`
+  / ramp snap) is still needed for recolors.
 - Batch-route layers drift ±1 px per frame in centroid. This is acceptable visually, but the patch-tracking alignment could
   snap it.
 - Untested:

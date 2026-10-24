@@ -9,7 +9,7 @@ Date: 2026-10-22. Scope: the standalone mockups and their illustrative interacti
 - **Three additional state screenshots:** appearance review, export review and neutral inspection/mirrored facing.
 - **Three six-screen comparison boards:** personally inspected by the lead after the last rendering pass.
 - **24 viewport checks:** no horizontal document overflow reported. This check alone cannot prove the absence of internal clipping; it was paired with visual review and layout adjustments.
-- **13 interaction assertions:** choose character; equip wizard hat; change facing; open export; filter library; cost gate; appearance review; recolour; four-view inspection; plain backdrop; mirrored-state notice; phone All parts; phone New item.
+- **13 interaction assertions:** choose character; equip wizard hat; change facing; open export; filter library; cost gate; appearance review; recolor; four-view inspection; plain backdrop; mirrored-state notice; phone All parts; phone New item.
 - No uncaught page errors in the primary screenshot matrix or added interaction pass.
 - JavaScript syntax checked with `node --check`.
 - The [current-app audit](current-audit.md) separately documents 23 offline screenshots of the original interface. Those are baseline evidence, not redesigned screens.
@@ -25,15 +25,15 @@ Machine-readable results: [mockups/verification.json](mockups/verification.json)
 5. Replaced unlabeled inspection icon with visible Inspect text; added a four-direction proof view and neutral backdrop.
 6. Exposed All parts on phones, plus a category picker from the panel title for landscape layouts.
 7. Added mirrored-West and missing-north-view notices.
-8. Restored mobile material-colour labeling.
+8. Restored mobile material-color labeling.
 9. Expanded Atelier's creation workbench so cost information fits.
 10. Reflowed the short-phone and landscape layouts; compact panels intentionally scroll instead of squeezing every control into the viewport.
 
 ## Deliberate limits
 
-The prototype uses real stored demo sprite layers, but its six names/outfits are illustrative cast entries. Selecting a head item, facing, Walk playback, sample recolouring, simple outfit application and search work locally; many secondary buttons demonstrate a proposed explanatory state. It does not persist real projects, parse imports, quote jobs, generate/fix/fit equipment, run QA, save real palette ramps or create export files. Exact prompt serialization, draft restoration, full undo/redo, eight-direction assets and native-scale inspection remain implementation requirements.
+The prototype uses real stored demo sprite layers, but its six names/outfits are illustrative cast entries. Selecting a head item, facing, Walk playback, sample recoloring, simple outfit application and search work locally; many secondary buttons demonstrate a proposed explanatory state. It does not persist real projects, parse imports, quote jobs, generate/fix/fit equipment, run QA, save real palette ramps or create export files. Exact prompt serialization, draft restoration, full undo/redo, eight-direction assets and native-scale inspection remain implementation requirements.
 
-The appearance toggle is only a limited colour study, not a tested complete light theme. The creation preview is explicitly an example. Final production type sizes, touch targets, contrast, screen-reader behavior, safe areas, 200% zoom and a real mobile keyboard require further validation. No accessibility certification or user-study result is claimed.
+The appearance toggle is only a limited color study, not a tested complete light theme. The creation preview is explicitly an example. Final production type sizes, touch targets, contrast, screen-reader behavior, safe areas, 200% zoom and a real mobile keyboard require further validation. No accessibility certification or user-study result is claimed.
 
 The smoke scripts used the available Node **25.0.0** host and the repository's Playwright **1.64.1** with managed Chromium from the user's browser cache. The production project still requires Node **24.22.1**; no runtime/dependency configuration was changed. Production unit/build suites were not run because only design documents and the standalone prototype were added. The current app was not replaced or deployed.
 

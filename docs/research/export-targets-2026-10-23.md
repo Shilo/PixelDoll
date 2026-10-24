@@ -2,7 +2,7 @@
 
 ## Decision criteria
 
-An engine button must deliver engine-specific resources or an importer/runtime that preserves the paperdoll: shared frame clock, variable frame durations, equipment changes, per-frame draw order, oversized-layer pivots and saved outfit colours. Renaming a PNG/JSON bundle after an engine does not qualify. Aseprite and PNG + JSON remain useful general interchange formats.
+An engine button must deliver engine-specific resources or an importer/runtime that preserves the paperdoll: shared frame clock, variable frame durations, equipment changes, per-frame draw order, oversized-layer pivots and saved outfit colors. Renaming a PNG/JSON bundle after an engine does not qualify. Aseprite and PNG + JSON remain useful general interchange formats.
 
 ## What current adoption evidence can establish
 

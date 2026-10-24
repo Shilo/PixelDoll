@@ -77,7 +77,7 @@ Select one artwork target for Draw/Erase/Joints. All other targets remain protec
 
 Editing a fitted/shared equipment copy changes that character's local item only. Preserve immutable source-design snapshots and lineage; updating the reusable library requires a separate explicit save-as-new-design action. Never propagate pixel corrections to other characters or the library silently.
 
-**Whole character · all wardrobe alternatives** is a deliberate Move target for alignment, comprising Body plus every compatible stored item at the selected source cells, including unequipped/hidden alternatives. Show its membership/count. It must not mean “only what happens to be visible.” Ineligible or missing cells remain labelled; stale assets are never silently promoted. This operation is distinct from moving Body alone and never changes the shared export pivot.
+**Whole character · all wardrobe alternatives** is a deliberate Move target for alignment, comprising Body plus every compatible stored item at the selected source cells, including unequipped/hidden alternatives. Show its membership/count. It must not mean “only what happens to be visible.” Ineligible or missing cells remain labeled; stale assets are never silently promoted. This operation is distinct from moving Body alone and never changes the shared export pivot.
 
 ## Tools
 
@@ -88,15 +88,15 @@ Editing a fitted/shared equipment copy changes that character's local item only.
 - **Body:** move body artwork only. Display fitting consequences in the draft; do not move gear to make the difference disappear. Coherently translate applicable manually observed joints/anchors as derived data, with before/after retained; never rewrite historical API target poses.
 - **Whole character:** explicitly apply the same integer translation to the chosen cells of the body and eligible equipment. It is not camera movement, pivot editing or a new pose. Only a validated lossless group operation can preserve fitting automatically.
 - Show canvas-edge loss before Save; allow cancel/reset. The first release rejects an operation that would discard nontransparent pixels rather than silently cropping or resizing cells.
-- A minimal rectangular pixel selection can move a bounded region on one target. Moving a body region changes anatomy/geometry and therefore requires fitting review; it is not labelled as skeletal deformation.
+- A minimal rectangular pixel selection can move a bounded region on one target. Moving a body region changes anatomy/geometry and therefore requires fitting review; it is not labeled as skeletal deformation.
 
-Pan/Zoom are navigation, available as labelled controls and gestures. Their state never appears as a saved pixel edit. Do not expose arbitrary rotation, scaling or pivot resizing as an alignment shortcut.
+Pan/Zoom are navigation, available as labeled controls and gestures. Their state never appears as a saved pixel edit. Do not expose arbitrary rotation, scaling or pivot resizing as an alignment shortcut.
 
 ### Draw and Erase
 
 - Crisp source-pixel editing on Body or one item; start with 1 px pencil/eraser, source palette swatches, eyedropper and a simple rectangular selection. No opacity, anti-aliasing, gradients or generic effects in the core release.
 - Drawing occurs on one active frame. A multiframe filmstrip selection does not stamp a stroke onto different poses. Use an explicit **Repeat edit on selected frames…** preview only for supported deliberate batch operations; defer general paint propagation.
-- The canvas shows the currently recoloured outfit, while paint stores a known source-ramp shade/material role. Fixed-colour detail is an explicit later capability, not a silent nearest-colour guess or material reassignment.
+- The canvas shows the currently recolored outfit, while paint stores a known source-ramp shade/material role. Fixed-color detail is an explicit later capability, not a silent nearest-color guess or material reassignment.
 - Erase changes alpha only on the target. **Restore** is an Erase-tool option that recovers pixels from a named available stage: saved original or preserved pre-cleanup extraction. Do not promise pixels that were never retained or invent hidden geometry.
 - Where an item already has front/back pieces, an explicit overlap option transfers selected pixels between those pieces, with composite preview. It does not change slot-wide stacking or flatten another target into this one. Outfit-specific hair/hat clipping remains separate from the shared hair artwork.
 
@@ -117,11 +117,11 @@ One clip and direction are primary at a time. Show thumbnail filmstrip, source-c
 
 Scope starts at **This frame**. Range selection applies only to supported operations and lists affected cells before a batch. No default all-directions operation. Equal content hashes do not establish shared edit intent: copy-on-write changes only addressed cells. Repeated playback entries pointing at the same logical cell are different; disclose “Used in N timeline positions.” Changing only one occurrence requires explicit duplication/remapping, not timing changes made by an unrelated stroke.
 
-Derived mirrors show a link badge. Offer **Edit source and linked view** with both previews, or **Make this view independent** before editing. No handedness claim follows from relabelling joints. All scope and coordinate rules are detailed in [data-and-safety.md](data-and-safety.md).
+Derived mirrors show a link badge. Offer **Edit source and linked view** with both previews, or **Make this view independent** before editing. No handedness claim follows from relabeling joints. All scope and coordinate rules are detailed in [data-and-safety.md](data-and-safety.md).
 
 ## Body edits and fitting
 
-Body is editable in the core tool. A colour/detail change, alpha/contour change, body translation, region move and desired-pose change have different effects. Derive impact from the actual before/after differences and dependency records; never infer safe fitting solely from an unchanged bounding box.
+Body is editable in the core tool. A color/detail change, alpha/contour change, body translation, region move and desired-pose change have different effects. Derive impact from the actual before/after differences and dependency records; never infer safe fitting solely from an unchanged bounding box.
 
 Save review lists affected body cells and equipment coverage, shows existing gear over the draft, and lets the user preserve it as **Needs fitting review**, manually repair affected gear in the same session, or explicitly exclude unresolved items from a later export. No automatic paid refit or wardrobe-wide redraw. Body and selected item repairs can publish together when the final reviewed state is consistent.
 
@@ -137,7 +137,7 @@ AI assistance is an explicit optional inspector action in this same screen, with
 
 Use the host app's current appearance contract; the editor uses a quiet opaque workspace behind exact unlit sprite pixels even when entered from an immersive world. No world motion or reflections under a pixel-inspection task. Restore previous presentation on exit.
 
-All tools and targets have labels, keyboard access and visible focus. Arrow keys nudge the selected artwork/joint only while the editor canvas has focus; text inputs and native controls keep their behavior. Ctrl/Cmd+Z operates editor-session history, not outfit Undo. Ctrl/Cmd+S saves the editor draft as a project revision; frame/tool shortcuts do not leak into game movement. Space pans only during an active editor gesture, with Play available by a labelled control.
+All tools and targets have labels, keyboard access and visible focus. Arrow keys nudge the selected artwork/joint only while the editor canvas has focus; text inputs and native controls keep their behavior. Ctrl/Cmd+Z operates editor-session history, not outfit Undo. Ctrl/Cmd+S saves the editor draft as a project revision; frame/tool shortcuts do not leak into game movement. Space pans only during an active editor gesture, with Play available by a labeled control.
 
 Touch supports tap selection plus steppers/numeric input as alternatives to precision drag, a loupe for pixel placement, explicit pan mode and nonoverlapping effective joint targets. Pointer cancellation restores a pending gesture; no partial accidental stroke is committed. Test reduced motion, contrast, zoom, 320 px portrait and shallow landscape using emulation; no physical-phone testing is claimed or required.
 

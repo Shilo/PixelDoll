@@ -6,7 +6,7 @@ import { LABELS } from '../../src/lib/rig/poses.ts'
 import { flipH } from '../../src/lib/rig/mirror.ts'
 import { makeImg, type Img } from '../../src/lib/image/png.ts'
 import { cellImg, composeCell } from '../../src/lib/compose/compose.ts'
-import { recolour } from '../../src/lib/dress/dress.ts'
+import { recolor } from '../../src/lib/dress/dress.ts'
 import { exportFiles } from '../../src/lib/export/export.ts'
 import { readAseprite } from '../../src/lib/export/aseprite.ts'
 import { readCharacterZip } from '../../src/lib/store/import.ts'
@@ -38,7 +38,7 @@ async function fixture(count: 4 | 8, independent: boolean) {
   const rig = built.rig, images: Project['images'] = new Map(Object.values(built.cells).map((c) => [c.hash, c.img]))
   const cells: NonNullable<Layer['cells']> = {}
   for (const key of cellKeys(rig)) { const [anim, dir, frame] = key.split('/') as [string, DirectionName, string]; ((cells[anim] ??= {})[dir] ??= [])[+frame] = built.cells[key].hash }
-  const base: Item = { id: 'base', name: 'Body', slot: 'body', status: 'accepted', mirror: independent ? 'generate' : 'flip', materials: ['body_colour'], prompt: 'offline fixture', baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance: [] }
+  const base: Item = { id: 'base', name: 'Body', slot: 'body', status: 'accepted', mirror: independent ? 'generate' : 'flip', materials: ['body_color'], prompt: 'offline fixture', baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance: [] }
   rig.rest = {}
   rig.anchors = { hand_r: {} }
   const hand = rig.anchors.hand_r!
@@ -64,16 +64,16 @@ async function fixture(count: 4 | 8, independent: boolean) {
       layer.cells![anim.id] = {}
       for (const d of generated) layer.cells![anim.id]![d] = await Promise.all([0, 1].map(async (frame) => { const im = sprite(d, frame, kind), h = await cellHash(im); images.set(h, im); return h }))
     }
-    equipment.push({ id: kind, name: kind, slot, status: 'accepted', mirror: independent ? 'generate' : 'flip', materials: [`${kind}_colour`], prompt: kind, baseHash: rig.baseHash, layers: [layer], provenance: [] })
+    equipment.push({ id: kind, name: kind, slot, status: 'accepted', mirror: independent ? 'generate' : 'flip', materials: [`${kind}_color`], prompt: kind, baseHash: rig.baseHash, layers: [layer], provenance: [] })
   }
   const manifest: Manifest = { format: 'pixeldoll/1', name: `${independent ? 'Independent' : 'Legacy'} ${count}`, app: 'test', rig,
     items: [base, ...equipment], slots: [{ id: 'body', z: 10, class: 'base' }, { id: 'hair', z: 110, class: 'worn' }, { id: 'head', z: 130, class: 'rigid', clips: ['hair'] }],
     materials: [
-      { id: 'body_colour', owner: 'base', label: 'Body', ramp: ['#1e3c5a'], variants: { gold: ['#d0a050'] } },
-      { id: 'hair_colour', owner: 'hair', label: 'Hair', ramp: ['#50141e'], variants: { gold: ['#b08020'] } },
-      { id: 'hat_colour', owner: 'hat', label: 'Hat', ramp: ['#145a28'], variants: { gold: ['#f0d080'] } },
+      { id: 'body_color', owner: 'base', label: 'Body', ramp: ['#1e3c5a'], variants: { gold: ['#d0a050'] } },
+      { id: 'hair_color', owner: 'hair', label: 'Hair', ramp: ['#50141e'], variants: { gold: ['#b08020'] } },
+      { id: 'hat_color', owner: 'hat', label: 'Hat', ramp: ['#145a28'], variants: { gold: ['#f0d080'] } },
     ], presets: [
-      { id: 'gold', name: 'Gold', items: { body: 'base', hair: 'hair', head: 'hat' }, variants: { body_colour: 'gold', hair_colour: 'gold', hat_colour: 'gold' } },
+      { id: 'gold', name: 'Gold', items: { body: 'base', hair: 'hair', head: 'hat' }, variants: { body_color: 'gold', hair_color: 'gold', hat_color: 'gold' } },
       { id: 'original', name: 'Original', items: { body: 'base', hair: 'hair', head: 'hat' }, variants: {} },
     ] }
   return { p: { manifest, images } satisfies Project, requested, generated, skeletons }
@@ -109,9 +109,9 @@ test.each(cases)('$count directions independent=$independent preserve explicit w
   // Engine rows are already materialized; legacy sheet import clears mirror metadata without altering any exported pixels.
   expect(engineOnly.project.manifest.rig.directions.every((d) => !d.mirrorOf)).toBe(true)
   for (const [i, preset] of p.manifest.presets.entries()) {
-    const expected = recolour(p, preset.variants), pr = engineOnly.project.manifest.presets[i]
+    const expected = recolor(p, preset.variants), pr = engineOnly.project.manifest.presets[i]
     for (const anim of rig.animations) for (const dir of requested) for (let frame = 0; frame < anim.cells; frame++)
-      expect(composeCell(recolour(engineOnly.project, pr.variants), pr.items, anim.id, dir, frame)).toEqual(composeCell(expected, preset.items, anim.id, dir, frame))
+      expect(composeCell(recolor(engineOnly.project, pr.variants), pr.items, anim.id, dir, frame)).toEqual(composeCell(expected, preset.items, anim.id, dir, frame))
   }
   const files = new Map(out.entries.map((e) => [e.name, e.data])), text = new TextDecoder()
   const m = JSON.parse(text.decode(files.get('manifest.json'))) as Manifest

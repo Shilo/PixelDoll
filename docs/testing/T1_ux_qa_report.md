@@ -112,7 +112,7 @@ The stage also has about 450 px of dead space above the sprite.
 - Use the phone layout for medium portrait: stage on top, chips and tiles below, inspector as a sheet.
 - Make the drawer push the stage instead of covering it, and auto-close it after a tap on touch.
 
-At minimum, centre the sprite vertically and drop the inspector into a bottom panel when `height > width`.
+At minimum, center the sprite vertically and drop the inspector into a bottom panel when `height > width`.
 
 ---
 
@@ -120,16 +120,16 @@ At minimum, centre the sprite vertically and drop the inspector into a bottom pa
 
 | # | Issue | Repro / evidence | Suggested fix |
 |---|---|---|---|
-| P2-1 | **Tapping a wardrobe row toggles wear.** Clicking a worn item to look at its colours takes it off. Selecting and wearing are the same action. | Desktop: click "Steel helmet" while it is worn → helmet off, inspector shows **Wear** (`t1_flow_hide_hair.png`) | Row click = select (and wear only if not worn). Keep the trailing check as the wear/take-off toggle. Phone tiles can keep tap-to-wear because "None" exists there. |
+| P2-1 | **Tapping a wardrobe row toggles wear.** Clicking a worn item to look at its colors takes it off. Selecting and wearing are the same action. | Desktop: click "Steel helmet" while it is worn → helmet off, inspector shows **Wear** (`t1_flow_hide_hair.png`) | Row click = select (and wear only if not worn). Keep the trailing check as the wear/take-off toggle. Phone tiles can keep tap-to-wear because "None" exists there. |
 | P2-2 | **Browser back or the Android back gesture leaves the app** while a sheet is open (sheets don't push history). | Open Export → back → `about:blank` | `history.pushState` when a sheet opens; `popstate` closes it. |
 | P2-3 | **Focus is not returned** to the button that opened a sheet; it lands on `<body>`. Initial focus is on **Cancel**, not the first field (Create, New item). | Keyboard: Export → Esc → `document.activeElement = body` | Remember the opener and `.focus()` it on close. Put `autofocus` on the textarea in Create and New item (desktop only). |
-| P2-4 | **Touch targets under 44 px:** direction S/E/N/W 36×40, colour swatches 48×32, colour picker 36×32, slot chips 40 high, landscape segmented tabs 36 high, layer-order checkbox 16×16, "PixelLab" link 45×16. | `audit` log, phone/tablet/land | `pointer: coarse` → min 44×44 (swatches 48×44, chips 44). |
+| P2-4 | **Touch targets under 44 px:** direction S/E/N/W 36×40, color swatches 48×32, color picker 36×32, slot chips 40 high, landscape segmented tabs 36 high, layer-order checkbox 16×16, "PixelLab" link 45×16. | `audit` log, phone/tablet/land | `pointer: coarse` → min 44×44 (swatches 48×44, chips 44). |
 | P2-5 | **320×568: the Welcome CTAs are below the fold** (Create at y=591). The hero art takes 60 % of the height. 375×667 just fits. | `t1_welcome_narrow.png` | Cap the hero at about 35 vh on short screens, or put the CTAs above the description. |
 | P2-6 | **Phaser and PNG + JSON exports have no README.** Godot and Unity have one. The Phaser usage is only in the JS header comment. | unzip `adventurer-phaser.pixeldoll.zip` | Add `phaser/README.txt` (copy folder, `pixelArt: true, roundPixels: true`, `loadPaperdoll(scene, 'assets/hero/')`, ES-module note) and a root `README.txt` naming the folders. |
 | P2-7 | **CREDITS.csv lists every item twice** (identical rows, e.g. `vest_leather` ×2, `cape_red` with two endpoints). | `CREDITS.csv` | Dedupe by (item, endpoint, seed), or one row per provenance step with a step column. |
 | P2-8 | **Export counts and names don't match the UI:** "3 outfits" where the UI lists 2 (adds `current`). The UI's "Base only" exports as `baked/bare/`. | Export sheet + zip | Say "2 outfits + your current look". Use the outfit's display name as a slug (`base-only`). |
 | P2-9 | **Internal fixture name leaks:** `s2_adventurer` in the stage's screen-reader label ("s2_adventurer, walk, facing south…"), `manifest.name`, the Godot root node and Phaser texture keys. The zip is called `adventurer-…`. | aria snapshot, `manifest.json` | Use the display name ("Adventurer") everywhere user- or dev-visible. |
-| P2-10 | **Material names don't match what you see:** Leather vest → "Leather", "**Metal**" (actually the dark outline ramp); Red cape → "Cloth", "**Yellow**"; Wizard hat → "Cloth", "**Yellow**", "**Grey**". Single-step ramps render as flat swatches next to gradient ones. | `t1_colours_d1440_light.png`, `t1_item_tablet.png` | Hide outline/near-black ramps from casual recolour, or call them "Trim" / "Outline". Fall back to "Detail 1/2" rather than hue words. |
+| P2-10 | **Material names don't match what you see:** Leather vest → "Leather", "**Metal**" (actually the dark outline ramp); Red cape → "Cloth", "**Yellow**"; Wizard hat → "Cloth", "**Yellow**", "**Grey**". Single-step ramps render as flat swatches next to gradient ones. | `t1_colours_d1440_light.png`, `t1_item_tablet.png` | Hide outline/near-black ramps from casual recolor, or call them "Trim" / "Outline". Fall back to "Detail 1/2" rather than hue words. |
 | P2-11 | **"Add a move" on older rigs** shows jargon ("made before skeleton rigs (v1.3)") and an empty footer bar, yet the button is offered. | `t1_addmove_d1440.png`, `t1_addmove_phone.png` | Hide or disable the button with a plain line: "Moves can be added to characters made from now on." |
 | P2-12 | **Add a move doesn't show the total cost:** footer "**Add Cast · 21 gens**", plus a checked "Iron Knight Helmet · 9 gens" row. Is the total 21 or 30? Slash is offered again although the character already has it. | `t1_addmove_ranger_pane.jpg` | The button shows the total including checked items. Mark existing moves as "Added" and disable them. |
 | P2-13 | **Cost estimate moved and may under-promise:** Create showed 45 gens, then 35 later the same session (moving). B7 measured **45.45** for a real create. | `t1_create_d1440.png` (45) vs `t1_create_phone.png` (35) | Base the estimate on the ledger median of real creates, and show a range ("≈ 35–50 gens"). |
@@ -159,7 +159,7 @@ At minimum, centre the sprite vertically and drop the inspector into a bottom pa
   Play visible.
 - No offline banner: offline after load, Export still works (good), but nothing tells you. Not tested while generating.
 - Connect makes 3 `GET /v2/balance` calls per attempt.
-- The colour picker field always shows `#808080`, whatever colour is in use.
+- The color picker field always shows `#808080`, whatever color is in use.
 - The character menu lists dev rigs ("hero48", "s4skel", "s1-e2", "base") in an origin that has used the M2 pages. Hide
   projects without Studio data, or group them under "Developer".
 - 1920×1080: the stage auto-fits to 14×, which is huge. Cap fit at about 10× or 70 % of the stage height.
@@ -191,15 +191,15 @@ The sizes on the buttons are accurate.
 ## What's great
 
 - **Look A is well executed.** System font, quiet monochrome chrome, one blue primary (Export), consistent Lucide icons
-  everywhere, colour only in the art. Dark (default) and light are both clean, and the text contrast checks found nothing
+  everywhere, color only in the art. Dark (default) and light are both clean, and the text contrast checks found nothing
   under 4.5:1 in either theme.
 - **The sprite is the hero.** Integer device-pixel zoom stays crisp. The checker or plain background toggle and the
   All-directions grid ("West (mirrored)") are nice touches for both audiences.
 - **Undo labels are real HIG.** "Undo Wear Wizard hat (Ctrl+Z)", "Redo Take off Wizard hat". Undo/redo is correct across
-  wear, take-off and colour.
+  wear, take-off and color.
 - **Costs are honest.** Every spending button names its price, the Welcome screen says the demo needs no account, and Export
   says "Free · runs on this device".
-- **Sheets fit each size.** Centred on desktop, bottom sheet with a grabber on phones, trailing 60 % panel in landscape with
+- **Sheets fit each size.** Centered on desktop, bottom sheet with a grabber on phones, trailing 60 % panel in landscape with
   the character still visible. Esc closes every sheet, and nothing overflows horizontally at any size tested.
 - **Removing an item asks first** ("Remove for good / Keep"). An invalid key gives a plain message ("PixelLab didn't accept
   this key.") and a "Key rejected" state in the toolbar.

@@ -69,7 +69,7 @@ function growInto(seed: Uint8Array, B: Img, C: Img, t = 18) {
 const clip = (m: Uint8Array, w: number, r: Rect) => m.map((v, p) => (v && inR(r, p, w) ? 1 : 0));
 const count = (m: Uint8Array) => m.reduce((a, b) => a + b, 0);
 
-/** S1 `auto` + skin-only rejection (base colours with r−b > 30, Δ <= 10) + pinhole fill. `useCc` = per-item novel_cc fallback. */
+/** S1 `auto` + skin-only rejection (base colors with r−b > 30, Δ <= 10) + pinhole fill. `useCc` = per-item novel_cc fallback. */
 export function diffLayer(B: Img, C: Img, region: Rect, useCc?: boolean): { layer: Img; mask: Uint8Array; novel2Ratio: number } {
   const { w, h } = B;
   const cc = clip(keepComponents(maskNovel(B, C), w, h, 3, region), w, region);
@@ -87,7 +87,7 @@ export function diffLayer(B: Img, C: Img, region: Rect, useCc?: boolean): { laye
 export function selfTest() {
   const B = makeImg(8, 8), C = makeImg(8, 8);
   for (let p = 0; p < 64; p++) if (p % 8 > 1 && p % 8 < 6) { B.data.set([200, 140, 110, 255], p * 4); C.data.set([201, 140, 110, 255], p * 4); } // skin + drift
-  for (const p of [10, 11, 12, 18, 20, 26, 27, 28]) C.data.set([60, 60, 70, 255], p * 4); // a grey ring (item) with a skin hole at 19
+  for (const p of [10, 11, 12, 18, 20, 26, 27, 28]) C.data.set([60, 60, 70, 255], p * 4); // a gray ring (item) with a skin hole at 19
   C.data.set([0, 200, 0, 255], 1); // new px on empty canvas, outside the region
   const { mask } = diffLayer(B, C, { x: 0, y: 0, w: 8, h: 4 });
   console.assert([10, 11, 12, 18, 20, 26, 27, 28].every((p) => mask[p]) && mask[19] === 1, 'ring kept, skin pinhole filled');

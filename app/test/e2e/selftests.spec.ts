@@ -1,3 +1,4 @@
+import { openStudio } from './immersive-helpers.ts'
 import { expect, test } from '@playwright/test'
 import { browserSelfTests } from '../../src/lib/selftests.ts'
 
@@ -36,7 +37,7 @@ test('move QA survives real storage, ZIP export and directional replacements', a
 test('copying a demo publishes its images atomically against concurrent garbage collection', async ({ page }) => {
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
   await page.route('https://*.pixellab.ai/**', route => route.abort())
-  await page.goto('/'); await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/'); await expect(page.locator('.world-actors')).toBeVisible()
   const result = await page.evaluate(async () => {
     const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', projectPath = '/src/lib/store/project.ts'
     const state = await import(statePath), db = await import(dbPath), project = await import(projectPath)

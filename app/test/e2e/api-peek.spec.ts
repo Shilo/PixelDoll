@@ -1,3 +1,4 @@
+import { openStudio } from './immersive-helpers.ts'
 import { expect, test, type Page } from '@playwright/test'
 
 const peek = (page: Page) => page.locator('[popover][aria-label="API calls"]:popover-open')
@@ -36,8 +37,8 @@ test('request preview follows the current character draft and copying never subm
     requests.push(`${route.request().method()} ${new URL(route.request().url()).pathname}`)
     await route.abort()
   })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await newCharacter(page)
   await expectPeekBeforePrimary(page)
   const sheet = page.locator('dialog[open]')
@@ -81,8 +82,8 @@ test('automatic account checks remain inspectable without flooding the default g
     expect(path).toBe('/v2/balance')
     await route.fulfill({ json: { subscription: { generations: 100, total: 100 }, credits: { usd: 0 } } })
   })
-  await page.goto(info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   // A fully intercepted free read exercises the same transport as automatic balance refreshes.
   // A deliberately invalid fixture value never obtains or uses a real credential.
   await page.evaluate(async () => {
@@ -90,6 +91,7 @@ test('automatic account checks remain inspectable without flooding the default g
     const { api } = await import(path)
     await api('offline-fixture-not-a-key', 'GET', '/balance')
   })
+  await page.getByRole('button', { name: 'More options', exact: true }).click()
   await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click()
   await expect(peek(page)).toBeVisible()
   await expect(peek(page).locator('details summary').filter({ hasText: '/balance' })).toHaveCount(0)
@@ -138,8 +140,8 @@ test('recorded generation, automatic measurement and repair show full inputs and
       throw new Error(`Unexpected intercepted request: ${request.method()} ${path}`)
     }
   })
-  await page.goto(info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   // All responses are fixtures intercepted above. No generation workflow or real account is started.
   await page.evaluate(async ({ body, image }) => {
     const path = '/src/lib/pixellab/client.ts', { api } = await import(path)
@@ -152,6 +154,7 @@ test('recorded generation, automatic measurement and repair show full inputs and
     await api(key, 'POST', '/inpaint-v3', { description: 'Repair a stray pixel', inpainting_image: { image, size: { width: 1, height: 1 } }, mask_image: { image, size: { width: 1, height: 1 } }, seed: 714 }, undefined, { ...context, label: 'Automatic quality repair' })
     await api(key, 'GET', '/balance', undefined, undefined, context)
   }, { body, image })
+  await page.getByRole('button', { name: 'More options', exact: true }).click()
   await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click()
   const rows = peek(page).locator('.peek-call')
   await expect(rows).toHaveCount(3) // Automatic paid work remains in the foreground list.
@@ -192,8 +195,8 @@ test('recorded generation, automatic measurement and repair show full inputs and
 test('a pending reported charge does not hide a separate terminal unknown cost', async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto(info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   // Model two independent response outcomes without making even an intercepted API request.
   await page.evaluate(async () => {
     const path = '/src/lib/pixellab/activity.ts'
@@ -203,6 +206,7 @@ test('a pending reported charge does not hide a separate terminal unknown cost',
     const pending = beginActivityCall('POST', 'https://api.pixellab.ai/v2/animate-with-skeleton-v3', { description: 'Reported charge with unfinished job' })
     finishActivityCall(pending, 200, true, { background_job_id: 'unfinished-offline-fixture', usage: { type: 'generations', generations: 2 } })
   })
+  await page.getByRole('button', { name: 'More options', exact: true }).click()
   await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click()
   const footer = peek(page).locator('footer')
   await expect(footer).toContainText('2 gens')
@@ -225,8 +229,8 @@ test('a pending reported charge does not hide a separate terminal unknown cost',
 test('an action peek includes its shared balance check without another operation’s requests', async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto(info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const path = '/src/lib/pixellab/activity.ts'
     const { beginActivityCall, finishActivityCall } = await import(path)
@@ -266,8 +270,8 @@ test('an action peek includes its shared balance check without another operation
 test('mirrored saved requests show their payload and updated charge without sending them again', async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto(info.config.projects.find(project => project.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find(project => project.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const dbPath = '/src/lib/store/db.ts', queuePath = '/src/lib/pixellab/queue.ts', statePath = '/src/studio/state.svelte.ts'
     const db = await import(dbPath), { queue } = await import(queuePath), { ui } = await import(statePath)
@@ -313,8 +317,8 @@ test('refreshing a library character replaces its preview URL and records both d
       await route.fulfill({ contentType: 'image/png', body: png })
     } else { await route.abort(); throw new Error(`Unexpected fixture request ${path}`) }
   })
-  await page.goto(info.config.projects.find(project => project.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find(project => project.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const appPath = '/src/lib/app.svelte.ts', statePath = '/src/studio/state.svelte.ts'
     const { setKey } = await import(appPath), { ui } = await import(statePath)
@@ -336,8 +340,8 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
   await page.setViewportSize({ width: 390, height: 844 })
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await newCharacter(page)
   await expectPeekBeforePrimary(page)
   const sheet = page.locator('dialog[open]')

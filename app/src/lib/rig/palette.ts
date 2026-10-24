@@ -4,7 +4,7 @@ import { paletteFit } from './clips.ts';
 
 const TOLERANCE = 12, MAX_CHANGE = 16, MAX_SHARE = 0.05;
 type RGB = [number, number, number];
-const colour = (data: Uint8ClampedArray, i: number): RGB => [data[i], data[i + 1], data[i + 2]];
+const color = (data: Uint8ClampedArray, i: number): RGB => [data[i], data[i + 1], data[i + 2]];
 const keyOf = (c: RGB) => (c[0] << 16) | (c[1] << 8) | c[2];
 const distance = (a: RGB, b: RGB) => Math.max(...a.map((v, i) => Math.abs(v - b[i])));
 function hue(c: RGB): number {
@@ -31,16 +31,16 @@ export interface BodyPaletteRepair {
   remainingOutliers: number;
   changedFrames: number[];
 }
-/** Correct only unique nearest same-family colours at most 16/255 per channel from the actual reference.
- * Colours already within the unchanged 12/255 gate tolerance stay untouched. Larger/ambiguous/hue-changing
+/** Correct only unique nearest same-family colors at most 16/255 per channel from the actual reference.
+ * Colors already within the unchanged 12/255 gate tolerance stay untouched. Larger/ambiguous/hue-changing
  * matches stay outliers; a result need not pass QA. Refuse broad drift rather than quantizing a new design. */
 export function repairBodyPalette(rest: Img, frames: Img[]): BodyPaletteRepair {
   if (!frames.length || !rest.w || !rest.h || rest.data.length !== rest.w * rest.h * 4 || frames.some(f => f.w !== rest.w || f.h !== rest.h || f.data.length !== rest.data.length)) throw new Error('Body palette repair requires matching complete frames.');
   const reference = new Map<number, RGB>();
   for (let i = 0; i < rest.data.length; i += 4) if (rest.data[i + 3]) {
-    const c = colour(rest.data, i); reference.set(keyOf(c), c);
+    const c = color(rest.data, i); reference.set(keyOf(c), c);
   }
-  if (!reference.size) throw new Error('Body palette repair needs visible reference colours.');
+  if (!reference.size) throw new Error('Body palette repair needs visible reference colors.');
   const decisions = new Map<number, { outlier: boolean; replacement?: RGB }>();
   const decide = (c: RGB) => {
     const id = keyOf(c), prior = decisions.get(id);
@@ -64,7 +64,7 @@ export function repairBodyPalette(rest: Img, frames: Img[]): BodyPaletteRepair {
     for (let i = 0; i < frame.data.length; i += 4) {
       if (!frame.data[i + 3]) continue; // preserve invisible RGB and alpha bit-for-bit
       opaque++;
-      const decision = decide(colour(frame.data, i));
+      const decision = decide(color(frame.data, i));
       if (decision.outlier) rawOutliers++;
       if (decision.replacement) { out.data.set(decision.replacement, i); changed++; }
     }
@@ -72,6 +72,6 @@ export function repairBodyPalette(rest: Img, frames: Img[]): BodyPaletteRepair {
     if (changed) changedFrames.push(index);
     return out;
   });
-  if (opaque && (rawOutliers / opaque > MAX_SHARE || changedPixels / opaque > MAX_SHARE)) throw new Error('Too much colour drift for a small palette repair. Existing artwork was kept.');
+  if (opaque && (rawOutliers / opaque > MAX_SHARE || changedPixels / opaque > MAX_SHARE)) throw new Error('Too much color drift for a small palette repair. Existing artwork was kept.');
   return { frames: repaired, rawPaletteFit: paletteFit(rest, frames), paletteFit: paletteFit(rest, repaired), rawOutliers, changedPixels, remainingOutliers: rawOutliers - changedPixels, changedFrames };
 }

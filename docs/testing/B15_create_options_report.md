@@ -1,4 +1,4 @@
-# B15: Create options (4/8 directions, 48/56 px), shirt/shorts colour regions, offline banner
+# B15: Create options (4/8 directions, 48/56 px), shirt/shorts color regions, offline banner
 
 Date: 2026-10-21. Builder: B15. Dev server `app-dev-b15` (:5177). **Spend: 57.25 gens** (one live 8-direction character,
 estimate 57.3, no re-rolls). One POST was refused with 500 and cost nothing.
@@ -9,7 +9,7 @@ estimate 57.3, no re-rolls). One POST was refused with 500 and cost nothing.
 |---|---|
 | Create → **More options**: Directions 4 / 8, Body size 48 / 56 px, live price | Done. Folded away by default (4 directions, 48 px). The price moves from 35–50 to 57–75 gens as soon as 8 is picked. ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_create_options_desk.png) |
 | 8 directions through the whole pipeline | Live 8-direction 48 px character (idle + walk). All 8 directions are correct in the Studio, the baked sheets and Godot (0 px difference). Gaps fixed: Godot resource ids, the all-directions grid, the phone direction bar, diagonal pose tables and items wording / z. **One known gap: held items on 8-direction rigs (below).** |
-| Shirt / Shorts / Skin recolour separately | Done for new rigs (prompt plus split) and for existing rigs and the demo (split only, nothing regenerated). ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_eight_recolour_walk_baked.png) |
+| Shirt / Shorts / Skin recolor separately | Done for new rigs (prompt plus split) and for existing rigs and the demo (split only, nothing regenerated). ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_eight_recolour_walk_baked.png) |
 | Offline banner + queue pause | Done. ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_offline_banner_phone.png) |
 | Docs, check / build / selftest / e2e | User guide, architecture §3/§6/§7 and manifest-spec `Item.regions` updated. All four pass (e2e: 3 new steps). |
 
@@ -92,19 +92,19 @@ in the footer and on the button.
 - Fix (B14's files): split the dress call into ≤ 4-frame chunks, with the first dressed keyframe as the design anchor of the
   second chunk. Not live-tested (budget).
 
-## 2. Base colour regions (Shirt / Shorts / Skin)
+## 2. Base color regions (Shirt / Shorts / Skin)
 
 **Approach: both (position split + prompt), chosen on evidence.**
 
 | Evidence | Result |
 |---|---|
-| S4 rig (old prompt "grey t-shirt + grey shorts"), positional split with keypoint hip lines | 23 garment colours, **9 used by both garments**. Exact-colour materials cannot separate them. ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_regions_s4rig_zoom.png) (grey = original, red = shirt, blue = shorts) |
+| S4 rig (old prompt "grey t-shirt + grey shorts"), positional split with keypoint hip lines | 23 garment colors, **9 used by both garments**. Exact-color materials cannot separate them. ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_regions_s4rig_zoom.png) (gray = original, red = shirt, blue = shorts) |
 | Same S4 rig, guessed line (60 % of the figure height, used for fixtures without keypoints) vs keypoint line | 99.9 % of 8,085 garment px agree |
-| Live rig with the new prompt "light grey t-shirt and dark grey shorts" | The garments come out visibly different, but **11 of 18 garment colours still occur in both** (1,213 minority px, 7.7 %). The prompt alone is not enough. |
+| Live rig with the new prompt "light grey t-shirt and dark grey shorts" | The garments come out visibly different, but **11 of 18 garment colors still occur in both** (1,213 minority px, 7.7 %). The prompt alone is not enough. |
 
 **How it works (`lib/dress/regions.ts`).**
 
-- **Garment greys.** Colours with chroma C < 0.04 and lightness L ≥ 0.18 count as garment. Skin is warm and the near-black
+- **Garment grays.** Colors with chroma C < 0.04 and lightness L ≥ 0.18 count as garment. Skin is warm and the near-black
   outline is excluded.
 - **Components.** Garment pixels are grouped into 4-connected components; outline and skin separate shirt from shorts.
 - **Position vote.** A component goes to the shorts when at least 75 % of it lies at or below hip − 1.5 px, measured along
@@ -112,15 +112,15 @@ in the footer and on the button.
 - **Straddling components** are cut pixel by pixel.
 - **Line fitting** (live finding, walk/east/1).
   - Problem: the patch-tracked hip sat 4 px below the shorts, so the shorts went to the shirt.
-  - Fix: colours that are clearly one garment over the whole rig (≥ 75 % of their pixels) now vote. Each cell's line may
+  - Fix: colors that are clearly one garment over the whole rig (≥ 75 % of their pixels) now vote. Each cell's line may
     move up to 6 px up or 4 px down to where most of those pixels agree; ties stay at the anchor line.
   - On the S4 rig the fitting changes 14 of 8,085 px.
   - Self-test: a deliberately low anchor fails without the fitting and passes with it.
-- **Storage in the pixels.** The region is written into the pixel itself: shirt greys get an even blue channel, shorts greys
+- **Storage in the pixels.** The region is written into the pixel itself: shirt grays get an even blue channel, shorts grays
   an odd one (a 1/255 nudge, invisible).
 - **What this keeps working:**
-  - Materials stay exact-colour and pairwise disjoint (spec inv. 5).
-  - `deriveMaterials` makes **Shirt** (even greys), **Shorts** (odd greys), then **Skin** (`autoRamps` on the rest).
+  - Materials stay exact-color and pairwise disjoint (spec inv. 5).
+  - `deriveMaterials` makes **Shirt** (even grays), **Shorts** (odd grays), then **Skin** (`autoRamps` on the rest).
   - Export validation passes, and an engine swap shader still works.
   - The split is **idempotent**: classification ignores the region bit, and the votes come from the anchor lines.
 - **When it runs.** In `openProject`, for every project.
@@ -134,9 +134,9 @@ in the footer and on the button.
 
 - Demo (S2 base, never regenerated): the Colours tab shows **Shirt, Shorts, Skin**.
   ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_colours_demo_shirt_shorts.jpg)
-- Live 8-direction rig: Shirt 18, Shorts 11 and Skin 23 colours. Crimson shirt plus azure shorts are clean in every frame
+- Live 8-direction rig: Shirt 18, Shorts 11 and Skin 23 colors. Crimson shirt plus azure shorts are clean in every frame
   and direction: ![](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b15_eight_recolour_walk_baked.png)
-- **Limitation:** a garment grey of 1–3 px outside the clothes (a toe highlight) recolours with the garment the line puts it
+- **Limitation:** a garment gray of 1–3 px outside the clothes (a toe highlight) recolors with the garment the line puts it
   in. This was the same with the old single "Clothes" material.
 
 ## 3. Offline banner
@@ -167,14 +167,14 @@ in the footer and on the button.
   self-tests: `dress/regions`, the region materials in `dress`, `offlineTest` / `notStartedTest` in queue, 8-direction poses,
   Godot resource ids.
 - `BASE=http://localhost:5177 node app/scripts/e2e-studio.mjs`: all passed (21 steps). New steps:
-  - base colours Shirt / Shorts / Skin;
+  - base colors Shirt / Shorts / Skin;
   - Create More options: folded by default, defaults 4 / 48 px, 8 changes the price live to 57–75, 56 px detail text;
   - offline banner via `context.setOffline`.
 
 ## Files
 
 - **New:** `app/src/lib/dress/regions.ts`.
-- **Changed:** `studio/create.ts`, `CreateSheet.svelte`, `Stage.svelte`, `Studio.svelte`, `Colours.svelte`,
+- **Changed:** `studio/create.ts`, `CreateSheet.svelte`, `Stage.svelte`, `Studio.svelte`, `Colors.svelte`,
   `ActivitySheet.svelte`, `GenCard.svelte`, `state.svelte.ts` (openProject: split + save), `model.ts` (prompt), `icons.ts`,
   `studio.css`; `lib/rig/poses.ts`, `lib/dress/{dress,project}.ts`, `lib/image/chroma.ts` (`components(…, four)`),
   `lib/pixellab/{client,queue}.ts`, `lib/export/godot.ts`, `lib/items/items.ts` (3 one-line edits), `lib/store/manifest.ts`

@@ -18,14 +18,14 @@
   let group = $state(draft?.group ?? ui.newItem.group)
   let slot = $state(draft?.slot ?? ui.newItem.slot)
   let prompt = $state(draft?.prompt ?? ui.newItem.prompt)
-  let colour = $state(draft?.colour ?? '')
+  let color = $state(draft?.color ?? '')
   let name = $state(draft?.name ?? '')
   let busy = $state(false)
   const g = $derived(GROUPS.find((x) => x.id === group)!)
   $effect(() => { if (!g.slots.includes(slot)) slot = g.slots[0] })
 
   const m = $derived(store.project?.manifest)
-  const fullPrompt = $derived(`${prompt.trim()}${colour ? `, ${colour} coloured` : ''}`)
+  const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`)
   const itemName = $derived(name.trim() || itemNameFrom(prompt) || 'New item')
   const input = $derived({ name: itemName, slot, prompt: fullPrompt })
   // the project record (skeletons decide the route); pixels are not needed for the plan
@@ -52,7 +52,7 @@
     try { await copyDemo() } finally { busy = false }
   }
   function go() {
-    formDrafts.item = { projectId: doc.id, sourceGroup: ui.newItem.group, group, slot, prompt, colour, name }
+    formDrafts.item = { projectId: doc.id, sourceGroup: ui.newItem.group, group, slot, prompt, color, name }
     const i = $state.snapshot(input)
     withKey(() => void make(i), !!plan?.minimumTier)
   }
@@ -60,13 +60,13 @@
 
 {#snippet foot()}
       <span class="foot-note">{plan ? `About ${plan.minutes + 2} min. You can keep working.` : ''}</span>
-      <span class="api-action"><ApiPeek scope="item-make" label="Make item" plan={itemPlan(m && rec ? { rec: { ...rec, manifest: m } } as RigCtx : null, input)} /><button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button></span>
+      <span class="api-action"><ApiPeek scope="item-make" label="Make item" plan={itemPlan(m && rec ? { rec: { ...rec, manifest: m } } as RigCtx : null, input)} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button></span>
 {/snippet}
 
 <Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() || ui.newItemTab === 'designs' ? undefined : foot}>
   <div class="seg full" role="tablist" aria-label="Item source"><button role="tab" aria-selected={ui.newItemTab === 'create'} onclick={() => (ui.newItemTab = 'create')}>Create</button><button role="tab" aria-selected={ui.newItemTab === 'designs'} onclick={() => (ui.newItemTab = 'designs')}>Saved designs</button></div>
   {#if ui.newItemTab === 'designs'}
-    {#if isDemo()}<p class="notice small"><Sparkles size={16} /><span>Make an editable copy of the demo before adding a fitted item.</span><button class="btn sm" disabled={busy} onclick={useCopy}>Copy demo body</button></p>{/if}
+    {#if isDemo()}<p class="notice small"><Sparkles size={16} /><span>Make an editable copy of the demo before adding a fitted item.</span><button class="bu-action btn sm" data-variant="outline" disabled={busy} onclick={useCopy}>Copy the demo body</button></p>{/if}
     {#key doc.id}<DesignLibrary />{/key}
   {:else if isDemo()}
     <div class="notice small">
@@ -74,27 +74,27 @@
       <span>Items are drawn for your own character. Create one, or make an editable copy of the demo body to add items to it.</span>
     </div>
     <div class="actions">
-      <button class="btn primary" onclick={() => (ui.sheet = 'create')}>Create your character</button>
-      <button class="btn copy-demo" onclick={useCopy} disabled={busy}>
+      <button class="bu-action btn primary" data-variant="primary" onclick={() => (ui.sheet = 'create')}>Create your character</button>
+      <button class="bu-action btn copy-demo" data-variant="outline" onclick={useCopy} disabled={busy}>
         <span class:copy-hidden={busy}>Copy the demo body</span>
         <span class:copy-hidden={!busy}>Copying…</span>
       </button>
     </div>
   {:else}
-    {#if rec && !rigReady(rec)}<p class="notice small"><TriangleAlert size={16} /><span>Set up this character to use skeleton-posed equipment, oversize weapons and new moves.</span><button class="btn small" onclick={() => (ui.sheet = 'setup')}>Set up character</button></p>{/if}
+    {#if rec && !rigReady(rec)}<p class="notice small"><TriangleAlert size={16} /><span>Set up this character to use skeleton-posed equipment, oversize weapons and new moves.</span><button class="bu-action btn small" data-variant="outline" onclick={() => (ui.sheet = 'setup')}>Set up character</button></p>{/if}
     {#if planned.error}<p class="notice warn small" role="alert"><TriangleAlert size={16} /><span>This character’s frames cannot use the item generator: {planned.error}</span></p>{/if}
     <div class="form">
       <div class="field">
         <span class="label" id="where">Where does it go?</span>
         <div class="chips" role="radiogroup" aria-labelledby="where">
           {#each GROUPS as x (x.id)}
-            <button class="chip" role="radio" aria-checked={group === x.id} tabindex={group === x.id ? 0 : -1} onclick={() => (group = x.id)}><GroupIcon group={x.id} size={14} />{x.id}</button>
+            <button class="chip" role="radio" aria-checked={group === x.id} tabindex={group === x.id ? 0 : -1} onclick={() => (group = x.id)}><GroupIcon group={x.id} size={14} />{x.id === 'Hands' ? 'Held item' : x.id}</button>
           {/each}
         </div>
       </div>
       <label class="field">
         <span class="label">What is it?</span>
-        <textarea class="input" rows="2" bind:value={prompt} placeholder="e.g. {g.ideas[0]?.label ?? 'a leather hat'}" maxlength="300"></textarea>
+        <textarea class="bu-input input" rows="2" bind:value={prompt} placeholder="e.g. {g.ideas[0]?.label ?? 'a leather hat'}" maxlength="300"></textarea>
       </label>
       <div class="chips" aria-label="Ideas">
         {#each g.ideas as idea (idea.label)}
@@ -102,11 +102,11 @@
         {/each}
       </div>
       <div class="field">
-        <span class="label">Colour hint <span class="faint">(optional)</span></span>
-        <div class="dots" role="radiogroup" aria-label="Colour hint">
-          <button class="dot-swatch none" role="radio" aria-checked={!colour} tabindex={!colour ? 0 : -1} onclick={() => (colour = '')}>Any</button>
+        <span class="label">Color hint <span class="faint">(optional)</span></span>
+        <div class="dots" role="radiogroup" aria-label="Color hint">
+          <button class="dot-swatch none" role="radio" aria-checked={!color} tabindex={!color ? 0 : -1} onclick={() => (color = '')}>Any</button>
           {#each Object.entries(SWATCHES) as [n, hex] (n)}
-            <button class="dot-swatch" role="radio" aria-checked={colour === n} tabindex={colour === n ? 0 : -1} aria-label={n} title={n} style:background={hex} onclick={() => (colour = n)}></button>
+            <button class="dot-swatch" role="radio" aria-checked={color === n} tabindex={color === n ? 0 : -1} aria-label={n} title={n} style:background={hex} onclick={() => (color = n)}></button>
           {/each}
         </div>
       </div>
@@ -114,10 +114,10 @@
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
-          <label class="field"><span class="label small">Name</span><input class="input" bind:value={name} placeholder={itemName} /></label>
+          <label class="field"><span class="label small">Name</span><input class="bu-input input" bind:value={name} placeholder={itemName} /></label>
           {#if g.slots.length > 1}
             <label class="field"><span class="label small">Exact slot</span>
-              <span class="select-wrap boxed"><select class="select" bind:value={slot}>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select><ChevronDown size={12} /></span>
+              <span class="select-wrap boxed"><select class="bu-select select" bind:value={slot}>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select><ChevronDown size={12} /></span>
             </label>
           {/if}
           {#if plan}<p class="faint small">{plan.calls} PixelLab calls · {plan.cells} frames · {itemRoute.label}{plan.cell ? ` · ${plan.cell} px canvas so long weapons are never cut off` : ''}. Failed checks re-roll automatically (up to 2×).</p>{/if}

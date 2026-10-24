@@ -52,7 +52,7 @@ await page.locator('.overlay [data-action="cat:Hands"]').click();
 await page.locator('.add-item').click();
 if(!(await page.getByRole('heading',{name:'Make a new item',exact:true}).isVisible()))throw Error('Mobile new item unreachable');
 if(interactionErrors.length)throw Error(interactionErrors.join('\n'));
-reports.push({interactionChecks:'PASS',checks:['character selection','equip wizard hat','direction change','export dialog','library search','creation cost gate','appearance review','recolour','four-view inspection','plain backdrop','mirrored-state notice','phone all-parts picker','phone new-item access']});
+reports.push({interactionChecks:'PASS',checks:['character selection','equip wizard hat','direction change','export dialog','library search','creation cost gate','appearance review','recolor','four-view inspection','plain backdrop','mirrored-state notice','phone all-parts picker','phone new-item access']});
 for(const [device,width,height] of [['small',320,568],['landscape',844,390]]){
  await page.setViewportSize({width,height});
  for(const screen of ['select','create','dress']){

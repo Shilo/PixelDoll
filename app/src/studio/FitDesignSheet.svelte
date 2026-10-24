@@ -6,7 +6,7 @@
   import DesignPreview from './DesignPreview.svelte'
   import { assessDesign, loadDesign, designPreview, prepareCopy, acceptCopy, planFit, createFit, getFit, reviewFit, acceptFit, discardFit, type EquipmentDesign, type FitAssessment, type FitCandidate, type FitDraft, type FitPlan } from '../lib/equipment/index.ts'
   import type { Project } from '../lib/store/manifest.ts'
-  import { recolour } from '../lib/dress/dress.ts'
+  import { recolor } from '../lib/dress/dress.ts'
   import { ui, doc, store, equipment, refreshFits, runFitStage, retryFitStage, withKey, flushSave, openProject, toast } from './state.svelte.ts'
   import { CircleCheck, Sparkles, TriangleAlert } from './icons.ts'
 
@@ -47,7 +47,7 @@
     assessment = draft.plan.assessment
     design = draft.plan.design
     if (!reference) reference = await designPreview(design)
-    preview = result.project ? recolour(result.project, draft.candidate?.variants ?? {}) : null
+    preview = result.project ? recolor(result.project, draft.candidate?.variants ?? {}) : null
     itemId = result.itemId ?? draft.candidate?.itemId ?? ''
     if (previous !== draft.updatedAt) reviewed = false
   }
@@ -63,7 +63,7 @@
           assessment = await assessDesign(design, target)
           if (assessment.canCopy && mode === 'copy') {
             candidate = await prepareCopy(design, target)
-            preview = recolour(candidate.project, candidate.variants); itemId = candidate.itemId
+            preview = recolor(candidate.project, candidate.variants); itemId = candidate.itemId
           } else {
             preview = reference; itemId = design.itemId
             if (assessment.status === 'fit') { await flushSave(); plan = await planFit(design, targetId); assessment = plan.assessment }
@@ -144,19 +144,19 @@
   {#if design && assessment}
     <p class="muted small">{draft ? `A fitted copy for ${targetName}.` : `Independent copy for ${target?.manifest.name ?? 'your character'}.`} The shared design and other characters stay independent.</p>
     {#if running}
-      <p class="notice small" role="status"><Sparkles size={16} /><span>{stage === 'pose-running' ? 'Animating the approved fit…' : 'Preparing the rest-pose fit…'} You can hide this window and reopen the fit from Activity. Hiding does not cancel a PixelLab job.</span></p>
+      <p class="notice small" role="status"><Sparkles size={16} /><span>{stage === 'pose-running' ? 'Animating the approved fit…' : 'Preparing the rest-pose fit…'} You can hide this sheet and reopen the fit from Activity. Hiding does not cancel a PixelLab job.</span></p>
     {:else if stage === 'needs-attention'}
       <p class="notice warn small"><TriangleAlert size={16} /><span>{draft?.error || 'This fit needs attention.'} No paid request is retried automatically.</span></p>
     {:else if stage === 'rest-review'}
-      <p class="notice small"><CircleCheck size={16} /><span>Review the rest fit in every direction before paying to animate it. Check shape, colours, grip and alignment.</span></p>
-      {#if plan?.extension}<p class="muted small">{plan.extension.reuseRest ? 'Reuses this character’s approved standing references for free.' : 'Review the new standing fit before animating.'} Only missing frames of {plan.extension.anims.join(', ')} will be generated; existing item frames and outfit colours stay intact.</p>{/if}
+      <p class="notice small"><CircleCheck size={16} /><span>Review the rest fit in every direction before paying to animate it. Check shape, colors, grip and alignment.</span></p>
+      {#if plan?.extension}<p class="muted small">{plan.extension.reuseRest ? 'Reuses this character’s approved standing references for free.' : 'Review the new standing fit before animating.'} Only missing frames of {plan.extension.anims.join(', ')} will be generated; existing item frames and outfit colors stay intact.</p>{/if}
     {:else if stage === 'fit-review' || candidate}
       <p class="notice small"><CircleCheck size={16} /><span>{candidate ? 'Free copy: 0 generations.' : 'Animation is ready.'} Check every move and direction before keeping this copy.</span></p>
       {#if candidate && assessment.missingCells}<p class="notice warn small"><TriangleAlert size={14} /><span>This is a partial copy: {assessment.freeCells} verified frames are included; {assessment.missingCells} target frames have no item. Fitting the missing frames is a separate step.</span></p>{/if}
     {:else if assessment.status === 'ready'}
       <p class="muted small">{mode === 'fit' ? 'The existing frames already match this design. No fitting generations are needed.' : 'Preparing your free copy…'}</p>
     {:else if assessment.status === 'setup'}
-      <p class="notice small"><TriangleAlert size={16} /><span>{assessment.reasons.join(' ')}</span><button class="btn sm" onclick={setup}>Set up character</button></p>
+      <p class="notice small"><TriangleAlert size={16} /><span>{assessment.reasons.join(' ')}</span><button class="bu-action btn sm" data-variant="outline" onclick={setup}>Set up character</button></p>
     {:else}
       {#each assessment.reasons as reason (reason)}<p class="muted small">{reason}</p>{/each}
       {#if plan}<p class="notice small"><Sparkles size={16} /><span>First preview the fit at rest: up to {plan.previewGens} gens. After you approve it, animate the current moves for up to {plan.poseGens} more gens. Each stage needs your approval.</span></p>{/if}
@@ -170,16 +170,16 @@
     {#if plan && !candidate}<p class="faint small">PixelLab may bill usage in dollars instead of generations. Actual charges appear in Activity.</p>{/if}
     <div class="actions fit-actions">
       {#if candidate || stage === 'fit-review'}
-        <button class="btn primary" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => accept(true)}>Keep and wear</button><button class="btn" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => accept(false)}>Keep in wardrobe</button>
+        <button class="bu-action btn primary" data-variant="primary" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => accept(true)}>Keep and wear</button><button class="bu-action btn" data-variant="outline" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => accept(false)}>Keep in wardrobe</button>
       {:else if stage === 'rest-review'}
-        <span class="api-action"><ApiPeek scope="equipment-fit-animate" label="Animate approved fit" plan={fitPlan(plan, 'pose', undefined, false, target?.manifest)} /><button class="btn primary" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => paid('pose')}>Animate fit <span class="cost">up to {plan?.poseGens} gens</span></button></span>
+        <span class="api-action"><ApiPeek scope="equipment-fit-animate" label="Animate approved fit" plan={fitPlan(plan, 'pose', undefined, false, target?.manifest)} /><button class="bu-action btn primary" data-variant="primary" disabled={!reviewed || busy || running || !!qualityFails.length} onclick={() => paid('pose')}>Animate fit <span class="cost">up to {plan?.poseGens} gens</span></button></span>
       {:else if stage === 'needs-attention' && draft?.resumeStage}
-        <span class="api-action"><ApiPeek scope="equipment-fit-resume" label="Continue checking submitted fit" plan={fitPlan(plan, draft.resumeStage, draft, true)} queueIds={draft.calls.flatMap(c => c.recId ? [c.recId] : [])} /><button class="btn primary" disabled={busy || running} onclick={() => paid(draft!.resumeStage!)}>Continue checking submitted fit <span class="cost">No new charge</span></button></span>
+        <span class="api-action"><ApiPeek scope="equipment-fit-resume" label="Continue checking submitted fit" plan={fitPlan(plan, draft.resumeStage, draft, true)} queueIds={draft.calls.flatMap(c => c.recId ? [c.recId] : [])} /><button class="bu-action btn primary" data-variant="primary" disabled={busy || running} onclick={() => paid(draft!.resumeStage!)}>Continue checking submitted fit <span class="cost">No new charge</span></button></span>
       {:else if !running && plan && assessment.status === 'fit'}
-        <span class="api-action"><ApiPeek scope="equipment-fit-preview" label="Preview standing fit" plan={fitPlan(plan, 'rest')} /><button class="btn primary" disabled={busy} onclick={() => paid('rest')}>Preview fit <span class="cost">up to {plan.previewGens} gens</span></button></span>
+        <span class="api-action"><ApiPeek scope="equipment-fit-preview" label="Preview standing fit" plan={fitPlan(plan, 'rest')} /><button class="bu-action btn primary" data-variant="primary" disabled={busy} onclick={() => paid('rest')}>Preview fit <span class="cost">up to {plan.previewGens} gens</span></button></span>
       {/if}
-      {#if draft?.retryStage && draft.retryGens && !running}<span class="api-action"><ApiPeek scope="equipment-fit-retry" label="Retry failed fitting coverage" plan={fitRetryPlan(draft)} /><button class="btn" disabled={busy} onclick={retry}>Try {draft.retryStage === 'rest' ? 'rest fit' : 'failed animation frames'} again <span class="cost">up to {draft.retryGens} additional gens</span></button></span>{/if}
-      {#if draftId && !running && stage !== 'accepted'}<button class="btn plain danger" disabled={busy} onclick={discard}>Discard fit</button>{/if}
+      {#if draft?.retryStage && draft.retryGens && !running}<span class="api-action"><ApiPeek scope="equipment-fit-retry" label="Retry failed fitting coverage" plan={fitRetryPlan(draft)} /><button class="bu-action btn" data-variant="outline" disabled={busy} onclick={retry}>Try {draft.retryStage === 'rest' ? 'rest fit' : 'failed animation frames'} again <span class="cost">up to {draft.retryGens} additional gens</span></button></span>{/if}
+      {#if draftId && !running && stage !== 'accepted'}<button class="bu-action btn plain danger" data-variant="quiet" disabled={busy} onclick={discard}>Discard fit</button>{/if}
     </div>
   {/if}
 </Sheet>

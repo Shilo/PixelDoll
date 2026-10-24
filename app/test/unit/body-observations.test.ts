@@ -7,9 +7,9 @@ import { setupPlan } from '../../src/lib/rig/setup.ts'
 import { equipmentFixture, bodyOnly } from './equipment-fixture.ts'
 
 const pose = (dy = 0) => LABELS.map(label => ({ label, x: 0.5, y: 0.5 + dy / 64 }))
-const frame = (bottom = 58, colour = [100, 80, 60], top = 10) => {
+const frame = (bottom = 58, color = [100, 80, 60], top = 10) => {
   const im = makeImg(64, 64)
-  for (let y = top; y < bottom; y++) for (let x = 25; x < 35; x++) im.data.set([...colour, 255], (y * 64 + x) * 4)
+  for (let y = top; y < bottom; y++) for (let x = 25; x < 35; x++) im.data.set([...color, 255], (y * 64 + x) * 4)
   return im
 }
 const warnings = (qa: ReturnType<typeof clipQa>) => (qa as typeof qa & { warnings?: string[] }).warnings ?? []

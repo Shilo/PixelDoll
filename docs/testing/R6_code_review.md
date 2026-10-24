@@ -9,7 +9,7 @@ a sourcemap size breakdown, and a node probe of the queue (`r6_queue_checks.ts`,
 of the probe are quoted where used.
 
 **CONFIRMED** = reproduced by a probe or followed end to end in the code. **PLAUSIBLE** = the code path exists, but the trigger
-depends on timing or on server behaviour I could not reproduce offline.
+depends on timing or on server behavior I could not reproduce offline.
 
 ## Summary
 
@@ -125,7 +125,7 @@ so zip import has no path-traversal or zip-bomb surface today.
 ### P2-9 Download retry storm — CONFIRMED
 - `queue.ts:330`: a sub-job with `remoteDone` runs `download()` on **every 1 s tick**, with no backoff, attempt count or
   terminal state. Probe 2: a 403 from storage → **59 GETs in 60 ticks**, and the record stays `running` forever.
-- A CSP block (a storage host outside `connect-src`) shows the same behaviour.
+- A CSP block (a storage host outside `connect-src`) shows the same behavior.
 - Fix: reuse `lastPoll` + `backoff()`. After about 10 failures, mark the sub-job failed with the URL kept (and "download
   manually" in the error).
 
@@ -175,7 +175,7 @@ so zip import has no path-traversal or zip-bomb surface today.
   rejected key stays remembered. It also calls `/balance` twice (inside `setKey` and again in `use`).
 - `state.svelte.ts:122-150`: two quick `openProject` calls race, and the slower one wins (the stage can show A while the menu
   says B). Guard with a request counter.
-- `deleteItem` (`project.ts:64`) leaves the item's materials in `m.materials` (owner gone). They still claim colours in
+- `deleteItem` (`project.ts:64`) leaves the item's materials in `m.materials` (owner gone). They still claim colors in
   `deriveMaterials` and are exported.
 - `acceptGen`/`removeItem` → `openProject` clears undo/redo. Fine for an MVP, but worth knowing.
 - Provenance formats differ: base clips store raw `params` with `{$blob}` (`create.ts:120`), while items map to `{sha256}`
@@ -186,7 +186,7 @@ so zip import has no path-traversal or zip-bomb surface today.
 
 Checked and fine: pivot/cell math (normalize floor pad, `pivotOf`, `layerFrame`/`unionFrame`, Godot `offset = -pivot`, Unity
 `(x/w, 1 − y/h)` with bottom-left rects, Phaser normalized pivot); mirroring (pixel `flipX = w−1−x` vs continuous `w − x` is
-consistent; the export validator rejects off-centre oversize layers on mirrored rigs); straight-alpha `over`; fg/bg split
+consistent; the export validator rejects off-center oversize layers on mirrored rigs); straight-alpha `over`; fg/bg split
 recomposes exactly; binary alpha everywhere (premultiply loss is irrelevant); undo/redo snapshots (`dressOf`/`applyDress`
 round-trip; slots without overrides are written as `[]`, items without hides as `null`).
 
@@ -229,7 +229,7 @@ round-trip; slots without overrides are written as `[]`, items without hides as 
 
 Other P3 notes:
 - `vite.config.ts:334` `/__dev/save` lacks the Host check that `/__dev/pixellab-key` has. Vite 8's `allowedHosts` already blocks
-  DNS rebinding, so this is defence in depth only.
+  DNS rebinding, so this is defense in depth only.
 - XSS: every remote or user string (item names, prompts, `r.error`, server `errorText`) goes through Svelte text interpolation.
   No `{@html}`, `innerHTML` or `eval`. OK.
 
@@ -245,7 +245,7 @@ Other P3 notes:
 | `unzip` | `store/zip.ts:84-111` (only its self-test calls it) | Delete until project import exists | ~28 lines |
 | Canvas `encodePng` | `image/png.ts:146-151` + test | `encodePngBytes` is used everywhere | ~8 lines |
 | One-implementation interface | `studio/itemRoute.ts` (`ItemRoute` + `chromaEdit` + `itemRoute = chromaEdit`) | Call `run.ts` directly; move `coverage()` next to `newDraft` | ~35 lines |
-| Duplicated helpers | `terminal`/`settled` (`run.ts:49-57` = `create.ts:46-55`); `pipe` (`zip.ts` = `pngraw.ts`); `dilate` (`diff.ts`, `items.ts`); "set of opaque colours" ×4 (`clips.rgbOf`, `items.colours`, `diff.palette`, `palette.colourCounts`); `slug` ×3 (`run.ts`, `MoveSheet`, `savePreset`); `lsGet` ×3 (`app.svelte.ts`, `state.svelte.ts`, `ExportSheet`/M4); `putCell` (`create.ts`) vs the blob loop in `saveItem` | One exported copy each: `queue.settled(id)`, `pngraw.pipe`, `chroma.dilate`, `palette.colourCounts`, `model.slug`, one `ls` helper, `project.putCell` | ~60–80 lines |
+| Duplicated helpers | `terminal`/`settled` (`run.ts:49-57` = `create.ts:46-55`); `pipe` (`zip.ts` = `pngraw.ts`); `dilate` (`diff.ts`, `items.ts`); "set of opaque colors" ×4 (`clips.rgbOf`, `items.colors`, `diff.palette`, `palette.colorCounts`); `slug` ×3 (`run.ts`, `MoveSheet`, `savePreset`); `lsGet` ×3 (`app.svelte.ts`, `state.svelte.ts`, `ExportSheet`/M4); `putCell` (`create.ts`) vs the blob loop in `saveItem` | One exported copy each: `queue.settled(id)`, `pngraw.pipe`, `chroma.dilate`, `palette.colorCounts`, `model.slug`, one `ls` helper, `project.putCell` | ~60–80 lines |
 | Deprecated field still written | `Item.extractor` (`items.ts:672`) | Drop (v1.3 has `route`) | 2 lines |
 | Dead ternary | `Stage.svelte:23` `phone ? 64 : 64` | `const barH = 64` | — |
 
@@ -292,9 +292,9 @@ about 300 lines) for readability. That is an optional, cosmetic change.
     runs after each call batch and again on load for every draft in review.
   - Fine for an MVP. Later, move `evaluateItem` into a Worker (it is pure over `Img`). At minimum, reuse the first
     `bestShift` result for `shifted` in `extractCell` (`items.ts:385` vs `:402`).
-- **Recolour LUT**: `View.project` (`state.svelte.ts:107`) re-runs `recolour` on every `doc.rev`. The index table is cached
-  per image (`dress.ts:101`), but `applyIndex` allocates a **new image for every cell of every recoloured item** on every edit,
-  including Wear/Take off, which changes no colours. Fix: key the derived value on `doc.variants` only, or cache by
+- **Recolor LUT**: `View.project` (`state.svelte.ts:107`) re-runs `recolor` on every `doc.rev`. The index table is cached
+  per image (`dress.ts:101`), but `applyIndex` allocates a **new image for every cell of every recolored item** on every edit,
+  including Wear/Take off, which changes no colors. Fix: key the derived value on `doc.variants` only, or cache by
   `(img, table signature)`.
 - **Canvas redraw**: one compose per visible sprite per frame tick (every 100–150 ms) is fine. For each mirrored layer,
   `cellImg` allocates a `flipH` copy every tick (`compose.ts:66`). `Sprite.svelte:15` copies the pixel buffer again before

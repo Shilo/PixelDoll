@@ -7,7 +7,7 @@
   const m = $derived(store.project?.manifest)
   const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
   const k = $derived(Math.max(1, Math.floor(ui.dpr)))
-  // fixed 56 px window (bottom-centred, no per-frame jitter) so the thumbnail is shown 1:1 instead of shrunk
+  // fixed 56 px window (bottom-centered, no per-frame jitter) so the thumbnail is shown 1:1 instead of shrunk
   const win = (im: Img) => {
     if (im.w < 56 || im.h < 56 || im.w > 64 || im.h > 64) return im
     const o = makeImg(56, 56), x0 = (im.w - 56) >> 1, y0 = im.h - 56
@@ -16,7 +16,7 @@
   }
 </script>
 
-<div class="colours">
+<div class="colors">
   <span class="sec-title">Moves</span>
   {#if m && view.project}
     <div class="move-list">
@@ -24,7 +24,7 @@
         {@const base = m.items.find((i) => i.id === m.rig.baseItem)}
         {@const dirs = m.rig.directions.filter((d) => !d.mirrorOf && base?.layers[0].cells?.[a.id]?.[d.id]?.some(Boolean))}
         {@const nDirs = dirs.length + m.rig.directions.filter((d) => d.mirrorOf && dirs.some((x) => x.id === d.mirrorOf)).length}
-        <button class="move-row" aria-pressed={ui.anim === a.id} onclick={() => { ui.anim = a.id; ui.frame = 0; ui.playing = true }}>
+        <button class="move-row bu-action" data-variant="row" aria-pressed={ui.anim === a.id} onclick={() => { ui.anim = a.id; ui.frame = 0 }}>
           <span class="move-thumb"><Sprite img={win(composeCell(view.project, doc.items, a.id, dirs[0]?.id ?? 'south', a.frames[ui.frame % a.frames.length].cell))} {k} limit={56} label="{nice(a.id)} preview" /></span>
           <span class="move-text"><b>{nice(a.id)}</b><span class="muted small">{a.cells} frames · {nDirs === 1 ? `${dirs[0]?.id ?? 'one'} only` : `${nDirs} directions`}</span></span>
         </button>
@@ -44,8 +44,8 @@
       </div>
     </details>
     {#if moving.spec && moving.projectId === doc.id && !moving.done}
-      <button class="move-row" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
+      <button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
     {/if}
-    {#if !isDemo()}<button class="btn" onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button>{/if}
+    {#if !isDemo()}<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button>{/if}
   {/if}
 </div>

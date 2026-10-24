@@ -1,0 +1,30 @@
+@import '@shilo/bronze-ui/tokens.css';
+@import '@shilo/bronze-ui/components.css';
+
+/* Compatibility names used by production workflows. Bronze remains the only
+   source of shared appearance; no second color palette or document reset. */
+:root, :root[data-theme] {
+  --font-ui:var(--bu-font); --font-mono:var(--bu-mono);
+  --fs:14px; --fs-sm:12px; --fs-md:16px; --fs-title:28px;
+  --ctl-h:40px; --tb-h:72px;
+  --r-ctl:var(--bu-radius-control); --r-card:var(--bu-radius-panel); --r-sheet:var(--bu-radius-dialog);
+  --bg:var(--bu-canvas); --bg-side:var(--bu-surface); --bg-raised:var(--bu-surface);
+  --bg-hover:var(--bu-hover); --bg-sel:var(--bu-selected); --stage:var(--bu-canvas);
+  --check-a:var(--bu-surface); --check-b:var(--bu-hover); --thumb-bg:var(--bu-diagram);
+  --text:var(--bu-text); --text-2:var(--bu-muted); --text-3:var(--bu-muted);
+  --line:var(--bu-line); --line-strong:var(--bu-border);
+  --accent:var(--bu-accent); --accent-text:var(--bu-accent); --on-accent:var(--bu-on-accent); --accent-soft:var(--bu-selected);
+  --ok:var(--bu-success); --warn:var(--bu-warning); --bad:var(--bu-danger); --danger-text:var(--bu-danger);
+  --shadow-1:none; --shadow-pop:var(--bu-dialog-shadow); --scrim:var(--bu-scrim); --focus:var(--bu-focus);
+  --dur:var(--bu-duration); --dur-fast:var(--bu-duration);
+}
+@media (pointer:coarse), (max-width:760px) { :root, :root[data-theme] { --ctl-h:44px; --fs:14px; --fs-sm:12px; } }
+/* Host geometry stays local. Appearance and states are package recipes. */
+.studio-app .bu-action { font-family:var(--bu-font); }
+.studio-app .bu-input { font-size:16px; }
+.studio-app .sheet { background:var(--bu-surface); }
+.studio-app .menu { background:var(--bu-floating); border:1px solid var(--bu-rim); box-shadow:var(--bu-shadow); }
+.studio-app .sheet-title { font-size:18px; }
+/* Legacy wrappers drew a chevron for appearance:none selects; Bronze base-select draws its own picker icon. */
+@supports (appearance:base-select) and selector(select::picker(select)) { .studio-app .select-wrap>svg { display:none; } .studio-app .select-wrap>.bu-select { padding-right:8px; } }
+.studio-app .toast { background:var(--bu-floating); color:var(--bu-text); border-color:var(--bu-rim); }

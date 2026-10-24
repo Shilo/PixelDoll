@@ -46,7 +46,7 @@ import { readCharacterZip,projectEntries } from '../../src/lib/store/import.ts';
 import { zip } from '../../src/lib/store/zip.ts';
 import { saveDress } from '../../src/lib/dress/project.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
-import { recolour } from '../../src/lib/dress/dress.ts';
+import { recolor } from '../../src/lib/dress/dress.ts';
 import { cellImg } from '../../src/lib/compose/compose.ts';
 import { planFit } from '../../src/lib/equipment/fit.ts';
 
@@ -139,7 +139,7 @@ test('extension preparation is free/deduplicated, reuses target refs and preserv
   const material=m.items.find(it=>it.id===id)!.materials[0];await saveDress('rig-target',m,{items:{body:'base',head:id},variants:{[material]:'red'}});
   const review=await approveRestAndPose(draft.id,2);expect(review.qualityFails).toEqual([]);
   const preview=await reviewFit(draft.id),previewItem=preview.project!.manifest.items.find(it=>it.id===preview.itemId)!;
-  for(const anim of ['rest','walk'])expect([...cellImg(recolour(preview.project!,preview.draft.candidate!.variants),previewItem.layers[0],anim,'south',0)!.data.slice((18*64+20)*4,(18*64+20)*4+3)]).toEqual([255,0,0]);
+  for(const anim of ['rest','walk'])expect([...cellImg(recolor(preview.project!,preview.draft.candidate!.variants),previewItem.layers[0],anim,'south',0)!.data.slice((18*64+20)*4,(18*64+20)*4+3)]).toEqual([255,0,0]);
   expect(await acceptFit(draft.id,false)).toBe(id);expect(await acceptFit(draft.id,false)).toBe(id);
   const final=await loadProject('rig-target'),item=final.project.manifest.items.find(it=>it.id===id)!;
   expect(item.layers[0].cells!.rest!.south).toEqual(old);expect(item.layers[0].cells!.walk!.south).toHaveLength(2);
@@ -147,11 +147,11 @@ test('extension preparation is free/deduplicated, reuses target refs and preserv
   expect(item.qa!.unmeasured).toBe(true);
   expect(item.qa!.cells['walk/south/1'].route).toBe('posed');expect(item.provenance.at(-1)!.produced).toEqual(['walk/south/1']);
   for(const variant of ['blue','red'])for(const anim of ['rest','walk']){
-    const view=recolour(final.project,{[material]:variant}),image=cellImg(view,item.layers[0],anim,'south',0)!;
+    const view=recolor(final.project,{[material]:variant}),image=cellImg(view,item.layers[0],anim,'south',0)!;
     expect([...image.data.slice((18*64+20)*4,(18*64+20)*4+3)]).toEqual(variant==='blue'?[0,0,255]:[255,0,0]);
   }
   const restored=(await readCharacterZip(await zip(await projectEntries(final.project)))).project;
-  const baseline=recolour(restored,{}),restoredItem=restored.manifest.items.find(it=>it.id===id)!;
+  const baseline=recolor(restored,{}),restoredItem=restored.manifest.items.find(it=>it.id===id)!;
   for(const anim of ['rest','walk'])expect([...cellImg(baseline,restoredItem.layers[0],anim,'south',0)!.data.slice((18*64+20)*4,(18*64+20)*4+3)]).toEqual([0,0,255]);
 });
 
@@ -187,7 +187,7 @@ test('one-direction approved refs bypass transfer-only limits; ordinary or chang
   const material=m.items.find(it=>it.id===id)!.materials[0];m.materials.find(mat=>mat.id==='base')!.variants['preview-skin']=['#123456'];
   state.projects.set('rig-target',{...loaded.rec,manifest:m,dress:{current:{items:{body:'base',head:id},variants:{[material]:'blue',base:'preview-skin'}}}});state.strictTransferMin=true;
   const fit=await prepareExtensionFit('rig-target',id,{anims:['move']});expect(fit.previewGens).toBe(0);expect(fit.poseGens).toBe(3);expect(state.restPreflights).toBe(0);
-  const restReview=await reviewFit(fit.id),view=recolour(restReview.project!,restReview.draft.candidate!.variants),hat=view.manifest.items.find(it=>it.id===id)!;
+  const restReview=await reviewFit(fit.id),view=recolor(restReview.project!,restReview.draft.candidate!.variants),hat=view.manifest.items.find(it=>it.id===id)!;
   expect(restReview.draft.candidate!.variants[material]).toBe('blue');expect(restReview.draft.candidate!.variants.base).toBe('preview-skin');
   expect([...cellImg(view,hat.layers[0],'rest','south',0)!.data.slice((18*64+20)*4,(18*64+20)*4+3)]).toEqual([0,0,255]);
   expect([...cellImg(view,view.manifest.items[0].layers[0],'rest','south',0)!.data.slice((50*64+20)*4,(50*64+20)*4+3)]).toEqual([18,52,86]);

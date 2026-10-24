@@ -109,9 +109,9 @@ test('loading a Tier 1 queued request with a missing stored input fails locally 
   expect(saved.get(record.id)?.state).toBe('failed')
 })
 
-test('cancellation while checking a missing stored input remains cancelled', async () => {
+test('cancellation while checking a missing stored input remains canceled', async () => {
   const record = missingInputRecord(), entered = deferred<void>(), lookup = deferred<Blob | undefined>()
-  const transport = vi.fn(() => { throw new Error('A cancelled request must not fetch') })
+  const transport = vi.fn(() => { throw new Error('A canceled request must not fetch') })
   vi.stubGlobal('fetch', transport)
   const q = new Queue({ locks: null, online: () => true, all: async () => [structuredClone(record)],
     getBlob: async () => { entered.resolve(); return lookup.promise }, put: async () => {} })
@@ -123,7 +123,7 @@ test('cancellation while checking a missing stored input remains cancelled', asy
   lookup.resolve(undefined)
   await tick
   expect(transport).not.toHaveBeenCalled()
-  expect(q.snapshot().jobs[0].state).toBe('cancelled')
+  expect(q.snapshot().jobs[0].state).toBe('canceled')
 })
 
 test.each([false, true])('disconnect while checking stored inputs stops the suspended tick (input present: %s)', async present => {

@@ -24,7 +24,7 @@ No PixelLab generations were used.**
   - Why: an RPG-Maker-style engine reads a single fixed cell, and the sword tip is never cut off.
   - Rejected: keeping the base cell for baked sheets, because it would clip the blade in 5 of 8 slash frames.
 - **Mirroring.** A mirrored row flips the whole layer cell. So whenever a direction is mirrored, an oversize cell must be
-  centred on the rig cell: `2·(rig.pivot.x − layer.pivot.x) + layer.w = rig.w` (new inv. 10, enforced by `validate`).
+  centered on the rig cell: `2·(rig.pivot.x − layer.pivot.x) + layer.w = rig.w` (new inv. 10, enforced by `validate`).
 - **Unity scale.** Unity's PPU stays the base's (`export.pixelsPerUnit`, default 64) for every layer, so the world scale is
   the same for all layers.
 
@@ -46,7 +46,7 @@ No PixelLab generations were used.**
 | `docs/architecture.md` | "Oversize cells" removed from the non-goals. Goal 1 points to §2.1. |
 
 Self-tests cover pivot alignment and clipping, `unionFrame`/`bakedFrame`, oversize sheet size, validation (accept 96,
-image ≠ layer cell, off-centre plus mirrored), the explicit manifest fields, the Godot region and offset, the Phaser rect and
+image ≠ layer cell, off-center plus mirrored), the explicit manifest fields, the Godot region and offset, the Phaser rect and
 pivot, and the Unity JSON (96 cell, PPU 64).
 
 ## Fixture `s5_sword`
@@ -93,7 +93,7 @@ Steps:
   - **0 of 1,179,648 px differ** from `baked/<preset>/<anim>.png`.
 
   ![Godot slash](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b8_godot_render_slash.png)
-- **Mutation check:** I edited a copy of the export to use the old behaviour (rig pivot on every node, no offset in
+- **Mutation check:** I edited a copy of the export to use the old behavior (rig pivot on every node, no offset in
   `equip`).
   - Sync: 1,441 failures.
   - Render: 17,254 differing px (armed only; bare stays at 0).

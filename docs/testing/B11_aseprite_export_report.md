@@ -24,7 +24,7 @@ Output: `aseprite/<name>.aseprite` + `aseprite/README.txt` (importer settings).
 | Pivot | Slice `pivot`: the whole canvas, pivot = `bakedPivot` (key at frame 0). |
 | Cels | Compressed (type 2, zlib via `CompressionStream('deflate')`), untrimmed (layer cell size). A cell repeated in a playlist (hold) becomes a linked cel. A transparent cell has no cel. |
 | zOverrides | Cel z-index. Aseprite ≥ 1.3 draws by layer index + z-index, so each cel gets `(its position in that frame's resolved draw order) − (layer index)`. The flattened frame then equals `composeCell`. This replaces the planned "static z only" limitation. |
-| Colours | Source ramps, the same as `layers/`. Outfit recolours are not applied. |
+| Colors | Source ramps, the same as `layers/`. Outfit recolors are not applied. |
 
 Sizes: S1 49 KB, S2 92 KB, S5 73 KB.
 
@@ -121,7 +121,7 @@ engine choice back to Godot.
 
 - Not run in Unity's Aseprite Importer (license-blocked, same as M5) or in Godot's Aseprite Wizard (needs the plugin and the
   Aseprite binary).
-- Expected behaviour there:
+- Expected behavior there:
   - Unity applies cel z-index as Order in Layer.
   - The Wizard makes per-layer SpriteFrames and ignores z-index.
 - Visibility follows only `presets[0]`. Other outfits are a matter of toggling layers. One file per preset is possible if users

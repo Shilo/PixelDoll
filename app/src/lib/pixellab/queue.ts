@@ -17,7 +17,7 @@ import { base64ToBytes, bytesToBase64, pngSize } from '../image/png.ts';
 import * as db from '../store/db.ts';
 import { activityRequest, beginActivityCall, finishActivityCall, restoreActivityRequest, type ActivityContext } from './activity.ts';
 
-export type RecState = 'queued' | 'submitting' | 'running' | 'done' | 'failed' | 'cancelled' | 'lost';
+export type RecState = 'queued' | 'submitting' | 'running' | 'done' | 'failed' | 'canceled' | 'lost';
 export interface Result { label: string; sha: string; w?: number; h?: number }
 export interface SubJob {
   id: string; // background_job_id
@@ -59,7 +59,7 @@ export interface JobRec {
   jobs: SubJob[];
   error?: string;
   estimateRecovery?: { id: string; retryOf?: string }; // explicit, persisted measurement-only retry; original unknown record is retained
-  autoCancelledAttempts?: number[]; // known automatic pre-submit cancellation; only a distinct explicit attempt may reopen
+  autoCanceledAttempts?: number[]; // known automatic pre-submit cancellation; only a distinct explicit attempt may reopen
   gens: number;
   usd: number;
 }
@@ -156,7 +156,7 @@ export interface EstimateRetryIntent { id: string; recordIds: readonly string[] 
 /** Unknown measurements require a new explicit reviewed intent; accepted background jobs are never cloned. */
 export function retryableEstimate(r: JobRec): boolean {
   return r.method === 'POST' && r.endpoint === '/estimate-skeleton' && !r.jobs.length && !hasJobEvidence(r.response) &&
-    (r.state === 'lost' || (r.state === 'cancelled' && !!r.autoCancelledAttempts?.length));
+    (r.state === 'lost' || (r.state === 'canceled' && !!r.autoCanceledAttempts?.length));
 }
 
 /** setInterval that keeps ticking in background tabs (worker-driven); plain setInterval where Worker is missing (node). */
@@ -272,7 +272,7 @@ export class Queue {
     this.emit();
     this.requestLeadership();
   }
-  /** Resolves with the record once it is finished (done, failed, cancelled or lost). */
+  /** Resolves with the record once it is finished (done, failed, canceled or lost). */
   settled(id: string): Promise<JobRec> {
     return new Promise((res) => {
       let done = false;
@@ -395,12 +395,12 @@ export class Queue {
       this.recs.set(r.id, r);
       if (dup) {
         this.strengthenPlan(dup, r);
-        Object.assign(r, { state: 'cancelled', error: `duplicate of ${dup.id} (sent from two tabs)`, finishedAt: this.deps.now() });
+        Object.assign(r, { state: 'canceled', error: `duplicate of ${dup.id} (sent from two tabs)`, finishedAt: this.deps.now() });
         void this.save(r).catch((e) => console.error('queue', e));
       }
       return true;
     }
-    if (mine.state === 'queued' && r.state === 'cancelled' && !this.busy.has(r.id)) { Object.assign(mine, { state: r.state, finishedAt: r.finishedAt }); return true; }
+    if (mine.state === 'queued' && r.state === 'canceled' && !this.busy.has(r.id)) { Object.assign(mine, { state: r.state, finishedAt: r.finishedAt }); return true; }
     return r.state === 'queued' && this.strengthenPlan(mine, r);
   }
   /** A follower can strengthen eligibility, but must never replace the leader's transport state or payload. */
@@ -413,6 +413,13 @@ export class Queue {
   }
   async load() {
     for (const r of await this.deps.all()) {
+      // Records saved by earlier versions use the previous state and field names.
+      const legacy = r as JobRec & { autoCancelledAttempts?: number[] };
+      if ((r.state as string) === 'cancelled' || legacy.autoCancelledAttempts) {
+        if ((r.state as string) === 'cancelled') r.state = 'canceled';
+        if (legacy.autoCancelledAttempts) { r.autoCanceledAttempts ??= legacy.autoCancelledAttempts; delete legacy.autoCancelledAttempts; }
+        await this.deps.put(r.id, r);
+      }
       // Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
       if (r.state === 'submitting') {
         r.state = r.requestStarted === false ? 'failed' : 'lost';
@@ -596,7 +603,7 @@ export class Queue {
       }
     }
     if (resumeSafe && !retryOf) {
-      const terminal = matches.find((r) => !(r.state === 'cancelled' && Number.isSafeInteger(meta.attempt) && r.autoCancelledAttempts?.length && !r.autoCancelledAttempts.includes(meta.attempt!)));
+      const terminal = matches.find((r) => !(r.state === 'canceled' && Number.isSafeInteger(meta.attempt) && r.autoCanceledAttempts?.length && !r.autoCanceledAttempts.includes(meta.attempt!)));
       if (terminal) return terminal;
     }
     const now = this.deps.now();
@@ -649,7 +656,7 @@ export class Queue {
       try { assertConnected(); }
       catch (e) {
         if (inserted && result.state === 'queued' && (!meta.signal || this.flowAborted(result.id) || (this.connectedOnce && this.connection !== connection))) {
-          result.autoCancelledAttempts = this.cancellationAttempts(result.id);
+          result.autoCanceledAttempts = this.cancellationAttempts(result.id);
           await this.cancel(result.id, true);
         }
         throw e;
@@ -677,7 +684,7 @@ export class Queue {
     signal.addEventListener('abort', () => {
       if (this.flowAborted(id)) {
         const r = this.recs.get(id);
-        if (r?.state === 'queued') r.autoCancelledAttempts = this.cancellationAttempts(id);
+        if (r?.state === 'queued') r.autoCanceledAttempts = this.cancellationAttempts(id);
         void this.cancel(id, true).catch(() => {});
       }
     }, { once: true });
@@ -808,13 +815,13 @@ export class Queue {
         })();
       });
       // Persisting and rehydrating inputs await storage. A released queue or failed sibling must not send afterward.
-      const cancelled = () => (this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted)) || this.flowAborted(r.id);
+      const canceled = () => (this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted)) || this.flowAborted(r.id);
       const cancelBeforeSend = async () => {
-        Object.assign(r, { state: 'cancelled', requestStarted: false, error: 'Request stopped before sending. No API request was made.', finishedAt: this.deps.now(), autoCancelledAttempts: this.cancellationAttempts(r.id) });
+        Object.assign(r, { state: 'canceled', requestStarted: false, error: 'Request stopped before sending. No API request was made.', finishedAt: this.deps.now(), autoCanceledAttempts: this.cancellationAttempts(r.id) });
         this.submitScopes.delete(r.id);
         await this.save(r);
       };
-      if (cancelled()) { await cancelBeforeSend(); return; }
+      if (canceled()) { await cancelBeforeSend(); return; }
       const held = () => credentialRevision !== this.keyRevision || key !== this.key || this.disconnected || this.paused || this.deps.now() < this.capacityRetryAt || this.planWait(r);
       if (held()) {
         r.waitingForPlan = this.planWait(r) ?? undefined;
@@ -824,7 +831,7 @@ export class Queue {
       r.requestStarted = true;
       try { await this.save(r); } // a crash from this point has an unknown transport outcome; never auto-resubmit it
       catch { r.requestStarted = false; throw new Error('request could not be saved; nothing was sent'); }
-      if (cancelled()) { await cancelBeforeSend(); return; }
+      if (canceled()) { await cancelBeforeSend(); return; }
       if (held()) {
         r.waitingForPlan = this.planWait(r) ?? undefined;
         r.requestStarted = false; r.state = 'queued'; r.attempts--; r.nextAt = Math.max(r.nextAt, this.capacityRetryAt);
@@ -987,9 +994,9 @@ export class Queue {
     if (!r.jobs.every((s) => s.done)) return;
     const failed = r.jobs.filter((s) => s.error);
     if (failed.length) r.error = failed.map((s) => s.error).join(' | ');
-    const cancelled = r.jobs.every((s) => s.status === 'cancelled');
+    const canceled = r.jobs.every((s) => s.status === 'cancelled');
     const lost = r.jobs.every((s) => s.status === 'lost');
-    this.finish(r, null, cancelled ? 'cancelled' : lost ? 'lost' : failed.length === r.jobs.length ? 'failed' : 'done');
+    this.finish(r, null, canceled ? 'canceled' : lost ? 'lost' : failed.length === r.jobs.length ? 'failed' : 'done');
   }
   private finish(r: JobRec, usage?: Usage | null, state: RecState = 'done') {
     const usages = usage ? [usage] : r.jobs.map((s) => s.usage).filter((u): u is Usage => !!u);
@@ -1005,14 +1012,14 @@ export class Queue {
   async cancel(id: string, queuedOnly = false) {
     const r = this.recs.get(id);
     if (!r || (queuedOnly && r.state !== 'queued')) return;
-    if (!queuedOnly) delete r.autoCancelledAttempts; // an explicit user cancellation is never reopened by recovery
+    if (!queuedOnly) delete r.autoCanceledAttempts; // an explicit user cancellation is never reopened by recovery
     if (this.role === 'follower' && r.state === 'running') { // the leader's next poll sees the cancel; never write its record
       for (const s of r.jobs.filter((s) => !s.done)) await this.deps.api(this.key, 'DELETE', `/background-jobs/${encodeURIComponent(s.id)}`, undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: `Stop ${r.label}`, background: false }).catch(() => {});
       return;
     }
     if (r.state === 'queued') {
       this.submitScopes.delete(r.id);
-      r.state = 'cancelled';
+      r.state = 'canceled';
       r.finishedAt = this.deps.now();
     } else if (r.state === 'running') {
       for (const s of r.jobs.filter((s) => !s.done && !s.remoteDone)) {
@@ -1309,7 +1316,7 @@ async function lockTest() {
   store.set(fromB2.id, fromB2);
   t += 31_000;
   await a.tick(); // full re-read fallback adopts the twin
-  console.assert(mineA.id !== fromB2.id && store.get(fromB2.id)?.state === 'cancelled' && /duplicate/.test(store.get(fromB2.id)?.error ?? '') && submits === 2, `leader drops the other tab's duplicate (${store.get(fromB2.id)?.state}, ${submits} POSTs)`);
+  console.assert(mineA.id !== fromB2.id && store.get(fromB2.id)?.state === 'canceled' && /duplicate/.test(store.get(fromB2.id)?.error ?? '') && submits === 2, `leader drops the other tab's duplicate (${store.get(fromB2.id)?.state}, ${submits} POSTs)`);
   await new Promise((r) => setTimeout(r, 10));
   console.assert(b.snapshot().jobs.find((r) => r.id === mineA.id)?.state === 'running', 'follower mirror follows the leader by record id (no full re-read)');
   a.disconnect(); // leader tab closed

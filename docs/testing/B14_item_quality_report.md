@@ -54,7 +54,7 @@ apply).
 - The clip was saved into the Ranger's cape.
 - The cape now hangs down the back in all 8 frames, and the arm and sword move in front of it
   ([after](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_cape_slash_north_grid.png); before: [T3 rolls](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_cape_slash_north_rolls.png)).
-- The grey hem smudges are still there, because they come from the reference keyframe (§3, D1).
+- The gray hem smudges are still there, because they come from the reference keyframe (§3, D1).
 
 **Not tested live:** the automatic fallback inside `runItem` and `poseItemClip`. Neither fired: the boots never failed. Both
 share `gridReq` and the extraction with the tested path.
@@ -107,7 +107,7 @@ so hair cannot stick out sideways above the brim. Px below the brim stay.
 ## 3. "Needs a look" re-tune and the dress design check
 
 **Evidence base.** I rebuilt each Ranger item's draft from its provenance (`requestHash` → ledger record) and re-ran
-`evaluateItem` on the stored PixelLab outputs (0 gens). Then I labelled each flagged frame by eye: [hair](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_long_hair.png),
+`evaluateItem` on the stored PixelLab outputs (0 gens). Then I labeled each flagged frame by eye: [hair](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_long_hair.png),
 [trousers](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_cloth_trousers.png), [chest](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_leather_chest_armour.png), [cape](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_red_cape.png),
 [helmet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_iron_knight_helmet.png) ([zoom](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_helmet_zoom.png)).
 
@@ -130,12 +130,12 @@ so hair cannot stick out sideways above the brim. Px below the brim stay.
 - **A held frame repaired from the keyframe** (S5) is recorded in `cells[].repaired`, not as a warning.
 - **Plain reason:** "Some frames do not look like the design (e.g. a cape wrapped around an arm)".
 
-**D1 dress check (0 gens).** It flags a colourful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-grey px
+**D1 dress check (0 gens).** It flags a colorful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-gray px
 (saturation < 0.25). That fails the dress call, so the design is re-rolled (10 gens) before 36 gens of poses copy it.
 
 - Measured on the T3 keyframes: the cape's N view is **11.3 %** (the smudged hem). Every clean view of hair, chest, trousers
-  and cape is ≤ 2.2 %. Grey items (helmet, sword) have a median below 0.4, so they are skipped.
-- Prompts that ask for grey, metal, black, white or fur skip the check.
+  and cape is ≤ 2.2 %. Gray items (helmet, sword) have a median below 0.4, so they are skipped.
+- Prompts that ask for gray, metal, black, white or fur skip the check.
 - Plain reason: "The design has grey smudges". The boots dress scored 0 %.
 - **A "thin design" check was not added.** Area per view cannot separate T3's thin chest E (E/mean(S,N) 0.47) from correct
   trousers E (0.48), or by body coverage (0.76 vs 0.72).

@@ -36,7 +36,7 @@ All six use pixel-art environments and the same real fixture sprites. The four i
 
 **Creation:** a separate scene keeps an example body visible while collecting name, appearance and direction count. It explicitly labels the body as an example, not a live generated preview. The intended order is drawing-cost review, appearance approval, then animation. Advanced request details remain reachable before paying. The actual quote and generated-result review require production integration.
 
-**Customization:** the character remains stable while categories and a contextual item picker change around it. Named modes preserve Wardrobe, Colours, Moves and Outfits. Headgear selection, local recolor demonstration, direction changes, animation playback, grid/bounds controls and native-size inspection are interactive. Additional categories and advanced workflows demonstrate placement and information hierarchy rather than implementing the pipeline.
+**Customization:** the character remains stable while categories and a contextual item picker change around it. Named modes preserve Wardrobe, Colors, Moves and Outfits. Headgear selection, local recolor demonstration, direction changes, animation playback, grid/bounds controls and native-size inspection are interactive. Additional categories and advanced workflows demonstrate placement and information hierarchy rather than implementing the pipeline.
 
 Phone uses a visible actor above a compact lower picker. All parts and a labeled New action remain discoverable. Narrow or short viewports scroll within the contextual panel instead of shrinking all the controls. Desktop alternatives deliberately compare side browsing and bottom browsing; the phone structure converges because preserving room for the actor matters more than maintaining decorative layout differences.
 
@@ -47,7 +47,7 @@ Phone uses a visible actor above a compact lower picker. All parts and a labeled
 | Character library, import and restore | In-world selection, searchable library, header Import and settings |
 | Body generation and immutable base | Separate creation flow, explicit paid-step review and accepted appearance |
 | Equipment generation and fitting | Named category → New → describe → quote drawing/fitting → review frames |
-| Palette ramps and local recolor | Contextual palette choices, Colours mode, exact-ramp details |
+| Palette ramps and local recolor | Contextual palette choices, Colors mode, exact-ramp details |
 | Direction and frame coverage | Facing controls, Inspect, missing-view notice, move coverage review |
 | Moves and animations | Moves mode, local Walk preview, Add a move with scoped paid work |
 | Outfits and reusable designs | Outfits mode; contextual saved designs and fitting details |

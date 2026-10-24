@@ -61,7 +61,7 @@ Saving an editor draft owned by an unaccepted candidate updates that candidate r
 1. Prepare image copies, hashes, encoded blobs, diffs, affected-cell review and QA outside the IndexedDB transaction.
 2. Inside one existing `updateCharacter`-style transaction, read current project/draft, compare expected input stamps and verify target existence.
 3. Merge only declared writes. Preserve unrelated outfit changes, new items and nonoverlapping accepted work. Reject any overlapping or dependency-changing write; entry-time stamps alone are insufficient.
-4. Publish blobs, final cell references, body identity, observations/attachments, fitting state, current QA, accepted history and draft checkpoint together. Record a commit identity for idempotent retry of uncertain local acknowledgement.
+4. Publish blobs, final cell references, body identity, observations/attachments, fitting state, current QA, accepted history and draft checkpoint together. Record a commit identity for idempotent retry of uncertain local acknowledgment.
 5. Announce Saved only on transaction completion. An abort/quota/deletion conflict leaves accepted data intact and the draft available. Recovery download carries no credential or internal creation-attempt identifier.
 
 Show concrete conflicts with Original / Your edit / Current project and choices to re-review against the current version, keep the draft, or save a copy. Do not automatically rebase a brush stroke onto a regenerated image. A save-copy path duplicates a valid project snapshot with an independent ID and truthful metadata; it does not claim the old API character registration belongs to the new source revision.
@@ -70,12 +70,12 @@ Do not rely on a UI lock, idle GC or a cross-tab notification for correctness. A
 
 ## Raster editing and palette identity
 
-- Never mutate a shared `Img.data` or cached recoloured image. Copy, edit, hash and replace only addressed references; invalidate relevant image-object and palette caches.
+- Never mutate a shared `Img.data` or cached recolored image. Copy, edit, hash and replace only addressed references; invalidate relevant image-object and palette caches.
 - Pencil uses binary alpha and exact source values. Erase clears the selected target pixels only. Existing partial alpha, when imported, is preserved outside edited pixels; pencil does not silently antialias it.
-- Default paint colours are the target's existing source palette/ramp shades, including existing fixed source colours. Preview applies current selected variants; the picker samples the selected target's source at that point, not an arbitrary topmost composite RGB.
-- If several source roles render the same preview colour, select the material/region explicitly. Never guess role ownership from a displayed RGB or silently recolour other items/materials.
+- Default paint colors are the target's existing source palette/ramp shades, including existing fixed source colors. Preview applies current selected variants; the picker samples the selected target's source at that point, not an arbitrary topmost composite RGB.
+- If several source roles render the same preview color, select the material/region explicitly. Never guess role ownership from a displayed RGB or silently recolor other items/materials.
 - Body skin/shirt/shorts identity, including the existing blue-LSB region encoding, is preserved or deliberately encoded by a region-aware write. Do not re-derive all body materials after an unrelated pixel stroke.
-- Freely adding fixed/custom colours needs a qualified ownership representation: an RGB that also belongs to a recolour ramp cannot be both fixed and recolourable without extra identity. Existing source colours ship first; new fixed colours/material-role authoring is a planned power extension gated by the palette spike. Label this limit rather than silently quantizing arbitrary input or permanently excluding the extension.
+- Freely adding fixed/custom colors needs a qualified ownership representation: an RGB that also belongs to a recolor ramp cannot be both fixed and recolorable without extra identity. Existing source colors ship first; new fixed colors/material-role authoring is a planned power extension gated by the palette spike. Label this limit rather than silently quantizing arbitrary input or permanently excluding the extension.
 
 Store both semantic operation information and final image references where useful, but final accepted pixels are authoritative. Do not replay a manual patch after extraction against unrelated regenerated art.
 
@@ -112,14 +112,14 @@ The current global `baseHash` remains an identity/guard, not a substitute for th
 
 **Initial conservative export policy:** an item with unresolved affected cells is visibly Needs fitting review and excluded as a whole from ordinary engine export until resolved; the export review lists excluded items and allows body-only/other valid items. Its unaffected frames remain stored, editable and inspectable. Selectively exporting only safe portions of such an item is a later enhancement requiring a complete coverage/consumer contract. This avoids claiming current whole-item guards already support partial compatibility. Generation that needs uncertain metadata/fit is blocked for that target, not for all ordinary raster editing.
 
-Users can therefore Save body work with unfinished gear without losing it or silently exporting stale art as verified. On return to ordinary Studio/gameplay preview, suppress unreviewed gear only on its affected cells and show a persistent actionable note (for example, “Sword hidden in 2 frames — review fitting”). Preserve its outfit selection and wardrobe card with Needs fitting review; unaffected cells retain their known visibility. The editor's explicit **Include unreviewed gear (WIP)** comparison can display retained pixels for repair. No unlabelled overlap is presented as a verified outfit, and no stored artwork is deleted. Export remains more conservative than this diagnostic preview: it excludes the whole unresolved item and never claims a clean full wardrobe while omitting things silently.
+Users can therefore Save body work with unfinished gear without losing it or silently exporting stale art as verified. On return to ordinary Studio/gameplay preview, suppress unreviewed gear only on its affected cells and show a persistent actionable note (for example, “Sword hidden in 2 frames — review fitting”). Preserve its outfit selection and wardrobe card with Needs fitting review; unaffected cells retain their known visibility. The editor's explicit **Include unreviewed gear (WIP)** comparison can display retained pixels for repair. No unlabeled overlap is presented as a verified outfit, and no stored artwork is deleted. Export remains more conservative than this diagnostic preview: it excludes the whole unresolved item and never claims a clean full wardrobe while omitting things silently.
 
 ### Two export projections
 
 An export containing engine files and editable recovery has two deliberately different views of the same accepted project:
 
 - **Engine projection:** filtered `manifest.json`, final sheets, presets/equipment rules and every engine adapter include only export-eligible items. Remove/remap equipped references and variants for excluded items coherently; preserve required surviving material/link dependencies or resolve equivalent values explicitly. No dangling item/material/tuck/mask/lineage reference can reach the consumer. Before download, list excluded items and resulting outfit changes; validate the filtered projection and preview its actual output.
-- **Editable project projection:** the versioned `project.json` and reachable source cells/history/observations retain the full accepted project, including unresolved gear and its compatibility state. They are not replaced by the filtered runtime manifest. Reimport restores unfinished work, not only the safe runtime subset. Unsaved draft recovery, if requested, is separately labelled.
+- **Editable project projection:** the versioned `project.json` and reachable source cells/history/observations retain the full accepted project, including unresolved gear and its compatibility state. They are not replaced by the filtered runtime manifest. Reimport restores unfinished work, not only the safe runtime subset. Unsaved draft recovery, if requested, is separately labeled.
 
 Validate each projection against its own contract. An unresolved item excluded from a game export must never disappear from its portable backup. Tests must include an outfit wearing excluded gear and a surviving material linked to excluded ownership. Current importer preference for `project.json` is useful here; its envelope must understand the new state rather than silently discarding it.
 
@@ -154,9 +154,9 @@ Teach image loading to traverse accepted history, retained original stages, work
 
 Plan a versioned editable-project envelope for editor state and compatibility evidence. Reserve a proposed `pixeldoll-project/2` only during the archive spike; do not change code, silently extend an envelope that older readers will discard, or bump the runtime manifest merely to store UI state. Engine files contain final accepted resolved pixels. New runtime semantics require a separately justified manifest version and all-exporter support.
 
-Default editable export contains accepted source/history/observation state needed for safe restoration. An unsaved draft is included only as a clearly labelled recovery export; it must not be presented as an accepted engine asset. Import validates counts, dimensions, hashes, target IDs, observation bounds, history reachability and migration, without trusting arbitrary operation scripts. Unknown mandatory versions fail clearly; legacy exports remain readable under the existing policy.
+Default editable export contains accepted source/history/observation state needed for safe restoration. An unsaved draft is included only as a clearly labeled recovery export; it must not be presented as an accepted engine asset. Import validates counts, dimensions, hashes, target IDs, observation bounds, history reachability and migration, without trusting arbitrary operation scripts. Unknown mandatory versions fail clearly; legacy exports remain readable under the existing policy.
 
-Mapped PNG replacement is separate from project recovery: stable item/piece/clip/direction/cell mapping, fixed geometry, expected prior hashes, source colour/role semantics and a diff preview. Retain rig metadata and untouched cells. Do not weaken hash verification or pretend editing an engine sheet inside a recovery archive updates its canonical cells.
+Mapped PNG replacement is separate from project recovery: stable item/piece/clip/direction/cell mapping, fixed geometry, expected prior hashes, source color/role semantics and a diff preview. Retain rig metadata and untouched cells. Do not weaken hash verification or pretend editing an engine sheet inside a recovery archive updates its canonical cells.
 
 ## Required invariants
 
@@ -165,5 +165,5 @@ Mapped PNG replacement is separate from project recovery: stable item/piece/clip
 - Joints never imply raster deformation; historical source/request provenance remains truthful.
 - Body Save retains prior assets and explicitly accounts for affected gear, mirrors, references and observations.
 - A draft, stale job, another tab or failed persistence cannot overwrite newer accepted state silently.
-- No source-to-export mismatch: every exported accepted frame matches the resolved saved artwork, pivots, colours and supported occlusion rules.
+- No source-to-export mismatch: every exported accepted frame matches the resolved saved artwork, pivots, colors and supported occlusion rules.
 - A usable raster character remains editable/exportable when rig metadata is incomplete; generation-readiness is a separate contract.

@@ -13,7 +13,7 @@
 <nav class="wardrobe" aria-label="Wardrobe">
   <div class="side-head">
     <h2 class="side-title">Wardrobe</h2>
-    <button class="btn icon plain" aria-label="Random look" title="Random look" onclick={randomize} disabled={!m}><Shuffle size={16} /></button>
+    <button class="bu-action btn icon plain" data-variant="quiet" aria-label="Random look" title="Random look" onclick={randomize} disabled={!m}><Shuffle size={16} /></button>
   </div>
   {#if m && view.project}
     <div class="side-scroll">
@@ -25,7 +25,7 @@
             <span class="glyph" aria-hidden="true"><GroupIcon group={g.id} size={16} /></span>
             <h3 id="g-{g.id}">{g.id}</h3>
             <span class="category-count small num">{items.length + pending.length}<span class="sr"> items{pending.length ? ` (${pending.length} pending)` : ''}</span></span>
-            <button class="btn icon plain add" aria-label="New {g.id.toLowerCase()} item" title="New {g.id.toLowerCase()} item" onclick={() => openNewItem(g.id)}><Plus size={16} /></button>
+            <button class="bu-action btn icon plain add" data-variant="quiet" aria-label="New {g.id.toLowerCase()} item" title="New {g.id.toLowerCase()} item" onclick={() => openNewItem(g.id)}><Plus size={16} /></button>
           </div>
           {#if items.length || pending.length}
             <ul class="rows">
@@ -37,7 +37,7 @@
                     <span class="thumb-box" aria-hidden="true"><Thumb project={view.project} item={it} size={24} /></span>
                     <span class="row-name">{it.name}</span>
                   </button>
-                  <button class="btn icon plain sm wear" class:on aria-pressed={on} aria-label="Wear {it.name}" title={on ? `Take off ${it.name}` : `Wear ${it.name}`} onclick={() => wear(it.id)}><Check size={14} strokeWidth={2.5} /></button>
+                  <button class="bu-action btn icon plain sm wear" data-variant="quiet" class:on aria-pressed={on} aria-label="Wear {it.name}" title={on ? `Take off ${it.name}` : `Wear ${it.name}`} onclick={() => wear(it.id)}><Check size={14} strokeWidth={2.5} /></button>
                 </li>
               {/each}
               {#each pending as x (x.draft.spec.id)}

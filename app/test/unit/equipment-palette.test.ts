@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { cellImg, withTuckVariants } from '../../src/lib/compose/compose.ts';
-import { deriveMaterials, recolour, variantOf } from '../../src/lib/dress/dress.ts';
+import { deriveMaterials, recolor, variantOf } from '../../src/lib/dress/dress.ts';
 import { applyDress, dressOf } from '../../src/lib/dress/project.ts';
 import { exportFiles } from '../../src/lib/export/export.ts';
 import { validate } from '../../src/lib/export/generic.ts';
@@ -30,21 +30,21 @@ test('v2 derives independent ramps despite identical RGBs, while v1 keeps its hi
   expect(p.manifest.items.filter((it) => it.id !== 'helmet').every((it) => it.materials.length)).toBe(true);
   expect(validate(p)).toEqual([]);
   p.manifest.format = 'pixeldoll/1';
-  expect(validate(p).some((s) => s.includes('colour'))).toBe(true);
+  expect(validate(p).some((s) => s.includes('color'))).toBe(true);
 });
 
-test('identical hashes recolour per owner including an unworn or unmodified second copy', async () => {
+test('identical hashes recolor per owner including an unworn or unmodified second copy', async () => {
   const p = await fixture(), a = p.manifest.items[1].layers[0], b = p.manifest.items[2].layers[0];
-  const colored = recolour(p, { a: 'blue', b: 'red' });
+  const colored = recolor(p, { a: 'blue', b: 'red' });
   expect(rgba(cellImg(colored, a, 'walk', 'south', 0)!)).toEqual([0, 0, 255, 255]);
   expect(rgba(cellImg(colored, b, 'walk', 'south', 0)!)).toEqual([255, 0, 0, 255]);
-  const onlyA = recolour(p, { a: 'blue' });
+  const onlyA = recolor(p, { a: 'blue' });
   expect(rgba(cellImg(onlyA, b, 'walk', 'south', 0)!)).toEqual([100, 100, 100, 255]);
   expect(rgba(cellImg(p, a, 'walk', 'south', 0)!)).toEqual([100, 100, 100, 255]);
 });
 
 test('tucked variants resolve the original owner-local layer rather than another copy sharing its hash', async () => {
-  const p = await fixture(), tucked = await withTuckVariants(recolour(p, { a: 'blue', b: 'red' }));
+  const p = await fixture(), tucked = await withTuckVariants(recolor(p, { a: 'blue', b: 'red' }));
   for (const [id, expected] of [['a~helmet', [0, 0, 255, 255]], ['b~helmet', [255, 0, 0, 255]]] as const) {
     const layer = tucked.manifest.items.find((it) => it.id === id)!.layers[0];
     expect(rgba(cellImg(tucked, layer, 'walk', 'south', 0)!)).toEqual([...expected]);
@@ -66,15 +66,15 @@ test('validation refuses missing and foreign material IDs, including invalid def
   const p = await fixture();
   p.manifest.items[1].materials = ['base', 'missing'];
   expect(validate(p).filter((s) => s.includes('foreign material'))).toHaveLength(2);
-  p.manifest.materials[0].defaultVariant = 'not-a-colour';
-  expect(validate(p).some((s) => s.includes('default colourway'))).toBe(true);
+  p.manifest.materials[0].defaultVariant = 'not-a-color';
+  expect(validate(p).some((s) => s.includes('default colorway'))).toBe(true);
 });
 
-test('default colourway survives old outfits; canonical sheets render it and sourceSheets retain independent raw roles', async () => {
+test('default colorway survives old outfits; canonical sheets render it and sourceSheets retain independent raw roles', async () => {
   const p = await fixture();
   p.manifest.materials.find((m) => m.id === 'a')!.defaultVariant = 'blue';
   expect(variantOf(p.manifest, {}, 'a')).toBe('blue');
-  expect(rgba(cellImg(recolour(p, {}), p.manifest.items[1].layers[0], 'walk', 'south', 0)!)).toEqual([0, 0, 255, 255]);
+  expect(rgba(cellImg(recolor(p, {}), p.manifest.items[1].layers[0], 'walk', 'south', 0)!)).toEqual([0, 0, 255, 255]);
   const result = await exportFiles(p, { engines: ['generic', 'godot', 'phaser', 'unity', 'aseprite'], baked: true });
   expect(result.errors).toEqual([]);
   const files = new Map(result.entries.map((e) => [e.name, e.data]));
@@ -84,7 +84,7 @@ test('default colourway survives old outfits; canonical sheets render it and sou
   expect(rgba(await decodePngBytes(files.get(layer.sourceSheets.walk)!))).toEqual([100, 100, 100, 255]);
   const restored = (await readCharacterZip(await zip(result.entries))).project;
   expect(restored.manifest.materials.find((m) => m.id === 'a')!.defaultVariant).toBe('blue');
-  expect(rgba(cellImg(recolour(restored, {}), restored.manifest.items.find((it) => it.id === 'a')!.layers[0], 'walk', 'south', 0)!)).toEqual([0, 0, 255, 255]);
+  expect(rgba(cellImg(recolor(restored, {}), restored.manifest.items.find((it) => it.id === 'a')!.layers[0], 'walk', 'south', 0)!)).toEqual([0, 0, 255, 255]);
 });
 
 test('two roles with equal rendered defaults keep distinct raw source ownership through engine export/import',async()=>{
@@ -93,6 +93,6 @@ test('two roles with equal rendered defaults keep distinct raw source ownership 
   p.manifest.materials.find(m=>m.id==='a')!.defaultVariant='blue';
   p.manifest.materials.push({id:'a_detail',owner:'a',label:'Detail',ramp:['#323232'],variants:{blue:['#0000ff']},defaultVariant:'blue'});item.materials.push('a_detail');
   const exported=await exportFiles(p,{engines:['generic','godot','unity','phaser','aseprite'],baked:true});expect(exported.errors).toEqual([]);
-  const restored=(await readCharacterZip(await zip(exported.entries))).project,a=restored.manifest.items.find(it=>it.id==='a')!,view=recolour(restored,{a:'red'}),im=cellImg(view,a.layers[0],'walk','south',0)!;
+  const restored=(await readCharacterZip(await zip(exported.entries))).project,a=restored.manifest.items.find(it=>it.id==='a')!,view=recolor(restored,{a:'red'}),im=cellImg(view,a.layers[0],'walk','south',0)!;
   expect(rgba(im,32,21)).toEqual([255,0,0,255]);expect(rgba(im,32,22)).toEqual([0,0,255,255]);expect(validate(restored)).toEqual([]);
 });

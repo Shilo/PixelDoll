@@ -1,4 +1,4 @@
-> Accuracy note (2026-10-20, R2): Several PixelLab claims here are outdated or incomplete — notably, public REST/MCP now has a changes-only output (`inpaint-image-pro-flash` `output_method`), Skeleton v3, exact per-size frame limits for Pro edit routes, and the JS SDK is v1-only. See `pixellab_current_capabilities_2026-10.md` §4.1 for itemised corrections with sources.
+> Accuracy note (2026-10-20, R2): Several PixelLab claims here are outdated or incomplete — notably, public REST/MCP now has a changes-only output (`inpaint-image-pro-flash` `output_method`), Skeleton v3, exact per-size frame limits for Pro edit routes, and the JS SDK is v1-only. See `pixellab_current_capabilities_2026-10.md` §4.1 for itemized corrections with sources.
 
 # Research Spike: PixelLab-First Paperdolling for Frame-Based 2D RPGs
 

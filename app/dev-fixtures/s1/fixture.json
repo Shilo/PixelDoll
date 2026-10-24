@@ -255,7 +255,7 @@
       "status": "accepted",
       "mirror": "flip",
       "materials": [],
-      "prompt": "a simple grey steel knight helmet covering the top and sides of the head, face visible",
+      "prompt": "a simple gray steel knight helmet covering the top and sides of the head, face visible",
       "layers": [
         {
           "id": "main",
@@ -271,7 +271,7 @@
         {
           "endpoint": "/edit-animation-v2",
           "params": {
-            "description": "Add only a simple grey steel knight helmet covering the top and sides of the head, face visible to this low top-down pixel art character in every frame, identical design in all frames. Keep every other pixel of the body, pose, outline and the transparent background unchanged.",
+            "description": "Add only a simple gray steel knight helmet covering the top and sides of the head, face visible to this low top-down pixel art character in every frame, identical design in all frames. Keep every other pixel of the body, pose, outline and the transparent background unchanged.",
             "image_size": {
               "width": 64,
               "height": 64
@@ -290,7 +290,7 @@
         {
           "endpoint": "/edit-animation-v2",
           "params": {
-            "description": "Add only a simple grey steel knight helmet covering the top and sides of the head, face visible to this low top-down pixel art character in every frame, identical design in all frames. Keep every other pixel of the body, pose, outline and the transparent background unchanged.",
+            "description": "Add only a simple gray steel knight helmet covering the top and sides of the head, face visible to this low top-down pixel art character in every frame, identical design in all frames. Keep every other pixel of the body, pose, outline and the transparent background unchanged.",
             "image_size": {
               "width": 64,
               "height": 64

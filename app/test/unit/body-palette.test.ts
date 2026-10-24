@@ -17,11 +17,11 @@ test.each([17, 24, 60])('leaves unsafe %i-unit drift unchanged even when the pal
   expect(result.frames[0]).toEqual(im); expect(result.changedPixels).toBe(0);
   expect(result.paletteFit).toBe(.95); expect(result.remainingOutliers).toBe(1);
 });
-test('already tolerated12-unit colours stay untouched rather than full palette quantization', () => {
+test('already tolerated12-unit colors stay untouched rather than full palette quantization', () => {
   const { rest, im } = pixel([12, 5, 2]), r = repairBodyPalette(rest, [im]);
   expect(r.frames[0]).toEqual(im); expect(r.rawOutliers).toBe(0); expect(r.changedPixels).toBe(0);
 });
-test('equally close reference colours are refused regardless of palette iteration order', () => {
+test('equally close reference colors are refused regardless of palette iteration order', () => {
   const { rest, im } = pixel([16, 16, 16]); rest.data.set([32, 32, 32, 255], 4);
   const r = repairBodyPalette(rest, [im]); expect(r.changedPixels).toBe(0); expect(r.frames[0]).toEqual(im);
 });
@@ -36,7 +36,7 @@ test.each([[[84, 84, 76], [100, 70, 60]], [[100, 64, 76], [100, 80, 60]]])('refu
 });
 test('broad drift over5% refuses the whole operation without mutating inputs', () => {
   const { rest, im } = pixel([13, 5, 2]); im.data.set([13, 5, 2, 255], 4); const before = structuredClone(im);
-  expect(() => repairBodyPalette(rest, [im])).toThrow('Too much colour drift'); expect(im).toEqual(before);
+  expect(() => repairBodyPalette(rest, [im])).toThrow('Too much color drift'); expect(im).toEqual(before);
 });
 test('transparent RGB, every alpha value and all unaffected pixels are preserved exactly', () => {
   const { rest, im } = pixel([13, 5, 2], [0, 0, 0]); im.data.set([88, 99, 111, 0], 4);
@@ -46,7 +46,7 @@ test('transparent RGB, every alpha value and all unaffected pixels are preserved
   for (const [n, f] of r.frames.entries()) for (let i = 3; i < f.data.length; i += 4) expect(f.data[i]).toBe(before[n].data[i]);
   expect([im, second]).toEqual(before); expect(r.changedFrames).toEqual([0]);
 });
-test('a palette-valid invented grey object is left unchanged; palette repair does not certify geometry', () => {
+test('a palette-valid invented gray object is left unchanged; palette repair does not certify geometry', () => {
   const rest = frame([80, 80, 80]), im = structuredClone(rest), r = repairBodyPalette(rest, [im]);
   expect(r.changedPixels).toBe(0); expect(r.frames[0]).toEqual(im); expect(r.paletteFit).toBe(1);
 });

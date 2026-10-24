@@ -27,12 +27,12 @@ async function paletteFixture(){
  }
  return f;
 }
-test('colour preview retains raw failed QA and cannot reuse original measurements for changed PNGs',async()=>{
+test('color preview retains raw failed QA and cannot reuse original measurements for changed PNGs',async()=>{
  const f=await paletteFixture(),r=await inspectPendingMove(f),preview=r.report.rolls[0].palettePreview as {rawQa:{fails:string[];warnings:string[]};changedPixels:number;changedFrames:number[];measurementsComplete:boolean;qa:unknown;frames:{changed:boolean;measured:unknown;inputPngHash:string;rawInputPngHash:string}[]};
  expect(preview.rawQa.fails).toEqual([]);expect(preview.rawQa.warnings).toEqual([expect.stringMatching(/^palette similarity /)]);expect(preview.changedPixels).toBe(200);expect(preview.changedFrames).toEqual([1,2,3,4]);expect(preview.measurementsComplete).toBe(false);expect(preview.qa).toBeNull();
  for(const frame of preview.frames)if(frame.changed){expect(frame.measured).toBeNull();expect(frame.inputPngHash).not.toBe(frame.rawInputPngHash);}else expect(frame.measured).toBeTruthy();
 });
-test('only genuine matching corrected-PNG checks complete the colour preview while raw failure remains auditable',async()=>{
+test('only genuine matching corrected-PNG checks complete the color preview while raw failure remains auditable',async()=>{
  const f=await paletteFixture(),first=await inspectPendingMove(f),preview=first.report.rolls[0].palettePreview as {frames:{cell:number;changed:boolean;inputPngHash:string}[]},poses=(f.raw.params as {keypoints:{label:string;x:number;y:number}[][]}).keypoints;
  const {unzip}=await import('../../src/lib/store/zip.ts'),files=await unzip(first.zip);
  for(const frame of preview.frames.filter(f=>f.changed)){const bytes=files.get(`pending/west/roll-1/palette-preview-input-${frame.cell}.png`)!;f.blobs.set(frame.inputPngHash,new Blob([bytes as Uint8Array<ArrayBuffer>]));const params={image:{type:'base64',format:'png',$blob:frame.inputPngHash}};f.jobs.push({id:`corrected-${frame.cell}`,method:'POST',endpoint:'/estimate-skeleton',params,requestHash:await sha256(stableStringify({method:'POST',endpoint:'/estimate-skeleton',params})),state:'done',createdAt:50+frame.cell,gens:0,usd:0,response:{keypoints:poses[frame.cell]},jobs:[]});}

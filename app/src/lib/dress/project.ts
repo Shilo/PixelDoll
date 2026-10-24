@@ -24,16 +24,19 @@ export async function listSources(): Promise<{ id: string; label: string }[]> {
   ];
 }
 
+/** Material labels derived by earlier versions. */
+const currentLabels = (project: Project) => { for (const m of project.manifest.materials) m.label = m.label.replace(/^Grey\b/, 'Gray'); return project; };
+
 export async function openSource(id: string): Promise<{ project: Project; current?: Outfit }> {
   if (id.startsWith('fixture:')) {
     const name = id.slice(8);
     const project = await loadFixture(async (p) => new Uint8Array(await (await fetch(`./fixtures/${name}/${p}`)).arrayBuffer()));
     const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);
     if (saved) applyDress(project.manifest, saved);
-    return { project, current: saved?.current };
+    return { project: currentLabels(project), current: saved?.current };
   }
   const { rec, project } = await loadProject(id); // B4's loader (store/project.ts)
-  return { project, current: (rec as ProjectRecord).dress?.current };
+  return { project: currentLabels(project), current: (rec as ProjectRecord).dress?.current };
 }
 
 export const dressOf = (m: Manifest, current?: Outfit): DressState => ({
@@ -70,7 +73,7 @@ export async function saveSplit(id: string, m: Manifest, split: { oldHash: strin
     if (!rec?.manifest) throw new Error(`project ${id} vanished`);
     const cur = rec.manifest, cb = cur.items.find((i) => i.id === cur.rig.baseItem)!;
     if (cur.rig.baseHash === m.rig.baseHash && cur.rig.baseHash !== split.oldHash && cb.regions === base.regions) return rec; // another tab completed the same split
-    if (cur.rig.baseHash !== split.oldHash && cur.rig.baseHash !== m.rig.baseHash) throw new Error('This character changed while preparing its colours. Open it again before editing.');
+    if (cur.rig.baseHash !== split.oldHash && cur.rig.baseHash !== m.rig.baseHash) throw new Error('This character changed while preparing its colors. Open it again before editing.');
     const receiptMatches = rec.moveRecovery?.bodyRigVersion === stableStringify({ rig: cur.rig, character: rec.character });
     cb.layers = structuredClone(base.layers);
     cb.regions = base.regions;

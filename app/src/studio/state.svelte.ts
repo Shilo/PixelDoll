@@ -1,14 +1,14 @@
 // Studio state: UI (size class, theme, tabs, sheets, playback), the open project + outfit with undo/redo and autosave,
 // item generations (drafts) and the create-character run. Pixel data lives in $state.raw (deep proxies over the manifest
-// made recolour/compose take seconds, B5); manifest edits bump doc.rev.
+// made recolor/compose take seconds, B5); manifest edits bump doc.rev.
 import { applyDress, dressOf, openSource, saveDress, saveSplit, type DressState } from '../lib/dress/project.ts';
 import { splitBase } from '../lib/dress/regions.ts';
-import { deriveMaterials, randomOutfit, recolour, storeVariants } from '../lib/dress/dress.ts';
+import { deriveMaterials, randomOutfit, recolor, storeVariants } from '../lib/dress/dress.ts';
 import { drawList } from '../lib/compose/compose.ts';
 import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
-import { evaluateItem, loadDrafts, matchItemColours as applyItemColours, type ItemPaletteRepairPlan, type Draft, type ItemResult } from '../lib/items/run.ts';
+import { evaluateItem, loadDrafts, matchItemColors as applyItemColors, type ItemPaletteRepairPlan, type Draft, type ItemResult } from '../lib/items/run.ts';
 import { SLOTS } from '../lib/items/items.ts';
 import { app } from '../lib/app.svelte.ts';
 import { accountTier } from '../lib/pixellab/plans.ts';
@@ -36,7 +36,7 @@ export const DEMO = 'fixture:s2';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
-export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup' | 'savedesign' | 'fitdesign';
+export type SheetId = null | 'inspect' | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup' | 'savedesign' | 'fitdesign';
 const sizeNow = (): Size => {
   const w = innerWidth, h = innerHeight;
   if (h < 500 && w > h) return 'landscape';
@@ -53,8 +53,8 @@ export const ui = $state({
   sidebar: true,
   inspector: true,
   drawer: innerWidth >= 900, // medium size: wardrobe pane, pushes the stage
-  tab: 'wardrobe' as 'wardrobe' | 'colours' | 'moves', // phone
-  inspTab: 'item' as 'item' | 'colours' | 'moves',
+  tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'moves', // phone
+  inspTab: 'item' as 'item' | 'colors' | 'moves',
   group: 'Head',
   selected: '', // item id, or "gen:<draft id>"
   sheet: null as SheetId,
@@ -82,7 +82,7 @@ export function initUi() {
   applyTheme();
   return () => removeEventListener('resize', on);
 }
-export function applyTheme() { document.documentElement.dataset.theme = ui.theme; }
+export function applyTheme() { document.documentElement.dataset.theme = ui.theme; document.documentElement.style.colorScheme = ui.theme; }
 export function toggleTheme() { ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; lsSet(K.theme, ui.theme); applyTheme(); }
 export function dismissWelcome() { ui.welcome = false; lsSet(K.welcomed, '1'); }
 let toastT: ReturnType<typeof setTimeout> | undefined;
@@ -172,7 +172,7 @@ async function trackFit(id: string, action: () => Promise<FitDraft>) {
 }
 export const runFitStage = (id: string, stage: 'rest' | 'pose', poseBudget = 0) => trackFit(id, () => stage === 'rest' ? runRestFit(id) : approveRestAndPose(id, poseBudget));
 export const retryFitStage = (id: string, stage: 'rest' | 'pose', budget: number) => trackFit(id, () => retryFit(id, stage, budget));
-/** Capture the displayed colourway before opening a sheet or changing characters. */
+/** Capture the displayed colorway before opening a sheet or changing characters. */
 export function openSaveDesign(itemId: string) {
   if (!store.project || !store.project.manifest.items.some((i) => i.id === itemId && i.slot !== 'body' && i.status === 'accepted')) return;
   designSource.project = { manifest: structuredClone(store.project.manifest), images: new Map(store.project.images) };
@@ -193,12 +193,12 @@ export const doc = $state({
 });
 export const isDemo = () => doc.id.startsWith('fixture:');
 
-/** What the stage shows: the project with the selected colour variants swapped in (exact ramp swap), and the playing cell. */
+/** What the stage shows: the project with the selected color variants swapped in (exact ramp swap), and the playing cell. */
 class View {
   project = $derived.by(() => {
     void doc.rev;
     const p = store.project;
-    return p ? recolour(p, $state.snapshot(doc.variants)) : null;
+    return p ? recolor(p, $state.snapshot(doc.variants)) : null;
   });
   anim = $derived(store.project?.manifest.rig.animations.find((a) => a.id === ui.anim));
   cell = $derived(this.anim ? this.anim.frames[ui.frame % this.anim.frames.length].cell : 0);
@@ -220,7 +220,7 @@ export async function openProject(id: string, keep?: { wear?: string }) {
   try {
     const r = await openSource(id);
     if (request !== openRequest) return;
-    const split = await splitBase(r.project); // B15: shirt / shorts colour regions on the base (idempotent; fixtures in memory)
+    const split = await splitBase(r.project); // B15: shirt / shorts color regions on the base (idempotent; fixtures in memory)
     deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
     if (split.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
     if (request !== openRequest) return;
@@ -252,7 +252,7 @@ export async function openProject(id: string, keep?: { wear?: string }) {
 }
 export const lastProject = () => lsGet(K.last) ?? DEMO;
 
-// ---- undo/redo: snapshots of the dress state (outfit, colours, presets, layer order, hides) ----
+// ---- undo/redo: snapshots of the dress state (outfit, colors, presets, layer order, hides) ----
 const snap = () => JSON.stringify(dressOf(store.project!.manifest, { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }));
 function restore(s: string) {
   const d = JSON.parse(s) as DressState;
@@ -357,10 +357,10 @@ export function clearSlots(slots: string[]) {
   commit('Take off', () => { for (const s of slots) doc.items[s] = null; });
 }
 export function setVariant(matId: string, name: string | null) {
-  commit('Colour change', () => { if (name == null) delete doc.variants[matId]; else doc.variants[matId] = name; });
+  commit('Color change', () => { if (name == null) delete doc.variants[matId]; else doc.variants[matId] = name; });
 }
-export function resetColours(matIds?: string[]) {
-  commit('Reset colours', () => { for (const k of matIds ?? Object.keys(doc.variants)) delete doc.variants[k]; });
+export function resetColors(matIds?: string[]) {
+  commit('Reset colors', () => { for (const k of matIds ?? Object.keys(doc.variants)) delete doc.variants[k]; });
 }
 export function randomize() {
   const r = randomOutfit(store.project!.manifest);
@@ -399,7 +399,7 @@ export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
   const i = order.findIndex((d) => d.item.id === itemId && d.layer.role === 'fg');
   const j = i + step;
   if (i < 0 || j < 0 || j >= order.length) return;
-  const nz = order[j].z + step; // just past the neighbour
+  const nz = order[j].z + step; // just past the neighbor
   const slot = m.slots.find((s) => s.id === it.slot)!;
   const o: ZOverride = { layer: 'fg', z: nz, ...(onlyDir ? { dir: ui.dir } : {}) };
   commit(step > 0 ? 'Bring forward' : 'Send backward', () => {
@@ -416,7 +416,7 @@ let itemPaletteRefresh = 0;
 export async function matchItemPalette(projectId: string, itemId: string, anim: string, dir: DirectionName, reviewed: ItemPaletteRepairPlan) {
   const request = openRequest;
   await flushSave();
-  await applyItemColours(projectId, itemId, anim, dir, reviewed);
+  await applyItemColors(projectId, itemId, anim, dir, reviewed);
   if (doc.id !== projectId || request !== openRequest) return;
   const refresh = ++itemPaletteRefresh, fresh = await loadProject(projectId);
   if (doc.id !== projectId || request !== openRequest || refresh !== itemPaletteRefresh) return;
@@ -633,8 +633,8 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 }
 
 
-export function openNewItem(group: string, prefill?: { slot?: string; prompt?: string }) {
-  if (prefill) ui.newItemTab = 'create';
+export function openNewItem(group: string, prefill?: { slot?: string; prompt?: string }, tab: typeof ui.newItemTab = 'create') {
+  ui.newItemTab = tab;
   ui.newItem = { group, slot: prefill?.slot ?? GROUPS.find((g) => g.id === group)!.slots[0], prompt: prefill?.prompt ?? '' };
   ui.sheet = 'newitem';
 }
@@ -766,15 +766,15 @@ export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, r
   }
   await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: { id: crypto.randomUUID(), recordIds: [...current.recordIds], rigVersion: current.rigVersion } });
 }
-/** Explicit bounded colour cleanup on the reviewed cached body; all paid measurements still use the changed PNGs. */
-export async function matchMoveBodyColours(projectId: string, spec: MoveSpec, reviewed: Awaited<ReturnType<typeof bodyPaletteRepairPlan>>) {
+/** Explicit bounded color cleanup on the reviewed cached body; all paid measurements still use the changed PNGs. */
+export async function matchMoveBodyColors(projectId: string, spec: MoveSpec, reviewed: Awaited<ReturnType<typeof bodyPaletteRepairPlan>>) {
   const pending = JSON.stringify($state.snapshot(spec));
   const unchanged = () => !hmrReloading && !moveRunning && moving.projectId === projectId && !!moving.error && !moving.done && !spec.bodyPaletteRepair && JSON.stringify($state.snapshot(moving.spec)) === pending;
-  if (!unchanged()) throw new Error('This operation changed. Review the body colours again.');
+  if (!unchanged()) throw new Error('This operation changed. Review the body colors again.');
   const current = await bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined });
   const review = (plan: typeof current) => JSON.stringify({ ...plan, directions: [...plan.directions].sort(), rawHashes: [...plan.rawHashes].sort(), recordIds: [...plan.recordIds].sort() });
   if (!unchanged() || current.changedPixels <= 0 || current.changedFrames <= 0 || !current.directions.length || review(current) !== review(reviewed)) {
-    throw new Error('The body colour corrections changed. Review their cost again.');
+    throw new Error('The body color corrections changed. Review their cost again.');
   }
   await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: undefined, bodyPaletteRepair: { id: crypto.randomUUID(), version: 'near-rest-v1', rigVersion: current.rigVersion } });
 }

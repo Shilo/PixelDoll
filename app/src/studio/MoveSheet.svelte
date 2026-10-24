@@ -13,7 +13,7 @@
   import { posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
   import { MOVE_STEPS, isV13, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
-  import { ui, doc, store, isDemo, moving, settingUp, startMove, matchMoveBodyColours, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
+  import { ui, doc, store, isDemo, moving, settingUp, startMove, matchMoveBodyColors, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
   import { bodyQualityNote } from './model.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
@@ -45,17 +45,17 @@
   const nice = (s: string) => s[0].toUpperCase() + s.slice(1).replace(/-/g, ' ')
   let recovery = $state<Awaited<ReturnType<typeof measurementRecoveryPlan>> | null>(null)
   let recoveryError = $state('')
-  let colourRepair = $state<Awaited<ReturnType<typeof bodyPaletteRepairPlan>> | null>(null)
+  let colorRepair = $state<Awaited<ReturnType<typeof bodyPaletteRepairPlan>> | null>(null)
   const recoveryItemGens = $derived(recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0)
   const ledgerStates = $derived($queue.jobs.map((r) => `${r.id}:${r.state}`).join('|'))
   $effect(() => {
     void ledgerStates // Re-check finished siblings without decoding PNGs on every progress poll.
     const projectId = moving.projectId, spec = moving.spec && $state.snapshot(moving.spec), error = moving.error
     let current = true
-    recovery = null; colourRepair = null; recoveryError = ''
+    recovery = null; colorRepair = null; recoveryError = ''
     if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
       void measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined }).then((plan) => { if (current && plan.checks > 0 && plan.recordIds.length > 0) recovery = plan }).catch(() => {})
-      if (!spec.bodyPaletteRepair) void bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined }).then((plan) => { if (current && plan.changedPixels > 0 && plan.changedFrames > 0 && plan.directions.length) colourRepair = plan }).catch(() => {})
+      if (!spec.bodyPaletteRepair) void bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined }).then((plan) => { if (current && plan.changedPixels > 0 && plan.changedFrames > 0 && plan.directions.length) colorRepair = plan }).catch(() => {})
     }
     return () => { current = false }
   })
@@ -68,12 +68,12 @@
     })
   }
 
-  function matchColours() {
-    if (!moving.spec || !colourRepair) return
-    const projectId = moving.projectId, spec = $state.snapshot(moving.spec), reviewed = $state.snapshot(colourRepair)
+  function matchColors() {
+    if (!moving.spec || !colorRepair) return
+    const projectId = moving.projectId, spec = $state.snapshot(moving.spec), reviewed = $state.snapshot(colorRepair)
     withKey(() => {
       ui.sheet = 'move'
-      void matchMoveBodyColours(projectId, spec, reviewed).catch((e) => { recoveryError = e instanceof Error ? e.message : String(e) })
+      void matchMoveBodyColors(projectId, spec, reviewed).catch((e) => { recoveryError = e instanceof Error ? e.message : String(e) })
     })
   }
 
@@ -94,18 +94,18 @@
 
 {#snippet foot()}
   {#if mine && moving.done}
-    <button class="btn primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
+    <button class="bu-action btn primary" data-variant="primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
   {:else if mine && moving.error}
-    <button class="btn plain" onclick={dismissMove}>Start over</button>
-    <span class="api-action"><ApiPeek scope="move-retry" label="Generate move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : []} /><button class="btn" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' }, true)}>{recovery || colourRepair ? 'Generate new frames' : 'Try again'}</button></span>
-    {#if recovery}<button class="btn primary" onclick={retryChecks}>Retry joint checks</button>{/if}
-    {#if colourRepair}<button class="btn primary" onclick={matchColours}>Match body colours</button>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
+    <button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}>Start over</button>
+    <span class="api-action"><ApiPeek scope="move-retry" label="Generate move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : []} /><button class="bu-action btn" data-variant="outline" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' }, true)}>{recovery || colorRepair ? 'Generate new frames' : 'Try again'}</button></span>
+    {#if recovery}<button class="bu-action btn primary" data-variant="primary" onclick={retryChecks}>Retry joint checks</button>{/if}
+    {#if colorRepair}<button class="bu-action btn primary" data-variant="primary" onclick={matchColors}>Match body colors</button>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
   {:else if mine}
     <span class="foot-note">You can keep working.</span>
-    <button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
+    <button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
     <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
-    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) })} /><button class="btn primary lg" disabled={!id || !targetDirs.length || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>{replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
+    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) })} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!id || !targetDirs.length || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>{replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
   {/if}
 {/snippet}
 
@@ -125,18 +125,18 @@
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
       {#if recovery}
-        <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint checks · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>
+        <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint {recovery.checks === 1 ? 'check' : 'checks'} · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>
       {/if}
-      {#if colourRepair}
-        <p class="notice warn small">Match {colourRepair.changedPixels} nearby colour pixels to the standing palette across {colourRepair.changedFrames} cached {colourRepair.directions.map(nice).join(', ')} frames. The body shape stays fixed; other colours are left alone. Recheck {colourRepair.checks} changed frames · estimated {colourRepair.gens.toFixed(1)} gens or ${colourRepair.usd.toFixed(3)}.{#if colourRepair.itemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(colourRepair.itemGens)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails.</p>
+      {#if colorRepair}
+        <p class="notice warn small">Match {colorRepair.changedPixels} nearby color {colorRepair.changedPixels === 1 ? 'pixel' : 'pixels'} to the standing palette across {colorRepair.changedFrames} cached {colorRepair.directions.map(nice).join(', ')} {colorRepair.changedFrames === 1 ? 'frame' : 'frames'}. The body shape stays fixed; other colors are left alone. Recheck {colorRepair.checks} changed frames · estimated {colorRepair.gens.toFixed(1)} gens or ${colorRepair.usd.toFixed(3)}.{#if colorRepair.itemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(colorRepair.itemGens)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails.</p>
       {/if}
       {#if recoveryError}<p class="notice bad small"><CircleAlert size={14} />{recoveryError}</p>{/if}
-      {#if moving.done && moving.fitIds.length}<p class="notice small"><Check size={14} /><span>The body move is ready. {moving.fitIds.length} shared equipment {moving.fitIds.length === 1 ? 'copy needs' : 'copies need'} a separately priced animation review.</span><button class="btn sm" onclick={() => (ui.sheet = 'activity')}>Review equipment fits</button></p>{/if}
+      {#if moving.done && moving.fitIds.length}<p class="notice small"><Check size={14} /><span>The body move is ready. {moving.fitIds.length} shared equipment {moving.fitIds.length === 1 ? 'copy needs' : 'copies need'} a separately priced animation review.</span><button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'activity')}>Review equipment fits</button></p>{/if}
       {#each moving.warnings as warning (warning)}<p class="notice warn small"><CircleAlert size={14} />{bodyQualityNote(warning)}</p>{/each}
     </div>
   {:else if isDemo() || !ok}
     <p class="notice small"><CircleAlert size={14} />{isDemo() ? 'Moves are added to your own character.' : 'Set up this character’s pose rig to add moves. Your existing artwork and layers stay aligned.'}</p>
-    {#if !isDemo()}<button class="btn primary" onclick={() => (ui.sheet = 'setup')}>Set up character</button>{/if}
+    {#if !isDemo()}<button class="bu-action btn primary" data-variant="primary" onclick={() => (ui.sheet = 'setup')}>Set up character</button>{/if}
   {:else}
     <div class="form">
       <div class="field">
@@ -151,12 +151,12 @@
         <div class="field">
           <span class="label">Views to replace</span>
           {#each availableDirs as dir (dir)}<label class="check"><input type="checkbox" checked={selectedDirs.includes(dir)} onchange={(e) => (selectedDirs = e.currentTarget.checked ? [...selectedDirs, dir] : selectedDirs.filter((d) => d !== dir))} />{nice(dir)}</label>{/each}
-          <p class="notice warn small">Only selected body views are replaced. Equipment ticked below is re-posed for those views; other equipment stays hidden there until remade. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)} Mirrored views follow their source.{/if}</p>
+          <p class="notice warn small">Only selected body views are replaced. Equipment checked below is re-posed for those views; other equipment stays hidden there until remade. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)} Mirrored views follow their source.{/if}</p>
         </div>
       {:else}<p class="faint small">Choose an existing move to replace selected views.</p>{/if}
       <label class="field">
         <span class="label">Or describe it <span class="faint">(optional)</span></span>
-        <input class="input" bind:value={text} placeholder="e.g. jumping in place" maxlength="120" />
+        <input class="bu-input input" bind:value={text} placeholder="e.g. jumping in place" maxlength="120" />
       </label>
       {#if items.length}
         <div class="field">
@@ -179,7 +179,7 @@
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
-          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ' (west mirrored)' : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes do not trigger redraws.</p>
+          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ` (${m.rig.directions.filter((d) => d.mirrorOf).map((d) => d.id.replaceAll('-', ' ')).join(', ')} mirrored)` : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes do not trigger redraws.</p>
         </div>
       </details>
     </div>

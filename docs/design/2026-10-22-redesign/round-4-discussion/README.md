@@ -30,7 +30,7 @@ Reduce the bright bronze horizon and rough floor around the character. The purpo
 
 The character name opens the same switcher in all studio views. Switching preserves that character's equipment and pending work, but never transplants items between incompatible bases. Top-center view tabs stay separate from the equipment tabs because they change the world/interaction mode, not the current equipment task.
 
-Keep the equipment area geometrically stable when Moves is unavailable in live views. Wardrobe, Colours and Outfits retain their positions. Preserve every actual equipment category, including Face; the old images' short category row is not a complete inventory.
+Keep the equipment area geometrically stable when Moves is unavailable in live views. Wardrobe, Colors and Outfits retain their positions. Preserve every actual equipment category, including Face; the old images' short category row is not a complete inventory.
 
 Preserve all-direction inspection, frame stepping, zoom/fit and transparent-pixel inspection in a contextual Preview inspection surface. This is access to existing output-validation functionality, not a return of world Grid/Bounds/Proof buttons. The permanent central strip stays compact.
 

@@ -37,7 +37,7 @@ export const PATCH_R: Record<AnchorId, number> = { head: 6, neck: 4, hand_r: 4, 
 
 /**
  * Integer translation d (|d - seed| <= R per axis) minimizing the SAD (premultiplied RGB + alpha) between the patch of A
- * centred at p and B shifted by d. Ties go to the shift closest to seed. sad = mean per patch pixel.
+ * centered at p and B shifted by d. Ties go to the shift closest to seed. sad = mean per patch pixel.
  */
 export function trackPatch(A: Img, B: Img, p: [number, number], r: number, seed: [number, number] = [0, 0], R = 4): { d: [number, number]; sad: number } {
   const px = (im: Img, x: number, y: number, c: number) => {

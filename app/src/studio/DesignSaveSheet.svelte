@@ -30,7 +30,7 @@
     busy = true; error = ''
     try {
       const saved = await saveCreatedDesign({ ...design, name: name.trim() })
-      toast(saved.id === design.id ? `Saved ${saved.name} to shared designs` : `This colourway is already saved as ${saved.name}`)
+      toast(saved.id === design.id ? `Saved ${saved.name} to shared designs` : `This colorway is already saved as ${saved.name}`)
       if (alive && ui.sheet === 'savedesign') ui.sheet = null
     } catch (e) { error = e instanceof Error ? e.message : 'Could not save this design.' }
     finally { busy = false }
@@ -39,12 +39,12 @@
 
 {#snippet footer()}
   <span class="foot-note">Free · saved in this browser</span>
-  <button class="btn primary lg" disabled={!design || !project || !name.trim() || busy} onclick={save}><Bookmark size={16} />{busy ? 'Saving…' : 'Save design'}</button>
+  <button class="bu-action btn primary lg" data-variant="primary" disabled={!design || !project || !name.trim() || busy} onclick={save}><Bookmark size={16} />{busy ? 'Saving…' : 'Save design'}</button>
 {/snippet}
 <Sheet title="Save shared design" {footer} cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
-  <label class="field"><span class="label">Design name</span><input class="input" bind:value={name} maxlength="60" /></label>
-  <p class="muted small">Saves this item’s current colours and references. Each character gets an independent fitted copy; later changes to the original item stay with that character.</p>
+  <label class="field"><span class="label">Design name</span><input class="bu-input input" bind:value={name} maxlength="60" /></label>
+  <p class="muted small">Saves this item’s current colors and references. Each character gets an independent fitted copy; later changes to the original item stay with that character.</p>
   {#if error}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{error}</p>
   {:else if project && design}<DesignPreview {project} itemId={design.itemId} itemOnly />
-  {:else}<p class="muted" role="status">Preparing the current colourway…</p>{/if}
+  {:else}<p class="muted" role="status">Preparing the current colorway…</p>{/if}
 </Sheet>

@@ -51,7 +51,7 @@ These sources support interaction patterns and service constraints. The product 
 3. **Power comes from coordinated operations, not a large toolbox.** Body pixels, sword movement and joint correction share one draft and Undo sequence. A small toolset can address several related failures without nested workflows.
 4. **Draft autosave is not project publication.** It protects work without leaking unreviewed body pixels into generation/export. Explicit Save and Done are sufficient; no extra Apply stage.
 5. **Detected joints and desired poses need labels.** They share an overlay but represent different records. Drafting a pose never pretends to move existing pixels or silently spends credits.
-6. **Palette restrictions must be honest.** Existing exact source shades, including unassigned outline colours, are supported first. Custom fixed colours require an ownership representation, particularly when their RGB collides with a recolour ramp; the extension is planned, not silently approximated.
+6. **Palette restrictions must be honest.** Existing exact source shades, including unassigned outline colors, are supported first. Custom fixed colors require an ownership representation, particularly when their RGB collides with a recolor ramp; the extension is planned, not silently approximated.
 7. **Current fixes count.** Structural acceptance guards, replacement-move invalidation and atomic item publication already exist. The plan extends them with editor-specific revisions rather than repeating old bug lists or replacing the queue.
 
 ## Completed read-only investigation spikes
@@ -61,12 +61,12 @@ These were completed in this planning round. They are source/document investigat
 | ID | Investigation | Evidence inspected | Result and limit |
 | --- | --- | --- | --- |
 | R1 | Can one screen fit the app? | `app/src/App.svelte`; `studio/Studio.svelte`; `studio/experience/state.svelte.ts`; immersive appearance/navigation docs. | A dedicated app-owned screen is appropriate; production routing currently renders Studio for all non-dev routes. Implementation must introduce editor screen/history handling deliberately and suspend world shortcuts. No new app/service is needed. |
-| R2 | Are save/revision foundations reusable? | `store/project.ts`, `db.ts`, `equipment/copy.ts`, `items/run.ts`, `studio/replaceMove.ts`. | Atomic publication, stamps, explicit colour-repair history and invalidation exist. Draft history, body-cell review and all-writer integration still need design/implementation. No storage behavior was executed here. |
+| R2 | Are save/revision foundations reusable? | `store/project.ts`, `db.ts`, `equipment/copy.ts`, `items/run.ts`, `studio/replaceMove.ts`. | Atomic publication, stamps, explicit color-repair history and invalidation exist. Draft history, body-cell review and all-writer integration still need design/implementation. No storage behavior was executed here. |
 | R3 | Do current archives preserve proposed editor state? | `store/import.ts`, `loadProject`, GC traversal and `ImportedCharacter.extra`. | Fields and image families are explicit; new hash strings alone are insufficient for loading/export. Plan an archive migration spike. |
 | R4 | Can service guidance promise one-frame pose redraw? | `AnimateWithSkeletonV3Request` and its `keypoints` description in local snapshot; current official skeleton guide. | Local schema inspection confirms 18 joints and 3–15 poses. Paid quality and current pricing were not revalidated; legacy UI examples are not the REST v3 contract. |
 | R5 | Is the interaction recommendation shared? | Independent peer documents, canonical proposal and challenge rounds. | Agreement must reference the final package in [consensus.md](consensus.md). It is design review evidence, not casual-user usability evidence. |
 
-Existing [repair concept source](../../reviews/frame-repair-mockup.html) and its dated verification remain useful interaction evidence for nudges, erasing and guide-only dragging. That concept edits only an illustrative equipment layer and wrist and lacks the complete body/save contract. It is not the new standalone editor prototype and must not be relabelled as one.
+Existing [repair concept source](../../reviews/frame-repair-mockup.html) and its dated verification remain useful interaction evidence for nudges, erasing and guide-only dragging. That concept edits only an illustrative equipment layer and wrist and lacks the complete body/save contract. It is not the new standalone editor prototype and must not be relabeled as one.
 
 ## Planned offline spikes before implementation commitment
 
@@ -96,11 +96,11 @@ Cases: known RGB role mapping, unrestricted RGB stroke, alpha erasure, body-only
 
 Pass when fitting statuses reflect only proven or reviewed relationships, no legacy stale item is promoted, unresolved items remain visible for review and excluded explicitly from export, and raster editing/export can succeed while rig generation remains unavailable. Verify all candidate publishers reject stale input stamps.
 
-### S5 — Source colour and overlap
+### S5 — Source color and overlap
 
-Cases: B15 Shirt/Shorts encoding, skin pixels, fixed existing outline colours, two source roles with the same preview RGB, linked materials, imported partial alpha, logical fg/bg movement, front/back transfer, hair-tuck preview and a missing pre-cleanup stage.
+Cases: B15 Shirt/Shorts encoding, skin pixels, fixed existing outline colors, two source roles with the same preview RGB, linked materials, imported partial alpha, logical fg/bg movement, front/back transfer, hair-tuck preview and a missing pre-cleanup stage.
 
-Pass when source identity/recolours survive Save/reload/export, pixel transfer preserves its defined union, outfit-only clipping does not alter shared art and Restore never fabricates unavailable pixels. Investigate optional custom fixed-colour ownership with ramp-RGB collisions; if it needs masks, define the minimum representation before offering arbitrary RGB. Pair-specific masks remain deferred until every exporter reproduces them.
+Pass when source identity/recolors survive Save/reload/export, pixel transfer preserves its defined union, outfit-only clipping does not alter shared art and Restore never fabricates unavailable pixels. Investigate optional custom fixed-color ownership with ramp-RGB collisions; if it needs masks, define the minimum representation before offering arbitrary RGB. Pair-specific masks remain deferred until every exporter reproduces them.
 
 ## Later paid spike, outside this planning task
 

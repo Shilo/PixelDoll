@@ -40,8 +40,8 @@ test('Unity serializes fractional pixels per unit as a native float', async () =
 
 test('Unity JSON retains all presets, original source sheets and item-local palette metadata', async () => {
   const m = await manifest();
-  m.materials.push({ id: 'body_colour', owner: m.items[0].id, label: 'Body', ramp: ['#112233'], variants: {} });
-  m.items[0].materials = ['body_colour'];
+  m.materials.push({ id: 'body_color', owner: m.items[0].id, label: 'Body', ramp: ['#112233'], variants: {} });
+  m.items[0].materials = ['body_color'];
   m.materials[0].defaultVariant = 'warm';
   m.materials[0].variants.warm = m.materials[0].ramp.map(() => '#ff0000');
   m.presets[0].variants = { [m.materials[0].id]: 'warm' };

@@ -17,7 +17,7 @@ import { opaqueBox } from '../rig/normalize.ts';
 import { cellHash, cellKey, type DirectionName } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
 import { CURRENT_FORMAT, type Material, type Preset, type Project, type Provenance } from '../store/manifest.ts';
-import { designColours, designRestReferences } from './design.ts';
+import { designColors, designRestReferences } from './design.ts';
 import { loadImages } from './store.ts';
 import { designItem, type EquipmentDesign } from './types.ts';
 
@@ -64,11 +64,11 @@ export function fitFramingWarnings(target: Project): string[] {
   });
 }
 function fitKey(design: EquipmentDesign): Key {
-  const colours = designColours(design).map(fromHex);
+  const colors = designColors(design).map(fromHex);
   const preferred=designItem(design).key;
   const candidates:Key[]=preferred?[preferred,preferred==='green'?'magenta':'green']:['green','magenta'];
-  const key = candidates.find(k => colours.every(c => keyScore(k, c >> 16, (c >> 8) & 255, c & 255) < KT));
-  if (!key) throw new Error('This colourway overlaps both chroma keys. Choose a colourway with a safe key before fitting.');
+  const key = candidates.find(k => colors.every(c => keyScore(k, c >> 16, (c >> 8) & 255, c & 255) < KT));
+  if (!key) throw new Error('This colorway overlaps both chroma keys. Choose a colorway with a safe key before fitting.');
   return key;
 }
 function specFor(design: EquipmentDesign, target: Project): ItemSpec {
@@ -87,10 +87,10 @@ export async function restFitRequests(design: EquipmentDesign, source: Project, 
   if (dirs.length < 2 || dirs.length > 15 || dirs.some(d => !refs.some(r => r.direction === d && r.complete))) throw new Error('The requested standing reference coverage is incomplete.');
   const reference = refs.find(r => r.direction === 'south'); if (!reference) throw new Error('A south-facing source reference is required.');
   const frames = await Promise.all(dirs.map(async d => ({ image: png(await b64(toChroma(target.images.get(target.manifest.rig.rest![d]!.image)!, key))), size })));
-  const colour = key === 'green' ? 'bright green' : 'magenta';
+  const color = key === 'green' ? 'bright green' : 'magenta';
   return [{ req: { method: 'POST', path: '/transfer-outfit-v2', body: {
     reference_image: { image: png(await b64(reference.image)), size }, frames, image_size: size, seed, no_background: true,
-    additional_instructions: `Transfer ONLY the identical ${designItem(design).prompt} from the reference onto the ${colour} mannequin in every target frame. Target directions in order: ${dirs.join(', ')}. Use the reference colours even if the description names the original colour. Preserve target body silhouette, limb positions, ${colour} chroma-key ramp and transparent background exactly. Empty hands; no other clothing, weapons or effects. Keep the headwear design; fit it to the target head. Do not transfer the reference body shape.`,
+    additional_instructions: `Transfer ONLY the identical ${designItem(design).prompt} from the reference onto the ${color} mannequin in every target frame. Target directions in order: ${dirs.join(', ')}. Use the reference colors even if the description names the original color. Preserve target body silhouette, limb positions, ${color} chroma-key ramp and transparent background exactly. Empty hands; no other clothing, weapons or effects. Keep the headwear design; fit it to the target head. Do not transfer the reference body shape.`,
   } }, cells: dirs.map(d => `rest/${d}/0`), limit: 10 }];
 }
 export async function poseFitRequests(design: EquipmentDesign, target: Project, rest: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?:string[]): Promise<GeneratedFitCall[]> {
@@ -151,7 +151,7 @@ export async function evaluatePoseFit(design: EquipmentDesign, target: Project, 
   if(options.reuseApprovedSourceRest) {
     const source=design.source.rig, item=designItem(design);
     const profile=(r:typeof rig)=>({cell:r.cell,pivot:r.pivot,view:r.view,template:r.template,rest:r.rest});
-    if(stableStringify(profile(source))!==stableStringify(profile(rig))||!history.length||item.key!==spec.key||Object.keys(design.variants).length||design.source.materials.some(m=>m.owner===item.id&&m.defaultVariant))throw new Error('Existing standing references cannot be reused on a changed body, pose, camera or colour baseline.');
+    if(stableStringify(profile(source))!==stableStringify(profile(rig))||!history.length||item.key!==spec.key||Object.keys(design.variants).length||design.source.materials.some(m=>m.owner===item.id&&m.defaultVariant))throw new Error('Existing standing references cannot be reused on a changed body, pose, camera or color baseline.');
     for(const dir of directions(target))if(!rest[dir]||await cellHash(rest[dir]!)!==item.dressed?.[dir])throw new Error('The reused reference is not the approved raw standing artwork.');
   } else if(directions(target).some(dir=>!restRecords.some(r=>r.rec.state==='done'&&r.call.cells.includes(`rest/${dir}/0`))))throw new Error('The approved fitted reference is missing its generating-call provenance.');
   for (const dir of directions(target)) { const view = rig.rest![dir]!, out = rest[dir];if (!out) throw new Error('Missing approved fitted standing view.'); keys[dir] = extractCell({ key: `rest/${dir}/0`, call: -1, base: target.images.get(view.image)!, out, route: spec.key, band: bandOf(spec.slot,fromApi(view.keypoints,rig.cell),64) }).layer; }
@@ -182,8 +182,8 @@ export async function evaluatePoseFit(design: EquipmentDesign, target: Project, 
   // compare against that actual per-direction palette as well, so a uniformly drifted whole clip cannot self-score clean.
   const palettes = new Map<DirectionName,number[]>();
   for(const [direction,image]of Object.entries(keys) as [DirectionName,Img][]) {
-    const colours=new Set<number>();for(let n=0;n<image.data.length;n+=4)if(image.data[n+3])colours.add((image.data[n]<<16)|(image.data[n+1]<<8)|image.data[n+2]);
-    palettes.set(direction,[...colours]);
+    const colors=new Set<number>();for(let n=0;n<image.data.length;n+=4)if(image.data[n+3])colors.add((image.data[n]<<16)|(image.data[n+1]<<8)|image.data[n+2]);
+    palettes.set(direction,[...colors]);
   }
   for(const c of cells) {
     const [anim,dir]=c.key.split('/') as [string,DirectionName], distance=paletteDistance(palettes.get(dir)??[],[c.layer]);

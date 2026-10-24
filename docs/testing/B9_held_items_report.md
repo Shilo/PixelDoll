@@ -117,7 +117,7 @@ within 30°; the second roll still fails G3–G5 on its own). 6 gens of the 62 w
   shield "pointing down" is probably wrong wording. 128 px (spears) not added.
 - The helmet's H4 still flags south slash f3 (forearm over the visor, own 0.48): a true occlusion, so the helmet stays
   "Needs a look". An occlusion-aware H4 that skips keyframe px covered by the posed arm is the next step.
-- The relative-angle G9 is from one live sword plus S5's sword/axe; the 30° threshold has no labelled flip case from the 96
+- The relative-angle G9 is from one live sword plus S5's sword/axe; the 30° threshold has no labeled flip case from the 96
   route yet (M3's flips were at 64). PCA angles of very short items (daggers) are noisy: below 6 px the gate is skipped.
 - Walk E frames 5–7 draw the blade near-vertical and partly behind the leg (arm swung back). It reads as a swing, but it is the
   weakest clip visually.

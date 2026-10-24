@@ -4,9 +4,9 @@ Date: 2026-10-22. User authorized implementation, live PixelLab generations, ind
 
 ## Delivered behavior
 
-- Accepted wardrobe items save an immutable, local design with the selected colourway. New item → Saved designs provides compatibility assessment, enlarged frame review and portable `.pixeldoll-design.zip` import/export.
+- Accepted wardrobe items save an immutable, local design with the selected colorway. New item → Saved designs provides compatibility assessment, enlarged frame review and portable `.pixeldoll-design.zip` import/export.
 - Exact frozen body pixels, layer geometry and slot semantics permit free copies, including unambiguous repeated poses and partial coverage. Different body pixels or ambiguous source equipment cannot silently reuse an item.
-- Copies own independent material IDs, colours, outfit selections and pinned source assets. Source/library deletion does not invalidate kept copies. Character ZIPs retain their references.
+- Copies own independent material IDs, colors, outfit selections and pinned source assets. Source/library deletion does not invalidate kept copies. Character ZIPs retain their references.
 - Paid fitting has a separately approved rest stage and animation stage. Results stay outside the wardrobe until reviewed and atomically kept. Budgets, seeds and request IDs persist; reload and leader takeover check existing submissions without resending them. Failed quality checks require an explicit, separately priced retry.
 - New moves prepare an explicit missing-frame review for shared equipment. Existing raw standing references are reused when their complete contract still matches. Known and transparent cells stay intact; exact missing poses are copied for free, and only the remaining cells are generated.
 - Reused pixels do not claim new API body-preservation measurements. Their conservative warning and incomplete-measurement label survive later merges.
@@ -26,7 +26,7 @@ The source was the iron helmet from the earlier real PixelLab Ragnarok import. T
 
 The qualification rest job was local `cfdaf69f-827b-49b3-a0af-74a5eec928ae`, remote `f6c44071-68e4-4f01-aa4e-f0c683d87eba`. The kept fit's eight pose calls were 3 gens each. The initial four-view fit used no fitting reroll or alternate paid route. Global account balance is shared and is not used as a per-test cost ledger.
 
-The fitted helmet was recoloured azure independently. Its real browser Godot download was 523,907 bytes, with 340 entries and 317 decoded images. All referenced PNG RGBA hashes, 146 pinned source images, palette-role mappings and measured-cell producer indices were verified. The imported rig remains ready for moves.
+The fitted helmet was recolored azure independently. Its real browser Godot download was 523,907 bytes, with 340 entries and 317 decoded images. All referenced PNG RGBA hashes, 146 pinned source images, palette-role mappings and measured-cell producer indices were verified. The imported rig remains ready for moves.
 
 Offline export of that actual artifact to Godot, Unity, Phaser, generic PNG/JSON and Aseprite produced 389 files / 623,401 bytes and successfully round-tripped the immutable design revision. This verifies generated artifacts, not a new execution inside every game engine.
 
@@ -38,7 +38,7 @@ The actual downloaded ZIP was reimported through the normal, keyless Studio on p
 
 ### Live new move and rejection behavior
 
-To bound further spending, a validated one-direction clone of the real four-direction export was imported through the UI. Existing south body/equipment cells, actual standing references, palette IDs and selected azure colourway were retained. A new six-frame Hurt body move completed in one request plus six measurements. The body request billed $0.040; measurements were billed in dollars as well, rather than generations.
+To bound further spending, a validated one-direction clone of the real four-direction export was imported through the UI. Existing south body/equipment cells, actual standing references, palette IDs and selected azure colorway were retained. A new six-frame Hurt body move completed in one request plus six measurements. The body request billed $0.040; measurements were billed in dollars as well, rather than generations.
 
 Its first missing-equipment pose call reused approved standing references at zero transfer cost, with a displayed 3-generation request estimate. Actual usage was $0.020. Two visibly deformed helmet cells failed H4 (own similarity 0.67 / 0.57); Keep was correctly disabled. Independent screenshot review agreed these were real geometry defects, not harmless numerical flags. A single separately priced batch retry billed $0.022 and still failed those cells (0.67 / 0.60). The cumulative $0.042 charge survived reload and appeared in the review and Activity. Both rejected attempts remain separate from wardrobe pixels; thresholds were not relaxed. This Hurt helmet result is **not delivered or accepted**.
 
@@ -48,12 +48,12 @@ A browser export while that retry was running independently verified the publica
 
 A separate one-direction clone tested a new eight-frame Cast move without changing the blocked Hurt evidence. The ordinary body pipeline made its one allowed reroll after pose checks. Body calls reported $0.020 and $0.018; completed joint measurements reported dollar usage. Three measurement submissions ended with unknown outcomes and were retained without resending. Their final billing is not inferred from the shared account balance.
 
-The original automatically prepared equipment draft survived Studio normalization and a reload. Its standing review correctly displayed the existing blue colourway. One explicitly approved pose call generated the eight missing Cast equipment cells for an actual $0.040, with zero rest-fitting charge and no equipment retry. All hard checks passed. A forearm-occlusion warning on stored cell 3 remained visible; root inspected all eight frames, and the independent reviewer confirmed that the flagged frame retained the rounded helmet design while the arms rose beside it. The warning was retained when keeping the extension.
+The original automatically prepared equipment draft survived Studio normalization and a reload. Its standing review correctly displayed the existing blue colorway. One explicitly approved pose call generated the eight missing Cast equipment cells for an actual $0.040, with zero rest-fitting charge and no equipment retry. All hard checks passed. A forearm-occlusion warning on stored cell 3 remained visible; root inspected all eight frames, and the independent reviewer confirmed that the flagged frame retained the rounded helmet design while the arms rose beside it. The warning was retained when keeping the extension.
 
 The actual browser Godot export was 427,279 bytes. Independent artifact verification confirmed:
 
 - The existing equipment item and all 12 old raw equipment cells are unchanged.
-- Material IDs, complete material definitions and the selected azure colourway are unchanged.
+- Material IDs, complete material definitions and the selected azure colorway are unchanged.
 - Eight new Cast equipment cells are present; coverage is now 20 cells.
 - All 206 decoded RGBA hashes, 20 measured-cell producer links across 19 provenance entries, 146 pinned source images and the immutable design revision are valid.
 - The restored character remains rig-ready. Azure changes all eight new helmet cells and no body cells.
@@ -94,13 +94,13 @@ Offline browser tests block paid requests. These results do not claim physical-d
 
 ## Adversarial review
 
-The implementer and independent reviewer challenged each other's evidence; root reviewed the implementation and accepted only reproducible issues. Regressions cover stale outfit references, stale dressed snapshots, target edits before spending/keeping, sparse/transparent coverage, selected-cell cost batching, actual API producers, partial quality summaries, independent palettes/default colourways, archive limits and source/blob lifecycle.
+The implementer and independent reviewer challenged each other's evidence; root reviewed the implementation and accepted only reproducible issues. Regressions cover stale outfit references, stale dressed snapshots, target edits before spending/keeping, sparse/transparent coverage, selected-cell cost batching, actual API producers, partial quality summaries, independent palettes/default colorways, archive limits and source/blob lifecycle.
 
 Final review additionally found and corrected:
 
 - A free-only extension could become stuck after a one-shot local result-save failure. Continue now rebuilds that review locally with zero POSTs.
 - An approved-rest extension unnecessarily preflighted the transfer endpoint's minimum target count, blocking a one-direction move even though no transfer was required. Only the private approved-rest extension path skips that irrelevant preflight; new fits remain strict.
-- An extension's review could show its raw palette instead of the target's selected colourway. Preview mappings now use saved target selections while paid references and original raw cells stay unchanged.
+- An extension's review could show its raw palette instead of the target's selected colorway. Preview mappings now use saved target selections while paid references and original raw cells stay unchanged.
 - Free or mixed copied frames could expose aggregate numeric API measurements. Such summaries now explicitly carry incomplete-measurement metadata and suppress those misleading numbers in the inspector.
 - Real API calls can report dollar usage instead of generations. Fit summaries now retain and show both currencies through failures, recovery and retries; the UI explains dollar billing before paid actions and labels the allowance as a generation estimate rather than a dollar cap.
 - Preparing equipment reviews before the Studio's body palette normalization could immediately stale both captured fit stamps. Add move now persists the existing normalization before direct item poses and shared fit preparation, including resumed raw clips. A real resumed-clip regression and independent probe verify blue-channel normalization, zero further changes on reopen, stable stamps, preserved equipment/azure choices and zero API calls.

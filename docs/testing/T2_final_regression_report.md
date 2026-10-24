@@ -10,7 +10,7 @@ Tester and fixer: T2. Build under test: `main` @ 32b6313 plus the T2 edits liste
   - Sizes: desktop 1440×900, tablet 768×1024 @2×, phone 375×812 @2×, landscape 812×375 @2×, narrow 320×568 @2×.
   - Both dark and light themes.
 - **Automatic audit** of every screen: welcome, studio, the export, create, connect and new-item sheets, and the moves and
-  colours tabs.
+  colors tabs.
   - Checks: horizontal overflow, controls off-screen, touch targets under 44 px on touch devices, page errors.
   - Script: `scratchpad/t2_audit.mjs`.
   - Screenshots: `img/t2_<screen>_<device>_<theme>.png`, 90 files.
@@ -68,7 +68,7 @@ the slot-chip scroller, which scrolls by design.
 | Body QA (freeze gate) | hurt S/E/N: adherence 0.63 / 0.98 / 0.49 px, feet drift 0, border 0, palette fit 1.00, stray 0, 0 fails. `baseHash` updated, and both items moved to it. |
 | Items re-posed | Helmet and sword now have hurt S/E/N cells. West is mirrored at compose time. The sword stays a 96×96 oversize layer with pivot 48,75. Sword north f0 and f5 were `repaired` (the S5 dropped-item repair). |
 | QA status (UI) | Both items show **"Needs a look"**. Helmet: H4 / stray px (B9's known south-slash occlusion). Sword: "Some body pixels were changed" (key outside 0.029 > 0.02) and "changes size between frames" (area CV 0.173). These are B9's own aggregate numbers, but B9 reported the sword as "Clean"; see known issue K3. |
-| Visual check (all directions) | `t2_3_ranger_hurt_alldirs.png` (6 frames × S/E/N/W) and `t2_5_studio_hurt_alldirs.jpg` (Studio grid). Helmet stays seated in every frame. The sword stays in the right hand and follows the flinch. West mirrors correctly. **Defect:** south f3 keeps a small detached grey blade smear under the sword (`t2_4_hurt_south_detail.png`). |
+| Visual check (all directions) | `t2_3_ranger_hurt_alldirs.png` (6 frames × S/E/N/W) and `t2_5_studio_hurt_alldirs.jpg` (Studio grid). Helmet stays seated in every frame. The sword stays in the right hand and follows the flinch. West mirrors correctly. **Defect:** south f3 keeps a small detached gray blade smear under the sword (`t2_4_hurt_south_detail.png`). |
 
 ### Export from the Studio
 
@@ -76,7 +76,7 @@ Godot and Phaser. The zips were captured in-page from the Export button's blob, 
 
 | Check | Godot `ranger-godot.pixeldoll.zip` (224 KB, 34 files) | Phaser `ranger-phaser.pixeldoll.zip` (228 KB, 45 files) |
 |---|---|---|
-| README | Root `README.txt`: quick start, folder map, "Moves: idle (4), walk (8), slash (8), hurt (6)", nearest-neighbour note. Plus `godot/README.txt` (Nearest, snap, `*.json` export filter). | Root README plus `phaser/README.txt` (pixelArt/roundPixels, `loadPaperdoll`, http not file://) |
+| README | Root `README.txt`: quick start, folder map, "Moves: idle (4), walk (8), slash (8), hurt (6)", nearest-neighbor note. Plus `godot/README.txt` (Nearest, snap, `*.json` export filter). | Root README plus `phaser/README.txt` (pixelArt/roundPixels, `loadPaperdoll`, http not file://) |
 | Directions per move | `rig.animations[].directions`: idle, walk, slash and hurt all list `south/east/north/west` | same |
 | Oversize sword | `steel_sword.fg` and `.bg`: `cell 96×96`, `pivot 48,75`. Sheet `hurt.png` is 576×384 (6×96 by 4×96). Body is 384×256 (64 px). `export.bakedCell` 96×96, `bakedPivot` 48,75. | Atlas `steel_sword_fg_hurt.json`: 24 frames of 96×96, pivot (0.5, 0.78125) = 75/96 |
 | Hurt files | layers for body, helmet, sword fg and sword bg, plus `baked/current` and `baked/default` | the same, plus 4 `phaser/*_hurt.json` |
@@ -105,7 +105,7 @@ Godot and Phaser. The zips were captured in-page from the Export button's blob, 
 | Check | Result |
 |---|---|
 | Welcome tab order | theme → Create your character → Try the demo → PixelLab link. All show a 2 px ring: #4DA3FF in dark, #0071E3 in light. |
-| Studio tab order (desktop) | Wardrobe toggle → character → Connect → theme → Export → Inspector → Random look → New head item → items (row, then wear check) … → outfits → Play → move picker → S/E/N/W → All directions → zoom → background → Item/Colours/Moves. The order is logical, and every stop has a visible ring. |
+| Studio tab order (desktop) | Wardrobe toggle → character → Connect → theme → Export → Inspector → Random look → New head item → items (row, then wear check) … → outfits → Play → move picker → S/E/N/W → All directions → zoom → background → Item/Colors/Moves. The order is logical, and every stop has a visible ring. |
 | Enter / Space | Enter on a wardrobe row wears the item. Enter on Export opens the sheet. |
 | Esc | Closes every sheet and the character menu, and focus returns to the opener. |
 | **Arrow keys in segmented controls** | **Failed before T2: there was no arrow handling.** Fixed (§6). ArrowRight on S selects and focuses E, and End goes to W. Inspector tabs, Export engines, the Create skin and build controls, the phone and landscape tab bars, and the slot chips all move with arrows plus Home/End. Selection follows focus. |
@@ -146,7 +146,7 @@ Godot and Phaser. The zips were captured in-page from the Export button's blob, 
 | K1 | **P1** | **A backgrounded tab stalls generation.** After about 5 min hidden, Chrome's intensive throttling cuts the queue leader's `setInterval` to about 1 tick per minute. That is exactly when a user follows "You can keep working" and switches tabs during a 10-minute create or move. It was seen live here; the hidden pane gave about 0.5 ticks per second only with a manual pump. | Run polling from a dedicated Worker, where timers are not intensively throttled. Alternatively re-tick on `visibilitychange`, and say "Keep this tab open" on long runs. |
 | K2 | P2 | **Spend exceeds the shown price without saying so.** The move showed 29 and cost 37.8 (+30 %). Item re-rolls are automatic. | Show a range like Create does ("29–38 gens"). The Done step should show the actual spend. |
 | K3 | P2 | **The sword reads "Needs a look"** (key outside 0.029 > 0.02, area CV 0.173), although B9 reported it "Clean" with the same numbers. Either the status was recomputed with stricter thresholds when the hurt cells merged, or B9's verdict used other limits. | Pick one held-item threshold set (area CV is naturally high for a rotating blade) and recompute the status once per accept or move. |
-| K4 | P2 | **Hurt south f3: a detached grey blade smear** stays under the sword (`t2_4`). The held cleanup keeps components within 3 px of the wrist or the main component. | Drop components that are under about 10 % of the main blade's area and not attached to the grip. Or re-roll that direction when stray px > N. |
+| K4 | P2 | **Hurt south f3: a detached gray blade smear** stays under the sword (`t2_4`). The held cleanup keeps components within 3 px of the wrist or the main component. | Drop components that are under about 10 % of the main blade's area and not attached to the grip. Or re-roll that direction when stray px > N. |
 | K5 | P3 | Direction segments are 40×44 on phones (HIG minimum 44×44). | Let the move picker shrink further, or show icons only below 400 px. |
 | K6 | P3 | On a short phone viewport (465×690) with a 96 px oversize character, the all-directions grid's bottom labels sit under the floating preview bar (seen in the Browser pane on Ranger). 375×812 is fine. | Pad the stage bottom by the bar height when `ui.all`. |
 | K7 | P3 | Export opens with focus on Cancel. The Add-a-move Done screen has no summary: spend, QA, "View hurt". | Focus the Download button. Add "Spent 37.8 gens · 2 items need a look". |

@@ -30,7 +30,7 @@ This inventory is a review/checklist boundary, not a claim that every behavior h
 | Preview | Back, Undo disabled/enabled, Export, More; character/prompt menus; three view switches; four panel switches; Head/Hair/Body/All parts; selected/unselected item tiles and None; palette swatches; New item/Saved design; play/pause/still; native animation popup; four facing buttons; animation details; missing-direction and missing-equipment notices. |
 | Top-down | Shared equipment/identity/navigation controls; Moves intentionally unavailable; WASD/arrows; drag joystick; diagonal motion; second-finger equipment use; missing-equipment notice; stop/cancel/focus-loss behavior. |
 | Side-scroller | Shared equipment/identity/navigation controls; horizontal movement/facing; joystick; missing-equipment notice; view transitions. |
-| Panel variants | Colours explanation; Moves selected and unselected choices; Outfits selectable rows; expanded/collapsed mobile wardrobe; long content scroll. |
+| Panel variants | Colors explanation; Moves selected and unselected choices; Outfits selectable rows; expanded/collapsed mobile wardrobe; long content scroll. |
 | Transient surfaces | More and appearance switch; character menu; prompt text/copy/close; parts choices; export/animation/about/creator-help/API/not-connected dialogs; toast; click/keyboard dismiss; opener return; active hover/focus/pressed states. |
 
 Source review found no integration-induced markup changes to these controls. The migration intentionally applied the package recipe only to primary buttons, form fields and floating surfaces, so importing Bronze does not improve generic button affordance automatically.

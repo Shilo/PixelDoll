@@ -1,12 +1,12 @@
 import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../lib/rig/rig.ts';
-import { BASE_BODY } from './model.ts';
+import { BASE_BODY, isBaseBody } from './model.ts';
 
 export const BODY_SIZES = [48, 64, 96, 128] as const;
 export const TRAITS = {
   kind: { label: 'Kind', options: ['Human', 'Elf', 'Dwarf', 'Orc', 'Undead'], help: 'The kind of humanoid. Leave Not set to add no extra hint.' },
   build: { label: 'Build', options: ['Slender', 'Broad', 'Muscular', 'Rounded'], help: 'Slender: narrow frame. Broad: wide torso. Muscular: defined muscles. Rounded: soft, rounded torso.' },
   proportions: { label: 'Proportions', options: ['Natural', 'Chibi'], help: 'Natural head-to-body proportions, or Chibi with a larger head and shorter limbs. Separate from size in pixels.' },
-  skin: { label: 'Skin', options: ['Deep brown', 'Brown', 'Tan', 'Light tan', 'Light', 'Pale'], help: 'Skin-tone guidance. Leave Not set to add no extra hint; exact palette colours can be edited later.' },
+  skin: { label: 'Skin', options: ['Deep brown', 'Brown', 'Tan', 'Light tan', 'Light', 'Pale'], help: 'Skin-tone guidance. Leave Not set to add no extra hint; exact palette colors can be edited later.' },
 } as const;
 export type Trait = keyof typeof TRAITS;
 export const TRAIT_KEYS = Object.keys(TRAITS) as Trait[];
@@ -50,12 +50,12 @@ export function readPrompt(d: CharacterDraft, prompt: string, preserveDetailsWhi
     d[key] = indices.length === 1 ? recognized(lines[indices[0]])!.value : UNSET;
     if (indices.length === 1) owned.add(indices[0]);
   }
-  const details = lines.filter((line, i) => !owned.has(i) && line.trim() !== BASE_BODY).join('\n');
+  const details = lines.filter((line, i) => !owned.has(i) && !isBaseBody(line)).join('\n');
   d.details = preserveDetailsWhitespace ? details : details.trim();
 }
 export function writeTrait(d: CharacterDraft, key: Trait, value: string): void {
   const lines = d.prompt.split('\n'), indices = lines.map((l, i) => recognized(l)?.key === key ? i : -1).filter(i => i >= 0);
-  const at = indices[0] ?? (lines.indexOf(BASE_BODY) >= 0 ? lines.indexOf(BASE_BODY) : lines.length);
+  const at = indices[0] ?? (lines.findIndex(isBaseBody) >= 0 ? lines.findIndex(isBaseBody) : lines.length);
   const next = lines.filter((_, i) => !indices.includes(i));
   if (value !== UNSET) next.splice(at, 0, `${TRAITS[key].label}: ${value}`);
   readPrompt(d, next.join('\n'));
@@ -67,7 +67,7 @@ export function writeDetails(d: CharacterDraft, value: string): void {
   const next: string[] = [];
   for (const line of lines) {
     const hit = recognized(line);
-    if (line.trim() === BASE_BODY || hit && counts[hit.key] === 1) next.push(line);
+    if (isBaseBody(line) || hit && counts[hit.key] === 1) next.push(line);
     else if (!inserted) { next.push(value); inserted = true; }
   }
   if (!inserted) next.unshift(value);

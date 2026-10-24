@@ -1,4 +1,4 @@
-// Read-only: forced colours, prefers-contrast and 200% zoom (deviceScaleFactor-independent CSS zoom emulation).
+// Read-only: forced colors, prefers-contrast and 200% zoom (deviceScaleFactor-independent CSS zoom emulation).
 import { chromium } from '../../../../app/node_modules/playwright/index.mjs';
 import { fileURLToPath } from 'node:url';
 import { mkdirSync } from 'node:fs';

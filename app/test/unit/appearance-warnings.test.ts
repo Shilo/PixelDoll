@@ -14,7 +14,7 @@ const framePass = (): ItemQa => ({ minKeyKept: 1, maxKeyOutside: 0, minAreaRatio
 test('accepted appearance exceptions survive frame replacement, all-QA invalidation and editable ZIP roundtrip', async () => {
   const p = await loadFixture(async (path) => new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))))
   const item = p.manifest.items.find((it) => it.slot !== 'body')!
-  const warnings = ['D1 keyframe rest/south/0: grey smudges', 'G2 keyframe rest/south/0: changed pixels']
+  const warnings = ['D1 keyframe rest/south/0: gray smudges', 'G2 keyframe rest/south/0: changed pixels']
   item.designWarnings = [...warnings]
   item.qa = framePass()
   expect(healthOf(p.manifest, item)).toBe('look')

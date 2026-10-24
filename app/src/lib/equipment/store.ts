@@ -3,7 +3,7 @@ import { decodePng, pngSize, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { cellHash } from '../rig/rig.ts';
 import { validate } from '../export/generic.ts';
-import { recolour } from '../dress/dress.ts';
+import { recolor } from '../dress/dress.ts';
 import { supportedFormat, type Project, type Sha256 } from '../store/manifest.ts';
 import { unzip, zip } from '../store/zip.ts';
 import { designRevision, imageHashes } from './design.ts';
@@ -51,7 +51,7 @@ export async function loadDesign(id: string): Promise<{ design: EquipmentDesign;
 }
 export async function designPreview(design: EquipmentDesign): Promise<Project> {
   assertDesign(design);
-  return recolour({ manifest: design.source, images: await loadImages(design.imageHashes, design.images) }, design.variants);
+  return recolor({ manifest: design.source, images: await loadImages(design.imageHashes, design.images) }, design.variants);
 }
 export async function saveCreatedDesign(design: EquipmentDesign): Promise<EquipmentDesign> {
   assertDesign(design);
@@ -75,7 +75,7 @@ export async function exportDesign(design: EquipmentDesign): Promise<Uint8Array>
   return zip([
     { name: 'design.json', data: enc.encode(JSON.stringify(snapshotDesign(design), null, 2)) },
     { name: 'README.txt', data: enc.encode(`${design.name}\nPixelDoll equipment design, not a character. Import from Saved designs. Fitting to another body may require PixelLab generations. This archive contains the source body and item references required for independent reuse.\n`) },
-    { name: 'ATTRIBUTION.txt', data: enc.encode('Artwork created or edited with PixelLab (https://pixellab.ai). Generating call provenance is retained in design.json. The app\'s MIT licence does not grant a separate artwork licence.\n') },
+    { name: 'ATTRIBUTION.txt', data: enc.encode('Artwork created or edited with PixelLab (https://pixellab.ai). Generating call provenance is retained in design.json. The app\'s MIT license does not grant a separate artwork license.\n') },
     ...await Promise.all([...images].map(async ([hash, im]) => ({ name: `cells/${hash.slice(7)}.png`, data: await encodePngBytes(im) }))),
   ], { deflate: true });
 }

@@ -39,7 +39,7 @@ node docs/design/2026-10-22-redesign/serve.mjs
 
 Open **http://127.0.0.1:5201/**. The review bar changes concept, screen and phone framing. For a clean full-window view, use `?capture=1&concept=camp&screen=select` (concepts: `camp`, `atelier`, `quiet`; screens: `select`, `create`, `dress`). The server is bound only to localhost. The prototype works directly from `index.html` as well; no network assets are required.
 
-Try selecting a character, searching the full cast, changing headgear, switching directions, playing Walk, recolouring, opening All parts on a phone, opening Inspect and its plain backdrop, and stepping through the simulated appearance review. Generation, import, fitting, exports, and advanced settings are explanatory design states; they do not run the production pipeline. This prototype has no token field, calls no PixelLab endpoint, and saves nothing to the app's storage.
+Try selecting a character, searching the full cast, changing headgear, switching directions, playing Walk, recoloring, opening All parts on a phone, opening Inspect and its plain backdrop, and stepping through the simulated appearance review. Generation, import, fitting, exports, and advanced settings are explanatory design states; they do not run the production pipeline. This prototype has no token field, calls no PixelLab endpoint, and saves nothing to the app's storage.
 
 ## Scope and ownership
 

@@ -12,7 +12,7 @@ import { inputCell, padImg, packGrid } from '../../src/lib/items/items.ts'
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts'
 
 afterEach(() => vi.restoreAllMocks())
-type Mode = 'clean' | 'damaged' | 'worse' | 'count' | 'geometry' | 'lost' | 'cancelled' | 'abort'
+type Mode = 'clean' | 'damaged' | 'worse' | 'count' | 'geometry' | 'lost' | 'canceled' | 'abort'
 async function fixture(modes: Mode[], directions: ('south' | 'west')[] = ['west'], held = true) {
   const pad=held?16:0, canvas=64+2*pad
   const base = makeImg(64, 64)
@@ -44,9 +44,9 @@ async function fixture(modes: Mode[], directions: ('south' | 'west')[] = ['west'
     }
     const dir = (req.body as {direction:string}).direction, attempt = counts.get(dir) ?? 0; counts.set(dir,attempt+1)
     const mode = modes[attempt]
-    if(mode==='abort') throw new DOMException('Synthetic cancelled flow','AbortError')
+    if(mode==='abort') throw new DOMException('Synthetic canceled flow','AbortError')
     const raw = await putImage(output(mode,attempt))
-    const record = { id:`${dir}-${attempt}`, endpoint:req.path, method:req.method, params:req.body, requestHash:`${dir}-${attempt}`, createdAt:0, gens:3, usd:0, state:mode==='lost'||mode==='cancelled'?mode:'done', error:mode, jobs:[{id:`job-${dir}-${attempt}`, results:Array.from({length:mode==='count'?3:4},(_,i)=>({label:String(i),sha:raw}))}] } as unknown as JobRec
+    const record = { id:`${dir}-${attempt}`, endpoint:req.path, method:req.method, params:req.body, requestHash:`${dir}-${attempt}`, createdAt:0, gens:3, usd:0, state:mode==='lost'||mode==='canceled'?mode:'done', error:mode, jobs:[{id:`job-${dir}-${attempt}`, results:Array.from({length:mode==='count'?3:4},(_,i)=>({label:String(i),sha:raw}))}] } as unknown as JobRec
     seen.push(record); return record
   })
   return { run:()=>poseItemClip(ctx,item,'walk'), save, seen, counts, item, output, saved:()=>save.mock.calls.at(-1)![1] }
@@ -80,7 +80,7 @@ test('two malformed responses publish no partial direction',async()=>{
   const f=await fixture(['count','geometry']); await expect(f.run()).rejects.toThrow('missing or malformed frames twice'); expect(f.save).not.toHaveBeenCalled()
 })
 
-test.each(['lost','cancelled'] as const)('a later %s outcome still stops publication instead of silently falling back',async state=>{
+test.each(['lost','canceled'] as const)('a later %s outcome still stops publication instead of silently falling back',async state=>{
   const f=await fixture(['damaged',state]); await expect(f.run()).rejects.toThrow(state); expect(f.save).not.toHaveBeenCalled(); expect(f.seen).toHaveLength(2)
 })
 

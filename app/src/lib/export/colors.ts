@@ -1,10 +1,10 @@
-// Bake the palettes actually used by outfits into ordinary equipment layers. Engine runtimes need no colour shader.
-import { recolour, variantOf, variantRampOf } from '../dress/dress.ts';
+// Bake the palettes actually used by outfits into ordinary equipment layers. Engine runtimes need no color shader.
+import { recolor, variantOf, variantRampOf } from '../dress/dress.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { cellHash } from '../rig/rig.ts';
 import type { Project, Slot } from '../store/manifest.ts';
 
-export async function withColourVariants(source: Project): Promise<Project> {
+export async function withColorVariants(source: Project): Promise<Project> {
   const m = structuredClone(source.manifest), images = new Map(source.images);
   const originals = [...m.items], used = new Set(m.items.map((it) => it.id)), copies = new Map<string, string>();
   const paletteOf = (it: (typeof originals)[number], preset: (typeof m.presets)[number]) => it.materials.flatMap((id) => {
@@ -26,18 +26,18 @@ export async function withColourVariants(source: Project): Promise<Project> {
       const signature = stableStringify([it.id, palette]);
       let id = copies.get(signature);
       if (!id) {
-        const stem = `${it.id}-colour-${(await sha256(signature)).slice(0, 12)}`;
+        const stem = `${it.id}-color-${(await sha256(signature)).slice(0, 12)}`;
         id = stem;
         for (let i = 2; used.has(id); i++) id = `${stem}-${i}`;
         used.add(id); copies.set(signature, id);
         const copy = structuredClone(it);
-        copy.id = id; copy.name = `${it.name} (coloured)`; copy.materials = [];
+        copy.id = id; copy.name = `${it.name} (colored)`; copy.materials = [];
         delete copy.qa;
         if (it.id === m.rig.baseItem) {
-          // Keep the canonical body's invisible animation clock. A normal synced layer draws its recoloured pixels.
+          // Keep the canonical body's invisible animation clock. A normal synced layer draws its recolored pixels.
           if (!bodySlot) {
-            bodySlot = 'body_colour';
-            for (let i = 2; m.slots.some((s) => s.id === bodySlot); i++) bodySlot = `body_colour_${i}`;
+            bodySlot = 'body_color';
+            for (let i = 2; m.slots.some((s) => s.id === bodySlot); i++) bodySlot = `body_color_${i}`;
             const body = m.slots.find((s) => s.id === 'body')!;
             const slot: Slot = { ...structuredClone(body), id: bodySlot, class: 'worn', required: false };
             m.slots.splice(m.slots.indexOf(body) + 1, 0, slot);
@@ -47,10 +47,10 @@ export async function withColourVariants(source: Project): Promise<Project> {
           const hides = it.hides ?? m.slots.find((s) => s.id === 'body')?.hides ?? [];
           copy.hides = [...new Set([...hides, ...(hides.includes('body') ? [bodySlot] : []), 'body'])];
         }
-        const coloured = recolour({ manifest: { ...m, items: [it] }, images: source.images }, preset.variants);
+        const colored = recolor({ manifest: { ...m, items: [it] }, images: source.images }, preset.variants);
         for (const layer of copy.layers) for (const dirs of Object.values(layer.cells ?? {}))
           for (const cells of Object.values(dirs)) if (cells) for (let c = 0; c < cells.length; c++) {
-            const image = cells[c] && coloured.images.get(cells[c]!);
+            const image = cells[c] && colored.images.get(cells[c]!);
             if (!image) continue;
             const hash = await cellHash(image); images.set(hash, image); cells[c] = hash;
           }

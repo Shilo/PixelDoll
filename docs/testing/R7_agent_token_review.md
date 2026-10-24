@@ -126,7 +126,7 @@ browser-reachable way to make the token act for another page). F2 and F3 are nex
 | Memory-only | `remember=false` | `memoryOnly` flag blocks both stores and Keep-signed-in | consistent in effect |
 | Cross-tab | key shared follower → leader (BroadcastChannel) | never shares the key (bare messages) | inconsistent; F7 |
 | Human default store | memory (tab) | sessionStorage (tab) | differs from contract §11 wording ("memory"); not agent-related, flag for the PM |
-| Badge | bottom-left, inline style, title mentions auto-connect | top-centre, glass classes | fine; both show with kill switch (F6) |
+| Badge | bottom-left, inline style, title mentions auto-connect | top-center, glass classes | fine; both show with kill switch (F6) |
 | Dist guard | inline bash in CI only; no old names, no inline-map check | `scripts/dist-guard.mjs` in `npm run build`; old names + `sourceMappingURL` | inconsistent (F3) |
 | CI triggers / Node | every push + PR, Node 24 | push to main + PR, `lts/*`, concurrency group | fine |
 | CI secrets/env | none | none | consistent |

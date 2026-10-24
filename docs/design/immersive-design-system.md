@@ -1,12 +1,14 @@
 # Immersive design system
 
-Updated 2026-10-23. This is the reusable styling and interaction contract for the approved Obsidian / Porcelain Bronze direction. It describes the implemented isolated prototype and the target for future app integration. Production Studio has not been migrated. The [current design record](2026-10-22-redesign/round-4-discussion/current-design.md) controls product decisions; this document controls their reusable visual treatment.
+Updated 2026-10-23. This is the reusable styling and interaction contract for the approved Obsidian / Porcelain Bronze direction. The [production integration](production-experience.md) now applies it to the real Studio on the feature branch. The [current design record](2026-10-22-redesign/round-4-discussion/current-design.md) controls product decisions; this document controls their reusable visual treatment.
 
 Latest refinement: [independent review challenge and accepted repairs](../reviews/2026-10-23-claude-redesign-audit/response.md). The prototype consumes the published Bronze UI dependency. GlassKit experiments remain historical comparisons; GlassKit is not loaded by the current prototype.
 
-**Full-app foundation:** [Owned Bronze theme and component/state coverage](2026-10-22-redesign/round-6-prototype/theme-foundation.md) records the design research. Production migration remains separate. Shared component recipes and native light/dark tokens live upstream in Bronze UI; scene layout and workflows remain here.
+**Full-app foundation:** [Owned Bronze theme and component/state coverage](2026-10-22-redesign/round-6-prototype/theme-foundation.md) records the design research. Shared component recipes and native light/dark tokens live upstream in Bronze UI; scene layout and workflows remain here.
 
 ## Sources of truth
+
+Production sources: [theme adapter](../../app/src/studio/experience/theme.css), [responsive layout](../../app/src/studio/experience/layout.css), [world configuration](../../app/src/studio/experience/config.ts), [movement](../../app/src/studio/experience/movement.ts), [presentation resolver](../../app/src/studio/experience/presentation.ts) and [focus/popover placement](../../app/src/studio/experience/focus.ts). Production uses existing Studio components and state for real workflows; the following table preserves the isolated prototype reference implementation.
 
 | Responsibility | Source |
 | --- | --- |
@@ -66,7 +68,7 @@ Keep the selection ring and focus outline external to the swatch. Do not shift p
 
 ## Direction and presentation contracts
 
-Preview and live modes share keyboard vectors, compass metadata and nearest-direction mathematics. WASD/arrows support chords; opposite keys cancel, diagonals normalize, and ties retain the previous supported facing. On release, preserve facing. Letter/arrow shortcuts require focus on the labelled world canvas. Focusing UI controls clears held keyboard input; blur and context changes clear all movement. Touch movement may continue while a second finger operates equipment.
+Preview and live modes share keyboard vectors, compass metadata and nearest-direction mathematics. WASD/arrows support chords; opposite keys cancel, diagonals normalize, and ties retain the previous supported facing. On release, preserve facing. Letter/arrow shortcuts require focus on the labeled world canvas. Focusing UI controls clears held keyboard input; blur and context changes clear all movement. Touch movement may continue while a second finger operates equipment.
 
 Character selection reuses the same key mapping: A/W/Left/Up select the previous character; D/S/Right/Down select the next. Each key press advances once, with existing wraparound; held-key repeats do not race through characters. Enter opens customization only when the world has focus; on a focused control it performs native activation. Search fields, menus, dialogs and modified shortcuts retain their normal behavior.
 
