@@ -28,7 +28,7 @@ function notify(message, key = message) { if (seenIssues.has(key))
     return; seenIssues.add(key); toastKey = key; const toast = $('#toast'); toast.textContent = message; toast.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.hidden = true, 4800); }
 function stop() { keys.clear(); joystick = null; stick.hidden = true; }
 function showDialog(title, html, trigger = document.activeElement) {
-    dialogReturnFocus = state.menu ? { selector: `[data-action="${menuTrigger(state.menu)}"]`, index: 0 } : focusIdentity(trigger, ui);
+    dialogReturnFocus = state.menu && trigger?.closest('.popover') ? { selector: `[data-action="${menuTrigger(state.menu)}"]`, index: 0 } : focusIdentity(trigger, ui);
     stop(); state.menu = null; render();
     const content = `${iconButton('Close', 'close-dialog', 'x')}<h2 id="dialog-title">${esc(title)}</h2>${html}`;
     dialog.innerHTML = `<div class="bu-dialog-surface dialog-panel">${content}</div>`;

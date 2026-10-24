@@ -54,6 +54,8 @@ try {
     assert.equal(await page.evaluate(() => window.prototype.snapshot().state.direction), 'east');
     await click('export'); await page.keyboard.press('Escape');
     await page.waitForFunction(() => document.activeElement?.dataset.action === 'export');
+    await click('more'); await click('export'); await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.activeElement?.dataset.action === 'export');
     await click('more'); assert.ok((await focus()).startsWith('theme:'), 'Popover receives focus');
     await page.keyboard.press('Escape'); assert.equal(await focus(), 'more');
     await click('more'); await click('about');
