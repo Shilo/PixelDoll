@@ -76,6 +76,14 @@ for (const theme of ['dark', 'light'] as const) for (const size of ['desktop', '
   test(`all five real screens: ${theme}, ${size}`, async ({ page }) => {
     await page.setViewportSize(size === 'desktop' ? { width: 1440, height: 900 } : { width: 390, height: 844 })
     await landing(page)
+    if (size === 'phone') {
+      const search = page.getByRole('searchbox', { name: 'Search characters', exact: true })
+      await expect(search).toBeVisible(); await expect(search).toBeEditable()
+      await search.fill('Adventurer')
+      await expect(search).toBeFocused()
+      await expect(page.locator('.character-row')).toHaveCount(1)
+      await search.clear()
+    }
     if (theme === 'light') {
       await page.getByRole('button', { name: 'More options', exact: true }).click()
       await page.getByRole('button', { name: 'Light mode', exact: true }).click()
@@ -88,12 +96,50 @@ for (const theme of ['dark', 'light'] as const) for (const size of ['desktop', '
     await page.getByRole('button', { name: 'New character', exact: true }).click()
     const creator = page.getByRole('dialog', { name: 'New character', exact: true })
     await expect(creator.getByLabel('Details', { exact: true })).toBeVisible()
+    if (size === 'phone') {
+      const appearance = creator.getByRole('tab', { name: 'Appearance', exact: true })
+      const prompt = creator.getByRole('tab', { name: 'Prompt', exact: true })
+      for (const tab of [appearance, prompt]) {
+        const widths = await tab.evaluate((button) => {
+          const text = document.createRange(); text.selectNodeContents(button)
+          return { control: button.getBoundingClientRect().width, text: text.getBoundingClientRect().width }
+        })
+        expect(widths.control, 'Creator mode labels must fit their controls').toBeGreaterThanOrEqual(widths.text - 1)
+      }
+      const appearanceBox = (await appearance.boundingBox())!, promptBox = (await prompt.boundingBox())!
+      expect(appearanceBox.x + appearanceBox.width).toBeLessThanOrEqual(promptBox.x + 1)
+      const nameField = (await creator.locator('.character-name-field').boundingBox())!
+      const nameInput = (await creator.getByRole('textbox', { name: 'Name', exact: true }).boundingBox())!
+      expect(nameInput.width).toBeGreaterThanOrEqual(nameField.width - 2)
+    }
     await screenshot(page, `${size}-${theme}-create`)
     await creator.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(creator).toHaveCount(0)
     await page.locator('.customize-action').click()
     await expect(world(page)).toHaveAttribute('data-position', '0.00,0.00')
     await pause(page)
+    if (size === 'phone') {
+      await page.getByRole('tab', { name: /^Head/ }).click()
+      const head = page.getByRole('group', { name: 'Head items', exact: true })
+      const helmet = (await head.getByRole('button', { name: 'Steel helmet', exact: true }).boundingBox())!
+      const hat = (await head.getByRole('button', { name: 'Wizard hat', exact: true }).boundingBox())!
+      const none = (await head.getByRole('button', { name: 'None', exact: true }).boundingBox())!
+      expect(helmet.x + helmet.width).toBeLessThanOrEqual(hat.x + 1)
+      expect(hat.x + hat.width).toBeLessThanOrEqual(none.x + 1)
+      expect(helmet.y).toBeCloseTo(hat.y, 0); expect(hat.y).toBeCloseTo(none.y, 0)
+      expect(helmet.width).toBeCloseTo(hat.width, 0); expect(hat.width).toBeCloseTo(none.width, 0)
+    }
+    if (size === 'desktop') {
+      const viewModes = (await modes(page).boundingBox())!
+      const header = (await page.locator('.experience-header').boundingBox())!
+      expect(viewModes.y).toBeCloseTo(28, 0)
+      expect(viewModes.x + viewModes.width / 2).toBeCloseTo(1440 * .46, 0)
+      expect(header.y).toBeCloseTo(28, 0)
+      const viewSize = await modes(page).getByRole('button', { name: 'Preview', exact: true }).evaluate(el => parseFloat(getComputedStyle(el).fontSize))
+      expect(viewSize).toBeCloseTo(17.28, 1) // Approved clamp(17px, 1.2vw, 23px) at 1440px.
+      const headerSize = await page.getByRole('button', { name: 'Characters', exact: true }).evaluate(el => parseFloat(getComputedStyle(el).fontSize))
+      expect(headerSize).toBe(16)
+    }
     await screenshot(page, `${size}-${theme}-preview`)
     for (const [label, name] of [['Top-down', 'topdown'], ['Side-scroller', 'side']] as const) {
       await modes(page).getByRole('button', { name: label, exact: true }).click()
@@ -119,6 +165,14 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
   await customize(page)
   await pause(page)
   await page.getByRole('tab', { name: /^Head/ }).click()
+  await expect(page.getByRole('button', { name: 'New head item', exact: true })).toHaveCount(1)
+  const head = page.getByRole('group', { name: 'Head items', exact: true })
+  const none = head.getByRole('button', { name: 'None', exact: true })
+  await expect(none).toBeVisible()
+  const headBox = (await head.boundingBox())!, noneBox = (await none.boundingBox())!
+  const helmetBox = (await head.getByRole('button', { name: 'Steel helmet', exact: true }).boundingBox())!
+  expect(noneBox.width).toBeGreaterThanOrEqual(headBox.width - 2)
+  expect(noneBox.y).toBeGreaterThanOrEqual(helmetBox.y + helmetBox.height - 1)
   const helmet = page.getByRole('button', { name: 'Steel helmet', exact: true })
   const hat = page.getByRole('button', { name: 'Wizard hat', exact: true })
   await expect(helmet).toHaveAttribute('aria-pressed', 'true')

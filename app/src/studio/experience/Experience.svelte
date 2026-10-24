@@ -7,10 +7,13 @@
   import { ui,doc,store,openProject,refreshProjects } from '../state.svelte.ts'
   import { experience,customize,characters,setMode,type WorldMode } from './state.svelte.ts'
   import { WORLDS,REFLECTION } from './config.ts'
-  import { ChevronDown,ChevronLeft,ChevronRight,Play,Pause,Grid2x2 } from '../icons.ts'
+  import { ChevronDown,ChevronLeft,ChevronRight,Play,Pause,Grid2x2,Copy } from '../icons.ts'
   import { directionInfo } from './movement.ts'
   let search=$state('')
+  let copyMessage=$state('')
+  async function copyPrompt(){try{await navigator.clipboard.writeText(prompt);copyMessage='Copied'}catch{copyMessage='Select the prompt to copy it'}}
   let selection=$state<HTMLDivElement>()
+  let viewportWidth=$state(1280),viewportHeight=$state(720)
   const m=$derived(store.project?.manifest)
   const name=$derived(store.projects.find(p=>p.id===doc.id)?.name.replace(/ \(demo\)$/,'')??m?.name??'Character')
   const prompt=$derived(m?.items.find(it=>it.id===m.rig.baseItem)?.prompt??'')
@@ -20,18 +23,42 @@
   const neighbors=$derived(list.length>1?[-1,0,1].filter(n=>!(list.length===2&&n===1)).map(offset=>({offset,p:list[(Math.max(0,index)+offset+list.length)%list.length]})):list.map(p=>({offset:0,p})))
   const tabs=[['wardrobe','Wardrobe'],['colours','Colors'],['outfits','Outfits'],['moves','Moves']] as const
   const modes=[['preview','Preview'],['topdown','Top-down'],['side','Side-scroller']] as const
+  const castScale=$derived.by(()=>{
+    const mobile=viewportWidth<=760,short=viewportHeight<=540
+    const rail=Math.min(414,Math.max(300,viewportWidth*.2156))
+    const edge=Math.min(56,Math.max(28,viewportWidth*.0292))
+    const width=mobile?viewportWidth:viewportWidth-rail-edge
+    return Math.max(1,Math.floor(Math.min(width/(mobile?100:130),viewportHeight*(short?.3:mobile?.26:.43)/50)))
+  })
+  const castSize=(offset:number)=>64*(offset?Math.max(1,Math.round(castScale*.56)):castScale)
   const background=$derived(WORLDS[ui.theme].backgrounds[ui.sheet==='create'?'creation':experience.screen==='characters'?'selection':experience.mode])
   async function pick(id:string){if(doc.loading)return;if(id===doc.id)customize();else await openProject(id)}
   function next(delta:number){if(!list.length||doc.loading)return;void openProject(list[(Math.max(0,index)+delta+list.length)%list.length].id)}
   function selectionKey(e:KeyboardEvent){if(e.target!==selection||ui.sheet||e.ctrlKey||e.metaKey||e.altKey||e.repeat)return;const k=e.key.toLowerCase();if(['a','w','arrowleft','arrowup','d','s','arrowright','arrowdown'].includes(k)){e.preventDefault();next(['a','w','arrowleft','arrowup'].includes(k)?-1:1)}else if(k==='enter'&&list.length){e.preventDefault();customize()}}
   onMount(()=>{const short=matchMedia('(max-width:760px) and (max-height:700px)');if(short.matches)experience.expanded=true;window.addEventListener('wheel',wheel,{passive:false});return()=>window.removeEventListener('wheel',wheel)})
-  let wheelAmount=0,lastWheel=0
-  function wheel(e:WheelEvent){if(experience.screen!=='characters'||ui.sheet||e.ctrlKey||e.metaKey||e.altKey||document.querySelector(':popover-open')||!e.deltaY)return;e.preventDefault();wheelAmount+=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?innerHeight:1);if(Math.abs(wheelAmount)>=40&&performance.now()-lastWheel>180){next(Math.sign(wheelAmount));wheelAmount=0;lastWheel=performance.now()}}
+  let wheelAmount=0,lastWheelAt=0,lastWheelStep=-Infinity
+  function wheel(e:WheelEvent){
+    if(experience.screen!=='characters'||ui.sheet||e.ctrlKey||e.metaKey||e.altKey||e.shiftKey||document.querySelector(':popover-open')){wheelAmount=0;return}
+    if(!e.deltaY||Math.abs(e.deltaX)>Math.abs(e.deltaY))return
+    e.preventDefault()
+    const now=performance.now(),delta=e.deltaY*(e.deltaMode===1?16:e.deltaMode===2?innerHeight:1)
+    if(now-lastWheelAt>180||Math.sign(delta)!==Math.sign(wheelAmount))wheelAmount=0
+    lastWheelAt=now
+    if(now-lastWheelStep<180){wheelAmount=0;return}
+    wheelAmount+=delta
+    if(Math.abs(wheelAmount)<40)return
+    next(Math.sign(wheelAmount));wheelAmount=0;lastWheelStep=now
+  }
   async function changeMode(mode:WorldMode){setMode(mode);await tick();document.querySelector<HTMLElement>('.world-stage')?.focus({preventScroll:true})}
   function panel(id:typeof ui.tab){document.querySelectorAll<HTMLElement>('[popover]:popover-open').forEach(el=>el.hidePopover());ui.tab=id}
   $effect(()=>{if(experience.mode!=='preview'&&ui.tab==='moves')ui.tab='wardrobe'})
+  $effect(()=>{
+    const screen=experience.screen
+    void tick().then(()=>{
+      if(!ui.sheet)(screen==='characters'?selection:document.querySelector<HTMLElement>('.world-stage'))?.focus({preventScroll:true})
+    })
+  })
 
-  // Imported/setup characters should enter the real studio, including imports started on landing.
   function back(e:KeyboardEvent) {
     if(e.repeat||!['Escape','Backspace'].includes(e.key)||ui.sheet||e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey)return
     if((e.target as HTMLElement).closest('input,textarea,select,[contenteditable]'))return
@@ -51,7 +78,7 @@
     })
   })
 </script>
-<svelte:window onkeydown={back}/>
+<svelte:window onkeydown={back} bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight}/>
 <div class="experience" class:selection={experience.screen==='characters'} class:expanded={experience.expanded} style:--world-image="url('{background}')">
   <div class="scene-backdrop" aria-hidden="true"></div>
   <div class="scene-reading" aria-hidden="true"></div>
@@ -64,8 +91,8 @@
       <div class="cast">
         {#each neighbors as {p,offset} (p.id)}
           <button class="cast-character" class:chosen={!offset} onclick={()=>pick(p.id)} aria-label={offset?`Select ${p.name}`:`Customize ${name}`}>
-            <CharacterThumb id={p.id} name={p.name} size={offset?170:330}/>
-            {#if REFLECTION.enabled&&REFLECTION.selection}<span class="cast-reflection" aria-hidden="true"><CharacterThumb id={p.id} name={p.name} size={offset?170:330}/></span>{/if}
+            <CharacterThumb id={p.id} name={p.name} size={castSize(offset)}/>
+            {#if REFLECTION.enabled&&REFLECTION.selection}<span class="cast-reflection" aria-hidden="true"><CharacterThumb id={p.id} name={p.name} size={castSize(offset)}/></span>{/if}
           </button>
         {/each}
       </div>
@@ -76,7 +103,7 @@
     </div><button class="bu-action customize-action" data-variant="primary" onclick={customize} disabled={doc.loading||!m||!list.length}>Customize {name}<ChevronRight size={16}/></button></aside>
   {:else}
     <div class="scene-identity"><p>Customize character</p><button class="project-btn" popovertarget="project-menu" aria-haspopup="menu" onclick={()=>void refreshProjects()}><h1>{name}</h1><ChevronDown size={18}/></button>
-      {#if prompt}<details class="prompt-disclosure"><summary>{prompt}</summary><div>{prompt}</div></details>{/if}
+      {#if prompt}<details class="prompt-disclosure" ontoggle={()=>copyMessage=''}><summary>{prompt}</summary><div><p>{prompt}</p><button class="bu-action" data-variant="outline" onclick={copyPrompt}><Copy size={16}/>{copyMessage||'Copy prompt'}</button></div></details>{/if}
       <nav class="view-modes" aria-label="Character view">{#each modes as [id,label]}<button class="bu-action" data-variant="tab" aria-pressed={experience.mode===id} onclick={()=>changeMode(id as WorldMode)}>{label}</button>{/each}</nav>
     </div>
     <div class="experience-stage">

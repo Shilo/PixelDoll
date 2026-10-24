@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test'
 // Run against an already built/served production app without owning other suites' servers.
 export default defineConfig({
   testDir: './test/e2e',
-  testMatch: 'experience.spec.ts',
+  testMatch: ['experience.spec.ts', 'experience-parity.spec.ts'],
   outputDir: 'test-results/experience-run',
   timeout: 45_000,
   expect: { timeout: 8_000 },

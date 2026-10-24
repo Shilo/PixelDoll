@@ -23,12 +23,12 @@
 
 <header class="experience-header">
   <div class="header-start">
-    {#if experience.screen === 'studio'}<button class="bu-action header-back" data-variant="quiet" onclick={characters}><ChevronLeft size={18} />Characters</button>{:else}<span class="brand">PixelDoll</span>{/if}
+    {#if experience.screen === 'studio'}<button class="bu-action header-back" data-variant="quiet" onclick={characters}><ChevronLeft size={18} />Characters</button>{:else}<span class="brand"><PersonStanding size={20}/>PixelDoll</span>{/if}
   </div>
   <div class="header-actions">
     {#if experience.screen === 'characters'}
-      <button class="bu-action" data-variant="quiet" onclick={() => { ui.importSource='device'; ui.sheet='import' }}><Download size={16} /><span>Import</span></button>
-      <button class="bu-action" data-variant="outline" onclick={() => ui.sheet='create'}><Plus size={16} /><span>New character</span></button>
+      <button class="bu-action selection-import" data-variant="outline" onclick={() => { ui.importSource='device'; ui.sheet='import' }}><Download size={16} /><span>Import</span></button>
+      <button class="bu-action selection-create" data-variant="outline" aria-label="New character" onclick={() => ui.sheet='create'}><Plus size={16} /><span class="desktop-name">New character</span><span class="mobile-name">New</span></button>
     {:else}
       <button class="bu-action header-undo" data-variant="quiet" aria-label={undoLabel ? 'Undo '+undoLabel : 'Undo'} disabled={!undoLabel} onclick={undo}><Undo2 size={18} /></button>
       <button class="bu-action header-redo" data-variant="quiet" aria-label={redoLabel ? 'Redo '+redoLabel : 'Redo'} disabled={!redoLabel} onclick={redo}><Redo2 size={18} /></button>

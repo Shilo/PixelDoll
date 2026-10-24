@@ -1,5 +1,9 @@
 @AGENTS.md
 
+## Current redesign continuation
+
+Start with the [UI/UX continuation handoff](.claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md). Claude takes over as lead game character-creator UI/UX designer, using **Claude Browser** for live prototype/production comparison. The checkpoint is tested but final visual review is unfinished; the handoff identifies exact evidence, remaining work and the approved design contract.
+
 ## Bronze UI theme
 
 The production Studio and isolated playable prototype use `@shilo/bronze-ui`, pinned to a versioned release archive in `app/package.json` and `app/package-lock.json`.

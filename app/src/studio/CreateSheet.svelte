@@ -67,7 +67,7 @@
 </script>
 
 <Sheet title="New character" cancel={running ? 'Hide' : creating.projectId ? 'Close' : 'Cancel'} onclose={() => (ui.sheet = null)} className="character-sheet" wide>
-  {#snippet heading()}{#if !creating.spec}<input class="bu-input input character-name" aria-label="Name" title="Library and export name; not part of the prompt" bind:value={d.name} placeholder="Name" maxlength="80" />{/if}{/snippet}
+  {#snippet heading()}{#if !creating.spec}<label class="character-name-field"><span>Name</span><input class="bu-input input character-name" aria-label="Name" title="Library and export name; not part of the prompt" bind:value={d.name} placeholder="Name" maxlength="80" /></label>{/if}{/snippet}
   {#if creating.projectId}
     <div class="create-review">
       <ApiPeek scope="character-create-result" label="Completed character generation" plan={creating.spec ? createPlan(creating.spec) : []} activityScope={creating.spec?.activityScope} />

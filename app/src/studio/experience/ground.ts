@@ -4,13 +4,13 @@ export interface Point { x: number; y: number }
 /** Fit the complete pivot-relative frame. Oversize gear and large imported
  * sprites must not cross controls. Prefer whole device pixels; a source larger
  * than the available stage is minified with nearest-neighbor sampling. */
-export function actorScale(frame: {w:number;h:number;x:number;y:number}, area: {width:number;height:number}, dpr=1): number {
+export function actorScale(frame: {w:number;h:number;x:number;y:number}, area: {width:number;height:number}, dpr=1, preferred=6, anchorRatio=.77): number {
   const density = Math.max(1,dpr)
-  const fit = Math.max(0,Math.min(6,
+  const fit = Math.max(0,Math.min(preferred,
     area.width*.5/Math.max(1,frame.x),
     area.width*.5/Math.max(1,frame.w-frame.x),
-    area.height*.77/Math.max(1,frame.y),
-    area.height*.23/Math.max(1,frame.h-frame.y)))
+    frame.y > 0 ? area.height*anchorRatio/frame.y : Infinity,
+    frame.h-frame.y > 0 ? area.height*(1-anchorRatio)/(frame.h-frame.y) : Infinity))
   return fit*density<1 ? fit : Math.floor(fit*density)/density
 }
 export interface RenderOptions {

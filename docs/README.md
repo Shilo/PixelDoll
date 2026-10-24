@@ -18,6 +18,8 @@ tracked on `main`; links in these docs point to the tag. README images: [media/]
 
 **Shared styling contract:** [Immersive design system](design/immersive-design-system.md) documents theme tokens, type, control states, paint overflow, reusable modules and Preview/live direction behavior for future integration.
 
+**Production fidelity:** [Direct prototype parity review](design/production-prototype-parity.md) records corrected integration regressions, intentional production differences and the reproducible 40-pair desktop/mobile light/dark comparison matrix.
+
 **Material study history:** [GlassKit evaluation](design/2026-10-22-redesign/round-6-prototype/glasskit-study.md) records the earlier selective adoption, baseline/rounded comparisons, independent review and accessibility/rendering checks. Bronze UI supersedes its active prototype styling.
 
 **Current theme owner:** [Bronze UI](https://github.com/Shilo/bronze-ui) maintains the MIT package, [style guide](https://github.com/Shilo/bronze-ui/blob/main/docs/STYLE-GUIDE.md) and [standalone component showcase](https://shilo.github.io/bronze-ui/). The [round-six dependency integration](design/2026-10-22-redesign/round-6-prototype/bronze-integration.md) applies it to PixelDoll's playable prototype; the [production adapter](../app/src/studio/experience/theme.css) uses the same package without its document reset. The [round-seven lab](design/2026-10-22-redesign/round-7-theme/README.md) preserves historical source, app inventory, independent reviews and browser evidence. Its local theme and runners are frozen.
