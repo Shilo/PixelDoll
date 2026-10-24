@@ -23,7 +23,6 @@ import { clipOf, summaryOf } from './qa-summary.ts';
  */
 export type Method = 'skel' | 'anchor';
 export type CallKind = 'edit' | 'dress' | 'pose' | 'grid'; // grid: B14 per clip-direction fallback (inpaint-v3)
-// British "colour" in request text stays: the job ledger reuses finished calls by exact request text, so rewording would re-pay resumed work.
 export const itemRoute = {
   name: 'skeleton-posed keyframe / edit-animation-v2',
   edit: (framesPngB64: string[], description: string, seed: number, cell: { w: number; h: number }): Req => {
@@ -40,7 +39,7 @@ export const itemRoute = {
     const poses = f0Last(o.slot, o.rest, sent, o.cell) ? [...sent.slice(1), sent[0]] : sent;
     return rawClip({
       // B7 live: "slash" drew a blade into a helmet layer although the action said "no weapon" -> say it in the looks too
-      description: `solid ${o.key === 'green' ? 'bright green' : 'magenta'} mannequin (chroma key colour) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${oneHeld(o.slot)}` : `wearing ${o.item}, empty hands, no weapon`}`,
+      description: `solid ${o.key === 'green' ? 'bright green' : 'magenta'} mannequin (chroma key color) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${oneHeld(o.slot)}` : `wearing ${o.item}, empty hands, no weapon`}`,
       // M3: a "slash" pose made the model draw a sword into a helmet layer -> unarmed unless the item is the held object
       action: actionOf(o.anim) + (held ? '' : ', empty hands, no weapon, no effects'),
       dir: o.dir, first: o.keyframePngB64, rest: k(o.rest), keypoints: poses.map(k), seed: o.seed, view: o.view,
@@ -90,7 +89,7 @@ export function gridPrompt(o: { item: string; slot: string; key: Key; anim: stri
   return `This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +
     `The first ${o.n} frames (left to right, top to bottom) are a ${o.n}-frame ${actionOf(o.anim)} animation ${facing(o.dir)}. ` +
     `The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${o.item}. ` +
-    `The ${color} colour is intentional (a chroma key) and must stay exactly the same ${color}. ` +
+    `The ${color} color is intentional (a chroma key) and must stay exactly the same ${color}. ` +
     instruction +
     `Keep every other pixel, the poses, the outlines, the grid layout and the transparent background unchanged.`;
 }
@@ -218,8 +217,8 @@ export function cellsNote(cells: string[], anchor?: string): string {
 export function itemPrompt(item: string, route: Route, cells: string[], anchor?: string): string {
   if (route !== 'none') return chromaPrompt(item, route, cellsNote(cells, anchor), !!anchor);
   return (
-    `Add only ${item} to this pixel art character, drawn in its own colours, identical design in all frames. ` +
-    (anchor ? `Frame 1 already wears ${item}: copy exactly that design, colours and size onto the other frames. ` : '') +
+    `Add only ${item} to this pixel art character, drawn in its own colors, identical design in all frames. ` +
+    (anchor ? `Frame 1 already wears ${item}: copy exactly that design, colors and size onto the other frames. ` : '') +
     `${cellsNote(cells, anchor)}Keep every other pixel, the pose, the outline and the transparent background exactly unchanged.`
   );
 }
@@ -1000,7 +999,7 @@ export async function selfTest() {
   const req = itemRoute.pose({ keyframePngB64: 'x', rest: rest0, poses: seq, item: 'a sword', slot: 'main_hand', key: 'green', anim: 'slash', dir: 'south', seed: 1, cell: c64, pad: 16 }).body as { keypoints: Keypoint[][]; description: string };
   console.assert(req.keypoints[2][0].x === padKeypoints(seq[0], c64, 16)[0].x && unrotate([1, 2, 0], true).join() === '0,1,2' && req.description.includes('exactly one weapon'), 'pose: frame 0 sent last, padded, one weapon');
   const helm = itemRoute.pose({ keyframePngB64: 'x', rest: rest0, poses: seq, item: 'a helmet', slot: 'head', key: 'green', anim: 'slash', dir: 'south', seed: 1, cell: c64 }).body as { keypoints: Keypoint[][]; description: string };
-  console.assert(helm.keypoints[0] === seq[0] && helm.description === 'solid bright green mannequin (chroma key colour) wearing a helmet, empty hands, no weapon', 'non-held pose request unchanged (ledger cache hits)');
+  console.assert(helm.keypoints[0] === seq[0] && helm.description === 'solid bright green mannequin (chroma key color) wearing a helmet, empty hands, no weapon', 'non-held pose request unchanged (ledger cache hits)');
   const held = await buildItem({ spec: { id: 's', name: 'S', slot: 'main_hand', prompt: 'p', key: 'green', anims: ['idle'], dirs: ['south'], method: 'skel' }, rig, cells: cs.map((c) => ({ ...c, base: padImg(c.base, 16), layer: padImg(c.layer, 16) })), route: 'green', provenance: [], qa: q.qa, pad: 16 });
   console.assert(held.item.layers.every((l) => l.cell?.w === 40 && l.pivot?.x === 4 + 16 && l.pivot?.y === 8 + 16), 'held layers carry cell + pivot');
 

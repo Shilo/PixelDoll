@@ -200,7 +200,7 @@ What is inside
   cells/          original frame and rest images for the editable copy
 
 Outfit colors are baked into additional item layers, reused by matching outfits. The source layers remain available.
-A colored body is a synced body_colour layer; its hidden original body remains the animation clock.
+A colored body is a synced body_color layer; its hidden original body remains the animation clock.
 
 Moves: ${moves.join(', ')}.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.

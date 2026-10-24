@@ -151,7 +151,7 @@ Severity: **Blocker** (prevents a core task or fails WCAG A/AA on a primary path
 - **F17 Redundant or empty actions.** The creator header has both "← Characters" and "Cancel" with the same effect. The "PixelDoll" header button on the selection screen does nothing. Low.
 - **F18 Navigation surprises.** Escape inside the creator's Name field leaves the creator (probe case G), and Backspace on any focused studio button leaves the studio (case K). The draft survives in memory but not a reload. Recommendation: Escape in an editable field should blur or do nothing; keep Backspace-back only when focus is on `<body>` or the world. Medium.
 - **F22 Typography identity.** `--bu-font: 'Segoe UI', system-ui` and `--bu-display: Georgia` resolve to different families on macOS, iOS and Android, so the product's identity depends on the OS. Georgia headings read more editorial-blog than game. A bundled display face (or a deliberate system-only decision) should be chosen explicitly. Owner: theme. **Subjective; needs agreement.**
-- **Showcase spelling.** The Bronze showcase uses "colour" ("Equipment & colour", "Reset colours"), while the approved product copy is "Colors". Low.
+- **Showcase copy.** The Bronze showcase uses "colour" ("Equipment & colour", "Reset colours"), while the approved product copy is "Colors". Low.
 
 ### D. Scope gaps (not bugs; do not count as production features)
 

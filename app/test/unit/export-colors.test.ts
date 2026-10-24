@@ -70,12 +70,12 @@ test('all engine exports preserve body and equipment palettes, tuck masks, mirro
 
 test('palette copies deduplicate outfit combinations and avoid item/slot collisions', async () => {
   const p = await source(), first = await withColorVariants(p)
-  const collisionId = first.manifest.presets[0].items.body_colour!
-  p.manifest.slots.push({ id: 'body_colour', z: 5, class: 'worn' })
+  const collisionId = first.manifest.presets[0].items.body_color!
+  p.manifest.slots.push({ id: 'body_color', z: 5, class: 'worn' })
   p.manifest.items.push({ ...structuredClone(p.manifest.items[2]), id: collisionId, materials: [] })
   p.manifest.presets.push({ ...structuredClone(p.manifest.presets[0]), id: 'same-again' })
   const result = await withColorVariants(p)
-  expect(result.manifest.presets[0].items.body_colour_2).toBe(`${collisionId}-2`)
+  expect(result.manifest.presets[0].items.body_color_2).toBe(`${collisionId}-2`)
   expect(result.manifest.presets[2].items).toEqual(result.manifest.presets[0].items)
   expect(result.manifest.items.length).toBe(p.manifest.items.length + 6)
   expect(new Set(result.manifest.items.map((it) => it.id)).size).toBe(result.manifest.items.length)
@@ -88,8 +88,8 @@ test('a later colored body and linked material keep first source outfit unchange
   p.manifest.presets.unshift({ id: 'original', name: 'Original', items: { body: 'base', hair: 'hair', head: 'hat' }, variants: {} })
   delete p.manifest.presets[1].variants.hair_tone
   const normalized = await withColorVariants(p)
-  expect(normalized.manifest.presets[0].items.body_colour).toBeTruthy()
-  expect(normalized.manifest.presets[1].items.body_colour).toBeTruthy()
+  expect(normalized.manifest.presets[0].items.body_color).toBeTruthy()
+  expect(normalized.manifest.presets[1].items.body_color).toBeTruthy()
   expect(normalized.manifest.presets[1].items.hair).not.toBe('hair')
   for (const [i, preset] of p.manifest.presets.entries()) {
     expect(composeCell(normalized, normalized.manifest.presets[i].items, 'idle', 'south', 0)).toEqual(composeCell(recolor(p, preset.variants), preset.items, 'idle', 'south', 0))

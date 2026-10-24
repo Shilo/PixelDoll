@@ -35,7 +35,7 @@ async function fixture(palette:boolean|'partial'=false) {
    frames.push(frame)
    const bytes=await encodePngBytes(frame),sha=await sha256(bytes);blobs.set(sha,new Blob([bytes as Uint8Array<ArrayBuffer>],{type:'image/png'}));outputs.push({label:String(i),sha});expected.set(sha,keypoints[i])
    const measurement=await requestIdentity(routes.estimateSkeleton(png(await b64(frame))))
-   if(d==='west') {const id='old-'+i;lostIds.push(id);records.set(id,{id,method:'POST',endpoint:'/estimate-skeleton',label:id,...measurement,state:i<2?'lost':'cancelled',...(i>=2?{autoCancelledAttempts:[23]}:{}),createdAt:time++,attempts:1,nextAt:0,jobs:[],gens:0,usd:0,error:'HTTP 500'})}
+   if(d==='west') {const id='old-'+i;lostIds.push(id);records.set(id,{id,method:'POST',endpoint:'/estimate-skeleton',label:id,...measurement,state:i<2?'lost':'canceled',...(i>=2?{autoCanceledAttempts:[23]}:{}),createdAt:time++,attempts:1,nextAt:0,jobs:[],gens:0,usd:0,error:'HTTP 500'})}
   }
   if(palette&&d==='west'){const fixed=repairBodyPalette(im,frames);for(let i=0;i<fixed.frames.length;i++)expected.set(await sha256(await encodePngBytes(fixed.frames[i])),keypoints[i])}
   const raw=rawClip({first:await b64(im),rest:points,keypoints,description:'body',action:'breathing idle, empty hands, no weapon, no props, no effects',dir:d,seed:spec.seed+101})

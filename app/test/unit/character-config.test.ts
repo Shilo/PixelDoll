@@ -43,6 +43,11 @@ test('raw prompts are lossless and prose is never guessed as a trait', () => {
   writeTrait(d, 'kind', UNSET); expect(d.prompt).not.toContain('Kind: Elf')
   expect(d.prompt).toContain('Not an elf. No pale skin.')
 })
+test('prompts saved with the old "grey" base body still parse', () => {
+  const d = newCharacterDraft(), legacy = BASE_BODY.replaceAll('gray', 'grey')
+  readPrompt(d, `A friendly elf\nKind: Elf\n${legacy}`)
+  expect(d.kind).toBe('Elf'); expect(d.details).toBe('A friendly elf')
+})
 test('conflicting trait lines remain editable prose until explicitly replaced', () => {
   const d = newCharacterDraft()
   readPrompt(d, 'Kind: Elf\nKind: Orc\nSkin: Pale')

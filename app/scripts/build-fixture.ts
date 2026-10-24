@@ -34,7 +34,7 @@ const baseProv = (anim: string, template: string) => {
 };
 const ask = (what: string) => `Add only ${what} to this low top-down pixel art character in every frame, identical design in all frames. Keep every other pixel of the body, pose, outline and the transparent background unchanged.`;
 const WHAT = {
-  helmet: 'a simple grey steel knight helmet covering the top and sides of the head, face visible',
+  helmet: 'a simple gray steel knight helmet covering the top and sides of the head, face visible',
   chest: 'a brown leather chest armor vest covering the torso',
   sword: "a steel longsword held in the character's right hand (on the left side of the image), blade pointing down and slightly outward",
 };

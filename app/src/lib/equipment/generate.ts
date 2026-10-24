@@ -81,7 +81,6 @@ function selectionFor(spec:ItemSpec,target:Project,requested?:string[]):Set<stri
   if(requested&&(!requested.length||new Set(requested).size!==requested.length||requested.some(k=>!all.includes(k))))throw new Error('The missing-frame selection is empty, duplicated or outside the target moves.');
   return new Set(requested??all);
 }
-// British "colour" in request text stays: the job ledger reuses finished calls by exact request text, so rewording would re-pay resumed work.
 export async function restFitRequests(design: EquipmentDesign, source: Project, target: Project, seed: number): Promise<GeneratedFitCall[]> {
   const reason = qualifiedFit(design, target); if (reason) throw new Error(reason);
   const key = fitKey(design), refs = designRestReferences(design, source, key), dirs = directions(target);
@@ -91,7 +90,7 @@ export async function restFitRequests(design: EquipmentDesign, source: Project, 
   const color = key === 'green' ? 'bright green' : 'magenta';
   return [{ req: { method: 'POST', path: '/transfer-outfit-v2', body: {
     reference_image: { image: png(await b64(reference.image)), size }, frames, image_size: size, seed, no_background: true,
-    additional_instructions: `Transfer ONLY the identical ${designItem(design).prompt} from the reference onto the ${color} mannequin in every target frame. Target directions in order: ${dirs.join(', ')}. Use the reference colours even if the description names the original colour. Preserve target body silhouette, limb positions, ${color} chroma-key ramp and transparent background exactly. Empty hands; no other clothing, weapons or effects. Keep the headwear design; fit it to the target head. Do not transfer the reference body shape.`,
+    additional_instructions: `Transfer ONLY the identical ${designItem(design).prompt} from the reference onto the ${color} mannequin in every target frame. Target directions in order: ${dirs.join(', ')}. Use the reference colors even if the description names the original color. Preserve target body silhouette, limb positions, ${color} chroma-key ramp and transparent background exactly. Empty hands; no other clothing, weapons or effects. Keep the headwear design; fit it to the target head. Do not transfer the reference body shape.`,
   } }, cells: dirs.map(d => `rest/${d}/0`), limit: 10 }];
 }
 export async function poseFitRequests(design: EquipmentDesign, target: Project, rest: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?:string[]): Promise<GeneratedFitCall[]> {

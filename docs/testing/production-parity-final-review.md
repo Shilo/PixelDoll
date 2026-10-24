@@ -55,7 +55,6 @@ The handoff's accepted differences stand (real library, real palette ramps, full
 - Popovers can extend a few pixels past the desktop rail edge.
 - Intermittent queue self-test under full-suite load (see Verification).
 
-Resolved after this review: a follow-up sweep converted British spellings to American across interface copy, source identifiers, tests and docs (for example "Colour hint" is now "Color hint"). PixelLab request text keeps its original wording because the job ledger reuses finished calls by exact text; quoted evidence, logs and the persisted `cancelled` queue state are also unchanged. Published export identifiers (`<item>-colour-<hash>`, `(coloured)`, `body_colour`) and the saved base-body prompt (matched verbatim on load) also keep their spelling. Older projects saved before the base-region split may show a neutral material as "Gray" on screen while their saved label stays "Grey".
 
 ## Verification
 

@@ -89,5 +89,5 @@ test('scope aborted after commit cancels only the newly owned queued claim befor
  const waiting=new Promise<void>(resolve=>{entered=resolve}),hold=new Promise<void>(resolve=>{release=resolve}),claim=f.deps.claimEstimate!
  const q=new Queue({...f.deps,claimEstimate:async(record,choose)=>{const result=await claim(record,choose);entered();await hold;return result}});q.setKey('synthetic');await q.load()
  const pending=q.enqueue(req,{estimateRetry:{id:'explicit',recordIds:[r.id]},signal:scope.signal,attempt:99});await waiting;scope.abort(Error('scope stopped'));release();await expect(pending).rejects.toThrow('scope stopped');await q.tick();expect(f.posts()).toBe(1)
- const retry=[...f.records.values()].find(v=>v.id!==r.id)!;expect(retry.state).toBe('cancelled');expect(retry.autoCancelledAttempts).toEqual([99]);expect(f.records.get(r.id)?.state).toBe('lost')
+ const retry=[...f.records.values()].find(v=>v.id!==r.id)!;expect(retry.state).toBe('canceled');expect(retry.autoCanceledAttempts).toEqual([99]);expect(f.records.get(r.id)?.state).toBe('lost')
 })

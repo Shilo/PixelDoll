@@ -34,7 +34,7 @@
 | Small text / touch targets | Accept practical improvements, not a blanket WCAG 44px requirement. | Raise remaining 10/11px consumer text to 12px. Sheet handle becomes 24px tall. Sample swatches retain approved alignment and spacing; real color editing still needs a dedicated touch interaction. |
 | Missing theme/production controls | Accept as a future integration inventory, not current bugs. | No speculative sheet/job/menu/worn-state APIs added without a concrete consumer contract. Bronze is not claimed to implement all Studio workflows. |
 | Magic numbers / single-consumer tokens | Reject these as automatic defects. Accept demonstrated opaque-fallback omissions. | Upstream action material roles now cover reduced transparency, contrast and forced colors. Geometry stays consumer-owned. |
-| Showcase spelling | Accept consistency with the approved American English copy; either dialect is otherwise valid. | Normalize showcase Color/Colors wording upstream. This is catalog copy, not a reason to change the released CSS. |
+| Showcase copy | Accept consistency with the approved product copy. | Normalize showcase Color/Colors wording upstream. This is catalog copy, not a reason to change the released CSS. |
 
 ## Additional defects found during challenge
 

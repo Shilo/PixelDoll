@@ -46,7 +46,7 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 | Property | Decision | Evidence |
 |---|---|---|
 | Cell | Square frame sized by the creator: default **80×80** around a 64 px body (body presets 48/64/96/128 px or custom; auto frame or manual, up to 256 px). Legacy rigs: 64×64 around 48 px. | Legacy 64 px cell: Pro editors fit 16 frames at ≤64 px [S1]. |
-| Base character | `create-character-v3` text at the chosen body size (default **64 px**; legacy rigs **48 px**), clothed (plain grey t-shirt + grey shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded into the frame (legacy 48→64: x+8, y+12, 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
+| Base character | `create-character-v3` text at the chosen body size (default **64 px**; legacy rigs **48 px**), clothed (plain gray t-shirt + gray shorts, bald, barefoot; prompts avoid "body/skin"), rotations **padded into the frame (legacy 48→64: x+8, y+12, 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
 | Rest views | The padded S/E/N rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
 | Directions | New forms default to the **Top-down 8** preset: five drawn views plus western flips. Other presets (Top-down 4, Diagonal 4, Side-scroller 2, Unique 8) and per-direction mirror toggles choose which views are drawn; Unique 8 preserves original western rotations. Policy-less saved specs keep 3/5 authored views plus western flips. The initial text-only v3 request retains default eight rotations; reference import uses 4/8. Exact direction/policy coverage is required before freezing. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalized 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
@@ -69,7 +69,7 @@ pixels outside the base, independent of seed). Managed skeleton-v3 is looser (3�
 rendered by the same raw request shape. Managed skeleton-v3 is only a **motion source**. **Template mode is banned** [D8].
 
 Raw v3 request: `{first_frame: rest view (64×64), first_frame_keypoints: rest, keypoints: sequence (3–15 frames),
-description: looks only ("bald man in a plain grey t-shirt … empty hands, no weapon"), action: short label, direction,
+description: looks only ("bald man in a plain gray t-shirt … empty hands, no weapon"), action: short label, direction,
 view: "low top-down", no_background: true, seed}`. Output = exactly `len(keypoints)` frames on the 64 canvas (no echo).
 
 **Normalization:** managed skeleton-v3 renders on a larger centered canvas (**80 for a 48 px character, 96 for 64**); managed
@@ -296,7 +296,7 @@ neck → hip axis (anchor tracks; fixtures: 60 % of the figure height), a stradd
 written into the pixel: blue LSB even = shirt, odd = shorts (a 1/255 nudge). Base materials are then Shirt / Shorts / Skin,
 still exact-color and disjoint, so export and engine swap shaders are unchanged. Idempotent; runs when a project opens
 (existing rigs are migrated once, `baseHash` and the items made for it move to the new hash). New bases are prompted with
-"light grey t-shirt and dark grey shorts". Recolor = exact index swap (`variantRamp`), `linkTo` for linked materials; grayscale × tint
+"light gray t-shirt and dark gray shorts". Recolor = exact index swap (`variantRamp`), `linkTo` for linked materials; grayscale × tint
 only as a comparison/engine option. Export: source-ramp sheets + `materials` (+ swap shader), baked variants per preset.
 
 ## 7. Storage, queue, key [M1, M2]

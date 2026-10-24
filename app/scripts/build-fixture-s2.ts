@@ -41,7 +41,7 @@ const ITEMS = [
   { id: 'vest_leather', name: 'Leather vest', slot: 'torso_inner', runs: ['b5_chest48_A', 'b5_chest48_Ba'], what: 'a brown leather chest armor vest covering the torso' },
   { id: 'cape_red', name: 'Red cape', slot: 'back', runs: ['cape48_A', 'cape48_B'], what: 'a long red cloth cape hanging from the shoulders behind the back, visible at both sides of the figure' },
   { id: 'hair_brown', name: 'Messy brown hair', slot: 'hair', runs: ['b5_hair48_A', 'b5_hair48_Ba'], what: 'short messy dark brown hair covering the top, back and sides of the head, face visible, no hat' },
-  { id: 'helmet_steel', name: 'Steel helmet', slot: 'head', runs: ['helmet48_A', 'helmet48_Ba'], what: 'a simple grey steel knight helmet covering the top and sides of the head, face visible', hides: ['hair'] },
+  { id: 'helmet_steel', name: 'Steel helmet', slot: 'head', runs: ['helmet48_A', 'helmet48_Ba'], what: 'a simple gray steel knight helmet covering the top and sides of the head, face visible', hides: ['hair'] },
   { id: 'hat_wizard', name: 'Wizard hat', slot: 'head', runs: ['wizardhat48_A'], what: 'a tall pointed blue wizard hat with a wide brim', hides: [] },
   { id: 'sword_steel', name: 'Steel longsword', slot: 'main_hand', runs: ['sword48_A', 'sword48_Ba', 'sword48_C'], what: "a steel longsword held in the character's right hand, blade pointing down and slightly outward" },
 ];
@@ -122,7 +122,7 @@ const fixture = {
   materials: [],
   slots: SLOTS,
   items: [
-    { id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'flip', materials: [], prompt: 'plain grey t-shirt and plain grey shorts, bald, barefoot (S2 b48, padded to 64)', baseHash: '',
+    { id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'flip', materials: [], prompt: 'plain gray t-shirt and plain gray shorts, bald, barefoot (S2 b48, padded to 64)', baseHash: '',
       layers: [{ id: 'main', role: 'fg', z: 10, sheets: Object.fromEntries(await Promise.all(anims.map(async (a) => [a, await writeSheet(`layers/body/base/main/${a}.png`, a, (d, i) => base[`${a}/${d}`][i])]))) }],
       provenance: [{ endpoint: '/create-character-v3', params: { image_size: 48, seed: 4321 }, seed: 4321, requestHash: '', createdAt: '2026-10-21T05:00:00Z', produced: [] }] },
     ...items,

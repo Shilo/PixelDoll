@@ -181,7 +181,7 @@
       "status": "accepted",
       "mirror": "flip",
       "materials": [],
-      "prompt": "plain grey t-shirt and plain grey shorts, bald, barefoot (S2 b48, padded to 64)",
+      "prompt": "plain gray t-shirt and plain gray shorts, bald, barefoot (S2 b48, padded to 64)",
       "baseHash": "",
       "layers": [
         {
@@ -368,7 +368,7 @@
       "status": "accepted",
       "mirror": "flip",
       "materials": [],
-      "prompt": "a simple grey steel knight helmet covering the top and sides of the head, face visible",
+      "prompt": "a simple gray steel knight helmet covering the top and sides of the head, face visible",
       "baseHash": "",
       "layers": [
         {

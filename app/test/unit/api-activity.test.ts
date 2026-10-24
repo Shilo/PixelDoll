@@ -95,8 +95,8 @@ test('reported submission usage remains available when terminal poll omits usage
 
 test('cancel usage is attributed to the paid request, while cancellation itself stays free', () => {
   const id = beginActivityCall('POST', '/create-character-v3');
-  finishActivityCall(id, 200, true, { background_job_id: 'cancelled-job' });
-  const stop = beginActivityCall('DELETE', '/background-jobs/cancelled-job');
+  finishActivityCall(id, 200, true, { background_job_id: 'canceled-job' });
+  const stop = beginActivityCall('DELETE', '/background-jobs/canceled-job');
   finishActivityCall(stop, 200, true, { status: 'cancelled', usage: usage(1) });
   expect(snapshot()[0]).toMatchObject({ cost: { generations: 1, usd: 0 }, usagePending: false });
   expect(snapshot()[1]).toMatchObject({ background: false, costSource: 'free', cost: { generations: 0, usd: 0 } });

@@ -26,19 +26,18 @@ export async function withColorVariants(source: Project): Promise<Project> {
       const signature = stableStringify([it.id, palette]);
       let id = copies.get(signature);
       if (!id) {
-        // Published export format: the -colour- copy IDs, "(coloured)" names and body_colour slot keep their spelling.
-        const stem = `${it.id}-colour-${(await sha256(signature)).slice(0, 12)}`;
+        const stem = `${it.id}-color-${(await sha256(signature)).slice(0, 12)}`;
         id = stem;
         for (let i = 2; used.has(id); i++) id = `${stem}-${i}`;
         used.add(id); copies.set(signature, id);
         const copy = structuredClone(it);
-        copy.id = id; copy.name = `${it.name} (coloured)`; copy.materials = [];
+        copy.id = id; copy.name = `${it.name} (colored)`; copy.materials = [];
         delete copy.qa;
         if (it.id === m.rig.baseItem) {
           // Keep the canonical body's invisible animation clock. A normal synced layer draws its recolored pixels.
           if (!bodySlot) {
-            bodySlot = 'body_colour';
-            for (let i = 2; m.slots.some((s) => s.id === bodySlot); i++) bodySlot = `body_colour_${i}`;
+            bodySlot = 'body_color';
+            for (let i = 2; m.slots.some((s) => s.id === bodySlot); i++) bodySlot = `body_color_${i}`;
             const body = m.slots.find((s) => s.id === 'body')!;
             const slot: Slot = { ...structuredClone(body), id: bodySlot, class: 'worn', required: false };
             m.slots.splice(m.slots.indexOf(body) + 1, 0, slot);

@@ -2,7 +2,7 @@
 
 ## Current redesign continuation
 
-The production/prototype visual review is complete: see the [final review](docs/testing/production-parity-final-review.md) for fixes, intentional differences, verification and the resolved spelling follow-up. The [UI/UX continuation handoff](.claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md) keeps the approved design contract. Use **Claude Browser** for live prototype/production comparison (`.claude/launch.json` has `prototype-5202`, `app-build-5208` and `app-dev-5207`).
+The production/prototype visual review is complete: see the [final review](docs/testing/production-parity-final-review.md) for fixes, intentional differences and verification. The [UI/UX continuation handoff](.claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md) keeps the approved design contract. Use **Claude Browser** for live prototype/production comparison (`.claude/launch.json` has `prototype-5202`, `app-build-5208` and `app-dev-5207`).
 
 ## Bronze UI theme
 

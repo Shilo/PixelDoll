@@ -150,7 +150,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 }
 
 
-const recoveryPlan = { recordIds: ['lost-west-0', 'cancelled-west-1'], rigVersion: 'rig-fingerprint', checks: 2, gens: 0.2, usd: 0.01026, rawHashes: [] }
+const recoveryPlan = { recordIds: ['lost-west-0', 'canceled-west-1'], rigVersion: 'rig-fingerprint', checks: 2, gens: 0.2, usd: 0.01026, rawHashes: [] }
 const recoverySpec = { id: 'slash', action: 'slash', frames: 8, items: ['sword'], seed: 2438, replace: true, dirs: ['east', 'west'] as import('../../src/lib/store/manifest.ts').DirectionName[], poseStyle: 'visible-side-v1' as const }
 
 test('explicit joint-check recovery preserves the body identity and persists one reviewed intent before work', async () => {

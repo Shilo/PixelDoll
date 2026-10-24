@@ -151,7 +151,7 @@ test('reload-safe setup never replaces a lost or failed paid request', async () 
   const records = new Map<string, JobRec>()
   let sent = 0
   const deps = { put: async (id: string, r: JobRec) => { records.set(id, structuredClone(r)) }, all: async () => [...records.values()].map((r) => structuredClone(r)), api: async <T>() => { sent++; return {} as T } }
-  for (const state of ['lost', 'failed', 'cancelled'] as const) {
+  for (const state of ['lost', 'failed', 'canceled'] as const) {
     const q = new Queue(deps), req = { method: 'POST' as const, path: '/estimate-skeleton', body: { fixture: state } }
     const prior = await q.enqueue(req)
     prior.state = state; await deps.put(prior.id, prior)

@@ -12,7 +12,7 @@ test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
 })
 
-test('import can be cancelled before choosing a file and reopened', async ({ page }, info) => {
+test('import can be canceled before choosing a file and reopened', async ({ page }, info) => {
   await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
   for (const close of ['Cancel', 'Escape']) {
     await page.locator('.project-btn').click()
@@ -25,7 +25,7 @@ test('import can be cancelled before choosing a file and reopened', async ({ pag
   }
 })
 
-test('cancelling a downloading import closes it and cannot reopen a late preview', async ({ page, context }, info) => {
+test('canceling a downloading import closes it and cannot reopen a late preview', async ({ page, context }, info) => {
   const im = makeImg(48, 48)
   im.data.set([180, 100, 80, 255], (30 * 48 + 24) * 4)
   const data = await zip([{ name: 'metadata.json', data: new TextEncoder().encode(JSON.stringify({ name: 'Late preview' })) }, { name: 'rotations/south.png', data: await encodePngBytes(im) }])
@@ -126,7 +126,7 @@ test('PixelLab library connection, pagination and direct import use only free re
   await page.getByRole('button', { name: 'Connect PixelLab to browse your characters' }).click()
   await page.getByLabel('API key', { exact: true }).fill('test-only-not-a-real-key')
   await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click()
-  await expect(page.getByRole('button', { name: /Library hero 1 directions/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Library hero 1 direction ·/ })).toBeVisible()
   await expect(page.locator('.character-library .library-character')).toHaveCount(20)
   await expect(page.getByText('1–20 of 21', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Previous', exact: true })).toBeDisabled()

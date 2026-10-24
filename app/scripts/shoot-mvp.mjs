@@ -21,7 +21,7 @@ const SCREENS = {
   welcome: null,
   studio: async () => {},
   alldirs: async (p) => p.getByRole('button', { name: 'All directions' }).click(),
-  colours: async (p, d) => p.getByRole('tab', { name: 'Colors' }).first().click(),
+  colors: async (p, d) => p.getByRole('tab', { name: 'Colors' }).first().click(),
   moves: async (p, d) => p.getByRole('tab', { name: 'Moves' }).first().click(),
   item: async (p, d) => { if (phoneLike(d)) await p.getByRole('button', { name: /details$/ }).first().click() },
   export: async (p) => p.getByRole('button', { name: 'Export' }).first().click(),

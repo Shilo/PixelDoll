@@ -225,14 +225,13 @@ export function keyHeatmap(C: Img, key: Key, kT = KT): Img {
   return o;
 }
 
-// British "colour" in request text stays: the job ledger reuses finished calls by exact request text, so rewording would re-pay resumed work.
 /** S2 prompt template (verbatim structure). `anchor` = frame 1 is a dressed reference cell from the design call. */
 export function chromaPrompt(item: string, key: Key, cellsNote: string, anchor = false): string {
   const n = KEY_NAME[key];
   return (
-    `This pixel art character is a solid ${n} mannequin. The ${n} colour is intentional (a chroma key) and must stay exactly the same ${n} in every frame. ` +
-    (anchor ? `Frame 1 already wears ${item}: copy exactly that design, colours and size onto the other frames. ` : '') +
-    `Add only ${item}, drawn in its own natural colours (no ${n} on the item), identical design in all frames. ${cellsNote}` +
+    `This pixel art character is a solid ${n} mannequin. The ${n} color is intentional (a chroma key) and must stay exactly the same ${n} in every frame. ` +
+    (anchor ? `Frame 1 already wears ${item}: copy exactly that design, colors and size onto the other frames. ` : '') +
+    `Add only ${item}, drawn in its own natural colors (no ${n} on the item), identical design in all frames. ${cellsNote}` +
     'Keep every other pixel, the pose, the outline and the transparent background unchanged.'
   );
 }

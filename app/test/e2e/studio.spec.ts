@@ -531,7 +531,7 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
   });
 }
 
-test('setup and move drafts survive cancelled connection and stay scoped to their character', async ({ page, context }) => {
+test('setup and move drafts survive canceled connection and stay scoped to their character', async ({ page, context }) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })

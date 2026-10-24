@@ -1,5 +1,5 @@
 import { DIRECTIONS, type DirectionName, type RigDirection, type Rig } from '../lib/rig/rig.ts';
-import { BASE_BODY } from './model.ts';
+import { BASE_BODY, isBaseBody } from './model.ts';
 
 export const BODY_SIZES = [48, 64, 96, 128] as const;
 export const TRAITS = {
@@ -50,12 +50,12 @@ export function readPrompt(d: CharacterDraft, prompt: string, preserveDetailsWhi
     d[key] = indices.length === 1 ? recognized(lines[indices[0]])!.value : UNSET;
     if (indices.length === 1) owned.add(indices[0]);
   }
-  const details = lines.filter((line, i) => !owned.has(i) && line.trim() !== BASE_BODY).join('\n');
+  const details = lines.filter((line, i) => !owned.has(i) && !isBaseBody(line)).join('\n');
   d.details = preserveDetailsWhitespace ? details : details.trim();
 }
 export function writeTrait(d: CharacterDraft, key: Trait, value: string): void {
   const lines = d.prompt.split('\n'), indices = lines.map((l, i) => recognized(l)?.key === key ? i : -1).filter(i => i >= 0);
-  const at = indices[0] ?? (lines.indexOf(BASE_BODY) >= 0 ? lines.indexOf(BASE_BODY) : lines.length);
+  const at = indices[0] ?? (lines.findIndex(isBaseBody) >= 0 ? lines.findIndex(isBaseBody) : lines.length);
   const next = lines.filter((_, i) => !indices.includes(i));
   if (value !== UNSET) next.splice(at, 0, `${TRAITS[key].label}: ${value}`);
   readPrompt(d, next.join('\n'));
@@ -67,7 +67,7 @@ export function writeDetails(d: CharacterDraft, value: string): void {
   const next: string[] = [];
   for (const line of lines) {
     const hit = recognized(line);
-    if (line.trim() === BASE_BODY || hit && counts[hit.key] === 1) next.push(line);
+    if (isBaseBody(line) || hit && counts[hit.key] === 1) next.push(line);
     else if (!inserted) { next.push(value); inserted = true; }
   }
   if (!inserted) next.unshift(value);

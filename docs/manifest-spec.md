@@ -345,13 +345,13 @@ are preserved; use the character root's depth for positioning among scene object
   "items": [
     { "id": "base", "name": "Base body", "slot": "body", "status": "accepted", "mirror": "flip",
       "materials": ["skin", "shirt", "shorts"],
-      "prompt": "bald human character, plain grey t-shirt and plain grey shorts, barefoot, arms slightly away",
+      "prompt": "bald human character, plain gray t-shirt and plain gray shorts, barefoot, arms slightly away",
       "baseHash": "sha256:5f1c…",
       "layers": [ { "id": "main", "role": "fg", "z": 10,
         "sheets": { "idle": "layers/body/base/main/idle.png", "walk": "layers/body/base/main/walk.png" } } ],
       "provenance": [
         { "endpoint": "/create-character-v3", "seed": 4321, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "description": "bald human character, plain grey t-shirt…", "image_size": {"width":48,"height":48},
+          "params": { "description": "bald human character, plain gray t-shirt…", "image_size": {"width":48,"height":48},
                       "view": "low top-down", "template_id": "mannequin", "no_background": true },
           "usage": { "generations": 2 }, "createdAt": "2026-10-21T09:05:00Z", "produced": [] },
         { "endpoint": "/create-character-v3", "seed": 0, "jobId": "…", "requestHash": "sha256:…",
@@ -364,19 +364,19 @@ are preserved; use the character root's depth for positioning among scene object
           "usage": { "generations": 3 }, "createdAt": "2026-10-21T09:12:00Z", "produced": [] },
         { "endpoint": "/animate-with-skeleton-v3", "seed": 7, "jobId": "…", "requestHash": "sha256:…",
           "params": { "first_frame": {"sha256": "a1…"}, "first_frame_keypoints": "rig.rest.south", "keypoints": "rig.animations[walk].sources.south",
-                      "description": "bald man in a plain grey t-shirt and grey shorts, empty hands, no weapon",
+                      "description": "bald man in a plain gray t-shirt and gray shorts, empty hands, no weapon",
                       "action": "walk", "direction": "south", "view": "low top-down", "no_background": true },
           "usage": { "generations": 3 }, "createdAt": "2026-10-21T09:20:00Z", "produced": ["walk/south/0", "walk/south/7"] } // shortened
       ] },
     { "id": "helmet_iron", "name": "Iron helmet", "slot": "head", "status": "accepted", "mirror": "flip",
-      "hides": ["hair"], "materials": ["iron"], "prompt": "a simple grey steel knight helmet, face visible",
+      "hides": ["hair"], "materials": ["iron"], "prompt": "a simple gray steel knight helmet, face visible",
       "baseHash": "sha256:5f1c…", "route": "skeleton-pose", "key": "green",
       "dressed": { "south": "sha256:d1…", "east": "sha256:d2…", "north": "sha256:d3…" },
       "layers": [ { "id": "main", "role": "fg", "z": 130,
         "sheets": { "idle": "layers/head/helmet_iron/main/idle.png", "walk": "layers/head/helmet_iron/main/walk.png" } } ],
       "provenance": [
         { "endpoint": "/edit-animation-v2", "seed": 7, "jobId": "…", "requestHash": "sha256:…",
-          "params": { "description": "This pixel art character is a solid bright green mannequin… Add only a simple grey steel knight helmet…",
+          "params": { "description": "This pixel art character is a solid bright green mannequin… Add only a simple gray steel knight helmet…",
                       "frames": [ {"sha256": "…"}, {"sha256": "…"}, {"sha256": "…"} ], // chroma rest views S, E, N
                       "image_size": {"width":64,"height":64}, "no_background": true },
           "usage": { "generations": 10 }, "createdAt": "2026-10-21T10:40:00Z", "produced": [] },
@@ -585,7 +585,7 @@ Explicit rig setup measures every unique frozen body image with `estimate-skelet
 ## Outfit-color export normalization (2026-10-22)
 
 Before building engine files, PixelDoll makes an ordinary item copy for each distinct item/palette combination actually
-used by an exported preset. Copy IDs are deterministic `<item>-colour-<palette hash>` values (with a suffix when needed
+used by an exported preset. Copy IDs are deterministic `<item>-color-<palette hash>` values (with a suffix when needed
 for an existing ID); matching outfits reuse a copy. Preset item selections point to those copies and their engine-facing
 `variants` maps are empty because the colors are already pixels. Original source-color items and material definitions
 remain available. Tuck variants are built afterward, so colored hair and helmets preserve the same masking as Studio.
@@ -593,7 +593,7 @@ remain available. Tuck variants are built afterward, so colored hair and helmets
 The canonical base stays the single item in slot `body` and remains every runtime's animation clock. When any outfit
 recolors the body, or equipped items can clip it, every exported outfit receives a body copy (including identity-color
 copies for original palettes). A body copy
-uses an export-only `body_colour` slot immediately after `body` (a collision gets a numbered slot suffix), the same layer
+uses an export-only `body_color` slot immediately after `body` (a collision gets a numbered slot suffix), the same layer
 z values, geometry and overrides, and `hides: ["body"]` in addition to the base's existing hide rules. The hidden clock
 continues animating; the ordinary synced layer displays its pixels. Existing body hide and clipping rules target the
 visible copy as well. No engine-specific color shader is needed.

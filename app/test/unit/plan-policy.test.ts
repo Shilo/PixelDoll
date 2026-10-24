@@ -133,7 +133,7 @@ test.each([false, true])('cross-tab requirements strengthen the queued original 
   await vi.waitFor(() => expect(store.get(original.id)?.minimumTier).toBe(1));
   expect(posts).toEqual([]);
   expect(q.snapshot().jobs.find(r => r.id === original.id)).toMatchObject({ state: 'queued', attempts: 0, minimumTier: 1 });
-  if (duplicate) expect(store.get('follower-duplicate')?.state).toBe('cancelled');
+  if (duplicate) expect(store.get('follower-duplicate')?.state).toBe('canceled');
 });
 test('free queues hold a whole character workflow before its first paid call, allow other calls, and resume after upgrade', async () => {
   const store = new Map<string, JobRec>(), posts: string[] = [];
