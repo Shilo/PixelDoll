@@ -463,7 +463,12 @@ export function pick(id: string) {
 }
 
 // ---------- item generations ----------
-export interface Gen { draft: Draft; input: NewItemInput; phase: 'running' | 'review' | 'failed'; status: string; error?: string }
+// Bump when PixelLab request wording changes. Work saved with other wording no longer matches its ledger records and would
+// resend paid calls, so it waits for review instead of resuming by itself.
+export const REQUEST_TEXT = 2;
+const STOPPED = 'Generation stopped. Review Activity before trying again.';
+const halted = (r: { status?: string; requestText?: number }) => r.status === 'failed' || r.requestText !== REQUEST_TEXT;
+export interface Gen { draft: Draft; input: NewItemInput; phase: 'running' | 'review' | 'failed'; status: string; error?: string; requestText?: number }
 export const gens = $state<Gen[]>([]);
 const GENS_KEY = 'studio-drafts'; // projects store, no `manifest` -> ignored by project listings
 const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state.snapshot(gens) });
@@ -496,6 +501,9 @@ export function loadGens(): Promise<void> {
 function drive() {
   if (driving) return;
   driving = true;
+  const outdated = gens.filter((g) => g.phase === 'running' && g.requestText !== REQUEST_TEXT);
+  for (const g of outdated) Object.assign(g, { phase: 'failed', status: '', error: STOPPED });
+  if (outdated.length) void saveGens();
   for (const g of gens) if (g.phase === 'running') void runGen(g);
     else if (g.phase === 'review') void evalGen(g);
   void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
@@ -530,7 +538,7 @@ export async function startItem(input: NewItemInput) {
   if (hmrReloading) return;
   const ctx = await loadProject(doc.id);
   const taken = gens.map((g) => g.draft.spec.id);
-  gens.push({ draft: itemRoute.draft(ctx, input, taken), input, phase: 'running', status: 'Starting' });
+  gens.push({ draft: itemRoute.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
   const g = gens.at(-1)!;
   ui.selected = `gen:${g.draft.spec.id}`;
   ui.group = groupOf(input.slot).id;
@@ -651,7 +659,7 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number; short: strin
 }
 
 // A caught failure must stay terminal across reload; only an explicit start clears it.
-interface FlowDraft<S> { spec: S; status?: 'running' | 'failed'; error?: string; progress?: Progress | null }
+interface FlowDraft<S> { spec: S; status?: 'running' | 'failed'; error?: string; progress?: Progress | null; requestText?: number }
 async function persistFlowFailure(key: string, record: object, error: unknown): Promise<string> {
   const message = error instanceof Error ? error.message : String(error);
   try { await db.put('projects', key, { id: key, ...record, status: 'failed', error: message }); }
@@ -679,7 +687,7 @@ export async function startCreate(spec: CreateSpec) {
   creating.projectId = '';
   creating.progress = null;
   try {
-    await db.put('projects', CREATE_KEY, { id: CREATE_KEY, spec, status: 'running' });
+    await db.put('projects', CREATE_KEY, { id: CREATE_KEY, spec, status: 'running', requestText: REQUEST_TEXT });
     const id = await createCharacter(spec, (p) => { if (current() && !failed) creating.progress = p; });
     if (!current()) return;
     creating.projectId = id;
@@ -705,7 +713,7 @@ export async function resumeCreate() {
   createResumed = true;
   const r = await db.get<FlowDraft<CreateSpec>>('projects', CREATE_KEY).catch(() => undefined);
   if (!r?.spec || creating.spec) return;
-  if (r.status === 'failed') Object.assign(creating, { spec: r.spec, progress: r.progress ?? null, error: r.error || 'Generation stopped. Review Activity before trying again.', projectId: '', warnings: [] });
+  if (halted(r)) Object.assign(creating, { spec: r.spec, progress: r.progress ?? null, error: r.error || STOPPED, projectId: '', warnings: [] });
   else void startCreate(r.spec);
 }
 export async function cancelCreate() {
@@ -732,7 +740,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   let failed = false;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   try {
-    await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId, status: 'running' });
+    await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT });
     const result = await addMove(projectId, spec, (p) => { if (current() && !failed) moving.progress = p; });
     if (!current()) return;
     moving.fitIds = result.fitIds; moving.warnings = result.warnings;
@@ -784,7 +792,7 @@ export async function resumeMove() {
   moveResumed = true;
   const r = await db.get<FlowDraft<MoveSpec> & { projectId: string }>('projects', MOVE_KEY).catch(() => undefined);
   if (!r?.spec || moving.spec) return;
-  if (r.status === 'failed') Object.assign(moving, { spec: r.spec, projectId: r.projectId, progress: r.progress ?? null, error: r.error || 'Generation stopped. Review Activity before trying again.', done: false, fitIds: [], warnings: [] });
+  if (halted(r)) Object.assign(moving, { spec: r.spec, projectId: r.projectId, progress: r.progress ?? null, error: r.error || STOPPED, done: false, fitIds: [], warnings: [] });
   else void startMove(r.projectId, r.spec);
 }
 export async function dismissMove() {
@@ -807,7 +815,7 @@ export async function startSetup(spec: SetupSpec) {
   Object.assign(settingUp, { spec, progress: null, error: '', done: false, warnings: [] });
   try {
     await flushSave();
-    await db.put('projects', SETUP_KEY, { id: SETUP_KEY, spec, status: 'running' });
+    await db.put('projects', SETUP_KEY, { id: SETUP_KEY, spec, status: 'running', requestText: REQUEST_TEXT });
     await setupCharacter(spec, (p) => { if (current() && !failed) settingUp.progress = p; });
     if (!current()) return;
     settingUp.done = true;
@@ -833,7 +841,7 @@ export async function resumeSetup() {
   setupResumed = true;
   const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
   if (!rec?.spec || settingUp.spec) return;
-  if (rec.status === 'failed') Object.assign(settingUp, { spec: rec.spec, progress: rec.progress ?? null, error: rec.error || 'Setup stopped. Review Activity before trying again.', done: false, warnings: [] });
+  if (halted(rec)) Object.assign(settingUp, { spec: rec.spec, progress: rec.progress ?? null, error: rec.error || 'Setup stopped. Review Activity before trying again.', done: false, warnings: [] });
   else void startSetup(rec.spec);
 }
 export async function dismissSetup() {

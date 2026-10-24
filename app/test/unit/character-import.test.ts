@@ -137,7 +137,7 @@ test('PixelDoll export restores editable original cells, outfits, rest rig and d
   expect(result.extra).toEqual(extra)
   expect(result.project.images.get(hash)).toEqual(dressed)
   for (const [h, im] of p.images) if (result.project.images.has(h)) expect(result.project.images.get(h)).toEqual(im)
-}, 20_000)
+}, 60_000) // heavy PNG decoding; slower under a full parallel run
 
 test('older PixelDoll sheets import with correct rows and preserve source pixels', async () => {
   const p = await loadFixture(async (path) => new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))))
@@ -156,7 +156,7 @@ test('older PixelDoll sheets import with correct rows and preserve source pixels
   expect(result.project.manifest.items.some((it) => it.variantOf)).toBe(false)
   const reexported = await exportFiles(result.project, { engines: ['generic'], baked: false })
   await expect(unzip(await zip(reexported.entries))).resolves.toBeInstanceOf(Map)
-}, 20_000)
+}, 60_000) // heavy PNG decoding; slower under a full parallel run
 
 test('current PixelDoll ZIPs support one enclosing folder containing both manifests', async () => {
   const { project } = await readCharacterZip(await zip(await pixelLabFiles()))

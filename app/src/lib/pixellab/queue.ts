@@ -177,6 +177,15 @@ function every(ms: number, fn: () => void): () => void {
   return () => { ticks.delete(id); w.postMessage({ id }) }
 }
 
+/** Records saved by earlier versions (or by an older tab still open) use the previous state and field names. */
+export function upgraded(r: JobRec): boolean {
+  const legacy = r as JobRec & { autoCancelledAttempts?: number[] };
+  if ((r.state as string) !== 'cancelled' && !legacy.autoCancelledAttempts) return false;
+  if ((r.state as string) === 'cancelled') r.state = 'canceled';
+  if (legacy.autoCancelledAttempts) { r.autoCanceledAttempts ??= legacy.autoCancelledAttempts; delete legacy.autoCancelledAttempts; }
+  return true;
+}
+
 export class Queue {
   private recs = new Map<string, JobRec>();
   private persisting = new Set<string>(); // first ledger write must commit before the scheduler may send
@@ -362,7 +371,7 @@ export class Queue {
   }
   /** Follower: replace the mirror with the stored ledger. */
   async sync() {
-    this.recs = new Map((await this.deps.all()).map((r) => [r.id, r]));
+    this.recs = new Map((await this.deps.all()).map((r) => (upgraded(r), [r.id, r])));
     this.emit();
   }
   /** Inspect mirrored/persisted submissions without making requests or eagerly decoding every saved input. */
@@ -377,13 +386,14 @@ export class Queue {
   private async pull(id: string) {
     const r = await this.deps.get(id);
     if (!r) return;
+    upgraded(r);
     if (this.role === 'follower') { this.recs.set(id, r); this.emit(); }
     else if (this.role === 'leader' && this.adopt(r)) this.emit();
   }
   /** Leader: full re-read fallback (a missed channel message). */
   private async merge() {
     let changed = false;
-    for (const r of await this.deps.all()) changed = this.adopt(r) || changed;
+    for (const r of await this.deps.all()) changed = (upgraded(r), this.adopt(r)) || changed;
     if (changed) this.emit();
   }
   /** Leader: adopt a record another tab enqueued (unless it repeats a live or cached request of mine: R6 P1-1), or its cancel
@@ -413,13 +423,7 @@ export class Queue {
   }
   async load() {
     for (const r of await this.deps.all()) {
-      // Records saved by earlier versions use the previous state and field names.
-      const legacy = r as JobRec & { autoCancelledAttempts?: number[] };
-      if ((r.state as string) === 'cancelled' || legacy.autoCancelledAttempts) {
-        if ((r.state as string) === 'cancelled') r.state = 'canceled';
-        if (legacy.autoCancelledAttempts) { r.autoCanceledAttempts ??= legacy.autoCancelledAttempts; delete legacy.autoCancelledAttempts; }
-        await this.deps.put(r.id, r);
-      }
+      if (upgraded(r)) await this.deps.put(r.id, r);
       // Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
       if (r.state === 'submitting') {
         r.state = r.requestStarted === false ? 'failed' : 'lost';

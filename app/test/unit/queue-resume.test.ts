@@ -1,6 +1,6 @@
 import { accountBalance } from './account-fixture.ts'
 import { expect, test } from 'vitest'
-import { Queue, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
+import { Queue, upgraded, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import { ApiError } from '../../src/lib/pixellab/client.ts'
 
 function fixture(status: number) {
@@ -48,6 +48,10 @@ test('records saved with the previous canceled state and field names load and st
   expect((await resumed.enqueue(request)).id).toBe(old.id)
   await resumed.tick()
   expect(f.posts()).toBe(1)
+})
+test('a cancel written by an older tab is read with the current state name', () => {
+  const r = { state: 'cancelled' } as unknown as JobRec
+  expect(upgraded(r)).toBe(true); expect(r.state).toBe('canceled'); expect(upgraded(r)).toBe(false)
 })
 test('historical old lost records cannot hide a newer queued or successful request during resume', async () => {
   const f = fixture(500), q = f.make()

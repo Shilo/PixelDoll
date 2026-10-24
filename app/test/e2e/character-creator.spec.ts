@@ -126,8 +126,8 @@ test('same seeded output creates separate projects and a resumed workflow preser
     const modulePath = '/src/lib/store/db.ts'
     const { put } = await import(modulePath) as typeof import('../../src/lib/store/db.ts')
     const statePath = '/src/studio/state.svelte.ts'
-    const { creating } = await import(statePath) as typeof import('../../src/studio/state.svelte.ts')
-    await put('projects', 'studio-create', { id: 'studio-create', spec: JSON.parse(JSON.stringify(creating.spec)) })
+    const { creating, REQUEST_TEXT } = await import(statePath) as typeof import('../../src/studio/state.svelte.ts')
+    await put('projects', 'studio-create', { id: 'studio-create', spec: JSON.parse(JSON.stringify(creating.spec)), requestText: REQUEST_TEXT })
   })
   await reloadStudio(page)
   await expect.poll(async () => page.evaluate(async () => {

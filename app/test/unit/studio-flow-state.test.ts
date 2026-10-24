@@ -120,14 +120,22 @@ for (const kind of ['create', 'move', 'setup'] as const) {
   })
 
   test.each([undefined, 'running'])(`${kind} retains interrupted recovery for status %s`, async (status) => {
-    mocks.get.mockResolvedValue({ spec, projectId: 'project', ...(status ? { status } : {}) })
-    const wait = pending<string>(); mocks[kind].mockReturnValue(wait.promise)
     const s = await import('../../src/studio/state.svelte.ts')
+    mocks.get.mockResolvedValue({ spec, projectId: 'project', requestText: s.REQUEST_TEXT, ...(status ? { status } : {}) })
+    const wait = pending<string>(); mocks[kind].mockReturnValue(wait.promise)
     await resume(s)
     await vi.waitFor(() => expect(mocks[kind]).toHaveBeenCalledOnce())
     if (kind === 'move') expect(mocks.move.mock.calls[0][1]).not.toHaveProperty('poseStyle')
     wait.reject(new Error('Interrupted recovery stopped'))
     await vi.waitFor(() => expect(stateOf(s).error).toBe('Interrupted recovery stopped'))
+  })
+
+  test(`${kind} saved with older request wording waits for review instead of resending`, async () => {
+    mocks.get.mockResolvedValue({ spec, projectId: 'project', status: 'running' })
+    const s = await import('../../src/studio/state.svelte.ts')
+    await resume(s)
+    expect(mocks[kind]).not.toHaveBeenCalled()
+    expect(stateOf(s).error).toMatch(/stopped\. Review Activity before trying again\./)
   })
 
   test.each(['Original failure', ''])(`${kind} reports failed-marker storage errors, freezes late progress, and releases its guard (%s)`, async (message) => {
@@ -250,7 +258,7 @@ test('existing body color intent cannot be applied twice and interrupted resume 
   Object.assign(s.moving, { projectId: 'project', spec, error: 'A corrected check stopped', done: false })
   await expect(s.matchMoveBodyColors('project', spec, palettePlan)).rejects.toThrow('Review the body colors again')
   expect(mocks.palette).not.toHaveBeenCalled(); expect(mocks.move).not.toHaveBeenCalled()
-  vi.resetModules(); mocks.get.mockResolvedValue({ id: 'studio-move', spec, projectId: 'project', status: 'running' })
+  vi.resetModules(); mocks.get.mockResolvedValue({ id: 'studio-move', spec, projectId: 'project', status: 'running', requestText: s.REQUEST_TEXT })
   mocks.move.mockRejectedValue(new Error('Interrupted corrected check stopped'))
   const restored = await import('../../src/studio/state.svelte.ts'); await restored.resumeMove()
   await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
