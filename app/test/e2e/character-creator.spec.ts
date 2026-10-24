@@ -419,7 +419,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 350, height: 800 }
 
 test('compact creator toolbar keeps wider fallback-font labels and actions readable', async ({ page, context }, info) => {
   await context.route('https://*.pixellab.ai/**', route => route.abort())
-  for (const width of [320, 900]) {
+  for (const width of [320, 350, 360, 390, 900]) {
     await page.setViewportSize({ width, height: width === 320 ? 568 : 900 })
     const sheet = await open(page)
     await page.addStyleTag({ content: '.character-sheet { font-family: Verdana, sans-serif !important; }' })
@@ -430,7 +430,15 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
       const text = range.getBoundingClientRect(), rect = button.getBoundingClientRect()
       return text.left >= rect.left && text.right <= rect.right
     }))).toBe(true)
+    // Labels fitting is insufficient if an adjacent action intercepts their clicks.
+    await tabs.getByRole('tab', { name: 'Prompt', exact: true }).click()
+    await expect(tabs.getByRole('tab', { name: 'Prompt', exact: true })).toHaveAttribute('aria-selected', 'true')
+    await tabs.getByRole('tab', { name: 'Appearance', exact: true }).click()
     const toolbar = await sheet.locator('.editor-toolbar').boundingBox()
+    expect(await sheet.locator('.editor-toolbar').evaluate(element => {
+      const buttons = [...element.querySelectorAll('button')].map(button => button.getBoundingClientRect())
+      return buttons.every((a, index) => buttons.slice(index + 1).every(b => a.right <= b.left + 0.5 || b.right <= a.left + 0.5 || a.bottom <= b.top + 0.5 || b.bottom <= a.top + 0.5))
+    })).toBe(true)
     for (const label of ['Appearance help', 'Inspect API calls', 'Copy details', 'Enhance']) {
       const button = sheet.locator('.editor-toolbar').getByRole('button', { name: label, exact: true })
       await expect(button).toBeVisible()

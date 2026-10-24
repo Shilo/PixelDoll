@@ -147,8 +147,8 @@
   .creator-grid { display:grid; grid-template-columns:minmax(250px,1.1fr) minmax(170px,.8fr) minmax(290px,1.15fr); gap:24px; align-items:start; }
   section { min-width:0; display:flex; flex-direction:column; gap:12px; }
   .appearance { gap:10px; container-type:inline-size; }
-  .editor-toolbar { display:flex; align-items:center; justify-content:space-between; gap:6px; min-height:36px; }
-  .creator-tabs { display:flex; flex:1; min-width:0; gap:3px; padding:3px; background:var(--bg-side); border-radius:var(--r-ctl); }
+  .editor-toolbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:6px; min-height:36px; }
+  .creator-tabs { display:flex; flex:1 1 auto; min-width:max-content; gap:3px; padding:3px; background:var(--bg-side); border-radius:var(--r-ctl); }
   .creator-tabs button { flex:1; height:30px; padding:0 6px; border:0; border-radius:4px; background:none; color:var(--text-3); font:inherit; font-size:var(--fs-sm); cursor:pointer; }
   .creator-tabs [aria-selected=true] { background:var(--bg-hover); color:var(--text); box-shadow:0 1px 3px #0002; }
   .editor-panel { display:flex; flex-direction:column; gap:12px; min-height:336px; }
@@ -157,7 +157,7 @@
   .enhance-label { position:relative; }
   .enhance-sizer { visibility:hidden; }
   .enhance-text { position:absolute; inset:0; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .prompt-actions { display:flex; flex:none; align-items:center; gap:3px; }
+  .prompt-actions { display:flex; flex:none; align-items:center; gap:3px; margin-inline-start:auto; }
   .details-input { resize:vertical; min-height:82px; max-height:160px; font-size:var(--fs); }
   .trait-row { display:grid; grid-template-columns:88px minmax(0,1fr); gap:8px; align-items:center; }
   .trait-row :global(.help-title) { align-self:center; }
@@ -197,7 +197,6 @@
   @media (max-width:599px), (max-height:499px) { .creator-grid { display:flex; flex-direction:column; gap:22px; } section { width:100%; } .editor-panel { min-height:0; } .creator-tabs button { height:40px; } .editor-toolbar { min-height:46px; } .trait-row { grid-template-columns:90px minmax(0,1fr); } .input { min-height:44px; font-size:16px; } .body-presets .btn, .frame-controls .btn, .direction-presets .btn { min-height:44px; } .direction-tile { height:56px; } .compass { --mirror-width:44px; } .facing { max-width:none; } .exact-input { min-height:300px; } .direction-presets .btn { font-size:12px; } .prompt-excerpt { font-size:12px; height:54px; } }
   @container (max-width:290px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } }
   @media (pointer:coarse) { @container (max-width:340px) { .enhance-label { display:none; } .editor-toolbar .enhance { min-width:44px; width:44px; padding-inline:0; } } }
-  @container (max-width:310px) { .editor-toolbar { flex-wrap:wrap; gap:4px; } .creator-tabs { flex-basis:100%; gap:2px; padding:3px; } .creator-tabs button { flex:1 1 0; min-width:0; padding-inline:4px; font-size:var(--fs-sm); } .prompt-actions { margin-inline-start:auto; gap:1px; } }
   @media (pointer:coarse) { .editor-toolbar .creator-tabs button { min-width:44px; } }
   @media (max-width:599px), (max-height:499px), (pointer:coarse) { @container (max-width:400px) { .editor-toolbar :global(.help-title.icon-only), .editor-toolbar :global(.api-peek-trigger), .editor-toolbar .copy { width:32px; min-width:32px; } } }
 </style>
