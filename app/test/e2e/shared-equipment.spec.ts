@@ -109,6 +109,11 @@ test('shared design sheets cancel cleanly on a phone and do not overflow', async
   expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
+  // The primary entry always opens Create, even right after a saved-design visit; the saved-design entry opens its tab.
+  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await expect(page.getByRole('tab', { name: 'Create', exact: true })).toHaveAttribute('aria-selected', 'true')
+  await page.keyboard.press('Escape')
+  await expect(page.getByRole('dialog')).toHaveCount(0)
   await page.getByRole('button', { name: 'Use a saved design', exact: true }).click()
   await expect(page.getByRole('tab', { name: 'Saved designs', exact: true })).toHaveAttribute('aria-selected', 'true')
   await page.keyboard.press('Escape')

@@ -61,9 +61,9 @@
 .facing-buttons { display:flex; flex-wrap:wrap; justify-content:center; }
 .equipment-rail { top:18%; bottom:24px; gap:20px; }
 .equipment-modes { display:flex; justify-content:space-between; gap:12px; }
-/* Live views hide Moves; the remaining tabs keep their Preview positions instead of spreading. */
-.equipment-modes:not(:has(>:nth-child(4))) { justify-content:flex-start; gap:26px; }
-.equipment-modes button { min-height:50px; padding:8px 0; font-size:16px; }
+/* Live views hide Moves behind an invisible placeholder (as in the prototype), so the other tabs keep their Preview positions. */
+.equipment-modes :is(button,.tab-placeholder) { min-height:50px; padding:8px 0; font-size:16px; }
+.equipment-modes .tab-placeholder { visibility:hidden; }
 .equipment-scroll { overflow:auto; min-height:0; padding:8px; margin:-8px; flex:1;font-size:16px; }
 .equipment-scroll .small,.equipment-scroll .ramp-label { font-size:14px; }
 .equipment-scroll .panel { gap:18px; }
@@ -103,8 +103,10 @@
 .menu .row { gap:12px; min-height:44px; padding:10px 12px;font-size:16px; }
 .menu a.row { color:inherit; text-decoration:none; }
 .menu .character-thumbnail { min-width:48px; }
-.world-coverage { position:fixed; left:var(--edge); bottom:18px; z-index:4; max-width:min(420px,calc(100% - var(--rail) - 100px)); margin:0; font-size:13px; color:var(--bu-muted); }
-.world-hint { position:fixed; left:var(--edge); bottom:56px; z-index:4; max-width:260px; margin:0; font-size:15px; pointer-events:none; }
+.world-notes { position:fixed; left:var(--edge); bottom:18px; z-index:4; display:flex; flex-direction:column; align-items:flex-start; gap:6px; max-width:min(420px,calc(100% - var(--rail) - 100px)); pointer-events:none; }
+.world-notes p { margin:0; }
+.world-coverage { font-size:13px; color:var(--bu-muted); }
+.world-hint { max-width:260px; font-size:16px; }
 .world-stick { position:fixed; width:92px;height:92px; margin:-46px; border:1px solid var(--bu-border); background:var(--bu-gesture-track); border-radius:50%; pointer-events:none; z-index:3; display:grid;place-items:center; }
 .world-stick span { width:24px;height:24px;border-radius:50%;background:var(--bu-gesture-thumb);border:1px solid var(--bu-accent); }
 .experience-error { position:absolute; bottom:16px; left:var(--edge); z-index:6; color:var(--bu-danger); }
@@ -176,7 +178,8 @@
 }
 @media (max-width:1100px) { .experience { --rail:300px; --edge:24px; } .scene-identity { max-width:calc(100% - var(--rail) - 65px); } .equipment-modes { gap:8px; } .equipment-scroll .slot-chips { gap:10px; } .equipment-scroll .slot-chip svg { width:22px;height:22px; } .character-sheet .sheet-body { justify-content:flex-start; } }
 @media (min-width:761px) and (max-width:1100px) and (min-height:541px) {
-  .view-modes { position:fixed;top:22px;left:47%;transform:translateX(-50%);margin:0;gap:24px; }
+  .view-modes { position:fixed;top:76px;left:24px;margin:0;gap:24px; }
+  .world-hint { font-size:13px; }
   .scene-identity { top:17%; }
   .scene-identity h1 { font-size:32px; }
   .scene-identity p,.prompt-disclosure { font-size:14px; }
@@ -185,6 +188,8 @@
   .playback-bar .bu-action { font-size:14px;min-width:32px; }
   .playback-bar select { font-size:16px;max-width:130px; }
 }
+/* Header-centered tabs need room beside the header actions, including the Activity button shown while jobs run. */
+@media (min-width:920px) and (max-width:1100px) and (min-height:541px) { .view-modes { top:22px;left:47%;transform:translateX(-50%); } }
 @media (max-width:760px) and (min-height:541px) {
   .experience { --edge:20px; --rail:0px; }
   .experience-header { inset:12px var(--edge) auto; gap:8px; }
@@ -219,7 +224,7 @@
   .equipment-rail { top:auto;bottom:0;left:0;right:0;width:auto;height:40dvh; gap:8px; padding:0 20px max(16px,env(safe-area-inset-bottom)); background:linear-gradient(180deg,var(--bu-floating),var(--bu-sheet)); border-radius:0; }
   .sheet-expand { display:flex;justify-content:center;align-items:center;min-height:24px;height:24px;flex:none;padding:0; }
   .sheet-expand span { width:32px;height:3px;background:var(--bu-muted);border-radius:4px; }
-  .equipment-modes { flex:none; gap:14px; } .equipment-modes button { min-height:40px;font-size:14px; }
+  .equipment-modes { flex:none; gap:14px; } .equipment-modes :is(button,.tab-placeholder) { min-height:40px;font-size:14px; }
   .equipment-scroll .panel { gap:8px; }
   .equipment-scroll { font-size:14px; }
   .equipment-scroll .small { font-size:12px; }
@@ -236,13 +241,11 @@
   .experience.expanded .equipment-rail { height:48dvh; }
   .experience.expanded .experience-stage { bottom:calc(48dvh + 90px); top:205px; }
   .experience.expanded .experience-playback { bottom:calc(48dvh + 22px); }
-  .world-coverage { left:20px;bottom:calc(40dvh + 2px);max-width:calc(100% - 40px);font-size:12px; }
-  /* Phone hints sit just above the fallback note so they clear the actor whether the sheet is collapsed or expanded. */
-  .world-hint { left:20px;bottom:calc(40dvh + 24px);max-width:calc(100% - 40px);font-size:13px; }
-  .expanded .world-hint { bottom:calc(48dvh + 24px); }
-  .equipment-modes:not(:has(>:nth-child(4))) { gap:40px; }
+  .world-notes { left:20px;bottom:calc(40dvh + 2px);max-width:calc(100% - 40px); }
+  .world-coverage { font-size:12px; }
+  .world-hint { max-width:none;font-size:12px; }
   .equipment-scroll :is(.sec-title,.group-head h3) { font-size:16px; }
-  .expanded .world-coverage { bottom:calc(48dvh + 2px); }
+  .expanded .world-notes { bottom:calc(48dvh + 2px); }
 
   .studio-app .character-sheet .sheet-head { padding:64px 20px 12px; }
   .studio-app .character-sheet .sheet-head>.btn { top:12px;right:20px; }
@@ -294,8 +297,6 @@
   .experience.expanded .prompt-disclosure { display:none; }
   .experience.expanded .experience-stage { top:144px; bottom:calc(min(48dvh,100dvh - 330px) + 80px); }
   .experience.expanded .experience-playback { bottom:calc(min(48dvh,100dvh - 330px) + 12px); }
-  .world-coverage { bottom:calc(31dvh + 2px); }
-  .world-hint { bottom:calc(31dvh + 24px); }
-  .expanded .world-hint { bottom:calc(min(48dvh,100dvh - 330px) + 24px); }
-  .expanded .world-coverage { bottom:calc(min(48dvh,100dvh - 330px) + 2px); }
+  .world-notes { bottom:calc(31dvh + 2px); }
+  .expanded .world-notes { bottom:calc(min(48dvh,100dvh - 330px) + 2px); }
 }

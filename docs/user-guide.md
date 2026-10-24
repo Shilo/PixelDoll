@@ -182,7 +182,7 @@ a copy for backup; clearing browser data removes local projects.
 
 ## Recolor
 
-Open the **Colors** tab. Pick a swatch for each color of the item (or of **Everything you wear**), or **Pick any color**.
+Open the **Colors** tab. Pick a swatch for each color of the item (or of **Character colors**), or **Pick any color**.
 The body has three: **Shirt**, **Shorts** and **Skin** (characters made before this came with one shared gray; PixelDoll
 splits it into shirt and shorts the next time you open them, nothing is regenerated).
 **Original** restores one color and **Reset** restores them all. Recoloring swaps exact colors,

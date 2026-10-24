@@ -20,19 +20,23 @@ Each pair was reviewed as a direct side-by-side composite at 1:1 pixels, then co
 | Colors/Outfits/Moves headings were 12–14px labels; Random/Reset 12px; outfits were unbounded text rows. | Prototype headings 18px/500, secondary 14px, bordered rows. | Restored heading scale and bounded outfit/move rows using Bronze `outline`/`row` recipes. Colors heading reads "Character colors" so it fits beside its actions. |
 | Selected facing had no chip. | Facing buttons used `quiet`; Bronze has a `direction` variant. | Uses the shared `direction` recipe. |
 | Live views gave no movement discoverability. | Prototype shows a timed "WASD or arrow keys" / "Drag in the world to move" hint. | Same hint, dismissed by movement or after 6.5s. |
-| Fallback notice read only "View details". | Summary text carried no meaning. | Summary shows the notice itself, truncated to one line. |
+| Fallback notice read only "View details". | Summary text carried no meaning. | Shows the notice text directly in a plain note. |
 | Prompt disclosure used a text "⌄" glyph, low and misaligned. | Prototype uses a Lucide chevron. | Lucide chevron sized to the text. |
 | Characters typography was smaller than the prototype at desktop. | Computed: subtitle 16 vs 20px, caption 30 vs 38px, caption meta 12 vs 14px, row name 20 vs 22px. | Desktop sizes restored. |
-| Live views spread three panel tabs across the rail. | Prototype keeps their Preview positions. | Three-tab rows pack left with the prototype's spacing. |
+| Live views spread three panel tabs across the rail. | Prototype keeps their Preview positions with a hidden Moves placeholder. | Same hidden placeholder, so the tabs do not move. |
 | Inspect selects showed two picker arrows. | Legacy wrapper chevron plus Bronze's native picker icon. | Legacy chevron hidden only where `base-select` is supported. |
 | GitHub menu row styled as an underlined accent link. | Anchor defaults inside a menu row. | Inherits row styling. |
-| Tablet view tabs fell below the header at the left. | Prototype centers them in the header; measured no overlap 761–1100px. | Header-centered on tablet. |
+| Tablet view tabs fell below the header at the left. | Prototype centers them in the header. | Header-centered from 920px; 761–919px keeps them under the header, because the Activity button shown while jobs run would otherwise overlap them. |
 | Desktop creator focused Details instead of Name (handoff P2). | Initial-focus query searched only `.sheet-body`. | Searches the heading first; phones still avoid forcing the keyboard. |
 | Light phone sheet let the floor show through its controls; landscape rail had no backing. | Production used `--bu-sheet-soft` in portrait and nothing in landscape; prototype uses floating→sheet in portrait and sheet-soft in landscape. | Prototype materials restored. |
-| Fallback notice repeated itself when opened. | Summary and body rendered the same text. | Plain one-line note (13px desktop), no disclosure. |
+| Fallback notice repeated itself when opened. | Summary and body rendered the same text. | Plain note (13px desktop), no disclosure. |
 | Creator Cancel sat ~4px above the header row. | Positioned at 24px against a 28px/50px header. | Aligned to the header row. |
-| Movement hint overlapped the actor on short phones. | Fixed top position could not clear the actor with the sheet expanded (short phones start expanded by design). | Phone hint sits just above the fallback note and follows the sheet state. |
+| Movement hint overlapped the actor on short phones. | Fixed top position could not clear the actor with the sheet expanded (short phones start expanded by design). | Hint and note share one bottom-anchored stack, so the hint stays above the note however it wraps and follows the sheet state. |
 | At 320px the side compass arrows were 40px wide. | Equal tiles minus the 44px touch mirror strip. | ≤360px widens the mirror columns so every arrow keeps 44px; equal tiles elsewhere, as in the prototype. |
+
+## Multi-reviewer round
+
+Four independent reviewers then audited the source, tests and scripts, docs, and this UI commit live; each finding was argued to agreement. Fixed: the tablet tab overlap while jobs run, hint/note overlap with a wrapped note (reproduced without WebGL), the **New item** button reopening on Saved designs after a saved-design visit (a test edit had hidden it; the test now checks both entry points), tab shifts in live views, the base-select support condition, hint sizes (prototype 16/13/12px), the pending move row recipe, and documentation drift. Recorded as follow-ups: any color hint containing "red" (as in "colored") blocks the magenta key and names a material "Colored"; the export README describes baked outfit layers that the export does not call.
 
 ## Intentional differences retained
 
@@ -42,7 +46,7 @@ The handoff's accepted differences stand (real library, real palette ramps, full
 - **Phone More popover** opens upward over the world: production lists five extra categories, which do not fit below the button inside the lower sheet. It is now opaque.
 - **Move rows** keep thumbnails, frame counts and direction coverage; **outfit rows** keep the delete affordance (it reserves its column on desktop and appears on hover/focus).
 - **Short phones** start with the equipment sheet expanded and hide the prompt line, as recorded in the [integration record](production-experience-2026-10-23.md).
-- **Phone movement hint** sits at the bottom of the world above the fallback note rather than under the view tabs, so it never collides with the actor in either sheet state.
+- **Movement hint** sits at the bottom of the world directly above the fallback note (about 20px lower than the prototype on desktop) rather than under the view tabs, so it never collides with the actor in either sheet state.
 - **Creator Cancel** keeps the accent color shared by every production sheet; there is no separate back link because Cancel performs it.
 
 ## Not changed / follow-up
@@ -51,7 +55,7 @@ The handoff's accepted differences stand (real library, real palette ramps, full
 - Popovers can extend a few pixels past the desktop rail edge.
 - Intermittent queue self-test under full-suite load (see Verification).
 
-Resolved after this review: a follow-up sweep converted British spellings to American across interface copy, source identifiers, tests and docs (for example "Colour hint" is now "Color hint"). PixelLab request text keeps its original wording because the job ledger reuses finished calls by exact text; quoted evidence, logs and the persisted `cancelled` queue state are also unchanged.
+Resolved after this review: a follow-up sweep converted British spellings to American across interface copy, source identifiers, tests and docs (for example "Colour hint" is now "Color hint"). PixelLab request text keeps its original wording because the job ledger reuses finished calls by exact text; quoted evidence, logs and the persisted `cancelled` queue state are also unchanged. Published export identifiers (`<item>-colour-<hash>`, `(coloured)`, `body_colour`) and the saved base-body prompt (matched verbatim on load) also keep their spelling. Older projects saved before the base-region split may show a neutral material as "Gray" on screen while their saved label stays "Grey".
 
 ## Verification
 

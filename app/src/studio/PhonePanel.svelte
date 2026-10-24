@@ -79,7 +79,7 @@
         </div>
       {/if}
       <button class="bu-action equipment-create" data-variant="primary" onclick={() => openNewItem(g.id)}><Plus size={18}/><span>New {g.id === 'Hands' ? 'held' : g.id.toLowerCase()} item</span></button>
-      <button class="bu-action equipment-saved" data-variant="quiet" onclick={() => { openNewItem(g.id); ui.newItemTab = 'designs' }}><Bookmark size={18}/><span>Use a saved design</span></button>
+      <button class="bu-action equipment-saved" data-variant="quiet" onclick={() => openNewItem(g.id, undefined, 'designs')}><Bookmark size={18}/><span>Use a saved design</span></button>
     {/if}
   {:else if ui.tab === 'outfits'}
     <Outfits />

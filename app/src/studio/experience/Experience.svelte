@@ -118,7 +118,7 @@
         <button class="bu-action" data-variant="quiet" onclick={()=>ui.sheet='inspect'}><Grid2x2 size={16}/><span>Inspect</span></button>
       </div></div>
     {/if}
-    <aside class="equipment-rail" aria-label="Customization"><button class="sheet-expand bu-action" data-variant="quiet" aria-label={experience.expanded?'Collapse equipment':'Expand equipment'} aria-expanded={experience.expanded} onclick={()=>experience.expanded=!experience.expanded}><span></span></button><nav class="equipment-modes" aria-label="Customization panels">{#each tabs.filter(t=>experience.mode==='preview'||t[0]!=='moves') as [id,label]}<button class="bu-action" data-variant="tab" aria-pressed={ui.tab===id} onclick={()=>panel(id)}>{label}</button>{/each}</nav><div class="equipment-scroll"><PhonePanel/></div></aside>
+    <aside class="equipment-rail" aria-label="Customization"><button class="sheet-expand bu-action" data-variant="quiet" aria-label={experience.expanded?'Collapse equipment':'Expand equipment'} aria-expanded={experience.expanded} onclick={()=>experience.expanded=!experience.expanded}><span></span></button><nav class="equipment-modes" aria-label="Customization panels">{#each tabs as [id,label]}{#if experience.mode==='preview'||id!=='moves'}<button class="bu-action" data-variant="tab" aria-pressed={ui.tab===id} onclick={()=>panel(id)}>{label}</button>{:else}<span class="tab-placeholder" aria-hidden="true">{label}</span>{/if}{/each}</nav><div class="equipment-scroll"><PhonePanel/></div></aside>
   {/if}
   {#if doc.error}<p class="experience-error" role="alert">{doc.error}</p>{/if}
 </div>

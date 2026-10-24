@@ -24,7 +24,6 @@
   $effect(() => { void doc.id; void experience.mode; untrack(reset) })
   // Live views briefly name their movement controls, as in the approved prototype; moving or 6.5s dismisses it.
   let hint = $state(false)
-  const coarse = matchMedia('(pointer:coarse)').matches
   $effect(() => { void doc.id; const live=experience.mode!=='preview'; hint=live; if(!live)return; const t=setTimeout(()=>hint=false,6500); return ()=>clearTimeout(t) })
   $effect(() => { void doc.rev; noticed.clear() })
   $effect(() => { if(ui.sheet) {keys.clear();release()} })
@@ -156,6 +155,6 @@
   <canvas class="world-actors" bind:this={canvas} aria-hidden="true"></canvas>
   {#if doc.loading}<span class="world-loading">Loading character…</span>{/if}
 </div>
-{#if hint}<p class="world-hint">{coarse?'Drag in the world to move':experience.mode==='side'?'Focus world · A/D or ←/→ to move':'Focus world · WASD or arrow keys to move'}</p>{/if}
-{#if note||rendererWarning}<p class="world-coverage">{[rendererWarning,note].filter(Boolean).join(' · ')}</p>{/if}
+<!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to. -->
+{#if hint||note||rendererWarning}<div class="world-notes">{#if hint}<p class="world-hint">{matchMedia('(pointer:coarse)').matches?'Drag in the world to move':experience.mode==='side'?'Focus world · A/D or ←/→ to move':'Focus world · WASD or arrow keys to move'}</p>{/if}{#if note||rendererWarning}<p class="world-coverage">{[rendererWarning,note].filter(Boolean).join(' · ')}</p>{/if}</div>{/if}
 {#if stick}<div class="world-stick" style:left="{stick.x}px" style:top="{stick.y}px" aria-hidden="true"><span style:transform="translate({Math.max(-40,Math.min(40,stick.dx))}px,{Math.max(-40,Math.min(40,stick.dy))}px)"></span></div>{/if}

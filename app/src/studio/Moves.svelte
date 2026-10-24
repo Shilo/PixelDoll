@@ -44,7 +44,7 @@
       </div>
     </details>
     {#if moving.spec && moving.projectId === doc.id && !moving.done}
-      <button class="move-row" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
+      <button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
     {/if}
     {#if !isDemo()}<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button>{/if}
   {/if}

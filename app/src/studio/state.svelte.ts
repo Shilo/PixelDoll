@@ -633,8 +633,8 @@ export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number;
 }
 
 
-export function openNewItem(group: string, prefill?: { slot?: string; prompt?: string }) {
-  if (prefill) ui.newItemTab = 'create';
+export function openNewItem(group: string, prefill?: { slot?: string; prompt?: string }, tab: typeof ui.newItemTab = 'create') {
+  ui.newItemTab = tab;
   ui.newItem = { group, slot: prefill?.slot ?? GROUPS.find((g) => g.id === group)!.slots[0], prompt: prefill?.prompt ?? '' };
   ui.sheet = 'newitem';
 }
