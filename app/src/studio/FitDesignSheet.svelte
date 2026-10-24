@@ -144,7 +144,7 @@
   {#if design && assessment}
     <p class="muted small">{draft ? `A fitted copy for ${targetName}.` : `Independent copy for ${target?.manifest.name ?? 'your character'}.`} The shared design and other characters stay independent.</p>
     {#if running}
-      <p class="notice small" role="status"><Sparkles size={16} /><span>{stage === 'pose-running' ? 'Animating the approved fit…' : 'Preparing the rest-pose fit…'} You can hide this window and reopen the fit from Activity. Hiding does not cancel a PixelLab job.</span></p>
+      <p class="notice small" role="status"><Sparkles size={16} /><span>{stage === 'pose-running' ? 'Animating the approved fit…' : 'Preparing the rest-pose fit…'} You can hide this sheet and reopen the fit from Activity. Hiding does not cancel a PixelLab job.</span></p>
     {:else if stage === 'needs-attention'}
       <p class="notice warn small"><TriangleAlert size={16} /><span>{draft?.error || 'This fit needs attention.'} No paid request is retried automatically.</span></p>
     {:else if stage === 'rest-review'}

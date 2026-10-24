@@ -335,7 +335,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   const others = Object.fromEntries(await Promise.all((Object.keys(registered) as Direction[]).filter((d) => d !== 'south').map(async (d) => [d, png(await b64(registered[d]))])));
   const imp = await run(routes.createCharacterV3({ description: looks, reference_image: png(await b64(registered.south)), direction_images: others, n_directions: modern ? 8 : spec.dirs ?? 4, view, template_id: 'mannequin', no_background: true, seed: spec.seed }), `${spec.name} · rest views`, 'studio-base', false, true, undefined, spec.activityScope);
   const charId = (imp.response as { character_id?: string })?.character_id;
-  if (!charId) throw new Error('PixelLab did not return a character id');
+  if (!charId) throw new Error('PixelLab did not return a character ID');
   const ch = await run(routes.getCharacter(charId), `${spec.name} · skeleton`, 'studio-base', true, false, undefined, spec.activityScope);
   const refs = (ch.response as { skeletons?: { '2d_references'?: Record<string, { keypoints?: Record<string, { x: number; y: number }> }> } })?.skeletons?.['2d_references'];
   const restKps = {} as Record<DirectionName, Keypoint[]>, managed = managedRestKeypoints(refs, DIRS);

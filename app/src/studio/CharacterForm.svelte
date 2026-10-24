@@ -122,7 +122,7 @@
   </section>
 
   <section class="facing" aria-label="Character directions">
-    <Help title="Directions" text="Choose the views to keep and animate. V3 first creates all eight original views. Attached flip buttons mirror a horizontal partner; a blue flip marks a derived view. Turning it off uses that view’s original artwork. For one facing, choose Side-scroller 2 and turn W off." />
+    <Help title="Directions" text="Choose the views to keep and animate. V3 first creates all eight original views. Attached mirror buttons mirror a horizontal partner; a blue mirror button marks a derived view. Turning it off uses that view’s original artwork. For one facing, choose Side-scroller 2 and turn W off." />
     <div class="direction-presets" role="group" aria-label="Direction presets">{#each PRESETS as p (p.id)}<button class="bu-action btn" data-variant="outline" aria-pressed={preset === p.id} onclick={() => { setPreset(d, p.id); announcement = '' }}>{p.label}</button>{/each}</div>
     <div class="compass" role="group" aria-label="Facing directions">
       {#each COMPASS as dir, i (dir ?? 'center')}

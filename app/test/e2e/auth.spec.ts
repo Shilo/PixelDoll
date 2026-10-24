@@ -23,7 +23,7 @@ for (const remembered of [true, false]) {
     await dialog.getByRole('checkbox', { name: 'Remember on this device' }).setChecked(remembered);
     await dialog.getByRole('button', { name: 'Connect', exact: true }).click();
     await page.locator('.project-btn').click();
-    await expect(page.getByRole('menuitem', {name:'PixelLab key',exact:true})).toBeVisible();
+    await expect(page.getByRole('menuitem', {name:'PixelLab account',exact:true})).toBeVisible();
     await page.keyboard.press('Escape');
     const peer = await context.newPage();
     await peer.goto(new URL('/__auth-peer', page.url()).href);
@@ -52,7 +52,7 @@ test('shared token: a saved replacement retains the current account until reload
   await page.addInitScript((key) => { if (!sessionStorage.getItem('seeded-auth')) { sessionStorage.setItem('seeded-auth', '1'); localStorage.setItem('pixellabApiKey', key); } }, key);
   await openStudio(page, '/');
   await page.locator('.project-btn').click();
-  await page.getByRole('menuitem', { name: 'PixelLab key', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'PixelLab account', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
   await expect(dialog.getByText(/Connected and remembered/)).toBeVisible();
   const peer = await context.newPage(); await peer.goto(new URL('/__auth-peer', page.url()).href);

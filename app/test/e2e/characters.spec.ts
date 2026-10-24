@@ -66,7 +66,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
   await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const download = page.waitForEvent('download')
-  await page.getByRole('button', { name: /Download zip/ }).click()
+  await page.getByRole('button', { name: /Download ZIP/ }).click()
   const bytes = await readFile((await (await download).path())!)
   async function importCopy(name: string) {
     await page.locator('.project-btn').click()
@@ -206,7 +206,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
   expect(before.manifest.rig.rest?.west?.keypoints).toHaveLength(18)
   expect((before.rigQa as { clips: Record<string, { adherence: number | null }> }).clips['rest/south'].adherence).toBeNull()
   await newItem(page, 'Hands')
-  await page.getByRole('radio', { name: 'Hands', exact: true }).click()
+  await page.getByRole('radio', { name: 'Held item', exact: true }).click()
   await page.getByRole('dialog').getByText('Details', { exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('96 px canvas')
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
@@ -402,7 +402,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
   await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible()
   await expect(pane.getByText('Some body pixels were changed by the model', { exact: true })).toBeVisible()
   await pane.getByText('Details', { exact: true }).click()
-  await expect(pane.getByText('10 gens · $0.080 · 1 PixelLab calls', { exact: true })).toBeVisible()
+  await expect(pane.getByText('10 gens · $0.080 · 1 PixelLab call', { exact: true })).toBeVisible()
   await page.evaluate(async (id) => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     const it = { ...s.store.project.manifest.items.find((x: { id: string }) => x.id === id) }

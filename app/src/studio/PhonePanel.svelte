@@ -47,7 +47,7 @@
     {#if m && view.project}
       <div class="equipment-heading"><h2>{categoryName}</h2><span class="muted small">{items.length + pending.length} {items.length + pending.length === 1 ? 'item' : 'items'}</span><button class="bu-action btn icon plain" data-variant="quiet" aria-label="Random look" title="Random look" onclick={randomize}><Shuffle size={18}/></button></div>
       {#if items.length || pending.length}
-        <div class="tiles" role="group" aria-label="{g.id} items">
+        <div class="tiles" role="group" aria-label="{g.id === 'Hands' ? 'Held' : g.id} items">
           {#each items as it (it.id)}
             <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === it.id} aria-pressed={doc.items[it.slot] === it.id} onclick={() => pick(it.id)}>
               <span class="tile-art" aria-hidden="true"><Thumb project={view.project} item={it} size={tileK} /></span><span class="tile-name">{it.name}</span>
@@ -74,7 +74,7 @@
           <Colors only={sel.id} heading={false} />
         {/if}
       {:else}
-        <div class="category-empty" role="group" aria-label="{g.id} items">
+        <div class="category-empty" role="group" aria-label="{g.id === 'Hands' ? 'Held' : g.id} items">
           <span class="muted">No saved items</span>
         </div>
       {/if}

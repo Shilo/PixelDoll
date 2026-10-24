@@ -196,8 +196,8 @@ What is inside
                   rows = directions (${m.rig.directions.map((d) => d.id).join(', ')}), columns = frames${m.export?.baked ? `
   baked/          the finished character per outfit: baked/<outfit>/<move>.png` : ''}
   CREDITS.txt     where each item came from (PixelLab calls), CSV
-  project.json   editable character for importing back into PixelDoll
-  cells/         original frame and rest images for the editable copy
+  project.json    editable character for importing back into PixelDoll
+  cells/          original frame and rest images for the editable copy
 
 Outfit colors are baked into additional item layers, reused by matching outfits. The source layers remain available.
 A colored body is a synced body_colour layer; its hidden original body remains the animation clock.

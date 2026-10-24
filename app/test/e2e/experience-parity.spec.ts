@@ -115,7 +115,7 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const exportDialog = page.getByRole('dialog', { name: 'Export', exact: true })
   await exportDialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).click()
-  const download = exportDialog.getByRole('button', { name: /^Download zip/ })
+  const download = exportDialog.getByRole('button', { name: /^Download ZIP/ })
   await expect(download).toBeEnabled({ timeout: 30_000 })
   const downloaded = page.waitForEvent('download'); await download.click()
   const bytes = await readFile((await (await downloaded).path())!)

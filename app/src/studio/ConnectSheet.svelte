@@ -26,8 +26,8 @@
     await refreshBalance({ activityScope, label: 'Connect PixelLab', background: false })
     if (closed) return
     checking = false
-    if (app.keyRejected) msg = "PixelLab didn't accept this key."
-    else if (app.balanceError) msg = `Couldn't reach PixelLab: ${app.balanceError}`
+    if (app.keyRejected) msg = "PixelLab didn’t accept this key."
+    else if (app.balanceError) msg = `Couldn’t reach PixelLab: ${app.balanceError}`
     else if (accountTier(app.balance) === 0 && !pendingConnectionAllowsFree()) clearPendingConnection()
     else connected()
   }

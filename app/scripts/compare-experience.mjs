@@ -127,7 +127,7 @@ async function capture(kind, url) {
         if (await all.getAttribute('aria-pressed') !== 'true') await all.click()
         await extra('inspect'); await close('Inspect character', 'Done')
         await page.getByRole('button', { name: 'Export', exact: true }).click()
-        await page.waitForFunction(() => [...document.querySelectorAll('dialog button')].some(button => button.textContent.includes('Download zip') && !button.disabled))
+        await page.waitForFunction(() => [...document.querySelectorAll('dialog button')].some(button => button.textContent.includes('Download ZIP') && !button.disabled))
         await extra('export'); await close('Export')
         await options('Connect PixelLab')
         if (await dialog('Connect PixelLab').getByLabel('API key', { exact: true }).inputValue()) throw new Error('Refusing to capture a credential field containing data')

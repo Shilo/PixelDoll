@@ -74,7 +74,7 @@
 
 <section>
   <h2>API key</h2>
-  <p class="note">Kept in memory unless "remember" is ticked (then localStorage on this device). Sent only to api.pixellab.ai. The API accepts any origin, so a leaked key is usable anywhere — rotate it at pixellab.ai if in doubt.</p>
+  <p class="note">Kept in memory unless "remember" is checked (then localStorage on this device). Sent only to api.pixellab.ai. The API accepts any origin, so a leaked key is usable anywhere — rotate it at pixellab.ai if in doubt.</p>
   <input type="password" placeholder="PixelLab API key" bind:value={keyInput} autocomplete="off" />
   <label><input type="checkbox" bind:checked={remember} /> remember on this device</label>
   <button onclick={saveKey} disabled={!keyInput.trim()}>use key</button>

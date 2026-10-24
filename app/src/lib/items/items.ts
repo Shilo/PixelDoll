@@ -153,7 +153,7 @@ export const SLOTS: Slot[] = [
   { id: 'hair', z: 110, bgZ: 3, class: 'rigid', anchor: 'head', zOverrides: [{ layer: 'bg', z: 5 }] }, // T3: long hair lies over the cape (bg 4) in every view: 359 hair px hidden over walk E
   { id: 'face_acc', z: 120, class: 'rigid', anchor: 'head', band: true },
   // B14: hair is tucked under a helmet (only what hangs below the brim shows) instead of hidden (T3: hides erased long hair);
-  // a hood or full mask ticks "hide hair" (item.hides)
+  // a hood or full mask checks "hide hair" (item.hides)
   { id: 'head', z: 130, class: 'rigid', anchor: 'head', clips: ['hair'], band: true },
   { id: 'off_hand', z: 140, bgZ: 2, class: 'held', anchor: 'hand_l', zOverrides: heldBgOverCape() },
   { id: 'main_hand', z: 150, bgZ: 1, class: 'held', anchor: 'hand_r', zOverrides: heldBgOverCape() },

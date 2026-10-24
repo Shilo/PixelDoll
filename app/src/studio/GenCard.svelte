@@ -64,7 +64,7 @@
       <div class="field-row small"><span>{g.status || 'Starting'}</span><span class="num muted">{p.pct}%</span></div>
       <div class="track" role="progressbar" aria-valuenow={p.pct} aria-valuemin={0} aria-valuemax={100} aria-label="{g.input.name} progress"><div class="fill" style:width="{Math.max(4, p.pct)}%"></div></div>
       <p class="muted small">
-        {#if !app.key}Waiting for your PixelLab key.{:else if $queue.paused === 'offline'}Paused while you're offline. Submitted jobs may still finish or charge.{:else if $queue.paused}PixelLab paused the queue ({$queue.paused}).{:else}{g.draft.calls.length} batches of frames · about {5 + Math.ceil(g.draft.calls.length / 3) * 2} min + queue time. Keep this tab open while PixelLab responds. You can keep dressing up. Unknown outcomes stop for review in Activity.{/if}
+        {#if !app.key}Waiting for your PixelLab key.{:else if $queue.paused === 'offline'}Paused while you’re offline. Submitted jobs may still finish or charge.{:else if $queue.paused}PixelLab paused the queue ({$queue.paused}).{:else}{g.draft.calls.length} batches of frames · about {5 + Math.ceil(g.draft.calls.length / 3) * 2} min + queue time. Keep this tab open while PixelLab responds. You can keep dressing up. Unknown outcomes stop for review in Activity.{/if}
       </p>
     </div>
   {/if}

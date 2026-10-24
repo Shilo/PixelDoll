@@ -8,7 +8,7 @@
   import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts'
   async function clear() {
     const n = await cleanUp()
-    toast(`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused images` : ''}. Jobs your drafts or a running create or move still use are kept.`)
+    toast(`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused image${n.blobs === 1 ? '' : 's'}` : ''}. Jobs your drafts or a running create or move still use are kept.`)
   }
   import { ChevronRight, CircleAlert, CircleCheck, Coins, RefreshCw } from './icons.ts'
 
@@ -50,7 +50,7 @@
       <p class="notice small"><CircleAlert size={14} />Running in another tab. Keys stay in the tab where you connect. Connect PixelLab in the active queue tab, or close it to run jobs here.</p>
     {/if}
     {#if $queue.paused}
-      <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn't accept the key. Jobs wait until you connect again." : $queue.paused === 'offline' ? "You're offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs." : 'PixelLab credits are insufficient. Jobs wait until credits are available.'}
+      <p class="notice warn small"><CircleAlert size={14} />{$queue.paused === 'auth' ? "PixelLab didn’t accept the key. Jobs wait until you connect again." : $queue.paused === 'offline' ? "You’re offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs." : 'PixelLab credits are insufficient. Jobs wait until credits are available.'}
         {#if $queue.paused !== 'offline'}<span class="api-action">{#if $queue.paused !== 'auth'}<ApiPeek scope="queue-resume" label="Resume waiting requests" plan={queuedPlan(jobs)} />{/if}<button class="bu-action btn sm" data-variant="outline" onclick={() => ($queue.paused === 'auth' ? (ui.sheet = 'connect') : queue.resume())}>{$queue.paused === 'auth' ? 'Connect' : 'Resume'}</button></span>{/if}</p>
     {/if}
     {#if fits.length}

@@ -66,7 +66,7 @@
 <Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() || ui.newItemTab === 'designs' ? undefined : foot}>
   <div class="seg full" role="tablist" aria-label="Item source"><button role="tab" aria-selected={ui.newItemTab === 'create'} onclick={() => (ui.newItemTab = 'create')}>Create</button><button role="tab" aria-selected={ui.newItemTab === 'designs'} onclick={() => (ui.newItemTab = 'designs')}>Saved designs</button></div>
   {#if ui.newItemTab === 'designs'}
-    {#if isDemo()}<p class="notice small"><Sparkles size={16} /><span>Make an editable copy of the demo before adding a fitted item.</span><button class="bu-action btn sm" data-variant="outline" disabled={busy} onclick={useCopy}>Copy demo body</button></p>{/if}
+    {#if isDemo()}<p class="notice small"><Sparkles size={16} /><span>Make an editable copy of the demo before adding a fitted item.</span><button class="bu-action btn sm" data-variant="outline" disabled={busy} onclick={useCopy}>Copy the demo body</button></p>{/if}
     {#key doc.id}<DesignLibrary />{/key}
   {:else if isDemo()}
     <div class="notice small">
@@ -88,7 +88,7 @@
         <span class="label" id="where">Where does it go?</span>
         <div class="chips" role="radiogroup" aria-labelledby="where">
           {#each GROUPS as x (x.id)}
-            <button class="chip" role="radio" aria-checked={group === x.id} tabindex={group === x.id ? 0 : -1} onclick={() => (group = x.id)}><GroupIcon group={x.id} size={14} />{x.id}</button>
+            <button class="chip" role="radio" aria-checked={group === x.id} tabindex={group === x.id ? 0 : -1} onclick={() => (group = x.id)}><GroupIcon group={x.id} size={14} />{x.id === 'Hands' ? 'Held item' : x.id}</button>
           {/each}
         </div>
       </div>

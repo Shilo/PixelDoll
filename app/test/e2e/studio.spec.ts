@@ -127,7 +127,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   step('outfit, colors, presets and theme survive a reload')
 
   await page.getByRole('button', { name: 'Export' }).first().click()
-  const dl = page.getByRole('button', { name: /Download zip · \d+ KB/ })
+  const dl = page.getByRole('button', { name: /Download ZIP · \d+ KB/ })
   await dl.waitFor()
   const [download] = await Promise.all([page.waitForEvent('download'), dl.click()])
   const bytes = readFileSync((await download.path())!)
@@ -162,7 +162,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   await page.waitForFunction(() => !document.querySelector('dialog[open]'))
   step('Create: visible size and direction controls update frame and full generation cost')
   await ctx.setOffline(true)
-  await page.locator('.offline-banner', { hasText: "You're offline" }).waitFor()
+  await page.locator('.offline-banner', { hasText: 'You’re offline' }).waitFor()
   await page.waitForFunction(() => !window.__queue || window.__queue.paused === 'offline') // __queue/__studio are dev-server only
   await pickItem(page, 'Wizard hat') // everything else still works (selects the worn hat)
   assert.equal(await page.evaluate(() => window.__studio?.ui.selected ?? 'hat_wizard'), 'hat_wizard')
@@ -333,7 +333,7 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
   // Disposable layout fixture: duplicate stored east artwork into the extra directions, without generation.
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const download = page.waitForEvent('download')
-  await page.getByRole('button', { name: /Download zip/ }).click()
+  await page.getByRole('button', { name: /Download ZIP/ }).click()
   const files = await unzip(new Uint8Array(readFileSync((await (await download).path())!)))
   const data = JSON.parse(new TextDecoder().decode(files.get('project.json')))
   data.manifest.rig.directions = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'].map((id) => ({ id }))
@@ -433,7 +433,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await newItem(page, 'Head')
   await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click()
   const item = page.getByRole('dialog', { name: 'New item', exact: true })
-  await item.getByRole('radio', { name: 'Hands', exact: true }).click()
+  await item.getByRole('radio', { name: 'Held item', exact: true }).click()
   await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword')
   await item.getByRole('radio', { name: 'azure', exact: true }).click()
   await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/Est\. \d+ gens/)
@@ -442,7 +442,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
   await newItem(page, 'Head')
   await expect(item.getByRole('textbox', { name: 'What is it?', exact: true })).toHaveValue('a silver sword')
-  await expect(item.getByRole('radio', { name: 'Hands', exact: true })).toHaveAttribute('aria-checked', 'true')
+  await expect(item.getByRole('radio', { name: 'Held item', exact: true })).toHaveAttribute('aria-checked', 'true')
   await expect(item.getByRole('radio', { name: 'azure', exact: true })).toHaveAttribute('aria-checked', 'true')
   await item.getByRole('button', { name: 'Cancel', exact: true }).click()
 
@@ -472,7 +472,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key')
   await connect.getByRole('button', { name: 'Connect', exact: true }).click()
   await page.locator('.project-btn').click()
-  await expect(page.getByRole('menuitem', {name:'PixelLab key',exact:true})).toContainText('42 gens')
+  await expect(page.getByRole('menuitem', {name:'PixelLab account',exact:true})).toContainText('42 gens')
   await page.keyboard.press('Escape')
   await expect(page.getByRole('dialog')).toHaveCount(0)
   expect(paidRequests).toEqual([])
@@ -509,7 +509,7 @@ for (const initial of ['shared', 'old-only', 'both'] as const) {
     await expect(page.locator('.project-btn')).toHaveText('Adventurer');
     await expect(page.locator('.world-actors').first()).toBeVisible();
     await page.locator('.project-btn').click();
-    await page.getByRole('menuitem', { name: initial === 'old-only' ? 'Connect PixelLab…' : 'PixelLab key', exact: true }).click();
+    await page.getByRole('menuitem', { name: initial === 'old-only' ? 'Connect PixelLab…' : 'PixelLab account', exact: true }).click();
     const dialog = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true });
     if (initial === 'old-only') {
       await expect(dialog.getByRole('button', { name: 'Forget key' })).toHaveCount(0);
@@ -539,7 +539,7 @@ test('setup and move drafts survive cancelled connection and stay scoped to thei
   await page.locator('.world-actors').first().waitFor()
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const downloading = page.waitForEvent('download')
-  await page.getByRole('button', { name: /Download zip/ }).click()
+  await page.getByRole('button', { name: /Download ZIP/ }).click()
   const files = await unzip(new Uint8Array(readFileSync((await (await downloading).path())!)))
   const data = JSON.parse(new TextDecoder().decode(files.get('project.json')))
   const m = data.manifest
@@ -979,9 +979,9 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
     const q = (window as unknown as { __queue: { paused: string | null; emit: () => void } }).__queue
     q.paused = 'offline'; q.emit()
   })
-  await expect(activity).toContainText("You're offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.")
+  await expect(activity).toContainText("You’re offline. Queued work waits; submitted jobs may finish. Reconnect to resume known jobs.")
   await activity.getByRole('button', { name: 'Done', exact: true }).click()
-  await expect(gen).toContainText("Paused while you're offline. Submitted jobs may still finish or charge.")
+  await expect(gen).toContainText("Paused while you’re offline. Submitted jobs may still finish or charge.")
   expect(posts).toEqual([])
 })
 
@@ -1113,7 +1113,7 @@ test('Export discloses saved item and body review flags without blocking analysi
   await expect(bodyNotice).not.toContainText('Removed')
   await expect(bodyNotice).not.toContainText('Cross punch')
   await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
-  const download = sheet.getByRole('button', { name: /^Download zip/ })
+  const download = sheet.getByRole('button', { name: /^Download ZIP/ })
   await expect(download).toBeEnabled()
   const file = page.waitForEvent('download')
   await download.click()
@@ -1126,7 +1126,7 @@ test('Export discloses saved item and body review flags without blocking analysi
     await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id)
   })
   await page.getByRole('button', { name: 'Export', exact: true }).click()
-  await expect(sheet.getByRole('button', { name: /^Download zip/ })).toBeEnabled()
+  await expect(sheet.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled()
   await expect(sheet.getByText(/Saved quality or appearance flags:/)).toHaveCount(0)
   await expect(sheet.getByText(/Body frames failed saved checks:/)).toHaveCount(0)
   expect(requests).toEqual([])
@@ -1321,7 +1321,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
   const diagnosis = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p), c = '/src/studio/create.ts', create = await import(c); try { return await create.measurementRecoveryPlan(s.moving.projectId, s.moving.spec) } catch(e) { return String(e) } })
   expect(diagnosis).toMatchObject({ checks: 1, recordIds: ['offline-joint-lost'] })
   await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toBeVisible()
-  await expect(sheet).toContainText('Retry 1 unfinished joint checks')
+  await expect(sheet).toContainText('Retry 1 unfinished joint check ·')
   await expect(sheet).toContainText('estimated 0.1 gens or $0.005')
   await expect(sheet).toContainText('Unknown checks may already have charged; retrying can charge again')
   await sheet.getByRole('button', { name: 'Retry joint checks', exact: true }).click()
@@ -1547,7 +1547,7 @@ test('free item color matching is offline, scoped, persistent and preserves save
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
   await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
-  const download = sheet.getByRole('button', { name: /^Download zip/ })
+  const download = sheet.getByRole('button', { name: /^Download ZIP/ })
   await expect(download).toBeEnabled()
   const event = page.waitForEvent('download'); await download.click()
   const file = await event, path = await file.path(); expect(path).not.toBeNull()

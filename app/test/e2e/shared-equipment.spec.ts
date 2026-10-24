@@ -27,7 +27,7 @@ test('shared design colorway, free independent copy, portable ZIP and deletion s
   await newItem(page, 'Head')
   await page.getByRole('tab', { name: 'Saved designs', exact: true }).click()
   await expect(page.locator('.design-card')).toContainText('Traveling wizard hat')
-  await page.getByRole('button', { name: 'Copy demo body', exact: true }).click()
+  await page.getByRole('button', { name: 'Copy the demo body', exact: true }).click()
   await expect(page.locator('.project-btn')).toContainText('Adventurer copy')
   await expect(page.getByRole('button', { name: /^Review (free|available) copy/ })).toBeEnabled()
 
@@ -78,7 +78,7 @@ test('shared design colorway, free independent copy, portable ZIP and deletion s
   await expect(page.getByRole('dialog')).toContainText('Fitted copies on characters and their outfits stay intact')
   await page.getByRole('button', { name: 'Delete design', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('No saved designs yet')
-  await page.getByLabel('Import shared design zip', { exact: true }).setInputFiles({ name: downloaded.suggestedFilename(), mimeType: 'application/zip', buffer: bytes })
+  await page.getByLabel('Import shared design ZIP', { exact: true }).setInputFiles({ name: downloaded.suggestedFilename(), mimeType: 'application/zip', buffer: bytes })
   await expect(page.locator('.design-card')).toContainText('Traveling wizard hat')
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
   await reloadStudio(page)
@@ -96,7 +96,7 @@ test('shared design sheets cancel cleanly on a phone and do not overflow', async
   await page.getByRole('button', { name: 'New head item', exact: true }).click()
   await page.getByRole('tab', { name: 'Saved designs', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('No saved designs yet')
-  const designFile = page.getByLabel('Import shared design zip', { exact: true })
+  const designFile = page.getByLabel('Import shared design ZIP', { exact: true })
   await designFile.evaluate((input) => {
     Object.defineProperty(input, 'files', { configurable: true, value: [{ size: 65 * 1024 * 1024, arrayBuffer: () => { input.setAttribute('data-read', 'yes'); throw new Error('Oversized files must not be read') } }] })
     input.dispatchEvent(new Event('change', { bubbles: true }))

@@ -127,7 +127,7 @@
 
 <div class="studio-app" onclickcapture={rememberActivation}>
   <Experience />
-  {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You're offline — generation paused; everything else works</div>{/if}
+  {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You’re offline — generation paused; everything else works</div>{/if}
   {#if ui.toast}<div class="toast" role="status">{ui.toast}</div>{/if}
 
   {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><StageNote/></div></Sheet>{/if}

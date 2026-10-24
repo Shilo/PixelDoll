@@ -495,7 +495,7 @@ for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse:
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   await page.getByRole('radio', { name: /PNG \+ JSON/ }).click()
   const downloaded = page.waitForEvent('download')
-  await page.getByRole('button', { name: /Download zip/ }).click()
+  await page.getByRole('button', { name: /Download ZIP/ }).click()
   const zipBytes = await readFile((await (await downloaded).path())!)
   const entries = await unzip(new Uint8Array(zipBytes))
   const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json'))) as Manifest

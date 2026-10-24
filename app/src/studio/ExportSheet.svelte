@@ -124,7 +124,7 @@
   </details>
   {#snippet footer()}
     <span class="foot-note">Free · includes an editable copy</span>
-    <button class="bu-action btn primary lg" data-variant="primary" onclick={download} disabled={busy || !result?.zip}><Download size={16} />{busy ? 'Preparing…' : `Download zip · ${kb} KB`}</button>
+    <button class="bu-action btn primary lg" data-variant="primary" onclick={download} disabled={busy || !result?.zip}><Download size={16} />{busy ? 'Preparing…' : `Download ZIP · ${kb} KB`}</button>
   {/snippet}
 </Sheet>
 

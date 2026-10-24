@@ -124,7 +124,7 @@
             {#each characters as ch (ch.id)}
               <div class="api-action library-entry"><ApiPeek scope={`library-character-${ch.id}`} label={`Preview ${ch.name || 'character'}`} plan={characterZipPlan(ch.id)} activityScope={zipScope(ch.id)} /><button class="library-character" disabled={busy} onclick={() => fromPixelLab(ch.id)}>
                 {#if ch.preview_url}{#key ch.preview_url}<ApiPreview src={ch.preview_url} activityScope={listScope(offset)} />{/key}{/if}
-                <span><b>{ch.name || 'Untitled character'}</b><span class="faint small">{ch.directions} directions · {ch.animation_count} animations</span></span>
+                <span><b>{ch.name || 'Untitled character'}</b><span class="faint small">{ch.directions} {ch.directions === 1 ? 'direction' : 'directions'} · {ch.animation_count} {ch.animation_count === 1 ? 'move' : 'moves'}</span></span>
               </button></div>
             {/each}
           </div>
@@ -140,7 +140,7 @@
   {:else}
     <div class="import-preview">
       {#if preview}<Sprite img={preview} k={Math.max(1, Math.min(3, Math.floor(256 * ui.dpr / Math.max(preview.w, preview.h))))} label="Character import preview" />{/if}
-      <p class="muted">{prepared.project.manifest.rig.directions.length} directions · {prepared.project.manifest.rig.animations.length} moves · {prepared.project.manifest.items.filter((i) => i.slot !== 'body').length} separate items</p>
+      <p class="muted">{prepared.project.manifest.rig.directions.length} directions · {prepared.project.manifest.rig.animations.length} {prepared.project.manifest.rig.animations.length === 1 ? 'move' : 'moves'} · {prepared.project.manifest.items.filter((i) => i.slot !== 'body').length} separate {prepared.project.manifest.items.filter((i) => i.slot !== 'body').length === 1 ? 'item' : 'items'}</p>
     </div>
     <label class="field"><span class="label">Character name</span><input class="bu-input input" type="text" bind:value={name} maxlength="60" disabled={busy} /></label>
     {#each prepared.warnings as warning (warning)}<p class="notice warn small"><TriangleAlert size={16} /><span>{warning}</span></p>{/each}

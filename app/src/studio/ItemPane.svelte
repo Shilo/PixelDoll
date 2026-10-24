@@ -153,7 +153,7 @@
     {#if !isDemo() && colorPlan}
       <div class="field">
         <button class="bu-action btn" data-variant="outline" disabled={colorBusy || repairBusy} onclick={matchColors}>{colorBusy ? 'Matching colors…' : 'Match item colors'} <span class="cost">Free</span></button>
-        <p class="faint small">Match {colorPlan.changedPixels} pixels in {colorPlan.changedFrames.length} saved {moveName} {colorPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item's existing color palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolors stay fixed. {#if colorPlan.unmatchedPixels}{colorPlan.unmatchedPixels} unmatched eligible pixels stay unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
+        <p class="faint small">Match {colorPlan.changedPixels} {colorPlan.changedPixels === 1 ? 'pixel' : 'pixels'} in {colorPlan.changedFrames.length} saved {moveName} {colorPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item’s existing color palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolors stay fixed. {#if colorPlan.unmatchedPixels}{colorPlan.unmatchedPixels} unmatched eligible {colorPlan.unmatchedPixels === 1 ? 'pixel stays' : 'pixels stay'} unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
       </div>
     {/if}
     {#if colorError}<p class="notice bad small"><TriangleAlert size={14} />{colorError}</p>{/if}
@@ -168,7 +168,7 @@
         <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
         {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(SLOTS.find((s) => s.id === it.slot)?.zOverrides ?? [])}<button class="bu-action btn sm plain" data-variant="quiet" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
       </div>
-      <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir}</label>
+      <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir.replaceAll('-', ' ')}</label>
     </div>
 
     {#if others.length}
@@ -188,7 +188,7 @@
       <summary><ChevronRight size={14} />Details</summary>
       <div>
         <dl class="kv">
-          <dt>Id</dt><dd class="mono">{it.id}</dd>
+          <dt>ID</dt><dd class="mono">{it.id}</dd>
           <dt>Slot</dt><dd>{it.slot} · {it.layers.map((l) => `${l.id} z${l.z}`).join(', ')}</dd>
           {#if it.prompt}<dt>Prompt</dt><dd>{it.prompt}</dd>{/if}
           {#if it.extractor}<dt>Extractor</dt><dd>{it.extractor}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
@@ -207,7 +207,7 @@
             {/if}
             <dt>Re-rolls</dt><dd>{it.qa.rerolls}</dd>
           {/if}
-          <dt>Source calls</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent ? `$${usdSpent.toFixed(3)} · ` : ''}{it.provenance.length} PixelLab calls</dd>
+          <dt>Source calls</dt><dd>{gensSpent ? `${+gensSpent.toFixed(1)} gens · ` : ''}{usdSpent ? `$${usdSpent.toFixed(3)} · ` : ''}{it.provenance.length} PixelLab {it.provenance.length === 1 ? 'call' : 'calls'}</dd>
           {#if gaps.length}<dt>No frames for</dt><dd>{gaps.join(', ')}</dd>{/if}
           <dt>Method</dt><dd>{it.route ? routeNames[it.route] : 'Not recorded'}</dd>
         </dl>

@@ -125,10 +125,10 @@
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
       {#if recovery}
-        <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint checks · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>
+        <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint {recovery.checks === 1 ? 'check' : 'checks'} · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>
       {/if}
       {#if colorRepair}
-        <p class="notice warn small">Match {colorRepair.changedPixels} nearby color pixels to the standing palette across {colorRepair.changedFrames} cached {colorRepair.directions.map(nice).join(', ')} frames. The body shape stays fixed; other colors are left alone. Recheck {colorRepair.checks} changed frames · estimated {colorRepair.gens.toFixed(1)} gens or ${colorRepair.usd.toFixed(3)}.{#if colorRepair.itemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(colorRepair.itemGens)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails.</p>
+        <p class="notice warn small">Match {colorRepair.changedPixels} nearby color {colorRepair.changedPixels === 1 ? 'pixel' : 'pixels'} to the standing palette across {colorRepair.changedFrames} cached {colorRepair.directions.map(nice).join(', ')} {colorRepair.changedFrames === 1 ? 'frame' : 'frames'}. The body shape stays fixed; other colors are left alone. Recheck {colorRepair.checks} changed frames · estimated {colorRepair.gens.toFixed(1)} gens or ${colorRepair.usd.toFixed(3)}.{#if colorRepair.itemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(colorRepair.itemGens)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails.</p>
       {/if}
       {#if recoveryError}<p class="notice bad small"><CircleAlert size={14} />{recoveryError}</p>{/if}
       {#if moving.done && moving.fitIds.length}<p class="notice small"><Check size={14} /><span>The body move is ready. {moving.fitIds.length} shared equipment {moving.fitIds.length === 1 ? 'copy needs' : 'copies need'} a separately priced animation review.</span><button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'activity')}>Review equipment fits</button></p>{/if}
@@ -151,7 +151,7 @@
         <div class="field">
           <span class="label">Views to replace</span>
           {#each availableDirs as dir (dir)}<label class="check"><input type="checkbox" checked={selectedDirs.includes(dir)} onchange={(e) => (selectedDirs = e.currentTarget.checked ? [...selectedDirs, dir] : selectedDirs.filter((d) => d !== dir))} />{nice(dir)}</label>{/each}
-          <p class="notice warn small">Only selected body views are replaced. Equipment ticked below is re-posed for those views; other equipment stays hidden there until remade. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)} Mirrored views follow their source.{/if}</p>
+          <p class="notice warn small">Only selected body views are replaced. Equipment checked below is re-posed for those views; other equipment stays hidden there until remade. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)} Mirrored views follow their source.{/if}</p>
         </div>
       {:else}<p class="faint small">Choose an existing move to replace selected views.</p>{/if}
       <label class="field">
@@ -179,7 +179,7 @@
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
-          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ' (west mirrored)' : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes do not trigger redraws.</p>
+          <p class="faint small">{text.trim() ? 'pixminimax motion (unarmed, no props, no effects) → joints → raw skeleton-v3 on the rest view' : action === 'walk' ? 'walking skeleton-v3 motion → joints → raw skeleton-v3 on the rest view' : 'keypoints authored from the rest pose → raw skeleton-v3'} · {est?.frames} frames × {dirs} directions{m?.rig.directions.some((d) => d.mirrorOf) ? ` (${m.rig.directions.filter((d) => d.mirrorOf).map((d) => d.id.replaceAll('-', ' ')).join(', ')} mirrored)` : ''} · body ≈ {est?.body.toFixed(1)} gens, items {est?.items} gens · body review notes do not trigger redraws.</p>
         </div>
       </details>
     </div>

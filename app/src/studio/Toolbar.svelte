@@ -62,7 +62,7 @@
   {#if !isDemo()}<button class="row" role="menuitem" aria-label="Set up character…" onclick={() => sheet('setup')}><PersonStanding size={16} /><span class="row-name">Set up character…</span></button>{/if}
   {#if !isDemo()}<button class="row" role="menuitem" aria-label="Delete character…" onclick={() => sheet('delete')}><Trash size={16} /><span class="row-name">Delete character…</span></button>{/if}
   <hr />
-  <button class="row" role="menuitem" aria-label={app.key ? 'PixelLab key' : 'Connect PixelLab…'} onclick={() => sheet('connect')}><KeyRound size={16} /><span class="row-name">{app.key ? 'PixelLab key' : 'Connect PixelLab…'}</span>
+  <button class="row" role="menuitem" aria-label={app.key ? 'PixelLab account' : 'Connect PixelLab…'} onclick={() => sheet('connect')}><KeyRound size={16} /><span class="row-name">{app.key ? 'PixelLab account' : 'Connect PixelLab…'}</span>
     {#if app.balance}<span class="faint small num">{fmtNum(app.balance.subscription.generations)} gens</span>{/if}</button>
   <button class="row" role="menuitem" aria-label="Activity" onclick={() => sheet('activity')}><Activity size={16} /><span class="row-name">Activity</span>{#if active}<span class="badge accent">{active}</span>{/if}</button>
   <button class="row" role="menuitem" aria-label="Character selection" onclick={() => { close(); characters() }}><House size={16} /><span class="row-name">Character selection</span></button>

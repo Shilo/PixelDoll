@@ -244,7 +244,7 @@ test('all production extra categories, native menu focus, mode controls and Tab 
   await menu.getByRole('button', { name: 'Held item', exact: true }).click()
   await expect(menu).not.toBeVisible()
   await expect(more).toBeFocused()
-  await expect(page.getByRole('group', { name: 'Hands items', exact: true })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Held items', exact: true })).toBeVisible()
   await world(page).focus()
   await page.keyboard.press('Tab')
   await expect(world(page)).not.toBeFocused()
@@ -405,7 +405,7 @@ test('320px inspection keeps both native selects and All directions within its t
 test('shallow landscape More menu stays clamped and every additional equipment group is reachable', async ({ page }) => {
   await page.setViewportSize({ width: 844, height: 390 })
   await customize(page)
-  for (const [label, group] of [['Face', 'Face'], ['Legs', 'Legs'], ['Feet', 'Feet'], ['Back', 'Back'], ['Held item', 'Hands']] as const) {
+  for (const [label, group] of [['Face', 'Face'], ['Legs', 'Legs'], ['Feet', 'Feet'], ['Back', 'Back'], ['Held item', 'Held']] as const) {
     await page.getByRole('button', { name: 'More', exact: true }).click()
     const popup = page.locator('#more-equipment')
     await expect(popup).toBeVisible()
@@ -524,7 +524,7 @@ test('offline export and device import remain accessible production actions', as
   await exportButton.click()
   const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
   await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
-  const download = sheet.getByRole('button', { name: /^Download zip/ })
+  const download = sheet.getByRole('button', { name: /^Download ZIP/ })
   await expect(download).toBeEnabled()
   const event = page.waitForEvent('download'); await download.click()
   const path = await (await event).path(); expect(path).not.toBeNull()
