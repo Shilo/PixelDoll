@@ -43,10 +43,11 @@ deployed by Pages. Both entry points refuse to initialize the app when framed, m
 this client guard is not a replacement for response-header protection. A future static hosting/CDN change can deliver
 headers without adding an application backend.
 
-Deferred separately: persisted PixelDoll queue records are not scoped to an API-key fingerprint. Reloading after a
-saved key changed may attach the existing ledger to that key. A future fix must scope enqueue/dedup/recovery/polling
-durably and conservatively handle legacy records while preserving accepted job IDs. This patch avoids introducing
-automatic account switching in open tabs; it does not claim durable queue-account isolation.
+User-deferred on 2026-10-23: persisted PixelDoll queue credential ownership is an optional account-switch edge case,
+not a release blocker or scheduled implementation. Reloading after a saved key changed may attach the existing ledger
+to that key. Revisit only if requested; future scope includes enqueue/dedup/recovery/polling, preserving accepted job IDs
+and keeping unowned saved work separate. Open tabs already avoid automatic account switching; durable queue-account
+isolation is not implemented. The TODO also retains optional response-header hosting work for a future hosting review.
 
 Encryption is deferred in the TODO/roadmap: a fixed bundled key or an automatically available saved decryption key
 does not solve same-origin token theft, while a separate passphrase adds unwanted friction. Reassess only when there
