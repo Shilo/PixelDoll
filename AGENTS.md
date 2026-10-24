@@ -70,6 +70,7 @@ Use only the allowed PixelLab models above, and check docs/research/pixellab/ be
 PixelLab credits are real money: spend only when the task needs generations, never auto-resend paid requests, and prefer offline checks on stored frames.
 Never print, log, screenshot or commit a PixelLab token or the .env file.
 Follow the Git Conventional Commits standard for every commit.
+Use American English spelling (color, gray, center, -ize) in code, UI text and docs; keep existing British wording only where exact text matters: PixelLab request text, stored or exported ids, and quoted or recorded evidence.
 
 ## Agent testing
 
