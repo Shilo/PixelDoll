@@ -57,6 +57,23 @@ Legend: `[ ]` todo · `[~]` in progress · `[x]` done · `[!]` concern
 Physical-phone testing is out of scope by user decision (2026-10-22). The live site passed the keyless Studio regression
 in Edge, including emulated phone portrait/landscape and tablet layouts; no physical-device or real-key claim.
 
+## Frame Editor — planned, not implemented
+
+The [unified editor plan](docs/design/frame-editor/README.md) includes character/body and item frames in one separate
+embedded screen. Earlier equipment-only recommendations remain historical; the core release must include safe body
+editing, not permanently defer it. All implementation work below is unstarted; detailed dependencies and acceptance
+cases live in the [delivery plan](docs/design/frame-editor/delivery-plan.md).
+
+- [ ] Run offline UX, coordinates/mirrors, draft/archive/conflict, body-fitting and palette/overlap spikes (E0/S1–S5).
+- [ ] Implement immutable revisions, session drafts, Undo/recovery, all-writer checks and portable history (E1).
+- [ ] Add the full-screen editor, explicit target/frame/scope, app appearance and safe return navigation (E2).
+- [ ] Add body/item Move, Draw/Erase/source palette and reviewed all-wardrobe group alignment (E3).
+- [ ] Add direct joint correction/rescue, body fitting review and honest preview/export/recovery states; verify the
+      coherent local editor before release (E4). Preserve current structural guards and atomic publication safeguards.
+- [ ] Qualify mapped PNG replacement, custom-colour ownership and other deliberate power tools (E5).
+- [ ] Only when a later task needs it, qualify explicitly priced v3 pose candidates and optional IK in the same
+      editor (E6/S6). No paid generation was requested or performed for the planning package.
+
 ## Concerns
 - [ ] **Deferred: scope the persisted queue to its credential.** Open tabs now retain their current account when
   another app changes the saved key. Reloading can still attach an existing ledger to a replacement saved key.

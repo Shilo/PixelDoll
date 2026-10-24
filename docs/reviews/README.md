@@ -2,6 +2,13 @@
 
 These 2026-10-23 reports inform future work. They do not replace the approved immersive prototype or establish that the proposed repairs are implemented. Findings retain their original scope and evidence limits; repository cleanup did not re-audit their technical conclusions.
 
+**Current editor planning:** [Unified Frame Editor](../design/frame-editor/README.md) supersedes the equipment-only
+boundary and separate repair-tool proposals for future work. It defines one embedded full-screen tool for body/items,
+pixel/alignment/joint edits, recoverable drafts and reviewed Save/return, with research, data contracts, planned spikes,
+delivery gates and [review agreement](../design/frame-editor/consensus.md). It is planning only; the older mock-up and
+audits below remain dated evidence. Some safeguards identified by those audits have since been implemented, as the
+new package's current-source investigation records.
+
 | Artifact | Purpose |
 | --- | --- |
 | [Frame-repair recommendation](2026-10-23-frame-repair-recommendation.md) | Proposed pixel, alignment and joint-guide workflows, tradeoffs and implementation order |

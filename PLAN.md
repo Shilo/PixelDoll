@@ -67,6 +67,16 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 7. **Housekeeping** — CI runner pinned to `ubuntu-24.04`; PixelLab OpenAPI snapshot refresh when
    endpoints change. Releases: bump `app/package.json`, annotated tag `vX.Y.Z`, `gh release create`.
 
+## Frame Editor planning (2026-10-23)
+
+The [unified Frame Editor plan](docs/design/frame-editor/README.md) defines a separate full-screen tool embedded in
+PixelDoll for both body and equipment frames: alignment, Draw/Erase, detected joints and desired-pose drafts, one
+recoverable editing session and explicit reviewed Save/return. It replaces the earlier equipment-only planning boundary.
+Implementation has not started in this task. The [delivery sequence](docs/design/frame-editor/delivery-plan.md) begins
+with offline UX/data spikes, then revisions/history/portable recovery, the shared screen and a coherent local editor
+including body edits. Paid pose candidates remain a later qualified capability in that same screen. Research, precise
+body/gear safety contracts and reviewer agreement are linked from the plan; existing audits remain historical evidence.
+
 ## Decisions log
 
 - D1 (2026-10-20): Browser calls PixelLab REST v2 directly with the user's token (CORS verified). No backend, ever.
@@ -97,6 +107,10 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 - D16 (2026-10-22, professional audit): New character forms default to independent directions. Mirrored economy is
   optional with an explicit held-hand warning; missing policy in historical drafts/specs retains mirrored behavior.
   Existing frozen projects are not regenerated or silently converted.
+- D17 (2026-10-23, user scope and team planning): Plan one embedded full-screen Frame Editor for body and equipment,
+  with visible target/frame/tool choices, local pixel/alignment/joint edits, durable drafts and explicit revision-safe
+  saving. Body edits require fitting review rather than a permanent lock or automatic paid refit. No implementation,
+  dependency change or API spend is included in this planning decision. See the [canonical package](docs/design/frame-editor/README.md).
 
 ## PWA (deferred, D13)
 
