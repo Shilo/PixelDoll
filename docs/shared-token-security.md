@@ -6,7 +6,9 @@ encryption, backend, or additional unlock step is required. Apps on other origin
 
 ## Cross-app notifications
 
-The implementation in `src/lib/shared-auth.ts` is identical in both apps (PixelDoll's source lives under `app/`).
+Only the shared storage names and message meanings must agree. Applications may use different implementations;
+the two current helper files happen to match for convenience. Reading `pixellabApiKey` alone is sufficient to share
+a remembered token; adopting this protocol additionally gives an app coordinated Forget behavior.
 
 - After changing the saved key, send the bare string `key-changed` on `BroadcastChannel('pixellab-auth')`.
   Other remembered sessions read the current `pixellabApiKey` value, never a key from a message. If it changes to a
@@ -20,7 +22,8 @@ The implementation in `src/lib/shared-auth.ts` is identical in both apps (PixelD
   visibility restoration to catch missed notifications. A canonical storage removal disconnects remembered clients;
   `localStorage.clear()` disconnects all cooperating clients. No receiver echoes events or removes another app's newer saved key.
 - Session-restoring apps associate their tab credential with the current Forget marker. They discard that tab copy
-  if a newer Forget occurred while the page was inactive. Never restore a stale credential after Forget.
+  if a newer Forget occurred while the page was inactive. Untagged old session records are discarded, never migrated.
+  Never restore a stale credential after Forget.
 - Explicit reconnection invalidates stale responses before the new account is verified.
   Clearing local credentials prevents future requests; it cannot recall requests already submitted or revoke a stolen token.
 

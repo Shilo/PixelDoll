@@ -1,5 +1,5 @@
-// Shared by origin-wide PixelLab apps. Keep this protocol identical in Backpack.
-// Only pixellabApiKey contains a credential; notifications never carry one.
+// Origin-wide PixelLab coordination: apps agree on names and message meaning, not identical code.
+// Only pixellabApiKey contains a credential; app-generated channel messages never carry one.
 export const SAVED_KEY = 'pixellabApiKey';
 export const FORGET_MARKER = 'pixellabAuthForget';
 export const AUTH_CHANNEL = 'pixellab-auth';
