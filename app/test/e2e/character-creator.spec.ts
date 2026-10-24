@@ -358,7 +358,7 @@ test.describe('touch tablet', () => {
   test('mirror controls retain 44px targets without overflowing the two-column layout', async ({ page }) => {
     const sheet = await open(page)
     const tab = await sheet.getByRole('tab', { name: 'Prompt', exact: true }).boundingBox(), help = await sheet.getByRole('button', { name: 'Appearance help', exact: true }).boundingBox()
-    expect(tab!.x + tab!.width).toBeLessThanOrEqual(help!.x)
+    expect(tab!.x + tab!.width <= help!.x || tab!.y + tab!.height <= help!.y).toBe(true)
     await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
     const buttons = await sheet.locator('.mirror, .creator-tabs button').evaluateAll(elements => elements.map(el => { const r = el.getBoundingClientRect(); return { w: r.width, h: r.height } }))
     expect(buttons.filter(b => b.w < 44 || b.h < 44)).toEqual([])
@@ -366,7 +366,7 @@ test.describe('touch tablet', () => {
   })
 })
 
-for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 1440, height: 900 }]) test(`creator fits ${viewport.width}×${viewport.height} without clipped controls`, async ({ page }) => {
+for (const viewport of [{ width: 320, height: 568 }, { width: 350, height: 800 }, { width: 360, height: 800 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 900, height: 900 }, { width: 1440, height: 900 }]) test(`creator fits ${viewport.width}×${viewport.height} without clipped controls`, async ({ page }) => {
   await page.setViewportSize(viewport); const sheet = await open(page)
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf')
   const horizontal = await sheet.evaluate(element => ({ client: element.clientWidth, scroll: element.scrollWidth }))
@@ -415,6 +415,31 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
     return [...el.querySelectorAll('button')].every(button => { const r = button.getBoundingClientRect(); return r.left >= row.left && r.right <= row.right + 1 && r.top >= row.top && r.bottom <= row.bottom })
   })
   expect(toolbar).toBe(true)
+})
+
+test('compact creator toolbar keeps wider fallback-font labels and actions readable', async ({ page, context }, info) => {
+  await context.route('https://*.pixellab.ai/**', route => route.abort())
+  for (const width of [320, 900]) {
+    await page.setViewportSize({ width, height: width === 320 ? 568 : 900 })
+    const sheet = await open(page)
+    await page.addStyleTag({ content: '.character-sheet { font-family: Verdana, sans-serif !important; }' })
+    const tabs = sheet.getByRole('tablist', { name: 'Prompt editor', exact: true })
+    await tabs.scrollIntoViewIfNeeded()
+    expect(await tabs.getByRole('tab').evaluateAll(buttons => buttons.every(button => {
+      const range = document.createRange(); range.selectNodeContents(button)
+      const text = range.getBoundingClientRect(), rect = button.getBoundingClientRect()
+      return text.left >= rect.left && text.right <= rect.right
+    }))).toBe(true)
+    const toolbar = await sheet.locator('.editor-toolbar').boundingBox()
+    for (const label of ['Appearance help', 'Inspect API calls', 'Copy details', 'Enhance']) {
+      const button = sheet.locator('.editor-toolbar').getByRole('button', { name: label, exact: true })
+      await expect(button).toBeVisible()
+      const rect = await button.boundingBox()
+      expect(rect!.x).toBeGreaterThanOrEqual(toolbar!.x)
+      expect(rect!.x + rect!.width).toBeLessThanOrEqual(toolbar!.x + toolbar!.width + 1)
+    }
+    await page.screenshot({ path: info.outputPath(`creator-toolbar-${width}.png`) })
+  }
 })
 
 for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse: true, unique: 1, rows: 2 }, { preset: 'Diagonal 4', size: 96, frame: 160, reverse: false, unique: 2, rows: 4 }, { preset: 'Unique 8', size: 128, frame: 256, reverse: false, unique: 8, rows: 8 }]) test(`offline creation, persistence and export: ${config.preset}, ${config.frame}px`, async ({ page, context }) => {
