@@ -2,7 +2,8 @@ import { expect, type Page } from '@playwright/test'
 
 /** Enter through Characters and open Head, which the former all-category sidebar always exposed. */
 export async function enterStudio(page: Page) {
-  await expect(page.locator('.customize-action, .experience-stage')).toBeVisible()
+  // First load opens IndexedDB and fixtures; under a busy full suite this can exceed the default 5s.
+  await expect(page.locator('.customize-action, .experience-stage')).toBeVisible({ timeout: 20_000 })
   const customize = page.locator('.customize-action')
   if (await customize.count()) await customize.click()
   await expect(page.locator('.experience-stage')).toBeVisible()

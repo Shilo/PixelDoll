@@ -13,7 +13,7 @@ const RAMP: Record<Key, (t: number) => [number, number, number]> = {
   magenta: (t) => [Math.round(70 + 185 * t), Math.round(110 * t * t), Math.round(70 + 185 * t)],
 };
 
-const HUES: Record<Key, RegExp> = { green: /green|emerald|lime|olive|jade|teal|mint|forest/i, magenta: /red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|magenta|fuchsia/i };
+const HUES: Record<Key, RegExp> = { green: /\b(?:green|emerald|lime|olive|jade|teal|mint|forest)/i, magenta: /\b(?:red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|magenta|fuchsia)/i };
 /** May this key be used for an item? A key must stay far from the item hue (magenta failed on a red cape, gray on steel [S2]). */
 export const keyAllowed = (prompt: string, k: Key) => !HUES[k].test(prompt);
 /** Green unless the item's color words collide with green (S2 rule). Gray is never used. */
@@ -270,6 +270,7 @@ export function selfTest() {
   console.assert(keyScore('green', 9, 39, 7) >= KT, 'dark green outline is key (ratio score)');
   console.assert(pickKey('an emerald cloak') === 'magenta' && pickKey('a red cape') === 'green', 'pickKey');
   console.assert(!keyAllowed('a long red cloth cape', 'magenta') && keyAllowed('a steel sword', 'magenta'), 'keyAllowed');
+  console.assert(keyAllowed('a leather cap, azure colored', 'magenta') && !keyAllowed('a reddish cloak', 'magenta') && keyAllowed('a steel helmet', 'green'), 'color words match at a word start');
   const sp: Img = { w: 2, h: 1, data: new Uint8ClampedArray([100, 60, 40, 255, 70, 85, 40, 255]) };
   console.assert(despill(sp, 'green').data.slice(4, 8).join() === '100,60,40,255', 'despill snaps olive edge to the core brown');
   console.assert(chromaPrompt('a hat', 'green', 'X. ', true).includes('Frame 1 already wears a hat'), 'anchor prompt');

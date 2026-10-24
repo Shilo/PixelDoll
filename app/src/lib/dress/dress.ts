@@ -36,7 +36,7 @@ const wordOf = (noun: string) => WORDS.find(([re]) => re.test(noun))?.[1];
 export function materialNames(it: Pick<Item, 'slot' | 'prompt' | 'name'>, ramps: Hex[][]): string[] {
   const text = `${it.prompt} ${it.name}`.toLowerCase(), hues = ramps.map(hueName), used = new Set<string>();
   const words = WORDS.map(([re, w]) => [text.search(re), w] as const).filter(([i]) => i >= 0).sort((a, b) => a[0] - b[0]).map(([, w]) => w);
-  const pairs = [...text.matchAll(/\b(\w+)\s+(\w+)/g)].filter((m) => COLOR_HUE[m[1]]).map((m) => ({ hues: COLOR_HUE[m[1]], noun: m[2] }));
+  const pairs = [...text.matchAll(/\b(\w+)\s+(\w+)/g)].filter((m) => COLOR_HUE[m[1]] && !/^colou?red$/.test(m[2])).map((m) => ({ hues: COLOR_HUE[m[1]], noun: m[2] }));
   const free = (w?: string) => (w && !used.has(w) ? w : undefined);
   // B10 (T1 P2-10): a near-black ramp is the outline, and an unexplained ramp is a "Detail" (a hue word misnames it)
   const lum = (h: Hex) => { const n = fromHex(h); return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255; };
@@ -235,6 +235,7 @@ export function selfTest() {
   console.assert(materialNames({ slot: 'feet', name: 'Boots', prompt: 'tall boots' }, [red, gray]).join() === 'Leather,Detail' && materialNames({ slot: 'body', name: 'Base', prompt: '' }, [red, gray]).join() === 'Skin,Clothes', 'slot + base names');
   console.assert(materialNames({ slot: 'back', name: 'Cape', prompt: 'cape' }, [red, red, red]).join() === 'Cloth,Detail,Detail 2', 'no duplicate words');
   console.assert(materialNames({ slot: 'torso_inner', name: 'Vest', prompt: 'leather armor vest' }, [red, ['#101012', '#1c1c20'] as Hex[]]).join() === 'Leather,Outline', 'dark ramp = outline');
+  console.assert(materialNames({ slot: 'head', name: 'Cap', prompt: 'leather cap, red colored' }, [red]).join() === 'Leather', 'a color hint never names a material');
   // B15: a region-split base -> Shirt (even-blue garment grays), Shorts (odd), Skin (the rest)
   const rb = { manifest: { rig: { baseItem: 'b' }, materials: [], items: [{ id: 'b', name: 'Base', slot: 'body', prompt: '', regions: 'shirt-shorts', materials: [], layers: L('sha256:r') }] } as unknown as Manifest,
     images: new Map([['sha256:r', px(0x9eacb0, 0x6d7c86, 0x9eacb1, 0x6d7c87, 0xc96e4e, 0xe4976e, 0x000000)]]) } as Project;
