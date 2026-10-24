@@ -45,4 +45,18 @@ All verification is offline: mocked or blocked PixelLab transport, local fixture
 
 After this merge commit is pushed, verify local main, the fetched remote main and the server's main reference agree, and verify both input commits remain ancestors. Only then delete the old local redesign branch and create `feat/game-experience-rework`. There is no auxiliary worktree for the old branch; the primary checkout must remain in place.
 
+## Independent follow-up challenge
+
+Two GPT-6.1 Sol High reviewers independently compared both parents and reproduced issues offline. The coordinating reviewer reproduced the failures before fixing them and challenged the proposed changes:
+
+- Fixed a merge-specific credential race: restoring Activity input data could pair an old key with a new credential revision. Polls now recheck the key, revision and connection after storage reads.
+- Fixed a merge-specific Unity clipping regression: the canonical body now uses the same clipped-variant resolver as equipment. Exported pixels are checked against the compositor; native Unity execution is not claimed.
+- Fixed an inherited queue deadlock: missing stored input images now fail locally before account lookup rather than waiting indefinitely for plan verification. Cancellation and disconnect during the check remain respected.
+- Rejected the Unity editor color-preview concern as an intentional, documented limitation: chosen runtime palettes apply in Play Mode, while persistent editor sprites use default colors.
+- GitHub exposed the old five-minute browser-step limit after the suite expanded. The limit is now fifteen minutes with individual test results; per-test limits and checks remain unchanged. CI results are evaluated separately from local verification.
+
+Bronze UI remote main `4883351` is two commits beyond `v0.2.1`, but only release documentation, showcase spelling, and its test labels differ. Published styles, Svelte components and package configuration are unchanged. No new theme release or dependency change is warranted.
+
+Review evidence: [queue/creation audit](2026-10-23-independent-merge-review.md), [UI/export audit](2026-10-23-merge-ui-export-review.md).
+
 Local raw logs are ignored under `.runtime.tmp/merge-recovery/`; generated browser evidence remains local. The earlier interrupted-merge patch is historical recovery material, not a finished merge to apply.

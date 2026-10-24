@@ -146,17 +146,17 @@ function memoryQueue(records: Map<string, JobRec>) {
     locks: null, online: () => true, now: () => 1000,
   });
 }
-test('input preparation failure never records a paid request, including after reloading its attempted queue record', async () => {
+test('input preparation failure never records a paid request, including after reloading its failed queue record', async () => {
   const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
   const records = new Map<string, JobRec>(), queue = memoryQueue(records);
   const record = await queue.enqueue({ method: 'POST', path: '/edit-animation-v2', body: { seed: 1, image: { type: 'base64', base64: 'aA==' } } });
   queue.setKey('test-key');
   await queue.tick();
-  expect(records.get(record.id)).toMatchObject({ state: 'failed', attempts: 1, requestStarted: false, error: expect.stringContaining('nothing was sent') });
+  expect(records.get(record.id)).toMatchObject({ state: 'failed', attempts: 0, requestStarted: false, error: expect.stringContaining('nothing was sent') });
   expect(snapshot().filter(call => !call.background)).toEqual([]);
   const reloaded = memoryQueue(records); await reloaded.load(); reloaded.setKey('test-key'); await reloaded.tick();
   expect(snapshot().filter(call => !call.background)).toEqual([]);
-  expect(fetchMock.mock.calls.every(([url, options]) => String(url).endsWith('/balance') && options.method === 'GET')).toBe(true);
+  expect(fetchMock).not.toHaveBeenCalled(); // Missing inputs fail before account lookup or a submission attempt.
 });
 
 test.each([false, true, undefined])('crash restore distinguishes known-unsent preparation from unknown transport (%s)', async (requestStarted) => {

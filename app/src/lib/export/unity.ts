@@ -168,7 +168,7 @@ namespace PixelDoll
             var visible = new List<KeyValuePair<PdNode, int>>();
             foreach (var n in nodes)
             {
-                var it = Item(n.slot == "body" ? data.baseItem : Shown(equipped.Find(x => x.slot == n.slot)?.item));
+                var it = Item(Shown(n.slot == "body" ? data.baseItem : equipped.Find(x => x.slot == n.slot)?.item));
                 var layer = it == null ? null : Array.Find(it.layers, l => l.role == n.role);
                 n.renderer.enabled = layer != null && !hidden.Contains(n.slot);
                 if (layer == null) continue;

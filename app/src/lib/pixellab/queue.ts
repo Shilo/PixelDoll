@@ -534,10 +534,19 @@ export class Queue {
 
   private async hasPreparedInputs(): Promise<boolean> {
     // A broken stored request should fail locally without even an account lookup.
-    for (const r of this.recs.values()) if (r.state === 'queued' && !this.persisting.has(r.id)) {
-      if ((await Promise.all(r.inputs.map((sha) => this.deps.getBlob(sha)))).every(Boolean)) return true;
+    const connection = this.connection;
+    let prepared = false;
+    for (const r of this.recs.values()) if (r.state === 'queued' && !this.persisting.has(r.id) && !this.busy.has(r.id)) {
+      const blobs = await Promise.all(r.inputs.map((sha) => this.deps.getBlob(sha)));
+      if (this.disconnected || connection !== this.connection || this.role === 'follower') return false;
+      if (this.recs.get(r.id) !== r || r.state !== 'queued' || this.persisting.has(r.id) || this.busy.has(r.id)) continue;
+      const missing = blobs.findIndex(blob => !blob);
+      if (missing < 0) { prepared = true; continue; }
+      Object.assign(r, { state: 'failed', requestStarted: false, waitingForPlan: undefined, finishedAt: this.deps.now(), error: `input image ${r.inputs[missing].slice(0, 12)} missing from storage; nothing was sent` });
+      this.submitScopes.delete(r.id);
+      await this.save(r);
     }
-    return false;
+    return prepared;
   }
 
   // ---- enqueue ----
@@ -720,11 +729,13 @@ export class Queue {
     const ops: Promise<void>[] = [];
     let capacity: Promise<void> | undefined;
     if (this.key && !this.paused && this.detectCapacity && !this.capacityRead && now - this.capacityCheckedAt >= 60_000 && await this.hasPreparedInputs()) {
+      if (disconnected()) return { ops: [] };
       const read = this.refreshCapacity();
       this.capacityRead = read;
       const refreshed = read.finally(() => { if (this.capacityRead === read) this.capacityRead = null; });
       if (!this.capacityKnown) capacity = refreshed;
     }
+    if (disconnected()) return { ops: [] };
     if (this.key && !this.paused && (!this.capacityRead || this.capacityKnown) && !this.capacityProbe && now >= this.capacityRetryAt) {
       let active = this.activeSlots();
       for (const r of [...this.recs.values()].sort((a, b) => a.createdAt - b.createdAt)) {
@@ -872,17 +883,19 @@ export class Queue {
   }
 
   private async poll(r: JobRec, s: SubJob) {
-    const key = this.key;
+    const key = this.key, credentialRevision = this.keyRevision, connection = this.connection;
+    const currentCredential = () => !this.disconnected && connection === this.connection && credentialRevision === this.keyRevision && key === this.key;
     if (this.deps.api === realApi) await this.restoreActivity(r);
+    // Restoring inspection data awaits storage: Forget/reconnect or releasing the queue must stop the old poll.
+    if (!key || !currentCredential()) return;
     s.lastPoll = this.deps.now();
     let job: Job;
-    const credentialRevision = this.keyRevision;
     try {
       job = await this.deps.api<Job>(key, 'GET', `/background-jobs/${encodeURIComponent(s.id)}`, undefined, undefined, { queueId: r.id, queueTag: r.tag, activityScope: r.activityScope, label: r.label, background: true });
     } catch (e) {
       if (!(e instanceof ApiError)) throw e;
-      if (e.kind === 'auth') { s.error = e.message; if (credentialRevision === this.keyRevision) this.paused = 'auth'; }
-      else if (isNetwork(e)) { s.error = e.message; if (credentialRevision === this.keyRevision) this.goOffline(); } // B15
+      if (e.kind === 'auth') { s.error = e.message; if (currentCredential()) this.paused = 'auth'; }
+      else if (isNetwork(e)) { s.error = e.message; if (currentCredential()) this.goOffline(); } // B15
       else if (e.kind === 'notfound' && this.deps.now() - (r.submittedAt ?? 0) > LOST_AFTER_MS) {
         s.done = true;
         s.status = 'lost';
