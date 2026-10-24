@@ -1,5 +1,6 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
+  import { customize } from './experience/state.svelte.ts'
   import { default as ApiPeek } from './ApiPeek.svelte'
   import { setupPeekPlan } from './apiPlans.ts'
   import Sprite from './Sprite.svelte'
@@ -49,18 +50,18 @@
     <p class="muted">Find joints on the frozen body frames, check alignment and colours, and connect the standing views to your PixelLab account. Your existing artwork, equipment and outfits stay aligned.</p>
     <p class="faint small">Pose registration uses a humanoid rig with {m?.rig.view ? `the saved ${m.rig.view} camera` : 'a low top-down camera because no camera was saved'}. Check that this view matches the artwork before starting setup.</p>
     {#if preview}<div class="setup-preview"><Sprite img={preview} k={3} limit={192} label="Standing reference for rig setup" /></div>{/if}
-    {#if m}<label class="field"><span class="label">Standing reference</span><select class="input" bind:value={restAnim} disabled={plan?.fixedRest}><option value="">Choose automatically</option>{#each m.rig.animations as a (a.id)}<option value={a.id}>{a.id}</option>{/each}</select><span class="faint small">{plan?.fixedRest ? 'Saved standing views are retained so existing equipment keyframes stay aligned.' : 'Use a clear standing pose with every direction. The first frame is the reference.'}</span></label>{/if}
-    <label class="field"><span class="label">Existing appearance</span><textarea class="input" rows="3" maxlength="2000" bind:value={looks} placeholder="Describe the body, hair, colours and clothes already in this artwork"></textarea><span class="faint small">This guides new moves. Include existing hair and clothes; setup cannot separate them from the base.</span></label>
+    {#if m}<label class="field"><span class="label">Standing reference</span><select class="bu-input input" bind:value={restAnim} disabled={plan?.fixedRest}><option value="">Choose automatically</option>{#each m.rig.animations as a (a.id)}<option value={a.id}>{a.id}</option>{/each}</select><span class="faint small">{plan?.fixedRest ? 'Saved standing views are retained so existing equipment keyframes stay aligned.' : 'Use a clear standing pose with every direction. The first frame is the reference.'}</span></label>{/if}
+    <label class="field"><span class="label">Existing appearance</span><textarea class="bu-input input" rows="3" maxlength="2000" bind:value={looks} placeholder="Describe the body, hair, colours and clothes already in this artwork"></textarea><span class="faint small">This guides new moves. Include existing hair and clothes; setup cannot separate them from the base.</span></label>
     {#if plan}<p class="faint small">{plan.frames.size} unique body frames · {plan.gens} gens estimated. Includes a 0.25-gen account connection. Matching saved measurements are reused.</p>{/if}
     {#each plan?.warnings ?? [] as warning (warning)}<p class="notice warn small"><TriangleAlert size={14} /><span>{warning}</span></p>{/each}
     {#if error}<p class="notice warn small" role="alert"><TriangleAlert size={16} /><span>{error}</span></p>{/if}
     {#if busyElsewhere}<p class="notice small">Finish the other character operation before starting setup.</p>{/if}
   {/if}
   {#snippet footer()}
-    {#if mine && settingUp.done}<button class="btn primary" onclick={async () => { await dismissSetup(); ui.sheet = null }}>Start dressing up</button>
-    {:else if mine && settingUp.error}<ApiPeek scope="character-setup-resume" label="Resume rig setup" plan={setupPeekPlan(plan, settingUp.spec?.looks ?? looks)} activityScope={settingUp.spec?.activityScope} /><button class="btn plain" onclick={dismissSetup}>Dismiss setup</button><span class="api-action"><button class="btn primary" onclick={() => settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)), true)}>Resume setup</button></span>
-    {:else if active}<span class="foot-note">You can keep working. Setup resumes after reload.</span><button class="btn" onclick={() => (ui.sheet = null)}>Hide</button>
-    {:else}<span class="foot-note">Existing pixels stay unchanged</span><span class="api-action"><ApiPeek scope="character-setup" label="Set up rig" plan={setupPeekPlan(plan, looks)} /><button class="btn primary" disabled={!plan || !looks.trim() || busyElsewhere} onclick={go}>Set up <span class="cost">{plan?.gens ?? '–'} gens</span></button></span>{/if}
+    {#if mine && settingUp.done}<button class="bu-action btn primary" data-variant="primary" onclick={async () => { await dismissSetup(); customize(); ui.sheet = null }}>Start dressing up</button>
+    {:else if mine && settingUp.error}<ApiPeek scope="character-setup-resume" label="Resume rig setup" plan={setupPeekPlan(plan, settingUp.spec?.looks ?? looks)} activityScope={settingUp.spec?.activityScope} /><button class="bu-action btn plain" data-variant="quiet" onclick={dismissSetup}>Dismiss setup</button><span class="api-action"><button class="bu-action btn primary" data-variant="primary" onclick={() => settingUp.spec && withKey(() => void startSetup($state.snapshot(settingUp.spec!)), true)}>Resume setup</button></span>
+    {:else if active}<span class="foot-note">You can keep working. Setup resumes after reload.</span><button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}>Hide</button>
+    {:else}<span class="foot-note">Existing pixels stay unchanged</span><span class="api-action"><ApiPeek scope="character-setup" label="Set up rig" plan={setupPeekPlan(plan, looks)} /><button class="bu-action btn primary" data-variant="primary" disabled={!plan || !looks.trim() || busyElsewhere} onclick={go}>Set up <span class="cost">{plan?.gens ?? '–'} gens</span></button></span>{/if}
   {/snippet}
 </Sheet>
 

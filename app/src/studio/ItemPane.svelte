@@ -114,19 +114,19 @@
     {/if}
 
     <div class="actions">
-      <button class="btn {on ? '' : 'primary'}" onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button>
-      {#if it.status === 'accepted' && it.slot !== 'body'}<button class="btn" onclick={() => openSaveDesign(it.id)}><Bookmark size={14} />Save as shared design</button>{/if}
-      {#if it.design && !isDemo()}<button class="btn" onclick={() => openPinnedDesign(it.id)}>View saved design</button>{/if}
-      {#if it.design && gaps.length && !isDemo()}<button class="btn" disabled={extensionPreparing(it.id)} onclick={() => openItemExtension(it.id)}>{extensionPreparing(it.id) ? 'Checking fit…' : 'Fit missing frames'}</button>{/if}
+      <button class="bu-action btn {on ? '' : 'primary'}" data-variant="outline" onclick={() => wear(it.id)}>{on ? 'Take off' : 'Wear'}</button>
+      {#if it.status === 'accepted' && it.slot !== 'body'}<button class="bu-action btn" data-variant="outline" onclick={() => openSaveDesign(it.id)}><Bookmark size={14} />Save as shared design</button>{/if}
+      {#if it.design && !isDemo()}<button class="bu-action btn" data-variant="outline" onclick={() => openPinnedDesign(it.id)}>View saved design</button>{/if}
+      {#if it.design && gaps.length && !isDemo()}<button class="bu-action btn" data-variant="outline" disabled={extensionPreparing(it.id)} onclick={() => openItemExtension(it.id)}>{extensionPreparing(it.id) ? 'Checking fit…' : 'Fit missing frames'}</button>{/if}
       {#if !isDemo() && it.prompt && !it.design}
-        <button class="btn" onclick={() => withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}><RefreshCw size={14} />Try again</button>
+        <button class="bu-action btn" data-variant="outline" onclick={() => withKey(() => openNewItem(groupOf(it.slot).id, { slot: it.slot, prompt: it.prompt }))}><RefreshCw size={14} />Try again</button>
       {/if}
       {#if !isDemo()}
         {#if confirmRemove}
-          <button class="btn danger" onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button>
-          <button class="btn plain" onclick={() => (confirmRemove = false)}>Keep</button>
+          <button class="bu-action btn danger" data-variant="outline" onclick={() => removeItem(it.id)}><Trash size={14} />Remove for good</button>
+          <button class="bu-action btn plain" data-variant="quiet" onclick={() => (confirmRemove = false)}>Keep</button>
         {:else}
-          <button class="btn plain danger" onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button>
+          <button class="bu-action btn plain danger" data-variant="quiet" onclick={() => (confirmRemove = true)}><Trash size={14} />Remove</button>
         {/if}
       {/if}
     </div>
@@ -145,14 +145,14 @@
 
     {#if !isDemo() && repairSpec}
       <div class="field">
-        <button class="btn" disabled={repairBusy} onclick={repairFrames}>Try new item frames <span class="cost">Est. {Math.ceil(repairCost)} gens</span></button>
+        <button class="bu-action btn" data-variant="outline" disabled={repairBusy} onclick={repairFrames}>Try new item frames <span class="cost">Est. {Math.ceil(repairCost)} gens</span></button>
         <p class="faint small">Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard failures keep the previous frames. PixelLab may bill dollars; queue time varies.</p>
       </div>
     {/if}
 
     {#if !isDemo() && colourPlan}
       <div class="field">
-        <button class="btn" disabled={colourBusy || repairBusy} onclick={matchColours}>{colourBusy ? 'Matching colours…' : 'Match item colours'} <span class="cost">Free</span></button>
+        <button class="bu-action btn" data-variant="outline" disabled={colourBusy || repairBusy} onclick={matchColours}>{colourBusy ? 'Matching colours…' : 'Match item colours'} <span class="cost">Free</span></button>
         <p class="faint small">Match {colourPlan.changedPixels} pixels in {colourPlan.changedFrames.length} saved {moveName} {colourPlan.changedFrames.length === 1 ? 'frame' : 'frames'} facing {sourceDir.replaceAll('-', ' ')} to the item's existing colour palette.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves, materials and saved recolours stay fixed. {#if colourPlan.unmatchedPixels}{colourPlan.unmatchedPixels} unmatched eligible pixels stay unchanged.{' '}{/if}Existing quality warnings are kept. No PixelLab call is made.</p>
       </div>
     {/if}
@@ -164,9 +164,9 @@
     <div class="field">
       <span class="sec-title">Layer order</span>
       <div class="actions">
-        <button class="btn sm" onclick={() => moveLayer(it.id, 1, onlyDir)} title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button>
-        <button class="btn sm" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
-        {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(SLOTS.find((s) => s.id === it.slot)?.zOverrides ?? [])}<button class="btn sm plain" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
+        <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, 1, onlyDir)} title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button>
+        <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
+        {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(SLOTS.find((s) => s.id === it.slot)?.zOverrides ?? [])}<button class="bu-action btn sm plain" data-variant="quiet" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
       </div>
       <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir}</label>
     </div>

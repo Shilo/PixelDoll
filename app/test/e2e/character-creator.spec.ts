@@ -1,3 +1,4 @@
+import { openStudio, reloadStudio, equipmentMode, openAccount } from './immersive-helpers.ts'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { CharacterApi } from '../fixtures/character-api.ts'
 import { readFile } from 'node:fs/promises'
@@ -14,7 +15,7 @@ test.beforeEach(async ({ context }) => {
   })
 })
 async function open(page: Page) {
-  await page.goto('/')
+  await openStudio(page, '/')
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
   return page.getByRole('dialog', { name: 'New character', exact: true })
@@ -28,8 +29,8 @@ test.describe('creation safety', () => {
 test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` })
 test('all quality notes remain visible and failed clips come first', async ({ page, context }) => {
   await context.route('https://*.pixellab.ai/**', route => route.abort())
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts'
     const state = await import(statePath) as typeof import('../../src/studio/state.svelte.ts')
@@ -61,8 +62,8 @@ test('all quality notes remain visible and failed clips come first', async ({ pa
 test('completed move observations remain readable on desktop and mobile', async ({ page, context }) => {
   let requests = 0
   await context.route('https://*.pixellab.ai/**', route => { requests++; return route.abort() })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const statePath = '/src/studio/state.svelte.ts'
     const state = await import(statePath) as typeof import('../../src/studio/state.svelte.ts')
@@ -128,7 +129,7 @@ test('same seeded output creates separate projects and a resumed workflow preser
     const { creating } = await import(statePath) as typeof import('../../src/studio/state.svelte.ts')
     await put('projects', 'studio-create', { id: 'studio-create', spec: JSON.parse(JSON.stringify(creating.spec)) })
   })
-  await page.reload()
+  await reloadStudio(page)
   await expect.poll(async () => page.evaluate(async () => {
     const modulePath = '/src/lib/store/db.ts'
     const { get } = await import(modulePath) as typeof import('../../src/lib/store/db.ts'); return !(await get('projects', 'studio-create'))
@@ -346,7 +347,7 @@ test('canceling the connection discards the pending enhancement instead of charg
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly elf')
   await sheet.getByRole('button', { name: 'Enhance', exact: true }).click()
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
-  await page.getByRole('button', { name: 'Connect', exact: true }).click(); await connect(page)
+  await openAccount(page); await connect(page)
   await page.locator('.project-btn').click(); await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
   await expect(sheet.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue('A friendly elf')
   await expect(sheet.getByRole('button', { name: 'Enhance', exact: true })).toBeEnabled()
@@ -381,7 +382,8 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 350, height: 800 }
   const frameHeight = await sheet.getByRole('spinbutton', { name: 'Frame size', exact: true }).boundingBox()
   expect(autoHeight!.height).toBeCloseTo(frameHeight!.height, 0)
   const arrowWidths = await sheet.locator('.direction').evaluateAll(elements => elements.map(el => el.getBoundingClientRect().width))
-  expect(arrowWidths.every(width => Math.abs(width - 56) < 1)).toBe(true)
+  expect(arrowWidths.every(width => width >= 44)).toBe(true)
+  expect(Math.max(...arrowWidths) - Math.min(...arrowWidths)).toBeLessThanOrEqual(1) // Attached mirror borders may add one CSS pixel.
   const copyRight = async () => sheet.locator('.prompt-note').evaluate(el => ({ copy: el.querySelector('.copy')!.getBoundingClientRect().right, row: el.getBoundingClientRect().right }))
   const shortCopy = await copyRight()
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf with freckles and a broad nose, expressive eyebrows, small ears and a calm expression')
@@ -480,11 +482,11 @@ for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse:
   await page.locator('.project-btn').click(); await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
   await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  await page.getByRole('tab', { name: 'Moves', exact: true }).click()
+  await equipmentMode(page, 'Moves')
   const moveCanvas = page.locator('.move-thumb canvas').first()
   expect(await moveCanvas.getAttribute('width')).toBe(String(config.frame))
   expect((await moveCanvas.boundingBox())!.width).toBeLessThanOrEqual(56)
-  await page.reload(); await expect(page.locator('.project-btn')).toContainText('Offline creator test')
+  await reloadStudio(page); await expect(page.locator('.project-btn')).toContainText('Offline creator test')
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   await page.getByRole('radio', { name: /PNG \+ JSON/ }).click()
   const downloaded = page.waitForEvent('download')

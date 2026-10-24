@@ -28,8 +28,8 @@
 {#if item && clip}
   <div class="design-preview">
     <div class="field-row">
-      <label class="field small"><span class="label">Move</span><select class="input" value={clip.id} onchange={(e) => (move = e.currentTarget.value)}>{#each animations as a (a.id)}<option value={a.id}>{a.id.replace(/-/g, ' ')}</option>{/each}</select></label>
-      <label class="field small"><span class="label">Review zoom</span><select class="input" bind:value={zoom}><option value={2}>2×</option><option value={3}>3×</option><option value={4}>4×</option></select></label>
+      <label class="field small"><span class="label">Move</span><select class="bu-input input" value={clip.id} onchange={(e) => (move = e.currentTarget.value)}>{#each animations as a (a.id)}<option value={a.id}>{a.id.replace(/-/g, ' ')}</option>{/each}</select></label>
+      <label class="field small"><span class="label">Review zoom</span><select class="bu-input input" bind:value={zoom}><option value={2}>2×</option><option value={3}>3×</option><option value={4}>4×</option></select></label>
       <label class="check small"><input type="checkbox" bind:checked={alone} />Item only</label>
     </div>
     <p class="faint small">Every frame is shown below. Choose each move to check its directions and alignment.</p>

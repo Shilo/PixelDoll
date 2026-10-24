@@ -90,14 +90,14 @@
   }
 </script>
 
-<button bind:this={opener} type="button" class="btn icon plain api-peek-trigger" aria-label={all ? 'Inspect all API calls' : 'Inspect API calls'} title="PixelLab API calls" aria-expanded={open} aria-controls={id} popovertarget={id}><CodeXml size={17} /></button>
+<button bind:this={opener} type="button" class="bu-action btn icon plain api-peek-trigger" data-variant="quiet" aria-label={all ? 'Inspect all API calls' : 'Inspect API calls'} title="PixelLab API calls" aria-expanded={open} aria-controls={id} popovertarget={id}><CodeXml size={17} /></button>
 <div bind:this={panel} {id} popover="auto" class="api-peek" role="dialog" aria-label="API calls" tabindex="-1" ontoggle={toggled} onkeydown={keydown} style:left="{left}px" style:top="{top}px" style:max-height="{height}px">
   {#if open}
   <header class="peek-head">
     <div class="peek-heading"><strong>API calls</strong><span class="peek-sub" role="status">{copied || (inspectionError ? 'Saved requests unavailable' : '') || label || (all ? 'Recent API calls' : 'This action')}</span></div>
-    <button type="button" class="btn icon plain" aria-label="Copy all calls" title="Copy all calls as JSON, including background calls" disabled={!calls.length} onclick={copy}>{#if copied}<Check size={16} />{:else}<Copy size={16} />{/if}</button>
-    <button type="button" class="btn icon plain" aria-label={backgrounds ? 'Hide background calls' : 'Show background calls'} title={backgrounds ? 'Hide background calls' : `Show background calls${hidden ? ` (${hidden})` : ''}`} aria-pressed={backgrounds} onclick={() => backgrounds = !backgrounds}>{#if backgrounds}<ListMinus size={17} />{:else}<ListPlus size={17} />{/if}</button>
-    <button type="button" class="btn icon plain" aria-label="Close API calls" title="Close" onclick={close}><X size={17} /></button>
+    <button type="button" class="bu-action btn icon plain" data-variant="quiet" aria-label="Copy all calls" title="Copy all calls as JSON, including background calls" disabled={!calls.length} onclick={copy}>{#if copied}<Check size={16} />{:else}<Copy size={16} />{/if}</button>
+    <button type="button" class="bu-action btn icon plain" data-variant="quiet" aria-label={backgrounds ? 'Hide background calls' : 'Show background calls'} title={backgrounds ? 'Hide background calls' : `Show background calls${hidden ? ` (${hidden})` : ''}`} aria-pressed={backgrounds} onclick={() => backgrounds = !backgrounds}>{#if backgrounds}<ListMinus size={17} />{:else}<ListPlus size={17} />{/if}</button>
+    <button type="button" class="bu-action btn icon plain" data-variant="quiet" aria-label="Close API calls" title="Close" onclick={close}><X size={17} /></button>
   </header>
   <div class="peek-list">
     {#each visible as c, i ('id' in c ? c.id : `${scope}:${i}:${c.path}`)}

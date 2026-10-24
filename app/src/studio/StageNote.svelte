@@ -41,15 +41,15 @@
     <TriangleAlert size={14} />
     <span>{missing.map((i) => i.name).join(', ')} {missing.length > 1 ? "aren't" : "isn't"} made for {move}{ui.all ? '' : ` facing ${ui.dir}`} yet</span>
     {#if busy}
-      <button class="btn sm" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span>Making…</button>
+      <button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span>Making…</button>
     {:else if isDemo()}
-      <button class="btn sm" onclick={() => (ui.sheet = 'create')}>Make your own</button>
+      <button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'create')}>Make your own</button>
     {:else if shared}
-      <button class="btn sm" disabled={extensionPreparing(shared.id)} onclick={() => openItemExtension(shared.id, [anim!.id])}>{extensionPreparing(shared.id) ? 'Checking fit…' : 'Review equipment fit'}</button>
+      <button class="bu-action btn sm" data-variant="outline" disabled={extensionPreparing(shared.id)} onclick={() => openItemExtension(shared.id, [anim!.id])}>{extensionPreparing(shared.id) ? 'Checking fit…' : 'Review equipment fit'}</button>
     {:else if pose.length === missing.length}
-      <span class="api-action"><ApiPeek scope="equipment-missing-move" label="Make missing equipment frames" plan={m && anim ? movePlan({ manifest: m }, { id: anim.id, frames: anim.cells, items: pose.map(i => i.id), dirs: [...targetDirs] }) : []} /><button class="btn sm primary" disabled={!!moving.spec && !moving.done} onclick={makePose}>Make it <span class="cost">Est. {cost} gens</span></button></span>
+      <span class="api-action"><ApiPeek scope="equipment-missing-move" label="Make missing equipment frames" plan={m && anim ? movePlan({ manifest: m }, { id: anim.id, frames: anim.cells, items: pose.map(i => i.id), dirs: [...targetDirs] }) : []} /><button class="bu-action btn sm primary" data-variant="primary" disabled={!!moving.spec && !moving.done} onclick={makePose}>Make it <span class="cost">Est. {cost} gens</span></button></span>
     {:else if remake}
-      <button class="btn sm" onclick={() => withKey(() => openNewItem(groupOf(remake.slot).id, { slot: remake.slot, prompt: remake.prompt }))}>Make it again…</button>
+      <button class="bu-action btn sm" data-variant="outline" onclick={() => withKey(() => openNewItem(groupOf(remake.slot).id, { slot: remake.slot, prompt: remake.prompt }))}>Make it again…</button>
     {/if}
   </div>
 {/if}

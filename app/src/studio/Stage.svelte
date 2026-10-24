@@ -7,11 +7,19 @@
   import { ChevronDown, Grid2x2, Image, Minus, Pause, Play, Plus } from './icons.ts'
 
   let box: HTMLElement
+  let bar = $state<HTMLElement>()
   let w = $state(0), h = $state(0)
+  let transportHeight = $state(64)
   $effect(() => {
     const ro = new ResizeObserver(([e]) => { w = e.contentRect.width; h = e.contentRect.height })
     ro.observe(box)
     return () => ro.disconnect()
+  })
+  $effect(() => {
+    if (!bar) return
+    const observer = new ResizeObserver(([entry]) => { transportHeight = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height })
+    observer.observe(bar)
+    return () => observer.disconnect()
   })
 
   const m = $derived(store.project?.manifest)
@@ -21,7 +29,7 @@
   const cellH = $derived(frame?.h ?? 64)
   // Both desktop sidebars can leave less room than the full toolbar needs.
   const phone = $derived(ui.size !== 'expanded' || w < ((m?.rig.directions.length ?? 4) > 4 ? 620 : 440))
-  const barH = $derived(phone ? 76 : 64)
+  const barH = $derived(transportHeight + 28)
   const allDirs = $derived(m?.rig.directions ?? [])
   // B10: views the move has (the base has frames there); the others are disabled, not silently empty
   const made = $derived(m ? moveDirs(m, ui.anim) : [])
@@ -50,13 +58,13 @@
   {#if doc.loading && !m}
     <div class="stage-msg"><span class="ring spin" aria-hidden="true"></span><span class="sr">Loading</span></div>
   {:else if m}
-    <div class="stage-art" style:padding-bottom="{barH}px">
+    <div class="stage-art" style:margin-bottom="{barH}px">
       {#if ui.all}
         <div class="all-dirs" style:--cols={cols}>
           {#each grid as d, i (i)}
             {#if d}
               <figure>
-                <button class="btn plain" style="height:auto;padding:0" onclick={() => { ui.dir = d.id; ui.all = false }} aria-label="Show {d.id} only">
+                <button class="bu-action btn plain" data-variant="quiet" style="height:auto;padding:0" onclick={() => { ui.dir = d.id; ui.all = false }} aria-label="Show {d.id} only">
                   <Sprite img={cellImg(d.id)} {k} w={cellW} h={cellH} checker={ui.bg === 'checker'} label={label(d.id)} />
                 </button>
                 <figcaption>{name(d.id)}{d.mirrorOf ? ' (mirrored)' : ''}</figcaption>
@@ -71,23 +79,23 @@
       {/if}
     </div>
 
-    <div class="canvas-bar" role="toolbar" aria-label="Preview controls">
-      <button class="btn icon plain" aria-label={ui.playing ? 'Pause' : 'Play'} title="Play / pause (Space)" onclick={() => (ui.playing = !ui.playing)}>
+    <div class="canvas-bar" bind:this={bar} role="toolbar" aria-label="Preview controls">
+      <button class="bu-action btn icon plain" data-variant="quiet" aria-label={ui.playing ? 'Pause' : 'Play'} title="Play / pause (Space)" onclick={() => (ui.playing = !ui.playing)}>
         {#if ui.playing}<Pause size={16} />{:else}<Play size={16} />{/if}
       </button>
       <label class="select-wrap">
         <span class="sr">Move</span>
-        <select class="select" bind:value={ui.anim} onchange={() => (ui.frame = 0)}>
+        <select class="bu-select select" bind:value={ui.anim} onchange={() => (ui.frame = 0)}>
           {#each m.rig.animations as a (a.id)}<option value={a.id}>{a.id[0].toUpperCase() + a.id.slice(1).replace(/-/g, ' ')}</option>{/each}
         </select>
         <ChevronDown size={12} />
       </label>
       <span class="bar-sep" aria-hidden="true"></span>
-      {#if phone && allDirs.length > 4}
-        <!-- B15: 8 buttons do not fit a phone bar; a menu instead -->
+      {#if phone}
+        <!-- Available space, not direction count, determines the compact control. -->
         <label class="select-wrap">
           <span class="sr">Direction</span>
-          <select class="select dir-select" value={ui.dir} onchange={(e) => { ui.all = false; ui.dir = e.currentTarget.value as DirectionName }}>
+          <select class="bu-select select dir-select" value={ui.dir} onchange={(e) => { ui.all = false; ui.dir = e.currentTarget.value as DirectionName }}>
             {#each allDirs as d (d.id)}<option value={d.id} disabled={!made.includes(d.id)}>{name(d.id)}</option>{/each}
           </select>
           <ChevronDown size={12} />
@@ -99,16 +107,23 @@
           {/each}
         </div>
       {/if}
-      <button class="btn icon plain" aria-pressed={ui.all} aria-label="All directions" title="All directions (0)" onclick={() => (ui.all = !ui.all)}><Grid2x2 size={16} /></button>
+      <button class="bu-action btn icon plain" data-variant="quiet" aria-pressed={ui.all} aria-label="All directions" title="All directions (0)" onclick={() => (ui.all = !ui.all)}><Grid2x2 size={16} /></button>
       {#if !phone}
         <span class="bar-sep" aria-hidden="true"></span>
-        <button class="btn icon plain" aria-label="Zoom out" title="Zoom out (−)" disabled={k <= 1} onclick={() => (ui.zoom = Math.max(1, k - step))}><Minus size={14} /></button>
-        <button class="btn plain sm zoom-val num" title="Fit" aria-label="Zoom {zoomLabel}, click to fit" onclick={() => (ui.zoom = 0)}>{zoomLabel}</button>
-        <button class="btn icon plain" aria-label="Zoom in" title="Zoom in (+)" disabled={k >= fit} onclick={() => (ui.zoom = Math.min(fit, k + step))}><Plus size={14} /></button>
-        <button class="btn icon plain" aria-pressed={ui.bg === 'solid'} aria-label="Background: {ui.bg}" title="Background (checker / plain)" onclick={() => (ui.bg = ui.bg === 'checker' ? 'solid' : 'checker')}><Image size={16} /></button>
+        <button class="bu-action btn icon plain" data-variant="quiet" aria-label="Zoom out" title="Zoom out (−)" disabled={k <= 1} onclick={() => (ui.zoom = Math.max(1, k - step))}><Minus size={14} /></button>
+        <button class="bu-action btn plain sm zoom-val num" data-variant="quiet" title="Fit" aria-label="Zoom {zoomLabel}, click to fit" onclick={() => (ui.zoom = 0)}>{zoomLabel}</button>
+        <button class="bu-action btn icon plain" data-variant="quiet" aria-label="Zoom in" title="Zoom in (+)" disabled={k >= fit} onclick={() => (ui.zoom = Math.min(fit, k + step))}><Plus size={14} /></button>
+        <button class="bu-action btn icon plain" data-variant="quiet" aria-pressed={ui.bg === 'solid'} aria-label="Background: {ui.bg}" title="Background (checker / plain)" onclick={() => (ui.bg = ui.bg === 'checker' ? 'solid' : 'checker')}><Image size={16} /></button>
       {/if}
     </div>
   {:else}
     <div class="stage-msg">{doc.error || 'Nothing to show'}</div>
   {/if}
 </div>
+
+<style>
+  .canvas-bar { width:max-content; flex-wrap:wrap; justify-content:center; }
+  .canvas-bar > :global(*) { flex-shrink:0; }
+  .canvas-bar [aria-label="All directions"] { display:inline-flex; }
+  .canvas-bar .select.dir-select { min-width:100px; max-width:124px; }
+</style>

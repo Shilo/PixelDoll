@@ -24,11 +24,11 @@
 <div class="colours">
   {#if heading}
     <div class="sec-head">
-      <span class="sec-title">{only ? 'Colours' : 'Everything you wear'}</span>
+      <span class="sec-title">{only ? 'Colors' : 'Everything you wear'}</span>
       {#if !only}
         <span class="actions">
-          <button class="btn sm plain" onclick={randomize} title="Random look"><Shuffle size={14} />Random</button>
-          <button class="btn sm plain" onclick={() => resetColours()} disabled={!Object.keys(doc.variants).length}><RotateCcw size={14} />Reset</button>
+          <button class="bu-action btn sm plain" data-variant="quiet" onclick={randomize} title="Random look"><Shuffle size={14} />Random</button>
+          <button class="bu-action btn sm plain" data-variant="quiet" onclick={() => resetColours()} disabled={!Object.keys(doc.variants).length}><RotateCcw size={14} />Reset</button>
         </span>
       {/if}
     </div>
@@ -68,6 +68,6 @@
       {/each}
     {/if}
   {:else}
-    <p class="muted">Wear something to change its colours.</p>
+    <p class="muted">Wear something to change its colors.</p>
   {/each}
 </div>

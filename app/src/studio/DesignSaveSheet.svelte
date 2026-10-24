@@ -39,10 +39,10 @@
 
 {#snippet footer()}
   <span class="foot-note">Free · saved in this browser</span>
-  <button class="btn primary lg" disabled={!design || !project || !name.trim() || busy} onclick={save}><Bookmark size={16} />{busy ? 'Saving…' : 'Save design'}</button>
+  <button class="bu-action btn primary lg" data-variant="primary" disabled={!design || !project || !name.trim() || busy} onclick={save}><Bookmark size={16} />{busy ? 'Saving…' : 'Save design'}</button>
 {/snippet}
 <Sheet title="Save shared design" {footer} cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
-  <label class="field"><span class="label">Design name</span><input class="input" bind:value={name} maxlength="60" /></label>
+  <label class="field"><span class="label">Design name</span><input class="bu-input input" bind:value={name} maxlength="60" /></label>
   <p class="muted small">Saves this item’s current colours and references. Each character gets an independent fitted copy; later changes to the original item stay with that character.</p>
   {#if error}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{error}</p>
   {:else if project && design}<DesignPreview {project} itemId={design.itemId} itemOnly />

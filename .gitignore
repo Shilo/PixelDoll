@@ -11,6 +11,7 @@ dist-ssr/
 
 # test + scratch artifacts
 test-results/
+test-results-migration/
 playwright-report/
 blob-report/
 playwright/.cache/

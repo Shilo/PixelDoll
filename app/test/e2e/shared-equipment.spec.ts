@@ -1,3 +1,4 @@
+import { openStudio, reloadStudio, equipmentMode, newItem, selectedItemDetails, pickItem } from './immersive-helpers.ts'
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
@@ -10,10 +11,11 @@ test('shared design colourway, free independent copy, portable ZIP and deletion 
   const requests: string[] = [], errors: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname); await route.abort() })
   page.on('pageerror', (e) => errors.push(e.message))
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
-  await page.locator('.wardrobe .row', { hasText: 'Wizard hat' }).click()
-  await page.locator('.insp .swatch[aria-label="azure"]').first().click()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click()
+  await page.locator('.equipment-scroll .swatch[aria-label="azure"]').first().click()
+  await selectedItemDetails(page)
   await page.getByRole('button', { name: 'Save as shared design', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('current colours')
   await page.getByRole('textbox', { name: 'Design name', exact: true }).fill('Travelling wizard hat')
@@ -22,7 +24,7 @@ test('shared design colourway, free independent copy, portable ZIP and deletion 
   await page.getByRole('button', { name: 'Save design', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
 
-  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await newItem(page, 'Head')
   await page.getByRole('tab', { name: 'Saved designs', exact: true }).click()
   await expect(page.locator('.design-card')).toContainText('Travelling wizard hat')
   await page.getByRole('button', { name: 'Copy demo body', exact: true }).click()
@@ -50,25 +52,27 @@ test('shared design colourway, free independent copy, portable ZIP and deletion 
   await page.getByRole('checkbox', { name: 'I checked every move and direction shown above.', exact: true }).check()
   await page.getByRole('button', { name: 'Keep and wear', exact: true }).click()
   await expect(page.getByRole('dialog')).toHaveCount(0)
-  await expect(page.locator('.insp-title')).toContainText('Travelling wizard hat')
-  await page.locator('.wardrobe').getByRole('button', { name: 'Base only', exact: true }).click()
-  await page.locator('.wardrobe .row', { hasText: 'Travelling wizard hat' }).click()
-  await expect(page.locator('.insp').getByRole('radio', { name: 'Saved colour', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
-  const savedGroup = page.locator('.insp [role=radiogroup]').first()
+  await expect(page.locator('.sel-name')).toContainText('Travelling wizard hat')
+  await equipmentMode(page, 'Outfits')
+  await page.locator('.outfits').getByRole('button', { name: 'Base only', exact: true }).click()
+  await equipmentMode(page, 'Wardrobe')
+  await page.locator('.equipment-scroll .tile', { hasText: 'Travelling wizard hat' }).click()
+  await expect(page.locator('.equipment-scroll').getByRole('radio', { name: 'Saved colour', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
+  const savedGroup = page.locator('.equipment-scroll [role=radiogroup]').first()
   await expect(savedGroup.locator('[role=radio][tabindex="0"]')).toHaveCount(1)
   await expect(savedGroup.getByRole('radio', { name: 'Saved colour', exact: true })).toHaveAttribute('tabindex', '0')
   await expect(savedGroup.getByRole('radio', { name: 'azure', exact: true })).toHaveAttribute('aria-checked', 'false')
-  await page.locator('.insp .swatch[aria-label="crimson"]').first().click()
-  await page.locator('.wardrobe').getByRole('button', { name: 'Wizard hat', exact: true }).click()
-  await expect(page.locator('.insp').getByRole('radio', { name: 'Original', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
-  await page.locator('.wardrobe .row', { hasText: 'Travelling wizard hat' }).click()
-  await expect(page.locator('.insp .swatch[aria-label="crimson"]').first()).toHaveAttribute('aria-checked', 'true')
-  await page.reload()
+  await page.locator('.equipment-scroll .swatch[aria-label="crimson"]').first().click()
+  await pickItem(page, 'Wizard hat')
+  await expect(page.locator('.equipment-scroll').getByRole('radio', { name: 'Original', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
+  await page.locator('.equipment-scroll .tile', { hasText: 'Travelling wizard hat' }).click()
+  await expect(page.locator('.equipment-scroll .swatch[aria-label="crimson"]').first()).toHaveAttribute('aria-checked', 'true')
+  await reloadStudio(page)
   await expect(page.locator('.project-btn')).toContainText('Adventurer copy')
-  await expect(page.locator('.wardrobe .row', { hasText: 'Travelling wizard hat' })).toBeVisible()
-  await expect(page.locator('.wardrobe .row', { hasText: 'Wizard hat' }).first()).toBeVisible()
+  await expect(page.locator('.equipment-scroll .tile', { hasText: 'Travelling wizard hat' })).toBeVisible()
+  await expect(page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).first()).toBeVisible()
 
-  await page.getByRole('button', { name: 'New head item', exact: true }).click()
+  await newItem(page, 'Head')
   await page.getByRole('tab', { name: 'Saved designs', exact: true }).click()
   await page.getByRole('button', { name: 'Delete Travelling wizard hat design', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('Fitted copies on characters and their outfits stay intact')
@@ -77,8 +81,8 @@ test('shared design colourway, free independent copy, portable ZIP and deletion 
   await page.getByLabel('Import shared design zip', { exact: true }).setInputFiles({ name: downloaded.suggestedFilename(), mimeType: 'application/zip', buffer: bytes })
   await expect(page.locator('.design-card')).toContainText('Travelling wizard hat')
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  await page.reload()
-  await expect(page.locator('.wardrobe .row', { hasText: 'Travelling wizard hat' })).toBeVisible()
+  await reloadStudio(page)
+  await expect(page.locator('.equipment-scroll .tile', { hasText: 'Travelling wizard hat' })).toBeVisible()
   expect(requests).toEqual([])
   expect(errors).toEqual([])
 })
@@ -87,8 +91,8 @@ test('shared design sheets cancel cleanly on a phone and do not overflow', async
   await page.setViewportSize({ width: 390, height: 844 })
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const source = page.getByRole('button', { name: 'New head item', exact: true })
   // Phone tiles retain the same create/library picker as desktop wardrobe buttons.
   if (await source.count()) await source.click()
@@ -118,8 +122,8 @@ test('shared design sheets cancel cleanly on a phone and do not overflow', async
 test('cleanup retains a submitted fit job across a crash before its record ID was saved', async ({ page, context }) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const request = indexedDB.open('pixeldoll', 1)
     const database = await new Promise<IDBDatabase>((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error) })
@@ -130,8 +134,8 @@ test('cleanup retains a submitted fit job across a crash before its record ID wa
     await new Promise<void>((resolve, reject) => { transaction.oncomplete = () => resolve(); transaction.onabort = transaction.onerror = () => reject(transaction.error) })
     database.close()
   })
-  await page.reload()
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await reloadStudio(page)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Activity', exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('Retained fit')
@@ -153,8 +157,8 @@ test('cleanup retains a submitted fit job across a crash before its record ID wa
 test('a follower resumes retained equipment work when the leader closes', async ({ page, context }) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const request = indexedDB.open('pixeldoll', 1)
     const database = await new Promise<IDBDatabase>((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error) })
@@ -164,8 +168,10 @@ test('a follower resumes retained equipment work when the leader closes', async 
     database.close()
   })
   const follower = await context.newPage()
-  await follower.goto('/')
-  await expect(follower.getByRole('button', { name: 'Working in another tab', exact: true })).toBeVisible()
+  await openStudio(follower, '/')
+  await follower.getByRole('button', {name:'More options',exact:true}).click()
+  await expect(follower.locator('#experience-options')).toContainText('Other tab')
+  await follower.keyboard.press('Escape')
   const stage = () => follower.evaluate(async () => {
     const request = indexedDB.open('pixeldoll', 1)
     const database = await new Promise<IDBDatabase>((resolve, reject) => { request.onsuccess = () => resolve(request.result); request.onerror = () => reject(request.error) })
@@ -184,9 +190,9 @@ test('review shows every stored cell once when playback omits or repeats cells',
   const errors: string[] = [], requests: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
-  await page.locator('.wardrobe .row', { hasText: 'Wizard hat' }).click()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click()
   const expected = await page.evaluate(() => {
     const studio = (window as unknown as { __studio: { store: { project: { manifest: { rig: { directions: unknown[]; animations: { id: string; cells: number; frames: { cell: number; ms: number }[] }[] } } } }; ui: { playing: boolean } } }).__studio
     studio.ui.playing = false
@@ -194,6 +200,7 @@ test('review shows every stored cell once when playback omits or repeats cells',
     clip.frames = [{ cell: 0, ms: 100 }, { cell: 0, ms: 100 }]
     return { id: clip.id, cells: clip.cells, directions: rig.directions.length }
   })
+  await selectedItemDetails(page)
   await page.getByRole('button', { name: 'Save as shared design', exact: true }).click()
   const review = page.getByRole('dialog').getByLabel(`Wizard hat, all frames of ${expected.id}`, { exact: true })
   await expect(review.getByRole('img')).toHaveCount(expected.cells * expected.directions)
@@ -208,9 +215,10 @@ test('review shows every stored cell once when playback omits or repeats cells',
     const project = studio.store.project
     studio.store.project = { ...project, manifest: { ...project.manifest, items: project.manifest.items.map((item) => item.name === 'Wizard hat' ? { ...item, qa: { unmeasured: true, status: 'warn', minKeyKept: 0, maxKeyOutside: 0, minAreaRatio: 0, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, rerolls: 0, cells: {} } } : item) } }
   })
-  await page.locator('.insp').getByText('Details', { exact: true }).click()
-  await expect(page.locator('.insp')).toContainText('Reused cells were not measured by PixelLab')
-  await expect(page.locator('.insp dt').filter({ hasText: /^(Key kept|Key outside|Area|Palette drift|Edge px|Hands)$/ })).toHaveCount(0)
+  await selectedItemDetails(page)
+  await page.getByRole('dialog').getByText('Details', { exact: true }).click()
+  await expect(page.getByRole('dialog')).toContainText('Reused cells were not measured by PixelLab')
+  await expect(page.locator('dialog .insp-body dt').filter({ hasText: /^(Key kept|Key outside|Area|Palette drift|Edge px|Hands)$/ })).toHaveCount(0)
   expect(errors).toEqual([])
   expect(requests).toEqual([])
 })
@@ -218,8 +226,9 @@ test('review shows every stored cell once when playback omits or repeats cells',
 test('browser Back respects an atomic local save and closes sheets after it finishes', async ({ page, context }) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  await selectedItemDetails(page)
   await page.getByRole('button', { name: 'Save as shared design', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Save design', exact: true })).toBeEnabled()
   // Pause the real content-hash work performed by publication, without mocking the sheet's busy state.
@@ -238,6 +247,7 @@ test('browser Back respects an atomic local save and closes sheets after it fini
     await expect(page.getByRole('button', { name: 'Cancel', exact: true })).toBeDisabled()
   } finally { await page.evaluate(() => (window as unknown as { releaseSharedSave: () => void }).releaseSharedSave()) }
   await expect(page.getByRole('dialog')).toHaveCount(0)
+  await selectedItemDetails(page)
   await page.getByRole('button', { name: 'Save as shared design', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Save design', exact: true })).toBeEnabled()
   await page.goBack()

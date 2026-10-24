@@ -1,12 +1,14 @@
 # Immersive design system
 
-Updated 2026-10-23. This is the reusable styling and interaction contract for the approved Obsidian / Porcelain Bronze direction. It describes the implemented isolated prototype and the target for future app integration. Production Studio has not been migrated. The [current design record](2026-10-22-redesign/round-4-discussion/current-design.md) controls product decisions; this document controls their reusable visual treatment.
+Updated 2026-10-23. This is the reusable styling and interaction contract for the approved Obsidian / Porcelain Bronze direction. The [production integration](production-experience.md) now applies it to the real Studio on the feature branch. The [current design record](2026-10-22-redesign/round-4-discussion/current-design.md) controls product decisions; this document controls their reusable visual treatment.
 
 Latest refinement: [independent review challenge and accepted repairs](../reviews/2026-10-23-claude-redesign-audit/response.md). The prototype consumes the published Bronze UI dependency. GlassKit experiments remain historical comparisons; GlassKit is not loaded by the current prototype.
 
-**Full-app foundation:** [Owned Bronze theme and component/state coverage](2026-10-22-redesign/round-6-prototype/theme-foundation.md) records the design research. Production migration remains separate. Shared component recipes and native light/dark tokens live upstream in Bronze UI; scene layout and workflows remain here.
+**Full-app foundation:** [Owned Bronze theme and component/state coverage](2026-10-22-redesign/round-6-prototype/theme-foundation.md) records the design research. Shared component recipes and native light/dark tokens live upstream in Bronze UI; scene layout and workflows remain here.
 
 ## Sources of truth
+
+Production sources: [theme adapter](../../app/src/studio/experience/theme.css), [responsive layout](../../app/src/studio/experience/layout.css), [world configuration](../../app/src/studio/experience/config.ts), [movement](../../app/src/studio/experience/movement.ts), [presentation resolver](../../app/src/studio/experience/presentation.ts) and [focus/popover placement](../../app/src/studio/experience/focus.ts). Production uses existing Studio components and state for real workflows; the following table preserves the isolated prototype reference implementation.
 
 | Responsibility | Source |
 | --- | --- |

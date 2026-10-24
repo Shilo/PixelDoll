@@ -1,5 +1,6 @@
 <script lang="ts">
   import Sheet from './Sheet.svelte'
+  import { customize } from './experience/state.svelte.ts'
   import { default as ApiPeek } from './ApiPeek.svelte'
   import { createPlan } from './apiPlans.ts'
   import { formDrafts } from './formDrafts.ts'
@@ -61,11 +62,12 @@
     ui.sheet = null
     ui.welcome = false
     await openProject(id)
+    customize()
   }
 </script>
 
 <Sheet title="New character" cancel={running ? 'Hide' : creating.projectId ? 'Close' : 'Cancel'} onclose={() => (ui.sheet = null)} className="character-sheet" wide>
-  {#snippet heading()}{#if !creating.spec}<input class="input character-name" aria-label="Name" title="Library and export name; not part of the prompt" bind:value={d.name} placeholder="Name" maxlength="80" />{/if}{/snippet}
+  {#snippet heading()}{#if !creating.spec}<input class="bu-input input character-name" aria-label="Name" title="Library and export name; not part of the prompt" bind:value={d.name} placeholder="Name" maxlength="80" />{/if}{/snippet}
   {#if creating.projectId}
     <div class="create-review">
       <ApiPeek scope="character-create-result" label="Completed character generation" plan={creating.spec ? createPlan(creating.spec) : []} activityScope={creating.spec?.activityScope} />
@@ -109,16 +111,16 @@
   {#snippet footer()}
     {#if creating.projectId}
       <span class="foot-note">Saved on this device.</span>
-      <button class="btn primary lg" onclick={open}>Start dressing up</button>
+      <button class="bu-action btn primary lg" data-variant="primary" onclick={open}>Start dressing up</button>
     {:else if creating.error}
-      <button class="btn plain" onclick={cancelCreate}>Start over</button>
-      <span class="api-action"><ApiPeek scope="character-create-retry" label="Create character again" plan={creating.spec ? createPlan(creating.spec, true) : []} /><button class="btn primary" onclick={() => creating.spec && withKey(() => { void startCreate({ ...$state.snapshot(creating.spec!), projectId: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'create' }, true)}>Try again <span class="cost">{lo}–{hi} gens</span></button></span><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
+      <button class="bu-action btn plain" data-variant="quiet" onclick={cancelCreate}>Start over</button>
+      <span class="api-action"><ApiPeek scope="character-create-retry" label="Create character again" plan={creating.spec ? createPlan(creating.spec, true) : []} /><button class="bu-action btn primary" data-variant="primary" onclick={() => creating.spec && withKey(() => { void startCreate({ ...$state.snapshot(creating.spec!), projectId: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'create' }, true)}>Try again <span class="cost">{lo}–{hi} gens</span></button></span><!-- new seed: the same one re-reads the cached (bad) results (R6 P2-7) -->
     {:else if running}
       <span class="foot-note">Estimated {lo}–{hi} gens</span>
-      <button class="btn" onclick={() => (ui.sheet = null)}>Keep working</button>
+      <button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}>Keep working</button>
     {:else}
       <span class="foot-note creator-cost" title="Includes idle and walk; extra attempts may cost more">~{lo}–{hi} gens</span>
-      <span class="api-action"><ApiPeek scope="character-create" label="Create character" plan={createPlan(formSpec, !d.seed)} /><button class="btn primary lg" disabled={!!errors.length || enhancing} onclick={go}>Create character</button></span>
+      <span class="api-action"><ApiPeek scope="character-create" label="Create character" plan={createPlan(formSpec, !d.seed)} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!!errors.length || enhancing} onclick={go}>Create character</button></span>
     {/if}
   {/snippet}
 </Sheet>

@@ -34,7 +34,7 @@
           {#if bare}
             <p class="empty-title">Your character is ready</p>
             <p class="small">Add a hat, a top or a weapon. Each item becomes its own layer.</p>
-            <button class="btn primary" onclick={() => openNewItem('Head')}><Plus size={16} />Add your first item</button>
+            <button class="bu-action btn primary" data-variant="primary" onclick={() => openNewItem('Head')}><Plus size={16} />Add your first item</button>
           {:else}
             <p class="empty-title">Nothing selected</p>
             <p class="small">Pick an item in the wardrobe to wear it and change its colours.</p>

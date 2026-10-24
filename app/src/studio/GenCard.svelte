@@ -70,7 +70,7 @@
   {/if}
 
   {#if prev && anim}
-    <label class="field"><span class="label small">Preview move</span><select class="input" value={anim.id} onchange={(e) => { ui.anim = e.currentTarget.value; ui.frame = 0 }}>{#each anims as a (a.id)}<option value={a.id}>{a.id[0].toUpperCase() + a.id.slice(1).replace(/-/g, ' ')}</option>{/each}</select></label>
+    <label class="field"><span class="label small">Preview move</span><select class="bu-input input" value={anim.id} onchange={(e) => { ui.anim = e.currentTarget.value; ui.frame = 0 }}>{#each anims as a (a.id)}<option value={a.id}>{a.id[0].toUpperCase() + a.id.slice(1).replace(/-/g, ' ')}</option>{/each}</select></label>
     <div class="review-grid" aria-label="Preview in every direction">
       {#each dirs as d (d.id)}
         <figure>
@@ -92,15 +92,15 @@
       <p class="muted small">Some checks need review.</p>
     {/if}
     <div class="actions">
-      <button class="btn primary" onclick={accept} disabled={busy || !res?.qa || hasStructuralFailure(res)}>Keep it</button>
-      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="btn" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
-      <button class="btn plain danger" onclick={() => discardGen(g)} disabled={busy}>Discard</button>
+      <button class="bu-action btn primary" data-variant="primary" onclick={accept} disabled={busy || !res?.qa || hasStructuralFailure(res)}>Keep it</button>
+      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="bu-action btn" data-variant="outline" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
+      <button class="bu-action btn plain danger" data-variant="quiet" onclick={() => discardGen(g)} disabled={busy}>Discard</button>
     </div>
   {:else if g.phase === 'failed'}
     <p class="notice bad small"><CircleAlert size={14} />{g.error?.includes('5000') || g.error?.toLowerCase().includes('policy') ? 'PixelLab declined this prompt. Try different words.' : 'This item could not be made.'}</p>
     <div class="actions">
-      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="btn primary" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
-      <button class="btn plain danger" onclick={() => discardGen(g)}>Discard</button>
+      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="bu-action btn primary" data-variant="primary" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
+      <button class="bu-action btn plain danger" data-variant="quiet" onclick={() => discardGen(g)}>Discard</button>
     </div>
   {/if}
 

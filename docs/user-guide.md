@@ -5,12 +5,15 @@ them at runtime. The pictures are drawn by [PixelLab](https://pixellab.ai) using
 
 ## Try the demo
 
-On the welcome screen, press **Try the demo**. The demo character is free and needs no account. You can dress it up, recolour
-it, save outfits and export it. To make your own character and items, you need a PixelLab key.
+The app opens to **Characters**, including the bundled demo and characters saved on this device. Choose **Customize** to dress the selected character. Clicking an already-selected character also opens customization. The demo needs no account: you can dress it, recolor it, save outfits and export it. Creating characters and items requires a PixelLab key.
+
+In customization, **Preview** provides animation playback and facing controls. **Top-down** and **Side-scroller** provide continuous movement with a following camera. Focus the world and use WASD/arrows, or drag the world on touch screens. Equipment and outfits remain available in every view. **Inspect** opens the original precise frame/direction viewer. Click the character name to switch characters or manage imports and setup.
+
+Desktop customization controls sit together on the right. On phones, expand or collapse the bottom equipment area. **Wardrobe**, **Colors**, **Outfits** and **Moves** reuse the same saved character; Moves is available in Preview. **More** lists additional equipment categories. **More options → Light mode / Dark mode** changes the environment and UI, never the character's source colors.
 
 ## Connect your PixelLab key
 
-Open **Connect PixelLab…** from the character menu (top left), or press the gens counter in the toolbar. Paste your key
+Open **More options → Connect PixelLab**, or the account entry in the character-name menu. Paste your key
 (**Get a key** opens your PixelLab account page), then press **Connect**.
 
 - The key is only sent to PixelLab.
@@ -18,7 +21,7 @@ Open **Connect PixelLab…** from the character menu (top left), or press the ge
   **Forget key** clears the key in open PixelDoll tabs and removes the saved key.
 - Remembered keys are shared with PixelLab Backpack on the same website. Open or reload either app to use the saved key;
   **Forget key** removes the shared saved key for both apps.
-- The toolbar then shows how many **gens** you have left.
+- The account and Activity views show your balance and usage.
 
 ## What "gens" cost
 
@@ -45,7 +48,7 @@ Press the **code brackets** icon beside a PixelLab action to peek at its request
 the list shows estimated costs and the fields already known; dependent images and poses become available when prepared.
 Expand a call for readable fields, with nested objects and lists you can open individually.
 
-The toolbar's code brackets icon shows recorded calls, including automatic generation and quality repairs. Each call shows
+The code brackets action in **More options** shows recorded calls, including automatic generation and quality repairs. Each call shows
 its cost, with a total below. Pending or unreported charges are marked explicitly; dollar charges stay separate from gens.
 The list-plus icon reveals background checks, polling and image downloads. **Copy all calls** copies structured JSON,
 including hidden background calls and full available request images; authentication credentials are excluded. If copying

@@ -60,13 +60,13 @@
 
 {#snippet foot()}
       <span class="foot-note">{plan ? `About ${plan.minutes + 2} min. You can keep working.` : ''}</span>
-      <span class="api-action"><ApiPeek scope="item-make" label="Make item" plan={itemPlan(m && rec ? { rec: { ...rec, manifest: m } } as RigCtx : null, input)} /><button class="btn primary lg" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button></span>
+      <span class="api-action"><ApiPeek scope="item-make" label="Make item" plan={itemPlan(m && rec ? { rec: { ...rec, manifest: m } } as RigCtx : null, input)} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!prompt.trim() || busy || !plan?.calls} onclick={go}>Make <span class="cost">Est. {plan?.gens ?? '–'} gens</span></button></span>
 {/snippet}
 
 <Sheet title="New item" onclose={() => (ui.sheet = null)} footer={isDemo() || ui.newItemTab === 'designs' ? undefined : foot}>
   <div class="seg full" role="tablist" aria-label="Item source"><button role="tab" aria-selected={ui.newItemTab === 'create'} onclick={() => (ui.newItemTab = 'create')}>Create</button><button role="tab" aria-selected={ui.newItemTab === 'designs'} onclick={() => (ui.newItemTab = 'designs')}>Saved designs</button></div>
   {#if ui.newItemTab === 'designs'}
-    {#if isDemo()}<p class="notice small"><Sparkles size={16} /><span>Make an editable copy of the demo before adding a fitted item.</span><button class="btn sm" disabled={busy} onclick={useCopy}>Copy demo body</button></p>{/if}
+    {#if isDemo()}<p class="notice small"><Sparkles size={16} /><span>Make an editable copy of the demo before adding a fitted item.</span><button class="bu-action btn sm" data-variant="outline" disabled={busy} onclick={useCopy}>Copy demo body</button></p>{/if}
     {#key doc.id}<DesignLibrary />{/key}
   {:else if isDemo()}
     <div class="notice small">
@@ -74,14 +74,14 @@
       <span>Items are drawn for your own character. Create one, or make an editable copy of the demo body to add items to it.</span>
     </div>
     <div class="actions">
-      <button class="btn primary" onclick={() => (ui.sheet = 'create')}>Create your character</button>
-      <button class="btn copy-demo" onclick={useCopy} disabled={busy}>
+      <button class="bu-action btn primary" data-variant="primary" onclick={() => (ui.sheet = 'create')}>Create your character</button>
+      <button class="bu-action btn copy-demo" data-variant="outline" onclick={useCopy} disabled={busy}>
         <span class:copy-hidden={busy}>Copy the demo body</span>
         <span class:copy-hidden={!busy}>Copying…</span>
       </button>
     </div>
   {:else}
-    {#if rec && !rigReady(rec)}<p class="notice small"><TriangleAlert size={16} /><span>Set up this character to use skeleton-posed equipment, oversize weapons and new moves.</span><button class="btn small" onclick={() => (ui.sheet = 'setup')}>Set up character</button></p>{/if}
+    {#if rec && !rigReady(rec)}<p class="notice small"><TriangleAlert size={16} /><span>Set up this character to use skeleton-posed equipment, oversize weapons and new moves.</span><button class="bu-action btn small" data-variant="outline" onclick={() => (ui.sheet = 'setup')}>Set up character</button></p>{/if}
     {#if planned.error}<p class="notice warn small" role="alert"><TriangleAlert size={16} /><span>This character’s frames cannot use the item generator: {planned.error}</span></p>{/if}
     <div class="form">
       <div class="field">
@@ -94,7 +94,7 @@
       </div>
       <label class="field">
         <span class="label">What is it?</span>
-        <textarea class="input" rows="2" bind:value={prompt} placeholder="e.g. {g.ideas[0]?.label ?? 'a leather hat'}" maxlength="300"></textarea>
+        <textarea class="bu-input input" rows="2" bind:value={prompt} placeholder="e.g. {g.ideas[0]?.label ?? 'a leather hat'}" maxlength="300"></textarea>
       </label>
       <div class="chips" aria-label="Ideas">
         {#each g.ideas as idea (idea.label)}
@@ -114,10 +114,10 @@
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
-          <label class="field"><span class="label small">Name</span><input class="input" bind:value={name} placeholder={itemName} /></label>
+          <label class="field"><span class="label small">Name</span><input class="bu-input input" bind:value={name} placeholder={itemName} /></label>
           {#if g.slots.length > 1}
             <label class="field"><span class="label small">Exact slot</span>
-              <span class="select-wrap boxed"><select class="select" bind:value={slot}>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select><ChevronDown size={12} /></span>
+              <span class="select-wrap boxed"><select class="bu-select select" bind:value={slot}>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select><ChevronDown size={12} /></span>
             </label>
           {/if}
           {#if plan}<p class="faint small">{plan.calls} PixelLab calls · {plan.cells} frames · {itemRoute.label}{plan.cell ? ` · ${plan.cell} px canvas so long weapons are never cut off` : ''}. Failed checks re-roll automatically (up to 2×).</p>{/if}

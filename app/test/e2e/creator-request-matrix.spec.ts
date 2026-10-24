@@ -1,3 +1,4 @@
+import { openStudio, openAccount } from './immersive-helpers.ts'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { BASE_BODY } from '../../src/studio/model.ts'
 
@@ -28,8 +29,8 @@ async function setup(page: Page) {
       await route.abort()
     }
   })
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Connect', exact: true }).click()
+  await openStudio(page, '/')
+  await openAccount(page)
   const connection = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
   await connection.getByLabel('API key', { exact: true }).fill('offline-matrix-not-a-real-key')
   await connection.getByRole('button', { name: 'Connect', exact: true }).click()

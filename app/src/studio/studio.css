@@ -1,35 +1,7 @@
 /* PixelDoll Studio — look A (native minimal, PLAN D9). Colours are tokens: dark is the default on :root, light under
    [data-theme="light"]. A future theme (e.g. "Paper") only adds another [data-theme] block. */
 
-:root {
-  --font-ui: system-ui, -apple-system, "Segoe UI Variable Text", "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", Menlo, monospace;
-  --fs: 13px; --fs-sm: 11.5px; --fs-md: 15px; --fs-title: 22px;
-  --ctl-h: 28px; --tb-h: 48px; --side-w: 248px; --insp-w: 300px;
-  --r-ctl: 6px; --r-card: 10px; --r-sheet: 14px; --r-pill: 999px;
-  --dur: 200ms; --dur-fast: 120ms; --ease: cubic-bezier(.2, .8, .2, 1);
-
-  --bg: #1e1e1f; --bg-side: #262628; --bg-raised: #2c2c2e; --bg-hover: rgb(255 255 255 / .06); --bg-sel: rgb(255 255 255 / .10);
-  --stage: #161617; --check-a: #232325; --check-b: #2a2a2d; --thumb-bg: #3a3a3e;
-  --text: #f5f5f7; --text-2: #c7c7cc; --text-3: #98989f;
-  --line: rgb(255 255 255 / .10); --line-strong: rgb(255 255 255 / .20);
-  --accent: #0071e3; --accent-text: #4da3ff; --on-accent: #fff; --accent-soft: rgb(10 132 255 / .20);
-  --ok: #30d158; --warn: #ff9f0a; --bad: #ff6961;
-  --shadow-1: 0 1px 2px rgb(0 0 0 / .3);
-  --shadow-pop: 0 16px 48px rgb(0 0 0 / .5), 0 0 0 1px rgb(255 255 255 / .08);
-  --scrim: rgb(0 0 0 / .5); --focus: #4da3ff;
-}
-:root[data-theme="light"] {
-  --bg: #ffffff; --bg-side: #f5f5f7; --bg-raised: #ffffff; --bg-hover: rgb(0 0 0 / .05); --bg-sel: rgb(0 0 0 / .07);
-  --stage: #ececee; --check-a: #e3e3e6; --check-b: #f0f0f2; --thumb-bg: #e4e4e8;
-  --text: #1d1d1f; --text-2: #4f4f55; --text-3: #6a6a70;
-  --line: rgb(0 0 0 / .10); --line-strong: rgb(0 0 0 / .22);
-  --accent: #0071e3; --accent-text: #0062c4; --on-accent: #fff; --accent-soft: rgb(0 113 227 / .12);
-  --ok: #1a7f37; --warn: #a24a00; --bad: #c8001a;
-  --shadow-1: 0 1px 2px rgb(0 0 0 / .06), 0 1px 1px rgb(0 0 0 / .04);
-  --shadow-pop: 0 12px 40px rgb(0 0 0 / .16), 0 2px 6px rgb(0 0 0 / .08);
-  --scrim: rgb(0 0 0 / .28); --focus: #0071e3;
-}
+:root { --side-w:248px; --insp-w:300px; --r-pill:999px; --ease:cubic-bezier(.2,.8,.2,1); }
 @media (max-width: 599px), (max-height: 499px), (pointer: coarse) {
   :root { --fs: 15px; --fs-sm: 12.5px; --fs-md: 17px; --ctl-h: 44px; --tb-h: 52px; }
 }
@@ -37,11 +9,6 @@
   :root { --dur: 0ms; --dur-fast: 0ms; }
   .studio-app *, .studio-app *::before, .studio-app *::after { animation-duration: 0ms !important; transition-duration: 0ms !important; }
 }
-@media (prefers-contrast: more) {
-  :root { --line: rgb(255 255 255 / .3); --line-strong: rgb(255 255 255 / .5); --text-2: #e5e5ea; --text-3: #c7c7cc; }
-  :root[data-theme="light"] { --line: rgb(0 0 0 / .35); --line-strong: rgb(0 0 0 / .55); --text-2: #2c2c30; --text-3: #3a3a3f; }
-}
-
 html[data-app="studio"] { color-scheme: dark; }
 html[data-app="studio"][data-theme="light"] { color-scheme: light; }
 html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%; background: var(--bg); }
@@ -375,17 +342,17 @@ dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
 .slot-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 0 -16px; padding: 2px 16px; }
 .slot-chip { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px 0 10px; border-radius: var(--r-pill);
   border: 1px solid var(--line-strong); background: transparent; color: var(--text-2); font-weight: 500; }
-.slot-chip[aria-selected="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
 .slot-chip[aria-selected="true"] .category-count { color: inherit; }
 .category-empty { display: flex; align-items: center; gap: 8px; min-height: 44px; padding-top: 8px; border-top: 1px solid var(--line); color: var(--text-2); }
 .category-empty .add { margin-left: auto; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
 .tile { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; color: var(--text-2); min-width: 0; }
-.tile-art { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: var(--r-card); background: var(--thumb-bg); color: var(--text-2); overflow: hidden; }
-.tile.new .tile-art, .tile-art.none { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
-.tile[aria-pressed="true"] .tile-art { box-shadow: inset 0 0 0 2px var(--accent-text); background: var(--accent-soft); }
+.tile-art { width:100%; display:grid; place-items:center; overflow:hidden; }
+
+
 .tile[aria-pressed="true"] { color: var(--text); font-weight: 600; }
-.tile.sel .tile-art { box-shadow: inset 0 0 0 2px var(--line-strong); }
+
 .tile.sel { color: var(--text); }
 .tile-name { font-size: var(--fs-sm); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sel-row { display: flex; align-items: center; gap: 8px; }

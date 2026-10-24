@@ -47,16 +47,16 @@
   </div>
   {#if app.key && !app.keyRejected}
     <p class="notice ok small"><Check size={14} />Connected{app.remembered ? ' and remembered on this device' : ' for this tab'}{app.balance ? ` · ${fmtNum(app.balance.subscription.generations)} of ${fmtNum(app.balance.subscription.total)} gens left` : ''}.
-      <button class="btn sm" onclick={forgetKey}>Forget key</button></p>
+      <button class="bu-action btn sm" data-variant="outline" onclick={forgetKey}>Forget key</button></p>
   {/if}
   {#if app.key && !app.keyRejected && accountTier(app.balance) === 0}
     <p class="notice warn small" role="status">{FREE_PLAN_NOTICE}</p>
-    <div class="field-row"><a class="btn sm" href="https://www.pixellab.ai/#pricing" target="_blank" rel="noreferrer">View PixelLab plans <ExternalLink size={12} /></a><button class="btn sm" onclick={() => { clearPendingConnection(); connected() }}>Continue with limited access</button></div>
+    <div class="field-row"><a class="bu-action btn sm" data-variant="outline" href="https://www.pixellab.ai/#pricing" target="_blank" rel="noreferrer">View PixelLab plans <ExternalLink size={12} /></a><button class="bu-action btn sm" data-variant="outline" onclick={() => { clearPendingConnection(); connected() }}>Continue with limited access</button></div>
   {/if}
   <form class="form" onsubmit={(e) => { e.preventDefault(); if (key.trim()) void use(key, remember) }}>
     <label class="field">
       <span class="label">API key</span>
-      <input class="input" type="password" bind:value={key} autocomplete="off" spellcheck="false" placeholder="Paste your key" />
+      <input class="bu-input input" type="password" bind:value={key} autocomplete="off" spellcheck="false" placeholder="Paste your key" />
     </label>
     <label class="toggle-row"><span>Remember on this device</span><input class="switch" type="checkbox" bind:checked={remember} /></label>
     {#if remember && sharedOrigin}<p class="notice warn small">This copy of PixelDoll runs in a folder of {location.host}, a site other GitHub Pages projects share. Any of their pages could read a remembered key. Leave Remember off here, or use PixelDoll from its own address.</p>{/if}
@@ -64,7 +64,7 @@
     <div class="field-row">
       <a class="small" href="https://pixellab.ai/account" target="_blank" rel="noreferrer">Get a key <ExternalLink size={12} style="display:inline" /></a>
       <span class="actions">
-        <span class="api-action"><ApiPeek scope="account-connect" label="Connect PixelLab" plan={balancePlan()} {activityScope} /><button class="btn primary" type="submit" disabled={!key.trim() || checking}>{checking ? 'Checking…' : 'Connect'}</button></span>
+        <span class="api-action"><ApiPeek scope="account-connect" label="Connect PixelLab" plan={balancePlan()} {activityScope} /><button class="bu-action btn primary" data-variant="primary" type="submit" disabled={!key.trim() || checking}>{checking ? 'Checking…' : 'Connect'}</button></span>
       </span>
     </div>
   </form>

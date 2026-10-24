@@ -65,7 +65,7 @@
 </script>
 
 <div class="library">
-  <div class="field-row"><p class="muted small">Shared designs stay in this browser. Each fitted copy has its own colours, moves and outfit choices.</p><button class="btn sm" disabled={!!busy} onclick={() => file.click()}><Plus size={14} />Import design</button></div>
+  <div class="field-row"><p class="muted small">Shared designs stay in this browser. Each fitted copy has its own colours, moves and outfit choices.</p><button class="bu-action btn sm" data-variant="outline" disabled={!!busy} onclick={() => file.click()}><Plus size={14} />Import design</button></div>
   <input class="file" type="file" accept=".zip,application/zip" bind:this={file} onchange={importFile} aria-label="Import shared design zip" />
   {#if error}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{error}</p>{/if}
   {#if loading}<p class="muted" role="status">Checking shared designs…</p>
@@ -80,12 +80,12 @@
           {#if assessment?.canCopy && assessment.missingCells}<p class="faint small">{assessment.freeCells} frames can be copied free; {assessment.missingCells} target frames still need fitting.</p>{/if}
           {#if assessmentErrors[design.id]}<p class="notice warn small">{assessmentErrors[design.id]}</p>{/if}
           {#if removing === design.id}
-            <p class="small">Delete this design? Fitted copies on characters and their outfits stay intact.</p><div class="actions"><button class="btn danger" disabled={!!busy} onclick={() => remove(design.id)}>Delete design</button><button class="btn plain" disabled={!!busy} onclick={() => (removing = '')}>Keep design</button></div>
+            <p class="small">Delete this design? Fitted copies on characters and their outfits stay intact.</p><div class="actions"><button class="bu-action btn danger" data-variant="outline" disabled={!!busy} onclick={() => remove(design.id)}>Delete design</button><button class="bu-action btn plain" data-variant="quiet" disabled={!!busy} onclick={() => (removing = '')}>Keep design</button></div>
           {:else}
             <div class="actions">
-              {#if assessment?.canCopy}<button class="btn primary sm" disabled={!!busy || isDemo()} onclick={() => choose(design, 'copy')}>{assessment.missingCells ? 'Review available copy' : 'Review free copy'} <span class="cost">Free</span></button>{/if}
-              {#if assessment?.status !== 'ready'}<button class="btn sm" class:primary={!assessment?.canCopy} disabled={!!busy || isDemo() || !assessment} onclick={() => choose(design, 'fit')}>{assessment?.canCopy ? 'Fit missing frames' : 'View fit'}</button>{/if}
-              <button class="btn sm" aria-label="Export {design.name} design" disabled={!!busy} onclick={() => download(design)}><Download size={14} />Export</button><button class="btn icon plain danger" aria-label="Delete {design.name} design" disabled={!!busy} onclick={() => (removing = design.id)}><Trash size={14} /></button>
+              {#if assessment?.canCopy}<button class="bu-action btn primary sm" data-variant="primary" disabled={!!busy || isDemo()} onclick={() => choose(design, 'copy')}>{assessment.missingCells ? 'Review available copy' : 'Review free copy'} <span class="cost">Free</span></button>{/if}
+              {#if assessment?.status !== 'ready'}<button class="bu-action btn sm" data-variant="outline" class:primary={!assessment?.canCopy} disabled={!!busy || isDemo() || !assessment} onclick={() => choose(design, 'fit')}>{assessment?.canCopy ? 'Fit missing frames' : 'View fit'}</button>{/if}
+              <button class="bu-action btn sm" data-variant="outline" aria-label="Export {design.name} design" disabled={!!busy} onclick={() => download(design)}><Download size={14} />Export</button><button class="bu-action btn icon plain danger" data-variant="quiet" aria-label="Delete {design.name} design" disabled={!!busy} onclick={() => (removing = design.id)}><Trash size={14} /></button>
             </div>
           {/if}
         </article>

@@ -21,7 +21,7 @@ grid and pivot.
 Client-side only (Svelte 5 + Vite 8 + TypeScript, no backend). The browser calls the PixelLab REST v2 API directly with your own
 key.
 
-The isolated immersive prototype uses [Bronze UI](https://github.com/Shilo/bronze-ui), our MIT theme with native light/dark modes ([component showcase](https://shilo.github.io/bronze-ui/)). It is a versioned dependency in `app/package.json`; the production Studio retains its existing custom CSS.
+The immersive Studio and its design prototype use [Bronze UI](https://github.com/Shilo/bronze-ui), our MIT theme with native light/dark modes ([component showcase](https://shilo.github.io/bronze-ui/)). It is a versioned dependency in `app/package.json`; application layout and gameplay stay local. The [production design contract](docs/design/production-experience.md) documents the integration.
 
 ## Status
 
@@ -49,7 +49,7 @@ npm ci
 npm run dev        # http://localhost:5173
 ```
 
-Open `#/` for the Studio. **Try the demo** needs no key. To generate, open **Connect PixelLab…** and paste a key from
+Open `#/` for character selection; the bundled demo needs no key. Choose **Customize** to dress it or try **Top-down** and **Side-scroller** movement. To generate, open **More options → Connect PixelLab** and paste a key from
 <https://pixellab.ai/account>. It stays in memory unless you tick *Remember on this device*, and is only sent to
 `api.pixellab.ai`. `npm run dev` handles the key exactly like the deployed site: there is no key file, endpoint or button.
 

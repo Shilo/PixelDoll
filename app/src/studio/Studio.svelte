@@ -1,15 +1,14 @@
 <script lang="ts">
   import './studio.css'
+  import './experience/theme.css'
+  import './experience/layout.css'
+  import { rememberActivation } from './experience/focus.ts'
+  import Experience from './experience/Experience.svelte'
   import { onMount, untrack } from 'svelte'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import { resumeFits } from '../lib/equipment/index.ts'
-  import Toolbar from './Toolbar.svelte'
-  import Wardrobe from './Wardrobe.svelte'
   import Stage from './Stage.svelte'
-  import Inspector from './Inspector.svelte'
-  import PhonePanel from './PhonePanel.svelte'
-  import Welcome from './Welcome.svelte'
   import Sheet from './Sheet.svelte'
   import ItemPane from './ItemPane.svelte'
   import ConnectSheet from './ConnectSheet.svelte'
@@ -26,8 +25,8 @@
   import FitDesignSheet from './FitDesignSheet.svelte'
   import StageNote from './StageNote.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, undo, redo, genProgress } from './state.svelte.ts'
-  import { Palette, PersonStanding, Shirt, WifiOff } from './icons.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, undo, redo } from './state.svelte.ts'
+  import { WifiOff } from './icons.ts'
 
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
   onMount(() => {
@@ -53,13 +52,6 @@
     if (!a || !ui.playing) return
     const t = setTimeout(() => ui.frame++, a.frames[ui.frame % a.frames.length].ms)
     return () => clearTimeout(t)
-  })
-
-  // a move without the current view (demo cross punch: south only) switches to one it has
-  $effect(() => {
-    const m = store.project?.manifest
-    const made = m ? moveDirs(m, ui.anim) : []
-    if (made.length && !made.includes(ui.dir)) ui.dir = made[0]
   })
 
   // Back (browser button, Android gesture) closes an open sheet first: one history entry while any sheet is open.
@@ -111,13 +103,14 @@
       if (!menu) opts[n].click()
       return
     }
-    if (ui.sheet || ui.welcome || t.closest('input, textarea, select, [contenteditable]')) return
+    if ((ui.sheet && ui.sheet!=='inspect') || t.closest('input, textarea, select, [contenteditable]')) return
     const mod = e.ctrlKey || e.metaKey
     const m = store.project?.manifest
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); return }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return }
-    if (mod && e.altKey && e.key.toLowerCase() === 'i') { e.preventDefault(); if (ui.size === 'medium' && ui.drawer) { ui.drawer = false; ui.inspector = true } else ui.inspector = !ui.inspector; return }
+    if (mod && e.altKey && e.key.toLowerCase() === 'i') { e.preventDefault(); if (m) ui.sheet = ui.sheet === 'inspect' ? null : 'inspect'; return }
     if (mod || e.altKey || !m) return
+    if (ui.sheet!=='inspect') return
     if (e.key === ' ' && !t.closest('button, a')) { e.preventDefault(); ui.playing = !ui.playing }
     else if (e.key === ',' || e.key === '.') { ui.playing = false; ui.frame += e.key === '.' ? 1 : (view.anim?.frames.length ?? 1) - 1 }
     else if (e.key === '0') ui.all = !ui.all
@@ -128,57 +121,16 @@
   let online = $state(navigator.onLine)
   const offline = $derived(!online || $queue.paused === 'offline')
 
-  const desk = $derived(ui.size === 'expanded' || ui.size === 'medium')
-  const firstGen = $derived(gens.find((g) => g.draft.rigId === doc.id && g.phase !== 'failed'))
-  const creatingNow = $derived(!!creating.spec && !creating.projectId)
-  const TABS = [['wardrobe', 'Wardrobe', Shirt], ['colours', 'Colours', Palette], ['moves', 'Moves', PersonStanding]] as const
 </script>
 
 <svelte:window onkeydown={onkey} onpopstate={onpop} ononline={() => (online = true)} onoffline={() => (online = false)} />
 
-<div class="studio-app">
-  {#if ui.welcome}
-    <Welcome />
-  {:else}
-    <div class="studio {ui.size}">
-      {#if ui.size !== 'landscape'}<Toolbar phone={ui.size === 'compact'} />{/if}
-      <div class="main">
-        <!-- B10 (T1 P1-3): medium width pushes the stage instead of covering it; portrait tablets use the stacked layout -->
-        {#if (ui.size === 'expanded' && ui.sidebar) || (ui.size === 'medium' && ui.drawer)}<aside class="side pane" aria-label="Wardrobe"><Wardrobe /></aside>{/if}
-        <main class="stage-wrap" aria-label="Preview"><Stage /><StageNote /></main>
-        {#if desk && ui.inspector && (ui.size !== 'medium' || !ui.drawer)}<aside class="insp pane" aria-label="Inspector"><Inspector /></aside>{/if}
-        {#if ui.size === 'compact'}<section class="phone-panel" aria-label={ui.tab}><PhonePanel /></section>{/if}
-        {#if ui.size === 'landscape'}
-          <section class="land-col">
-            <Toolbar phone />
-            <div class="seg full" role="tablist" aria-label="Studio">
-              {#each TABS as [id, label] (id)}<button role="tab" aria-selected={ui.tab === id} tabindex={ui.tab === id ? 0 : -1} onclick={() => (ui.tab = id)}>{label}</button>{/each}
-            </div>
-            <PhonePanel />
-          </section>
-        {/if}
-      </div>
-      {#if ui.size === 'compact'}
-        <div class="dock">
-          {#if (firstGen && !(ui.tab === 'wardrobe' && ui.selected === `gen:${firstGen.draft.spec.id}`)) || creatingNow}
-            {@const p = firstGen ? genProgress(firstGen, $queue.jobs) : null}
-            <button class="accessory" onclick={() => { if (firstGen) { ui.selected = `gen:${firstGen.draft.spec.id}`; ui.tab = 'wardrobe' } else ui.sheet = 'create' }}>
-              <span class="ring" class:spin={!p || !p.pct} style:--p={p?.pct ?? 0}></span>
-              <span class="acc-text"><b>{firstGen ? firstGen.input.name : creating.spec?.name}</b><span>{p ? p.label : creating.error ? 'Needs attention' : 'Creating your character'}</span></span>
-            </button>
-          {/if}
-          <div class="tabbar" role="tablist" aria-label="Studio">
-            {#each TABS as [id, label, I] (id)}
-              <button class="tab" role="tab" aria-selected={ui.tab === id} tabindex={ui.tab === id ? 0 : -1} onclick={() => (ui.tab = id)}><I size={20} /><span class="tab-label">{label}</span></button>
-            {/each}
-          </div>
-        </div>
-      {/if}
-      {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You're offline — generation paused; everything else works</div>{/if}
-      {#if ui.toast}<div class="toast" role="status">{ui.toast}</div>{/if}
-    </div>
-  {/if}
+<div class="studio-app" onclickcapture={rememberActivation}>
+  <Experience />
+  {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You're offline — generation paused; everything else works</div>{/if}
+  {#if ui.toast}<div class="toast" role="status">{ui.toast}</div>{/if}
 
+  {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><StageNote/></div></Sheet>{/if}
   {#if ui.sheet === 'connect'}<ConnectSheet />{/if}
   {#if ui.sheet === 'create'}<CreateSheet />{/if}
   {#if ui.sheet === 'newitem'}<NewItemSheet />{/if}

@@ -1,3 +1,4 @@
+import { openStudio, reloadStudio, equipmentMode, newItem, selectedItemDetails } from './immersive-helpers.ts'
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { makeImg } from '../../src/lib/image/png.ts'
@@ -12,7 +13,7 @@ test.beforeEach(async ({ context }) => {
 })
 
 test('import can be cancelled before choosing a file and reopened', async ({ page }, info) => {
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
   for (const close of ['Cancel', 'Escape']) {
     await page.locator('.project-btn').click()
     await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
@@ -36,8 +37,8 @@ test('cancelling a downloading import closes it and cannot reopen a late preview
     await held
     await route.fulfill({ contentType: 'application/zip', body: Buffer.from(data) }).catch(() => {})
   })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.project-btn')).toContainText('Adventurer')
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
   await page.getByRole('tab', { name: 'From PixelLab', exact: true }).click()
@@ -53,7 +54,7 @@ test('cancelling a downloading import closes it and cannot reopen a late preview
   await expect(page.getByRole('dialog')).not.toContainText('PixelLab could not find')
   await expect(page.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled()
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
+  await expect(page.locator('.project-btn')).toContainText('Adventurer')
   expect(calls).toEqual(['GET'])
 })
 
@@ -61,8 +62,8 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
   const requests: string[] = [], errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))
   await context.route('https://api.pixellab.ai/**', async (route) => { requests.push(route.request().method()); await route.abort() })
-  await page.goto('/')
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const download = page.waitForEvent('download')
   await page.getByRole('button', { name: /Download zip/ }).click()
@@ -78,7 +79,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
     await expect(page.locator('.project-btn')).toContainText(name)
   }
   await importCopy('Imported one')
-  await page.reload()
+  await reloadStudio(page)
   await expect(page.locator('.project-btn')).toContainText('Imported one')
   await importCopy('Imported two')
   await page.locator('.project-btn').click()
@@ -93,10 +94,10 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
     await page.locator('.project-btn').click()
     await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click()
     await page.getByRole('button', { name: 'Delete character', exact: true }).click()
-    await expect(page.locator('.project-btn')).toContainText(remaining)
+    await expect(page.locator('.project-btn')).toContainText(remaining.replace(/ \(demo\)$/, ''))
   }
-  await page.reload()
-  await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
+  await reloadStudio(page)
+  await expect(page.locator('.project-btn')).toContainText('Adventurer')
   await page.locator('.project-btn').click()
   await expect(page.getByRole('menuitem', { name: 'Delete character…', exact: true })).toHaveCount(0)
   await expect(page.getByRole('menuitemradio', { name: /^Imported/ })).toHaveCount(0)
@@ -118,7 +119,7 @@ test('PixelLab library connection, pagination and direct import use only free re
     if (url.pathname.endsWith('/zip')) { expect(req.headers().authorization).toBeUndefined(); return route.fulfill({ contentType: 'application/zip', body: Buffer.from(data) }) }
     return route.abort()
   })
-  await page.goto('/')
+  await openStudio(page, '/')
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
   await page.getByRole('tab', { name: 'From PixelLab', exact: true }).click()
@@ -184,7 +185,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
     if (count) return route.fulfill({ json: { id: path.split('/').pop(), status: 'completed', created_at: '', usage: { type: 'generations', generations: 2 }, last_response: { images: Array.from({ length: count }, () => ({ type: 'base64', base64 })) } } })
     return route.abort()
   })
-  await page.goto('/')
+  await openStudio(page, '/')
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
   await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'hero.zip', mimeType: 'application/zip', buffer: Buffer.from(data) })
@@ -204,12 +205,12 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
   expect(before.character).toEqual({ id: 'managed-parity-fixture', looks: 'red hair, blue coat and boots' })
   expect(before.manifest.rig.rest?.west?.keypoints).toHaveLength(18)
   expect((before.rigQa as { clips: Record<string, { adherence: number | null }> }).clips['rest/south'].adherence).toBeNull()
-  await page.getByRole('button', { name: 'New hands item', exact: true }).click()
+  await newItem(page, 'Hands')
   await page.getByRole('radio', { name: 'Hands', exact: true }).click()
   await page.getByRole('dialog').getByText('Details', { exact: true }).click()
   await expect(page.getByRole('dialog')).toContainText('96 px canvas')
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
-  await page.getByRole('tab', { name: 'Moves', exact: true }).click()
+  await equipmentMode(page, 'Moves')
   await page.getByRole('button', { name: 'Add a move', exact: true }).click()
   await page.getByRole('radio', { name: 'Idle', exact: true }).click()
   await page.getByRole('button', { name: /^Add Idle/ }).click()
@@ -228,7 +229,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
   expect(registration.description).toBe('red hair, blue coat and boots')
   expect(posts.filter((p) => p.path.endsWith('/animate-with-skeleton-v3'))).toHaveLength(4)
   expect(posts.filter((p) => p.path.endsWith('/animate-with-skeleton-v3')).every((p) => p.body.view === 'side')).toBe(true)
-  await page.reload()
+  await reloadStudio(page)
   await expect(page.locator('.project-btn')).toContainText('Rig parity fixture')
   expect(errors).toEqual([])
 })
@@ -236,8 +237,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
 test('deleting a disposable character preserves another character’s pending review', async ({ page, context }, info) => {
   await context.route('https://api.pixellab.ai/**', (r) => r.abort())
   const devURL = info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!
-  await page.goto(devURL)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, devURL)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const result = await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     await s.copyDemo()
@@ -247,13 +248,13 @@ test('deleting a disposable character preserves another character’s pending re
     return { resultKept: !!s.store.results['keep-review'], draftKept: s.gens.some((g: { draft: { spec: { id: string } } }) => g.draft.spec.id === 'keep-review') }
   })
   expect(result).toEqual({ resultKept: true, draftKept: true })
-  await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
+  await expect(page.locator('.project-btn')).toContainText('Adventurer')
 })
 
 test('equipping an accepted item while opening its project survives reload', async ({ page, context }, info) => {
   await context.route('https://api.pixellab.ai/**', (r) => r.abort())
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const name = await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     await s.copyDemo()
@@ -264,16 +265,16 @@ test('equipping an accepted item while opening its project survives reload', asy
     await s.openProject(s.doc.id, { wear: hat.id })
     return hat.name as string
   })
-  await expect(page.getByRole('button', { name: `Wear ${name}`, exact: true })).toHaveAttribute('aria-pressed', 'true')
-  await page.reload()
-  await expect(page.getByRole('button', { name: `Wear ${name}`, exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true')
+  await reloadStudio(page)
+  await expect(page.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true')
 })
 
 
 test('a delayed earlier character load cannot replace the last selected character', async ({ page, context }, info) => {
   await context.route('https://api.pixellab.ai/**', (r) => r.abort())
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const id = await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     return await s.copyDemo() as string
@@ -300,8 +301,8 @@ test('a delayed earlier character load cannot replace the last selected characte
 
 test('rename storage failures leave the name visible and retryable', async ({ page, context }, info) => {
   await context.route('https://api.pixellab.ai/**', (r) => r.abort())
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     await s.copyDemo()
@@ -322,8 +323,8 @@ test('rename storage failures leave the name visible and retryable', async ({ pa
 
 test('item deletion finishing during navigation cannot reopen the old character', async ({ page, context }, info) => {
   await context.route('https://api.pixellab.ai/**', (r) => r.abort())
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     await s.copyDemo()
@@ -343,7 +344,7 @@ test('item deletion finishing during navigation cannot reopen the old character'
   try { await page.evaluate(async () => await (window as unknown as { deleting: Promise<void> }).deleting) }
   finally { release() }
   await page.evaluate(async () => await (window as unknown as { navigating: Promise<void> }).navigating)
-  await expect(page.locator('.project-btn')).toContainText('Adventurer (demo)')
+  await expect(page.locator('.project-btn')).toContainText('Adventurer')
   expect(await page.evaluate(() => localStorage.getItem('pixeldoll.studio.project'))).toBe('fixture:s2')
 })
 
@@ -351,8 +352,8 @@ test('item deletion finishing during navigation cannot reopen the old character'
 test('storage failures before paid work surface errors and release the move runner', async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const result = await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     const put = IDBObjectStore.prototype.put
@@ -381,8 +382,8 @@ test('storage failures before paid work surface errors and release the move runn
 
 test('accepted appearance warnings remain visible with clean or removed frame QA and dollar source costs', async ({ page, context }, info) => {
   await context.route('https://api.pixellab.ai/**', (r) => r.abort())
-  await page.goto(info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
-  await expect(page.locator('.stage canvas').first()).toBeVisible()
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
   const id = await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     await s.copyDemo()
@@ -395,7 +396,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
     s.doc.rev++
     return it.id
   })
-  const pane = page.locator('.inspector')
+  const pane = await selectedItemDetails(page)
   await expect(pane.locator('.badge.look')).toContainText('Needs a look')
   await expect(pane.getByText('Accepted appearance warnings', { exact: true })).toBeVisible()
   await expect(pane.getByText('The design has grey smudges', { exact: true })).toBeVisible()

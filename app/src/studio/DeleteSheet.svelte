@@ -19,7 +19,7 @@
   <p class="faint small">Your original character in PixelLab stays in your PixelLab account.</p>
   {#if reason || error}<p class="notice warn small" role="alert"><TriangleAlert size={16} /><span>{error || reason}</span></p>{/if}
   {#snippet footer()}
-    <button class="btn" disabled={busy} onclick={() => (ui.sheet = 'export')}>Export a copy</button>
-    <button class="btn danger" disabled={busy || !!reason} onclick={remove}><Trash size={16} />{busy ? 'Deleting…' : 'Delete character'}</button>
+    <button class="bu-action btn" data-variant="outline" disabled={busy} onclick={() => (ui.sheet = 'export')}>Export a copy</button>
+    <button class="bu-action btn danger" data-variant="outline" disabled={busy || !!reason} onclick={remove}><Trash size={16} />{busy ? 'Deleting…' : 'Delete character'}</button>
   {/snippet}
 </Sheet>

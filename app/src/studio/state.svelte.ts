@@ -36,7 +36,7 @@ export const DEMO = 'fixture:s2';
 
 // ---------- UI ----------
 export type Size = 'expanded' | 'medium' | 'compact' | 'landscape';
-export type SheetId = null | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup' | 'savedesign' | 'fitdesign';
+export type SheetId = null | 'inspect' | 'connect' | 'create' | 'newitem' | 'export' | 'activity' | 'item' | 'move' | 'rename' | 'import' | 'delete' | 'setup' | 'savedesign' | 'fitdesign';
 const sizeNow = (): Size => {
   const w = innerWidth, h = innerHeight;
   if (h < 500 && w > h) return 'landscape';
@@ -53,7 +53,7 @@ export const ui = $state({
   sidebar: true,
   inspector: true,
   drawer: innerWidth >= 900, // medium size: wardrobe pane, pushes the stage
-  tab: 'wardrobe' as 'wardrobe' | 'colours' | 'moves', // phone
+  tab: 'wardrobe' as 'wardrobe' | 'colours' | 'outfits' | 'moves', // phone
   inspTab: 'item' as 'item' | 'colours' | 'moves',
   group: 'Head',
   selected: '', // item id, or "gen:<draft id>"
@@ -82,7 +82,7 @@ export function initUi() {
   applyTheme();
   return () => removeEventListener('resize', on);
 }
-export function applyTheme() { document.documentElement.dataset.theme = ui.theme; }
+export function applyTheme() { document.documentElement.dataset.theme = ui.theme; document.documentElement.style.colorScheme = ui.theme; }
 export function toggleTheme() { ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; lsSet(K.theme, ui.theme); applyTheme(); }
 export function dismissWelcome() { ui.welcome = false; lsSet(K.welcomed, '1'); }
 let toastT: ReturnType<typeof setTimeout> | undefined;

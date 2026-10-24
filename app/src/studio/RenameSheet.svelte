@@ -14,11 +14,11 @@
 
 <Sheet title="Rename character" cancelDisabled={busy} onclose={() => (ui.sheet = null)}>
   <form class="form" onsubmit={(e) => { e.preventDefault(); void save() }}>
-    <label class="field"><span class="label">Name</span><input class="input" type="text" bind:value={name} maxlength="60" disabled={busy} /></label>
+    <label class="field"><span class="label">Name</span><input class="bu-input input" type="text" bind:value={name} maxlength="60" disabled={busy} /></label>
   </form>
   {#if error}<p class="notice bad small" role="alert">{error}</p>{/if}
   {#snippet footer()}
     <span class="foot-note">Also the name in your exports.</span>
-    <button class="btn primary" disabled={!name.trim() || busy} onclick={save}>Save</button>
+    <button class="bu-action btn primary" data-variant="primary" disabled={!name.trim() || busy} onclick={save}>Save</button>
   {/snippet}
 </Sheet>
