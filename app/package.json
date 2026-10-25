@@ -1,7 +1,6 @@
 {
   "name": "app",
   "private": true,
-  "version": "0.1.0",
   "description": "Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.",
   "license": "MIT",
   "homepage": "https://shilo.github.io/PixelDoll/",

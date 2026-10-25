@@ -72,11 +72,11 @@ for clip × dir: raw /animate-with-skeleton-v3 {first_frame: dressed 96, first_f
 
 ### Dressed keyframes (one `edit-animation-v2` call each, 96×96, 3 frames, 10 gens, 111–120 s)
 
-| Tag | Prompt | Key kept S/E/N | Key outside S/E/N | Visual ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/dress_d96.sheet.png)) |
+| Tag | Prompt | Key kept S/E/N | Key outside S/E/N | Visual ([sheet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/dress_d96.sheet.png)) |
 |---|---|---|---|---|
 | `d96` | longsword, right hand, blade down and slightly outward | 1 / 1 / 0.994 | 0 / 0 / 0.006 | one design in all views, arms unchanged, longer blade than S4's 64 px dress |
-| `u96` | longsword held upright, blade straight up | 0.956 / 1 / 0.954 | 0.040 / 0.075 / 0.046 | **forearm raised and bent** in every view ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/dress_u96.sheet.png)) |
-| `a96` | battle axe, handle down and slightly outward, head at the bottom | 1 / 1 / 0.998 | 0.005 / 0 / 0.014 | clean axe in all views ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/dress_a96.sheet.png)) |
+| `u96` | longsword held upright, blade straight up | 0.956 / 1 / 0.954 | 0.040 / 0.075 / 0.046 | **forearm raised and bent** in every view ([sheet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/dress_u96.sheet.png)) |
+| `a96` | battle axe, handle down and slightly outward, head at the bottom | 1 / 1 / 0.998 | 0.005 / 0 / 0.014 | clean axe in all views ([sheet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/dress_a96.sheet.png)) |
 
 ### Posed clips (raw skeleton-v3, 96 canvas, 3 gens per call, 86–210 s)
 
@@ -101,16 +101,16 @@ Column notes:
 
 Sheets (layer over the real base on the 96 canvas, magenta = the 64 window; the first column is the dressed keyframe):
 
-- [`eval_fsw`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/eval_fsw.sheet.png) (final sword);
-- [`eval_fax`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/eval_fax.sheet.png) (final axe);
-- [`eval_d96`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/eval_d96.sheet.png) (seed 7 everywhere: f0 losses, smeared E slash);
-- [`eval_u96`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/eval_u96.sheet.png) (upright, rejected);
-- [`eval_d96fix`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/eval_d96fix.sheet.png) (anchor repair);
-- [`eval_s4`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/eval_s4.sheet.png) (64 control).
+- [`eval_fsw`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/eval_fsw.sheet.png) (final sword);
+- [`eval_fax`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/eval_fax.sheet.png) (final axe);
+- [`eval_d96`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/eval_d96.sheet.png) (seed 7 everywhere: f0 losses, smeared E slash);
+- [`eval_u96`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/eval_u96.sheet.png) (upright, rejected);
+- [`eval_d96fix`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/eval_d96fix.sheet.png) (anchor repair);
+- [`eval_s4`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/eval_s4.sheet.png) (64 control).
 
-Raw zooms: [`zoom_d96_slash`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/zoom_d96_slash.png),
-[`zoom_d96_walk`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/zoom_d96_walk.png), [`zoom_d96r`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/zoom_d96r.png),
-[`zoom_E11`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/zoom_E11.png), [`zoom_a96`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/zoom_a96.png).
+Raw zooms: [`zoom_d96_slash`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/zoom_d96_slash.png),
+[`zoom_d96_walk`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/zoom_d96_walk.png), [`zoom_d96r`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/zoom_d96r.png),
+[`zoom_E11`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/zoom_E11.png), [`zoom_a96`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/zoom_a96.png).
 
 Export-shaped layer sheets (8 × 96 by S/E/N, untrimmed, transparent):
 
@@ -138,7 +138,7 @@ Frame 7 (also about the rest pose, but not the first output frame) never lost th
   - Cells 16–18 are the `d96` dressed S/E/N keyframes, as design anchors with a black mask.
   - Each animation cell's mask is a disc of radius 34 around that frame's right-wrist keypoint.
 - 1 call, **25 gens**, 88 s.
-- Result ([zoom row 1–2](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s5_held/zoom_inp96.png)):
+- Result ([zoom row 1–2](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s5_held/zoom_inp96.png)):
   - Walk E: key outside 0.003, area CV 0.04, G9 0.68, grip 2/1/5/0.
   - Slash E: key outside 0.057, CV 0.06.
   - No motion smears, and the blade is drawn crisply in the swing.

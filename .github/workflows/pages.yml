@@ -1,10 +1,14 @@
-# CI on every push and PR (check, unit tests, keyless browser tests, build + dist guard); on push to main also deploy app/dist to GitHub Pages.
+# CI on every push and PR that changes what ships (check, unit tests, keyless browser tests, build + dist guard); on push to main also deploy app/dist to GitHub Pages.
 # Enable Pages once: Settings > Pages > Source = "GitHub Actions". No secrets or env: the PixelLab key never touches CI.
 name: CI and Pages
 
+# The site is built from app/ alone. Keep these paths equal to SHIPPED in app/version.ts so every deploy bumps the version.
+# GitHub checks only a push's first 300 changed files against them, so push large docs-only sweeps apart from app/ changes.
 on:
   push:
+    paths: [app/**, .github/workflows/pages.yml]
   pull_request:
+    paths: [app/**, .github/workflows/pages.yml]
   workflow_dispatch:
 
 permissions:
@@ -27,6 +31,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0 # the build counts commits for the app version (app/version.ts); it needs commits and trees, not old files
+          filter: blob:none
       - uses: actions/setup-node@v7
         with:
           node-version: '24.22.1'
@@ -60,6 +66,8 @@ jobs:
       - uses: actions/checkout@v7
         with:
           persist-credentials: false
+          fetch-depth: 0 # the build counts commits for the app version (app/version.ts); it needs commits and trees, not old files
+          filter: blob:none
       - uses: actions/setup-node@v7
         with:
           node-version: '24.22.1'

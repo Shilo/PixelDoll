@@ -35,21 +35,21 @@ W is the mirror of E.
 
 | Item | Move | S | E | N | Notes |
 |---|---|---|---|---|---|
-| **Long hair** (green key, 46 gens, 0 re-rolls) | idle | ✓ | ✓ | ✓ | Same design in every view: framing strands S, hangs down the back E, full sheet N ([dress](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_hair_dress.png)). |
+| **Long hair** (green key, 46 gens, 0 re-rolls) | idle | ✓ | ✓ | ✓ | Same design in every view: framing strands S, hangs down the back E, full sheet N ([dress](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_hair_dress.png)). |
 | | walk | ✓ | ✓ | ✓ | Sits on the head in every frame; no offset. |
 | | slash | ~ | ~ | ✓ | S/E f1–5: the raised forearm covers part of the hair, and the layer is pre-occluded correctly. H4 warns (own 0.36–0.74). In S the right strand is drawn very dark while the arm is up. |
 | | hurt | ~ | ~ | ✓ | The hair swings outward with the flinch (plausible). H4 warns. |
 | **Red cape** (green, 68 gens) | idle | ✓ | ✓ | ~ | N: the dressed design has gray-brown smudges at the hem (in PixelLab's own output, not an extraction artifact). Roll 1 of the dress was clean but was rejected by a false G2 (§3.1). |
-| | walk | ~ | ✓ | ~ | E: natural swing ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_cape_comp.png)). S: only the cape edges show, so H4 warns on 4 frames. |
-| | slash | ~ | ✓ | **✗** | E: big flare behind the lunge (plausible). Slash E f2–3 put 1–3 px on the cell border (G7 warn). **N f1–5: the cape wraps the raised arm and uncovers the back in all 3 rolls** (G4 43–49 %); the S4 weakness is confirmed. The best roll is kept (§3.6) ([rolls](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_cape_slash_north_rolls.png)). |
+| | walk | ~ | ✓ | ~ | E: natural swing ([sheet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_cape_comp.png)). S: only the cape edges show, so H4 warns on 4 frames. |
+| | slash | ~ | ✓ | **✗** | E: big flare behind the lunge (plausible). Slash E f2–3 put 1–3 px on the cell border (G7 warn). **N f1–5: the cape wraps the raised arm and uncovers the back in all 3 rolls** (G4 43–49 %); the S4 weakness is confirmed. The best roll is kept (§3.6) ([rolls](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_cape_slash_north_rolls.png)). |
 | | hurt | ~ | ✓ | ~ | N f1–2: the cape balloons into a round shape over the flung-out arms; odd, but in sync. |
-| **Leather chest armour** (green, 46 gens, 0 re-rolls) | idle | ✓ | ~ | ✓ | E is thin, showing mostly a shoulder plate and a side strap; the dressed E keyframe is thin too (same as S4's vest) ([dress](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_dress.png)). |
+| **Leather chest armour** (green, 46 gens, 0 re-rolls) | idle | ✓ | ~ | ✓ | E is thin, showing mostly a shoulder plate and a side strap; the dressed E keyframe is thin too (same as S4's vest) ([dress](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_chest_dress.png)). |
 | | walk | ✓ | ~ | ✓ | Same thin E. |
-| | slash | ~ | ✓ (fixed) | ✓ | E f2/f4/f5 had a gray swoosh and brown streaks. These were **motion smears extracted as armour, and QA passed them (false pass)**; removed by §3.3 ([before](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_slash_east.png) / [after](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_slash_east_fixed.png)). |
-| | hurt | ~ | ✓ | ~ | H4 warnings only; the frames look right ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_chest_comp.png)). |
-| **Cloth trousers** (green, 55 gens) | idle | ✓ | ✓ | ✓ | **Full-length trousers** on the gray-shorts base; no shorts showing ([dress](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_trousers_dress.png)). |
+| | slash | ~ | ✓ (fixed) | ✓ | E f2/f4/f5 had a gray swoosh and brown streaks. These were **motion smears extracted as armour, and QA passed them (false pass)**; removed by §3.3 ([before](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_chest_slash_east.png) / [after](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_chest_slash_east_fixed.png)). |
+| | hurt | ~ | ✓ | ~ | H4 warnings only; the frames look right ([sheet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_chest_comp.png)). |
+| **Cloth trousers** (green, 55 gens) | idle | ✓ | ✓ | ✓ | **Full-length trousers** on the gray-shorts base; no shorts showing ([dress](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_trousers_dress.png)). |
 | | walk | ~ | ✓ | ~ | E failed G5 on 3 seeds (CV 0.20–0.22): a **false fail**, fixed in §3.4. S/N: H4 warnings while the legs move. |
-| | slash | ✓ | ✓ | ✓ | E re-rolled once on G3 0.052 (borderline); both rolls look the same ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_trousers_comp_roll1.png)). |
+| | slash | ✓ | ✓ | ✓ | E re-rolled once on G3 0.052 (borderline); both rolls look the same ([sheet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_trousers_comp_roll1.png)). |
 | | hurt | ✓ | ✓ | ✓ | |
 
 **QA status accuracy (live).**
@@ -68,8 +68,8 @@ for the cape and borderline noise for the others (§6, P2).
 
 All items, plus the helmet and the sword, in every move and direction (baked 96 frame; W mirrored):
 
-- with the helmet: [idle](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_final_idle.png) · [walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_final_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_final_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_final_hurt.png)
-- without the helmet: [idle](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_final_nohelmet_idle.png) · [walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_final_nohelmet_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_final_nohelmet_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_final_nohelmet_hurt.png)
+- with the helmet: [idle](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_final_idle.png) · [walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_final_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_final_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_final_hurt.png)
+- without the helmet: [idle](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_final_nohelmet_idle.png) · [walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_final_nohelmet_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_final_nohelmet_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_final_nohelmet_hurt.png)
 
 I measured occlusion as "item px that one item hides from another", summed over every frame (Ranger, all 4 moves):
 
@@ -78,7 +78,7 @@ I measured occlusion as "item px that one item hides from another", summed over 
 | Sword under cape | S idle 80, **walk 220**, slash 79 px hidden; N 63–185 | S/E/W 0 (sword over cape); N unchanged (cape over the blade from behind) | **Fixed (§3.5)**. The M4 fix was in the demo fixture only, not in the Studio's slot ladder. |
 | Hair under cape | **walk E 359**, slash E 370, hurt E 374, N 94–191, S 22–224 px hidden | 0: the hair's bg is now drawn over the cape's bg | **Fixed (§3.5)**. Long hair lies over the cape in every view. |
 | Trousers under chest | S 88–168, N 36–74, E 7–23 px | — | Correct: the armor hem sits over the waistband. |
-| Hair under helmet | Helmet `hides: [hair]`, so **long hair disappears completely** ([walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_combo1_walk.png)) | Unchanged default | With the hide unticked, long hair hangs naturally below the helmet ([no hide](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_combo1_nohide_walk.png), [zoom](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_helmet_hair_nohide_zoom.png)). Short spiky hair pokes through without the hide (M4), so I kept the default (§6, P1). |
+| Hair under helmet | Helmet `hides: [hair]`, so **long hair disappears completely** ([walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_combo1_walk.png)) | Unchanged default | With the hide unticked, long hair hangs naturally below the helmet ([no hide](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_combo1_nohide_walk.png), [zoom](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_helmet_hair_nohide_zoom.png)). Short spiky hair pokes through without the hide (M4), so I kept the default (§6, P1). |
 | Chest pauldrons vs cape (N) | The pauldrons draw over the cape's shoulders | — | Plausible (the cape sits under the shoulder plates). |
 
 ## 3. Issues → fix → evidence
@@ -91,9 +91,9 @@ stored frames at 0 gens.
      a clean dress was re-rolled for 10 gens.
    - **Fix:** G2 also needs **> 8 lost px** (`GATES.keyLostPx`, `g2Fails`, `keyKept().lost`), applied in itemQa and on the
      dress keyframes.
-   - **Evidence:** [roll 1](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_cape_dress_roll1.png) vs [roll 2](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_cape_dress.png).
+   - **Evidence:** [roll 1](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_cape_dress_roll1.png) vs [roll 2](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_cape_dress.png).
 2. **H4 re-rolled long hair on legit occlusion and swing.**
-   - **Cause:** 9 slash/hurt frames scored own 0.36–0.74, and they look right ([zoom](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_hair_h4_flagged.png)).
+   - **Cause:** 9 slash/hurt frames scored own 0.36–0.74, and they look right ([zoom](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_hair_h4_flagged.png)).
    - **Fix:** H4 **fails only band items** (helmet, face). Hair now gets the cloth treatment: a review warning in every view.
 3. **Motion smears passed as worn items (false pass).**
    - **Fix:** `dropOffBody`. Body-hugging worn slots (not back or hair) drop detached components that have fewer than half
@@ -133,7 +133,7 @@ Docs: architecture §4.1 (cleanup), §4.5 (G2, G5, keep best roll, H4) and §5 (
 | Studio Export → Godot | 395 KB zip; the blob was captured in-page, no download. Baked cell 96×96, pivot (48, 75). Presets `current` (all 7 items) and `default`. |
 | Godot 4.7.1 `--import` | 0 errors |
 | `test_sync_oversize.gd -- t3_ranger` | **1,440 ticks, 2,880 oversize layer-ticks, 0 failures**. z from the manifest: hair bg z5, sword bg z5 (S), cape bg z4 ([log](b8_engine_tests/t3_ranger_sync.log)) |
-| `test_render_oversize.gd -- t3_ranger` (Vulkan, RTX 3070 Ti) | **0 of 1,916,928 px differ**, 2 presets × 4 moves × 4 directions ([log](b8_engine_tests/t3_ranger_render.log)); Godot's own render: [walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_godot_render_walk.png), [slash](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_godot_render_slash.png) |
+| `test_render_oversize.gd -- t3_ranger` (Vulkan, RTX 3070 Ti) | **0 of 1,916,928 px differ**, 2 presets × 4 moves × 4 directions ([log](b8_engine_tests/t3_ranger_render.log)); Godot's own render: [walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_godot_render_walk.png), [slash](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_godot_render_slash.png) |
 | `npm run check` / `build` / `selftest` | 0 errors / ok / all passed |
 | `e2e-studio.mjs` (BASE :5173) | all passed |
 

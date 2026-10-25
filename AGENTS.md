@@ -17,7 +17,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Plan and decisions: PLAN.md
 - Accepted limits: docs/known-issues.md
 - Agent token contract: docs/handoff/agent-dev-token-handling.md
-- Old evidence media: git tag v0.1.0
+- Old evidence media: commit 1f95029
 - Before editing this file: docs/agent-instructions.md
 
 ## Tasks
@@ -58,7 +58,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 ## End-to-end scope
 
-- CI runs the full end-to-end suite on every push, sharded, and Pages deploys only after it passes.
+- CI runs the full end-to-end suite on every push that changes app/ or its workflow, sharded, and Pages deploys only after it passes.
 - Agents run npm run check and npm test (skip both for docs-only changes), plus only the end-to-end specs that cover what they changed (none for docs-only or test/unit-only changes).
 - Run the full end-to-end suite locally only for cross-cutting changes (studio state, storage, queue, shared components, test/e2e/immersive-helpers.ts, test/fixtures/, src/studio/experience/, Playwright config) or when asked.
 - Spec names in app/test/e2e/ match their areas, except:

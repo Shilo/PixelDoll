@@ -265,6 +265,7 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
   padding: 6px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--bg-raised); color: var(--text); box-shadow: var(--shadow-pop); font: 400 var(--fs)/1.4 var(--font-ui); }
 .menu-sec { padding: 6px 8px 2px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-3); }
 .menu .row { min-height: var(--ctl-h); }
+.app-version .row-name { padding-left: 28px; line-height: 1.35; } /* lines up with the row names after an 18 px icon */
 .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
 .dev-rigs > summary { list-style: none; cursor: pointer; color: var(--text-2); }
 .dev-rigs > summary::-webkit-details-marker { display: none; }

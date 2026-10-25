@@ -42,7 +42,7 @@ apply).
   outside the mask.
 - On the 64 px rig this is 256×192, and the call cost **10 gens**.
 - For the back slot, the prompt says the cape "hangs from the shoulders down the back and never wraps around or follows the
-  arms" ([input](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_grid_in.png), [mask](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_grid_mask.png)).
+  arms" ([input](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_grid_in.png), [mask](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_grid_mask.png)).
 
 `routes.ts` gets `inpaintV3` back (B13 had removed it as unused). `jobImages` now reads inpaint-v3's single
 `last_response.image`; without that, the queue would have marked the paid result as malformed.
@@ -53,7 +53,7 @@ apply).
   no H4.
 - The clip was saved into the Ranger's cape.
 - The cape now hangs down the back in all 8 frames, and the arm and sword move in front of it
-  ([after](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_cape_slash_north_grid.png); before: [T3 rolls](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/t3_cape_slash_north_rolls.png)).
+  ([after](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_cape_slash_north_grid.png); before: [T3 rolls](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/t3_cape_slash_north_rolls.png)).
 - The gray hem smudges are still there, because they come from the reference keyframe (§3, D1).
 
 **Not tested live:** the automatic fallback inside `runItem` and `poseItemClip`. Neither fired: the boots never failed. Both
@@ -81,8 +81,8 @@ so hair cannot stick out sideways above the brim. Px below the brim stay.
 - Spec: manifest-spec invariant 11, architecture §5.
 
 **Evidence (0 gens).** Long hair under the Iron Knight Helmet, every move × view (with and without the helmet):
-[walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_tuck_zoom_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_tuck_zoom_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_tuck_zoom_hurt.png) ·
-[idle](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_tuck_zoom_idle.png).
+[walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_tuck_zoom_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_tuck_zoom_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_tuck_zoom_hurt.png) ·
+[idle](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_tuck_zoom_idle.png).
 
 | Pair (all moves, all views) | Hair px kept | Dropped | Of those, outside the cover (would poke through) |
 |---|---|---|---|
@@ -90,7 +90,7 @@ so hair cannot stick out sideways above the brim. Px below the brim stay.
 | Demo short spiky hair + steel helmet | 75 | 4,495 | **597** (poke-through gone) |
 | Demo short hair + wizard hat | 2,214 | 2,356 | 88 |
 
-- Short hair: [walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_tuck_demo_short_walk.png), [cross punch](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_tuck_demo_short_cross-punch.png). No spike
+- Short hair: [walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_tuck_demo_short_walk.png), [cross punch](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_tuck_demo_short_cross-punch.png). No spike
   shows above or beside the steel helmet.
 - The wizard hat has no north frames in the demo (B10), so the north row shows bare hair, as before.
 
@@ -107,9 +107,9 @@ so hair cannot stick out sideways above the brim. Px below the brim stay.
 ## 3. "Needs a look" re-tune and the dress design check
 
 **Evidence base.** I rebuilt each Ranger item's draft from its provenance (`requestHash` → ledger record) and re-ran
-`evaluateItem` on the stored PixelLab outputs (0 gens). Then I labeled each flagged frame by eye: [hair](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_long_hair.png),
-[trousers](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_cloth_trousers.png), [chest](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_leather_chest_armour.png), [cape](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_red_cape.png),
-[helmet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_iron_knight_helmet.png) ([zoom](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_h4_helmet_zoom.png)).
+`evaluateItem` on the stored PixelLab outputs (0 gens). Then I labeled each flagged frame by eye: [hair](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_h4_long_hair.png),
+[trousers](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_h4_cloth_trousers.png), [chest](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_h4_leather_chest_armour.png), [cape](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_h4_red_cape.png),
+[helmet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_h4_iron_knight_helmet.png) ([zoom](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_h4_helmet_zoom.png)).
 
 | Item | Before (T3 gates) | Frames that are actually wrong | After (B14 gates) |
 |---|---|---|---|
@@ -147,23 +147,23 @@ The stored Ranger items were re-evaluated, and the four that now pass were set t
 I made them in the Studio: Feet → New item → "leather boots" → Make (46 gens shown, 46 spent, 0 re-rolls). The review card
 showed **Clean**, "Every frame passed the checks", and I kept it.
 
-- Dress: [keyframes](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_boots_dress.png) (D1 0 %).
-- All 4 moves × 4 views: [b14_boots_all.png](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_boots_all.png). The design is the same everywhere, the boots follow the
+- Dress: [keyframes](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_boots_dress.png) (D1 0 %).
+- All 4 moves × 4 views: [b14_boots_all.png](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_boots_all.png). The design is the same everywhere, the boots follow the
   stride in walk E/W, there are no smears or flips, and they sit under the trouser hems (feet z20 < legs z30).
 
 ## 5. Final outfit and engine
 
 Full outfit (helmet, long hair tucked, chest armour, trousers, boots, red cape, steel sword), baked 96 frame, rows S/E/N/W:
 
-- with the helmet: [idle](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_final_idle.png) · [walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_final_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_final_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_final_hurt.png)
-- without the helmet: [idle](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_final_nohelmet_idle.png) · [walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_final_nohelmet_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_final_nohelmet_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_final_nohelmet_hurt.png)
+- with the helmet: [idle](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_final_idle.png) · [walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_final_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_final_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_final_hurt.png)
+- without the helmet: [idle](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_final_nohelmet_idle.png) · [walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_final_nohelmet_walk.png) · [slash](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_final_nohelmet_slash.png) · [hurt](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_final_nohelmet_hurt.png)
 
 | Check | Result |
 |---|---|
 | Studio Export → Godot | 513 KB zip (captured in-page, not downloaded). 9 items, including `long_hair~iron_knight_helmet`. Presets `current`, `default`, `no-helmet` (saved as a Studio outfit) |
 | Godot 4.7.1 `--import` | 0 errors. 1 warning: a stale `.uid` cache entry from re-exporting into the same folder |
 | `test_sync_oversize.gd -- b14_ranger` | **1,440 ticks, 2,880 oversize layer-ticks, 0 failures** ([log](b8_engine_tests/b14_ranger_sync.log)) |
-| `test_render_oversize.gd -- b14_ranger` (Vulkan, RTX 3070 Ti) | **0 of 2,875,392 px** differ over 3 presets × 4 moves × 4 views ([log](b8_engine_tests/b14_ranger_render.log)). Godot's render: [slash](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_godot_render_slash.png), [no helmet walk](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b14_godot_render_nohelmet_walk.png). Before the tie-break fix: 4 px (§2) |
+| `test_render_oversize.gd -- b14_ranger` (Vulkan, RTX 3070 Ti) | **0 of 2,875,392 px** differ over 3 presets × 4 moves × 4 views ([log](b8_engine_tests/b14_ranger_render.log)). Godot's render: [slash](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_godot_render_slash.png), [no helmet walk](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b14_godot_render_nohelmet_walk.png). Before the tie-break fix: 4 px (§2) |
 | Phaser harness, `run_phaser.mjs b14_ranger` | 3.80.0 / 3.90.0 / 4.2.1: **0 px** on all 3 presets, 0 sync or origin mismatches |
 
 I fixed one bug in the Phaser harness itself: `test_oversize.html` now unequips the slots a preset leaves out, as the Godot

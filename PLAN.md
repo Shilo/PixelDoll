@@ -6,8 +6,8 @@ Living document: status and decisions. Open tasks live on the [PixelDoll board](
 
 ## Status (2026-10-22)
 
-- **Released:** v0.1.0 (tag + GitHub release). Public repo https://github.com/Shilo/PixelDoll (MIT), live at
-  https://shilo.github.io/PixelDoll/. CI on every push/PR (check, selftest, build, dist guard); `main` deploys to Pages.
+- **Live:** public repo https://github.com/Shilo/PixelDoll (MIT), live at https://shilo.github.io/PixelDoll/. CI on every
+  push/PR that changes app/ (check, selftest, build, dist guard); `main` deploys to Pages. Versioning: D20.
 - **Pipeline (live evidence from legacy mirrored creation and imported rigs):** `create-character-v3` base (48 or 56 px body in a 64 px cell, 4 or 8 directions) →
   skeleton-v3 clips with stored keypoints (idle authored, walk from managed skeleton-v3 motion re-rendered raw, slash/cast/
   hurt/death authored) → items: chroma-keyed rest views dressed in one Pro `edit-animation-v2` call (chunked under the
@@ -89,8 +89,8 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 - D12 (2026-10-21, user): Public GitHub repo under MIT; Pages at https://shilo.github.io/PixelDoll/ (custom domain
   recommended).
 - D13 (2026-10-22, user): PWA deferred — retain the plan below, not implemented. Final origin remains undecided.
-- D14 (2026-10-22, user): Evidence media (spike output, test screenshots, design mockups) is untracked and lives in tag
-  v0.1.0; the repo tracks only what helps development. Dev-only fixtures live in `app/dev-fixtures/`.
+- D14 (2026-10-22, user): Evidence media (spike output, test screenshots, design mockups) is untracked and lives at commit
+  1f95029 (formerly tag v0.1.0); the repo tracks only what helps development. Dev-only fixtures live in `app/dev-fixtures/`.
 - D15 (2026-10-22, user): Do not perform physical-phone testing. Browser-emulated mobile checks remain useful.
 - D16 (2026-10-22, professional audit): New character forms default to independent directions. Mirrored economy is
   optional with an explicit held-hand warning; missing policy in historical drafts/specs retains mirrored behavior.
@@ -106,6 +106,10 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   and magenta (green with pink or red); green + purple keeps magenta. Concept-image items should be built on
   `transfer-outfit-v2` with the raw concept (provisional). Prompt rewordings for the dress and pose calls are not adopted. See
   the [campaign](docs/research/generation-quality-campaign-2026-10-25.md).
+- D20 (2026-10-25, user): the version is automatic and never bumped by hand: the number of commits that changed what
+  ships (app/ or its workflow), written major.minor.patch with patch 0-99 and minor 0-9 (1234 = 1.2.34), shown with the
+  short commit in the More menu. Docs-only pushes neither run CI nor deploy. No tags or GitHub releases. See
+  app/version.ts.
 
 ## PWA (deferred, D13)
 

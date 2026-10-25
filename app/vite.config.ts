@@ -4,6 +4,7 @@ import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, type Plugin } from 'vite'
 import { localSameOrigin } from './agent-key.ts'
+import { appVersion } from './version.ts'
 
 // Dev-only fixtures (s1, s4rig, s5): served at /fixtures/<name>/... by the dev server, never copied into dist.
 const DEV_FIXTURES = fileURLToPath(new URL('./dev-fixtures', import.meta.url))
@@ -64,7 +65,10 @@ function agentKey(): Plugin {
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   if (command === 'build' && mode === 'agent') throw new Error('mode "agent" is dev-server only; never build with it')
+  const { version, commit } = appVersion(fileURLToPath(new URL('.', import.meta.url)))
   return {
+    // The dev server may run uncommitted changes, so it never claims a released version.
+    define: { __APP_VERSION__: JSON.stringify(command === 'serve' ? `${version}-dev` : version), __APP_COMMIT__: JSON.stringify(commit) },
     base: './', // ponytail: relative base so GitHub Pages subpath just works
     envDir: false, // never load .env files: nothing reaches import.meta.env, in any mode
     plugins: [svelte(), devTools(), command === 'serve' && mode === 'agent' && agentKey()],

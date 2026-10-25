@@ -61,7 +61,7 @@ pivot, and the Unity JSON (96 cell, PPU 64).
 - **Presets.** `armed` and `bare`.
 - **Export.** 55 files, 156 KB zip. `bakedCell` 96×96, `bakedPivot` (48, 80).
 
-![baked armed walk](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b8_baked_armed_walk.png)
+![baked armed walk](https://github.com/Shilo/PixelDoll/raw/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b8_baked_armed_walk.png)
 
 **S1 regression.** The S1 export from the new code is byte-identical to HEAD's for every PNG (layers, baked, strips) and
 for the `.tres`, `.tscn` and atlas JSON files. Only the manifest (now with explicit cell/pivot), `paperdoll.gd` and the
@@ -92,7 +92,7 @@ Steps:
   - Each doll sits at the baked pivot of its 96 cell.
   - **0 of 1,179,648 px differ** from `baked/<preset>/<anim>.png`.
 
-  ![Godot slash](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b8_godot_render_slash.png)
+  ![Godot slash](https://github.com/Shilo/PixelDoll/raw/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b8_godot_render_slash.png)
 - **Mutation check:** I edited a copy of the export to use the old behavior (rig pivot on every node, no offset in
   `equip`).
   - Sync: 1,441 failures.
@@ -115,7 +115,7 @@ headless Chromium, WebGL).
   `setTexture` → `setFrame` really applies the per-frame custom pivot in Phaser 3 and in Phaser 4.
 - Mutation check: sword atlas pivots set to the rig's (32/96, 64/96) gave 17,254 differing px and 1,920 origin mismatches.
 
-![Phaser 4.2.1](https://github.com/Shilo/PixelDoll/raw/v0.1.0/docs/testing/img/b8_phaser_4.2.1_oversize.png)
+![Phaser 4.2.1](https://github.com/Shilo/PixelDoll/raw/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b8_phaser_4.2.1_oversize.png)
 
 ### Unity 6000.4.0f1
 

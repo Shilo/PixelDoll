@@ -37,11 +37,11 @@ frames, references and sheets the Pro editors are allowed (and expected to be be
 
 Setup: same clothed prompt as S2 ("plain bald human mannequin … grey t-shirt + grey shorts, barefoot …"). There were **no
 policy refusals**. Sheets:
-[`v348b`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_base/v348b_sheet.png),
-[`pf48`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_base/pf48_sheet.png),
-[`pf48b`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_base/pf48b_sheet.png),
-[`pf48c`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_base/pf48c_sheet.png) (adult prompt),
-[`pf64`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_base/pf64_sheet.png).
+[`v348b`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_base/v348b_sheet.png),
+[`pf48`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_base/pf48_sheet.png),
+[`pf48b`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_base/pf48b_sheet.png),
+[`pf48c`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_base/pf48c_sheet.png) (adult prompt),
+[`pf64`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_base/pf64_sheet.png).
 
 | Run | Stored canvas | Figure height (S) | Headroom | Colors (S) | Cost | Time |
 |---|---|---|---|---|---|---|
@@ -64,7 +64,7 @@ policy refusals**. Sheets:
 - **v3.** Adult proportions, 44/48 px tall, and the same identity in all 8 directions. It needs the S2 48→64 pad (x+8,
   y+16) for headroom.
 - **Pro Flash bases animate fine but the canvas is unstable.** pixminimax walk on `pf48b` returned 52×52 for S and N but
-  56×56 for E ([sheet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/pf_pixminimax_walk_sheet.png)). v3 gave the same split.
+  56×56 for E ([sheet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/pf_pixminimax_walk_sheet.png)). v3 gave the same split.
 - **Pick: v3 48 → pad 64.** Pro Flash is only for a deliberately chibi game style. An imported or custom base also works:
   S3 showed `create-character-v3` with `reference_image` + `direction_images` imports pixel-exactly for 0.25 gen.
 
@@ -108,14 +108,14 @@ Reference values come from S2's template frames, with no new template calls.
 | raw slash | pixminimax / v3 | 9 / 9 | 64×64 | 62 | 28–37 | ≤0.8 % | 1 | 92–159 s | readable, but both lunge (center-x 29→45) |
 
 Sheets: `out/s4_anim/<tag>_sheet.png`, for example
-[`a48_pixminimax_walk`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/a48_pixminimax_walk_sheet.png),
-[`a48_v3_walk`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/a48_v3_walk_sheet.png),
-[`a48_pixminimax_run`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/a48_pixminimax_run_sheet.png),
-[`a48_pixminimax_slash`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/a48_pixminimax_slash_sheet.png) (the added sword),
-[`a48_pixminimax_slash2`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/a48_pixminimax_slash2_sheet.png),
-[`a48_pixminimax_hurt`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/a48_pixminimax_hurt_sheet.png) (the fist),
-[`a48_v3_death`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/a48_v3_death_sheet.png),
-[`r48_rawpm_walk`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_anim/r48_rawpm_walk_sheet.png).
+[`a48_pixminimax_walk`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/a48_pixminimax_walk_sheet.png),
+[`a48_v3_walk`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/a48_v3_walk_sheet.png),
+[`a48_pixminimax_run`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/a48_pixminimax_run_sheet.png),
+[`a48_pixminimax_slash`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/a48_pixminimax_slash_sheet.png) (the added sword),
+[`a48_pixminimax_slash2`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/a48_pixminimax_slash2_sheet.png),
+[`a48_pixminimax_hurt`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/a48_pixminimax_hurt_sheet.png) (the fist),
+[`a48_v3_death`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/a48_v3_death_sheet.png),
+[`r48_rawpm_walk`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_anim/r48_rawpm_walk_sheet.png).
 
 **Findings:**
 
@@ -202,10 +202,10 @@ S/E/N, 8 frames each, strays removed (`out/s4_items/sk_<dir>.base0-15`). Every r
   directions);
 - sword grip side (S3 `gripSide`, R/L/amb/none).
 
-**Visuals.** Every montage was viewed: [`m_helmet`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_q3e/m_helmet.png),
-[`m_cape`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_q3e/m_cape.png), [`m_chest`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_q3e/m_chest.png),
-[`m_boots`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_q3e/m_boots.png), [`m_hair`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_q3e/m_hair.png) and
-[`m_sword`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_q3e/m_sword.png). Each has two rows per route (S walk, E slash), in the route order
+**Visuals.** Every montage was viewed: [`m_helmet`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_q3e/m_helmet.png),
+[`m_cape`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_q3e/m_cape.png), [`m_chest`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_q3e/m_chest.png),
+[`m_boots`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_q3e/m_boots.png), [`m_hair`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_q3e/m_hair.png) and
+[`m_sword`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_q3e/m_sword.png). Each has two rows per route (S walk, E slash), in the route order
 listed above. Per-route sheets with all six clips are in `out/s4_q3e/h2h_<item>_<route>.sheet.png`.
 
 ### Results (S+E clips, 4 clips × 8 frames per cell; N available for ea2/pfinp/skel)
@@ -242,12 +242,12 @@ listed above. Per-route sheets with all six clips are in `out/s4_q3e/h2h_<item>_
 - **Pro Flash 256 packed grid without a mask (`pfgrid`).** One image gives one consistent design (palette distance to cell 0
   only 0–7). But it redraws the key body: key kept 0.92–0.98, 2.5–6 % key outside. It makes semantic errors:
   - capes drawn as outlines (S) or in front;
-  - a second sword in 4 E frames ([`pfgridg_sword`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_items/pfgridg_sword.final_sheet.png));
+  - a second sword in 4 E frames ([`pfgridg_sword`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_items/pfgridg_sword.final_sheet.png));
   - cells bleed across touching 64 px cell edges (the sword tip crossed into the next row).
   Adding 8 px gutters (248×256) did *not* help: key kept 0.83–0.94.
 - **Pro Flash inpaint grid (`pfinp`).** Pixel-exact outside the mask (1.000 on every run). Helmet and hair are good
-  ([`pfinp_helmet`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_items/pfinp_helmet.final_sheet.png),
-  [`pfinp_hair`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_items/pfinp_hair.final_sheet.png)). The cape and the E vest fail.
+  ([`pfinp_helmet`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_items/pfinp_helmet.final_sheet.png),
+  [`pfinp_hair`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_items/pfinp_hair.final_sheet.png)). The cape and the E vest fail.
 - **Pro Flash per cell with the dressed cell 0 as reference (`pfref`).**
   - The design changes every frame: adjacent palette Jaccard 0.00–0.03, palette distance 16–35.
   - It costs 5 gens per cell (70 per item).
@@ -256,12 +256,12 @@ listed above. Per-route sheets with all six clips are in `out/s4_q3e/h2h_<item>_
   the mannequin's motion differs from the base: 7–16 % key outside, silhouette IoU 0.65–0.84. The layer is occluded by the
   wrong body. **Rejected, as expected**; skeleton-v3 is the aligned variant of this idea.
 - **The `edit-animation-v2` baseline on the new pixminimax walk base (`nb_ea2_*`).** Clean: key kept 0.99+, ≤0.8 % outside,
-  0–11 pinholes ([`nb_ea2_cape`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_items/nb_ea2_cape.final_sheet.png)). The chroma route transfers to
+  0–11 pinholes ([`nb_ea2_cape`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_items/nb_ea2_cape.final_sheet.png)). The chroma route transfers to
   text-animated bases.
 
 ### Dressing a single keyframe (for route (e))
 
-3 rest chroma frames (S/E/N) per item, six items. Montage [`m_dress`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s4_q3e/m_dress.png) has rows in
+3 rest chroma frames (S/E/N) per item, six items. Montage [`m_dress`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s4_q3e/m_dress.png) has rows in
 this order: ea2, eiv2, inv3, pfg, pfe, pxg, pxe.
 
 | Editor | Calls / gens | Key kept | Key outside | Cross-view design | Visual |

@@ -25,9 +25,9 @@ as a main route (X2 output is clean but un-occluded, and it costs twice as much)
 
 Showcases:
 
-- [`out/s2_x1/stack_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x1/stack_sheet.png): S1 base, five independent chroma layers stacked,
+- [`out/s2_x1/stack_sheet.png`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x1/stack_sheet.png): S1 base, five independent chroma layers stacked,
   walk south and east.
-- [`out/s2_x4/showcase48_sheet.png`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/showcase48_sheet.png): new clothed base; cape, helmet and sword
+- [`out/s2_x4/showcase48_sheet.png`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/showcase48_sheet.png): new clothed base; cape, helmet and sword
   on walk south, east and north, and on a cross-punch.
 
 ## Setup
@@ -38,8 +38,8 @@ Showcases:
   - `b64` is 64 px, with "small character … plenty of empty space above the head" added to the prompt. Its rotations have
     5–8 px headroom, but its walk frames still have only 6–7 px.
   - `b48` is 48 px, padded to 64 by translating x+8 and y+16. It is never rescaled. Walk frames have 18–20 px headroom.
-  - Sheets: [`b64_sheet`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_base/b64_sheet.png), [`b48_sheet`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_base/b48_sheet.png),
-    [`b64walk`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_base/b64walk_sheet.png), [`b48walk`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_base/b48walk_sheet.png).
+  - Sheets: [`b64_sheet`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_base/b64_sheet.png), [`b48_sheet`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_base/b48_sheet.png),
+    [`b64walk`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_base/b64walk_sheet.png), [`b48walk`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_base/b48walk_sheet.png).
 - **Template animations** (`walking-8-frames`; `cross-punch` = 6 frames): the clothed base passed all of them. There was no
   content-policy refusal anywhere in S2.
 - **Live template list.** For a `mannequin` character, a 422 on a real character id lists the set below. **There is no `attack`
@@ -65,7 +65,7 @@ Showcases:
    | grey (flat) | dark pixels (t<0.18) → (48,48,48), all others → (128,128,128) |
 
    Alpha is unchanged, so the silhouette and outline shape are identical to the base. Example:
-   [`raw_sheet` green helmet](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x1/helmet_green_ea2.raw_sheet.png).
+   [`raw_sheet` green helmet](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x1/helmet_green_ea2.raw_sheet.png).
 2. **Call.** `edit-animation-v2` with 16 cells (8 south + 8 east walk), seed 7. This is one call per item, so the design is
    shared across both directions. `transfer-outfit-v2` was also tested, with 8 south cells; its reference was the key mannequin
    plus S1's clean E3 helmet/chest/sword layer.
@@ -123,16 +123,16 @@ Other measurements:
 
 Sheets, each row showing a layer and then the layer over the real base:
 
-- [`overview/helmet`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_overview/helmet.png): green, magenta, grey, green-to2, then S1.
-- [`overview/chest`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_overview/chest.png): same order. The last two rows are S1, with arm slivers.
-- [`overview/boots_cape`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_overview/boots_cape.png).
-- [`overview/sword`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_overview/sword.png).
+- [`overview/helmet`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_overview/helmet.png): green, magenta, grey, green-to2, then S1.
+- [`overview/chest`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_overview/chest.png): same order. The last two rows are S1, with arm slivers.
+- [`overview/boots_cape`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_overview/boots_cape.png).
+- [`overview/sword`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_overview/sword.png).
 - Per-run `out/s2_x1/*.final_sheet.png`, with rows real base / key composite / layer / base+layer.
 
 Zooms:
 
-- [`helmet_f0`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_zoom/helmet_f0.png): base / key composite / chroma layer / S1 layer.
-- [`despill`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_zoom/despill.png): the olive edge on the vest disappears after despill.
+- [`helmet_f0`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_zoom/helmet_f0.png): base / key composite / chroma layer / S1 layer.
+- [`despill`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_zoom/despill.png): the olive edge on the vest disappears after despill.
 
 ### Visual judgment (read from the sheets)
 
@@ -159,10 +159,10 @@ drawn over the base. 3 calls, 30 generations.
 | chest | S | 237 | 0.03 | 0 / 0 | 19 | 0.72 | ≤1.3 px |
 | sword | S | 168 | 0.02 | 0 / 0 | 11.5 | 0.79 | 1–2 px |
 
-Sheets: [`helmet_south`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x2/helmet_south.final_sheet.png),
-[`helmet_east`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x2/helmet_east.final_sheet.png),
-[`chest_south`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x2/chest_south.final_sheet.png). Zoom of X2 against X1 over the base:
-[`x2_vs_x1`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_zoom/x2_vs_x1.png).
+Sheets: [`helmet_south`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x2/helmet_south.final_sheet.png),
+[`helmet_east`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x2/helmet_east.final_sheet.png),
+[`chest_south`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x2/chest_south.final_sheet.png). Zoom of X2 against X1 over the base:
+[`x2_vs_x1`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_zoom/x2_vs_x1.png).
 
 **Verdict.** The items are clean, consistent and in place, but they are **un-occluded full objects**:
 
@@ -199,7 +199,7 @@ are needed.** Even there, the chroma north view already gives a full cape.
 | nbr ∧ novel2 + grow + fill | 0.921 | 0.965 | 0.945 / 0.912 / 0.928 | 9.9 |
 | any of the above + temporal consensus | — | +0.001–0.006 | −0.01 to −0.02 (moving limbs) | — |
 
-**Real S1 composites** ([`real_s1_skinrej_sheet`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x3/real_s1_skinrej_sheet.png)): skin rejection with
+**Real S1 composites** ([`real_s1_skinrej_sheet`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x3/real_s1_skinrej_sheet.png)): skin rejection with
 pinhole fill brings pinholes to 0 (helmet 11→0, chest 12–23→0). But **the arm slivers and the redrawn eyes stay.** Redrawn skin
 is more than 10 levels from every base color, and widening the tolerance eats leather.
 
@@ -236,11 +236,11 @@ palette). It measures design lock across calls.
 
 **Sheets:**
 
-- [`helmet48_Ba`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/helmet48_Ba.final_sheet.png), [`helmet48_B` (to2)](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/helmet48_B.final_sheet.png),
-  [`helmet_calls` zoom](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_zoom/helmet_calls.png) (design across calls).
-- [`sword48_A`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/sword48_A.final_sheet.png), [`sword48_Ba`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/sword48_Ba.final_sheet.png),
-  [`sword48_C`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/sword48_C.final_sheet.png).
-- [`cape48_A`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/cape48_A.final_sheet.png), [`cape48_B`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/cape48_B.final_sheet.png).
+- [`helmet48_Ba`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/helmet48_Ba.final_sheet.png), [`helmet48_B` (to2)](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/helmet48_B.final_sheet.png),
+  [`helmet_calls` zoom](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_zoom/helmet_calls.png) (design across calls).
+- [`sword48_A`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/sword48_A.final_sheet.png), [`sword48_Ba`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/sword48_Ba.final_sheet.png),
+  [`sword48_C`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/sword48_C.final_sheet.png).
+- [`cape48_A`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/cape48_A.final_sheet.png), [`cape48_B`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/cape48_B.final_sheet.png).
 
 **Findings:**
 
@@ -259,9 +259,9 @@ palette). It measures design lock across calls.
   The QA gate catches it: key kept was 0.912 against a threshold of 0.97.
 - **Headroom:**
   - The tall wizard hat on the 64 px base was **squashed** (bent, short cone) to fit 6 px of headroom, and it touches y=0 on one
-    frame ([`wizardhat_A`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/wizardhat_A.final_sheet.png)).
+    frame ([`wizardhat_A`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/wizardhat_A.final_sheet.png)).
   - On the padded 48→64 base the full tall hat fits with a 6 px margin
-    ([`wizardhat48_A`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/spikes/api/out/s2_x4/wizardhat48_A.final_sheet.png)).
+    ([`wizardhat48_A`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out/s2_x4/wizardhat48_A.final_sheet.png)).
   - Helmets fit both bases (top y 5–6 on the 64 base, 14–17 on the padded one).
   - **Prompting for a "small character" does not shrink the animation frames** (b64 walk headroom is 6–7 px, the same as S1).
     Generating smaller and padding does.

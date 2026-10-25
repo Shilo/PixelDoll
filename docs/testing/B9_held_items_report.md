@@ -76,17 +76,17 @@ Rules (all after chroma extraction, posed cells only):
 
 | Data | Removed (px) | Reading |
 |---|---|---|
-| **B7 Ranger helmet**, all stored poses (idle, walk, slash × S/E/N) | idle 0, walk 0, slash S 2, slash E 14 (f1 3, f2 11), slash N 35 (f3 2, f4 33) | exactly B7's three leftovers: the east f1 streak, the detached east f2 fragment (the two split helmet halves are kept), the north f4 blade streak; **0 px on idle/walk** ([`b9_1`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b9_1_helmet_trim_ranger.png), red = removed) |
-| S4 helmet (64, walk + slash) | 20 | strap/smear tails (walk N f5/f7 1–2 px, slash E f2 detached blob); helmet shape untouched ([`b9_11`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b9_11_trim_s4_helmet.png)) |
+| **B7 Ranger helmet**, all stored poses (idle, walk, slash × S/E/N) | idle 0, walk 0, slash S 2, slash E 14 (f1 3, f2 11), slash N 35 (f3 2, f4 33) | exactly B7's three leftovers: the east f1 streak, the detached east f2 fragment (the two split helmet halves are kept), the north f4 blade streak; **0 px on idle/walk** ([`b9_1`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b9_1_helmet_trim_ranger.png), red = removed) |
+| S4 helmet (64, walk + slash) | 20 | strap/smear tails (walk N f5/f7 1–2 px, slash E f2 detached blob); helmet shape untouched ([`b9_11`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b9_11_trim_s4_helmet.png)) |
 | S4 hair / chest / cape / boots | 0 | worn and hair classes are not trimmed |
 | S5 final sword `fsw` (96) | 39 (slash N only) | a detached speck right of f0 and a fragment at f5; blade intact |
-| S5 final axe `fax` (96) | 87 (slash E 24, slash N 63) | detached smear blob under the axe (E f3) and a detached shape (N f1) ([`b9_12`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b9_12_held_attach_s5_axe.png)) |
+| S5 final axe `fax` (96) | 87 (slash E 24, slash N 63) | detached smear blob under the axe (E f3) and a detached shape (N f1) ([`b9_12`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b9_12_held_attach_s5_axe.png)) |
 | S5 `d96` seed 7 (f0 losses) | 0 removed, **repaired slash S f0 + N f0** | the two frames S5 lost; same fix as S5's `repair` |
 | Live sword | 94 + stray filter | detached blobs on slash E f3 / N f3 |
 
 ## 4. G9 on a held blade: a systematic false fail, fixed
 
-Walk/east failed the IoU G9 on all three seeds (0.24, 0.26, 0.20; [`b9_13`](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/testing/img/b9_13_walk_east_g9_rerolls.png)): when the arm
+Walk/east failed the IoU G9 on all three seeds (0.24, 0.26, 0.20; [`b9_13`](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img/b9_13_walk_east_g9_rerolls.png)): when the arm
 swings back the blade turns from 29° to 74°, so a 1–2 px thin blade's aligned IoU collapses, although the sword keeps its design
 and follows the hand. Measured offline, the blade-minus-forearm angle stays −39° … −14° across the frames on every seed (idle
 −31…−35, walk N −31…−40). G9 for posed held items now checks that relative angle (≤ 30° change between adjacent frames), which

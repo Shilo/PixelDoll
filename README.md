@@ -25,8 +25,7 @@ The immersive Studio and its design prototype use [Bronze UI](https://github.com
 
 ## Status
 
-**v0.1.0 released** ([release notes](https://github.com/Shilo/PixelDoll/releases/tag/v0.1.0)), live at
-https://shilo.github.io/PixelDoll/. See the [roadmap](https://github.com/users/Shilo/projects/7) (planned, in progress and done), [PLAN.md](PLAN.md) (status, decisions) and
+Live at https://shilo.github.io/PixelDoll/ (the version is in the More menu). See the [roadmap](https://github.com/users/Shilo/projects/7) (planned, in progress and done), [PLAN.md](PLAN.md) (status, decisions) and
 [known issues](docs/known-issues.md).
 
 - Proven: base character (48 px, padded to a 64 px cell) → skeleton-v3 moves → items dressed on a chroma mannequin and posed per
@@ -36,7 +35,7 @@ https://shilo.github.io/PixelDoll/. See the [roadmap](https://github.com/users/S
 - New characters default to the **Top-down 8** preset, which mirrors the three western views from their eastern partners
   (mirrored views and older mirrored rigs swap held-item handedness); **Unique 8** or turning off a view's mirror draws it
   independently. Automated direction/persistence/export checks pass; live independent
-  full creation stopped safely on unknown skeleton-estimation outcomes. Idle-only recovery passed with 16 genuinely measured frames. A primary 96px sword passed reload, keyless ZIP reimport and engine runtime checks with a west-profile grip warning retained; targeted Slash repairs now pass every body gate and manual review of all 32 sword frames; automated item review warnings remain visible. This is separate from the released v0.1.0 evidence above.
+  full creation stopped safely on unknown skeleton-estimation outcomes. Idle-only recovery passed with 16 genuinely measured frames. A primary 96px sword passed reload, keyless ZIP reimport and engine runtime checks with a west-profile grip warning retained; targeted Slash repairs now pass every body gate and manual review of all 32 sword frames; automated item review warnings remain visible.
 - Known quality limits: two shield east-walk drafts remain unaccepted; generated artwork still needs visual review.
   PWA is deferred (see PLAN.md). The bundled demo uses the team's own PixelLab outputs.
 
@@ -155,8 +154,8 @@ run work here. The Connect sheet warns when "Remember" is turned on at a `*.gith
 | `docs/` | Research, spikes, architecture, manifest spec, design, test reports. Start at [docs/README.md](docs/README.md). `docs/media/` holds the README images. |
 
 Evidence media (spike outputs `spikes/api/out/`, test screenshots `docs/testing/img/`, design screenshots
-`docs/design/screenshots/`) and the D2 mockup app `design-mockups/` are no longer tracked on `main`. They live at tag
-[v0.1.0](https://github.com/Shilo/PixelDoll/tree/v0.1.0); report links point there.
+`docs/design/screenshots/`) and the D2 mockup app `design-mockups/` are no longer tracked on `main`. They live at commit
+[1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e); report links point there.
 
 ## Key docs
 

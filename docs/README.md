@@ -3,7 +3,7 @@
 Start with [architecture.md](architecture.md) (v1.3, current pipeline) and [manifest-spec.md](manifest-spec.md) (export
 format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Open work: the [board](https://github.com/users/Shilo/projects/7); accepted limits: [known-issues.md](known-issues.md). Casual users: [user-guide.md](user-guide.md).
 
-**Evidence media lives at tag [v0.1.0](https://github.com/Shilo/PixelDoll/tree/v0.1.0).** Spike outputs (`spikes/api/out/`), test
+**Evidence media lives at commit [1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e).** Spike outputs (`spikes/api/out/`), test
 screenshots (`testing/img/`), design screenshots (`design/screenshots/`) and the D2 mockup app (`design-mockups/`) are no longer
 tracked on `main`; links in these docs point to the tag. README images: [media/](media/).
 
@@ -83,7 +83,7 @@ Older inputs, kept for history:
 
 ## Live spikes (S1–S5)
 
-Code: `spikes/api/`. Evidence: [`spikes/api/out/` at v0.1.0](https://github.com/Shilo/PixelDoll/tree/v0.1.0/spikes/api/out).
+Code: `spikes/api/`. Evidence: [`spikes/api/out/` at 1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e/spikes/api/out).
 
 | Doc | Conclusion |
 |---|---|
@@ -100,11 +100,11 @@ Code: `spikes/api/`. Evidence: [`spikes/api/out/` at v0.1.0](https://github.com/
 | [D1_design_research.md](design/D1_design_research.md) | User flows for casual users, information architecture, look candidates A–E. |
 | [glasskit_review.md](design/glasskit_review.md) | GlassKit as a theme base (look B): reviewed and not chosen. |
 | [D2_mockups_report.md](design/D2_mockups_report.md) | The `design-mockups/` app: looks A–E in dark and light. The user chose **look A only**, dark by default (D9). |
-| [Screenshot gallery](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/design/screenshots/README.md) | Every look, screen and device (`<look>_<scheme>_<screen>_<device>.png`). Grid view: [index.html](https://github.com/Shilo/PixelDoll/blob/v0.1.0/docs/design/screenshots/index.html) (open from a checkout of the tag). |
+| [Screenshot gallery](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/README.md) | Every look, screen and device (`<look>_<scheme>_<screen>_<device>.png`). Grid view: [index.html](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/index.html) (open from a checkout of the tag). |
 
 ## Testing reports
 
-Screenshots for all reports: [`testing/img/` at v0.1.0](https://github.com/Shilo/PixelDoll/tree/v0.1.0/docs/testing/img) (bare `img/...` paths in the reports refer to it). Engine harnesses: `testing/m5_engine_tests/`, `testing/b8_engine_tests/`.
+Screenshots for all reports: [`testing/img/` at 1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e/docs/testing/img) (bare `img/...` paths in the reports refer to it). Engine harnesses: `testing/m5_engine_tests/`, `testing/b8_engine_tests/`.
 
 | Doc | What |
 |---|---|
