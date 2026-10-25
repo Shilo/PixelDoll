@@ -180,8 +180,9 @@ Key score ratio < 35 on opaque pixels, rim guard, drop components < 2 px, despil
 item on magenta lost its pink on every frame; 2026-10-25 campaign arm K; purples and indigo score as blue key); azure (the
 green ramp hue-rotated to 210°; scored, despilled and luminance-matched in the rotated frame) when the prompt names green and a
 purple but no blue (a green-and-purple tunic on magenta kept 1.3 % of its purple while every gate passed, on azure 100 %; round
-2 arm Z); magenta when all four collide, as before (the diff route would keep the colors but cannot be posed); never gray; after two
-G2 failures switch to the next key the prompt allows, in that order. Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
+2 arm Z); magenta when all four collide, as before (the diff route would keep the colors but cannot be posed); never gray; a dressed
+keyframe that fails G3 (key px outside the body: a key/item collision) switches at once to the next key the prompt allows, in
+that order; G2 and posed-frame failures never switch (a collision cannot lower G2; G2 fails on erased body px). Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
 
 **Round 3 cleanup rules** ([round 3](research/generation-quality-round3-2026-10-25.md)).
 - *Despill*: a key-tinted px first loses the key excess (the key channel down to the next one; azure in its rotated frame),

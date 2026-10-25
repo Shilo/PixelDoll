@@ -12,7 +12,8 @@ Builds on [round 1](generation-quality-campaign-2026-10-25.md); same harness (`s
   near-unanimous) effects decide; everything else is "no reliable effect".
 - Blind judging, fixed from round 1: the bias gate is **flipped repeats** (≥ 6 test pairs shown twice with sides swapped; a
   judge counts if ≥ 2/3 of repeats agree, tie-tie counts as agreement); identical-image placebos only test attention and are
-  dropped. Calibration = the 8 clip-specific S4 pairs plus 4 S4 pairs nobody has judged yet, frozen before judging; ≥ 10/12.
+  dropped. Calibration = the 8 clip-specific S4 pairs plus 4 S4 pairs nobody has judged yet, frozen before judging; ≥ 10/12. (As run, r4 used 10 calibration pairs and a judge counted at ≥ 8/10, i.e. the same
+  80 %; noted in the round 3 review.)
 - Code changes keep `npm run bench` free of new misses and label regressions, and add a benchmark case for what they fix.
 
 ## Arms

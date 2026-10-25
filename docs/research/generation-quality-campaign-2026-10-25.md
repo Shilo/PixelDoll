@@ -72,8 +72,9 @@ The first call at each canvas size is a price probe (S5 measured 10 gens for a 3
 
 ## Results
 
-Spend: **909 of 1,000 gens** (balance delta): P 216, D 240, K 120, C 150, E4 126 (incl. one Pro Flash concept image),
-body B 57 (Studio creator). No refusals, errors or lost requests. Prices measured: dress `edit-animation-v2` 10 gens for 3
+Spend: **909 of 1,000 gens** (balance delta): P 216, D 240, K 120, C 125, E4 126 (incl. one Pro Flash concept image),
+body B 57 (Studio creator). The ledger sums to 884; the other 25 are not in it (C was first booked at its 15-gen dress estimate;
+round 3 review), so trust the ledger over the balance delta, which other account use can also move. No refusals, errors or lost requests. Prices measured: dress `edit-animation-v2` 10 gens for 3
 frames at 64 px **and for 5 frames at 80 px** (the plan assumed 15); pose 3 gens per 8 frames; `transfer-outfit-v2` 10 gens
 at 64 px; `create-image-pro-flash` 128 px 6 gens. Evidence: `spikes/api/out/c25/` (local); harness: `spikes/api/c25/`.
 

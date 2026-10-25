@@ -47,6 +47,39 @@ designs and the fitted preview drop `baseCut` (their cells are remapped). (5) In
 
 Kept, documented: an item hidden by another item's `hides` still cuts, like every runtime (they swap by what is equipped).
 
+## External reviews (Codex and an independent subagent, each challenged by a skeptic subagent)
+
+Both reviewed commit e76b3c60 offline from a local handoff (`.claude/handoffs/2026-10-25-codex-paperdoll-challenge.md`, not
+tracked); Codex wrote `docs/reviews/2026-10-25-codex-paperdoll-challenge.md`. A skeptic rerun of
+every reproducer kept these, and they are fixed:
+
+- **Key switch on the wrong gate.** Collisions never lower G2 (key-colored item px count as kept); they fail G3 on the dressed
+  keyframe (all 8 benchmark collision keyframes: G2 1.000, G3 0.023–0.217). The switch now fires at once on a design-call G3 and
+  never on G2 or posed frames (G2 fails on erased body px, which a new key cannot fix). Worst case before: ≈ 144–159 gens of
+  same-key re-rolls; a false flag now costs one re-dress (+10). Also: joined keyframe reasons are split, and a switch resets a
+  grid fallback (it could restore an old-key roll).
+- **Design drift (G6) measured against the first pose call**, which compared that call with itself. Each posed clip is now also
+  measured against its dressed keyframe, in every slot, as a warning (corpus max 14.0 against the 15 cut-off; an automatic
+  re-roll would change spend without evidence).
+- **Dress price** shown as a flat 10: now 10 / 15 / 25 by canvas (a 160 px body 15, a 192 px held canvas 25), display only.
+- **Copied designs dropped their hidden-ear px**: a match guarantees the same body cell, so cuts now carry over (mirror-aware).
+- **Tuck did not commute with mirroring** (gaps between cover parts took the left brim): the nearest covered column fills them.
+- **Color words**: chartreuse, malachite, harlequin, shamrock, moss, ivy ban green; stealth, plumed, sacred, shredded, hundred no
+  longer ban a key; "sash", "cashmere", "furious" no longer switch off the gray-smudge check (D1). The known-issues sentence on
+  colliding words was wrong (two words such as teal + red can block all four keys).
+- **Tests the mutation run showed missing**: retry and key switch, the design re-roll dropping later calls, the cut's body-edge
+  rule and share cap, the despill snap limit; each now fails on its mutant. Benchmark cases for the bow grip (a-bow96) and steel
+  on azure (a-plume-azure); the spike evaluator now gives the production verdict (keyframe gates, cuts) and imports its own
+  checkout.
+- **Round 1 spend**: arm C was 125 in the ledger, not 150.
+
+Not changed: silhouette registration (Codex F6: 4/584 posed cells move, all toward the body); cross-reference against stored
+measured keypoints for posing (the drift may be systematic, so this could double it; offline check first); CPU trims (paid
+latency dominates); the two-cutter and old-item limits (documented). Open for the owner: `export/colors.ts` is used only by its
+test (dead code, its spec appendix describes baked colors exports do not ship); skipping re-rolls for bows in side views
+(about 6 gens per bow, recovery about 1 in 6); prompt grammar fixes ("1 cells", "the identical a …") need a paid canary; posing
+idle + walk in one call (−21 to −25 % gens, paid test ≈ 24 gens).
+
 Also found and fixed while reviewing the bow frames (the owner reported holes in the bow): **the grip hole**. PixelLab's stand-in
 hand covers the middle of the bow and is removed with the key; the body's own hand comes from a separate drawing and sits
 1–3 px elsewhere, so a hole shows. Aligning the item to the hand made it worse (1,022 → 1,208–1,934 hole px over 144 frames:

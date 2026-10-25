@@ -36,8 +36,9 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   explicit incomplete-check notice. Retained historical totals may omit old additions or include replaced frames until
   all older coverage is replaced. No paid recheck or silent reconstruction is performed.
 - **A few item colors have no safe key color.** Items are drawn on a single-color stand-in body (green, else magenta, else
-  blue, else azure) and separated by that color. Only an item that names green, a red or pink, a blue and a purple at once
-  collides with all four; it keeps magenta and parts in those colors can be removed as if they were background. Workaround:
+  blue, else azure) and separated by that color. An item whose words ban all four keys keeps magenta, and parts in those
+  colors can be removed as if they were background. Two words can be enough ("a teal and red tunic": teal bans green, blue
+  and azure). Colors the prompt never names (a goblin's green skin) are not seen at all. Workaround:
   describe one color differently, or review the item. Azure sits near blue-gray steel shading: steel stays gray since the
   round 3 despill fix (a green and purple plume on a steel helmet, a tabard over steel plate).
 - **Hidden body pixels with two covering items.** A hood or great helm hides the ear tips it covers (round 3). Wearing two
