@@ -22,7 +22,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 ## Tasks
 
-- Tasks are draft cards on the public [PixelDoll board](https://github.com/users/Shilo/projects/7), which is also the roadmap; there is no TODO file, and GitHub Issues are for user reports. Write for users: a short imperative title, one to three plain lines, then "Refs: <paths or links>"; no progress logs.
+- Tasks are draft cards on the public [PixelDoll board](https://github.com/users/Shilo/projects/7), which is also the roadmap; there is no TODO file, and GitHub Issues are for user reports. Write each card for the maintainer and agents alike: a short imperative title, then one to three short lines on what and why (technical terms are fine; details belong in the Refs), then "Refs: <paths or links>"; no progress logs.
 - Statuses: Ready (approved; top is next), Progress, Done, Later (deferred). Dropped cards are archived. The user orders cards by dragging; list prints board order and new cards land at the bottom.
 - A body's first line may be "Blocked:", "Paid:" (needs PixelLab generations) or "Needs decision:"; list shows it. Add the marker whenever it applies.
 - From app/: node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. A card is its ID or a unique part of its title. Single-quote bodies; \n is a newline; --body replaces the whole body.
