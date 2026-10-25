@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Task board CLI for people and agents: one small GraphQL read per command, no node IDs or shell quoting to handle.
-// Usage: node scripts/board.mjs list [status] | show <card> | add <title> [--body <b>] [--status <s>] | move <card> <status>
+// Usage: node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body <b>] [--status <s>] | move <card> <status>
 //        | edit <card> [--title <t>] [--body <b>] | archive <card>
 // <card> is an item ID (PVTI_…), an exact title or a unique, case-insensitive part of one. Needs `gh auth refresh -s project`.
 import { execFileSync } from 'node:child_process'
@@ -8,12 +8,13 @@ import { execFileSync } from 'node:child_process'
 const OWNER = 'Shilo'
 const NUMBER = 7
 const URL = `https://github.com/users/${OWNER}/projects/${NUMBER}`
-const USAGE = `Usage: node scripts/board.mjs list [status] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>\nBoard: ${URL}`
+const USAGE = `Usage: node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>\nBoard: ${URL}`
 
 const fail = (msg) => { console.error(msg); process.exit(1) }
 const text = (s) => s?.replace(/\\n/g, '\n') // a typed \n is a newline in every shell
 const flag = (args, name) => { const k = args.indexOf(name); return k < 0 ? undefined : args.splice(k, 2)[1] }
-const line = (i) => `${i.id}\t${i.status}\t${i.title}`
+const mark = (i) => i.content?.body?.match(/^(Blocked|Paid|Needs decision):/)?.[1]
+const line = (i) => `${i.id}\t${i.status}\t${i.title}${mark(i) ? `\t(${mark(i)})` : ''}`
 
 function gql(query, vars = {}) {
   const args = ['api', 'graphql', '-f', `query=${query}`]
@@ -35,16 +36,16 @@ function board() {
     project = gql(`query($owner: String!, $number: Int!, $after: String) { user(login: $owner) { projectV2(number: $number) {
       id
       field(name: "Status") { ... on ProjectV2SingleSelectField { id options { id name } } }
-      items(first: 100, after: $after) { pageInfo { hasNextPage endCursor } nodes {
-        id
+      items(first: 100, after: $after, archivedStates: [ARCHIVED, NOT_ARCHIVED]) { pageInfo { hasNextPage endCursor } nodes {
+        id isArchived
         status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
         content { __typename ... on DraftIssue { id title body } ... on Issue { title body url } ... on PullRequest { title body url } }
       } } } } }`, { owner: OWNER, number: NUMBER, ...(after && { after }) }).user?.projectV2
     if (!project) fail(`${URL} is not readable with this gh login.`)
-    for (const n of project.items.nodes) items.push({ id: n.id, status: n.status?.name ?? 'No status', title: n.content?.title ?? '', content: n.content })
+    for (const n of project.items.nodes) items.push({ id: n.id, status: n.status?.name ?? 'No status', archived: n.isArchived, title: n.content?.title ?? '', content: n.content })
     after = project.items.pageInfo.endCursor
   } while (project.items.pageInfo.hasNextPage)
-  return { id: project.id, field: project.field, items }
+  return { id: project.id, field: project.field, items: items.filter((i) => !i.archived), archived: items.filter((i) => i.archived) }
 }
 
 function find(b, query) {
@@ -72,8 +73,9 @@ function setStatus(b, itemId, o) {
 const [cmd, ...args] = process.argv.slice(2)
 switch (cmd) {
   case 'list': {
-    const want = args.join(' ').toLowerCase()
-    for (const i of board().items) if (!want || i.status.toLowerCase() === want) console.log(line(i))
+    const want = args.join(' ').toLowerCase(), b = board()
+    if (want === 'archived') for (const i of b.archived) console.log(`${line(i)}	(archived)`)
+    else for (const i of b.items) if (!want || i.status.toLowerCase() === want) console.log(line(i))
     break
   }
   case 'show': {
@@ -86,8 +88,8 @@ switch (cmd) {
     if (!title) fail(USAGE)
     const b = board()
     const o = option(b, status) // checked before anything is created on the public board
-    const dup = b.items.find((i) => i.title.toLowerCase() === title.toLowerCase())
-    if (dup) fail(`A card with this title exists: ${line(dup)}`)
+    const dup = [...b.items, ...b.archived].find((i) => i.title.toLowerCase() === title.toLowerCase())
+    if (dup) fail(`A card with this title exists${dup.archived ? ' (archived; restore it from the board\'s Archived items)' : ''}: ${line(dup)}`)
     const id = gql(`mutation($p: ID!, $t: String!, $b: String) { addProjectV2DraftIssue(input: { projectId: $p, title: $t, body: $b }) { projectItem { id } } }`,
       { p: b.id, t: title, b: text(body) }).addProjectV2DraftIssue.projectItem.id
     console.log(`${id}\t${setStatus(b, id, o)}\t${title}`)
