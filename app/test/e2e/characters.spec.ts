@@ -76,7 +76,8 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
     await page.getByLabel('Character name', { exact: true }).fill(name)
     await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck()
     await page.getByRole('button', { name: 'Import character', exact: true }).click()
-    await expect(page.locator('.project-btn')).toContainText(name)
+    // Saving then reopening a full character decodes every frame; parallel workers can stretch it past 10s.
+    await expect(page.locator('.project-btn')).toContainText(name, { timeout: 30_000 })
   }
   await importCopy('Imported one')
   await reloadStudio(page)
@@ -94,7 +95,7 @@ test('device import roundtrip, duplicate copies, persistence and local deletion'
     await page.locator('.project-btn').click()
     await page.getByRole('menuitem', { name: 'Delete character…', exact: true }).click()
     await page.getByRole('button', { name: 'Delete character', exact: true }).click()
-    await expect(page.locator('.project-btn')).toContainText(remaining.replace(/ \(demo\)$/, ''))
+    await expect(page.locator('.project-btn')).toContainText(remaining.replace(/ \(demo\)$/, ''), { timeout: 30_000 })
   }
   await reloadStudio(page)
   await expect(page.locator('.project-btn')).toContainText('Adventurer')

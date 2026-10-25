@@ -53,8 +53,23 @@ Dev server for agents: npm run dev:agent
 Type check: npm run check
 Unit tests: npm test (Vitest 4.1.12); npm run selftest is a compatibility alias
 Build: npm run build
-End-to-end tests: npm run e2e (Playwright Test 1.64.1; managed Chromium; builds and starts local servers)
+End-to-end tests: npm run e2e (Playwright Test 1.64.1; managed Chromium; builds and starts local servers; parallel)
+Targeted end-to-end tests: npm run e2e -- <spec names> [-g "<title>"], e.g. npm run e2e -- characters auth
 Browser install: npx playwright install chromium
+
+## End-to-end scope
+
+CI runs the full end-to-end suite on every push, sharded, and Pages deploys only after it passes. Agents run only the specs that cover what they changed, plus npm run check and npm test; run the full suite locally only for cross-cutting changes (studio state, storage, queue, shared components, Playwright config) or when asked. Specs in app/test/e2e/:
+studio: Studio shell, dressing, outfits, drafts, Activity, review, repair, recolor, export
+characters: character import (device and PixelLab library), duplicates, deletion
+character-creator, creator-request-matrix: New character sheet, creation flow and its request JSON
+shared-equipment: shared designs and cross-tab follower work
+auth: connect, remembered token, Forget, shared-token peers
+api-peek: API call inspector
+export-picker: export dialog and engine formats
+concurrency: plan capacity, two-tab queue leadership, busy recovery
+selftests: browser self-tests, QA storage, demo copy
+Experience visuals use a separate config: playwright.experience.config.ts (see docs/testing/production-experience-2026-10-23.md).
 Standalone Studio compatibility entry: node scripts/e2e-studio.mjs (existing build required)
 
 ## Rules

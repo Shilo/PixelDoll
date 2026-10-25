@@ -4,16 +4,21 @@ const previewPort = Number(process.env.E2E_PREVIEW_PORT ?? 5399)
 const devPort = Number(process.env.E2E_DEV_PORT ?? process.env.DEV_PORT ?? 5298)
 const baseURL = process.env.BASE ?? `http://127.0.0.1:${previewPort}`
 const devURL = `http://127.0.0.1:${devPort}`
+process.env.DEV_PORT = String(devPort) // Workers inherit this; creator specs read it for their baseURL.
 const channel = process.env.PLAYWRIGHT_CHANNEL
 
 export default defineConfig({
   testDir: './test/e2e',
   outputDir: process.env.TEST_OUTPUT_DIR ?? 'test-results',
   timeout: 90_000,
-  fullyParallel: false,
-  workers: 1,
+  // Every test owns a fresh browser context (storage, locks, channels), so tests run in parallel.
+  // Parallel CPU load slows IndexedDB and image work; wait longer instead of asserting less.
+  expect: { timeout: 15_000 },
+  fullyParallel: true,
+  // Each Studio page keeps animating, so a worker uses about two CPU threads: 2 on a 4-vCPU CI runner.
+  workers: process.env.CI ? 2 : 4,
   forbidOnly: !!process.env.CI,
-  retries: 0,
+  retries: process.env.CI ? 1 : 0, // A CI timing flake is retried once and still listed as flaky.
   use: { trace: 'retain-on-failure', channel },
   webServer: [
     ...(!process.env.BASE ? [{ command: `npm run preview -- --host 127.0.0.1 --port ${previewPort} --strictPort`, url: baseURL, reuseExistingServer: false }] : []),

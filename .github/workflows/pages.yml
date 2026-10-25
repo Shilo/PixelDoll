@@ -10,6 +10,11 @@ on:
 permissions:
   contents: read
 
+# A newer push to the same branch or PR supersedes its running checks; main always finishes so every deploy is tested.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -28,9 +33,7 @@ jobs:
       - run: npm ci
       - run: npm run check
       - run: npm test
-      - run: npx playwright install --with-deps chromium
-      - run: npm run e2e -- --reporter=list # show each result even if a later test or the step times out
-        timeout-minutes: 15 # expanded creator/export suites run serially; keep per-test timeouts unchanged
+      - run: npm run build
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/configure-pages@v6
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -38,9 +41,34 @@ jobs:
         with:
           path: app/dist
 
+  # Shards run on separate runners in parallel with build; each runs two workers (playwright.config.ts).
+  e2e:
+    name: e2e ${{ matrix.shard }}/4
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24.22.1'
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e -- --shard=${{ matrix.shard }}/4 --reporter=list # show each result even if a later test or the step times out
+        timeout-minutes: 10
+
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
+    needs: [build, e2e]
     runs-on: ubuntu-24.04
     permissions:
       pages: write
