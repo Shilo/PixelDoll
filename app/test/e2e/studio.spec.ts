@@ -526,6 +526,65 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await expect(page.locator('.project-btn')).toHaveText('Adventurer')
 })
 
+// CI shards are contiguous slices of the test order. This heavy test (about 28 s) is registered among light tests, away
+// from its two stale-review variants at the end and from the studio demo and Inspector tests above; heavy neighbors share
+// one slow shard (docs/testing/test-performance.md).
+test('free item color matching is offline, scoped, persistent and preserves saved recolors and warnings', async ({ page, context }, info) => {
+  const requests: string[] = []
+  context.on('request', r => { if (r.url().startsWith('https://api.pixellab.ai/')) requests.push(r.method()) })
+  await context.route('https://api.pixellab.ai/**', r => r.abort())
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await freePaletteFixture(page, true), pane = await selectedItemDetails(page)
+  const eligibility = await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p), item = s.store.project.manifest.items.find((it: { id: string }) => it.id === id); return { route: item.route, key: item.key, dressed: !!item.dressed.west, frames: s.store.project.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').sources.west.keypoints.length, shared: !!item.design } }, fixture.itemId)
+  expect(eligibility).toMatchObject({ route: 'skeleton-pose', key: 'green', dressed: true, frames: 8, shared: true })
+  await expect(pane.getByRole('button', { name: /^Try new item frames/ })).toHaveCount(0)
+  await expect(pane.getByRole('button', { name: 'View saved design', exact: true })).toBeVisible()
+  const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ })
+  await expect(action).toBeVisible()
+  await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west')
+  await expect(pane).toContainText('2 unmatched eligible pixels stay unchanged')
+  await expect(pane).toContainText('No PixelLab call is made')
+  await context.setOffline(true)
+  await action.click()
+  await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible()
+  await expect(action).toHaveCount(0)
+  await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.doc.rev++ })
+  await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible()
+  await context.setOffline(false)
+  const after = await page.evaluate(async id => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p), projectPath = '/src/lib/store/project.ts', projectModule = await import(projectPath)
+    const ctx = await projectModule.loadProject(s.doc.id), item = ctx.rec.manifest.items.find((it: { id: string }) => it.id === id), image = ctx.project.images.get(item.layers[0].cells.walk.west[0])
+    const unscoped = structuredClone(item.layers); for (const layer of unscoped) delete layer.cells.walk.west
+    return { materials: ctx.rec.manifest.materials, presets: ctx.rec.manifest.presets, variants: s.doc.variants, qa: item.qa, warnings: item.designWarnings, provenance: item.provenance, rig: ctx.rec.manifest.rig, unscoped, pixels: [...image.data.slice((40 * 96 + 40) * 4, (40 * 96 + 44) * 4)], audit: item.paletteRepairs, selected: s.ui.selected, anim: s.ui.anim, dir: s.ui.dir }
+  }, fixture.itemId)
+  for (const key of ['materials', 'presets', 'variants', 'qa', 'warnings', 'provenance', 'rig', 'unscoped'] as const) expect(after[key]).toEqual(fixture[key])
+  expect(after.pixels).toEqual([128, 128, 128, 255, 240, 240, 240, 255, 192, 128, 96, 255, 16, 16, 16, 255])
+  expect(after).toMatchObject({ selected: fixture.itemId, anim: 'walk', dir: 'west' })
+  expect(after.audit).toHaveLength(1)
+  expect(after.audit[0]).toMatchObject({ version: 'neutral-owned-v1', anim: 'walk', dir: 'west' })
+  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
+  await reloadStudio(page); await expect(page.locator('.world-actors').first()).toBeVisible()
+  await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.anim = 'walk'; s.ui.dir = 'west'; s.pick(id) }, fixture.itemId)
+  await selectedItemDetails(page)
+  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
+  await expect(pane.getByRole('radio', { name: 'azure', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
+  await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0)
+  await pane.getByRole('button', { name: 'Done', exact: true }).click()
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
+  await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
+  const download = sheet.getByRole('button', { name: /^Download ZIP/ })
+  await expect(download).toBeEnabled()
+  const event = page.waitForEvent('download'); await download.click()
+  const file = await event, path = await file.path(); expect(path).not.toBeNull()
+  const entries = await unzip(new Uint8Array(readFileSync(path!)))
+  const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json')!))
+  expect(manifest.items.find((it: { id: string }) => it.id === fixture.itemId).paletteRepairs).toHaveLength(1)
+  expect(manifest.materials).toEqual(fixture.materials)
+  expect(requests).toEqual([])
+})
+
 // Synthetic keys only: exercise the production bundle without contacting PixelLab.
 for (const initial of ['shared', 'old-only', 'both'] as const) {
   test('remembered key: ' + initial + ' uses only the shared name and Forget survives reload', async ({ page }) => {
@@ -1544,62 +1603,6 @@ async function freePaletteFixture(page: Page, shared = false) {
   expect(diagnosis).toMatchObject({ changedPixels: 2, changedFrames: [0, 1], unmatchedPixels: 2 })
   return { ...fixture, ...before }
 }
-
-test('free item color matching is offline, scoped, persistent and preserves saved recolors and warnings', async ({ page, context }, info) => {
-  const requests: string[] = []
-  context.on('request', r => { if (r.url().startsWith('https://api.pixellab.ai/')) requests.push(r.method()) })
-  await context.route('https://api.pixellab.ai/**', r => r.abort())
-  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
-  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
-  const fixture = await freePaletteFixture(page, true), pane = await selectedItemDetails(page)
-  const eligibility = await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p), item = s.store.project.manifest.items.find((it: { id: string }) => it.id === id); return { route: item.route, key: item.key, dressed: !!item.dressed.west, frames: s.store.project.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').sources.west.keypoints.length, shared: !!item.design } }, fixture.itemId)
-  expect(eligibility).toMatchObject({ route: 'skeleton-pose', key: 'green', dressed: true, frames: 8, shared: true })
-  await expect(pane.getByRole('button', { name: /^Try new item frames/ })).toHaveCount(0)
-  await expect(pane.getByRole('button', { name: 'View saved design', exact: true })).toBeVisible()
-  const action = pane.getByRole('button', { name: /^Match item colors.*Free$/ })
-  await expect(action).toBeVisible()
-  await expect(pane).toContainText('Match 2 pixels in 2 saved Walk frames facing west')
-  await expect(pane).toContainText('2 unmatched eligible pixels stay unchanged')
-  await expect(pane).toContainText('No PixelLab call is made')
-  await context.setOffline(true)
-  await action.click()
-  await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible()
-  await expect(action).toHaveCount(0)
-  await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.doc.rev++ })
-  await expect(pane.getByText('Matched 2 pixels in 2 frames.', { exact: true })).toBeVisible()
-  await context.setOffline(false)
-  const after = await page.evaluate(async id => {
-    const p = '/src/studio/state.svelte.ts', s = await import(p), projectPath = '/src/lib/store/project.ts', projectModule = await import(projectPath)
-    const ctx = await projectModule.loadProject(s.doc.id), item = ctx.rec.manifest.items.find((it: { id: string }) => it.id === id), image = ctx.project.images.get(item.layers[0].cells.walk.west[0])
-    const unscoped = structuredClone(item.layers); for (const layer of unscoped) delete layer.cells.walk.west
-    return { materials: ctx.rec.manifest.materials, presets: ctx.rec.manifest.presets, variants: s.doc.variants, qa: item.qa, warnings: item.designWarnings, provenance: item.provenance, rig: ctx.rec.manifest.rig, unscoped, pixels: [...image.data.slice((40 * 96 + 40) * 4, (40 * 96 + 44) * 4)], audit: item.paletteRepairs, selected: s.ui.selected, anim: s.ui.anim, dir: s.ui.dir }
-  }, fixture.itemId)
-  for (const key of ['materials', 'presets', 'variants', 'qa', 'warnings', 'provenance', 'rig', 'unscoped'] as const) expect(after[key]).toEqual(fixture[key])
-  expect(after.pixels).toEqual([128, 128, 128, 255, 240, 240, 240, 255, 192, 128, 96, 255, 16, 16, 16, 255])
-  expect(after).toMatchObject({ selected: fixture.itemId, anim: 'walk', dir: 'west' })
-  expect(after.audit).toHaveLength(1)
-  expect(after.audit[0]).toMatchObject({ version: 'neutral-owned-v1', anim: 'walk', dir: 'west' })
-  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
-  await reloadStudio(page); await expect(page.locator('.world-actors').first()).toBeVisible()
-  await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.anim = 'walk'; s.ui.dir = 'west'; s.pick(id) }, fixture.itemId)
-  await selectedItemDetails(page)
-  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
-  await expect(pane.getByRole('radio', { name: 'azure', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
-  await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0)
-  await pane.getByRole('button', { name: 'Done', exact: true }).click()
-  await page.getByRole('button', { name: 'Export', exact: true }).click()
-  const sheet = page.getByRole('dialog', { name: 'Export', exact: true })
-  await sheet.getByRole('radio', { name: /PNG \+ JSON/ }).click()
-  const download = sheet.getByRole('button', { name: /^Download ZIP/ })
-  await expect(download).toBeEnabled()
-  const event = page.waitForEvent('download'); await download.click()
-  const file = await event, path = await file.path(); expect(path).not.toBeNull()
-  const entries = await unzip(new Uint8Array(readFileSync(path!)))
-  const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json')!))
-  expect(manifest.items.find((it: { id: string }) => it.id === fixture.itemId).paletteRepairs).toHaveLength(1)
-  expect(manifest.materials).toEqual(fixture.materials)
-  expect(requests).toEqual([])
-})
 
 for (const changed of ['item', 'rig'] as const) test(`free item color matching refuses a stale ${changed} review without changing any pixels`, async ({ page, context }, info) => {
   const requests: string[] = []

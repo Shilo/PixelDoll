@@ -40,9 +40,9 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
 Playwright 1.64 (`filterForShard` in `node_modules/playwright/lib/runner/index.js`) orders tests by project, file and position, then cuts that list into **contiguous slices of equal test count**. It does not weigh by duration.
 
 - With one worker, a shard's time is the **sum of its tests**, not its longest test.
-- Heavy tests that sit next to each other land in the same shard. With 16 shards the bottleneck is the slice holding both parameterized creator cases (`character-creator.spec.ts:460`, Side-scroller 2 and Unique 8, always adjacent) and the device import roundtrip: 2.0 min in run 40187808473, against 41 s for the last shard. With 8 shards it was the end of `studio.spec.ts` (150 s) plus the creator slice (121 s).
+- Heavy tests that sit next to each other land in the same shard. Two clusters did: the two offline creation cases (Unique 8 and Side-scroller 2, about 42 s and 22 s, registered from one loop) with the device import roundtrip, and the 28 s color-matching test next to its two 13 s stale-review variants. Both are now **registered apart on purpose** (2026-10-25): Unique 8 before the creation-safety group in `character-creator.spec.ts`, color matching after "canceling Connect…" in `studio.spec.ts`, among light tests and away from the studio demo and Inspector tests.
 - Splitting a long test does not rebalance anything: its parts stay adjacent, usually in the same shard. Replaying `filterForShard` on real durations, splitting the three longest tests changed the slowest shard from 150 s to 136 s in one run, and made it worse (110 s to 121 s) in another.
-- What helps: more shards (smaller slices); less actual work in heavy tests; or spreading heavy tests across the order, e.g. splitting a huge spec file by feature so its parts sort apart.
+- What helps: more shards (smaller slices); less actual work in heavy tests; spreading heavy tests across the order by registering them among light tests. Replaying the split on five CI timing sets, the reorder took the slowest shard from 99–112 s to 72–87 s (at most 93 s with up to two tests added or removed before it). Real CI noise between runs of the same commit is about ±20 s, so expect roughly 10–20 s per deploy, not more.
 - `PWTEST_SHARD_WEIGHTS` can weight the slices (best contiguous cut ≈ 95 s against 150 s in one run), but it is an undocumented internal variable. Don't rely on it.
 
 ### Benchmark, 2026-10-25
@@ -108,7 +108,7 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
   - browser APIs (IndexedDB, Web Locks, CompressionStream) in the browser self-tests;
   - UI wiring and user flows in e2e.
 - **Keep every e2e test independent.** No ordering or shared state between tests or files. `fullyParallel` and sharding depend on it.
-- **Keep tests lean.** Shard time is the sum of its tests, and adjacent heavy tests share a shard, so cut real work and round trips rather than splitting a test into parts. If one spec file collects many heavy tests, split it by feature.
+- **Keep tests lean, and keep heavy tests apart.** Shard time is the sum of its tests, and adjacent heavy tests share a shard, so cut real work and round trips rather than splitting a test into parts. After adding a test over about 20 s, check its neighbors in `npx playwright test --list`; if it joins a heavy cluster, register it among light tests and replay the split on recent CI durations (see Measuring).
 - **Register a new spec in `app/playwright.config.ts` `testMatch`**, or it never runs (it is silently skipped). Then, if its name does not reveal its area, add it to AGENTS.md "End-to-end scope".
 - **Stay offline.** Route `https://*.pixellab.ai/**` to fixtures or `abort()`, and keep the existing "no paid request" assertions.
 - **Before merging anything that changes timing or waits,** run it under load: `npm run e2e -- <spec> --repeat-each=10 --workers=8` with your own `E2E_PREVIEW_PORT` / `E2E_DEV_PORT` / `TEST_OUTPUT_DIR`, and once in CI mode: `CI=1 npm run e2e -- <spec> --workers=1`.
@@ -116,7 +116,6 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
 
 ## Open options, measured or modeled but not done
 
-- **Separate the two parameterized creator cases** (`character-creator.spec.ts:460`) so they no longer share a slice, e.g. by moving one into another spec file by feature. Re-measure with CI after any move: the bottleneck shifts as tests are added.
 - **Setup per shard is about 35–45 s** (installing Playwright with its apt packages takes 16–26 s). Browser caching saves about 3–6 s and Playwright advises against it. Dropping `--with-deps` needs Linux validation first.
 - **The 15 s local expect timeout** hides UI steps that take up to 15 s on a loaded workstation. CI's 5 s still catches them.
 - **The unload snapshot covers only the debounced dress state.** Other flows (character creation, import, moves) write through their own awaited saves; a new debounced write path would need the same treatment. Known limits:
@@ -159,6 +158,23 @@ One line dominating while waiting on app output (the 256 px creator waits about 
 ### Which shard is slow
 
 `gh run view <run-id> --log | grep -E "passed \("` prints each shard's test time, and `gh run view <run-id> --json jobs` gives each job's wall time. To see which tests share the slow slice, read that shard's `✓` lines in the log. Shards are contiguous, so neighbors in file order share a slice.
+
+To try an ordering before pushing, replay the split. Save this outside the repo; it prints each shard's test seconds and its tests over 15 s:
+
+```js
+// replay.mjs: replay Playwright's contiguous shard split on CI durations.
+// Usage (from app/): npx playwright test --list > order.txt; gh run view <id> --log > ci.log; node replay.mjs order.txt ci.log 16
+import { readFileSync } from 'node:fs'
+const [orderFile, logFile, total = '16'] = process.argv.slice(2), N = +total
+const order = readFileSync(orderFile, 'utf8').split('\n').map((l) => l.match(/›\s+\S+?\.spec\.ts:\d+:\d+\s+›\s+(.*)$/)?.[1].trim()).filter(Boolean)
+const secs = new Map()
+for (const l of readFileSync(logFile, 'utf8').split('\n')) { const m = l.match(/✓.*?\.spec\.ts:\d+:\d+\s+›\s+(.*?)\s+\(([\d.]+)(m?s)\)\s*$/); if (m) secs.set(m[1].trim(), m[3] === 'ms' ? m[2] / 1000 : +m[2]) }
+const sizes = Array(N).fill(Math.floor(order.length / N)).map((s, i) => s + (i < order.length % N ? 1 : 0))
+let k = 0
+sizes.forEach((s, i) => { const slice = order.slice(k, (k += s)); const sum = slice.reduce((a, t) => a + (secs.get(t) ?? 0), 0)
+  console.log(`shard ${String(i + 1).padStart(2)}: ${sum.toFixed(0).padStart(4)} s  ${slice.filter((t) => (secs.get(t) ?? 0) > 15).map((t) => t.slice(0, 40)).join(' | ')}`) })
+console.log('missing durations:', order.filter((t) => !secs.has(t)).length)
+```
 
 ### Benchmarking a shard layout
 

@@ -25,6 +25,10 @@ async function connect(page: Page) {
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Connect', exact: true }).click()
 }
 
+// The two offline creation runs are the heaviest tests here (about 22 s and 42 s). CI shards are contiguous slices of the
+// test order, so they are registered apart to land in different shards (docs/testing/test-performance.md).
+offlineCreation({ preset: 'Unique 8', size: 128, frame: 256, reverse: false, unique: 8, rows: 8 })
+
 test.describe('creation safety', () => {
 test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` })
 test('all quality notes remain visible and failed clips come first', async ({ page, context }) => {
@@ -457,7 +461,11 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
   }
 })
 
-for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse: true, unique: 1, rows: 2 }, { preset: 'Unique 8', size: 128, frame: 256, reverse: false, unique: 8, rows: 8 }]) test(`offline creation, persistence and export: ${config.preset}, ${config.frame}px`, async ({ page, context }) => {
+offlineCreation({ preset: 'Side-scroller 2', size: 48, frame: 81, reverse: true, unique: 1, rows: 2 })
+
+type CreationCase = { preset: string; size: number; frame: number; reverse: boolean; unique: number; rows: number }
+function offlineCreation(config: CreationCase) {
+test(`offline creation, persistence and export: ${config.preset}, ${config.frame}px`, async ({ page, context }) => {
   test.setTimeout(180_000)
   const api = new CharacterApi(), errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
@@ -522,7 +530,8 @@ for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse:
   expect(await imported.locator('canvas').getAttribute('width')).toBe(String(config.frame * Math.max(1, Math.min(3, Math.floor(256 / config.frame)))))
   await page.getByLabel('Character name', { exact: true }).fill('Restored custom frame')
   await page.getByRole('button', { name: 'Import character', exact: true }).click()
-  await expect(page.locator('.project-btn')).toContainText('Restored custom frame')
+  // Saving then reopening a full 8-direction 256 px character decodes every frame; on slow runners this exceeded the 5 s CI default.
+  await expect(page.locator('.project-btn')).toContainText('Restored custom frame', { timeout: 30_000 })
   if (config.reverse) {
     await page.locator('.project-btn').click(); await page.getByRole('menuitem', { name: /Set up character/ }).click()
     const setup = page.getByRole('dialog', { name: 'Set up character', exact: true })
@@ -537,3 +546,4 @@ for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse:
   }
   expect(errors).toEqual([])
 })
+}
