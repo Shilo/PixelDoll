@@ -52,7 +52,7 @@ Living document: status and decisions. Open tasks live on the [PixelDoll board](
 
 ## Roadmap
 
-Open work is the [PixelDoll board](https://github.com/users/Shilo/projects/7): Ready (pending, in priority order; deferred cards at the bottom) → In progress → Done.
+Open work is the [PixelDoll board](https://github.com/users/Shilo/projects/7): Ready (approved, in priority order) → In progress → Done; deferred ideas wait in Later.
 Releases: bump `app/package.json`, annotated tag `vX.Y.Z`, `gh release create`; CI deploys `main`.
 
 ## Frame Editor planning (2026-10-23)
