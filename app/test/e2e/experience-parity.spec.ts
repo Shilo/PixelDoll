@@ -102,7 +102,7 @@ test('resizing stops held live input without teleporting, while a view change re
   await page.setViewportSize({ width: 1280, height: 820 })
   const stopped = await position()
   expect(Number(stopped!.split(',')[0])).toBeGreaterThan(10)
-  await page.waitForTimeout(100)
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))) // the movement loop ran
   expect(await position()).toBe(stopped)
   await page.keyboard.up('d')
   await modes(page).getByRole('button', { name: 'Side-scroller', exact: true }).click()

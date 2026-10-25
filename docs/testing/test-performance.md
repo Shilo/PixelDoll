@@ -26,6 +26,8 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
   - Each Studio page animates continuously and uses about three CPU threads. Two workers on a 4-vCPU runner made tests about 42% slower and produced a load flake (benchmark below).
   - A push uses 17 jobs. GitHub Free allows 20 concurrent jobs per account, so a second push (or another workflow) while one runs queues some jobs: it finishes later, but it still runs.
   - **Local: `workers: '20%'`**, which gives 4 on 24 threads and 1 on 8 or fewer. 6 and 12 workers were slower and caused timeouts.
+  - Don't raise it for a single run either: each animating Studio page uses about three threads, so 6 or more workers saturate a 24-thread machine. On 2026-10-25 one shared-equipment test failed 12 of 12 times at 12 workers and passed 8 of 8 at 6, with no race involved. Other sessions on the same machine add to that load.
+  - Dev-server tests (those that `import('/src/...')` in the page, plus characters and creator-request-matrix) fail first under that overload: Vite transforms each module on request, and at 4 workers a blank first page still had 61 of about 200 module requests pending after 20 s. Vite's `server.warmup` cut an idle first load from 0.87 s to 0.2 s but did not reduce these failures (5 and 4 failed with it, against 5 without), so it was not adopted. CI's one worker per runner does not hit this.
   - `expect.timeout` is 5 s on CI (an unloaded single worker) and 15 s locally (workers share the CPU).
   - `retries` is 1 on CI. The `github` reporter annotates any test that only passed on retry as flaky; investigate those, don't ignore them.
   - Failures and retried flakes upload `app/test-results` traces as an artifact for 7 days.

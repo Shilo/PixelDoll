@@ -1247,6 +1247,18 @@ async function until(ok: () => boolean, step?: () => Promise<unknown>) {
   while (!ok() && performance.now() < end) { await new Promise((r) => setTimeout(r, 10)); await step?.(); }
 }
 
+/** Every message posted on `channel` so far has reached every same-page listener: posted-message tasks run in posting
+ *  order, so once a fresh probe arrives the earlier deliveries are done. Unlike a sleep, it cannot end early under load,
+ *  so a "nothing happened" assertion after it really saw the messages. */
+async function delivered(channel: string) {
+  const id = crypto.randomUUID(), rx = new BroadcastChannel(channel), tx = new BroadcastChannel(channel);
+  let arrived = false;
+  rx.onmessage = (e) => { if ((e.data as { probe?: string })?.probe === id) arrived = true; };
+  tx.postMessage({ probe: id });
+  await until(() => arrived);
+  rx.close(); tx.close();
+}
+
 /** A minimal Web Locks stand-in: one holder, FIFO waiters, ifAvailable. */
 function fakeLocks(): Pick<LockManager, 'request'> {
   let held = false;
@@ -1288,17 +1300,17 @@ async function lockTest() {
   const spy = new BroadcastChannel(deps.channel!), heard: unknown[] = [];
   spy.onmessage = (e) => heard.push(e.data);
   b.setKey('synthetic-follower-token');
-  await new Promise((r) => setTimeout(r, 20));
+  await delivered(deps.channel!);
   console.assert(a.key === '' && b.key === 'synthetic-follower-token', 'typed key stays private to the connected tab');
   console.assert(!JSON.stringify(heard).includes('synthetic-follower-token'), 'an origin-wide listener never receives typed credentials');
   spy.postMessage({ key: 'synthetic-injected-token' }); // old or malicious same-origin sender
   spy.postMessage({ ask: true });
-  await new Promise((r) => setTimeout(r, 20));
+  await delivered(deps.channel!);
   console.assert(a.key === '' && b.key === 'synthetic-follower-token', 'credential injection and key requests are ignored');
   a.setKey('k');
   a.paused = 'auth';
   b.setKey('synthetic-replacement-token');
-  await new Promise((r) => setTimeout(r, 20));
+  await delivered(deps.channel!);
   console.assert(a.key === 'k' && a.paused === 'auth', 'a follower cannot replace a rejected leader credential');
   console.assert(!JSON.stringify(heard).includes('synthetic-replacement-token'), 'replacement credentials are never broadcast');
   b.setKey('');
@@ -1342,7 +1354,7 @@ async function lockTest() {
 
 // A keyless leader yields automatically; the follower runs its work without sharing its key or extra user steps.
 async function handoffTest() {
-  const store = new Map<string, JobRec>(), locks = fakeLocks(), tick = () => new Promise((r) => setTimeout(r, 0));
+  const store = new Map<string, JobRec>(), locks = fakeLocks();
   let t = 1000, posts = 0, usedKey = '';
   const deps: Partial<Deps> = {
     locks, now: () => t, channel: `${LOCK}-selftest-${crypto.randomUUID()}`,
@@ -1361,7 +1373,7 @@ async function handoffTest() {
   const rec = await b.enqueue({ method: 'POST', path: '/handoff', body: { seed: 123 } });
   t += FULL_SYNC_MS + 1;
   await a.tick(); await b.tick();
-  await tick(); await tick();
+  await delivered(deps.channel!); // b's keyReady reached the busy leader
   console.assert(a.role === 'leader' && posts === 0, 'a keyless leader does not hand off until its existing work settles');
   console.assert(a.key === '', 'keyless leader never borrows the follower credential');
   finishBusy(); await busy; // no ledger save: guard completion must still notify waiting followers

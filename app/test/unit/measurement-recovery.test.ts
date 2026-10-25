@@ -49,6 +49,8 @@ async function fixture(palette:boolean|'partial'=false) {
  const q=new Queue(deps);q.setKey('synthetic-key');await q.load()
  const finishOriginalChecks=async()=>{for(const raw of [...records.values()].filter(r=>r.endpoint==='/animate-with-skeleton-v3'))for(const out of raw.jobs[0].results){const bytes=new Uint8Array(await blobs.get(out.sha)!.arrayBuffer());const request=routes.estimateSkeleton(png(await b64(await (await import('../../src/lib/image/png.ts')).decodePng(new Blob([bytes])))));await q.enqueue(request,{estimateRetry:{id:'original-checks',recordIds:lostIds}});await q.tick()}}
  vi.spyOn(queue,'snapshot').mockImplementation(()=>q.snapshot());vi.spyOn(queue,'settled').mockImplementation(id=>q.settled(id))
+ // Queue.tick() returns early while another tick's work() runs, so this wake-up relies on work() awaiting only microtasks
+ // (fake storage and API). If work() ever awaits a timer or real IndexedDB, a lost wake-up leaves the job queued and the test fails loudly.
  const enqueue=vi.spyOn(queue,'enqueue').mockImplementation(async(...args)=>{const r=await q.enqueue(...args);queueMicrotask(()=>void q.tick());return r})
  vi.spyOn(projects,'loadProject').mockImplementation(async()=>{const rec=structuredClone(saved);return{rec,project:{manifest:rec.manifest,images:new Map([[hash,im]])}}})
  vi.spyOn(db,'updateCharacter').mockImplementation(async(_id,_blobs,change)=>{saved=change(structuredClone(saved)) as projects.StoredProject});
