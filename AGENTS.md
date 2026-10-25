@@ -27,11 +27,11 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - A body's first line may be "Blocked:", "Paid:" (needs PixelLab generations) or "Needs decision:"; list shows it. Add the marker whenever it applies.
 - From app/: node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. A card is its ID or a unique part of its title. Single-quote bodies; \n is a newline; --body replaces the whole body.
 - Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
-- Broad requests ("what's next", "work on pending tasks", "do everything") cover only unmarked Ready cards, from the top, one at a time; list the marked ones you skipped. Never start a Later card, resume a Progress card (another session may own it) or start a marked card without the user's yes for that card; a question or "maybe" is not a yes.
+- Broad requests ("what's next", "work on pending tasks", "do everything") cover only unmarked Ready cards, from the top, one at a time; list the marked ones you skipped. Never start a Later card, resume a Progress card another session started or start a marked card without the user's yes for that card; a question or "maybe" is not a yes.
 - "What's next?": report Progress cards, then recommend the top eligible Ready card; move nothing.
-- Starting: show the card, read its Refs, then move it to Progress before changing files. If it turns out to need generations or a decision, stop, add the marker and ask.
-- Done: only after the checks in End-to-end scope pass and nothing awaits the user's review; otherwise keep it in Progress with "Left: …" as the body's last line.
-- Adding: only when the user asks (Ready if they want it done, --status Later if they only want it tracked); never for steps of the current task. Check list and list archived for similar titles first.
+- Starting: show the card, read its Refs, then move it to Progress before changing files. If it turns out to need generations, an install, an account or a decision, stop before spending or installing, add the marker, move it back to Ready and ask.
+- Done: only after the checks in End-to-end scope pass and nothing awaits the user's review; otherwise keep it in Progress with "Left: …" as the body's last line, removed once done.
+- Adding: only when the user asks (Ready if they want it done, --status Later if they only want it tracked); never for steps of the current task. Check list and list archived for similar titles first; if an archived card matches, ask the user to restore it from the board's Archived items.
 - Archiving: only when the user drops a card or asks to clear Done.
 
 ## Code
