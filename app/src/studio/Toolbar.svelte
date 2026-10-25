@@ -7,7 +7,7 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
   import { ui, doc, store, creating, settingUp, gens, openProject, undo, redo, toggleTheme, isDemo } from './state.svelte.ts'
-  import { Github, GitCommitHorizontal, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
+  import { Github, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
   const devRigs = $derived(store.projects.filter((p) => p.dev))
@@ -39,13 +39,15 @@
   </div>
 </header>
 <div id="experience-options" class="menu options-menu bu-floating" popover ontoggle={popoverFocus}>
-  <button class="row bu-action" data-variant="quiet" onclick={() => { toggleTheme(); document.getElementById('experience-options')?.hidePopover() }}>{#if ui.theme==='dark'}<Sun size={18}/>{:else}<Moon size={18}/>{/if}<span class="row-name">{ui.theme==='dark'?'Light mode':'Dark mode'}</span></button>
   {#if experience.screen==='studio'}<button class="row bu-action mobile-redo" data-variant="quiet" disabled={!redoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); redo() }}><Redo2 size={18}/><span class="row-name">{redoLabel?'Redo '+redoLabel:'Redo'}</span></button>{/if}
-  <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='connect' }}><KeyRound size={18}/><span class="row-name">{app.key ? app.keyRejected ? 'Key not accepted' : 'PixelLab account' : 'Connect PixelLab'}</span></button>
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='activity' }}><Activity size={18}/><span class="row-name">Activity</span>{#if $queue.role==='follower'}<span class="small">Other tab</span>{/if}</button>
   <ApiPeek scope="all" all menu />
-  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noreferrer"><Github size={18}/><span class="row-name">GitHub</span><ExternalLink size={16}/></a>
-  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}" target="_blank" rel="noreferrer"><GitCommitHorizontal size={18}/><span class="row-name faint small num">v{__APP_VERSION__}<br/>{__APP_COMMIT__}</span><ExternalLink size={16}/></a>
+  <hr />
+  <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='connect' }}><KeyRound size={18}/><span class="row-name">{app.key ? app.keyRejected ? 'Key not accepted' : 'PixelLab account' : 'Connect PixelLab'}</span></button>
+  <button class="row bu-action" data-variant="quiet" onclick={() => { toggleTheme(); document.getElementById('experience-options')?.hidePopover() }}>{#if ui.theme==='dark'}<Sun size={18}/>{:else}<Moon size={18}/>{/if}<span class="row-name">{ui.theme==='dark'?'Light mode':'Dark mode'}</span></button>
+  <hr />
+  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noreferrer"><Github size={18}/><span class="row-name">Source code</span><ExternalLink size={16}/></a>
+  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}" target="_blank" rel="noreferrer"><PersonStanding size={18}/><span class="row-name">Version {__APP_VERSION__}</span><span class="faint small num">{__APP_COMMIT__}</span><ExternalLink size={16}/></a>
 </div>
 
 <div id="project-menu" class="menu" popover bind:this={menu} role="menu" aria-label="Characters"
