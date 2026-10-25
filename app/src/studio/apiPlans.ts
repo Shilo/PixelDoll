@@ -3,7 +3,7 @@ import { routes, BASE_ANIMS, baseAnimation, type Req } from '../lib/pixellab/rou
 import { type CreateSpec, type MoveSpec, creationDirections, creationLooks, moveDirections, moveFrames } from './create.ts'
 import { basePrompt } from './model.ts'
 import { ACTIONS } from '../lib/rig/poses.ts'
-import { actionOf, poseBatches } from '../lib/rig/clips.ts'
+import { actionOf, poseBatches, poseCallGens } from '../lib/rig/clips.ts'
 import { pickKey } from '../lib/image/chroma.ts'
 import { gridEstimate, planItem, itemPrompt, planGens, slotOf, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
 import { defaultMethod, type Draft, type RigCtx } from '../lib/items/run.ts'
@@ -91,7 +91,7 @@ export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | nu
         calls.push({ ...routes.animateCharacter(b), label: `Create motion · ${direction}`, generations: spec.action === 'walk' ? 3 : 1, note: spec.seed === undefined ? `Known fields only. ${selectedSeed}` : undefined })
         for (let frame = 0; frame < frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${spec.id} ${direction} · motion frame ${frame + 1}`, generations: 0.1, note: 'Sends the generated motion frame as image (base64 PNG), unless already measured.' })
       }
-      calls.push({ method: 'POST', path: '/animate-with-skeleton-v3', label: `${spec.id} ${direction} · render body`, generations: 3,
+      calls.push({ method: 'POST', path: '/animate-with-skeleton-v3', label: `${spec.id} ${direction} · render body`, generations: poseCallGens(frames),
         body: { description: rec.character?.looks, action: actionOf(spec.id) + (spec.poseStyle === 'visible-side-v1' ? ', empty hands, no weapon, no props, no effects' : ''), direction, view: m.rig.view ?? 'low top-down', ...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }), no_background: true },
         note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${spec.action && ACTIONS[spec.action] ? 'locally authored' : 'generated motion'} keypoints. Empty output or a wrong frame count can add one re-roll; review observations do not.` })
       for (let frame = 0; frame < frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${spec.id} ${direction} · check frame ${frame + 1}`, generations: 0.1, note: 'Sends the rendered body frame as image (base64 PNG), unless already measured.' })
