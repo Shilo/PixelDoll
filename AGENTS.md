@@ -13,8 +13,12 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 ## Docs
 
-Index: docs/README.md. Plan and decisions: PLAN.md. Accepted limits: docs/known-issues.md.
-Agent token contract: docs/handoff/agent-dev-token-handling.md. Old evidence media: git tag v0.1.0. Before editing this file: docs/agent-instructions.md.
+- Index: docs/README.md
+- Plan and decisions: PLAN.md
+- Accepted limits: docs/known-issues.md
+- Agent token contract: docs/handoff/agent-dev-token-handling.md
+- Old evidence media: git tag v0.1.0
+- Before editing this file: docs/agent-instructions.md
 
 ## Tasks
 
@@ -31,8 +35,10 @@ A card body may start with "Blocked:", "Paid:" or "Needs decision:".
 
 ## Code
 
-PixelLab plan policy (tier limits and tool access): edit `PLAN_JOB_LIMITS` in app/src/lib/pixellab/plans.ts; policy and sources in docs/pixellab-plans.md.
-app/src/ui/ holds dev-only pages; the Studio UI is app/src/studio/. Demo fixture: app/public/fixtures/s2/.
+- PixelLab plan policy (tier limits, tool access): edit `PLAN_JOB_LIMITS` in app/src/lib/pixellab/plans.ts; sources in docs/pixellab-plans.md
+- Studio UI: app/src/studio/
+- Dev-only pages: app/src/ui/
+- Demo fixture: app/public/fixtures/s2/
 
 ## Theme
 
