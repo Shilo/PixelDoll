@@ -74,3 +74,13 @@ test('requests name the azure key', () => {
   const req = itemRoute.pose({ keyframePngB64: 'x', rest: [], poses: [[], [], []], item: 'a tunic', slot: 'torso_outer', key: 'azure', anim: 'walk', dir: 'south', seed: 1, cell: { w: 64, h: 64 } }) as { body: { description: string } }
   expect(req.body.description).toContain('solid bright azure blue mannequin')
 })
+
+test('color words: unlisted greens that score as green key ban it, and words that only contain a color do not (round 3 review)', () => {
+  for (const [p, rgb] of [['a chartreuse cloak', [127, 255, 0]], ['a malachite brooch', [11, 218, 81]], ['a harlequin vest', [63, 255, 0]], ['a shamrock hat', [0, 158, 96]]] as const) {
+    expect(keyScore('green', rgb[0], rgb[1], rgb[2]), p).toBeGreaterThanOrEqual(KT)
+    expect(pickKey(p), p).toBe('magenta')
+  }
+  for (const p of ['a stealth hood', 'a plumed steel helmet', 'a sacred white robe', 'a shredded gray cape', 'a hundred-ring mail shirt']) expect(pickKey(p), p).toBe('green')
+  expect(pickKey('an ivy crown')).toBe('magenta')
+  expect(pickKey('a green and red cape')).toBe('blue')
+})

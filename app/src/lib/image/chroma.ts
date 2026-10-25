@@ -34,12 +34,12 @@ const RAMP: Record<Key, (t: number) => [number, number, number]> = {
 
 // Substrings, so compounds ("darkgreen", "bloodred") count; "red" after a vowel is a word ending (colored, covered, armored).
 const HUES: Record<Key, RegExp> = {
-  green: /green|emerald|lime|olive|jade|teal|mint|forest/i,
-  magenta: /(?<![aeiou])red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|indigo|plum|orchid|grape|amethyst|lavender|lilac|mauve|magenta|fuchsia/i, // indigo 58, orchid 47, plum 45, grape 39 as magenta key
+  green: /green|emerald|lime|olive|jade|\bteal|mint|forest|chartreuse|malachite|harlequin|shamrock|\bmoss|\bivy\b/i, // \bteal: not stealth
+  magenta: /(?<![aeiou]|sac|hund|sh)red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|indigo|plum(?!e)|orchid|grape|amethyst|lavender|lilac|mauve|magenta|fuchsia/i, // indigo 58, orchid 47, plum 45, grape 39 as magenta key
   // purples score as blue key too (blueviolet 39, indigo 42 against KT 35)
-  blue: /blue|navy|azure|cyan|teal|sapphire|cobalt|indigo|turquoise|aqua|cerulean|purple|violet|lavender|lilac|plum|mauve|orchid|grape|amethyst/i,
+  blue: /blue|navy|azure|cyan|\bteal|sapphire|cobalt|indigo|turquoise|aqua|cerulean|purple|violet|lavender|lilac|plum(?!e)|mauve|orchid|grape|amethyst/i,
   // blues and blue-greens score 50-67 as azure key; purples 0-12 and emerald 0
-  azure: /blue|navy|azure|cyan|teal|\bsky|ocean|denim|sapphire|cobalt|turquoise|aqua|cerulean/i,
+  azure: /blue|navy|azure|cyan|\bteal|\bsky|ocean|denim|sapphire|cobalt|turquoise|aqua|cerulean/i,
 };
 /** May this key be used for an item? A key must stay far from the item hue (magenta failed on a red cape, gray on steel [S2]). */
 export const keyAllowed = (prompt: string, k: Key) => !HUES[k].test(prompt);

@@ -191,19 +191,26 @@ export function rerollCall(d: Draft, k: number, why: string) {
   const dirs = c.cells.map((x) => x.split('/')[1]), stale = k === 0 ? d.calls.slice(1) : c.kind === 'dress' ? d.calls.filter((l) => l.kind === 'pose' || l.kind === 'grid' ? dirs.includes(l.cells[0].split('/')[1]) : false) : [];
   for (const l of stale) { if (l.recId) l.old.push(l.recId); l.recId = undefined; }
 }
-function switchKey(d: Draft, to: Key) {
+function switchKey(d: Draft, to: Key, why: string) {
   d.spec.key = to;
   d.keySwitched = true;
-  d.log.push(`switch key to ${d.spec.key} after ${MAX_REROLLS} failed re-rolls`);
-  for (const c of d.calls) { if (c.recId) c.old.push(c.recId); c.recId = undefined; c.rerolls = 0; c.seed = seed(); }
+  d.log.push(`switch key to ${d.spec.key} (${why})`);
+  // every call restarts on the new key; a grid fallback goes back to a pose call (its kept roll used the old key)
+  for (const c of d.calls) { if (c.recId) c.old.push(c.recId); c.recId = undefined; c.rerolls = 0; c.seed = seed(); if (c.kind === 'grid') c.kind = 'pose'; delete c.fallback; }
 }
 export const failsOf = (res: ItemResult, k: number) => [...(res.g1.has(k) ? [res.g1.get(k)!] : []), ...(res.qa?.failCalls.get(k) ?? [])];
-function retry(d: Draft, k: number, why: string[]): boolean {
-  let to: Key | undefined;
-  if (d.calls[k].rerolls < MAX_REROLLS) rerollCall(d, k, why.join('; '));
-  // the other key only helps a key/item color collision (G2); moved arms, missing or clipped items are generation problems
-  else if (!d.keySwitched && d.calls[k].kind !== 'grid' && d.spec.key !== 'none' && why.some((w) => w.startsWith('G2')) && (to = switchTo(d.spec.prompt, d.spec.key))) switchKey(d, to);
-  else { d.log.push(`call ${k + 1} still fails after re-rolls and key switch: ${why.join('; ')} -> needs review`); return false; }
+/**
+ * Re-roll a failing call (2×), else hand it to review. A design call whose keyframe has key px outside the body (G3) is a key/item
+ * color collision: another seed on the same key cannot fix it, so it switches key at once. G2 never signals a collision (key-
+ * colored item px count as kept); it fails on erased or moved body px, which a new key cannot fix (round 3 review: the 8
+ * collision keyframes on the benchmark keep G2 at 1.000 and fail G3 at 0.023–0.217).
+ */
+export function retry(d: Draft, k: number, why: string[]): boolean {
+  const reasons = why.flatMap((w) => w.split('; ')), c = d.calls[k];
+  const to = !d.keySwitched && d.spec.key !== 'none' && (k === 0 || c.kind === 'dress') && reasons.some((w) => w.startsWith('G3')) ? switchTo(d.spec.prompt, d.spec.key) : undefined;
+  if (to) switchKey(d, to, reasons.find((w) => w.startsWith('G3'))!);
+  else if (c.rerolls < MAX_REROLLS) rerollCall(d, k, reasons.join('; '));
+  else { d.log.push(`call ${k + 1} still fails after re-rolls: ${reasons.join('; ')} -> needs review`); return false; }
   return true;
 }
 
