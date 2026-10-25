@@ -48,6 +48,8 @@ test('only small accessories may have an empty view', () => {
   expect([...hiddenViews([glasses], keys)]).toEqual(['north'])
   expect(hiddenViews([helmet], keys).size).toBe(0)
   expect(hiddenViews([glasses], { south: keys.south }).size).toBe(0)
+  // an empty front view is a failed dress (the body cannot hide a front item there)
+  expect(hiddenViews([glasses], { north: keys.south, south: makeImg(W, W) }).size).toBe(0)
   // a fragment drawn in one view of three is a failed dress, not two hidden views
   expect(hiddenViews([glasses], { ...keys, east: makeImg(W, W) }).size).toBe(0)
 })

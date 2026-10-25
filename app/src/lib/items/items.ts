@@ -7,7 +7,7 @@ import { over } from '../compose/compose.ts';
 import { splitFgBg } from '../compose/split.ts';
 import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
-import { hasAll } from '../rig/poses.ts';
+import { backView, hasAll } from '../rig/poses.ts';
 import { actionOf, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
@@ -551,13 +551,14 @@ export function repairDropped(rig: Rig, slot: Slot, cells: CellOut[], keys: Part
 const partFloor = (K?: Img) => Math.min(4, (K && Math.max(0, ...components(maskOf(K), K.w, K.h).map((x) => x.length))) || 4);
 /** Small accessories cover ~1 % of the body (round 5: glasses, earrings); every benchmark item covers >= 14 % in every view. */
 export const SMALL_SHARE = 0.05;
-/** Views whose dressed keyframe is empty while the item is a small accessory shown in at least half of the views: the view
- * hides it (glasses from behind), so an empty view is reviewed instead of re-rolled; its posed frames must stay empty too (G4).
- * A fragment drawn in one view of three is a failed dress, not a hidden one. `cells` are the keyframe cells. */
+/** Back views (north, north-east, north-west) whose dressed keyframe is empty while the item is a small accessory shown in at
+ * least half of the views: the body hides it (glasses from behind), so the empty view is reviewed instead of re-rolled; its
+ * posed frames must stay empty too (G4). An empty front or side view is a failed dress (round 5: the earrings' front view),
+ * and so is a fragment drawn in one view of three. `cells` are the keyframe cells of every dressed view. */
 export function hiddenViews(cells: Pick<CellOut, 'key' | 'area' | 'base'>[], keys: Partial<Record<DirectionName, Img>>): Set<string> {
   const share = Math.max(0, ...cells.map((c) => { let b = 0; for (let p = 3; p < c.base.data.length; p += 4) if (c.base.data[p]) b++; return b ? c.area / b : 0; }));
   const views = Object.entries(keys).filter(([, K]) => K), empty = views.filter(([, K]) => !K!.data.some((v, i) => i % 4 === 3 && v)).map(([d]) => d);
-  return share > 0 && share < SMALL_SHARE && 2 * (views.length - empty.length) >= views.length ? new Set(empty) : new Set();
+  return share > 0 && share < SMALL_SHARE && 2 * (views.length - empty.length) >= views.length ? new Set(empty.filter(backView)) : new Set();
 }
 /**
  * Posed non-held items: drop components under max(4 px, 15 % of the largest) (motion-smear specks, S3). The 4 px floor drops to
@@ -1000,7 +1001,7 @@ function headOcclusion(c: CellOut, rig: Rig): { mask: Uint8Array; shift: [number
 /** cover: B14, soft items (cloth, hair) are only judged in a view where the item covers at least half of the body (a cape from
  *  behind, not the cape edges from the front); soft: their own-similarity floor there. */
 // minPx: a keyframe view and frame both under 12 px are too small to judge: a 1 px drift of a 3 px part halves its overlap
-// (round 5: steady earrings from behind scored 0.47–0.58); a frame that grew past it is still judged
+// (round 5: steady earrings from behind scored 0.47–0.58); a frame that grew past 1.5× its keyframe is still judged
 export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 };
 /**
  * H4: a posed layer must look like its own direction's dressed keyframe layer. Band items (helmet, face): own < 0.75 fails in every
@@ -1031,7 +1032,7 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     }
   for (const c of cells) {
     const dir = c.key.split('/')[1] as DirectionName, opp = OPP[dir];
-    if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp) || (sum(maskOf(keys[dir]!)) < H4.minPx && c.area < H4.minPx)) continue;
+    if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp) || (sum(maskOf(keys[dir]!)) < H4.minPx && c.area < Math.max(H4.minPx, 1.5 * sum(maskOf(keys[dir]!))))) continue;
     if (!slot.band && (cover.get(c.key.split('/').slice(0, 2).join('/')) ?? 0) < H4.cover) continue;
     const min = partFloor(keys[dir]), L = despeck(c.layer, min), occ = new Uint8Array(c.mask.length);
     for (let p = 0; p < occ.length; p++) occ[p] = c.out.data[p * 4 + 3] && !c.mask[p] ? 1 : 0;

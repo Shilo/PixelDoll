@@ -107,10 +107,11 @@ const cutFor = (ctx: RigCtx, slot: string, k: string, posed: boolean, keyCut: Cu
   const allow = cutAllow(rig, k, keyCut[k.split('/')[1] as DirectionName], rig.cell.w, posedTol(rig.cell.w, rig.cell.h));
   return allow && { maxY, allow };
 };
-/** Dressed keyframe layers (H4, trims) and the body px they hide, per direction, for later moves and grid repairs. */
-async function dressedKeys(ctx: RigCtx, item: Item, pad: number, dirs = Object.keys(item.dressed ?? {}) as DirectionName[]) {
+/** Dressed keyframe layers (H4, trims) and the body px they hide, per direction, for later moves and grid repairs. Every dressed
+ * view, also when only some directions are posed: hidden views are judged over all of them. */
+async function dressedKeys(ctx: RigCtx, item: Item, pad: number) {
   const keys: Partial<Record<DirectionName, Img>> = {}, cuts: Cuts = {}, H = ctx.rec.manifest.rig.cell.h + 2 * pad, cells: CellOut[] = [];
-  for (const d of dirs) {
+  for (const d of Object.keys(item.dressed ?? {}) as DirectionName[]) {
     const k = restKey(d), c = extractCell({ key: k, call: 0, base: padImg(baseCell(ctx, k, true), pad), out: await img(item.dressed![d]!.slice(7)), route: item.key!, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, k, true), H), cut: cutFor(ctx, item.slot, k, false, {}, true) });
     keys[d] = c.layer;
     if (c.cut) cuts[d] = c.cut;
@@ -449,7 +450,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   const dirs = selectedDirs ?? available;
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
   let rerolls = 0; // actual additional attempted calls, independent of which candidate wins
-  const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad, dirs);
+  const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad);
   Object.assign(keys, k0);
   const perDir = await Promise.all(dirs.map(async (dir, k) => {
     const allPoses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
