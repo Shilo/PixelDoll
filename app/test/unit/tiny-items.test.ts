@@ -48,6 +48,8 @@ test('only small accessories may have an empty view', () => {
   expect([...hiddenViews([glasses], keys)]).toEqual(['north'])
   expect(hiddenViews([helmet], keys).size).toBe(0)
   expect(hiddenViews([glasses], { south: keys.south }).size).toBe(0)
+  // a fragment drawn in one view of three is a failed dress, not two hidden views
+  expect(hiddenViews([glasses], { ...keys, east: makeImg(W, W) }).size).toBe(0)
 })
 
 test('a hidden view warns instead of failing G4', () => {
@@ -58,6 +60,9 @@ test('a hidden view warns instead of failing G4', () => {
   const hidden = itemQa(rig, slotOf('face_acc'), 'green', cells, 0, undefined, 0, new Set(['north']))
   expect([...hidden.failCalls.values()].flat().some((m) => m.startsWith('G4'))).toBe(false)
   expect(hidden.warnings.some((m) => m.startsWith('G4 walk/north'))).toBe(true)
+  // the item popping in on some frames of a hidden view still fails
+  const popIn = itemQa(rig, slotOf('face_acc'), 'green', [...cells, empty('north', 2), { ...posed(EARRINGS), key: 'walk/north/3' }], 0, undefined, 0, new Set(['north']))
+  expect([...popIn.failCalls.values()].flat().some((m) => m.startsWith('G4 walk/north'))).toBe(true)
 })
 
 test('H4 compares tiny parts instead of despecking them away', () => {
@@ -65,6 +70,12 @@ test('H4 compares tiny parts instead of despecking them away', () => {
   const c = posed(studs)
   postProcess(rig, slotOf('face_acc'), [c], keyframe(studs))
   expect(dirGate(slotOf('face_acc'), [c], keyframe(studs), rig).fails.size).toBe(0)
+})
+
+test('H4 judges a frame that grew past 12 px on a tiny keyframe', () => {
+  const c = posed([...EARRINGS, ...Array.from({ length: 14 }, (_, i) => [12 + (i % 7), 3 + Math.floor(i / 7)])]) // a 14 px extra part
+  postProcess(rig, slotOf('face_acc'), [c], keyframe(EARRINGS))
+  expect(dirGate(slotOf('face_acc'), [c], keyframe(EARRINGS), rig).fails.size).toBe(1)
 })
 
 test('H4 does not judge a keyframe view under 12 px', () => {

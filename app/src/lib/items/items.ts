@@ -551,12 +551,13 @@ export function repairDropped(rig: Rig, slot: Slot, cells: CellOut[], keys: Part
 const partFloor = (K?: Img) => Math.min(4, (K && Math.max(0, ...components(maskOf(K), K.w, K.h).map((x) => x.length))) || 4);
 /** Small accessories cover ~1 % of the body (round 5: glasses, earrings); every benchmark item covers >= 14 % in every view. */
 export const SMALL_SHARE = 0.05;
-/** Views whose dressed keyframe is empty while the item is a small accessory: the view hides it (glasses from behind), so an
- * empty view is reviewed instead of re-rolled. `cells` are the keyframe or posed cells (their base is the body in that view). */
+/** Views whose dressed keyframe is empty while the item is a small accessory shown in at least half of the views: the view
+ * hides it (glasses from behind), so an empty view is reviewed instead of re-rolled; its posed frames must stay empty too (G4).
+ * A fragment drawn in one view of three is a failed dress, not a hidden one. `cells` are the keyframe cells. */
 export function hiddenViews(cells: Pick<CellOut, 'key' | 'area' | 'base'>[], keys: Partial<Record<DirectionName, Img>>): Set<string> {
   const share = Math.max(0, ...cells.map((c) => { let b = 0; for (let p = 3; p < c.base.data.length; p += 4) if (c.base.data[p]) b++; return b ? c.area / b : 0; }));
-  const empty = Object.entries(keys).filter(([, K]) => K && !K.data.some((v, i) => i % 4 === 3 && v)).map(([d]) => d);
-  return share > 0 && share < SMALL_SHARE ? new Set(empty) : new Set();
+  const views = Object.entries(keys).filter(([, K]) => K), empty = views.filter(([, K]) => !K!.data.some((v, i) => i % 4 === 3 && v)).map(([d]) => d);
+  return share > 0 && share < SMALL_SHARE && 2 * (views.length - empty.length) >= views.length ? new Set(empty) : new Set();
 }
 /**
  * Posed non-held items: drop components under max(4 px, 15 % of the largest) (motion-smear specks, S3). The 4 px floor drops to
@@ -833,7 +834,8 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, 2 * baseCv);
     const wrist = slot.class === 'held' && cs.every((c) => c.posed) ? slot.anchor === 'hand_l' ? hl : hr : undefined;
     const minRatio = med ? Math.min(...areas) / med : 0;
-    if (!med) (hidden.has(d) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
+    // a hidden view (hiddenViews) must stay empty: px in some of its frames are an item popping in, not a hidden one
+    if (!med) (hidden.has(d) && !areas.some(Boolean) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) && !areas.some(Boolean) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
     else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
     // a standard deviation under 2 px is drawing noise, not a lost part (round 5: earrings 5–10 px per frame read as CV 0.19)
@@ -997,8 +999,8 @@ function headOcclusion(c: CellOut, rig: Rig): { mask: Uint8Array; shift: [number
 }
 /** cover: B14, soft items (cloth, hair) are only judged in a view where the item covers at least half of the body (a cape from
  *  behind, not the cape edges from the front); soft: their own-similarity floor there. */
-// minPx: a keyframe view under 12 px is too small to judge: a 1 px drift of a 3 px part halves its overlap (round 5: steady
-// earrings from behind scored 0.47–0.58)
+// minPx: a keyframe view and frame both under 12 px are too small to judge: a 1 px drift of a 3 px part halves its overlap
+// (round 5: steady earrings from behind scored 0.47–0.58); a frame that grew past it is still judged
 export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 };
 /**
  * H4: a posed layer must look like its own direction's dressed keyframe layer. Band items (helmet, face): own < 0.75 fails in every
@@ -1029,7 +1031,7 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     }
   for (const c of cells) {
     const dir = c.key.split('/')[1] as DirectionName, opp = OPP[dir];
-    if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp) || sum(maskOf(keys[dir]!)) < H4.minPx) continue;
+    if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp) || (sum(maskOf(keys[dir]!)) < H4.minPx && c.area < H4.minPx)) continue;
     if (!slot.band && (cover.get(c.key.split('/').slice(0, 2).join('/')) ?? 0) < H4.cover) continue;
     const min = partFloor(keys[dir]), L = despeck(c.layer, min), occ = new Uint8Array(c.mask.length);
     for (let p = 0; p < occ.length; p++) occ[p] = c.out.data[p * 4 + 3] && !c.mask[p] ? 1 : 0;
