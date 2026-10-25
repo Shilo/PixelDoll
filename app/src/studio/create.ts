@@ -200,7 +200,7 @@ export function managedPose(points?: Record<string, { x: number; y: number }>): 
   return hasAll(pose) ? pose.map(k => kp4(k.label, k.x, k.y)) : undefined;
 }
 // ---------- one clip-direction: raw skeleton-v3 on the rest view + structural checks + observations ----------
-interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void; view?: Manifest['rig']['view']; activityScope?: string; signal?: AbortSignal; unarmed?: boolean; paletteRepair?: boolean }
+interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]; keypoints: Keypoint[][]; looks: string; seed: number; name: string; tick: () => void; view?: Manifest['rig']['view']; activityScope?: string; signal?: AbortSignal; unarmed?: boolean; paletteRepair?: boolean; authored?: boolean }
 interface ClipOut { frames: Img[]; measured: (Keypoint[] | undefined)[]; qa: ClipQa; recs: JobRec[]; processing?: ClipSource['processing'] }
 async function renderClip(j: ClipJob): Promise<ClipOut> {
   const restB64 = await b64(j.rest), recs: JobRec[] = [];
@@ -221,7 +221,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
     // Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
     const measured = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, j.signal, j.activityScope); j.tick(); return k; }));
     if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`);
-    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: 0, disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0), facing: { dir: j.dir, rest: j.restKps } });
+    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: 0, disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0), ...(j.authored ? {} : { facing: { dir: j.dir, rest: j.restKps } }) });
     return { frames, measured, qa, recs, ...('processing' in candidate ? { processing: candidate.processing } : {}) };
   }
   throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames or the wrong number of frames`);
@@ -365,7 +365,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
       keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, checkedTick, signal, spec.activityScope, cell);
       motions.set(`${a.name}/${d}`, (await queue.enqueue(req, { signal })) as JobRec); // cache hit: the record for provenance
     }
-    return { a, d, keypoints, out: await renderClip({ anim: a.name, dir: d, rest: rest[d], restKps: restKps[d], keypoints, looks, seed: spec.seed + 101, name: spec.name, tick: checkedTick, signal, view, activityScope: spec.activityScope }) };
+    return { a, d, keypoints, out: await renderClip({ anim: a.name, dir: d, rest: rest[d], restKps: restKps[d], keypoints, authored: !!authored, looks, seed: spec.seed + 101, name: spec.name, tick: checkedTick, signal, view, activityScope: spec.activityScope }) };
   }), spec.seed);
 
   // 4. freeze
@@ -618,7 +618,7 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
       keypoints = shiftMotionPoses(await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, checkedTick, signal, spec.activityScope, rig.cell.w), motionOffsets[d] ?? 0, rig.cell.h);
       extra[k] = [(await queue.enqueue(req, { signal })) as JobRec];
     }
-    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, looks: rec.character!.looks, seed: spec.seed + 101, name, tick: checkedTick, view: rig.view, signal, activityScope: spec.activityScope, unarmed: spec.poseStyle === 'visible-side-v1', paletteRepair: !!spec.bodyPaletteRepair }) };
+    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, authored: !!(spec.action && ACTIONS[spec.action]), looks: rec.character!.looks, seed: spec.seed + 101, name, tick: checkedTick, view: rig.view, signal, activityScope: spec.activityScope, unarmed: spec.poseStyle === 'visible-side-v1', paletteRepair: !!spec.bodyPaletteRepair }) };
   }), spec.seed, recovery && { intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] }, rawHashes: new Set(recovery.rawHashes), tail: Promise.resolve() });
 
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });

@@ -92,7 +92,8 @@ export function facingRatios(dir: string, rest: Keypoint[], frames: (Keypoint[] 
   return frames.map((k) => { const w = width(k); return dir !== 'south' && dir !== 'north' || !w0 || w == null ? null : w / w0; });
 }
 /** Text-described moves can turn the body side-on (round 5, measured joints: a pixminimax slash south fell to 0.06 of the standing
- * shoulder width and a north one flipped sign; walk, idle, run and hurt stayed >= 0.85). Review threshold only. */
+ * shoulder width and a north one flipped sign; walk, idle, run and hurt stayed >= 0.85). Review threshold only; authored
+ * presets skip it (their death falls on purpose: 0.01). */
 export const FACING_MIN = 0.5;
 export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: Keypoint[][]; measured: (Keypoint[] | undefined)[]; stray: number; disconnectedPixels?: number; facing?: { dir: string; rest: Keypoint[] } }): ClipQa {
   const cell = { w: o.rest.w, h: o.rest.h };
@@ -113,7 +114,9 @@ export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: 
     fit < RIG_GATES.paletteFit && `palette similarity ${fit.toFixed(3)}; review shading`,
     border > RIG_GATES.border && `${border} opaque pixels touch the frame border; check framing`,
     (o.disconnectedPixels ?? 0) > 0 && `${o.disconnectedPixels} disconnected pixels retained; review details`,
-    turned.length > 0 && `the body turns side-on or falls in frame${turned.length > 1 ? 's' : ''} ${turned.join(', ')} (shoulders down to ${Math.max(0, Math.round(100 * Math.min(...ratios.filter((r): r is number => r != null))))} % of the standing width); check that it still faces ${o.facing!.dir}`,
+    turned.length > 0 && (ratios.some((r) => r != null && r < 0)
+      ? `the body turns away in frame${turned.length > 1 ? 's' : ''} ${turned.join(', ')} (its shoulders swap sides); check that it still faces ${o.facing!.dir}`
+      : `the body turns side-on or falls in frame${turned.length > 1 ? 's' : ''} ${turned.join(', ')} (shoulders down to ${Math.round(100 * Math.min(...ratios.filter((r): r is number => r != null)))} % of the standing width); check that it still faces ${o.facing!.dir}`),
   ].filter((s): s is string => !!s);
   return { adherence: adh === null ? null : +adh.toFixed(2), feetDrift: feet, paletteFit: +fit.toFixed(3), border, stray: o.stray, disconnectedPixels: o.disconnectedPixels ?? 0, fails, warnings };
 }
