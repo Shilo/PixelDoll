@@ -52,10 +52,12 @@ export const GRID_COLS = 4;
 /** Estimated Pro inpaint tiers from the official 256²/341²/512² catalog bands (2026-10-22).
  * Area interpretation is inferred from actual 384×288=15 and 480×384=25 charges; it is not a provider quote.
  * References and unused packed cells remain part of the submitted canvas. */
+/** Does a packed repair grid fit PixelLab's 32–512 px canvas? */
+export const gridFits = (cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS) => { const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h; return w >= 32 && h >= 32 && w <= 512 && h <= 512; };
 export function gridEstimate(cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS): { w: number; h: number; gens: number } {
   if (![cell.w, cell.h, cells, refs, cols].every(Number.isInteger) || cell.w <= 0 || cell.h <= 0 || cells <= 0 || refs < 0 || cols <= 0) throw new Error('Repair grid dimensions and frame/reference counts must be valid integers.');
   const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h;
-  if (w < 32 || h < 32 || w > 512 || h > 512) throw new Error('This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.');
+  if (!gridFits(cell, cells, refs, cols)) throw new Error('This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.');
   const area = w * h;
   return { w, h, gens: area <= 256 * 256 ? 10 : area <= 341 * 341 ? 15 : 25 };
 }
@@ -82,12 +84,12 @@ export function cutGrid(g: Img, n: number, w: number, h: number, cols = GRID_COL
 /** Mask of a slot band (full width) for one cell. */
 export const bandMask = (r: Rect, w: number, h: number) => { const m = new Uint8Array(w * h); for (let y = Math.max(0, r.y); y < Math.min(h, r.y + r.h); y++) m.fill(1, y * w, y * w + w); return m; };
 /** S5 H3 wording: what the grid is, which cells are the reference design, one design everywhere; back items hang behind the arms. */
-export function gridPrompt(o: { item: string; slot: string; key: Key; anim: string; dir: DirectionName; n: number; refs: DirectionName[]; cell: { w: number; h: number } }): string {
+export function gridPrompt(o: { item: string; slot: string; key: Key; anim: string; dir: DirectionName; n: number; refs: DirectionName[]; cell: { w: number; h: number }; parts?: { anim: string; n: number }[] }): string {
   const cols = GRID_COLS, rows = Math.ceil((o.n + o.refs.length) / cols), color = KEY_NAME[o.key];
   const held = slotOf(o.slot).class === 'held';
   const instruction = held ? `Add the identical ${o.item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${oneHeld(o.slot)}; no effects. ` : `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
   return `This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +
-    `The first ${o.n} frames (left to right, top to bottom) are a ${o.n}-frame ${actionOf(o.anim)} animation ${facing(o.dir)}. ` +
+    `The first ${o.n} frames (left to right, top to bottom) are ${(o.parts && o.parts.length > 1 ? o.parts : [{ anim: o.anim, n: o.n }]).map((p, i) => `${i ? 'then ' : ''}a ${p.n}-frame ${actionOf(p.anim)} animation`).join(', ')} ${facing(o.dir)}. ` +
     `The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${o.item}. ` +
     `The ${color} color is intentional (a chroma key) and must stay exactly the same ${color}. ` +
     instruction +
@@ -129,6 +131,12 @@ export const clipKeypoints = (rig: Rig, anim: string, dir: DirectionName) => {
   const a = rig.animations.find((x) => x.id === anim), k = a?.sources?.[dir]?.keypoints;
   return k && k.length === a!.cells && k.every(hasAll) ? k : undefined;
 };
+/** Stored keypoints of one cell ("walk/south/3"): a packed call holds cells of more than one move. */
+export const cellKeypoints = (rig: Rig, key: string) => { const [a, d, i] = key.split('/') as [string, DirectionName, string]; return clipKeypoints(rig, a, d)?.[+i]; };
+/** The move whose action words a pose call sends: the one with the most frames (walk in a packed idle + walk call). */
+export const callAnim = (cells: string[]) => { const n = new Map<string, number>(); for (const k of cells) { const a = k.split('/')[0]; n.set(a, (n.get(a) ?? 0) + 1); } return [...n].sort((x, y) => y[1] - x[1])[0][0]; };
+/** Moves of one cell list in order, with frame counts. */
+export const callParts = (cells: string[]) => cells.reduce<{ anim: string; n: number }[]>((p, k) => { const a = k.split('/')[0]; if (p.at(-1)?.anim === a) p.at(-1)!.n++; else p.push({ anim: a, n: 1 }); return p; }, []);
 /** Can the skel route run? Needs the v1.3 rest views and the stored keypoint sequence of every chosen clip-direction. */
 export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) =>
   spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints)) && spec.anims.every((a) => (spec.clipDirs?.[a] ?? spec.dirs).every((d) => !!clipKeypoints(rig, a, d)));
@@ -169,23 +177,45 @@ export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clip
   const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method, rig.cell) : 0));
   return [
     ...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({ kind: 'dress' as const, cells })),
-    ...spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
-      const clip = rig.animations.find((x) => x.id === a)!;
-      if (clip.cells === 1 && clip.sources?.[d]?.motion === 'imported-rest') return []; // reuse the dressed standing reference
-      return poseBatches(clip.cells).map(({ start, count }) => ({ kind: 'pose' as const, cells: Array.from({ length: count }, (_, i) => cellKey(a, d, start + i)) }));
-    })),
+    ...posePlan(rig, spec),
   ];
+}
+/**
+ * Pose calls: one per clip-direction (split above 15 frames), except that idle and walk of one direction share a call when they
+ * fit 15 frames: 12 frames cost 3 gens like 8, and both parts passed QA in all 6 chibi clip-directions (round 4 arm I). Held
+ * items and other moves keep one move per call (not measured).
+ */
+function posePlan(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'> & { slot?: string }): { kind: 'pose'; cells: string[] }[] {
+  const calls: { kind: 'pose'; cells: string[] }[] = [], packable = !spec.slot || slotOf(spec.slot)?.class !== 'held';
+  const anims = rig.animations.filter((x) => spec.anims.includes(x.id)).map((x) => x.id);
+  for (const d of [...new Set(anims.flatMap((a) => spec.clipDirs?.[a] ?? spec.dirs))]) {
+    let shared: string[] | undefined;
+    for (const a of anims) {
+      if (!(spec.clipDirs?.[a] ?? spec.dirs).includes(d)) continue;
+      const clip = rig.animations.find((x) => x.id === a)!;
+      if (clip.cells === 1 && clip.sources?.[d]?.motion === 'imported-rest') continue; // reuse the dressed standing reference
+      const cells = Array.from({ length: clip.cells }, (_, i) => cellKey(a, d, i));
+      if (packable && /^(idle|walk)$/.test(a) && clip.cells <= 15) {
+        if (shared && shared.length + cells.length <= 15) { shared.push(...cells); continue; }
+        calls.push({ kind: 'pose', cells: (shared = cells) });
+        continue;
+      }
+      for (const { start, count } of poseBatches(clip.cells)) calls.push({ kind: 'pose', cells: cells.slice(start, start + count) });
+    }
+  }
+  return calls;
 }
 /** Split cells for a capped multi-frame call: the first call takes `cap`, later ones `cap − 1` plus the anchor cell (S2). */
 export const anchorChunks = <T>(cells: T[], cap: number): T[][] => [cells.slice(0, cap), ...Array.from({ length: Math.ceil(Math.max(0, cells.length - cap) / (cap - 1)) }, (_, i) => cells.slice(cap + i * (cap - 1), cap + (i + 1) * (cap - 1)))];
 /** Does call k lead with the anchor cell (edit-animation-v2 after the first call)? Its first output is then dropped. */
 export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind === 'edit' || kind === 'dress');
+// pose: 3 frames 2 gens, 8 and 12 frames 3 (measured, round 4), 15 frames 4 (docs)
 /** edit-animation-v2 price by canvas: 10 / 15 / 25 gens up to 128 / 170 / 256 px (pixellab_current_capabilities; ledgers: 15 at
  *  160 px, 25 for a 192 px held canvas). */
 export const editGens = (canvas: { w: number; h: number }) => { const s = Math.max(canvas.w, canvas.h); return s <= 128 ? 10 : s <= 170 ? 15 : 25; };
 export function planGens(p: { kind: CallKind; cells: string[] }[], gridCell = { w: 64, h: 64 }): number {
   const refs = new Set(p.filter(c => c.kind === 'dress').flatMap(c => c.cells)).size;
-  return p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 8 ? 3 : 4) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, refs).gens : editGens(gridCell)), 0);
+  return p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 12 ? 3 : 4) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, refs).gens : editGens(gridCell)), 0);
 }
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
@@ -1049,8 +1079,11 @@ export async function selfTest() {
   const calls = planCalls(rig, { anims: ['idle', 'walk'], dirs: ['south', 'east', 'north'] });
   console.assert(calls.map((c) => c.length).join() === '16,12,8' && calls[0][0] === 'walk/south/0' && calls[1][8] === 'idle/south/0', `packing ${calls.map((c) => c.length)}`);
   const sk = planItem(rig, { anims: ['idle', 'walk'], dirs: ['south', 'east', 'north'], method: 'skel', key: 'green' });
-  console.assert(sk.length === 7 && sk[0].kind === 'dress' && sk[0].cells.join() === 'rest/south/0,rest/east/0,rest/north/0' && sk[6].cells.length === 8 && planGens(sk) === 10 + 3 * 3 + 3 * 3, `planItem skel ${planGens(sk)}`);
-  console.assert(planGens(sk, { w: 160, h: 160 }) === 15 + 3 * 3 + 3 * 3 && editGens({ w: 192, h: 192 }) === 25 && editGens({ w: 112, h: 112 }) === 10, 'edit price by canvas (round 3 review)');
+  // round 4: idle (4) + walk (8) of a direction share one 12-frame pose call (3 gens): 10 + 3 × 3 instead of 10 + 6 × 3
+  console.assert(sk.length === 4 && sk[0].kind === 'dress' && sk[0].cells.join() === 'rest/south/0,rest/east/0,rest/north/0' && sk[1].cells.join() === [...Array.from({ length: 4 }, (_, i) => `idle/south/${i}`), ...Array.from({ length: 8 }, (_, i) => `walk/south/${i}`)].join() && planGens(sk) === 10 + 3 * 3 && callAnim(sk[1].cells) === 'walk', `planItem skel ${planGens(sk)}`);
+  const heldPlan = planItem(rig, { anims: ['idle', 'walk'], dirs: ['south'], method: 'skel', key: 'green', slot: 'main_hand' });
+  console.assert(heldPlan.length === 3 && heldPlan[1].cells.length === 4 && callParts([...heldPlan[1].cells, ...heldPlan[2].cells]).map((p) => p.n).join() === '4,8', 'held items keep one move per pose call');
+  console.assert(planGens(sk, { w: 160, h: 160 }) === 15 + 3 * 3 && editGens({ w: 192, h: 192 }) === 25 && editGens({ w: 112, h: 112 }) === 10, 'edit price by canvas (round 3 review)');
   const two: Img = { w: 2, h: 1, data: new Uint8ClampedArray([10, 0, 0, 255, 250, 0, 0, 255]) };
   console.assert(paletteDistance([10 << 16], [two]) === 120, 'paletteDistance is pixel-weighted');
   console.assert(cellsNote(calls[1], 'walk/south/0') === 'Cells in order: frame 1 = reference (walk facing south (front view)), then 8 cells walk facing north (back view), 4 cells idle facing south (front view). ', 'cellsNote');

@@ -11,13 +11,13 @@ import * as db from '../store/db.ts';
 import { loadProject, saveItem, type StoredProject } from '../store/project.ts';
 import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifest.ts';
 import { dropCut } from '../compose/compose.ts';
-import type { DirectionName, Rig } from '../rig/rig.ts';
+import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
 import { switchTo, type Key } from '../image/chroma.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { DESIGN, GATES, GRID_COLS, anchored, planGens, GRAYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, grayShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { DESIGN, GATES, GRID_COLS, anchored, planGens, GRAYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, grayShare, gridPrompt, packGrid, bandOf, buildItem, gridFits, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 /** fallback: B14, a pose call redone as an inpaint-v3 grid keeps its best pose roll (and that roll's failed-check count). */
@@ -139,7 +139,7 @@ async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'ke
   const g = packGrid([...cells.map((k) => inputCell(padImg(baseCell(ctx, k), pad), spec.key)), ...refs.map((r) => r.im)], [...masks, ...refs.map(() => null)]);
   const b64 = async (im: Img) => png(bytesToBase64(await encodePngBytes(im)));
   return routes.inpaintV3({
-    description: gridPrompt({ item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim, dir, n: cells.length, refs: refs.map((r) => r.dir), cell: { w, h } }),
+    description: gridPrompt({ item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim, dir, n: cells.length, refs: refs.map((r) => r.dir), cell: { w, h }, parts: callParts(cells) }),
     inpainting_image: { image: await b64(g.image), size: { width: g.image.w, height: g.image.h } }, mask_image: { image: await b64(g.mask), size: { width: g.mask.w, height: g.mask.h } }, no_background: true, seed,
   });
 }
@@ -149,17 +149,17 @@ const gridable = (spec: { slot: string; key?: ItemSpec['key'] }) => !!spec.key &
 const blobB64 = async (sha: string) => bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
 async function submit(d: Draft, k: number, ctx: RigCtx) {
   const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method, rig.cell);
-  const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${c.cells[0].split('/').slice(0, 2).join('/')}` : ''})`;
+  const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${callParts(c.cells).map((p) => p.anim).join(' + ')}/${c.cells[0].split('/')[1]}` : ''})`;
   let req;
   if (c.kind === 'grid') { // B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
     req = await gridReq(ctx, d.spec, c.cells, await Promise.all([...dressedOf(d.calls)].map(async ([k, o]) => ({ dir: k.split('/')[1] as DirectionName, im: await img(o.sha) }))), c.seed);
   } else if (c.kind === 'pose') { // the direction's dressed keyframe (from the dress call) posed through the base clip's STORED keypoints
     if (route === 'none') throw new Error('posing needs a chroma key');
-    const [anim, dir] = c.cells[0].split('/') as [string, DirectionName], kf = dressedOf(d.calls).get(restKey(dir));
+    const dir = c.cells[0].split('/')[1] as DirectionName, anim = callAnim(c.cells), kf = dressedOf(d.calls).get(restKey(dir));
     if (!kf) throw new Error(`${dir}: no dressed keyframe`);
-    const poses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
-    if (!poses || !rest) throw new Error(`${anim}/${dir}: the rig has no stored keypoints (rig v1.3)`);
-    req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest, poses: c.cells.map((key) => poses[+key.split('/')[2]]), item: d.spec.prompt, slot: d.spec.slot, key: route, anim, dir, seed: c.seed, cell: rig.cell, pad, view: rig.view });
+    const poses = c.cells.map((key) => cellKeypoints(rig, key)), rest = rig.rest?.[dir]?.keypoints;
+    if (poses.some((p) => !p) || !rest) throw new Error(`${anim}/${dir}: the rig has no stored keypoints (rig v1.3)`);
+    req = itemRoute.pose({ keyframePngB64: await blobB64(kf.sha), rest, poses: poses as Keypoint[][], item: d.spec.prompt, slot: d.spec.slot, key: route, anim, dir, seed: c.seed, cell: rig.cell, pad, view: rig.view });
   } else {
     const frames: string[] = [];
     if (anchored(k, c.kind)) { // anchor cell: the design call's dressed cell 0 (cross-call design lock, S2; B16: dress chunks too)
@@ -236,7 +236,8 @@ export async function keepBestRoll(d: Draft, k: number, ctx: RigCtx) {
  */
 async function gridFallback(d: Draft, k: number, ctx: RigCtx): Promise<boolean> {
   const c = d.calls[k];
-  if (c.kind === 'pose' && !c.fallback && c.recId && gridable(d.spec)) {
+  // a packed idle + walk call with 5 reference views on a 128 px cell needs 640 px: no grid then, the pose roll is kept
+  if (c.kind === 'pose' && !c.fallback && c.recId && gridable(d.spec) && gridFits(ctx.rec.manifest.rig.cell, c.cells.length, dressedOf(d.calls).size)) {
     c.fallback = { recId: c.recId, fails: failsOf(await evaluateItem(d, ctx), k).length };
     c.old.push(c.recId);
     Object.assign(c, { recId: undefined, kind: 'grid', seed: seed(), rerolls: MAX_REROLLS }); // one size-priced grid, no re-rolls
@@ -327,8 +328,8 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
     const expected = c.kind === 'pose' ? Math.max(3, c.cells.length) : c.cells.length;
     if (o.length !== expected) { g1.set(k, `G1 ${o.length} outputs for ${expected} requested frames`); continue; }
     if (c.kind === 'pose') {
-      const [a, dir] = c.cells[0].split('/') as [string, DirectionName];
-      const poses = paddedPoses(c.cells.map((key) => clipKeypoints(rig, a, dir)![+key.split('/')[2]]));
+      const dir = c.cells[0].split('/')[1] as DirectionName;
+      const poses = paddedPoses(c.cells.map((key) => cellKeypoints(rig, key)!));
       o = unrotate(o, f0Last(d.spec.slot, rig.rest?.[dir]?.keypoints ?? [], poses, rig.cell)).slice(0, c.cells.length);
     }
     for (const [i, key] of c.cells.entries()) {
