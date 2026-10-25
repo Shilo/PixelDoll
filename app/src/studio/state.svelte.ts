@@ -360,6 +360,7 @@ export async function removeProject(): Promise<void> {
   const id = doc.id, request = openRequest, name = store.project?.manifest.name ?? 'Character';
   await flushSave();
   await db.deleteCharacter(id);
+  lsSet(unsavedKey(id), null);
   const deletedDrafts = new Set(gens.filter((g) => g.draft.rigId === id).map((g) => g.draft.spec.id));
   setGens(gens.filter((g) => g.draft.rigId !== id));
   store.results = Object.fromEntries(Object.entries(store.results).filter(([draftId]) => !deletedDrafts.has(draftId)));
