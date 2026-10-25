@@ -24,7 +24,7 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
 - **End-to-end tests (Playwright)** use `fullyParallel`. Every test owns a fresh browser context (storage, locks, BroadcastChannel), so any test can run beside any other, and shards split per test rather than per file.
   - **CI: one worker per runner, sixteen shard jobs** beside the `build` job. This follows Playwright's CI advice: get parallelism from sharding, not from piling workers onto one machine.
   - Each Studio page animates continuously and uses about three CPU threads. Two workers on a 4-vCPU runner made tests about 42% slower and produced a load flake (benchmark below).
-  - 17 of GitHub Free's 20 concurrent jobs per push: a second push while one runs queues some of its jobs, so it finishes later, but it still runs.
+  - A push uses 17 jobs. GitHub Free allows 20 concurrent jobs per account, so a second push (or another workflow) while one runs queues some jobs: it finishes later, but it still runs.
   - **Local: `workers: '20%'`**, which gives 4 on 24 threads and 1 on 8 or fewer. 6 and 12 workers were slower and caused timeouts.
   - `expect.timeout` is 5 s on CI (an unloaded single worker) and 15 s locally (workers share the CPU).
   - `retries` is 1 on CI. The `github` reporter annotates any test that only passed on retry as flaky; investigate those, don't ignore them.
@@ -40,7 +40,7 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
 Playwright 1.64 (`filterForShard` in `node_modules/playwright/lib/runner/index.js`) orders tests by project, file and position, then cuts that list into **contiguous slices of equal test count**. It does not weigh by duration.
 
 - With one worker, a shard's time is the **sum of its tests**, not its longest test.
-- Heavy tests that sit next to each other land in the same shard. `studio.spec.ts` (25 tests, most of the heavy ones) sorts last, so the last shards are the slow ones (with 8 shards: 50 s to 150 s of tests in one run).
+- Heavy tests that sit next to each other land in the same shard. With 16 shards the bottleneck is the slice holding both parameterized creator cases (`character-creator.spec.ts:460`, Side-scroller 2 and Unique 8, always adjacent) and the device import roundtrip: 2.0 min in run 40187808473, against 41 s for the last shard. With 8 shards it was the end of `studio.spec.ts` (150 s) plus the creator slice (121 s).
 - Splitting a long test does not rebalance anything: its parts stay adjacent, usually in the same shard. Replaying `filterForShard` on real durations, splitting the three longest tests changed the slowest shard from 150 s to 136 s in one run, and made it worse (110 s to 121 s) in another.
 - What helps: more shards (smaller slices); less actual work in heavy tests; or spreading heavy tests across the order, e.g. splitting a huge spec file by feature so its parts sort apart.
 - `PWTEST_SHARD_WEIGHTS` can weight the slices (best contiguous cut ≈ 95 s against 150 s in one run), but it is an undocumented internal variable. Don't rely on it.
@@ -62,7 +62,7 @@ Runs: [40187369452](https://github.com/Shilo/PixelDoll/actions/runs/40187369452)
 | Signal | Budget | How to see it |
 |---|---|---|
 | CI push to deployed | over 5 min | `gh run list`, then `gh run view <id> --json createdAt,updatedAt` |
-| Any e2e shard job | over 3 min, or more than about 3× the fastest shard | `gh run view <id> --json jobs` |
+| Any e2e shard job | over 3 min including setup (about 35–45 s of each job) | `gh run view <id> --json jobs` |
 | One e2e test | over 45 s in CI (it costs every local run and inflates its slice) | `gh run view <id> --log` (list reporter prints each duration) |
 | Unit suite | over 15 s locally or 45 s in CI | `npx vitest run` from `app/` |
 | One unit file | over 3 s locally (CI is roughly 1.5× slower) | `npx vitest run --reporter=verbose` or `--reporter=json` |
@@ -116,10 +116,14 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
 
 ## Open options, measured or modeled but not done
 
-- **Balance `studio.spec.ts`.** Its heavy tests cluster in the last slices. Splitting it by feature (for example review and repair, recolor, inspector) would spread them, and keep each file readable. Re-measure with CI after any split.
+- **Separate the two parameterized creator cases** (`character-creator.spec.ts:460`) so they no longer share a slice, e.g. by moving one into another spec file by feature. Re-measure with CI after any move: the bottleneck shifts as tests are added.
 - **Setup per shard is about 35–45 s** (installing Playwright with its apt packages takes 16–26 s). Browser caching saves about 3–6 s and Playwright advises against it. Dropping `--with-deps` needs Linux validation first.
 - **The 15 s local expect timeout** hides UI steps that take up to 15 s on a loaded workstation. CI's 5 s still catches them.
-- **The unload snapshot covers only the debounced dress state.** Other flows (character creation, import, moves) write through their own awaited saves; a new debounced write path would need the same treatment.
+- **The unload snapshot covers only the debounced dress state.** Other flows (character creation, import, moves) write through their own awaited saves; a new debounced write path would need the same treatment. Known limits:
+  - Only the outfit and color paths have regression tests. Saved outfits, layer order and hides ride on the same `applyDress` path that undo uses.
+  - The "loaded project is clean" reset after a failed save has no test: one would need an import plus a forced IndexedDB failure.
+  - If the snapshot's save never landed and another tab then changes that character's presets or colors outside the autosave, reopening applies the older snapshot. Items added since are kept.
+  - The deleted-character sweep can, in a tiny window, drop a snapshot another tab writes while this tab's character list is loading.
 
 ## Measuring
 
