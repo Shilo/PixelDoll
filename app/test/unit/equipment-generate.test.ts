@@ -12,6 +12,7 @@ import { createDesign } from '../../src/lib/equipment/design.ts';
 import { qualifiedFit, fitFramingWarnings, restFitRequests, poseFitRequests, evaluateRestFit, evaluatePoseFit, type FitRecord } from '../../src/lib/equipment/generate.ts';
 
 const { blobs } = vi.hoisted(() => ({ blobs: new Map<string, Blob>() }));
+let serial=0; // record() runs concurrently: a name from blobs.size would collide and keep whichever encode finished last
 vi.mock('../../src/lib/store/db.ts', () => ({ getBlob: async (id: string) => blobs.get(id) }));
 const dirs: DirectionName[] = ['south','east','north','west'];
 const points: Keypoint[] = LABELS.map((label,i) => ({label,x:0.4+(i%2)*0.15,y:label==='NECK'?0.35:0.2+Math.floor(i/2)*0.07}));
@@ -31,7 +32,7 @@ async function project(w: number, source = false): Promise<Project> {
   return {manifest:{format:'pixeldoll/2',name:'Fixture',app:'test',rig,items,materials:[],presets:[{id:'base',name:'Base',items:{body:'base'},variants:{}}],slots:[{id:'body',class:'base',z:10},{id:'head',class:'rigid',anchor:'head',z:130}]},images};
 }
 async function record(cells: string[], images: Img[], endpoint='/transfer-outfit-v2'): Promise<FitRecord> {
-  const results=await Promise.all(images.map(async(im,i)=>{const sha=`result-${blobs.size}-${i}`;blobs.set(sha,new Blob([await encodePngBytes(im) as Uint8Array<ArrayBuffer>]));return {label:String(i),sha};}));
+  const results=await Promise.all(images.map(async(im,i)=>{const sha=`result-${++serial}`;blobs.set(sha,new Blob([await encodePngBytes(im) as Uint8Array<ArrayBuffer>]));return {label:String(i),sha};}));
   return {call:{cells,seed:99},rec:{id:crypto.randomUUID(),label:'test',method:'POST',endpoint,params:{},inputs:[],requestHash:'a'.repeat(64),state:'done',attempts:1,nextAt:0,createdAt:1,jobs:[{id:'remote',status:'completed',done:true,results}],gens:10,usd:0} as JobRec};
 }
 test('a contained fitted headwear border is a framing observation, not proof of clipping',async()=>{
@@ -128,6 +129,7 @@ test('extension reuses approved raw references only with exact body, pose, profi
   const records=await Promise.all(dirs.map(d=>record([`blink/${d}/0`,`blink/${d}/1`],[refs[d],refs[d],refs[d]],'/animate-with-skeleton-v3')));
   const result=await evaluatePoseFit(design,target,refs,records,[],{reuseApprovedSourceRest:true});
   const item=result.project.manifest.items.find(i=>i.id===result.itemId)!;expect(item.provenance[0].endpoint).toBe('/edit-animation-v2');
+  expect(Object.keys(item.qa!.cells)).toHaveLength(8);
   for(const [key,q]of Object.entries(item.qa!.cells)) {
     expect(q.provenance).toBeGreaterThan(0);
     expect(item.provenance[q.provenance!].produced).toContain(key);

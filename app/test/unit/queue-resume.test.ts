@@ -83,13 +83,15 @@ test('a disconnected Studio queue rejects obsolete flows; reconnect permits new 
 
 test('disconnect during input storage prevents the old flow publishing a request after reconnect', async () => {
   const records = new Map<string, JobRec>()
-  let finish!: (hash: string) => void
+  let finish!: (hash: string) => void, entered!: () => void
+  const storing = new Promise<void>((resolve) => { entered = resolve })
   const q = new Queue({ locks: null, all: async () => [],
     put: async (id, r) => { records.set(id, structuredClone(r)) },
-    putBlob: () => new Promise<string>((resolve) => { finish = resolve }),
+    putBlob: () => new Promise<string>((resolve) => { finish = resolve; entered() }),
   })
   await q.connect()
   const pending = q.enqueue({ ...request, body: { ...request.body, image: { type: 'base64', base64: 'AQ==' } } })
+  await storing // disconnect while the image is being stored
   q.disconnect()
   await q.connect()
   finish('synthetic-image-hash')

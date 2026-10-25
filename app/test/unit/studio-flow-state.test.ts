@@ -1,5 +1,5 @@
 /// <reference types="svelte" />
-import { afterEach, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
@@ -14,16 +14,21 @@ vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, de
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', subscribe: () => () => {}, idle: () => true } }))
 
-beforeEach(() => {
-  vi.resetModules()
-  Object.values(mocks).forEach((m) => m.mockReset())
-  mocks.put.mockResolvedValue(undefined); mocks.get.mockResolvedValue(undefined); mocks.del.mockResolvedValue(undefined); mocks.fits.mockResolvedValue([])
+function stubGlobals() {
   // Isolate asynchronous controller logic; no rendering or Svelte reactivity is under test.
   const identity = <T>(value: T) => value
   vi.stubGlobal('$state', Object.assign(identity, { raw: identity, snapshot: identity }))
   vi.stubGlobal('$derived', Object.assign(identity, { by: () => undefined }))
   vi.stubGlobal('innerWidth', 1440); vi.stubGlobal('innerHeight', 900); vi.stubGlobal('devicePixelRatio', 1)
   vi.stubGlobal('matchMedia', () => ({ matches: false }))
+}
+// Build the module graph once outside any test's timeout; each test's fresh import after resetModules is then fast.
+beforeAll(async () => { stubGlobals(); await import('../../src/studio/state.svelte.ts'); vi.unstubAllGlobals() })
+beforeEach(() => {
+  vi.resetModules()
+  Object.values(mocks).forEach((m) => m.mockReset())
+  mocks.put.mockResolvedValue(undefined); mocks.get.mockResolvedValue(undefined); mocks.del.mockResolvedValue(undefined); mocks.fits.mockResolvedValue([])
+  stubGlobals()
 })
 afterEach(() => vi.unstubAllGlobals())
 function pending<T>() { let resolve!: (value: T) => void, reject!: (error: unknown) => void; const promise = new Promise<T>((a, b) => { resolve = a; reject = b }); return { promise, resolve, reject } }

@@ -61,8 +61,8 @@ test('dependent workflows wait for an in-flight refresh while allowed operations
   expect(calls).not.toContain('POST /create-character-v3');
   expect(q.snapshot().jobs.find(r => r.minimumTier === 1)).toMatchObject({ state: 'queued', attempts: 0, waitingForPlan: expect.stringContaining('Checking') });
   read.resolve(balance('Free trial', 'trial')); await read.promise; await q.tick();
+  await vi.waitFor(() => expect(q.concurrency).toBe(1)); // the capacity refresh finishes in the background
   expect(calls).not.toContain('POST /create-character-v3');
-  expect(q.concurrency).toBe(1);
 });
 
 test.each([false, true])('plan refresh beginning during request persistence prevents transport (started marker: %s)', async (started) => {

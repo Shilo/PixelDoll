@@ -80,7 +80,7 @@ test('local result-save failure resumes retained paid results without another en
 test('lost or missing posted records never become a fresh paid request on reload/continue',async()=>{
   const{plan}=await fixture(),f=await createFit(plan,{previewGens:10,poseGens:0});
   f.stage='rest-running';f.calls=[{id:'reserved',stage:'rest',cells:['rest/south/0'],seed:1,limit:10}];state.projects.set(f.id,f);
-  await resumeFits();await vi.waitFor(async()=>expect((await getFit(f.id)).stage).toBe('needs-attention'));
+  await resumeFits();await vi.waitFor(async()=>expect((await getFit(f.id)).stage).toBe('needs-attention'),{timeout:4000});
   await expect(runRestFit(f.id)).rejects.toThrow('Nothing was resent');expect(state.posts).toBe(0);
 });
 test('explicit failed-batch retry retains approved rest and charges only its additional pose cap',async()=>{

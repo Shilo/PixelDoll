@@ -56,9 +56,9 @@ test('accepted job evidence and unrelated terminal records never become explicit
 })
 
 test('ordinary enqueue cannot dispatch during a delayed or failed first ledger write',async()=>{
- let finish!:()=>void,fail!: (e:Error)=>void,posts=0;const blocked=new Promise<void>((resolve,reject)=>{finish=resolve;fail=reject})
- const q=new Queue({locks:null,online:()=>true,put:async()=>blocked,api:async<T>(_key:string,_method:string,path:string)=>{if(path==='/balance')return accountBalance as T;posts++;return{} as T}});q.setKey('synthetic')
- const creating=q.enqueue({method:'POST',path:'/ordinary',body:{}});await new Promise(r=>setTimeout(r,0));await q.tick();expect(posts).toBe(0);finish();await creating;await q.tick();expect(posts).toBe(1)
+ let finish!:()=>void,fail!: (e:Error)=>void,writing!:()=>void,posts=0;const blocked=new Promise<void>((resolve,reject)=>{finish=resolve;fail=reject}),written=new Promise<void>(resolve=>{writing=resolve})
+ const q=new Queue({locks:null,online:()=>true,put:async()=>{writing();return blocked},api:async<T>(_key:string,_method:string,path:string)=>{if(path==='/balance')return accountBalance as T;posts++;return{} as T}});q.setKey('synthetic')
+ const creating=q.enqueue({method:'POST',path:'/ordinary',body:{}});await written;await q.tick();expect(posts).toBe(0);finish();await creating;await q.tick();expect(posts).toBe(1)
  const broken=new Queue({locks:null,online:()=>true,put:async()=>{throw Error('quota')},api:async<T>(_key:string,_method:string,path:string)=>{if(path==='/balance')return accountBalance as T;posts++;return{} as T}});broken.setKey('synthetic');await expect(broken.enqueue({method:'POST',path:'/ordinary',body:{}})).rejects.toThrow('quota');await broken.tick();expect(posts).toBe(1);expect(broken.snapshot().jobs).toHaveLength(0);void fail
 })
 
