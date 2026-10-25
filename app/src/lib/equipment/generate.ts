@@ -2,7 +2,7 @@
 import { cellImg, layerFrame } from '../compose/compose.ts';
 import { deriveMaterials } from '../dress/dress.ts';
 import { fromHex } from '../dress/palette.ts';
-import { components, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
+import { components, KEY_NAME, KEYS, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
 import { binaryAlpha, decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { stableStringify } from '../image/hash.ts';
@@ -66,9 +66,9 @@ export function fitFramingWarnings(target: Project): string[] {
 function fitKey(design: EquipmentDesign): Key {
   const colors = designColors(design).map(fromHex);
   const preferred=designItem(design).key;
-  const candidates:Key[]=preferred?[preferred,preferred==='green'?'magenta':'green']:['green','magenta'];
+  const candidates:Key[]=preferred?[preferred,...KEYS.filter(k=>k!==preferred)]:KEYS;
   const key = candidates.find(k => colors.every(c => keyScore(k, c >> 16, (c >> 8) & 255, c & 255) < KT));
-  if (!key) throw new Error('This colorway overlaps both chroma keys. Choose a colorway with a safe key before fitting.');
+  if (!key) throw new Error('This colorway overlaps every chroma key. Choose a colorway with a safe key before fitting.');
   return key;
 }
 function specFor(design: EquipmentDesign, target: Project): ItemSpec {
@@ -87,7 +87,7 @@ export async function restFitRequests(design: EquipmentDesign, source: Project, 
   if (dirs.length < 2 || dirs.length > 15 || dirs.some(d => !refs.some(r => r.direction === d && r.complete))) throw new Error('The requested standing reference coverage is incomplete.');
   const reference = refs.find(r => r.direction === 'south'); if (!reference) throw new Error('A south-facing source reference is required.');
   const frames = await Promise.all(dirs.map(async d => ({ image: png(await b64(toChroma(target.images.get(target.manifest.rig.rest![d]!.image)!, key))), size })));
-  const color = key === 'green' ? 'bright green' : 'magenta';
+  const color = KEY_NAME[key];
   return [{ req: { method: 'POST', path: '/transfer-outfit-v2', body: {
     reference_image: { image: png(await b64(reference.image)), size }, frames, image_size: size, seed, no_background: true,
     additional_instructions: `Transfer ONLY the identical ${designItem(design).prompt} from the reference onto the ${color} mannequin in every target frame. Target directions in order: ${dirs.join(', ')}. Use the reference colors even if the description names the original color. Preserve target body silhouette, limb positions, ${color} chroma-key ramp and transparent background exactly. Empty hands; no other clothing, weapons or effects. Keep the headwear design; fit it to the target head. Do not transfer the reference body shape.`,

@@ -2,23 +2,36 @@
 // then item = opaque pixels that are not key-colored. Port of spikes/api/lib/chroma.mjs. Pure over Img; masks = Uint8Array(w*h).
 import { makeImg, type Img } from './png.ts';
 
-export type Key = 'green' | 'magenta';
-export const KEYS: Key[] = ['green', 'magenta'];
-const KEY_NAME: Record<Key, string> = { green: 'bright green', magenta: 'magenta' };
+// Blue (2026-10-25 campaign, arm K) is the third key: only for prompts whose colors collide with both green and magenta.
+export type Key = 'green' | 'magenta' | 'blue';
+export const KEYS: Key[] = ['green', 'magenta', 'blue'];
+export const KEY_NAME: Record<Key, string> = { green: 'bright green', magenta: 'magenta', blue: 'bright blue' };
 export const other = (k: Key): Key => (k === 'green' ? 'magenta' : 'green');
 
 const lum = (r: number, g: number, b: number) => (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+/** Luminance in the key's frame: blue is the green ramp with G and B swapped, so its key px weigh their B channel as green does G. */
+const keyLum = (key: Key, r: number, g: number, b: number) => (key === 'blue' ? lum(r, b, g) : lum(r, g, b));
 const RAMP: Record<Key, (t: number) => [number, number, number]> = {
   green: (t) => [Math.round(110 * t * t), Math.round(60 + 195 * t), Math.round(110 * t * t)],
   magenta: (t) => [Math.round(70 + 185 * t), Math.round(110 * t * t), Math.round(70 + 185 * t)],
+  blue: (t) => [Math.round(110 * t * t), Math.round(110 * t * t), Math.round(60 + 195 * t)], // the green ramp with G and B swapped
 };
 
 // Substrings, so compounds ("darkgreen", "bloodred") count; "red" after a vowel is a word ending (colored, covered, armored).
-const HUES: Record<Key, RegExp> = { green: /green|emerald|lime|olive|jade|teal|mint|forest/i, magenta: /(?<![aeiou])red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|magenta|fuchsia/i };
+const HUES: Record<Key, RegExp> = {
+  green: /green|emerald|lime|olive|jade|teal|mint|forest/i,
+  magenta: /(?<![aeiou])red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|indigo|magenta|fuchsia/i, // indigo scores 58 as magenta key
+  // purples score as blue key too (blueviolet 39, indigo 42 against KT 35)
+  blue: /blue|navy|azure|cyan|teal|sapphire|cobalt|indigo|turquoise|aqua|cerulean|purple|violet|lavender|lilac|plum|mauve/i,
+};
 /** May this key be used for an item? A key must stay far from the item hue (magenta failed on a red cape, gray on steel [S2]). */
 export const keyAllowed = (prompt: string, k: Key) => !HUES[k].test(prompt);
-/** Green unless the item's color words collide with green (S2 rule). Gray is never used. */
-export const pickKey = (prompt: string): Key => (keyAllowed(prompt, 'green') ? 'green' : 'magenta');
+/**
+ * Green unless the item's color words collide with green (S2 rule), then magenta, then blue (a green-and-pink item: magenta keyed
+ * out the pink on every frame). When all three collide (green + purple), magenta as before: still posable; the diff route would
+ * not be, and it was never measured on Studio bodies (campaign 2026-10-25 follow-up). Gray is never used.
+ */
+export const pickKey = (prompt: string): Key => KEYS.find((k) => keyAllowed(prompt, k)) ?? 'magenta';
 
 /** Every opaque pixel -> key ramp by luminance normalized over the cell's opaque range. Alpha (silhouette) unchanged. */
 export function toChroma(B: Img, key: Key): Img {
@@ -30,12 +43,15 @@ export function toChroma(B: Img, key: Key): Img {
 }
 
 /** Key-likeness 0..100 as a RATIO (the returned dark outline 9,39,7 must still score as key). Excess < 12 = not key. */
+/** The key's channel excess over the other channels, and the channel it is measured against. */
+const excess = (key: Key, r: number, g: number, b: number): [number, number] =>
+  key === 'green' ? [g - Math.max(r, b), g] : key === 'blue' ? [b - Math.max(r, g), b] : [Math.min(r, b) - g, Math.max(r, b)];
 export function keyScore(key: Key, r: number, g: number, b: number): number {
-  const [ex, mx] = key === 'green' ? [g - Math.max(r, b), g] : [Math.min(r, b) - g, Math.max(r, b)];
+  const [ex, mx] = excess(key, r, g, b);
   return ex < 12 ? 0 : Math.round((100 * ex) / Math.max(mx, 1));
 }
 const tint = (key: Key, r: number, g: number, b: number) => {
-  const [ex, mx] = key === 'green' ? [g - Math.max(r, b), g] : [Math.min(r, b) - g, Math.max(r, b)];
+  const [ex, mx] = excess(key, r, g, b);
   return ex >= 5 ? (100 * ex) / Math.max(mx, 1) : 0;
 };
 const isKey = (C: Img, p: number, key: Key, kT: number) => C.data[p * 4 + 3] >= 128 && keyScore(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) >= kT;
@@ -126,14 +142,15 @@ export function despill(L: Img, key: Key, sT = 10): Img {
   const o: Img = { w: L.w, h: L.h, data: new Uint8ClampedArray(L.data) }, d = L.data, core: number[][] = [];
   for (let i = 0; i < d.length; i += 4) if (d[i + 3] && tint(key, d[i], d[i + 1], d[i + 2]) <= sT) core.push([d[i], d[i + 1], d[i + 2]]);
   if (!core.length) return o;
-  const lc = core.map((c) => lum(c[0], c[1], c[2]));
+  const lc = core.map((c) => keyLum(key, c[0], c[1], c[2]));
   for (let i = 0; i < d.length; i += 4) {
     if (!d[i + 3] || tint(key, d[i], d[i + 1], d[i + 2]) <= sT) continue;
-    const l = lum(d[i], d[i + 1], d[i + 2]);
+    const l = keyLum(key, d[i], d[i + 1], d[i + 2]);
     let b = 0;
     for (let k = 1; k < core.length; k++) if (Math.abs(lc[k] - l) < Math.abs(lc[b] - l)) b = k;
     if (Math.abs(lc[b] - l) <= 0.08) o.data.set(core[b], i);
     else if (key === 'green') o.data[i + 1] = Math.max(d[i], d[i + 2]);
+    else if (key === 'blue') o.data[i + 2] = Math.max(d[i], d[i + 1]);
     else { o.data[i] = Math.min(d[i], d[i + 1] + 4); o.data[i + 2] = Math.min(d[i + 2], d[i + 1] + 4); }
   }
   return o;
@@ -148,7 +165,7 @@ export function despill(L: Img, key: Key, sT = 10): Img {
 export function absorbOutline(mask: Uint8Array, B: Img, C: Img, key: Key, kT = KT, lumMax = 0.3): Uint8Array {
   const { w, h } = C;
   let o = new Uint8Array(mask);
-  const dark = (p: number) => isKey(C, p, key, kT) && lum(C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) <= lumMax;
+  const dark = (p: number) => isKey(C, p, key, kT) && keyLum(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) <= lumMax;
   const itemNb = (m: Uint8Array, p: number) => {
     const x = p % w, y = (p / w) | 0;
     let n = 0;

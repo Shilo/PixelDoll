@@ -1,6 +1,6 @@
 // Item lab core (architecture §3.1–3.4, §4): slot ladder, call packing, prompts, per-cell extraction, gates G1–G8, fg/bg split,
 // manifest Item. Pure over Img; the UI (ui/M3.svelte) only runs calls through the queue and persists.
-import { chromaLayer, chromaPrompt, components, fillHoles, keyKept, keyOutside, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
+import { chromaLayer, chromaPrompt, components, fillHoles, KEY_NAME, keyKept, keyOutside, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
 import { diffLayer, type Rect } from '../image/diff.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { over } from '../compose/compose.ts';
@@ -39,7 +39,7 @@ export const itemRoute = {
     const poses = f0Last(o.slot, o.rest, sent, o.cell) ? [...sent.slice(1), sent[0]] : sent;
     return rawClip({
       // B7 live: "slash" drew a blade into a helmet layer although the action said "no weapon" -> say it in the looks too
-      description: `solid ${o.key === 'green' ? 'bright green' : 'magenta'} mannequin (chroma key color) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${oneHeld(o.slot)}` : `wearing ${o.item}, empty hands, no weapon`}`,
+      description: `solid ${KEY_NAME[o.key]} mannequin (chroma key color) ${held ? `holding ${o.item} in the ${handOf(o.slot)} hand; ${oneHeld(o.slot)}` : `wearing ${o.item}, empty hands, no weapon`}`,
       // M3: a "slash" pose made the model draw a sword into a helmet layer -> unarmed unless the item is the held object
       action: actionOf(o.anim) + (held ? '' : ', empty hands, no weapon, no effects'),
       dir: o.dir, first: o.keyframePngB64, rest: k(o.rest), keypoints: poses.map(k), seed: o.seed, view: o.view,
@@ -83,7 +83,7 @@ export function cutGrid(g: Img, n: number, w: number, h: number, cols = GRID_COL
 export const bandMask = (r: Rect, w: number, h: number) => { const m = new Uint8Array(w * h); for (let y = Math.max(0, r.y); y < Math.min(h, r.y + r.h); y++) m.fill(1, y * w, y * w + w); return m; };
 /** S5 H3 wording: what the grid is, which cells are the reference design, one design everywhere; back items hang behind the arms. */
 export function gridPrompt(o: { item: string; slot: string; key: Key; anim: string; dir: DirectionName; n: number; refs: DirectionName[]; cell: { w: number; h: number } }): string {
-  const cols = GRID_COLS, rows = Math.ceil((o.n + o.refs.length) / cols), color = o.key === 'green' ? 'bright green' : 'magenta';
+  const cols = GRID_COLS, rows = Math.ceil((o.n + o.refs.length) / cols), color = KEY_NAME[o.key];
   const held = slotOf(o.slot).class === 'held';
   const instruction = held ? `Add the identical ${o.item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${oneHeld(o.slot)}; no effects. ` : `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
   return `This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +
@@ -265,6 +265,7 @@ export interface CellOut {
   shifted: boolean; // still misregistered after re-registration (S4: shifted frames must be 0)
   offset: [number, number]; // posed cells: 1-px re-registration applied to the PixelLab output (skeleton-v3 is not exact)
   stray: number; // px removed by the largest-component filter
+  chroma?: Key; // the key the cell was extracted with (absent for the diff route)
   clipY?: number; // posed clip: item px at rows >= clipY are joined to the item above the band; postProcess keeps them only where the dressed keyframe has them
   posed: boolean;
   repaired?: boolean; // held: dressed keyframe pasted (S5 frame-0 repair)
@@ -392,10 +393,12 @@ export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): num
     if (comps.length < 2) continue;
     const wr = kpAt(posedKps(rig, c.key).pose, wristL, rig.cell, pad), big = new Uint8Array(c.mask.length);
     for (const p of comps[0]) big[p] = 1;
-    const near = dilate(big, w, 3);
+    const near = dilate(big, w, 3), floor = Math.max(4, 0.15 * comps[0].length);
+    const grip = (comp: number[], r: number) => !!wr && comp.some((p) => Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]) <= r);
     const keep = new Uint8Array(c.mask.length);
     for (const [i, comp] of comps.entries()) {
-      const ok = !i || comp.some((p) => near[p] || (wr && Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]) <= 3));
+      // the majorComponents size floor, applied here so a pommel or haft end the fist splits off (within 6 px of the wrist) survives
+      const ok = !i || ((comp.some((p) => near[p]) || grip(comp, 3)) && (comp.length >= floor || grip(comp, 6)));
       if (ok) for (const p of comp) keep[p] = 1;
     }
     removed += setMask(c, keep);
@@ -476,7 +479,7 @@ function translate(im: Img, dx: number, dy: number): Img {
   return o;
 }
 
-export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean }): CellOut {
+export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean }): CellOut {
   const { base, route, band } = o, { w, h } = base;
   // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
   const reg = o.posed ? bestShift(base, o.out) : ([0, 0] as [number, number]);
@@ -491,18 +494,21 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
       for (const p of c) { r.mask[p] = 0; r.layer.data.fill(0, p * 4, p * 4 + 4); r.stray = (r.stray ?? 0) + 1; }
     }
   }
-  if (o.posed) { const st = r.stray ?? 0; r = majorComponents(r, w, h); r.stray = (r.stray ?? 0) + st; }
+  // held items get the size floor in attachHeld, after the wrist rule (2026-10-25: S5 pommels and haft ends)
+  if (o.posed && !o.held) { const st = r.stray ?? 0; r = majorComponents(r, w, h); r.stray = (r.stray ?? 0) + st; }
+  // the cell's gate metrics keep the size-floored mask for held items too, so G2/G3 are as strict as before the pommel change
+  const qm = o.posed && o.held ? majorComponents({ layer: { ...r.layer, data: new Uint8ClampedArray(r.layer.data) }, mask: new Uint8Array(r.mask) }, w, h).mask : r.mask;
   let outBand = 0, baseBand = 0;
   for (let p = 0; p < r.mask.length; p++) {
     const inBand = (p / w | 0) >= band.y && (p / w | 0) < band.y + band.h;
-    if (r.mask[p] && !inBand) outBand++;
+    if (qm[p] && !inBand) outBand++;
     if (base.data[p * 4 + 3] && inBand) baseBand++;
   }
-  const tol = o.posed ? 1 : 0, kk = route === 'none' ? null : keyKept(base, out, route, r.mask, undefined, tol);
+  const tol = o.posed ? 1 : 0, kk = route === 'none' ? null : keyKept(base, out, route, qm, undefined, tol);
   return {
     key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
-    ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, r.mask, tol) } : {}),
-    ...cleanliness(r.mask, w, h), shifted: bestShift(base, out).some(Boolean), offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
+    ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, qm, tol) } : {}),
+    ...cleanliness(qm, w, h), ...(route !== 'none' ? { chroma: route } : {}), shifted: bestShift(base, out).some(Boolean), offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
     ...(clipY != null ? { clipY } : {}),
   };
 }
@@ -829,7 +835,7 @@ function headOcclusion(c: CellOut, rig: Rig): { mask: Uint8Array; shift: [number
     for (let p = 0; p < mask.length; p++) {
       if (c.mask[p] || !c.base.data[p * 4 + 3] || !c.out.data[p * 4 + 3]) continue;
       const [r, g, b] = c.out.data.subarray(p * 4, p * 4 + 3);
-      if (keyScore('green', r, g, b) < KT && keyScore('magenta', r, g, b) < KT) continue;
+      if (c.chroma ? keyScore(c.chroma, r, g, b) < KT : keyScore('green', r, g, b) < KT && keyScore('magenta', r, g, b) < KT) continue;
       const x = p % c.layer.w + 0.5 - e[0], y = (p / c.layer.w | 0) + 0.5 - e[1];
       const t = Math.max(0, Math.min(1, (x * dx + y * dy) / length2));
       if (Math.hypot(x - t * dx, y - t * dy) <= radius) mask[p] = 1;
