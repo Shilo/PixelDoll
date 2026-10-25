@@ -180,9 +180,12 @@ export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clip
 export const anchorChunks = <T>(cells: T[], cap: number): T[][] => [cells.slice(0, cap), ...Array.from({ length: Math.ceil(Math.max(0, cells.length - cap) / (cap - 1)) }, (_, i) => cells.slice(cap + i * (cap - 1), cap + (i + 1) * (cap - 1)))];
 /** Does call k lead with the anchor cell (edit-animation-v2 after the first call)? Its first output is then dropped. */
 export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind === 'edit' || kind === 'dress');
+/** edit-animation-v2 price by canvas: 10 / 15 / 25 gens up to 128 / 170 / 256 px (pixellab_current_capabilities; ledgers: 15 at
+ *  160 px, 25 for a 192 px held canvas). */
+export const editGens = (canvas: { w: number; h: number }) => { const s = Math.max(canvas.w, canvas.h); return s <= 128 ? 10 : s <= 170 ? 15 : 25; };
 export function planGens(p: { kind: CallKind; cells: string[] }[], gridCell = { w: 64, h: 64 }): number {
   const refs = new Set(p.filter(c => c.kind === 'dress').flatMap(c => c.cells)).size;
-  return p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 8 ? 3 : 4) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, refs).gens : 10), 0);
+  return p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 8 ? 3 : 4) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, refs).gens : editGens(gridCell)), 0);
 }
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
@@ -867,7 +870,7 @@ export function grayShare(L: Img): number {
 }
 export const DESIGN = { gray: 0.05 };
 /** Prompts that ask for gray/black/white parts: the gray check does not apply. */
-export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|fur|stone|ash/i;
+export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|\bfur(?!i)|stone|\bash/i; // not sash, cashmere, furious
 
 // ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------
 const maskOf = (im: Img) => { const m = new Uint8Array(im.w * im.h); for (let p = 0; p < m.length; p++) m[p] = im.data[p * 4 + 3] ? 1 : 0; return m; };
@@ -934,6 +937,14 @@ export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5 };
  */
 export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig): { fails: Map<number, string[]>; warnings: string[] } {
   const fails = new Map<number, string[]>(), warnings: string[] = [];
+  // G6 against the dressed design, every slot: the call-level G6 measures later calls against the first pose call, so a clip
+  // that drifts together with that call passed (round 3 review). Warning only: the corpus max is 14.0 against the 15 cut-off
+  const clips = new Map<string, CellOut[]>();
+  for (const c of cells) if (c.posed && c.area) { const k = c.key.split('/').slice(0, 2).join('/'); (clips.get(k) ?? (clips.set(k, []), clips.get(k)!)).push(c); }
+  for (const [clip, cs] of clips) {
+    const K = keys[clip.split('/')[1] as DirectionName], d = K ? paletteDistance(colors(K), cs.map((c) => c.layer)) : 0;
+    if (d > GATES.paletteDist) warnings.push(`G6 ${clip}: palette distance ${d.toFixed(1)} to the dressed design`);
+  }
   if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return { fails, warnings };
   // soft items: the clip's best body coverage (item px on the base silhouette / base px)
   const cover = new Map<string, number>();
@@ -1039,6 +1050,7 @@ export async function selfTest() {
   console.assert(calls.map((c) => c.length).join() === '16,12,8' && calls[0][0] === 'walk/south/0' && calls[1][8] === 'idle/south/0', `packing ${calls.map((c) => c.length)}`);
   const sk = planItem(rig, { anims: ['idle', 'walk'], dirs: ['south', 'east', 'north'], method: 'skel', key: 'green' });
   console.assert(sk.length === 7 && sk[0].kind === 'dress' && sk[0].cells.join() === 'rest/south/0,rest/east/0,rest/north/0' && sk[6].cells.length === 8 && planGens(sk) === 10 + 3 * 3 + 3 * 3, `planItem skel ${planGens(sk)}`);
+  console.assert(planGens(sk, { w: 160, h: 160 }) === 15 + 3 * 3 + 3 * 3 && editGens({ w: 192, h: 192 }) === 25 && editGens({ w: 112, h: 112 }) === 10, 'edit price by canvas (round 3 review)');
   const two: Img = { w: 2, h: 1, data: new Uint8ClampedArray([10, 0, 0, 255, 250, 0, 0, 255]) };
   console.assert(paletteDistance([10 << 16], [two]) === 120, 'paletteDistance is pixel-weighted');
   console.assert(cellsNote(calls[1], 'walk/south/0') === 'Cells in order: frame 1 = reference (walk facing south (front view)), then 8 cells walk facing north (back view), 4 cells idle facing south (front view). ', 'cellsNote');
@@ -1082,7 +1094,8 @@ export async function selfTest() {
   for (let y = 2; y < 8; y++) for (let x = 2; x < 6; x++) red.data.set([250, 10, 10, 255], (y * 8 + x) * 4);
   const cloak = { ...cell, layer: red, mask: maskOf(red), area: 24, out: red }, edge = { ...blade, mask: maskOf(blade.layer), area: 16 };
   const hairH4 = dirGate(slotOf('hair'), [cloak], { south: block }), backH4 = dirGate(slotOf('back'), [edge], { south: block });
-  console.assert(!hairH4.fails.size && hairH4.warnings.length === 1 && !backH4.warnings.length && !dirGate(slotOf('legs'), [cloak], { south: block }).warnings.length, 'H4: soft items warn only when covering the body (T3/B14), legs off');
+  const h4 = (w: string[]) => w.filter((m) => m.startsWith('H4')).length; // these fixtures also differ in color (G6 warns too)
+  console.assert(!hairH4.fails.size && h4(hairH4.warnings) === 1 && !h4(backH4.warnings) && !h4(dirGate(slotOf('legs'), [cloak], { south: block }).warnings), 'H4: soft items warn only when covering the body (T3/B14), legs off');
   const smudged = makeImg(10, 10);
   for (let p = 0; p < 100; p++) smudged.data.set(p < 8 ? [90, 85, 80, 255] : [200, 30, 40, 255], p * 4);
   console.assert(grayShare(smudged) === 0.08 && grayShare(block) === 0 && GRAYISH.test('an iron helmet'), 'D1: gray share of a colorful design');
@@ -1146,6 +1159,12 @@ export async function selfTest() {
   const ec = (cut?: { maxY: number; allow?: Uint8Array }, posed = false) => extractCell({ key: 'rest/south/0', call: 0, base: eb, out: eo, route: 'green', band: { x: 0, y: 0, w: 16, h: 16 }, posed, cut });
   const ek = ec({ maxY: 12 });
   console.assert(sum(ek.cut!) === 3 && ek.cut![6 * 16 + 3] === 1 && !ek.cut![12 * 16 + 7] && ek.keyLost === 1, 'baseCut: the erased ear is hidden, a hole inside the body still counts for G2');
+  // 3 erased px inside the body under the helm (x 6-8, y 10) are not cut (they do not reach the body's edge); two ears (6 px) exceed
+  // CUT.maxShare of this 99 px body, so nothing is cut and G2 decides as before
+  const inner = { ...eo, data: new Uint8ClampedArray(eo.data) }; inner.data.fill(0, (10 * 16 + 6) * 4, (10 * 16 + 9) * 4);
+  const ic = extractCell({ key: 'rest/south/0', call: 0, base: eb, out: inner, route: 'green', band: { x: 0, y: 0, w: 16, h: 16 }, cut: { maxY: 12 } });
+  const eb2 = { ...eb, data: new Uint8ClampedArray(eb.data) }; for (const p of [6 * 16 + 12, 7 * 16 + 12, 6 * 16 + 13]) eb2.data.set([200, 150, 120, 255], p * 4);
+  console.assert(sum(ic.cut!) === 3 && !ic.cut![10 * 16 + 7] && !extractCell({ key: 'rest/south/0', call: 0, base: eb2, out: eo, route: 'green', band: { x: 0, y: 0, w: 16, h: 16 }, cut: { maxY: 12 } }).cut, 'baseCut: only the body edge, and never more than CUT.maxShare');
   console.assert(!ec({ maxY: 5 }).cut && !ec({ maxY: 12 }, true).cut && ec({ maxY: 12, allow: ek.cut }, true).cut?.[6 * 16 + 2] === 1, 'baseCut: rows limit; posed frames only inside the keyframe cut');
   const neck = { NECK: { x: 8, y: 9 } } as unknown as Skeleton;
   console.assert(cutRows('main_hand', neck, 16) === undefined && cutRows('head', neck, 16) === 12 && cutRows('head', undefined, 16) === undefined, 'baseCut: head band rows, never held items');

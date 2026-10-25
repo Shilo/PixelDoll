@@ -62,7 +62,7 @@ function itemCalls(spec: Pick<ItemSpec, 'prompt' | 'key' | 'slot' | 'method'>, c
     const pose = call.kind === 'pose', anchor = index > 0 && !pose ? calls[0].cells[0] : undefined
     return { method: 'POST', path: pose ? '/animate-with-skeleton-v3' : '/edit-animation-v2', label: `${pose ? 'Pose equipment' : call.kind === 'dress' ? 'Dress standing views' : 'Edit packed frames'} · ${call.cells.length} frames`,
       ...(pose ? {} : { body: { description: itemPrompt(pad ? heldPhrase(spec.prompt, spec.slot) : spec.prompt, spec.key, call.cells, anchor), ...(call.seed === undefined ? {} : { seed: call.seed }), ...(cell ? { image_size: { width: cell.w + 2 * pad, height: cell.h + 2 * pad } } : {}), no_background: true } }),
-      generations: planGens([{ kind: pose ? 'pose' : 'edit', cells: call.cells }]),
+      generations: planGens([{ kind: pose ? 'pose' : 'edit', cells: call.cells }], cell && { w: cell.w + 2 * pad, h: cell.h + 2 * pad }),
       note: `Known fields only. ${pose ? 'Sends the dressed reference image, exact stored poses, appearance, action, direction and seed.' : 'Frames and image_size are prepared from this character on submission.'} ${call.seed === undefined ? selectedSeed : ''} Coverage: ${call.cells.join(', ')}.` }
   })
 }

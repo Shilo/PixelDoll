@@ -26,7 +26,7 @@ async function fixture(modes: Mode[], directions: ('south' | 'west')[] = ['west'
     if (mode === 'geometry') return makeImg(32, 32)
     const im = inputCell(padImg(base, pad), 'green')
     // Stable synthetic weapon touches the right wrist; damage is measured by real G2/G7, not mocked QA counts.
-    for (let y = 30 + pad; y < 51 + pad; y++) for (let x = (mode === 'worse' ? 0 : 21 + pad); x < 26 + pad; x++) im.data.set([210, 40 + attempt * 20, 40, 255], (y * canvas + x) * 4)
+    for (let y = 30 + pad; y < 51 + pad; y++) for (let x = (mode === 'worse' ? 0 : 21 + pad); x < 26 + pad; x++) im.data.set([210, 40 + attempt * 5, 40, 255], (y * canvas + x) * 4)
     if (mode !== 'clean') for (let y = 20 + pad; y < 32 + pad; y++) for (let x = 29 + pad; x < 35 + pad; x++) im.data.fill(0, (y * canvas + x) * 4, (y * canvas + x) * 4 + 4)
     return im
   }
@@ -62,7 +62,7 @@ test.each([{modes:['damaged','worse'], winner:0},{modes:['damaged','damaged'],wi
   expect(q.qa.rerolls).toBe(1); expect(saved.qa!.rerolls).toBe(8)
   const images = f.save.mock.calls.at(-1)![2]
   const contains = (green:number) => [...images.values()].some(im=>{for(let p=0;p<im.data.length;p+=4)if(im.data[p]===210&&im.data[p+1]===green&&im.data[p+2]===40&&im.data[p+3])return true;return false})
-  expect(contains(40+winner*20)).toBe(true); expect(contains(40+(1-winner)*20)).toBe(false)
+  expect(contains(40+winner*5)).toBe(true); expect(contains(40+(1-winner)*5)).toBe(false)
   if(modes[winner]==='clean') expect(q.qa.status).toBe('pass'); else expect(q.qa.status).toBe('fail')
 })
 

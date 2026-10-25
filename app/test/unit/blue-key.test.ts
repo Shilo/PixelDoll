@@ -44,6 +44,9 @@ test('the blue ramp is key and common item colors are not', () => {
   // lightly tinted blue-gray steel de-spilled to gray never takes a saturated item color (steel turned purple on azure)
   const steel = despill({ w: 2, h: 1, data: new Uint8ClampedArray([120, 40, 160, 255, 100, 108, 135, 255]) }, 'azure')
   expect(Math.max(...steel.data.slice(4, 7)) - Math.min(...steel.data.slice(4, 7))).toBeLessThan(16)
+  // a tinted px 105 from the clean brown, |Δlum| 0.11, keeps its de-spilled color: SNAP is 40, not "nearest at any distance"
+  const far = despill({ w: 2, h: 1, data: new Uint8ClampedArray([200, 120, 60, 255, 95, 130, 40, 255]) }, 'green')
+  expect([...far.data.slice(4, 7)]).toEqual([95, 95, 40])
 })
 
 test('real jester outputs: magenta keys out the pink half, blue keeps both colors', () => {
