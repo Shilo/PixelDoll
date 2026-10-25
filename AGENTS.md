@@ -19,14 +19,15 @@ Agent token contract: docs/handoff/agent-dev-token-handling.md. Old evidence med
 ## Tasks
 
 Tasks live only on the [PixelDoll board](https://github.com/users/Shilo/projects/7) as draft cards; there is no TODO file, and GitHub Issues are for user reports. The board is public and is the roadmap, so write cards for users to read.
-Statuses: Ready (approved and pending; top is next), In progress, Done, Later (deferred: start one only when the user explicitly asks for that card, and confirm first), Canceled; archived cards are hidden from list.
-From app/, run node scripts/board.mjs list [status] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. A card is its ID, exact title or a unique part of its title; \n in a body is a newline. Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
-- "What's next?": list Ready and recommend the highest card whose body does not start with "Blocked:"; say if it is paid or needs the user's decision. Do not move it.
-- "Work on pending tasks" (or similar): take Ready cards from the top, one at a time, never Later or Blocked ones; skip cards that are paid or need the user's decision and list them for the user.
-- Starting a card: show it, read its Refs, then move it to In progress before changing files.
-- Finishing: move it to Done only after verifying the work. If work stops early, keep it In progress and add a "Left: …" line to the body; remove that line when the card is done.
-- Adding: only when the user asks to track something, or for an out-of-scope finding the user agrees to track; never for steps of the current task. List first to avoid duplicates, including similar titles. Use a short imperative title and one to three plain lines plus "Refs: <paths or links>"; no progress logs.
-- Canceling: move to Canceled only when the user decides. Archive only when asked. Leave Later and Blocked cards alone unless asked.
+Statuses: Ready (approved and planned; top is next), Progress, Done, Later (deferred: never start one until the user confirms that specific card when you ask). Archived cards are dropped or old; they are hidden from the board and from list, and list archived shows them.
+From app/, run node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. list prints cards in board order. A card is its ID, exact title or a unique part of its title; \n in a body is a newline. Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
+A card body may start with "Blocked:", "Paid:" or "Needs decision:".
+- "What's next?": mention any Progress cards first (another session may own them; ask before resuming), then recommend the highest Ready card that is not Blocked, saying if it is Paid or Needs decision. Do not move it.
+- "Work on pending tasks" (or similar): take Ready cards from the top, one at a time, never Later or Blocked ones; skip Paid and Needs decision cards and list them for the user.
+- Starting a card: show it, read its Refs, then move it to Progress before changing files.
+- Finishing: move it to Done only after verifying the work. If work stops early, keep it in Progress and add a "Left: …" line to the body; remove that line when the card is done.
+- Adding: only when the user asks to track something (Ready), or for an out-of-scope finding the user agrees to track (--status Later unless they approve doing it); never for steps of the current task. Check list and list archived first to avoid duplicates, including similar titles. Use a short imperative title and one to three plain lines plus "Refs: <paths or links>"; no progress logs.
+- Dropping: archive a card only when the user decides it will not be done or asks to clear old Done cards. Leave Later and Blocked cards alone unless asked.
 
 ## Code
 
