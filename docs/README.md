@@ -51,6 +51,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | [manifest-spec.md](manifest-spec.md) | `pixeldoll/2` manifest with legacy `pixeldoll/1` reading: owner-local palettes, shared-copy lineage, source sheets, invariants, ZIP layout and per-engine mapping. |
 | [user-guide.md](user-guide.md) | The Studio in plain language. |
 | [pixellab-plans.md](pixellab-plans.md) | Editable tier limits, Free/Trial handling, and the plan requirements of the REST endpoints PixelDoll calls. |
+| [agent-instructions.md](agent-instructions.md) | How to keep AGENTS.md short and effective: what belongs, how to word rules, how to verify an edit. |
 
 ## Research (R1–R5, 2026-10-20)
 

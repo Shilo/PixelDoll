@@ -2,7 +2,7 @@
 
 Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine.
 
-Tech stack: Node.js 24.22.1; npm 11.19.1; strict TypeScript 6.0.3; Svelte 5.57.2 (not SvelteKit); Vite 8.3.4; @sveltejs/vite-plugin-svelte 7.3.1; custom CSS (no GlassKit); Vitest 4.1.12; Playwright Test 1.64.1.
+Tech stack: Node.js 24.22.1; npm 11.19.1; strict TypeScript 6.0.3; Svelte 5.57.2 (not SvelteKit); Vite 8.3.4; @sveltejs/vite-plugin-svelte 7.3.1; @shilo/bronze-ui 0.2.2 theme with custom CSS; Vitest 4.1.12; Playwright Test 1.64.1.
 
 PixelDoll is a free, open-source (MIT), fully client-side web app (Svelte 5, not SvelteKit, with Vite and TypeScript), hosted on GitHub Pages at https://shilo.github.io/PixelDoll/. It is powered by PixelLab (https://pixellab.ai) through its REST v2 API, called directly from the browser with the user's own token.
 PixelLab returns one composited image per call and has no layers. PixelDoll turns that into traditional frame-based paper dolling: one frozen base body (4 or 8 directions, several moves) plus a separate transparent layer per item (hair, headgear, clothing, boots, capes, weapons) that lines up on every frame.
@@ -14,7 +14,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 ## Docs
 
 Index: docs/README.md (architecture, manifest spec, user guide, research, test reports). Plan and decisions: PLAN.md. Accepted limits: docs/known-issues.md.
-Agent token contract: docs/handoff/agent-dev-token-handling.md. PixelLab API snapshot: docs/research/pixellab/pixellab-openapi-v2.json. Old evidence media: git tag v0.1.0.
+Agent token contract: docs/handoff/agent-dev-token-handling.md. PixelLab API snapshot: docs/research/pixellab/pixellab-openapi-v2.json. Old evidence media: git tag v0.1.0. Before editing this file: docs/agent-instructions.md.
 
 ## Tasks
 
@@ -72,7 +72,7 @@ Surface errors: no empty catch, placeholder value or silent fallback that hides 
 Never weaken, skip or delete a test or assertion, or change its expected values, just to make it pass; if the test itself is wrong, fix it and say why.
 Delete code your change makes dead; no commented-out code. Comments explain why, not what changed.
 Report what you verified, what failed and what you skipped; never claim a check you did not run.
-Keep the existing custom CSS and visuals; do not introduce GlassKit.
+Style with Bronze UI as CLAUDE.md ("Bronze UI theme") describes, and keep the existing visuals; add no other UI kit or CSS framework.
 Keep the app client-only; never add a backend.
 Use only the allowed PixelLab models above, and check docs/research/pixellab/ before calling an endpoint.
 PixelLab credits are real money: spend only when the task needs generations, never auto-resend paid requests, and prefer offline checks on stored frames.
