@@ -22,18 +22,17 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 ## Tasks
 
-- Tasks live only on the [PixelDoll board](https://github.com/users/Shilo/projects/7) as draft cards; there is no TODO file, and GitHub Issues are for user reports. The board is public and is the roadmap, so write cards for users to read.
-- Statuses: Ready (approved and planned; top is next), Progress, Done, Later (deferred: never start one until the user confirms that specific card when you ask). Archived cards are dropped or old; they are hidden from the board and from list, and list archived shows them.
-- From app/, run node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. list prints cards in board order.
-- A card is its ID, exact title or a unique part of its title; \n in a body is a newline.
+- Tasks are draft cards on the public [PixelDoll board](https://github.com/users/Shilo/projects/7), which is also the roadmap; there is no TODO file, and GitHub Issues are for user reports. Write for users: a short imperative title, one to three plain lines, then "Refs: <paths or links>"; no progress logs.
+- Statuses: Ready (approved; top is next), Progress, Done, Later (deferred). Dropped cards are archived. The user orders cards by dragging; list prints board order and new cards land at the bottom.
+- A body's first line may be "Blocked:", "Paid:" (needs PixelLab generations) or "Needs decision:"; list shows it. Add the marker whenever it applies.
+- From app/: node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. A card is its ID or a unique part of its title. Single-quote bodies; \n is a newline; --body replaces the whole body.
 - Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
-- A card body may start with "Blocked:", "Paid:" or "Needs decision:".
-- "What's next?": mention any Progress cards first (another session may own them; ask before resuming), then recommend the highest Ready card that is not Blocked, saying if it is Paid or Needs decision. Do not move it.
-- "Work on pending tasks" (or similar): take Ready cards from the top, one at a time, never Later or Blocked ones; skip Paid and Needs decision cards and list them for the user.
-- Starting a card: show it, read its Refs, then move it to Progress before changing files.
-- Finishing: move it to Done only after verifying the work. If work stops early, keep it in Progress and add a "Left: …" line to the body; remove that line when the card is done.
-- Adding: only when the user asks to track something (Ready), or for an out-of-scope finding the user agrees to track (--status Later unless they approve doing it); never for steps of the current task. Check list and list archived first to avoid duplicates, including similar titles. Use a short imperative title and one to three plain lines plus "Refs: <paths or links>"; no progress logs.
-- Dropping: archive a card only when the user decides it will not be done or asks to clear old Done cards. Leave Later and Blocked cards alone unless asked.
+- Broad requests ("what's next", "work on pending tasks", "do everything") cover only unmarked Ready cards, from the top, one at a time; list the marked ones you skipped. Never start a Later card, resume a Progress card (another session may own it) or start a marked card without the user's yes for that card; a question or "maybe" is not a yes.
+- "What's next?": report Progress cards, then recommend the top eligible Ready card; move nothing.
+- Starting: show the card, read its Refs, then move it to Progress before changing files. If it turns out to need generations or a decision, stop, add the marker and ask.
+- Done: only after the checks in End-to-end scope pass and nothing awaits the user's review; otherwise keep it in Progress with "Left: …" as the body's last line.
+- Adding: only when the user asks (Ready if they want it done, --status Later if they only want it tracked); never for steps of the current task. Check list and list archived for similar titles first.
+- Archiving: only when the user drops a card or asks to clear Done.
 
 ## Code
 

@@ -23,7 +23,7 @@ function gql(query, vars = {}) {
     return JSON.parse(execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 1 << 26 })).data
   } catch (e) {
     const err = String(e.stderr || e.stdout || e.message)
-    if (/HTTP 401|Requires authentication|gh auth login/i.test(err)) fail('gh is not signed in here. In a sandbox (e.g. Codex), rerun this command outside the sandbox.')
+    if (/HTTP 401|Requires authentication|gh auth login/i.test(err)) fail('gh is not signed in: run `gh auth login`; in a sandbox such as Codex, rerun this command outside it.')
     if (/rate limit/i.test(err)) fail(`${err.trim()}\nGitHub rate limit: wait a minute (burst limit) or check \`gh api rate_limit\` (hourly) and retry.`)
     fail(err.trim())
   }
@@ -49,13 +49,12 @@ function board() {
 }
 
 function find(b, query) {
+  if (!query) fail(USAGE)
   const q = query.toLowerCase()
   const same = b.items.filter((i) => i.id === query || i.title.toLowerCase() === q)
   if (same.length === 1) return same[0]
   const hits = same.length ? same : b.items.filter((i) => i.title.toLowerCase().includes(q))
   if (hits.length === 1) return hits[0]
-  // ponytail: GitHub lists a new card a few seconds late; an ID from `add` still works for move/archive meanwhile
-  if (!hits.length && query.startsWith('PVTI_')) return { id: query, status: 'No status', title: query }
   fail(hits.length ? `"${query}" matches ${hits.length} cards:\n${hits.map(line).join('\n')}` : `No card matches "${query}".`)
 }
 
@@ -74,6 +73,7 @@ const [cmd, ...args] = process.argv.slice(2)
 switch (cmd) {
   case 'list': {
     const want = args.join(' ').toLowerCase(), b = board()
+    if (want && want !== 'archived') option(b, want) // a typo fails instead of printing an empty column
     if (want === 'archived') for (const i of b.archived) console.log(`${line(i)}	(archived)`)
     else for (const i of b.items) if (!want || i.status.toLowerCase() === want) console.log(line(i))
     break
