@@ -81,6 +81,7 @@ with every app on this origin. Never broadcast credentials. Follow `docs/shared-
 Forget/replacement notifications; do not introduce encryption or an extra unlock step. The TODO records encryption as deferred.
 
 Follow KISS and YAGNI: no feature, dependency or abstraction without a real need.
+Before changing test configs, CI shards or adding slow or timing-sensitive tests, read docs/testing/test-performance.md (budgets, anti-patterns, rules).
 Keep the existing custom CSS and visuals; do not introduce GlassKit.
 Keep the app client-only; never add a backend.
 Use only the allowed PixelLab models above, and check docs/research/pixellab/ before calling an endpoint.
