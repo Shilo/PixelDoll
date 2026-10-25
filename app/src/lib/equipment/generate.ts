@@ -6,7 +6,7 @@ import { components, KEY_NAME, KEYS, keyScore, KT, toChroma, type Key } from '..
 import { binaryAlpha, decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { stableStringify } from '../image/hash.ts';
-import { bandOf, buildItem, canPose, extractCell, GATES, g2Fails, itemQa, itemRoute, paletteDistance, postProcess, slotOf, unrotate, f0Last, type CellOut, type ItemSpec } from '../items/items.ts';
+import { bandOf, buildItem, canPose, extractCell, GATES, g2Fails, hiddenViews, itemQa, itemRoute, paletteDistance, postProcess, slotOf, unrotate, f0Last, type CellOut, type ItemSpec } from '../items/items.ts';
 import { withH4 } from '../items/run.ts';
 import { png, type Req } from '../pixellab/routes.ts';
 import type { JobRec } from '../pixellab/queue.ts';
@@ -154,7 +154,8 @@ export async function evaluatePoseFit(design: EquipmentDesign, target: Project, 
     if(stableStringify(profile(source))!==stableStringify(profile(rig))||!history.length||item.key!==spec.key||Object.keys(design.variants).length||design.source.materials.some(m=>m.owner===item.id&&m.defaultVariant))throw new Error('Existing standing references cannot be reused on a changed body, pose, camera or color baseline.');
     for(const dir of directions(target))if(!rest[dir]||await cellHash(rest[dir]!)!==item.dressed?.[dir])throw new Error('The reused reference is not the approved raw standing artwork.');
   } else if(directions(target).some(dir=>!restRecords.some(r=>r.rec.state==='done'&&r.call.cells.includes(`rest/${dir}/0`))))throw new Error('The approved fitted reference is missing its generating-call provenance.');
-  for (const dir of directions(target)) { const view = rig.rest![dir]!, out = rest[dir];if (!out) throw new Error('Missing approved fitted standing view.'); keys[dir] = extractCell({ key: `rest/${dir}/0`, call: -1, base: target.images.get(view.image)!, out, route: spec.key, band: bandOf(spec.slot,fromApi(view.keypoints,rig.cell),64) }).layer; }
+  const kfCells: CellOut[] = [];
+  for (const dir of directions(target)) { const view = rig.rest![dir]!, out = rest[dir];if (!out) throw new Error('Missing approved fitted standing view.'); const k = extractCell({ key: `rest/${dir}/0`, call: -1, base: target.images.get(view.image)!, out, route: spec.key, band: bandOf(spec.slot,fromApi(view.keypoints,rig.cell),64) }); keys[dir] = k.layer; kfCells.push(k); }
   for (const [call,record] of records.entries()) {
     const [anim,dir] = record.call.cells[0].split('/') as [string,DirectionName], a = rig.animations.find(a=>a.id===anim)!;
     const poses = record.call.cells.map(k=>a.sources![dir]!.keypoints![+k.split('/')[2]]), returned = await decoded(record);
@@ -173,7 +174,7 @@ export async function evaluatePoseFit(design: EquipmentDesign, target: Project, 
   }
   if (new Set(cells.map(c=>c.key)).size !== selected.size || cells.length !== selected.size || cells.some(c=>!selected.has(c.key))) throw new Error('Fitted animation coverage is incomplete or duplicated.');
   postProcess(rig,slotOf(spec.slot),cells,keys);
-  const qa = withH4(itemQa(rig,slotOf(spec.slot),spec.key,cells,0,GATES.keyOutsidePosed),slotOf(spec.slot),cells,keys,rig);
+  const qa = withH4(itemQa(rig,slotOf(spec.slot),spec.key,cells,0,GATES.keyOutsidePosed,0,hiddenViews(kfCells,keys)),slotOf(spec.slot),cells,keys,rig);
   for(const [clip,summary]of Object.entries(qa.qa.clips??{})) {
     const count=rig.animations.find(a=>a.id===clip.split('/')[0])!.cells;
     if(cells.filter(c=>c.key.startsWith(clip+'/')).length<count){if(summary.status==='pass')summary.status='warn';if(qa.qa.status==='pass')qa.qa.status='warn';qa.warnings.push(`${clip}: only newly fitted cells were checked. Earlier frames retain their existing checks.`);}

@@ -538,10 +538,40 @@ export function repairDropped(rig: Rig, slot: Slot, cells: CellOut[], keys: Part
   return fixed;
 }
 
-/** Clip-level cleanup after extraction (posed cells): streak trim for head items, attachment + repair for held items. */
+/** Smallest part size a posed layer keeps: 4 px (motion specks, S3), or less when the direction's dressed keyframe has no
+ * bigger part (earrings: two 3 px hoops; glasses from the side: one 2 px lens). No or an empty keyframe: 4 px. */
+const partFloor = (K?: Img) => Math.min(4, (K && Math.max(0, ...components(maskOf(K), K.w, K.h).map((x) => x.length))) || 4);
+/** Small accessories cover ~1 % of the body (round 5: glasses, earrings); every benchmark item covers >= 14 % in every view. */
+export const SMALL_SHARE = 0.05;
+/** Views whose dressed keyframe is empty while the item is a small accessory: the view hides it (glasses from behind), so an
+ * empty view is reviewed instead of re-rolled. `cells` are the keyframe or posed cells (their base is the body in that view). */
+export function hiddenViews(cells: Pick<CellOut, 'key' | 'area' | 'base'>[], keys: Partial<Record<DirectionName, Img>>): Set<string> {
+  const share = Math.max(0, ...cells.map((c) => { let b = 0; for (let p = 3; p < c.base.data.length; p += 4) if (c.base.data[p]) b++; return b ? c.area / b : 0; }));
+  const empty = Object.entries(keys).filter(([, K]) => K && !K.data.some((v, i) => i % 4 === 3 && v)).map(([d]) => d);
+  return share > 0 && share < SMALL_SHARE ? new Set(empty) : new Set();
+}
+/**
+ * Posed non-held items: drop components under max(4 px, 15 % of the largest) (motion-smear specks, S3). The 4 px floor drops to
+ * the largest part of the direction's dressed keyframe, so an item made only of tiny parts (earrings: two 3 px hoops) keeps
+ * them; a direction without a keyframe or with an empty one keeps 4 px. Returns px removed.
+ */
+export function sizeFloor(cells: CellOut[], keys: Partial<Record<DirectionName, Img>>): number {
+  let removed = 0;
+  for (const c of cells) {
+    if (!c.posed || !c.area) continue;
+    const w = c.layer.w, h = c.mask.length / w, comps = components(c.mask, w, h), big = Math.max(...comps.map((x) => x.length));
+    const floor = Math.max(partFloor(keys[c.key.split('/')[1] as DirectionName]), 0.15 * big);
+    const keep = new Uint8Array(c.mask.length);
+    for (const comp of comps) if (comp.length >= floor) for (const p of comp) keep[p] = 1;
+    removed += setMask(c, keep);
+  }
+  return removed;
+}
+
+/** Clip-level cleanup after extraction (posed cells): size floor and streak trim for head items, attachment + repair for held items. */
 export function postProcess(rig: Rig, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): { removed: number; repaired: string[] } {
   if (slot.class === 'held') { const removed = attachHeld(rig, slot, cells, pad) + clipFloor(cells); closeGrip(cells); return { removed, repaired: repairDropped(rig, slot, cells, keys, pad) }; }
-  return { removed: (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells), repaired: [] };
+  return { removed: sizeFloor(cells, keys) + (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells), repaired: [] };
 }
 
 /**
@@ -603,10 +633,9 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
       for (const p of c) { r.mask[p] = 0; r.layer.data.fill(0, p * 4, p * 4 + 4); r.stray = (r.stray ?? 0) + 1; }
     }
   }
-  // held items get the size floor in attachHeld, after the wrist rule (2026-10-25: S5 pommels and haft ends)
-  if (o.posed && !o.held) { const st = r.stray ?? 0; r = majorComponents(r, w, h); r.stray = (r.stray ?? 0) + st; }
-  // the cell's gate metrics keep the size-floored mask for held items too, so G2/G3 are as strict as before the pommel change
-  const qm = o.posed && o.held ? majorComponents({ layer: { ...r.layer, data: new Uint8ClampedArray(r.layer.data) }, mask: new Uint8Array(r.mask) }, w, h).mask : r.mask;
+  // posed layers get the size floor in postProcess: held items after the wrist rule (attachHeld, 2026-10-25: S5 pommels and
+  // haft ends), others against the dressed keyframe's parts (sizeFloor). The gate metrics keep the 4 px floor, as before.
+  const qm = o.posed ? majorComponents({ layer: { ...r.layer, data: new Uint8ClampedArray(r.layer.data) }, mask: new Uint8Array(r.mask) }, w, h).mask : r.mask;
   let outBand = 0, baseBand = 0;
   for (let p = 0; p < r.mask.length; p++) {
     const inBand = (p / w | 0) >= band.y && (p / w | 0) < band.y + band.h;
@@ -723,10 +752,10 @@ function heldVisibility(a: CellOut, b: CellOut, wa: [number, number], wb: [numbe
 
 /** Retain replaceable summaries against the same design palette as the complete evaluation.
  * `pad`: oversize layers are gated on their own canvas; hand positions move by the pad. */
-export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax = GATES.keyOutside, pad = 0): QaResult {
-  const ref = designColors(cells), q = evaluateQa(rig, slot, route, cells, rerolls, keyOutsideMax, pad, ref);
+export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax = GATES.keyOutside, pad = 0, hidden = new Set<string>()): QaResult {
+  const ref = designColors(cells), q = evaluateQa(rig, slot, route, cells, rerolls, keyOutsideMax, pad, ref, hidden);
   q.qa.clips = Object.fromEntries(q.clips.map(({ clip, hand }) => {
-    const part = evaluateQa(rig, slot, route, cells.filter((c) => clipOf(c.key) === clip), 0, keyOutsideMax, pad, ref);
+    const part = evaluateQa(rig, slot, route, cells.filter((c) => clipOf(c.key) === clip), 0, keyOutsideMax, pad, ref, hidden);
     const summary = summaryOf(part.qa);
     for (const warning of part.warnings) if (!q.warnings.includes(warning)) {
       const message = warning.startsWith('G6 call ') ? `G6 ${clip}: palette distance ${summary.maxPaletteDist} to the design call` : `${clip}: ${warning}`;
@@ -743,7 +772,7 @@ const designColors = (cells: CellOut[]) => {
   const first = Math.min(...cells.map((c) => c.call));
   return [...new Set(cells.filter((c) => c.call === first).flatMap((c) => colors(c.layer)))];
 };
-function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax: number, pad: number, ref: number[]): QaResult {
+function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax: number, pad: number, ref: number[], hidden: Set<string>): QaResult {
   const w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, fail = new Map<number, string[]>(), warnings: string[] = [];
   const flag = (call: number, why: string) => (fail.get(call) ?? (fail.set(call, []), fail.get(call)!)).push(why);
   const cellsQa: Record<CellKey, CellQa> = {};
@@ -793,10 +822,11 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, 2 * baseCv);
     const wrist = slot.class === 'held' && cs.every((c) => c.posed) ? slot.anchor === 'hand_l' ? hl : hr : undefined;
     const minRatio = med ? Math.min(...areas) / med : 0;
-    if (!med) flag(cs[0].call, `G4 ${clip}: item missing`);
+    if (!med) (hidden.has(d) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
     else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
-    if (cv > cvMax && !isAction(clip)) {
+    // a standard deviation under 2 px is drawing noise, not a lost part (round 5: earrings 5–10 px per frame read as CV 0.19)
+    if (cv > cvMax && cv * (areas.reduce((s, x) => s + x, 0) / areas.length) >= 2 && !isAction(clip)) {
       const ref = cs.reduce((big, c) => c.area > big.area ? c : big), ri = +ref.key.split('/')[2];
       const visibility = wrist && cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]]));
       // The largest observed silhouette is only a reference, not an invented full shield. If hidden pixels explain
@@ -903,9 +933,9 @@ export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|\bfur(
 
 // ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------
 const maskOf = (im: Img) => { const m = new Uint8Array(im.w * im.h); for (let p = 0; p < m.length; p++) m[p] = im.data[p * 4 + 3] ? 1 : 0; return m; };
-const despeck = (im: Img) => {
+const despeck = (im: Img, min = 4) => {
   const o = makeImg(im.w, im.h);
-  for (const c of components(maskOf(im), im.w, im.h)) if (c.length >= 4) for (const p of c) o.data.set(im.data.subarray(p * 4, p * 4 + 4), p * 4);
+  for (const c of components(maskOf(im), im.w, im.h)) if (c.length >= min) for (const p of c) o.data.set(im.data.subarray(p * 4, p * 4 + 4), p * 4);
   return o;
 };
 /** Appearance similarity of layer A to keyframe layer K after centroid alignment (±1 px): over the union of both masks a pixel
@@ -956,7 +986,9 @@ function headOcclusion(c: CellOut, rig: Rig): { mask: Uint8Array; shift: [number
 }
 /** cover: B14, soft items (cloth, hair) are only judged in a view where the item covers at least half of the body (a cape from
  *  behind, not the cape edges from the front); soft: their own-similarity floor there. */
-export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5 };
+// minPx: a keyframe view under 12 px is too small to judge: a 1 px drift of a 3 px part halves its overlap (round 5: steady
+// earrings from behind scored 0.47–0.58)
+export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 };
 /**
  * H4: a posed layer must look like its own direction's dressed keyframe layer. Band items (helmet, face): own < 0.75 fails in every
  * view (S5: a visor on a back view; B7 live: a blade drawn into a helmet's slash frames). Soft items (worn torso/back, hair) only
@@ -986,20 +1018,20 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     }
   for (const c of cells) {
     const dir = c.key.split('/')[1] as DirectionName, opp = OPP[dir];
-    if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp)) continue;
+    if (!c.posed || !keys[dir] || !c.area || (slot.class !== 'rigid' && !opp) || sum(maskOf(keys[dir]!)) < H4.minPx) continue;
     if (!slot.band && (cover.get(c.key.split('/').slice(0, 2).join('/')) ?? 0) < H4.cover) continue;
-    const L = despeck(c.layer), occ = new Uint8Array(c.mask.length);
+    const min = partFloor(keys[dir]), L = despeck(c.layer, min), occ = new Uint8Array(c.mask.length);
     for (let p = 0; p < occ.length; p++) occ[p] = c.out.data[p * 4 + 3] && !c.mask[p] ? 1 : 0;
-    const own = simAligned(L, despeck(keys[dir]!), occ);
+    const own = simAligned(L, despeck(keys[dir]!, min), occ);
     if (own >= (slot.band ? H4.own : H4.soft)) continue;
     if (slot.band && rig && sum(maskOf(L)) >= 6) {
       const arm = headOcclusion(c, rig);
-      if (arm && simAligned(L, despeck(keys[dir]!), undefined, arm.shift) < H4.own && simAligned(L, despeck(keys[dir]!), arm.mask, arm.shift) >= H4.own) {
+      if (arm && simAligned(L, despeck(keys[dir]!, min), undefined, arm.shift) < H4.own && simAligned(L, despeck(keys[dir]!, min), arm.mask, arm.shift) >= H4.own) {
         warnings.push(`Occlusion ${c.key}: the forearm may cover the head item; inspect it before keeping it`);
         continue; // Hidden details cannot be verified: review, never a clean pass or an automatic H4 retry.
       }
     }
-    const other = opp && keys[opp] ? simAligned(L, despeck(keys[opp]!), occ) : 0;
+    const other = opp && keys[opp] ? simAligned(L, despeck(keys[opp]!, min), occ) : 0;
     const why = `H4 ${c.key}: ${other >= own - H4.oppMargin ? 'looks like the opposite view' : 'does not match its keyframe (extra or missing parts)'} (own ${own.toFixed(2)}${opp ? `, opposite ${other.toFixed(2)}` : ''})`;
     if (slot.band) (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);
     else warnings.push(why);
@@ -1113,9 +1145,9 @@ export async function selfTest() {
   const { item, images } = await buildItem({ spec: { id: 'h', name: 'H', slot: 'back', prompt: 'p', key: 'green', anims: ['idle'], dirs: ['south'] }, rig, cells: cs, route: 'green', provenance: [], qa: q.qa });
   console.assert(item.layers.map((l) => l.id).join() === 'fg,bg' && item.layers[0].cells!.idle!.south!.length === 4 && images.size === 1, 'buildItem split layers');
   console.assert(item.layers[1].cells!.idle!.south![0] === null, 'bg empty -> transparent cell');
-  const block = makeImg(8, 8);
-  for (let y = 3; y < 6; y++) for (let x = 3; x < 6; x++) block.data.set([90, 90, 100, 255], (y * 8 + x) * 4);
-  const cell = { ...cs[0], posed: true, layer: block, mask: new Uint8Array(64), area: 9 };
+  const block = makeImg(8, 8); // 16 px: H4 judges keyframe views of at least H4.minPx
+  for (let y = 2; y < 6; y++) for (let x = 2; x < 6; x++) block.data.set([90, 90, 100, 255], (y * 8 + x) * 4);
+  const cell = { ...cs[0], posed: true, layer: block, mask: new Uint8Array(64), area: 16 };
   console.assert(simAligned(block, block) === 1 && !dirGate(slotOf('head'), [cell], { south: block }).fails.size, 'H4: same layer passes');
   const blade = { ...cell, layer: makeImg(8, 8) };
   blade.layer.data.set(block.data);
