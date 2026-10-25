@@ -9,8 +9,10 @@ test('browser PNG and IndexedDB self-tests preserve every registered check', asy
   await page.route('https://api.pixellab.ai/**', (route) => route.abort())
   await page.goto('/#/selftest')
   const result = page.getByTestId('selftest')
-  await expect(result).toHaveAttribute('data-failures', '0', { timeout: 20_000 }) // may be the shard's first cold dev-server load
-  const lines = (await result.innerText()).split('\n')
+  // Wait for the run to finish (the shard's first cold dev-server load may be slow), then fail at once with the harness log.
+  await expect(result).toHaveAttribute('data-failures', /^\d+$/, { timeout: 20_000 })
+  const text = await result.innerText(), lines = text.split('\n')
+  expect(await result.getAttribute('data-failures'), text).toBe('0')
   expect(lines).toHaveLength(browserSelfTests.length + 1)
   for (const [name] of browserSelfTests) expect(lines).toContain('ok   ' + name)
   expect(lines.at(-1)).toBe('all self-tests passed')

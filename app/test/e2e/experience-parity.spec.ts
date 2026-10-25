@@ -140,20 +140,22 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
   expect(await selected()).toBe(index)
   await wheel(3, { deltaMode: 1 }); index = (index + 1) % 3
   await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(200) // The approved selection-wheel cooldown is 180ms.
-  await page.evaluate(() => { for (let event = 0; event < 8; event++) window.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, cancelable: true })) })
+  // The approved cooldown and fraction window are both 180 ms. Waits must exceed it; events that must land inside it go in
+  // one browser task, because separate evaluate round trips can exceed 180 ms under parallel load.
+  const wheels = (...deltas: number[]) => page.evaluate(ds => { for (const deltaY of ds) window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true })) }, deltas)
+  await page.waitForTimeout(300)
+  await wheels(...Array(8).fill(120))
   index = (index + 1) % 3; await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(200)
+  await page.waitForTimeout(300)
   await wheel(-40); index = (index + 2) % 3; await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(200)
-  await wheel(20); await page.waitForTimeout(200); await wheel(20)
-  expect(await selected()).toBe(index)
-  await wheel(20); index = (index + 1) % 3; await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(200)
-  await wheel(30); await wheel(-30)
-  expect(await selected()).toBe(index)
-  await wheel(-10); index = (index + 2) % 3; await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(200)
+  await page.waitForTimeout(300)
+  await wheel(20); await page.waitForTimeout(300); await wheel(20)
+  expect(await selected()).toBe(index) // the stale fraction was discarded
+  await wheels(20, 20); index = (index + 1) % 3; await expect.poll(selected).toBe(index)
+  await page.waitForTimeout(300)
+  // Without the sign reset, 30 − 30 − 10 = −10 would not step; with it, −30 − 10 = −40 steps back once.
+  await wheels(30, -30, -10); index = (index + 2) % 3; await expect.poll(selected).toBe(index)
+  await page.waitForTimeout(300)
   await wheel(1, { deltaMode: 2 }); index = (index + 1) % 3; await expect.poll(selected).toBe(index)
   await page.getByRole('button', { name: 'More options', exact: true }).click()
   expect(await wheel(120)).toBe(false); expect(await selected()).toBe(index)

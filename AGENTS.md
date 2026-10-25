@@ -65,12 +65,13 @@ studio: Studio shell, dressing, outfits, drafts, Activity, review, repair, recol
 characters: character import (device and PixelLab library), duplicates, deletion
 character-creator, creator-request-matrix: New character sheet, creation flow and its request JSON
 shared-equipment: shared designs and cross-tab follower work
-auth: connect, remembered token, Forget, shared-token peers
+auth: shared-token peers and framed-app isolation; remembered token, Forget and canceled Connect live in studio, so credential changes run auth and studio
 api-peek: API call inspector
 export-picker: export dialog and engine formats
 concurrency: plan capacity, two-tab queue leadership, busy recovery
 selftests: browser self-tests (every module registered in src/lib/selftests.ts), QA storage, demo copy
-Experience visuals use a separate config: playwright.experience.config.ts (see docs/testing/production-experience-2026-10-23.md).
+experience-parity: world keyboard focus, Preview input, resizing, selection wheel, two-finger equipment (src/studio/experience/)
+Experience screenshot captures (experience.spec.ts) use a separate config: playwright.experience.config.ts (see docs/testing/production-experience-2026-10-23.md).
 Standalone Studio compatibility entry: node scripts/e2e-studio.mjs (existing build required)
 
 ## Rules
