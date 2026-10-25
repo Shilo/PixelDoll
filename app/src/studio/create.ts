@@ -24,7 +24,7 @@ import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, rawClip, managedMot
 import { gridEstimate } from '../lib/items/items.ts';
 import { poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
-import { basePrompt, looksOf, withoutBaseBody } from './model.ts';
+import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
 import { affectedMoveDirections, clearMovePoseData, invalidateMoveItems, moveRigVersion } from './replaceMove.ts';
 import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
 import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
@@ -61,7 +61,10 @@ const authoredBase = (anim: string) => (anim in ACTIONS ? ACTIONS[anim] : undefi
 /** Cost from measured prices: base 2 + import 0.25, per clip-direction raw 3 (+ managed motion 3 unless authored), joints 0.1
  * per raw frame (+ per managed motion frame). */
 export const creationDirections = (spec: Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy'>): RigDirection[] => spec.directions ?? planDirections(spec.directionPolicy === 'independent' ? 'all' : spec.dirs === 8 ? '8' : '4', genDirsOf(spec.dirs, spec.directionPolicy)).dirs;
-export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => looksOf(spec.exactPrompt ? withoutBaseBody(spec.description).trim() || 'humanoid base body' : spec.description);
+export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => {
+  if (!spec.exactPrompt) return looksOf(spec.description);
+  return looksOf(withoutBaseBody(spec.description).trim() || 'humanoid base body', baseClothesIn(spec.description) ?? null);
+};
 export function estimate(choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy' | 'size'> = 4, policy: DirectionPolicy = 'mirrored') {
   const render = (a: (typeof BASE_ANIMS)[number]) => RAW_GENS + a.frames * EST;
   const per = (a: (typeof BASE_ANIMS)[number]) => render(a) + (authoredBase(a.name) ? 0 : 3 + a.frames * EST);

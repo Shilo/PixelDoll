@@ -91,15 +91,20 @@ export function itemPreviewFrames(p: Project, it: Item, anim: string): Img[][] {
 
 /** Base prompt (S2 winner): the user's words + a plain clothed mannequin so items have a clean body to sit on. B15: a light
  * shirt over dark shorts, so the two garments get their own shades (lib/dress/regions.ts splits them into Shirt and Shorts). */
-export const BASE_BODY = 'plain bald paperdoll base body, wearing a plain light gray t-shirt and plain dark gray shorts, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso';
-/** Prompts saved by earlier versions embed this older base body text. */
-const LEGACY_BASE_BODY = BASE_BODY.replaceAll('gray', 'grey')
-export const isBaseBody = (line: string) => line.trim() === BASE_BODY || line.trim() === LEGACY_BASE_BODY
-export const withoutBaseBody = (text: string) => text.replace(BASE_BODY, '').replace(LEGACY_BASE_BODY, '')
+export const BASE_CLOTHES = 'wearing a plain light gray t-shirt and plain dark gray shorts';
+const bodyWith = (clothes: string) => `plain bald paperdoll base body, ${clothes}, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
+export const BASE_BODY = bodyWith(BASE_CLOTHES);
+/** The clothes each base body text names, current first; prompts saved by earlier versions spell it "grey". */
+const CLOTHES = [BASE_CLOTHES, BASE_CLOTHES.replaceAll('gray', 'grey')];
+export const isBaseBody = (line: string) => CLOTHES.some((c) => line.trim() === bodyWith(c))
+export const withoutBaseBody = (text: string) => CLOTHES.reduce((t, c) => t.replace(bodyWith(c), ''), text)
+/** The clothes of the base body line in a prompt, or undefined when the prompt has none. */
+export const baseClothesIn = (text: string) => CLOTHES.find((c) => text.includes(bodyWith(c)))
 export const basePrompt = (desc: string) => `${desc.trim().replace(/[.\s]+$/, '')}, ${BASE_BODY}`;
-/** What the base LOOKS like (raw skeleton-v3 `description`, S3): no pose words, empty hands. */
-export const looksOf = (desc: string) =>
-  `${desc.trim().replace(/[.\s]+$/, '')}, bald, wearing a plain light gray t-shirt and plain dark gray shorts, barefoot, empty hands, no weapon`;
+/** What the base LOOKS like (raw skeleton-v3 `description`, S3): no pose words, empty hands. `clothes` null: the description
+ * says what the body wears (an exact prompt without a base body line), so no base clothes are added on top of it. */
+export const looksOf = (desc: string, clothes: string | null = BASE_CLOTHES) =>
+  `${desc.trim().replace(/[.\s]+$/, '')}, ${clothes == null ? '' : `bald, ${clothes}, barefoot, `}empty hands, no weapon`;
 
 export const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
 /** The noun of the description's first phrase: "a sturdy young dwarf with a friendly face" -> "Dwarf". */
