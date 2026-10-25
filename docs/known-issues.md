@@ -35,6 +35,14 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Historical item QA.** Older saved items lack replaceable checks; after an edit they stay marked for review with an
   explicit incomplete-check notice. Retained historical totals may omit old additions or include replaced frames until
   all older coverage is replaced. No paid recheck or silent reconstruction is performed.
+- **Some item colors have no safe key color.** Items are drawn on a single-color stand-in body (green, else magenta, else
+  blue) and separated by that color. An item that names green and purple (or violet, indigo) collides with all three, so it
+  keeps magenta and its purple parts can be removed as if they were background. Workaround: describe the purple as another
+  color, or review the item. See the [campaign](research/generation-quality-campaign-2026-10-25.md) follow-ups.
+- **Back views of full-coverage items on Studio bodies.** A hooded cloak seen from behind came out with a dark rim around
+  the hood (pointed ears redrawn) and a speckled texture on the 80 px elf; the "key kept" check flags it for review.
+- **Action poses invent props.** Slash poses draw swords and motion streaks even for helmets and capes; cleanup removes them
+  from the saved layers, but streaks across the face can still fail the helmet's consistency check.
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 

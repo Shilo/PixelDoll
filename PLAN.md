@@ -99,6 +99,13 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   with visible target/frame/tool choices, local pixel/alignment/joint edits, durable drafts and explicit revision-safe
   saving. Body edits require fitting review rather than a permanent lock or automatic paid refit. No implementation,
   dependency change or API spend is included in this planning decision. See the [canonical package](docs/design/frame-editor/README.md).
+- D18 (2026-10-24, user): `transfer-outfit-v2` is allowed for reference-image dressing (it was only superseded as a per-clip
+  design lock), because items from a concept image are planned. Judge external ideas by output quality, not by the model list.
+  See the [external pipeline review](docs/research/paperdoll-py-asset-review-2026-10-24.md).
+- D19 (2026-10-25, measured campaign): a third chroma key, blue, is used only when an item's colors collide with both green
+  and magenta (green with pink or red); green + purple keeps magenta. Concept-image items should be built on
+  `transfer-outfit-v2` with the raw concept (provisional). Prompt rewordings for the dress and pose calls are not adopted. See
+  the [campaign](docs/research/generation-quality-campaign-2026-10-25.md).
 
 ## PWA (deferred, D13)
 

@@ -175,8 +175,11 @@ change. Only corrected PNGs need new actual measurements. Existing pose, palette
 ### 4.4 Chroma extraction (unchanged from S2)
 
 Key score ratio < 35 on opaque pixels, rim guard, drop components < 2 px, despill, layer drawn over the real base frame
-(pre-occluded). Key choice: green; magenta when the prompt matches `/green|emerald|lime|olive|jade|teal|mint|forest/`; never
-gray; switch key after two failures. Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
+(pre-occluded). Key choice: green; magenta when the prompt matches `/green|emerald|lime|olive|jade|teal|mint|forest/`; blue
+(the green ramp with G and B swapped) when the prompt also names a red or pink hue and no blue or purple one (a green-and-pink
+item on magenta lost its pink on every frame; 2026-10-25 campaign arm K; purples and indigo score as blue key); magenta when
+all three collide, as before (it keys out purple; the diff route would keep it but cannot be posed); never gray; switch green ↔ magenta after two
+failures when allowed. Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
 
 ### 4.5 Item QA (per item over all cells)
 

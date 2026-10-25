@@ -109,6 +109,9 @@ until the spike below passes. The S2 evidence is about the reference role itself
 
 ## Concept-image items (agreed design)
 
+> **Tested 2026-10-25** ([campaign](generation-quality-campaign-2026-10-25.md), arm E4): `transfer-outfit-v2` beat the anchored
+> dress, and the raw concept did at least as well as the local paste-up, so the paste-up step below is dropped (provisional).
+
 The concept replaces only the dress step. Posing, extraction, H4 and the keyframe trim run unchanged.
 
 1. **Local prep (0 gens):** remove the background and crop the item (the user confirms; no crop, no item); scale it to the slot
@@ -130,6 +133,9 @@ arm: raw concept, paste-up, paste-up + `target_palette`, and the control (paste-
 transfer-outfit path.
 
 ## Other spikes
+
+> **Outcome 2026-10-25** ([campaign](generation-quality-campaign-2026-10-25.md)): `target_palette` on the dress was cut (it caps every
+> pixel, key colors included); the state-as-dress spike was cut (no 8-direction body in scope).
 
 - **`target_palette` on dress and pose calls** (first to fund for existing items). It is typed in `routes.ts` but never sent by
   item code. S1: exact body px rose from 0 % to 25.6 % (`edit-animation-v2`) and 34.2 % (`transfer-outfit-v2`). Key ramp +
