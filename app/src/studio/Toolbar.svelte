@@ -7,7 +7,7 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
   import { ui, doc, store, creating, settingUp, gens, openProject, undo, redo, toggleTheme, isDemo } from './state.svelte.ts'
-  import { Github, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
+  import { Github, GitCommitHorizontal, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
   const devRigs = $derived(store.projects.filter((p) => p.dev))
@@ -45,7 +45,7 @@
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='activity' }}><Activity size={18}/><span class="row-name">Activity</span>{#if $queue.role==='follower'}<span class="small">Other tab</span>{/if}</button>
   <ApiPeek scope="all" all menu />
   <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noreferrer"><Github size={18}/><span class="row-name">GitHub</span><ExternalLink size={16}/></a>
-  <a class="row bu-action app-version" data-variant="quiet" href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}" target="_blank" rel="noreferrer"><span class="row-name faint small num">v{__APP_VERSION__}<br/>{__APP_COMMIT__}</span><ExternalLink size={16}/></a>
+  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}" target="_blank" rel="noreferrer"><GitCommitHorizontal size={18}/><span class="row-name faint small num">v{__APP_VERSION__}<br/>{__APP_COMMIT__}</span><ExternalLink size={16}/></a>
 </div>
 
 <div id="project-menu" class="menu" popover bind:this={menu} role="menu" aria-label="Characters"

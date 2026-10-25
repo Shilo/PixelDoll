@@ -6,6 +6,7 @@ name: CI and Pages
 # GitHub checks only a push's first 300 changed files against them, so push large docs-only sweeps apart from app/ changes.
 on:
   push:
+    branches: ['**'] # GitHub ignores `paths` for tag pushes, so tags would run everything
     paths: [app/**, .github/workflows/pages.yml]
   pull_request:
     paths: [app/**, .github/workflows/pages.yml]

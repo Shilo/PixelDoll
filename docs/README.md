@@ -5,7 +5,7 @@ format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Open work:
 
 **Evidence media lives at commit [1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e).** Spike outputs (`spikes/api/out/`), test
 screenshots (`testing/img/`), design screenshots (`design/screenshots/`) and the D2 mockup app (`design-mockups/`) are no longer
-tracked on `main`; links in these docs point to the tag. README images: [media/](media/).
+tracked on `main`; links in these docs point to that commit. README images: [media/](media/).
 
 **Superseded** marks a result that later work replaced. The doc is still accurate as a record of what was tested.
 [architecture.md §4.3](architecture.md) lists every replaced route.
@@ -100,7 +100,7 @@ Code: `spikes/api/`. Evidence: [`spikes/api/out/` at 1f95029](https://github.com
 | [D1_design_research.md](design/D1_design_research.md) | User flows for casual users, information architecture, look candidates A–E. |
 | [glasskit_review.md](design/glasskit_review.md) | GlassKit as a theme base (look B): reviewed and not chosen. |
 | [D2_mockups_report.md](design/D2_mockups_report.md) | The `design-mockups/` app: looks A–E in dark and light. The user chose **look A only**, dark by default (D9). |
-| [Screenshot gallery](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/README.md) | Every look, screen and device (`<look>_<scheme>_<screen>_<device>.png`). Grid view: [index.html](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/index.html) (open from a checkout of the tag). |
+| [Screenshot gallery](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/README.md) | Every look, screen and device (`<look>_<scheme>_<screen>_<device>.png`). Grid view: [index.html](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/index.html) (open from a checkout of that commit). |
 
 ## Testing reports
 

@@ -120,7 +120,7 @@ Use nearest-neighbor filtering and whole-pixel positions in every engine.
 
 ## CI and deploy to GitHub Pages
 
-[.github/workflows/pages.yml](.github/workflows/pages.yml) runs on every push and pull request: `npm ci`, `npm run check`,
+[.github/workflows/pages.yml](.github/workflows/pages.yml) runs on every push and pull request that changes `app/` or the workflow: `npm ci`, `npm run check`,
 `npm test` and `npm run e2e` in `app/`; the browser command includes a build and a **dist guard** that fails the run if `app/dist` contains `__dev`,
 `pixellab-key`, `PIXELLAB_API_KEY_AGENT_DEV`, agent-mode code, any `.env*` file or any source map. On a push to `main` it also deploys
 `app/dist` to GitHub Pages. A manual workflow run performs the checks; deployment requires a push to `main`. The workflow

@@ -7,13 +7,16 @@ export const SHIPPED = ['app/**', '.github/workflows/pages.yml']
 /** The commit count as major.minor.patch: patch 0-99, minor 0-9, major unbounded (1234 -> 1.2.34). */
 export const formatVersion = (n: number) => `${Math.floor(n / 1000)}.${Math.floor(n / 100) % 10}.${n % 100}`
 
-/** Version = commits that changed what ships; commit = the latest of them, so a version always names one commit. */
+/** Version = commits that changed what ships; commit = HEAD, the exact source of this build. */
 export function appVersion(cwd: string) {
   const git = (...args: string[]) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
   // A shallow clone (actions/checkout's default) would count only the commits it has, so fail instead of shipping that.
   if (git('rev-parse', '--is-shallow-repository') !== 'false') throw new Error('version: full git history needed (actions/checkout fetch-depth: 0)')
-  // --full-history: whether a commit counts depends on that commit alone, so new commits never lower the count (git's
-  // default simplification follows one side of some merges and drops the other side's commits).
-  const shipped = ['--full-history', 'HEAD', '--', ...SHIPPED.map((p) => `:(top,glob)${p}`)]
-  return { version: formatVersion(Number(git('rev-list', '--count', ...shipped))), commit: git('log', '-1', '--abbrev=7', '--format=%h', ...shipped) }
+  // Whether a commit counts depends on that commit alone, so new commits never lower the count: --full-history walks
+  // both sides of every merge (git's default follows one side of some merges), and --no-merges skips merges, which
+  // only combine counted commits (a merged docs-only branch would otherwise count without deploying).
+  const shipped = ['--full-history', '--no-merges', 'HEAD', '--', ...SHIPPED.map((p) => `:(top,glob)${p}`)]
+  const count = Number(git('rev-list', '--count', ...shipped))
+  if (!count) throw new Error(`version: no commits touch ${SHIPPED.join(' or ')}; did app/ move?`)
+  return { version: formatVersion(count), commit: git('rev-parse', '--short=7', 'HEAD') }
 }

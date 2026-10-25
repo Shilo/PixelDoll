@@ -157,7 +157,7 @@ are never bundled or deployed.
 ```
 
 ### CI (`.github/workflows/pages.yml`)
-Runs on every push and PR: `npm ci` → `check` → `selftest` → `build` (which ends with the **dist guard**). Pushes to `main`
+Runs on every push and PR that changes `app/` or the workflow: `npm ci` → `check` → `selftest` → `build` (which ends with the **dist guard**). Pushes to `main`
 also deploy to GitHub Pages. No secrets, no env for the token.
 ```json
 "build": "vite build && node scripts/dist-guard.mjs"

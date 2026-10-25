@@ -14,17 +14,19 @@ describe('app version', () => {
   it('counts only commits that change what ships, and a merge never hides counted commits', () => {
     const repo = mkdtempSync(join(tmpdir(), 'pixeldoll-version-'))
     try {
-      const git = (...a: string[]) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', ...a], { cwd: repo, encoding: 'utf8' }).trim()
+      const git = (...a: string[]) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', '-c', 'core.hooksPath=no-hooks', ...a], { cwd: repo, encoding: 'utf8' }).trim()
       const commit = (file: string, text: string) => {
         mkdirSync(dirname(join(repo, file)), { recursive: true }); writeFileSync(join(repo, file), text); git('add', '-A'); git('commit', '-qm', file)
       }
       git('init', '-q', '-b', 'main')
+      commit('docs/b.md', 'x')
+      expect(() => appVersion(repo)).toThrow(/no commits touch/)
       commit('app/a.txt', '1'); commit('docs/a.md', 'x'); commit('app/a.txt', '2'); commit('app/a.txt', '3')
       expect(appVersion(repo).version).toBe('0.0.3') // the docs commit is left out
       // The side branch ends with main's app/ content, so git's default history simplification would follow only that side.
       git('checkout', '-qb', 'side', 'HEAD~3'); commit('app/a.txt', '3'); commit('app/b.txt', 'b')
       git('checkout', '-q', 'main'); git('merge', '-q', '--no-ff', '-m', 'merge', 'side')
-      expect(appVersion(join(repo, 'app'))).toEqual({ version: '0.0.6', commit: git('log', '-1', '--abbrev=7', '--format=%h') })
+      expect(appVersion(join(repo, 'app'))).toEqual({ version: '0.0.5', commit: git('rev-parse', '--short=7', 'HEAD') }) // the merge itself never counts
     } finally { rmSync(repo, { recursive: true, force: true }) }
   })
 
