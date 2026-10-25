@@ -10,6 +10,7 @@ import type { StoredProject } from '../../src/lib/store/project.ts'
 const ID = 'f6a0bdc5-354e-4682-8df3-55fc3d118737'
 test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await context.route('https://*.pixellab.ai/**', route => route.abort()) // stay offline by default; a test's own route overrides this
 })
 
 test('import can be canceled before choosing a file and reopened', async ({ page }, info) => {
@@ -283,7 +284,7 @@ test('a delayed earlier character load cannot replace the last selected characte
   let release!: () => void
   const held = new Promise<void>((resolve) => { release = resolve })
   await page.route('**/fixtures/s2/fixture.json', async (route) => { await held; await route.continue() })
-  const requested = page.waitForRequest('**/fixtures/s2/fixture.json')
+  const requested = page.waitForRequest('**/fixtures/s2/fixture.json', { timeout: 10_000 })
   await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     ;(window as unknown as { auditOpen: Promise<void> }).auditOpen = s.openProject('fixture:s2')
@@ -333,7 +334,7 @@ test('item deletion finishing during navigation cannot reopen the old character'
   let release!: () => void
   const held = new Promise<void>((resolve) => { release = resolve })
   await page.route('**/fixtures/s2/fixture.json', async (route) => { await held; await route.continue() })
-  const requested = page.waitForRequest('**/fixtures/s2/fixture.json')
+  const requested = page.waitForRequest('**/fixtures/s2/fixture.json', { timeout: 10_000 })
   await page.evaluate(async () => {
     const path = '/src/studio/state.svelte.ts', s = await import(path)
     const testWindow = window as unknown as { deleting: Promise<void>; navigating: Promise<void> }

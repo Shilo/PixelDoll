@@ -89,6 +89,7 @@ export interface Deps {
   fetchBytes: (url: string, context?: ActivityContext) => Promise<Uint8Array>;
   now: () => number;
   locks: Pick<LockManager, 'request'> | null; // Web Locks (null = single tab)
+  channel: string; // cross-tab BroadcastChannel; self-tests use their own so they never signal the live app's tabs
   online: () => boolean; // navigator.onLine
 }
 
@@ -248,6 +249,7 @@ export class Queue {
       },
       now: Date.now,
       locks: globalThis.navigator?.locks ?? null,
+      channel: LOCK,
       online: () => globalThis.navigator?.onLine ?? true,
       ...deps,
     };
@@ -303,7 +305,7 @@ export class Queue {
     const locks = this.deps.locks;
     if (!locks) { await this.load(); if (!signal.aborted) this.start(); return; }
     if (typeof BroadcastChannel !== 'undefined') {
-      this.chan = new BroadcastChannel(LOCK);
+      this.chan = new BroadcastChannel(this.deps.channel);
       this.chan.onmessage = (e: MessageEvent<Msg>) => {
         if (signal.aborted) return;
         const m = e.data ?? {};
@@ -1267,7 +1269,7 @@ async function lockTest() {
   const store = new Map<string, JobRec>(), locks = fakeLocks();
   let t = 1000, submits = 0;
   const deps: Partial<Deps> = {
-    now: () => t, locks,
+    now: () => t, locks, channel: `${LOCK}-selftest-${crypto.randomUUID()}`,
     put: async (k, r) => void store.set(k, structuredClone(r)),
     get: async (k) => structuredClone(store.get(k)),
     del: async (k) => store.delete(k),
@@ -1283,7 +1285,7 @@ async function lockTest() {
   await a.connect();
   await b.connect();
   console.assert(a.role === 'leader' && b.role === 'follower' && b.snapshot().role === 'follower', `roles ${a.role}/${b.role}`);
-  const spy = new BroadcastChannel(LOCK), heard: unknown[] = [];
+  const spy = new BroadcastChannel(deps.channel!), heard: unknown[] = [];
   spy.onmessage = (e) => heard.push(e.data);
   b.setKey('synthetic-follower-token');
   await new Promise((r) => setTimeout(r, 20));
@@ -1343,7 +1345,7 @@ async function handoffTest() {
   const store = new Map<string, JobRec>(), locks = fakeLocks(), tick = () => new Promise((r) => setTimeout(r, 0));
   let t = 1000, posts = 0, usedKey = '';
   const deps: Partial<Deps> = {
-    locks, now: () => t,
+    locks, now: () => t, channel: `${LOCK}-selftest-${crypto.randomUUID()}`,
     put: async (k, r) => void store.set(k, structuredClone(r)), get: async (k) => structuredClone(store.get(k)),
     all: async () => [...store.values()].map((r) => structuredClone(r)),
     api: async <T>(key: string, _method: string, path: string): Promise<T> => {

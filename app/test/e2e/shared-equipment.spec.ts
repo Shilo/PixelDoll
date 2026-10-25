@@ -5,6 +5,7 @@ import { unzip } from '../../src/lib/store/zip.ts'
 
 test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await context.route('https://*.pixellab.ai/**', route => route.abort()) // stay offline by default; a test's own route overrides this
 })
 
 test('shared design colorway, free independent copy, portable ZIP and deletion survive reload without API requests', async ({ page, context }) => {

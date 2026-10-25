@@ -142,7 +142,7 @@ gh run view <run-id> --log                         # per-test durations from the
 
 ### Where a slow test spends its time
 
-Record a trace (`npx playwright test <spec>:<line> --workers=1 --trace=on`), then sum action time per spec line. Save this as a scratch file outside the repo and run `node prof.mjs test-results/<test-dir>/trace.zip`:
+Record a trace (`npm run e2e -- <spec>:<line> --workers=1 --trace=on`; plain `npx playwright test` skips the build and tests a stale `dist`), then sum action time per spec line. Save this as a scratch file outside the repo and run `node prof.mjs test-results/<test-dir>/trace.zip`:
 
 ```js
 // prof.mjs: sum traced Playwright action time per spec line (needs `unzip` on PATH, e.g. Git Bash).

@@ -356,12 +356,14 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
   for (const viewport of [{ width: 390, height: 844 }, { width: 320, height: 700 }, { width: 844, height: 390 }]) {
     await page.setViewportSize(viewport)
     await expectPeekBeforePrimary(page)
-    const bounds = await peek(page).boundingBox()
-    expect(bounds).not.toBeNull()
-    expect(bounds!.x).toBeGreaterThanOrEqual(0)
-    expect(bounds!.y).toBeGreaterThanOrEqual(0)
-    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width)
-    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height)
+    await expect(async () => { // the popover repositions on the next resize frame
+      const bounds = await peek(page).boundingBox()
+      expect(bounds).not.toBeNull()
+      expect(bounds!.x).toBeGreaterThanOrEqual(0)
+      expect(bounds!.y).toBeGreaterThanOrEqual(0)
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width)
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height)
+    }).toPass()
   }
   await page.keyboard.press('Escape')
   await expect(peek(page)).toHaveCount(0)

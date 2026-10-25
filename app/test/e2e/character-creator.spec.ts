@@ -13,6 +13,7 @@ test.beforeEach(async ({ context }) => {
     localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1')
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: async (text: string) => sessionStorage.setItem('creator-copy', text) } })
   })
+  await context.route('https://*.pixellab.ai/**', route => route.abort()) // stay offline by default; a test's own route overrides this
 })
 async function open(page: Page) {
   await openStudio(page, '/')

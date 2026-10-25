@@ -128,7 +128,7 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
     await dialog.getByLabel('Character name', { exact: true }).fill(`Wheel character ${copy + 1}`)
     await dialog.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true }).uncheck()
     await dialog.getByRole('button', { name: 'Import character', exact: true }).click()
-    await expect(page.locator('.scene-identity h1')).toHaveText(`Wheel character ${copy + 1}`)
+    await expect(page.locator('.scene-identity h1')).toHaveText(`Wheel character ${copy + 1}`, { timeout: 30_000 }) // a full import saves and reopens the character
   }
   await page.getByRole('button', { name: 'Characters', exact: true }).click()
   const rows = page.locator('.character-row')

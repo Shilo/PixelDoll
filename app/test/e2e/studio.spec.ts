@@ -4,6 +4,10 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { unzip, zip } from '../../src/lib/store/zip.ts'
 
+test.beforeEach(async ({ context }) => {
+  await context.route('https://*.pixellab.ai/**', route => route.abort()) // stay offline by default; a test's own route overrides this
+})
+
 declare global {
   interface Window {
     __queue?: { paused: string | null }
@@ -174,8 +178,8 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   // T1 P0: Create without a key -> the Connect sheet replaces it (8afef4f)
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'New character…' }).click()
+  await expect(page.locator('dialog').getByLabel('Name', { exact: true })).toBeFocused() // first field focused, not Cancel (checked before fill() moves focus)
   await page.locator('dialog textarea').fill('a cheerful elf archer')
-  assert.equal(await page.evaluate(() => document.activeElement?.tagName), 'TEXTAREA') // first field focused, not Cancel
   await page.locator('dialog').getByRole('button', { name: /^Create/ }).click()
   await page.waitForFunction(() => document.querySelector('dialog[open] h2')?.textContent === 'Connect PixelLab')
   step('Create without a key opens Connect (P0 sheet chaining)')
