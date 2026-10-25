@@ -13,7 +13,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p tsconfig.test.json",
     "selftest": "npm test",
     "test": "vitest run",
-    "e2e": "npm run build && playwright test"
+    "e2e": "npm run build && playwright test",
+    "bench": "node scripts/bench.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
