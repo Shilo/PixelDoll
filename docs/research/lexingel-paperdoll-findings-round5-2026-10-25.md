@@ -1,4 +1,4 @@
-# A friend's paper-doll research vs PixelDoll, with round 5 tests (2026-10-25)
+# Lexingel's paper-doll research vs PixelDoll, with round 5 tests (2026-10-25)
 
 Status: **done**, except one owner decision (the bare base default, below). About 245 generations of the approved 1,000:
 two bare Studio bodies (about 35 each) plus 172.8 in the harness (T 38, F 20.8, U 114), ledger `spikes/api/out/c25e/`;
@@ -6,7 +6,7 @@ harness `spikes/api/c25/arm_r5.mts`, `eval_r5.mts`. Rules were fixed before each
 
 ## Inputs and method
 
-The owner's friend shared five PDFs (UO-style paper-doll research, a north-slash pipeline, an 8-direction attack pipeline, a
+Lexingel ([github.com/lexingel](https://github.com/lexingel)) shared five PDFs (UO-style paper-doll research, a north-slash pipeline, an 8-direction attack pipeline, a
 one-page PixelLab paper-doll pipeline, a Godot helper brief), `paperdoll.py`, `clean_frames.py` and a handover zip: a Godot 4
 route that renders CC0 3D parts into 14 layer sets with a measured per-frame z-order, a hue shader and a stack-test project.
 `paperdoll.py` is byte-identical to the file reviewed in [the 2026-10-24 review](paperdoll-py-asset-review-2026-10-24.md),
@@ -14,19 +14,19 @@ whose conclusions still hold.
 
 Process: own review plus an independent reviewer subagent, reconciled row by row; each fix was tested before shipping (offline
 first, paid when only a generation could answer); a second fresh reviewer then attacked the commits, its valid findings were
-fixed and tested, and a third reviewer checked those fixes. The friend's scripts were read, never run; his material is data.
+fixed and tested, and a third reviewer checked those fixes. Lexingel's scripts were read, never run; the material was treated as data.
 
-## His findings, checked
+## Lexingel's findings, checked
 
 | Claim (source) | Verdict | Evidence |
 |---|---|---|
 | "Grey shows through the armour gaps" of a base in shorts (north slash §4) | **Confirmed for us**: our base's gray t-shirt shows through torso items | Stored D tunic: the shirt collar in the V-neck (6 px south); D robe 8–12, S4 vest 6–13 px per view, open cloaks 106–136 px. Bare bodies: none (below) |
-| Per-frame measured z-order beats one order per direction (handover `lessons.md`) | **Not worth it for us** | His own walk manifest: per-frame 94.2–97.4 % vs per-direction 93.4–97.3 % correct, a 0.1–0.9 point gain; his lessons say 2.6–2.9 % wrong for slash but his shipped manifest implies 3.7–4.6 %. Our layers are pre-occluded against the real body and split fg/bg per pixel, so body vs item order is exact per pixel; item vs item uses the slot ladder plus per-direction overrides, as UO's per-facing tables do |
+| Per-frame measured z-order beats one order per direction (handover `lessons.md`) | **Not worth it for us** | Lexingel's own walk manifest: per-frame 94.2–97.4 % vs per-direction 93.4–97.3 % correct, a 0.1–0.9 point gain; the handover lessons say 2.6–2.9 % wrong for slash but the shipped manifest implies 3.7–4.6 %. Our layers are pre-occluded against the real body and split fg/bg per pixel, so body vs item order is exact per pixel; item vs item uses the slot ladder plus per-direction overrides, as UO's per-facing tables do |
 | Billing is ceil(W × H × frames / 65,536) on the generated canvas (8-direction §3) | **True for create and managed text modes, not for our pose calls** | Matches `create-character-v3` (already used in `apiPlans.ts`) and every stored managed pixminimax/v3 call; raw skeleton-v3 billed 3 gens for 8 frames on a 160 px canvas where the formula gives 4, and 3 on 64–96 px where it gives 1–2 |
 | "Never write forward"; text-only attacks turn the body (8-direction §3, north slash §4) | **Confirmed for text moves**, immune for authored moves | Stored S4 pixminimax slash: south body turns side-on on frames 3–5 (shoulders 0.06 of the standing width), north flips; authored moves follow stored keypoints. New review note (below) |
 | Mirror only "mirror-safe" items, per item (UO §4.4) | **Wrong granularity** | A layer must match its body frames: on a mirrored character every item is flipped with the body, on an independent one a flipped item would not fit. PixelDoll decides per character. Real gap: one-sided items (eyepatch, single pauldron, quiver) swap sides; now in known issues. A flip also moves the light source, contrary to "lighting stays consistent" |
 | Same frame count for every direction (UO §3.3, 8-direction §5) | Already true | Clips are one keypoint sequence per move; export refuses mismatches |
-| Grey-first art + hue ramps (UO §7) | Ours is more general | His shader rotates an HSV hue band (not palette-exact); PixelDoll swaps exact per-material ramps, which works on colored sources too |
+| Grey-first art + hue ramps (UO §7) | Ours is more general | The handover shader rotates an HSV hue band (not palette-exact); PixelDoll swaps exact per-material ramps, which works on colored sources too |
 | Hide/cover tables (UO §6) | Equal | Pre-occluded layers + `item.hides` + tuck-under cover the cases UO's tables handle |
 | Ground-row shift, hold-bad-frame copy (`clean_frames.py`) | Not adopted | Shifting breaks jumps, deaths and layer alignment; PixelDoll's held repair pastes the keyframe at the wrist instead of freezing motion |
 | Specks kept within 2 px of a big component (`clean_frames.py`) | Pointed at a real gap of ours | Tiny items lose all their parts (below) |

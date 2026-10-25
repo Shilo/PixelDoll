@@ -1,4 +1,4 @@
-// Round 5 (C25_RUN=c25e), rules fixed before the run; evidence for the friend's-findings review (2026-10-25).
+// Round 5 (C25_RUN=c25e), rules fixed before the run; evidence for the review of Lexingel's paper-doll findings (2026-10-25).
 // Arm T (tiny and one-view items): small gold hoop earrings and round wire glasses (face_acc) on body A (S/E/N, walk), seed 7.
 // Question: does PixelLab draw them as parts under 4 px, and does a view legitimately show none of the item (north)? Rules:
 // the keyframe-relative size floor ships only if a real item has a part under 4 px that the posed frames keep with it and lose

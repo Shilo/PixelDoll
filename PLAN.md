@@ -121,11 +121,11 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 - D24 (2026-10-25, measured round 4): idle and walk of a direction share one pose call for non-held items (3 gens instead of 6);
   prompt grammar stays; the unused baked-color export is deleted (runtimes swap palettes live); no per-item re-roll exceptions.
   See [round 4](docs/research/generation-quality-round4-2026-10-25.md).
-- D25 (2026-10-25, measured round 5, a friend's paper-doll research): small accessories keep 2–3 px parts and may leave a view
+- D25 (2026-10-25, measured round 5, Lexingel's paper-doll research): small accessories keep 2–3 px parts and may leave a view
   empty that hides them (review, not re-roll); G2 ignores detached body effects; text moves that turn side-on get a review
   note; body animations describe the prompt's own clothes; one pose price. Per-frame z-order, per-item mirror flags, ground
   shifts and a render route are not adopted. The bare-base default awaits the owner. See
-  [round 5](docs/research/friend-paperdoll-findings-round5-2026-10-25.md).
+  [round 5](docs/research/lexingel-paperdoll-findings-round5-2026-10-25.md).
 - D20 (2026-10-25, user): the version is automatic and never bumped by hand: the number of non-merge commits that changed what
   ships (app/ or its workflow), written major.minor.patch with patch 0-99 and minor 0-9 (1234 = 1.2.34), shown with the
   short commit in the More menu. Docs-only pushes neither run CI nor deploy. No tags or GitHub releases. See
