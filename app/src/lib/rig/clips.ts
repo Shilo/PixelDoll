@@ -102,7 +102,7 @@ export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: 
   const adh = o.requested && complete && countMatches ? adherence(o.requested.map((k) => fromApi(k, cell)), o.measured.map((k) => k && fromApi(k, cell))) : null;
   const feet = Math.max(0, ...o.frames.map((f) => Math.abs(feetY(f) - feetY(o.rest))));
   const fit = paletteFit(o.rest, o.frames), border = o.frames.reduce((s, f) => s + borderPx(f), 0);
-  const ratios = o.facing ? facingRatios(o.facing.dir, o.facing.rest, o.measured) : [], turned = ratios.flatMap((r, i) => (r != null && r < FACING_MIN ? [i + 1] : []));
+  const ratios = o.facing ? facingRatios(o.facing.dir, o.facing.rest, o.measured) : [], sideOn = ratios.flatMap((r, i) => (r != null && r >= 0 && r < FACING_MIN ? [i + 1] : [])), away = ratios.flatMap((r, i) => (r != null && r < 0 ? [i + 1] : []));
   const fails = [
     (!o.frames.length || o.frames.some(f => !opaqueBox(f))) && 'empty animation frame',
     !complete && 'missing or invalid frame joints',
@@ -114,9 +114,8 @@ export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: 
     fit < RIG_GATES.paletteFit && `palette similarity ${fit.toFixed(3)}; review shading`,
     border > RIG_GATES.border && `${border} opaque pixels touch the frame border; check framing`,
     (o.disconnectedPixels ?? 0) > 0 && `${o.disconnectedPixels} disconnected pixels retained; review details`,
-    turned.length > 0 && (ratios.some((r) => r != null && r < 0)
-      ? `the body turns away in frame${turned.length > 1 ? 's' : ''} ${turned.join(', ')} (its shoulders swap sides); check that it still faces ${o.facing!.dir}`
-      : `the body turns side-on or falls in frame${turned.length > 1 ? 's' : ''} ${turned.join(', ')} (shoulders down to ${Math.round(100 * Math.min(...ratios.filter((r): r is number => r != null)))} % of the standing width); check that it still faces ${o.facing!.dir}`),
+    sideOn.length > 0 && `the body turns side-on or falls in frame${sideOn.length > 1 ? 's' : ''} ${sideOn.join(', ')} (shoulders down to ${Math.round(100 * Math.min(...sideOn.map((f) => ratios[f - 1]!)))} % of the standing width); check that it still faces ${o.facing!.dir}`,
+    away.length > 0 && `the body turns away in frame${away.length > 1 ? 's' : ''} ${away.join(', ')} (its shoulders swap sides); check that it still faces ${o.facing!.dir}`,
   ].filter((s): s is string => !!s);
   return { adherence: adh === null ? null : +adh.toFixed(2), feetDrift: feet, paletteFit: +fit.toFixed(3), border, stray: o.stray, disconnectedPixels: o.disconnectedPixels ?? 0, fails, warnings };
 }
