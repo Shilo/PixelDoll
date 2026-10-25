@@ -74,7 +74,9 @@ test('a delayed same-ID claim cannot replace the authoritative terminal in-memor
  const claim=f.deps.claimEstimate!
  const q=new Queue({...f.deps,claimEstimate:async(record,choose)=>{const result=await claim(record,choose);if(++count===2){entered();await hold}return result}});q.setKey('synthetic');await q.load()
  const a=q.enqueue(req,{estimateRetry:{id:'a',recordIds:[r.id]}}),b=q.enqueue(req,{estimateRetry:{id:'b',recordIds:[r.id]}})
- const first=await a;await waiting;await q.tick();expect(first.state).toBe('done');release();const second=await b;expect(second).toBe(first);expect(second.state).toBe('done');expect(f.posts()).toBe(2)
+ // enqueue hashes before claiming, so either call may claim second: race() returns whichever was not held
+ const first=await Promise.race([a,b]);await waiting;await q.tick();expect(first.state).toBe('done');release()
+ for(const second of await Promise.all([a,b]))expect(second).toBe(first);expect(first.state).toBe('done');expect(f.posts()).toBe(2)
 })
 
 test('scope aborted before atomic insertion leaves no new queued record',async()=>{

@@ -94,6 +94,7 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
    - The queue self-tests counted `setTimeout(0)` ticks and flaked under load.
    - Poll the condition with a wall-clock deadline (`until()` in `src/lib/pixellab/queue.ts`).
    - In Playwright, use `expect(...)`, `expect.poll` or a DOM signal, not `waitForTimeout`.
+   - Never assume which concurrent async call reaches a hook first: crypto.subtle, IndexedDB and timers reorder under load. Select the held call by identity, or await whichever settles (`Promise.race`). `measurement-retry.test.ts` held "the second claim" but awaited one fixed caller, and hung to the 5 s timeout on CI whenever the other caller claimed second.
 7. **Real-time windows asserted across separate `page.evaluate` round trips.** A round trip can take more than 180 ms under load.
    - For logic driven by time, hold page time still. `experience-parity.spec.ts` overrides `performance.now`, the only clock the wheel handler reads.
    - Have each action report its effect directly, e.g. "did this start a load?". Asynchronous follow-ups (`openProject`) can make a wrong step and a right step end on the same final state.
