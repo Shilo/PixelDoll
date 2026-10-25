@@ -1238,9 +1238,10 @@ async function robustTest() {
   console.assert(store.has(url.id) && !store.has(bad.id) && !store.has(busy.id) && n === 6, `clear finished keeps referenced records and removes terminal unknowns (${n})`);
 }
 
-/** Wait for cross-tab state (BroadcastChannel, lock handoff) instead of counting ticks; fails the assertion after 5 s. */
+/** Wait for cross-tab state (BroadcastChannel, lock handoff) instead of counting ticks. Gives up after 0.5 s, under the
+ *  leader's 1 s timer, so a later timer tick can never satisfy a check that must hold promptly. */
 async function until(ok: () => boolean, step?: () => Promise<unknown>) {
-  for (let i = 0; i < 500 && !ok(); i++) { await new Promise((r) => setTimeout(r, 10)); await step?.(); }
+  for (let i = 0; i < 50 && !ok(); i++) { await new Promise((r) => setTimeout(r, 10)); await step?.(); }
 }
 
 /** A minimal Web Locks stand-in: one holder, FIFO waiters, ifAvailable. */
@@ -1298,7 +1299,7 @@ async function lockTest() {
   console.assert(a.key === 'k' && a.paused === 'auth', 'a follower cannot replace a rejected leader credential');
   console.assert(!JSON.stringify(heard).includes('synthetic-replacement-token'), 'replacement credentials are never broadcast');
   b.setKey('');
-  for (let i = 0; i < 20 && a.key; i++) await new Promise((r) => setTimeout(r, 5));
+  await until(() => !a.key);
   console.assert(a.key === '', 'credential-free Forget signal stops the leader');
   console.assert(!heard.some((m) => typeof (m as Record<string, unknown>).key === 'string'), 'queue notifications never contain a key');
   spy.close();
