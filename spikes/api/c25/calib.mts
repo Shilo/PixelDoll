@@ -11,6 +11,8 @@ const KNOWN: [string, string, string, string][] = [
   ['boots', 'eiv2', 'south', 'ghost body outlines'], ['boots', 'eiv2', 'east', 'ghost body outlines'],
   ['cape', 'pfgrid', 'south', 'thin outline only'], ['cape', 'pfgrid', 'east', 'thin outline only'],
   ['sword', 'pixen', 'south', 'sword missing, swaps sides'], ['chest', 'pixen', 'south', 'body redrawn'],
+  // round 2: two S4 verdicts no judge has seen yet
+  ['helmet', 'pfgrid', 'south', 'adds unrequested pauldrons'], ['cape', 'pfinp', 'south', 'thin red outline only'],
 ];
 async function clip(item: string, route: string, dir: string): Promise<Img[]> {
   const off = dir === 'south' ? 0 : 8; // cells 0-7 walk, 8-15 slash

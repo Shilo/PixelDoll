@@ -12,8 +12,11 @@ for (const { f, j } of judges) {
   const calib = key.filter((k) => k.kind === 'calib'), hit = calib.filter((k) => j.get(k.file)?.v === k.expectedTop).length;
   const plac = key.filter((k) => k.kind === 'placebo').map((k) => j.get(k.file)?.v).filter((v) => v === 'top' || v === 'bottom');
   const top = plac.filter((v) => v === 'top').length, bias = plac.length ? Math.max(top, plac.length - top) / plac.length : 0;
-  const pass = hit / calib.length >= 0.8 && bias <= 0.65;
-  console.log(`${path.basename(f)}: answered ${j.size}/${key.length}, calibration ${hit}/${calib.length}, placebo top/bottom ${top}/${plac.length - top} (ties ${key.filter((k) => k.kind === 'placebo').length - plac.length}) -> ${pass ? 'COUNTS' : 'EXCLUDED'}`);
+  // round 2 bias gate: flipped repeats must name the same winning arm (tie-tie agrees) on >= 2/3; placebos when a kit has them
+  const reps = key.filter((k) => k.kind === 'repeat'), arm = (k: any) => { const v = j.get(k.file)?.v; return v === 'top' ? k.top : v === 'bottom' ? k.bottom : 'tie'; };
+  const agree = reps.filter((r) => arm(r) === arm(key.find((k) => k.id === r.of))).length;
+  const pass = hit / calib.length >= 0.8 && (reps.length ? agree / reps.length >= 2 / 3 : bias <= 0.65);
+  console.log(`${path.basename(f)}: answered ${j.size}/${key.length}, calibration ${hit}/${calib.length}, ${reps.length ? `flipped repeats agree ${agree}/${reps.length}` : `placebo top/bottom ${top}/${plac.length - top}`} -> ${pass ? 'COUNTS' : 'EXCLUDED'}`);
   if (pass) ok.push({ f, j });
 }
 const winner = (k: any, v?: string) => (v === 'top' ? k.top : v === 'bottom' ? k.bottom : 'tie');

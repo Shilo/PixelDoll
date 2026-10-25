@@ -42,7 +42,7 @@ export function evaluate(c: Case, opt: { snap?: number } = {}) {
   const cells: any[] = [];
   for (const cl of c.clips) cl.frames.forEach((f, i) => cells.push(items.extractCell({
     key: `${cl.anim}/${cl.dir}/${i}`, call: 1 + c.clips.indexOf(cl), base: padTo(f.base, C), out: padTo(f.out, C), route: c.key,
-    band: items.bandOf(c.slot, c.pad ? undefined : skel(c.rig, cl.anim, cl.dir, i), C), posed: true, clip: slot.band, held })));
+    band: items.bandOf(c.slot, c.pad ? undefined : skel(c.rig, cl.anim, cl.dir, i), C), posed: true, clip: slot.band, held, pad: c.pad })));
   items.postProcess(c.rig, slot, cells, keys, c.pad);
   let snapped = 0;
   if (opt.snap != null) for (const cell of cells) { // P3 variant: snap each posed layer to its direction's keyframe palette
