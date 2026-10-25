@@ -117,7 +117,6 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light')
   step('theme switch')
 
-  await page.waitForTimeout(800) // autosave debounce
   await reloadStudio(page, { waitUntil: 'networkidle' })
   await page.waitForSelector('.world-actors')
   assert.equal(await pressed('Wizard hat'), 'true')

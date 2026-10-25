@@ -78,9 +78,15 @@ let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
 
 export function initUi() {
   const on = () => { ui.size = sizeNow(); ui.dpr = devicePixelRatio || 1; };
+  // Flush the autosave debounce when the tab is backgrounded or closed. Chromium aborts IndexedDB writes started in
+  // pagehide (and in the unload-time visibilitychange), but keeps ones started in beforeunload.
+  // ponytail: a beforeunload listener costs Firefox's back/forward cache for the Studio; add it only while a save is pending if that matters.
+  const hide = () => void flushSave();
   addEventListener('resize', on);
+  addEventListener('beforeunload', hide);
+  document.addEventListener('visibilitychange', hide);
   applyTheme();
-  return () => removeEventListener('resize', on);
+  return () => { removeEventListener('resize', on); removeEventListener('beforeunload', hide); document.removeEventListener('visibilitychange', hide); };
 }
 export function applyTheme() { document.documentElement.dataset.theme = ui.theme; document.documentElement.style.colorScheme = ui.theme; }
 export function toggleTheme() { ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; lsSet(K.theme, ui.theme); applyTheme(); }
