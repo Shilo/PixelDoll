@@ -12,7 +12,9 @@ export const clips = await import(APP + 'rig/clips.ts');
 const { decodePngBytes, encodePngBytes } = await import(APP + 'image/pngraw.ts');
 export type Img = { w: number; h: number; data: Uint8ClampedArray };
 
-export const OUT = path.resolve(import.meta.dirname, '../out/c25');
+// RUN selects the campaign folder and its own ledger: c25 = round 1 (2026-10-25), c25b = round 2
+export const RUN = process.env.C25_RUN ?? 'c25';
+export const OUT = path.resolve(import.meta.dirname, `../out/${RUN}`);
 fs.mkdirSync(OUT, { recursive: true });
 const strip = (v: any): any => typeof v === 'string' && v.length > 300 ? `<${v.length} chars>` : Array.isArray(v) ? v.map(strip) : v && typeof v === 'object' ? Object.fromEntries(Object.entries(v).map(([k, x]) => [k, strip(x)])) : v;
 const logFile = path.join(OUT, 'calls.jsonl');
@@ -28,7 +30,8 @@ export const exists = (f: string) => fs.existsSync(f);
 // ---------- spend ledger: every paid call is recorded; an arm refuses to start a call that could pass its cap ----------
 const LEDGER = path.join(OUT, 'ledger.jsonl');
 export const spent = (arm?: string) => !fs.existsSync(LEDGER) ? 0 : fs.readFileSync(LEDGER, 'utf8').trim().split('\n').filter(Boolean).map((l) => JSON.parse(l)).filter((r) => !arm || r.arm === arm).reduce((s, r) => s + (r.gens ?? r.estimate), 0);
-export const TOTAL_CAP = 943; // 1,000 approved minus 57 spent creating body B in the Studio (balance delta)
+// round 1: 1,000 approved minus 57 spent creating body B in the Studio; round 2: 1,000 approved, minus Studio bodies (see c25b notes)
+export const TOTAL_CAP = +(process.env.C25_CAP ?? (RUN === 'c25' ? 943 : 0));
 let READONLY = false;
 /** Evaluation scripts call this first: paid() then only returns stored results. */
 export const readOnly = () => { READONLY = true; };
