@@ -206,8 +206,8 @@ What is inside
   project.json    editable character for importing back into PixelDoll
   cells/          original frame and rest images for the editable copy
 
-Outfit colors are baked into additional item layers, reused by matching outfits. The source layers remain available.
-A colored body is a synced body_color layer; its hidden original body remains the animation clock.
+Outfit colors are exact palette swaps (materials[].ramp and variants, presets[].variants); the runtimes swap them while
+the character plays, so a game can change them.
 
 Moves: ${moves.join(', ')}.
 A move lists the directions it has in rig.animations[].directions; its other sheet rows are empty.

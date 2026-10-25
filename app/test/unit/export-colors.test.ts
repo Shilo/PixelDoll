@@ -5,7 +5,6 @@ import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
 import { cellHash } from '../../src/lib/rig/rig.ts'
 import { composeCell, bakedFrame, over } from '../../src/lib/compose/compose.ts'
 import { recolor } from '../../src/lib/dress/dress.ts'
-import { withColorVariants } from '../../src/lib/export/colors.ts'
 import { exportFiles } from '../../src/lib/export/export.ts'
 import { readAseprite } from '../../src/lib/export/aseprite.ts'
 import { readCharacterZip } from '../../src/lib/store/import.ts'
@@ -66,48 +65,4 @@ test('all engine exports preserve body and equipment palettes, tuck masks, mirro
   const again = await exportFiles(p, { engines: ['generic'], baked: false })
   const m2 = JSON.parse(text.decode(again.entries.find((e) => e.name === 'manifest.json')!.data)) as Manifest
   expect(m2.items.map((it) => it.id)).toEqual(m.items.map((it) => it.id))
-})
-
-
-test('palette copies deduplicate outfit combinations and avoid item/slot collisions', async () => {
-  const p = await source(), first = await withColorVariants(p)
-  const collisionId = first.manifest.presets[0].items.body_color!
-  p.manifest.slots.push({ id: 'body_color', z: 5, class: 'worn' })
-  p.manifest.items.push({ ...structuredClone(p.manifest.items[2]), id: collisionId, materials: [] })
-  p.manifest.presets.push({ ...structuredClone(p.manifest.presets[0]), id: 'same-again' })
-  const result = await withColorVariants(p)
-  expect(result.manifest.presets[0].items.body_color_2).toBe(`${collisionId}-2`)
-  expect(result.manifest.presets[2].items).toEqual(result.manifest.presets[0].items)
-  expect(result.manifest.items.length).toBe(p.manifest.items.length + 6)
-  expect(new Set(result.manifest.items.map((it) => it.id)).size).toBe(result.manifest.items.length)
-})
-
-
-test('a later colored body and linked material keep first source outfit unchanged', async () => {
-  const p = await source()
-  p.manifest.materials.find((m) => m.id === 'hair_tone')!.linkTo = 'base_tone'
-  p.manifest.presets.unshift({ id: 'original', name: 'Original', items: { body: 'base', hair: 'hair', head: 'hat' }, variants: {} })
-  delete p.manifest.presets[1].variants.hair_tone
-  const normalized = await withColorVariants(p)
-  expect(normalized.manifest.presets[0].items.body_color).toBeTruthy()
-  expect(normalized.manifest.presets[1].items.body_color).toBeTruthy()
-  expect(normalized.manifest.presets[1].items.hair).not.toBe('hair')
-  for (const [i, preset] of p.manifest.presets.entries()) {
-    expect(composeCell(normalized, normalized.manifest.presets[i].items, 'idle', 'south', 0)).toEqual(composeCell(recolor(p, preset.variants), preset.items, 'idle', 'south', 0))
-  }
-})
-
-
-test('body-color overlays preserve body hiding and clipping from equipped gear', async () => {
-  for (const mode of ['item-hide', 'slot-hide', 'slot-clip', 'uncolored-clip'] as const) {
-    const p = await source()
-    if (mode === 'item-hide') p.manifest.items[2].hides = ['body']
-    if (mode === 'slot-hide') p.manifest.slots[2].hides = ['body']
-    if (mode === 'slot-clip' || mode === 'uncolored-clip') p.manifest.slots[2].clips = ['body', 'hair']
-    if (mode === 'uncolored-clip') for (const preset of p.manifest.presets) preset.variants = {}
-    const out = await exportFiles(p, { engines: ['generic'], baked: false })
-    expect(out.errors).toEqual([])
-    const restored = await readCharacterZip(await zip(out.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))))
-    for (const [i, preset] of p.manifest.presets.entries()) expect(composeCell(recolor(restored.project, restored.project.manifest.presets[i].variants), restored.project.manifest.presets[i].items, 'idle', 'south', 0)).toEqual(composeCell(recolor(p, preset.variants), preset.items, 'idle', 'south', 0))
-  }
 })

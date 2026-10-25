@@ -591,23 +591,14 @@ Import assigns a fresh local ID, writes blobs and project in one IndexedDB trans
 Explicit rig setup measures every unique frozen body image with `estimate-skeleton`, registers all supplied rest views with `create-character-v3`, and atomically attaches the same rest/keypoint/anchor/character contract as creation. Existing artwork is not regenerated. Source camera `rig.view` and humanoid `rig.template` are retained. Imported sources use `route: "import"`, `motion: "estimated:frozen-import"` (or `"imported-rest"` for a matching one-cell rest), and actual measured keypoints. Their QA adherence is `null`; palette, feet and border checks still run. New moves use the normal skeleton-v3 render and independent adherence checks. Short item clips are padded to the API's three-frame minimum and trimmed; long clips are batched to at most fifteen poses with original cell indices preserved.
 
 
-## Outfit-color export normalization (2026-10-22)
+## Outfit colors in exports
 
-Before building engine files, PixelDoll makes an ordinary item copy for each distinct item/palette combination actually
-used by an exported preset. Copy IDs are deterministic `<item>-color-<palette hash>` values (with a suffix when needed
-for an existing ID); matching outfits reuse a copy. Preset item selections point to those copies and their engine-facing
-`variants` maps are empty because the colors are already pixels. Original source-color items and material definitions
-remain available. Tuck variants are built afterward, so colored hair and helmets preserve the same masking as Studio.
+Exports ship each outfit's colors as data, not as extra layers: `materials[].ramp` and `variants` plus `presets[].variants`,
+and every runtime (Godot, Phaser, Unity, GDevelop) swaps exact source-ramp colors while the doll plays, so a game can change
+them; Aseprite applies the first outfit's palettes; `baked/` shows each outfit finished. (An earlier plan baked a recolored
+item copy per outfit and a `body_color` slot; it was never wired into exports and was removed in round 3.)
 
-The canonical base stays the single item in slot `body` and remains every runtime's animation clock. When any outfit
-recolors the body, or equipped items can clip it, every exported outfit receives a body copy (including identity-color
-copies for original palettes). A body copy
-uses an export-only `body_color` slot immediately after `body` (a collision gets a numbered slot suffix), the same layer
-z values, geometry and overrides, and `hides: ["body"]` in addition to the base's existing hide rules. The hidden clock
-continues animating; the ordinary synced layer displays its pixels. Existing body hide and clipping rules target the
-visible copy as well. No engine-specific color shader is needed.
-
-This normalization affects `manifest.json` and engine assets only. `project.json` and `cells/` preserve the original
+`project.json` and `cells/` preserve the original
 editable items, material ramps, outfit variant selections, rig and provenance. Body dimensions of 48/56 px inside a 64 px
 cell, legacy 32 px rig cells and 96 px held layers retain their geometry. Imported layer dimensions are bounded to
 1–256 px and pivots use the pixel-edge convention inside their own layer cell. Import budgets include repeated logical
