@@ -89,7 +89,7 @@ test('encoded strips and oversized baked sheets match the compositor, including 
   for (const pr of m.presets) for (const a of m.rig.animations) {
     const baked = await decodePngBytes(files.get(`baked/${pr.id}/${a.id}.png`)!);
     for (const [row, d] of m.rig.directions.entries()) for (let c = 0; c < a.cells; c++) {
-      expect(crop(baked, c * 96, row * 96, 96, 96)).toEqual(composeCell(recolor(p, pr.variants), pr.items, a.id, d.id, c, bakedFrame(m)));
+      expectPixels(crop(baked, c * 96, row * 96, 96, 96), composeCell(recolor(p, pr.variants), pr.items, a.id, d.id, c, bakedFrame(m)), `${pr.id}/${a.id}/${d.id}/${c}`);
     }
   }
   const strips = [...files.keys()].filter((path) => path.startsWith('generic/') && path.endsWith('.png'));
@@ -98,7 +98,7 @@ test('encoded strips and oversized baked sheets match the compositor, including 
   expect(strips).not.toContain('generic/base_main/strike_east_strip2.png');
   const west = await decodePngBytes(files.get('generic/sword_main/walk_west_strip2.png')!);
   const expected = cellImg(recolor(p, {}), p.manifest.items[1].layers[0], 'walk', 'west', 0)!;
-  expect(crop(west, 0, 0, 96, 96)).toEqual(expected);
+  expectPixels(crop(west, 0, 0, 96, 96), expected);
   expect(m.rig.animations[0].frames).toEqual(p.manifest.rig.animations[0].frames);
   expect(new TextDecoder().decode(files.get('generic/README.txt'))).toContain('including repeated indices');
 });
@@ -108,8 +108,8 @@ test('raw export round-trips through editable and source-sheet-only archives wit
   for (const entries of [result.entries, result.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))]) {
     const restored = (await readCharacterZip(await zip(entries))).project;
     for (const pr of p.manifest.presets) for (const dir of p.manifest.rig.directions) for (let c = 0; c < 2; c++) {
-      expect(composeCell(recolor(restored, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)))
-        .toEqual(composeCell(recolor(p, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)));
+      expectPixels(composeCell(recolor(restored, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)),
+        composeCell(recolor(p, pr.variants), pr.items, 'walk', dir.id, c, bakedFrame(p.manifest)), `${pr.id}/${dir.id}/${c}`);
     }
   }
 });
@@ -137,8 +137,8 @@ test('stale exclusion preserves linked outfit palettes while removing dangling o
   const restored = (await readCharacterZip(await zip(result.entries.filter((e) => e.name !== 'project.json' && !e.name.startsWith('cells/'))))).project;
   for (const [i, pr] of m.presets.entries()) {
     const expected = composeCell(recolor({ ...p, manifest: { ...p.manifest, items: p.manifest.items.filter((it) => it.id !== 'old') } }, p.manifest.presets[i].variants), pr.items, 'walk', 'south', 0, bakedFrame(m));
-    expect(composeCell(recolor(restored, pr.variants), pr.items, 'walk', 'south', 0, bakedFrame(m))).toEqual(expected);
-    expect(crop(await decodePngBytes(files.get(`baked/${pr.id}/walk.png`)!), 0, 0, 96, 96)).toEqual(expected);
+    expectPixels(composeCell(recolor(restored, pr.variants), pr.items, 'walk', 'south', 0, bakedFrame(m)), expected, pr.id);
+    expectPixels(crop(await decodePngBytes(files.get(`baked/${pr.id}/walk.png`)!), 0, 0, 96, 96), expected, pr.id);
   }
 });
 
