@@ -265,6 +265,7 @@ export interface CellOut {
   shifted: boolean; // still misregistered after re-registration (S4: shifted frames must be 0)
   offset: [number, number]; // posed cells: 1-px re-registration applied to the PixelLab output (skeleton-v3 is not exact)
   stray: number; // px removed by the largest-component filter
+  clipY?: number; // posed clip: item px at rows >= clipY are joined to the item above the band; postProcess keeps them only where the dressed keyframe has them
   posed: boolean;
   repaired?: boolean; // held: dressed keyframe pasted (S5 frame-0 repair)
 }
@@ -352,9 +353,11 @@ export function trimToKeyframe(rig: Rig, cells: CellOut[], keys: Partial<Record<
     const back = cs.map((c, i) => dilate(shiftMask(c.mask, w, -al[i].s[0], -al[i].s[1]), w, 1));
     for (const [i, c] of cs.entries()) {
       if (al[i].ov < TRIM.minOverlap * kn) continue;
-      const support = dilate(shiftMask(km, w, al[i].s[0], al[i].s[1]), w, TRIM.support), keep = new Uint8Array(c.mask.length), need = Math.ceil((cs.length - 1) / 2);
+      const exact = shiftMask(km, w, al[i].s[0], al[i].s[1]), support = dilate(exact, w, TRIM.support), keep = new Uint8Array(c.mask.length), need = Math.ceil((cs.length - 1) / 2);
       for (let p = 0; p < keep.length; p++) {
         if (!c.mask[p]) continue;
+        // below the head band only the keyframe itself counts: no dilation, no consensus (repeated slash streaks would win it)
+        if (c.clipY != null && ((p / w) | 0) >= c.clipY) { if (exact[p]) keep[p] = 1; continue; }
         if (support[p]) { keep[p] = 1; continue; }
         const X = (p % w) - al[i].s[0], Y = ((p / w) | 0) - al[i].s[1], q = Y * w + X;
         let n = 0;
@@ -362,10 +365,19 @@ export function trimToKeyframe(rig: Rig, cells: CellOut[], keys: Partial<Record<
         if (need && n >= need) keep[p] = 1;
       }
       removed += setMask(c, keep);
+      c.clipY = undefined; // judged
     }
   }
   return removed;
 }
+
+/** Cells the keyframe could not judge (no keyframe, aligned overlap < 50 %, a slot without the trim) get the band trim (B7). */
+const clipFloor = (cells: CellOut[]) => cells.reduce((n, c) => {
+  if (c.clipY == null) return n;
+  const y = c.clipY;
+  c.clipY = undefined;
+  return n + setMask(c, c.mask.map((v, p) => (v && ((p / c.layer.w) | 0) < y ? 1 : 0)));
+}, 0);
 
 /**
  * Held items: keep the largest component plus every component attached to it or to the gripping wrist (≤ 3 px: a blade split by
@@ -416,8 +428,8 @@ export function repairDropped(rig: Rig, slot: Slot, cells: CellOut[], keys: Part
 
 /** Clip-level cleanup after extraction (posed cells): streak trim for head items, attachment + repair for held items. */
 export function postProcess(rig: Rig, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): { removed: number; repaired: string[] } {
-  if (slot.class === 'held') { const removed = attachHeld(rig, slot, cells, pad); return { removed, repaired: repairDropped(rig, slot, cells, keys, pad) }; }
-  return { removed: slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0, repaired: [] };
+  if (slot.class === 'held') { const removed = attachHeld(rig, slot, cells, pad) + clipFloor(cells); return { removed, repaired: repairDropped(rig, slot, cells, keys, pad) }; }
+  return { removed: (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells), repaired: [] };
 }
 
 /**
@@ -470,8 +482,14 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
   const reg = o.posed ? bestShift(base, o.out) : ([0, 0] as [number, number]);
   const out = reg[0] || reg[1] ? translate(o.out, -reg[0], -reg[1]) : o.out;
   let r: { layer: Img; mask: Uint8Array; stray?: number } = route === 'none' ? diffLayer(base, out, band, o.useCc) : chromaLayer(out, route, base);
-  if (o.posed && o.clip) { // head items live above the neck: px below the band are smears/props the pose invented (B7 live)
-    for (let p = 0; p < r.mask.length; p++) if (r.mask[p] && ((p / w) | 0) >= band.y + band.h) { r.mask[p] = 0; r.layer.data.fill(0, p * 4, p * 4 + 4); r.stray = (r.stray ?? 0) + 1; }
+  let clipY: number | undefined;
+  if (o.posed && o.clip) { // head items live above the neck: detached px below the band are smears/props the pose invented (B7 live)
+    const y0 = band.y + band.h, below = (p: number) => ((p / w) | 0) >= y0;
+    for (const c of components(r.mask, w, h)) {
+      // px joined to the item above the band (coif, aventail, hood mantle) wait for postProcess: the dressed keyframe decides (2026-10-24)
+      if (c.some((p) => !below(p))) { if (c.some(below)) clipY = y0; continue; }
+      for (const p of c) { r.mask[p] = 0; r.layer.data.fill(0, p * 4, p * 4 + 4); r.stray = (r.stray ?? 0) + 1; }
+    }
   }
   if (o.posed) { const st = r.stray ?? 0; r = majorComponents(r, w, h); r.stray = (r.stray ?? 0) + st; }
   let outBand = 0, baseBand = 0;
@@ -485,6 +503,7 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
     key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
     ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, r.mask, tol) } : {}),
     ...cleanliness(r.mask, w, h), shifted: bestShift(base, out).some(Boolean), offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
+    ...(clipY != null ? { clipY } : {}),
   };
 }
 

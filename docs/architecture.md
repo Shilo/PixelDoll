@@ -119,7 +119,9 @@ rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE
 - **Clip cleanup after extraction [B9]:** held = largest component + components attached to it or to the gripping wrist
   (≤ 3 px); head items (`slot.band`) = trim px outside the aligned, 2 px-dilated dressed keyframe unless at least half of the
   direction's other frames have item px there (temporal consensus), skipped on frames whose aligned overlap is < 50 %.
-  Body-hugging worn items (torso, legs, feet, arms; not `back`/`hair`) drop detached components with < 50 % of their px on
+  Below the head band, detached components are trimmed at extraction; px joined to the item above the band (coif, aventail,
+  hood mantle) stay only where the aligned, undilated keyframe has them (no consensus), and frames the keyframe cannot judge
+  fall back to the band trim (2026-10-24). Body-hugging worn items (torso, legs, feet, arms; not `back`/`hair`) drop detached components with < 50 % of their px on
   the body silhouette (motion smears; T3). Capes and hair keep the component filter only (consensus trim would eat swings).
 - Cost: dress 10 + 12 clip-directions × 3 = **≈ 46 gens per item** (3 dirs × 4 clips).
 - Weak spots: more specks from motion smears (largest-component filter removes most), north slash cape vanished on 2 frames,
