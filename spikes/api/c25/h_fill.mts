@@ -1,6 +1,6 @@
 // Arm H prototype: cover erased base px (base opaque, output alpha < 128) in components of <= MAX px that touch the item, using the
 // color of an adjacent item px (repeated dilation inside the component). Renders today vs filled, composited over the real base.
-const A = 'file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/';
+const A = new URL('../../../app/', import.meta.url).href;
 const { runBench } = await import(A + 'scripts/bench.ts');
 const { components } = await import(A + 'src/lib/image/chroma.ts');
 const { recompose } = await import(A + 'src/lib/items/items.ts');

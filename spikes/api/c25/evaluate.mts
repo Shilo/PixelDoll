@@ -1,6 +1,6 @@
 // Shared evaluator: production extraction, cleanup and QA plus palette metrics, for stored and campaign runs.
 import { items, chroma, save, type Img } from './lib.mts';
-const { normalizeItemPalette } = await import('file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/src/lib/equipment/palette.ts');
+const { normalizeItemPalette } = await import(new URL('../../../app/src/lib/equipment/palette.ts', import.meta.url).href);
 export const count = (m: Uint8Array) => m.reduce((a, b) => a + b, 0);
 const blank = (w: number, h: number): Img => ({ w, h, data: new Uint8ClampedArray(w * h * 4) });
 export function padTo(im: Img, C: number): Img {
@@ -35,14 +35,19 @@ const dist = (a: number, b: number) => Math.max(Math.abs((a >> 16) - (b >> 16)),
 export function evaluate(c: Case, opt: { snap?: number } = {}) {
   const slot = items.slotOf(c.slot), held = slot.class === 'held', C = c.rig.cell.w + 2 * c.pad;
   const keys: Record<string, Img> = {}, kfCells: any[] = [];
+  const keyCut: Record<string, Uint8Array | undefined> = {}, N = c.rig.cell.w;
   for (const [d, out] of Object.entries(c.dress)) {
-    const k = items.extractCell({ key: `rest/${d}/0`, call: 0, base: padTo(c.rest[d], C), out: padTo(out, C), route: c.key, band: items.bandOf(c.slot, undefined, C) });
-    keys[d] = k.layer; kfCells.push(k);
+    const rk = c.rig.rest?.[d]?.keypoints, s0 = c.pad || !rk ? undefined : Object.fromEntries(rk.map((p: any) => [p.label, { x: p.x * c.rig.cell.w, y: p.y * c.rig.cell.h }])), maxY = items.cutRows(c.slot, s0, C);
+    const k = items.extractCell({ key: `rest/${d}/0`, call: 0, base: padTo(c.rest[d], C), out: padTo(out, C), route: c.key, band: items.bandOf(c.slot, undefined, C), ...(maxY != null ? { cut: { maxY } } : {}) });
+    keys[d] = k.layer; kfCells.push(k); keyCut[d] = k.cut;
   }
-  const cells: any[] = [];
+  const cells: any[] = [], cutOf = (anim: string, dir: string, i: number) => { // as run.ts cutFor: posed frames only inside the keyframe cut
+    const maxY = c.pad ? undefined : items.cutRows(c.slot, skel(c.rig, anim, dir, i), C), allow = maxY != null ? items.cutAllow(c.rig, `${anim}/${dir}/${i}`, keyCut[dir], N, items.posedTol(N, N)) : undefined;
+    return allow ? { cut: { maxY: maxY!, allow } } : {};
+  };
   for (const cl of c.clips) cl.frames.forEach((f, i) => cells.push(items.extractCell({
     key: `${cl.anim}/${cl.dir}/${i}`, call: 1 + c.clips.indexOf(cl), base: padTo(f.base, C), out: padTo(f.out, C), route: c.key,
-    band: items.bandOf(c.slot, c.pad ? undefined : skel(c.rig, cl.anim, cl.dir, i), C), posed: true, clip: slot.band, held, pad: c.pad })));
+    band: items.bandOf(c.slot, c.pad ? undefined : skel(c.rig, cl.anim, cl.dir, i), C), posed: true, clip: slot.band, held, pad: c.pad, ...cutOf(cl.anim, cl.dir, i) })));
   items.postProcess(c.rig, slot, cells, keys, c.pad);
   let snapped = 0;
   if (opt.snap != null) for (const cell of cells) { // P3 variant: snap each posed layer to its direction's keyframe palette
@@ -50,7 +55,9 @@ export function evaluate(c: Case, opt: { snap?: number } = {}) {
     cell.layer = r.image; snapped += r.changed;
   }
   const q = items.itemQa(c.rig, slot, c.key, cells, 0, items.GATES.keyOutsidePosed, c.pad), h = items.dirGate(slot, cells, keys, c.rig);
-  const fails = [...q.failCalls.values(), ...h.fails.values()].flat();
+  // the dress call's own gates (run.ts evaluateItem): a failing keyframe fails the item
+  const kfFails = kfCells.flatMap((k) => [items.g2Fails(k) && `G2 keyframe ${k.key}`, (k.keyOutside ?? 0) > items.GATES.keyOutside && `G3 keyframe ${k.key}`, !k.area && `G4 keyframe ${k.key}`].filter(Boolean));
+  const fails = [...kfFails, ...q.failCalls.values(), ...h.fails.values()].flat();
   const clips = c.clips.map((cl) => {
     const cs = cells.filter((x) => x.key.startsWith(`${cl.anim}/${cl.dir}/`)), kp = colorsOf(keys[cl.dir]);
     const areas = cs.map((x) => count(x.mask)), m = areas.reduce((s, a) => s + a, 0) / areas.length;

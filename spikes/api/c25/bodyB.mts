@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { type Img } from './lib.mts';
-const APP = 'file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/src/lib/';
+const APP = new URL('../../../app/src/lib/', import.meta.url).href;
 const { decodePngBytes } = await import(APP + 'image/pngraw.ts');
 export function studioBody(name: string) {
   const J = JSON.parse(fs.readFileSync(path.resolve(import.meta.dirname, `../out/c25/${name}.json`), 'utf8'));

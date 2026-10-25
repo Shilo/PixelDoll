@@ -1,6 +1,6 @@
 // Arm H survey (offline): base px the model erased (base opaque, output alpha < 128) that touch the extracted item, per cell,
 // as 8-connected components; their sizes and whether they touch the cell border. Over the bench corpus (real outputs).
-const A = 'file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/';
+const A = new URL('../../../app/', import.meta.url).href;
 const { runBench } = await import(A + 'scripts/bench.ts');
 const { components } = await import(A + 'src/lib/image/chroma.ts');
 const { cases, results } = await runBench();

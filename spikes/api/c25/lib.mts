@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 // @ts-ignore spike JS client
 import { client } from '../lib/api.mjs';
-const APP = 'file:///C:/Programming_Files/Shilocity/PixelLab/PixelDoll/app/src/lib/';
+const APP = new URL('../../../app/src/lib/', import.meta.url).href; // this checkout's app (a worktree tests its own code)
 export const items = await import(APP + 'items/items.ts');
 export const chroma = await import(APP + 'image/chroma.ts');
 export const routes = await import(APP + 'pixellab/routes.ts');
