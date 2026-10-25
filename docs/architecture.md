@@ -167,7 +167,7 @@ change. Only corrected PNGs need new actual measurements. Existing pose, palette
 | S2 chroma `edit-animation-v2` over all cells as the primary route | Superseded by §4.1; `edit-animation-v2` is now the **dressing** call (3 frames) and the cape fallback. |
 | S1 local diff on skin composites | Fallback only for items colliding with both keys; always human-reviewed. |
 | Template animations, rigid propagation | Banned / superseded (posing gives the consistency propagation was buying). |
-| `transfer-outfit-v2` as the per-clip design lock | Superseded, not banned: anchor-cell `edit-animation-v2` held the design closer (palette distance 9–10 vs 34) and kept the sword's shape (area CV 0.04 vs 0.27–0.39) [S2 X4]. Allowed for reference-image dressing; run the same chroma gates. Concept-image items are experimental until their spike passes ([review](research/paperdoll-py-asset-review-2026-10-24.md#concept-image-items-agreed-design)). |
+| `transfer-outfit-v2` as the per-clip design lock | Superseded, not banned: anchor-cell `edit-animation-v2` held the design closer (palette distance 9–10 vs 34) and kept the sword's shape (area CV 0.04 vs 0.27–0.39) [S2 X4]. Allowed for reference-image dressing; run the same chroma gates. Concept-image items use the anchored edit-animation-v2 route instead: blind-judged against transfer, no winner and more hard fails on transfer ([round 2](research/generation-quality-round2-2026-10-25.md) arm E). |
 | Per-cell masked inpaint, Pro Flash reference per cell | Design flicker [S1, S4]. |
 | Animating a dressed keyframe with pixminimax/v3 | Misaligned body (IoU 0.65–0.84) [S4]. |
 | `edit-images-v2`, Pro Flash grids, Pixen | Shifts / key loss / faces drawn into layers [S4]. Pixen = 1-gen draft preview only. |
@@ -177,9 +177,11 @@ change. Only corrected PNGs need new actual measurements. Existing pose, palette
 Key score ratio < 35 on opaque pixels, rim guard, drop components < 2 px, despill, layer drawn over the real base frame
 (pre-occluded). Key choice: green; magenta when the prompt matches `/green|emerald|lime|olive|jade|teal|mint|forest/`; blue
 (the green ramp with G and B swapped) when the prompt also names a red or pink hue and no blue or purple one (a green-and-pink
-item on magenta lost its pink on every frame; 2026-10-25 campaign arm K; purples and indigo score as blue key); magenta when
-all three collide, as before (it keys out purple; the diff route would keep it but cannot be posed); never gray; switch green ↔ magenta after two
-failures when allowed. Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
+item on magenta lost its pink on every frame; 2026-10-25 campaign arm K; purples and indigo score as blue key); azure (the
+green ramp hue-rotated to 210°; scored, despilled and luminance-matched in the rotated frame) when the prompt names green and a
+purple but no blue (a green-and-purple tunic on magenta kept 1.3 % of its purple while every gate passed, on azure 100 %; round
+2 arm Z); magenta when all four collide, as before (the diff route would keep the colors but cannot be posed); never gray; after two
+G2 failures switch to the next key the prompt allows, in that order. Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
 
 **Why a color key and not a pixel diff.** The obvious approach is to record the body before generation and keep only the pixels
 that changed. It was the first route (S1) and is still the fallback (`image/diff.ts`, route `none`), but it loses on output:

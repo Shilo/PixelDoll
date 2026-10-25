@@ -35,14 +35,20 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Historical item QA.** Older saved items lack replaceable checks; after an edit they stay marked for review with an
   explicit incomplete-check notice. Retained historical totals may omit old additions or include replaced frames until
   all older coverage is replaced. No paid recheck or silent reconstruction is performed.
-- **Some item colors have no safe key color.** Items are drawn on a single-color stand-in body (green, else magenta, else
-  blue) and separated by that color. An item that names green and purple (or violet, indigo) collides with all three, so it
-  keeps magenta and its purple parts can be removed as if they were background. Workaround: describe the purple as another
-  color, or review the item. See the [campaign](research/generation-quality-campaign-2026-10-25.md) follow-ups.
-- **Back views of full-coverage items on Studio bodies.** A hooded cloak seen from behind came out with a dark rim around
-  the hood (pointed ears redrawn) and a speckled texture on the 80 px elf; the "key kept" check flags it for review.
+- **A few item colors have no safe key color.** Items are drawn on a single-color stand-in body (green, else magenta, else
+  blue, else azure) and separated by that color. Only an item that names green, a red or pink, a blue and a purple at once
+  collides with all four; it keeps magenta and parts in those colors can be removed as if they were background. Workaround:
+  describe one color differently, or review the item. Azure sits near blue-gray steel shading; stored steel items scored 0 %
+  as azure key, but a green, purple and steel item on azure is untested.
+- **Items cannot hide parts of the body.** When a hood or a great helm is wider than the head, PixelLab erases the ear tips
+  under it, but layers only add pixels, so the body's own ears still poke out beside the item (elf hood back view, chibi
+  helm). The "key kept" check flags it for review. Fix: an item-hides-body mask, not yet designed. See
+  [round 2](research/generation-quality-round2-2026-10-25.md) arm H.
+- **Long held items lose size where the body hides them.** Bows change size between walk frames (front and back views) and
+  may turn against the hand; the size and turn checks flag the clip for repair.
 - **Action poses invent props.** Slash poses draw swords and motion streaks even for helmets and capes; cleanup removes them
-  from the saved layers, but streaks across the face can still fail the helmet's consistency check.
+  from the saved layers, but streaks across the face can still fail the helmet's consistency check. Changing the action
+  wording had no reliable effect (round 2 arm A).
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 

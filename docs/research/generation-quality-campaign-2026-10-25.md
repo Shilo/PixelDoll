@@ -132,6 +132,10 @@ purple parts on every route, so the untested routes cannot be worse than before.
 
 ## Follow-ups
 
+Outcome in [round 2](generation-quality-round2-2026-10-25.md): 1 → the anchored edit-animation-v2 route won instead; 2 → the
+model erases the ears under the hood, which layers cannot hide (needs an occlusion feature); 3 → solved with a fourth key,
+azure; 4 → no reliable effect.
+
 1. **Concept-image items**: implement with `transfer-outfit-v2`, the user's image as `reference_image`, chroma rest views as frames,
    the `equipment/generate.ts` instruction template, the same G2/G3 gates, then the normal posing. Test more concepts (full-body
    outfits, held items) before release; n here is 2 headwear concepts; only seed 7 was judged blind (seed 11 unjudged).

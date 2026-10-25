@@ -106,6 +106,12 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   and magenta (green with pink or red); green + purple keeps magenta. Concept-image items should be built on
   `transfer-outfit-v2` with the raw concept (provisional). Prompt rewordings for the dress and pose calls are not adopted. See
   the [campaign](docs/research/generation-quality-campaign-2026-10-25.md).
+- D21 (2026-10-25, measured round 2): a fourth chroma key, azure (hue 210°), for items that name green and purple; order
+  green → magenta → blue → azure. Concept-image items use the anchored edit-animation-v2 route with the raw concept as frame 1
+  (supersedes D19's provisional transfer-outfit-v2 route: blind judging found no winner and more hard fails on transfer).
+  Held bows and shields default to the off hand. The posed key tolerance follows the body cell (2 px for a 128 px body's 160 px cell). A G2 key switch takes the next key
+  the prompt allows. See
+  [round 2](docs/research/generation-quality-round2-2026-10-25.md).
 - D20 (2026-10-25, user): the version is automatic and never bumped by hand: the number of non-merge commits that changed what
   ships (app/ or its workflow), written major.minor.patch with patch 0-99 and minor 0-9 (1234 = 1.2.34), shown with the
   short commit in the More menu. Docs-only pushes neither run CI nor deploy. No tags or GitHub releases. See
