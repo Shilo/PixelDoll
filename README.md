@@ -1,7 +1,7 @@
 # PixelDoll
 
 **Dress up your 2D game characters with pixel-perfect paper dolling.** Generate swappable, frame-aligned equipment layers
-with PixelLab AI and export them to any game engine. · [Open PixelDoll](https://shilo.github.io/PixelDoll/)
+with PixelLab AI and export them to any game engine. · [Open PixelDoll](https://pixeldoll.app/)
 
 <p>
   <img src="docs/media/studio-dark.png" width="49%" alt="PixelDoll Studio in dark mode: the dressed demo character in the world with Preview controls below it, and the Wardrobe panel with equipment cards, a color ramp and New head item on the right">
@@ -25,7 +25,7 @@ The immersive Studio and its design prototype use [Bronze UI](https://github.com
 
 ## Status
 
-Live at https://shilo.github.io/PixelDoll/ (the version is in the More menu). See the [roadmap](https://github.com/users/Shilo/projects/7) (planned, in progress and done), [PLAN.md](PLAN.md) (status, decisions) and
+Live at https://pixeldoll.app/ (the version is in the More menu). See the [roadmap](https://github.com/users/Shilo/projects/7) (planned, in progress and done), [PLAN.md](PLAN.md) (status, decisions) and
 [known issues](docs/known-issues.md).
 
 - Proven: base character (48 px, padded to a 64 px cell) → skeleton-v3 moves → items dressed on a chroma mannequin and posed per
@@ -53,8 +53,9 @@ Open `#/` for character selection; the bundled demo needs no key. Choose **Custo
 <https://pixellab.ai/account>. It stays in memory unless you check *Remember on this device*, and is only sent to
 `api.pixellab.ai`. `npm run dev` handles the key exactly like the deployed site: there is no key file, endpoint or button.
 
-Remembered keys use `localStorage['pixellabApiKey']`, shared with PixelLab Backpack and other apps on the same origin
-(including other `https://shilo.github.io/` project paths). Only this name is used; older saved names are ignored and are
+Remembered keys use `localStorage['pixellabApiKey']`, shared with every app on the same origin. `https://pixeldoll.app/`
+is its own origin, so it no longer shares a key with PixelLab Backpack at `https://shilo.github.io/pixellab-backpack/`.
+Only this name is used; older saved names are ignored and are
 not migrated. Forget removes the shared saved key. Other open apps read it on their next load.
 
 **Agent mode (AI agents only).** Automated agents (Claude, Codex, …) that test generations use a separate dev server:
@@ -125,8 +126,9 @@ Use nearest-neighbor filtering and whole-pixel positions in every engine.
 `pixellab-key`, `PIXELLAB_API_KEY_AGENT_DEV`, agent-mode code, any `.env*` file or any source map. On a push to `main` it also deploys
 `app/dist` to GitHub Pages. A manual workflow run performs the checks; deployment requires a push to `main`. The workflow
 requires no PixelLab secret or key environment variable. Enable Pages once: **Settings → Pages → Build and deployment → Source: GitHub
-Actions**. The site is served at <https://shilo.github.io/PixelDoll/>; it works under that sub-path because Vite's `base` is
-`./` and the router uses `#/` hashes.
+Actions**. The site is served at <https://pixeldoll.app/>, a custom domain verified on the GitHub account with HTTPS
+enforced; `https://shilo.github.io/PixelDoll/` redirects there. The same build also works under a sub-path (a fork's
+`<user>.github.io/PixelDoll/`) because Vite's `base` is `./` and the router uses `#/` hashes.
 
 GitHub Pages cannot set response headers, so the Content-Security-Policy is a `<meta>` tag in `app/index.html`. It allows
 scripts from `'self'` only and network calls to `api.pixellab.ai` and PixelLab's image hosts. Add any new origin there.
@@ -140,8 +142,8 @@ either:
 - a custom domain (Settings → Pages → Custom domain), **recommended**, or
 - a user or organization root site (`<name>.github.io`) that hosts nothing else.
 
-`https://shilo.github.io/PixelDoll/` is such a project path: fine for trying the demo, but for real work (your key, saved
-projects) use a custom domain. Never deploy it as a project path next to pages you do not control. PixelDoll keeps the key
+The official site uses the custom domain `https://pixeldoll.app/`. A fork deployed as a project path is fine for trying
+the demo, but for real work (your key, saved projects) use a custom domain. Never deploy it as a project path next to pages you do not control. PixelDoll keeps the key
 in memory per tab by default and never broadcasts it to other tabs. Connect in the active queue tab, or close that tab to
 run work here. The Connect sheet warns when "Remember" is turned on at a `*.github.io` project path.
 

@@ -3,6 +3,8 @@
 Decision: 2026-10-23. PixelDoll, Backpack, and future applications on this origin intentionally share the optional,
 unencrypted `localStorage['pixellabApiKey']`. Existing paste/connect/Remember controls remain unchanged. No passphrase,
 encryption, backend, or additional unlock step is required. Apps on other origins do not share this storage.
+Since 2026-10-25 PixelDoll is served from `https://pixeldoll.app` and Backpack from `https://shilo.github.io`, so the two
+no longer share a remembered key; each keeps this contract on its own origin.
 
 ## Cross-app notifications
 

@@ -6,7 +6,7 @@ Living document: status and decisions. Open tasks live on the [PixelDoll board](
 
 ## Status (2026-10-22)
 
-- **Live:** public repo https://github.com/Shilo/PixelDoll (MIT), live at https://shilo.github.io/PixelDoll/. CI on every
+- **Live:** public repo https://github.com/Shilo/PixelDoll (MIT), live at https://pixeldoll.app/ (D23). CI on every
   push/PR that changes app/ (check, selftest, build, dist guard); `main` deploys to Pages. Versioning: D20.
 - **Pipeline (live evidence from legacy mirrored creation and imported rigs):** `create-character-v3` base (48 or 56 px body in a 64 px cell, 4 or 8 directions) →
   skeleton-v3 clips with stored keypoints (idle authored, walk from managed skeleton-v3 motion re-rendered raw, slash/cast/
@@ -116,6 +116,10 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   ships (app/ or its workflow), written major.minor.patch with patch 0-99 and minor 0-9 (1234 = 1.2.34), shown with the
   short commit in the More menu. Docs-only pushes neither run CI nor deploy. No tags or GitHub releases. See
   app/version.ts.
+- D23 (2026-10-25, user): the site moves to the custom domain https://pixeldoll.app/ (registered at Porkbun, verified on
+  the GitHub account, HTTPS enforced), which gives PixelDoll its own origin (D12 recommended one; settles D13's origin
+  question). https://shilo.github.io/PixelDoll/ redirects there. Keys remembered and projects saved on the old origin stay
+  there, and the remembered key is no longer shared with PixelLab Backpack on `shilo.github.io`.
 
 ## PWA (deferred, D13)
 
