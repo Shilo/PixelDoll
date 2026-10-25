@@ -1,6 +1,7 @@
 # PixelDoll — Plan
 
-Living document: status, roadmap, decisions. Open tasks and concerns live in `TODO.md`; how things work lives in
+Living document: status and decisions. Open tasks live on the [PixelDoll board](https://github.com/users/Shilo/projects/7), known limits in
+`docs/known-issues.md`; how things work lives in
 `docs/architecture.md`; the agent quick map is `AGENTS.md`.
 
 ## Status (2026-10-22)
@@ -31,7 +32,7 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 - **Shared equipment:** local immutable design library, portable design ZIPs, free compatible copies and independent
   target palettes are implemented. Paid cross-body fitting remains an experimental single-material headwear trial.
   Live idle/walk and Cast export/reimport passed; a Hurt helmet extension failed and remains blocked. Broader classes,
-  reliability and validation work are tracked in [TODO](TODO.md#shared-equipment-remaining-work); see the
+  reliability and validation work are tracked on the [board](https://github.com/users/Shilo/projects/7); see the
   [verification report](docs/testing/shared-equipment-2026-10-22.md) for scope and actual charges.
 - **PixelLab credits:** the ≈212 balance was an earlier free-GET snapshot, not the balance after subsequent shared-fit
   tests. Shield validation spent 99 generations (34 + 65); later fitting can report USD as well as generations, with
@@ -51,21 +52,8 @@ Living document: status, roadmap, decisions. Open tasks and concerns live in `TO
 
 ## Roadmap
 
-1. **Own origin** (custom domain) — key safety on shared `*.github.io`; prerequisite for PWA and for recommending
-   "Remember key". Decision deferred with PWA.
-2. **PWA** — deferred by user (2026-10-22); retain the installable, offline shell plan below (D13).
-3. **Item quality** — shield east-walk discontinuities (trajectory audit complete, two hard flags remain); stored cape
-   back-hem smudges and actual helmet hurt-frame deformations (forearm-occlusion false retry fixed);
-   live validation of the implemented independent-direction default with a right-hand weapon and western slash/grip
-   inspection (an item-only toggle cannot repair legacy mirrored actions;
-   see docs/research/handedness-implementation-scope-2026-10-22.md).
-4. **Engine coverage** — Unity live verification (needs Unity Hub sign-in); Godot Aseprite Wizard path.
-5. **Theming** — runtime theme tokens + "Paper" theme inspired by design look D (deferred by user).
-6. **Shared equipment fitting** — improve the rejected Hurt case; qualify more bodies/motions, then additional item
-   classes and profiles with separate cost/review gates. Missing-reference recovery and shared-copy engine execution
-   remain open. The [canonical backlog](TODO.md#shared-equipment-remaining-work) separates these from completed behavior.
-7. **Housekeeping** — CI runner pinned to `ubuntu-24.04`; PixelLab OpenAPI snapshot refresh when
-   endpoints change. Releases: bump `app/package.json`, annotated tag `vX.Y.Z`, `gh release create`.
+Open work is the [PixelDoll board](https://github.com/users/Shilo/projects/7): Ready (in priority order) → In progress → Done; deferred ideas are Later.
+Releases: bump `app/package.json`, annotated tag `vX.Y.Z`, `gh release create`; CI deploys `main`.
 
 ## Frame Editor planning (2026-10-23)
 
@@ -114,7 +102,7 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 
 ## PWA (deferred, D13)
 
-Installable, offline-capable Studio. Tasks in `TODO.md` "PWA".
+Installable, offline-capable Studio. Tracked as a Later card on the [board](https://github.com/users/Shilo/projects/7).
 
 - **Manifest** (`app/public/manifest.webmanifest`, relative href): name/short_name "PixelDoll", `start_url` "./#/",
   `scope` "./", `display` "standalone", theme/background = dark `--bg`, icons 192 + 512 + 512 maskable + SVG.

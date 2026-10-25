@@ -2,7 +2,7 @@
 
 Status: initial implementation verified under subsequent explicit user authorization. The original research and proposed qualification matrix below remain historical context. Exact copying, portable designs and reviewed fitting are implemented; the paid route is an experimental single-material headwear trial, not qualification of every item class. See the [implementation and verification report](../testing/shared-equipment-2026-10-22.md).
 
-Open work is tracked in [TODO — Shared equipment remaining work](../../TODO.md#shared-equipment-remaining-work): failed Hurt output, broader qualification, additional paid classes, missing-reference recovery, unknown billing and engine execution. The proposals below are not a completed capability checklist; current behavior and measured limits are in the verification report.
+Open work is tracked in [shared-equipment cards on the board](https://github.com/users/Shilo/projects/7): failed Hurt output, broader qualification, additional paid classes, missing-reference recovery, unknown billing and engine execution. The proposals below are not a completed capability checklist; current behavior and measured limits are in the verification report.
 
 Date: 2026-10-22.  
 Scope: a device-local design library shared across PixelDoll characters, portable design archives, and independently editable fitted copies on each target character. The app remains client-only.

@@ -64,7 +64,7 @@ The verified character remains open in the normal app. Temporary documentation/a
 
 ## Remaining concerns and follow-up
 
-The canonical action list is [TODO — Shared equipment remaining work](../../TODO.md#shared-equipment-remaining-work).
+The canonical action list is [shared-equipment cards on the board](https://github.com/users/Shilo/projects/7).
 This report records a completed implementation/verification checkpoint, not completion of the broader fitting plan.
 
 - **Confirmed quality failure:** Hurt helmet deformation persisted through an explicit retry; it remains blocked.

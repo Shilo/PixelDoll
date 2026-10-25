@@ -1,7 +1,7 @@
 # PixelDoll docs index
 
 Start with [architecture.md](architecture.md) (v1.3, current pipeline) and [manifest-spec.md](manifest-spec.md) (export
-format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Casual users: [user-guide.md](user-guide.md).
+format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Open work: the [board](https://github.com/users/Shilo/projects/7); accepted limits: [known-issues.md](known-issues.md). Casual users: [user-guide.md](user-guide.md).
 
 **Evidence media lives at tag [v0.1.0](https://github.com/Shilo/PixelDoll/tree/v0.1.0).** Spike outputs (`spikes/api/out/`), test
 screenshots (`testing/img/`), design screenshots (`design/screenshots/`) and the D2 mockup app (`design-mockups/`) are no longer
@@ -68,7 +68,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | [pixellab-openapi-v2.json](research/pixellab/pixellab-openapi-v2.json) | PixelLab REST v2 OpenAPI snapshot (102 paths). |
 | [Shared equipment designs with fitted copies](research/shared-equipment-fitted-copies-plan.md) | Agreed design and qualification plan; implemented local library, exact reuse and independent fitted copies. Paid fitting starts with an experimental single-material headwear route. |
 
-Shared-system limits and follow-up tasks live in [TODO — Shared equipment remaining work](../TODO.md#shared-equipment-remaining-work).
+Shared-system limits and follow-up tasks live in [shared-equipment cards on the board](https://github.com/users/Shilo/projects/7).
 The research plan is broader than the delivered paid trial; the verification report records both accepted and rejected live results.
 
 Older inputs, kept for history:

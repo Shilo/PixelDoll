@@ -26,8 +26,8 @@ The immersive Studio and its design prototype use [Bronze UI](https://github.com
 ## Status
 
 **v0.1.0 released** ([release notes](https://github.com/Shilo/PixelDoll/releases/tag/v0.1.0)), live at
-https://shilo.github.io/PixelDoll/. See [PLAN.md](PLAN.md) (status, roadmap, decisions) and [TODO.md](TODO.md) (open work
-and concerns).
+https://shilo.github.io/PixelDoll/. See the [roadmap](https://github.com/users/Shilo/projects/7) (planned, in progress and done), [PLAN.md](PLAN.md) (status, decisions) and
+[known issues](docs/known-issues.md).
 
 - Proven: base character (48 px, padded to a 64 px cell) → skeleton-v3 moves → items dressed on a chroma mannequin and posed per
   move → automatic checks → layers. Held items use a 96 px canvas with the same pivot.
@@ -163,7 +163,7 @@ Evidence media (spike outputs `spikes/api/out/`, test screenshots `docs/testing/
 - [User guide](docs/user-guide.md): the Studio in plain language
 - [Docs index](docs/README.md)
 - [Architecture v1.3](docs/architecture.md) and [manifest spec](docs/manifest-spec.md)
-- [PLAN.md](PLAN.md) and [TODO.md](TODO.md)
+- [Roadmap](https://github.com/users/Shilo/projects/7), [PLAN.md](PLAN.md) and [known issues](docs/known-issues.md)
 
 ## License
 

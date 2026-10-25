@@ -105,7 +105,7 @@ Each kept copy has its own wardrobe entry, colors and outfit choices. Changing t
 
 When you add a move, shared equipment gets a separate review for its missing frames. Matching frames copy for free; approved standing references can be reused without another standing-fit charge. Unaccepted or failed drafts do not replace wardrobe artwork. An export can therefore contain the new body move while warning that an item has no equipment frames for it.
 
-Paid fitting is experimental: a successful standing fit does not guarantee every move will preserve the design. Visible deformation blocks keeping the result; an occlusion warning still needs visual review. Broader item classes and recovery of missing old equipment references remain on the [shared equipment backlog](../TODO.md#shared-equipment-remaining-work).
+Paid fitting is experimental: a successful standing fit does not guarantee every move will preserve the design. Visible deformation blocks keeping the result; an occlusion warning still needs visual review. Broader item classes and recovery of missing old equipment references remain on the [shared equipment backlog](https://github.com/users/Shilo/projects/7).
 
 The library lives in this browser's storage, with no account sync. Download design and character ZIPs to keep backups or move them to another device. A design ZIP contains equipment references; use a character ZIP to preserve the whole editable character.
 

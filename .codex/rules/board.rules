@@ -1,0 +1,7 @@
+# The task board CLI needs the user's GitHub login, which Codex's sandbox hides. Ask instead of allowing silently:
+# the script is in the writable workspace, so an edited copy would otherwise run unsandboxed with the user's gh token.
+prefix_rule(
+    pattern = ["node", "scripts/board.mjs"],
+    decision = "prompt",
+    justification = "Task board CLI (see AGENTS.md Tasks); it only calls gh for project 7.",
+)
