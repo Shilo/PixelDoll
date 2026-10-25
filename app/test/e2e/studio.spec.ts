@@ -303,10 +303,32 @@ test('an outfit edit survives an immediate reload inside the autosave delay', as
   await expect(hat).toHaveAttribute('aria-pressed', worn)
   // A page-initiated reload 20 ms later lost the edit every time before the localStorage snapshot (page.reload() did not).
   const loaded = page.waitForEvent('load')
-  await page.evaluate(() => { setTimeout(() => location.reload(), 20) })
+  // A snapshot of a character deleted in another tab is swept when the character list loads.
+  await page.evaluate(() => { localStorage.setItem('pixeldoll.unsaved.rig-deleted-elsewhere', '{}'); setTimeout(() => location.reload(), 20) })
   await loaded; await enterStudio(page)
   await expect(hat).toHaveAttribute('aria-pressed', worn)
   expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('pixeldoll.unsaved.')))).toEqual([]) // saved, then cleared
+})
+
+// The unload snapshot replaces the saved dress state (never merges it), so a reset or removal survives too.
+test('a color reset survives an immediate reload inside the autosave delay', async ({ page }) => {
+  await page.route('https://*.pixellab.ai/**', (route) => route.abort())
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, '/#/')
+  const azure = () => page.locator('.colors .swatches').filter({ has: page.locator('[aria-label="azure"]') }).first().locator('[aria-label="azure"]')
+  await equipmentMode(page, 'Colors')
+  await azure().click()
+  await expect(azure()).toHaveAttribute('aria-checked', 'true')
+  await reloadStudio(page) // azure is now the saved state (openProject awaits the save)
+  await equipmentMode(page, 'Colors')
+  await expect(azure()).toHaveAttribute('aria-checked', 'true')
+  await page.locator('.colors .swatches').filter({ has: page.locator('[aria-label="azure"]') }).first().locator('.swatch').first().click()
+  await expect(azure()).toHaveAttribute('aria-checked', 'false')
+  const loaded = page.waitForEvent('load')
+  await page.evaluate(() => { setTimeout(() => location.reload(), 20) })
+  await loaded; await enterStudio(page)
+  await equipmentMode(page, 'Colors')
+  await expect(azure()).toHaveAttribute('aria-checked', 'false')
 })
 
 test('Inspector animation stays stable and eight-direction previews fit the panel', async ({ page }) => {
@@ -331,6 +353,8 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
       })
       geometry.push(JSON.stringify(sample.strip), JSON.stringify(sample.actions))
       pixels.push(sample.pixels)
+      // getBoundingClientRect gives a hidden element a zero box (boundingBox() gave null), so require real size.
+      for (const b of [sample.strip, ...sample.sprites]) expect(b.width * b.height).toBeGreaterThan(0)
       for (const b of sample.sprites) {
         expect(b.x).toBeGreaterThanOrEqual(sample.strip.x)
         expect(b.x + b.width).toBeLessThanOrEqual(sample.strip.x + sample.strip.width)

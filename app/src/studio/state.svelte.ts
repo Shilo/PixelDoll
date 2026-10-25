@@ -213,8 +213,10 @@ class View {
 export const view = new View();
 
 export async function refreshProjects() {
-  const own = (await listProjects().catch(() => [])).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+  const listed = await listProjects().catch(() => null), own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
   store.projects = [{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' }, ...own.map((p) => ({ id: p.id, name: p.manifest.name, demo: false, dev: originOf(p) === 'dev', savedAt: p.savedAt }))];
+  // Drop unload snapshots of characters deleted here or in another tab (only when the listing is known to be complete).
+  if (listed) try { for (const k of Object.keys(localStorage)) if (k.startsWith(UNSAVED) && !store.projects.some((p) => k === UNSAVED + p.id)) localStorage.removeItem(k); } catch { /* storage blocked */ }
 }
 
 let openRequest = 0;
@@ -233,9 +235,9 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     if (request !== openRequest) return;
     const m = r.project.manifest;
     const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
-    const unsaved = takeUnsaved(id, m);
-    doc.items = { ...pr.items, ...unsaved?.items };
-    doc.variants = { ...pr.variants, ...unsaved?.variants };
+    const unsaved = takeUnsaved(id, m), current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
+    doc.items = { ...current.items };
+    doc.variants = { ...current.variants };
     if (keep?.wear) { const it = m.items.find((i) => i.id === keep.wear); if (it) doc.items[it.slot] = it.id; }
     doc.undo = [];
     doc.redo = [];
@@ -248,6 +250,7 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     if (ui.selected) ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
     lsSet(K.last, id);
     doc.rev++;
+    savedEdits = edits; // what was just loaded is saved; only later edits make this project dirty
     // Keep it equips the accepted item while opening, or an outfit left unsaved by an unload; persist it now.
     if (keep?.wear || unsaved) { save(); await flushSave(); }
   } catch (e) {
@@ -327,19 +330,21 @@ function save() {
   saveT = setTimeout(() => void flushSave(), 400);
 }
 
-// IndexedDB writes started while a page unloads may never finish, so the unsaved outfit also goes to localStorage (synchronous)
-// until a save lands; openProject re-applies it through save().
-const unsavedKey = (id: string) => `pixeldoll.unsaved.${id}`;
+// IndexedDB writes started while a page unloads may never finish, so the unsaved dress state (the undo snapshot: outfit,
+// colors, saved outfits, layer order, hides) also goes to localStorage (synchronous) until a save lands; openProject
+// re-applies it with applyDress and saves it.
+const UNSAVED = 'pixeldoll.unsaved.', unsavedKey = (id: string) => UNSAVED + id;
 function keepUnsaved() {
-  if (edits === savedEdits || !doc.id || doc.loading) return;
-  lsSet(unsavedKey(doc.id), JSON.stringify({ items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }));
+  if (edits === savedEdits || !doc.id || doc.loading || !store.project) return;
+  lsSet(unsavedKey(doc.id), snap());
 }
 function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'> | null {
   try {
-    const v = JSON.parse(lsGet(unsavedKey(id)) ?? 'null') as Pick<Preset, 'items' | 'variants'> | null;
-    if (!v || typeof v.items !== 'object' || typeof v.variants !== 'object') return null;
+    const d = JSON.parse(lsGet(unsavedKey(id)) ?? 'null') as DressState | null;
+    if (!d?.current || !Array.isArray(d.materials) || !Array.isArray(d.presets) || typeof d.zOverrides !== 'object') return null;
+    applyDress(m, d); // keeps items added since and never revives removed ones
     // An item deleted since (another tab) is dropped rather than worn as a dangling id.
-    return { items: Object.fromEntries(Object.entries(v.items).filter(([, it]) => it == null || m.items.some((i) => i.id === it))), variants: v.variants };
+    return { items: Object.fromEntries(Object.entries(d.current.items).filter(([, it]) => it == null || m.items.some((i) => i.id === it))), variants: { ...d.current.variants } };
   } catch { return null; }
 }
 
@@ -360,7 +365,6 @@ export async function removeProject(): Promise<void> {
   const id = doc.id, request = openRequest, name = store.project?.manifest.name ?? 'Character';
   await flushSave();
   await db.deleteCharacter(id);
-  lsSet(unsavedKey(id), null);
   const deletedDrafts = new Set(gens.filter((g) => g.draft.rigId === id).map((g) => g.draft.spec.id));
   setGens(gens.filter((g) => g.draft.rigId !== id));
   store.results = Object.fromEntries(Object.entries(store.results).filter(([draftId]) => !deletedDrafts.has(draftId)));
