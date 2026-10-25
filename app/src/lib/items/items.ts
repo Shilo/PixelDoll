@@ -305,6 +305,14 @@ export interface CellOut {
 }
 
 const sum = (m: Uint8Array) => m.reduce((a, b) => a + b, 0);
+/** Base px outside the body's largest component (as body QA's detached pixels, rig/clips.ts bodyComponents). */
+function detachedOf(base: Img): Uint8Array {
+  const m = new Uint8Array(base.w * base.h);
+  for (let p = 0; p < m.length; p++) m[p] = base.data[p * 4 + 3] ? 1 : 0;
+  const comps = components(m, base.w, base.h).sort((a, b) => b.length - a.length), o = new Uint8Array(m.length);
+  for (const c of comps.slice(1)) for (const p of c) o[p] = 1;
+  return o;
+}
 function cleanliness(mask: Uint8Array, w: number, h: number) {
   const specks = components(mask, w, h).filter((c) => c.length <= 2).length;
   const filled = fillHoles(mask, { w, h, data: new Uint8ClampedArray(w * h * 4).fill(255) }, 2);
@@ -644,7 +652,10 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
   }
   // body px the item hides (round 3) count as covered for G2; posed frames only inside the keyframe's cut (cutAllow)
   const cut = o.cut && route !== 'none' && !(o.posed && !o.cut.allow) ? cutOf(base, out, qm, o.cut) : undefined;
-  const tol = o.posed ? posedTol(w, h, o.pad) : 0, kk = route === 'none' ? null : keyKept(base, out, route, cut ? qm.map((v, p) => v | cut[p]) : qm, undefined, tol);
+  // G2 counts the body only: detached base px (skeleton-v3 smoke or smear FX the body render kept, reported by body QA) are never
+  // on the stand-in, so they read as erased (round 5: 10–13 px beside the head failed G2 on every item, idle east 1–3)
+  const fx = detachedOf(base), skip = qm.map((v, p) => v | (cut?.[p] ?? 0) | fx[p]);
+  const tol = o.posed ? posedTol(w, h, o.pad) : 0, kk = route === 'none' ? null : keyKept(base, out, route, skip, undefined, tol);
   return {
     key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
     ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, qm, tol) } : {}),
