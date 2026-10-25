@@ -266,6 +266,8 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .menu-sec { padding: 6px 8px 2px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-3); }
 .menu .row { min-height: var(--ctl-h); }
 .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
+.options-menu { container-type: inline-size; }
+@container (max-width: 19.5em) { .options-menu .row-aside { display: none; } } /* measured: the widest row needs ~19 em; the muted extras give way before names truncate */
 .dev-rigs > summary { list-style: none; cursor: pointer; color: var(--text-2); }
 .dev-rigs > summary::-webkit-details-marker { display: none; }
 .dev-rigs[open] > summary svg { transform: rotate(90deg); }

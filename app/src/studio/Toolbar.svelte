@@ -46,8 +46,8 @@
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='connect' }}><KeyRound size={18}/><span class="row-name">{app.key ? app.keyRejected ? 'Key not accepted' : 'PixelLab account' : 'Connect PixelLab'}</span></button>
   <button class="row bu-action" data-variant="quiet" onclick={() => { toggleTheme(); document.getElementById('experience-options')?.hidePopover() }}>{#if ui.theme==='dark'}<Sun size={18}/>{:else}<Moon size={18}/>{/if}<span class="row-name">{ui.theme==='dark'?'Light mode':'Dark mode'}</span></button>
   <hr />
-  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noreferrer"><Github size={18}/><span class="row-name">Source code</span><ExternalLink size={16}/></a>
-  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}" target="_blank" rel="noreferrer"><PersonStanding size={18}/><span class="row-name">Version {__APP_VERSION__}</span><span class="faint small num">{__APP_COMMIT__}</span><ExternalLink size={16}/></a>
+  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noreferrer"><Github size={18}/><span class="row-name">Source code</span><span class="row-aside faint small">Shilo/PixelDoll</span><ExternalLink size={16}/></a>
+  <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}" target="_blank" rel="noreferrer"><PersonStanding size={18}/><span class="row-name">Version {__APP_VERSION__}</span><span class="row-aside faint small num">{__APP_COMMIT__}</span><ExternalLink size={16}/></a>
 </div>
 
 <div id="project-menu" class="menu" popover bind:this={menu} role="menu" aria-label="Characters"
