@@ -75,7 +75,9 @@ jobs:
           cache: npm
           cache-dependency-path: app/package-lock.json
       - run: npm ci
-      - run: npx playwright install --with-deps --only-shell chromium # headless runs need only the shell
+      # No --with-deps: the runner already has the shell's libraries, and the apt mirror it used stalled shards for up to
+      # 10 min. Fonts the app's stacks resolve to are identical either way (docs/testing/test-performance.md).
+      - run: npx playwright install --only-shell chromium # headless runs need only the shell
       - run: npm run e2e -- --shard=${{ matrix.shard }}/16 # list + GitHub annotations for failures and flakes (playwright.config.ts)
         timeout-minutes: 10 # a step timeout fails the step (job timeouts cancel it), so traces still upload
       - if: ${{ !cancelled() && hashFiles('app/test-results/**/trace.zip') != '' }} # failures and retried flakes

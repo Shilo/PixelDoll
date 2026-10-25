@@ -29,6 +29,8 @@ Commits: `1b6230a7`, `16b787ef`, `84f718e3`, `1c59e22e`, `3a246fff`, `8b098785`,
   - `expect.timeout` is 5 s on CI (an unloaded single worker) and 15 s locally (workers share the CPU).
   - `retries` is 1 on CI. The `github` reporter annotates any test that only passed on retry as flaky; investigate those, don't ignore them.
   - Failures and retried flakes upload `app/test-results` traces as an artifact for 7 days.
+  - **The browser installs without `--with-deps`.** The runner's preinstalled Google Chrome already brings every library the headless shell needs; `--with-deps` only added fonts and security upgrades from an Ubuntu mirror that stalled 4 of 32 shard installs for 3–10 min on 2026-10-25. Validated on a throwaway branch ([run 40211945075](https://github.com/Shilo/PixelDoll/actions/runs/40211945075)): all 16 shards passed with no flakes, the install fell from a median of 19 s to 4–6 s, and `fc-match` gave the same font file for every name the app's stacks use (sans-serif, serif, monospace, system-ui, Segoe UI, Georgia, Times New Roman) with and without the packages.
+  - Playwright 1.64.1's Chromium host-dependency check does nothing on Linux (it looks in `chrome-linux`; the folders are `chrome-linux64` and `chrome-headless-shell-linux64`). A library missing from a future runner image shows up as a browser launch crash instead, which still fails every test and blocks the deploy.
 - **CI layout:** `build` (check, unit, build, Pages artifact) runs in parallel with the e2e shards. `deploy` needs all of them.
   - A newer push to a non-main ref cancels its older run.
   - On main, a run that has started always finishes. A queued one can be replaced by a newer push, which is then tested and deployed itself.
@@ -116,7 +118,7 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
 
 ## Open options, measured or modeled but not done
 
-- **Setup per shard is about 35–45 s** (installing Playwright with its apt packages takes 16–26 s). Browser caching saves about 3–6 s and Playwright advises against it. Dropping `--with-deps` needs Linux validation first.
+- **Setup per shard is about 20–25 s.** Browser caching saves about 3–6 s and Playwright advises against it.
 - **The 15 s local expect timeout** hides UI steps that take up to 15 s on a loaded workstation. CI's 5 s still catches them.
 - **The unload snapshot covers only the debounced dress state.** Other flows (character creation, import, moves) write through their own awaited saves; a new debounced write path would need the same treatment. Known limits:
   - Only the outfit and color paths have regression tests. Saved outfits, layer order and hides ride on the same `applyDress` path that undo uses.
