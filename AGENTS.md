@@ -13,50 +13,33 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 ## Docs
 
-Overview and setup: README.md
-Plan and decisions: PLAN.md
-Open work and concerns: TODO.md
-Docs index: docs/README.md
-Architecture: docs/architecture.md
-Manifest and export format: docs/manifest-spec.md
-User guide: docs/user-guide.md
-Research and spikes: docs/research/, docs/spikes/
-Test reports: docs/testing/
-Agent token contract: docs/handoff/agent-dev-token-handling.md
-PixelLab API snapshot: docs/research/pixellab/pixellab-openapi-v2.json
-Old evidence media (spike output, screenshots): git tag v0.1.0
+Index: docs/README.md (architecture, manifest spec, user guide, research, test reports). Plan and decisions: PLAN.md. Accepted limits: docs/known-issues.md.
+Agent token contract: docs/handoff/agent-dev-token-handling.md. PixelLab API snapshot: docs/research/pixellab/pixellab-openapi-v2.json. Old evidence media: git tag v0.1.0.
+
+## Tasks
+
+Tasks live only on the [PixelDoll board](https://github.com/users/Shilo/projects/7) as draft cards; there is no TODO file, and GitHub Issues are for user reports. The board is public and is the roadmap, so write cards for users to read.
+Statuses: Ready (top is next), In progress, Done, Later (deferred), Canceled.
+From app/, run node scripts/board.mjs (no arguments prints usage). A card is its ID, exact title or a unique part of its title; \n in a body is a newline. Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
+- "What's next?": list Ready and recommend the highest card whose body does not start with "Blocked:"; say if it is paid or needs the user's decision. Do not move it.
+- Starting a card: show it, read its Refs, then move it to In progress before changing files.
+- Finishing: move it to Done only after verifying the work. If work stops early, keep it In progress and add a "Left: …" line to the body; remove that line when the card is done.
+- Adding: only when the user asks to track something, or for an out-of-scope finding the user agrees to track; never for steps of the current task. List first to avoid duplicates, including similar titles. Use a short imperative title and one to three plain lines plus "Refs: <paths or links>"; no progress logs.
+- Canceling: move to Canceled only when the user decides. Archive only when asked. Leave Later and Blocked cards alone unless asked.
 
 ## Code
 
-Studio UI: app/src/studio/
-PixelLab client and job queue: app/src/lib/pixellab/
-PixelLab tier concurrency defaults and tool access rules: app/src/lib/pixellab/plans.ts (`PLAN_JOB_LIMITS`; edit values here). Policy, endpoint audit and sources: docs/pixellab-plans.md. Free/Trial = local tier 0; the API does not return a numeric concurrency limit.
-Rig, clips and poses: app/src/lib/rig/
-Item generation and quality gates: app/src/lib/items/
-Image pipeline and chroma key: app/src/lib/image/
-Compositing and z order: app/src/lib/compose/
-Recolor and outfits: app/src/lib/dress/
-Exporters: app/src/lib/export/
-Storage (IndexedDB, zip): app/src/lib/store/
-Dev-only pages and fixtures: app/src/ui/, app/dev-fixtures/
-Demo fixture: app/public/fixtures/s2/
-Live API experiments: spikes/api/
-CI and Pages deploy: .github/workflows/pages.yml
+Studio UI: app/src/studio/. app/src/lib/: pixellab (client, job queue), rig, items (generation, quality gates), image (chroma key), compose (z order), dress (recolor, outfits), export, store (IndexedDB, zip).
+PixelLab tier limits and tool access: edit `PLAN_JOB_LIMITS` in app/src/lib/pixellab/plans.ts; policy and sources in docs/pixellab-plans.md. Free/Trial is local tier 0; the API returns no numeric concurrency limit.
+Dev-only pages and fixtures: app/src/ui/, app/dev-fixtures/. Demo fixture: app/public/fixtures/s2/. Live API experiments: spikes/api/. CI and Pages deploy: .github/workflows/pages.yml.
 
 ## Commands
 
-Run all from app/.
-Runtime: Node.js 24.22.1 (.nvmrc), npm 11.19.1; use exact package versions and the committed lockfile.
-Install: npm ci
-Dev server for humans: npm run dev
-Dev server for agents: npm run dev:agent
-Type check: npm run check
-Unit tests: npm test (Vitest 4.1.12, parallel); npm test -- <file filter> while iterating, e.g. npm test -- phaser; npm run selftest is a compatibility alias
-Build: npm run build
-End-to-end tests: npm run e2e (Playwright Test 1.64.1; managed Chromium; builds and starts local servers; parallel)
-Targeted end-to-end tests: npm run e2e -- <spec names> [-g "<title>"], e.g. npm run e2e -- characters auth; rerun failures with npm run e2e -- --last-failed
-Concurrent agents: give each run its own E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR (defaults 5399, 5298, test-results); --last-failed reads the same TEST_OUTPUT_DIR
-Browser install: npx playwright install chromium
+Run all from app/. Install with npm ci; add dependencies at exact versions with the committed lockfile.
+Dev server: npm run dev (humans), npm run dev:agent (agents; see Agent testing).
+Type check: npm run check. Unit tests: npm test [-- <file filter>]. Build: npm run build.
+End-to-end tests: npm run e2e [-- <spec names>] [-g "<title>"] [--last-failed]; it builds and starts its own servers. Browser install: npx playwright install chromium.
+Concurrent agents: give each run its own E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR (defaults 5399, 5298, test-results); --last-failed reads the same TEST_OUTPUT_DIR.
 
 ## End-to-end scope
 
@@ -71,17 +54,23 @@ export-picker: export dialog and engine formats
 concurrency: plan capacity, two-tab queue leadership, busy recovery
 selftests: browser self-tests (every module registered in src/lib/selftests.ts), QA storage, demo copy
 experience-parity: world keyboard focus, Preview input, resizing, selection wheel, phone Redo, character search, early theme, two-finger equipment (src/studio/experience/)
-Experience screenshot captures (experience.spec.ts) use a separate config: playwright.experience.config.ts (see docs/testing/production-experience-2026-10-23.md).
-Standalone Studio compatibility entry: node scripts/e2e-studio.mjs (existing build required)
+Before changing test configs, CI shards or adding slow or timing-sensitive tests, read docs/testing/test-performance.md.
+Experience screenshot captures (experience.spec.ts) use playwright.experience.config.ts (see docs/testing/production-experience-2026-10-23.md).
 
 ## Rules
 
 Remembered PixelLab credentials remain plaintext in optional `localStorage['pixellabApiKey']`, intentionally shared
 with every app on this origin. Never broadcast credentials. Follow `docs/shared-token-security.md` for credential-free
-Forget/replacement notifications; do not introduce encryption or an extra unlock step. The TODO records encryption as deferred.
+Forget/replacement notifications; do not introduce encryption or an extra unlock step. A deferred board card tracks encryption.
 
-Follow KISS and YAGNI: no feature, dependency or abstraction without a real need.
-Before changing test configs, CI shards or adding slow or timing-sensitive tests, read docs/testing/test-performance.md (budgets, anti-patterns, rules).
+KISS and YAGNI: no feature, dependency, option or abstraction without a real need.
+DRY: before writing a helper, type or constant, search for an existing one and reuse or extend it; never copy logic. Extract shared code when a second caller needs it, not before.
+Fix the root cause where all callers pass through, not only the reported symptom.
+Stay in scope: no unrequested refactors, renames or reformatting; mention them instead.
+Fail loudly: no catch-all, placeholder value or fallback that hides an error unless the design calls for it.
+Never weaken, skip or delete a test or assertion to make it pass; if the test is wrong, say why.
+Delete code your change makes dead; no commented-out code. Comments explain why, not what changed.
+Report what you verified, what failed and what you skipped; never claim a check you did not run.
 Keep the existing custom CSS and visuals; do not introduce GlassKit.
 Keep the app client-only; never add a backend.
 Use only the allowed PixelLab models above, and check docs/research/pixellab/ before calling an endpoint.
@@ -93,6 +82,6 @@ Use American English spelling.
 ## Agent testing
 
 Agents that need PixelLab run npm run dev:agent (launch config app-dev-agent, port 5199). It reads PIXELLAB_API_KEY_AGENT_DEV from the repo-root .env server-side, and the app connects by itself and shows an Agent mode badge.
-Humans use npm run dev and paste their token in the app, as in production. Builds never contain the agent path (agent-mode builds are refused, and npm run build ends with the dist guard, app/scripts/dist-guard.mjs, which fails if key code reaches dist).
+Humans use npm run dev and paste their token, as in production. Agent-mode builds are refused, and npm run build ends with app/scripts/dist-guard.mjs, which fails if key code reaches dist.
 Check GET /balance only unless the task needs generations. Keyless scripts set localStorage pixeldoll.agentKey to off on the agent server so nothing can spend. The switch is read at page load and covers every tab of that origin, so keep it set for the whole run.
 Never expose the agent server beyond localhost (no --host, tunnels or port forwards).
