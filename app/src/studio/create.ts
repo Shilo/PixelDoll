@@ -221,7 +221,7 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
     // Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
     const measured = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, j.signal, j.activityScope); j.tick(); return k; }));
     if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`);
-    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: 0, disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0) });
+    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: 0, disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0), facing: { dir: j.dir, rest: j.restKps } });
     return { frames, measured, qa, recs, ...('processing' in candidate ? { processing: candidate.processing } : {}) };
   }
   throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames or the wrong number of frames`);

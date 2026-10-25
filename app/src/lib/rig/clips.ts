@@ -85,13 +85,23 @@ export const borderPx = (im: Img) => {
 export const RIG_GATES = { adherence: 2, silhouetteBottomDelta: 1, paletteFit: 0.97, border: 0 };
 export interface ClipQa { adherence: number | null; feetDrift: number; paletteFit: number; border: number; stray: number; disconnectedPixels: number; fails: string[]; warnings: string[] }
 /** `feetDrift` is the historical storage field for silhouette-bottom displacement, not measured foot contact/sliding. */
-export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: Keypoint[][]; measured: (Keypoint[] | undefined)[]; stray: number; disconnectedPixels?: number }): ClipQa {
+/** Shoulder width (character's left minus right, signed) of each frame relative to the standing pose, in front and back views. */
+export function facingRatios(dir: string, rest: Keypoint[], frames: (Keypoint[] | undefined)[]): (number | null)[] {
+  const width = (k?: Keypoint[]) => { const l = k?.find((p) => p.label === 'LEFT SHOULDER'), r = k?.find((p) => p.label === 'RIGHT SHOULDER'); return l && r ? l.x - r.x : null; };
+  const w0 = width(rest);
+  return frames.map((k) => { const w = width(k); return dir !== 'south' && dir !== 'north' || !w0 || w == null ? null : w / w0; });
+}
+/** Text-described moves can turn the body side-on (round 5, measured joints: a pixminimax slash south fell to 0.06 of the standing
+ * shoulder width and a north one flipped sign; walk, idle, run and hurt stayed >= 0.85). Review threshold only. */
+export const FACING_MIN = 0.5;
+export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: Keypoint[][]; measured: (Keypoint[] | undefined)[]; stray: number; disconnectedPixels?: number; facing?: { dir: string; rest: Keypoint[] } }): ClipQa {
   const cell = { w: o.rest.w, h: o.rest.h };
   const complete = o.frames.length > 0 && o.measured.length === o.frames.length && o.measured.every(k => hasAll(k));
   const countMatches = !o.requested || o.requested.length === o.frames.length;
   const adh = o.requested && complete && countMatches ? adherence(o.requested.map((k) => fromApi(k, cell)), o.measured.map((k) => k && fromApi(k, cell))) : null;
   const feet = Math.max(0, ...o.frames.map((f) => Math.abs(feetY(f) - feetY(o.rest))));
   const fit = paletteFit(o.rest, o.frames), border = o.frames.reduce((s, f) => s + borderPx(f), 0);
+  const ratios = o.facing ? facingRatios(o.facing.dir, o.facing.rest, o.measured) : [], turned = ratios.flatMap((r, i) => (r != null && r < FACING_MIN ? [i + 1] : []));
   const fails = [
     (!o.frames.length || o.frames.some(f => !opaqueBox(f))) && 'empty animation frame',
     !complete && 'missing or invalid frame joints',
@@ -103,6 +113,7 @@ export function clipQa(o: { anim: string; rest: Img; frames: Img[]; requested?: 
     fit < RIG_GATES.paletteFit && `palette similarity ${fit.toFixed(3)}; review shading`,
     border > RIG_GATES.border && `${border} opaque pixels touch the frame border; check framing`,
     (o.disconnectedPixels ?? 0) > 0 && `${o.disconnectedPixels} disconnected pixels retained; review details`,
+    turned.length > 0 && `the body turns side-on or falls in frame${turned.length > 1 ? 's' : ''} ${turned.join(', ')} (shoulders down to ${Math.max(0, Math.round(100 * Math.min(...ratios.filter((r): r is number => r != null))))} % of the standing width); check that it still faces ${o.facing!.dir}`,
   ].filter((s): s is string => !!s);
   return { adherence: adh === null ? null : +adh.toFixed(2), feetDrift: feet, paletteFit: +fit.toFixed(3), border, stray: o.stray, disconnectedPixels: o.disconnectedPixels ?? 0, fails, warnings };
 }
@@ -113,6 +124,10 @@ export function poseBatches(cells: number): { start: number; count: number }[] {
   let start = 0;
   return Array.from({ length: n }, (_, i) => { const count = size + (i < extra ? 1 : 0), out = { start, count }; start += count; return out; });
 }
+/** Raw skeleton-v3 price of one call: 3 frames 2 gens, up to 12 frames 3 (measured, round 4), 15 frames 4 (docs). */
+export const poseCallGens = (frames: number) => frames <= 3 ? 2 : frames <= 12 ? 3 : 4;
+/** Gens to pose `cells` frames in poseBatches calls. */
+export const poseGensFor = (cells: number) => poseBatches(cells).reduce((sum, b) => sum + poseCallGens(b.count), 0);
 export const paddedPoses = (poses: Keypoint[][]): Keypoint[][] => poses.length >= 3 ? poses : [...poses, ...Array.from({ length: 3 - poses.length }, () => poses.at(-1)!)];
 
 export function selfTest() {
@@ -124,10 +139,6 @@ export function selfTest() {
   console.assert(parts.count === 3 && parts.detachedPixels === 2 && im.data.every((v, i) => v === original[i]), 'body connectivity inspection never erases pixels');
   const clean = makeImg(8, 8); clean.data.set(im.data); clean.data.fill(0, (1 * 8 + 7) * 4, (1 * 8 + 7) * 4 + 4); clean.data.fill(0, 0, 4);
   console.assert(paletteFit(clean, [clean]) === 1 && paletteFit(clean, [im]) < 1, 'paletteFit');
-/** Raw skeleton-v3 price of one call: 3 frames 2 gens, up to 12 frames 3 (measured, round 4), 15 frames 4 (docs). */
-export const poseCallGens = (frames: number) => frames <= 3 ? 2 : frames <= 12 ? 3 : 4;
-/** Gens to pose `cells` frames in poseBatches calls. */
-export const poseGensFor = (cells: number) => poseBatches(cells).reduce((sum, b) => sum + poseCallGens(b.count), 0);
   const k = LABELS.map(label => ({ label, x: 0.5, y: 0.5 })), k2 = k.map(p => ({ ...p, y: 0.8 })); // joints 2.4 px apart on 8 px
   const ok = clipQa({ anim: 'slash', rest: clean, frames: [clean], requested: [k], measured: [k], stray: 0 });
   const bad = clipQa({ anim: 'slash', rest: clean, frames: [im], requested: [k], measured: [k2], stray: 0 });
