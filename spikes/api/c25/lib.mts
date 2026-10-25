@@ -73,6 +73,25 @@ export async function paid(o: { arm: string; label: string; file: string; req: {
   return imgs;
 }
 
+/** One paid synchronous call whose answer is JSON (estimate-skeleton): `<file>.json` holds the response; same marker, cap and ledger rules as paid(). */
+export async function paidJson(o: { arm: string; label: string; file: string; req: { path: string; body: any }; estimate: number; armCap: number }): Promise<any | null> {
+  const done = `${o.file}.json`, sent = `${o.file}.sent`;
+  if (fs.existsSync(done)) return JSON.parse(fs.readFileSync(done, 'utf8')).response;
+  if (READONLY) return null;
+  if (fs.existsSync(sent)) { console.log(`LOST? ${o.label}: sent earlier without a stored result; not resending`); return null; }
+  if (spent(o.arm) + o.estimate > o.armCap || spent() + o.estimate > TOTAL_CAP) { console.log(`CAP ${o.label}: arm ${spent(o.arm)}/${o.armCap}, total ${spent()}/${TOTAL_CAP}`); return null; }
+  if (!api) throw new Error('no agent key (run with --env-file=../../.env)');
+  fs.mkdirSync(path.dirname(o.file), { recursive: true });
+  fs.writeFileSync(sent, new Date().toISOString());
+  let r: any;
+  try { r = await api.post(o.req.path, o.req.body); }
+  catch (e: any) { fs.appendFileSync(LEDGER, JSON.stringify({ arm: o.arm, label: o.label, estimate: o.estimate, error: String(e.message).slice(0, 300), status: e.status }) + '\n'); console.log(`ERROR ${o.label}: ${String(e.message).slice(0, 200)}`); return null; }
+  const gens = r?.usage?.generations;
+  fs.writeFileSync(done, JSON.stringify({ label: o.label, response: r }));
+  fs.appendFileSync(LEDGER, JSON.stringify({ arm: o.arm, label: o.label, estimate: o.estimate, gens, usage: r?.usage }) + '\n');
+  return r;
+}
+
 /** Run tasks with a concurrency limit. */
 export async function pool<T>(tasks: (() => Promise<T>)[], n = 6): Promise<T[]> {
   const out: T[] = []; let i = 0;

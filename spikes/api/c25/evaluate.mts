@@ -54,9 +54,10 @@ export function evaluate(c: Case, opt: { snap?: number } = {}) {
     const pal = colorsOf(keys[cell.key.split('/')[1]]), r = normalizeItemPalette(cell.layer, pal, opt.snap);
     cell.layer = r.image; snapped += r.changed;
   }
-  const q = items.itemQa(c.rig, slot, c.key, cells, 0, items.GATES.keyOutsidePosed, c.pad), h = items.dirGate(slot, cells, keys, c.rig);
+  const hidden = items.hiddenViews(kfCells, keys); // as run.ts: a small accessory's empty view is reviewed, not failed
+  const q = items.itemQa(c.rig, slot, c.key, cells, 0, items.GATES.keyOutsidePosed, c.pad, hidden), h = items.dirGate(slot, cells, keys, c.rig);
   // the dress call's own gates (run.ts evaluateItem): a failing keyframe fails the item
-  const kfFails = kfCells.flatMap((k) => [items.g2Fails(k) && `G2 keyframe ${k.key}`, (k.keyOutside ?? 0) > items.GATES.keyOutside && `G3 keyframe ${k.key}`, !k.area && `G4 keyframe ${k.key}`].filter(Boolean));
+  const kfFails = kfCells.flatMap((k) => [items.g2Fails(k) && `G2 keyframe ${k.key}`, (k.keyOutside ?? 0) > items.GATES.keyOutside && `G3 keyframe ${k.key}`, !k.area && !hidden.has(k.key.split('/')[1]) && `G4 keyframe ${k.key}`].filter(Boolean));
   const fails = [...kfFails, ...q.failCalls.values(), ...h.fails.values()].flat();
   const clips = c.clips.map((cl) => {
     const cs = cells.filter((x) => x.key.startsWith(`${cl.anim}/${cl.dir}/`)), kp = colorsOf(keys[cl.dir]);
