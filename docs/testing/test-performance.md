@@ -109,7 +109,7 @@ Locally every unit file runs under 2.4 s. In CI the slowest are `character-optio
   - UI wiring and user flows in e2e.
 - **Keep every e2e test independent.** No ordering or shared state between tests or files. `fullyParallel` and sharding depend on it.
 - **Keep tests lean.** Shard time is the sum of its tests, and adjacent heavy tests share a shard, so cut real work and round trips rather than splitting a test into parts. If one spec file collects many heavy tests, split it by feature.
-- **Register a new spec in `app/playwright.config.ts` `testMatch`**, or it never runs (it is silently skipped). Then add it to the AGENTS.md spec map so agents select it.
+- **Register a new spec in `app/playwright.config.ts` `testMatch`**, or it never runs (it is silently skipped). Then, if its name does not reveal its area, add it to AGENTS.md "End-to-end scope".
 - **Stay offline.** Route `https://*.pixellab.ai/**` to fixtures or `abort()`, and keep the existing "no paid request" assertions.
 - **Before merging anything that changes timing or waits,** run it under load: `npm run e2e -- <spec> --repeat-each=10 --workers=8` with your own `E2E_PREVIEW_PORT` / `E2E_DEV_PORT` / `TEST_OUTPUT_DIR`, and once in CI mode: `CI=1 npm run e2e -- <spec> --workers=1`.
 - **Prove a timing or guard test can fail.** Temporarily break the app code it guards, confirm the test fails, then restore the file exactly.

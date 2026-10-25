@@ -15,7 +15,7 @@ Implemented on `feat/game-experience-rework`, 2026-10-23. This is the production
 
 ## Ownership
 
-`@shilo/bronze-ui` 0.2.2 remains the owner of semantic colors, light/dark surfaces, component states, borders, focus, shadows, radii, scrollbars and transparent scrollbar tracks. No GlassKit and no new theme dependency.
+`@shilo/bronze-ui` 0.2.2 remains the owner of semantic colors, light/dark surfaces, component states, borders, focus, shadows, radii, scrollbars and transparent scrollbar tracks. No GlassKit and no new theme dependency. UI design contract: [Design Contract to Preserve](../../.claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md#design-contract-to-preserve).
 
 `app/src/studio/experience/theme.css` imports package tokens/components without reset and aliases existing production workflow variables. `layout.css` owns composition, responsive constraints, reading-gradient placement and component sizing. Native controls receive Bronze recipes rather than a second palette. Shared-theme defects must be fixed and released in the Bronze repository; workflow geometry and scene artwork stay here.
 
