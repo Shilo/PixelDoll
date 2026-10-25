@@ -2,7 +2,7 @@
 // LPC-style credits (provenance trail).
 import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
-import type { Engine, Manifest, Project } from '../store/manifest.ts';
+import type { Engine, Item, Manifest, Project } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
 import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame } from '../compose/compose.ts';
@@ -12,6 +12,12 @@ export type OutFile = { name: string; data: string | Img | Uint8Array };
 const nativeDepth = (z: number) => Number.isInteger(z) && z >= -2147483648 && z <= 2147483647;
 
 /** Invariants checked before export (spec §3); export refuses on any error. Stale items are warnings, not errors. */
+/** baseCut: known moves and generated directions, one entry per cell, null or strictly increasing rig-cell indices. */
+const validCut = (m: Manifest, cut: NonNullable<Item['baseCut']>) => typeof cut === 'object' && cut !== null && Object.entries(cut).every(([anim, dirs]) => {
+  const a = m.rig.animations.find((x) => x.id === anim), n = m.rig.cell.w * m.rig.cell.h;
+  return !!a && typeof dirs === 'object' && dirs !== null && Object.entries(dirs).every(([d, cells]) => m.rig.directions.some((x) => x.id === d && !x.mirrorOf) && Array.isArray(cells) && cells.length === a.cells
+    && cells.every((c) => c === null || (Array.isArray(c) && c.length <= n && c.every((p, i) => Number.isInteger(p) && p >= 0 && p < n && (!i || p > c[i - 1])))));
+});
 export function validate(p: Project): string[] {
   const m = p.manifest, e = validateRig(m.rig);
   // IDs become archive paths and engine resource names; validate them before producing either.
@@ -33,6 +39,7 @@ export function validate(p: Project): string[] {
     if (new Set(it.layers.map((l) => l.id)).size !== it.layers.length) e.push(`${it.id}: duplicate layer id`);
     if (it.designWarnings !== undefined && (!Array.isArray(it.designWarnings) || it.designWarnings.length > 100 || it.designWarnings.some((why) => typeof why !== 'string' || !why.trim() || why.length > 2000))) e.push(`${it.id}: invalid accepted appearance warnings`);
     if (it.paletteRepairs !== undefined && !validPaletteRepairs(it.paletteRepairs)) e.push(`${it.id}: invalid local palette repair history`);
+    if (it.baseCut !== undefined && !validCut(m, it.baseCut)) e.push(`${it.id}: invalid hidden body pixels (baseCut)`);
   }
   for (const a of m.rig.animations) {
     if (!Number.isInteger(a.cells)) e.push(`${a.id}: cell count must be an integer`);
@@ -42,7 +49,7 @@ export function validate(p: Project): string[] {
   if (bodies.length !== 1 || bodies[0].id !== m.rig.baseItem) e.push('exactly one item in slot "body" must be rig.baseItem');
   for (const variant of m.items.filter(i => i.slot === 'body' && i.variantOf)) {
     const cover = m.items.find(i => i.id === variant.under);
-    if (variant.variantOf !== m.rig.baseItem || variant.id !== `${m.rig.baseItem}~${variant.under}` || !cover || cover.slot === 'body' || !m.slots.find(s => s.id === cover.slot)?.clips?.includes('body') || variant.baseHash !== m.rig.baseHash) e.push(`${variant.id}: invalid clipped body variant`);
+    if (variant.variantOf !== m.rig.baseItem || variant.id !== `${m.rig.baseItem}~${variant.under}` || !cover || cover.slot === 'body' || !(cover.baseCut || m.slots.find(s => s.id === cover.slot)?.clips?.includes('body')) || variant.baseHash !== m.rig.baseHash) e.push(`${variant.id}: invalid clipped body variant`);
   }
   for (const slot of m.slots) {
     if (!nativeDepth(slot.z) || slot.zOverrides?.some((o) => !nativeDepth(o.z))) e.push(`${slot.id}: slot and override depths must be finite integers in the signed 32-bit range`);

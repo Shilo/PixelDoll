@@ -35,6 +35,15 @@ test('replacement hides obsolete fitted pixels while retaining every unaffected 
   expect(manifest).toEqual(before);
 });
 
+test('replacement forgets the body px the item hid in that move only (round 3 baseCut)', () => {
+  const m = fixture(), item = m.items[0]
+  item.baseCut = { idle: { south: [[788]] }, slash: { south: [[788]] } }
+  invalidateMoveItems(m, 'slash')
+  expect(item.baseCut).toEqual({ idle: { south: [[788]] } })
+  invalidateMoveItems(m, 'idle')
+  expect(item.baseCut).toBeUndefined()
+})
+
 test('legacy summaries remain explicitly incomplete only for retained coverage', () => {
   const m = fixture(true);
   invalidateMoveItems(m, 'slash');

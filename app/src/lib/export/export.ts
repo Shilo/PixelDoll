@@ -37,6 +37,9 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
     return { entries: [], warnings: [], errors: ['The base body has no visible animation frames to export.'] };
   }
   const { manifest: m, warnings } = exportManifest(p, o);
+  // round 3 baseCut: engines swap to one "<base>~<item>" sheet; the Studio hides the union when two such items are worn
+  const cutSlots = [...new Set(src.manifest.items.filter((it) => it.baseCut && !it.variantOf && it.baseHash === src.manifest.rig.baseHash).map((it) => it.slot))];
+  if (cutSlots.length > 1) warnings.push(`Items in ${cutSlots.join(', ')} each hide body pixels (ears under a hood). Worn together, game engines hide only one item's pixels; the Studio preview hides both.`);
   const files = coreFiles(p, m);
   const sheets = new Map(files.flatMap((f) => (typeof f.data === 'object' && 'w' in f.data ? [[f.name, f.data] as [string, Img]] : [])));
   files.push(...genericFiles(p, m, sheets, { strips: o.engines.includes('generic'), baked: o.baked }));

@@ -10,13 +10,14 @@ import { encodePngBytes } from '../image/pngraw.ts';
 import * as db from '../store/db.ts';
 import { loadProject, saveItem, type StoredProject } from '../store/project.ts';
 import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifest.ts';
+import { dropCut } from '../compose/compose.ts';
 import type { DirectionName, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
-import { chromaLayer, switchTo, type Key } from '../image/chroma.ts';
+import { switchTo, type Key } from '../image/chroma.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { DESIGN, GATES, GRID_COLS, anchored, planGens, GRAYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, grayShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { DESIGN, GATES, GRID_COLS, anchored, planGens, GRAYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, grayShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 /** fallback: B14, a pose call redone as an inpaint-v3 grid keeps its best pose roll (and that roll's failed-check count). */
@@ -97,6 +98,25 @@ const skelOf = (ctx: RigCtx, k: string, restView = false) => {
   const [a, d] = k.split('/') as [string, DirectionName], rest = ctx.rec.manifest.rig.rest?.[d];
   return restView ? rest && fromApi(rest.keypoints, ctx.rec.manifest.rig.cell) : ctx.rec.skeletons?.[k] ?? (a === 'rest' && rest ? fromApi(rest.keypoints, ctx.rec.manifest.rig.cell) : undefined);
 };
+type Cuts = Partial<Record<DirectionName, Uint8Array>>;
+/** Round 3 cut options of a cell: dressed keyframes cut on their own, posed frames only inside their keyframe's cut. */
+const cutFor = (ctx: RigCtx, slot: string, k: string, posed: boolean, keyCut: Cuts, restView = false) => {
+  const { rig } = ctx.rec.manifest, maxY = cutRows(slot, skelOf(ctx, k, restView), rig.cell.h);
+  if (maxY == null) return undefined;
+  if (!posed) return restView ? { maxY } : undefined; // in-place edit cells never cut on their own: untested for drift
+  const allow = cutAllow(rig, k, keyCut[k.split('/')[1] as DirectionName], rig.cell.w, posedTol(rig.cell.w, rig.cell.h));
+  return allow && { maxY, allow };
+};
+/** Dressed keyframe layers (H4, trims) and the body px they hide, per direction, for later moves and grid repairs. */
+async function dressedKeys(ctx: RigCtx, item: Item, pad: number, dirs = Object.keys(item.dressed ?? {}) as DirectionName[]) {
+  const keys: Partial<Record<DirectionName, Img>> = {}, cuts: Cuts = {}, H = ctx.rec.manifest.rig.cell.h + 2 * pad;
+  for (const d of dirs) {
+    const k = restKey(d), c = extractCell({ key: k, call: 0, base: padImg(baseCell(ctx, k, true), pad), out: await img(item.dressed![d]!.slice(7)), route: item.key!, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, k, true), H), cut: cutFor(ctx, item.slot, k, false, {}, true) });
+    keys[d] = c.layer;
+    if (c.cut) cuts[d] = c.cut;
+  }
+  return { keys, cuts };
+}
 
 // ---------- calls ----------
 /** B14 grid request (S4 inv3 / S5 H3): the clip-direction's chroma cells masked to the slot band, then the dressed keyframes
@@ -314,14 +334,16 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
     const dir = o.key.split('/')[1] as DirectionName;
     for (const a of rig.animations) if (d.spec.anims.includes(a.id) && (d.spec.clipDirs?.[a.id] ?? d.spec.dirs).includes(dir) && a.cells === 1 && a.sources?.[dir]?.motion === 'imported-rest') outs.push({ ...o, key: `${a.id}/${dir}/0`, posed: true });
   }
+  const keyCut: Cuts = {};
   const ex = (o: Out, useCc?: boolean, restView = false) =>
     // ponytail: padded (held) slots have no keypoint band, so the rig-cell skeleton is not shifted
-    extractCell({ key: o.key, call: o.k, base: padImg(baseCell(ctx, o.key, restView), pad), out: o.out, route, band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key, restView), H), useCc, posed: o.posed, clip: slot.band, held: slot.class === 'held', pad });
+    extractCell({ key: o.key, call: o.k, base: padImg(baseCell(ctx, o.key, restView), pad), out: o.out, route, band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key, restView), H), useCc, posed: o.posed, clip: slot.band, held: slot.class === 'held', pad, cut: cutFor(ctx, d.spec.slot, o.key, o.posed, keyCut, restView) });
   // the dress call only makes keyframes: gate them (G2, G3, presence); they are not item cells themselves
   const keys: Partial<Record<DirectionName, Img>> = {}; // dressed keyframe layers per direction (H4)
   for (const o of dressOuts) {
     const c = ex(o, undefined, true);
     keys[o.key.split('/')[1] as DirectionName] = c.layer;
+    if (c.cut) keyCut[o.key.split('/')[1] as DirectionName] = c.cut;
     const bad = [g2Fails(c) && `G2 keyframe ${o.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`,
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
       !c.area && `G4 keyframe ${o.key}: item missing`,
@@ -415,7 +437,8 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   const dirs = selectedDirs ?? available;
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
   let rerolls = 0; // actual additional attempted calls, independent of which candidate wins
-  for (const d of dirs) keys[d] = chromaLayer(await img(item.dressed![d]!.slice(7)), key, padImg(baseCell(ctx, restKey(d), true), pad)).layer;
+  const { keys: k0, cuts } = await dressedKeys(ctx, item, pad, dirs);
+  Object.assign(keys, k0);
   const perDir = await Promise.all(dirs.map(async (dir, k) => {
     const allPoses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
     if (!allPoses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
@@ -436,7 +459,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
       const outs = unrotate(outputs, f0Last(item.slot, rest, paddedPoses(poses), rig.cell)).slice(0, cells.length);
       const images = await Promise.all(outs.map((o) => img(o.sha)));
       if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad)) continue; // G1: wrong geometry is not a candidate
-      const candidate = cells.map((c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: images[i], route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band, held: slot.class === 'held', pad }));
+      const candidate = cells.map((c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: images[i], route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band, held: slot.class === 'held', pad, cut: cutFor(ctx, item.slot, c, true, cuts) }));
       postProcess(rig, slot, candidate, keys, pad);
       const fails = failCount(withH4(itemQa(rig, slot, key, candidate, attempt, GATES.keyOutsidePosed, pad), slot, candidate, keys, rig));
       // Keep pixels and provenance together. A later equal/worse or malformed roll cannot replace the earlier candidate.
@@ -445,7 +468,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     }
     if (!best.length) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned missing or malformed frames twice. Try again.`); // R6 P2-13: never save a direction with empty cells
     if (bestFails && gridable(item)) { // B14: still failing after the re-roll -> one inpaint-v3 grid, kept only if it is better
-      const g = await gridItemClip(ctx, item, anim, dir, k, keys, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells, activityScope);
+      const g = await gridItemClip(ctx, item, anim, dir, k, keys, cuts, seedOf(`${item.id}/${anim}/${dir}/grid-${start}${moveSeed ? `/${moveSeed}` : ''}`), cells, activityScope);
       onCall();
       rerolls++;
       if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad), slot, g.cells, keys, rig)) < bestFails) { best = g.cells; bestProv = g.prov; }
@@ -476,6 +499,8 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
   const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa, pad });
   const out: Item = structuredClone(item);
   out.layers.forEach((l, j) => { l.cells = { ...l.cells, [anim]: { ...l.cells?.[anim], ...built.item.layers[j].cells![anim] } }; });
+  dropCut(out, anim, dirs); // replaced directions take their new cut, never a stale one
+  for (const d of dirs) { const c = built.item.baseCut?.[anim]?.[d]; if (c) ((out.baseCut ??= {})[anim] ??= {})[d] = c; }
   // Per-direction call numbers are local to this move; records arrive in completion order (and may be grid fallbacks).
   // Resolve the selected record by its produced keys, then offset into the item's full provenance history.
   const source = new Map(prov.flatMap((p, i) => p.produced.map((k) => [k, item.provenance.length + i] as const)));
@@ -503,7 +528,7 @@ export async function gridRepairRequest(ctx: RigCtx, item: Item, anim: string, d
   return gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key }, cells, refs, seed, pad);
 }
 /** One clip-direction edited on its own canvas; body frames remain frozen and reference cells are protected. */
-async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?: string[], activityScope?: string): Promise<{ cells: CellOut[]; prov: Provenance }> {
+async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, cuts: Cuts, seed: number, selectedCells?: string[], activityScope?: string): Promise<{ cells: CellOut[]; prov: Provenance }> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const cells = selectedCells ?? Array.from({ length: rig.animations.find(a => a.id === anim)!.cells }, (_, i) => `${anim}/${dir}/${i}`), n = cells.length;
   const rec = await queue.enqueue(await gridRepairRequest(ctx, item, anim, dir, seed, cells), { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move', activityScope, minimumTier: 1 });
@@ -513,7 +538,7 @@ async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: Directio
   const g = await img(outputsOf(r)[0].sha), w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, rows = Math.ceil((n + Object.keys(item.dressed!).length) / GRID_COLS);
   if (g.w !== GRID_COLS * w || g.h !== rows * h) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned a grid with the wrong frame layout`);
   const cut = cutGrid(g, n, w, h);
-  const out = cells.map((c, i) => extractCell({ key: c, call, base: padImg(baseCell(ctx, c), pad), out: cut[i], route: item.key!, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), h), posed: true, clip: slot.band, held: slot.class === 'held', pad }));
+  const out = cells.map((c, i) => extractCell({ key: c, call, base: padImg(baseCell(ctx, c), pad), out: cut[i], route: item.key!, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), h), posed: true, clip: slot.band, held: slot.class === 'held', pad, cut: cutFor(ctx, item.slot, c, true, cuts) }));
   postProcess(rig, slot, out, keys, pad);
   return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };
 }
@@ -525,9 +550,8 @@ export async function regridClip(ctx: RigCtx, item: Item, anim: string, dir: Dir
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!;
   if (!item.key || !item.dressed?.[dir]) throw new Error(`${item.name}: no grid reference for this item`);
   const pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
-  const keys: Partial<Record<DirectionName, Img>> = {};
-  for (const [d, h] of Object.entries(item.dressed) as [DirectionName, string][]) keys[d] = chromaLayer(await img(h.slice(7)), key, padImg(baseCell(ctx, restKey(d), true), pad)).layer;
-  const g = await gridItemClip(ctx, item, anim, dir, 0, keys, seedN);
+  const { keys, cuts } = await dressedKeys(ctx, item, pad);
+  const g = await gridItemClip(ctx, item, anim, dir, 0, keys, cuts, seedN);
   const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed, pad), slot, g.cells, keys, rig);
   const saved = !qa.failCalls.size;
   if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa, pad);

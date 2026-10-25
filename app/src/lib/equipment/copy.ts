@@ -36,6 +36,7 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
   const source: Project = { manifest: design.source, images: await loadImages(design.imageHashes, design.images) };
   const item = structuredClone(designItem(design)), m = structuredClone(target.manifest), images = new Map([...target.images, ...source.images]);
   const oldId = item.id, id = `gear-${crypto.randomUUID()}`, audit = await targetAudit(target), stamp = targetStamp(m, item.slot);
+  delete item.baseCut; // the cells are remapped through the matches; hidden ear px are only valid on the cells they were found on
   item.id = id; item.name = design.name; item.baseHash = m.rig.baseHash;
   item.coverage = assessment.matches.map(match => match.target as NonNullable<Item['coverage']>[number]);
   const materials = design.source.materials.filter((mat) => mat.owner === oldId).map((mat, i) => ({ ...structuredClone(mat), id: `${id}_${i + 1}`, owner: id, defaultVariant: design.variants[mat.id] ?? mat.defaultVariant }));

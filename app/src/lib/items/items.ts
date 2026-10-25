@@ -269,6 +269,7 @@ export interface CellOut {
   clipY?: number; // posed clip: item px at rows >= clipY are joined to the item above the band; postProcess keeps them only where the dressed keyframe has them
   posed: boolean;
   repaired?: boolean; // held: dressed keyframe pasted (S5 frame-0 repair)
+  cut?: Uint8Array; // base px this item hides (round 3 baseCut): PixelLab erased them under the item (ear tips under a hood)
 }
 
 const sum = (m: Uint8Array) => m.reduce((a, b) => a + b, 0);
@@ -318,6 +319,49 @@ const posedKps = (rig: Rig, key: string) => {
   const [a, d, i] = key.split('/') as [string, DirectionName, string];
   return { pose: clipKeypoints(rig, a, d)?.[+i], rest: rig.rest?.[d]?.keypoints, poses: clipKeypoints(rig, a, d) };
 };
+// ---------- round 3: items that hide body px (a hood or great helm wider than the head erases the ear tips) ----------
+/** Cut limits for a keyframe: components of >= minPx, at most maxShare of the base's opaque px (else no cut, G2 as before). */
+export const CUT = { minPx: 3, maxShare: 0.04 };
+/** Posed tolerance (px): follows the body cell without the held pad; 1 px up to a 149 px cell, 2 px at 160 (round 2 arm N). */
+export const posedTol = (w: number, h: number, pad = 0) => Math.max(1, Math.round((Math.min(w, h) - 2 * pad) / 100));
+/** Rows (exclusive) where a worn item may hide body px: the head band (neck + 3). Held items and cells without a skeleton never cut. */
+export const cutRows = (slot: string, s: Skeleton | undefined, h: number) => {
+  const c = slotOf(slot)?.class;
+  return c && c !== 'held' && c !== 'base' && s?.NECK != null ? bandOf('head', s, h).h : undefined;
+};
+/**
+ * Where a posed frame may hide body px: the dressed keyframe's cut, moved with the requested head move and widened by 2 ×
+ * the posed tolerance. Posed frames never cut on their own: skeleton-v3 draws the stand-in's legs and hands 1–3 px from the
+ * body's (n-cloak128 walk/east/3 erased 68 px of leg next to the cape), so only what the keyframe hides may be hidden.
+ */
+export function cutAllow(rig: Rig, key: string, K: Uint8Array | undefined, w: number, tol: number): Uint8Array | undefined {
+  if (!K) return undefined;
+  const { pose, rest } = posedKps(rig, key), h0 = kpAt(rest, HEAD, rig.cell, 0), h1 = kpAt(pose, HEAD, rig.cell, 0);
+  return h0 && h1 ? dilate(shiftMask(K, w, Math.round(h1[0] - h0[0]), Math.round(h1[1] - h0[1])), w, 2 * tol) : undefined;
+}
+/**
+ * Body px the item hides: erased by PixelLab (base opaque, output alpha < 128, not item; exact, no tolerance, or a 1 px ear
+ * root stays), above `maxY`, inside `allow` when given, in components that touch the item and the body's outer edge (an ear,
+ * not a hole inside a visor). Keyframes also need >= CUT.minPx per component and <= CUT.maxShare in total.
+ */
+function cutOf(base: Img, out: Img, qm: Uint8Array, cut: { maxY: number; allow?: Uint8Array }): Uint8Array | undefined {
+  const { w, h } = base, cand = new Uint8Array(qm.length), op = (x: number, y: number) => x >= 0 && y >= 0 && x < w && y < h && base.data[(y * w + x) * 4 + 3] > 0;
+  for (let p = 0; p < qm.length; p++) {
+    const x = p % w, y = (p / w) | 0;
+    if (x && y && x < w - 1 && y < h - 1 && y < cut.maxY && base.data[p * 4 + 3] && !qm[p] && out.data[p * 4 + 3] < 128 && (!cut.allow || cut.allow[p])) cand[p] = 1;
+  }
+  const near = dilate(qm, w, 1), keep = new Uint8Array(qm.length);
+  let n = 0, opaque = 0;
+  for (const comp of components(cand, w, h)) {
+    if ((!cut.allow && comp.length < CUT.minPx) || !comp.some((p) => near[p])) continue;
+    if (!comp.some((p) => { const x = p % w, y = (p / w) | 0; return !op(x - 1, y) || !op(x + 1, y) || !op(x, y - 1) || !op(x, y + 1); })) continue;
+    for (const p of comp) keep[p] = 1;
+    n += comp.length;
+  }
+  for (let p = 0; p < qm.length; p++) if (base.data[p * 4 + 3]) opaque++;
+  return n && (cut.allow || n <= CUT.maxShare * opaque) ? keep : undefined;
+}
+
 export const TRIM = { support: 2, minOverlap: 0.5 };
 
 /**
@@ -407,6 +451,39 @@ export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): num
 }
 
 /**
+ * Held items: the stand-in's hand covers the grip, and the posed hand sits 1–3 px from the body's own hand (two separate
+ * drawings of one pose), so the grip shows a hole (round 3: 1,022 hole px over 144 bow walk frames). Close the layer by 2 px,
+ * filling only px the stand-in covered where the body has none, with the nearest item color (323 hole px left; aligning the
+ * item to the hand made it worse). Returns px added.
+ */
+export function closeGrip(cells: CellOut[]): number {
+  let added = 0;
+  for (const c of cells) {
+    if (!c.posed || !c.area || !c.chroma) continue;
+    const w = c.layer.w, h = c.mask.length / w, R = 2, inv = (m: Uint8Array) => m.map((v) => 1 - v) as Uint8Array;
+    const closed = inv(dilate(inv(dilate(c.mask, w, R)), w, R)), src = new Uint8Array(c.mask);
+    let k = 0;
+    for (let p = 0; p < src.length; p++) {
+      const q = p * 4, o = c.out.data;
+      if (!closed[p] || src[p] || c.base.data[q + 3] || o[q + 3] < 128 || keyScore(c.chroma, o[q], o[q + 1], o[q + 2]) < KT) continue;
+      const x = p % w, y = (p / w) | 0;
+      let best = -1, bd = Infinity;
+      for (let dy = -R - 1; dy <= R + 1; dy++) for (let dx = -R - 1; dx <= R + 1; dx++) {
+        const X = x + dx, Y = y + dy, d = dx * dx + dy * dy;
+        if (X >= 0 && Y >= 0 && X < w && Y < h && src[Y * w + X] && d < bd) { bd = d; best = Y * w + X; }
+      }
+      if (best < 0) continue;
+      c.layer.data.set(c.layer.data.subarray(best * 4, best * 4 + 4), q);
+      c.mask[p] = 1;
+      k++;
+    }
+    c.area += k;
+    added += k;
+  }
+  return added;
+}
+
+/**
  * S5 free fallback: a held item lost on a near-rest frame (area < 50 % of the clip median, pose ≤ 1 px from the rest pose) gets
  * the dressed keyframe layer pasted, shifted by the requested wrist move. Returns the repaired cell keys.
  */
@@ -431,7 +508,7 @@ export function repairDropped(rig: Rig, slot: Slot, cells: CellOut[], keys: Part
 
 /** Clip-level cleanup after extraction (posed cells): streak trim for head items, attachment + repair for held items. */
 export function postProcess(rig: Rig, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): { removed: number; repaired: string[] } {
-  if (slot.class === 'held') { const removed = attachHeld(rig, slot, cells, pad) + clipFloor(cells); return { removed, repaired: repairDropped(rig, slot, cells, keys, pad) }; }
+  if (slot.class === 'held') { const removed = attachHeld(rig, slot, cells, pad) + clipFloor(cells); closeGrip(cells); return { removed, repaired: repairDropped(rig, slot, cells, keys, pad) }; }
   return { removed: (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells), repaired: [] };
 }
 
@@ -479,7 +556,7 @@ function translate(im: Img, dx: number, dy: number): Img {
   return o;
 }
 
-export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean; pad?: number }): CellOut {
+export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean; pad?: number; cut?: { maxY: number; allow?: Uint8Array } }): CellOut {
   const { base, route, band } = o, { w, h } = base;
   // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
   const reg = o.posed ? bestShift(base, o.out) : ([0, 0] as [number, number]);
@@ -504,14 +581,14 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
     if (qm[p] && !inBand) outBand++;
     if (base.data[p * 4 + 3] && inBand) baseBand++;
   }
-  // posed tolerance follows the body cell (without the held pad): 1 px up to a 149 px cell (48-96 px bodies), 2 px for a 128 px
-  // body's 160 px cell, whose posed feet drift 2 px (round 2 arm N cloak north)
-  const tol = o.posed ? Math.max(1, Math.round((Math.min(w, h) - 2 * (o.pad ?? 0)) / 100)) : 0, kk = route === 'none' ? null : keyKept(base, out, route, qm, undefined, tol);
+  // body px the item hides (round 3) count as covered for G2; posed frames only inside the keyframe's cut (cutAllow)
+  const cut = o.cut && route !== 'none' && !(o.posed && !o.cut.allow) ? cutOf(base, out, qm, o.cut) : undefined;
+  const tol = o.posed ? posedTol(w, h, o.pad) : 0, kk = route === 'none' ? null : keyKept(base, out, route, cut ? qm.map((v, p) => v | cut[p]) : qm, undefined, tol);
   return {
     key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
     ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, qm, tol) } : {}),
     ...cleanliness(qm, w, h), ...(route !== 'none' ? { chroma: route } : {}), shifted: bestShift(base, out).some(Boolean), offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
-    ...(clipY != null ? { clipY } : {}),
+    ...(clipY != null ? { clipY } : {}), ...(cut ? { cut } : {}),
   };
 }
 
@@ -907,7 +984,7 @@ export async function buildItem(o: {
   const layers: Layer[] = slot.bgZ != null
     ? [{ id: 'fg', role: 'fg', z: slot.z, cells: {}, ...size }, { id: 'bg', role: 'bg', z: slot.bgZ, cells: {}, ...size }]
     : [{ id: 'main', role: 'fg', z: slot.z, cells: {}, ...size }];
-  const byKey = new Map(cells.map((c) => [c.key, c]));
+  const byKey = new Map(cells.map((c) => [c.key, c])), baseCut: NonNullable<Item['baseCut']> = {};
   for (const a of spec.anims) {
     const n = rig.animations.find((x) => x.id === a)!.cells;
     for (const l of layers) l.cells![a] = {};
@@ -916,6 +993,7 @@ export async function buildItem(o: {
         const c = byKey.get(cellKey(a, d, i));
         const parts = !c ? [null, null] : slot.bgZ != null ? (({ fg, bg }) => [fg, bg])(splitFgBg(c.layer, c.base)) : [c.layer];
         for (const [j, l] of layers.entries()) ((l.cells![a]![d] ??= Array(n).fill(null)) as (Sha256 | null)[])[i] = parts[j] ? await put(parts[j]!) : null;
+        if (c?.cut) ((baseCut[a] ??= {})[d] ??= Array(n).fill(null))[i] = [...c.cut.keys()].filter((p) => c.cut![p]);
       }
   }
   const item: Item = {
@@ -923,6 +1001,7 @@ export async function buildItem(o: {
     baseHash: rig.baseHash, route: o.route === 'none' ? 'diff' : spec.method === 'skel' ? 'skeleton-pose' : 'ea2-anchor',
     extractor: o.route === 'none' ? 'diff' : 'chroma', ...(o.route !== 'none' ? { key: o.route } : {}),
     ...(o.anchorCell && spec.method !== 'skel' ? { anchorCell: o.anchorCell as CellKey } : {}), provenance: o.provenance, qa: o.qa,
+    ...(Object.keys(baseCut).length ? { baseCut } : {}),
   };
   if (o.dressed) {
     item.dressed = {};
@@ -1051,5 +1130,24 @@ export async function selfTest() {
   for (const p of [4 * 16 + 4, 4 * 16 + 5, 5 * 16 + 4, 5 * 16 + 5, 5 * 16 + 6, 9 * 16 + 8, 9 * 16 + 9, 10 * 16 + 8, 1 * 16 + 13, 2 * 16 + 13, 2 * 16 + 14]) wl.data.set([120, 70, 30, 255], p * 4);
   const wc = { ...cs[0], key: 'slash/east/0', posed: true, base: wb, layer: wl, mask: maskOf(wl), area: 11, stray: 0 } as CellOut;
   console.assert(dropOffBody([wc]) === 3 && wc.area === 8 && wc.mask[9 * 16 + 8] === 1 && !wc.mask[1 * 16 + 13], 'dropOffBody: off-body smear removed, on-body split part kept');
+  // closeGrip: a bow limb on row 8 split by the stand-in's hand (x 6-8, key px) is bridged where the body has no px; the same
+  // gap over the body (x 6-8 of row 12) stays open, and a 5 px gap (row 4) is too wide to close
+  const go = makeImg(16, 16), gb = makeImg(16, 16), gl = makeImg(16, 16);
+  for (const [y, x0, x1] of [[8, 6, 8], [12, 6, 8], [4, 5, 9]]) for (let x = 0; x < 16; x++) (x >= x0 && x <= x1 ? go : gl).data.set(x >= x0 && x <= x1 ? [40, 220, 40, 255] : [120, 70, 30, 255], (y * 16 + x) * 4);
+  for (let x = 6; x <= 8; x++) gb.data.set([200, 160, 130, 255], (12 * 16 + x) * 4);
+  const gc = { ...cs[0], key: 'walk/south/0', posed: true, base: gb, out: go, layer: gl, mask: maskOf(gl), area: sum(maskOf(gl)), chroma: 'green' as const, stray: 0 } as CellOut;
+  console.assert(closeGrip([gc]) === 3 && gc.mask[8 * 16 + 7] === 1 && !gc.mask[12 * 16 + 7] && !gc.mask[4 * 16 + 7] && gc.layer.data[(8 * 16 + 7) * 4] === 120, 'closeGrip bridges an off-body hand gap only');
+  // round 3 baseCut: a head (x 4-11, y 4-15) with an ear at x 2-3, y 6-7; the helm covers rows 4-9; PixelLab erased the ear and
+  // one px inside the body (7, 12). The ear is cut (it touches the helm and the body edge), the inner hole is not
+  const eb = makeImg(16, 16), eo = makeImg(16, 16), ear = [6 * 16 + 3, 7 * 16 + 3, 6 * 16 + 2];
+  for (let y = 4; y < 16; y++) for (let x = 4; x < 12; x++) eb.data.set([200, 150, 120, 255], (y * 16 + x) * 4);
+  for (const p of ear) eb.data.set([200, 150, 120, 255], p * 4);
+  for (let p = 0; p < 256; p++) if (eb.data[p * 4 + 3] && !ear.includes(p) && p !== 12 * 16 + 7) eo.data.set(((p / 16) | 0) <= 9 && p % 16 >= 4 ? [120, 70, 30, 255] : [40, 220, 40, 255], p * 4);
+  const ec = (cut?: { maxY: number; allow?: Uint8Array }, posed = false) => extractCell({ key: 'rest/south/0', call: 0, base: eb, out: eo, route: 'green', band: { x: 0, y: 0, w: 16, h: 16 }, posed, cut });
+  const ek = ec({ maxY: 12 });
+  console.assert(sum(ek.cut!) === 3 && ek.cut![6 * 16 + 3] === 1 && !ek.cut![12 * 16 + 7] && ek.keyLost === 1, 'baseCut: the erased ear is hidden, a hole inside the body still counts for G2');
+  console.assert(!ec({ maxY: 5 }).cut && !ec({ maxY: 12 }, true).cut && ec({ maxY: 12, allow: ek.cut }, true).cut?.[6 * 16 + 2] === 1, 'baseCut: rows limit; posed frames only inside the keyframe cut');
+  const neck = { NECK: { x: 8, y: 9 } } as unknown as Skeleton;
+  console.assert(cutRows('main_hand', neck, 16) === undefined && cutRows('head', neck, 16) === 12 && cutRows('head', undefined, 16) === undefined, 'baseCut: head band rows, never held items');
   console.assert(gone === 3 && t[0].area === 16 + 2 && t[1].area === 8 + 2 && !t[0].mask[13 * 16 + 1] && t[0].mask[3 * 16 + 11] === 1, `trimToKeyframe ${gone} ${t.map((c) => c.area)}`);
 }

@@ -137,7 +137,7 @@ export async function evaluateRestFit(design: EquipmentDesign, target: Project, 
   manifest.rig.animations = [{ id: 'fit-rest', cells: 1, loop: true, frames: [{ cell: 0, ms: 200 }] }];
   base.layers[0].cells = { 'fit-rest': {} };
   for (const d of directions(target)) base.layers[0].cells['fit-rest']![d] = [rig.rest![d]!.image];
-  const item = structuredClone(designItem(design));item.id = 'fitted-preview'; item.name = design.name; item.baseHash = rig.baseHash; item.materials = []; delete item.design; delete item.qa;
+  const item = structuredClone(designItem(design));item.id = 'fitted-preview'; item.name = design.name; item.baseHash = rig.baseHash; item.materials = []; delete item.baseCut; delete item.design; delete item.qa;
   item.layers = [{ id: 'main', role: 'fg', z: slotOf('head').z, cells: { 'fit-rest': {} } }];
   for (const c of cells) { const h = await cellHash(c.layer);images.set(h,c.layer);item.layers[0].cells!['fit-rest']![c.key.split('/')[1] as DirectionName] = [h]; }
   manifest.items = [base,item];manifest.materials = manifest.materials.filter(m => m.owner === base.id);manifest.format = CURRENT_FORMAT;

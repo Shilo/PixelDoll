@@ -1,6 +1,7 @@
 import { stableStringify } from '../lib/image/hash.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import { mergeQa, summaryOf } from '../lib/items/qa-summary.ts';
+import { dropCut } from '../lib/compose/compose.ts';
 import type { DirectionName, Rig } from '../lib/rig/rig.ts';
 import type { Skeleton } from '../lib/rig/skeleton.ts';
 import type { ItemQa, Manifest } from '../lib/store/manifest.ts';
@@ -26,6 +27,7 @@ export function invalidateMoveItems(manifest: Manifest, anim: string, dirs?: rea
       }
       if (layer.sheets) delete layer.sheets[anim];
     }
+    dropCut(item, anim, changed); // the hidden ear px belong to the old body frames
     if (item.anchorCell && belongs(item.anchorCell)) delete item.anchorCell;
     if (item.coverage) item.coverage = item.coverage.filter((key) => !belongs(key));
     const old = item.qa;

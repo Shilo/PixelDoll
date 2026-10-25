@@ -148,6 +148,8 @@ export interface Item {
   route?: 'skeleton-pose' | 'inpaint-grid' | 'ea2-anchor' | 'diff'; // architecture §4; absent on the base
   key?: 'green' | 'magenta' | 'blue' | 'azure'; // chroma key used (all routes except diff); blue for green + pink/red, azure for green + purple
   dressed?: Partial<Record<DirectionName, Sha256>>; // skeleton-pose: dressed chroma keyframes; re-posed for new clips
+  baseCut?: Record<string, Partial<Record<DirectionName, (number[] | null)[]>>>; // round 3: base px this item hides per cell
+                                          //   (ear tips under a hood), sorted y·rig.cell.w + x indices; invariant 12
   anchorCell?: CellKey;                   // ea2-anchor: dressed cell passed as frame 1 to later calls
   provenance: Provenance[];
   qa?: ItemQa;                            // absent on the base
@@ -272,6 +274,13 @@ frame index or name; only each layer's rect and pivot differ. Conventions:
     Preview/import can represent multiple covering slots, but export currently refuses combinations where two distinct,
     populated clipping slots can cover a visible target together. Per-pair baked variants cannot represent their combined mask.
     Alternative items in one covering slot, stale/empty covering slots, and covers that always hide the target do not trigger this restriction.
+12. Hidden body px (round 3): while an item with `baseCut` is worn, the base's px listed for that cell are not drawn (a
+    mirrored direction flips its source's list; one entry per cell, null or strictly increasing indices into the rig cell, only
+    generated directions). They are px PixelLab erased under the item (a hood or great helm wider than the head hides the ear
+    tips). Exports bake `"<base>~<item>"` (`variantOf: base`, `under: item`) and every runtime swaps to it like a tucked item.
+    Optional field: older readers ignore it and draw the whole body. With two such items in different slots worn together the
+    Studio hides both sets; a runtime draws one baked body, so export warns.
+    Like `hides`, an equipped item cuts even while another item hides it (every runtime swaps by what is equipped).
 
 Export `pixelsPerUnit`, when supplied, must be positive and finite; fractional values are supported.
 Godot maps manifest depths to compact native ranks because `CanvasItem.z_index` has a bounded range. Ordering and cell overrides

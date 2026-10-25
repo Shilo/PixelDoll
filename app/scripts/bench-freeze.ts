@@ -44,7 +44,7 @@ await save('bodyN.png', tile(await Promise.all(DIRS_N.map(async (d) => [await im
 
 // ---------- cases ----------
 // role 'reference': documents a superseded choice (the jester on magenta, which pickKey no longer picks); excluded from totals
-type Case = { id: string; body: 'A' | 'B' | 'N'; slot: string; key: string; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' };
+type Case = { id: string; body: 'A' | 'B' | 'N' | 'C'; slot: string; key: string; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' };
 const cases: Case[] = [];
 async function posedCase(c: Omit<Case, 'clips'>, dress: (d: string) => string, pose: (clip: string, d: string, i: number) => string, clips: [string, string][], C: number) {
   const rows: Img[][] = [];
@@ -111,7 +111,7 @@ const walksB: [string, string][] = DIRS_B.map((d) => ['walk', d]);
 const exB = (e: Record<string, string>) => ({ ...Object.fromEntries(DIRS_B.map((d) => [`walk/${d}`, 'pass'])), ...e });
 for (const [item, slot, v, expect, note] of [
   ['tunic', 'torso_outer', 'ctrl', exB({}), ''],
-  ['cloak', 'back', 'ctrl', exB({ 'walk/north': 'fail:G2' }), 'back view: dark rim around the hood (ears) and mottled texture'],
+  ['cloak', 'back', 'ctrl', exB({}), 'back view: PixelLab erased the ear tips under the hood; round 3 baseCut hides them (G2 failed on them before); the fabric stays mottled'],
   ['greathelm', 'head', 'ctrl', exB({ 'walk/north': 'any' }), 'back view key kept 0.967, borderline'],
   ['jester', 'head', 'ctrl', Object.fromEntries(DIRS_B.map((d) => [`walk/${d}`, 'fail:G3'])), 'magenta keys out the pink'],
   ['jester', 'head', 'blue', exB({}), 'blue keeps the pink'],
@@ -123,6 +123,14 @@ for (const [item, slot, v, expect, note] of [
 // round 2 arm N: the posed key tolerance at 160 px (a 1 px tolerance failed 5 north frames on 2 px foot drift; one real stays)
 const N25 = (item: string) => ({ dress: (d: string) => `c25b/N/${item}/dress.${DIRS_N.indexOf(d)}.png`, pose: (_a: string, d: string, i: number) => `c25b/N/${item}/walk_${d}.${i}.png` });
 await posedCase({ id: 'n-cloak128', body: 'N', slot: 'back', key: 'green', pad: 0, expect: { 'walk/south': 'pass', 'walk/east': 'pass', 'walk/north': 'fail:G3' }, source: 'docs/research/generation-quality-round2-2026-10-25.md arm N', note: 'north 4: a real 0.053 foot mismatch; the other frames pass at the scaled tolerance' }, N25('cloak128').dress, N25('cloak128').pose, DIRS_N.map((d) => ['walk', d]), 160);
+
+// round 3 arm O: the chibi dwarf's great helm erases the ear tips (28 front, 32 back px); baseCut hides them in every frame
+const Cb = JSON.parse(readFileSync(new URL('c25/chibi.json', SPIKE), 'utf8')), DIRS_C: string[] = Cb.rig.directions.filter((d: { mirrorOf?: string }) => !d.mirrorOf).map((d: { id: string }) => d.id);
+const imgC = (sha: string) => decodePngBytes(new Uint8Array(Buffer.from(Cb.images[sha], 'base64')));
+writeFileSync(new URL('bodyC.json', OUT), JSON.stringify({ note: 'Studio-created chibi dwarf: 64 px body in an 80 px frame, Top-down 4 (3 drawn views); rows = drawn views: rest, walk 0-7', rig: { ...Cb.rig, animations: Cb.rig.animations.filter((a: { id: string }) => a.id === 'walk') }, rows: DIRS_C, cols: ['rest', ...Array.from({ length: 8 }, (_, i) => `walk/${i}`)] }));
+await save('bodyC.png', tile(await Promise.all(DIRS_C.map(async (d) => [await imgC(Cb.rig.rest[d].image), ...(await Promise.all(Cb.body.cells.walk[d].map(imgC)))])), 80));
+const C25N = (item: string) => ({ dress: (d: string) => `c25b/N/${item}/dress.${DIRS_C.indexOf(d)}.png`, pose: (_a: string, d: string, i: number) => `c25b/N/${item}/walk_${d}.${i}.png` });
+await posedCase({ id: 'c-greathelm', body: 'C', slot: 'head', key: 'green', pad: 0, expect: Object.fromEntries(DIRS_C.map((d) => [`walk/${d}`, 'pass'])), source: 'docs/research/generation-quality-round3-2026-10-25.md arm O', note: 'ear tips erased under the helm; G2 failed on them before baseCut' }, C25N('helmChibi').dress, C25N('helmChibi').pose, DIRS_C.map((d) => ['walk', d]), 80);
 
 // round 2 arm Z, body A, dress only: green + purple stripes; the purple must ship (KEEP = px of the raw azure output with hue
 // 250-320°, saturation >= 0.3, value >= 51; the azure ramp sits at 210°). On magenta the purple and the key ramp share those hues

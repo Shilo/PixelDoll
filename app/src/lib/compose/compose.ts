@@ -41,7 +41,31 @@ export const tuckers = (m: Manifest, on: Item[], slot: string) => on.filter((c) 
 export const tuckedId = (item: string, over: string) => `${item}~${over}`;
 /** The equipped items as drawn: an item tucked under another uses its baked variant when the project has one. */
 export const shownItems = (m: Manifest, on: Item[]): Item[] =>
-  on.map((it) => tuckers(m, on, it.slot).map((c) => m.items.find((v) => v.id === tuckedId(it.id, c.id))).find(Boolean) ?? it);
+  on.map((it) => (it.id === m.rig?.baseItem ? on.filter((c) => c.baseCut) : tuckers(m, on, it.slot)).map((c) => m.items.find((v) => v.id === tuckedId(it.id, c.id))).find(Boolean) ?? it);
+
+// ---------- round 3: items that hide body px (Item.baseCut: ear tips under a hood) ----------
+/** Base px an item hides in one cell (rig-cell indices); a mirrored direction flips its source's. */
+export function cutAt(m: Manifest, item: Item, anim: string, dir: DirectionName, cell: number): number[] | null {
+  const stored = item.baseCut?.[anim]?.[dir];
+  if (stored) return stored[cell] ?? null;
+  const src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf, w = m.rig.cell.w, s = src ? cutAt(m, item, anim, src, cell) : null;
+  return s && s.map((p) => p - 2 * (p % w) + w - 1);
+}
+/** Forget an item's hidden body px in some directions of a move (their cells were replaced or removed). */
+export function dropCut(item: Item, anim: string, dirs: Iterable<DirectionName>) {
+  const a = item.baseCut?.[anim];
+  if (!a) return;
+  for (const d of dirs) delete a[d];
+  if (!Object.keys(a).length) delete item.baseCut![anim];
+  if (!Object.keys(item.baseCut!).length) delete item.baseCut;
+}
+/** A base cell with the px of every worn item's cut cleared (idempotent: a baked "<base>~<item>" variant stays the same). */
+export function cutBase(im: Img, cuts: (number[] | null)[]): Img {
+  if (!cuts.some((c) => c?.length)) return im;
+  const o: Img = { w: im.w, h: im.h, data: im.data.slice() };
+  for (const c of cuts) for (const p of c ?? []) o.data.fill(0, p * 4, p * 4 + 4);
+  return o;
+}
 
 /**
  * Drop the px of `im` (frame `f`) that sit under the covering layers' silhouette: per column, everything at or above the
@@ -93,6 +117,23 @@ export async function withTuckVariants(p: Project): Promise<Project> {
               }));
         add.push(v);
       }
+  const base = m.items.find((x) => x.id === m.rig.baseItem);
+  for (const over of m.items.filter((x) => x.baseCut && !x.variantOf && x.baseHash === m.rig.baseHash))
+    if (base) { // engines swap to "<base>~<item>" while the item is worn (the same rule as tucked hair), they never mask
+      const v: Item = { ...structuredClone(base), id: tuckedId(base.id, over.id), name: `${base.name} under ${over.name}`, variantOf: base.id, under: over.id };
+      delete v.qa;
+      for (const [li, l] of v.layers.entries())
+        for (const [anim, dirs] of Object.entries(l.cells ?? {}))
+          for (const [dir, cells] of Object.entries(dirs ?? {}) as [DirectionName, (Sha256 | null)[]][])
+            dirs![dir] = await Promise.all(cells.map(async (h, i) => {
+              const im = h ? cellImg(p, base.layers[li], anim, dir, i) : null, cut = cutAt(m, over, anim, dir, i);
+              if (!im || !cut?.length) return h;
+              const t = cutBase(im, [cut]), k = await cellHash(t);
+              images.set(k, t);
+              return k;
+            }));
+      add.push(v);
+    }
   return add.length ? { manifest: { ...m, items: [...m.items, ...add] }, images, layerImages: p.layerImages } : p;
 }
 
@@ -148,15 +189,18 @@ export function over(dst: Img, src: Img, x = 0, y = 0) {
 
 /** Composite of one cell on `frame` (default the rig cell: oversize layers are clipped to it; bakedFrame() keeps them whole). */
 export function composeCell(p: Project, items: Preset['items'], anim: string, dir: DirectionName, cell: number, frame = rigFrame(p.manifest.rig)): Img {
-  const out = makeImg(frame.w, frame.h);
-  for (const d of drawList(p.manifest, items, anim, dir, cell)) {
-    const im = tucked(p, cellImg(p, d.layer, anim, dir, cell), d.layer, d.under, anim, dir, cell), f = layerFrame(p.manifest.rig, d.layer);
+  const out = makeImg(frame.w, frame.h), m = p.manifest;
+  const cuts = equipped(m, items).filter((it) => it.baseCut && it.baseHash === m.rig.baseHash).map((it) => cutAt(m, it, anim, dir, cell));
+  for (const d of drawList(m, items, anim, dir, cell)) {
+    let im = tucked(p, cellImg(p, d.layer, anim, dir, cell), d.layer, d.under, anim, dir, cell);
+    if (im && (d.item.id === m.rig.baseItem || d.item.variantOf === m.rig.baseItem)) im = cutBase(im, cuts);
+    const f = layerFrame(m.rig, d.layer);
     if (im) over(out, im, frame.x - f.x, frame.y - f.y);
   }
   return out;
 }
 
-export function selfTest() {
+export async function selfTest() {
   const px = (r: number): Img => ({ w: 1, h: 1, data: new Uint8ClampedArray([r, 0, 0, 255]) });
   const images = new Map<string, Img>([['sha256:b', px(1)], ['sha256:h', px(2)], ['sha256:c', px(3)], ['sha256:k', px(4)]]);
   const L = (role: 'fg' | 'bg', z: number, h: string) => ({ id: role === 'bg' ? 'bg' : 'main', role, z, cells: { walk: { south: [h as `sha256:${string}`, null] } } }) as Layer;
@@ -220,4 +264,19 @@ export function selfTest() {
   console.assert(shownItems(tm, [tm.items[0], tm.items[1]]).map((i) => i.id).join() === 'h~k,k' && shownItems(tm, [tm.items[0]])[0].id === 'h', 'tuck: the baked variant replaces its item only under its cover');
   const clip = makeImg(2, 2); over(clip, big, -1, -1);
   console.assert(clip.data[0] === 14 && clip.data[12] === 18, 'over clips negative offsets');
+  // round 3 baseCut: a 3x1 rig cell; the hood hides base px 2 in walk/east/0, and west (mirror of east) hides px 0
+  const b3: Img = { w: 3, h: 1, data: new Uint8ClampedArray([5, 0, 0, 255, 6, 0, 0, 255, 7, 0, 0, 255]) };
+  const cm = {
+    rig: { cell: { w: 3, h: 1 }, pivot: { x: 1, y: 0 }, baseItem: 'base', baseHash: 'sha256:base', directions: [{ id: 'east' }, { id: 'west', mirrorOf: 'east' }] },
+    slots: [{ id: 'body', z: 10 }, { id: 'back', z: 90 }],
+    items: [
+      { id: 'base', slot: 'body', baseHash: 'sha256:base', layers: [{ id: 'main', role: 'fg', z: 10, cells: { walk: { east: ['sha256:b3'] } } }] },
+      { id: 'hood', slot: 'back', baseHash: 'sha256:base', layers: [{ id: 'main', role: 'fg', z: 90, cells: { walk: { east: [null] } } }], baseCut: { walk: { east: [[2]] } } },
+    ],
+  } as unknown as Manifest;
+  const cp: Project = { manifest: cm, images: new Map([['sha256:b3', b3]]) }, seen = (im: Img) => [0, 1, 2].map((i) => (im.data[i * 4 + 3] ? 1 : 0)).join('');
+  console.assert(seen(composeCell(cp, { back: 'hood' }, 'walk', 'east', 0)) === '110' && seen(composeCell(cp, {}, 'walk', 'east', 0)) === '111', 'baseCut: hidden only while the item is worn');
+  console.assert(seen(composeCell(cp, { back: 'hood' }, 'walk', 'west', 0)) === '011', 'baseCut: a mirrored direction flips the cut');
+  const ex = await withTuckVariants(cp), v = ex.manifest.items.find((i) => i.id === 'base~hood');
+  console.assert(!!v && v.variantOf === 'base' && v.under === 'hood' && seen(cellImg(ex, v.layers[0], 'walk', 'east', 0)!) === '110' && seen(composeCell(ex, { back: 'hood' }, 'walk', 'east', 0)) === '110', 'baseCut: exports bake <base>~<item>; compose stays idempotent');
 }

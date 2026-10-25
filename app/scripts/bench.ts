@@ -8,13 +8,13 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { decodePngBytes, encodePngBytes } from '../src/lib/image/pngraw.ts';
 import { makeImg, type Img } from '../src/lib/image/png.ts';
-import { bandOf, dirGate, extractCell, GATES, g2Fails, itemQa, padImg, postProcess, recompose, slotOf, type CellOut, type Route } from '../src/lib/items/items.ts';
+import { bandOf, cutAllow, cutRows, dirGate, extractCell, GATES, g2Fails, itemQa, padImg, posedTol, postProcess, recompose, slotOf, type CellOut, type Route } from '../src/lib/items/items.ts';
 import { sha256 } from '../src/lib/image/hash.ts';
 import type { Keypoint, Rig } from '../src/lib/rig/rig.ts';
 import { fromApi } from '../src/lib/rig/poses.ts';
 
 const FIX = new URL('../test/fixtures/bench/', import.meta.url);
-interface Case { id: string; body: 'A' | 'B' | 'N'; slot: string; key: Route; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' }
+interface Case { id: string; body: 'A' | 'B' | 'N' | 'C'; slot: string; key: Route; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' }
 interface Body { rig: Rig; rows: string[]; cols: string[] }
 const load = (name: string) => decodePngBytes(new Uint8Array(readFileSync(new URL(name, FIX))));
 const cell = (sheet: Img, C: number, row: number, col: number): Img => {
@@ -24,7 +24,7 @@ const cell = (sheet: Img, C: number, row: number, col: number): Img => {
 };
 const skel = (rig: Rig, k: Keypoint[] | undefined) => k && fromApi(k, rig.cell);
 
-export interface CaseResult { id: string; verdicts: Record<string, string>; misses: string[]; keep: [number, number]; keepExact: [number, number]; drop: [number, number]; fails: number; warnings: number; maxAreaCV: number; cells: CellOut[] }
+export interface CaseResult { id: string; verdicts: Record<string, string>; misses: string[]; keep: [number, number]; keepExact: [number, number]; drop: [number, number]; fails: number; warnings: number; maxAreaCV: number; cut: number; cells: CellOut[] }
 /** Verdict of one clip from the QA messages: "fail:G3", "warn:G7", or "pass". */
 function verdictOf(clip: string, fails: string[], warnings: string[]) {
   const hit = (m: string) => m.includes(` ${clip}/`) || m.includes(` ${clip}:`) || m.includes(` ${clip} `);
@@ -40,14 +40,20 @@ export async function runCase(c: Case): Promise<CaseResult> {
   const dirsOf = c.clips.length ? [...new Set(c.clips.map((k) => k.split('/')[1]))] : body.rows;
   const keys: Record<string, Img> = {}, kf: CellOut[] = [];
   const kfRow = (d: string) => (c.clips.length ? c.clips.findIndex((k) => k.endsWith(`/${d}`)) : 0), kfCol = (d: string) => (c.clips.length ? 0 : body.rows.indexOf(d));
+  // round 3 cuts, as production (run.ts cutFor): keyframes cut on their own, posed frames only inside their keyframe's cut
+  const keyCut: Record<string, Uint8Array | undefined> = {};
   for (const d of dirsOf) {
-    const k = extractCell({ key: `rest/${d}/0`, call: 0, base: base(d, 'rest'), out: cell(sheet, C, kfRow(d), kfCol(d)), route: c.key, band: bandOf(c.slot, c.pad ? undefined : skel(rig, rig.rest?.[d as 'south']?.keypoints), C) });
-    keys[d] = k.layer; kf.push(k);
+    const s0 = c.pad ? undefined : skel(rig, rig.rest?.[d as 'south']?.keypoints), maxY = cutRows(c.slot, s0, C);
+    const k = extractCell({ key: `rest/${d}/0`, call: 0, base: base(d, 'rest'), out: cell(sheet, C, kfRow(d), kfCol(d)), route: c.key, band: bandOf(c.slot, s0, C), ...(maxY != null ? { cut: { maxY } } : {}) });
+    keys[d] = k.layer; kf.push(k); keyCut[d] = k.cut;
   }
   const cells: CellOut[] = [];
   c.clips.forEach((clip, r) => {
     const [anim, dir] = clip.split('/'), a = rig.animations.find((x) => x.id === anim)!;
-    for (let i = 0; i < a.cells; i++) cells.push(extractCell({ key: `${clip}/${i}`, call: 1 + r, base: base(dir, `${anim}/${i}`), out: cell(sheet, C, r, 1 + i), route: c.key, band: bandOf(c.slot, c.pad ? undefined : skel(rig, a.sources?.[dir as 'south']?.keypoints?.[i]), C), posed: true, clip: slot.band, held, pad: c.pad }));
+    for (let i = 0; i < a.cells; i++) {
+      const s1 = c.pad ? undefined : skel(rig, a.sources?.[dir as 'south']?.keypoints?.[i]), maxY = cutRows(c.slot, s1, C), allow = maxY != null ? cutAllow(rig, `${clip}/${i}`, keyCut[dir], N, posedTol(N, N)) : undefined;
+      cells.push(extractCell({ key: `${clip}/${i}`, call: 1 + r, base: base(dir, `${anim}/${i}`), out: cell(sheet, C, r, 1 + i), route: c.key, band: bandOf(c.slot, s1, C), posed: true, clip: slot.band, held, pad: c.pad, ...(allow ? { cut: { maxY: maxY!, allow } } : {}) }));
+    }
   });
   let fails: string[] = [], warnings: string[] = [];
   if (cells.length) {
@@ -80,7 +86,7 @@ export async function runCase(c: Case): Promise<CaseResult> {
   };
   const rawPos = (key: string): [number, number] => { const [a, d, i] = key.split('/'); return a === 'rest' ? [kfRow(d), kfCol(d)] : [c.clips.indexOf(`${a}/${d}`), 1 + +i]; };
   const cvs = c.clips.map((clip) => { const ar = cells.filter((x) => x.key.startsWith(`${clip}/`)).map((x) => x.area), m = ar.reduce((s, v) => s + v, 0) / ar.length; return m ? Math.sqrt(ar.reduce((s, v) => s + (v - m) ** 2, 0) / ar.length) / m : 0; });
-  return { id: c.id, verdicts, misses, keep: score(c.keep), keepExact: score(c.keep, true), drop: score(c.drop), fails: fails.length, warnings: warnings.length, maxAreaCV: Math.max(0, ...cvs), cells: all };
+  return { id: c.id, verdicts, misses, keep: score(c.keep), keepExact: score(c.keep, true), drop: score(c.drop), fails: fails.length, warnings: warnings.length, maxAreaCV: Math.max(0, ...cvs), cut: all.reduce((n, x) => n + (x.cut ? x.cut.reduce((a, b) => a + b, 0) : 0), 0), cells: all };
 }
 
 export async function runBench(filter?: string) {
@@ -93,7 +99,7 @@ const pct = ([h, n]: [number, number]) => (n ? `${((100 * h) / n).toFixed(1)} % 
 export async function report(results: CaseResult[], cases: Case[]) {
   const corpus = await sha256(new Uint8Array(readFileSync(new URL('cases.json', FIX))));
   const gates = await sha256(new TextEncoder().encode(JSON.stringify(GATES)));
-  const rows = results.map((r) => { const c = cases.find((x) => x.id === r.id)!; return `| ${r.id}${c.role ? ' (reference)' : ''} | ${c.slot} / ${c.key} | ${r.misses.length ? `**${r.misses.length} miss**` : 'ok'} | ${pct(r.keep)} | ${pct(r.keepExact)} | ${pct(r.drop)} | ${r.fails} | ${r.warnings} | ${r.maxAreaCV.toFixed(3)} |`; });
+  const rows = results.map((r) => { const c = cases.find((x) => x.id === r.id)!; return `| ${r.id}${c.role ? ' (reference)' : ''} | ${c.slot} / ${c.key} | ${r.misses.length ? `**${r.misses.length} miss**` : 'ok'} | ${pct(r.keep)} | ${pct(r.keepExact)} | ${pct(r.drop)} | ${r.fails} | ${r.warnings} | ${r.maxAreaCV.toFixed(3)} | ${r.cut || '–'} |`; });
   const misses = results.flatMap((r) => r.misses.map((m) => `- ${r.id} ${m}`));
   const live = results.filter((r) => !cases.find((x) => x.id === r.id)!.role);
   const tot = (f: (r: CaseResult) => [number, number]) => live.reduce<[number, number]>((s, r) => [s[0] + f(r)[0], s[1] + f(r)[1]], [0, 0]);
@@ -106,11 +112,12 @@ it with any change to extraction, cleanup or QA. Corpus \`${corpus.slice(0, 12)}
 - **Verdict**: each clip's QA result (pass, warn:Gx, fail:Gx) against the expected one from documented visual verdicts.
 - **Keep**: labeled pixels that must ship and do (pommels, haft ends, the jester's pink, the stripes' purple). **Keep exact**: also within 24 per
   channel of the raw color (catches discoloring). **Drop**: labeled invented props that ship anyway (lower is better).
+- **Cut px**: body px the item hides over all cells (baseCut: ear tips PixelLab erased under a hood or helm); anything else is a false hide.
 - **Reference** cases document a superseded choice (items on magenta that pickKey no longer sends there) and stay out of totals.
 - An improvement fixes a miss or a label without regressing another case; see the campaign playbook for generation changes.
 
-| Case | Slot / key | Verdicts | Keep | Keep exact | Drop | Fails | Warnings | Max area CV |
-|---|---|---|---|---|---|---|---|---|
+| Case | Slot / key | Verdicts | Keep | Keep exact | Drop | Fails | Warnings | Max area CV | Cut px |
+|---|---|---|---|---|---|---|---|---|---|
 ${rows.join('\n')}
 
 Totals (reference cases excluded): ${results.reduce((s, r) => s + r.misses.length, 0)} verdict misses; keep ${pct(tot((r) => r.keep))}; keep exact ${pct(tot((r) => r.keepExact))}; drop ${pct(tot((r) => r.drop))}.

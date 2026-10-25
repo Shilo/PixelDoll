@@ -1038,10 +1038,10 @@
    "walk/south-east": "pass",
    "walk/east": "pass",
    "walk/north-east": "pass",
-   "walk/north": "fail:G2"
+   "walk/north": "pass"
   },
   "source": "campaign 2026-10-25 arm C",
-  "note": "back view: dark rim around the hood (ears) and mottled texture",
+  "note": "back view: PixelLab erased the ear tips under the hood; round 3 baseCut hides them (G2 failed on them before); the fabric stays mottled",
   "clips": [
    "walk/south",
    "walk/south-east",
@@ -12293,6 +12293,25 @@
   },
   "source": "docs/research/generation-quality-round2-2026-10-25.md arm N",
   "note": "north 4: a real 0.053 foot mismatch; the other frames pass at the scaled tolerance",
+  "clips": [
+   "walk/south",
+   "walk/east",
+   "walk/north"
+  ]
+ },
+ {
+  "id": "c-greathelm",
+  "body": "C",
+  "slot": "head",
+  "key": "green",
+  "pad": 0,
+  "expect": {
+   "walk/south": "pass",
+   "walk/east": "pass",
+   "walk/north": "pass"
+  },
+  "source": "docs/research/generation-quality-round3-2026-10-25.md arm O",
+  "note": "ear tips erased under the helm; G2 failed on them before baseCut",
   "clips": [
    "walk/south",
    "walk/east",
