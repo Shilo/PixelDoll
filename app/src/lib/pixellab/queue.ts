@@ -1238,6 +1238,11 @@ async function robustTest() {
   console.assert(store.has(url.id) && !store.has(bad.id) && !store.has(busy.id) && n === 6, `clear finished keeps referenced records and removes terminal unknowns (${n})`);
 }
 
+/** Wait for cross-tab state (BroadcastChannel, lock handoff) instead of counting ticks; fails the assertion after 5 s. */
+async function until(ok: () => boolean, step?: () => Promise<unknown>) {
+  for (let i = 0; i < 500 && !ok(); i++) { await new Promise((r) => setTimeout(r, 10)); await step?.(); }
+}
+
 /** A minimal Web Locks stand-in: one holder, FIFO waiters, ifAvailable. */
 function fakeLocks(): Pick<LockManager, 'request'> {
   let held = false;
@@ -1257,7 +1262,7 @@ function fakeLocks(): Pick<LockManager, 'request'> {
 // Two tabs on one ledger: one leader submits, the follower never submits, never marks the leader's in-flight jobs lost, and
 // takes over (and only then cleans up orphans) when the leader's tab goes away.
 async function lockTest() {
-  const store = new Map<string, JobRec>(), locks = fakeLocks(), tick = () => new Promise((r) => setTimeout(r, 0));
+  const store = new Map<string, JobRec>(), locks = fakeLocks();
   let t = 1000, submits = 0;
   const deps: Partial<Deps> = {
     now: () => t, locks,
@@ -1300,7 +1305,7 @@ async function lockTest() {
   a.setKey('k'); b.setKey('k');
   const hang = await a.enqueue({ method: 'POST', path: '/hang', body: { seed: 1 } });
   void a.tick();
-  await tick();
+  await until(() => store.get(hang.id)?.state === 'submitting');
   console.assert(store.get(hang.id)?.state === 'submitting', 'leader submit in flight');
   const c = new Queue(deps); // a third tab opening now must not rewrite it to lost
   await c.connect();
@@ -1321,10 +1326,10 @@ async function lockTest() {
   t += 31_000;
   await a.tick(); // full re-read fallback adopts the twin
   console.assert(mineA.id !== fromB2.id && store.get(fromB2.id)?.state === 'canceled' && /duplicate/.test(store.get(fromB2.id)?.error ?? '') && submits === 2, `leader drops the other tab's duplicate (${store.get(fromB2.id)?.state}, ${submits} POSTs)`);
-  await new Promise((r) => setTimeout(r, 10));
+  await until(() => b.snapshot().jobs.find((r) => r.id === mineA.id)?.state === 'running');
   console.assert(b.snapshot().jobs.find((r) => r.id === mineA.id)?.state === 'running', 'follower mirror follows the leader by record id (no full re-read)');
   a.disconnect(); // leader tab closed
-  await tick(); await tick(); await tick();
+  await until(() => b.role === 'leader' && store.get(hang.id)?.state === 'lost');
   console.assert(b.role === 'leader' && c.role === 'follower', `next tab takes over (${b.role}, ${c.role})`);
   console.assert(store.get(hang.id)?.state === 'lost', 'orphaned submit is marked lost only by the new leader');
   b.disconnect(); c.disconnect();
@@ -1356,21 +1361,21 @@ async function handoffTest() {
   console.assert(a.role === 'leader' && posts === 0, 'a keyless leader does not hand off until its existing work settles');
   console.assert(a.key === '', 'keyless leader never borrows the follower credential');
   finishBusy(); await busy; // no ledger save: guard completion must still notify waiting followers
-  await tick(); await tick(); await tick();
-  await b.tick(); await b.tick();
+  await until(() => store.get(rec.id)?.state === 'done', () => b.tick());
+  await b.tick(); // a later tick must not submit again
   console.assert(b.role === 'leader' && posts === 1 && usedKey === 'synthetic-private-handoff-key' && store.get(rec.id)?.state === 'done', 'connected follower takes over and submits its queued work exactly once with its own key');
   a.disconnect(); b.disconnect();
 }
 
 // A follower disconnected while waiting for the Web Lock must never become an active queue later (HMR/remount).
 async function disconnectedLockTest() {
-  const locks = fakeLocks(), tick = () => new Promise((r) => setTimeout(r, 0));
+  const locks = fakeLocks();
   const deps: Partial<Deps> = { locks, all: async () => [], put: async () => {}, now: () => 1000 };
   const a = new Queue(deps), b = new Queue(deps), c = new Queue(deps);
   await a.connect(); await b.connect(); await c.connect();
   b.disconnect();
   a.disconnect();
-  for (let i = 0; i < 6; i++) await tick();
+  await until(() => c.role === 'leader');
   console.assert(b.role === 'follower' && c.role === 'leader', 'disconnected follower skips lock takeover; next live tab becomes leader');
   c.disconnect();
   // Disconnect during the asynchronous ledger load must also prevent restarting the ticker.
