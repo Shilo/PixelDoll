@@ -36,6 +36,7 @@ function board() {
     project = gql(`query($owner: String!, $number: Int!, $after: String) { user(login: $owner) { projectV2(number: $number) {
       id
       field(name: "Status") { ... on ProjectV2SingleSelectField { id options { id name } } }
+      origin: field(name: "Origin") { ... on ProjectV2SingleSelectField { id options { id name } } }
       items(first: 100, after: $after, archivedStates: [ARCHIVED, NOT_ARCHIVED]) { pageInfo { hasNextPage endCursor } nodes {
         id isArchived
         status: fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } }
@@ -45,7 +46,7 @@ function board() {
     for (const n of project.items.nodes) items.push({ id: n.id, status: n.status?.name ?? 'No status', archived: n.isArchived, title: n.content?.title ?? '', content: n.content })
     after = project.items.pageInfo.endCursor
   } while (project.items.pageInfo.hasNextPage)
-  return { id: project.id, field: project.field, items: items.filter((i) => !i.archived), archived: items.filter((i) => i.archived) }
+  return { id: project.id, field: project.field, origin: project.origin, items: items.filter((i) => !i.archived), archived: items.filter((i) => i.archived) }
 }
 
 function find(b, query) {
@@ -63,9 +64,9 @@ function option(b, name) {
     ?? fail(`Unknown status "${name}". Use: ${b.field.options.map((o) => o.name).join(', ')}`)
 }
 
-function setStatus(b, itemId, o) {
+function setStatus(b, itemId, o, field = b.field) {
   gql(`mutation($p: ID!, $i: ID!, $f: ID!, $o: String!) { updateProjectV2ItemFieldValue(input: { projectId: $p, itemId: $i, fieldId: $f, value: { singleSelectOptionId: $o } }) { clientMutationId } }`,
-    { p: b.id, i: itemId, f: b.field.id, o: o.id })
+    { p: b.id, i: itemId, f: field.id, o: o.id })
   return o.name
 }
 
@@ -93,6 +94,9 @@ switch (cmd) {
     const id = gql(`mutation($p: ID!, $t: String!, $b: String) { addProjectV2DraftIssue(input: { projectId: $p, title: $t, body: $b }) { projectItem { id } } }`,
       { p: b.id, t: title, b: text(body) }).addProjectV2DraftIssue.projectItem.id
     console.log(`${id}\t${setStatus(b, id, o)}\t${title}`)
+    // Cards added here come from agents; the board's "Origin: AI" chip tells them apart from the maintainer's own cards.
+    const ai = b.origin?.options.find((x) => x.name === 'AI')
+    if (ai) setStatus(b, id, ai, b.origin)
     break
   }
   case 'move': {
