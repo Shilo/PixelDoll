@@ -10,7 +10,8 @@ import { decodePngBytes, encodePngBytes } from '../src/lib/image/pngraw.ts';
 import { makeImg, type Img } from '../src/lib/image/png.ts';
 import { bandOf, dirGate, extractCell, GATES, g2Fails, itemQa, padImg, postProcess, recompose, slotOf, type CellOut, type Route } from '../src/lib/items/items.ts';
 import { sha256 } from '../src/lib/image/hash.ts';
-import type { Rig } from '../src/lib/rig/rig.ts';
+import type { Keypoint, Rig } from '../src/lib/rig/rig.ts';
+import { fromApi } from '../src/lib/rig/poses.ts';
 
 const FIX = new URL('../test/fixtures/bench/', import.meta.url);
 interface Case { id: string; body: 'A' | 'B'; slot: string; key: Route; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' }
@@ -21,7 +22,7 @@ const cell = (sheet: Img, C: number, row: number, col: number): Img => {
   for (let y = 0; y < C; y++) o.data.set(sheet.data.subarray(((row * C + y) * sheet.w + col * C) * 4, ((row * C + y) * sheet.w + col * C + C) * 4), y * C * 4);
   return o;
 };
-const skel = (rig: Rig, k: { label: string; x: number; y: number }[] | undefined) => k && Object.fromEntries(k.map((p) => [p.label, { x: p.x * rig.cell.w, y: p.y * rig.cell.h }]));
+const skel = (rig: Rig, k: Keypoint[] | undefined) => k && fromApi(k, rig.cell);
 
 export interface CaseResult { id: string; verdicts: Record<string, string>; misses: string[]; keep: [number, number]; keepExact: [number, number]; drop: [number, number]; fails: number; warnings: number; maxAreaCV: number; cells: CellOut[] }
 /** Verdict of one clip from the QA messages: "fail:G3", "warn:G7", or "pass". */
