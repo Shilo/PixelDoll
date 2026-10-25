@@ -22,10 +22,12 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 ## Tasks
 
-Tasks live only on the [PixelDoll board](https://github.com/users/Shilo/projects/7) as draft cards; there is no TODO file, and GitHub Issues are for user reports. The board is public and is the roadmap, so write cards for users to read.
-Statuses: Ready (approved and planned; top is next), Progress, Done, Later (deferred: never start one until the user confirms that specific card when you ask). Archived cards are dropped or old; they are hidden from the board and from list, and list archived shows them.
-From app/, run node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. list prints cards in board order. A card is its ID, exact title or a unique part of its title; \n in a body is a newline. Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
-A card body may start with "Blocked:", "Paid:" or "Needs decision:".
+- Tasks live only on the [PixelDoll board](https://github.com/users/Shilo/projects/7) as draft cards; there is no TODO file, and GitHub Issues are for user reports. The board is public and is the roadmap, so write cards for users to read.
+- Statuses: Ready (approved and planned; top is next), Progress, Done, Later (deferred: never start one until the user confirms that specific card when you ask). Archived cards are dropped or old; they are hidden from the board and from list, and list archived shows them.
+- From app/, run node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. list prints cards in board order.
+- A card is its ID, exact title or a unique part of its title; \n in a body is a newline.
+- Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
+- A card body may start with "Blocked:", "Paid:" or "Needs decision:".
 - "What's next?": mention any Progress cards first (another session may own them; ask before resuming), then recommend the highest Ready card that is not Blocked, saying if it is Paid or Needs decision. Do not move it.
 - "Work on pending tasks" (or similar): take Ready cards from the top, one at a time, never Later or Blocked ones; skip Paid and Needs decision cards and list them for the user.
 - Starting a card: show it, read its Refs, then move it to Progress before changing files.
@@ -42,45 +44,54 @@ A card body may start with "Blocked:", "Paid:" or "Needs decision:".
 
 ## Theme
 
-`@shilo/bronze-ui` is the owner's theme and the only UI kit (source: C:/Programming_Files/Shilocity/bronze-ui). Fix shared appearance there (colors, materials, states, focus, borders, radii), release a new version, then update the dependency and lockfile here; never patch node_modules or override that appearance locally. Layout, geometry and spacing stay local. Ownership: docs/design/production-experience.md. Prototype CSS check: node docs/design/2026-10-22-redesign/round-6-prototype/verify-theme-ownership.mjs from the repo root.
+- `@shilo/bronze-ui` is the owner's theme and the only UI kit (source: C:/Programming_Files/Shilocity/bronze-ui).
+- Fix shared appearance there (colors, materials, states, focus, borders, radii), release a new version, then update the dependency and lockfile here; never patch node_modules or override that appearance locally.
+- Layout, geometry and spacing stay local.
+- Ownership: docs/design/production-experience.md
+- Prototype CSS check: node docs/design/2026-10-22-redesign/round-6-prototype/verify-theme-ownership.mjs from the repo root
 
 ## Commands
 
-Run all from app/. Install with npm ci; add dependencies with npm install -E and commit the lockfile.
-Unit tests: npm test [-- <file filter>].
-End-to-end tests: npm run e2e, or npm run e2e -- <spec names> [-g "<title>"] [--last-failed]; it builds and starts its own servers.
-Concurrent agents: give each run its own E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR; --last-failed reads the same TEST_OUTPUT_DIR.
+- Run all from app/. Install with npm ci; add dependencies with npm install -E and commit the lockfile.
+- Unit tests: npm test [-- <file filter>]
+- End-to-end tests: npm run e2e, or npm run e2e -- <spec names> [-g "<title>"] [--last-failed]; it builds and starts its own servers.
+- Concurrent agents: give each run its own E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR; --last-failed reads the same TEST_OUTPUT_DIR.
 
 ## End-to-end scope
 
-CI runs the full end-to-end suite on every push, sharded, and Pages deploys only after it passes. Agents run npm run check and npm test (skip both for docs-only changes), plus only the end-to-end specs that cover what they changed (none for docs-only or test/unit-only changes); run the full end-to-end suite locally only for cross-cutting changes (studio state, storage, queue, shared components, test/e2e/immersive-helpers.ts, test/fixtures/, src/studio/experience/, Playwright config) or when asked. Spec names in app/test/e2e/ match their areas; not obvious: studio covers dressing, outfits, drafts, Activity, review, repair, recolor and export; credential changes (remembered token, Forget, canceled Connect) run auth and studio; early theme (app/public/appearance.js) runs experience-parity; modules registered in src/lib/selftests.ts run in selftests.
-Before changing test configs, CI shards or adding slow or timing-sensitive tests, read docs/testing/test-performance.md.
-experience.spec.ts (screenshot captures) runs only with playwright.experience.config.ts.
+- CI runs the full end-to-end suite on every push, sharded, and Pages deploys only after it passes.
+- Agents run npm run check and npm test (skip both for docs-only changes), plus only the end-to-end specs that cover what they changed (none for docs-only or test/unit-only changes).
+- Run the full end-to-end suite locally only for cross-cutting changes (studio state, storage, queue, shared components, test/e2e/immersive-helpers.ts, test/fixtures/, src/studio/experience/, Playwright config) or when asked.
+- Spec names in app/test/e2e/ match their areas, except:
+  - studio covers dressing, outfits, drafts, Activity, review, repair, recolor and export
+  - credential changes (remembered token, Forget, canceled Connect) run auth and studio
+  - early theme (app/public/appearance.js) runs experience-parity
+  - modules registered in src/lib/selftests.ts run in selftests
+- Before changing test configs, CI shards or adding slow or timing-sensitive tests, read docs/testing/test-performance.md.
+- experience.spec.ts (screenshot captures) runs only with playwright.experience.config.ts.
 
 ## Rules
 
-Remembered PixelLab credentials remain plaintext in optional `localStorage['pixellabApiKey']`, intentionally shared
-with every app on this origin. Never broadcast credentials. Follow `docs/shared-token-security.md` for credential-free
-Forget/replacement notifications; do not introduce encryption or an extra unlock step. A deferred board card tracks encryption.
-
-KISS and YAGNI: no feature, dependency, option or abstraction without a real need.
-DRY in app/: before writing a helper, type or constant, search for one and reuse it (extend it only if existing callers keep their behavior); never copy logic. Extract shared code when a second caller needs it, not before.
-Fix the root cause in the code all callers share, not only where the symptom shows.
-Stay in scope: no unrequested refactors, renames, reformatting or restyling; mention them instead.
-Never revert, stash, reformat or commit changes you did not make; the owner and other agents work in this tree.
-Surface errors: no empty catch, placeholder value or silent fallback that hides a failure unless documented as intended (e.g. the inpaint-v3 fallback, legacy manifest reading, optional localStorage).
-Never weaken, skip or delete a test or assertion, or change its expected values, just to make it pass; if the test itself is wrong, fix it and say why.
-Delete code your change makes dead; no commented-out code. Comments explain why, not what changed.
-Report what you verified, what failed and what you skipped; never claim a check you did not run.
-Keep the app client-only; never add a backend.
-Use only the allowed PixelLab models above, and check docs/research/pixellab/ (pixellab-openapi-v2.json) before calling an endpoint.
-PixelLab credits are real money: spend only when the task needs generations, never auto-resend paid requests, and prefer offline checks on stored frames.
-Never print, log, screenshot or commit a PixelLab token or the .env file.
-Follow the Git Conventional Commits standard for every commit.
-Use American English spelling.
+- Remembered PixelLab credentials remain plaintext in optional `localStorage['pixellabApiKey']`, intentionally shared with every app on this origin. Never broadcast credentials. Follow `docs/shared-token-security.md` for credential-free Forget/replacement notifications; do not introduce encryption or an extra unlock step. A deferred board card tracks encryption.
+- KISS and YAGNI: no feature, dependency, option or abstraction without a real need.
+- DRY in app/: before writing a helper, type or constant, search for one and reuse it (extend it only if existing callers keep their behavior); never copy logic. Extract shared code when a second caller needs it, not before.
+- Fix the root cause in the code all callers share, not only where the symptom shows.
+- Stay in scope: no unrequested refactors, renames, reformatting or restyling; mention them instead.
+- Never revert, stash, reformat or commit changes you did not make; the owner and other agents work in this tree.
+- Surface errors: no empty catch, placeholder value or silent fallback that hides a failure unless documented as intended (e.g. the inpaint-v3 fallback, legacy manifest reading, optional localStorage).
+- Never weaken, skip or delete a test or assertion, or change its expected values, just to make it pass; if the test itself is wrong, fix it and say why.
+- Delete code your change makes dead; no commented-out code. Comments explain why, not what changed.
+- Report what you verified, what failed and what you skipped; never claim a check you did not run.
+- Keep the app client-only; never add a backend.
+- Use only the allowed PixelLab models above, and check docs/research/pixellab/ (pixellab-openapi-v2.json) before calling an endpoint.
+- PixelLab credits are real money: spend only when the task needs generations, never auto-resend paid requests, and prefer offline checks on stored frames.
+- Never print, log, screenshot or commit a PixelLab token or the .env file.
+- Follow the Git Conventional Commits standard for every commit.
+- Use American English spelling.
 
 ## Agent testing
 
-Agents that need PixelLab run npm run dev:agent (launch config app-dev-agent, port 5199). It reads PIXELLAB_API_KEY_AGENT_DEV from the repo-root .env server-side, and the app connects by itself and shows an Agent mode badge.
-Check GET /balance only unless the task needs generations. Keyless scripts set localStorage pixeldoll.agentKey to off on the agent server so nothing can spend. The switch is read at page load and covers every tab of that origin, so keep it set for the whole run.
-Never expose the agent server beyond localhost (no --host, tunnels or port forwards).
+- Agents that need PixelLab run npm run dev:agent (launch config app-dev-agent, port 5199). It reads PIXELLAB_API_KEY_AGENT_DEV from the repo-root .env server-side, and the app connects by itself and shows an Agent mode badge.
+- Check GET /balance only unless the task needs generations.
+- Keyless scripts set localStorage pixeldoll.agentKey to off on the agent server so nothing can spend. The switch is read at page load and covers every tab of that origin, so keep it set for the whole run.
+- Never expose the agent server beyond localhost (no --host, tunnels or port forwards).
