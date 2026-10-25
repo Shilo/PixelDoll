@@ -1,4 +1,4 @@
-import { openStudio, reloadStudio, equipmentMode, equipmentGroup, newItem, selectedItemDetails, inspectStage, openAccount, pickItem } from './immersive-helpers.ts'
+import { openStudio, reloadStudio, enterStudio, equipmentMode, equipmentGroup, newItem, selectedItemDetails, inspectStage, openAccount, pickItem } from './immersive-helpers.ts'
 import { expect, test, type Page } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -290,6 +290,23 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
 
   assert.deepEqual(errors, [])
   assert.deepEqual(unexpectedRequests, [], 'demo tests must never call the paid API')
+})
+
+// IndexedDB writes started while a page unloads may never finish, so an edit inside the 400 ms autosave delay must survive.
+test('an outfit edit survives an immediate reload inside the autosave delay', async ({ page }) => {
+  await page.route('https://*.pixellab.ai/**', (route) => route.abort())
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, '/#/')
+  const hat = page.locator('.equipment-scroll').getByRole('button', { name: 'Wizard hat', exact: true })
+  const worn = (await hat.getAttribute('aria-pressed')) === 'true' ? 'false' : 'true'
+  await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click()
+  await expect(hat).toHaveAttribute('aria-pressed', worn)
+  // A page-initiated reload 20 ms later lost the edit every time before the localStorage snapshot (page.reload() did not).
+  const loaded = page.waitForEvent('load')
+  await page.evaluate(() => { setTimeout(() => location.reload(), 20) })
+  await loaded; await enterStudio(page)
+  await expect(hat).toHaveAttribute('aria-pressed', worn)
+  expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('pixeldoll.unsaved.')))).toEqual([]) // saved, then cleared
 })
 
 test('Inspector animation stays stable and eight-direction previews fit the panel', async ({ page }) => {

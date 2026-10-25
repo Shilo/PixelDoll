@@ -78,15 +78,16 @@ let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
 
 export function initUi() {
   const on = () => { ui.size = sizeNow(); ui.dpr = devicePixelRatio || 1; };
-  // Flush the autosave debounce when the tab is backgrounded or closed. Chromium aborts IndexedDB writes started in
-  // pagehide (and in the unload-time visibilitychange), but keeps ones started in beforeunload.
-  // ponytail: a beforeunload listener costs Firefox's back/forward cache for the Studio; add it only while a save is pending if that matters.
-  const hide = () => void flushSave();
+  // Backgrounded or closing: keep any unsaved outfit synchronously (an unload can abort IndexedDB), then flush the autosave
+  // debounce. pagehide covers reload/close/navigation; hidden covers mobile, where pagehide may never fire. No beforeunload,
+  // which would cost the back/forward cache.
+  const hide = () => { if (document.visibilityState === 'hidden') { keepUnsaved(); void flushSave(); } };
+  const leave = () => { keepUnsaved(); void flushSave(); };
   addEventListener('resize', on);
-  addEventListener('beforeunload', hide);
+  addEventListener('pagehide', leave);
   document.addEventListener('visibilitychange', hide);
   applyTheme();
-  return () => { removeEventListener('resize', on); removeEventListener('beforeunload', hide); document.removeEventListener('visibilitychange', hide); };
+  return () => { removeEventListener('resize', on); removeEventListener('pagehide', leave); document.removeEventListener('visibilitychange', hide); };
 }
 export function applyTheme() { document.documentElement.dataset.theme = ui.theme; document.documentElement.style.colorScheme = ui.theme; }
 export function toggleTheme() { ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; lsSet(K.theme, ui.theme); applyTheme(); }
@@ -232,8 +233,9 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     if (request !== openRequest) return;
     const m = r.project.manifest;
     const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
-    doc.items = { ...pr.items };
-    doc.variants = { ...pr.variants };
+    const unsaved = takeUnsaved(id, m);
+    doc.items = { ...pr.items, ...unsaved?.items };
+    doc.variants = { ...pr.variants, ...unsaved?.variants };
     if (keep?.wear) { const it = m.items.find((i) => i.id === keep.wear); if (it) doc.items[it.slot] = it.id; }
     doc.undo = [];
     doc.redo = [];
@@ -246,8 +248,8 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     if (ui.selected) ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
     lsSet(K.last, id);
     doc.rev++;
-    // Keep it equips the accepted item while opening; persist that edit before a reload or project switch.
-    if (keep?.wear) { save(); await flushSave(); }
+    // Keep it equips the accepted item while opening, or an outfit left unsaved by an unload; persist it now.
+    if (keep?.wear || unsaved) { save(); await flushSave(); }
   } catch (e) {
     if (request !== openRequest) return;
     doc.error = (e as Error).message;
@@ -308,16 +310,37 @@ export async function flushSave() {
   if (pending) saving = saving.then(pending);
   await saving;
 }
+let edits = 0, savedEdits = 0;
 function save() {
   clearTimeout(saveT);
   const id = doc.id, m = store.project?.manifest;
   if (!m) return;
-  const cur = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
+  const n = ++edits, cur = { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
   pendingSave = async () => {
     storeVariants(m, cur.variants);
-    try { await saveDress(id, m, cur); doc.saved = new Date().toLocaleTimeString(); } catch (e) { console.error('autosave', e); toast(`Could not save: ${(e as Error).message}`); }
+    try {
+      await saveDress(id, m, cur);
+      doc.saved = new Date().toLocaleTimeString();
+      if (n === edits) { savedEdits = n; lsSet(unsavedKey(id), null); }
+    } catch (e) { console.error('autosave', e); toast(`Could not save: ${(e as Error).message}`); }
   };
   saveT = setTimeout(() => void flushSave(), 400);
+}
+
+// IndexedDB writes started while a page unloads may never finish, so the unsaved outfit also goes to localStorage (synchronous)
+// until a save lands; openProject re-applies it through save().
+const unsavedKey = (id: string) => `pixeldoll.unsaved.${id}`;
+function keepUnsaved() {
+  if (edits === savedEdits || !doc.id || doc.loading) return;
+  lsSet(unsavedKey(doc.id), JSON.stringify({ items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }));
+}
+function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'> | null {
+  try {
+    const v = JSON.parse(lsGet(unsavedKey(id)) ?? 'null') as Pick<Preset, 'items' | 'variants'> | null;
+    if (!v || typeof v.items !== 'object' || typeof v.variants !== 'object') return null;
+    // An item deleted since (another tab) is dropped rather than worn as a dangling id.
+    return { items: Object.fromEntries(Object.entries(v.items).filter(([, it]) => it == null || m.items.some((i) => i.id === it))), variants: v.variants };
+  } catch { return null; }
 }
 
 /** Deleting a project never cancels paid jobs or removes shared cell blobs. */
