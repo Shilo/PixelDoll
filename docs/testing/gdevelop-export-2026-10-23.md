@@ -4,7 +4,7 @@
 
 Separate agents investigated GameMaker and GDevelop; a third challenged Unreal feasibility, target ordering and picker names.
 GameMaker was explicitly deferred by the user after discovery that native compile/run verification needs an uninstalled
-modern runtime. It is a Later card on the [board](https://github.com/users/Shilo/projects/7); its acceptance criteria are in the [research record](../research/native-export-expansion-2026-10-23.md). No unverified GameMaker exporter or option
+modern runtime. It is a deferred card on the [board](https://github.com/users/Shilo/projects/7); its acceptance criteria are in the [research record](../research/native-export-expansion-2026-10-23.md). No unverified GameMaker exporter or option
 is shipped. The [design/research record](../research/native-export-expansion-2026-10-23.md) explains Unreal and the category decisions.
 
 ## Native GDevelop verification

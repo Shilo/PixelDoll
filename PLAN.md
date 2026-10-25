@@ -52,7 +52,7 @@ Living document: status and decisions. Open tasks live on the [PixelDoll board](
 
 ## Roadmap
 
-Open work is the [PixelDoll board](https://github.com/users/Shilo/projects/7): Ready (in priority order) → In progress → Done; deferred ideas are Later.
+Open work is the [PixelDoll board](https://github.com/users/Shilo/projects/7): Ready (pending, in priority order; deferred cards at the bottom) → In progress → Done.
 Releases: bump `app/package.json`, annotated tag `vX.Y.Z`, `gh release create`; CI deploys `main`.
 
 ## Frame Editor planning (2026-10-23)
@@ -102,7 +102,7 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 
 ## PWA (deferred, D13)
 
-Installable, offline-capable Studio. Tracked as a Later card on the [board](https://github.com/users/Shilo/projects/7).
+Installable, offline-capable Studio. Tracked as a deferred card on the [board](https://github.com/users/Shilo/projects/7).
 
 - **Manifest** (`app/public/manifest.webmanifest`, relative href): name/short_name "PixelDoll", `start_url` "./#/",
   `scope` "./", `display` "standalone", theme/background = dark `--bg`, icons 192 + 512 + 512 maskable + SVG.

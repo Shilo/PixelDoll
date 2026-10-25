@@ -47,8 +47,8 @@ User-deferred on 2026-10-23: persisted PixelDoll queue credential ownership is a
 not a release blocker or scheduled implementation. Reloading after a saved key changed may attach the existing ledger
 to that key. Revisit only if requested; future scope includes enqueue/dedup/recovery/polling, preserving accepted job IDs
 and keeping unowned saved work separate. Open tabs already avoid automatic account switching; durable queue-account
-isolation is not implemented. A Later card on the [board](https://github.com/users/Shilo/projects/7) keeps optional response-header hosting work for a future hosting review.
+isolation is not implemented. A deferred card on the [board](https://github.com/users/Shilo/projects/7) keeps optional response-header hosting work for a future hosting review.
 
-Encryption is deferred (a Later card on the [board](https://github.com/users/Shilo/projects/7)): a fixed bundled key or an automatically available saved decryption key
+Encryption is deferred (tracked on the [board](https://github.com/users/Shilo/projects/7)): a fixed bundled key or an automatically available saved decryption key
 does not solve same-origin token theft, while a separate passphrase adds unwanted friction. Reassess only when there
 is a concrete protection goal and an acceptable independent unlock or provider-delegation mechanism.

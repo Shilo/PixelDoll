@@ -24,7 +24,7 @@ revisits GDevelop with an implementation and verification requirement.
 The specialist inspected the official LTS2026 IDE 2026.0.0.16 and bundled ProjectTool 2024.14.165. ProjectTool generated
 a native blank `.yyp` baseline, but it cannot substitute for compiling/running equipment behavior. The matching runtime
 2026.0.0.23 is not installed; only old GameMaker Studio 1.x artifacts exist locally. No exporter, runtime or public target
-was shipped. The user's deferral is a Later card on the [board](https://github.com/users/Shilo/projects/7); the acceptance criteria are below.
+was shipped. The user's deferral is tracked on the [board](https://github.com/users/Shilo/projects/7); the acceptance criteria are below.
 
 A useful future target should produce native sprites with origins, reusable GML objects/API and a demonstration room,
 plus shared elapsed-millisecond timing, equipment/hides/tucking/draw order, and exact owner-local palette swaps.
