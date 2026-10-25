@@ -323,14 +323,17 @@ test('Inspector animation stays stable and eight-direction previews fit the pane
     const geometry: string[] = [], pixels: string[] = []
     for (let frame = 0; frame < 8; frame++) {
       await page.waitForTimeout(110) // Authored playback continues while the item sheet is open.
-      geometry.push(JSON.stringify(await inspector.locator('.dir-strip').boundingBox()))
-      geometry.push(JSON.stringify(await inspector.locator('.actions').first().boundingBox()))
-      pixels.push(await inspector.locator('.dir-strip canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL()))
-      const strip = (await inspector.locator('.dir-strip').boundingBox())!
-      for (const sprite of await inspector.locator('.dir-strip canvas').all()) {
-        const b = (await sprite.boundingBox())!
-        expect(b.x).toBeGreaterThanOrEqual(strip.x)
-        expect(b.x + b.width).toBeLessThanOrEqual(strip.x + strip.width)
+      // One browser call per sample (it was ~12 round trips): the same boxes, read in the same instant.
+      const sample = await inspector.evaluate((sheet) => {
+        const box = (el: Element) => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height } }
+        const strip = sheet.querySelector('.dir-strip')!, sprites = [...strip.querySelectorAll('canvas')]
+        return { strip: box(strip), actions: box(sheet.querySelector('.actions')!), sprites: sprites.map(box), pixels: sprites[0].toDataURL() }
+      })
+      geometry.push(JSON.stringify(sample.strip), JSON.stringify(sample.actions))
+      pixels.push(sample.pixels)
+      for (const b of sample.sprites) {
+        expect(b.x).toBeGreaterThanOrEqual(sample.strip.x)
+        expect(b.x + b.width).toBeLessThanOrEqual(sample.strip.x + sample.strip.width)
       }
     }
     expect(new Set(geometry.filter((_, i) => i % 2 === 0)).size).toBe(1)
