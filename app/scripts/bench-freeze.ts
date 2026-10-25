@@ -132,6 +132,28 @@ await save('bodyC.png', tile(await Promise.all(DIRS_C.map(async (d) => [await im
 const C25N = (item: string) => ({ dress: (d: string) => `c25b/N/${item}/dress.${DIRS_C.indexOf(d)}.png`, pose: (_a: string, d: string, i: number) => `c25b/N/${item}/walk_${d}.${i}.png` });
 await posedCase({ id: 'c-greathelm', body: 'C', slot: 'head', key: 'green', pad: 0, expect: Object.fromEntries(DIRS_C.map((d) => [`walk/${d}`, 'pass'])), source: 'docs/research/generation-quality-round3-2026-10-25.md arm O', note: 'ear tips erased under the helm; G2 failed on them before baseCut' }, C25N('helmChibi').dress, C25N('helmChibi').pose, DIRS_C.map((d) => ['walk', d]), 80);
 
+// round 3: the bow grip and steel on azure (review: the corpus did not protect either fix)
+// bow, off hand, 96 px: KEEP = grip-gap px of the raw output: stand-in px (key) off the body with bow px within 3 px on both sides
+// of a row or a column (the stand-in's hand covered the bow there; the body's own hand is elsewhere), so closeGrip must fill them
+const keyAt = (im: Img, p: number) => im.data[p * 4 + 3] >= 128 && keyScore('green', im.data[p * 4], im.data[p * 4 + 1], im.data[p * 4 + 2]) >= KT;
+const itemAt = (im: Img, p: number) => im.data[p * 4 + 3] >= 128 && !keyAt(im, p);
+const gripKeep = (im: Img, base: Img, C: number) => { const m = new Uint8Array(C * C);
+  for (let p = 0; p < m.length; p++) { const x = p % C, y = (p / C) | 0; if (!keyAt(im, p) || base.data[p * 4 + 3]) continue;
+    const side = (dx: number, dy: number) => [1, 2, 3].some((k) => { const X = x + k * dx, Y = y + k * dy; return X >= 0 && Y >= 0 && X < C && Y < C && itemAt(im, Y * C + X); });
+    if ((side(-1, 0) && side(1, 0)) || (side(0, -1) && side(0, 1))) m[p] = 1; }
+  return runs(m); };
+const bow: [string, string][] = DIRS_A.map((d) => ['walk', d]);
+const bowRows = await posedCase({ id: 'a-bow96', body: 'A', slot: 'off_hand', key: 'green', pad: 16, expect: Object.fromEntries(bow.map(([a, d]) => [`${a}/${d}`, 'any'])), source: 'docs/research/generation-quality-round3-2026-10-25.md (grip fill)', note: 'held bow, off hand; side and back views fail G4/G5/G9 (known limit)' }, (d) => `c25c/B/off_hand/dress_s7.${DIRS_A.indexOf(d)}.png`, (_a, d, i) => `c25c/B/off_hand/walk_${d}.${i}.png`, bow, 96);
+{ const keep: Record<string, number[][]> = {};
+  for (const [r, [a, d]] of bow.entries()) for (let i = 0; i < 8; i++) { const rr = gripKeep(bowRows[r][1 + i], pad(await load(`s4_items/sk_${d}.base${i}.png`), 96), 96); if (rr.length) keep[`${a}/${d}/${i}`] = rr; }
+  cases.at(-1)!.keep = keep; }
+// steel on azure, body A, dress only: KEEP = near-gray item px of the raw output (chroma <= 30, not azure key); keep exact
+// catches a despill that recolors them (round 3 arm S: the luminance snap turned up to 84 of 147 per view purple)
+{ const views = await Promise.all(DIRS_A.map((_, i) => load(`c25c/S/plume/dress_s7.${i}.png`)));
+  const steel = (im: Img) => { const m = new Uint8Array(64 * 64); for (let p = 0; p < m.length; p++) { const [r, g, b, al] = im.data.subarray(p * 4, p * 4 + 4); if (al >= 128 && Math.max(r, g, b) - Math.min(r, g, b) <= 30 && Math.max(r, g, b) >= 40 && keyScore('azure', r, g, b) < KT) m[p] = 1; } return runs(m); };
+  await save('a-plume-azure.png', tile([views], 64));
+  cases.push({ id: 'a-plume-azure', body: 'A', slot: 'head', key: 'azure', pad: 0, clips: [], expect: { rest: 'pass' }, keep: Object.fromEntries(DIRS_A.map((d, i) => [`rest/${d}/0`, steel(views[i])])), source: 'docs/research/generation-quality-round3-2026-10-25.md arm S', note: 'a steel helmet with a green and purple plume: the steel must stay gray' }); }
+
 // round 2 arm Z, body A, dress only: green + purple stripes; the purple must ship (KEEP = px of the raw azure output with hue
 // 250-320°, saturation >= 0.3, value >= 51; the azure ramp sits at 210°). On magenta the purple and the key ramp share those hues
 // (the collision itself), so raw labels cannot separate them: the magenta reference has none and documents that every gate passes
