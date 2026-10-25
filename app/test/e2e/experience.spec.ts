@@ -267,36 +267,6 @@ test('all production extra categories, native menu focus, mode controls and Tab 
   await expect(options).toBeFocused()
 })
 
-test('phone More preserves Redo and closes after restoring a taken-off item state', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await customize(page)
-  await pause(page)
-  const options = page.getByRole('button', { name: 'More options', exact: true })
-  const popup = page.locator('#experience-options')
-  await options.click()
-  await expect(popup.getByRole('button', { name: 'Redo', exact: true })).toBeDisabled()
-  await page.keyboard.press('Escape')
-  await page.getByRole('tab', { name: /^Head/ }).click()
-  const helmet = page.getByRole('button', { name: 'Steel helmet', exact: true })
-  const none = page.getByRole('button', { name: 'None', exact: true })
-  await expect(helmet).toHaveAttribute('aria-pressed', 'true')
-  await none.click()
-  await expect(none).toHaveAttribute('aria-pressed', 'true')
-  await expect(helmet).toHaveAttribute('aria-pressed', 'false')
-  await page.getByRole('button', { name: /^Undo/ }).click()
-  await expect(helmet).toHaveAttribute('aria-pressed', 'true')
-  await options.click()
-  const redo = popup.getByRole('button', { name: 'Redo Take off', exact: true })
-  await expect(redo).toBeVisible(); await expect(redo).toBeEnabled()
-  await redo.click()
-  await expect(popup).not.toBeVisible()
-  await expect(options).toBeFocused()
-  await expect(none).toHaveAttribute('aria-pressed', 'true')
-  await expect(helmet).toHaveAttribute('aria-pressed', 'false')
-  await options.click()
-  await expect(popup.getByRole('button', { name: 'Redo', exact: true })).toBeDisabled()
-})
-
 test('creator validation stays real; Cancel and Escape restore the native opener', async ({ page }) => {
   await landing(page)
   const opener = page.getByRole('button', { name: 'New character', exact: true })
@@ -318,47 +288,6 @@ test('creator validation stays real; Cancel and Escape restore the native opener
   await page.keyboard.press('Escape')
   await expect(creator).toHaveCount(0)
   await expect(opener).toBeFocused()
-})
-
-test('selection search shows an honest zero-result state and preserves native editing', async ({ page }) => {
-  await landing(page)
-  const search = page.getByRole('searchbox', { name: 'Search characters', exact: true })
-  await search.fill('There is no such saved character')
-  await expect(page.locator('.character-row')).toHaveCount(0)
-  await expect(page.locator('.cast-character')).toHaveCount(0)
-  await expect(page.locator('.empty-cast')).toHaveText('No matching characters')
-  await expect(page.locator('.customize-action')).toBeDisabled()
-  await page.keyboard.press('ArrowLeft'); await page.keyboard.press('Enter')
-  await expect(search).toBeFocused()
-  await expect(page.getByRole('heading', { name: 'Characters', exact: true })).toBeVisible()
-  await search.fill('Adventurer')
-  await expect(page.locator('.character-row')).toHaveCount(1)
-  await expect(page.locator('.customize-action')).toBeEnabled()
-})
-
-test('saved light appearance applies before the application module initializes', async ({ page, context }) => {
-  await landing(page)
-  await page.evaluate(() => localStorage.setItem('pixeldoll.theme', 'light'))
-  let release!: () => void
-  const held = new Promise<void>((resolve) => { release = resolve })
-  let blocked = 0
-  await context.route('**/*', async (route) => {
-    const request = route.request()
-    if (request.resourceType() === 'script' && !new URL(request.url()).pathname.endsWith('/appearance.js')) {
-      blocked++
-      await held
-    }
-    await route.fallback().catch(() => {})
-  })
-  try {
-    await page.reload({ waitUntil: 'commit' })
-    await expect.poll(() => blocked).toBeGreaterThan(0)
-    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-    expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe('light')
-    await expect(page.locator('#app')).toBeEmpty()
-  } finally { release() }
-  await expect(page.getByRole('heading', { name: 'Characters', exact: true })).toBeVisible()
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 })
 
 test('320px inspection keeps both native selects and All directions within its transport', async ({ page }) => {

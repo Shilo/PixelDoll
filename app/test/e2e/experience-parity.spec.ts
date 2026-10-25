@@ -138,27 +138,117 @@ test('selection wheel normalizes deltas, discards bursts and stale fractions, an
   const wheel = (deltaY: number, init: { deltaMode?: number; deltaX?: number; shiftKey?: boolean; ctrlKey?: boolean } = {}) => page.evaluate(({ deltaY, init }) => !window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true, ...init })), { deltaY, init })
   for (const init of [{ shiftKey: true }, { ctrlKey: true }, { deltaX: 120 }]) expect(await wheel(60, init)).toBe(false)
   expect(await selected()).toBe(index)
-  await wheel(3, { deltaMode: 1 }); index = (index + 1) % 3
-  await expect.poll(selected).toBe(index)
-  // The approved cooldown and fraction window are both 180 ms. Waits must exceed it; events that must land inside it go in
-  // one browser task, because separate evaluate round trips can exceed 180 ms under parallel load.
-  const wheels = (...deltas: number[]) => page.evaluate(ds => { for (const deltaY of ds) window.dispatchEvent(new WheelEvent('wheel', { deltaY, cancelable: true })) }, deltas)
-  await page.waitForTimeout(300)
-  await wheels(...Array(8).fill(120))
-  index = (index + 1) % 3; await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(300)
-  await wheel(-40); index = (index + 2) % 3; await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(300)
-  await wheel(20); await page.waitForTimeout(300); await wheel(20)
-  expect(await selected()).toBe(index) // the stale fraction was discarded
-  await wheels(20, 20); index = (index + 1) % 3; await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(300)
-  // Without the sign reset, 30 − 30 − 10 = −10 would not step; with it, −30 − 10 = −40 steps back once.
-  await wheels(30, -30, -10); index = (index + 2) % 3; await expect.poll(selected).toBe(index)
-  await page.waitForTimeout(300)
-  await wheel(1, { deltaMode: 2 }); index = (index + 1) % 3; await expect.poll(selected).toBe(index)
+  // The approved cooldown and fraction window are both 180 ms. Page time is held still (the handler reads only performance.now),
+  // so each event lands at an exact time however slow loads or round trips are, and reports whether it started a character
+  // load (Customize is disabled while loading). A step selects asynchronously, so final indices alone can mask a wrong step.
+  await page.evaluate(() => { const w = window as unknown as { t: number }, t0 = performance.now(); w.t = 0; performance.now = () => t0 + w.t })
+  const at = (t: number, deltaY: number, deltaMode = 0) => page.evaluate(async ({ t, deltaY, deltaMode }) => {
+    (window as unknown as { t: number }).t = t
+    window.dispatchEvent(new WheelEvent('wheel', { deltaY, deltaMode, cancelable: true }))
+    await new Promise((resolve) => setTimeout(resolve))
+    return document.querySelector<HTMLButtonElement>('.customize-action')!.disabled
+  }, { t, deltaY, deltaMode })
+  const step = async (delta: number) => {
+    index = (index + delta + 3) % 3
+    await expect.poll(selected).toBe(index)
+    await expect(page.locator('.customize-action')).toBeEnabled()
+  }
+  expect(await at(0, 3, 1)).toBe(true); await step(1) // lines × 16 px
+  expect(await at(300, -40)).toBe(true); await step(-1)
+  expect(await at(600, 20)).toBe(false); expect(await at(800, 20)).toBe(false) // a fraction older than 180 ms is discarded
+  expect(await at(900, 20)).toBe(true); await step(1) // fractions inside 180 ms add up to 40
+  expect(await at(1200, 30)).toBe(false); expect(await at(1210, -30)).toBe(false) // a sign change restarts the fraction
+  expect(await at(1220, -10)).toBe(true); await step(-1)
+  expect(await at(1500, -30)).toBe(false) // below the threshold in the negative direction too
+  expect(await at(1800, 40)).toBe(true); await step(1)
+  expect(await at(1900, 120)).toBe(false) // inside the cooldown even a full burst is discarded
+  expect(await at(1990, 30)).toBe(false) // and leaves no fraction behind (30 alone, not 150)
+  expect(await at(2300, 1, 2)).toBe(true); await step(1) // pages × viewport height
   await page.getByRole('button', { name: 'More options', exact: true }).click()
   expect(await wheel(120)).toBe(false); expect(await selected()).toBe(index)
+})
+
+// Moved from experience.spec.ts (screenshot config) so these behavioral checks gate deploys.
+async function customize(page: Page) {
+  await landing(page)
+  await page.locator('.customize-action').click()
+  await expect(page.locator('.world-stage')).toHaveAttribute('data-position', '0.00,0.00')
+  await expect(page.getByRole('navigation', { name: 'Customization panels' })).toBeVisible()
+}
+async function pause(page: Page) {
+  const pauseButton = page.getByRole('button', { name: 'Pause', exact: true })
+  if (await pauseButton.isVisible()) await pauseButton.click()
+}
+
+test('phone More preserves Redo and closes after restoring a taken-off item state', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await customize(page)
+  await pause(page)
+  const options = page.getByRole('button', { name: 'More options', exact: true })
+  const popup = page.locator('#experience-options')
+  await options.click()
+  await expect(popup.getByRole('button', { name: 'Redo', exact: true })).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await page.getByRole('tab', { name: /^Head/ }).click()
+  const helmet = page.getByRole('button', { name: 'Steel helmet', exact: true })
+  const none = page.getByRole('button', { name: 'None', exact: true })
+  await expect(helmet).toHaveAttribute('aria-pressed', 'true')
+  await none.click()
+  await expect(none).toHaveAttribute('aria-pressed', 'true')
+  await expect(helmet).toHaveAttribute('aria-pressed', 'false')
+  await page.getByRole('button', { name: /^Undo/ }).click()
+  await expect(helmet).toHaveAttribute('aria-pressed', 'true')
+  await options.click()
+  const redo = popup.getByRole('button', { name: 'Redo Take off', exact: true })
+  await expect(redo).toBeVisible(); await expect(redo).toBeEnabled()
+  await redo.click()
+  await expect(popup).not.toBeVisible()
+  await expect(options).toBeFocused()
+  await expect(none).toHaveAttribute('aria-pressed', 'true')
+  await expect(helmet).toHaveAttribute('aria-pressed', 'false')
+  await options.click()
+  await expect(popup.getByRole('button', { name: 'Redo', exact: true })).toBeDisabled()
+})
+
+test('selection search shows an honest zero-result state and preserves native editing', async ({ page }) => {
+  await landing(page)
+  const search = page.getByRole('searchbox', { name: 'Search characters', exact: true })
+  await search.fill('There is no such saved character')
+  await expect(page.locator('.character-row')).toHaveCount(0)
+  await expect(page.locator('.cast-character')).toHaveCount(0)
+  await expect(page.locator('.empty-cast')).toHaveText('No matching characters')
+  await expect(page.locator('.customize-action')).toBeDisabled()
+  await page.keyboard.press('ArrowLeft'); await page.keyboard.press('Enter')
+  await expect(search).toBeFocused()
+  await expect(page.getByRole('heading', { name: 'Characters', exact: true })).toBeVisible()
+  await search.fill('Adventurer')
+  await expect(page.locator('.character-row')).toHaveCount(1)
+  await expect(page.locator('.customize-action')).toBeEnabled()
+})
+
+test('saved light appearance applies before the application module initializes', async ({ page, context }) => {
+  await landing(page)
+  await page.evaluate(() => localStorage.setItem('pixeldoll.theme', 'light'))
+  let release!: () => void
+  const held = new Promise<void>((resolve) => { release = resolve })
+  let blocked = 0
+  await context.route('**/*', async (route) => {
+    const request = route.request()
+    if (request.resourceType() === 'script' && !new URL(request.url()).pathname.endsWith('/appearance.js')) {
+      blocked++
+      await held
+    }
+    await route.fallback().catch(() => {})
+  })
+  try {
+    await page.reload({ waitUntil: 'commit' })
+    await expect.poll(() => blocked).toBeGreaterThan(0)
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+    expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe('light')
+    await expect(page.locator('#app')).toBeEmpty()
+  } finally { release() }
+  await expect(page.getByRole('heading', { name: 'Characters', exact: true })).toBeVisible()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 })
 
 test.describe('two-finger equipment input', () => {
