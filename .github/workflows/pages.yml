@@ -43,15 +43,16 @@ jobs:
         with:
           path: app/dist
 
-  # Eight one-worker shards on separate 4-vCPU runners, in parallel with build (Playwright's CI advice: shard, don't overload).
+  # Sixteen one-worker shards on separate 4-vCPU runners, in parallel with build (Playwright's CI advice: shard, don't overload).
+  # Benchmarked 2026-10-25: 16x1 = 147-151 s, 8x1 = 175-182 s, 8x2 = 128-200 s with a load flake (docs/testing/test-performance.md).
   e2e:
-    name: e2e ${{ matrix.shard }}/8
+    name: e2e ${{ matrix.shard }}/16
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     defaults:
       run:
         working-directory: app
@@ -66,7 +67,7 @@ jobs:
           cache-dependency-path: app/package-lock.json
       - run: npm ci
       - run: npx playwright install --with-deps --only-shell chromium # headless runs need only the shell
-      - run: npm run e2e -- --shard=${{ matrix.shard }}/8 # list + GitHub annotations for failures and flakes (playwright.config.ts)
+      - run: npm run e2e -- --shard=${{ matrix.shard }}/16 # list + GitHub annotations for failures and flakes (playwright.config.ts)
         timeout-minutes: 10 # a step timeout fails the step (job timeouts cancel it), so traces still upload
       - if: ${{ !cancelled() && hashFiles('app/test-results/**/trace.zip') != '' }} # failures and retried flakes
         uses: actions/upload-artifact@v7
