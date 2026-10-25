@@ -138,4 +138,30 @@ gh run view <run-id> --json createdAt,updatedAt,jobs
 gh run view <run-id> --log                         # per-test durations from the list reporter
 ```
 
+### Where a slow test spends its time
+
+Record a trace (`npx playwright test <spec>:<line> --workers=1 --trace=on`), then sum action time per spec line. Save this as a scratch file outside the repo and run `node prof.mjs test-results/<test-dir>/trace.zip`:
+
+```js
+// prof.mjs: sum traced Playwright action time per spec line (needs `unzip` on PATH, e.g. Git Bash).
+import { execSync } from 'node:child_process'
+const text = execSync(`unzip -p "${process.argv[2]}" test.trace`, { maxBuffer: 1 << 28 }).toString()
+const begin = new Map(), byLine = new Map()
+for (const l of text.split('\n')) { if (!l) continue; const e = JSON.parse(l)
+  if (e.type === 'before') begin.set(e.callId, e)
+  if (e.type === 'after') { const b = begin.get(e.callId); const f = b && !b.parentId && (b.stack || []).find((s) => /\.spec\.ts$/.test(s.file))
+    if (f) byLine.set(f.line, (byLine.get(f.line) || 0) + e.endTime - b.startTime) } }
+for (const [line, ms] of [...byLine].sort((a, b) => b[1] - a[1]).slice(0, 12)) console.log(String(line).padStart(5), (ms / 1000).toFixed(2) + 's')
+```
+
+One line dominating while waiting on app output (the 256 px creator waits about 17 s at its "Start dressing up" assertion) means the cost is app work: cutting it costs coverage. Time spread across many small actions (`boundingBox`, `getAttribute` in loops) means round trips that one `evaluate` can replace.
+
+### Which shard is slow
+
+`gh run view <run-id> --log | grep -E "passed \("` prints each shard's test time, and `gh run view <run-id> --json jobs` gives each job's wall time. To see which tests share the slow slice, read that shard's `✓` lines in the log. Shards are contiguous, so neighbors in file order share a slice.
+
+### Benchmarking a shard layout
+
+Push the workflow change to a throwaway branch: branch runs test but never deploy. A newer push to that branch cancels the running one, so wait for each run to finish. Rerun each layout once with `gh run rerun <run-id>` and compare both attempts: one flaky retry costs over a minute. Measure from the first job's start to the last e2e job's end with `gh api repos/Shilo/PixelDoll/actions/runs/<id>/attempts/<n>/jobs`. Delete the branch afterwards with `git push origin --delete <branch>`.
+
 Compare against a baseline from the same machine at the same time. The owner's workstation varies by ±30% depending on other load (one round of parallel runs here once took 4× longer for no reproducible reason), and the required runtime is Node 24.22.1 (`.nvmrc`).
