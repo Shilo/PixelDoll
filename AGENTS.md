@@ -19,8 +19,8 @@ Agent token contract: docs/handoff/agent-dev-token-handling.md. PixelLab API sna
 ## Tasks
 
 Tasks live only on the [PixelDoll board](https://github.com/users/Shilo/projects/7) as draft cards; there is no TODO file, and GitHub Issues are for user reports. The board is public and is the roadmap, so write cards for users to read.
-Statuses: Ready (top is next), In progress, Done, Later (deferred), Canceled.
-From app/, run node scripts/board.mjs (no arguments prints usage). A card is its ID, exact title or a unique part of its title; \n in a body is a newline. Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
+Statuses: Ready (top is next), In progress, Done, Later (deferred), Canceled; archived cards are hidden from list.
+From app/, run node scripts/board.mjs list [status] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. A card is its ID, exact title or a unique part of its title; \n in a body is a newline. Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
 - "What's next?": list Ready and recommend the highest card whose body does not start with "Blocked:"; say if it is paid or needs the user's decision. Do not move it.
 - Starting a card: show it, read its Refs, then move it to In progress before changing files.
 - Finishing: move it to Done only after verifying the work. If work stops early, keep it In progress and add a "Left: …" line to the body; remove that line when the card is done.
@@ -29,16 +29,15 @@ From app/, run node scripts/board.mjs (no arguments prints usage). A card is its
 
 ## Code
 
-Studio UI: app/src/studio/. app/src/lib/: pixellab (client, job queue), rig, items (generation, quality gates), image (chroma key), compose (z order), dress (recolor, outfits), export, store (IndexedDB, zip).
-PixelLab tier limits and tool access: edit `PLAN_JOB_LIMITS` in app/src/lib/pixellab/plans.ts; policy and sources in docs/pixellab-plans.md. Free/Trial is local tier 0; the API returns no numeric concurrency limit.
+Studio UI: app/src/studio/. app/src/lib/: pixellab (client, job queue), rig, items (generation, quality gates), image (chroma key), compose (z order), dress (recolor, outfits), equipment (shared designs, fitted copies), export, store (IndexedDB, zip).
+PixelLab plan policy (tier limits and tool access): edit `PLAN_JOB_LIMITS` in app/src/lib/pixellab/plans.ts; policy and sources in docs/pixellab-plans.md. Free/Trial is local tier 0; the API returns no numeric concurrency limit.
 Dev-only pages and fixtures: app/src/ui/, app/dev-fixtures/. Demo fixture: app/public/fixtures/s2/. Live API experiments: spikes/api/. CI and Pages deploy: .github/workflows/pages.yml.
 
 ## Commands
 
-Run all from app/. Install with npm ci; add dependencies at exact versions with the committed lockfile.
-Dev server: npm run dev (humans), npm run dev:agent (agents; see Agent testing).
-Type check: npm run check. Unit tests: npm test [-- <file filter>]. Build: npm run build.
-End-to-end tests: npm run e2e [-- <spec names>] [-g "<title>"] [--last-failed]; it builds and starts its own servers. Browser install: npx playwright install chromium.
+Run all from app/. Install with npm ci; add dependencies with npm install -E and commit the lockfile.
+Unit tests: npm test [-- <file filter>].
+End-to-end tests: npm run e2e, or npm run e2e -- <spec names> [-g "<title>"] [--last-failed]; it builds and starts its own servers.
 Concurrent agents: give each run its own E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR (defaults 5399, 5298, test-results); --last-failed reads the same TEST_OUTPUT_DIR.
 
 ## End-to-end scope
@@ -64,11 +63,12 @@ with every app on this origin. Never broadcast credentials. Follow `docs/shared-
 Forget/replacement notifications; do not introduce encryption or an extra unlock step. A deferred board card tracks encryption.
 
 KISS and YAGNI: no feature, dependency, option or abstraction without a real need.
-DRY: before writing a helper, type or constant, search for an existing one and reuse or extend it; never copy logic. Extract shared code when a second caller needs it, not before.
-Fix the root cause where all callers pass through, not only the reported symptom.
+DRY in app/: before writing a helper, type or constant, search for one and reuse it (extend it only if existing callers keep their behavior); never copy logic. Extract shared code when a second caller needs it, not before.
+Fix the root cause in the code all callers share, not only where the symptom shows.
 Stay in scope: no unrequested refactors, renames or reformatting; mention them instead.
-Fail loudly: no catch-all, placeholder value or fallback that hides an error unless the design calls for it.
-Never weaken, skip or delete a test or assertion to make it pass; if the test is wrong, say why.
+Never revert, stash, reformat or commit changes you did not make; the owner and other agents work in this tree.
+Surface errors: no empty catch, placeholder value or silent fallback that hides a failure unless documented as intended (e.g. the inpaint-v3 fallback, legacy manifest reading, optional localStorage).
+Never weaken, skip or delete a test or assertion, or change its expected values, just to make it pass; if the test itself is wrong, fix it and say why.
 Delete code your change makes dead; no commented-out code. Comments explain why, not what changed.
 Report what you verified, what failed and what you skipped; never claim a check you did not run.
 Keep the existing custom CSS and visuals; do not introduce GlassKit.
