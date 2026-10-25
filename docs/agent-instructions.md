@@ -24,8 +24,8 @@ over 20% to cost, but agents follow them well when they state conventions an age
 - Progress logs, history, dates and "recently changed" notes; they go stale. Use the board, commits and docs.
 - Bans on things nobody uses. State the positive rule ("style with Bronze UI; add no other UI kit") so it also covers
   the next alternative.
-- Rules that belong to one tool only; put them in that tool's file (CLAUDE.md, `.codex/`). Rules every agent needs go
-  here, so Codex sees them too.
+- A second instruction file. CLAUDE.md is only `@AGENTS.md`, so every instruction lives here and every agent sees it;
+  label a tool-specific note in place ("Codex: …").
 
 ## Rules that counter agent failure modes
 

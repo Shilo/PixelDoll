@@ -34,6 +34,15 @@ Studio UI: app/src/studio/. app/src/lib/: pixellab (client, job queue), rig, ite
 PixelLab plan policy (tier limits and tool access): edit `PLAN_JOB_LIMITS` in app/src/lib/pixellab/plans.ts; policy and sources in docs/pixellab-plans.md. Free/Trial is local tier 0; the API returns no numeric concurrency limit.
 Dev-only pages and fixtures: app/src/ui/, app/dev-fixtures/. Demo fixture: app/public/fixtures/s2/. Live API experiments: spikes/api/. CI and Pages deploy: .github/workflows/pages.yml.
 
+## Theme
+
+The Studio and the playable prototype use `@shilo/bronze-ui`, the owner's own theme, pinned to a release archive in app/package.json. Source: C:/Programming_Files/Shilocity/bronze-ui (../../bronze-ui from this repo); shared contract: its docs/STYLE-GUIDE.md.
+Shared tokens and component recipes (control states, materials including scene backing strengths, focus, borders, radii) change only upstream: fix and test there, publish a new version, then update the dependency and lockfile here. Never patch node_modules or copy package fixes into the app or prototype.
+Scene geometry, gradient placement and workflow-specific spacing stay local. Adapters import tokens and components without the document reset: app/src/studio/experience/theme.css (maps legacy workflow variables to Bronze tokens) and docs/design/2026-10-22-redesign/round-6-prototype/bronze-theme.css.
+After theme changes, run node docs/design/2026-10-22-redesign/round-6-prototype/verify-theme-ownership.mjs from the repo root (catches local appearance duplication) and check light and dark in the showcase and prototype.
+Production composition lives in app/src/studio/experience/ (Experience.svelte, layout.css; world configuration and code-only reflections in config.ts; movement and presentation are typed offline modules). Keep the existing storage, generation, queue and export workflows. Ownership and intentional differences from the prototype: docs/design/production-experience.md.
+UI/UX design contract: .claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md; the completed parity review: docs/testing/production-parity-final-review.md. Live prototype/production comparison configs in .claude/launch.json: prototype-5202, app-build-5208, app-dev-5207.
+
 ## Commands
 
 Run all from app/. Install with npm ci; add dependencies with npm install -E and commit the lockfile.
@@ -72,7 +81,7 @@ Surface errors: no empty catch, placeholder value or silent fallback that hides 
 Never weaken, skip or delete a test or assertion, or change its expected values, just to make it pass; if the test itself is wrong, fix it and say why.
 Delete code your change makes dead; no commented-out code. Comments explain why, not what changed.
 Report what you verified, what failed and what you skipped; never claim a check you did not run.
-Style with Bronze UI as CLAUDE.md ("Bronze UI theme") describes, and keep the existing visuals; add no other UI kit or CSS framework.
+Keep the existing visuals; add no UI kit or CSS framework besides Bronze UI.
 Keep the app client-only; never add a backend.
 Use only the allowed PixelLab models above, and check docs/research/pixellab/ before calling an endpoint.
 PixelLab credits are real money: spend only when the task needs generations, never auto-resend paid requests, and prefer offline checks on stored frames.
