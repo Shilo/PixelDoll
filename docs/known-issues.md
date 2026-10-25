@@ -27,7 +27,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 - **Generation is not bit-repeatable.** Same request + seed ≠ same pixels, so base frames are frozen and never
   regenerated; changing the base (`baseHash`) makes existing items stale.
-- **Mirrored directions flip handedness** (west holds the sword in the left hand). New forms default to Top-down 8, which
+- **Mirrored directions flip handedness and one-sided items** (west holds the sword in the left hand; an eyepatch, a single
+  pauldron, a side part or a quiver on one shoulder moves to the other side). New forms default to Top-down 8, which
   mirrors the west views; Unique 8 or turning off a mirror gives independent views, and old projects stay mirrored.
   Independent views avoid the forced flip, but generated anatomy and grip still need review: the idle sword keeps a
   west-profile ambiguity, and the repaired Slash keeps its item review warnings. An item-only toggle cannot repair old

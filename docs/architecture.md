@@ -52,7 +52,7 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalized 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
 | Clips | New Studio characters start with **`idle` (4), `walk` (8)**. Add moves such as `slash` (8), `hurt` (6), `run`, `cast` or `death` separately. Older evidence rigs include additional moves. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
 | Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of the south rest view. Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
-| Frozen frame | Binary alpha; **largest 8-connected component kept** (skeleton-v3 adds detached motion-smear FX on 7/15 clips); SHA-256 per cell; `baseHash` over all cells. | [S3] |
+| Frozen frame | Binary alpha; every component kept and detached ones reported for review (skeleton-v3 adds detached motion-smear FX on 7/15 clips; §3.2); SHA-256 per cell; `baseHash` over all cells. | [S3] |
 
 ### 3.1 Clip routes
 
@@ -421,7 +421,7 @@ USD billing and unknown charges prevent treating any estimate as an account spen
 | Pose not followed / wrong hand | Adherence + `gripSide` gates; re-roll; author an armed variant. |
 | North action frames lose back items (cape) | QA re-roll; `inpaint-grid` fallback. |
 | Side-view grip ambiguity | Retain ambiguity warnings and visually inspect grips and trajectories in every direction. |
-| Mirrored west swaps the weapon hand | Independent body views/actions are the new-character default. An item-only toggle cannot repair a flipped attacking body. Existing mirrored rigs and economy mode retain this limitation. |
+| Mirrored west swaps the weapon hand and one-sided items | New characters default to Top-down 8, which mirrors the west views; Unique 8 or turning off a view's mirror gives independent views. An item-only toggle cannot repair a flipped attacking body. |
 | Pose presets tuned for one body | Free preview before paying; per-body check. |
 | Server failures / silent direction drop | Poll known jobs; never automatically resend unknown paid outcomes. Require the exact requested direction set before publication. |
 | Small figure (48 base) | Product call (D4: 56 px optional). |
@@ -449,6 +449,6 @@ USD billing and unknown charges prevent treating any estimate as an account spen
 |---|---|---|---|
 | O7 | Palette: 3-step key ramp to free item colors | colors per item, key kept | 5-step ramp |
 | O11 | Face-context items (hair, glasses) and worn items (chest, cape) on `skeleton-pose` over a full 3-dir × 4-clip set | §4.5 pass rate vs `inpaint-grid` | `skeleton-pose` |
-| O13 | Held items in mirrored west | Superseded for new forms by independent body directions; generated grips still require QA. Legacy/economy rigs retain flips. | independent new forms |
+| O13 | Held items in mirrored west | Per character: mirrored views flip the hand, independent views (Unique 8 or a view's mirror off) keep it; generated grips still require QA. | Top-down 8 (mirrored west) |
 | O14 | Base scale 48 vs 56 | headroom vs figure size | 48 |
 | O15 | Dressing with `inpaint-v3` (192×64 row) instead of `edit-animation-v2` | §4.5 after posing | `edit-animation-v2` |
