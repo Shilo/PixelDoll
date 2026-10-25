@@ -155,23 +155,34 @@ export function fillHoles(m: Uint8Array, C: Img, maxArea = 4): Uint8Array {
   return o;
 }
 
-/** De-spill: key-tinted layer px snap to the luminance-nearest clean color (|Δlum| <= 0.08), else lose the key excess. */
+/**
+ * De-spill: a key-tinted layer px loses the key excess (the key channel down to the next one), then snaps to the nearest
+ * clean color (Chebyshev RGB distance <= SNAP) so the layer keeps the item's own palette. A px the de-spill left near-gray
+ * (chroma < 16) only snaps to near-gray clean colors (chroma < 24): snapping by luminance moved blue-gray steel on the azure key
+ * to the plume's purple (round 3 arm S: up to 84 of 147 steel px per view), and dark steel is within 40 of dark purple. With no
+ * clean color that near, the luminance-nearest one (|Δlum| <= 0.08) wins unless the px is lightly tinted and de-spilled to
+ * near-gray (steel stays gray): a cape fold drawn in the key's own darkest shade (it scores as key; absorbOutline kept it)
+ * carries no item color and becomes the cape's dark red, not an off-palette black (round 3 review: 0 -> 1,355 px on a-cape).
+ */
+const SNAP = 40, chroma3 = (c: ArrayLike<number>) => Math.max(c[0], c[1], c[2]) - Math.min(c[0], c[1], c[2]);
 export function despill(L: Img, key: Key, sT = 10): Img {
-  const o: Img = { w: L.w, h: L.h, data: new Uint8ClampedArray(L.data) }, d = L.data, core: number[][] = [];
-  for (let i = 0; i < d.length; i += 4) if (d[i + 3] && tint(key, d[i], d[i + 1], d[i + 2]) <= sT) core.push([d[i], d[i + 1], d[i + 2]]);
-  if (!core.length) return o;
+  const o: Img = { w: L.w, h: L.h, data: new Uint8ClampedArray(L.data) }, d = L.data, seen = new Set<number>(), core: number[][] = [];
+  for (let i = 0; i < d.length; i += 4) {
+    const k = (d[i] << 16) | (d[i + 1] << 8) | d[i + 2];
+    if (d[i + 3] && !seen.has(k) && tint(key, d[i], d[i + 1], d[i + 2]) <= sT) { seen.add(k); core.push([d[i], d[i + 1], d[i + 2]]); }
+  }
   const lc = core.map((c) => keyLum(key, c[0], c[1], c[2]));
   for (let i = 0; i < d.length; i += 4) {
-    if (!d[i + 3] || tint(key, d[i], d[i + 1], d[i + 2]) <= sT) continue;
-    const l = keyLum(key, d[i], d[i + 1], d[i + 2]);
-    let b = 0;
-    for (let k = 1; k < core.length; k++) if (Math.abs(lc[k] - l) < Math.abs(lc[b] - l)) b = k;
-    if (Math.abs(lc[b] - l) <= 0.08) o.data.set(core[b], i);
-    else if (key === 'green') o.data[i + 1] = Math.max(d[i], d[i + 2]);
-    else if (key === 'blue') o.data[i + 2] = Math.max(d[i], d[i + 1]);
-    // azure: the green rule in the rotated frame, written only to tinted px (a whole-layer round trip moved 1 in 4 colors by 1)
-    else if (key === 'azure') { const [r, , b] = hueRot(d[i], d[i + 1], d[i + 2], -90); o.data.set(hueRot(r, Math.max(r, b), b, 90), i); }
-    else { o.data[i] = Math.min(d[i], d[i + 1] + 4); o.data[i + 2] = Math.min(d[i + 2], d[i + 1] + 4); }
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    if (!d[i + 3] || tint(key, r, g, b) <= sT) continue;
+    const c: number[] = key === 'green' ? [r, Math.max(r, b), b] : key === 'blue' ? [r, g, Math.max(r, g)]
+      : key === 'azure' ? (() => { const [x, , z] = hueRot(r, g, b, -90); return hueRot(x, Math.max(x, z), z, 90); })()
+      : [Math.min(r, g + 4), g, Math.min(b, g + 4)];
+    let best = -1, bd = SNAP + 1;
+    const neutral = chroma3(c) < 16;
+    for (const [j, k] of core.entries()) { if (neutral && chroma3(k) >= 24) continue; const dist = Math.max(Math.abs(k[0] - c[0]), Math.abs(k[1] - c[1]), Math.abs(k[2] - c[2])); if (dist < bd) { bd = dist; best = j; } }
+    if (best < 0 && core.length && (!neutral || keyScore(key, r, g, b) >= KT)) { const l = keyLum(key, r, g, b); let j = 0; for (let n = 1; n < core.length; n++) if (Math.abs(lc[n] - l) < Math.abs(lc[j] - l)) j = n; if (Math.abs(lc[j] - l) <= 0.08) best = j; }
+    o.data.set(best < 0 ? c : core[best], i);
   }
   return o;
 }

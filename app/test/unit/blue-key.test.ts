@@ -36,8 +36,14 @@ test('the blue ramp is key and common item colors are not', () => {
   const K = toChroma(B, 'blue')
   for (let p = 0; p < 16; p++) expect(keyScore('blue', K.data[p * 4], K.data[p * 4 + 1], K.data[p * 4 + 2])).toBeGreaterThanOrEqual(KT)
   for (const c of [[230, 90, 160], [60, 160, 70], [170, 120, 60], [20, 20, 22], [220, 200, 60]]) expect(keyScore('blue', c[0], c[1], c[2])).toBeLessThan(KT)
-  const spill = despill({ w: 2, h: 1, data: new Uint8ClampedArray([230, 90, 160, 255, 150, 80, 200, 255]) }, 'blue')
-  expect([...spill.data.slice(4, 7)]).toEqual([230, 90, 160]) // the blue-tinted edge snaps to the item's own core color
+  // round 3: a tinted px first loses the key excess and snaps to a clean color within 40; the blue-tinted pink edge is 80 from
+  // the core, so the luminance rule decides as before and it snaps to the item's own core color, like the near-core px
+  const spill = despill({ w: 3, h: 1, data: new Uint8ClampedArray([230, 90, 160, 255, 150, 80, 200, 255, 195, 88, 225, 255]) }, 'blue')
+  expect([...spill.data.slice(4, 7)]).toEqual([230, 90, 160])
+  expect([...spill.data.slice(8, 11)]).toEqual([230, 90, 160])
+  // lightly tinted blue-gray steel de-spilled to gray never takes a saturated item color (steel turned purple on azure)
+  const steel = despill({ w: 2, h: 1, data: new Uint8ClampedArray([120, 40, 160, 255, 100, 108, 135, 255]) }, 'azure')
+  expect(Math.max(...steel.data.slice(4, 7)) - Math.min(...steel.data.slice(4, 7))).toBeLessThan(16)
 })
 
 test('real jester outputs: magenta keys out the pink half, blue keeps both colors', () => {
