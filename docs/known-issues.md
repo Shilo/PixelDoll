@@ -38,14 +38,15 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **A few item colors have no safe key color.** Items are drawn on a single-color stand-in body (green, else magenta, else
   blue, else azure) and separated by that color. Only an item that names green, a red or pink, a blue and a purple at once
   collides with all four; it keeps magenta and parts in those colors can be removed as if they were background. Workaround:
-  describe one color differently, or review the item. Azure sits near blue-gray steel shading; stored steel items scored 0 %
-  as azure key, but a green, purple and steel item on azure is untested.
-- **Items cannot hide parts of the body.** When a hood or a great helm is wider than the head, PixelLab erases the ear tips
-  under it, but layers only add pixels, so the body's own ears still poke out beside the item (elf hood back view, chibi
-  helm). The "key kept" check flags it for review. Fix: an item-hides-body mask, not yet designed. See
-  [round 2](research/generation-quality-round2-2026-10-25.md) arm H.
-- **Long held items lose size where the body hides them.** Bows change size between walk frames (front and back views) and
-  may turn against the hand; the size and turn checks flag the clip for repair.
+  describe one color differently, or review the item. Azure sits near blue-gray steel shading: steel stays gray since the
+  round 3 despill fix (a green and purple plume on a steel helmet, a tabard over steel plate).
+- **Hidden body pixels with two covering items.** A hood or great helm hides the ear tips it covers (round 3). Wearing two
+  such items from different slots (a hooded cloak and a helm), the Studio hides both sets but a game engine draws one baked
+  body, so one item's ear tips can show; export warns. Items made before round 3 keep showing the ears until re-dressed.
+- **Long held items lose size where the body hides them.** Bows change size between walk frames and may turn against the
+  hand, mostly in the side view, where a left-hand bow is behind the body; some of these clips are real flips of the bow, so
+  the size and turn checks keep flagging the clip for repair. An upright-bow wording looked better but did not reduce failing
+  clips enough (round 3 arm V).
 - **Action poses invent props.** Slash poses draw swords and motion streaks even for helmets and capes; cleanup removes them
   from the saved layers, but streaks across the face can still fail the helmet's consistency check. Changing the action
   wording had no reliable effect (round 2 arm A).

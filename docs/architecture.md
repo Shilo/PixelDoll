@@ -183,6 +183,20 @@ purple but no blue (a green-and-purple tunic on magenta kept 1.3 % of its purple
 2 arm Z); magenta when all four collide, as before (the diff route would keep the colors but cannot be posed); never gray; after two
 G2 failures switch to the next key the prompt allows, in that order. Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
 
+**Round 3 cleanup rules** ([round 3](research/generation-quality-round3-2026-10-25.md)).
+- *Despill*: a key-tinted px first loses the key excess (the key channel down to the next one; azure in its rotated frame),
+  then snaps to the nearest clean item color within 40 (Chebyshev RGB); a px left near-gray only snaps to near-gray colors. With
+  none that near, the old luminance rule decides, except for a lightly tinted px de-spilled to near-gray (steel stays gray; a
+  fold drawn in the key's darkest shade still becomes the item's dark color). The luminance-only snap turned blue-gray steel on
+  the azure key into the plume's purple.
+- *Hidden body px* (`Item.baseCut`): PixelLab erases the ear tips under a hood or great helm wider than the head, and layers can
+  only add px. The dressed keyframe decides where an item may hide body px (erased, above the neck + 3 rows, touching the item
+  and the body's edge, ≥ 3 px components, ≤ 4 % of the body; never held items or in-place edit cells); each posed frame hides its own erased px only
+  inside that region, moved with the head (posed frames draw legs and hands 1–3 px off, so they never cut on their own). G2
+  counts hidden px as covered; the compositor clears them while the item is worn; exports bake `"<base>~<item>"`.
+- *Grip fill* (`closeGrip`, held items): the stand-in's hand covers the grip and the posed hand sits 1–3 px from the body's own,
+  so a 2 px morphological closing fills the px the stand-in covered where the body has none, with the nearest item color.
+
 **Why a color key and not a pixel diff.** The obvious approach is to record the body before generation and keep only the pixels
 that changed. It was the first route (S1) and is still the fallback (`image/diff.ts`, route `none`), but it loses on output:
 

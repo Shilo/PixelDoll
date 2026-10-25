@@ -112,6 +112,10 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   Held bows and shields default to the off hand. The posed key tolerance follows the body cell (2 px for a 128 px body's 160 px cell). A G2 key switch takes the next key
   the prompt allows. See
   [round 2](docs/research/generation-quality-round2-2026-10-25.md).
+- D22 (2026-10-25, measured round 3): items may hide body px they cover (`Item.baseCut`, ear tips under a hood): the dressed
+  keyframe decides where, each frame's own erasure decides which; exports bake "<base>~<item>". Despill snaps only to near
+  item colors (steel stayed purple-free on azure). Held items fill the stand-in's grip gap. Bows keep the off-hand wording. See
+  [round 3](docs/research/generation-quality-round3-2026-10-25.md).
 - D20 (2026-10-25, user): the version is automatic and never bumped by hand: the number of non-merge commits that changed what
   ships (app/ or its workflow), written major.minor.patch with patch 0-99 and minor 0-9 (1234 = 1.2.34), shown with the
   short commit in the More menu. Docs-only pushes neither run CI nor deploy. No tags or GitHub releases. See
