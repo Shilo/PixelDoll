@@ -124,6 +124,10 @@ export function selfTest() {
   console.assert(parts.count === 3 && parts.detachedPixels === 2 && im.data.every((v, i) => v === original[i]), 'body connectivity inspection never erases pixels');
   const clean = makeImg(8, 8); clean.data.set(im.data); clean.data.fill(0, (1 * 8 + 7) * 4, (1 * 8 + 7) * 4 + 4); clean.data.fill(0, 0, 4);
   console.assert(paletteFit(clean, [clean]) === 1 && paletteFit(clean, [im]) < 1, 'paletteFit');
+/** Raw skeleton-v3 price of one call: 3 frames 2 gens, up to 12 frames 3 (measured, round 4), 15 frames 4 (docs). */
+export const poseCallGens = (frames: number) => frames <= 3 ? 2 : frames <= 12 ? 3 : 4;
+/** Gens to pose `cells` frames in poseBatches calls. */
+export const poseGensFor = (cells: number) => poseBatches(cells).reduce((sum, b) => sum + poseCallGens(b.count), 0);
   const k = LABELS.map(label => ({ label, x: 0.5, y: 0.5 })), k2 = k.map(p => ({ ...p, y: 0.8 })); // joints 2.4 px apart on 8 px
   const ok = clipQa({ anim: 'slash', rest: clean, frames: [clean], requested: [k], measured: [k], stray: 0 });
   const bad = clipQa({ anim: 'slash', rest: clean, frames: [im], requested: [k], measured: [k2], stray: 0 });

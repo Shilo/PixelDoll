@@ -20,7 +20,7 @@ import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
 import { repairBodyPalette } from '../lib/rig/palette.ts';
-import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
+import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
 import { poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
@@ -50,7 +50,7 @@ export const genDirsOf = (n: 4 | 8 = 4, policy: DirectionPolicy = 'mirrored'): D
   ? n === 8 ? ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'] : ['south', 'east', 'north', 'west']
   : n === 8 ? ['south', 'south-east', 'east', 'north-east', 'north'] : ['south', 'east', 'north'];
 const MIRRORS: [Direction, Direction][] = [['west', 'east'], ['south-west', 'south-east'], ['north-west', 'north-east']];
-const CELL = 64, RAW_GENS = 3, EST = 0.1;
+const CELL = 64, EST = 0.1;
 export const CLIP_ATTEMPTS = 2;
 /** Base sizes in the 64 cell (D4): the 4 px floor stays, so 56 px leaves 4 px of canvas above the character's own canvas
  * and the rest views are checked for HEADROOM_MIN free px above the head. */
@@ -66,7 +66,7 @@ export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPromp
   return looksOf(withoutBaseBody(spec.description).trim() || 'humanoid base body', baseClothesIn(spec.description) ?? null);
 };
 export function estimate(choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy' | 'size'> = 4, policy: DirectionPolicy = 'mirrored') {
-  const render = (a: (typeof BASE_ANIMS)[number]) => RAW_GENS + a.frames * EST;
+  const render = (a: (typeof BASE_ANIMS)[number]) => poseCallGens(a.frames) + a.frames * EST;
   const per = (a: (typeof BASE_ANIMS)[number]) => render(a) + (authoredBase(a.name) ? 0 : 3 + a.frames * EST);
   const n = typeof choice === 'number' ? genDirsOf(choice, policy).length : creationDirections(choice).filter(d => !d.mirrorOf).length;
   const size = typeof choice === 'number' ? 48 : choice.size;
@@ -530,7 +530,7 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
   return s.action === 'walk' ? 8 : s.action && ACTIONS[s.action] && r && dir ? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length : s.frames;
 };
 export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace'>) {
-  const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = s.itemMethod === 'grid' && !s.replace ? 0 : dirs * (RAW_GENS + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
+  const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = s.itemMethod === 'grid' && !s.replace ? 0 : dirs * (poseCallGens(n) + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
   const directItems = s.items.filter(id => !m.items.find(item => item.id === id)?.design);
   const items = s.itemMethod === 'grid' ? directItems.reduce((sum, id) => {
     const item = m.items.find(i => i.id === id);

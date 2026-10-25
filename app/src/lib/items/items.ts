@@ -8,7 +8,7 @@ import { splitFgBg } from '../compose/split.ts';
 import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import { hasAll } from '../rig/poses.ts';
-import { actionOf, paddedPoses, poseBatches, rawClip } from '../rig/clips.ts';
+import { actionOf, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { clipOf, summaryOf } from './qa-summary.ts';
@@ -209,13 +209,12 @@ function posePlan(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'> 
 export const anchorChunks = <T>(cells: T[], cap: number): T[][] => [cells.slice(0, cap), ...Array.from({ length: Math.ceil(Math.max(0, cells.length - cap) / (cap - 1)) }, (_, i) => cells.slice(cap + i * (cap - 1), cap + (i + 1) * (cap - 1)))];
 /** Does call k lead with the anchor cell (edit-animation-v2 after the first call)? Its first output is then dropped. */
 export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind === 'edit' || kind === 'dress');
-// pose: 3 frames 2 gens, 8 and 12 frames 3 (measured, round 4), 15 frames 4 (docs)
 /** edit-animation-v2 price by canvas: 10 / 15 / 25 gens up to 128 / 170 / 256 px (pixellab_current_capabilities; ledgers: 15 at
  *  160 px, 25 for a 192 px held canvas). */
 export const editGens = (canvas: { w: number; h: number }) => { const s = Math.max(canvas.w, canvas.h); return s <= 128 ? 10 : s <= 170 ? 15 : 25; };
 export function planGens(p: { kind: CallKind; cells: string[] }[], gridCell = { w: 64, h: 64 }): number {
   const refs = new Set(p.filter(c => c.kind === 'dress').flatMap(c => c.cells)).size;
-  return p.reduce((s, c) => s + (c.kind === 'pose' ? (c.cells.length <= 3 ? 2 : c.cells.length <= 12 ? 3 : 4) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, refs).gens : editGens(gridCell)), 0);
+  return p.reduce((s, c) => s + (c.kind === 'pose' ? poseCallGens(c.cells.length) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, refs).gens : editGens(gridCell)), 0);
 }
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */

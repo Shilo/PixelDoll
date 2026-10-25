@@ -2,7 +2,7 @@
 import * as db from '../store/db.ts';
 import { loadProject, type StoredProject } from '../store/project.ts';
 import { queue, live, type JobRec } from '../pixellab/queue.ts';
-import { poseBatches } from '../rig/clips.ts';
+import { poseGensFor } from '../rig/clips.ts';
 import { cellHash, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { validate } from '../export/generic.ts';
 import { imageHashes, designRevision, createDesign } from './design.ts';
@@ -84,7 +84,7 @@ async function priceFit(design:EquipmentDesign,targetId:string,options:{reuseApp
   if(!assessment.targetRigReady)throw new Error('Set up the target character’s pose rig before fitting.');
   if(options.reuseApprovedRest&&restStamp(source.manifest)!==restStamp(project.manifest))throw new Error('The approved standing reference contract changed.');
   const requests=options.reuseApprovedRest?[]:await restFitRequests(design,source,project,1),directions=rig.directions.filter(d=>!d.mirrorOf).map(d=>d.id),body=project.manifest.items.find(it=>it.id===rig.baseItem)!;
-  const poseGens=rig.animations.reduce((n,a)=>n+directions.filter(d=>body.layers[0].cells?.[a.id]?.[d]?.some(Boolean)&&!(a.cells===1&&a.sources?.[d]?.motion==='imported-rest')).length*poseBatches(a.cells).reduce((s,b)=>s+(b.count<=3?2:b.count<=8?3:4),0),0);
+  const poseGens=rig.animations.reduce((n,a)=>n+directions.filter(d=>body.layers[0].cells?.[a.id]?.[d]?.some(Boolean)&&!(a.cells===1&&a.sources?.[d]?.motion==='imported-rest')).length*poseGensFor(a.cells),0);
   assessment.warnings.push('Experimental headwear fitting: review every view and move. Failed attempts still cost generations.', ...fitFramingWarnings(project));
   return{design:snapshotDesign(design),targetId,targetAudit:await targetAudit(project),targetStamp:targetStamp(project.manifest,design.slot),assessment,previewGens:requests.reduce((n,r)=>n+r.limit,0),poseGens,directions,createdAt:now()};
 }

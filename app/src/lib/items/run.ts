@@ -13,7 +13,7 @@ import type { Item, Manifest, Project, Provenance, Slot } from '../store/manifes
 import { dropCut } from '../compose/compose.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
-import { paddedPoses, poseBatches } from '../rig/clips.ts';
+import { paddedPoses, poseBatches, poseGensFor } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
 import { switchTo, type Key } from '../image/chroma.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
@@ -428,8 +428,8 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
 // ---------- new clips on accepted items (architecture §4.1: "adding a clip later = one pose call per item-direction") ----------
 /** Accepted skeleton-pose items that can be posed onto a new clip (dressed keyframes + key, made for this base). */
 export const posable = (m: Manifest) => m.items.filter((i) => i.slot !== 'body' && i.route === 'skeleton-pose' && i.key && i.dressed && i.baseHash === m.rig.baseHash);
-/** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions (raw skeleton-v3: 3 gens for ≤ 8 frames). */
-export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * poseBatches(cells).reduce((sum, b) => sum + (b.count <= 3 ? 2 : b.count <= 8 ? 3 : 4), 0);
+/** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions. */
+export const poseGens = (n: number, cells: number, dirs: number) => n * dirs * poseGensFor(cells);
 const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
 
 /**
