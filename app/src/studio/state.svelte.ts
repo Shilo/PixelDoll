@@ -233,6 +233,8 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
     if (split.dirty && !id.startsWith('fixture:')) await saveSplit(id, r.project.manifest, split);
     if (request !== openRequest) return;
+    await flushSave(); // an edit made to the previous character while this one loaded lands before it is replaced
+    if (request !== openRequest) return;
     const m = r.project.manifest;
     const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
     const unsaved = takeUnsaved(id, m), current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
@@ -250,7 +252,7 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     if (ui.selected) ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
     lsSet(K.last, id);
     doc.rev++;
-    savedEdits = edits; // what was just loaded is saved; only later edits make this project dirty
+    savedEdits = edits; // nothing is pending (flushed above): what was just loaded is saved, so only later edits count
     // Keep it equips the accepted item while opening, or an outfit left unsaved by an unload; persist it now.
     if (keep?.wear || unsaved) { save(); await flushSave(); }
   } catch (e) {
@@ -335,16 +337,20 @@ function save() {
 // re-applies it with applyDress and saves it.
 const UNSAVED = 'pixeldoll.unsaved.', unsavedKey = (id: string) => UNSAVED + id;
 function keepUnsaved() {
-  if (edits === savedEdits || !doc.id || doc.loading || !store.project) return;
-  lsSet(unsavedKey(doc.id), snap());
+  // While another character loads, doc and store.project still describe this one, so its snapshot stays consistent.
+  if (edits === savedEdits || !doc.id || !store.project) return;
+  try { lsSet(unsavedKey(doc.id), snap()); } catch (e) { console.error('unsaved snapshot', e); }
 }
 function takeUnsaved(id: string, m: Manifest): Pick<Preset, 'items' | 'variants'> | null {
   try {
     const d = JSON.parse(lsGet(unsavedKey(id)) ?? 'null') as DressState | null;
-    if (!d?.current || !Array.isArray(d.materials) || !Array.isArray(d.presets) || typeof d.zOverrides !== 'object') return null;
+    // Validate the whole shape first: applyDress changes the manifest in place, so a bad snapshot must not half-apply.
+    const obj = (v: unknown) => typeof v === 'object' && v !== null && !Array.isArray(v);
+    const current = d?.current;
+    if (!d || !current || !obj(current) || !obj(current.items) || !obj(current.variants) || !Array.isArray(d.materials) || !Array.isArray(d.presets) || !obj(d.zOverrides) || (d.hides != null && !obj(d.hides))) return null;
     applyDress(m, d); // keeps items added since and never revives removed ones
     // An item deleted since (another tab) is dropped rather than worn as a dangling id.
-    return { items: Object.fromEntries(Object.entries(d.current.items).filter(([, it]) => it == null || m.items.some((i) => i.id === it))), variants: { ...d.current.variants } };
+    return { items: Object.fromEntries(Object.entries(current.items).filter(([, it]) => it == null || m.items.some((i) => i.id === it))), variants: { ...current.variants } };
   } catch { return null; }
 }
 
