@@ -181,6 +181,22 @@ item on magenta lost its pink on every frame; 2026-10-25 campaign arm K; purples
 all three collide, as before (it keys out purple; the diff route would keep it but cannot be posed); never gray; switch green ↔ magenta after two
 failures when allowed. Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
 
+**Why a color key and not a pixel diff.** The obvious approach is to record the body before generation and keep only the pixels
+that changed. It was the first route (S1) and is still the fallback (`image/diff.ts`, route `none`), but it loses on output:
+
+- **PixelLab repaints the whole body when it adds an item.** Batch edits keep 0 % of body pixels exact; only 45–56 % stay within
+  Δ8 and 77–80 % within Δ18 [S1]. `create-character-state` keeps the silhouette but recolors ≈ 74 % of the body [S1, 2026-10-24
+  review]. "Unchanged pixel = body" therefore does not hold, and every recolored body pixel becomes a false item pixel.
+- **Measured quality.** On the same items, the chroma layers had 0 specks and 0 pinholes and no skin; the diff extractor had 11–38
+  pinholes, skin slivers along the arms and a redrawn face baked into the helmet [S2 X1]. The best diff variant tops out at ≈ 9–12
+  false body pixels per cell [S2 X3]; on real stored drift it scores F1 0.963 with 8.6 false and 5.1 missed pixels per cell, and
+  adding the script-style palette filter made clothing worse (chest F1 0.902 → 0.840) [2026-10-24 review].
+- **Posed frames have no clean "before".** Every skeleton-posed frame is a new render; a diff against the frozen base frame also
+  picks up the re-render's own differences, while the key only asks "is this pixel still key-colored?".
+- **Same cost.** Both use the same generations and run instantly locally. The real trade-off: the key forbids its own color in the
+  item (hence the key choice above), the diff accepts dirty layers. The diff route remains as a fallback (dev M3 page); the Studio
+  does not choose it automatically because diff items cannot be posed, fall back to the anchored edit route and always end in review.
+
 ### 4.5 Item QA (per item over all cells)
 
 | Gate | Pass |
