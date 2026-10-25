@@ -5,7 +5,7 @@
   import { formDrafts } from './formDrafts.ts'
   import GroupIcon from './GroupIcon.svelte'
   import DesignLibrary from './DesignLibrary.svelte'
-  import { GROUPS, slotLabel, itemNameFrom } from './model.ts'
+  import { GROUPS, slotLabel, itemNameFrom, heldSlotFor } from './model.ts'
   import { itemRoute } from './itemRoute.ts'
   import { ui, doc, store, isDemo, startItem, withKey, copyDemo } from './state.svelte.ts'
   import * as db from '../lib/store/db.ts'
@@ -22,7 +22,11 @@
   let name = $state(draft?.name ?? '')
   let busy = $state(false)
   const g = $derived(GROUPS.find((x) => x.id === group)!)
+  // a draft or a prefill (Try again, Make it again) carries a slot the user already chose
+  let slotPicked = $state(!!draft || !!ui.newItem.prompt)
   $effect(() => { if (!g.slots.includes(slot)) slot = g.slots[0] })
+  // held items follow their words (bows and shields go in the left hand) until the user picks the exact slot
+  $effect(() => { if (g.id === 'Hands' && !slotPicked) slot = heldSlotFor(prompt) })
 
   const m = $derived(store.project?.manifest)
   const fullPrompt = $derived(`${prompt.trim()}${color ? `, ${color} colored` : ''}`)
@@ -117,7 +121,7 @@
           <label class="field"><span class="label small">Name</span><input class="bu-input input" bind:value={name} placeholder={itemName} /></label>
           {#if g.slots.length > 1}
             <label class="field"><span class="label small">Exact slot</span>
-              <span class="select-wrap boxed"><select class="bu-select select" bind:value={slot}>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select><ChevronDown size={12} /></span>
+              <span class="select-wrap boxed"><select class="bu-select select" bind:value={slot} onchange={() => (slotPicked = true)}>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select><ChevronDown size={12} /></span>
             </label>
           {/if}
           {#if plan}<p class="faint small">{plan.calls} PixelLab calls · {plan.cells} frames · {itemRoute.label}{plan.cell ? ` · ${plan.cell} px canvas so long weapons are never cut off` : ''}. Failed checks re-roll automatically (up to 2×).</p>{/if}

@@ -25,6 +25,10 @@ export const GROUPS: Group[] = [
   { id: 'Back', slots: ['back'], empty: 'capes', ideas: [{ label: 'red cape' }, { label: 'travel backpack' }, { label: 'quiver of arrows' }] },
   { id: 'Hands', slots: ['main_hand', 'off_hand'], empty: 'weapons', ideas: [{ label: 'steel sword' }, { label: 'wooden staff' }, { label: 'round shield', slot: 'off_hand' }] },
 ];
+/** Held items PixelLab draws in the left hand: bows (archery prior; round 2 arm B: main hand got the right hand on 1/3 seeds,
+ * off hand 3/3) and shields (the main-hand wording forbids a shield). Crossbows stay in the main hand. */
+const OFF_HAND = /\b(?:long|short|recurve|hunting|war|great|flat)?bows?\b|\b(?:shield|buckler)s?\b/i;
+export const heldSlotFor = (prompt: string) => (OFF_HAND.test(prompt) ? 'off_hand' : 'main_hand');
 export const groupOf = (slot: string) => GROUPS.find((g) => g.slots.includes(slot)) ?? GROUPS[3];
 export const SLOT_LABEL: Record<string, string> = {
   head: 'Head', hair: 'Hair', facial_hair: 'Facial hair', face_acc: 'Face', torso_inner: 'Top (inner)', torso_outer: 'Top (outer)',
@@ -159,6 +163,8 @@ export function selfTest() {
   s.data.set([9, 9, 9, 255], 0);
   console.assert(nameFrom('a stocky dwarf, tan skin') === 'Dwarf' && nameFrom('a sturdy young dwarf with a friendly face') === 'Dwarf' && nameFrom('') === 'My character', 'nameFrom');
   console.assert(itemNameFrom('a straw farmer hat') === 'Straw farmer hat' && itemNameFrom('Iron Knight Helmet with a red plume') === 'Iron knight helmet' && itemNameFrom('') === '', `itemNameFrom ${itemNameFrom('a straw farmer hat')}`);
+  console.assert(['a wooden longbow', 'short bow', 'Round Shield', 'elven bow with gold', 'a yew warbow'].every((x) => heldSlotFor(x) === 'off_hand')
+    && ['steel sword', 'a crossbow', 'elbow pads', 'rainbow staff'].every((x) => heldSlotFor(x) === 'main_hand'), 'heldSlotFor');
   console.assert(groupOf('off_hand').id === 'Hands' && groupOf('waist').id === 'Legs', 'groupOf');
   // T2: character menu marker; records from before `origin` are migrated by shape (v1.3 create / demo copy = Studio)
   const rec = (x: Partial<StoredProject>) => x as StoredProject;

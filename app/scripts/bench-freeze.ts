@@ -36,10 +36,15 @@ const imgB = (sha: string) => decodePngBytes(new Uint8Array(Buffer.from(B.images
 const rigB = { ...B.rig, animations: B.rig.animations.filter((a: { id: string }) => a.id === 'walk') };
 writeFileSync(new URL('bodyB.json', OUT), JSON.stringify({ note: 'Studio-created slender elf: 64 px body in an 80 px frame, Top-down 8 (5 drawn views); rows = drawn views: rest, walk 0-7', rig: rigB, rows: DIRS_B, cols: ['rest', ...Array.from({ length: 8 }, (_, i) => `walk/${i}`)] }));
 await save('bodyB.png', tile(await Promise.all(DIRS_B.map(async (d) => [await imgB(B.rig.rest[d].image), ...(await Promise.all(B.body.cells.walk[d].map(imgB)))])), 80));
+// body N (round 2): Studio-created 128 px human in a 160 px frame, Top-down 4 (3 drawn views)
+const N = JSON.parse(readFileSync(new URL('c25/body128.json', SPIKE), 'utf8')), DIRS_N: string[] = N.rig.directions.filter((d: { mirrorOf?: string }) => !d.mirrorOf).map((d: { id: string }) => d.id);
+const imgN = (sha: string) => decodePngBytes(new Uint8Array(Buffer.from(N.images[sha], 'base64')));
+writeFileSync(new URL('bodyN.json', OUT), JSON.stringify({ note: 'Studio-created human: 128 px body in a 160 px frame, Top-down 4 (3 drawn views); rows = drawn views: rest, walk 0-7', rig: { ...N.rig, animations: N.rig.animations.filter((a: { id: string }) => a.id === 'walk') }, rows: DIRS_N, cols: ['rest', ...Array.from({ length: 8 }, (_, i) => `walk/${i}`)] }));
+await save('bodyN.png', tile(await Promise.all(DIRS_N.map(async (d) => [await imgN(N.rig.rest[d].image), ...(await Promise.all(N.body.cells.walk[d].map(imgN)))])), 160));
 
 // ---------- cases ----------
 // role 'reference': documents a superseded choice (the jester on magenta, which pickKey no longer picks); excluded from totals
-type Case = { id: string; body: 'A' | 'B'; slot: string; key: string; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' };
+type Case = { id: string; body: 'A' | 'B' | 'N'; slot: string; key: string; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' };
 const cases: Case[] = [];
 async function posedCase(c: Omit<Case, 'clips'>, dress: (d: string) => string, pose: (clip: string, d: string, i: number) => string, clips: [string, string][], C: number) {
   const rows: Img[][] = [];
@@ -114,6 +119,20 @@ for (const [item, slot, v, expect, note] of [
   const f = C25(item, v), id = `b-${item}${v === 'blue' ? '-blue' : ''}`;
   const rows = await posedCase({ id, body: 'B', slot, ...(item === 'jester' && v === 'ctrl' ? { role: 'reference' as const } : {}), key: v === 'blue' ? 'blue' : item === 'tunic' || item === 'jester' ? 'magenta' : 'green', pad: 0, expect, source: 'campaign 2026-10-25 arm C', ...(note ? { note } : {}) }, f.dress, f.pose, walksB, 80);
   if (item === 'jester') cases.at(-1)!.keep = Object.fromEntries(walksB.flatMap(([a, d], r) => rows[r].map((im, i) => [i ? `${a}/${d}/${i - 1}` : `rest/${d}/0`, pinkKeep(im, 80)])));
+}
+// round 2 arm N: the posed key tolerance at 160 px (a 1 px tolerance failed 5 north frames on 2 px foot drift; one real stays)
+const N25 = (item: string) => ({ dress: (d: string) => `c25b/N/${item}/dress.${DIRS_N.indexOf(d)}.png`, pose: (_a: string, d: string, i: number) => `c25b/N/${item}/walk_${d}.${i}.png` });
+await posedCase({ id: 'n-cloak128', body: 'N', slot: 'back', key: 'green', pad: 0, expect: { 'walk/south': 'pass', 'walk/east': 'pass', 'walk/north': 'fail:G3' }, source: 'docs/research/generation-quality-round2-2026-10-25.md arm N', note: 'north 4: a real 0.053 foot mismatch; the other frames pass at the scaled tolerance' }, N25('cloak128').dress, N25('cloak128').pose, DIRS_N.map((d) => ['walk', d]), 160);
+
+// round 2 arm Z, body A, dress only: green + purple stripes; the purple must ship (KEEP = px of the raw azure output with hue
+// 250-320°, saturation >= 0.3, value >= 51; the azure ramp sits at 210°). On magenta the purple and the key ramp share those hues
+// (the collision itself), so raw labels cannot separate them: the magenta reference has none and documents that every gate passes
+const purpleKeep = (im: Img, C: number) => { const m = new Uint8Array(C * C); for (let p = 0; p < m.length; p++) { const [r, g, b, a] = im.data.subarray(p * 4, p * 4 + 4), mx = Math.max(r, g, b), d = mx - Math.min(r, g, b); if (a < 128 || mx < 51 || d / mx < 0.3) continue; const h = (mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60; if (h >= 250 && h <= 320) m[p] = 1; } return runs(m); };
+for (const v of ['azure', 'magenta']) {
+  const views = await Promise.all(DIRS_A.map((_, i) => load(`c25b/Z/stripes/${v}_dress_s7.${i}.png`)));
+  await save(`a-stripes-${v}.png`, tile([views], 64));
+  cases.push({ id: `a-stripes-${v}`, body: 'A', slot: 'torso_outer', key: v, pad: 0, clips: [], expect: { rest: 'pass' }, source: 'docs/research/generation-quality-round2-2026-10-25.md arm Z',
+    ...(v === 'magenta' ? { role: 'reference' as const, note: 'every gate passes while the purple stripes are keyed out (1.3 % kept)' } : { keep: Object.fromEntries(DIRS_A.map((d, i) => [`rest/${d}/0`, purpleKeep(views[i], 64)])) }) });
 }
 writeFileSync(new URL('cases.json', OUT), JSON.stringify(cases, null, 1));
 console.log(`froze ${cases.length} cases`);

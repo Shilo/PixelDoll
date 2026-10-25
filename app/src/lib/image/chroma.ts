@@ -2,34 +2,51 @@
 // then item = opaque pixels that are not key-colored. Port of spikes/api/lib/chroma.mjs. Pure over Img; masks = Uint8Array(w*h).
 import { makeImg, type Img } from './png.ts';
 
-// Blue (2026-10-25 campaign, arm K) is the third key: only for prompts whose colors collide with both green and magenta.
-export type Key = 'green' | 'magenta' | 'blue';
-export const KEYS: Key[] = ['green', 'magenta', 'blue'];
-export const KEY_NAME: Record<Key, string> = { green: 'bright green', magenta: 'magenta', blue: 'bright blue' };
-export const other = (k: Key): Key => (k === 'green' ? 'magenta' : 'green');
+// Blue (2026-10-25 campaign, arm K) is the third key, for prompts whose colors collide with both green and magenta (green + pink
+// or red). Azure (round 2, arm Z) is the fourth, for green + purple, violet or indigo: the green ramp rotated +90° in hue (210°);
+// its score, luminance and despill work in that rotated frame, exactly as measured.
+export type Key = 'green' | 'magenta' | 'blue' | 'azure';
+export const KEYS: Key[] = ['green', 'magenta', 'blue', 'azure'];
+export const KEY_NAME: Record<Key, string> = { green: 'bright green', magenta: 'magenta', blue: 'bright blue', azure: 'bright azure blue' };
+/** The key a G2 key/item collision switches to: the first other key the prompt allows, in pickKey order. */
+export const switchTo = (prompt: string, k: Key): Key | undefined => KEYS.find((x) => x !== k && keyAllowed(prompt, x));
 
 const lum = (r: number, g: number, b: number) => (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-/** Luminance in the key's frame: blue is the green ramp with G and B swapped, so its key px weigh their B channel as green does G. */
-const keyLum = (key: Key, r: number, g: number, b: number) => (key === 'blue' ? lum(r, b, g) : lum(r, g, b));
+/** Rotate a color's hue by deg (HSV, saturation and value kept, rounded). */
+function hueRot(r: number, g: number, b: number, deg: number): [number, number, number] {
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  if (!d) return [r, g, b];
+  let h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  h = (((h * 60 + deg) % 360) + 360) % 360;
+  const x = d * (1 - Math.abs(((h / 60) % 2) - 1));
+  const [R, G, B] = h < 60 ? [d, x, 0] : h < 120 ? [x, d, 0] : h < 180 ? [0, d, x] : h < 240 ? [0, x, d] : h < 300 ? [x, 0, d] : [d, 0, x];
+  return [Math.round(R + mn), Math.round(G + mn), Math.round(B + mn)];
+}
+/** Luminance in the key's frame: blue is the green ramp with G and B swapped, azure the green ramp rotated +90°, so their key px
+ *  weigh like green's. */
+const keyLum = (key: Key, r: number, g: number, b: number) => (key === 'blue' ? lum(r, b, g) : key === 'azure' ? lum(...hueRot(r, g, b, -90)) : lum(r, g, b));
 const RAMP: Record<Key, (t: number) => [number, number, number]> = {
   green: (t) => [Math.round(110 * t * t), Math.round(60 + 195 * t), Math.round(110 * t * t)],
   magenta: (t) => [Math.round(70 + 185 * t), Math.round(110 * t * t), Math.round(70 + 185 * t)],
   blue: (t) => [Math.round(110 * t * t), Math.round(110 * t * t), Math.round(60 + 195 * t)], // the green ramp with G and B swapped
+  azure: (t) => hueRot(...RAMP.green(t), 90), // G = (R + B) / 2
 };
 
 // Substrings, so compounds ("darkgreen", "bloodred") count; "red" after a vowel is a word ending (colored, covered, armored).
 const HUES: Record<Key, RegExp> = {
   green: /green|emerald|lime|olive|jade|teal|mint|forest/i,
-  magenta: /(?<![aeiou])red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|indigo|magenta|fuchsia/i, // indigo scores 58 as magenta key
+  magenta: /(?<![aeiou])red|crimson|scarlet|maroon|ruby|pink|rose|purple|violet|indigo|plum|orchid|grape|amethyst|lavender|lilac|mauve|magenta|fuchsia/i, // indigo 58, orchid 47, plum 45, grape 39 as magenta key
   // purples score as blue key too (blueviolet 39, indigo 42 against KT 35)
-  blue: /blue|navy|azure|cyan|teal|sapphire|cobalt|indigo|turquoise|aqua|cerulean|purple|violet|lavender|lilac|plum|mauve/i,
+  blue: /blue|navy|azure|cyan|teal|sapphire|cobalt|indigo|turquoise|aqua|cerulean|purple|violet|lavender|lilac|plum|mauve|orchid|grape|amethyst/i,
+  // blues and blue-greens score 50-67 as azure key; purples 0-12 and emerald 0
+  azure: /blue|navy|azure|cyan|teal|\bsky|ocean|denim|sapphire|cobalt|turquoise|aqua|cerulean/i,
 };
 /** May this key be used for an item? A key must stay far from the item hue (magenta failed on a red cape, gray on steel [S2]). */
 export const keyAllowed = (prompt: string, k: Key) => !HUES[k].test(prompt);
 /**
- * Green unless the item's color words collide with green (S2 rule), then magenta, then blue (a green-and-pink item: magenta keyed
- * out the pink on every frame). When all three collide (green + purple), magenta as before: still posable; the diff route would
- * not be, and it was never measured on Studio bodies (campaign 2026-10-25 follow-up). Gray is never used.
+ * Green unless the item's color words collide with green (S2 rule), then magenta, then blue (green + pink: magenta keyed out the
+ * pink on every frame), then azure (green + purple: magenta removed the purple stripes while every gate passed). When all four
+ * collide, magenta as before: still posable; the diff route would not be. Gray is never used.
  */
 export const pickKey = (prompt: string): Key => KEYS.find((k) => keyAllowed(prompt, k)) ?? 'magenta';
 
@@ -45,7 +62,8 @@ export function toChroma(B: Img, key: Key): Img {
 /** Key-likeness 0..100 as a RATIO (the returned dark outline 9,39,7 must still score as key). Excess < 12 = not key. */
 /** The key's channel excess over the other channels, and the channel it is measured against. */
 const excess = (key: Key, r: number, g: number, b: number): [number, number] =>
-  key === 'green' ? [g - Math.max(r, b), g] : key === 'blue' ? [b - Math.max(r, g), b] : [Math.min(r, b) - g, Math.max(r, b)];
+  key === 'azure' ? excess('green', ...hueRot(r, g, b, -90))
+    : key === 'green' ? [g - Math.max(r, b), g] : key === 'blue' ? [b - Math.max(r, g), b] : [Math.min(r, b) - g, Math.max(r, b)];
 export function keyScore(key: Key, r: number, g: number, b: number): number {
   const [ex, mx] = excess(key, r, g, b);
   return ex < 12 ? 0 : Math.round((100 * ex) / Math.max(mx, 1));
@@ -151,6 +169,8 @@ export function despill(L: Img, key: Key, sT = 10): Img {
     if (Math.abs(lc[b] - l) <= 0.08) o.data.set(core[b], i);
     else if (key === 'green') o.data[i + 1] = Math.max(d[i], d[i + 2]);
     else if (key === 'blue') o.data[i + 2] = Math.max(d[i], d[i + 1]);
+    // azure: the green rule in the rotated frame, written only to tinted px (a whole-layer round trip moved 1 in 4 colors by 1)
+    else if (key === 'azure') { const [r, , b] = hueRot(d[i], d[i + 1], d[i + 2], -90); o.data.set(hueRot(r, Math.max(r, b), b, 90), i); }
     else { o.data[i] = Math.min(d[i], d[i + 1] + 4); o.data[i + 2] = Math.min(d[i + 2], d[i + 1] + 4); }
   }
   return o;

@@ -64,7 +64,7 @@ export interface Item {
   baseHash: Sha256;
   route?: 'skeleton-pose' | 'inpaint-grid' | 'ea2-anchor' | 'diff'; // manifest-spec v1.3
   extractor?: 'chroma' | 'diff'; // deprecated (v1.2), still written for older readers
-  key?: 'green' | 'magenta' | 'blue';
+  key?: 'green' | 'magenta' | 'blue' | 'azure';
   dressed?: Partial<Record<DirectionName, Sha256>>; // skeleton-pose: dressed chroma keyframes
   anchorCell?: CellKey; // ea2-anchor: design-call cell passed as frame 1 to later calls
   provenance: Provenance[];

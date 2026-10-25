@@ -153,7 +153,7 @@
       <label>name <input bind:value={form.name} placeholder="Iron helmet" data-testid="name" /></label>
       <label>key
         <select bind:value={form.key} data-testid="key">
-          <option value="auto">auto ({autoKey})</option><option value="green">green</option><option value="magenta">magenta</option><option value="blue">blue</option><option value="none">none: diff fallback on the real base</option>
+          <option value="auto">auto ({autoKey})</option><option value="green">green</option><option value="magenta">magenta</option><option value="blue">blue</option><option value="azure">azure</option><option value="none">none: diff fallback on the real base</option>
         </select>
       </label>
     </div>

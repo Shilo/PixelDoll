@@ -23,4 +23,6 @@ test('fixed defects stay fixed', () => {
   expect(share(byId('a-jester-blue').keepExact)).toBe(1) // the blue key keeps the pink exactly
   expect(share(byId('b-jester-blue').keepExact)).toBe(1)
   expect(byId('a-helmet').drop[0]).toBe(0) // swords invented by slash poses never ship in a helmet layer
+  expect(share(byId('a-stripes-azure').keepExact)).toBe(1) // azure keeps green + purple (magenta kept 1.3 % of the purple)
+  expect(byId('n-cloak128').fails).toBe(1) // 128 px body: 6 fails at a fixed 1 px posed tolerance, 1 real at the scaled one
 })

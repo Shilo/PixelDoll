@@ -24,9 +24,10 @@ test('blue is picked only when green and magenta both collide', () => {
   expect(pickKey('a red, green and blue harlequin hat')).toBe('magenta') // nothing is safe: the old behavior
 })
 
-test('purple shades score as blue key, so green-and-purple items keep the old magenta fallback (not blue)', () => {
+// round 2 added azure for exactly these prompts (azure-key.test.ts); blue must still never be picked for them
+test('purple shades score as blue key, so green-and-purple items never get blue', () => {
   for (const c of [[138, 43, 226], [75, 0, 130], [90, 40, 140]]) expect(keyScore('blue', c[0], c[1], c[2])).toBeGreaterThanOrEqual(KT) // blueviolet, indigo, dark purple
-  for (const p of ['a green and violet robe', 'a green and purple wizard hat', 'an emerald and indigo sash']) expect(pickKey(p)).toBe('magenta')
+  for (const p of ['a green and violet robe', 'a green and purple wizard hat', 'an emerald and indigo sash']) expect(pickKey(p)).toBe('azure')
 })
 
 test('the blue ramp is key and common item colors are not', () => {

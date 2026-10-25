@@ -479,7 +479,7 @@ function translate(im: Img, dx: number, dy: number): Img {
   return o;
 }
 
-export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean }): CellOut {
+export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean; pad?: number }): CellOut {
   const { base, route, band } = o, { w, h } = base;
   // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
   const reg = o.posed ? bestShift(base, o.out) : ([0, 0] as [number, number]);
@@ -504,7 +504,9 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
     if (qm[p] && !inBand) outBand++;
     if (base.data[p * 4 + 3] && inBand) baseBand++;
   }
-  const tol = o.posed ? 1 : 0, kk = route === 'none' ? null : keyKept(base, out, route, qm, undefined, tol);
+  // posed tolerance follows the body cell (without the held pad): 1 px up to a 149 px cell (48-96 px bodies), 2 px for a 128 px
+  // body's 160 px cell, whose posed feet drift 2 px (round 2 arm N cloak north)
+  const tol = o.posed ? Math.max(1, Math.round((Math.min(w, h) - 2 * (o.pad ?? 0)) / 100)) : 0, kk = route === 'none' ? null : keyKept(base, out, route, qm, undefined, tol);
   return {
     key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
     ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, qm, tol) } : {}),

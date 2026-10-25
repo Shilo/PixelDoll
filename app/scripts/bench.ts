@@ -14,7 +14,7 @@ import type { Keypoint, Rig } from '../src/lib/rig/rig.ts';
 import { fromApi } from '../src/lib/rig/poses.ts';
 
 const FIX = new URL('../test/fixtures/bench/', import.meta.url);
-interface Case { id: string; body: 'A' | 'B'; slot: string; key: Route; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' }
+interface Case { id: string; body: 'A' | 'B' | 'N'; slot: string; key: Route; pad: number; clips: string[]; expect: Record<string, string>; keep?: Record<string, number[][]>; drop?: Record<string, number[][]>; source: string; note?: string; role?: 'reference' }
 interface Body { rig: Rig; rows: string[]; cols: string[] }
 const load = (name: string) => decodePngBytes(new Uint8Array(readFileSync(new URL(name, FIX))));
 const cell = (sheet: Img, C: number, row: number, col: number): Img => {
@@ -47,7 +47,7 @@ export async function runCase(c: Case): Promise<CaseResult> {
   const cells: CellOut[] = [];
   c.clips.forEach((clip, r) => {
     const [anim, dir] = clip.split('/'), a = rig.animations.find((x) => x.id === anim)!;
-    for (let i = 0; i < a.cells; i++) cells.push(extractCell({ key: `${clip}/${i}`, call: 1 + r, base: base(dir, `${anim}/${i}`), out: cell(sheet, C, r, 1 + i), route: c.key, band: bandOf(c.slot, c.pad ? undefined : skel(rig, a.sources?.[dir as 'south']?.keypoints?.[i]), C), posed: true, clip: slot.band, held }));
+    for (let i = 0; i < a.cells; i++) cells.push(extractCell({ key: `${clip}/${i}`, call: 1 + r, base: base(dir, `${anim}/${i}`), out: cell(sheet, C, r, 1 + i), route: c.key, band: bandOf(c.slot, c.pad ? undefined : skel(rig, a.sources?.[dir as 'south']?.keypoints?.[i]), C), posed: true, clip: slot.band, held, pad: c.pad }));
   });
   let fails: string[] = [], warnings: string[] = [];
   if (cells.length) {
@@ -104,9 +104,9 @@ cases, labels and sources in \`cases.json\`, built by \`scripts/bench-freeze.ts\
 it with any change to extraction, cleanup or QA. Corpus \`${corpus.slice(0, 12)}\`, gates \`${gates.slice(0, 12)}\`.
 
 - **Verdict**: each clip's QA result (pass, warn:Gx, fail:Gx) against the expected one from documented visual verdicts.
-- **Keep**: labeled pixels that must ship and do (pommels, haft ends, the jester's pink). **Keep exact**: also within 24 per
+- **Keep**: labeled pixels that must ship and do (pommels, haft ends, the jester's pink, the stripes' purple). **Keep exact**: also within 24 per
   channel of the raw color (catches discoloring). **Drop**: labeled invented props that ship anyway (lower is better).
-- **Reference** cases document a superseded choice (the jester on magenta, which pickKey no longer picks) and stay out of totals.
+- **Reference** cases document a superseded choice (items on magenta that pickKey no longer sends there) and stay out of totals.
 - An improvement fixes a miss or a label without regressing another case; see the campaign playbook for generation changes.
 
 | Case | Slot / key | Verdicts | Keep | Keep exact | Drop | Fails | Warnings | Max area CV |

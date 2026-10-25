@@ -146,7 +146,7 @@ export interface Item {
   layers: Layer[];                        // 1 layer ("main", role fg) or 2 ("fg" + "bg")
   baseHash: Sha256;                       // base the layers were extracted against
   route?: 'skeleton-pose' | 'inpaint-grid' | 'ea2-anchor' | 'diff'; // architecture §4; absent on the base
-  key?: 'green' | 'magenta' | 'blue';     // chroma key used (all routes except diff); blue only when green and magenta collide
+  key?: 'green' | 'magenta' | 'blue' | 'azure'; // chroma key used (all routes except diff); blue for green + pink/red, azure for green + purple
   dressed?: Partial<Record<DirectionName, Sha256>>; // skeleton-pose: dressed chroma keyframes; re-posed for new clips
   anchorCell?: CellKey;                   // ea2-anchor: dressed cell passed as frame 1 to later calls
   provenance: Provenance[];

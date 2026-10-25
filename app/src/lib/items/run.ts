@@ -2,7 +2,6 @@
 // UI-free; ui/M3.svelte and the Studio use this. A Draft is mutated in place (pass a Svelte $state proxy to get reactivity)
 // and persisted through the `persist` hook. Everything is re-derived from the job ledger, so reloads resume.
 import { queue, type JobRec } from '../pixellab/queue.ts';
-import { keyAllowed, other } from '../image/chroma.ts';
 import { binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { cellHash, type Sha256 } from '../rig/rig.ts';
@@ -15,7 +14,7 @@ import type { DirectionName, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
-import { chromaLayer, type Key } from '../image/chroma.ts';
+import { chromaLayer, switchTo, type Key } from '../image/chroma.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { DESIGN, GATES, GRID_COLS, anchored, planGens, GRAYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, grayShare, gridPrompt, packGrid, bandOf, buildItem, canPose, clipKeypoints, dirGate, extractCell, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
@@ -172,18 +171,18 @@ export function rerollCall(d: Draft, k: number, why: string) {
   const dirs = c.cells.map((x) => x.split('/')[1]), stale = k === 0 ? d.calls.slice(1) : c.kind === 'dress' ? d.calls.filter((l) => l.kind === 'pose' || l.kind === 'grid' ? dirs.includes(l.cells[0].split('/')[1]) : false) : [];
   for (const l of stale) { if (l.recId) l.old.push(l.recId); l.recId = undefined; }
 }
-function switchKey(d: Draft) {
-  if (d.spec.key === 'none') return;
-  d.spec.key = other(d.spec.key);
+function switchKey(d: Draft, to: Key) {
+  d.spec.key = to;
   d.keySwitched = true;
   d.log.push(`switch key to ${d.spec.key} after ${MAX_REROLLS} failed re-rolls`);
   for (const c of d.calls) { if (c.recId) c.old.push(c.recId); c.recId = undefined; c.rerolls = 0; c.seed = seed(); }
 }
 export const failsOf = (res: ItemResult, k: number) => [...(res.g1.has(k) ? [res.g1.get(k)!] : []), ...(res.qa?.failCalls.get(k) ?? [])];
 function retry(d: Draft, k: number, why: string[]): boolean {
+  let to: Key | undefined;
   if (d.calls[k].rerolls < MAX_REROLLS) rerollCall(d, k, why.join('; '));
   // the other key only helps a key/item color collision (G2); moved arms, missing or clipped items are generation problems
-  else if (!d.keySwitched && d.calls[k].kind !== 'grid' && d.spec.key !== 'none' && why.some((w) => w.startsWith('G2')) && keyAllowed(d.spec.prompt, other(d.spec.key))) switchKey(d);
+  else if (!d.keySwitched && d.calls[k].kind !== 'grid' && d.spec.key !== 'none' && why.some((w) => w.startsWith('G2')) && (to = switchTo(d.spec.prompt, d.spec.key))) switchKey(d, to);
   else { d.log.push(`call ${k + 1} still fails after re-rolls and key switch: ${why.join('; ')} -> needs review`); return false; }
   return true;
 }
@@ -317,7 +316,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   }
   const ex = (o: Out, useCc?: boolean, restView = false) =>
     // ponytail: padded (held) slots have no keypoint band, so the rig-cell skeleton is not shifted
-    extractCell({ key: o.key, call: o.k, base: padImg(baseCell(ctx, o.key, restView), pad), out: o.out, route, band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key, restView), H), useCc, posed: o.posed, clip: slot.band, held: slot.class === 'held' });
+    extractCell({ key: o.key, call: o.k, base: padImg(baseCell(ctx, o.key, restView), pad), out: o.out, route, band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key, restView), H), useCc, posed: o.posed, clip: slot.band, held: slot.class === 'held', pad });
   // the dress call only makes keyframes: gate them (G2, G3, presence); they are not item cells themselves
   const keys: Partial<Record<DirectionName, Img>> = {}; // dressed keyframe layers per direction (H4)
   for (const o of dressOuts) {
@@ -437,7 +436,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
       const outs = unrotate(outputs, f0Last(item.slot, rest, paddedPoses(poses), rig.cell)).slice(0, cells.length);
       const images = await Promise.all(outs.map((o) => img(o.sha)));
       if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad)) continue; // G1: wrong geometry is not a candidate
-      const candidate = cells.map((c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: images[i], route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band, held: slot.class === 'held' }));
+      const candidate = cells.map((c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: images[i], route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band, held: slot.class === 'held', pad }));
       postProcess(rig, slot, candidate, keys, pad);
       const fails = failCount(withH4(itemQa(rig, slot, key, candidate, attempt, GATES.keyOutsidePosed, pad), slot, candidate, keys, rig));
       // Keep pixels and provenance together. A later equal/worse or malformed roll cannot replace the earlier candidate.
@@ -514,7 +513,7 @@ async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: Directio
   const g = await img(outputsOf(r)[0].sha), w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, rows = Math.ceil((n + Object.keys(item.dressed!).length) / GRID_COLS);
   if (g.w !== GRID_COLS * w || g.h !== rows * h) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned a grid with the wrong frame layout`);
   const cut = cutGrid(g, n, w, h);
-  const out = cells.map((c, i) => extractCell({ key: c, call, base: padImg(baseCell(ctx, c), pad), out: cut[i], route: item.key!, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), h), posed: true, clip: slot.band, held: slot.class === 'held' }));
+  const out = cells.map((c, i) => extractCell({ key: c, call, base: padImg(baseCell(ctx, c), pad), out: cut[i], route: item.key!, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), h), posed: true, clip: slot.band, held: slot.class === 'held', pad }));
   postProcess(rig, slot, out, keys, pad);
   return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };
 }
