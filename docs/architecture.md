@@ -103,7 +103,10 @@ rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE
 
 - One design everywhere: palette distance to the reference ≤ 3 (edited batches 6–15); held items follow the hand in every
   direction; capes swing [S4].
-- Adding a clip later = one pose call per item-direction, same design, no re-dress.
+- Idle and walk of a direction share one pose call (12 frames cost 3 gens like 8; round 4); held items and other moves pose one
+  move per call. Adding a clip later = one pose call per item-direction, same design, no re-dress.
+- PixelLab is not deterministic: a byte-identical request and seed returned 6–10 % different pixels (round 4), so a single
+  same-seed pair cannot separate a change from noise; compare across seeds.
 - **Dress frame cap [B16]:** edit-animation-v2 takes 16 / 9 / 4 frames at ≤ 64 / 65–80 / 81–256 px (`editFrameCap`). The dress
   is split into chunks under that cap (`anchorChunks`): the first takes `cap` rest views, later ones `cap − 1` plus the first
   chunk's dressed cell 0 as an anchor (its output dropped, S2). A legacy/economy 8-direction held item has 5 independent

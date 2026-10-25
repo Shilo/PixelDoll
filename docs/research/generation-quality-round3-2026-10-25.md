@@ -75,7 +75,7 @@ every reproducer kept these, and they are fixed:
 
 Not changed: silhouette registration (Codex F6: 4/584 posed cells move, all toward the body); cross-reference against stored
 measured keypoints for posing (the drift may be systematic, so this could double it; offline check first); CPU trims (paid
-latency dominates); the two-cutter and old-item limits (documented). Open for the owner: `export/colors.ts` is used only by its
+latency dominates); the two-cutter and old-item limits (documented). Settled in [round 4](generation-quality-round4-2026-10-25.md): `export/colors.ts` was used only by its
 test (dead code, its spec appendix describes baked colors exports do not ship); skipping re-rolls for bows in side views
 (about 6 gens per bow, recovery about 1 in 6); prompt grammar fixes ("1 cells", "the identical a …") need a paid canary; posing
 idle + walk in one call (−21 to −25 % gens, paid test ≈ 24 gens).

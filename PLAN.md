@@ -118,6 +118,9 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   [round 3](docs/research/generation-quality-round3-2026-10-25.md).
 - D23 (2026-10-25, reviews): a key switches only on a dressed keyframe's G3 (collision), at once; G2 never switches. Posed
   clips are also checked against their dressed keyframe's palette (warning). See [round 3](docs/research/generation-quality-round3-2026-10-25.md).
+- D24 (2026-10-25, measured round 4): idle and walk of a direction share one pose call for non-held items (3 gens instead of 6);
+  prompt grammar stays; the unused baked-color export is deleted (runtimes swap palettes live); no per-item re-roll exceptions.
+  See [round 4](docs/research/generation-quality-round4-2026-10-25.md).
 - D20 (2026-10-25, user): the version is automatic and never bumped by hand: the number of non-merge commits that changed what
   ships (app/ or its workflow), written major.minor.patch with patch 0-99 and minor 0-9 (1234 = 1.2.34), shown with the
   short commit in the More menu. Docs-only pushes neither run CI nor deploy. No tags or GitHub releases. See
