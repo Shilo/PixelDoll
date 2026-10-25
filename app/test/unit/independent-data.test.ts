@@ -12,6 +12,7 @@ import { readAseprite } from '../../src/lib/export/aseprite.ts'
 import { readCharacterZip } from '../../src/lib/store/import.ts'
 import { zip } from '../../src/lib/store/zip.ts'
 import type { Item, Layer, Manifest, Project } from '../../src/lib/store/manifest.ts'
+import { expectPixels } from './pixels.ts'
 
 const MIRRORS: Partial<Record<DirectionName, DirectionName>> = { west: 'east', 'south-west': 'south-east', 'north-west': 'north-east' }
 const cases = [
@@ -111,7 +112,7 @@ test.each(cases)('$count directions independent=$independent preserve explicit w
   for (const [i, preset] of p.manifest.presets.entries()) {
     const expected = recolor(p, preset.variants), pr = engineOnly.project.manifest.presets[i]
     for (const anim of rig.animations) for (const dir of requested) for (let frame = 0; frame < anim.cells; frame++)
-      expect(composeCell(recolor(engineOnly.project, pr.variants), pr.items, anim.id, dir, frame)).toEqual(composeCell(expected, preset.items, anim.id, dir, frame))
+      expectPixels(composeCell(recolor(engineOnly.project, pr.variants), pr.items, anim.id, dir, frame), composeCell(expected, preset.items, anim.id, dir, frame), `${anim.id}/${dir}/${frame}`)
   }
   const files = new Map(out.entries.map((e) => [e.name, e.data])), text = new TextDecoder()
   const m = JSON.parse(text.decode(files.get('manifest.json'))) as Manifest

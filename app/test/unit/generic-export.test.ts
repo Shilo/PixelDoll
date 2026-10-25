@@ -9,6 +9,7 @@ import { cellHash } from '../../src/lib/rig/rig.ts';
 import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts';
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts';
 import { zip } from '../../src/lib/store/zip.ts';
+import { expectPixels } from './pixels.ts';
 
 const hash = `sha256:${'0'.repeat(64)}` as const;
 const options = { engines: ['generic'] as const, baked: true, exportedAt: '2026-10-23T00:00:00.000Z' };
@@ -73,8 +74,8 @@ test('public export materializes procedural defaults, linked defaults and every 
     const canonical = await decodePngBytes(files.get(l.sheets!.walk)!);
     const source = await decodePngBytes(files.get(l.sourceSheets!.walk)!);
     const w = l.cell!.w, h = l.cell!.h;
-    expect(crop(canonical, 0, 0, w, h)).toEqual(cellImg(recolor(p, {}), src, 'walk', 'south', 0));
-    expect(crop(source, 0, 0, w, h)).toEqual(cellImg(p, src, 'walk', 'south', 0));
+    expectPixels(crop(canonical, 0, 0, w, h), cellImg(recolor(p, {}), src, 'walk', 'south', 0), item.id);
+    expectPixels(crop(source, 0, 0, w, h), cellImg(p, src, 'walk', 'south', 0), item.id);
   }
 });
 

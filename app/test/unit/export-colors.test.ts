@@ -11,6 +11,7 @@ import { readAseprite } from '../../src/lib/export/aseprite.ts'
 import { readCharacterZip } from '../../src/lib/store/import.ts'
 import { zip } from '../../src/lib/store/zip.ts'
 import type { Manifest, Project } from '../../src/lib/store/manifest.ts'
+import { expectBytes, expectPixels } from './pixels.ts'
 
 async function source(): Promise<Project> {
   const images: Project['images'] = new Map(), hash = `sha256:${'0'.repeat(64)}` as const
@@ -42,10 +43,10 @@ test('all engine exports preserve body and equipment palettes, tuck masks, mirro
   for (const [i, preset] of p.manifest.presets.entries()) for (const dir of ['south', 'east', 'west'] as const) {
     const expected = composeCell(recolor(p, preset.variants), preset.items, 'idle', dir, 0, bakedFrame(p.manifest))
     const restored = engineOnly.project.manifest.presets[i]
-    expect(composeCell(recolor(engineOnly.project, restored.variants), restored.items, 'idle', dir, 0, bakedFrame(engineOnly.project.manifest))).toEqual(expected)
+    expectPixels(composeCell(recolor(engineOnly.project, restored.variants), restored.items, 'idle', dir, 0, bakedFrame(engineOnly.project.manifest)), expected, dir)
     const baked = await decodePngBytes(files.get(`baked/${preset.id}/idle.png`)!)
     const row = p.manifest.rig.directions.findIndex((d) => d.id === dir)
-    expect(baked.data.slice(row * 64 * 64 * 4, (row + 1) * 64 * 64 * 4)).toEqual(expected.data)
+    expectBytes(baked.data.slice(row * 64 * 64 * 4, (row + 1) * 64 * 64 * 4), expected.data, dir)
   }
   const overlay = m.items.find((it) => it.id === m.presets[0].items.body)!
   expect(overlay.slot).toBe('body')

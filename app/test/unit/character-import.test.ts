@@ -10,6 +10,7 @@ import { planItem } from '../../src/lib/items/items.ts'
 import { baseCell } from '../../src/lib/items/run.ts'
 import { coverage } from '../../src/studio/itemRoute.ts'
 import { cellHash } from '../../src/lib/rig/rig.ts'
+import { expectPixels } from './pixels.ts'
 import { CharacterImportError, projectEntries, readCharacterZip } from '../../src/lib/store/import.ts'
 import { unzip, zip, type ZipEntry } from '../../src/lib/store/zip.ts'
 
@@ -135,9 +136,9 @@ test('PixelDoll export restores editable original cells, outfits, rest rig and d
   const result = await readCharacterZip(await zip(out.entries, { deflate: true }))
   expect(result.project.manifest).toEqual(p.manifest)
   expect(result.extra).toEqual(extra)
-  expect(result.project.images.get(hash)).toEqual(dressed)
-  for (const [h, im] of p.images) if (result.project.images.has(h)) expect(result.project.images.get(h)).toEqual(im)
-}, 60_000) // heavy PNG decoding; slower under a full parallel run
+  expectPixels(result.project.images.get(hash), dressed)
+  for (const [h, im] of p.images) if (result.project.images.has(h)) expectPixels(result.project.images.get(h), im, h)
+})
 
 test('older PixelDoll sheets import with correct rows and preserve source pixels', async () => {
   const p = await loadFixture(async (path) => new Uint8Array(await readFile(new URL(`../../public/fixtures/s2/${path}`, import.meta.url))))
@@ -149,14 +150,14 @@ test('older PixelDoll sheets import with correct rows and preserve source pixels
   const result = await readCharacterZip(await zip(old))
   const base = p.manifest.items.find((it) => it.id === p.manifest.rig.baseItem)!.layers[0]
   const restored = result.project.manifest.items.find((it) => it.id === p.manifest.rig.baseItem)!.layers[0]
-  for (const a of p.manifest.rig.animations) for (const d of p.manifest.rig.directions) for (let c = 0; c < a.cells; c++) expect(cellImg(result.project, restored, a.id, d.id, c)).toEqual(cellImg(p, base, a.id, d.id, c))
+  for (const a of p.manifest.rig.animations) for (const d of p.manifest.rig.directions) for (let c = 0; c < a.cells; c++) expectPixels(cellImg(result.project, restored, a.id, d.id, c), cellImg(p, base, a.id, d.id, c), `${a.id}/${d.id}/${c}`)
   expect(result.project.manifest.rig.directions.every((d) => !d.mirrorOf)).toBe(true)
   expect(result.project.manifest.items[1].dressed).toBeUndefined()
   expect(result.project.manifest.items[1].route).toBeUndefined()
   expect(result.project.manifest.items.some((it) => it.variantOf)).toBe(false)
   const reexported = await exportFiles(result.project, { engines: ['generic'], baked: false })
   await expect(unzip(await zip(reexported.entries))).resolves.toBeInstanceOf(Map)
-}, 60_000) // heavy PNG decoding; slower under a full parallel run
+})
 
 test('current PixelDoll ZIPs support one enclosing folder containing both manifests', async () => {
   const { project } = await readCharacterZip(await zip(await pixelLabFiles()))
