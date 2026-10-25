@@ -73,24 +73,21 @@ async function plannedSources(page: Page, sheet: Locator, expected: string[]) {
   await peek.getByRole('button', { name: 'Close API calls', exact: true }).click()
 }
 
-test('all 21 appearance options and exact custom text reach the initial HTTP JSON unchanged', async ({ page }) => {
+// Every value of every control is mapped exhaustively in test/unit/character-option-matrix.test.ts; here each control's wiring
+// reaches the HTTP JSON once, plus Not set and exact custom text.
+test('each appearance control, Not set and exact custom text reach the initial HTTP JSON unchanged', async ({ page }) => {
   const { sheet, submit } = await setup(page)
-  const groups = [
-    ['Kind', ['Human', 'Elf', 'Dwarf', 'Orc', 'Undead']], ['Build', ['Slender', 'Broad', 'Muscular', 'Rounded']],
-    ['Proportions', ['Natural', 'Chibi']], ['Skin', ['Deep brown', 'Brown', 'Tan', 'Light tan', 'Light', 'Pale']],
-  ] as const
-  let choices = 0
-  for (const [title, values] of groups) for (const value of ['Not set', ...values]) {
-    choices++
+  for (const [title, first, value] of [
+    ['Kind', 'Human', 'Not set'], ['Kind', 'Human', 'Undead'], ['Build', 'Slender', 'Rounded'], ['Proportions', 'Natural', 'Chibi'], ['Skin', 'Deep brown', 'Pale'],
+  ] as const) {
     await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
     await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).fill(`A calm face\n${BASE_BODY}`)
     await sheet.getByRole('tab', { name: 'Appearance', exact: true }).click()
     const control = sheet.getByRole('combobox', { name: title, exact: true })
-    await control.selectOption(values[0]); await control.selectOption(value)
+    await control.selectOption(first); await control.selectOption(value)
     const body = await submit()
     expect(body.description).toBe(`A calm face\n${value === 'Not set' ? '' : `${title}: ${value}\n`}${BASE_BODY}`)
   }
-  expect(choices).toBe(21)
   const exact = '  My exact custom prompt.\n\nKeep this spacing  \nKind: Orc\n'
   await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
   await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).fill(exact)
@@ -143,15 +140,12 @@ test('five direction presets keep eight-view V3 creation and plan only selected 
   }
 })
 
-test('all six attached mirror controls plan the correct unique source on either side', async ({ page }) => {
+// All 12,082 mirror/direction transitions are covered by the unit matrix; one mirror per side proves the controls are wired.
+test('attached mirror controls on either side plan the correct unique source', async ({ page }) => {
   const { sheet, submit } = await setup(page)
   for (const [button, sources] of [
-    ['NW', ['south', 'south-east', 'east', 'north-east', 'north', 'north-west']],
     ['W', ['south', 'south-east', 'east', 'north-east', 'north', 'west']],
-    ['SW', ['south', 'south-east', 'east', 'north-east', 'north', 'south-west']],
-    ['NE', ['south', 'south-east', 'east', 'north', 'north-west']],
     ['E', ['south', 'south-east', 'north-east', 'north', 'west']],
-    ['SE', ['south', 'east', 'north-east', 'north', 'south-west']],
   ] as const) {
     await sheet.getByRole('button', { name: 'Top-down 8', exact: true }).click()
     await sheet.getByRole('button', { name: `Mirror ${button}`, exact: true }).click()
@@ -160,9 +154,9 @@ test('all six attached mirror controls plan the correct unique source on either 
   }
 })
 
-test('each individual direction can be removed and a one-facing custom plan remains valid', async ({ page }) => {
+test('a direction can be removed and a one-facing custom plan remains valid', async ({ page }) => {
   const { sheet, submit } = await setup(page)
-  for (const [abbreviation, direction] of [['S', 'south'], ['SE', 'south-east'], ['E', 'east'], ['NE', 'north-east'], ['N', 'north'], ['NW', 'north-west'], ['W', 'west'], ['SW', 'south-west']]) {
+  for (const [abbreviation, direction] of [['S', 'south'], ['NW', 'north-west']]) {
     await sheet.getByRole('button', { name: 'Unique 8', exact: true }).click()
     await sheet.getByRole('button', { name: `${abbreviation} direction`, exact: true }).click()
     await plannedSources(page, sheet, all.filter(value => value !== direction))

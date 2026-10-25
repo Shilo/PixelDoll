@@ -11,14 +11,16 @@ export default defineConfig({
   testDir: './test/e2e',
   outputDir: process.env.TEST_OUTPUT_DIR ?? 'test-results',
   timeout: 90_000,
-  // Every test owns a fresh browser context (storage, locks, channels), so tests run in parallel.
-  // Parallel CPU load slows IndexedDB and image work; wait longer instead of asserting less.
-  expect: { timeout: 15_000 },
+  // Every test owns a fresh browser context (storage, locks, channels), so tests run in parallel and shard per test.
   fullyParallel: true,
-  // Each Studio page keeps animating, so a worker uses about two CPU threads: 2 on a 4-vCPU CI runner.
-  workers: process.env.CI ? 2 : 4,
+  // CI: one worker per runner (Playwright's CI advice); parallelism comes from the shard matrix in pages.yml.
+  // Local: each animating Studio page uses about three CPU threads, so 20% of threads (4 on 24) is the measured sweet spot.
+  workers: process.env.CI ? 1 : '20%',
+  // Unloaded CI keeps the strict default; local parallel CPU load slows IndexedDB and image work, so wait longer there.
+  expect: { timeout: process.env.CI ? 5_000 : 15_000 },
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0, // A CI timing flake is retried once and still listed as flaky.
+  retries: process.env.CI ? 1 : 0, // A CI timing flake is retried once and annotated as flaky.
+  reporter: process.env.CI ? [['list'], ['github']] : 'list',
   use: { trace: 'retain-on-failure', channel },
   webServer: [
     ...(!process.env.BASE ? [{ command: `npm run preview -- --host 127.0.0.1 --port ${previewPort} --strictPort`, url: baseURL, reuseExistingServer: false }] : []),

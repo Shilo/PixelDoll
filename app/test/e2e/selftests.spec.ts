@@ -9,7 +9,7 @@ test('browser PNG and IndexedDB self-tests preserve every registered check', asy
   await page.route('https://api.pixellab.ai/**', (route) => route.abort())
   await page.goto('/#/selftest')
   const result = page.getByTestId('selftest')
-  await expect(result).toHaveAttribute('data-failures', '0')
+  await expect(result).toHaveAttribute('data-failures', '0', { timeout: 20_000 }) // may be the shard's first cold dev-server load
   const lines = (await result.innerText()).split('\n')
   expect(lines).toHaveLength(browserSelfTests.length + 1)
   for (const [name] of browserSelfTests) expect(lines).toContain('ok   ' + name)

@@ -51,15 +51,16 @@ Install: npm ci
 Dev server for humans: npm run dev
 Dev server for agents: npm run dev:agent
 Type check: npm run check
-Unit tests: npm test (Vitest 4.1.12); npm run selftest is a compatibility alias
+Unit tests: npm test (Vitest 4.1.12, parallel); npm test -- <file filter> while iterating, e.g. npm test -- phaser; npm run selftest is a compatibility alias
 Build: npm run build
 End-to-end tests: npm run e2e (Playwright Test 1.64.1; managed Chromium; builds and starts local servers; parallel)
-Targeted end-to-end tests: npm run e2e -- <spec names> [-g "<title>"], e.g. npm run e2e -- characters auth
+Targeted end-to-end tests: npm run e2e -- <spec names> [-g "<title>"], e.g. npm run e2e -- characters auth; rerun failures with npm run e2e -- --last-failed
+Concurrent agents: give each run its own E2E_PREVIEW_PORT, E2E_DEV_PORT and TEST_OUTPUT_DIR (defaults 5399, 5298, test-results); --last-failed reads the same TEST_OUTPUT_DIR
 Browser install: npx playwright install chromium
 
 ## End-to-end scope
 
-CI runs the full end-to-end suite on every push, sharded, and Pages deploys only after it passes. Agents run only the specs that cover what they changed, plus npm run check and npm test; run the full suite locally only for cross-cutting changes (studio state, storage, queue, shared components, Playwright config) or when asked. Specs in app/test/e2e/:
+CI runs the full end-to-end suite on every push, sharded, and Pages deploys only after it passes. Agents run npm run check and npm test (skip both for docs-only changes), plus only the end-to-end specs that cover what they changed (none for docs-only or test/unit-only changes); run the full end-to-end suite locally only for cross-cutting changes (studio state, storage, queue, shared components, test/e2e/immersive-helpers.ts, test/fixtures/, src/studio/experience/, Playwright config) or when asked. Specs in app/test/e2e/:
 studio: Studio shell, dressing, outfits, drafts, Activity, review, repair, recolor, export
 characters: character import (device and PixelLab library), duplicates, deletion
 character-creator, creator-request-matrix: New character sheet, creation flow and its request JSON
@@ -68,7 +69,7 @@ auth: connect, remembered token, Forget, shared-token peers
 api-peek: API call inspector
 export-picker: export dialog and engine formats
 concurrency: plan capacity, two-tab queue leadership, busy recovery
-selftests: browser self-tests, QA storage, demo copy
+selftests: browser self-tests (every module registered in src/lib/selftests.ts), QA storage, demo copy
 Experience visuals use a separate config: playwright.experience.config.ts (see docs/testing/production-experience-2026-10-23.md).
 Standalone Studio compatibility entry: node scripts/e2e-studio.mjs (existing build required)
 

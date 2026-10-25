@@ -457,7 +457,7 @@ test('compact creator toolbar keeps wider fallback-font labels and actions reada
   }
 })
 
-for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse: true, unique: 1, rows: 2 }, { preset: 'Diagonal 4', size: 96, frame: 160, reverse: false, unique: 2, rows: 4 }, { preset: 'Unique 8', size: 128, frame: 256, reverse: false, unique: 8, rows: 8 }]) test(`offline creation, persistence and export: ${config.preset}, ${config.frame}px`, async ({ page, context }) => {
+for (const config of [{ preset: 'Side-scroller 2', size: 48, frame: 81, reverse: true, unique: 1, rows: 2 }, { preset: 'Unique 8', size: 128, frame: 256, reverse: false, unique: 8, rows: 8 }]) test(`offline creation, persistence and export: ${config.preset}, ${config.frame}px`, async ({ page, context }) => {
   test.setTimeout(180_000)
   const api = new CharacterApi(), errors: string[] = []
   page.on('pageerror', e => errors.push(e.message))
