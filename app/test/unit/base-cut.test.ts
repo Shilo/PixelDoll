@@ -56,3 +56,23 @@ test('malformed hidden body pixels are rejected', async () => {
   for (const bad of [{ walk: { south: [[1]] } }, { idle: { east: [[1]] } }, { idle: { south: [[5, 3]] } }, { idle: { south: [[64 * 64]] } }, { idle: { south: [[1], [2]] } }])
     expect(validate(await project(bad as unknown as Item['baseCut'])), JSON.stringify(bad)).toContain('hood: invalid hidden body pixels (baseCut)')
 })
+
+test('an exact copy keeps the hidden ear px, flipped for a target view the source mirrored', async () => {
+  const { createDesign } = await import('../../src/lib/equipment/design.ts')
+  const { prepareCopy } = await import('../../src/lib/equipment/copy.ts')
+  const { flipH } = await import('../../src/lib/rig/mirror.ts')
+  const body = makeImg(64, 64), hood = makeImg(64, 64), ear = 12 * 64 + 20, earW = 12 * 64 + 43
+  body.data.set([200, 150, 120, 255], ear * 4); body.data.set([200, 150, 120, 255], (40 * 64 + 20) * 4); hood.data.set([150, 20, 30, 255], (12 * 64 + 22) * 4)
+  const bodyW = flipH(body), [b, h, bw] = await Promise.all([body, hood, bodyW].map(cellHash)), baseHash = `sha256:${'0'.repeat(64)}` as const
+  const item = (id: string, slot: string, z: number, cells: Item['layers'][number]['cells'], extra: Partial<Item> = {}): Item => ({ id, name: id, slot, status: 'accepted', baseHash, mirror: 'flip', materials: [], provenance: [], prompt: 'a red hood', layers: [{ id: 'main', role: 'fg', z, cells }], ...extra })
+  const rig = (directions: Project['manifest']['rig']['directions']) => ({ baseItem: 'base', baseHash, cell: { w: 64, h: 64 }, pivot: { x: 32, y: 60 }, directions, animations: [{ id: 'idle', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }] })
+  const slots = [{ id: 'body', class: 'base', z: 10 }, { id: 'head', class: 'rigid', anchor: 'head', z: 130 }] as Project['manifest']['slots']
+  const src: Project = { images: new Map([[b, body], [h, hood]]), manifest: { name: 's', app: 'test', format: 'pixeldoll/2', rig: rig([{ id: 'east' }, { id: 'west', mirrorOf: 'east' }]), slots, items: [item('base', 'body', 10, { idle: { east: [b] } }), item('hood', 'head', 130, { idle: { east: [h] } }, { baseCut: { idle: { east: [[ear]] } } })], materials: [], presets: [{ id: 'default', name: 'd', items: { body: 'base', head: 'hood' }, variants: {} }] } }
+  const tgt: Project = { images: new Map([[b, body], [bw, bodyW]]), manifest: { name: 't', app: 'test', format: 'pixeldoll/2', rig: rig([{ id: 'east' }, { id: 'west' }]), slots, items: [item('base', 'body', 10, { idle: { east: [b], west: [bw] } })], materials: [], presets: [{ id: 'default', name: 'd', items: { body: 'base' }, variants: {} }] } }
+  const cand = await prepareCopy(await createDesign(src, 'hood'), tgt), id = cand.itemId
+  const seen = (dir: 'east' | 'west', px: number) => composeCell(cand.project, { body: 'base', head: id }, 'idle', dir, 0).data[px * 4 + 3]
+  expect(seen('east', ear)).toBe(0)
+  expect(seen('west', earW)).toBe(0)
+  expect(seen('east', 40 * 64 + 20)).toBe(255)
+  expect(validate(cand.project)).toEqual([])
+})

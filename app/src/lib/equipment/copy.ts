@@ -1,6 +1,6 @@
 import * as db from '../store/db.ts';
 import { cellHash, type DirectionName, type Sha256 } from '../rig/rig.ts';
-import { cellImg } from '../compose/compose.ts';
+import { cellImg, cutAt } from '../compose/compose.ts';
 import { stableStringify } from '../image/hash.ts';
 import { CURRENT_FORMAT, type Item, type Manifest, type Project, type Preset } from '../store/manifest.ts';
 import type { StoredProject } from '../store/project.ts';
@@ -36,7 +36,6 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
   const source: Project = { manifest: design.source, images: await loadImages(design.imageHashes, design.images) };
   const item = structuredClone(designItem(design)), m = structuredClone(target.manifest), images = new Map([...target.images, ...source.images]);
   const oldId = item.id, id = `gear-${crypto.randomUUID()}`, audit = await targetAudit(target), stamp = targetStamp(m, item.slot);
-  delete item.baseCut; // the cells are remapped through the matches; hidden ear px are only valid on the cells they were found on
   item.id = id; item.name = design.name; item.baseHash = m.rig.baseHash;
   item.coverage = assessment.matches.map(match => match.target as NonNullable<Item['coverage']>[number]);
   const materials = design.source.materials.filter((mat) => mat.owner === oldId).map((mat, i) => ({ ...structuredClone(mat), id: `${id}_${i + 1}`, owner: id, defaultVariant: design.variants[mat.id] ?? mat.defaultVariant }));
@@ -45,9 +44,13 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
   const variants = Object.fromEntries(Object.entries(design.variants).flatMap(([mat, variant]) => roles[mat] ? [[roles[mat], variant]] : []));
   for (const mat of materials) delete mat.linkTo;
   item.design = { designId: design.id, revision: design.revision, snapshot: snapshotDesign(design), roleMaterials: roles, targetAudit: audit, targetStamp: stamp, dressedStamp: assessment.canExtend ? restStamp(m) : undefined };
-  const layerCells = item.layers.map(() => ({} as NonNullable<Item['layers'][number]['cells']>));
+  const layerCells = item.layers.map(() => ({} as NonNullable<Item['layers'][number]['cells']>)), baseCut: NonNullable<Item['baseCut']> = {};
   for (const match of assessment.matches) {
     const [ta, td, ti] = match.target.split('/') as [string, DirectionName, string], [sa, sd, si] = match.source.split('/') as [string, DirectionName, string];
+    // a match has an identical body cell and geometry on a generated target direction, so the hidden ear px carry over as they are
+    // (a mirrored source flips them; sorted again for the manifest)
+    const cut = cutAt(design.source, designItem(design), sa, sd, +si);
+    if (cut?.length) ((baseCut[ta] ??= {})[td] ??= Array(m.rig.animations.find((a) => a.id === ta)!.cells).fill(null))[+ti] = [...cut].sort((a, b) => a - b);
     for (const [i, layer] of designItem(design).layers.entries()) {
       const im = cellImg(source, layer, sa, sd, +si), h = im ? await cellHash(im) : null;
       if (h && im) images.set(h, im);
@@ -56,6 +59,7 @@ export async function prepareCopy(design: EquipmentDesign, target: Project): Pro
     }
   }
   item.layers.forEach((layer, i) => { layer.cells = layerCells[i]; delete layer.sheets; });
+  if (Object.keys(baseCut).length) item.baseCut = baseCut; else delete item.baseCut;
   // Frozen raster copying does not prove a source standing reference fits future target moves.
   if (!assessment.canExtend) { delete item.dressed; delete item.route; }
   if (item.qa) {

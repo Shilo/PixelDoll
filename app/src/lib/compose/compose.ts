@@ -86,8 +86,17 @@ export function tuck(im: Img, f: Frame, covers: [Img | null, Frame][]): Img {
       }
   }
   if (brim.every((b) => b < 0)) return im;
-  for (let x = 1; x < im.w; x++) if (brim[x] < 0) brim[x] = brim[x - 1]; // beside the cover: nearest covered column
-  for (let x = im.w - 2; x >= 0; x--) if (brim[x] < 0) brim[x] = brim[x + 1];
+  // uncovered columns (beside the cover, or a gap between its parts) take the nearest covered column, the higher brim on a tie:
+  // symmetric, so tucking commutes with a mirrored view (a left-to-right fill gave gaps the left brim; round 3 review)
+  const own = brim.slice();
+  for (let x = 0; x < im.w; x++) {
+    if (own[x] >= 0) continue;
+    let l = x - 1, r = x + 1;
+    while (l >= 0 && own[l] < 0) l--;
+    while (r < im.w && own[r] < 0) r++;
+    const dl = l >= 0 ? x - l : Infinity, dr = r < im.w ? r - x : Infinity;
+    brim[x] = dl < dr ? own[l] : dr < dl ? own[r] : Math.max(own[l], own[r]);
+  }
   const o: Img = { w: im.w, h: im.h, data: im.data.slice() };
   for (let y = 0; y < im.h; y++) for (let x = 0; x < im.w; x++) if (y <= brim[x]) o.data.fill(0, (y * im.w + x) * 4, (y * im.w + x) * 4 + 4);
   return o;
@@ -260,6 +269,10 @@ export async function selfTest() {
   const f4 = { w: 4, h: 4, x: 2, y: 4 }, t4 = tuck(hair4, f4, [[helm4, f4]]), op = (im: Img) => im.data.filter((_, i) => i % 4 === 3 && _).length;
   console.assert(op(t4) === 8 && t4.data[(2 * 4) * 4 + 3] === 255 && !t4.data[3] && op(tuck(t4, f4, [[helm4, f4]])) === 8, 'tuck: drops px at/above the brim, keeps what hangs below, idempotent');
   console.assert(op(tuck(hair4, f4, [[helm4, { ...f4, y: 3 }]])) === 4 && tuck(hair4, f4, [[null, f4]]) === hair4, 'tuck: covers align by pivot; no cover = untouched');
+  const hair6 = makeImg(6, 4); hair6.data.fill(255);
+  const horns = makeImg(6, 4); for (const q of [0, 6, 12, 5]) horns.data.set([9, 9, 9, 255], q * 4); // a tall left horn, a short right one, a gap
+  const f6 = { w: 6, h: 4, x: 3, y: 4 }, fh = { ...f6, x: 6 - f6.x };
+  console.assert(flipH(tuck(hair6, f6, [[horns, f6]])).data.join() === tuck(flipH(hair6), fh, [[flipH(horns), fh]]).data.join(), 'tuck commutes with a mirrored view (interior gap)');
   const tm = { slots: [{ id: 'hair', z: 110 }, { id: 'head', z: 130, clips: ['hair'] }], items: [{ id: 'h', slot: 'hair' }, { id: 'k', slot: 'head' }, { id: 'h~k', slot: 'hair', variantOf: 'h', under: 'k' }] } as unknown as Manifest;
   console.assert(shownItems(tm, [tm.items[0], tm.items[1]]).map((i) => i.id).join() === 'h~k,k' && shownItems(tm, [tm.items[0]])[0].id === 'h', 'tuck: the baked variant replaces its item only under its cover');
   const clip = makeImg(2, 2); over(clip, big, -1, -1);
