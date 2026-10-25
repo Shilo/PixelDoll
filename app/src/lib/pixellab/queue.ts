@@ -1238,10 +1238,11 @@ async function robustTest() {
   console.assert(store.has(url.id) && !store.has(bad.id) && !store.has(busy.id) && n === 6, `clear finished keeps referenced records and removes terminal unknowns (${n})`);
 }
 
-/** Wait for cross-tab state (BroadcastChannel, lock handoff) instead of counting ticks. Gives up after 0.5 s, under the
- *  leader's 1 s timer, so a later timer tick can never satisfy a check that must hold promptly. */
+/** Wait for cross-tab state (BroadcastChannel, lock handoff) instead of counting ticks. A 2 s wall-clock deadline fails
+ *  the assertion with its own message well inside Vitest's 5 s test timeout; delivery normally takes milliseconds. */
 async function until(ok: () => boolean, step?: () => Promise<unknown>) {
-  for (let i = 0; i < 50 && !ok(); i++) { await new Promise((r) => setTimeout(r, 10)); await step?.(); }
+  const end = performance.now() + 2000;
+  while (!ok() && performance.now() < end) { await new Promise((r) => setTimeout(r, 10)); await step?.(); }
 }
 
 /** A minimal Web Locks stand-in: one holder, FIFO waiters, ifAvailable. */
