@@ -123,8 +123,9 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   See [round 4](docs/research/generation-quality-round4-2026-10-25.md).
 - D25 (2026-10-25, measured round 5, Lexingel's paper-doll research): small accessories keep 2–3 px parts and may leave a view
   empty that hides them (review, not re-roll); G2 ignores detached body effects; text moves that turn side-on get a review
-  note; body animations describe the prompt's own clothes; one pose price. Per-frame z-order, per-item mirror flags, ground
-  shifts and a render route are not adopted. The bare-base default awaits the owner. See
+  note; body animations describe the prompt's own clothes; one pose price; new bases are fully bare (owner: "with plain bare
+  skin everywhere, nothing worn", the shortest wording that drew no garment on men over four seeds). Per-frame z-order, per-item
+  mirror flags, ground shifts and a render route are not adopted. See
   [round 5](docs/research/lexingel-paperdoll-findings-round5-2026-10-25.md).
 - D20 (2026-10-25, user): the version is automatic and never bumped by hand: the number of non-merge commits that changed what
   ships (app/ or its workflow), written major.minor.patch with patch 0-99 and minor 0-9 (1234 = 1.2.34), shown with the

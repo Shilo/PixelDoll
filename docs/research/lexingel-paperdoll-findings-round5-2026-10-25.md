@@ -1,7 +1,7 @@
 # Lexingel's paper-doll research vs PixelDoll, with round 5 tests (2026-10-25)
 
-Status: **done**, except one owner decision (the bare base default, below). About 245 generations of the approved 1,000:
-two bare Studio bodies (about 35 each) plus 172.8 in the harness (T 38, F 20.8, U 114), ledger `spikes/api/out/c25e/`;
+Status: **done**. About 610 generations of the approved 1,000 (balance 5,301 → 4,698 over the round): five bare Studio
+bodies (about 35 each) plus 426.8 in the harness (T 38, F 20.8, U 228, W 140), ledger `spikes/api/out/c25e/`;
 harness `spikes/api/c25/arm_r5.mts`, `eval_r5.mts`. Rules were fixed before each paid run (header of `arm_r5.mts`).
 
 ## Inputs and method
@@ -43,12 +43,13 @@ already fail G9; clean walks stay at 38° or less.
 |---|---|---|---|
 | T | Do small accessories survive? Small gold hoop earrings and round wire glasses (`face_acc`), body A, seed 7 | Real parts of 2–3 px: the glasses' side lens is 2 px, the earrings seen from behind two 3 px hoops. The old 4 px posed floor dropped them all (16 and 12 px). The glasses' back view is legitimately empty. H4 scored the steady earrings 0.00 (despeck) then 0.47–0.58 (a 1 px drift halves a 3 px part); G5 read a 1–2 px wobble as CV 0.19. The earrings' front view was a real dress miss, popping in on 2 of 8 frames | Fixed (below); after the fixes the glasses pass with one review note and the earrings fail only on their real defects |
 | F | Does a shoulder-width test catch turned text moves? `estimate-skeleton` on all 208 stored south/north S4 text-move frames | Walk, idle, run and hurt (16 clips): ≥ 0.85 of the standing width. Turned slashes: 0.06–0.44, a north one flips sign. Death falls (0.01) | Review note below 0.5, authored presets skipped |
-| U | Does a bare-chested base work? Two Studio bodies, "a human man" / "a human woman" + "wearing only plain dark gray underwear" (64 px, Top-down 4, seed 26); tunic, sleeveless vest and open cloak on both | No refusal on any call. All 6 items pass every gate; necklines, armholes and open fronts show skin. The woman came out topless in briefs (stylized, no explicit detail). Both bodies drew 10–18 px of smoke beside the head on idle east 1–3, and **every item failed G2 there** until the G2 fix | Default **not switched**: needs the owner (below). The G2 fix ships |
+| U | Does a bare base work? Two Studio bodies, "a human man" / "a human woman" + "wearing only plain dark gray underwear" (64 px, Top-down 4, seed 26), then two fully bare ones (arm W wording, Light tan, seed 27); tunic, sleeveless vest and open cloak on all four | No refusal on any call. All 12 items pass every gate; necklines, armholes and open fronts show skin. "Underwear" drew the woman topless in briefs. The first two bodies drew 10–18 px of smoke beside the head on idle east 1–3, and **every item failed G2 there** until the G2 fix | Fully bare default ships (below); the G2 fix ships |
 
 Sheets: `spikes/api/out/c25e/T/*.sheet.png`, `out/c25e/U/*.sheet.png` (git-ignored).
 
 ## Changes
 
+- **Fully bare base by default** (`BASE_CLOTHES` = "with plain bare skin everywhere, nothing worn"): see below.
 - **Body animation text follows the prompt's clothes** (`studio/model.ts`, `create.ts`): every body animation said "t-shirt
   and shorts" even when the prompt dressed the base otherwise. One `BASE_CLOTHES` constant; prompts without a base body line
   get no clothes appended; older saved texts keep theirs.
@@ -66,13 +67,36 @@ Sheets: `spikes/api/out/c25e/T/*.sheet.png`, `out/c25e/U/*.sheet.png` (git-ignor
 - Docs: the mirroring default (Top-down 8 mirrors west; architecture said otherwise), one-sided items in known issues, body
   frames keep every component.
 
-## Needs the owner: bare base by default
+## Bare base by default (owner decision: fully bare, worded to pass the filter)
 
-Evidence for: the t-shirt shows through every torso item measured; bare bodies passed every call and every gate, and items
-read as intended. Against: "underwear" draws a topless woman, and the default applies to every new character. Options: (1)
-"wearing only plain dark gray underwear" for everyone; (2) a cover for both, e.g. underwear plus a plain dark gray bandeau,
-which needs a short paid test on both bodies (~70 gens) because a top garment can show through openings again; (3) keep the
-t-shirt. The switch is one line (`BASE_CLOTHES`) since the animation text now follows it.
+The owner chose a fully bare base. Research before paying: a web survey (avoid "nude", "naked", "topless", "underwear", "briefs";
+describe a smooth mannequin-like object) and the pixellab-pip project's logs (54 of 54 create calls with "nude bare skin, no
+clothing" passed; its real failure was drawn briefs or pants; "no underwear" and "bald hairless" helped). Then arm W:
+`create-character-v3`, 64 px, 8 rotations (2 gens each), "a human man" / "a human woman" + the production base body line with
+only the clothes clause changed, `template_id: mannequin`. Judged by eye on the back, front and three-quarter views: a fail is any
+garment, hair or explicit detail.
+
+| Clause | Seeds | Men with a garment | Women with a garment or hair |
+|---|---|---|---|
+| with bare skin, no clothes, no underwear | 26 | 1 / 1 (briefs) | 0 / 1 |
+| with a smooth unclothed body like a featureless store mannequin, one even skin tone, no underwear | 26 | 1 / 1 (briefs) | 0 / 1 (jointed legs) |
+| with bare skin, no clothes, no underwear, smooth featureless non-explicit anatomy | 26 | 1 / 1 | 1 / 1 (red hair) |
+| with bare skin, no clothes, no underwear, no tattoos | 26–27 | 2 / 2 | 1 / 2 (red spot on the head) |
+| with a smooth unclothed doll body, plain skin, no underwear, no tattoos | 26–27 | 1 / 2 | 0 / 2 |
+| with plain bare skin everywhere, nothing worn, no underwear, no tattoos or markings | 26–29 | 0 / 4 | 0 / 4 |
+| … without "no tattoos or markings" | 26–29 | 0 / 4 | 0 / 4 |
+| … also without "no underwear" (**shipped**: "with plain bare skin everywhere, nothing worn") | 26–29 | 0 / 4 | 0 / 4 |
+| … also without "nothing worn" ("with plain bare skin everywhere") | 26–29 | 2 / 4 (briefs, loincloth) | 0 / 4 |
+| "with plain bare skin, nothing worn, no underwear" (without "everywhere") | 26–29 | 2 / 4 | 0 / 4 |
+| "with plain bare skin, nothing worn" | 26–29 | 1 / 4 | 0 / 4 |
+| "nothing worn" | 26–29 | 1 / 4 (loincloth) | 0 / 4 |
+
+No call was refused (92 gens). Men are the hard case; "everywhere" and "nothing worn" are both needed, "no underwear" and "no
+tattoos or markings" add nothing measurable. Every clause shares per-seed defects, which are seed effects, not wording: seed 26 men
+draw tattoo-like blotches, seed 27 often turns the skin stone gray (no Skin trait set), seed 29 men drew a background scene, seed
+28 women came out chunky and blotchy. Full Studio bodies (man and woman, Light tan, seed 27, Top-down 4) with the longer clause
+animated cleanly; the tunic, sleeveless vest and open cloak passed every gate on both and read as worn on bare skin. A man with the
+shipped clause (seed 26, the seed whose men drew briefs with most clauses) stayed bare in every idle and walk frame.
 
 ## Accepted limits
 
@@ -81,6 +105,7 @@ t-shirt. The switch is one line (`BASE_CLOTHES`) since the animation text now fo
 - A creation in flight across this update, with an exact prompt that has no base body line or uses the older "grey" text,
   re-pays its body renders on resume (the request text changed).
 - A hidden view still pays its pose call (empty frames).
+- A bare base can still come out with tattoo-like blotches, gray skin or a background on some seeds; re-roll the character.
 - A small item worn only at the back (a hair clip) has no hidden front view: an empty front view fails and re-rolls.
 - 9–12-frame pose calls were measured at 3 gens only on 64–96 px canvases; at 160 px only 8 frames (3 gens).
 
