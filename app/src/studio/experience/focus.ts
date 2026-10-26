@@ -34,7 +34,8 @@ export function popoverFocus(event: ToggleEvent & {currentTarget:EventTarget & H
     place()
     placements.set(menu, place)
     window.addEventListener('resize', place)
-    menu.querySelector<HTMLElement>('button,[href],input')?.focus()
+    // Hidden (phone-only) and disabled rows ignore focus(), so move on to the first row that takes it.
+    for (const row of menu.querySelectorAll<HTMLElement>('button,[href],input')) { row.focus(); if (document.activeElement === row) break }
   } else {
     placements.delete(menu)
     // Do not steal focus from a control/world the user clicked to dismiss it.
