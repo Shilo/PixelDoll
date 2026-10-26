@@ -51,7 +51,7 @@
   const wearing = $derived(m ? m.items.filter((it) => it.id !== m.rig.baseItem && doc.items[it.slot] === it.id).map((it) => it.name) : [])
   const name = (d: DirectionName) => d[0].toUpperCase() + d.slice(1)
   const label = (d: DirectionName) => `${store.projects.find((p) => p.id === doc.id)?.name.replace(/ \(demo\)$/, '') ?? m?.name ?? 'Character'}, ${ui.anim.replace(/-/g, ' ')}, facing ${d}${wearing.length ? `, wearing ${wearing.join(', ')}` : ''}`
-  const cellImg = (d: DirectionName) => (view.project && view.anim ? composeCell(view.project, doc.items, ui.anim, d, view.cell, frame) : null)
+  const cellImg = (d: DirectionName) => (view.project && view.anim ? composeCell(view.project, view.items, ui.anim, d, view.cell, frame) : null)
 </script>
 
 <div class="stage" bind:this={box}>

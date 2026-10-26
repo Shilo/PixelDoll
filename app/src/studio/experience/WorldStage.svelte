@@ -4,16 +4,17 @@
   import { experience, characters, setMode } from './state.svelte.ts'
   import type { Ground, RenderOptions } from './ground.ts'
   import { MOTION, REFLECTION, WORLDS } from './config.ts'
+  import { LoaderCircle } from '../icons.ts'
   import { paintedFrame, actorScale } from './bounds.ts'
   import { buildPresentation, resolvePreview, resolveLive, renderPresentation, advancePlayback, type Presentation } from './presentation.ts'
   import { keyboardVector, pointerVector, nearestDirection, integrateMovement, MOVEMENT_KEYS, type Vector } from './movement.ts'
   let host: HTMLDivElement, canvas: HTMLCanvasElement, floor: HTMLCanvasElement, sky: HTMLCanvasElement
-  let note = $state(''), rendererWarning = $state('')
+  let note = $state(''), loadingNote = $state(''), rendererWarning = $state('')
   let stick = $state<{id:number;x:number;y:number;dx:number;dy:number}|null>(null)
   const secondaryTouches = new Map<number,{button:HTMLButtonElement;x:number;y:number}>()
   let consumedTouch:{x:number;y:number;until:number}|null=null
   const availability = $derived.by(() => { void doc.rev; return view.project ? buildPresentation(view.project,{loading:doc.loading,sourceProject:store.project??undefined,variants:doc.variants}) : null })
-  const fitFrame = $derived.by(() => { void doc.rev; return view.project ? paintedFrame(view.project,doc.items) : null })
+  const fitFrame = $derived.by(() => { void doc.rev; return view.project ? paintedFrame(view.project,view.items) : null })
   const keys = new Set<string>()
   let position:Vector={x:0,y:0}, camera:Vector={x:0,y:0}, previous:Presentation|undefined
   let hasMoved=false
@@ -117,8 +118,8 @@
         experience.presentation=p.kind
         if(live)clock=advancePlayback(p,clock,dt)
         const cell=live?clock?.cell:p.kind==='animation'?view.cell:p.cell
-        const nextKey=JSON.stringify([p.kind,p.clip,p.direction,cell,doc.items,doc.rev])
-        if(lastProject!==a||nextKey!==renderKey){imageCache=renderPresentation(a,doc.items,p,cell);renderKey=nextKey;lastProject=a
+        const nextKey=JSON.stringify([p.kind,p.clip,p.direction,cell,view.items,doc.rev])
+        if(lastProject!==a||nextKey!==renderKey){imageCache=renderPresentation(a,view.items,p,cell);renderKey=nextKey;lastProject=a
           if(imageCache.image){source.width=imageCache.image.w;source.height=imageCache.image.h;sg.putImageData(new ImageData(new Uint8ClampedArray(imageCache.image.data),source.width,source.height),0,0)
             reflected.width=source.width;reflected.height=source.height;rg.drawImage(source,0,0)
             rg.globalCompositeOperation='destination-in';const fade=rg.createLinearGradient(0,0,0,imageCache.frame.y);fade.addColorStop(0,'transparent');fade.addColorStop(.3,'transparent');fade.addColorStop(1,'black');rg.fillStyle=fade;rg.fillRect(0,0,source.width,source.height);rg.globalCompositeOperation='source-over'
@@ -126,6 +127,7 @@
         }
         const result=imageCache, img=result?.image
         note=[p.issue,result?.hiddenItems.length?`${result.hiddenItems.length} equipped item${result.hiddenItems.length===1?'':'s'} hidden for this view`:''].filter(Boolean).join(' · ')
+        loadingNote=result?.loading??''
         if((velocity.x||velocity.y)&&!hasMoved){hasMoved=true;hint=false}
         if(live&&hasMoved){const issues=[[p.issueKey,p.issue],[result?.issueKey,result?.issue]];for(const [id,text] of issues)if(id&&text&&!noticed.has(id)){noticed.add(id);toast(text)}}
         if(img&&result){
@@ -163,5 +165,5 @@
   {#if doc.loading}<span class="world-loading">Loading character…</span>{/if}
 </div>
 <!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to. -->
-{#if hint||note||rendererWarning}<div class="world-notes">{#if hint}<p class="world-hint">{matchMedia('(pointer:coarse)').matches?'Drag in the world to move':experience.mode==='side'?'Focus world · A/D or ←/→ to move':'Focus world · WASD or arrow keys to move'}</p>{/if}{#if note||rendererWarning}<p class="world-coverage">{[rendererWarning,note].filter(Boolean).join(' · ')}</p>{/if}</div>{/if}
+{#if hint||note||loadingNote||rendererWarning}<div class="world-notes">{#if hint}<p class="world-hint">{matchMedia('(pointer:coarse)').matches?'Drag in the world to move':experience.mode==='side'?'Focus world · A/D or ←/→ to move':'Focus world · WASD or arrow keys to move'}</p>{/if}{#if loadingNote}<p class="world-coverage world-loading-items" role="status"><LoaderCircle size={14} class="spin" aria-hidden="true"/>{loadingNote}</p>{/if}{#if note||rendererWarning}<p class="world-coverage">{[rendererWarning,note].filter(Boolean).join(' · ')}</p>{/if}</div>{/if}
 {#if stick}<div class="world-stick" style:left="{stick.x}px" style:top="{stick.y}px" aria-hidden="true"><span style:transform="translate({Math.max(-40,Math.min(40,stick.dx))}px,{Math.max(-40,Math.min(40,stick.dy))}px)"></span></div>{/if}

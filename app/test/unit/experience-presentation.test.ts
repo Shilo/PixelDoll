@@ -254,4 +254,25 @@ describe('synchronized production equipment', () => {
     expect(dressed.image?.data[(1 * 4 + 3) * 4]).toBe(123);
     expect(bare.image?.data[(1 * 4 + 3) * 4]).toBe(0);
   });
+
+  test('a worn draft still generating a view shows as loading, never as a hidden or transparent item', () => {
+    const project = fixture(['south', 'east', 'west'], ['walk']);
+    project.manifest.rig.directions = [{ id: 'south' }, { id: 'east' }, { id: 'west', mirrorOf: 'east' }];
+    // the draft's preview: south landed, east (and so the mirrored west) still on its way, its entries null
+    project.manifest.items.push({ id: 'sword', name: 'Sword', slot: 'head', prompt: '', baseHash: bodyHash, status: 'draft', mirror: 'flip', materials: [], provenance: [],
+      layers: [{ id: 'main', role: 'fg', z: 2, cells: { walk: { south: [gearHash, gearHash], east: [null, null] } } }],
+      coverage: ['walk/south/0', 'walk/south/1'], pending: ['walk/east/0', 'walk/east/1'] });
+    const a = buildPresentation(project), at = (direction: DirectionName) => renderPresentation(a, { head: 'sword' }, resolvePreview(a, { clip: 'walk', direction }));
+    expect(at('south')).toMatchObject({ loading: null, hiddenItems: [], issue: null });
+    expect(at('south').image?.data[4]).toBe(90);
+    for (const direction of ['east', 'west'] as const) {
+      expect(at(direction)).toMatchObject({ loading: 'Sword loading — East', hiddenItems: [], issue: null });
+      expect(at(direction).image?.data[4]).toBe(0);
+    }
+    // the same gap after generating stopped is missing: hidden and reported, not drawn as authored transparency
+    delete project.manifest.items.at(-1)!.pending;
+    const done = buildPresentation(project), east = renderPresentation(done, { head: 'sword' }, resolvePreview(done, { clip: 'walk', direction: 'east' }));
+    expect(east.loading).toBeNull();
+    expect(east.hiddenItems.map(item => item.id)).toEqual(['sword']);
+  });
 });

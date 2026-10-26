@@ -2,7 +2,7 @@
   // Shared customization content for the desktop rail and mobile sheet.
   import { popoverFocus } from './experience/focus.ts'
   import { GROUPS, HEALTH_LABEL, healthOf } from './model.ts'
-  import { ui, doc, store, view, gens, wear, clearSlots, genOf, genProgress, openNewItem, randomize, isDemo } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, wear, wearDraft, clearSlots, genOf, genProgress, openNewItem, randomize, isDemo } from './state.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import Thumb from './Thumb.svelte'
   import GroupIcon from './GroupIcon.svelte'
@@ -49,18 +49,21 @@
       {#if items.length || pending.length}
         <div class="tiles" role="group" aria-label="{g.id === 'Hands' ? 'Held' : g.id} items">
           {#each items as it (it.id)}
-            <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === it.id} aria-pressed={doc.items[it.slot] === it.id} onclick={() => wear(it.id)}>
+            <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === it.id} aria-pressed={doc.items[it.slot] === it.id && !doc.drafts[it.slot]} onclick={() => wear(it.id)}>
               <span class="tile-art" aria-hidden="true"><Thumb project={view.project} item={it} size={tileK} /></span><span class="tile-name">{it.name}</span>
-              {#if doc.items[it.slot] === it.id}<span class="equipped-check" aria-hidden="true"><Check size={16}/></span>{/if}
+              {#if doc.items[it.slot] === it.id && !doc.drafts[it.slot]}<span class="equipped-check" aria-hidden="true"><Check size={16}/></span>{/if}
             </button>
           {/each}
           {#each pending as x (x.draft.spec.id)}
             {@const p = genProgress(x, $queue.jobs)}
-            <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === `gen:${x.draft.spec.id}`} aria-label="{x.input.name}, {p.label}" onclick={() => (ui.selected = `gen:${x.draft.spec.id}`)}>
+            {@const on = doc.drafts[x.draft.spec.slot] === x.draft.spec.id}
+            <!-- a draft tile wears the draft like a saved item (display only, while it loads or awaits review) -->
+            <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === `gen:${x.draft.spec.id}`} aria-label="{x.input.name}, {p.label}" aria-pressed={on} onclick={() => (x.phase === 'failed' ? (ui.selected = `gen:${x.draft.spec.id}`) : wearDraft(x.draft.spec.id))}>
               <span class="tile-art none"><span class="ring" class:spin={x.phase === 'running' && !p.pct} style:--p={p.pct}></span></span><span class="tile-name">{p.short}</span>
+              {#if on}<span class="equipped-check" aria-hidden="true"><Check size={16}/></span>{/if}
             </button>
           {/each}
-          <button data-variant="outline" class="bu-action equipment-none" aria-pressed={!items.some((i) => doc.items[i.slot] === i.id)} onclick={() => clearSlots(g.slots)}><X size={18}/><span>None</span></button>
+          <button data-variant="outline" class="bu-action equipment-none" aria-pressed={!items.some((i) => doc.items[i.slot] === i.id) && !g.slots.some((s) => doc.drafts[s])} onclick={() => clearSlots(g.slots)}><X size={18}/><span>None</span></button>
         </div>
         {#if gen}
           <Lazy load={() => import('./GenCard.svelte')} sheet={false} g={gen} />

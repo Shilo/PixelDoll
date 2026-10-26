@@ -14,7 +14,7 @@
   const m = $derived(store.project?.manifest)
   const it = $derived(m?.items.find((i) => i.id === id))
   const ladder = $derived(SLOTS.find((s) => s.id === it?.slot)?.zOverrides ?? [])
-  const on = $derived(!!it && doc.items[it.slot] === it.id)
+  const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot])
   const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false)
   const health = $derived(m && it ? healthOf(m, it) : 'demo')
   const routeNames = { 'skeleton-pose': 'Skeleton posing', 'inpaint-grid': 'Inpainted grid', 'ea2-anchor': 'Anchored frame edits', diff: 'Difference extraction' }

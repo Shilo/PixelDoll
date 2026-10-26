@@ -792,7 +792,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
   let clipPx = 0, minKept = 1, maxOut = 0, splitExact = true;
   for (const c of cells) {
     if (c.shifted) flag(c.call, `G10 ${c.key}: misregistered (fits the base better 1 px off)`);
-    // B14: a repaired frame (S5 frame-0 repair) is the designed fix, recorded in cells[].repaired, not a review warning
+    // a repaired frame (S5 frame-0 repair) is recorded in cells[].repaired; its clip also warns (R1 below)
     cellsQa[c.key as CellKey] = { route: route === 'none' ? 'diff' : c.posed ? 'posed' : 'ea2', provenance: c.call, area: c.area, ...(c.repaired ? { repaired: true } : {}), ...(c.offset[0] || c.offset[1] ? { offset: c.offset } : {}), ...(c.keyKept != null ? { keyKept: +c.keyKept.toFixed(3) } : {}) };
     if (g2Fails(c)) flag(c.call, `G2 ${c.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`);
     if (c.keyOutside != null && c.keyOutside > keyOutsideMax) flag(c.call, `G3 ${c.key} key outside ${c.keyOutside.toFixed(3)}`);
@@ -835,6 +835,10 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, 2 * baseCv);
     const wrist = slot.class === 'held' && cs.every((c) => c.posed) ? slot.anchor === 'hand_l' ? hl : hr : undefined;
     const minRatio = med ? Math.min(...areas) / med : 0;
+    // R1: the S5 repair pastes the dressed keyframe on near-rest frames. Free and allowed, but the pasted item stands still
+    // there (round 10: a static weapon over idle), so review says so; the pixels are unchanged.
+    const pasted = cs.filter((c) => c.repaired).length;
+    if (pasted) warnings.push(`R1 ${clip}: dressed item pasted on ${pasted} near-rest ${pasted === 1 ? 'frame' : 'frames'}; check that it moves`);
     // a hidden view (hiddenViews) must stay empty: px in some of its frames are an item popping in, not a hidden one
     if (!med) (hidden.has(d) && !areas.some(Boolean) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) && !areas.some(Boolean) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
@@ -1057,6 +1061,9 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
 /** Accepted item: layers (main, or fg + bg for slots with bgZ) with cell hashes for every selected anim × generated dir. */
 export async function buildItem(o: {
   spec: ItemSpec; rig: Rig; cells: CellOut[]; route: Route; provenance: Provenance[]; qa: ItemQa; anchorCell?: string; dressed?: Partial<Record<DirectionName, Img>>; pad?: number;
+  /** Previews only: target cells still generating. The preview then lists its landed cells as coverage, so a pending or missing
+   *  cell is never read as authored transparency (its layer entry stays null). Saved items never pass it. */
+  pending?: CellKey[];
 }): Promise<{ item: Item; images: Map<Sha256, Img> }> {
   const { spec, rig, cells } = o, slot = slotOf(spec.slot), images = new Map<Sha256, Img>(), p = o.pad ?? 0;
   // v1.3.1 oversize layer (S5 held): own cell + pivot, aligned to the base by pivot
@@ -1070,13 +1077,14 @@ export async function buildItem(o: {
   const layers: Layer[] = slot.bgZ != null
     ? [{ id: 'fg', role: 'fg', z: slot.z, cells: {}, ...size }, { id: 'bg', role: 'bg', z: slot.bgZ, cells: {}, ...size }]
     : [{ id: 'main', role: 'fg', z: slot.z, cells: {}, ...size }];
-  const byKey = new Map(cells.map((c) => [c.key, c])), baseCut: NonNullable<Item['baseCut']> = {};
+  const byKey = new Map(cells.map((c) => [c.key, c])), baseCut: NonNullable<Item['baseCut']> = {}, covered: CellKey[] = [];
   for (const a of spec.anims) {
     const n = rig.animations.find((x) => x.id === a)!.cells;
     for (const l of layers) l.cells![a] = {};
     for (const d of spec.clipDirs?.[a] ?? spec.dirs)
       for (let i = 0; i < n; i++) {
         const c = byKey.get(cellKey(a, d, i));
+        if (c) covered.push(cellKey(a, d, i) as CellKey);
         const parts = !c ? [null, null] : slot.bgZ != null ? (({ fg, bg }) => [fg, bg])(splitFgBg(c.layer, c.base)) : [c.layer];
         for (const [j, l] of layers.entries()) ((l.cells![a]![d] ??= Array(n).fill(null)) as (Sha256 | null)[])[i] = parts[j] ? await put(parts[j]!) : null;
         if (c?.cut) ((baseCut[a] ??= {})[d] ??= Array(n).fill(null))[i] = [...c.cut.keys()].filter((p) => c.cut![p]);
@@ -1088,6 +1096,7 @@ export async function buildItem(o: {
     extractor: o.route === 'none' ? 'diff' : 'chroma', ...(o.route !== 'none' ? { key: o.route } : {}),
     ...(o.anchorCell && spec.method !== 'skel' ? { anchorCell: o.anchorCell as CellKey } : {}), provenance: o.provenance, qa: o.qa,
     ...(Object.keys(baseCut).length ? { baseCut } : {}),
+    ...(o.pending ? { coverage: covered, ...(o.pending.length ? { pending: o.pending } : {}) } : {}),
   };
   if (o.dressed) {
     item.dressed = {};

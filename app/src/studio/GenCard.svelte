@@ -1,14 +1,15 @@
 <script lang="ts">
-  // A generating item: progress from the ledger, then the review (auto-finish with accept / try again at the end, PLAN D7).
+  // A generating item: progress from the ledger and its landed frames, then an optional review (round 10: a clean draft saves
+  // itself; Keep it / Try again / Discard stay available for the rest). Wear shows the draft on the character meanwhile.
   import { bakedFrame, composeCell } from '../lib/compose/compose.ts'
   import { queue } from '../lib/pixellab/queue.ts'
-  import { failsOf, gensOf, usdOf, hasStructuralFailure } from '../lib/items/run.ts'
+  import { failsOf, gensOf, usdOf, hasStructuralFailure, isClean } from '../lib/items/run.ts'
   import { loadProject } from '../lib/store/project.ts'
   import { itemRoute } from './itemRoute.ts'
   import Sprite from './Sprite.svelte'
   import { groupOf, plainReason } from './model.ts'
-  import { ui, store, genProgress, acceptGen, discardGen, retryGen, type Gen } from './state.svelte.ts'
-  import { CircleAlert, CircleCheck, ChevronRight, TriangleAlert } from './icons.ts'
+  import { ui, doc, store, genProgress, acceptGen, discardGen, retryGen, wearDraft, type Gen } from './state.svelte.ts'
+  import { CircleAlert, CircleCheck, ChevronRight, LoaderCircle, TriangleAlert } from './icons.ts'
   import { app } from '../lib/app.svelte.ts'
   import { default as ApiPeek } from './ApiPeek.svelte'
   import { draftPlan, draftQueueIds } from './apiPlans.ts'
@@ -26,7 +27,10 @@
   const frame = $derived(prev ? bakedFrame(prev.manifest) : undefined) // a 96 px held item shows whole
   const reasons = $derived(res ? [...new Set(g.draft.calls.flatMap((_, i) => failsOf(res, i)).map(plainReason))] : [])
   const warns = $derived(res?.qa?.warnings.map(plainReason) ?? [])
-  const clean = $derived(res?.qa?.qa.status === 'pass' && res.g1.size === 0 && res.qa.failCalls.size === 0 && res.qa.warnings.length === 0)
+  const clean = $derived(!!res && isClean(res))
+  const worn = $derived(doc.drafts[g.draft.spec.slot] === g.draft.spec.id)
+  // views whose frames are still generating (the preview item lists them as pending)
+  const loadingDirs = $derived(g.phase === 'running' && anim ? new Set(prev?.manifest.items.find((i) => i.id === g.draft.spec.id)?.pending?.filter((k) => k.startsWith(`${anim.id}/`)).map((k) => k.split('/')[1])) : new Set<string>())
   let retryGens = $state<number | null>(null)
   let retryEstimateError = $state('')
   $effect(() => {
@@ -69,13 +73,17 @@
     </div>
   {/if}
 
+  {#if g.draft.rigId === doc.id && g.phase !== 'failed'}
+    <button class="bu-action btn" data-variant="outline" aria-pressed={worn} onclick={() => wearDraft(g.draft.spec.id)}>{worn ? 'Take off' : 'Wear'}</button>
+  {/if}
+
   {#if prev && anim}
     <label class="field"><span class="label small">Preview move</span><select class="bu-input input" value={anim.id} onchange={(e) => { ui.anim = e.currentTarget.value; ui.frame = 0 }}>{#each anims as a (a.id)}<option value={a.id}>{a.id[0].toUpperCase() + a.id.slice(1).replace(/-/g, ' ')}</option>{/each}</select></label>
     <div class="review-grid" aria-label="Preview in every direction">
       {#each dirs as d (d.id)}
         <figure>
           <Sprite img={composeCell(prev, outfit, anim.id, d.id, anim.frames[ui.frame % anim.frames.length].cell, frame)} {k} w={frame?.w} h={frame?.h} checker label="{g.input.name} facing {d.id}" />
-          {d.id[0].toUpperCase() + d.id.slice(1)}
+          <span class="dir-caption">{#if loadingDirs.has(d.mirrorOf ?? d.id)}<LoaderCircle size={12} class="spin" aria-label="loading" />{/if}{d.id[0].toUpperCase() + d.id.slice(1)}</span>
         </figure>
       {/each}
     </div>

@@ -525,6 +525,11 @@ export class Queue {
     this.capacityCheckedAt = this.deps.now();
     this.emit();
   }
+  /** Why the account's known plan can never run this request (null when it can, or while the plan is unknown). Optional
+   *  fallbacks check it before enqueueing, since the queue holds restricted work until the plan changes. */
+  planBlocks(req: Req, minimumTier = 0): string | null {
+    return planRestriction(this.accountBalance, { method: req.method, endpoint: req.path, params: req.body ?? null, minimumTier });
+  }
 
   private activeSlots() {
     return [...this.recs.values()].reduce((n, r) => n + (r.state === 'submitting' ? requestedSlots(r.endpoint, r.params)
