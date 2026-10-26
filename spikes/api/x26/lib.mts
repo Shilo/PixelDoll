@@ -3,7 +3,7 @@
 // Run from spikes/api: node --env-file=<repo root>/.env x26/<step>.mts
 import fs from 'node:fs';
 import path from 'node:path';
-process.env.C25_RUN = 'x26';
+process.env.C25_RUN ??= 'x26';
 process.env.C25_CAP ??= '110';
 const lib = await import('../c25/lib.mts');
 export const { api, b64, save, load, items, chroma, routes, clips, OUT, spent, TOTAL_CAP } = lib;
