@@ -29,7 +29,7 @@ test('omitted policy preserves legacy four/eight direction planning and prices',
   for (const n of [4, 8] as const) expect(estimate(n)).toEqual(estimate(n, 'mirrored'))
 })
 
-test.each([[4, 46.25, 75.45, 15], [8, 90.25, 148.65, 27]] as const)('independent %i view costs include all original directions, retries and rest fallback', (n, gens, maxGens, minutes) => {
+test.each([[4, 2.25, 2.65, 5], [8, 2.25, 3.05, 5]] as const)('independent %i view costs include the draw, re-import and rest fallback of every original direction', (n, gens, maxGens, minutes) => {
   expect(genDirsOf(n, 'independent')).toEqual(n === 8 ? DIRECTIONS : ['south', 'east', 'north', 'west'])
   expect(estimate(n, 'independent')).toEqual({ gens, maxGens, minutes })
   const spec = { ...options, dirs: n, directionPolicy: 'independent' as const }

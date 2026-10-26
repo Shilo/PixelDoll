@@ -3,10 +3,15 @@
   import Sprite from './Sprite.svelte'
   import { makeImg, type Img } from '../lib/image/png.ts'
   import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts'
+  import Lazy from './Lazy.svelte'
   import { ChevronRight, Plus } from './icons.ts'
   const m = $derived(store.project?.manifest)
   const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
   const k = $derived(Math.max(1, Math.floor(ui.dpr)))
+  const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done)
+  const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id))
+  // Created characters start with Default only; the one-tap offer (and its pipeline code) loads only while idle or walk is missing.
+  const baseMissing = $derived(!!m && ['idle', 'walk'].some((id) => !m!.rig.animations.some((a) => a.id === id)))
   // fixed 56 px window (bottom-centered, no per-frame jitter) so the thumbnail is shown 1:1 instead of shrunk
   const win = (im: Img) => {
     if (im.w < 56 || im.h < 56 || im.w > 64 || im.h > 64) return im
@@ -43,9 +48,13 @@
         </dl>
       </div>
     </details>
-    {#if moving.spec && moving.projectId === doc.id && !moving.done}
+    {#if mine && moving.spec}
       <button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
     {/if}
+    {#each queued as q, i (i)}
+      <button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}><span class="ring" aria-hidden="true"></span><span class="move-text"><b>{nice(q.spec.id)}</b><span class="muted small">{moving.error ? 'Waiting for the failed move' : 'Queued'}</span></span></button>
+    {/each}
+    {#if !isDemo() && baseMissing}<Lazy load={() => import('./BaseMoves.svelte')} sheet={false} projectId={doc.id} manifest={m} />{/if}
     {#if !isDemo()}<button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = 'move')}><Plus size={16} />Add a move</button>{/if}
   {/if}
 </div>

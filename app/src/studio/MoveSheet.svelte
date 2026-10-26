@@ -12,8 +12,9 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
+  import { DEFAULT_MOVE } from '../lib/rig/rig.ts'
   import { MOVE_STEPS, isV13, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
-  import { ui, doc, store, isDemo, moving, settingUp, startMove, matchMoveBodyColors, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
+  import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
   import { bodyQualityNote } from './model.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
@@ -22,7 +23,8 @@
   $effect(() => { if (!isDemo()) void db.get<StoredProject>('projects', doc.id).then((r) => (rec = r ?? null)) })
   const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null))
   const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []))
-  const options = $derived([...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])])
+  // Default is the standing views themselves: nothing to generate or replace.
+  const options = $derived([...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])].filter((a) => a !== DEFAULT_MOVE))
   const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined
   let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '')
   let text = $state(draft?.text ?? '')
@@ -82,7 +84,7 @@
     const projectId = doc.id
     const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1' as const, seed: 1 + Math.floor(Math.random() * 1_000_000), ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) }
     formDrafts.move = { projectId, action, text, skip: $state.snapshot(skip), dirs: [...selectedDirs], poseStyle: 'visible-side-v1' }
-    withKey(() => { formDrafts.move = undefined; void startMove(projectId, spec); ui.sheet = 'move' }, true)
+    withKey(() => { formDrafts.move = undefined; void queueMoves(projectId, [spec]); ui.sheet = 'move' }, true)
   }
   function chooseAction(next: string) {
     action = next; text = ''
@@ -124,6 +126,7 @@
         {/each}
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
+      {#if moving.queued.length}<p class="muted small">Queued next: {moving.queued.map((q) => nice(q.spec.id)).join(', ')}{moving.error ? '. Try again continues with them; Start over drops them.' : ''}</p>{/if}
       {#if recovery}
         <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint {recovery.checks === 1 ? 'check' : 'checks'} · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>
       {/if}

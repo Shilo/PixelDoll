@@ -49,6 +49,9 @@ export interface Rig {
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 
+/** The move every created character starts with: one standing frame per direction. Not `rest`, which names the item
+ * pipeline's pseudo cells (items.ts restKey) and imported standing clips. */
+export const DEFAULT_MOVE = 'default';
 export const cellKey = (anim: string, dir: DirectionName, cell: number) => `${anim}/${dir}/${cell}`;
 export const defaultMs = (anim: string) => (anim.includes('idle') ? 150 : 100);
 export const playlist = (cells: number, ms: number) => Array.from({ length: cells }, (_, cell) => ({ cell, ms }));

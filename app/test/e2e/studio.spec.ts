@@ -163,9 +163,10 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   assert.equal(await page.getByRole('button', { name: 'Top-down 8', exact: true }).getAttribute('aria-pressed'), 'true')
   assert.equal(await page.getByRole('spinbutton', { name: 'Body size', exact: true }).inputValue(), '64')
   await page.getByRole('button', { name: 'Top-down 4', exact: true }).click()
-  assert.notEqual(await cost(), eight)
+  assert.equal(await cost(), eight) // creation draws every view once and animates none: directions do not change its price
   await page.getByRole('button', { name: '96', exact: true }).click()
   assert.equal(await page.getByRole('spinbutton', { name: 'Frame size', exact: true }).inputValue(), '128')
+  assert.notEqual(await cost(), eight) // the draw is priced by body size
   await page.keyboard.press('Escape')
   await page.waitForFunction(() => !document.querySelector('dialog[open]'))
   step('Create: visible size and direction controls update frame and full generation cost')
@@ -992,7 +993,7 @@ test('long item and outfit names leave wardrobe controls inside the desktop side
 })
 
 
-test('interrupted character specifications retain their own direction policy and estimates', async ({ page, context }, info) => {
+test('interrupted character specifications retain their own estimates', async ({ page, context }, info) => {
   const calls: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { calls.push(r.request().method()); return r.abort() })
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
@@ -1011,17 +1012,23 @@ test('interrupted character specifications retain their own direction policy and
     s.ui.sheet = 'create'
   })
   const create = page.getByRole('dialog', { name: 'New character', exact: true })
-  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('35–60 gens')
+  // Creation is priced by the draw (body size) plus a standing-joint fallback per direction; it makes no animation.
+  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens')
   await page.evaluate(() => {
     const s = (window as unknown as { __studio: { creating: { spec: { dirs: number } } } }).__studio
     s.creating.spec.dirs = 8
   })
-  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('57–95 gens')
+  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens')
   await page.evaluate(() => {
     const s = (window as unknown as { __studio: { creating: { spec: { directionPolicy: string } } } }).__studio
     s.creating.spec.directionPolicy = 'independent'
   })
-  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('90–150 gens')
+  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('2–5 gens')
+  await page.evaluate(() => {
+    const s = (window as unknown as { __studio: { creating: { spec: { size: number } } } }).__studio
+    s.creating.spec.size = 128 // the stored run, not the 64 px form draft, sets the price
+  })
+  await expect(create.getByRole('button', { name: /^Try again/ })).toContainText('3–5 gens')
   expect(calls).toEqual([])
 })
 

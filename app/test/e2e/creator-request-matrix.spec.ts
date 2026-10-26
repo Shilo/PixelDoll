@@ -8,8 +8,6 @@ test.use({ baseURL: `http://127.0.0.1:${process.env.DEV_PORT ?? '5298'}` })
 test.setTimeout(180_000)
 type Body = { description: string; image_size: { width: number; height: number }; view: string; seed: number; [key: string]: unknown }
 type PlanCall = { method: string; path: string; body?: { direction?: string; directions?: string[]; n_directions?: number } }
-const all = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west']
-const defaultSources = ['south', 'south-east', 'east', 'north-east', 'north']
 
 async function setup(page: Page) {
   const posted: Body[] = [], unexpected: string[] = []
@@ -61,14 +59,15 @@ async function setup(page: Page) {
   return { sheet, submit, posted }
 }
 
-async function plannedSources(page: Page, sheet: Locator, expected: string[]) {
+/** Creation plans no animation: per-direction motion and render requests belong to "Add idle + walk", whose source mapping
+ * for every facing plan is checked in test/unit/character-option-matrix.test.ts. */
+async function plannedCreation(page: Page, sheet: Locator) {
   await sheet.locator('.sheet-foot').getByRole('button', { name: 'Inspect API calls', exact: true }).click()
   const peek = page.locator('[popover][aria-label="API calls"]:popover-open')
   await peek.getByRole('button', { name: 'Copy all calls', exact: true }).click()
   const plan = JSON.parse((await page.evaluate(() => sessionStorage.getItem('matrix-copy')))!) as { format: string; calls: PlanCall[] }
   expect(plan.format).toBe('pixeldoll-calls/1')
-  expect(plan.calls.filter(call => call.path === '/animate-with-skeleton-v3').map(call => call.body?.direction)).toEqual([...expected, ...expected])
-  expect(plan.calls.filter(call => call.path === '/characters/animations').map(call => call.body?.directions)).toEqual(expected.map(direction => [direction]))
+  expect(plan.calls.filter(call => call.path === '/animate-with-skeleton-v3' || call.path === '/characters/animations' || call.path === '/estimate-skeleton')).toEqual([])
   expect(plan.calls.filter(call => call.path === '/create-character-v3')[1].body?.n_directions).toBe(8)
   await peek.getByRole('button', { name: 'Close API calls', exact: true }).click()
 }
@@ -123,48 +122,48 @@ test('every body preset, custom size, and manual/auto frame has the correct sour
   expect((await submit()).image_size).toEqual({ width: 76, height: 76 })
 })
 
-test('five direction presets keep eight-view V3 creation and plan only selected unique sources', async ({ page }) => {
+test('five direction presets keep eight-view V3 creation without planning animation', async ({ page }) => {
   const { sheet, submit } = await setup(page)
-  for (const [label, view, sources, selected, mirrors] of [
-    ['Top-down 8', 'low top-down', defaultSources, 8, 3],
-    ['Top-down 4', 'low top-down', ['south', 'east', 'north'], 4, 1],
-    ['Diagonal 4', 'high top-down', ['south-east', 'north-east'], 4, 2],
-    ['Side-scroller 2', 'side', ['east'], 2, 1],
-    ['Unique 8', 'low top-down', all, 8, 0],
+  for (const [label, view, selected, mirrors] of [
+    ['Top-down 8', 'low top-down', 8, 3],
+    ['Top-down 4', 'low top-down', 4, 1],
+    ['Diagonal 4', 'high top-down', 4, 2],
+    ['Side-scroller 2', 'side', 2, 1],
+    ['Unique 8', 'low top-down', 8, 0],
   ] as const) {
     await sheet.getByRole('button', { name: label, exact: true }).click()
     await expect(sheet.locator('.direction[aria-pressed=true]')).toHaveCount(selected)
     await expect(sheet.locator('.mirror[aria-pressed=true]')).toHaveCount(mirrors)
-    await plannedSources(page, sheet, [...sources])
+    await plannedCreation(page, sheet)
     expect((await submit()).view).toBe(view)
   }
 })
 
 // All 12,082 mirror/direction transitions are covered by the unit matrix; one mirror per side proves the controls are wired.
-test('attached mirror controls on either side plan the correct unique source', async ({ page }) => {
+test('attached mirror controls on either side keep a valid creation plan', async ({ page }) => {
   const { sheet, submit } = await setup(page)
-  for (const [button, sources] of [
-    ['W', ['south', 'south-east', 'east', 'north-east', 'north', 'west']],
-    ['E', ['south', 'south-east', 'north-east', 'north', 'west']],
-  ] as const) {
+  for (const button of ['W', 'E'] as const) {
     await sheet.getByRole('button', { name: 'Top-down 8', exact: true }).click()
     await sheet.getByRole('button', { name: `Mirror ${button}`, exact: true }).click()
-    await plannedSources(page, sheet, [...sources])
+    await expect(sheet.getByRole('button', { name: `Mirror ${button}`, exact: true })).toHaveAttribute('aria-pressed', button === 'W' ? 'false' : 'true')
+    await plannedCreation(page, sheet)
     expect((await submit()).view).toBe('low top-down')
   }
 })
 
 test('a direction can be removed and a one-facing custom plan remains valid', async ({ page }) => {
   const { sheet, submit } = await setup(page)
-  for (const [abbreviation, direction] of [['S', 'south'], ['NW', 'north-west']]) {
+  for (const abbreviation of ['S', 'NW']) {
     await sheet.getByRole('button', { name: 'Unique 8', exact: true }).click()
     await sheet.getByRole('button', { name: `${abbreviation} direction`, exact: true }).click()
-    await plannedSources(page, sheet, all.filter(value => value !== direction))
+    await expect(sheet.getByRole('button', { name: `${abbreviation} direction`, exact: true })).toHaveAttribute('aria-pressed', 'false')
+    await expect(sheet.locator('.direction[aria-pressed=true]')).toHaveCount(7)
+    await plannedCreation(page, sheet)
     await submit()
   }
   await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click()
   await sheet.getByRole('button', { name: 'W direction', exact: true }).click()
-  await plannedSources(page, sheet, ['east'])
+  await plannedCreation(page, sheet)
   await expect(sheet.locator('.direction[aria-pressed=true]')).toHaveCount(1)
   expect((await submit()).view).toBe('side')
 })

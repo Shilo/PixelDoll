@@ -10,6 +10,7 @@
   import type { Project } from '../lib/store/manifest.ts'
   import type { ClipQa } from '../lib/rig/clips.ts'
   import { STEPS, estimate, type CreateSpec } from './create.ts'
+  import BaseMoves from './BaseMoves.svelte'
   import CharacterForm from './CharacterForm.svelte'
   import { autoFrame, draftErrors, facingOf, freshSeed, newCharacterDraft } from './characterConfig.ts'
   import { nameFrom, bodyQualityNote as plain } from './model.ts'
@@ -56,6 +57,7 @@
     const spec = { ...$state.snapshot(formSpec), seed: d.seed ? Number(d.seed) : freshSeed() }
     withKey(() => { formDrafts.character = undefined; void startCreate(spec); ui.sheet = 'create' }, true)
   }
+  const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
   async function open() {
     const id = creating.projectId
     await cancelCreate()
@@ -76,7 +78,7 @@
         {@const a = result.manifest.rig.animations.find((x) => x.id === 'walk') ?? result.manifest.rig.animations[0]}
         <div class="review-grid">
           {#each result.manifest.rig.directions as d (d.id)}
-            <figure><Sprite img={composeCell(result, {}, a.id, d.id, a.frames[frame % a.frames.length].cell)} w={result.manifest.rig.cell.w} h={result.manifest.rig.cell.h} {k} checker label="{creating.spec?.name} walking {d.id}" />{d.id[0].toUpperCase() + d.id.slice(1)}</figure>
+            <figure><Sprite img={composeCell(result, {}, a.id, d.id, a.frames[frame % a.frames.length].cell)} w={result.manifest.rig.cell.w} h={result.manifest.rig.cell.h} {k} checker label="{creating.spec?.name} {a.id} {d.id}" />{nice(d.id)}</figure>
           {/each}
         </div>
       {/if}
@@ -98,6 +100,11 @@
           </li>
         {/each}
       </ol>
+      {#if creating.views.length}
+        <div class="review-grid">
+          {#each creating.views as v (v.id)}<figure><Sprite img={v.img} {k} checker label="{creating.spec?.name} standing {v.id}" />{nice(v.id)}</figure>{/each}
+        </div>
+      {/if}
       {#if creating.error}
         <p class="notice bad small"><CircleAlert size={14} />{creating.error.includes('5000') || /policy/i.test(creating.error) ? 'PixelLab declined this description. Try different words.' : creating.error}</p>
       {:else}
@@ -111,6 +118,7 @@
   {#snippet footer()}
     {#if creating.projectId}
       <span class="foot-note">Saved on this device.</span>
+      {#if result}<BaseMoves projectId={creating.projectId} manifest={result.manifest} onadd={() => void open()} />{/if}
       <button class="bu-action btn primary lg" data-variant="primary" onclick={open}>Start dressing up</button>
     {:else if creating.error}
       <button class="bu-action btn plain" data-variant="quiet" onclick={cancelCreate}>Start over</button>
@@ -119,7 +127,7 @@
       <span class="foot-note">Estimated {lo}–{hi} gens</span>
       <button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}>Keep working</button>
     {:else}
-      <span class="foot-note creator-cost" title="Includes idle and walk; extra attempts may cost more">~{lo}–{hi} gens</span>
+      <span class="foot-note creator-cost" title="The standing views in every direction; add idle, walk and other moves afterward. A missing standing joint may cost a little more">~{lo}–{hi} gens</span>
       <span class="api-action"><ApiPeek scope="character-create" label="Create character" plan={createPlan(formSpec, !d.seed)} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!!errors.length || enhancing} onclick={go}>Create character</button></span>
     {/if}
   {/snippet}

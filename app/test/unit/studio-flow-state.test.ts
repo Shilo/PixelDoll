@@ -1,5 +1,5 @@
 /// <reference types="svelte" />
-import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
@@ -34,12 +34,14 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals())
 function pending<T>() { let resolve!: (value: T) => void, reject!: (error: unknown) => void; const promise = new Promise<T>((a, b) => { resolve = a; reject = b }); return { promise, resolve, reject } }
 const progress = (step: string, done: number): Progress => ({ step, done, total: 69, recIds: [] })
+/** The flow's progress callback: createCharacter takes a views callback after it, addMove and setup end with it. */
+const progressOf = (kind: 'create' | 'move' | 'setup', args: unknown[]) => (kind === 'create' ? args[1] : args.at(-1)) as (p: Progress) => void
 
 test.each(['create', 'move', 'setup'] as const)('%s ignores late sibling progress after failure, during retry, and after termination', async (kind) => {
   const first = pending<string>(), second = pending<string>(), callbacks: ((p: Progress) => void)[] = []
   const flow = mocks[kind]
-  flow.mockImplementationOnce((...args: unknown[]) => { callbacks.push(args.at(-1) as (p: Progress) => void); return first.promise })
-    .mockImplementationOnce((...args: unknown[]) => { callbacks.push(args.at(-1) as (p: Progress) => void); return second.promise })
+  flow.mockImplementationOnce((...args: unknown[]) => { callbacks.push(progressOf(kind, args)); return first.promise })
+    .mockImplementationOnce((...args: unknown[]) => { callbacks.push(progressOf(kind, args)); return second.promise })
   const s = await import('../../src/studio/state.svelte.ts')
   const state = kind === 'create' ? s.creating : kind === 'move' ? s.moving : s.settingUp
   const start = (seed: number) => kind === 'create'
@@ -147,7 +149,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
   test.each(['Original failure', ''])(`${kind} reports failed-marker storage errors, freezes late progress, and releases its guard (%s)`, async (message) => {
     const saved = pending<void>(); let callback!: (p: Progress) => void
     mocks.put.mockImplementation((_store, _id, record) => record.status === 'failed' ? saved.promise : Promise.resolve())
-    mocks[kind].mockImplementationOnce((...args: unknown[]) => { callback = args.at(-1) as (p: Progress) => void; callback(progress('animate', 4)); throw new Error(message) })
+    mocks[kind].mockImplementationOnce((...args: unknown[]) => { callback = progressOf(kind, args); callback(progress('animate', 4)); throw new Error(message) })
     const s = await import('../../src/studio/state.svelte.ts')
     const running = start(s)
     await vi.waitFor(() => expect(mocks.put).toHaveBeenCalledTimes(2))
@@ -431,4 +433,67 @@ test('an unreadable character list is reported instead of showing only the demo 
   await s.refreshProjects() // the mocked store has no `all`: listing throws
   expect(s.store.projects.map((p) => p.id)).toEqual([s.DEMO])
   expect(s.ui.toast).toMatch(/^Could not read your saved characters: /)
+})
+
+describe('move queue', () => {
+  const idle = { id: 'idle', action: 'idle', frames: 4, items: [], seed: 1 }, walk = { id: 'walk', action: 'walk', frames: 8, items: [], seed: 1 }
+  const done = { fitIds: [], warnings: [] }
+  function storage() {
+    const records = new Map<string, any>()
+    mocks.put.mockImplementation(async (_store, id, value) => { records.set(id, structuredClone(value)) })
+    mocks.get.mockImplementation(async (_store, id) => structuredClone(records.get(id)))
+    mocks.del.mockImplementation(async (_store, id) => { records.delete(id) })
+    return records
+  }
+
+  test('queued moves run one at a time in order, and the waiting ones are saved with the running move', async () => {
+    const records = storage(), first = pending<typeof done>(), second = pending<typeof done>()
+    mocks.move.mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
+    const s = await import('../../src/studio/state.svelte.ts')
+    const queued = s.queueMoves('project', [idle, walk])
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+    expect(mocks.move.mock.calls[0][1]).toMatchObject(idle)
+    expect(s.moving.queued).toEqual([{ projectId: 'project', spec: walk }])
+    expect(records.get('studio-move')).toMatchObject({ status: 'running', spec: idle, queued: [{ projectId: 'project', spec: walk }] })
+    first.resolve(done)
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledTimes(2))
+    expect(mocks.move.mock.calls[1][1]).toMatchObject(walk)
+    expect(records.get('studio-move')).toMatchObject({ status: 'running', spec: walk, queued: [] })
+    second.resolve(done); await queued
+    expect(records.has('studio-move')).toBe(false)
+    expect(s.moving).toMatchObject({ spec: walk, done: true, queued: [] })
+  })
+
+  test('a move added while one runs waits; a failure holds the queue across reload until it is dismissed', async () => {
+    const records = storage(), first = pending<typeof done>()
+    mocks.move.mockReturnValueOnce(first.promise)
+    const s = await import('../../src/studio/state.svelte.ts')
+    const running = s.queueMoves('project', [idle])
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+    await s.queueMoves('project', [walk])
+    expect(mocks.move).toHaveBeenCalledOnce()
+    expect(records.get('studio-move')).toMatchObject({ spec: idle, queued: [{ projectId: 'project', spec: walk }] })
+    first.reject(new Error('Idle failed')); await running
+    expect(mocks.move).toHaveBeenCalledOnce()
+    expect(records.get('studio-move')).toMatchObject({ status: 'failed', spec: idle, queued: [{ projectId: 'project', spec: walk }] })
+    vi.resetModules()
+    const restored = await import('../../src/studio/state.svelte.ts')
+    await restored.resumeMove()
+    expect(mocks.move).toHaveBeenCalledOnce()
+    expect(restored.moving).toMatchObject({ spec: idle, error: 'Idle failed', queued: [{ projectId: 'project', spec: walk }] })
+    await restored.dismissMove()
+    expect(restored.moving.queued).toEqual([])
+    expect(records.has('studio-move')).toBe(false)
+  })
+
+  test('an interrupted queue resumes its running move and then the waiting one', async () => {
+    const records = storage()
+    mocks.move.mockResolvedValue(done)
+    const s = await import('../../src/studio/state.svelte.ts')
+    records.set('studio-move', { id: 'studio-move', spec: idle, projectId: 'project', status: 'running', requestText: s.REQUEST_TEXT, queued: [{ projectId: 'project', spec: walk }] })
+    await s.resumeMove()
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledTimes(2))
+    expect(mocks.move.mock.calls.map(call => call[1].id)).toEqual(['idle', 'walk'])
+    await vi.waitFor(() => expect(records.has('studio-move')).toBe(false))
+  })
 })

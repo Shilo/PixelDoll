@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest'
 import { autoFrame, draftErrors, facingErrors, facingOf, freshSeed, newCharacterDraft, readPrompt, sizeErrors, toggleDirection, toggleMirror, TRAITS, UNSET, writeDetails, writeTrait, type Mirrors, type Trait } from '../../src/studio/characterConfig.ts'
-import { creationDirections, createCharacter, type CreateSpec } from '../../src/studio/create.ts'
-import { createPlan } from '../../src/studio/apiPlans.ts'
+import { baseMoveSpecs, creationDirections, createCharacter, type CreateSpec } from '../../src/studio/create.ts'
+import { createPlan, movePlan } from '../../src/studio/apiPlans.ts'
+import type { Manifest } from '../../src/lib/store/manifest.ts'
 import { BASE_BODY } from '../../src/studio/model.ts'
 import { DIRECTIONS, type DirectionName } from '../../src/lib/rig/rig.ts'
 import { makeImg } from '../../src/lib/image/png.ts'
@@ -33,8 +34,13 @@ function allPlans(): Facing[] {
 }
 const plans = allPlans()
 const specOf = (plan: Facing): CreateSpec => ({ description: 'A freckled humanoid', name: 'Matrix', size: 64, frame: 80, view: 'low top-down', seed: 321, exactPrompt: true, directions: facingOf(plan) })
+/** Creation makes only the Default move; idle and walk come from "Add idle + walk" on the created rig (same directions, camera and seed). */
+function basePlan(spec: CreateSpec) {
+  const manifest = { rig: { cell: { w: spec.frame!, h: spec.frame! }, view: spec.view, directions: creationDirections(spec), animations: [{ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }] }, items: [] } as unknown as Manifest
+  return baseMoveSpecs(manifest, spec.seed).flatMap(move => movePlan({ manifest, character: { id: 'managed', looks: 'looks' } }, move))
+}
 
-test('all 863 nonempty facing plans map only their unique sources to motion and render requests', () => {
+test('all 863 nonempty facing plans create without animation and map only their unique sources to idle + walk requests', () => {
   expect(plans).toHaveLength(863)
   expect(new Set(plans.map(plan => JSON.stringify(facingOf(plan)))).size).toBe(863)
   for (const plan of plans) {
@@ -46,9 +52,11 @@ test('all 863 nonempty facing plans map only their unique sources to motion and 
     expect(calls[0]).toMatchObject({ method: 'POST', path: '/create-character-v3', body: { description: spec.description, image_size: { width: 64, height: 64 } } })
     expect(calls[1].body).toMatchObject({ n_directions: 8 })
     expect(calls[1].note).toContain('all eight original')
-    const motion = calls.filter(call => call.path === '/characters/animations')
+    expect(calls.filter(call => call.path === '/characters/animations' || call.path === '/animate-with-skeleton-v3')).toEqual([])
+    const moves = basePlan(spec)
+    const motion = moves.filter(call => call.path === '/characters/animations')
     expect(motion.map(call => (call.body as { directions: string[] }).directions)).toEqual(expectedSources.map(dir => [dir]))
-    const render = calls.filter(call => call.path === '/animate-with-skeleton-v3')
+    const render = moves.filter(call => call.path === '/animate-with-skeleton-v3')
     expect(render.map(call => (call.body as { direction: string }).direction)).toEqual([...expectedSources, ...expectedSources])
     expect(render.every(call => (call.body as { seed: number }).seed === 422)).toBe(true)
   }
@@ -171,7 +179,9 @@ test('all camera values propagate through source, registration and raw requests,
     const calls = createPlan({ ...specOf(plans[0]), view })
     expect(calls[0].body).toHaveProperty('view', view)
     expect(calls[1].body).toHaveProperty('view', view)
-    for (const call of calls.filter(call => call.path === '/animate-with-skeleton-v3')) expect(call.body).toHaveProperty('view', view)
+    const render = basePlan({ ...specOf(plans[0]), view }).filter(call => call.path === '/animate-with-skeleton-v3')
+    expect(render).not.toHaveLength(0)
+    for (const call of render) expect(call.body).toHaveProperty('view', view)
   }
   await expect(createCharacter({ ...specOf(plans[0]), view: 'overhead' as CreateSpec['view'] })).rejects.toThrow('Invalid camera')
 })
@@ -184,8 +194,10 @@ test('blank and explicit seeds keep their intended request semantics and reject 
     const calls = createPlan({ ...specOf(plans[0]), seed: Number(seed) })
     expect(calls[0].body).toHaveProperty('seed', Number(seed))
     expect(calls[1].body).toHaveProperty('seed', Number(seed))
-    for (const call of calls.filter(call => call.path === '/characters/animations')) expect(call.body).toHaveProperty('seed', Number(seed))
-    for (const call of calls.filter(call => call.path === '/animate-with-skeleton-v3')) expect(call.body).toHaveProperty('seed', Number(seed) + 101)
+    const moves = basePlan({ ...specOf(plans[0]), seed: Number(seed) })
+    expect(moves.filter(call => call.path === '/characters/animations')).not.toHaveLength(0)
+    for (const call of moves.filter(call => call.path === '/characters/animations')) expect(call.body).toHaveProperty('seed', Number(seed))
+    for (const call of moves.filter(call => call.path === '/animate-with-skeleton-v3')) expect(call.body).toHaveProperty('seed', Number(seed) + 101)
   }
   const blank = newCharacterDraft(); expect(draftErrors(blank)).toEqual([])
   for (const call of createPlan(specOf(plans[0]), true)) if (call.body) expect(JSON.parse(JSON.stringify(call.body))).not.toHaveProperty('seed')

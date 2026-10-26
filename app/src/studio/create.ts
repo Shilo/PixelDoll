@@ -12,17 +12,17 @@ import { sha256, stableStringify } from '../lib/image/hash.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
 import * as db from '../lib/store/db.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
-import { HEADROOM_MIN, anchorTracks, buildRig, type SourceAnim } from '../lib/rig/freeze.ts';
+import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
-import { ANCHORS, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
+import { ANCHORS, DEFAULT_MOVE, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, defaultMs, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
 import { repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
-import { poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
+import { posable, poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
 import { affectedMoveDirections, clearMovePoseData, invalidateMoveItems, moveRigVersion } from './replaceMove.ts';
@@ -38,11 +38,10 @@ export type DirectionPolicy = 'independent' | 'mirrored';
 /** New forms send an exact prompt, frame, camera and explicit direction plan. Old saved in-flight specs retain their
  * original 64 px / 4-or-8-direction registration payload so resuming does not create a differently keyed paid pipeline. */
 export interface CreateSpec { description: string; name: string; seed: number; size: number; frame?: number; directions?: RigDirection[]; view?: Rig['view']; exactPrompt?: boolean; dirs?: 4 | 8; directionPolicy?: DirectionPolicy; activityScope?: string; projectId?: string }
-export type CreateStep = 'draw' | 'rest' | 'animate' | 'save';
+export type CreateStep = 'draw' | 'rest' | 'save';
 export const STEPS: { id: CreateStep; label: string }[] = [
   { id: 'draw', label: 'Drawing your character' },
   { id: 'rest', label: 'Setting up the skeleton' },
-  { id: 'animate', label: 'Animating idle and walk' },
   { id: 'save', label: 'Checking and saving' },
 ];
 /** Independently rendered directions. Legacy mirrored policy derives western views from their eastern counterpart. */
@@ -56,24 +55,19 @@ export const CLIP_ATTEMPTS = 2;
  * and the rest views are checked for HEADROOM_MIN free px above the head. */
 export const SIZES = [48, 56] as const;
 
-/** Base clips whose keypoints are authored from the rest pose (B9: idle) instead of a managed skeleton-v3 motion source. */
-const authoredBase = (anim: string) => (anim in ACTIONS ? ACTIONS[anim] : undefined);
-/** Cost from measured prices: base 2 + import 0.25, per clip-direction raw 3 (+ managed motion 3 unless authored), joints 0.1
- * per raw frame (+ per managed motion frame). */
+/** Cost from measured prices: base 2 + import 0.25. Creation makes only the Default move (the standing views); idle, walk
+ * and other moves are added later and priced by moveEstimate. */
 export const creationDirections = (spec: Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy'>): RigDirection[] => spec.directions ?? planDirections(spec.directionPolicy === 'independent' ? 'all' : spec.dirs === 8 ? '8' : '4', genDirsOf(spec.dirs, spec.directionPolicy)).dirs;
 export const creationLooks = (spec: Pick<CreateSpec, 'description' | 'exactPrompt'>) => {
   if (!spec.exactPrompt) return looksOf(spec.description);
   return looksOf(withoutBaseBody(spec.description).trim() || 'humanoid base body', baseClothesIn(spec.description) ?? null);
 };
 export function estimate(choice: 4 | 8 | Pick<CreateSpec, 'directions' | 'dirs' | 'directionPolicy' | 'size'> = 4, policy: DirectionPolicy = 'mirrored') {
-  const render = (a: (typeof BASE_ANIMS)[number]) => poseCallGens(a.frames) + a.frames * EST;
-  const per = (a: (typeof BASE_ANIMS)[number]) => render(a) + (authoredBase(a.name) ? 0 : 3 + a.frames * EST);
   const n = typeof choice === 'number' ? genDirsOf(choice, policy).length : creationDirections(choice).filter(d => !d.mirrorOf).length;
   const size = typeof choice === 'number' ? 48 : choice.size;
-  const gens = +(1.25 + Math.ceil(size * size * 8 / 65536) + n * BASE_ANIMS.reduce((sum, a) => sum + per(a), 0)).toFixed(2);
-  // Every clip-direction can reroll, and missing managed rest joints may require one estimate per direction.
-  const extra = n * ((CLIP_ATTEMPTS - 1) * BASE_ANIMS.reduce((sum, a) => sum + render(a), 0) + EST);
-  return { gens, maxGens: +(gens + extra).toFixed(2), minutes: Math.max(5, 3 + n * 3) };
+  const gens = +(1.25 + Math.ceil(size * size * 8 / 65536)).toFixed(2);
+  // Missing managed rest joints may require one estimate per direction.
+  return { gens, maxGens: +(gens + n * EST).toFixed(2), minutes: 5 };
 }
 
 /** Retain provider artwork for every independently requested view; legacy specs keep their original flips. */
@@ -300,7 +294,9 @@ export async function publishCreatedCharacter(rec: StoredProject, images: Map<Sh
 
 export interface Progress { step: string; done: number; total: number; recIds: string[] }
 
-export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress) => void = () => {}): Promise<string> {
+/** Creation = draw -> padded standing views -> re-import -> rest keypoints -> a Default-only rig (no animation calls).
+ * `onViews` receives the standing views of the chosen directions as soon as the draw is normalized. */
+export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress) => void = () => {}, onViews: (views: { id: DirectionName; img: Img }[]) => void = () => {}): Promise<string> {
   const projectId = spec.projectId ?? `rig-${crypto.randomUUID()}`;
   if (!/^rig-[a-z0-9-]+$/.test(projectId)) throw new Error('This creation attempt has an invalid project identity. Start a new character.');
   const cell = spec.frame ?? CELL, directions = creationDirections(spec), DIRS = directions.filter(d => !d.mirrorOf).map(d => d.id);
@@ -333,6 +329,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     rest[d] = n.img;
     pad = n.offset;
   }
+  onViews(directions.map(d => ({ id: d.id, img: d.mirrorOf ? flipH(rest[d.mirrorOf]) : rest[d.id] })));
   // Register all eight ORIGINAL views, including south when it isn't selected. Never overwrite these with mirrors.
   const registered = modern ? rest : Object.fromEntries(directions.map(d => [d.id, d.mirrorOf ? flipH(rest[d.mirrorOf]) : rest[d.id]])) as Record<DirectionName, Img>;
   const others = Object.fromEntries(await Promise.all((Object.keys(registered) as Direction[]).filter((d) => d !== 'south').map(async (d) => [d, png(await b64(registered[d]))])));
@@ -348,56 +345,27 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
     restKps[d] = kps!;
   }
 
-  // 3. per (clip, direction): managed skeleton-v3 motion -> keypoints -> raw re-render on the rest view
-  const pairs = BASE_ANIMS.flatMap((a) => DIRS.map((d) => ({ a, d })));
-  const total = pairs.reduce((s, { a }) => s + (authoredBase(a.name) ? 1 + a.frames : 2 + a.frames * 2), 0);
-  let done = 0;
-  const tick = () => onProgress({ step: 'animate', done: Math.min(total, ++done), total, recIds: [] });
-  onProgress({ step: 'animate', done: 0, total, recIds: [] });
-  const motions = new Map<string, JobRec>();
-  const clips = await parallelGeneration(pairs.map(({ a, d }) => async (signal) => {
-    const checkedTick = () => { signal.throwIfAborted(); tick(); };
-    const authored = authoredBase(a.name);
-    let keypoints: Keypoint[][];
-    if (authored) keypoints = authoredPoses(a.name, fromApi(restKps[d], { w: cell, h: cell }), d, cell).map((p) => toApi(p, { w: cell, h: cell }));
-    else {
-      const req = routes.animateCharacter(baseAnimation('skeleton-v3', charId, a, [d], spec.seed));
-      keypoints = await motion(req, d, `${spec.name} · ${a.name} ${d} (motion)`, checkedTick, signal, spec.activityScope, cell);
-      motions.set(`${a.name}/${d}`, (await queue.enqueue(req, { signal })) as JobRec); // cache hit: the record for provenance
-    }
-    return { a, d, keypoints, out: await renderClip({ anim: a.name, dir: d, rest: rest[d], restKps: restKps[d], keypoints, authored: !!authored, looks, seed: spec.seed + 101, name: spec.name, tick: checkedTick, signal, view, activityScope: spec.activityScope }) };
-  }), spec.seed);
-
-  // 4. freeze
+  // 3. freeze the Default move: one standing frame per direction, posed by its own rest keypoints (`imported-rest`, so items
+  // reuse their dressed standing view for it). Idle, walk and other moves are added from Moves through addMove.
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
-  const anims: SourceAnim[] = BASE_ANIMS.map((a) => ({ id: a.name, dirs: Object.fromEntries(clips.filter((c) => c.a === a).map((c) => [c.d, c.out.frames])) }));
-  const built = await buildRig(anims, { size: cell, directions });
+  const built = await buildRig([{ id: DEFAULT_MOVE, dirs: Object.fromEntries(DIRS.map((d) => [d, [rest[d]]])) }], { size: cell, directions });
   if (!modern) assertCreatedDirections(built.rig, spec.dirs, spec.directionPolicy);
-  if (built.errors.length) throw new Error(`The animation frames do not fit together: ${built.errors.slice(0, 3).join('; ')}`);
+  if (built.errors.length) throw new Error(`The standing views do not fit together: ${built.errors.slice(0, 3).join('; ')}`);
   const rig = built.rig;
   rig.view = view;
   rig.template = 'mannequin';
   rig.pad = { x: pad[0], y: pad[1] };
   const provenance: Provenance[] = [provOf(base), provOf(imp)];
-  const at = (r: JobRec, produced: CellKey[] = []) => provenance.push(provOf(r, produced)) - 1;
   rig.rest = {};
   for (const d of DIRS) rig.rest[d] = { image: await cellHash(rest[d]), keypoints: restKps[d] };
   // Retain unselected originals for a future account reconnection, without estimating unused joints or animating them.
   if (modern) for (const d of DIRECTIONS.filter(d => !DIRS.includes(d))) {
     rig.rest[d] = { image: await cellHash(rest[d]), keypoints: managedPose(refs?.[d]?.keypoints) ?? [] };
   }
-  for (const c of clips) {
-    const anim = rig.animations.find((x) => x.id === c.a.name)!;
-    anim.loop = loops(anim.id);
-    const produced = c.out.frames.map((_, i) => cellKey(anim.id, c.d, i) as CellKey);
-    (anim.sources ??= {})[c.d] = {
-      route: 'skeleton-v3', reference: rig.rest[c.d]!.image, keypoints: c.keypoints, motion: authoredBase(c.a.name) ? `authored:${c.a.name}` : `managed-skeleton-v3:${c.a.template}`, measured: c.out.measured.map((k) => k ?? []),
-      provenance: [...(motions.has(`${c.a.name}/${c.d}`) ? [at(motions.get(`${c.a.name}/${c.d}`)!)] : []), ...c.out.recs.map((r) => at(r, produced))],
-    };
-    built.warnings.push(...warn(`${anim.id}/${c.d}`, c.out.qa));
-  }
+  const anim = rig.animations[0];
+  anim.sources = Object.fromEntries(DIRS.map((d) => [d, { route: 'v3', reference: rig.rest![d]!.image, keypoints: [restKps[d]], measured: [restKps[d]], motion: 'imported-rest', provenance: [0, 1] } satisfies ClipSource]));
   const skel: Record<string, Skeleton> = {};
-  for (const c of clips) c.out.frames.forEach((_, i) => { const k = c.out.measured[i], h = built.cells[cellKey(c.a.name, c.d, i)]?.hash; if (k && h) skel[h] = fromApi(k, rig.cell); });
+  for (const d of DIRS) skel[built.cells[cellKey(DEFAULT_MOVE, d, 0)].hash] = fromApi(restKps[d], rig.cell);
   const tracks = anchorTracks(built, skel);
   rig.anchors = tracks.anchors;
   const cells: Record<string, Partial<Record<DirectionName, Sha256[]>>> = {};
@@ -418,7 +386,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
   };
   const rec: StoredProject = {
     id: projectId, creationSpec, savedAt: new Date().toISOString(), manifest, skeletons, character: { id: charId, looks }, origin: 'studio',
-    rigQa: { warnings: [...restWarnings, ...built.warnings], pivotFrom: built.pivotFrom, clips: Object.fromEntries(clips.map((c) => [`${c.a.name}/${c.d}`, c.out.qa])), tracks: tracks.stats.map(({ points: _, ...t }) => t) },
+    rigQa: { warnings: [...restWarnings, ...built.warnings], pivotFrom: built.pivotFrom, clips: {}, tracks: tracks.stats.map(({ points: _, ...t }) => t) },
   };
   const images = new Map<Sha256, Img>(Object.values(built.cells).map((c) => [c.hash, c.img]));
   for (const d of Object.keys(rig.rest) as DirectionName[]) images.set(rig.rest[d]!.image, rest[d]);
@@ -521,6 +489,14 @@ export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec)
   }
   if (approved && (recordIds.size !== approved.length || approved.some(id => !recordIds.has(id)))) throw new Error('The reviewed joint checks do not match these exact cached body frames.');
   return { recordIds: [...recordIds].sort(), checks: needed.size, gens: +(needed.size * EST).toFixed(2), usd: +(needed.size * .00513).toFixed(5), rigVersion, rawHashes, ...(spec.bodyPaletteRepair ? { palette } : {}) };
+}
+
+/** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
+ * shapes as creation made them (no poseStyle); every posable item and accepted shared design follows, as in "Add a move". */
+export function baseMoveSpecs(m: Manifest, seed = 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
+  const have = new Set(m.rig.animations.map((a) => a.id));
+  const items = posable(m).filter((i) => !i.design).map((i) => i.id), sharedItems = m.items.filter((i) => i.design && i.status === 'accepted').map((i) => i.id);
+  return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({ id: a.name, action: a.name, frames: a.frames, items, sharedItems, seed }));
 }
 
 /** Frames of a move: the authored table's length, or the text frame count. */
@@ -626,7 +602,7 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
   if (!fresh || moveRigVersion(fresh) !== version) throw new Error('This character changed in another tab while the move was generating. Reopen it before trying again.');
   const fm = fresh.manifest, frig = fm.rig, baseIt = fm.items.find((i) => i.id === frig.baseItem)!;
   const old = frig.animations.find((a) => a.id === spec.id);
-  const anim: RigAnimation = { ...old, id: spec.id, cells: n, loop: loops(spec.id), frames: old?.cells === n ? old.frames : playlist(n, 100), sources: { ...old?.sources } };
+  const anim: RigAnimation = { ...old, id: spec.id, cells: n, loop: loops(spec.id), frames: old?.cells === n ? old.frames : playlist(n, defaultMs(spec.id)), sources: { ...old?.sources } };
   for (const d of affected) delete anim.sources![d];
   if (spec.dirs && clips.some(({ out: { qa } }) => qa.fails.length || qa.adherence === null || qa.adherence > RIG_GATES.adherence || qa.feetDrift > RIG_GATES.silhouetteBottomDelta || qa.paletteFit < RIG_GATES.paletteFit || qa.border > RIG_GATES.border)) throw new Error('The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.');
   const layer = baseIt.layers[0], cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = { ...baseIt.layers[0].cells?.[spec.id] };

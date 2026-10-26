@@ -1,5 +1,6 @@
 import { bakedFrame, composeCell, equipped, hiddenSlots, shownItems, type Frame } from '../../lib/compose/compose.ts';
 import { recolor } from '../../lib/dress/dress.ts';
+import { DEFAULT_MOVE } from '../../lib/rig/rig.ts';
 import type { Img } from '../../lib/image/png.ts';
 import type { DirectionName, Item, Layer, Preset, Project, RigAnimation, Sha256 } from '../../lib/store/manifest.ts';
 import { directionInfo, directionLabel, dot, nearestDirection, unit, type Vector } from './movement.ts';
@@ -194,7 +195,7 @@ export function resolveLive(a: PresentationAvailability, options: { velocity: Ve
       if (body && a.complete(body, previous.clip, previous.direction, [previous.cell])) return { ...base, kind: 'still', clip: previous.clip, direction: previous.direction, cell: previous.cell };
     }
   }
-  for (const clip of moving ? ['walk', 'idle'] : ['idle']) {
+  for (const clip of moving ? ['walk', 'idle', DEFAULT_MOVE] : ['idle', DEFAULT_MOVE]) { // Default: a new character's standing views
     const sequences = a.animations.get(clip), directions = [...sequences?.keys() ?? []].filter(eligible);
     const direction = intended && directions.includes(intended) ? intended : nearestDirection(directions, desired, previous?.direction, previous?.intendedDirection, saved);
     if (direction) return withIssue(a, animated(base, sequences!.get(direction)!));

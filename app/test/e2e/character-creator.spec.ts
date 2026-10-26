@@ -143,7 +143,9 @@ test('same seeded output creates separate projects and a resumed workflow preser
   expect(api.calls.filter(c => c.path === '/v2/create-character-v3')).toHaveLength(2)
 })
 
-test('a failed required measurement stops creation without paying for an art reroll', async ({ page, context }) => {
+})
+
+test('a failed required measurement stops the queued idle without paying for an art reroll', async ({ page, context }) => {
   test.setTimeout(120_000)
   const api = new CharacterApi()
   await context.route('https://*.pixellab.ai/**', async route => {
@@ -155,11 +157,21 @@ test('a failed required measurement stops creation without paying for an art rer
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human')
   await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click()
   await sheet.getByRole('button', { name: 'Create character', exact: true }).click(); await connect(page)
-  await expect(sheet).toContainText(/joints (were )?not found on every frame/, { timeout: 90_000 })
-  await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toHaveCount(0)
+  // Creation reads the standing joints and makes no animation, so it completes; the failure belongs to the move.
+  await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible({ timeout: 90_000 })
+  expect(api.calls.filter(c => c.path === '/v2/estimate-skeleton' || c.path === '/v2/animate-with-skeleton-v3')).toHaveLength(0)
+  await sheet.getByRole('button', { name: /^Add idle \+ walk/ }).click()
+  await equipmentMode(page, 'Moves')
+  await page.locator('.move-row', { hasText: 'Failed: tap for details' }).click({ timeout: 90_000 })
+  const move = page.getByRole('dialog', { name: 'Add a move', exact: true })
+  await expect(move).toContainText(/joints (were )?not found on every frame/)
+  await expect(move).toContainText('Queued next: Walk')
   expect(api.calls.filter(c => c.path === '/v2/animate-with-skeleton-v3')).toHaveLength(1)
-  expect(await page.evaluate(async () => { const modulePath = '/src/lib/store/db.ts'; const { all } = await import(modulePath) as typeof import('../../src/lib/store/db.ts'); return (await all<{ manifest?: unknown }>('projects')).filter(r => r.manifest).length })).toBe(0)
-})
+  const saved = await page.evaluate(() => new Promise<string[][]>((resolve, reject) => {
+    const r = indexedDB.open('pixeldoll'); r.onerror = () => reject(r.error)
+    r.onsuccess = () => { const db = r.result, q = db.transaction('projects').objectStore('projects').getAll(); q.onsuccess = () => { db.close(); resolve(q.result.filter((p: { manifest?: Manifest }) => p.manifest).map((p: { manifest: Manifest }) => p.manifest.rig.animations.map(a => a.id))) }; q.onerror = () => reject(q.error) }
+  }))
+  expect(saved).toEqual([['default']])
 })
 
 test('visible size fields, auto frame, preset deselection and preview positions stay consistent', async ({ page, context }) => {
@@ -469,8 +481,14 @@ function offlineCreation(config: CreationCase) {
 test(`offline creation, persistence and export: ${config.preset}, ${config.frame}px`, async ({ page, context }) => {
   test.setTimeout(180_000)
   const api = new CharacterApi(), errors: string[] = []
+  let release!: () => void
+  const skeletonRead = new Promise<void>(resolve => { release = resolve })
   page.on('pageerror', e => errors.push(e.message))
-  await context.route('https://*.pixellab.ai/**', async route => { const req = route.request(); await fulfill(route, await api.handle(req.method(), req.url(), req.postDataJSON())) })
+  await context.route('https://*.pixellab.ai/**', async route => {
+    const req = route.request()
+    if (req.method() === 'GET' && new URL(req.url()).pathname.startsWith('/v2/characters/')) await skeletonRead // hold creation after the draw
+    await fulfill(route, await api.handle(req.method(), req.url(), req.postDataJSON()))
+  })
   const sheet = await open(page)
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly humanoid with freckles')
   await sheet.getByRole('textbox', { name: 'Name', exact: true }).fill('Offline creator test')
@@ -481,6 +499,10 @@ test(`offline creation, persistence and export: ${config.preset}, ${config.frame
   await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
   const exact = await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).inputValue()
   await sheet.getByRole('button', { name: 'Create character', exact: true }).click(); await connect(page)
+  // The standing views show as soon as the draw lands, while the skeleton step is still running.
+  await expect(sheet.locator('.review-grid figure')).toHaveCount(config.rows, { timeout: 90_000 })
+  await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toHaveCount(0)
+  release()
   await expect(sheet.getByRole('button', { name: 'Start dressing up', exact: true })).toBeVisible({ timeout: 150_000 })
   const preview = await sheet.locator('.review-grid canvas').first().evaluate((element: HTMLCanvasElement) => ({ w: element.width, h: element.height }))
   expect(preview.w).toBe(config.frame * 2); expect(preview.h).toBe(config.frame * 2)
@@ -488,15 +510,19 @@ test(`offline creation, persistence and export: ${config.preset}, ${config.frame
   expect(creates).toHaveLength(2)
   expect(creates[0].body).toMatchObject({ description: exact, image_size: { width: config.size, height: config.size } })
   expect(creates[1].body).toMatchObject({ n_directions: 8 }); expect(Object.keys(creates[1].body!.direction_images!)).toHaveLength(7)
-  const raw = api.calls.filter(c => c.path === '/v2/animate-with-skeleton-v3')
-  expect(raw).toHaveLength(config.unique * 2)
-  if (config.reverse) expect(raw.every(c => (c.body as unknown as { direction: string }).direction === 'west')).toBe(true)
-  await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click()
+  // Default-first: creation makes no animation; one tap queues idle and walk with the old per-direction requests.
+  expect(api.calls.filter(c => c.path === '/v2/animate-with-skeleton-v3' || c.path === '/v2/characters/animations' || c.path === '/v2/estimate-skeleton')).toHaveLength(0)
+  await sheet.getByRole('button', { name: /^Add idle \+ walk/ }).click()
   await expect(page.locator('.project-btn')).toContainText('Offline creator test')
   await page.locator('.project-btn').click(); await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
   await expect(page.getByRole('tab', { name: 'Appearance', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Cancel', exact: true }).click()
   await equipmentMode(page, 'Moves')
+  await expect(page.locator('.move-list .move-row')).toHaveCount(3, { timeout: 150_000 })
+  await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk'])
+  const raw = api.calls.filter(c => c.path === '/v2/animate-with-skeleton-v3')
+  expect(raw).toHaveLength(config.unique * 2)
+  if (config.reverse) expect(raw.every(c => (c.body as unknown as { direction: string }).direction === 'west')).toBe(true)
   const moveCanvas = page.locator('.move-thumb canvas').first()
   expect(await moveCanvas.getAttribute('width')).toBe(String(config.frame))
   expect((await moveCanvas.boundingBox())!.width).toBeLessThanOrEqual(56)

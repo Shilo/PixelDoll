@@ -1,6 +1,6 @@
 // Offline explanations only. These never encode images, submit work or invent dependent payloads.
 import { routes, BASE_ANIMS, baseAnimation, type Req } from '../lib/pixellab/routes.ts'
-import { type CreateSpec, type MoveSpec, creationDirections, creationLooks, moveDirections, moveFrames } from './create.ts'
+import { type CreateSpec, type MoveSpec, creationLooks, moveDirections, moveFrames } from './create.ts'
 import { basePrompt } from './model.ts'
 import { ACTIONS } from '../lib/rig/poses.ts'
 import { actionOf, poseBatches, poseCallGens } from '../lib/rig/clips.ts'
@@ -40,19 +40,8 @@ export function createPlan(spec: CreateSpec, freshSeed = false): PeekCall[] {
   const calls: PeekCall[] = [
     { ...routes.createCharacterV3({ description: spec.exactPrompt ? spec.description : basePrompt(spec.description), image_size: { width: spec.size, height: spec.size }, view, template_id: 'mannequin', ...(seed === undefined ? {} : { seed }), no_background: true }), label: 'Create base character', generations: 1 + Math.ceil(spec.size * spec.size * 8 / 65536), ...(freshSeed ? { note: `Known fields only. ${selectedSeed}` } : {}) },
     { method: 'POST', path: '/create-character-v3', label: 'Register padded standing views', generations: 0.25, body: { description: looks, n_directions: modern ? 8 : spec.dirs ?? 4, view, template_id: 'mannequin', ...(seed === undefined ? {} : { seed }), no_background: true }, note: `Known fields only. ${dependent} Adds ${modern ? 'all eight original' : 'saved-plan'} standing views as reference_image and direction_images, padded to ${spec.frame ?? 64} px without rescaling.` },
-    { method: 'GET', path: '/characters/{character_id}', label: 'Read standing skeletons', note: 'Character ID comes from registration. Cached when available. Missing standing joints conditionally add POST /estimate-skeleton at 0.1 gen per uncached standing image.' },
+    { method: 'GET', path: '/characters/{character_id}', label: 'Read standing skeletons', note: 'Character ID comes from registration. Cached when available. Missing standing joints conditionally add POST /estimate-skeleton at 0.1 gen per uncached standing image. Idle, walk and other moves are added later from Moves.' },
   ]
-  for (const anim of BASE_ANIMS) for (const { id: direction } of creationDirections(spec).filter(d => !d.mirrorOf)) {
-    if (!ACTIONS[anim.name]) {
-      const { character_id: _unknown, ...known } = baseAnimation('skeleton-v3', '', anim, [direction], seed)
-      calls.push({ method: 'POST', path: '/characters/animations', label: `${anim.name} ${direction} · motion`, body: known, generations: 3, note: 'Known fields only. character_id comes from standing-view registration.' })
-      for (let frame = 0; frame < anim.frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${anim.name} ${direction} · motion frame ${frame + 1}`, generations: 0.1, note: 'Sends this generated motion frame as image (base64 PNG). Matching measurements are reused.' })
-    }
-    calls.push({ method: 'POST', path: '/animate-with-skeleton-v3', label: `${anim.name} ${direction} · render ${anim.frames} frames`, generations: 3,
-      body: { description: looks, action: actionOf(anim.name), direction, view, ...(seed === undefined ? {} : { seed: seed + 101 }), no_background: true },
-      note: `Known fields only. ${dependent} Adds first_frame, first_frame_keypoints and ${ACTIONS[anim.name] ? 'locally authored' : 'measured motion'} keypoints. Empty output or a wrong frame count can add one re-roll. Pose, silhouette, palette and border observations never redraw the body automatically.` })
-    for (let frame = 0; frame < anim.frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${anim.name} ${direction} · check frame ${frame + 1}`, generations: 0.1, note: 'Sends this rendered body frame as image (base64 PNG) for pose observations. Matching measurements are reused.' })
-  }
   return [...calls, ...lifecycle()]
 }
 

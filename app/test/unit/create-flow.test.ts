@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { CLIP_ATTEMPTS, estimate, parallelGeneration, run } from '../../src/studio/create.ts'
+import { estimate, parallelGeneration, run } from '../../src/studio/create.ts'
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts'
 
 function deferred<T>() { let resolve!: (value: T) => void; const promise = new Promise<T>((done) => { resolve = done }); return { promise, resolve } }
@@ -43,13 +43,11 @@ test('aborting one direction consumer leaves shared cancellation to the queue an
 })
 
 
-test('creation estimate covers every configured clip attempt and rest-joint fallback', () => {
-  for (const [directions, generated, baseline, ceiling] of [[4, 3, 35.25, 57.15], [8, 5, 57.25, 93.75]] as const) {
+test('creation estimate covers the draw, the re-import and the rest-joint fallback, and no animation', () => {
+  for (const [directions, generated] of [[4, 3], [8, 5]] as const) {
     const cost = estimate(directions)
-    expect(cost.gens).toBe(baseline)
-    expect(cost.maxGens).toBe(ceiling)
-    expect(cost.maxGens - cost.gens).toBeCloseTo(generated * ((CLIP_ATTEMPTS - 1) * ((3 + 4 * 0.1) + (3 + 8 * 0.1)) + 0.1))
-    expect(Math.ceil(cost.maxGens / 5) * 5).toBe(directions === 4 ? 60 : 95)
+    expect(cost.gens).toBe(2.25) // draw 1 + ceil(48² × 8 / 65536), re-import 0.25
+    expect(cost.maxGens).toBeCloseTo(cost.gens + generated * 0.1) // one standing-joint estimate per generated direction
   }
 })
 

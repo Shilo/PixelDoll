@@ -11,13 +11,12 @@ import { LABELS } from '../../src/lib/rig/poses.ts'
 import { makeImg } from '../../src/lib/image/png.ts'
 import type { FitPlan, FitDraft } from '../../src/lib/equipment/types.ts'
 
-test.each([4, 8] as const)('create preflight baseline matches the %i-direction estimate and lists each measurement', (dirs) => {
+test.each([4, 8] as const)('create preflight baseline matches the %i-direction estimate and makes no animation calls', (dirs) => {
   const spec = { description: 'friendly dwarf', name: 'Dwarf', size: 48, seed: 123, dirs }
   const plan = createPlan(spec), total = plan.reduce((sum, call) => sum + (call.generations ?? 0), 0)
   expect(total).toBeCloseTo(estimate(dirs).gens)
-  const directions = dirs === 4 ? 3 : 5
-  expect(plan.filter(c => c.path === '/estimate-skeleton')).toHaveLength(directions * (4 + 8 + 8))
-  expect(plan.filter(c => c.path === '/animate-with-skeleton-v3')).toHaveLength(directions * 2)
+  // Default-first: idle and walk (with their measurements) are priced by movePlan when added from Moves.
+  expect(plan.filter(c => !c.background).map(c => c.path)).toEqual(['/create-character-v3', '/create-character-v3', '/characters/{character_id}'])
   expect(plan[0].body).toEqual({ description: basePrompt(spec.description), image_size: { width: 48, height: 48 }, view: 'low top-down', template_id: 'mannequin', seed: 123, no_background: true })
   expect(plan[1].note).toContain('Known fields only')
   expect(plan[2].note).toContain('conditionally')
@@ -26,15 +25,14 @@ test.each([4, 8] as const)('create preflight baseline matches the %i-direction e
   expect(plan[1].body).toMatchObject({ n_directions: dirs })
 })
 
-test('custom creator preflight uses exact text, camera, eight originals and only the selected unique source', () => {
+test('custom creator preflight uses exact text, camera and eight originals without animation calls', () => {
   const spec = { description: 'Exact raw prompt.\nBuild: Broad', name: 'Custom', size: 96, frame: 160, seed: 123, exactPrompt: true, view: 'side' as const, directions: [{ id: 'east' as const, mirrorOf: 'west' as const }, { id: 'west' as const }] }
   const plan = createPlan(spec)
   expect(plan[0].body).toMatchObject({ description: spec.description, view: 'side', image_size: { width: 96, height: 96 } })
   expect(plan[0].generations).toBe(3)
   expect(plan[1].body).toMatchObject({ n_directions: 8, view: 'side' })
   expect(plan[1].note).toContain('160 px')
-  const raw = plan.filter(c => c.path === '/animate-with-skeleton-v3')
-  expect(raw).toHaveLength(2); expect(raw.every(c => (c.body as { direction: string; view: string }).direction === 'west' && (c.body as { view: string }).view === 'side')).toBe(true)
+  expect(plan.filter(c => c.path === '/animate-with-skeleton-v3')).toEqual([])
   expect(plan.reduce((sum, c) => sum + (c.generations ?? 0), 0)).toBeCloseTo(estimate(spec).gens)
 })
 test('authored moves count frames from an available unique rest view when south is absent', async () => {

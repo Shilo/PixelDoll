@@ -20,6 +20,7 @@ import type { SetupSpec } from './setup.ts';
 import { listFits, clearFinishedFits, resumeFits } from '../lib/equipment/fits.ts';
 import type { EquipmentDesign, FitDraft } from '../lib/equipment/types.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
+import type { Img } from '../lib/image/png.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -389,7 +390,7 @@ export async function removeProject(): Promise<void> {
   const deletedDrafts = new Set(gens.filter((g) => g.draft.rigId === id).map((g) => g.draft.spec.id));
   setGens(gens.filter((g) => g.draft.rigId !== id));
   store.results = Object.fromEntries(Object.entries(store.results).filter(([draftId]) => !deletedDrafts.has(draftId)));
-  if (creating.projectId === id) Object.assign(creating, { spec: null, projectId: '', progress: null, error: '', warnings: [] });
+  if (creating.projectId === id) Object.assign(creating, { spec: null, projectId: '', progress: null, error: '', warnings: [], views: [] });
   if (moving.projectId === id) await dismissMove();
   await refreshProjects();
   if (doc.id === id && request === openRequest) {
@@ -742,7 +743,8 @@ function withActivityScope<T extends { seed: number; activityScope?: string }>(s
   const prefix = `${kind}:${spec.seed}:`;
   return { ...spec, activityScope: spec.activityScope?.startsWith(prefix) ? spec.activityScope : `${prefix}${crypto.randomUUID()}` };
 }
-export const creating = $state({ spec: null as CreateSpec | null, progress: null as Progress | null, error: '', projectId: '', warnings: [] as string[] });
+/** `views`: the standing views, shown while the rest of creation finishes (not persisted: a resume re-reads the cached draw). */
+export const creating = $state({ spec: null as CreateSpec | null, progress: null as Progress | null, error: '', projectId: '', warnings: [] as string[], views: [] as { id: DirectionName; img: Img }[] });
 const CREATE_KEY = 'studio-create';
 let createRunning = false, createRevision = 0;
 export async function startCreate(spec: CreateSpec) {
@@ -755,9 +757,10 @@ export async function startCreate(spec: CreateSpec) {
   creating.error = '';
   creating.projectId = '';
   creating.progress = null;
+  creating.views = [];
   try {
     await db.put('projects', CREATE_KEY, { id: CREATE_KEY, spec, status: 'running', requestText: REQUEST_TEXT });
-    const id = await (await createFlow()).createCharacter(spec, (p) => { if (current() && !failed) creating.progress = p; });
+    const id = await (await createFlow()).createCharacter(spec, (p) => { if (current() && !failed) creating.progress = p; }, (v) => { if (current() && !failed) creating.views = v; });
     if (!current()) return;
     creating.projectId = id;
     const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', id);
@@ -782,7 +785,7 @@ export async function resumeCreate() {
   createResumed = true;
   const r = await db.get<FlowDraft<CreateSpec>>('projects', CREATE_KEY).catch(() => undefined);
   if (!r?.spec || creating.spec) return;
-  if (halted(r)) Object.assign(creating, { spec: r.spec, progress: r.progress ?? null, error: r.error || STOPPED, projectId: '', warnings: [] });
+  if (halted(r)) Object.assign(creating, { spec: r.spec, progress: r.progress ?? null, error: r.error || STOPPED, projectId: '', warnings: [], views: [] });
   else void startCreate(r.spec);
 }
 export async function cancelCreate() {
@@ -793,30 +796,50 @@ export async function cancelCreate() {
   creating.error = '';
   creating.projectId = '';
   creating.warnings = [];
+  creating.views = [];
   await db.del('projects', CREATE_KEY);
 }
 
 
-// ---------- add a move (one at a time; resumable like create) ----------
-export const moving = $state({ spec: null as MoveSpec | null, projectId: '', progress: null as Progress | null, error: '', done: false, fitIds: [] as string[], warnings: [] as string[] });
+// ---------- add a move (one at a time, FIFO; resumable like create) ----------
+type QueuedMove = { projectId: string; spec: MoveSpec };
+/** `queued`: moves waiting for the current one. Persisted with it, so closing the sheet or reloading keeps the order. */
+export const moving = $state({ spec: null as MoveSpec | null, projectId: '', progress: null as Progress | null, error: '', done: false, fitIds: [] as string[], warnings: [] as string[], queued: [] as QueuedMove[] });
 const MOVE_KEY = 'studio-move';
 let moveRunning = false, moveRevision = 0;
+/** Queue moves behind the current one; start the first now when nothing is pending. A failed move holds the queue until it
+ * is retried (the queue continues) or dismissed (the queue is dropped). */
+export async function queueMoves(projectId: string, specs: MoveSpec[]) {
+  if (hmrReloading || !specs.length) return;
+  moving.queued = [...moving.queued, ...specs.map((spec) => ({ projectId, spec }))];
+  if (moveRunning || (moving.spec && !moving.done)) {
+    const r = await db.get<object>('projects', MOVE_KEY); // a starting move writes the queue with its own record
+    if (r) await db.put('projects', MOVE_KEY, { ...r, queued: $state.snapshot(moving.queued) });
+    return;
+  }
+  const [next, ...rest] = moving.queued;
+  moving.queued = rest;
+  await startMove(next.projectId, next.spec);
+}
 export async function startMove(projectId: string, spec: MoveSpec) {
   if (hmrReloading || moveRunning) return;
-  spec = withActivityScope(spec, 'move');
+  spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
   moveRunning = true;
   const revision = ++moveRevision, current = () => revision === moveRevision && moveRunning;
-  let failed = false;
+  let failed = false, next: QueuedMove | undefined;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   try {
-    await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT });
+    await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT, queued: $state.snapshot(moving.queued) });
     const result = await (await createFlow()).addMove(projectId, spec, (p) => { if (current() && !failed) moving.progress = p; });
     if (!current()) return;
     moving.fitIds = result.fitIds; moving.warnings = result.warnings;
     await refreshFits();
     if (!current()) return;
     moving.done = true;
-    await db.del('projects', MOVE_KEY);
+    next = $state.snapshot(moving.queued[0]);
+    // The next queued move replaces this record in one write, so a reload between moves cannot lose the queue.
+    if (next) { moving.queued = moving.queued.slice(1); await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec: next.spec, projectId: next.projectId, status: 'running', requestText: REQUEST_TEXT, queued: $state.snapshot(moving.queued) }); }
+    else await db.del('projects', MOVE_KEY);
     if (!current()) return;
     if (doc.id === projectId) { await openProject(projectId); if (!current()) return; ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
     toast(`${spec.id[0].toUpperCase() + spec.id.slice(1)} added`);
@@ -824,12 +847,13 @@ export async function startMove(projectId: string, spec: MoveSpec) {
     if (current()) {
       failed = true;
       moving.error = e instanceof Error ? e.message : String(e);
-      const error = await persistFlowFailure(MOVE_KEY, { spec, projectId, progress: $state.snapshot(moving.progress) }, e);
+      const error = await persistFlowFailure(MOVE_KEY, { spec, projectId, progress: $state.snapshot(moving.progress), queued: $state.snapshot(moving.queued) }, e);
       if (current()) moving.error = error;
     }
   } finally {
     if (revision === moveRevision) moveRunning = false;
   }
+  if (next && revision === moveRevision) await startMove(next.projectId, next.spec);
 }
 /** Explicit consent to retry only the reviewed joint checks, keeping the original body request identity. */
 export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, reviewed: MeasurementRecoveryPlan) {
@@ -859,15 +883,16 @@ let moveResumed = false;
 export async function resumeMove() {
   if (hmrReloading || moveResumed || queue.role === 'follower') return;
   moveResumed = true;
-  const r = await db.get<FlowDraft<MoveSpec> & { projectId: string }>('projects', MOVE_KEY).catch(() => undefined);
+  const r = await db.get<FlowDraft<MoveSpec> & { projectId: string; queued?: QueuedMove[] }>('projects', MOVE_KEY).catch(() => undefined);
   if (!r?.spec || moving.spec) return;
+  moving.queued = r.queued ?? [];
   if (halted(r)) Object.assign(moving, { spec: r.spec, projectId: r.projectId, progress: r.progress ?? null, error: r.error || STOPPED, done: false, fitIds: [], warnings: [] });
   else void startMove(r.projectId, r.spec);
 }
 export async function dismissMove() {
   if (moveRunning) return;
   moveRevision++;
-  Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false, fitIds: [], warnings: [] });
+  Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false, fitIds: [], warnings: [], queued: [] });
   await db.del('projects', MOVE_KEY);
 }
 
