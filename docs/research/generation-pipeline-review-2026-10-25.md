@@ -923,5 +923,32 @@ after integration (studio state, queue and shared components are touched). A liv
 package D updated the docs and recorded [D26](../../PLAN.md). The animation system and every request body are unchanged,
 as scoped. §6 bugs 1, 3 and 4 are fixed; bug 2 (the idle "walking" caption) stays by decision. The "<item> loading"
 markers show in Preview, Top-down and Side-scroller and as spinners on the draft card; Inspect draws landed cells only.
-New accepted limits are in [known issues](../known-issues.md). Test and e2e results, and the live check, will be added by
-the lead.
+New accepted limits are in [known issues](../known-issues.md).
+
+**Review and fixes:** an independent review found five real defects, all fixed in `8bd32563`:
+- early poses that a later dress chunk could waste;
+- a move queued during the last move's finish that never started;
+- base moves fixing their items at tap time;
+- a failed worn draft that could not be taken off;
+- an auto-save cancelling a just-started character open.
+
+The race fixes come with 11 tests that fail on the old code.
+
+**Checks:** `npm run check` is clean, and unit tests pass 860 (1 skipped). The full e2e suite passes 111/111: 102 in the
+parallel run, plus 9 dev-server tests that time out under parallel load (as on the base commit) and pass serially. Two
+tests that failed once each (import cancel, free color matching) pass 8/8 on repeat.
+
+**Live check** (agent dev server in Claude Browser, **70.3 gens**, balance 3,666.7 → 3,596.45):
+
+| Step | Result |
+|---|---|
+| Create | Done in about 4 min, about 2.25 gens, 0 animation or estimate calls. The result screen offers "Add idle + walk · Est. 55 gens" and "Start dressing up". |
+| Add idle + walk | Queued: idle "Adding… n/25", then walk "Queued"; the character opens at once with **Default** selectable. |
+| Item while moves generate | A red cape costs 10 gens (dress only) and can be worn while loading (overlay only, never saved). The stage shows "Red cape loading — South, South-east, East, North-east, North". It **saved itself** ("Red cape saved") and appears in Default. |
+| A gap the live run exposed | The cape had been planned on the Default-only rig and saved after walk's item stage had begun, so it missed idle and walk. **Fixed in `fae47bba`:** base moves pick their items at their item stage, and a saved item queues items-only poses (the "Make it" request) for moves added while it generated. Verified live with one 3-gen "Make it" (walk south). |
+| Old characters | A character created before the change opens with idle and walk and plays. |
+
+**Not verified:**
+- The run used Top-down 8, not the Top-down 4 that was clicked. A code trace found no cause and the branch does not touch
+  that logic; unreproduced.
+- An items-only queued move still toasts "<Move> added".
