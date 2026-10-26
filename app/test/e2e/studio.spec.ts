@@ -81,11 +81,14 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   step('wear swaps the item in the slot')
 
   await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click()
-  assert.equal(await pressed('Wizard hat'), 'true')
+  assert.equal(await pressed('Wizard hat'), 'false')
+  assert.equal(await pressed('None'), 'true')
   assert.equal(await page.locator('.sel-name').textContent(), 'Wizard hat')
-  step('tapping a worn item selects it, it stays on (T1 P2-1)')
+  await page.locator('.equipment-scroll .tile', { hasText: 'Wizard hat' }).click()
+  assert.equal(await pressed('Wizard hat'), 'true')
+  step('tapping a worn item takes it off, tapping again wears it')
 
-  await page.getByRole('button', { name: /^Undo/ }).click()
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: /^Undo/ }).click()
   assert.equal(await pressed('Steel helmet'), 'true')
   await page.keyboard.press('Control+Shift+Z')
   assert.equal(await pressed('Wizard hat'), 'true')

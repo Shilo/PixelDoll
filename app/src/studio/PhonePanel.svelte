@@ -2,7 +2,7 @@
   // Shared customization content for the desktop rail and mobile sheet.
   import { popoverFocus } from './experience/focus.ts'
   import { GROUPS, HEALTH_LABEL, healthOf } from './model.ts'
-  import { ui, doc, store, view, gens, pick, clearSlots, genOf, genProgress, openNewItem, randomize, isDemo } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, wear, clearSlots, genOf, genProgress, openNewItem, randomize, isDemo } from './state.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import Thumb from './Thumb.svelte'
   import GroupIcon from './GroupIcon.svelte'
@@ -49,7 +49,7 @@
       {#if items.length || pending.length}
         <div class="tiles" role="group" aria-label="{g.id === 'Hands' ? 'Held' : g.id} items">
           {#each items as it (it.id)}
-            <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === it.id} aria-pressed={doc.items[it.slot] === it.id} onclick={() => pick(it.id)}>
+            <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === it.id} aria-pressed={doc.items[it.slot] === it.id} onclick={() => wear(it.id)}>
               <span class="tile-art" aria-hidden="true"><Thumb project={view.project} item={it} size={tileK} /></span><span class="tile-name">{it.name}</span>
               {#if doc.items[it.slot] === it.id}<span class="equipped-check" aria-hidden="true"><Check size={16}/></span>{/if}
             </button>

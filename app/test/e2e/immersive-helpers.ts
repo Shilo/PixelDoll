@@ -69,7 +69,10 @@ export async function pickItem(page: Page, name: string) {
     if (await item.count()) break
     await equipmentGroup(page, group)
   }
+  // Tapping a worn tile takes the item off, so tap it again to leave it worn and selected
+  const worn = await page.locator('.equipment-scroll .tile[aria-pressed="true"]').filter({ has: page.getByText(name, { exact: true }) }).count()
   await item.click()
+  if (worn) await item.click()
 }
 
 export async function inspectStage(page: Page) {
