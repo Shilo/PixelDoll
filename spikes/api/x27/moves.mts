@@ -38,6 +38,15 @@ export const MOVES: Move[] = [
   { id: 'die2', action: 'dying, collapsing to the ground', frames: span('Death02', 10, 0, 2.47, true), opts: { face: 1, twist: 0.5, lean: 1, travel: 0.6 }, ms: 120 },
 ];
 
+// Action wording on identical keypoints: "sword slash" draws a sword into the body layer; "dying" dissolves the last frame.
+const like = (id: string, o: Partial<Move>): Move => ({ ...MOVES.find((m) => m.id === id)!, ...o });
+MOVES.push(
+  like('slash_k_soft', { id: 'slash_w1', action: 'overhead arm strike, empty hands, no weapon, no props, no effects' }),
+  like('slash_k_soft', { id: 'slash_w2', action: 'attacking with bare hands' }),
+  like('slash_k_soft', { id: 'slash_w3', action: 'chopping motion with an empty right hand, nothing held' }),
+  like('die', { id: 'die_w1', action: 'falling down and lying still on the ground, whole body visible, no effects' }),
+);
+
 export const seq = (m: Move, dir: Dir) => build(m.frames, dir, m.opts);
 
 if (import.meta.main) {
