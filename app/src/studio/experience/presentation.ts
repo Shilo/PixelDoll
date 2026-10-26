@@ -233,23 +233,31 @@ export function advancePlayback(presentation: Presentation, previous: PlaybackCl
   return { key, elapsedMs, duration: sequence.duration, cell };
 }
 
-export interface RenderedPresentation { image: Img | null; frame: Frame; hiddenItems: Item[]; issue: string | null; issueKey: string | null }
+/** loading: worn drafts still generating this view ("Sword loading — East, North"), shown instead of hiding them as missing. */
+export interface RenderedPresentation { image: Img | null; frame: Frame; hiddenItems: Item[]; issue: string | null; issueKey: string | null; loading: string | null }
 /** Consume the production recolored project and current outfit map (DressState.current.items). */
 export function renderPresentation(a: PresentationAvailability, items: Preset['items'], presentation: Presentation, cell = presentation.cell): RenderedPresentation {
   const p = a.project, m = p.manifest, frame = bakedFrame(m);
-  const result: RenderedPresentation = { image: null, frame, hiddenItems: [], issue: null, issueKey: null };
+  const result: RenderedPresentation = { image: null, frame, hiddenItems: [], issue: null, issueKey: null, loading: null };
   if (presentation.kind === 'unavailable' || !presentation.direction) return result;
   const direction = presentation.direction, clip = presentation.kind === 'rest' ? 'rest' : presentation.clip!;
   const cells = presentation.kind === 'animation' ? presentation.sequence!.frames.map(f => f.cell) : [presentation.kind === 'rest' ? 0 : presentation.cell];
   const on = equipped(m, items), hidden = hiddenSlots(m, on), worn = shownItems(m, on);
-  const filtered = { ...items };
+  const filtered = { ...items }, loading: string[] = [], mirrored = m.rig.directions.find(d => d.id === direction)?.mirrorOf;
   for (const item of worn) {
     if (item.id === m.rig.baseItem) continue;
     // rig.rest stores original artwork, including views that differ from an
     // animated mirror. Mirrored clip equipment cannot certify that rest pose.
     const exactRest = presentation.kind !== 'rest' || item.layers.every(layer => Object.hasOwn(layer.cells?.rest?.[direction] ?? [], 0));
-    if (!exactRest || !a.complete(item, clip, direction, cells)) { filtered[item.slot] = null; if (!hidden.has(item.slot)) result.hiddenItems.push(item); }
+    if (!exactRest || !a.complete(item, clip, direction, cells)) {
+      filtered[item.slot] = null;
+      // a generating draft's cells are on their way, not missing
+      const pending = [...new Set((item.pending ?? []).filter(k => k.startsWith(`${clip}/`)).map(k => k.split('/')[1]))];
+      if (pending.includes(direction) || (mirrored && pending.includes(mirrored))) loading.push(`${item.name} loading — ${pending.map(directionLabel).join(', ')}`);
+      else if (!hidden.has(item.slot)) result.hiddenItems.push(item);
+    }
   }
+  result.loading = loading.join(' · ') || null;
   // A rest original is a distinct body source. Only explicit rest equipment cells accompany it.
   let source = p;
   if (presentation.kind === 'rest') {

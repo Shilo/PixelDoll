@@ -155,6 +155,8 @@ export function plainReason(s: string): string {
   if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
   if (s.startsWith('H4')) return 'Some frames do not look like the design (e.g. a cape wrapped around an arm)';
   if (s.startsWith('D1')) return 'The design has gray smudges';
+  const pasted = /^R1 ([^/]+)\/([^:]+): dressed item pasted on (\d+)/.exec(s);
+  if (pasted) return `Held item pasted on ${pasted[3]} ${pasted[1].replaceAll('-', ' ')} ${pasted[3] === '1' ? 'frame' : 'frames'} (${pasted[2].replaceAll('-', ' ')}); check that it moves`;
   return s;
 }
 

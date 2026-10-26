@@ -7,7 +7,7 @@ import { deriveMaterials, randomOutfit, recolor, storeVariants } from '../lib/dr
 import { drawList } from '../lib/compose/compose.ts';
 import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
-import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
+import type { CellKey, DirectionName, Item, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
 import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
 import { loadDrafts } from '../lib/items/drafts.ts';
 import { app } from '../lib/app.svelte.ts';
@@ -211,16 +211,22 @@ export const doc = $state({
   saved: '',
   undo: [] as { label: string; snap: string }[],
   redo: [] as { label: string; snap: string }[],
+  /** Worn drafts, slot -> draft id: shown over the outfit, never in doc.items, so autosave, undo, outfits and exports never
+   *  see a draft. Cleared when a saved item or None takes the slot, on discard and when another character opens. */
+  drafts: {} as Record<string, string>,
 });
 export const isDemo = () => doc.id.startsWith('fixture:');
 
-/** What the stage shows: the project with the selected color variants swapped in (exact ramp swap), and the playing cell. */
+/** What the stage shows: the project with the selected color variants swapped in (exact ramp swap) and the worn drafts' current
+ *  previews, the outfit with those drafts on, and the playing cell. */
 class View {
-  project = $derived.by(() => {
+  recolored = $derived.by(() => {
     void doc.rev;
     const p = store.project;
     return p ? recolor(p, $state.snapshot(doc.variants)) : null;
   });
+  project = $derived.by(() => this.recolored && withDrafts(this.recolored));
+  items = $derived.by(() => ({ ...doc.items, ...doc.drafts }));
   anim = $derived(store.project?.manifest.rig.animations.find((a) => a.id === ui.anim));
   cell = $derived(this.anim ? this.anim.frames[ui.frame % this.anim.frames.length].cell : 0);
 }
@@ -234,11 +240,13 @@ export async function refreshProjects() {
 }
 
 let openRequest = 0;
-export async function openProject(id: string, keep?: { wear?: string }) {
-  const request = ++openRequest;
+/** keep.wear: equip that item (Keep it). keep.quiet: reload the open character in place (a draft saved itself): the view, the
+ *  selection and undo stay, and the stage does not show loading. */
+export async function openProject(id: string, keep?: { wear?: string; quiet?: boolean }) {
+  const request = ++openRequest, quiet = !!keep?.quiet && id === doc.id;
   await flushSave();
   if (request !== openRequest) return;
-  doc.loading = true;
+  if (!quiet) doc.loading = true;
   doc.error = '';
   try {
     const r = await openSource(id);
@@ -252,18 +260,17 @@ export async function openProject(id: string, keep?: { wear?: string }) {
     const m = r.project.manifest;
     const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
     const unsaved = takeUnsaved(id, m), current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
-    doc.items = { ...current.items };
-    doc.variants = { ...current.variants };
-    if (keep?.wear) { const it = m.items.find((i) => i.id === keep.wear); if (it) doc.items[it.slot] = it.id; }
-    doc.undo = [];
-    doc.redo = [];
+    if (!quiet) { doc.items = { ...current.items }; doc.variants = { ...current.variants }; } // in place: keep the live outfit
+    if (id !== doc.id) doc.drafts = {};
+    if (keep?.wear) { const it = m.items.find((i) => i.id === keep.wear); if (it) { doc.items[it.slot] = it.id; delete doc.drafts[it.slot]; } }
+    if (!quiet) { doc.undo = []; doc.redo = []; }
     doc.id = id;
     if (!m.rig.animations.some((a) => a.id === ui.anim)) ui.anim = (m.rig.animations.find((a) => a.id === 'walk') ?? m.rig.animations[0]).id;
     if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
-    ui.frame = 0;
+    if (!quiet) ui.frame = 0;
     store.project = r.project;
-    ui.selected = keep?.wear ?? m.items.find((i) => i.id !== m.rig.baseItem && doc.items[i.slot] === i.id)?.id ?? '';
-    if (ui.selected) ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
+    if (!quiet) ui.selected = keep?.wear ?? m.items.find((i) => i.id !== m.rig.baseItem && doc.items[i.slot] === i.id)?.id ?? '';
+    if (ui.selected && !quiet) ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
     lsSet(K.last, id);
     doc.rev++;
     savedEdits = edits; // nothing is pending (flushed above): what was just loaded is saved, so only later edits count
@@ -295,7 +302,10 @@ export function commit(label: string, fn: () => void) {
   if (!store.project) return;
   doc.undo = [...doc.undo.slice(-99), { label, snap: snap() }];
   doc.redo = [];
+  const before = { ...doc.items };
   fn();
+  // a saved item put on or taken off a slot replaces the draft worn there
+  for (const slot of Object.keys(doc.drafts)) if ((doc.items[slot] ?? null) !== (before[slot] ?? null)) delete doc.drafts[slot];
   bump();
   save();
 }
@@ -404,11 +414,13 @@ const itemById = (id: string) => store.project?.manifest.items.find((i) => i.id 
 export function wear(id: string) {
   const it = itemById(id);
   if (!it) return;
-  const on = doc.items[it.slot] === id;
-  commit(`${on ? 'Take off' : 'Wear'} ${it.name}`, () => { doc.items[it.slot] = on ? null : id; });
+  const on = doc.items[it.slot] === id && !doc.drafts[it.slot];
+  delete doc.drafts[it.slot]; // a saved item put on or taken off replaces the draft worn in its slot
+  if (doc.items[it.slot] !== (on ? null : id)) commit(`${on ? 'Take off' : 'Wear'} ${it.name}`, () => { doc.items[it.slot] = on ? null : id; });
   ui.selected = id;
 }
 export function clearSlots(slots: string[]) {
+  for (const s of slots) delete doc.drafts[s];
   if (!slots.some((s) => doc.items[s])) return;
   commit('Take off', () => { for (const s of slots) doc.items[s] = null; });
 }
@@ -519,7 +531,7 @@ export async function renameProject(name: string) {
 /** Wear an item if it is off and select it; a worn item stays on. Wardrobe tiles toggle with `wear` instead. */
 export function pick(id: string) {
   const it = itemById(id);
-  if (it && doc.items[it.slot] !== id) wear(id);
+  if (it && (doc.items[it.slot] !== id || doc.drafts[it.slot])) wear(id);
   else ui.selected = id;
 }
 
@@ -636,7 +648,15 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
     g.error = (e as Error).message;
   }
   await saveGens();
-  if (g.phase === 'review') toast(`${g.input.name} is ready to review`);
+  if (g.phase !== 'review') return;
+  // Review is optional (round 10, changes D7): a clean draft saves itself; warned or failed ones wait with their badge.
+  const res = store.results[g.draft.spec.id];
+  if (res && (await itemRun()).isClean(res) && (await autoSave(g))) return;
+  toast(`${g.input.name} is ready to review`);
+}
+async function autoSave(g: Gen): Promise<boolean> {
+  try { return await acceptGen(g, true); }
+  catch (e) { g.draft.log.push(`not saved automatically: ${(e as Error).message}`); await saveGens(); return false; }
 }
 async function evalGen(g: Gen) {
   const ctx = await loadProject(g.draft.rigId);
@@ -644,21 +664,61 @@ async function evalGen(g: Gen) {
 }
 export const genOf = (sel: string) => gens.find((g) => `gen:${g.draft.spec.id}` === sel);
 
+/** Wear or take off a draft of the open character while it generates or waits for review (display only: doc.drafts). */
+export function wearDraft(id: string) {
+  const g = gens.find((x) => x.draft.spec.id === id);
+  if (!g || g.draft.rigId !== doc.id) return;
+  const slot = g.draft.spec.slot;
+  if (doc.drafts[slot] === id) delete doc.drafts[slot];
+  else doc.drafts[slot] = id;
+  ui.selected = `gen:${id}`;
+}
+/** The project plus each worn draft's current preview item; the saved manifest is never changed. A running draft without a
+ *  preview yet is a layerless stand-in whose target cells are all pending, so the stage says it is loading. */
+function withDrafts(p: Project): Project {
+  const ids = Object.values(doc.drafts);
+  if (!ids.length) return p;
+  const m = p.manifest, items: Item[] = [], images = new Map(p.images), slots = [...m.slots];
+  for (const id of ids) {
+    const g = gens.find((x) => x.draft.spec.id === id), prev = store.results[id]?.preview, it = prev?.manifest.items.find((i) => i.id === id);
+    if (!g || g.draft.rigId !== doc.id) continue;
+    const running = g.phase === 'running';
+    if (prev && it) {
+      items.push(running ? it : { ...it, pending: undefined }); // only a running draft is still loading; other gaps are missing
+      for (const [h, im] of prev.images) if (!images.has(h)) images.set(h, im);
+      const slot = prev.manifest.slots.find((x) => x.id === it.slot);
+      if (slot && !slots.some((x) => x.id === slot.id)) slots.push(slot);
+    } else if (running) {
+      const { spec } = g.draft;
+      items.push({ id, name: g.input.name, slot: spec.slot, status: 'draft', mirror: 'generate', materials: [], prompt: spec.prompt, layers: [], baseHash: m.rig.baseHash, provenance: [],
+        pending: spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => Array.from({ length: m.rig.animations.find((x) => x.id === a)?.cells ?? 0 }, (_, i) => `${a}/${d}/${i}` as CellKey))) });
+    }
+  }
+  return items.length ? { ...p, manifest: { ...m, items: [...m.items, ...items], slots }, images } : p;
+}
+
 // Keep it / Discard in flight for a draft: the other click is ignored (R6 P1-6: Discard during Keep it, then
 // splice(indexOf(g) = -1) removed an unrelated, still-running draft).
 const settling = new Set<string>();
 const drop = (g: Gen) => { const i = gens.findIndex((x) => x.draft.spec.id === g.draft.spec.id); if (i >= 0) gens.splice(i, 1); };
-export async function acceptGen(g: Gen) {
+/** Keep it (or `auto`: a clean draft saving itself). Keep it wears the item; a saved draft keeps the slot it was worn in (same id)
+ *  and reloads the open character in place. True when saved. */
+export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
   const id = g.draft.spec.id;
-  if (follower() || settling.has(id)) return;
+  if (follower() || settling.has(id)) return false;
   settling.add(id);
   try {
     const ctx = await loadProject(g.draft.rigId);
     const item = await (await itemFlow()).accept(g.draft, ctx, store.results[id] ?? undefined);
+    const worn = doc.drafts[item.slot] === id;
     drop(g);
     await saveGens();
-    if (doc.id === g.draft.rigId) await openProject(doc.id, { wear: item.id });
-    toast(`${item.name} added`);
+    if (doc.id === g.draft.rigId) {
+      if (ui.selected === `gen:${id}`) ui.selected = item.id;
+      await openProject(doc.id, auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id });
+    }
+    toast(auto ? `${item.name} saved` : `${item.name} added`);
+    return true;
   } finally {
     settling.delete(id);
   }
@@ -670,6 +730,7 @@ export async function discardGen(g: Gen): Promise<boolean> {
   try {
     drop(g);
     ui.selected = '';
+    if (doc.drafts[g.draft.spec.slot] === id) delete doc.drafts[g.draft.spec.slot];
     await saveGens();
     return true;
   } finally {

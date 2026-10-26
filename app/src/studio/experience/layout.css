@@ -106,6 +106,8 @@
 .world-notes { position:fixed; left:var(--edge); bottom:18px; z-index:4; display:flex; flex-direction:column; align-items:flex-start; gap:6px; max-width:min(420px,calc(100% - var(--rail) - 100px)); pointer-events:none; }
 .world-notes p { margin:0; }
 .world-coverage { font-size:13px; color:var(--bu-muted); }
+.world-loading-items { display:flex; align-items:center; gap:6px; }
+.world-loading-items .spin { flex:none; animation:spin 1.2s linear infinite; }
 .world-hint { max-width:260px; font-size:16px; }
 .world-stick { position:fixed; width:92px;height:92px; margin:-46px; border:1px solid var(--bu-border); background:var(--bu-gesture-track); border-radius:50%; pointer-events:none; z-index:3; display:grid;place-items:center; }
 .world-stick span { width:24px;height:24px;border-radius:50%;background:var(--bu-gesture-thumb);border:1px solid var(--bu-accent); }

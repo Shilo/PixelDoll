@@ -1,5 +1,5 @@
 /// <reference types="svelte" />
-import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
@@ -431,4 +431,84 @@ test('an unreadable character list is reported instead of showing only the demo 
   await s.refreshProjects() // the mocked store has no `all`: listing throws
   expect(s.store.projects.map((p) => p.id)).toEqual([s.DEMO])
   expect(s.ui.toast).toMatch(/^Could not read your saved characters: /)
+})
+
+type GenOf<S> = S extends { gens: (infer G)[] } ? G : never
+const draftGen = (id: string, rigId: string, phase = 'running') => ({ draft: { spec: { id, name: 'New helm', slot: 'head', prompt: 'a new helm', key: 'green', anims: ['walk'], dirs: ['south'] }, rigId, calls: [], keySwitched: false, log: [] }, input: { name: 'New helm', slot: 'head', prompt: 'a new helm' }, phase, status: '' })
+
+test('a worn draft overlays the outfit but never reaches autosave, undo or saved outfits; a saved item and discard clear it', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  s.store.project = { manifest: fixtureManifest(), images: new Map() }
+  s.doc.id = 'fixture:s2'; s.doc.items = { body: 'base', head: 'hat_wizard' }
+  const g = draftGen('new_helm', 'fixture:s2') as unknown as GenOf<typeof s>
+  s.gens.push(g)
+  s.wearDraft('new_helm')
+  expect(s.doc.drafts).toEqual({ head: 'new_helm' })
+  expect(s.doc.items).toEqual({ body: 'base', head: 'hat_wizard' })
+  expect(s.ui.selected).toBe('gen:new_helm')
+  s.setVariant('any-material', 'azure') // an edit while the draft is worn: undo entry + autosave
+  s.savePreset('With the draft on')
+  await s.flushSave()
+  const saved = mocks.put.mock.calls.filter(([, key]) => key === 'dress-fixture:s2').map((c) => JSON.stringify(c[2]))
+  expect(saved.length).toBeGreaterThan(0)
+  for (const persisted of [...saved, JSON.stringify(s.doc.undo), JSON.stringify(s.store.project!.manifest)]) expect(persisted).not.toContain('new_helm')
+  expect(s.store.project!.manifest.presets.at(-1)!.items.head).toBe('hat_wizard')
+  expect(s.doc.drafts).toEqual({ head: 'new_helm' }) // edits elsewhere keep it on
+  s.wear('hat_wizard') // the saved item shows again (it was worn under the draft)
+  expect(s.doc.drafts).toEqual({})
+  expect(s.doc.items.head).toBe('hat_wizard')
+  s.wearDraft('new_helm'); s.clearSlots(['head'])
+  expect(s.doc.drafts).toEqual({})
+  s.wearDraft('new_helm')
+  expect(await s.discardGen(g)).toBe(true)
+  expect(s.doc.drafts).toEqual({})
+  s.gens.push(draftGen('other_rig', 'rig-other') as unknown as GenOf<typeof s>)
+  s.wearDraft('other_rig') // drafts of another character cannot be worn here
+  expect(s.doc.drafts).toEqual({})
+})
+
+describe('optional review', () => {
+  const clean = { cells: [{}], qa: { qa: { status: 'pass' }, failCalls: new Map(), softCalls: new Map(), warnings: [] as string[] }, g1: new Map(), preview: null }
+  function routeMock(result: () => Promise<unknown>) {
+    const accept = vi.fn(async (d: { spec: { id: string } }) => ({ id: d.spec.id, name: 'New helm', slot: 'head' }))
+    vi.doMock('../../src/studio/itemRoute.ts', () => ({ itemRoute: { draft: (ctx: { rec: { id: string } }, input: { name: string; slot: string }, taken: string[]) => ({ spec: { id: `helm${taken.length}`, name: input.name, slot: input.slot, prompt: 'a new helm', key: 'green', anims: [], dirs: [] }, rigId: ctx.rec.id, calls: [], keySwitched: false, log: [] }), run: result, accept } }))
+    vi.doMock('../../src/lib/dress/regions.ts', () => ({ splitBase: async () => ({ dirty: false }) }))
+    vi.doMock('../../src/lib/dress/dress.ts', async (original) => ({ ...await original<typeof import('../../src/lib/dress/dress.ts')>(), deriveMaterials: () => {} }))
+    return accept
+  }
+  afterEach(() => { vi.doUnmock('../../src/studio/itemRoute.ts'); vi.doUnmock('../../src/lib/dress/regions.ts'); vi.doUnmock('../../src/lib/dress/dress.ts') })
+
+  test('a clean draft saves itself in place: the worn slot keeps it, undo and the view stay', async () => {
+    const done = pending<typeof clean>(), accept = routeMock(() => done.promise)
+    const manifest = fixtureManifest()
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest } })
+    const saved = fixtureManifest(); saved.items.push({ ...saved.items.find((i: { id: string }) => i.id === 'hat_wizard'), id: 'helm0', name: 'New helm' })
+    mocks.source.mockResolvedValue({ project: { manifest: saved, images: new Map() }, current: { items: { body: 'base' }, variants: {} } })
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.store.project = { manifest, images: new Map() }
+    s.doc.id = 'project'; s.doc.items = { body: 'base', head: 'hat_wizard' }; s.doc.undo = [{ label: 'Earlier edit', snap: '{}' }]
+    s.ui.anim = 'walk'; s.ui.frame = 3
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    s.wearDraft('helm0')
+    done.resolve(clean)
+    await vi.waitFor(() => expect(s.ui.toast).toBe('New helm saved'))
+    expect(accept).toHaveBeenCalledOnce()
+    expect(s.gens).toHaveLength(0)
+    expect(s.doc.items.head).toBe('helm0')
+    expect(s.doc.drafts).toEqual({})
+    expect(s.store.project!.manifest).toBe(saved)
+    expect(s.doc.undo.map((u) => u.label)).toEqual(['Earlier edit'])
+    expect(s.ui).toMatchObject({ selected: 'helm0', frame: 3 })
+  })
+
+  test('a warned draft stays a draft with its review; nothing is saved for it', async () => {
+    const accept = routeMock(async () => ({ ...clean, qa: { ...clean.qa, warnings: ['R1 idle/east: dressed item pasted on 2 near-rest frames; check that it moves'] } }))
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: fixtureManifest() } })
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.doc.id = 'project'
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    await vi.waitFor(() => expect(s.ui.toast).toBe('New helm is ready to review'))
+    expect(s.gens.map((g) => g.phase)).toEqual(['review'])
+    expect(accept).not.toHaveBeenCalled()
+  })
 })

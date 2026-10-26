@@ -18,7 +18,7 @@ it with any change to extraction, cleanup or QA. Corpus `6666e4f54851`, gates `1
 | a-chest | torso_outer / green | ok | – | – | – | 0 | 0 | 0.192 | – |
 | a-boots | feet / green | ok | – | – | – | 0 | 32 | 0.178 | – |
 | a-hair | hair / green | ok | – | – | – | 0 | 0 | 0.070 | – |
-| a-sword96 | main_hand / green | ok | 89.6 % (43/48) | 89.6 % (43/48) | – | 0 | 1 | 0.094 | – |
+| a-sword96 | main_hand / green | ok | 89.6 % (43/48) | 89.6 % (43/48) | – | 0 | 3 | 0.094 | – |
 | a-axe96 | main_hand / green | ok | 91.7 % (44/48) | 91.7 % (44/48) | – | 1 | 1 | 0.248 | – |
 | a-jester-magenta (reference) | head / magenta | ok | 100.0 % (202/202) | 0.0 % (0/202) | – | 3 | 0 | 0.000 | – |
 | a-jester-blue | head / blue | ok | 100.0 % (255/255) | 100.0 % (255/255) | – | 0 | 0 | 0.000 | – |

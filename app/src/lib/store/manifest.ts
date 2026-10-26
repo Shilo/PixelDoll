@@ -49,6 +49,8 @@ export interface ZOverride { layer: 'fg' | 'bg'; z: number; dir?: DirectionName;
 export interface Item {
   /** Explicit reviewed/generated target cells, including intentional transparent cells; absence is legacy coverage. */
   coverage?: CellKey[];
+  /** Preview of a generating draft only (never saved): target cells whose calls have not landed yet. */
+  pending?: CellKey[];
   id: string;
   name: string;
   slot: string;

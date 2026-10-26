@@ -236,6 +236,8 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .gen { display: flex; flex-direction: column; gap: 14px; }
 .review-grid { display: flex; flex-wrap: wrap; justify-content: safe center; gap: 2px 4px; padding: 6px 4px; max-width:100%; overflow:auto; background: var(--stage); border-radius: var(--r-card); }
 .review-grid figure { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: var(--fs-sm); color: var(--text-2); }
+.review-grid .dir-caption { display: inline-flex; align-items: center; gap: 4px; }
+.review-grid .spin { animation: spin 1.2s linear infinite; }
 .reasons { display: flex; flex-direction: column; gap: 4px; color: var(--text-2); }
 .reasons li { display: flex; gap: 6px; align-items: flex-start; }
 .reasons li svg { color: var(--warn); margin-top: 2px; }

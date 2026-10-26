@@ -40,6 +40,17 @@ test('paid feature checks do not reject allowed tools, reads, unknown plans, or 
   expect(planRestriction(balance('Tier 2: Pixel Artisan'), large)).toBeNull();
 });
 
+test('the queue says which optional request the known plan can never run, so flows skip it instead of waiting forever', () => {
+  const q = new Queue(), grid = (width: number) => ({ method: 'POST' as const, path: '/inpaint-v3', body: { inpainting_image: { size: { width, height: 64 } } } });
+  q.setKey('offline-fixture');
+  expect(q.planBlocks(grid(320), 1)).toBeNull(); // unknown plan: the queue verifies it first
+  q.setBalance(balance('Tier 1: Pixel Apprentice'), q.key);
+  expect(q.planBlocks(grid(320), 1)).toBe('Needs PixelLab Tier 2 or higher. No request sent.');
+  expect(q.planBlocks(grid(256), 1)).toBeNull();
+  q.setBalance(balance('Tier 2: Pixel Artisan'), q.key);
+  expect(q.planBlocks(grid(320), 1)).toBeNull();
+});
+
 test('dependent workflows wait for an in-flight refresh while allowed operations and accepted polling continue', async () => {
   let now = 1000;
   const read = deferred<Balance>(), calls: string[] = [];

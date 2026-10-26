@@ -855,6 +855,55 @@ test('draft review can inspect every generated move and only its available views
 })
 
 
+test('a draft can be worn while it loads: landed views show, pending ones say loading, and it is never saved', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  type Studio = { ui: { playing: boolean; anim: string; dir: string }; doc: { id: string; items: Record<string, string | null>; drafts: Record<string, string> }; store: { project: any; results: Record<string, unknown> }; gens: any[]; loadGens: () => Promise<void> }
+  await page.evaluate(async () => {
+    const s = (window as unknown as { __studio: Studio }).__studio
+    await s.loadGens()
+    s.ui.playing = false; s.ui.anim = 'walk'; s.ui.dir = 'south'
+    // a generating helm whose south walk landed; east (west mirrors it) and north are still on their way
+    const p = s.store.project, hat = p.manifest.items.find((i: { id: string }) => i.id === 'hat_wizard'), keys = (dir: string) => Array.from({ length: 8 }, (_, i) => `walk/${dir}/${i}`)
+    const item = { ...structuredClone(hat), id: 'loading_helm', name: 'Loading helm', status: 'draft', materials: [], coverage: keys('south'), pending: [...keys('east'), ...keys('north')] }
+    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: 'loading_helm', name: 'Loading helm', slot: 'head', prompt: 'a helm', key: 'green', anims: ['walk'], dirs: ['south', 'east', 'north'] }, calls: [], keySwitched: false, log: [] }, input: { name: 'Loading helm', slot: 'head', prompt: 'a helm' }, phase: 'running', status: 'Adding the other moves', requestText: 2 })
+    s.store.results = { ...s.store.results, loading_helm: { cells: [], qa: null, g1: new Map(), preview: { manifest: { ...p.manifest, items: [...p.manifest.items, item] }, images: p.images } } }
+  })
+  // run a function against the dev-only studio state (serialized like page.evaluate's own functions)
+  const studio = <T,>(fn: (s: Studio, arg: string) => T, arg = '') => page.evaluate(({ src, arg }) => new Function('s', 'arg', `return (${src})(s, arg)`)((window as unknown as { __studio: Studio }).__studio, arg), { src: fn.toString(), arg }) as Promise<T>
+  const before = await studio((s) => ({ ...s.doc.items }))
+  const tile = page.locator('.equipment-scroll').getByRole('button', { name: /^Loading helm, / })
+  await tile.click()
+  await expect(tile).toHaveAttribute('aria-pressed', 'true')
+  expect(await studio((s) => ({ items: { ...s.doc.items }, drafts: { ...s.doc.drafts } }))).toEqual({ items: before, drafts: { head: 'loading_helm' } })
+  const notes = page.locator('.world-loading-items')
+  await expect(notes).toHaveCount(0) // south landed: the draft is drawn
+  for (const dir of ['east', 'west', 'north']) {
+    await studio((s, d) => { s.ui.dir = d }, dir)
+    await expect(notes).toHaveText('Loading helm loading — East, North')
+    await expect(page.locator('.world-coverage', { hasText: 'hidden' })).toHaveCount(0)
+  }
+  const card = page.locator('.gen')
+  await card.getByRole('button', { name: 'Take off', exact: true }).click()
+  await expect(tile).toHaveAttribute('aria-pressed', 'false')
+  await expect(notes).toHaveCount(0)
+  await card.getByRole('button', { name: 'Wear', exact: true }).click()
+  await expect(notes).toHaveText('Loading helm loading — East, North')
+  // finished with gaps: those views are missing (hidden and said so), no longer loading; Discard takes the draft off
+  await studio((s) => { s.gens.find((g) => g.draft.spec.id === 'loading_helm').phase = 'review' })
+  await expect(notes).toHaveCount(0)
+  await expect(page.locator('.world-coverage', { hasText: '1 equipped item hidden for this view' })).toBeVisible()
+  await card.getByRole('button', { name: 'Discard', exact: true }).click()
+  await expect(tile).toHaveCount(0)
+  expect(await studio((s) => ({ items: { ...s.doc.items }, drafts: { ...s.doc.drafts }, presets: JSON.stringify(s.store.project.manifest.presets) }))).toMatchObject({ items: before, drafts: {} })
+  expect(await studio((s) => JSON.stringify(s.store.project.manifest))).not.toContain('loading_helm')
+  expect(requests).toEqual([])
+})
+
+
 test('a follower explains blocked Create above the modal and preserves its draft', async ({ page, context }) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
