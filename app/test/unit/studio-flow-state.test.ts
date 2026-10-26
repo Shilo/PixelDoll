@@ -1,6 +1,7 @@
 /// <reference types="svelte" />
 import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
+import { readFileSync } from 'node:fs'
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
@@ -348,4 +349,18 @@ test('merged move flow keeps durable guards while publishing separately reviewed
   expect(s.moving.progress).toEqual(progress('animate', 3))
   await s.dismissMove()
   expect(s.moving.fitIds).toEqual([]); expect(s.moving.warnings).toEqual([])
+})
+
+test('concurrent item starts claim distinct draft ids while the item pipeline loads', async () => {
+  const manifest = JSON.parse(readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8'))
+  mocks.load.mockResolvedValue({ rec: { id: 'project', manifest } })
+  const s = await import('../../src/studio/state.svelte.ts')
+  const input = { name: 'Hat', slot: 'head', prompt: 'a hat' }
+  await Promise.all([s.startItem(input), s.startItem(input)])
+  const ids = s.gens.map((g) => g.draft.spec.id)
+  expect(ids).toHaveLength(2)
+  expect(new Set(ids).size).toBe(2)
+  // Each start also runs its draft (the mocked queue cannot submit, so both end failed); let that finish inside the test.
+  await vi.waitFor(() => expect(s.gens.map((g) => g.phase)).toEqual(['failed', 'failed']))
+  await vi.waitFor(() => expect(mocks.put.mock.calls.filter(([, key]) => key === 'studio-drafts').length).toBeGreaterThanOrEqual(4))
 })

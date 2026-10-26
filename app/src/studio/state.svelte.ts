@@ -492,7 +492,8 @@ export async function removeItem(itemId: string) {
 
 /** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. */
 export async function copyDemo(): Promise<string> {
-  const id = await (await createFlow()).saveCopy(store.project!, 'Adventurer copy');
+  const project = store.project!; // the open character when asked, not after the pipeline loads
+  const id = await (await createFlow()).saveCopy(project, 'Adventurer copy');
   await refreshProjects();
   await openProject(id);
   return id;
@@ -592,9 +593,9 @@ async function takeOver() {
 
 export async function startItem(input: NewItemInput) {
   if (hmrReloading) return;
-  const ctx = await loadProject(doc.id);
-  const taken = gens.map((g) => g.draft.spec.id);
-  gens.push({ draft: (await itemFlow()).draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
+  const ctx = await loadProject(doc.id), route = await itemFlow();
+  const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
+  gens.push({ draft: route.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
   const g = gens.at(-1)!;
   ui.selected = `gen:${g.draft.spec.id}`;
   ui.group = groupOf(input.slot).id;
