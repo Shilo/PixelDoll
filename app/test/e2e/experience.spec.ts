@@ -189,6 +189,8 @@ test('real wardrobe, None, Undo, exact colors, outfits and item details remain c
   await expect(helmet).toHaveAttribute('aria-pressed', 'false')
   await expect.poll(() => actorPixels(page)).not.toBe(initial)
   await hat.click()
+  await expect(hat).toHaveAttribute('aria-pressed', 'false')
+  await hat.click()
   await expect(hat).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'None', exact: true }).click()
   await expect(hat).toHaveAttribute('aria-pressed', 'false')
