@@ -149,8 +149,17 @@ async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'ke
 const gridable = (spec: { slot: string; key?: ItemSpec['key'] }) => !!spec.key && spec.key !== 'none' && slotOf(spec.slot).class !== 'held';
 
 const blobB64 = async (sha: string) => bytesToBase64(new Uint8Array(await (await db.getBlob(sha))!.arrayBuffer()));
-async function submit(d: Draft, k: number, ctx: RigCtx) {
-  const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method, rig.cell);
+/** Times each call was dropped (re-rolled, or its design or key changed): a request built across a drop is stale. */
+const drops = new WeakMap<CallState, number>();
+function drop(c: CallState) {
+  if (c.recId) c.old.push(c.recId);
+  c.recId = undefined;
+  drops.set(c, (drops.get(c) ?? 0) + 1);
+}
+/** Submit call k; returns the record id. A call dropped while its request was built keeps that paid record in `old`: it was
+ *  made from the previous design or key, so it is counted but never used. */
+async function submit(d: Draft, k: number, ctx: RigCtx): Promise<string> {
+  const c = d.calls[k], dropped = drops.get(c), route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method, rig.cell);
   const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${callParts(c.cells).map((p) => p.anim).join(' + ')}/${c.cells[0].split('/')[1]}` : ''})`;
   let req;
   if (c.kind === 'grid') { // B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
@@ -173,32 +182,34 @@ async function submit(d: Draft, k: number, ctx: RigCtx) {
     // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
     req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, anchored(k, c.kind) ? d.calls[0].cells[0] : undefined), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
-  c.recId = (await queue.enqueue(req, { label, tag: 'm3', minimumTier: d.spec.method === 'skel' ? 1 : 0 })).id;
+  const id = (await queue.enqueue(req, { label, tag: 'm3', minimumTier: d.spec.method === 'skel' ? 1 : 0 })).id;
+  if (drops.get(c) === dropped) c.recId = id; else c.old.push(id);
+  return id;
 }
 async function runCall(d: Draft, k: number, ctx: RigCtx, persist: () => Promise<unknown>): Promise<JobRec> {
-  if (!recOf(d.calls[k].recId)) { await submit(d, k, ctx); await persist(); }
-  const r = recOf(d.calls[k].recId)!;
+  let id = d.calls[k].recId;
+  if (!recOf(id)) { id = await submit(d, k, ctx); await persist(); }
+  const r = recOf(id)!;
   return terminal(r) ? r : settled(r.id);
 }
 
 /** New seed for call k (k = 0 also drops the later calls: their anchor came from the old design). */
 export function rerollCall(d: Draft, k: number, why: string) {
   const c = d.calls[k];
-  if (c.recId) c.old.push(c.recId);
-  c.recId = undefined;
+  drop(c);
   c.seed = seed();
   c.rerolls++;
   d.log.push(`re-roll call ${k + 1} (${why})`);
   // k = 0 drops every later call (their anchor / keyframes came from the old design); a later dress chunk drops its directions' poses
   const dirs = c.cells.map((x) => x.split('/')[1]), stale = k === 0 ? d.calls.slice(1) : c.kind === 'dress' ? d.calls.filter((l) => l.kind === 'pose' || l.kind === 'grid' ? dirs.includes(l.cells[0].split('/')[1]) : false) : [];
-  for (const l of stale) { if (l.recId) l.old.push(l.recId); l.recId = undefined; }
+  for (const l of stale) drop(l);
 }
 function switchKey(d: Draft, to: Key, why: string) {
   d.spec.key = to;
   d.keySwitched = true;
   d.log.push(`switch key to ${d.spec.key} (${why})`);
   // every call restarts on the new key; a grid fallback goes back to a pose call (its kept roll used the old key)
-  for (const c of d.calls) { if (c.recId) c.old.push(c.recId); c.recId = undefined; c.rerolls = 0; c.seed = seed(); if (c.kind === 'grid') c.kind = 'pose'; delete c.fallback; }
+  for (const c of d.calls) { drop(c); c.rerolls = 0; c.seed = seed(); if (c.kind === 'grid') c.kind = 'pose'; delete c.fallback; }
 }
 export const failsOf = (res: ItemResult, k: number) => [...(res.g1.has(k) ? [res.g1.get(k)!] : []), ...(res.qa?.failCalls.get(k) ?? [])];
 /**
@@ -268,8 +279,9 @@ export const isClean = (r: ItemResult) => r.qa?.qa.status === 'pass' && !r.g1.si
 
 /**
  * Auto loop: design call -> later calls (anchor cell) -> gates; failing calls re-roll (2×), then the other key, then the user.
- * A direction's poses start as soon as its dress chunk passed its keyframe gates, and `result` gets a fresh preview after
- * landed calls (round 10); the requests are the same as before, so ledger reuse is unchanged.
+ * A direction's poses start as soon as its dress chunk passed its keyframe gates (several chunks on the first key wait for each
+ * other), and `result` gets a fresh preview after landed calls (round 10); the requests are the same as before, so ledger reuse
+ * is unchanged.
  */
 export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<ItemResult | null> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
@@ -291,13 +303,22 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
   /** Pose calls of the directions call k dressed. */
   const posesOf = (k: number) => { const dirs = new Set(d.calls[k].cells.map((x) => x.split('/')[1])); return d.calls.flatMap((c, p) => (c.kind === 'pose' && dirs.has(c.cells[0].split('/')[1]) ? [p] : [])); };
   // A direction poses once its dress chunk landed and passed its keyframe gates, without waiting for the other chunks. The design
-  // call must pass too: its re-roll drops every later call.
+  // call must pass too: its re-roll drops every later call. Several chunks on the first key wait for each other (the coverage
+  // step poses them): a later chunk's G3 switches the key, which would restart every pose already sent.
   const poseEarly = async (early: Map<number, Promise<JobRec>>, k: number, r: JobRec) => {
-    if (r.state !== 'done' || d.calls[k].kind !== 'dress' || !posesOf(k).length) return;
+    if (r.state !== 'done' || d.calls[k].kind !== 'dress') return;
+    if (!d.keySwitched && d.calls.filter((c) => c.kind === 'dress').length > 1) return landed();
+    if (!posesOf(k).length) return;
     const res = await evalItem();
     if (failsOf(res, 0).length || failsOf(res, k).length) return;
     status('poses');
-    for (const p of posesOf(k)) if (!early.has(p)) early.set(p, call(p));
+    for (const p of posesOf(k)) if (!early.has(p)) {
+      const started = call(p);
+      // awaited at the coverage step; a round that ends first either stops the run with its own reason or re-runs this call
+      // in the next round, where an error surfaces
+      started.catch(() => {});
+      early.set(p, started);
+    }
   };
   let res: ItemResult | null = null;
   try {
@@ -349,11 +370,11 @@ async function img(sha: string) {
   return im;
 }
 /** Extraction is the costly part of an evaluation, and streaming evaluates after every landed call: each landed output is
- *  extracted once per signature and copied before postProcess changes it (grid cuts are new images each time: not cached). */
-const extracted = new WeakMap<Img, Map<string, CellOut>>();
-function extractOnce(out: Img, sig: string, run: () => CellOut): CellOut {
-  let m = extracted.get(out);
-  if (!m) extracted.set(out, (m = new Map()));
+ *  extracted once per signature and copied before postProcess changes it. Kept per draft, so it goes with the draft. */
+const extracted = new WeakMap<Draft, Map<string, CellOut>>();
+function extractOnce(d: Draft, sig: string, run: () => CellOut): CellOut {
+  let m = extracted.get(d);
+  if (!m) extracted.set(d, (m = new Map()));
   let c = m.get(sig);
   if (!c) m.set(sig, (c = run()));
   return { ...c, layer: { ...c.layer, data: new Uint8ClampedArray(c.layer.data) }, mask: new Uint8Array(c.mask) };
@@ -393,8 +414,9 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   }
   for (const o of dressOuts) for (const key of restCells(dirOf(o.key))) outs.push({ ...o, key, posed: true });
   const keyCut: Cuts = {}, keyRec = new Map(dressOuts.map((o) => [dirOf(o.key), o.rec]));
-  // the signature holds every extraction input that can change for one output image (a posed cut follows its keyframe's record)
-  const ex = (o: Out, useCc?: boolean, restView = false) => extractOnce(o.out, [d.spec.slot, o.key, o.k, route, pad, useCc, restView, o.posed, rig.baseHash, keyRec.get(dirOf(o.key))].join('|'), () =>
+  // the signature names the output (record + cell) and every extraction input that can change for it (a posed cut follows its
+  // keyframe's record)
+  const ex = (o: Out, useCc?: boolean, restView = false) => extractOnce(d, [o.rec, d.spec.slot, o.key, o.k, route, pad, useCc, restView, o.posed, rig.baseHash, keyRec.get(dirOf(o.key))].join('|'), () =>
     // ponytail: padded (held) slots have no keypoint band, so the rig-cell skeleton is not shifted
     extractCell({ key: o.key, call: o.k, base: padImg(baseCell(ctx, o.key, restView), pad), out: o.out, route, band: bandOf(d.spec.slot, pad ? undefined : skelOf(ctx, o.key, restView), H), useCc, posed: o.posed, clip: slot.band, held: slot.class === 'held', pad, cut: cutFor(ctx, d.spec.slot, o.key, o.posed, keyCut, restView) }));
   // the dress call only makes keyframes: gate them (G2, G3, presence); they are not item cells themselves

@@ -78,7 +78,7 @@ test('creation publishes a Default-only rig that items, moves, exports and live 
 test('"Add idle + walk" restores what creation used to make, at the old price', async () => {
   const { rec } = await create({ name: 'Default', description: 'body', size: 48, seed: 7, dirs: 4, projectId: 'rig-default-moves' })
   const specs = baseMoveSpecs(rec.manifest, 7)
-  expect(specs).toEqual([{ id: 'idle', action: 'idle', frames: 4, items: [], sharedItems: [], seed: 7 }, { id: 'walk', action: 'walk', frames: 8, items: [], sharedItems: [], seed: 7 }])
+  expect(specs).toEqual([{ id: 'idle', action: 'idle', frames: 4, items: [], sharedItems: [], allItems: true, seed: 7 }, { id: 'walk', action: 'walk', frames: 8, items: [], sharedItems: [], allItems: true, seed: 7 }]) // allItems: re-read when each move starts
   // Creation + idle + walk = the pre-Default-first creation estimate (35.25 gens for Top-down 4).
   expect(estimate(4).gens + specs.reduce((n, s) => n + moveEstimate(rec.manifest, s).gens, 0)).toBeCloseTo(35.25)
   const calls = specs.flatMap((s) => movePlan(rec, s))

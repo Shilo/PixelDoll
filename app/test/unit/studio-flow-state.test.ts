@@ -3,8 +3,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), clear: vi.fn() }))
-vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), clear: vi.fn() }))
+vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
 vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: mocks.load }))
@@ -486,6 +486,62 @@ describe('move queue', () => {
     expect(records.has('studio-move')).toBe(false)
   })
 
+  test('a move queued while the last one finishes is started, not left waiting', async () => {
+    const records = storage(), removing = pending<void>(), second = pending<typeof done>()
+    mocks.del.mockImplementationOnce(async (_store, id) => { await removing.promise; records.delete(id) })
+    mocks.move.mockResolvedValueOnce(done).mockReturnValueOnce(second.promise)
+    const s = await import('../../src/studio/state.svelte.ts')
+    const first = s.queueMoves('project', [idle])
+    await vi.waitFor(() => expect(mocks.del).toHaveBeenCalledOnce()) // idle is done; its record is being removed
+    const later = s.queueMoves('project', [walk])
+    removing.resolve()
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledTimes(2))
+    expect(mocks.move.mock.calls[1][1]).toMatchObject(walk)
+    await later
+    expect(records.get('studio-move')).toMatchObject({ status: 'running', spec: walk, queued: [] })
+    second.resolve(done); await first
+    expect(records.has('studio-move')).toBe(false)
+  })
+
+  test('queueing during the write of the next move never stores the finished one again or drops the new one', async () => {
+    const records = storage(), held = pending<void>(), late = pending<void>(), second = pending<typeof done>(), jump = { ...walk, id: 'jump', action: 'jump' }
+    let holding = true
+    mocks.put.mockImplementation(async (_store, id, value) => {
+      if (holding && value.spec?.id === 'walk') { holding = false; await held.promise }
+      else if (value.spec?.id === 'idle' && value.queued.some((q: { spec: { id: string } }) => q.spec.id === 'jump')) await late.promise // a slow write of the queue
+      records.set(id, structuredClone(value))
+    })
+    mocks.move.mockResolvedValueOnce(done).mockReturnValueOnce(second.promise)
+    const s = await import('../../src/studio/state.svelte.ts')
+    const run = s.queueMoves('project', [idle, walk])
+    await vi.waitFor(() => expect(holding).toBe(false)) // idle is done; the record that starts walk is being written
+    const more = s.queueMoves('project', [jump])
+    held.resolve()
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledTimes(2))
+    late.resolve(); await more
+    expect(records.get('studio-move')).toMatchObject({ status: 'running', spec: walk, queued: [{ projectId: 'project', spec: jump }] })
+    second.resolve(done)
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledTimes(3))
+    expect(mocks.move.mock.calls[2][1]).toMatchObject(jump)
+    await run
+  })
+
+  test('"Add idle + walk" poses the items the character has when each move starts', async () => {
+    storage()
+    const first = pending<typeof done>(), manifest = (items: string[]) => ({ rec: { id: 'project', manifest: { items: items.map((id) => ({ id })) } } })
+    mocks.moveItems.mockImplementation((m: { items: { id: string }[] }) => ({ items: m.items.map((i) => i.id), sharedItems: [] }))
+    mocks.load.mockResolvedValue(manifest([]))
+    mocks.move.mockReturnValueOnce(first.promise).mockResolvedValueOnce(done)
+    const s = await import('../../src/studio/state.svelte.ts')
+    const run = s.queueMoves('project', [{ ...idle, allItems: true }, { ...walk, allItems: true }])
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+    expect(mocks.move.mock.calls[0][1].items).toEqual([])
+    mocks.load.mockResolvedValue(manifest(['helm'])) // a draft saved itself while idle ran
+    first.resolve(done); await run
+    expect(mocks.move.mock.calls[1][1]).toMatchObject({ id: 'walk', items: ['helm'], sharedItems: [] })
+    expect(mocks.move.mock.calls[1][1]).not.toHaveProperty('allItems') // resolved once: a resume or retry keeps these items
+  })
+
   test('an interrupted queue resumes its running move and then the waiting one', async () => {
     const records = storage()
     mocks.move.mockResolvedValue(done)
@@ -534,7 +590,7 @@ test('a worn draft overlays the outfit but never reaches autosave, undo or saved
 
 describe('optional review', () => {
   const clean = { cells: [{}], qa: { qa: { status: 'pass' }, failCalls: new Map(), softCalls: new Map(), warnings: [] as string[] }, g1: new Map(), preview: null }
-  function routeMock(result: () => Promise<unknown>) {
+  function routeMock(result: (d: unknown, ctx: unknown, h: { result?: (r: unknown) => void }) => Promise<unknown>) {
     const accept = vi.fn(async (d: { spec: { id: string } }) => ({ id: d.spec.id, name: 'New helm', slot: 'head' }))
     vi.doMock('../../src/studio/itemRoute.ts', () => ({ itemRoute: { draft: (ctx: { rec: { id: string } }, input: { name: string; slot: string }, taken: string[]) => ({ spec: { id: `helm${taken.length}`, name: input.name, slot: input.slot, prompt: 'a new helm', key: 'green', anims: [], dirs: [] }, rigId: ctx.rec.id, calls: [], keySwitched: false, log: [] }), run: result, accept } }))
     vi.doMock('../../src/lib/dress/regions.ts', () => ({ splitBase: async () => ({ dirty: false }) }))
@@ -576,4 +632,77 @@ describe('optional review', () => {
     expect(s.gens.map((g) => g.phase)).toEqual(['review'])
     expect(accept).not.toHaveBeenCalled()
   })
+
+  test('a worn draft that fails comes off, so the item under it shows again', async () => {
+    const done = pending<null>()
+    routeMock(() => done.promise)
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: fixtureManifest() } })
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.doc.id = 'project'; s.doc.items = { body: 'base', head: 'hat_wizard' }
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    s.wearDraft('helm0')
+    expect(s.doc.drafts).toEqual({ head: 'helm0' })
+    done.resolve(null)
+    await vi.waitFor(() => expect(s.gens[0].phase).toBe('failed'))
+    expect(s.doc.drafts).toEqual({})
+    expect(s.doc.items.head).toBe('hat_wizard')
+  })
+
+  test('a draft discarded while it runs keeps no late preview and never saves itself', async () => {
+    const done = pending<typeof clean>()
+    let hooks: { result?: (r: unknown) => void } | undefined
+    const accept = routeMock((_d, _ctx, h) => { hooks = h; return done.promise })
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: fixtureManifest() } })
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.doc.id = 'project'
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    await vi.waitFor(() => expect(hooks).toBeDefined())
+    expect(await s.discardGen(s.gens[0])).toBe(true)
+    hooks!.result!(clean) // a preview that lands after the discard
+    done.resolve(clean)
+    await new Promise((r) => setTimeout(r, 50))
+    expect(s.store.results).toEqual({})
+    expect(accept).not.toHaveBeenCalled()
+  })
+
+  test('a draft saving itself never cancels the open of another character', async () => {
+    const done = pending<typeof clean>(), other = pending<unknown>(), accept = routeMock(() => done.promise)
+    const opened = () => ({ project: { manifest: fixtureManifest(), images: new Map() }, current: { items: { body: 'base' }, variants: {} } })
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: fixtureManifest() } })
+    mocks.source.mockImplementation(async (id: string) => (id === 'other' ? other.promise : opened()))
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.store.project = { manifest: fixtureManifest(), images: new Map() }
+    s.doc.id = 'project'; s.doc.items = { body: 'base' }
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    const opening = s.openProject('other') // the user picks another character while the draft finishes
+    done.resolve(clean)
+    await vi.waitFor(() => expect(s.ui.toast).toBe('New helm saved'))
+    expect(accept).toHaveBeenCalledOnce()
+    other.resolve(opened()); await opening
+    expect(s.doc.id).toBe('other')
+  })
+
+  test('an edit made while the open character reloads in place is kept', async () => {
+    routeMock(async () => null) // only for the mocked base split
+    const first = pending<unknown>(), stored = fixtureManifest()
+    mocks.source.mockReturnValueOnce(first.promise).mockImplementationOnce(async () => ({ project: { manifest: stored, images: new Map() } }))
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.store.project = { manifest: fixtureManifest(), images: new Map() }
+    s.doc.id = 'fixture:s2'; s.doc.items = { body: 'base' }
+    const reload = s.openProject('fixture:s2', { quiet: true }) // e.g. a draft saved itself
+    await vi.waitFor(() => expect(mocks.source).toHaveBeenCalledOnce())
+    s.savePreset('Made during the reload') // after the read: storage has it once saved, the copy being read does not
+    stored.presets = structuredClone(s.store.project.manifest.presets)
+    first.resolve({ project: { manifest: fixtureManifest(), images: new Map() } })
+    await reload
+    expect(s.store.project.manifest.presets.map((p: { name: string }) => p.name)).toContain('Made during the reload')
+  })
+})
+
+test('a worn draft saved or discarded in another tab comes off when the drafts are read', async () => {
+  mocks.get.mockImplementation(async (_store, key) => (key === 'studio-drafts' ? { gens: [] } : undefined))
+  const s = await import('../../src/studio/state.svelte.ts')
+  s.doc.drafts = { head: 'saved_elsewhere' }
+  await s.loadGens()
+  expect(s.doc.drafts).toEqual({})
 })

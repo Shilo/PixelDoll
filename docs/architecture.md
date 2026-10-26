@@ -100,7 +100,7 @@ the creator as soon as the draw is normalized (`onViews`). The animation workflo
 unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](research/generation-pipeline-review-2026-10-25.md)).
 
 - **Add idle + walk** (creator result and Moves; `BaseMoves.svelte`, `baseMoveSpecs`) queues the missing base moves with every
-  posable item and accepted shared design, one random seed, and the request shapes creation used to send (authored idle,
+  posable item and accepted shared design the character has when each move starts (`allItems`), one random seed, and the request shapes creation used to send (authored idle,
   managed walk → estimates → raw render), so it costs what creation used to spend (≈ 11 gens per drawn direction plus item
   poses).
 - **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`. The
@@ -328,9 +328,10 @@ Same requests and ledger as before; only the order of the calls and what the Stu
 `studio/state.svelte.ts`).
 
 - **Streaming.** A direction's pose calls start as soon as its own dress chunk lands and passes its keyframe gates (the design
-  call must pass too), without waiting for the other chunks. After every landed call the draft is re-evaluated (one
-  evaluation at a time, landings during one coalesce into the next; extraction is cached per output) and its preview is
-  republished.
+  call must pass too), without waiting for the other chunks. Exception: several dress chunks on the first key wait for each
+  other, since a later chunk's G3 switches the key and would restart every pose already sent. After every landed call the
+  draft is re-evaluated (one evaluation at a time, landings during one coalesce into the next; extraction is cached per
+  draft and output) and its preview is republished. A worn draft comes off when it fails or is saved or discarded elsewhere.
 - **Coverage.** A draft preview item lists its landed cells in `Item.coverage` and the cells of calls still running in the
   preview-only `Item.pending`, so a pending or missing cell is never read as authored transparency. Saved items never carry
   `pending`.

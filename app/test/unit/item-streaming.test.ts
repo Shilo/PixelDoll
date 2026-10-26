@@ -9,19 +9,20 @@ import { LABELS } from '../../src/lib/rig/poses.ts'
 import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts'
 import * as db from '../../src/lib/store/db.ts'
 import { itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts'
-import { gridFallback, MAX_REROLLS, runItem, type Draft, type ItemResult, type RigCtx } from '../../src/lib/items/run.ts'
+import { gridFallback, MAX_REROLLS, rerollCall, runItem, type Draft, type ItemResult, type RigCtx } from '../../src/lib/items/run.ts'
 import { plainReason } from '../../src/studio/model.ts'
 import type { Manifest } from '../../src/lib/store/manifest.ts'
 
 // A fake ledger: enqueue records requests in order, the test lands them one at a time.
-const q = vi.hoisted(() => ({ recs: new Map<string, JobRec>(), order: [] as { id: string; path: string; label: string }[], listeners: new Set<(s: { jobs: JobRec[] }) => void>(), blocked: null as string | null }))
+// Record ids stay unique across tests, so a run a test leaves waiting never wakes on a later test's record.
+const q = vi.hoisted(() => ({ recs: new Map<string, JobRec>(), order: [] as { id: string; path: string; label: string }[], listeners: new Set<(s: { jobs: JobRec[] }) => void>(), blocked: null as string | null, n: 0 }))
 vi.mock('../../src/lib/pixellab/queue.ts', () => {
   const emit = () => { for (const l of [...q.listeners]) l({ jobs: [...q.recs.values()] }) }
   return {
     queue: {
       subscribe: (cb: (s: { jobs: JobRec[] }) => void) => { q.listeners.add(cb); cb({ jobs: [...q.recs.values()] }); return () => q.listeners.delete(cb) },
       enqueue: vi.fn(async (req: Req, meta: { label: string }) => {
-        const id = `r${q.order.length}`, rec = { id, label: meta.label, method: 'POST', endpoint: req.path, params: req.body, inputs: [], requestHash: id, state: 'queued', attempts: 0, nextAt: 0, createdAt: q.order.length, jobs: [], gens: 0, usd: 0 } as unknown as JobRec
+        const id = `r${q.n++}`, rec = { id, label: meta.label, method: 'POST', endpoint: req.path, params: req.body, inputs: [], requestHash: id, state: 'queued', attempts: 0, nextAt: 0, createdAt: q.order.length, jobs: [], gens: 0, usd: 0 } as unknown as JobRec
         q.recs.set(id, rec); q.order.push({ id, path: req.path, label: meta.label }); emit()
         return rec
       }),
@@ -65,8 +66,9 @@ async function fixture() {
   return { ctx, d, dressed }
 }
 
-test('a direction poses as soon as its own dress chunk passes, and the preview streams landed cells with the rest pending', async () => {
+test('after a key switch a direction poses as soon as its own dress chunk passes, and the preview streams landed cells with the rest pending', async () => {
   const { ctx, d, dressed } = await fixture(), results: ItemResult[] = []
+  d.keySwitched = true // no later chunk can switch the key again, so early poses are never restarted
   const run = runItem(d, ctx, { result: (r) => results.push(r) })
   await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
   await land(q.order[0].id, [dressed])
@@ -141,4 +143,61 @@ test('a held item pasted on near-rest frames says so in review, without changing
   expect(q2.qa.status).not.toBe('pass')
   expect(q2.qa.cells['idle/east/0']?.repaired).toBe(true)
   expect(itemQa(rig, slotOf('main_hand'), 'green', [cell(0, false), cell(1, false)], 0).warnings.some((w) => w.startsWith('R1'))).toBe(false)
+})
+
+/** The dressed keyframe with key-colored px outside the body: a key/item color collision (G3). */
+function collision(dressed: Img) {
+  const im = makeImg(16, 16)
+  im.data.set(dressed.data)
+  const key = dressed.data.slice((4 * 16 + 6) * 4, (4 * 16 + 6) * 4 + 4) // a body px above the item band: key-colored
+  for (let y = 0; y < 16; y++) for (let x = 0; x < 4; x++) im.data.set(key, (y * 16 + x) * 4)
+  return im
+}
+
+test('several dress chunks on the first key pose nothing until all landed: a later G3 switches the key with no pose sent', async () => {
+  const { ctx, d, dressed } = await fixture()
+  void runItem(d, ctx, {})
+  await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
+  await land(q.order[0].id, [dressed]) // south passes its gates
+  await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
+  const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1]
+  await land(east.id, [dressed, collision(dressed)])
+  await vi.waitFor(() => expect(d.keySwitched).toBe(true))
+  expect(d.log.some((l) => l.startsWith('switch key') && l.includes('G3'))).toBe(true)
+  expect(call('/animate-with-skeleton-v3')).toBeUndefined() // the old flow posed south first, then restarted it on the new key
+})
+
+test('a call re-rolled while its request is built keeps the paid record counted but never uses it', async () => {
+  const { ctx, d, dressed } = await fixture()
+  let release!: () => void
+  const hold = new Promise<void>((r) => { release = r })
+  d.keySwitched = true
+  let holding = false, held = false
+  vi.mocked(db.getBlob).mockImplementation(async (sha) => { if (holding) { held = true; await hold } return blobs.get(sha) })
+  void runItem(d, ctx, { result: () => { holding = true } }) // the next blob read after the gate evaluation is the pose's keyframe
+  await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
+  await land(q.order[0].id, [dressed])
+  await vi.waitFor(() => expect(held).toBe(true))
+  rerollCall(d, 0, 'a new design') // drops the south pose while its request is being built
+  holding = false; release()
+  await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined())
+  const pose = call('/animate-with-skeleton-v3', 'south')!.id
+  await vi.waitFor(() => expect(d.calls[2].old).toContain(pose))
+  expect(d.calls[2].recId).toBeUndefined()
+})
+
+test('an early pose that fails is handled where the run awaits it, never as an unhandled rejection', async () => {
+  const { ctx, d, dressed } = await fixture(), enqueue = vi.mocked(queue.enqueue).getMockImplementation()!
+  d.keySwitched = true
+  vi.mocked(queue.enqueue).mockImplementation(async (req, meta) => { if (req.path === '/animate-with-skeleton-v3') throw new Error('offline'); return enqueue(req, meta) })
+  try {
+    const run = runItem(d, ctx, {})
+    await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
+    await land(q.order[0].id, [dressed]) // the south pose fails at once, long before the coverage step
+    await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
+    await new Promise((r) => setTimeout(r, 50))
+    await land(q.order.filter((o) => o.path === '/edit-animation-v2')[1].id, [dressed, dressed])
+    await run
+    expect(d.log.at(-1)).toBe('error: offline')
+  } finally { vi.mocked(queue.enqueue).mockImplementation(enqueue) }
 })

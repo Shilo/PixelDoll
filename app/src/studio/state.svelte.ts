@@ -240,11 +240,12 @@ export async function refreshProjects() {
   if (listed) try { for (const k of Object.keys(localStorage)) if (k.startsWith(UNSAVED) && !store.projects.some((p) => k === UNSAVED + p.id)) localStorage.removeItem(k); } catch { /* storage blocked */ }
 }
 
-let openRequest = 0;
+let openRequest = 0, opening = ''; // opening: the character the newest open is loading ('' when it finished)
 /** keep.wear: equip that item (Keep it). keep.quiet: reload the open character in place (a draft saved itself): the view, the
  *  selection and undo stay, and the stage does not show loading. */
 export async function openProject(id: string, keep?: { wear?: string; quiet?: boolean }) {
-  const request = ++openRequest, quiet = !!keep?.quiet && id === doc.id;
+  const request = ++openRequest, quiet = !!keep?.quiet && id === doc.id, seen = edits; // edits so far are saved before the read
+  opening = id;
   await flushSave();
   if (request !== openRequest) return;
   if (!quiet) doc.loading = true;
@@ -258,6 +259,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
     if (request !== openRequest) return;
     await flushSave(); // an edit made to the previous character while this one loaded lands before it is replaced
     if (request !== openRequest) return;
+    // an edit to this same character while it reloaded (outfits, layer order, hides) is newer than the read: read it again
+    if (id === doc.id && edits !== seen) return openProject(id, keep);
     const m = r.project.manifest;
     const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
     const unsaved = takeUnsaved(id, m), current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
@@ -283,7 +286,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
     // The demo's own open clears doc.error: say why the requested character is not shown.
     if (id !== DEMO) { console.error('open', e); toast(`Could not open that character: ${doc.error}`); return openProject(DEMO); }
   } finally {
-    if (request === openRequest) doc.loading = false;
+    if (request === openRequest) { doc.loading = false; opening = ''; }
   }
 }
 export const lastProject = () => lsGet(K.last) ?? DEMO;
@@ -562,6 +565,11 @@ function setGens(list: Gen[]) {
   const uniq = uniqueBy(list, (g) => g.draft.spec.id);
   mirrored = JSON.stringify(uniq);
   gens.splice(0, gens.length, ...uniq);
+  takeOffGone();
+}
+/** A worn draft that failed or is gone (saved or discarded in another tab) comes off, so the item under it shows again. */
+function takeOffGone() {
+  for (const [slot, id] of Object.entries(doc.drafts)) if (!gens.some((g) => g.draft.spec.id === id && g.phase !== 'failed')) delete doc.drafts[slot];
 }
 /** Once per page (a second call, e.g. a Studio remount, returns the same promise). */
 export function loadGens(): Promise<void> {
@@ -578,6 +586,7 @@ function drive() {
   driving = true;
   const outdated = gens.filter((g) => g.phase === 'running' && g.requestText !== REQUEST_TEXT);
   for (const g of outdated) Object.assign(g, { phase: 'failed', status: '', error: STOPPED });
+  takeOffGone();
   if (outdated.length) void saveGens();
   for (const g of gens) if (g.phase === 'running') void runGen(g);
     else if (g.phase === 'review') void evalGen(g);
@@ -631,14 +640,17 @@ async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
 async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
   g.phase = 'running';
   g.error = undefined;
+  // a draft saved or discarded meanwhile keeps no result: a late preview must not bring it back
+  const result = (r: ItemResult | null) => { if (gens.includes(g)) store.results = { ...store.results, [g.draft.spec.id]: r }; };
   try {
     ctx ??= await loadProject(g.draft.rigId);
     const res = await (await itemFlow()).run(g.draft, ctx, {
       status: (s) => (g.status = s === 'design call' ? 'Designing' : 'Adding the other moves'),
       persist: saveGens,
-      result: (r) => (store.results = { ...store.results, [g.draft.spec.id]: r }),
+      result,
     });
-    store.results = { ...store.results, [g.draft.spec.id]: res };
+    if (!gens.includes(g)) return;
+    result(res);
     g.phase = res?.qa && res.cells.length ? 'review' : 'failed';
     if (g.phase === 'failed') g.error = g.draft.log.at(-1) ?? 'PixelLab did not return usable frames';
     g.status = '';
@@ -648,6 +660,7 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
     g.phase = 'failed';
     g.error = (e as Error).message;
   }
+  takeOffGone();
   await saveGens();
   if (g.phase !== 'review') return;
   // Review is optional (round 10, changes D7): a clean draft saves itself; warned or failed ones wait with their badge.
@@ -714,7 +727,8 @@ export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
     const worn = doc.drafts[item.slot] === id;
     drop(g);
     await saveGens();
-    if (doc.id === g.draft.rigId) {
+    // a draft saving itself never cancels the open of another character the user just started
+    if (doc.id === g.draft.rigId && !(auto && opening && opening !== doc.id)) {
       if (ui.selected === `gen:${id}`) ui.selected = item.id;
       await openProject(doc.id, auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id });
     }
@@ -790,10 +804,10 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number; short: strin
 // A caught failure must stay terminal across reload; only an explicit start clears it. A load failure is not one: the
 // pipeline never ran, so the saved run stays running for a reload to resume.
 interface FlowDraft<S> { spec: S; status?: 'running' | 'failed'; error?: string; progress?: Progress | null; requestText?: number }
-async function persistFlowFailure(key: string, record: object, error: unknown): Promise<string> {
+async function persistFlowFailure(key: string, record: object, error: unknown, write = (r: object): Promise<unknown> => db.put('projects', key, r)): Promise<string> {
   const message = error instanceof Error ? error.message : String(error);
   if (error instanceof LoadError) return message;
-  try { await db.put('projects', key, { id: key, ...record, status: 'failed', error: message }); }
+  try { await write({ id: key, ...record, status: 'failed', error: message }); }
   catch { return `${message} Could not save this failure on this device. Dismiss this operation before reloading.`; }
   return message;
 }
@@ -868,16 +882,27 @@ type QueuedMove = { projectId: string; spec: MoveSpec };
 export const moving = $state({ spec: null as MoveSpec | null, projectId: '', progress: null as Progress | null, error: '', done: false, fitIds: [] as string[], warnings: [] as string[], queued: [] as QueuedMove[] });
 const MOVE_KEY = 'studio-move';
 let moveRunning = false, moveRevision = 0;
+/** The stored move record without its queue (null: the current move is finished or dismissed). */
+let moveRecord: object | null = null, moveWrites: Promise<unknown> = Promise.resolve();
+/** The only writer of the stored move: writes run in order and each reads the live queue when it runs, so a move queued at any
+ *  time is kept and an older record never comes back. Between moves the first waiting one is stored as running (a reload
+ *  starts it). */
+function storeMove(record = moveRecord) {
+  moveRecord = record;
+  const write = moveWrites.then(() => {
+    const queued = $state.snapshot(moving.queued), [next, ...rest] = queued;
+    if (moveRecord) return db.put('projects', MOVE_KEY, { ...moveRecord, queued });
+    return next ? db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec: next.spec, projectId: next.projectId, status: 'running', requestText: REQUEST_TEXT, queued: rest }) : db.del('projects', MOVE_KEY);
+  });
+  moveWrites = write.catch(() => {}); // ordering only: each caller handles its own write's error
+  return write;
+}
 /** Queue moves behind the current one; start the first now when nothing is pending. A failed move holds the queue until it
  * is retried (the queue continues) or dismissed (the queue is dropped). */
 export async function queueMoves(projectId: string, specs: MoveSpec[]) {
   if (hmrReloading || !specs.length) return;
   moving.queued = [...moving.queued, ...specs.map((spec) => ({ projectId, spec }))];
-  if (moveRunning || (moving.spec && !moving.done)) {
-    const r = await db.get<object>('projects', MOVE_KEY); // a starting move writes the queue with its own record
-    if (r) await db.put('projects', MOVE_KEY, { ...r, queued: $state.snapshot(moving.queued) });
-    return;
-  }
+  if (moveRunning || (moving.spec && !moving.done)) { await storeMove(); return; }
   const [next, ...rest] = moving.queued;
   moving.queued = rest;
   await startMove(next.projectId, next.spec);
@@ -887,20 +912,19 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
   moveRunning = true;
   const revision = ++moveRevision, current = () => revision === moveRevision && moveRunning;
-  let failed = false, next: QueuedMove | undefined;
+  let failed = false;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   try {
-    await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT, queued: $state.snapshot(moving.queued) });
+    // "Add idle + walk" poses the items the character has when the move starts, also the ones saved while it waited
+    if (spec.allItems) { const { allItems: _, ...rest } = spec; moving.spec = spec = { ...rest, ...(await createFlow()).moveItems((await loadProject(projectId)).rec.manifest) }; }
+    await storeMove({ id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT });
     const result = await (await createFlow()).addMove(projectId, spec, (p) => { if (current() && !failed) moving.progress = p; });
     if (!current()) return;
     moving.fitIds = result.fitIds; moving.warnings = result.warnings;
     await refreshFits();
     if (!current()) return;
     moving.done = true;
-    next = $state.snapshot(moving.queued[0]);
-    // The next queued move replaces this record in one write, so a reload between moves cannot lose the queue.
-    if (next) { moving.queued = moving.queued.slice(1); await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec: next.spec, projectId: next.projectId, status: 'running', requestText: REQUEST_TEXT, queued: $state.snapshot(moving.queued) }); }
-    else await db.del('projects', MOVE_KEY);
+    await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
     if (!current()) return;
     if (doc.id === projectId) { await openProject(projectId); if (!current()) return; ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
     toast(`${spec.id[0].toUpperCase() + spec.id.slice(1)} added`);
@@ -908,13 +932,18 @@ export async function startMove(projectId: string, spec: MoveSpec) {
     if (current()) {
       failed = true;
       moving.error = e instanceof Error ? e.message : String(e);
-      const error = await persistFlowFailure(MOVE_KEY, { spec, projectId, progress: $state.snapshot(moving.progress), queued: $state.snapshot(moving.queued) }, e);
+      const error = await persistFlowFailure(MOVE_KEY, { spec, projectId, progress: $state.snapshot(moving.progress) }, e, storeMove);
       if (current()) moving.error = error;
     }
   } finally {
     if (revision === moveRevision) moveRunning = false;
   }
-  if (next && revision === moveRevision) await startMove(next.projectId, next.spec);
+  // the live queue after the finish steps: a move queued while this one finished is never left behind
+  if (revision === moveRevision && moving.done && moving.queued.length) {
+    const [next, ...rest] = moving.queued;
+    moving.queued = rest;
+    await startMove(next.projectId, next.spec);
+  }
 }
 /** Explicit consent to retry only the reviewed joint checks, keeping the original body request identity. */
 export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, reviewed: MeasurementRecoveryPlan) {
@@ -946,7 +975,9 @@ export async function resumeMove() {
   moveResumed = true;
   const r = await db.get<FlowDraft<MoveSpec> & { projectId: string; queued?: QueuedMove[] }>('projects', MOVE_KEY).catch(() => undefined);
   if (!r?.spec || moving.spec) return;
-  moving.queued = r.queued ?? [];
+  const { queued, ...record } = r;
+  moving.queued = queued ?? [];
+  moveRecord = record; // a halted move keeps its stored record while moves are queued behind it
   if (halted(r)) Object.assign(moving, { spec: r.spec, projectId: r.projectId, progress: r.progress ?? null, error: r.error || STOPPED, done: false, fitIds: [], warnings: [] });
   else void startMove(r.projectId, r.spec);
 }
@@ -954,7 +985,7 @@ export async function dismissMove() {
   if (moveRunning) return;
   moveRevision++;
   Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false, fitIds: [], warnings: [], queued: [] });
-  await db.del('projects', MOVE_KEY);
+  await storeMove(null);
 }
 
 // ---------- imported character setup ----------

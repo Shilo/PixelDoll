@@ -397,7 +397,9 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
+/** allItems: items and sharedItems are re-read when the move starts (moveItems), so a queued "Add idle + walk" also poses items
+ *  saved while it waited. */
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; allItems?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
 export const MOVE_STEPS = [
   { id: 'animate', label: 'Animating the body' },
@@ -491,12 +493,13 @@ export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec)
   return { recordIds: [...recordIds].sort(), checks: needed.size, gens: +(needed.size * EST).toFixed(2), usd: +(needed.size * .00513).toFixed(5), rigVersion, rawHashes, ...(spec.bodyPaletteRepair ? { palette } : {}) };
 }
 
+/** Every posable item and accepted shared design of a character, as "Add a move" offers them. */
+export const moveItems = (m: Manifest) => ({ items: posable(m).filter((i) => !i.design).map((i) => i.id), sharedItems: m.items.filter((i) => i.design && i.status === 'accepted').map((i) => i.id) });
 /** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
- * shapes as creation made them (no poseStyle); every posable item and accepted shared design follows, as in "Add a move". */
+ * shapes as creation made them (no poseStyle); the items follow the character until the move starts (allItems). */
 export function baseMoveSpecs(m: Manifest, seed = 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
   const have = new Set(m.rig.animations.map((a) => a.id));
-  const items = posable(m).filter((i) => !i.design).map((i) => i.id), sharedItems = m.items.filter((i) => i.design && i.status === 'accepted').map((i) => i.id);
-  return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({ id: a.name, action: a.name, frames: a.frames, items, sharedItems, seed }));
+  return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({ id: a.name, action: a.name, frames: a.frames, ...moveItems(m), allItems: true, seed }));
 }
 
 /** Frames of a move: the authored table's length, or the text frame count. */
