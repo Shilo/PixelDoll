@@ -16,6 +16,13 @@
       "url": "http://127.0.0.1:5232"
     },
     {
+      "name": "x28-gallery",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-I", "-m", "http.server", "5233", "--bind", "127.0.0.1", "--directory", "spikes/api/out/x28/gallery"],
+      "port": 5233,
+      "url": "http://127.0.0.1:5233"
+    },
+    {
       "name": "app-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

@@ -1,5 +1,5 @@
-# Round 8: GIFs (per-frame timing) and one self-contained page from out/x27/gallery/spec.json (x27/gallery.mts).
-# Usage (spikes/api): python -I x27/gallery.py out/x27/gallery
+# Rounds 8-9: GIFs (per-frame timing) and one self-contained page from <dir>/spec.json (x27/gallery.mts, x28/gallery.mts).
+# Usage (spikes/api): python -I x27/gallery.py out/x27/gallery   (or out/x28/gallery)
 import json, os, sys, html, base64, io
 from PIL import Image
 
@@ -35,9 +35,9 @@ details{margin-top:8px;background:var(--card);border:1px solid var(--line);borde
 summary{cursor:pointer;color:var(--acc);font-weight:600}li{margin:2px 0}
 """
 out = ['<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">',
-       '<title>Mocap Move Library</title><style>' + css + '</style></head><body><main>',
-       '<h1>PixelDoll round 8: mocap moves</h1>',
-       '<p>Same bare body, same seed. One-shot moves start on the rest frame (held). Blind rows hide which is which until revealed.</p>']
+       f"<title>{html.escape(J.get('title', 'Mocap Move Library'))}</title><style>" + css + '</style></head><body><main>',
+       f"<h1>{html.escape(J.get('h1', 'PixelDoll round 8: mocap moves'))}</h1>",
+       f"<p>{html.escape(J.get('intro', 'Same bare body, same seed. One-shot moves start on the rest frame (held). Blind rows hide which is which until revealed.'))}</p>"]
 for s in J['sections']:
     out.append(f"<h2>{html.escape(s['title'])}</h2><p>{html.escape(s['note'])}</p>")
     for c in s['cases']:
