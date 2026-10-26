@@ -110,7 +110,9 @@ export function storeVariants(m: Manifest, ...selections: Preset['variants'][]) 
 }
 
 // ponytail: index cache keyed by image object; a rebuilt project rebuilds its indices.
-const cache = new WeakMap<Img, { sig: string; idx: Int16Array }>();
+// The last rendered copy is kept too, so an outfit change re-renders nothing and the copies keep their identity for the
+// stage's per-image caches. One copy per image: two owners sharing a hash with different colors re-render each time.
+const cache = new WeakMap<Img, { sig: string; idx: Int16Array; table?: string; out?: Img }>();
 
 /** Project view with the selected variants swapped in (exact index swap). Same cell hashes, so compose is unchanged. */
 export function recolor(p: Project, variants: Preset['variants']): Project {
@@ -126,7 +128,7 @@ export function recolor(p: Project, variants: Preset['variants']): Project {
     }
     if (!table.some((c) => c >= 0)) continue;
     images ??= new Map(p.images);
-    const sig = mats.map((x) => x.ramp.join()).join('|'), t = Int32Array.from(table);
+    const sig = mats.map((x) => x.ramp.join()).join('|'), t = Int32Array.from(table), tsig = table.join();
     for (const l of it.layers) {
       const local = new Map<string, Img>();
       for (const d of Object.values(l.cells ?? {}))
@@ -135,7 +137,8 @@ export function recolor(p: Project, variants: Preset['variants']): Project {
           if (!im) continue;
           let c = cache.get(im);
           if (!c || c.sig !== sig) cache.set(im, (c = { sig, idx: indexImg(im, ids) }));
-          const rendered = applyIndex(im, c.idx, t);
+          if (c.table !== tsig) { c.table = tsig; c.out = applyIndex(im, c.idx, t); }
+          const rendered = c.out!;
           local.set(h!, rendered);
           // Preserve the traditional map for consumers inspecting a single item's images; composition uses owner-local refs.
           images.set(h!, rendered);

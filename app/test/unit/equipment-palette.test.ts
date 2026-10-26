@@ -43,6 +43,15 @@ test('identical hashes recolor per owner including an unworn or unmodified secon
   expect(rgba(cellImg(p, a, 'walk', 'south', 0)!)).toEqual([100, 100, 100, 255]);
 });
 
+test('an outfit change reuses the rendered colors; a color change renders new ones', async () => {
+  const p = await fixture(), helmet = p.manifest.items[3].layers[0], cell = () => cellImg(recolor(p, { helmet: 'blue' }), helmet, 'walk', 'south', 0)!;
+  const first = cell();
+  expect(cell()).toBe(first);
+  const red = cellImg(recolor(p, { helmet: 'red' }), helmet, 'walk', 'south', 0)!;
+  expect(red).not.toBe(first);
+  expect(rgba(red, 32, 20)).toEqual([255, 0, 0, 255]);
+});
+
 test('tucked variants resolve the original owner-local layer rather than another copy sharing its hash', async () => {
   const p = await fixture(), tucked = await withTuckVariants(recolor(p, { a: 'blue', b: 'red' }));
   for (const [id, expected] of [['a~helmet', [0, 0, 255, 255]], ['b~helmet', [255, 0, 0, 255]]] as const) {
