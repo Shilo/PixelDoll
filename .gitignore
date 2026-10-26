@@ -34,6 +34,8 @@ docs/design/**/*.jpg
 docs/design/**/*.jpeg
 docs/design/**/*.webp
 docs/design/**/*.gif
+# Branding boards are generated from the committed .mjs sources.
+docs/design/branding/*.svg
 # Review screenshots follow the same local-media policy as design evidence.
 docs/reviews/**/*.png
 docs/reviews/**/*.jpg
