@@ -2,6 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "x26-gallery",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-I", "-m", "http.server", "5231", "--bind", "127.0.0.1", "--directory", "spikes/api/out/x26/gallery"],
+      "port": 5231,
+      "url": "http://127.0.0.1:5231"
+    },
+    {
       "name": "app-dev",
       "runtimeExecutable": "npm",
       "runtimeArgs": [
