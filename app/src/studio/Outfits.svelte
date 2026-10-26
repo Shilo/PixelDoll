@@ -6,7 +6,9 @@
   let naming = $state(false)
   let outfitName = $state('')
   function saveOutfit() {
-    savePreset(outfitName.trim() || `Outfit ${(m?.presets.length ?? 0) + 1}`)
+    let n = (m?.presets.length ?? 0) + 1
+    while (m?.presets.some((p) => p.name === `Outfit ${n}`)) n++ // a default name after a deletion stays distinct
+    savePreset(outfitName.trim() || `Outfit ${n}`)
     naming = false
     outfitName = ''
   }

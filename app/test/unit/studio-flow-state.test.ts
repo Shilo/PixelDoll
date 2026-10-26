@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, expect, test, vi } from 'vitest'
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), clear: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
@@ -13,7 +13,7 @@ vi.mock('../../src/lib/equipment/fits.ts', async original => ({ ...await origina
 
 vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
-vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', subscribe: () => () => {}, idle: () => true } }))
+vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', subscribe: () => () => {}, idle: () => true, clearFinished: mocks.clear } }))
 
 function stubGlobals() {
   // Isolate asynchronous controller logic; no rendering or Svelte reactivity is under test.
@@ -28,7 +28,7 @@ beforeAll(async () => { stubGlobals(); await import('../../src/studio/state.svel
 beforeEach(() => {
   vi.resetModules()
   Object.values(mocks).forEach((m) => m.mockReset())
-  mocks.put.mockResolvedValue(undefined); mocks.get.mockResolvedValue(undefined); mocks.del.mockResolvedValue(undefined); mocks.fits.mockResolvedValue([])
+  mocks.put.mockResolvedValue(undefined); mocks.get.mockResolvedValue(undefined); mocks.del.mockResolvedValue(undefined); mocks.fits.mockResolvedValue([]); mocks.clear.mockResolvedValue(0)
   stubGlobals()
 })
 afterEach(() => vi.unstubAllGlobals())
@@ -363,4 +363,72 @@ test('concurrent item starts claim distinct draft ids while the item pipeline lo
   // Each start also runs its draft (the mocked queue cannot submit, so both end failed); let that finish inside the test.
   await vi.waitFor(() => expect(s.gens.map((g) => g.phase)).toEqual(['failed', 'failed']))
   await vi.waitFor(() => expect(mocks.put.mock.calls.filter(([, key]) => key === 'studio-drafts').length).toBeGreaterThanOrEqual(4))
+})
+
+const fixtureManifest = () => JSON.parse(readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8'))
+const draftsSaved = () => mocks.put.mock.calls.filter(([, key]) => key === 'studio-drafts')
+
+test('saving an outfit never replaces another one, including a default name after a deletion and the reserved current id', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  s.store.project = { manifest: fixtureManifest(), images: new Map() }
+  s.doc.id = 'fixture:s2'
+  s.savePreset('Outfit 2'); s.savePreset('Outfit 2'); s.savePreset('Adventurer'); s.savePreset('Current'); s.savePreset('鎧')
+  const presets = s.store.project!.manifest.presets
+  expect(presets.map((p) => p.id)).toEqual(['adventurer', 'base-only', 'outfit-2', 'outfit-2-2', 'adventurer-2', 'current-2', 'outfit'])
+  expect(presets[0].name).toBe('Adventurer') // the first (default) outfit keeps its place
+})
+
+test('Try again keeps the draft when Connect is closed without a key', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  const g = { draft: { spec: { id: 'hat' }, rigId: 'project', calls: [], log: [] }, input: { name: 'Hat', slot: 'head', prompt: 'a hat' }, phase: 'failed', status: '' } as unknown as (typeof s.gens)[number]
+  s.gens.push(g)
+  s.retryGen(g)
+  expect(s.ui.sheet).toBe('connect')
+  s.clearPendingConnection()
+  await Promise.resolve()
+  expect(s.gens.map((x) => x.draft.spec.id)).toEqual(['hat'])
+  expect(draftsSaved()).toHaveLength(0)
+})
+
+test('Clear finished waits for the stored drafts, so their records are kept', async () => {
+  const stored = pending<unknown>()
+  mocks.get.mockImplementation(async (_store, key) => key === 'studio-drafts' ? stored.promise : undefined)
+  const s = await import('../../src/studio/state.svelte.ts')
+  const cleared = s.cleanUp(60_000, false)
+  await new Promise((r) => setTimeout(r, 0))
+  expect(mocks.clear).not.toHaveBeenCalled()
+  void s.loadGens()
+  stored.resolve({ gens: [{ draft: { spec: { id: 'hat' }, rigId: 'project', calls: [{ recId: 'paid-call', old: [] }], log: [] }, input: { name: 'Hat', slot: 'head', prompt: 'a hat' }, phase: 'failed', status: '' }] })
+  await cleared
+  expect(mocks.clear).toHaveBeenCalled()
+  for (const [keep] of mocks.clear.mock.calls) expect(keep({ id: 'paid-call', createdAt: 0 })).toBe(true)
+})
+
+test('a failed read of the stored drafts is reported and a new item cannot overwrite them', async () => {
+  mocks.get.mockImplementation(async (_store, key) => { if (key === 'studio-drafts') throw new Error('read failed'); return undefined })
+  mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: fixtureManifest() } })
+  const s = await import('../../src/studio/state.svelte.ts')
+  await expect(s.loadGens()).rejects.toThrow('read failed')
+  await s.startItem({ name: 'Hat', slot: 'head', prompt: 'a hat' })
+  expect(s.gens).toHaveLength(0)
+  expect(draftsSaved()).toHaveLength(0)
+  expect(s.ui.toast).toMatch(/Saved item drafts could not be read: read failed/)
+  await expect(s.cleanUp(60_000, false)).rejects.toThrow('read failed')
+  expect(mocks.clear).not.toHaveBeenCalled()
+})
+
+test('a character that cannot open says why before the demo replaces it', async () => {
+  mocks.source.mockImplementation(async (id: string) => { throw new Error(id === 'rig-broken' ? 'broken record' : 'demo unavailable') })
+  const s = await import('../../src/studio/state.svelte.ts')
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  await s.openProject('rig-broken')
+  expect(s.ui.toast).toBe('Could not open that character: broken record')
+})
+
+test('an unreadable character list is reported instead of showing only the demo silently', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  vi.spyOn(console, 'error').mockImplementation(() => {})
+  await s.refreshProjects() // the mocked store has no `all`: listing throws
+  expect(s.store.projects.map((p) => p.id)).toEqual([s.DEMO])
+  expect(s.ui.toast).toMatch(/^Could not read your saved characters: /)
 })

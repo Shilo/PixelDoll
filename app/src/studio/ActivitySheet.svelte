@@ -7,7 +7,8 @@
   import { fmtNum } from './model.ts'
   import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts'
   async function clear() {
-    const n = await cleanUp()
+    let n: Awaited<ReturnType<typeof cleanUp>>
+    try { n = await cleanUp() } catch (e) { console.error('clear finished', e); toast(`Could not clear finished jobs: ${(e as Error).message}`); return }
     toast(`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused image${n.blobs === 1 ? '' : 's'}` : ''}. Jobs your drafts or a running create or move still use are kept.`)
   }
   import { ChevronRight, CircleAlert, CircleCheck, Coins, RefreshCw } from './icons.ts'

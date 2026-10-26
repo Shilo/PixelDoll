@@ -227,7 +227,7 @@ class View {
 export const view = new View();
 
 export async function refreshProjects() {
-  const listed = await listProjects().catch(() => null), own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+  const listed = await listProjects().catch((e: unknown) => { console.error('projects', e); toast(`Could not read your saved characters: ${(e as Error).message}`); return null; }), own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
   store.projects = [{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' }, ...own.map((p) => ({ id: p.id, name: p.manifest.name, demo: false, dev: originOf(p) === 'dev', savedAt: p.savedAt }))];
   // Drop unload snapshots of characters deleted here or in another tab (only when the listing is known to be complete).
   if (listed) try { for (const k of Object.keys(localStorage)) if (k.startsWith(UNSAVED) && !store.projects.some((p) => k === UNSAVED + p.id)) localStorage.removeItem(k); } catch { /* storage blocked */ }
@@ -272,7 +272,8 @@ export async function openProject(id: string, keep?: { wear?: string }) {
   } catch (e) {
     if (request !== openRequest) return;
     doc.error = (e as Error).message;
-    if (id !== DEMO) return openProject(DEMO);
+    // The demo's own open clears doc.error: say why the requested character is not shown.
+    if (id !== DEMO) { console.error('open', e); toast(`Could not open that character: ${doc.error}`); return openProject(DEMO); }
   } finally {
     if (request === openRequest) doc.loading = false;
   }
@@ -426,10 +427,13 @@ export function applyPreset(p: Preset) {
 }
 export function savePreset(name: string) {
   const m = store.project!.manifest;
-  const id = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || `outfit-${m.presets.length + 1}`;
+  // Never replaces a saved outfit (a repeated or non-Latin name, a default name after a deletion); 'current' is the export's live look.
+  const base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'outfit';
+  let id = base;
+  for (let n = 2; id === 'current' || m.presets.some((p) => p.id === id); n++) id = `${base}-${n}`;
   commit('Save outfit', () => {
     const pr: Preset = { id, name, items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) };
-    m.presets = [...m.presets.filter((p) => p.id !== id), pr];
+    m.presets = [...m.presets, pr];
   });
 }
 export function deletePreset(id: string) {
@@ -537,7 +541,8 @@ const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state
 // the leader's tab closes.
 const runningGens = new Set<string>();
 let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, mirrored = '', mirrorAt = 0;
-const readGens = async () => uniqueBy((await db.get<{ gens: Gen[] }>('projects', GENS_KEY).catch(() => undefined))?.gens ?? [], (g) => g.draft.spec.id);
+// A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
+const readGens = async () => uniqueBy((await db.get<{ gens: Gen[] }>('projects', GENS_KEY))?.gens ?? [], (g) => g.draft.spec.id);
 /** The ONLY way the list is replaced: one entry per draft id (already-persisted duplicates heal on the next save). Synchronous,
  * so no caller can splice with a length read before an await (the B13 regression that doubled every draft). */
 function setGens(list: Gen[]) {
@@ -574,7 +579,7 @@ queue.subscribe((s) => {
     if (driving || JSON.stringify(list) === mirrored) return;
     setGens(list);
     for (const g of gens) if (g.phase === 'review' && !store.results[g.draft.spec.id]) void evalGen(g);
-  });
+  }, (e) => console.error('drafts', e));
 });
 /** This follower tab just became the leader: continue the old leader's drafts, create and move. */
 async function takeOver() {
@@ -593,6 +598,8 @@ async function takeOver() {
 
 export async function startItem(input: NewItemInput) {
   if (hmrReloading) return;
+  // Startup may still be reading the stored drafts: saving before they load would overwrite them.
+  try { await loadGens(); } catch (e) { toast(`Saved item drafts could not be read: ${(e as Error).message}. Reload to try again.`); return; }
   const ctx = await loadProject(doc.id), route = await itemFlow();
   const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
   gens.push({ draft: route.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
@@ -671,7 +678,7 @@ export async function discardGen(g: Gen): Promise<boolean> {
 }
 export function retryGen(g: Gen) {
   const input = g.input;
-  void discardGen(g).then((ok) => ok && withKey(() => void startItem(input)));
+  withKey(() => void discardGen(g).then((ok) => { if (ok) return startItem(input); })); // closing Connect keeps the draft
 }
 
 const WEEK = 7 * 86_400_000;
@@ -684,8 +691,9 @@ const FLOW_TAGS = ['studio-base', 'studio-rig', 'studio-move', 'studio-setup', '
  */
 export async function cleanUp(maxAge = 0, sweep = true): Promise<{ jobs: number; blobs: number }> {
   if (queue.role === 'follower') return { jobs: 0, blobs: 0 };
+  await loadGens(); // before the drafts load, `gens` is empty and their records would look unreferenced
   if (maxAge === 0) await clearFinishedFits();
-  const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts().catch(() => []))];
+  const drafts = [...gens.map((g) => g.draft), ...(await loadDrafts())];
   const refs = new Set(drafts.flatMap((d) => d.calls.flatMap((c) => [c.recId, ...c.old])));
   const allFits = await listFits();
   equipment.fits = allFits;

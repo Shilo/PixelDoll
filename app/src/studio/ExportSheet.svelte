@@ -66,9 +66,10 @@
       if (stale) return
       result = { zip: r.zip, files: r.entries.map((x) => x.name), warnings: r.warnings, errors: r.errors, rigIssues: r.rigIssues }
       busy = false
-    }).catch(() => {
+    }).catch((e: unknown) => {
+      console.error('export', e)
       if (stale) return
-      result = { zip: null, files: [], warnings: [], errors: ['Could not prepare this export. Please try again.'], rigIssues: [] }
+      result = { zip: null, files: [], warnings: [], errors: [`Could not prepare this export: ${e instanceof Error ? e.message : String(e)}`], rigIssues: [] }
       busy = false
     })
     return () => { stale = true }

@@ -13,7 +13,7 @@
   import RenameSheet from './RenameSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, resumeFitStages, prefetchFlows, clearPendingConnection, undo, redo } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, toast, resumeCreate, resumeMove, resumeSetup, resumeFitStages, prefetchFlows, clearPendingConnection, undo, redo } from './state.svelte.ts'
   import { lazy } from '../lib/lazy.ts'
   import { WifiOff } from './icons.ts'
 
@@ -34,7 +34,8 @@
     void (async () => {
       await refreshProjects()
       await openProject(lastProject())
-      await loadGens()
+      // A failed read keeps item work stopped (startItem and Clear finished wait for it); create and moves still resume.
+      await loadGens().catch((e: Error) => { console.error('drafts', e); toast(`Saved item drafts could not be read: ${e.message}. Reload to try again.`) })
       await resumeCreate()
       await resumeMove()
       await resumeSetup()
