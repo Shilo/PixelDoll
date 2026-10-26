@@ -1,5 +1,5 @@
 <script lang="ts">
-  // Saved looks (presets): wardrobe sidebar and the phone's "Outfits" chip share this list.
+  // Saved looks (presets) for the customization panel's Outfits tab.
   import { store, applyPreset, savePreset, deletePreset, sameOutfit } from './state.svelte.ts'
   import { Bookmark, Plus, Trash, X } from './icons.ts'
   const m = $derived(store.project?.manifest)

@@ -394,6 +394,7 @@ export function wear(id: string) {
   ui.selected = id;
 }
 export function clearSlots(slots: string[]) {
+  if (!slots.some((s) => doc.items[s])) return;
   commit('Take off', () => { for (const s of slots) doc.items[s] = null; });
 }
 export function setVariant(matId: string, name: string | null) {
@@ -495,7 +496,7 @@ export async function renameProject(name: string) {
   await refreshProjects();
 }
 
-/** Wardrobe tap: wear an item that is off; a worn item is only selected (take it off with its check or "None"). */
+/** Wear an item if it is off and select it; a worn item stays on. Wardrobe tiles toggle with `wear` instead. */
 export function pick(id: string) {
   const it = itemById(id);
   if (it && doc.items[it.slot] !== id) wear(id);
