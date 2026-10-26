@@ -110,7 +110,8 @@
         }).catch(()=>{})
       }
       if(scene){ground??=new scene.Ground(floor);ground.render(options)}
-      rendererWarning=ground?.warning??(live?sceneError:'')
+      // Floor warnings only concern the live views; Preview never draws the floor.
+      rendererWarning=live?ground?.warning??sceneError:''
       if(a){
         const p=live?resolveLive(a,{velocity,previous,defaultDirection:experience.mode==='side'?nearestDirection(a.directions,{x:1,y:0},ui.dir)??undefined:ui.dir}):resolvePreview(a,{clip:ui.anim,direction:ui.dir})
         experience.presentation=p.kind
