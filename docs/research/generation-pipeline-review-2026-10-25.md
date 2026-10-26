@@ -1,7 +1,7 @@
 # Generation pipeline review and plan (2026-10-25)
 
-Status: **proposal, nothing implemented in the app; 94.1 generations spent on experiments (§13).** The owner's concerns are recorded with verdicts in §1
-(round 1), §8 (round 2), §9 (round 3), §10 (round 4, the bottleneck), §11 (round 5, the approach decision), §12 (round 6, a friend's PixelLab vs Godot comparison) and §13 (round 7, experiment results); the plan is §4–§7 as revised by §10.5 and §11.4. Branch `claude/paper-doll-system-optimization-c411d9`.
+Status: **proposal, nothing implemented in the app; experiments spent 94.1 generations (§13) plus 937 in rounds 8–9 (§15–§16). Skeleton-v3 is deferred by the owner (§15); the skeleton-free route is §16.6.** The owner's concerns are recorded with verdicts in §1
+(round 1), §8 (round 2), §9 (round 3), §10 (round 4, the bottleneck), §11 (round 5, the approach decision), §12 (round 6, a friend's PixelLab vs Godot comparison), §13 (round 7, experiment results), §15 (round 8, mocap move library; skeleton-v3 deferred) and §16 (round 9, the skeleton-free route); the plan is §4–§7 as revised by §10.5 and §11.4, superseded for moves and items by §16.6. Branch `claude/peaceful-robinson-0f1148` (rounds 1–7 started on `claude/paper-doll-system-optimization-c411d9`, uncommitted there).
 Sources: a code trace of `app/src` (file:line refs below), the live PixelLab OpenAPI and docs (same 102 paths as
 [pixellab-openapi-v2.json](pixellab/pixellab-openapi-v2.json)), and our own measurements (S1–S5, the 2026-10-25 campaign
 rounds, T3, B16).
@@ -669,6 +669,16 @@ visible, equippable drafts with a badge; only clean items auto-save.
    independent west views (+3 drawn views, about +60 % item cost)?
 4. Static hair: was it in idle, or in walk? A character/item name lets me check the stored frames for free.
 
+Round 9 questions (§16):
+
+6. Adopt the skeleton-free pipeline (§16.6): text-animated moves, items edited onto the real frames, tracked paste for
+   hair and helmets, armed-then-split weapon attacks?
+7. Natural motion costs about 2–3× more per worn item (≈ 70 vs 25 gens for idle + walk in 3 directions), while the body
+   gets ~5–10× cheaper. Accept, or spend ~100 gens first on the untested 512 px inpaint sheets (≈ 6 gens per
+   move-direction)?
+8. Best-of-N for body moves (1 gen each): pick automatically by the clip checks, or show the user 2–3 takes?
+9. Inpaint sheets above 256 px need Tier 2+. Keep edit-animation-v2 as the Tier 1 route?
+
 ## 15. Round 8: mocap move library on skeleton-v3, then skeleton-v3 deferred (2026-10-26)
 
 **Owner request:** test the popular mocap moves (idle, walk, attack, hurt, die and more), keep fixing the uncanny attack,
@@ -734,3 +744,147 @@ On skeletons, the walk's hip wander fell to 1.0 px, which matches PixelLab's wal
   - An idle needs 4+ px of motion to read at 64 px.
 - **If skeleton-v3 is revisited:** start from `retarget2.mts` (cut-out) with `Jog_Fwd_Loop`, `Walk_Loop` and `Death01`
   (east). Drop the generic sword clip: it needs authored key poses.
+
+## 16. Round 9: a skeleton-free route (2026-10-26)
+
+**Goal (owner):** skeleton-v3 is deferred, so find a route without it, test it, and document it. The owner's cap for
+rounds 8 and 9 together is **1,000 generations**. **Spend:** 937 in total, confirmed by the balance (4,603.7 → 3,666.7):
+186 in round 8 and 751 in round 9. The round 9 ledger shows 776, because it also counts one rejected request (400,
+not billed) at its 25-gen estimate. The body is the bare default (c27man, 64 px in 80 px, S/E/N drawn), seed 7 unless
+noted.
+
+**Files:** `spikes/api/x28/`:
+- `body.mts`: text-animated moves.
+- `qa.mts` and `motion.py`: clip checks.
+- `dress.mts`: four dressing tools on the real frames.
+- `paste.mts`: zero-cost head items.
+- `disarm.mts`: the armed-attack split.
+- `share.mts`: the second body.
+- `table.mjs`, `gallery.mts`.
+
+The GIF page is served by the `x28-gallery` launch config (port 5233); the round 8 page uses `x27-gallery` (port 5232).
+Outputs are git-ignored in `spikes/api/out/x28/`.
+
+### 16.1 The skeleton-free endpoints and their limits
+
+| Step | Endpoint | Limits (80 px cell) | Cost and time measured |
+|---|---|---|---|
+| Body move | `/animate-pixminimax` (text, with `direction`, `view`, `subject_description`, `initial_pose`) | 4–40 frames (multiples of 4), ≤ 256 px; frame 0 echoes the input | 1 gen per 8 frames, ~60 s |
+| Body move | `/animate-with-text-v3` (text, optional `last_frame`) | 4–16 frames (even); w·h·frames ≤ 524,288 | 1 gen per 8 frames, ~150 s |
+| Item on real frames | `/edit-animation-v2` (anchor + frames) | 9 frames at ≤ 80 px (anchor + 8); **4 at 81–256 px** | 10 gens per call, ~90 s |
+| Item on real frames | `/transfer-outfit-v2` (anchor as reference) | 8 frames at ≤ 80 px; 3 above | 10 gens, ~90 s |
+| Item, sheet | `/inpaint-v3` (one sheet image, item area masked) | ≤ 512 × 512 per side (Tier 2+; 640 px was rejected with a 400) | 25 gens per sheet (16 frames tested), ~2 min |
+| Item, sheet | `/edit-images-v2` (one sheet image) | ≤ 512, 1 image per call above 128 px | 25 gens; **rejected** (16.4) |
+| Rigid head item | none: tracked paste (local code) | translation only | **0 gens** |
+
+### 16.2 Body moves from text (no skeleton)
+
+| Move | pixminimax | v3 |
+|---|---|---|
+| Walk | **Best:** natural strides in S, E and N | South drifts into a profile (facing drift); dark leg artifacts |
+| Run | Natural; **east is the liveliest clip of all rounds** | Natural, calmer |
+| Idle | Subtle (400–600 px change per frame vs 120–300 for skeleton idles); "combat-ready stance" wording is the liveliest | Subtle; one take added floating FX in east |
+| Unarmed attack | **Turns the body sideways mid-strike** in every seed and wording (S, E, N) | **Keeps the facing** when it must end on the rest frame (`last_frame`) |
+| Hurt | Good recoil in south; a black streak FX in east | South: a big glowing aura FX |
+| Die | Readable falls in S, E and N (south falls spread-eagle) | Good south and east; **north turned into a muscle-flex pose** |
+
+**Neither model picks the hand.** Every unarmed south attack (12 takes) raised the same hand, the character's left,
+whatever the text said ("right arm", "the hand on the LEFT side of the image"). Since it is 1 gen per clip, best-of-N
+with the clip checks (props, facing, area) is affordable.
+
+### 16.3 Weapon attacks: animate armed, then split (the attack fix)
+
+Animating the body **holding the dressed sword** (its keyed-out layer pasted on the rest view) solves the hand problem.
+The weapon decides the hand, and both models produced the most natural attacks of the study. Each has a wind-up, a
+diagonal or overhead strike, and a recovery; pixminimax adds a swoosh trail. The split:
+
+1. `edit-animation-v2` with [bare rest view + 8 armed frames] and "remove the sword … the hand stays a closed empty fist"
+   (10 gens). The result is clean bare frames in the same gripping pose, with 0–3 non-body-colored px per frame.
+2. The weapon layer is the set of armed px that changed **and** are either non-body-colored or match the sword's own
+   palette within 3 px of the blade (that catches the gold hilt).
+3. Bare + weapon recomposes into the armed animation (gallery "Weapon attack"). A few specks by the fist need the usual
+   small-component cleanup.
+
+The inpaint-v3 alternative (mask = non-body-colored px) leaves the hilt in the body, because hilt colors sit within
+skin tolerance. Rejected.
+
+Other held weapons (axe, spear, bow) can be dressed onto the bare attack frames, or animated armed per weapon class.
+**Untested.**
+
+### 16.4 Items dressed onto the real frames (cloak, hair, sword × walk, attack × S, E)
+
+Means over the 4–5 clips per row. "Kept" = body key left as key (low when the item legitimately covers the body, as
+the cloak does in north); "outside" = key px outside the body; "pal" = mean color distance to the anchor's item colors.
+
+| Tool | Cloak kept / outside / pal | Hair | Sword | Verdict |
+|---|---|---|---|---|
+| `edit-animation-v2` + anchor | 0.93 / 0.08 / 8.0 | 0.79 / 0.27 / 6.1 | 0.92 / 0.10 / 9.6 | **Use for worn items** (cloak sways with the stride, keeps its design); 10 gens / 8 frames |
+| `transfer-outfit-v2` | 0.96 / 0.07 / 10.0 | 0.77 / 0.27 / 5.2 | 0.91 / 0.09 / 8.4 | Ties with edit-animation-v2 |
+| `inpaint-v3` sheet (S+E, one call) | 0.90 / 0.26 / **2.5** | 0.80 / 0.25 / 5.1 | 0.87 / 0.12 / 10.1 | **Most consistent design across directions**; one sword frame lost (attack S); 25 gens / 16 frames |
+| `edit-images-v2` sheet | 0.23 / 0.83 / 6.9 | 0.51 / 0.50 / 6.8 | 0.28 / 0.75 / 9.0 | **Rejected:** redraws and moves the bodies (registration hit the ±12 px search limit) |
+| Tracked paste (hair) | – | face kept, design identical | – | **Use for hair and helmets:** 0 gens; an occlusion rule keeps a crossing arm in front |
+
+**Findings:**
+- **Every AI editor paints over part of the face for hair** (key kept ≈ 0.79). The paste avoids that.
+- **Dressing a sword onto an unarmed attack fails:** the body attacks with the wrong hand, so edit-animation-v2 adds
+  a second sword and transfer-outfit leaves it at the hip. Hence 16.3.
+- **North works:** the cloak on the pixminimax north walk folds and sways.
+- **80 px cell limit for held items:** a raised blade reaches the cell edge. Bigger cells cut edit-animation-v2 to 4
+  frames per call.
+
+### 16.5 Shared equipment without skeleton (a second body)
+
+A single `edit-animation-v2` call (10 gens) did it. The frames were [man's dressed S, E, N | woman's green S, E, N],
+with "dress each in exactly the same design as the reference frame of the same facing". It dressed `c27woman` in the
+same hooded red cloak and the same longsword:
+- palette distance to the man's design: 6.6–8.2 (cloak) and 9.9–10.0 (sword);
+- areas within 2–14 %.
+
+Her own pixminimax walk (S, E, N) was then dressed with her anchors, like his (pal 10.8–18.2 vs his anchor). The design
+reads as the same item on both bodies (gallery "Shared equipment"). This is a **refit per character, not pixel-exact
+sharing**: each new character costs one anchor call per item plus its moves.
+
+### 16.6 The recommended skeleton-free pipeline
+
+1. **Character:** `create-character-v3` as today (rotations). Moves are **text-animated per direction:**
+   - pixminimax for walk, run, idle and die;
+   - v3 with `last_frame` for attacks;
+   - 1 gen each, best-of-N with the clip checks.
+
+   **The default character (idle + walk, 3 drawn directions) drops from 57 gens / 117 POSTs to about 6–12 gens and
+   6–12 calls.** There are no skeleton or estimate calls.
+2. **Weapon attacks:** animate armed with a class placeholder (16.3), split with one `edit-animation-v2` call per
+   direction (+10 gens).
+3. **Item design:** one dressed anchor per item and character (`edit-animation-v2` with references, or
+   `create-character-state`), 10 gens. Sharing across characters = use another character's anchor as the reference.
+4. **Item frames:**
+   - Worn items (clothing, capes): `edit-animation-v2` + anchor on each move-direction, 10 gens per 8 frames; or an
+     inpaint-v3 sheet when cross-direction consistency matters most.
+   - Hair and helmets: tracked paste, 0 gens.
+   - Weapons: the armed split.
+5. **Equip while loading:** every step is one job per move-direction, so items stream in per direction exactly as today.
+
+**Cost compared with today** (default: idle + walk, 3 drawn directions):
+
+| Item | Today | Skeleton-free |
+|---|---|---|
+| Worn item | 25 gens | ≈ 10 + 6 × 10 = **70 gens** (≈ 45 with sheets, untested at that size) |
+| Hair / helmet | 25 gens | **10** (anchor only) |
+| Weapon | 50 gens | idle/walk via edit-animation-v2 ≈ 70; each attack +10 per direction |
+
+**Natural motion costs about 2–3× more per worn item.** The body becomes ~5–10× cheaper and much faster: no 12–19 min
+skeleton chain.
+
+### 16.7 Not tested (budget), next if wanted
+
+- 512 px inpaint sheets with 4+ move-directions per call: about 6 gens per move-direction, and the cross-direction
+  consistency seen in 16.4.
+- Sizes above 80 px:
+  - edit-animation-v2 drops to 4 frames per call at 25 gens;
+  - held items need a bigger cell;
+  - a 128 px body probably needs inpaint sheets.
+- Other weapon classes on bare attack frames.
+- A best-of-N selector run end-to-end.
+- Diagonal views: this body has only S, E and N drawn.
+- Idle liveliness: text idles move more than skeleton idles, but still subtly.
+- `create-character-state` as the anchor dresser for every view in one call (X3 showed it works on a green import).
