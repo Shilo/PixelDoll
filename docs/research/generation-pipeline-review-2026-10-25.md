@@ -888,3 +888,33 @@ skeleton chain.
 - Diagonal views: this body has only S, E and N drawn.
 - Idle liveliness: text idles move more than skeleton idles, but still subtly.
 - `create-character-state` as the anchor dresser for every view in one call (X3 showed it works on a green import).
+
+## 17. Round 10: implementation (2026-10-26, branch `claude/generation-pipeline-overhaul`)
+
+**Owner scope:** do not change the `animate-with-skeleton-v3` system yet. The core animation workflow stays exactly as is:
+- the draw;
+- the re-import and `GET /characters/{id}` rest keypoints;
+- authored idle;
+- managed walk → estimates → raw render;
+- dress once → pose per direction.
+
+Improve everything around it. Code maps (three read-only explorers) showed:
+- **The estimates are not QA-only.** Rendered-frame estimates feed item cuts and bands, held-item grid masks and anchors,
+  so they stay.
+- **Default-first creation is mostly existing plumbing:**
+  - the `imported-rest` single-cell clip;
+  - "Add a move" already runs the creation building blocks for idle and walk (`addMove` → `addBodyClip`);
+  - item posing already skips single-cell clips.
+
+  So a Default-only character makes **zero** animation and estimate calls at creation.
+
+| Work package | What | Files (main) |
+|---|---|---|
+| **A. Default-first creation** | Creation = draw + normalize + re-import + rest keypoints → a `default` move (one standing frame per direction, `imported-rest` style) → publish. The rotations show in the creator as soon as the draw lands. "Add idle + walk" is one tap (creator result and Moves), with moves queued and run one at a time through the existing `addMove`. Plans and estimates are updated. Size presets and notes: show what changes above 80/128 px. | `studio/create.ts`, `CreateSheet.svelte`, `MoveSheet.svelte`, `Moves.svelte`, `state.svelte.ts` (moves), `apiPlans.ts`, `characterConfig.ts`, `CharacterForm.svelte` |
+| **B. Item streaming, equip while loading, optional review** | Pose a direction as soon as its dressed keyframe passes. Re-evaluate and publish the preview after every landed call (same request bodies, so ledger reuse is unchanged). A worn draft renders its landed cells, with per-(item, direction) loading markers in Preview / Top-down / Side-scroller. A slot may hold a draft id, which is never persisted or exported and is cleared on discard. Clean items auto-save; warned or failed items stay as drafts with a badge, and Review / Try again / Keep stay available at any time (changes D7). | `lib/items/run.ts`, `items.ts` (preview coverage), `state.svelte.ts` (gens, wear, accept), `GenCard.svelte`, `PhonePanel.svelte`, `experience/presentation.ts`, `WorldStage.svelte` |
+| **C. Pipeline bugs** | (1) Tier 1 never queues a Tier 2 inpaint grid (skip the fallback instead of waiting forever). (2) `repairDropped` pastes become a visible review warning. (3) Missing cells are reported as loading/missing, not authored transparency. Prompt wording (the idle "walking" caption) is **not** changed: D19 rejected unmeasured rewordings, and it would invalidate ledger reuse. | `run.ts`, `items.ts`, `plans.ts`/`queue.ts` |
+| **D. Docs** | `architecture.md` (14 stale places), user guide, PLAN decision (D7 → optional review, Default-first), known issues. | docs |
+
+Tests per package: unit and selftests, `npm run check`, and the e2e specs that cover the change. The full e2e suite runs
+after integration (studio state, queue and shared components are touched). A live check follows: one small character
+(Top-down 4, mirrored west) plus one item, ≤ 100 gens.
