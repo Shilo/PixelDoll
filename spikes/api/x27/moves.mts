@@ -3,7 +3,9 @@
 import fs from 'node:fs';
 import { build, span, strip, OUT, type At, type Opts, type Dir } from '../mocap/mocap.mts';
 
-export interface Move { id: string; action: string; frames: At[]; opts?: Opts; ms?: number | number[] }
+const { build: build2 } = await import('../mocap/retarget2.mts');
+/** r2: the 2D cut-out retarget (mocap/retarget2.mts); dirOpts override opts per direction. */
+export interface Move { id: string; action: string; frames: At[]; opts?: Opts & { fore?: number; az?: number; arms?: number }; dirOpts?: Partial<Record<Dir, Opts & { az?: number }>>; ms?: number | number[]; r2?: boolean; ref?: At }
 const cat = (...parts: At[][]) => parts.flat();
 const at = (anim: string, times: number[]): At[] => times.map((t) => [anim, t]);
 /** Sprite defaults: keep facing, half the twist and lean, half the travel. */
@@ -47,7 +49,26 @@ MOVES.push(
   like('die', { id: 'die_w1', action: 'falling down and lying still on the ground, whole body visible, no effects' }),
 );
 
-export const seq = (m: Move, dir: Dir) => build(m.frames, dir, m.opts);
+// Round 8b: the same moves through the cut-out retarget, with what M1 taught: no weapon or "dying" words in body actions,
+// locomotion keeps the chest twist, and the south death falls sideways (az) so it is not squashed end-on.
+const LOCO = { face: 1, twist: 1, lean: 0.6, travel: 0.5 };
+const ACT = 'empty hands, no weapon, no props, no effects';
+MOVES.push(...([
+  { id: 'walk2', action: 'walking', frames: span('Walk_Loop', 8), opts: LOCO, ms: 110 },
+  { id: 'walk2_g13', action: 'walking', frames: span('Walk_Loop', 8), opts: { ...LOCO, gain: 1.3 }, ms: 110 },
+  { id: 'run2', action: 'running', frames: span('Jog_Fwd_Loop', 8), opts: LOCO, ms: 90 },
+  { id: 'idle2_g3', action: 'breathing idle', frames: span('Idle_Loop', 8), opts: { ...SPRITE, gain: 3 }, ref: ['Idle_Loop', 0], ms: 160 },
+  { id: 'idle2_tired', action: 'breathing idle, catching breath', frames: span('Idle_Tired_Loop', 8), opts: SPRITE, ref: ['Idle_Tired_Loop', 0], ms: 140 },
+  { id: 'slash2', action: `overhead arm strike, ${ACT}`, frames: MOVES.find((m) => m.id === 'slash_k')!.frames, opts: SPRITE, ms: MOVES.find((m) => m.id === 'slash_k')!.ms },
+  { id: 'punch2', action: `punch, ${ACT}`, frames: span('Punch_Cross', 8, 0, 1, true), opts: SPRITE, ms: 90 },
+  { id: 'kick2', action: `kick, ${ACT}`, frames: span('Kick', 8, 0, 1.1, true), opts: SPRITE, ms: 90 },
+  { id: 'cast2', action: `casting a spell with an open hand, ${ACT}`, frames: MOVES.find((m) => m.id === 'cast')!.frames, opts: SPRITE, ms: 100 },
+  { id: 'jump2', action: 'jumping', frames: MOVES.find((m) => m.id === 'jump')!.frames, opts: { ...SPRITE, arms: 0.5 }, ms: 100 },
+  { id: 'hurt2', action: 'getting hit, flinching', frames: span('Hit_Chest', 5, 0, 0.33, true), opts: { ...SPRITE, lean: 1 }, ms: 100 },
+  { id: 'die2s', action: 'falling down and lying still on the ground, whole body visible, no effects', frames: span('Death01', 9, 0, 2.2, true), opts: { face: 1, twist: 0.5, lean: 1, travel: 0.6 }, dirOpts: { south: { az: 90 } }, ms: [100, 100, 100, 90, 80, 80, 100, 140, 400] },
+] as Move[]).map((m) => ({ ...m, r2: true })));
+
+export const seq = (m: Move, dir: Dir) => m.r2 ? build2(m.frames, dir, { ...m.opts, ...m.dirOpts?.[dir] }, m.ref) : build(m.frames, dir, m.opts);
 
 if (import.meta.main) {
   const f = process.argv[2];
