@@ -89,13 +89,17 @@ export function itemPreviewFrames(p: Project, it: Item, anim: string): Img[][] {
   return clip.frames.map((_, i) => cropped.slice(i * dirs.length, (i + 1) * dirs.length));
 }
 
-/** Base prompt (S2 winner): the user's words + a plain clothed mannequin so items have a clean body to sit on. B15: a light
- * shirt over dark shorts, so the two garments get their own shades (lib/dress/regions.ts splits them into Shirt and Shorts). */
-export const BASE_CLOTHES = 'wearing a plain light gray t-shirt and plain dark gray shorts';
-const bodyWith = (clothes: string) => `plain bald paperdoll base body, ${clothes}, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
+/** Base prompt: the user's words + a bare paper-doll body, so no garment shows through the items' gaps (round 5: the former
+ * t-shirt showed in necklines, armholes and open fronts). The shortest wording that drew no garment on a man and a woman over
+ * four seeds; without "everywhere" or "nothing worn" men get briefs or a loincloth. "nude" and "underwear" are avoided. See
+ * docs/research/lexingel-paperdoll-findings-round5-2026-10-25.md. */
+export const BASE_CLOTHES = 'with plain bare skin everywhere, nothing worn';
+export const bodyWith = (clothes: string) => `plain bald paperdoll base body, ${clothes}, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
 export const BASE_BODY = bodyWith(BASE_CLOTHES);
-/** The clothes each base body text names, current first; prompts saved by earlier versions spell it "grey". */
-const CLOTHES = [BASE_CLOTHES, BASE_CLOTHES.replaceAll('gray', 'grey')];
+/** The clothes each base body text names, current first. Prompts saved by earlier versions wear the B15 shirt and shorts
+ * (lib/dress/regions.ts splits those into Shirt and Shorts), some spelled "grey". */
+const OLD_CLOTHES = 'wearing a plain light gray t-shirt and plain dark gray shorts';
+const CLOTHES = [BASE_CLOTHES, OLD_CLOTHES, OLD_CLOTHES.replaceAll('gray', 'grey')];
 export const isBaseBody = (line: string) => CLOTHES.some((c) => line.trim() === bodyWith(c))
 export const withoutBaseBody = (text: string) => CLOTHES.reduce((t, c) => t.replace(bodyWith(c), ''), text)
 /** The clothes of the base body line in a prompt, or undefined when the prompt has none. */
