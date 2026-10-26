@@ -50,9 +50,6 @@ export const ui = $state({
   dpr: devicePixelRatio || 1,
   theme: (lsGet(K.theme) === 'light' ? 'light' : 'dark') as 'light' | 'dark',
   welcome: !lsGet(K.welcomed),
-  sidebar: true,
-  inspector: true,
-  drawer: innerWidth >= 900, // medium size: wardrobe pane, pushes the stage
   tab: 'wardrobe' as 'wardrobe' | 'colors' | 'outfits' | 'moves', // phone
   inspTab: 'item' as 'item' | 'colors' | 'moves',
   group: 'Head',
