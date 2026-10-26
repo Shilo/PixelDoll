@@ -733,6 +733,15 @@ export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
       await openProject(doc.id, auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id });
     }
     toast(auto ? `${item.name} saved` : `${item.name} added`);
+    // moves added while the draft generated (Default-first: idle and walk) get this item's poses through the move queue; a
+    // failure here never undoes the save
+    try {
+      const extend = (await createFlow()).missingItemMoves((await loadProject(g.draft.rigId)).rec.manifest, item.id);
+      if (extend.length) void queueMoves(g.draft.rigId, extend);
+    } catch (e) {
+      console.error(e);
+      toast(`${item.name} saved, but its poses for the newer moves could not be queued: ${e instanceof Error ? e.message : String(e)}`);
+    }
     return true;
   } finally {
     settling.delete(id);
@@ -915,8 +924,6 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   let failed = false;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   try {
-    // "Add idle + walk" poses the items the character has when the move starts, also the ones saved while it waited
-    if (spec.allItems) { const { allItems: _, ...rest } = spec; moving.spec = spec = { ...rest, ...(await createFlow()).moveItems((await loadProject(projectId)).rec.manifest) }; }
     await storeMove({ id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT });
     const result = await (await createFlow()).addMove(projectId, spec, (p) => { if (current() && !failed) moving.progress = p; });
     if (!current()) return;

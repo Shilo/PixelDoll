@@ -397,8 +397,8 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
-/** allItems: items and sharedItems are re-read when the move starts (moveItems), so a queued "Add idle + walk" also poses items
- *  saved while it waited. */
+/** allItems: items and sharedItems are re-read when the move reaches its item stage (moveItems), so a queued "Add idle + walk"
+ *  also poses items saved while it waited or while its body frames generated. */
 export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; allItems?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
 export const MOVE_STEPS = [
@@ -494,6 +494,18 @@ export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec)
 }
 
 /** Every posable item and accepted shared design of a character, as "Add a move" offers them. */
+/** Moves a saved item lacks because they were added while its draft generated (Default-first: idle and walk often land after
+ * an item was planned on the standing views). Items-only specs: addMove keeps the existing body clip and poses only the
+ * directions the item is missing, the same request "Make it" sends. */
+export function missingItemMoves(m: Manifest, itemId: string, seed = 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
+  const item = posable(m).find((i) => i.id === itemId && !i.design);
+  if (!item) return [];
+  const dirs = genDirs(m);
+  return m.rig.animations
+    .filter((a) => !Object.values(a.sources ?? {}).every((src) => src?.motion === 'imported-rest'))
+    .filter((a) => dirs.some((d) => !item.layers.every((l) => l.cells?.[a.id]?.[d]?.length === a.cells)))
+    .map((a) => ({ id: a.id, frames: a.cells, items: [item.id], seed }));
+}
 export const moveItems = (m: Manifest) => ({ items: posable(m).filter((i) => !i.design).map((i) => i.id), sharedItems: m.items.filter((i) => i.design && i.status === 'accepted').map((i) => i.id) });
 /** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
  * shapes as creation made them (no poseStyle); the items follow the character until the move starts (allItems). */
@@ -543,7 +555,8 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   deriveMaterials(normalized.project);
   if (split.dirty) await saveSplit(projectId, normalized.project.manifest, split);
   const fresh = await loadProject(projectId), frames = fresh.rec.manifest.rig.animations.find(a => a.id === spec.id)!.cells;
-  const plans = spec.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it && !it.design ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !it.layers.every(l => l.cells?.[spec.id]?.[d]?.length === frames)) }] : []; });
+  const pick = spec.allItems ? moveItems(fresh.rec.manifest) : spec;
+  const plans = pick.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it && !it.design ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !it.layers.every(l => l.cells?.[spec.id]?.[d]?.length === frames)) }] : []; });
   const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0); let posed = 0;
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
   const tick = () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
@@ -562,7 +575,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   }
   // Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.
   const shared = (await loadProject(projectId)).rec;
-  const sharedIds = [...new Set([...(spec.sharedItems ?? []), ...spec.items.filter((id) => shared.manifest.items.find((item) => item.id === id)?.design)])];
+  const sharedIds = [...new Set([...(pick.sharedItems ?? []), ...pick.items.filter((id) => shared.manifest.items.find((item) => item.id === id)?.design)])];
   const clipQa = (shared.rigQa as { clips?: Record<string, ClipQa> } | undefined)?.clips ?? {};
   // Include this move's current nested observations, including after resume. Flattened historical notes may be stale.
   const fitIds: string[] = [], warnings: string[] = Object.entries(clipQa).filter(([clip]) => clip.startsWith(`${spec.id}/`)).flatMap(([clip, qa]) => warn(clip, qa));
