@@ -38,7 +38,8 @@ vi.mock('../../src/lib/equipment/generate.ts',()=>({
 import { createDesign } from '../../src/lib/equipment/design.ts';
 import { encodedImages,saveCreatedDesign,removeDesign,exportDesign,importDesign } from '../../src/lib/equipment/store.ts';
 import { prepareCopy,acceptCopy } from '../../src/lib/equipment/copy.ts';
-import { createFit,getFit,runRestFit,approveRestAndPose,acceptFit,retryFit,resumeFits,prepareExtensionFit,clearFinishedFits,fitJobRefs,discardFit,reviewFit } from '../../src/lib/equipment/fit.ts';
+import { createFit,getFit,runRestFit,approveRestAndPose,acceptFit,retryFit,prepareExtensionFit,fitJobRefs,discardFit,reviewFit } from '../../src/lib/equipment/fit.ts';
+import { resumeFits,clearFinishedFits } from '../../src/lib/equipment/fits.ts';
 import { targetAudit } from '../../src/lib/equipment/compatibility.ts';
 import { targetStamp } from '../../src/lib/equipment/copy.ts';
 import { loadProject } from '../../src/lib/store/project.ts';

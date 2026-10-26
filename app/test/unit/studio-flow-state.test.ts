@@ -8,7 +8,7 @@ vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
 vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: mocks.load }))
 vi.mock('../../src/lib/dress/project.ts', async original => ({ ...await original<typeof import('../../src/lib/dress/project.ts')>(), openSource: mocks.source }))
-vi.mock('../../src/lib/equipment/index.ts', async original => ({ ...await original<typeof import('../../src/lib/equipment/index.ts')>(), listFits: mocks.fits }))
+vi.mock('../../src/lib/equipment/fits.ts', async original => ({ ...await original<typeof import('../../src/lib/equipment/fits.ts')>(), listFits: mocks.fits }))
 
 vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))

@@ -10,9 +10,10 @@
   import { composeCell } from '../lib/compose/compose.ts'
   import { SLOTS, slotOf, planItem, planGens, canPose, recompose, contactSheet, GATES, type CellOut, type Method, type Route } from '../lib/items/items.ts'
   import {
-    acceptItem, callState, evaluateItem, failsOf, gensOf, loadDrafts, newDraft, rerollCall, runItem, saveDrafts,
+    acceptItem, callState, evaluateItem, failsOf, gensOf, newDraft, rerollCall, runItem,
     type Draft, type ItemResult, type RigCtx,
   } from '../lib/items/run.ts'
+  import { loadDrafts, saveDrafts } from '../lib/items/drafts.ts'
 
   let drafts = $state<Draft[]>([])
   let results = $state.raw<Record<string, ItemResult>>({})

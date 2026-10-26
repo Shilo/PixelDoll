@@ -2,7 +2,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, normalizePath, type Plugin } from 'vite'
 import { localSameOrigin } from './agent-key.ts'
 import { appVersion } from './version.ts'
 
@@ -62,6 +62,21 @@ function agentKey(): Plugin {
   }
 }
 
+// Startup code (what bootstrap.ts imports statically) stays in one chunk. Top-level await in main.ts and bootstrap.ts turns
+// off Rolldown's chunk merging, so modules the startup shares with lazy sheets would otherwise become extra startup requests.
+// The preload helper keeps its own chunk: main.ts imports it, and importing the startup chunk would run it inside frames.
+const BOOTSTRAP = normalizePath(fileURLToPath(new URL('./src/bootstrap.ts', import.meta.url)))
+function startupChunk() {
+  let startup: Set<string> | undefined
+  return (id: string, ctx: { getModuleInfo(id: string): { importedIds: readonly string[] } | null }) => {
+    if (!startup) {
+      startup = new Set([BOOTSTRAP])
+      for (const m of startup) for (const n of ctx.getModuleInfo(m)?.importedIds ?? []) startup.add(n)
+    }
+    return startup.has(id) ? 'bootstrap' : null
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   if (command === 'build' && mode === 'agent') throw new Error('mode "agent" is dev-server only; never build with it')
@@ -72,5 +87,6 @@ export default defineConfig(({ command, mode }) => {
     base: './', // ponytail: relative base so GitHub Pages subpath just works
     envDir: false, // never load .env files: nothing reaches import.meta.env, in any mode
     plugins: [svelte(), devTools(), command === 'serve' && mode === 'agent' && agentKey()],
+    build: { rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 }, { name: startupChunk() }] } } } },
   }
 })

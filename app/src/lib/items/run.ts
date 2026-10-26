@@ -34,11 +34,6 @@ export const MAX_REROLLS = 2;
 const seed = () => 1 + Math.floor(Math.random() * 2_000_000);
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'item';
 
-// ---------- drafts (persisted at projects/m3-drafts: no `manifest`, so rig listings ignore it) ----------
-const DRAFTS = 'm3-drafts';
-export const loadDrafts = async () => (await db.get<{ drafts: Draft[] }>('projects', DRAFTS))?.drafts ?? [];
-export const saveDrafts = (drafts: Draft[]) => db.put('projects', DRAFTS, { id: DRAFTS, drafts });
-
 /** Default method for a rig: skeleton posing when every needed cell has keypoints (S4 Q4), else the anchor-cell edit route. */
 export const defaultMethod = (ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) => (canPose(ctx.rec.manifest.rig, spec) ? 'skel' : 'anchor');
 

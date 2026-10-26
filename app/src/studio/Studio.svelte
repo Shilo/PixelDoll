@@ -7,25 +7,13 @@
   import { onMount, untrack } from 'svelte'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
-  import { resumeFits } from '../lib/equipment/index.ts'
   import Stage from './Stage.svelte'
   import Sheet from './Sheet.svelte'
-  import ItemPane from './ItemPane.svelte'
-  import ConnectSheet from './ConnectSheet.svelte'
-  import CreateSheet from './CreateSheet.svelte'
-  import NewItemSheet from './NewItemSheet.svelte'
-  import ExportSheet from './ExportSheet.svelte'
-  import ActivitySheet from './ActivitySheet.svelte'
-  import MoveSheet from './MoveSheet.svelte'
+  import Lazy from './Lazy.svelte'
   import RenameSheet from './RenameSheet.svelte'
-  import ImportSheet from './ImportSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
-  import SetupSheet from './SetupSheet.svelte'
-  import DesignSaveSheet from './DesignSaveSheet.svelte'
-  import FitDesignSheet from './FitDesignSheet.svelte'
-  import StageNote from './StageNote.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, undo, redo } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, resumeFitStages, undo, redo } from './state.svelte.ts'
   import { WifiOff } from './icons.ts'
 
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
@@ -40,7 +28,7 @@
       await resumeCreate()
       await resumeMove()
       await resumeSetup()
-      if (queue.role !== 'follower') await resumeFits()
+      if (queue.role !== 'follower') await resumeFitStages()
       await refreshFits()
     })()
     return () => { off(); delete document.documentElement.dataset.app }
@@ -130,20 +118,20 @@
   {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You’re offline — generation paused; everything else works</div>{/if}
   {#if ui.toast}<div class="toast" role="status">{ui.toast}</div>{/if}
 
-  {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><StageNote/></div></Sheet>{/if}
-  {#if ui.sheet === 'connect'}<ConnectSheet />{/if}
-  {#if ui.sheet === 'create'}<CreateSheet />{/if}
-  {#if ui.sheet === 'newitem'}<NewItemSheet />{/if}
-  {#if ui.sheet === 'export'}<ExportSheet />{/if}
-  {#if ui.sheet === 'activity'}<ActivitySheet />{/if}
-  {#if ui.sheet === 'move'}<MoveSheet />{/if}
+  {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><Lazy load={() => import('./StageNote.svelte')} /></div></Sheet>{/if}
+  {#if ui.sheet === 'connect'}<Lazy load={() => import('./ConnectSheet.svelte')} />{/if}
+  {#if ui.sheet === 'create'}<Lazy load={() => import('./CreateSheet.svelte')} />{/if}
+  {#if ui.sheet === 'newitem'}<Lazy load={() => import('./NewItemSheet.svelte')} />{/if}
+  {#if ui.sheet === 'export'}<Lazy load={() => import('./ExportSheet.svelte')} />{/if}
+  {#if ui.sheet === 'activity'}<Lazy load={() => import('./ActivitySheet.svelte')} />{/if}
+  {#if ui.sheet === 'move'}<Lazy load={() => import('./MoveSheet.svelte')} />{/if}
   {#if ui.sheet === 'rename'}<RenameSheet />{/if}
-  {#if ui.sheet === 'import'}<ImportSheet />{/if}
+  {#if ui.sheet === 'import'}<Lazy load={() => import('./ImportSheet.svelte')} />{/if}
   {#if ui.sheet === 'delete'}<DeleteSheet />{/if}
-  {#if ui.sheet === 'setup'}<SetupSheet />{/if}
-  {#if ui.sheet === 'savedesign'}<DesignSaveSheet />{/if}
-  {#if ui.sheet === 'fitdesign'}<FitDesignSheet />{/if}
+  {#if ui.sheet === 'setup'}<Lazy load={() => import('./SetupSheet.svelte')} />{/if}
+  {#if ui.sheet === 'savedesign'}<Lazy load={() => import('./DesignSaveSheet.svelte')} />{/if}
+  {#if ui.sheet === 'fitdesign'}<Lazy load={() => import('./FitDesignSheet.svelte')} />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
-    <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><ItemPane id={ui.selected} /></Sheet>
+    <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><Lazy load={() => import('./ItemPane.svelte')} id={ui.selected} /></Sheet>
   {/if}
 </div>

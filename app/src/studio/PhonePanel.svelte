@@ -8,7 +8,7 @@
   import GroupIcon from './GroupIcon.svelte'
   import Colors from './Colors.svelte'
   import Moves from './Moves.svelte'
-  import GenCard from './GenCard.svelte'
+  import Lazy from './Lazy.svelte'
   import Outfits from './Outfits.svelte'
   import { Bookmark, Ellipsis, Info, Plus, Shuffle, X, Check } from './icons.ts'
 
@@ -63,7 +63,7 @@
           <button data-variant="outline" class="bu-action equipment-none" aria-pressed={!items.some((i) => doc.items[i.slot] === i.id)} onclick={() => clearSlots(g.slots)}><X size={18}/><span>None</span></button>
         </div>
         {#if gen}
-          <GenCard g={gen} />
+          <Lazy load={() => import('./GenCard.svelte')} sheet={false} g={gen} />
         {:else if sel}
           {@const h = healthOf(m, sel)}
           <div class="sel-row">

@@ -11,6 +11,7 @@ import { publishCandidate, targetStamp, extensionStamp, restStamp } from './copy
 import { assertDesign, encodedImages, loadImages, snapshotDesign } from './store.ts';
 import { qualifiedFit, fitFramingWarnings, restFitRequests, poseFitRequests, evaluateRestFit, evaluatePoseFit, type FitRecord, type GeneratedFitCall } from './generate.ts';
 import type { EquipmentDesign, FitCall, FitCandidate, FitDraft, FitPlan, FitReview } from './types.ts';
+import { leader, listFits } from './fits.ts';
 import type { Img } from '../image/png.ts';
 import type { Project, Item, ItemQa, Material, CellKey } from '../store/manifest.ts';
 import { variantRampOf, variantOf } from '../dress/dress.ts';
@@ -25,7 +26,6 @@ const seed=()=>crypto.getRandomValues(new Uint32Array(1))[0]&0x7fffffff;
 const active=new Map<string,Promise<FitDraft>>();
 const callsOf=(f:FitDraft,s:'rest'|'pose')=>f.calls.filter(c=>c.stage===s&&!c.superseded);
 const fitUsage=(fit:FitDraft,ledger:JobRec[])=>ledger.filter(r=>fit.calls.some(c=>c.recId===r.id||r.tag===`${fit.id}:${c.id}`)).reduce((sum,r)=>({spentGens:sum.spentGens+(r.gens??0),spentUsd:sum.spentUsd+(r.usd??0)}),{spentGens:0,spentUsd:0});
-const leader=()=>{if(queue.role==='follower')throw new Error('Continue this fit in the active generation tab, or close that tab first.');};
 async function sourceOf(design:EquipmentDesign):Promise<Project>{
   assertDesign(design);
   if(await designRevision(design.source,design.variants,design.imageHashes)!==design.revision)throw new Error('The design revision is invalid.');
@@ -90,7 +90,6 @@ async function priceFit(design:EquipmentDesign,targetId:string,options:{reuseApp
 }
 export const planFit=(design:EquipmentDesign,targetId:string):Promise<FitPlan>=>priceFit(design,targetId);
 export async function getFit(id:string):Promise<FitDraft>{const f=await db.get<FitDraft>('projects',id);if(!f||f.kind!=='equipment-fit-draft')throw new Error('This equipment fit was removed.');return f;}
-export const listFits=async():Promise<FitDraft[]> =>(await db.all<FitDraft>('projects')).filter(r=>r?.kind==='equipment-fit-draft'&&r.stage!=='discarded').sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
 export async function createFit(plan:FitPlan,budget:FitDraft['budget']):Promise<FitDraft>{
   leader();if(!Number.isFinite(budget.previewGens)||!Number.isFinite(budget.poseGens)||budget.previewGens<plan.previewGens||budget.poseGens<0)throw new Error('Approve the displayed rest-preview cost before fitting.');
   const source=await sourceOf(plan.design),{project}=await loadProject(plan.targetId);
@@ -108,9 +107,6 @@ export async function discardFit(id:string):Promise<void>{
     return{...f,stage:'discarded',candidate:undefined,rest:undefined,updatedAt:now()};
   });
   await db.del('projects',id);
-}
-export async function clearFinishedFits(before=Infinity):Promise<void>{
-  leader();for(const f of await db.all<FitDraft>('projects'))if(f.kind==='equipment-fit-draft'&&['accepted','discarded'].includes(f.stage)&&Date.parse(f.updatedAt)<=before)await db.del('projects',f.id);
 }
 export async function fitJobRefs():Promise<Set<string>>{const fits=(await listFits()).filter(f=>f.stage!=='accepted'),tags=new Set(fits.flatMap(f=>f.calls.map(c=>`${f.id}:${c.id}`)));return new Set([...fits.flatMap(f=>f.calls.flatMap(c=>c.recId??[])),...(await db.all<JobRec>('jobs')).filter(j=>j.tag&&tags.has(j.tag)).map(j=>j.id)]);}
 async function attention(id:string,error:unknown):Promise<void>{const ledger=await db.all<JobRec>('jobs');await db.update<FitDraft>('projects',id,f=>{
@@ -226,7 +222,8 @@ async function submitStage(id:string,stage:'rest'|'pose',requests:GeneratedFitCa
   }return finishStage(id,stage);
 }
 function run(id:string,fn:()=>Promise<FitDraft>):Promise<FitDraft>{const running=active.get(id);if(running)return running;const p=fn().catch(async e=>{await attention(id,e);throw e;}).finally(()=>active.delete(id));active.set(id,p);return p;}
-export async function resumeFits():Promise<void>{if(queue.role==='follower')return;await clearFinishedFits(Date.now()-7*24*60*60*1000);for(const f of await listFits())if(f.stage==='rest-running'||f.stage==='pose-running'){const stage=f.stage==='rest-running'?'rest':'pose';void run(f.id,()=>finishStage(f.id,stage)).catch(()=>{});}}
+/** Called by fits.ts resumeFits with the stages a reload left running. */
+export function resumeStages(fits:FitDraft[]):void{for(const f of fits){const stage=f.stage==='rest-running'?'rest':'pose';void run(f.id,()=>finishStage(f.id,stage)).catch(()=>{});}}
 export function runRestFit(id:string):Promise<FitDraft>{return run(id,async()=>{
   leader();const f=await getFit(id);
   if(f.stage==='needs-attention'&&f.resumeStage==='rest'){await db.update<FitDraft>('projects',id,current=>({...current!,stage:'rest-running',error:'',updatedAt:now()}));return finishStage(id,'rest');}

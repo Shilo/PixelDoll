@@ -8,20 +8,28 @@ import { drawList } from '../lib/compose/compose.ts';
 import { deleteItem, listProjects, loadProject, originOf } from '../lib/store/project.ts';
 import * as db from '../lib/store/db.ts';
 import type { DirectionName, Manifest, Preset, Project, ZOverride } from '../lib/store/manifest.ts';
-import { evaluateItem, loadDrafts, matchItemColors as applyItemColors, type ItemPaletteRepairPlan, type Draft, type ItemResult } from '../lib/items/run.ts';
-import { SLOTS } from '../lib/items/items.ts';
+import type { ItemPaletteRepairPlan, Draft, ItemResult } from '../lib/items/run.ts';
+import { loadDrafts } from '../lib/items/drafts.ts';
 import { app } from '../lib/app.svelte.ts';
 import { accountTier } from '../lib/pixellab/plans.ts';
-import { itemRoute, type NewItemInput } from './itemRoute.ts';
-import { addMove, bodyPaletteRepairPlan, createCharacter, measurementRecoveryPlan, saveCopy, type CreateSpec, type MoveSpec, type Progress } from './create.ts';
+import type { NewItemInput } from './itemRoute.ts';
+import type { BodyPaletteRepairPlan, CreateSpec, MeasurementRecoveryPlan, MoveSpec, Progress } from './create.ts';
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
-import { setupCharacter, type SetupSpec } from './setup.ts';
-import { listFits, clearFinishedFits, resumeFits, runRestFit, approveRestAndPose, retryFit, prepareExtensionFit, type EquipmentDesign, type FitDraft } from '../lib/equipment/index.ts';
+import type { SetupSpec } from './setup.ts';
+import { listFits, clearFinishedFits, resumeFits } from '../lib/equipment/fits.ts';
+import type { EquipmentDesign, FitDraft } from '../lib/equipment/types.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
 const hmrReloading = import.meta.hot?.data.flowReloading === true;
+// The paid pipelines load on first use, outside the startup bundle. A failed chunk load (offline, or a deploy replaced the
+// file) fails the action with this message through its usual error path.
+export const lazy = <T>(load: () => Promise<T>) => load().catch((e: unknown) => { console.error(e); throw new Error('Part of PixelDoll could not load. Reload to try again.'); });
+const createFlow = () => lazy(() => import('./create.ts'));
+const itemFlow = async () => (await lazy(() => import('./itemRoute.ts'))).itemRoute;
+const itemRun = () => lazy(() => import('../lib/items/run.ts'));
+const fitFlow = () => lazy(() => import('../lib/equipment/fit.ts'));
 import.meta.hot?.dispose((data) => {
   data.flowReloading = true;
   queue.disconnect();
@@ -139,6 +147,8 @@ class EquipmentState {
 }
 export const equipment = new EquipmentState();
 export async function refreshFits() { equipment.fits = await listFits(); }
+/** Resuming a stage loads the fitting pipeline; say so if it cannot load instead of leaving the fit running. */
+export async function resumeFitStages() { try { await resumeFits(); } catch (e) { toast(e instanceof Error ? e.message : String(e)); } }
 export function openFit(id: string) { equipment.previewDesign = null; ui.fitId = id; ui.designId = ''; ui.sheet = 'fitdesign'; }
 /** Accepted items pin the source even after its library entry has been deleted. */
 export function openPinnedDesign(itemId: string) {
@@ -156,7 +166,7 @@ export async function openItemExtension(itemId: string, anims?: string[]) {
   equipment.preparing = [...equipment.preparing, pending];
   try {
     await flushSave();
-    const fit = await prepareExtensionFit(id, itemId, { anims });
+    const fit = await (await fitFlow()).prepareExtensionFit(id, itemId, { anims });
     await refreshFits();
     if (doc.id === id && ui.sheet === sheet) openFit(fit.id);
     else toast('Equipment fit prepared in Activity');
@@ -174,8 +184,8 @@ async function trackFit(id: string, action: () => Promise<FitDraft>) {
   } catch (e) { toast(e instanceof Error ? e.message : 'The equipment fit needs attention in Activity.'); }
   finally { equipment.running = equipment.running.filter((x) => x !== id); await refreshFits(); }
 }
-export const runFitStage = (id: string, stage: 'rest' | 'pose', poseBudget = 0) => trackFit(id, () => stage === 'rest' ? runRestFit(id) : approveRestAndPose(id, poseBudget));
-export const retryFitStage = (id: string, stage: 'rest' | 'pose', budget: number) => trackFit(id, () => retryFit(id, stage, budget));
+export const runFitStage = (id: string, stage: 'rest' | 'pose', poseBudget = 0) => trackFit(id, async () => { const f = await fitFlow(); return stage === 'rest' ? f.runRestFit(id) : f.approveRestAndPose(id, poseBudget); });
+export const retryFitStage = (id: string, stage: 'rest' | 'pose', budget: number) => trackFit(id, async () => (await fitFlow()).retryFit(id, stage, budget));
 /** Capture the displayed colorway before opening a sheet or changing characters. */
 export function openSaveDesign(itemId: string) {
   if (!store.project || !store.project.manifest.items.some((i) => i.id === itemId && i.slot !== 'body' && i.status === 'accepted')) return;
@@ -444,7 +454,8 @@ export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
     slot.zOverrides = [...(slot.zOverrides ?? []).filter((x) => !(x.layer === 'fg' && x.dir === o.dir && !x.anim && x.cell == null)), o];
   });
 }
-export function resetLayer(itemId: string) {
+export async function resetLayer(itemId: string) {
+  const { SLOTS } = await lazy(() => import('../lib/items/items.ts'));
   const m = store.project!.manifest, slot = m.slots.find((s) => s.id === itemById(itemId)!.slot)!;
   commit('Reset layer order', () => { slot.zOverrides = structuredClone(SLOTS.find((s) => s.id === slot.id)?.zOverrides ?? []); }); // ladder default (T3)
 }
@@ -454,7 +465,7 @@ let itemPaletteRefresh = 0;
 export async function matchItemPalette(projectId: string, itemId: string, anim: string, dir: DirectionName, reviewed: ItemPaletteRepairPlan) {
   const request = openRequest;
   await flushSave();
-  await applyItemColors(projectId, itemId, anim, dir, reviewed);
+  await (await itemRun()).matchItemColors(projectId, itemId, anim, dir, reviewed);
   if (doc.id !== projectId || request !== openRequest) return;
   const refresh = ++itemPaletteRefresh, fresh = await loadProject(projectId);
   if (doc.id !== projectId || request !== openRequest || refresh !== itemPaletteRefresh) return;
@@ -474,7 +485,7 @@ export async function removeItem(itemId: string) {
 
 /** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. */
 export async function copyDemo(): Promise<string> {
-  const id = await saveCopy(store.project!, 'Adventurer copy');
+  const id = await (await createFlow()).saveCopy(store.project!, 'Adventurer copy');
   await refreshProjects();
   await openProject(id);
   return id;
@@ -568,7 +579,7 @@ async function takeOver() {
   await resumeCreate();
   await resumeMove();
   await resumeSetup();
-  await resumeFits();
+  await resumeFitStages();
   await refreshFits();
 }
 
@@ -576,7 +587,7 @@ export async function startItem(input: NewItemInput) {
   if (hmrReloading) return;
   const ctx = await loadProject(doc.id);
   const taken = gens.map((g) => g.draft.spec.id);
-  gens.push({ draft: itemRoute.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
+  gens.push({ draft: (await itemFlow()).draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
   const g = gens.at(-1)!;
   ui.selected = `gen:${g.draft.spec.id}`;
   ui.group = groupOf(input.slot).id;
@@ -594,7 +605,7 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
   g.error = undefined;
   try {
     ctx ??= await loadProject(g.draft.rigId);
-    const res = await itemRoute.run(g.draft, ctx, {
+    const res = await (await itemFlow()).run(g.draft, ctx, {
       status: (s) => (g.status = s === 'design call' ? 'Designing' : 'Adding the other moves'),
       persist: saveGens,
       result: (r) => (store.results = { ...store.results, [g.draft.spec.id]: r }),
@@ -612,7 +623,7 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
 }
 async function evalGen(g: Gen) {
   const ctx = await loadProject(g.draft.rigId);
-  store.results = { ...store.results, [g.draft.spec.id]: await evaluateItem(g.draft, ctx) };
+  store.results = { ...store.results, [g.draft.spec.id]: await (await itemRun()).evaluateItem(g.draft, ctx) };
 }
 export const genOf = (sel: string) => gens.find((g) => `gen:${g.draft.spec.id}` === sel);
 
@@ -626,7 +637,7 @@ export async function acceptGen(g: Gen) {
   settling.add(id);
   try {
     const ctx = await loadProject(g.draft.rigId);
-    const item = await itemRoute.accept(g.draft, ctx, store.results[id] ?? undefined);
+    const item = await (await itemFlow()).accept(g.draft, ctx, store.results[id] ?? undefined);
     drop(g);
     await saveGens();
     if (doc.id === g.draft.rigId) await openProject(doc.id, { wear: item.id });
@@ -726,7 +737,7 @@ export async function startCreate(spec: CreateSpec) {
   creating.progress = null;
   try {
     await db.put('projects', CREATE_KEY, { id: CREATE_KEY, spec, status: 'running', requestText: REQUEST_TEXT });
-    const id = await createCharacter(spec, (p) => { if (current() && !failed) creating.progress = p; });
+    const id = await (await createFlow()).createCharacter(spec, (p) => { if (current() && !failed) creating.progress = p; });
     if (!current()) return;
     creating.projectId = id;
     const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', id);
@@ -779,7 +790,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   try {
     await db.put('projects', MOVE_KEY, { id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT });
-    const result = await addMove(projectId, spec, (p) => { if (current() && !failed) moving.progress = p; });
+    const result = await (await createFlow()).addMove(projectId, spec, (p) => { if (current() && !failed) moving.progress = p; });
     if (!current()) return;
     moving.fitIds = result.fitIds; moving.warnings = result.warnings;
     await refreshFits();
@@ -801,11 +812,11 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   }
 }
 /** Explicit consent to retry only the reviewed joint checks, keeping the original body request identity. */
-export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, reviewed: Awaited<ReturnType<typeof measurementRecoveryPlan>>) {
+export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, reviewed: MeasurementRecoveryPlan) {
   const pending = JSON.stringify($state.snapshot(spec));
   const unchanged = () => !hmrReloading && !moveRunning && moving.projectId === projectId && !!moving.error && !moving.done && JSON.stringify($state.snapshot(moving.spec)) === pending;
   if (!unchanged()) throw new Error('This operation changed. Review the joint checks again.');
-  const current = await measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined });
+  const current = await (await createFlow()).measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined });
   const ids = (value: string[]) => JSON.stringify([...value].sort());
   if (!unchanged() || current.checks <= 0 || !current.recordIds.length || current.rigVersion !== reviewed.rigVersion || current.checks !== reviewed.checks || ids(current.recordIds) !== ids(reviewed.recordIds)) {
     throw new Error('The pending joint checks changed. Review their cost again.');
@@ -813,11 +824,11 @@ export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, r
   await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: { id: crypto.randomUUID(), recordIds: [...current.recordIds], rigVersion: current.rigVersion } });
 }
 /** Explicit bounded color cleanup on the reviewed cached body; all paid measurements still use the changed PNGs. */
-export async function matchMoveBodyColors(projectId: string, spec: MoveSpec, reviewed: Awaited<ReturnType<typeof bodyPaletteRepairPlan>>) {
+export async function matchMoveBodyColors(projectId: string, spec: MoveSpec, reviewed: BodyPaletteRepairPlan) {
   const pending = JSON.stringify($state.snapshot(spec));
   const unchanged = () => !hmrReloading && !moveRunning && moving.projectId === projectId && !!moving.error && !moving.done && !spec.bodyPaletteRepair && JSON.stringify($state.snapshot(moving.spec)) === pending;
   if (!unchanged()) throw new Error('This operation changed. Review the body colors again.');
-  const current = await bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined });
+  const current = await (await createFlow()).bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined });
   const review = (plan: typeof current) => JSON.stringify({ ...plan, directions: [...plan.directions].sort(), rawHashes: [...plan.rawHashes].sort(), recordIds: [...plan.recordIds].sort() });
   if (!unchanged() || current.changedPixels <= 0 || current.changedFrames <= 0 || !current.directions.length || review(current) !== review(reviewed)) {
     throw new Error('The body color corrections changed. Review their cost again.');
@@ -854,7 +865,7 @@ export async function startSetup(spec: SetupSpec) {
   try {
     await flushSave();
     await db.put('projects', SETUP_KEY, { id: SETUP_KEY, spec, status: 'running', requestText: REQUEST_TEXT });
-    await setupCharacter(spec, (p) => { if (current() && !failed) settingUp.progress = p; });
+    await (await lazy(() => import('./setup.ts'))).setupCharacter(spec, (p) => { if (current() && !failed) settingUp.progress = p; });
     if (!current()) return;
     settingUp.done = true;
     const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', spec.projectId);
