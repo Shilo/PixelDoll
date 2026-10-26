@@ -69,6 +69,8 @@ Sheets: `spikes/api/out/c25e/T/*.sheet.png`, `out/c25e/U/*.sheet.png` (git-ignor
 
 ## Bare base by default (owner decision: fully bare, worded to pass the filter)
 
+Full record, with every prompt: [bare-skin base wording](bare-skin-base-wording-2026-10-25.md).
+
 The owner chose a fully bare base. Research before paying: a web survey (avoid "nude", "naked", "topless", "underwear", "briefs";
 describe a smooth mannequin-like object) and the pixellab-pip project's logs (54 of 54 create calls with "nude bare skin, no
 clothing" passed; its real failure was drawn briefs or pants; "no underwear" and "bald hairless" helped). Then arm W:

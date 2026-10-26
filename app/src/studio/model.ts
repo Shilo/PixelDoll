@@ -92,7 +92,7 @@ export function itemPreviewFrames(p: Project, it: Item, anim: string): Img[][] {
 /** Base prompt: the user's words + a bare paper-doll body, so no garment shows through the items' gaps (round 5: the former
  * t-shirt showed in necklines, armholes and open fronts). The shortest wording that drew no garment on a man and a woman over
  * four seeds; without "everywhere" or "nothing worn" men get briefs or a loincloth. "nude" and "underwear" are avoided. See
- * docs/research/lexingel-paperdoll-findings-round5-2026-10-25.md. */
+ * docs/research/bare-skin-base-wording-2026-10-25.md. */
 export const BASE_CLOTHES = 'with plain bare skin everywhere, nothing worn';
 export const bodyWith = (clothes: string) => `plain bald paperdoll base body, ${clothes}, barefoot, no hair, no accessories, neutral standing pose with arms slightly away from the torso`;
 export const BASE_BODY = bodyWith(BASE_CLOTHES);

@@ -51,7 +51,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   clips enough (round 3 arm V).
 - **Bare bases vary by seed.** New characters are drawn fully bare; some seeds add tattoo-like blotches, gray skin or a
   background scene, and PixelLab occasionally adds a hair tuft or smoke to single animation frames. Re-roll the character
-  ([round 5](research/lexingel-paperdoll-findings-round5-2026-10-25.md)).
+  ([bare-skin wording](research/bare-skin-base-wording-2026-10-25.md)).
 - **Small accessories seen from the front only.** An empty back view of a small item (glasses from behind) is a review
   warning, not a re-roll; an empty front or side view always fails, so a small item worn only at the back of the head (a hair
   clip) fails its front view and ends in review ([round 5](research/lexingel-paperdoll-findings-round5-2026-10-25.md)).
