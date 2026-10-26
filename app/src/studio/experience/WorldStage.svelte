@@ -2,9 +2,9 @@
   import { onMount, untrack } from 'svelte'
   import { ui, doc, store, view, toast } from '../state.svelte.ts'
   import { experience, characters, setMode } from './state.svelte.ts'
-  import { Ground, project, projection, loadBackground, actorScale, type RenderOptions } from './ground.ts'
+  import type { Ground, RenderOptions } from './ground.ts'
   import { MOTION, REFLECTION, WORLDS } from './config.ts'
-  import { paintedFrame } from './bounds.ts'
+  import { paintedFrame, actorScale } from './bounds.ts'
   import { buildPresentation, resolvePreview, resolveLive, renderPresentation, advancePlayback, type Presentation } from './presentation.ts'
   import { keyboardVector, pointerVector, nearestDirection, integrateMovement, MOVEMENT_KEYS, type Vector } from './movement.ts'
   let host: HTMLDivElement, canvas: HTMLCanvasElement, floor: HTMLCanvasElement, sky: HTMLCanvasElement
@@ -26,6 +26,9 @@
   let hint = $state(false)
   $effect(() => { void doc.id; const live=experience.mode!=='preview'; hint=live; if(!live)return; const t=setTimeout(()=>hint=false,6500); return ()=>clearTimeout(t) })
   $effect(() => { void doc.rev; noticed.clear() })
+  // The top-down and side-scroller renderer stays out of the startup bundle until a live view first opens.
+  let scene:typeof import('./ground.ts')|undefined, sceneLoad:Promise<void>|undefined, sceneError=''
+  $effect(() => { if(experience.mode!=='preview') sceneLoad??=import('./ground.ts').then(m=>{scene=m;sceneError=''},(error)=>{console.error(error);sceneLoad=undefined;sceneError='Test world unavailable — reload to try again.'}) })
   $effect(() => { if(ui.sheet) {keys.clear();release()} })
   function previewFacing() {
     if(experience.mode!=='preview'||!availability||ui.sheet||document.activeElement!==host)return
@@ -73,7 +76,8 @@
     document.addEventListener('pointerup',secondaryUp,true)
     document.addEventListener('pointercancel',secondaryUp,true)
     document.addEventListener('click',compatibilityClick,true)
-    const ground=new Ground(floor), g=canvas.getContext('2d')!, source=document.createElement('canvas'), sg=source.getContext('2d')!
+    let ground:Ground|undefined
+    const g=canvas.getContext('2d')!, source=document.createElement('canvas'), sg=source.getContext('2d')!
     const reflected=document.createElement('canvas'), rg=reflected.getContext('2d')!, skyContext=sky.getContext('2d')!
     let skyStamp='', disposed=false
     let raf=0, last=performance.now(), renderKey='', lastProject:unknown, imageCache:ReturnType<typeof renderPresentation>|null=null
@@ -94,17 +98,19 @@
       const live=experience.mode!=='preview'
       if(live)({position,camera}=integrateMovement(position,camera,velocity,dt/1000,MOTION.speed,MOTION.cameraResponse))
       const options:RenderOptions={width,height,dpr,theme:ui.theme,mode:experience.mode,anchor,camera}
-      const horizon=projection(options).horizon, world=WORLDS[ui.theme], skyUrl=world.backgrounds[experience.mode]
-      const nextSky=[skyUrl,width,height,dpr,live?horizon:'preview'].join('|')
+      const world=WORLDS[ui.theme], skyUrl=world.backgrounds[experience.mode], s=live?scene:undefined
+      const horizon=s?.projection(options).horizon
+      const nextSky=[skyUrl,width,height,dpr,horizon??'preview'].join('|')
       if(nextSky!==skyStamp){
         skyStamp=nextSky;sky.width=Math.round(width*dpr);sky.height=Math.round(height*dpr)
-        if(live)void loadBackground(skyUrl).then(image=>{
+        if(s&&horizon!==undefined)void s.loadBackground(skyUrl).then(image=>{
           if(disposed||skyStamp!==nextSky)return
           skyContext.setTransform(dpr,0,0,dpr,0,0)
           skyContext.drawImage(image,0,0,image.width,image.height*world.horizon,0,0,width,Math.max(horizon+24,1))
         }).catch(()=>{})
       }
-      ground.render(options);rendererWarning=ground.warning??''
+      if(scene){ground??=new scene.Ground(floor);ground.render(options)}
+      rendererWarning=ground?.warning??(live?sceneError:'')
       if(a){
         const p=live?resolveLive(a,{velocity,previous,defaultDirection:experience.mode==='side'?nearestDirection(a.directions,{x:1,y:0},ui.dir)??undefined:ui.dir}):resolvePreview(a,{clip:ui.anim,direction:ui.dir})
         experience.presentation=p.kind
@@ -122,7 +128,7 @@
         if((velocity.x||velocity.y)&&!hasMoved){hasMoved=true;hint=false}
         if(live&&hasMoved){const issues=[[p.issueKey,p.issue],[result?.issueKey,result?.issue]];for(const [id,text] of issues)if(id&&text&&!noticed.has(id)){noticed.add(id);toast(text)}}
         if(img&&result){
-          const frame=result.frame, point=live?project(position,options):anchor
+          const frame=result.frame, point=s?s.project(position,options):anchor
           const scale=actorScale(fitFrame??frame,rect,dpr,preferred,anchorRatio)
           const snap=(n:number)=>Math.round(n*dpr)/dpr
           const x=snap(point.x-frame.x*scale),y=snap(point.y-frame.y*scale)
@@ -136,7 +142,7 @@
     }
     raf=requestAnimationFrame(animate)
     return()=>{
-      disposed=true;cancelAnimationFrame(raf);ground.destroy()
+      disposed=true;cancelAnimationFrame(raf);ground?.destroy()
       document.removeEventListener('pointerdown',secondaryDown,true)
       document.removeEventListener('pointerup',secondaryUp,true)
       document.removeEventListener('pointercancel',secondaryUp,true)

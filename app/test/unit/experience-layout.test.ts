@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { actorScale } from '../../src/studio/experience/ground.ts'
+import { actorScale } from '../../src/studio/experience/bounds.ts'
 
 describe('immersive stage frame fitting',()=>{
   for(const frame of [{w:96,h:96,x:48,y:80},{w:256,h:256,x:128,y:252},{w:384,h:192,x:300,y:100}]) {
