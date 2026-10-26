@@ -1,6 +1,7 @@
 # PixelDoll — Architecture (A1)
 
-Author: A1 (architect) · Date: 2026-10-21 · Status: **v1.3**. Sources: spikes [S1](spikes/S1_api_feasibility.md),
+Author: A1 (architect) · Date: 2026-10-21, updated 2026-10-26 (round 10: Default-first creation, item streaming, optional
+review [D26]) · Status: **v1.3**. Sources: spikes [S1](spikes/S1_api_feasibility.md),
 [S2](spikes/S2_clean_layers.md), [S3](spikes/S3_skeleton_rigging.md), [S4](spikes/S4_model_routing.md) (its **§Q4 routing
 table is authoritative**), PLAN decisions D1–D9, mockup reports in [`testing/`](testing/) (M1, M2, M4, M5 built). Data model:
 [`manifest-spec.md`](manifest-spec.md).
@@ -15,11 +16,12 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
 **Goals**
 
 1. Produce **traditional frame-based paperdoll assets**: one frozen base (directions × clips × frames on one fixed cell and
-   pivot) plus any number of **frame-aligned, separately exportable item layers**. Every layer sheet has the base's grid (held items may use an oversize 96 cell around the same pivot: spec §2.1 v1.3.1 [S5, B8]).
+   pivot) plus any number of **frame-aligned, separately exportable item layers**. Every layer sheet has the base's grid (held items may use an oversize cell, the body cell + 32 px, around the same pivot: spec §2.1 v1.3.1 [S5, B8]).
    Transparent cells are emitted, never omitted.
 2. **Every pixel comes from PixelLab.** PixelDoll only pads, recolors to a key, keys, drops stray components and composes. It
    never draws or resamples.
-3. **Minimal human work**: one prompt per item; everything runs automatically and ends in one accept/re-roll review [D7].
+3. **Minimal human work**: one prompt per item; everything runs automatically. A clean item saves itself; a flagged one
+   waits for an optional Keep it / Try again / Discard review [D26, supersedes D7's mandatory review].
 4. **Correct engine output**: Godot 4.7 and Phaser 3.80/3.90/4.2 render pixel-identical to PixelDoll's compositor [M5];
    Unity compiles, live check deferred [D5].
 5. **Fully client-side** on GitHub Pages; the browser calls `https://api.pixellab.ai/v2` with the user's key [D1].
@@ -33,7 +35,7 @@ Evidence tags: **[S1]–[S4]** live spikes, **[M1]–[M5]** mockup reports, **[R
 | Create characters | `create-character-v3` (default), `create-character-pro-flash` (chibi styles only) | `create-character-pro`, 4/8-direction standard routes |
 | Animate | `skeleton-v3` (raw `/animate-with-skeleton-v3`, managed `mode: "skeleton-v3"`), `pixminimax`, `v3` (managed or raw text) | `mode: "template"`, `mode: "pro"`, legacy `/animate-with-skeleton` |
 | Skeleton | `estimate-skeleton` | — |
-| Edit (Pro allowed for editing) | `edit-animation-v2`, `inpaint-v3` (best); `transfer-outfit-v2` (reference-image dressing: fitted copies today; concept-image items experimental until their spike passes); Pro Flash / Pixen only for drafts | `edit-images-v2` for layers (shifts every frame [S4]) |
+| Edit (Pro allowed for editing) | `edit-animation-v2`, `inpaint-v3` (best); `transfer-outfit-v2` (reference-image dressing: shared-design fits on 64 × 64 rigs only today; concept-image items experimental until their spike passes); Pro Flash / Pixen only for drafts | `edit-images-v2` for layers (shifts every frame [S4]) |
 
 ---
 
@@ -47,11 +49,11 @@ sequence + the route** that produced it. Generation is **not bit-repeatable** (s
 |---|---|---|
 | Cell | Square frame sized by the creator: default **80×80** around a 64 px body (body presets 48/64/96/128 px or custom; auto frame or manual, up to 256 px). Legacy rigs: 64×64 around 48 px. | Legacy 64 px cell: Pro editors fit 16 frames at ≤64 px [S1]. |
 | Base character | `create-character-v3` text at the chosen body size (default **64 px**; legacy rigs **48 px**), bare (`BASE_CLOTHES`: "with plain bare skin everywhere, nothing worn", bald, barefoot; round 5: the former gray t-shirt showed through items, "underwear" drew briefs or a topless body, shorter wordings drew briefs on men, and "nude" is avoided; [bare-skin wording](research/bare-skin-base-wording-2026-10-25.md)), older rigs clothed (plain gray t-shirt + gray shorts), rotations **padded into the frame (legacy 48→64: x+8, y+12, 4 px floor, M3/B7), never rescaled** → 12–16 px headroom; one placement rule for every source (`rig/normalize.ts`). Custom art: `create-character-v3` import with `reference_image` + `direction_images`, `n_directions: 4` (0.25 gen, pixel-exact). | [S2, S3, S4, D4] |
-| Rest views | The padded S/E/N rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
+| Rest views | The padded drawn rotations are re-imported as a managed character (0.25 gen, pixel-exact) → **rest keypoints** free from `skeletons["2d_references"][dir]` (= `estimate-skeleton` within 0.11 px). These rest views are the `reference` (first frame) of every clip and the source of every item keyframe. | [S3] |
 | Directions | New forms default to the **Top-down 8** preset: five drawn views plus western flips. Other presets (Top-down 4, Diagonal 4, Side-scroller 2, Unique 8) and per-direction mirror toggles choose which views are drawn; Unique 8 preserves original western rotations. Policy-less saved specs keep 3/5 authored views plus western flips. The initial text-only v3 request retains default eight rotations; reference import uses 4/8. Exact direction/policy coverage is required before freezing. `rig.directions[].mirrorOf` is canonical; independent rows have no mirror link. Western authored actions use the actual western rest pose and retain anatomical joint labels. | [M2, S3, B15, professional audit] |
 | Keypoints | 18 labels (NOSE, NECK, RIGHT/LEFT SHOULDER, ELBOW, ARM = wrist, HIP, KNEE, LEG = ankle, EYE, EAR), x/y normalized 0–1, **character's** left/right. `z_index` omitted (v3 rejects floats; `depth` defaults). `estimate-skeleton` is deterministic (0.00 px repeat), 0.1 gen, run at concurrency 3. | [S3, M2] |
-| Clips | New Studio characters start with **`idle` (4), `walk` (8)**. Add moves such as `slash` (8), `hurt` (6), `run`, `cast` or `death` separately. Older evidence rigs include additional moves. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
-| Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of the south rest view. Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
+| Clips | New Studio characters start with **`default`** only: one standing frame per direction (the rest view, source `imported-rest`) [D26]. **Add idle + walk** queues `idle` (4) and `walk` (8); add moves such as `slash` (8), `hurt` (6), `run`, `cast` or `death` the same way. Older rigs were created with idle and walk. Playlist `frames[{cell, ms}]`. | [S3, S4, Studio create] |
+| Pivot | Integer, top-left origin, pixel-edge coords: `x = w/2`, `y` = feet line of `idle/south/0`, else the first move's south cell (`default/south/0`, the standing south view, on new characters; moves added later keep it). Lunges and death may leave it (QA tolerance per clip). | [M2, S4] |
 | Frozen frame | Binary alpha; every component kept and detached ones reported for review (skeleton-v3 adds detached motion-smear FX on 7/15 clips; §3.2); SHA-256 per cell; `baseHash` over all cells. | [S3] |
 
 ### 3.1 Clip routes
@@ -68,12 +70,12 @@ pixel-aligned frames (chroma mannequin vs base IoU 0.988 S / 0.977 E, best shift
 pixels outside the base, independent of seed). Managed skeleton-v3 is looser (3–6 % outside) [S3]. So base and items must be
 rendered by the same raw request shape. Managed skeleton-v3 is only a **motion source**. **Template mode is banned** [D8].
 
-Raw v3 request: `{first_frame: rest view (64×64), first_frame_keypoints: rest, keypoints: sequence (3–15 frames),
+Raw v3 request: `{first_frame: rest view (cell size, default 80×80), first_frame_keypoints: rest, keypoints: sequence (3–15 frames),
 description: looks only ("bald man in a plain gray t-shirt … empty hands, no weapon"), action: short label, direction,
-view: "low top-down", no_background: true, seed}`. Output = exactly `len(keypoints)` frames on the 64 canvas (no echo).
+view: "low top-down", no_background: true, seed}`. Output = exactly `len(keypoints)` frames on the cell canvas (no echo).
 
 **Normalization:** managed skeleton-v3 renders on a larger centered canvas (**80 for a 48 px character, 96 for 64**); managed
-text modes on 68 for 48 px; Pro Flash bases vary by direction (52/56). Re-center by `(w − 64)/2` before estimating; falling
+text modes on 68 for 48 px; Pro Flash bases vary by direction (52/56). Re-center by `(w − cell)/2` before estimating; falling
 motions may clip at the rig edge → author death with raw v3 [S3, S4].
 
 **Text-route hygiene [S4]:** pixminimax invents props/attackers ("slash" added a sword, "hurt" a giant fist): always append
@@ -88,6 +90,26 @@ Estimated arm-joint difference, silhouette-bottom displacement, palette similari
 
 Body output keeps all normalized components, including detached details. Binary-alpha normalization remains the pixel-art contract. Component counts are reported without deleting artwork. Item chroma extraction and its independently documented checks retain their existing policy. Genuine body-pose deviation can still affect later equipment fitting; review notes remain visible and measurements are retained.
 
+### 3.3 Creation: Default first, moves on demand [D26]
+
+`createCharacter` (`studio/create.ts`) makes only the draw (`create-character-v3`), the padded re-import (0.25) and the free
+`GET /characters/{id}` rest keypoints (0.1 `estimate-skeleton` per missing reference), then publishes a rig whose only move is
+`default`: one cell per direction, the rest view itself, `motion: 'imported-rest'`, posed by its rest keypoints. No animation
+or estimate calls run at creation: about 2.25 gens up to a 90 px body (3.25 up to 128 px) and 3–5 minutes. The standing views stream into
+the creator as soon as the draw is normalized (`onViews`). The animation workflow and every PixelLab request body are
+unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](research/generation-pipeline-review-2026-10-25.md)).
+
+- **Add idle + walk** (creator result and Moves; `BaseMoves.svelte`, `baseMoveSpecs`) queues the missing base moves with every
+  posable item and accepted shared design, one random seed, and the request shapes creation used to send (authored idle,
+  managed walk → estimates → raw render), so it costs what creation used to spend (≈ 11 gens per drawn direction plus item
+  poses).
+- **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`. The
+  queue is persisted with the running move's record (`studio-move`), and the next move replaces that record in one write.
+  A failed move holds the queue: Try again continues it, Start over (dismiss) drops it.
+- Items treat `default` like any single-cell `imported-rest` clip: its cell is the dressed standing view, with no pose call.
+- The creator's form notes the frame-size price steps: above 80 px items dress 4 views per call; above 128 px a dress call
+  costs 15–25 gens and no repair grid fits.
+
 ---
 
 ## 4. Item pipeline
@@ -95,8 +117,8 @@ Body output keeps all normalized components, including detached details. Binary-
 ### 4.1 Default: skeleton-posed dressed chroma keyframe (route `skeleton-pose`) [S3, S4]
 
 ```
-rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE edit-animation-v2 call with the 3 key frames
-  ("dress") ─▶ QA + store the 3 dressed keyframes ─▶ for every clip-direction: raw /animate-with-skeleton-v3
+drawn rest views ─▶ toChroma (§4.4 key) ─▶ edit-animation-v2 with one key frame per view, chunked under the frame cap
+  ("dress") ─▶ QA + store the dressed keyframes ─▶ for every clip-direction: raw /animate-with-skeleton-v3
   {first_frame: dressed keyframe, first_frame_keypoints: rest, keypoints: the clip's stored sequence}
   ─▶ keep largest component of the whole frame ─▶ chroma extract (S2 chromaLayer) ─▶ layer over the REAL base frame
 ```
@@ -104,21 +126,24 @@ rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE
 - One design everywhere: palette distance to the reference ≤ 3 (edited batches 6–15); held items follow the hand in every
   direction; capes swing [S4].
 - Idle and walk of a direction share one pose call (12 frames cost 3 gens like 8; round 4); held items and other moves pose one
-  move per call. Adding a clip later = one pose call per item-direction, same design, no re-dress.
+  move per call. Single-cell `imported-rest` clips (`default`) use the dressed standing view, with no pose call. Adding a clip
+  later = one pose call per item-direction, same design, no re-dress.
 - PixelLab is not deterministic: a byte-identical request and seed returned 6–10 % different pixels (round 4), so a single
   same-seed pair cannot separate a change from noise; compare across seeds.
 - **Dress frame cap [B16]:** edit-animation-v2 takes 16 / 9 / 4 frames at ≤ 64 / 65–80 / 81–256 px (`editFrameCap`). The dress
   is split into chunks under that cap (`anchorChunks`): the first takes `cap` rest views, later ones `cap − 1` plus the first
-  chunk's dressed cell 0 as an anchor (its output dropped, S2). A legacy/economy 8-direction held item has 5 independent
-  rest views at 96 px: 4 + (1 + 1 anchor) frames, 2 dress calls (20 estimated gens). New independent 8-direction items
-  have 8 rest views: 4 + (3 + 1 anchor) + (1 + 1 anchor) frames, 3 dress calls (30 estimated gens). Actual billing can use
-  USD. The anchor route's `planCalls` uses the same cap.
-- **Held items (`main_hand`, `off_hand`) [S5, B9]:** rest views and base frames are padded 64 → 96 around the same pivot
-  (+16, +16; keypoints `(x·64 + 16)/96`); the dress prompt says "in the right hand, pointing down and slightly outward; exactly
-  one weapon …; the arms stay exactly as they are"; poses run at 96 with **frame 0 sent last** when it is within 1 px of the rest
-  pose (outputs reordered); a frame that still lost the item (area < 50 % of the clip median on a near-rest pose) gets the
-  dressed keyframe layer pasted at the wrist move (free `repair`, `CellQa.repaired`); layers are stored with
-  `cell 96×96`, `pivot = rig.pivot + 16` (spec §2.1). Same price: pose calls bill by frame count, not canvas.
+  chunk's dressed cell 0 as an anchor (its output dropped, S2). On the default 80 px cell a worn item dresses the 5 drawn
+  views of Top-down 8 in one call; a held item (112 px canvas, cap 4) takes 4 + (1 + 1 anchor) frames, 2 dress calls (20
+  estimated gens). Unique 8 (8 drawn views) at a cap of 4: 4 + (3 + 1 anchor) + (1 + 1 anchor) frames, 3 dress calls (30
+  estimated gens). A dress call costs 10 gens up to a 128 px canvas, 15 up to 170 and 25 above (`editGens`). Actual billing
+  can use USD. The anchor route's `planCalls` uses the same cap.
+- **Held items (`main_hand`, `off_hand`) [S5, B9]:** rest views and base frames are padded by 16 px on every side around the
+  same pivot (`HELD_PAD`, less when the canvas would pass 256 px; 80 → 112, legacy 64 → 96; keypoints `(x·cell + 16)/(cell + 32)`); the dress prompt says "in the right hand, pointing down and slightly outward; exactly
+  one weapon …; the arms stay exactly as they are"; poses run on the padded canvas with **frame 0 sent last** when it is
+  within 1 px of the rest pose (outputs reordered); a frame that still lost the item (area < 50 % of the clip median on a
+  near-rest pose) gets the dressed keyframe layer pasted at the wrist move (free `repair`, `CellQa.repaired`; review warning
+  R1, "Held item pasted on N … frames", since the pasted item stands still); layers are stored with the padded `cell` and
+  `pivot = rig.pivot + 16` (spec §2.1). Same price: pose calls bill by frame count, not canvas.
 - **Clip cleanup after extraction [B9]:** held = largest component + components attached to it or to the gripping wrist
   (≤ 3 px); head items (`slot.band`) = trim px outside the aligned, 2 px-dilated dressed keyframe unless at least half of the
   direction's other frames have item px there (temporal consensus), skipped on frames whose aligned overlap is < 50 %.
@@ -126,7 +151,8 @@ rest views S/E/N ─▶ toChroma (green key; magenta for green items) ─▶ ONE
   hood mantle) stay only where the aligned, undilated keyframe has them (no consensus), and frames the keyframe cannot judge
   fall back to the band trim (2026-10-24). Body-hugging worn items (torso, legs, feet, arms; not `back`/`hair`) drop detached components with < 50 % of their px on
   the body silhouette (motion smears; T3). Capes and hair keep the component filter only (consensus trim would eat swings).
-- Cost: dress 10 + 12 clip-directions × 3 = **≈ 46 gens per item** (3 dirs × 4 clips).
+- Cost on the default rig (Top-down 8, 80 px cell, idle + walk): worn **≈ 25 gens** (dress 10 + 5 pose calls × 3), held
+  **≈ 50** (2 dress calls + 10 pose calls). On a Default-only character only the dress calls run (10 / 20).
 - Weak spots: more specks from motion smears (largest-component filter removes most), north slash cape vanished on 2 frames,
   vest thin in east [S4] → QA re-roll, then the alternative route.
 
@@ -139,7 +165,10 @@ outside ≤ 0.003 on helmet/vest), design varies slightly per call (palDist 4–
 - clips without a keypoint sequence (text-animated or imported);
 - items that fail §4.1 QA twice: **live since B14** per clip-direction. A pose call still failing after its 2 re-rolls (best
   roll kept) is redone once as a grid of that clip-direction's chroma cells (slot-band mask) plus the 3 dressed keyframes as
-  kept reference cells (64 px rig: 4×3 = 256×192); the grid stays only with fewer failed checks. Also in `poseItemClip` (Add a
+  kept reference cells (64 px rig: 4×3 = 256×192; default 80 px idle + walk: 320×400); the grid stays only with fewer failed
+  checks. A grid over 256 px needs Tier 2: when the account's known plan cannot run it (`queue.planBlocks`), the automatic
+  fallback is skipped (best roll kept, a draft log note or review warning) instead of waiting in the queue forever, and an
+  explicit grid repair fails with the plan message. Also in `poseItemClip` (Add a
   move) and `regridClip` (an accepted item's clip-direction). Back items get "hangs down the back, never wraps the arms".
 
 For capes on text clips, `edit-animation-v2` with S2's anchor cell is the second choice.
@@ -167,7 +196,7 @@ change. Only corrected PNGs need new actual measurements. Existing pose, palette
 
 | Route | Status |
 |---|---|
-| S2 chroma `edit-animation-v2` over all cells as the primary route | Superseded by §4.1; `edit-animation-v2` is now the **dressing** call (3 frames) and the cape fallback. |
+| S2 chroma `edit-animation-v2` over all cells as the primary route | Superseded by §4.1; `edit-animation-v2` is now the **dressing** call (one frame per drawn view) and the cape fallback. |
 | S1 local diff on skin composites | Fallback only for items colliding with both keys; always human-reviewed. |
 | Template animations, rigid propagation | Banned / superseded (posing gives the consistency propagation was buying). |
 | `transfer-outfit-v2` as the per-clip design lock | Superseded, not banned: anchor-cell `edit-animation-v2` held the design closer (palette distance 9–10 vs 34) and kept the sword's shape (area CV 0.04 vs 0.27–0.39) [S2 X4]. Allowed for reference-image dressing; run the same chroma gates. Concept-image items use the anchored edit-animation-v2 route instead: blind-judged against transfer, no winner and more hard fails on transfer ([round 2](research/generation-quality-round2-2026-10-25.md) arm E). |
@@ -277,9 +306,9 @@ G8 requires at least half a clip's frames to supply contact-qualified side votes
 frame; missing positions cannot be reported as merely ambiguous. Conversely, valid overlapping wrists cannot be described
 as missing anchors. A confident sibling never hides an uncertain clip. Detached pixels retain `grip.none` diagnostics and
 do not vote for the nearer wrist. The user reviews uncertain grip; no hidden anatomy is inferred. A held frame repaired
-from the keyframe (S5) is not itself a warning.
+from the keyframe (S5) is a review warning (R1), not a failure; its pixels are unchanged.
 D1 (dress, 0 gens): a colorful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-gray px fails the dress call, so the
-design is re-rolled before 36 gens of poses copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks
+design is re-rolled before the pose calls copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks
 for gray/metal/black/white parts. Handedness is set by the
 motion: authored weapon-hand actions and dressed keyframes keep it; prompts and hand marks do not [S3].
 
@@ -292,6 +321,27 @@ missing source evidence fails before persistence. Historical exports are not rew
 
 `fg = layer ∩ base alpha`, `bg = layer − fg` for slots with `bgZ` (exact recompose [S1]). Compose and export as built in M4/M5:
 draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg before fg, item id. Export: manifest-spec §5–§6.
+
+### 4.7 Streaming, worn drafts and optional review [D26]
+
+Same requests and ledger as before; only the order of the calls and what the Studio shows changed (`items/run.ts`,
+`studio/state.svelte.ts`).
+
+- **Streaming.** A direction's pose calls start as soon as its own dress chunk lands and passes its keyframe gates (the design
+  call must pass too), without waiting for the other chunks. After every landed call the draft is re-evaluated (one
+  evaluation at a time, landings during one coalesce into the next; extraction is cached per output) and its preview is
+  republished.
+- **Coverage.** A draft preview item lists its landed cells in `Item.coverage` and the cells of calls still running in the
+  preview-only `Item.pending`, so a pending or missing cell is never read as authored transparency. Saved items never carry
+  `pending`.
+- **Worn drafts.** `doc.drafts` (slot → draft id) overlays a draft's current preview on the outfit. It is never in
+  `doc.items`, so autosave, undo, outfits and exports never see it; wearing a saved item or None in that slot, Discard and
+  opening another character clear it. A running draft with no preview yet is a layerless stand-in whose cells are all
+  pending. Preview, Top-down and Side-scroller show "<item> loading — <directions>" for pending views instead of hiding the
+  item as missing; the draft card marks loading views with a spinner; Inspect draws the landed cells only.
+- **Optional review.** When the run ends, a clean draft (`isClean`: status pass, no G1, no failed call, no warning) saves
+  itself ("<name> saved"; the open character reloads in place and a worn draft becomes the worn item). Warned or failed
+  drafts stay drafts with their badge; Keep it, Try again and Discard stay available.
 
 ---
 
@@ -397,7 +447,7 @@ integer zoom. Theming ("Paper" look) deferred. The shipped Studio has since move
 ## 10. Historical cost model (gens; 3 generated dirs; idle, walk, slash, hurt)
 
 This preserves the older measured four-move scenario, including managed idle, for comparison. It is not the current
-new-character estimate: Studio now authors idle, starts with idle/walk, and defaults to independent directions. Current
+new-character estimate: Studio now authors idle, starts with the Default move only (§3.3) and defaults to Top-down 8. Current
 policy-specific baseline/retry estimates appear in the creation UI and [handedness scope](research/handedness-implementation-scope-2026-10-22.md).
 USD billing and unknown charges prevent treating any estimate as an account spending cap.
 

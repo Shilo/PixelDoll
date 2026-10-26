@@ -918,3 +918,10 @@ Improve everything around it. Code maps (three read-only explorers) showed:
 Tests per package: unit and selftests, `npm run check`, and the e2e specs that cover the change. The full e2e suite runs
 after integration (studio state, queue and shared components are touched). A live check follows: one small character
 (Top-down 4, mirrored west) plus one item, ≤ 100 gens.
+
+**Status (2026-10-26):** packages A–C are implemented on the branch (commits `2c138061`, `46376fff`, merge `2fc99029`);
+package D updated the docs and recorded [D26](../../PLAN.md). The animation system and every request body are unchanged,
+as scoped. §6 bugs 1, 3 and 4 are fixed; bug 2 (the idle "walking" caption) stays by decision. The "<item> loading"
+markers show in Preview, Top-down and Side-scroller and as spinners on the draft card; Inspect draws landed cells only.
+New accepted limits are in [known issues](../known-issues.md). Test and e2e results, and the live check, will be added by
+the lead.

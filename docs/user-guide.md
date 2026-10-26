@@ -29,10 +29,11 @@ A gen is one PixelLab generation from your account's monthly allowance. Creation
 
 | Action | About |
 |---|---|
-| Create a character (idle + walk), default **Top-down 8** (5 drawn views, west mirrored) | 57–94 gens |
-| **Top-down 4** / **Diagonal 4** / **Side-scroller 2** | 35–57 / 24–39 / 13–21 gens |
-| **Unique 8** (every view drawn independently) | 90–149 gens |
-| Make an item | about 34 gens for a new 4-view idle/walk rig; varies with coverage |
+| Create a character (its standing **Default** pose) | about 2–5 gens |
+| **Add idle + walk**, default **Top-down 8** (5 drawn views, west mirrored) | about 55 gens, plus your items' poses |
+| **Top-down 4** / **Diagonal 4** / **Side-scroller 2** | about 33 / 22 / 11 gens |
+| **Unique 8** (every view drawn independently) | about 88 gens |
+| Make an item | about 10 gens on the Default pose alone; about 25 once idle and walk exist (Top-down 8); held items cost about twice that |
 | Add a move | depends on the move, views and selected items; shown before spending |
 | Try again on an item | shown on the button |
 | Dress up, recolor, outfits, export | free |
@@ -68,28 +69,31 @@ Character menu → **New character…**
    prose stays in Details. The muted preview and Copy button always use the complete prompt.
 3. Choose a **Body size** preset (48, 64, 96 or 128 px), or type 32–256 pixels in 4px increments. This is V3's source canvas,
    not a guaranteed opaque body height. **Frame → Auto** adds padding; type a larger frame for more room, up to 256 px.
-   Neither padding nor export rescale the artwork.
+   Neither padding nor export rescale the artwork. Above an 80 px frame, a note warns that items cost more.
 4. Choose **Directions**: Top-down 8 (default), Top-down 4, Diagonal 4, Side-scroller 2 or Unique 8. Individual arrows
    toggle retained views. Attached mirror buttons derive that view from its horizontal partner. Select the opposite
    mirror button to reverse the source. Removing a source makes its remaining partner independent. **Unique 8** has no mirrors.
 5. Check **Camera** and leave **Seed** blank for a fresh variation, or enter a non-negative whole seed. The seed affects
-   generation and animations rather than one appearance trait; reuse can give similar results but does not guarantee identical pixels.
-6. Press **Create character** for idle and walk in the selected directions. The muted cost includes the whole pipeline.
+   the drawing rather than one appearance trait, and moves added later pick their own seeds; reuse can give similar
+   results but does not guarantee identical pixels.
+6. Press **Create character**. It draws your character standing in the selected directions, its **Default** pose, in a
+   few minutes. Idle, walk and other moves come afterward.
 
 Hover a title on desktop, or tap it on mobile, for help. **Enhance** uses the V3 prompt endpoint with the current body size
 and camera; the same button becomes **Undo**. It never runs automatically during creation. A failed or stale response keeps
 your text, and no enhancement is automatically retried.
 
-V3 always creates all eight original views. PixelDoll pads and registers them, animates only the selected independent
-sources, then derives the selected mirrors. Asymmetric details change sides in a mirrored view; use an independent view
+V3 always creates all eight original views. PixelDoll pads and registers them, keeps the selected views and derives the
+selected mirrors. The standing views appear in the creator as soon as they are drawn; they all arrive together. Asymmetric details change sides in a mirrored view; use an independent view
 when that matters. A result that does not fit the chosen frame stops with a size error instead of silently cropping it.
 
-New characters wear a light gray shirt and dark gray shorts, so you can tell them apart and recolor them separately.
+New characters have plain bare skin with nothing worn, so every item you add sits directly on the body.
 
 Keep this tab open while PixelLab responds; you can keep dressing existing characters. After reopening, PixelDoll can resume requests with a
 known job ID and reuse saved results. If a submitted request has an unknown outcome, generation stops for review in
 **Activity**; it is never automatically sent again. **Try again** starts a new paid attempt and may incur additional charges.
-When creation is done, press **Start dressing up**.
+When creation is done, press **Add idle + walk** to queue both moves (the button shows the price) or **Start dressing up**
+to dress the Default pose first. **Moves → Add idle + walk** offers the same later.
 
 ## Share equipment designs between characters
 
@@ -155,10 +159,18 @@ In **Wardrobe**, pick a category (Head, Hair, Body, or **More** for Face, Legs, 
 
 Items are drawn for your own character. On the demo, use **Copy the demo body** to get an editable copy first.
 
+### While it generates
+
+The item's card fills in as PixelLab answers: first the standing views, then each direction's moves, with a spinner on the
+views still loading. Tap the item's tile in the wardrobe (or **Wear** on its card) to wear it while it loads; Preview,
+Top-down and Side-scroller say "<item> loading — <directions>" until the rest arrives. A worn draft is only shown: it is not
+saved, undone, put in outfits or exported until it becomes an item. Wearing another item or **None** in that slot takes it off.
+
 ### Review: Clean or Needs a look
 
-When an item is done, review it on your character. Use **Preview move** to inspect every generated move and direction,
-including frame edges and the grip of held items.
+Review is optional. A **Clean** item saves itself when it finishes ("<name> saved"); if you were wearing it, it stays on.
+An item that **Needs a look** stays a draft with a badge until you decide. Use **Preview move** to inspect every generated
+move and direction, including frame edges and the grip of held items.
 
 - **Clean**: the generated coverage passed PixelDoll's automatic checks. This is not a guarantee of correct artwork.
 - **Needs a look**: a check flagged something. The reason is listed, for example "The item touches the frame edge (may be
@@ -166,7 +178,8 @@ including frame edges and the grip of held items.
   flagged frames before deciding. Missing or malformed frame batches cannot be kept; complete artwork with appearance
   warnings can be kept explicitly, and those warnings remain visible on the saved item.
 
-Then choose **Keep it**, **Try again** (starts another paid attempt, in gens or dollars) or **Discard**.
+Then choose **Keep it**, **Try again** (starts another paid attempt, in gens or dollars) or **Discard**. These stay
+available on any draft that has not saved itself.
 
 ## Dress up
 
@@ -184,8 +197,8 @@ a copy for backup; clearing browser data removes local projects.
 ## Recolor
 
 Open the **Colors** tab. Pick a swatch for each color of the item (or of **Character colors**), or **Pick any color**.
-The body has three: **Shirt**, **Shorts** and **Skin** (characters made before this came with one shared gray; PixelDoll
-splits it into shirt and shorts the next time you open them, nothing is regenerated).
+A bare body has **Skin**. Older characters that were drawn in a gray shirt and shorts also have **Shirt** and **Shorts**
+(PixelDoll splits a single shared gray into the two the next time you open them; nothing is regenerated).
 **Original** restores one color and **Reset** restores them all. Recoloring swaps exact colors,
 so pixel art stays crisp, and it is free.
 
@@ -201,6 +214,10 @@ Open the **Moves** tab → **Add a move**. Pick **Idle**, **Walk**, **Slash**, *
 describe it**, for example "jumping in place". Items you check under **Animate these items too** are made for the new move.
 Items you leave out stay hidden in that move until you make them. A worn item without frames for the current move shows
 a note on the stage with **Make it** and its price.
+
+New characters start with only **Default**; **Add idle + walk** in **Moves** adds both in one tap. Moves run one at a time:
+a move you add while another is running waits as **Queued**. If a move fails, the queue waits: **Try again** continues
+with the queued moves, **Start over** drops them.
 
 Moves are added to your own characters (not the demo), using their existing direction policy. Older mirrored characters
 stay mirrored; the new-character setting does not rebuild their frozen artwork.

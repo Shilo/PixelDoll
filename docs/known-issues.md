@@ -13,9 +13,9 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## PixelLab credits and API
 
-- **Credits are real money.** Query the balance before paid work. New characters default to Top-down 8, estimated at
-  57–94 gens; Top-down 4 is 35–57 and Unique 8 (all independent) 90–149. Item and move estimates depend on route and
-  coverage. Some calls bill dollars; estimates are not caps. Lost responses may have run or charged and are never
+- **Credits are real money.** Query the balance before paid work. Creating a character costs about 2–5 gens up to a
+  128 px body (the Default standing views only); **Add idle + walk** then costs about 11 gens per drawn view before items and retries (55 on
+  the default Top-down 8, 33 on Top-down 4, 88 on Unique 8). Item and move estimates depend on route and coverage. Some calls bill dollars; estimates are not caps. Lost responses may have run or charged and are never
   auto-resent.
 - **Unknown paid outcomes.** Three Cast body joint-measurement outcomes remain unknown; do not infer their charges from
   the shared balance or resend them. Fitting records both generations and USD, including rejected attempts and explicit
@@ -58,6 +58,13 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Action poses invent props.** Slash poses draw swords and motion streaks even for helmets and capes; cleanup removes them
   from the saved layers, but streaks across the face can still fail the helmet's consistency check. Changing the action
   wording had no reliable effect (round 2 arm A).
+- **Default-only characters (round 10, D26).** All standing views arrive together, because PixelLab draws every rotation
+  in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
+  not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** picks a new
+  random seed on every tap; the character's seed no longer reaches its moves, so an earlier attempt cannot be reproduced.
+- **A late key switch discards early poses.** Poses of a direction start as soon as its dress chunk passes. If a later dress
+  chunk of a held item then fails G3 (a key/item color collision), the whole item switches key and restarts, so the poses
+  already started for the earlier directions are paid but discarded.
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 

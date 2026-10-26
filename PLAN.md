@@ -73,7 +73,8 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 - D4 (2026-10-21): Base generated at 48 px and padded to a 64 px cell (never rescaled); 56 px is an option.
 - D5 (2026-10-21, user): Unity live verification deferred; Godot + Phaser verified.
 - D6 (2026-10-21, user): Skeleton v3 is the rig (`estimate-skeleton` + `animate-with-skeleton-v3`); legacy skeleton banned.
-- D7 (2026-10-21): Item flow auto-finishes with an accept / try-again review. The bundled demo uses the team's own
+- D7 (2026-10-21): ~~Item flow auto-finishes with an accept / try-again review~~ — superseded by D26 (review is optional).
+  The bundled demo uses the team's own
   PixelLab outputs (fine for the public MIT repo).
 - D8 (2026-10-21, user): Allowed models only — characters `create-character-v3` (Pro Flash alternative); animations
   `v3`, `pixminimax`, `skeleton-v3`; skeleton `estimate-skeleton` + v3. Pro is for editing only (`edit-animation-v2`,
@@ -135,6 +136,14 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   the GitHub account, HTTPS enforced), which gives PixelDoll its own origin (D12 recommended one; settles D13's origin
   question). https://shilo.github.io/PixelDoll/ redirects there. Keys remembered and projects saved on the old origin stay
   there, and the remembered key is no longer shared with PixelLab Backpack on `shilo.github.io`.
+- D26 (2026-10-26, user, round 10): creation makes only the draw, the re-import and the rest keypoints, and publishes a rig
+  whose only move is `default` (the standing views; ~2.25 gens, 3–5 min). Idle and walk come from a one-tap "Add idle +
+  walk"; moves queue and run one at a time through the unchanged add-move path. Items stream: a direction poses as soon as
+  its dress chunk passes, the preview refreshes after every landed call, and a draft can be worn while it loads (never
+  saved, undone, put in outfits or exported). Review is optional (supersedes D7's mandatory review): a clean draft saves
+  itself; a warned or failed one stays a draft with its badge, and Keep it / Try again / Discard remain. The skeleton-v3
+  animation workflow and every PixelLab request body are unchanged. See
+  [review §17](docs/research/generation-pipeline-review-2026-10-25.md).
 
 ## PWA (deferred, D13)
 
