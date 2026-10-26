@@ -625,8 +625,8 @@ policy and not billed. The runs were single-seed, south and east only, on round 
   `peek.mts`, `zipcheck.mts`).
 - Outputs, git-ignored: `spikes/api/out/x26/`, including the ledger and `gallery/index.html`, a blind GIF page served by the
   `x26-gallery` launch config.
-- Mocap tool, local only (not committed): `…\scratchpad\mocap\tools\{glb,mocap}.mts`. It parses Quaternius UAL1.glb (CC0)
-  and projects it at a measured 9.9° camera elevation and a 24.7° east turn.
+- Mocap tool: `spikes/api/mocap/` (committed in round 8, §15). It parses Quaternius UAL1.glb (CC0) and projects it at a
+  measured camera elevation and east turn (9.9° / 24.7° on c26man; 8.9° / 20.1° on c27man).
 
 ### 13.1 Results
 
@@ -668,3 +668,69 @@ visible, equippable drafts with a badge; only clean items auto-save.
 3. Default Top-down 8 mirrors west, so a right-hand sword shows in the **left** hand facing west. Keep that, or default to
    independent west views (+3 drawn views, about +60 % item cost)?
 4. Static hair: was it in idle, or in walk? A character/item name lets me check the stored frames for free.
+
+## 15. Round 8: mocap move library on skeleton-v3, then skeleton-v3 deferred (2026-10-26)
+
+**Owner request:** test the popular mocap moves (idle, walk, attack, hurt, die and more), keep fixing the uncanny attack,
+and challenge the 3D-to-2D joint conversion. **Owner decision during the round:** skeleton-v3 is deferred until PixelLab
+improves it ("not good enough for production, none of it is natural"); find a route without skeleton. This section
+records what the round proved so the decision can be revisited.
+
+**Spend:** 186 generations, 62 calls (`spikes/api/out/x27/ledger.jsonl`), 3 gens per clip of up to 12 frames.
+**Files:** `spikes/api/mocap/` (`glb.mts`, `mocap.mts` = first retarget with knobs, `retarget2.mts` = 2D cut-out retarget,
+`list.mts`) and `spikes/api/x27/` (`moves.mts` catalog, `render.mts`, `items.mts`, `qa.mts`, `gallery.mts`/`.py`,
+`speed.mts`). The GIF page is served by the `x27-gallery` launch config (port 5232). Outputs are git-ignored in
+`spikes/api/out/x27/`.
+
+### 15.1 What the clips showed (bare c27man body, S and E, one seed)
+
+| Move (UAL1 clip) | Result |
+|---|---|
+| Walk (`Walk_Loop`) | **First retarget:** the east stride is natural, but the south walk **lurches**. **Cut-out retarget:** steady, but the south legs barely move. |
+| Run (`Jog_Fwd_Loop`) | **Cut-out retarget: the best clip of the round** (east reads as a real run). First retarget: the legs cross and the hips wander. |
+| Idle (`Idle_Loop` at ×1 and ×3 gain, `Sword_Idle`, `Idle_Tired_Loop`) | Still near-static. `Idle_Loop` moves ≤ 1.4 px. At ×3 gain it moves 3–4 px and still renders static. `Idle_Tired_Loop` (5–6 px) shows a head bob. `Sword_Idle` is a crouched stance, not an idle. |
+| Sword attack (`Sword_Attack`, key-pose timing, 5 variants) | Still uncanny in every variant: the off-arm flails, the body drops into a deep 25 cm squat, and the wind-up becomes a T-pose when the facing is locked. "sword slash" in the action text **draws a sword into the body** (8–9 of 12 east frames). |
+| Punch, kick, cast | The punch and the south kick read well. The east kick turns to a back view mid-move. The cast is readable but bland. |
+| Hurt (`Hit_Chest`, `Hit_Head`) | Readable, mostly as a head throw. |
+| Die (`Death01`) | **East:** a believable fall. **South:** the backward fall is seen end-on (15 px tall, broken frames). Watching the mocap from the side (`az: 90`) fixes this: the body falls across the screen. **The last frame dissolves into scattered pixels in every die clip:** with "dying" or neutral wording, and even when the last 3 frames had identical keypoints. |
+| Jump | The arms go out to the sides and read as a T-pose. The mocap does not lift the root (the game moves the sprite). |
+
+### 15.2 Why the conversion looked drunk and floppy (subagent review, measured)
+
+1. **Support-foot root pinning.** The root jumps whenever the support foot switches, because the body's wide drawn
+   stance does not match the mocap's narrow gait. The walk's hip center wanders 9.8 px (S) and 12.2 px (E); PixelLab's
+   own walk moves 0.7 and 1.1 px.
+2. **Reference pose.** `Idle_Loop` at 0 is a staggered stance: feet 0.36 m apart, one 0.27 m back. Every move
+   inherited that limp.
+3. **Facing from hips + chest.** A jog's ±40° chest twist turned the legs and head ±20° per stride. The head angle
+   jumps up to 32° per frame in the run and 46° in the slash.
+4. **IK clamp.** Unreachable foot targets straightened the support leg, leaving a 3–7° knee bend: "stiff legs".
+5. **World rotation deltas on bones that point differently from the mocap's.** Bone twist became sideways swing.
+   Limbs shrank to 0.1–0.2× in the east slash, and the die head swung 73° in one frame.
+
+`retarget2.mts` fixes these with 2D cut-out animation. Each drawn bone keeps its length and turns by the change in the
+mocap bone's angle on screen. Foreshortening is softened and clamped to 0.4–1.2×. It also uses:
+- a neutral reference pose;
+- facing from the hips only;
+- a head that rides the neck;
+- pelvis travel for the root.
+
+On skeletons, the walk's hip wander fell to 1.0 px, which matches PixelLab's walk.
+
+### 15.3 What it means
+
+- **Even with clean keypoints, skeleton-v3 redraws the body every frame:**
+  - proportions shift (head, chest);
+  - the last frame of a lying pose dissolves;
+  - the model adds props;
+  - fast moves come out as flails.
+
+  The conversion fixes made the motion correct, but not natural enough. This supports the owner's decision.
+- **Lessons that hold for any route:**
+  - Action text must never name a weapon on a body layer. "overhead arm strike, empty hands, no weapon, no props, no
+    effects" gave 0 of 12 leaked frames.
+  - Hold a pose with frame timing, not repeated frames.
+  - Choreograph for the camera: a fall toward or away from the camera is unreadable in south.
+  - An idle needs 4+ px of motion to read at 64 px.
+- **If skeleton-v3 is revisited:** start from `retarget2.mts` (cut-out) with `Jog_Fwd_Loop`, `Walk_Loop` and `Death01`
+  (east). Drop the generic sword clip: it needs authored key poses.
