@@ -68,6 +68,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | [lexingel-paperdoll-findings-round5-2026-10-25.md](research/lexingel-paperdoll-findings-round5-2026-10-25.md) | Lexingel's UO-style research, attack pipelines and Godot render route vs ours; round 5 tests: bare bases, small accessories, text-move facing. |
 | [paperdoll-py-asset-review-2026-10-24.md](research/paperdoll-py-asset-review-2026-10-24.md) | External diff-extractor + state pipeline compared with ours: offline benchmark, what to adopt, bugs found. |
 | [generation-quality-campaign-2026-10-25.md](research/generation-quality-campaign-2026-10-25.md) | Paid A/B campaign (909 gens, 2 bodies, blind judging): third chroma key, concept items via transfer-outfit-v2, rejected prompt variants. |
+| [generation-pipeline-review-2026-10-25.md](research/generation-pipeline-review-2026-10-25.md) | Proposal: what the character and item call chains do today, owner concerns checked, Default-first creation, streaming, experiments to run. |
 | [SHARED_NOTES.md](research/SHARED_NOTES.md) | Append-only cross-agent findings. |
 | [pixellab-openapi-v2.json](research/pixellab/pixellab-openapi-v2.json) | PixelLab REST v2 OpenAPI snapshot (102 paths). |
 | [Shared equipment designs with fitted copies](research/shared-equipment-fitted-copies-plan.md) | Agreed design and qualification plan; implemented local library, exact reuse and independent fitted copies. Paid fitting starts with an experimental single-material headwear route. |
