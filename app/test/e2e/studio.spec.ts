@@ -535,6 +535,42 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await expect(page.locator('.project-btn')).toHaveText('Adventurer')
 })
 
+test('closing Connect before its code loads still discards the pending action', async ({ page }) => {
+  const paidRequests: string[] = []
+  await page.route('https://api.pixellab.ai/**', async (route) => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname === '/v2/balance') {
+      await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 0 } } })
+    } else { paidRequests.push(route.request().method() + ' ' + new URL(route.request().url()).pathname); await route.abort() }
+  })
+  // Hold the Connect sheet's chunk so the sheet closes before ConnectSheet ever mounts.
+  let release!: () => void, connectFetches = 0
+  const held = new Promise<void>((resolve) => { release = resolve })
+  await page.route(/\/ConnectSheet-[\w-]+\.js$/, async (route) => { connectFetches++; await held; await route.continue() })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, '/#/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  const character = page.getByRole('dialog', { name: 'New character', exact: true })
+  await character.getByRole('textbox', { name: 'Details', exact: true }).fill('a cheerful elf archer')
+  await character.getByRole('textbox', { name: 'Name', exact: true }).fill('Archer draft')
+  await character.getByRole('button', { name: /^Create/ }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect.poll(() => connectFetches).toBeGreaterThan(0)
+  await page.goBack()
+  release()
+
+  // Connecting later must not start the character generation abandoned above.
+  await openAccount(page)
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab' })
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-manual-qa-key')
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(page.getByRole('dialog')).toHaveCount(0) // a revived action would open its progress sheet here
+  await page.locator('.project-btn').click()
+  await expect(page.getByRole('menuitem', { name: 'PixelLab account', exact: true })).toContainText('42 gens')
+  await page.keyboard.press('Escape')
+  expect(paidRequests).toEqual([])
+})
+
 // CI shards are contiguous slices of the test order. This heavy test (about 28 s) is registered among light tests, away
 // from its two stale-review variants at the end and from the studio demo and Inspector tests above; heavy neighbors share
 // one slow shard (docs/testing/test-performance.md).

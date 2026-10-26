@@ -2,6 +2,7 @@
 // a stage was left running, so it stays out of the startup bundle.
 import * as db from '../store/db.ts';
 import { queue } from '../pixellab/queue.ts';
+import { lazy } from '../lazy.ts';
 import type { FitDraft } from './types.ts';
 
 export const leader = () => { if (queue.role === 'follower') throw new Error('Continue this fit in the active generation tab, or close that tab first.'); };
@@ -14,5 +15,5 @@ export async function resumeFits(): Promise<void> {
   if (queue.role === 'follower') return;
   await clearFinishedFits(Date.now() - 7 * 24 * 60 * 60 * 1000);
   const running = (await listFits()).filter((f) => f.stage === 'rest-running' || f.stage === 'pose-running');
-  if (running.length) (await import('./fit.ts')).resumeStages(running);
+  if (running.length) (await lazy(() => import('./fit.ts'))).resumeStages(running);
 }

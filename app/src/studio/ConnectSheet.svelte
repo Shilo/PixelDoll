@@ -15,7 +15,7 @@
   let checking = $state(false)
   let closed = false
   const activityScope = crypto.randomUUID()
-  onDestroy(() => { closed = true; clearPendingConnection() })
+  onDestroy(() => { closed = true })
   // R6 P1-4: a *.github.io project path (user.github.io/PixelDoll/) shares its origin, and so localStorage, with every other Pages project of that account
   const sharedOrigin = location.hostname.endsWith('.github.io') && location.pathname.split('/').filter(Boolean).length > 0
   async function use(k: string, rem: boolean) {

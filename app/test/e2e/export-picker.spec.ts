@@ -67,3 +67,22 @@ test('export picker has accessible categories, local icons and a native GDevelop
   expect(errors).toEqual([])
   expect(apiRequests).toEqual([])
 })
+
+test('a sheet whose code fails to load closes, says so and can be tried again', async ({ page, context }, testInfo) => {
+  await context.route('https://api.pixellab.ai/**', (route) => route.abort())
+  let fetches = 0
+  await context.route(/\/ExportSheet-[\w-]+\.js$/, (route) => { fetches++; return route.abort() })
+  await context.addInitScript(() => {
+    localStorage.setItem('pixeldoll.agentKey', 'off')
+    localStorage.setItem('pixeldoll.welcomed', '1')
+  })
+  await openStudio(page, testInfo.project.use.baseURL! + '/#/')
+  const exportButton = page.getByRole('button', { name: 'Export', exact: true }).first()
+  await exportButton.click()
+  await expect(page.locator('.toast')).toHaveText('Part of PixelDoll could not load. Reload to try again.')
+  await expect(page.locator('dialog[open]')).toHaveCount(0)
+  const tried = fetches
+  await exportButton.click()
+  await expect.poll(() => fetches).toBeGreaterThan(tried)
+  await expect(page.locator('dialog[open]')).toHaveCount(0)
+})

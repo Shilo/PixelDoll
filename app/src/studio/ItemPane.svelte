@@ -13,6 +13,7 @@
   let { id }: { id: string } = $props()
   const m = $derived(store.project?.manifest)
   const it = $derived(m?.items.find((i) => i.id === id))
+  const ladder = $derived(SLOTS.find((s) => s.id === it?.slot)?.zOverrides ?? [])
   const on = $derived(!!it && doc.items[it.slot] === it.id)
   const hiddenNow = $derived(m && it ? hiddenSlots(m, equipped(m, doc.items)).has(it.slot) : false)
   const health = $derived(m && it ? healthOf(m, it) : 'demo')
@@ -166,7 +167,7 @@
       <div class="actions">
         <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, 1, onlyDir)} title="Draw in front of the next layer"><ArrowUp size={14} />Forward</button>
         <button class="bu-action btn sm" data-variant="outline" onclick={() => moveLayer(it.id, -1, onlyDir)} title="Draw behind the previous layer"><ArrowDown size={14} />Backward</button>
-        {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(SLOTS.find((s) => s.id === it.slot)?.zOverrides ?? [])}<button class="bu-action btn sm plain" data-variant="quiet" onclick={() => resetLayer(it.id)}>Reset</button>{/if}
+        {#if JSON.stringify(m.slots.find((s) => s.id === it.slot)?.zOverrides ?? []) !== JSON.stringify(ladder)}<button class="bu-action btn sm plain" data-variant="quiet" onclick={() => resetLayer(it.id, ladder)}>Reset</button>{/if}
       </div>
       <label class="check small"><input type="checkbox" bind:checked={onlyDir} />Only when facing {ui.dir.replaceAll('-', ' ')}</label>
     </div>

@@ -13,8 +13,18 @@
   import RenameSheet from './RenameSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, resumeFitStages, undo, redo } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, resumeCreate, resumeMove, resumeSetup, resumeFitStages, prefetchFlows, clearPendingConnection, undo, redo } from './state.svelte.ts'
+  import { lazy } from '../lib/lazy.ts'
   import { WifiOff } from './icons.ts'
+
+  // On-demand parts, out of the startup bundle (GenCard renders in PhonePanel).
+  const parts = {
+    connect: () => import('./ConnectSheet.svelte'), create: () => import('./CreateSheet.svelte'), newitem: () => import('./NewItemSheet.svelte'),
+    export: () => import('./ExportSheet.svelte'), activity: () => import('./ActivitySheet.svelte'), move: () => import('./MoveSheet.svelte'),
+    import: () => import('./ImportSheet.svelte'), setup: () => import('./SetupSheet.svelte'), savedesign: () => import('./DesignSaveSheet.svelte'),
+    fitdesign: () => import('./FitDesignSheet.svelte'), item: () => import('./ItemPane.svelte'), notes: () => import('./StageNote.svelte'),
+    gen: () => import('./GenCard.svelte'),
+  }
 
   // once on mount (an $effect would re-run on every state it reads, e.g. the theme)
   onMount(() => {
@@ -30,6 +40,9 @@
       await resumeSetup()
       if (queue.role !== 'follower') await resumeFitStages()
       await refreshFits()
+      // Once startup is done, fetch the on-demand code so it keeps working if the connection drops or a deploy replaces its
+      // files. Production only: the dev server would transform every module on each page load. lazy() logs failures.
+      if (import.meta.env.PROD) void Promise.allSettled([...Object.values(parts).map((load) => lazy<unknown>(load)), prefetchFlows()])
     })()
     return () => { off(); delete document.documentElement.dataset.app }
   })
@@ -50,6 +63,8 @@
     if (open && !sheetEntry) { history.pushState({ pixeldollSheet: 1 }, ''); sheetEntry = true }
     else if (!open && sheetEntry) { sheetEntry = false; history.back() }
   })
+  // Closing Connect cancels its spending action, also when the sheet closes before its code loaded (ConnectSheet never mounted).
+  $effect(() => { if (ui.sheet !== 'connect') clearPendingConnection() })
   const onpop = () => {
     if (!sheetEntry) return
     // An atomic local save/publish has the same disabled-close rule for browser Back as for Cancel/Escape.
@@ -118,20 +133,20 @@
   {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You’re offline — generation paused; everything else works</div>{/if}
   {#if ui.toast}<div class="toast" role="status">{ui.toast}</div>{/if}
 
-  {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><Lazy load={() => import('./StageNote.svelte')} /></div></Sheet>{/if}
-  {#if ui.sheet === 'connect'}<Lazy load={() => import('./ConnectSheet.svelte')} />{/if}
-  {#if ui.sheet === 'create'}<Lazy load={() => import('./CreateSheet.svelte')} />{/if}
-  {#if ui.sheet === 'newitem'}<Lazy load={() => import('./NewItemSheet.svelte')} />{/if}
-  {#if ui.sheet === 'export'}<Lazy load={() => import('./ExportSheet.svelte')} />{/if}
-  {#if ui.sheet === 'activity'}<Lazy load={() => import('./ActivitySheet.svelte')} />{/if}
-  {#if ui.sheet === 'move'}<Lazy load={() => import('./MoveSheet.svelte')} />{/if}
+  {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><Lazy load={parts.notes} sheet={false} /></div></Sheet>{/if}
+  {#if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
+  {#if ui.sheet === 'create'}<Lazy load={parts.create} />{/if}
+  {#if ui.sheet === 'newitem'}<Lazy load={parts.newitem} />{/if}
+  {#if ui.sheet === 'export'}<Lazy load={parts.export} />{/if}
+  {#if ui.sheet === 'activity'}<Lazy load={parts.activity} />{/if}
+  {#if ui.sheet === 'move'}<Lazy load={parts.move} />{/if}
   {#if ui.sheet === 'rename'}<RenameSheet />{/if}
-  {#if ui.sheet === 'import'}<Lazy load={() => import('./ImportSheet.svelte')} />{/if}
+  {#if ui.sheet === 'import'}<Lazy load={parts.import} />{/if}
   {#if ui.sheet === 'delete'}<DeleteSheet />{/if}
-  {#if ui.sheet === 'setup'}<Lazy load={() => import('./SetupSheet.svelte')} />{/if}
-  {#if ui.sheet === 'savedesign'}<Lazy load={() => import('./DesignSaveSheet.svelte')} />{/if}
-  {#if ui.sheet === 'fitdesign'}<Lazy load={() => import('./FitDesignSheet.svelte')} />{/if}
+  {#if ui.sheet === 'setup'}<Lazy load={parts.setup} />{/if}
+  {#if ui.sheet === 'savedesign'}<Lazy load={parts.savedesign} />{/if}
+  {#if ui.sheet === 'fitdesign'}<Lazy load={parts.fitdesign} />{/if}
   {#if ui.sheet === 'item' && store.project?.manifest.items.some((i) => i.id === ui.selected)}
-    <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><Lazy load={() => import('./ItemPane.svelte')} id={ui.selected} /></Sheet>
+    <Sheet title="Item" cancel="Done" onclose={() => (ui.sheet = null)}><Lazy load={parts.item} id={ui.selected} /></Sheet>
   {/if}
 </div>

@@ -19,17 +19,20 @@ import { queue, type JobRec } from '../lib/pixellab/queue.ts';
 import type { SetupSpec } from './setup.ts';
 import { listFits, clearFinishedFits, resumeFits } from '../lib/equipment/fits.ts';
 import type { EquipmentDesign, FitDraft } from '../lib/equipment/types.ts';
+import { lazy, LoadError } from '../lib/lazy.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
 const hmrReloading = import.meta.hot?.data.flowReloading === true;
-// The paid pipelines load on first use, outside the startup bundle. A failed chunk load (offline, or a deploy replaced the
-// file) fails the action with this message through its usual error path.
-export const lazy = <T>(load: () => Promise<T>) => load().catch((e: unknown) => { console.error(e); throw new Error('Part of PixelDoll could not load. Reload to try again.'); });
+// The paid pipelines load on first use, outside the startup bundle (lib/lazy.ts).
 const createFlow = () => lazy(() => import('./create.ts'));
 const itemFlow = async () => (await lazy(() => import('./itemRoute.ts'))).itemRoute;
 const itemRun = () => lazy(() => import('../lib/items/run.ts'));
 const fitFlow = () => lazy(() => import('../lib/equipment/fit.ts'));
+const setupFlow = () => lazy(() => import('./setup.ts'));
+/** After startup: fetch the pipelines so a later action still works offline or after a deploy replaced their files.
+ * A failure is logged by lazy() and shown again when the action runs. */
+export const prefetchFlows = () => Promise.allSettled([createFlow(), itemFlow(), itemRun(), fitFlow(), setupFlow()]);
 import.meta.hot?.dispose((data) => {
   data.flowReloading = true;
   queue.disconnect();
@@ -88,11 +91,14 @@ export function initUi() {
   // which would cost the back/forward cache.
   const hide = () => { if (document.visibilityState === 'hidden') { keepUnsaved(); void flushSave(); } };
   const leave = () => { keepUnsaved(); void flushSave(); };
+  // Actions started without awaiting them (Make item, Keep it, Reset, a review check) would otherwise drop a load failure.
+  const unhandled = (e: PromiseRejectionEvent) => { if (e.reason instanceof LoadError) { e.preventDefault(); toast(e.reason.message); } };
+  addEventListener('unhandledrejection', unhandled);
   addEventListener('resize', on);
   addEventListener('pagehide', leave);
   document.addEventListener('visibilitychange', hide);
   applyTheme();
-  return () => { removeEventListener('resize', on); removeEventListener('pagehide', leave); document.removeEventListener('visibilitychange', hide); };
+  return () => { removeEventListener('unhandledrejection', unhandled); removeEventListener('resize', on); removeEventListener('pagehide', leave); document.removeEventListener('visibilitychange', hide); };
 }
 export function applyTheme() { document.documentElement.dataset.theme = ui.theme; document.documentElement.style.colorScheme = ui.theme; }
 export function toggleTheme() { ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; lsSet(K.theme, ui.theme); applyTheme(); }
@@ -147,7 +153,8 @@ class EquipmentState {
 }
 export const equipment = new EquipmentState();
 export async function refreshFits() { equipment.fits = await listFits(); }
-/** Resuming a stage loads the fitting pipeline; say so if it cannot load instead of leaving the fit running. */
+/** Resuming a stage loads the fitting pipeline. If that (or storage) fails, say so; the fit stays running and a reload
+ * resumes it. */
 export async function resumeFitStages() { try { await resumeFits(); } catch (e) { toast(e instanceof Error ? e.message : String(e)); } }
 export function openFit(id: string) { equipment.previewDesign = null; ui.fitId = id; ui.designId = ''; ui.sheet = 'fitdesign'; }
 /** Accepted items pin the source even after its library entry has been deleted. */
@@ -454,10 +461,10 @@ export function moveLayer(itemId: string, step: 1 | -1, onlyDir: boolean) {
     slot.zOverrides = [...(slot.zOverrides ?? []).filter((x) => !(x.layer === 'fg' && x.dir === o.dir && !x.anim && x.cell == null)), o];
   });
 }
-export async function resetLayer(itemId: string) {
-  const { SLOTS } = await lazy(() => import('../lib/items/items.ts'));
+/** `ladder`: the slot's default order from lib/items SLOTS (T3), passed in so the item pipeline stays out of startup. */
+export function resetLayer(itemId: string, ladder: ZOverride[]) {
   const m = store.project!.manifest, slot = m.slots.find((s) => s.id === itemById(itemId)!.slot)!;
-  commit('Reset layer order', () => { slot.zOverrides = structuredClone(SLOTS.find((s) => s.id === slot.id)?.zOverrides ?? []); }); // ladder default (T3)
+  commit('Reset layer order', () => { slot.zOverrides = structuredClone(ladder); });
 }
 
 let itemPaletteRefresh = 0;
@@ -615,6 +622,8 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
     if (g.phase === 'failed') g.error = g.draft.log.at(-1) ?? 'PixelLab did not return usable frames';
     g.status = '';
   } catch (e) {
+    // The pipeline did not load, so this attempt submitted nothing: keep the draft running for a reload to resume.
+    if (e instanceof LoadError) { g.status = ''; toast(e.message); return; }
     g.phase = 'failed';
     g.error = (e as Error).message;
   }
@@ -707,10 +716,12 @@ export function genProgress(g: Gen, jobs: JobRec[]): { pct: number; short: strin
   return { pct, short: waiting ? 'Queued' : `${pct}%`, label: `${g.status || 'Generating'} · ${pct}%` };
 }
 
-// A caught failure must stay terminal across reload; only an explicit start clears it.
+// A caught failure must stay terminal across reload; only an explicit start clears it. A load failure is not one: the
+// pipeline never ran, so the saved run stays running for a reload to resume.
 interface FlowDraft<S> { spec: S; status?: 'running' | 'failed'; error?: string; progress?: Progress | null; requestText?: number }
 async function persistFlowFailure(key: string, record: object, error: unknown): Promise<string> {
   const message = error instanceof Error ? error.message : String(error);
+  if (error instanceof LoadError) return message;
   try { await db.put('projects', key, { id: key, ...record, status: 'failed', error: message }); }
   catch { return `${message} Could not save this failure on this device. Dismiss this operation before reloading.`; }
   return message;
@@ -865,7 +876,7 @@ export async function startSetup(spec: SetupSpec) {
   try {
     await flushSave();
     await db.put('projects', SETUP_KEY, { id: SETUP_KEY, spec, status: 'running', requestText: REQUEST_TEXT });
-    await (await lazy(() => import('./setup.ts'))).setupCharacter(spec, (p) => { if (current() && !failed) settingUp.progress = p; });
+    await (await setupFlow()).setupCharacter(spec, (p) => { if (current() && !failed) settingUp.progress = p; });
     if (!current()) return;
     settingUp.done = true;
     const rec = await db.get<{ rigQa?: { warnings?: string[] } }>('projects', spec.projectId);

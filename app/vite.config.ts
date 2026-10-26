@@ -87,6 +87,6 @@ export default defineConfig(({ command, mode }) => {
     base: './', // ponytail: relative base so GitHub Pages subpath just works
     envDir: false, // never load .env files: nothing reaches import.meta.env, in any mode
     plugins: [svelte(), devTools(), command === 'serve' && mode === 'agent' && agentKey()],
-    build: { rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 }, { name: startupChunk() }] } } } },
+    build: { rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 }, { name: startupChunk(), debugName: 'startup' }] } } } },
   }
 })
