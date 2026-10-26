@@ -980,9 +980,12 @@ export class Queue {
         await this.save(r);
       }
     } catch (e) { // storage CDN error or bad bytes: back off (tick), give up after MAX_TRIES with the URLs kept (R6 P2-9)
-      if (e instanceof TypeError || !this.deps.online()) { s.lastPoll = this.deps.now(); this.goOffline(); return this.save(r); } // B15: no connection is not a failed try
-      s.tries = (s.tries ?? 0) + 1;
       s.lastPoll = this.deps.now();
+      if (!this.deps.online()) { this.goOffline(); return this.save(r); } // B15: no connection is not a failed try
+      // A fetch TypeError while online may be an outage (pause; the probe holds every download) or a storage host that keeps
+      // refusing (CORS, CSP): it counts, so that case gives up below instead of pausing and resuming forever.
+      if (e instanceof TypeError) this.goOffline();
+      s.tries = (s.tries ?? 0) + 1;
       s.error = `result download failed ${s.tries}x: ${(e as Error).message}`;
       if (s.tries >= MAX_TRIES) {
         Object.assign(s, { done: true, status: 'failed', error: `${s.error}. Download manually: ${s.pendingUrls!.map((u) => u.url).join(' ')}` });
@@ -1046,14 +1049,17 @@ export class Queue {
   async clearFinished(keep: (r: JobRec) => boolean): Promise<number> {
     if (this.role === 'follower') return 0; // the leader owns the ledger
     let n = 0;
-    for (const r of [...this.recs.values()])
-      if (!live(r) && !keep(r)) {
-        this.recs.delete(r.id);
-        await this.deps.del(r.id).catch(() => {});
-        n++;
-      }
-    this.chan?.postMessage({ sync: true } satisfies Msg);
-    this.emit();
+    try {
+      for (const r of [...this.recs.values()])
+        if (!live(r) && !keep(r)) {
+          await this.deps.del(r.id); // a failed delete stays listed and fails Clear finished, instead of returning on reload
+          this.recs.delete(r.id);
+          n++;
+        }
+    } finally {
+      this.chan?.postMessage({ sync: true } satisfies Msg);
+      this.emit();
+    }
     return n;
   }
   /** Nothing queued, submitting or running in this tab's view of the ledger. */
