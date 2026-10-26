@@ -103,6 +103,7 @@ Code: `spikes/api/`. Evidence: [`spikes/api/out/` at 1f95029](https://github.com
 | [D1_design_research.md](design/D1_design_research.md) | User flows for casual users, information architecture, look candidates A–E. |
 | [glasskit_review.md](design/glasskit_review.md) | GlassKit as a theme base (look B): reviewed and not chosen. |
 | [D2_mockups_report.md](design/D2_mockups_report.md) | The `design-mockups/` app: looks A–E in dark and light. The user chose **look A only**, dark by default (D9). |
+| [skeleton-pose-lab.md](design/skeleton-pose-lab.md) | Future tool (deferred with skeleton-v3): mocap templates, pose editor, free puppet preview and pose lint, paid render/compare, and a PixelLab bug report export. |
 | [Screenshot gallery](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/README.md) | Every look, screen and device (`<look>_<scheme>_<screen>_<device>.png`). Grid view: [index.html](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/index.html) (open from a checkout of that commit). |
 
 ## Testing reports
