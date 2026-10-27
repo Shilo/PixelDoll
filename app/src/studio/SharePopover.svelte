@@ -38,7 +38,7 @@
   }))
   const previewFrames = $derived(planned.media ? sharePreviewFrames(planned.media) : [])
   const image = $derived(previewFrames[index % previewFrames.length] ?? null)
-  const previewHeight = $derived(Math.max(72, Math.min(220, viewportHeight - 300)))
+  const previewHeight = $derived(Math.max(72, Math.min(220, viewportHeight - 320)))
   const previewWidth = $derived(Math.min(360, viewportWidth - 16) - (viewportWidth <= 440 ? 14 : 18))
   const previewLimit = $derived(image ? Math.max(1, Math.floor(Math.min((previewWidth - 8) * Math.max(image.w, image.h) / image.w, (previewHeight - 12) * Math.max(image.w, image.h) / image.h))) : 112)
   const label = $derived(planned.media?.animated ? 'GIF' : 'PNG')
