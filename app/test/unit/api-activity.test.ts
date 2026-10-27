@@ -64,6 +64,20 @@ test('multi-job partial charges and missing usage remain honest; dollar billing 
   expect(activityTotals(snapshot())).toEqual({ generations: 3, usd: 0.25, unknown: 1, pending: 0 });
 });
 
+test('the poll that reports a terminal job keeps its status and error for the export', () => {
+  const sent = beginActivityCall('POST', '/edit-animation-v2');
+  finishActivityCall(sent, 200, true, { background_job_id: 'stockings' });
+  const running = beginActivityCall('GET', '/background-jobs/stockings');
+  finishActivityCall(running, 200, true, { status: 'processing', last_response: { progress: 0.5 } });
+  const failed = beginActivityCall('GET', '/background-jobs/stockings');
+  finishActivityCall(failed, 200, true, { status: 'failed', last_response: { error: 'worker timed out' } });
+  const refused = beginActivityCall('GET', '/background-jobs/other');
+  finishActivityCall(refused, 200, true, { status: 'failed', last_response: { code: 5000, error: 'content policy' } });
+  finishJob('done');
+  const calls = (JSON.parse(exportActivityJson()) as { calls: { job?: unknown }[] }).calls;
+  expect(calls.map((call) => call.job)).toEqual([undefined, undefined, { status: 'failed', error: 'worker timed out' }, { status: 'failed', error: 'content policy', policy: true }, { status: 'completed' }]);
+});
+
 test('restored queue jobs receive their final cost without inventing a new submission', () => {
   const input = { queueId: 'restored', queueTag: 'studio-base', label: 'Body', method: 'POST', endpoint: '/create-character-v3', body: { description: 'body', seed: 1 }, startedAt: 100, state: 'pending' as const, jobs: [{ id: 'old-job', done: false }] };
   const first = restoreActivityRequest(input);

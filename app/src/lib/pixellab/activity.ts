@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store';
+import { errorText, isPolicy } from './client.ts';
 
 export interface ActivityContext {
   label?: string; queueId?: string; queueTag?: string; activityScope?: string; background?: boolean;
@@ -23,9 +24,12 @@ export interface ApiCall extends ActivityContext {
   cost: ApiCost;
   costSource: 'free' | 'reported' | 'unknown';
   usagePending: boolean;
+  /** PixelLab's terminal job state, kept on the poll that reported it so a failure can be diagnosed from the export. */
+  job?: { status: string; error?: string; policy?: true };
 }
 
-// Request bodies stay in memory only. No headers, credentials or response text enter this store.
+// Request bodies stay in memory only. No headers, credentials or response text enter this store, except a terminal job's
+// status and error message.
 export const MAX_FOREGROUND_CALLS = 500;
 export const MAX_BACKGROUND_CALLS = 2000;
 export const MAX_ACTIVITY_CALLS = MAX_FOREGROUND_CALLS + MAX_BACKGROUND_CALLS;
@@ -134,10 +138,12 @@ export function finishActivityCall(id: string, status: number | null, ok: boolea
   }
   if ((call.method === 'GET' || call.method === 'DELETE') && call.endpoint.startsWith('/background-jobs/')) {
     const jobId = decodeURIComponent(call.endpoint.split('/').pop()!.split('?')[0]);
+    const policy = isPolicy(data), terminal = ['completed', 'failed', 'cancelled'].includes(String(data.status));
+    if (terminal || policy) update(id, { job: { status: String(data.status ?? 'failed'), ...(data.status === 'completed' && !policy ? {} : { error: errorText(data) }), ...(policy ? { policy: true as const } : {}) } });
     const owner = jobs.get(jobId);
     if (owner) {
       if (usage) owner.usage = usage;
-      owner.terminal = owner.terminal || ['completed', 'failed', 'cancelled'].includes(String(data.status)) || call.method === 'DELETE' && ok;
+      owner.terminal = owner.terminal || terminal || call.method === 'DELETE' && ok;
       reconcile(owner.callId);
     }
   }

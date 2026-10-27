@@ -95,6 +95,7 @@
         <summary><ChevronRight size={13} /><span class="call-name"><span class="call-route"><span class="call-method">{c.method}</span><span>{'endpoint' in c ? c.endpoint : c.path}</span></span>{#if c.label}<span class="call-context">{c.label}</span>{/if}</span><span class="call-price">{price(c)}</span></summary>
         <div class="peek-request">
           {#if 'state' in c}<p class="request-status">{c.restored ? 'Saved request' : c.state === 'pending' ? 'Sending' : c.state === 'failed' ? 'Failed' : 'Sent'}{c.status ? ` · HTTP ${c.status}` : ''}{c.background ? ' · Background' : ''}{c.costSource === 'unknown' && !c.usagePending ? ' · Cost not reported' : ''}</p>{:else}<p class="request-status">Planned · Estimate{c.background ? ' · Background' : ''}</p>{/if}
+          {#if 'job' in c && c.job}<p class="request-status">Job {c.job.policy ? 'refused by content policy' : c.job.status}{c.job.error ? `: ${c.job.error}` : ''}</p>{/if}
           {#if 'bodyUnavailable' in c && c.bodyUnavailable}<p class="request-status">Some saved image inputs are no longer available. Copy includes stored references.</p>{/if}
           {#if c.body !== undefined && c.body !== null}<RequestFields value={'cost' in c ? c.body : sanitizeActivityValue(c.body)} />{:else}<p class="request-status">{c.method === 'POST' ? 'Request fields available when prepared.' : 'No request body.'}</p>{/if}
           {#if 'note' in c && c.note}<p class="request-status">{c.note}</p>{/if}
