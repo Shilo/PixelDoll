@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
-  import { ui, doc, store, view, toast } from '../state.svelte.ts'
+  import { ui, doc, view, toast } from '../state.svelte.ts'
   import { experience, characters, setMode } from './state.svelte.ts'
   import type { Ground, RenderOptions } from './ground.ts'
   import { MOTION, REFLECTION, WORLDS } from './config.ts'
@@ -13,7 +13,7 @@
   let stick = $state<{id:number;x:number;y:number;dx:number;dy:number}|null>(null)
   const secondaryTouches = new Map<number,{button:HTMLButtonElement;x:number;y:number}>()
   let consumedTouch:{x:number;y:number;until:number}|null=null
-  const availability = $derived.by(() => { void doc.rev; return view.project ? buildPresentation(view.project,{loading:doc.loading,sourceProject:store.project??undefined,variants:doc.variants}) : null })
+  const availability = $derived.by(() => { void doc.rev; return view.project ? buildPresentation(view.project,{loading:doc.loading}) : null })
   const fitFrame = $derived.by(() => { void doc.rev; return view.project ? paintedFrame(view.project,view.items) : null })
   const keys = new Set<string>()
   let position:Vector={x:0,y:0}, camera:Vector={x:0,y:0}, previous:Presentation|undefined

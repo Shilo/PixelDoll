@@ -59,13 +59,21 @@ test('current PixelLab multi-state ZIP preserves independent directions and spar
   const base = m.items[0].layers[0]
   expect(base.cells?.walking.south).toHaveLength(2)
   expect(base.cells?.walking.east).toBeUndefined()
-  const east = images.get(base.cells!.rest.east![0]!)!, west = images.get(base.cells!.rest.west![0]!)!
+  const east = images.get(base.cells!.default.east![0]!)!, west = images.get(base.cells!.default.west![0]!)!
   expect(east.data).not.toEqual(west.data)
-  expect(images.get(base.cells!.rest.south![0]!)!.data[(27 * 64 + 26) * 4]).toBe(100) // exact 48 -> 64 padding +8,+12
+  expect(images.get(base.cells!.default.south![0]!)!.data[(27 * 64 + 26) * 4]).toBe(100) // exact 48 -> 64 padding +8,+12
   expect(imported.extra.character).toBeUndefined()
   expect(m.rig.rest).toBeUndefined()
   expect((await readCharacterZip(bytes, 'second')).project.manifest.rig.animations).toHaveLength(1)
   await expect(readCharacterZip(bytes, 'missing')).rejects.toThrow('selected character state')
+})
+
+test('the rotations are the Default move; a ZIP animation named default steps aside', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[0].frames.animations = { default: meta.states[0].frames.animations.walking }
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const m = (await readCharacterZip(await zip(entries), id)).project.manifest
+  expect(m.rig.animations.map((a) => [a.id, a.cells])).toEqual([['default', 1], ['default-copy', 2]])
 })
 
 test('PixelLab legacy root exports import; opaque cropping is refused', async () => {
@@ -105,7 +113,7 @@ test('sparse imported clips can be dressed without planning missing base frames'
   const keys = plan.flatMap((c) => c.cells)
   expect(keys).toContain('walking/south/1')
   expect(keys).not.toContain('walking/east/0')
-  for (const key of keys) expect(baseCell(ctx, key).w).toBe(64) // includes a real imported clip called "rest"
+  for (const key of keys) expect(baseCell(ctx, key).w).toBe(64) // includes the imported Default move
   const long = { ...project.manifest.rig, animations: [{ id: 'long', cells: 32, loop: true, frames: [] }] }
   const chunks = planItem(long, { anims: ['long'], dirs: ['south'], key: 'green', method: 'anchor' })
   expect(chunks.flatMap((c) => c.cells).sort()).toEqual(Array.from({ length: 32 }, (_, i) => `long/south/${i}`).sort())

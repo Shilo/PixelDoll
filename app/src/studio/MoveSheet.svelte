@@ -12,8 +12,7 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
-  import { DEFAULT_MOVE } from '../lib/rig/rig.ts'
-  import { MOVE_STEPS, isV13, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
+  import { MOVE_STEPS, isV13, reservedMove, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
   import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
   import { bodyQualityNote } from './model.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
@@ -24,7 +23,7 @@
   const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null))
   const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []))
   // Default is the standing views themselves: nothing to generate or replace.
-  const options = $derived([...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])].filter((a) => a !== DEFAULT_MOVE))
+  const options = $derived([...new Set(['idle', 'walk', ...AUTHORED, ...(m?.rig.animations.map((a) => a.id) ?? [])])].filter((a) => !reservedMove(a)))
   const draft = formDrafts.move?.projectId === doc.id ? formDrafts.move : undefined
   let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '')
   let text = $state(draft?.text ?? '')
@@ -107,7 +106,7 @@
     <button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
     <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
-    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) })} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!id || !targetDirs.length || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>{replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
+    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) })} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!id || !!reservedMove(id) || !targetDirs.length || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>{replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
   {/if}
 {/snippet}
 
@@ -161,6 +160,7 @@
         <span class="label">Or describe it <span class="faint">(optional)</span></span>
         <input class="bu-input input" bind:value={text} placeholder="e.g. jumping in place" maxlength="120" />
       </label>
+      {#if reservedMove(id)}<p class="notice warn small"><CircleAlert size={14} />{reservedMove(id)}</p>{/if}
       {#if items.length}
         <div class="field">
           <span class="label">Animate these items too</span>

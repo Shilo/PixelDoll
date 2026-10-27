@@ -71,6 +71,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Imports
 
+- **Default on older characters.** Characters saved before every character had Default get it when opened. Equipment
+  without dressed standing views (anchor, grid and diff items, fixtures) has no free source for it and stays hidden on
+  Default; remake it to fill it. The demo has no standing views, so it has no Default move. A character with unfinished
+  item drafts is upgraded once they are kept or discarded.
 - Old imports may have wearable frames but no dressed standing references, and incomplete body views are a character
   setup/import limit. Arbitrary PNG-folder or spritesheet ZIPs are not supported character import formats; they would
   need a user-confirmed layout mapper.

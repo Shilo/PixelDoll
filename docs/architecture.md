@@ -107,6 +107,12 @@ unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](researc
   queue is persisted with the running move's record (`studio-move`), and the next move replaces that record in one write.
   A failed move holds the queue: Try again continues it, Start over (dismiss) drops it.
 - Items treat `default` like any single-cell `imported-rest` clip: its cell is the dressed standing view, with no pose call.
+- Every character has exactly one `default` move (UI "Default"); `rig.rest` stays the internal standing data sent to
+  PixelLab and is never shown on its own. Imports name their rotations `default` (a ZIP animation of that name becomes
+  `default-copy`), and the id is reserved for user moves. Characters saved earlier are upgraded once when opened, free and
+  offline (`upgradeDefault` in `create.ts`, called by `openProject`): an import's standing move (found by content) is
+  renamed, a created character gains `default` from `rig.rest`, and items made for that body get their Default cells from
+  their dressed standing views, rebased with baseHash in one update. Items without dressed views stay hidden on Default.
 - The creator's form notes the frame-size price steps: above 80 px items dress 4 views per call; above 128 px a dress call
   costs 15–25 gens and no repair grid fits.
 

@@ -7,7 +7,6 @@ import { directionLabel } from './experience/movement.ts'
 
 export const ALL_MOVES = '__all_moves__'
 export const ALL_DIRECTIONS = '__all_directions__'
-export const STANDING = '__standing__'
 
 export interface ShareFrame { image: Img; ms: number }
 export interface ShareMedia { frames: ShareFrame[]; still: Img; animated: boolean; grid: boolean; previewRows: number; repeat: number; omitted: { move: string; direction: DirectionName; reason: string }[]; mime: 'image/png' | 'image/gif'; extension: 'png' | 'gif' }
@@ -45,42 +44,34 @@ function tile(images: (Img | null)[], columns: number, gap = 0): Img {
   return out
 }
 
-function rendered(a: PresentationAvailability, items: Preset['items'], move: string, direction: DirectionName, cell: number, standing: boolean): Img {
+function rendered(a: PresentationAvailability, items: Preset['items'], move: string, direction: DirectionName, cell: number): Img {
   const sequence = a.animations.get(move)?.get(direction)
-  const rest = standing && a.rests.has(direction)
-  const rescued = standing ? a.stills.get(direction) : undefined
-  if (standing ? !rest && !rescued : !sequence) throw new Error(`${standing ? 'Standing' : move} facing ${directionLabel(direction)} has no complete artwork`)
-  const presentation: Presentation = {
-    kind: standing ? rest ? 'rest' : 'still' : 'animation', moving: false, requestedClip: move,
-    intendedDirection: direction, direction, clip: standing ? rest ? null : rescued?.clip ?? null : move,
-    cell: rest ? 0 : rescued?.cell ?? cell, sequence, issue: null, issueKey: null, loading: false,
-  }
-  const result = renderPresentation(a, items, presentation, presentation.cell)
-  if (result.hiddenItems.length) throw new Error(`${result.hiddenItems.map(item => item.name).join(', ')} missing ${standing ? 'standing' : move} / ${directionLabel(direction)} artwork`)
-  if (!result.image) throw new Error(`${standing ? 'Standing' : move} facing ${directionLabel(direction)} cannot be rendered`)
+  if (!sequence) throw new Error(`${move} facing ${directionLabel(direction)} has no complete artwork`)
+  const presentation: Presentation = { kind: 'animation', moving: false, requestedClip: move, intendedDirection: direction, direction, clip: move, cell, sequence, issue: null, issueKey: null, loading: false }
+  const result = renderPresentation(a, items, presentation, cell)
+  if (result.hiddenItems.length) throw new Error(`${result.hiddenItems.map(item => item.name).join(', ')} missing ${move} / ${directionLabel(direction)} artwork`)
+  if (!result.image) throw new Error(`${move} facing ${directionLabel(direction)} cannot be rendered`)
   return result.image
 }
+const selectedMoves = (a: PresentationAvailability, move: string) => move === ALL_MOVES ? a.project.manifest.rig.animations.map(animation => animation.id) : [move]
 
 /** Body sequences and renderPresentation's equipped-item check both validate every authored timeline cell. */
 export function canShareDirection(a: PresentationAvailability, items: Preset['items'], move: string, direction: DirectionName): boolean {
-  const moves = move === ALL_MOVES ? [STANDING, ...a.project.manifest.rig.animations.map(animation => animation.id)] : [move]
-  return moves.some(selected => {
-    const standing = selected === STANDING
-    const cell = standing ? 0 : a.project.manifest.rig.animations.find(animation => animation.id === selected)?.frames[0]?.cell
+  return selectedMoves(a, move).some(selected => {
+    const cell = a.project.manifest.rig.animations.find(animation => animation.id === selected)?.frames[0]?.cell
     if (cell === undefined) return false
-    try { rendered(a, items, selected, direction, cell, standing); return true }
+    try { rendered(a, items, selected, direction, cell); return true }
     catch { return false }
   })
 }
 
 /** A GIF needs at least two authored moments among the renderable selected moves. */
 export function canAnimateShare(a: PresentationAvailability, items: Preset['items'], move: string, direction: string): boolean {
-  const moves = move === ALL_MOVES ? [STANDING, ...a.project.manifest.rig.animations.map(animation => animation.id)] : [move]
   const directions = direction === ALL_DIRECTIONS ? a.directions : a.directions.filter(id => id === direction)
   let moments = 0
-  for (const selected of moves) {
+  for (const selected of selectedMoves(a, move)) {
     if (!directions.some(id => canShareDirection(a, items, selected, id))) continue
-    moments += selected === STANDING ? 1 : a.project.manifest.rig.animations.find(animation => animation.id === selected)?.frames.length ?? 0
+    moments += a.project.manifest.rig.animations.find(animation => animation.id === selected)?.frames.length ?? 0
     if (moments > 1) return true
   }
   return false
@@ -90,18 +81,17 @@ export function canAnimateShare(a: PresentationAvailability, items: Preset['item
 export function buildShareMedia(a: PresentationAvailability, items: Preset['items'], move: string, direction: string, animate: boolean): ShareMedia {
   if (a.loading) throw new Error('Character artwork is still loading')
   if (a.metadataIssues.length) throw new Error(a.metadataIssues[0])
-  const moves = move === ALL_MOVES ? [STANDING, ...a.project.manifest.rig.animations.map(animation => animation.id)] : [move]
+  const moves = selectedMoves(a, move)
   const directions = direction === ALL_DIRECTIONS ? a.directions : a.directions.filter(id => id === direction)
   if (!directions.length || !moves.length) throw new Error('Select an available move and direction')
   const omitted: ShareMedia['omitted'] = []
   const entries: { move: string; timeline: { cell: number; ms: number }[]; views: Map<DirectionName, Img[]> }[] = []
   for (const selectedMove of moves) {
-    const standing = selectedMove === STANDING
-    const timeline = standing ? [{ cell: 0, ms: 1000 }] : a.project.manifest.rig.animations.find(animation => animation.id === selectedMove)?.frames
+    const timeline = a.project.manifest.rig.animations.find(animation => animation.id === selectedMove)?.frames
     if (!timeline?.length) throw new Error(`${selectedMove} has no frames`)
     const views = new Map<DirectionName, Img[]>()
     for (const id of directions) {
-      try { views.set(id, (animate ? timeline : timeline.slice(0, 1)).map(frame => rendered(a, items, selectedMove, id, frame.cell, standing))) }
+      try { views.set(id, (animate ? timeline : timeline.slice(0, 1)).map(frame => rendered(a, items, selectedMove, id, frame.cell))) }
       catch (error) {
         if (move !== ALL_MOVES && direction !== ALL_DIRECTIONS) throw error
         omitted.push({ move: selectedMove, direction: id, reason: (error as Error).message })
@@ -125,7 +115,7 @@ export function buildShareMedia(a: PresentationAvailability, items: Preset['item
   }
   const animated = animate && frames.length > 1
   if (animated && (frames[0].image.w > 65535 || frames[0].image.h > 65535)) throw new Error('Selected GIF is too large')
-  const repeat = entries.length === 1 && entries[0].move !== STANDING && a.project.manifest.rig.animations.find(animation => animation.id === entries[0].move)?.loop === false ? -1 : 0
+  const repeat = entries.length === 1 && a.project.manifest.rig.animations.find(animation => animation.id === entries[0].move)?.loop === false ? -1 : 0
   return { frames: animated ? frames : [{ image: still, ms: 1000 }], still, animated, grid: columns > 1 || entries.length > 1, previewRows: animated ? rowsPerMove : entries.length * rowsPerMove, repeat, omitted, mime: animated ? 'image/gif' : 'image/png', extension: animated ? 'gif' : 'png' }
 }
 

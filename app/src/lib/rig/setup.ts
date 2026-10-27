@@ -29,7 +29,7 @@ export async function setupPlan(p: Project, restAnim?: string): Promise<SetupPla
   if (rig.template && rig.template !== 'mannequin') throw new Error('Rig setup currently supports humanoid characters. This character uses a different body template.');
   const base = m.items.find((i) => i.id === rig.baseItem)!;
   if (base.layers.length !== 1) throw new Error('Rig setup needs a single frozen base-body layer.');
-  const a = restAnim ? rig.animations.find((a) => a.id === restAnim) : rig.animations.find((a) => /^(rest|idle|standing)$/.test(a.id)) ?? rig.animations[0];
+  const a = restAnim ? rig.animations.find((a) => a.id === restAnim) : rig.animations.find((a) => /^(default|rest|idle|standing)$/.test(a.id)) ?? rig.animations[0];
   if (!a) throw new Error('Choose a standing reference move.');
   const rest: SetupPlan['rest'] = {}, frames: SetupPlan['frames'] = new Map();
   for (const d of DIRECTIONS) {

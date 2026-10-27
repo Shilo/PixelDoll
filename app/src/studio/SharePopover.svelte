@@ -6,12 +6,12 @@
   import { buildPresentation } from './experience/presentation.ts'
   import { directionLabel } from './experience/movement.ts'
   import { popoverFocus } from './experience/focus.ts'
-  import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, sharePreviewFrames } from './shareMedia.ts'
+  import { ALL_DIRECTIONS, ALL_MOVES, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, sharePreviewFrames } from './shareMedia.ts'
   import { Clapperboard, Compass, Download, LoaderCircle, PersonStanding, Share2, ChevronDown } from './icons.ts'
 
   let popover: HTMLElement
   let open = $state(false)
-  let move = $state(STANDING)
+  let move = $state('')
   let direction = $state<string>('south')
   let wantedAnimate = $state(true)
   let index = $state(0)
@@ -24,7 +24,7 @@
   let rememberedId = ''
   const availability = $derived.by(() => {
     void doc.rev
-    return open && view.project ? buildPresentation(view.project, { loading: doc.loading, sourceProject: store.project ?? undefined, variants: doc.variants }) : null
+    return open && view.project ? buildPresentation(view.project, { loading: doc.loading }) : null
   })
   const canAnimate = $derived(availability ? canAnimateShare(availability, doc.items, move, direction) : false)
   const animate = $derived(wantedAnimate && canAnimate)
@@ -47,7 +47,7 @@
   const omittedText = $derived.by(() => {
     const missing = planned.media?.omitted ?? []
     if (!missing.length) return ''
-    const names = missing.slice(0, 3).map(entry => `${entry.move === STANDING ? 'Standing' : entry.move.replaceAll('-', ' ')} ${directionLabel(entry.direction)}`)
+    const names = missing.slice(0, 3).map(entry => `${entry.move.replaceAll('-', ' ')} ${directionLabel(entry.direction)}`)
     return `${missing.length} unavailable ${missing.length === 1 ? 'view' : 'views'} omitted: ${names.join(', ')}${missing.length > 3 ? `, and ${missing.length - 3} more` : ''}`
   })
 
@@ -73,7 +73,7 @@
     // Let the disabled Preparing state paint before GIF quantization runs on the main thread.
     void new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0))).then(() => encodeShareMedia(media)).then(bytes => {
       if (run !== serial) return
-      file = new File([bytes as Uint8Array<ArrayBuffer>], `${name}-${move === STANDING ? 'standing' : move === ALL_MOVES ? 'all-moves' : move}-${direction === ALL_DIRECTIONS ? 'all-directions' : direction}.${media.extension}`, { type: media.mime })
+      file = new File([bytes as Uint8Array<ArrayBuffer>], `${name}-${move === ALL_MOVES ? 'all-moves' : move}-${direction === ALL_DIRECTIONS ? 'all-directions' : direction}.${media.extension}`, { type: media.mime })
       encoding = false
     }).catch(error => {
       if (run !== serial) return
@@ -88,7 +88,7 @@
     if (!manifest || !doc.id || doc.loading) return
     const moves = manifest.rig.animations.map(animation => animation.id)
     const directions: string[] = manifest.rig.directions.map(entry => entry.id)
-    const currentMove = moves.includes(ui.anim) ? ui.anim : STANDING
+    const currentMove = moves.includes(ui.anim) ? ui.anim : moves[0] ?? ''
     const currentDirection = directions.includes(ui.dir) ? ui.dir : directions[0] ?? 'south'
     if (rememberedId !== doc.id) {
       rememberedId = doc.id
@@ -98,7 +98,7 @@
       index = 0
       return
     }
-    if (move !== STANDING && move !== ALL_MOVES && !moves.includes(move)) { move = currentMove; index = 0 }
+    if (move !== ALL_MOVES && !moves.includes(move)) { move = currentMove; index = 0 }
     if (direction !== ALL_DIRECTIONS && !directions.includes(direction)) { direction = currentDirection; index = 0 }
   }
   function toggle(event: ToggleEvent & { currentTarget: EventTarget & HTMLElement }) {
@@ -136,7 +136,6 @@
     <label class="share-picker">
       <PersonStanding size={16} aria-hidden="true" />
       <select class="bu-select" aria-label="Move" bind:value={move} onchange={() => index = 0}>
-        <option value={STANDING}>Standing</option>
         {#each store.project?.manifest.rig.animations ?? [] as animation (animation.id)}<option value={animation.id}>{animation.id[0].toUpperCase() + animation.id.slice(1).replaceAll('-', ' ')}</option>{/each}
         <option value={ALL_MOVES}>All moves</option>
       </select>

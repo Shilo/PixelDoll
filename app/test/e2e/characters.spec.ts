@@ -206,7 +206,7 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
   const before = await read()
   expect(before.character).toEqual({ id: 'managed-parity-fixture', looks: 'red hair, blue coat and boots' })
   expect(before.manifest.rig.rest?.west?.keypoints).toHaveLength(18)
-  expect((before.rigQa as { clips: Record<string, { adherence: number | null }> }).clips['rest/south'].adherence).toBeNull()
+  expect((before.rigQa as { clips: Record<string, { adherence: number | null }> }).clips['default/south'].adherence).toBeNull()
   await newItem(page, 'Hands')
   await page.getByRole('radio', { name: 'Held item', exact: true }).click()
   await page.getByRole('dialog').getByText('Details', { exact: true }).click()
@@ -219,7 +219,8 @@ test('imported artwork gets the shared rig, weapon plan and new-move pipeline', 
   await expect(page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true })).toBeVisible({ timeout: 45_000 })
   await page.getByRole('button', { name: 'Done', exact: true }).click()
   const after = await read(), idle = after.manifest.rig.animations.find((a) => a.id === 'idle')!
-  expect(after.manifest.items[0].layers[0].cells!.rest).toEqual(before.manifest.items[0].layers[0].cells!.rest)
+  expect(after.manifest.items[0].layers[0].cells!.default).toEqual(before.manifest.items[0].layers[0].cells!.default)
+  expect(Object.keys(before.manifest.items[0].layers[0].cells!.default)).toEqual(['south', 'east', 'north', 'west'])
   expect(after.manifest.rig.baseHash).not.toBe('sha256:')
   expect(idle.cells).toBe(4)
   expect(Object.keys(idle.sources!)).toEqual(['south', 'east', 'north', 'west'])
