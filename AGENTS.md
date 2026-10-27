@@ -26,7 +26,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Statuses: Ready (approved; top is next), Progress, Done, Later (deferred). Dropped cards are archived. The user orders cards by dragging; list prints board order and new cards land at the bottom.
 - A body's first line may be "Blocked:", "Paid:" (needs PixelLab generations) or "Needs decision:"; list shows it. Add the marker whenever it applies.
 - From app/: node scripts/board.mjs list [status|archived] | show <card> | add <title> [--body b] [--status s] | move <card> <status> | edit <card> [--title t] [--body b] | archive <card>. A card is its ID or a unique part of its title. Single-quote bodies; \n is a newline; --body replaces the whole body.
-- Codex: the CLI needs the user's GitHub login, which the sandbox hides; .codex/rules/board.rules asks to run it outside the sandbox.
+- Reuse saved GitHub CLI authorization; follow docs/github-cli-workflow.md before requesting login or new scopes. Codex: .codex/rules/board.rules requires running the board CLI outside the sandbox.
 - Broad requests ("what's next", "work on pending tasks", "do everything") cover only unmarked Ready cards, from the top, one at a time; list the marked ones you skipped. Never start a Later card, resume a Progress card another session started or start a marked card without the user's yes for that card; a question or "maybe" is not a yes.
 - "What's next?": report Progress cards, then recommend the top eligible Ready card; move nothing.
 - Starting: show the card, read its Refs, then move it to Progress before changing files. If it turns out to need generations, an install, an account or a decision, stop before spending or installing, add the marker, move it back to Ready and ask.
