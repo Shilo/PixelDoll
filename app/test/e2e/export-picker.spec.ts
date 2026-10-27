@@ -40,6 +40,14 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await popover.getByRole('button', { name: 'Share to…' }).click()
   await expect.poll(() => page.evaluate(() => (window as unknown as { __shared?: { type: string } }).__shared?.type)).toBe('image/gif')
 
+  await popover.getByRole('combobox', { name: 'Move' }).selectOption('__standing__')
+  await expect(popover.getByRole('switch')).toBeDisabled()
+  await expect(popover.getByRole('switch')).not.toBeChecked()
+  await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
+  await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk')
+  await expect(popover.getByRole('switch')).toBeEnabled()
+  await expect(popover.getByRole('switch')).toBeChecked()
+
   await popover.getByRole('switch').uncheck()
   await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
   await expect(popover.getByRole('button', { name: 'Download PNG' })).toHaveText('Download')
@@ -51,11 +59,15 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await expect.poll(() => page.evaluate(() => (window as unknown as { __shared?: { type: string } }).__shared?.type)).toBe('image/png')
 
   await popover.getByRole('combobox', { name: 'Move' }).selectOption('__standing__')
+  await expect(popover.getByRole('switch')).toBeDisabled()
+  await expect(popover.getByRole('switch')).not.toBeChecked()
   await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
   await popover.getByRole('combobox', { name: 'Direction' }).selectOption('__all_directions__')
   await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
   expect(await popover.locator('.share-preview canvas').evaluate(element => (element as HTMLCanvasElement).width)).toBeGreaterThan(64)
   await popover.getByRole('combobox', { name: 'Move' }).selectOption('__all_moves__')
+  await expect(popover.getByRole('switch')).toBeEnabled()
+  await expect(popover.getByRole('switch')).not.toBeChecked()
   await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
   const omitted = popover.getByRole('status').filter({ hasText: 'unavailable views omitted' })
   await expect(omitted).toContainText('cross punch')
@@ -96,6 +108,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
   expect((await popover.boundingBox())!.y + (await popover.boundingBox())!.height).toBeLessThanOrEqual(700)
   await page.screenshot({ path: testInfo.outputPath('share-grid-320.png') })
   await page.setViewportSize({ width: 844, height: 390 })
+  await expect.poll(async () => (await popover.boundingBox())!.y + (await popover.boundingBox())!.height).toBeLessThanOrEqual(390)
   const landscape = (await popover.boundingBox())!
   expect(landscape.y).toBeGreaterThanOrEqual(0)
   expect(landscape.y + landscape.height).toBeLessThanOrEqual(390)

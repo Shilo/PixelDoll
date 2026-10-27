@@ -3,7 +3,7 @@ import { makeImg } from '../../src/lib/image/png.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
 import type { DirectionName, Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts'
 import { buildPresentation } from '../../src/studio/experience/presentation.ts'
-import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canShareDirection, encodeShareMedia, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
+import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
 
 const hash = (name: string) => `sha256:${name}` as Sha256
 function fixture(directions: DirectionName[] = ['south', 'east']): Project {
@@ -29,6 +29,8 @@ function fixture(directions: DirectionName[] = ['south', 'east']): Project {
 describe('share media', () => {
   test('Standing is a dressed first-frame PNG and all selections make a deterministic contact sheet', async () => {
     const project = fixture(), a = buildPresentation(project, { sourceProject: project })
+    expect(canAnimateShare(a, { head: 'hat' }, STANDING, 'south')).toBe(false)
+    expect(canAnimateShare(a, { head: 'hat' }, 'walk', 'south')).toBe(true)
     const standing = buildShareMedia(a, { head: 'hat' }, STANDING, 'south', true)
     expect(standing.extension).toBe('png')
     expect([...standing.still.data]).toEqual([60, 0, 0, 255, 90, 0, 0, 255])
@@ -80,6 +82,14 @@ describe('share media', () => {
     const a = buildPresentation(project, { sourceProject: project })
     expect(canShareDirection(a, { head: 'hat' }, 'walk', 'south')).toBe(false)
     expect(() => buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)).toThrow(/hat missing walk \/ South artwork/)
+  })
+
+  test('one-frame moves cannot advertise GIF animation even with many directions', () => {
+    const project = fixture()
+    project.manifest.rig.animations[0].frames = [{ cell: 0, ms: 100 }]
+    const a = buildPresentation(project, { sourceProject: project })
+    expect(canAnimateShare(a, {}, 'walk', ALL_DIRECTIONS)).toBe(false)
+    expect(buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true).extension).toBe('png')
   })
 
   test('one through eight available facings use legible rows without changing rig order', () => {

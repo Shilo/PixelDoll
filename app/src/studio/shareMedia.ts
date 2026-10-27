@@ -73,6 +73,19 @@ export function canShareDirection(a: PresentationAvailability, items: Preset['it
   })
 }
 
+/** A GIF needs at least two authored moments among the renderable selected moves. */
+export function canAnimateShare(a: PresentationAvailability, items: Preset['items'], move: string, direction: string): boolean {
+  const moves = move === ALL_MOVES ? [STANDING, ...a.project.manifest.rig.animations.map(animation => animation.id)] : [move]
+  const directions = direction === ALL_DIRECTIONS ? a.directions : a.directions.filter(id => id === direction)
+  let moments = 0
+  for (const selected of moves) {
+    if (!directions.some(id => canShareDirection(a, items, selected, id))) continue
+    moments += selected === STANDING ? 1 : a.project.manifest.rig.animations.find(animation => animation.id === selected)?.frames.length ?? 0
+    if (moments > 1) return true
+  }
+  return false
+}
+
 /** Compose the selected dressed artwork once. The preview, PNG and GIF all consume these same pixels. */
 export function buildShareMedia(a: PresentationAvailability, items: Preset['items'], move: string, direction: string, animate: boolean): ShareMedia {
   if (a.loading) throw new Error('Character artwork is still loading')

@@ -5,14 +5,14 @@
   import { buildPresentation } from './experience/presentation.ts'
   import { directionLabel } from './experience/movement.ts'
   import { popoverFocus } from './experience/focus.ts'
-  import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canShareDirection, encodeShareMedia, sharePreviewFrames } from './shareMedia.ts'
+  import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, sharePreviewFrames } from './shareMedia.ts'
   import { Clapperboard, Compass, Download, LoaderCircle, PersonStanding, Share2, ChevronDown } from './icons.ts'
 
   let popover: HTMLElement
   let open = $state(false)
   let move = $state(STANDING)
   let direction = $state<string>('south')
-  let animate = $state(true)
+  let wantedAnimate = $state(true)
   let index = $state(0)
   let file = $state.raw<File | null>(null)
   let encoding = $state(false)
@@ -24,6 +24,8 @@
     void doc.rev
     return open && view.project ? buildPresentation(view.project, { loading: doc.loading, sourceProject: store.project ?? undefined, variants: doc.variants }) : null
   })
+  const canAnimate = $derived(availability ? canAnimateShare(availability, doc.items, move, direction) : false)
+  const animate = $derived(wantedAnimate && canAnimate)
   const planned = $derived.by(() => {
     if (!availability) return { media: null, error: '' }
     try { return { media: buildShareMedia(availability, doc.items, move, direction, animate), error: '' } }
@@ -79,7 +81,7 @@
     if (open) {
       move = store.project?.manifest.rig.animations.some(animation => animation.id === ui.anim) ? ui.anim : STANDING
       direction = store.project?.manifest.rig.directions.some(entry => entry.id === ui.dir) ? ui.dir : store.project?.manifest.rig.directions[0]?.id ?? 'south'
-      animate = true
+      wantedAnimate = true
       index = 0
       popover.querySelector<HTMLSelectElement>('select')?.focus()
     }
@@ -124,7 +126,7 @@
     </label>
     <label class="share-animate bu-check bu-action" data-variant="field">
       <span><Clapperboard size={16} aria-hidden="true" />Animate as GIF</span>
-      <input class="bu-switch" type="checkbox" role="switch" bind:checked={animate} onchange={() => index = 0} />
+      <input class="bu-switch" type="checkbox" role="switch" checked={animate} disabled={!canAnimate} onchange={(event) => { wantedAnimate = event.currentTarget.checked; index = 0 }} />
     </label>
   </div>
   <div class="share-actions">
