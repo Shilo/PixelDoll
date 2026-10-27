@@ -1,5 +1,6 @@
 <script lang="ts">
   import './studio.css'
+  import './share.css'
   import './experience/theme.css'
   import './experience/layout.css'
   import { rememberActivation } from './experience/focus.ts'

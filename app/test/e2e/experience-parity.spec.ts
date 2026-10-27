@@ -10,6 +10,91 @@ test.beforeEach(async ({ context }) => {
   })
 })
 
+test('anchored popovers point at their triggers on all four sides', async ({ page }) => {
+  await landing(page)
+  const initialViewport = page.viewportSize()!
+  const options = page.getByRole('button', { name: 'More options', exact: true })
+  const optionMenu = page.locator('#experience-options')
+  const check = async (id: string, triggerSelector: string, side: string) => {
+    const menu = page.locator(`#${id}`)
+    await expect(menu).toHaveAttribute('data-side', side)
+    await expect(menu).toHaveAttribute('data-positioned', '')
+    await expect.poll(() => menu.evaluate(node => node.contains(document.activeElement))).toBe(true)
+    const geometry = await menu.evaluate((node, selector) => {
+      const panel = node.querySelector('.bu-popover-surface')!.getBoundingClientRect()
+      const pointer = node.querySelector('.bu-popover-arrow')!.getBoundingClientRect()
+      const trigger = document.querySelector(selector)!.getBoundingClientRect()
+      const axis = node.getAttribute('data-side') === 'top' || node.getAttribute('data-side') === 'bottom' ? 'x' : 'y'
+      const pointerCenter = axis === 'x' ? pointer.x + pointer.width / 2 : pointer.y + pointer.height / 2
+      const triggerCenter = axis === 'x' ? trigger.x + trigger.width / 2 : trigger.y + trigger.height / 2
+      const path = node.querySelector<SVGPathElement>('.bu-popover-arrow path:last-child')!
+      const transform = path.getScreenCTM()!
+      const ends = [new DOMPoint(0, 8), new DOMPoint(12, 8)].map(point => point.matrixTransform(transform))
+      const side = node.getAttribute('data-side')
+      const border = side === 'bottom' ? panel.top + 0.5 : side === 'top' ? panel.bottom - 0.5 : side === 'right' ? panel.left + 0.5 : panel.right - 0.5
+      const seam = Math.max(...ends.map(point => Math.abs((axis === 'x' ? point.y : point.x) - border)))
+      return { panel: panel.toJSON(), pointer: pointer.toJSON(), delta: Math.abs(pointerCenter - triggerCenter), seam, hidden: node.hasAttribute('data-arrow-hidden') }
+    }, triggerSelector)
+    expect(geometry.hidden).toBe(false)
+    expect(geometry.delta).toBeLessThanOrEqual(12)
+    expect(geometry.seam).toBeLessThanOrEqual(1)
+    if (side === 'bottom') expect(geometry.pointer.bottom).toBeLessThanOrEqual(geometry.panel.top + 4)
+    if (side === 'top') expect(geometry.pointer.top).toBeGreaterThanOrEqual(geometry.panel.bottom - 4)
+    if (side === 'left') expect(geometry.pointer.left).toBeGreaterThanOrEqual(geometry.panel.right - 4)
+    if (side === 'right') expect(geometry.pointer.right).toBeLessThanOrEqual(geometry.panel.left + 4)
+    if (side === 'left') {
+      await page.setViewportSize({ width: 900, height: initialViewport.height })
+      await expect(menu).toHaveAttribute('data-side', 'left')
+      await expect.poll(() => menu.evaluate((node, selector) => {
+        const pointer = node.querySelector('.bu-popover-arrow')!.getBoundingClientRect()
+        const trigger = document.querySelector(selector)!.getBoundingClientRect()
+        return Math.abs(pointer.y + pointer.height / 2 - trigger.y - trigger.height / 2)
+      }, triggerSelector)).toBeLessThanOrEqual(12)
+    }
+    await page.keyboard.press('Escape')
+    await expect(menu).not.toBeVisible()
+  }
+
+  await options.click()
+  await check('experience-options', '[popovertarget="experience-options"]', 'bottom')
+  // A preferred placement above the header has no room; collision handling flips it below.
+  await optionMenu.evaluate(node => node.setAttribute('data-placement', 'top-end'))
+  await options.click()
+  await check('experience-options', '[popovertarget="experience-options"]', 'bottom')
+  await optionMenu.evaluate(node => node.setAttribute('data-placement', 'left-start'))
+  await options.click()
+  await check('experience-options', '[popovertarget="experience-options"]', 'left')
+  await page.setViewportSize(initialViewport)
+
+  const project = page.locator('.selected-name')
+  await page.locator('#project-menu').evaluate(node => node.setAttribute('data-placement', 'right-start'))
+  await project.click()
+  await check('project-menu', '.selected-name', 'right')
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.locator('.customize-action').click()
+  const equipment = page.getByRole('button', { name: 'More', exact: true })
+  await equipment.click()
+  await check('more-equipment', '[popovertarget="more-equipment"]', 'top')
+})
+
+test('closing a popover with a clipped trigger restores focus to a visible control', async ({ page }) => {
+  await landing(page)
+  const opener = page.locator('.selected-name')
+  const menu = page.locator('#project-menu')
+  await opener.click()
+  await expect(menu).toBeVisible()
+  await opener.evaluate(element => {
+    const parent = element.parentElement!
+    parent.style.maxHeight = '0px'
+    parent.style.overflow = 'hidden'
+    window.dispatchEvent(new Event('scroll'))
+  })
+  await expect(menu).not.toBeVisible()
+  await expect(opener).not.toBeFocused()
+  await expect(page.locator('.experience-header button').first()).toBeFocused()
+})
+
 const world = (page: Page) => page.locator('.world-stage')
 const selection = (page: Page) => page.getByRole('application', { name: /^Character selection\./ })
 const modes = (page: Page) => page.getByRole('navigation', { name: 'Character view', exact: true })
@@ -22,8 +107,10 @@ async function landing(page: Page) {
 test('screen transitions preserve world keyboard focus while creator fields remain native', async ({ page }) => {
   await landing(page)
   await expect(selection(page)).toBeFocused()
+  expect(await selection(page).evaluate(el => getComputedStyle(el, '::after').content)).toBe('none')
   await page.keyboard.press('Enter')
   await expect(world(page)).toBeFocused()
+  expect(await world(page).evaluate(el => getComputedStyle(el, '::after').content)).toBe('none')
   await page.keyboard.press('ArrowLeft')
   await expect(world(page)).toHaveAttribute('data-facing', 'west')
   const prompt = page.locator('.prompt-disclosure')
@@ -44,6 +131,8 @@ test('screen transitions preserve world keyboard focus while creator fields rema
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(create).toBeFocused()
   await expect(selection(page)).toBeVisible()
+  await page.locator('.customize-action').click()
+  await expect(world(page)).toBeFocused()
 })
 
 test('Preview resolves partial chord releases, preserves pause and clip selection, and rejects stale repeats', async ({ page }) => {

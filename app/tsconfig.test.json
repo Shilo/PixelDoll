@@ -9,6 +9,7 @@
   },
   "include": [
     "test/**/*.ts",
+    "src/studio/gifenc.d.ts",
     "vitest.config.ts",
     "playwright.config.ts"
   ]

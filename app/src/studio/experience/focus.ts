@@ -1,3 +1,5 @@
+import { arrow, autoUpdate, computePosition, flip, hide, offset, shift, size, type Placement } from '@floating-ui/dom'
+
 /** Capture actual activation; WebKit pointer clicks need not focus a button. */
 let trigger: HTMLElement | null = null
 export function rememberActivation(event: Event) {
@@ -7,37 +9,90 @@ export function rememberActivation(event: Event) {
   trigger = popover ? document.querySelector<HTMLElement>(`[popovertarget="${popover.id}"]`) : target
 }
 export function openingTrigger(): HTMLElement | null { return trigger?.isConnected ? trigger : document.activeElement as HTMLElement | null }
+function visibleInViewport(target: HTMLElement | null): target is HTMLElement {
+  if (!target?.isConnected || !target.getClientRects().length || target.closest('[popover]:not(:popover-open)')) return false
+  let { left, top, right, bottom } = target.getBoundingClientRect()
+  left = Math.max(left, 0); top = Math.max(top, 0)
+  right = Math.min(right, innerWidth); bottom = Math.min(bottom, innerHeight)
+  for (let parent = target.parentElement; parent && right > left && bottom > top; parent = parent.parentElement) {
+    const style = getComputedStyle(parent)
+    const bounds = parent.getBoundingClientRect()
+    if (/auto|scroll|hidden|clip/.test(style.overflowX)) { left = Math.max(left, bounds.left); right = Math.min(right, bounds.right) }
+    if (/auto|scroll|hidden|clip/.test(style.overflowY)) { top = Math.max(top, bounds.top); bottom = Math.min(bottom, bounds.bottom) }
+  }
+  return right > left && bottom > top
+}
 export function restoreTrigger(target: HTMLElement | null) {
-  if (document.querySelector('dialog[open]')) return
-  const visible = target?.isConnected && target.getClientRects().length && !target.closest('[popover]:not(:popover-open)')
-  ;(visible ? target : document.querySelector<HTMLElement>('.project-btn,.experience-header button'))?.focus({preventScroll:true})
+  const dialog = document.querySelector<HTMLDialogElement>('dialog[open]')
+  if (dialog) {
+    if (visibleInViewport(target) && dialog.contains(target)) target.focus({ preventScroll: true })
+    return
+  }
+  const fallback = [...document.querySelectorAll<HTMLElement>('.project-btn,.experience-header button')].find(visibleInViewport)
+  ;(visibleInViewport(target) ? target : fallback)?.focus({ preventScroll: true })
 }
 const placements = new WeakMap<HTMLElement, () => void>()
-export function popoverFocus(event: ToggleEvent & {currentTarget:EventTarget & HTMLElement}) {
+const openers = new WeakMap<HTMLElement, HTMLElement>()
+export function popoverFocus(event: {currentTarget: HTMLElement; newState: string}, focusFirst = true) {
   const menu = event.currentTarget
-  const opener = document.querySelector<HTMLElement>(`[popovertarget="${menu.id}"]`)
+  const activated = openingTrigger()
+  const source = activated?.getAttribute('popovertarget') === menu.id && visibleInViewport(activated)
+    ? activated
+    : [...document.querySelectorAll<HTMLElement>(`[popovertarget="${CSS.escape(menu.id)}"]`)].find(visibleInViewport) ?? null
+  const opener = event.newState === 'open' ? source : openers.get(menu) ?? source
   const prior = placements.get(menu)
-  if (prior) window.removeEventListener('resize', prior)
+  prior?.()
+  placements.delete(menu)
+  delete menu.dataset.positioned
   if (event.newState === 'open') {
-    // Position against the actual trigger, including short landscape viewports.
-    // Native popover supplies top-layer behavior; the host owns placement only.
-    const place = () => {
-      if (!opener) return
-      const rect = opener.getBoundingClientRect(), edge = 8
-      Object.assign(menu.style, { position:'fixed', margin:'0', right:'auto', bottom:'auto', maxHeight:`${innerHeight-edge*2}px`, maxWidth:`${innerWidth-edge*2}px`, overflowY:'auto' })
-      const width = menu.offsetWidth, height = menu.offsetHeight
-      const below = innerHeight-rect.bottom-edge
-      const preferred = below >= height || below >= rect.top ? rect.bottom+edge : rect.top-height-edge
-      menu.style.left = `${Math.max(edge,Math.min(innerWidth-width-edge,rect.right-width))}px`
-      menu.style.top = `${Math.max(edge,Math.min(innerHeight-height-edge,preferred))}px`
+    if (opener) openers.set(menu, opener)
+    const surface = menu.querySelector<HTMLElement>(':scope > .bu-popover-surface')
+    const pointer = menu.querySelector<HTMLElement>(':scope > .bu-popover-arrow')
+    if (opener && surface && pointer) {
+      let active = true
+      let sequence = 0
+      const place = () => {
+        const current = ++sequence
+        void computePosition(opener, menu, {
+          strategy: 'fixed',
+          placement: (menu.dataset.placement || 'bottom-end') as Placement,
+          middleware: [
+            offset(8),
+            flip({ padding: 8, fallbackAxisSideDirection: 'start' }),
+            shift({ padding: 8 }),
+            size({ padding: 8, apply({ availableHeight }) {
+              const maxHeight = `${Math.max(0, availableHeight)}px`
+              if (surface.style.maxHeight !== maxHeight) surface.style.maxHeight = maxHeight
+            } }),
+            arrow({ element: pointer, padding: 12 }),
+            hide(),
+          ],
+        }).then(({ x, y, placement, middlewareData }) => {
+          if (!active || current !== sequence) return
+          if (middlewareData.hide?.referenceHidden) { menu.hidePopover(); return }
+          menu.style.left = `${x}px`
+          menu.style.top = `${y}px`
+          menu.dataset.side = placement.split('-')[0]
+          const point = middlewareData.arrow
+          if (point?.x !== undefined) menu.style.setProperty('--bu-arrow-x', `${point.x}px`)
+          if (point?.y !== undefined) menu.style.setProperty('--bu-arrow-y', `${point.y}px`)
+          if (!point || Math.abs(point.centerOffset) > 1) menu.dataset.arrowHidden = ''
+          else delete menu.dataset.arrowHidden
+          menu.dataset.positioned = ''
+        })
+      }
+      const stop = autoUpdate(opener, menu, place)
+      placements.set(menu, () => { active = false; stop() })
     }
-    place()
-    placements.set(menu, place)
-    window.addEventListener('resize', place)
-    // Hidden (phone-only) and disabled rows ignore focus(), so move on to the first row that takes it.
-    for (const row of menu.querySelectorAll<HTMLElement>('button,[href],input')) { row.focus(); if (document.activeElement === row) break }
+    if (focusFirst) requestAnimationFrame(() => {
+      if (!menu.matches(':popover-open')) return
+      // Hidden (phone-only) and disabled rows ignore focus(), so move on to the first row that takes it.
+      for (const row of menu.querySelectorAll<HTMLElement>('button,[href],input')) { row.focus(); if (document.activeElement === row) break }
+    })
   } else {
-    placements.delete(menu)
+    openers.delete(menu)
+    const surface = menu.querySelector<HTMLElement>(':scope > .bu-popover-surface')
+    if (surface) surface.style.maxHeight = ''
     // Do not steal focus from a control/world the user clicked to dismiss it.
     if (document.activeElement === document.body || menu.contains(document.activeElement) || document.activeElement === opener) restoreTrigger(opener)
   }

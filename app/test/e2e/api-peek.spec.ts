@@ -350,6 +350,8 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
   const inspect = sheet.locator('.sheet-foot').getByRole('button', { name: 'Inspect API calls', exact: true })
   await inspect.click()
   await expect(peek(page)).toBeVisible()
+  await expect(peek(page)).toHaveAttribute('data-positioned', '')
+  await expect(peek(page).locator('.bu-popover-arrow')).toBeVisible()
   // A nonmodal native popover belongs to the sheet's top layer; no nested native dialog.
   await expect(page.locator('dialog[open]')).toHaveCount(1)
   expect(await peek(page).evaluate((element) => element.closest('dialog')?.open)).toBe(true)
@@ -358,11 +360,21 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
     await expectPeekBeforePrimary(page)
     await expect(async () => { // the popover repositions on the next resize frame
       const bounds = await peek(page).boundingBox()
+      const pointer = await peek(page).locator('.bu-popover-arrow').boundingBox()
+      const trigger = await inspect.boundingBox()
+      const side = await peek(page).getAttribute('data-side')
       expect(bounds).not.toBeNull()
+      expect(pointer).not.toBeNull()
+      expect(trigger).not.toBeNull()
       expect(bounds!.x).toBeGreaterThanOrEqual(0)
       expect(bounds!.y).toBeGreaterThanOrEqual(0)
       expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width)
       expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height)
+      const gap = side === 'top' ? trigger!.y - pointer!.y - pointer!.height
+        : side === 'bottom' ? pointer!.y - trigger!.y - trigger!.height
+        : side === 'left' ? trigger!.x - pointer!.x - pointer!.width
+        : pointer!.x - trigger!.x - trigger!.width
+      expect(Math.abs(gap)).toBeLessThanOrEqual(2)
     }).toPass()
   }
   await page.keyboard.press('Escape')
@@ -371,6 +383,9 @@ test('attached phone peeks stay above their sheet and dismiss without losing the
   await expect(prompt).toHaveValue('a tiny woodland ranger')
   await inspect.click()
   await expect(peek(page)).toBeVisible()
+  await peek(page).locator('button:not([disabled]), summary, [tabindex="0"]').last().focus()
+  await page.keyboard.press('Tab')
+  await expect.poll(() => peek(page).evaluate(element => element.contains(document.activeElement))).toBe(false)
   await peek(page).getByRole('button', { name: 'Close API calls', exact: true }).click()
   await expect(prompt).toHaveValue('a tiny woodland ranger')
   await expect(page.locator('dialog[open]')).toHaveCount(1)

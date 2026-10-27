@@ -262,7 +262,7 @@ test('all production extra categories, native menu focus, mode controls and Tab 
   const optionMenu = page.locator('#experience-options')
   await expect.poll(() => optionMenu.evaluate((node) => node.contains(document.activeElement))).toBe(true)
   // Built CSS must keep the standard blur (a minifier once kept only the -webkit- alias, letting panels show through).
-  expect(await optionMenu.evaluate(el => getComputedStyle(el).backdropFilter)).toContain('blur')
+  expect(await optionMenu.locator('.menu-surface').evaluate(el => getComputedStyle(el).backdropFilter)).toContain('blur')
   await expect(optionMenu.getByRole('button', { name: 'Inspect all API calls', exact: true })).toHaveText('API calls')
   await page.keyboard.press('Escape')
   await expect(optionMenu).not.toBeVisible()

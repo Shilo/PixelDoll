@@ -3,11 +3,13 @@
   import { popoverFocus } from './experience/focus.ts'
   import { experience, characters } from './experience/state.svelte.ts'
   import CharacterThumb from './experience/CharacterThumb.svelte'
+  import SharePopover from './SharePopover.svelte'
+  import PopoverArrow from './PopoverArrow.svelte'
   import ApiPeek from './ApiPeek.svelte'
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
   import { ui, doc, store, creating, settingUp, gens, openProject, undo, redo, toggleTheme, isDemo } from './state.svelte.ts'
-  import { Github, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
+  import { Github, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Share2, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
   const devRigs = $derived(store.projects.filter((p) => p.dev))
@@ -23,7 +25,7 @@
 
 <header class="experience-header">
   <div class="header-start">
-    {#if experience.screen === 'studio'}<button class="bu-action header-back" data-variant="quiet" onclick={characters}><ChevronLeft size={18} />Characters</button>{:else}<span class="brand"><PersonStanding size={20}/>PixelDoll</span>{/if}
+    {#if experience.screen === 'studio'}<button class="bu-action header-back" data-variant="quiet" aria-label="Characters" onclick={characters}><ChevronLeft size={18} /><span class="header-back-label">Characters</span></button>{:else}<span class="brand"><PersonStanding size={20}/>PixelDoll</span>{/if}
   </div>
   <div class="header-actions">
     {#if experience.screen === 'characters'}
@@ -32,13 +34,18 @@
     {:else}
       <button class="bu-action header-undo" data-variant="quiet" aria-label={undoLabel ? 'Undo '+undoLabel : 'Undo'} disabled={!undoLabel} onclick={undo}><Undo2 size={18} /></button>
       <button class="bu-action header-redo" data-variant="quiet" aria-label={redoLabel ? 'Redo '+redoLabel : 'Redo'} disabled={!redoLabel} onclick={redo}><Redo2 size={18} /></button>
-      <button class="bu-action" data-variant="outline" onclick={() => ui.sheet='export'} disabled={!m}><Download size={16} /><span>Export</span></button>
+      <button class="bu-action header-share" data-variant="outline" aria-label="Share character" popovertarget="share-popover" disabled={!m}><Share2 size={16} /><span>Share</span></button>
+      <button class="bu-action header-export" data-variant="outline" aria-label="Export" onclick={() => ui.sheet='export'} disabled={!m}><Download size={16} /><span>Export</span></button>
     {/if}
     {#if busy}<button class="bu-action" data-variant="quiet" aria-label="Activity" onclick={() => ui.sheet='activity'}><span class="ring spin"></span><span class="num">{active || ''}</span></button>{/if}
     <button class="bu-action" data-variant="quiet" aria-label="More options" popovertarget="experience-options"><Ellipsis size={20} /></button>
   </div>
 </header>
-<div id="experience-options" class="menu options-menu bu-floating" popover ontoggle={popoverFocus}>
+<SharePopover />
+<div id="experience-options" class="menu options-menu bu-popover-anchor" data-placement="bottom-end" popover ontoggle={popoverFocus}>
+  <PopoverArrow />
+  <div class="menu-surface bu-popover-surface bu-floating">
+  {#if experience.screen==='studio'}<button class="row bu-action mobile-undo" data-variant="quiet" disabled={!undoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); undo() }}><Undo2 size={18}/><span class="row-name">{undoLabel?'Undo '+undoLabel:'Undo'}</span></button>{/if}
   {#if experience.screen==='studio'}<button class="row bu-action mobile-redo" data-variant="quiet" disabled={!redoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); redo() }}><Redo2 size={18}/><span class="row-name">{redoLabel?'Redo '+redoLabel:'Redo'}</span></button>{/if}
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='activity' }}><Activity size={18}/><span class="row-name">Activity</span>{#if $queue.role==='follower'}<span class="small">Other tab</span>{/if}</button>
   <ApiPeek scope="all" all menu />
@@ -48,10 +55,13 @@
   <hr />
   <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noreferrer"><Github size={18}/><span class="row-name">Source code</span><span class="row-aside faint small">Shilo/PixelDoll</span><ExternalLink size={16}/></a>
   <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}" target="_blank" rel="noreferrer"><PersonStanding size={18}/><span class="row-name">Version {__APP_VERSION__}</span><span class="row-aside faint small num">{__APP_COMMIT__}</span><ExternalLink size={16}/></a>
+  </div>
 </div>
 
-<div id="project-menu" class="menu" popover bind:this={menu} role="menu" aria-label="Characters"
+<div id="project-menu" class="menu bu-popover-anchor" data-placement="bottom-start" popover bind:this={menu} role="menu" aria-label="Characters"
   ontoggle={popoverFocus}>
+  <PopoverArrow />
+  <div class="menu-surface bu-popover-surface bu-floating">
   <p class="menu-sec">Characters</p>
   {#snippet proj(p: (typeof store.projects)[number])}
     <button class="row" role="menuitemradio" aria-checked={p.id === doc.id} aria-label={p.name} onclick={() => pick(p.id)}>
@@ -77,4 +87,5 @@
       {#each devRigs as p (p.id)}{@render proj(p)}{/each}
     </details>
   {/if}
+  </div>
 </div>
