@@ -20,7 +20,6 @@ import type { SetupSpec } from './setup.ts';
 import { listFits, clearFinishedFits, resumeFits } from '../lib/equipment/fits.ts';
 import type { EquipmentDesign, FitDraft } from '../lib/equipment/types.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
-import { needsDefault } from '../lib/rig/rig.ts';
 import type { Img } from '../lib/image/png.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
@@ -252,13 +251,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
   if (!quiet) doc.loading = true;
   doc.error = '';
   try {
-    let r = await openSource(id);
-    if (request !== openRequest) return;
-    // Characters saved before Default get it here, before the color split below sees its cells; not while work planned on
-    // its old moves waits (a later open upgrades it). A failed upgrade opens the character as saved (re-read: the upgrade
-    // may have changed it in memory) and says why.
-    if (needsDefault(r.project.manifest)) try { if (!(await planned(id))) await (await createFlow()).upgradeDefault(id, r.project); }
-    catch (e) { console.error('default move', e); toast(`Could not add the Default move: ${(e as Error).message}`); r = await openSource(id); }
+    const r = await openSource(id);
     if (request !== openRequest) return;
     const split = await splitBase(r.project); // B15: shirt / shorts color regions on the base (idempotent; fixtures in memory)
     deriveMaterials(r.project); // items without materials (new items, fresh fixtures)
@@ -300,14 +293,6 @@ export const lastProject = () => lsGet(K.last) ?? DEMO;
 /** Work finishing in the background reloads only the character in view, never one the user is leaving: reopening it would
  *  cancel the open of the newly picked one. */
 const viewing = (id: string) => doc.id === id && (!opening || opening === id);
-/** Item drafts, an equipment fit, a move (running, failed or queued) or a rig setup planned on this character's current moves
- *  (a fit's target and extension stamps include them). */
-async function planned(id: string): Promise<boolean> {
-  const drafts = [...(await readGens()).map((g) => g.draft), ...(await loadDrafts())];
-  const flows = await Promise.all([MOVE_KEY, SETUP_KEY].map((k) => db.get<{ projectId?: string; spec?: { projectId?: string }; queued?: { projectId: string }[] }>('projects', k)));
-  return drafts.some((d) => d.rigId === id && !d.acceptedAt) || (await listFits()).some((f) => f.targetId === id && f.stage !== 'accepted' && f.stage !== 'discarded')
-    || flows.some((f) => !!f && [f.projectId, f.spec?.projectId, ...(f.queued ?? []).map((q) => q.projectId)].includes(id));
-}
 
 // ---- undo/redo: snapshots of the dress state (outfit, colors, presets, layer order, hides) ----
 const snap = () => JSON.stringify(dressOf(store.project!.manifest, { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }));

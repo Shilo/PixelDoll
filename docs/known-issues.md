@@ -60,9 +60,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   wording had no reliable effect (round 2 arm A).
 - **Default-only characters (round 10, D26).** All standing views arrive together, because PixelLab draws every rotation
   in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
-  not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** sends the seed
-  the character was drawn with, as creation did, so a creation interrupted before Default-first reuses its paid idle and
-  walk from the ledger (an imported character uses its rig setup's seed).
+  not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** picks a new
+  random seed on every tap; the character's seed no longer reaches its moves, so an earlier attempt cannot be reproduced.
 - **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
   the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** poses the items the
   character has when it is tapped (the ones it is priced for). Held items split over several dress calls pose only after
@@ -72,10 +71,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Imports
 
-- **Default on older characters.** Characters saved before every character had Default get it when opened. Equipment
-  without dressed standing views (anchor, grid and diff items, fixtures) has no free source for it and stays hidden on
-  Default; remake it to fill it. The demo has no standing views, so it has no Default move. A character with unfinished
-  item drafts is upgraded once they are kept or discarded.
+- **No Default on older characters.** Characters saved before Default (and the demo) are not upgraded and have no Default
+  move; recreate or reimport them to get it.
 - Old imports may have wearable frames but no dressed standing references, and incomplete body views are a character
   setup/import limit. Arbitrary PNG-folder or spritesheet ZIPs are not supported character import formats; they would
   need a user-confirmed layout mapper.

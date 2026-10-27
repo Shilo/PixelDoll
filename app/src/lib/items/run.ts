@@ -117,7 +117,7 @@ async function dressedKeys(ctx: RigCtx, item: Item, pad: number) {
     if (c.cut) cuts[d] = c.cut;
     cells.push(c);
   }
-  return { keys, cuts, hidden: hiddenViews(cells, keys), cells };
+  return { keys, cuts, hidden: hiddenViews(cells, keys) };
 }
 
 // ---------- calls ----------
@@ -586,7 +586,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
 const failCount = (q: QaResult) => [...q.failCalls.values()].flat().length;
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
 export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
-  const { rig } = ctx.rec.manifest;
+  const { rig } = ctx.rec.manifest, key = item.key!;
   const version = stableStringify({ rig, character: ctx.rec.character }), originalItem = stableStringify(item);
   const count = rig.animations.find((a) => a.id === anim)?.cells;
   const expected = new Set(dirs.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`)));
@@ -594,7 +594,12 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
     || Object.keys(q.qa.cells).length !== expected.size || Object.keys(q.qa.cells).some((k) => !expected.has(k))
     || dirs.some((d) => !q.qa.clips?.[`${anim}/${d}`]) || Object.keys(q.qa.clips ?? {}).length !== new Set(dirs).size)
     throw new Error('Move QA requires every frame of each replaced direction');
-  const { out, images } = await withClip(rig, item, anim, dirs, cells, pad);
+  const spec: ItemSpec = { id: item.id, name: item.name, slot: item.slot, prompt: item.prompt, key, anims: [anim], dirs, method: 'skel' };
+  const built = await buildItem({ spec, rig, cells, route: key, provenance: [], qa: q.qa, pad });
+  const out: Item = structuredClone(item);
+  out.layers.forEach((l, j) => { l.cells = { ...l.cells, [anim]: { ...l.cells?.[anim], ...built.item.layers[j].cells![anim] } }; });
+  dropCut(out, anim, dirs); // replaced directions take their new cut, never a stale one
+  for (const d of dirs) { const c = built.item.baseCut?.[anim]?.[d]; if (c) ((out.baseCut ??= {})[anim] ??= {})[d] = c; }
   // Per-direction call numbers are local to this move; records arrive in completion order (and may be grid fallbacks).
   // Resolve the selected record by its produced keys, then offset into the item's full provenance history.
   const source = new Map(prov.flatMap((p, i) => p.produced.map((k) => [k, item.provenance.length + i] as const)));
@@ -605,31 +610,9 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
   }));
   out.provenance = [...out.provenance, ...prov];
   out.qa = mergeQa(item, q.qa, qaCells);
-  await saveItem(ctx.rec.id, out, images, SLOTS, current => {
+  await saveItem(ctx.rec.id, out, built.images, SLOTS, current => {
     if (stableStringify({ rig: current.manifest.rig, character: current.character }) !== version || stableStringify(current.manifest.items.find(i => i.id === item.id)) !== originalItem) throw new Error('This character or item changed while the repair was generating. Existing artwork was kept. Reopen it before trying again.');
   });
-}
-/** The item with a clip's cells for the given directions replaced by `cells` (and their cuts); provenance and QA stay the caller's. */
-async function withClip(rig: Rig, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], pad: number) {
-  const spec: ItemSpec = { id: item.id, name: item.name, slot: item.slot, prompt: item.prompt, key: item.key!, anims: [anim], dirs, method: 'skel' };
-  const built = await buildItem({ spec, rig, cells, route: item.key!, provenance: [], pad });
-  const out: Item = structuredClone(item);
-  out.layers.forEach((l, j) => { l.cells = { ...l.cells, [anim]: { ...l.cells?.[anim], ...built.item.layers[j].cells![anim] } }; });
-  dropCut(out, anim, dirs); // replaced directions take their new cut, never a stale one
-  for (const d of dirs) { const c = built.item.baseCut?.[anim]?.[d]; if (c) ((out.baseCut ??= {})[anim] ??= {})[d] = c; }
-  return { out, images: built.images };
-}
-/** An accepted item with the cells it lacks of a one-frame standing move: its dressed standing views, extracted offline as for
- *  every move (no call). Undefined when it has no such view to add. For characters saved before Default (create.ts). */
-export async function withStandingCells(ctx: RigCtx, item: Item, anim: string) {
-  const { rig } = ctx.rec.manifest, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
-  const dirs = rig.directions.filter((d) => !d.mirrorOf && item.key && item.dressed?.[d.id] && !item.layers.every((l) => l.cells?.[anim]?.[d.id]?.length)).map((d) => d.id);
-  if (!dirs.length) return undefined;
-  const dirOf = (c: CellOut) => c.key.split('/')[1] as DirectionName;
-  const cells = (await dressedKeys(ctx, item, pad)).cells.filter((c) => dirs.includes(dirOf(c))).map((c) => ({ ...c, key: `${anim}/${dirOf(c)}/0` }));
-  const r = await withClip(rig, item, anim, dirs, cells, pad);
-  if (r.out.coverage) r.out.coverage = [...new Set([...r.out.coverage, ...cells.map((c) => c.key as CellKey)])];
-  return r;
 }
 /** Prepare a bounded frozen-frame edit without making an API call, for visible review and execution. */
 export async function gridRepairRequest(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, seed: number, selectedCells?: string[]): Promise<Req> {

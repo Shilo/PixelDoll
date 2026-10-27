@@ -3,8 +3,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), upgrade: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), clear: vi.fn() }))
-vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn(), upgradeDefault: mocks.upgrade }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), clear: vi.fn() }))
+vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
 vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: mocks.load }))
@@ -425,24 +425,6 @@ test('a character that cannot open says why before the demo replaces it', async 
   vi.spyOn(console, 'error').mockImplementation(() => {})
   await s.openProject('rig-broken')
   expect(s.ui.toast).toBe('Could not open that character: broken record')
-})
-
-test('a character saved before Default is upgraded on open, but not under an unfinished equipment fit', async () => {
-  // rig.rest views and an idle move, no standing move: needsDefault
-  const legacy = () => ({ project: { images: new Map(), manifest: { name: 'Old', format: 'pixeldoll/2', app: '', materials: [], slots: [], presets: [], rig: { cell: { w: 64, h: 64 }, pivot: { x: 32, y: 64 }, baseItem: 'base', baseHash: 'sha256:old', directions: [{ id: 'south' }],
-    rest: { south: { image: 'sha256:rest', keypoints: [] } }, animations: [{ id: 'idle', cells: 2, loop: true, frames: [{ cell: 0, ms: 150 }, { cell: 1, ms: 150 }] }] },
-    items: [{ id: 'base', name: 'Body', slot: 'body', status: 'accepted', mirror: 'flip', materials: [], prompt: '', provenance: [], baseHash: 'sha256:old', regions: 'shirt-shorts', layers: [{ id: 'main', role: 'fg', z: 10, cells: {} }] }] } } })
-  mocks.source.mockImplementation(async () => legacy())
-  const fit = (stage: string) => [{ kind: 'equipment-fit-draft', id: 'equipment-fit:hat', targetId: 'rig-old', stage }]
-  mocks.fits.mockResolvedValue(fit('rest-review'))
-  const s = await import('../../src/studio/state.svelte.ts')
-  vi.spyOn(console, 'error').mockImplementation(() => {})
-  await s.openProject('rig-old')
-  expect(mocks.upgrade).not.toHaveBeenCalled() // its target stamp includes the moves the upgrade would change
-  mocks.fits.mockResolvedValue(fit('accepted'))
-  await s.openProject('rig-old')
-  expect(mocks.upgrade).toHaveBeenCalledTimes(1)
-  expect(mocks.upgrade.mock.calls[0][0]).toBe('rig-old')
 })
 
 test('an unreadable character list is reported instead of showing only the demo silently', async () => {

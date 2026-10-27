@@ -37,6 +37,7 @@ These are observed, repeated failures, not style preferences
 | Failure | Rule in AGENTS.md |
 |---|---|
 | Over-engineering, speculative options | KISS and YAGNI |
+| Migrations and legacy shims for data nobody has | No backward compatibility (preview app; ask first) |
 | Re-implementing an existing helper; copy-paste | DRY in app/ (reuse first, extract at the second caller) |
 | Patching the reported path only | Fix the root cause in shared code |
 | Drive-by refactors and renames | Stay in scope |

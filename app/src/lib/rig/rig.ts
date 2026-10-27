@@ -1,7 +1,6 @@
 // Rig contract (manifest-spec §2 `Rig`), per-cell hashes, baseHash and validation.
 import { sha256 } from '../image/hash.ts';
 import type { Img } from '../image/png.ts';
-import type { Manifest } from '../store/manifest.ts';
 
 export type DirectionName = 'south' | 'south-east' | 'east' | 'north-east' | 'north' | 'north-west' | 'west' | 'south-west';
 export const DIRECTIONS: DirectionName[] = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'];
@@ -50,24 +49,9 @@ export interface Rig {
   anchors?: Partial<Record<AnchorId, AnchorTrack>>;
 }
 
-/** Every character's one-frame move of its standing views (UI "Default"). Not `rest`, which names the item pipeline's pseudo
- * cells (items.ts restKey); the reserved id a user's move can never take. */
+/** The one-frame move of the standing views that characters are created and imported with (UI "Default"). Not `rest`, which
+ * names the item pipeline's pseudo cells (items.ts restKey); the reserved id a user's move can never take. */
 export const DEFAULT_MOVE = 'default';
-
-/** The one-frame move holding the standing views, found by content: its cells are the rest views (rig setup marks them
- * `imported-rest`). An import not set up yet has no rest views to compare: its standing move is the first, which importers
- * before Default named rest or rest-pose. Undefined for a character saved before Default that keeps them only as rig.rest. */
-export function standingMove(m: Manifest): RigAnimation | undefined {
-  const { rig } = m, cells = m.items.find((i) => i.id === rig.baseItem)?.layers[0]?.cells, first = rig.animations[0];
-  return rig.animations.find((a) => a.cells === 1 && generatedDirs(rig).every((d) => { const h = cells?.[a.id]?.[d]?.[0]; return !!h && (a.sources?.[d]?.motion === 'imported-rest' || h === rig.rest?.[d]?.image); }))
-    ?? (!rig.rest && first?.cells === 1 && /^rest(-pose)*$/.test(first.id) ? first : undefined);
-}
-/** A character saved before every character had Default: upgradeDefault (create.ts) renames or adds it when it is opened. */
-export function needsDefault(m: Manifest): boolean {
-  const standing = standingMove(m);
-  return standing ? standing.id !== DEFAULT_MOVE : generatedDirs(m.rig).every((d) => m.rig.rest?.[d]?.image);
-}
-const generatedDirs = (rig: Pick<Rig, 'directions'>) => rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 export const cellKey = (anim: string, dir: DirectionName, cell: number) => `${anim}/${dir}/${cell}`;
 export const defaultMs = (anim: string) => (anim.includes('idle') ? 150 : 100);
 export const playlist = (cells: number, ms: number) => Array.from({ length: cells }, (_, cell) => ({ cell, ms }));

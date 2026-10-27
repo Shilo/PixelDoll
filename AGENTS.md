@@ -73,6 +73,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 
 - Remembered PixelLab credentials remain plaintext in optional `localStorage['pixellabApiKey']`, intentionally shared with every app on this origin. Never broadcast credentials. Follow `docs/shared-token-security.md` for credential-free Forget/replacement notifications; do not introduce encryption or an extra unlock step. A deferred board card tracks encryption.
 - KISS and YAGNI: no feature, dependency, option or abstraction without a real need.
+- No backward compatibility for data saved by earlier versions (no new migrations, upgrades or legacy shims): the app is in preview, so breaking changes are fine as long as old data cannot brick it (ignore it or fail with a clear message). Ask first if compatibility seems needed.
 - DRY in app/: before writing a helper, type or constant, search for one and reuse it (extend it only if existing callers keep their behavior); never copy logic. Extract shared code when a second caller needs it, not before.
 - Fix the root cause in the code all callers share, not only where the symptom shows.
 - Stay in scope: no unrequested refactors, renames, reformatting or restyling; mention them instead.

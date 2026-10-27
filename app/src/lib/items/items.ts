@@ -1060,7 +1060,7 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
 // ---------- manifest Item ----------
 /** Accepted item: layers (main, or fg + bg for slots with bgZ) with cell hashes for every selected anim × generated dir. */
 export async function buildItem(o: {
-  spec: ItemSpec; rig: Rig; cells: CellOut[]; route: Route; provenance: Provenance[]; qa?: ItemQa; anchorCell?: string; dressed?: Partial<Record<DirectionName, Img>>; pad?: number;
+  spec: ItemSpec; rig: Rig; cells: CellOut[]; route: Route; provenance: Provenance[]; qa: ItemQa; anchorCell?: string; dressed?: Partial<Record<DirectionName, Img>>; pad?: number;
   /** Previews only: target cells still generating. The preview then lists its landed cells as coverage, so a pending or missing
    *  cell is never read as authored transparency (its layer entry stays null). Saved items never pass it. */
   pending?: CellKey[];
