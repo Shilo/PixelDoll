@@ -16,7 +16,7 @@ export function restoreTrigger(target: HTMLElement | null) {
 }
 const placements = new WeakMap<HTMLElement, () => void>()
 const openers = new WeakMap<HTMLElement, HTMLElement>()
-export function popoverFocus(event: ToggleEvent & {currentTarget:EventTarget & HTMLElement}) {
+export function popoverFocus(event: {currentTarget: HTMLElement; newState: string}, focusFirst = true) {
   const menu = event.currentTarget
   const activated = openingTrigger()
   const source = activated?.getAttribute('popovertarget') === menu.id && activated.getClientRects().length
@@ -36,7 +36,6 @@ export function popoverFocus(event: ToggleEvent & {currentTarget:EventTarget & H
       let sequence = 0
       const place = () => {
         const current = ++sequence
-        surface.style.maxHeight = ''
         void computePosition(opener, menu, {
           strategy: 'fixed',
           placement: (menu.dataset.placement || 'bottom-end') as Placement,
@@ -45,7 +44,8 @@ export function popoverFocus(event: ToggleEvent & {currentTarget:EventTarget & H
             flip({ padding: 8, fallbackAxisSideDirection: 'start' }),
             shift({ padding: 8 }),
             size({ padding: 8, apply({ availableHeight }) {
-              surface.style.maxHeight = `${Math.max(0, availableHeight)}px`
+              const maxHeight = `${Math.max(0, availableHeight)}px`
+              if (surface.style.maxHeight !== maxHeight) surface.style.maxHeight = maxHeight
             } }),
             arrow({ element: pointer, padding: 12 }),
             hide(),
@@ -67,13 +67,15 @@ export function popoverFocus(event: ToggleEvent & {currentTarget:EventTarget & H
       const stop = autoUpdate(opener, menu, place)
       placements.set(menu, () => { active = false; stop() })
     }
-    requestAnimationFrame(() => {
+    if (focusFirst) requestAnimationFrame(() => {
       if (!menu.matches(':popover-open')) return
       // Hidden (phone-only) and disabled rows ignore focus(), so move on to the first row that takes it.
       for (const row of menu.querySelectorAll<HTMLElement>('button,[href],input')) { row.focus(); if (document.activeElement === row) break }
     })
   } else {
     openers.delete(menu)
+    const surface = menu.querySelector<HTMLElement>(':scope > .bu-popover-surface')
+    if (surface) surface.style.maxHeight = ''
     // Do not steal focus from a control/world the user clicked to dismiss it.
     if (document.activeElement === document.body || menu.contains(document.activeElement) || document.activeElement === opener) restoreTrigger(opener)
   }

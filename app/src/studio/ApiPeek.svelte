@@ -3,6 +3,8 @@
   import { apiActivity, activityRetention, activityTotals, exportActivityJson, sanitizeActivityValue, type ApiCall } from '../lib/pixellab/activity.ts'
   import type { PeekCall } from './apiPlans.ts'
   import RequestFields from './RequestFields.svelte'
+  import PopoverArrow from './PopoverArrow.svelte'
+  import { popoverFocus } from './experience/focus.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import { CodeXml, Copy, Check, ListPlus, ListMinus, X, ChevronRight } from './icons.ts'
 
@@ -17,7 +19,6 @@
   let backgrounds = $state(false)
   let copied = $state('')
   let inspectionError = $state(false)
-  let left = $state(8), top = $state(8), height = $state(600)
   const actual = $derived($apiActivity.filter((c) => all || (activityScope && (c.activityScope === activityScope || c.relatedScopes?.includes(activityScope))) || (c.queueId && queueIds.includes(c.queueId)) || c.relatedQueueIds?.some((id) => queueIds.includes(id))))
   const recorded = $derived(actual.length > 0 || all)
   const calls = $derived(recorded ? actual : plan)
@@ -36,33 +37,23 @@
     }
     return c.generations !== undefined ? `~${format(c.generations)} gens` : c.method === 'POST' ? 'Estimate varies' : 'Free'
   }
-  function position() {
-    if (!open) return
-    const r = opener.getBoundingClientRect(), mobile = matchMedia('(max-width:599px), (max-height:499px)').matches
-    height = Math.max(140, window.innerHeight - 24)
-    const w = Math.min(440, window.innerWidth - 16)
-    left = mobile ? 8 : Math.max(8, Math.min(window.innerWidth - w - 8, r.right - w))
-    top = mobile ? Math.max(8, window.innerHeight - Math.min(panel?.offsetHeight || 500, height) - 8) : Math.max(8, Math.min(window.innerHeight - (panel?.offsetHeight || 400) - 8, r.top - (panel?.offsetHeight || 400) - 8))
-    // A low action gets an attached peek above it; high toolbar actions open below.
-    if (!mobile && r.top < 100) top = Math.min(r.bottom + 8, window.innerHeight - 140)
-    if (!mobile) height = Math.max(140, window.innerHeight - top - 8)
-  }
   async function toggled(e: ToggleEvent) {
     open = e.newState === 'open'
-    if (open) { copied = ''; inspectionError = false; await tick(); position(); panel.querySelector<HTMLButtonElement>('[aria-label="Close API calls"]')?.focus() }
-    else opener?.focus()
+    if (open) {
+      copied = ''; inspectionError = false
+      await tick()
+      panel.dataset.placement = opener.getBoundingClientRect().top < 100 ? 'bottom-end' : 'top-end'
+      popoverFocus({ currentTarget: panel, newState: e.newState }, false)
+      panel.querySelector<HTMLButtonElement>('[aria-label="Close API calls"]')?.focus()
+    } else {
+      popoverFocus({ currentTarget: panel, newState: e.newState }, false)
+      opener?.focus()
+    }
   }
   $effect(() => {
     if (!open || all) return
     void $queue.jobs
     void queue.inspectActivity(queueIds, activityScope).catch(() => { inspectionError = true })
-  })
-  $effect(() => {
-    if (!open) return
-    const observer = new ResizeObserver(position)
-    observer.observe(panel)
-    window.addEventListener('resize', position)
-    return () => { observer.disconnect(); window.removeEventListener('resize', position) }
   })
   function close() { panel.hidePopover() }
   function keydown(e: KeyboardEvent) {
@@ -91,7 +82,9 @@
 </script>
 
 <button bind:this={opener} type="button" class={menu ? 'row bu-action api-peek-trigger' : 'bu-action btn icon plain api-peek-trigger'} data-variant="quiet" aria-label={all ? 'Inspect all API calls' : 'Inspect API calls'} title="PixelLab API calls" aria-expanded={open} aria-controls={id} popovertarget={id}><CodeXml size={menu ? 18 : 17} />{#if menu}<span class="row-name">API calls</span>{/if}</button>
-<div bind:this={panel} {id} popover="auto" class="api-peek" role="dialog" aria-label="API calls" tabindex="-1" ontoggle={toggled} onkeydown={keydown} style:left="{left}px" style:top="{top}px" style:max-height="{height}px">
+<div bind:this={panel} {id} popover="auto" class="api-peek bu-popover-anchor" role="dialog" aria-label="API calls" tabindex="-1" ontoggle={toggled} onkeydown={keydown}>
+  <PopoverArrow />
+  <div class="api-peek-surface bu-popover-surface bu-floating">
   {#if open}
   <header class="peek-head">
     <div class="peek-heading"><strong>API calls</strong><span class="peek-sub" role="status">{copied || (inspectionError ? 'Saved requests unavailable' : '') || label || (all ? 'Recent API calls' : 'This action')}</span></div>
@@ -116,12 +109,14 @@
   {#if recorded && ($activityRetention.droppedBackground || $activityRetention.droppedForeground)}<p class="peek-retention">Recent history · Older calls omitted{all && $activityRetention.droppedForeground ? '; total covers this list' : ''}. Copy includes this list.</p>{/if}
   <footer class="peek-total"><span>{recorded ? 'Total' : 'Estimated total'}<span class="total-caption">{calls.length} call{calls.length === 1 ? '' : 's'}{!backgrounds && hidden ? ` · ${hidden} background hidden` : ''}</span></span><strong>{#if recorded}{#if totals.generations || totals.usd || !totals.unknown}{format(totals.generations)} gens{totals.usd ? ` + $${totals.usd.toFixed(3)}` : ''}{:else}{totals.pending ? 'Pending' : 'Unknown'}{/if}{#if totals.unknown || totals.pending}<span class="total-caption">{unknownFinished > 0 ? `${unknownFinished} unknown` : ''}{unknownFinished > 0 && totals.pending ? ' · ' : ''}{totals.pending ? `${totals.pending} pending` : ''}</span>{/if}{:else}~{format(knownEstimate)} gens{#if unknownEstimate}<span class="total-caption">+ variable costs</span>{/if}{/if}</strong></footer>
   {/if}
+  </div>
 </div>
 
 <style>
   .api-peek-trigger { vertical-align:middle; flex:none; }
-  .api-peek { position:fixed; inset:auto; margin:0; width:min(440px, calc(100vw - 16px)); padding:0; border:1px solid var(--line-strong); border-radius:12px; background:var(--bg-raised, #2c2c2e); color:var(--text, #f5f5f7); box-shadow:var(--shadow-pop); font:400 12px/1.45 var(--font-ui, system-ui); overflow:hidden; box-sizing:border-box; }
-  .api-peek:popover-open { display:flex; flex-direction:column; }
+  .api-peek { width:min(440px, calc(100vw - 16px)); font:400 12px/1.45 var(--font-ui, system-ui); }
+  .api-peek:popover-open:not([data-positioned]) { visibility:hidden; }
+  .api-peek-surface { box-sizing:border-box; display:flex; flex-direction:column; width:100%; overflow:hidden; }
   .api-peek::backdrop { background:transparent; }
   .peek-head { display:flex; align-items:center; gap:2px; padding:10px 10px 10px 14px; border-bottom:1px solid var(--line); flex:none; }
   .peek-heading { flex:1; min-width:0; display:grid; gap:2px; }
@@ -149,5 +144,5 @@
   .peek-total { padding:12px 14px; display:flex; justify-content:space-between; gap:10px; align-items:start; border-top:1px solid var(--line-strong); flex:none; }
   .peek-total strong { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
   .total-caption { display:block; font-size:10px; color:var(--text-3); font-weight:400; margin-top:3px; }
-  @media(max-width:599px), (max-height:499px) { .api-peek { border-radius:14px; } .peek-head .btn { min-height:44px; min-width:44px; } .peek-list { max-height:none; } .peek-call > summary { min-height:48px; } .peek-request { padding-left:22px; } }
+  @media(max-width:599px), (max-height:499px) { .peek-head .btn { min-height:44px; min-width:44px; } .peek-list { max-height:none; } .peek-call > summary { min-height:48px; } .peek-request { padding-left:22px; } }
 </style>

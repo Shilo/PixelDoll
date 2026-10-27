@@ -192,6 +192,8 @@ test('appearance tooltips stay next to their trigger and inside the viewport', a
     await trigger.click()
     const tip = sheet.getByRole('tooltip')
     await expect(tip).toBeVisible()
+    await expect(tip).toHaveAttribute('data-positioned', '')
+    await expect(tip.locator('.bu-popover-arrow')).toBeVisible()
     const r = (await trigger.boundingBox())!, t = (await tip.boundingBox())!
     expect(t.x).toBeGreaterThanOrEqual(0)
     expect(t.x + t.width).toBeLessThanOrEqual(page.viewportSize()!.width)
