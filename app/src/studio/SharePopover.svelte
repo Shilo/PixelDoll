@@ -17,6 +17,8 @@
   let file = $state.raw<File | null>(null)
   let encoding = $state(false)
   let feedback = $state('')
+  let viewportWidth = $state(innerWidth)
+  let viewportHeight = $state(innerHeight)
   let serial = 0
   const availability = $derived.by(() => {
     void doc.rev
@@ -32,6 +34,8 @@
   }))
   const previewFrames = $derived(planned.media ? sharePreviewFrames(planned.media) : [])
   const image = $derived(previewFrames[index % previewFrames.length] ?? null)
+  const previewHeight = $derived(planned.media?.grid ? Math.max(80, Math.min(planned.media.previewRows * 100 + 12, viewportHeight - (viewportWidth <= 440 ? 250 : 220))) : 122)
+  const previewLimit = $derived(image ? planned.media?.grid ? Math.max(1, Math.floor(Math.min(420, viewportWidth - 32) * Math.max(image.w, image.h) / image.w)) : image.w > image.h ? 240 : 112 : 112)
   const label = $derived(planned.media?.animated ? 'GIF' : 'PNG')
   const canShare = $derived(!!file && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] }))
   const name = $derived((store.projects.find(project => project.id === doc.id)?.name ?? store.project?.manifest.name ?? 'character').replace(/[^a-z0-9-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'character')
@@ -95,9 +99,10 @@
   }
 </script>
 
+<svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
 <div id="share-popover" class="share-popover bu-popover bu-floating" popover bind:this={popover} role="dialog" aria-label="Share character preview" ontoggle={toggle}>
-  <div class="share-preview" aria-label="Selected artwork preview" role="img">
-    {#if image}<Sprite img={image} k={Math.max(1, Math.floor(3 * ui.dpr))} limit={image.w > image.h ? 240 : 112} label="Selected artwork" />{/if}
+  <div class="share-preview" class:share-grid={planned.media?.grid} style:--share-preview-height="{previewHeight}px" aria-label="Selected artwork preview" role="img">
+    {#if image}<Sprite img={image} k={Math.max(1, Math.floor(3 * ui.dpr))} limit={previewLimit} label="Selected artwork" />{/if}
   </div>
   <div class="share-controls">
     <label class="share-picker">

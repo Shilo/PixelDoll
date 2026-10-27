@@ -74,4 +74,12 @@ describe('share media', () => {
     delete project.manifest.items[0].layers[0].cells!.walk.south
     expect(() => buildShareMedia(buildPresentation(project), {}, 'walk', ALL_DIRECTIONS, true)).toThrow(/No complete move and direction pairs/)
   })
+
+  test('picker availability rejects equipment missing a later animation frame', () => {
+    const project = fixture()
+    project.manifest.items[1].layers[0].cells!.walk.south = [hash('hat')]
+    const a = buildPresentation(project, { sourceProject: project })
+    expect(canShareDirection(a, { head: 'hat' }, 'walk', 'south')).toBe(false)
+    expect(() => buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)).toThrow(/hat missing walk \/ South artwork/)
+  })
 })

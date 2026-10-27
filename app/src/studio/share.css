@@ -1,8 +1,11 @@
 /* Geometry only; Bronze UI owns surface, border, control and focus appearance. */
 .share-popover.bu-popover { width:max-content; max-width:calc(100vw - 16px); padding:9px; box-sizing:border-box; }
-.share-preview { height:122px; display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:var(--bu-radius-control); background:var(--bu-diagram); }
+.share-preview { height:var(--share-preview-height,122px); display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:var(--bu-radius-control); background:var(--bu-diagram); }
 .share-preview .sprite-box { max-width:100%; max-height:100%; }
-.share-preview .sprite { max-width:100%; max-height:116px; object-fit:contain; }
+.share-preview .sprite { max-width:100%; object-fit:contain; }
+.share-preview:not(.share-grid) .sprite { max-height:116px; }
+.share-preview.share-grid { align-items:safe center; overflow:auto; }
+.share-preview.share-grid .sprite-box { max-height:none; }
 .share-controls { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:9px; width:max-content; max-width:100%; }
 .share-picker { position:relative; display:inline-flex; align-items:center; min-width:0; }
 .share-picker > svg:first-child { position:absolute; left:9px; z-index:1; pointer-events:none; color:var(--bu-muted); }

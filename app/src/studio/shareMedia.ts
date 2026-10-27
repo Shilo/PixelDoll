@@ -10,7 +10,7 @@ export const ALL_DIRECTIONS = '__all_directions__'
 export const STANDING = '__standing__'
 
 export interface ShareFrame { image: Img; ms: number }
-export interface ShareMedia { frames: ShareFrame[]; still: Img; animated: boolean; grid: boolean; repeat: number; omitted: { move: string; direction: DirectionName; reason: string }[]; mime: 'image/png' | 'image/gif'; extension: 'png' | 'gif' }
+export interface ShareMedia { frames: ShareFrame[]; still: Img; animated: boolean; grid: boolean; previewRows: number; repeat: number; omitted: { move: string; direction: DirectionName; reason: string }[]; mime: 'image/png' | 'image/gif'; extension: 'png' | 'gif' }
 
 /** Remove only transparent outer padding for the small on-screen preview; downloads keep full frame alignment. */
 export function sharePreviewFrames(media: ShareMedia): Img[] {
@@ -61,7 +61,7 @@ function rendered(a: PresentationAvailability, items: Preset['items'], move: str
   return result.image
 }
 
-/** Direction picker availability needs only one composed frame; coverage validation spans the whole move. */
+/** Body sequences and renderPresentation's equipped-item check both validate every authored timeline cell. */
 export function canShareDirection(a: PresentationAvailability, items: Preset['items'], move: string, direction: DirectionName): boolean {
   const moves = move === ALL_MOVES ? [STANDING, ...a.project.manifest.rig.animations.map(animation => animation.id)] : [move]
   return moves.some(selected => {
@@ -108,7 +108,7 @@ export function buildShareMedia(a: PresentationAvailability, items: Preset['item
   const animated = animate && frames.length > 1
   if (animated && (frames[0].image.w > 65535 || frames[0].image.h > 65535)) throw new Error('Selected GIF is too large')
   const repeat = entries.length === 1 && entries[0].move !== STANDING && a.project.manifest.rig.animations.find(animation => animation.id === entries[0].move)?.loop === false ? -1 : 0
-  return { frames: animated ? frames : [{ image: still, ms: 1000 }], still, animated, grid: columns > 1 || entries.length > 1, repeat, omitted, mime: animated ? 'image/gif' : 'image/png', extension: animated ? 'gif' : 'png' }
+  return { frames: animated ? frames : [{ image: still, ms: 1000 }], still, animated, grid: columns > 1 || entries.length > 1, previewRows: animated ? 1 : entries.length, repeat, omitted, mime: animated ? 'image/gif' : 'image/png', extension: animated ? 'gif' : 'png' }
 }
 
 function paletteFor(image: Img): { colors: number[][]; indices: Uint8Array } {
