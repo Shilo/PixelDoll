@@ -4,6 +4,8 @@ Reuse the user's saved `gh` authorization for authorized GitHub work. A new agen
 or a sandbox failure does not establish that the saved CLI credential needs replacing. This document contains
 public commands and general procedures, with no local account or credential records.
 
+Task-tracking rationale, review findings and accepted tool limits: [Task management rationale and limits](task-management.md).
+
 ## Use the saved authorization
 
 Run the requested operation with the existing credential first. For board commands, follow the Tasks section of
