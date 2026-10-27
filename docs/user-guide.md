@@ -93,7 +93,8 @@ Keep this tab open while PixelLab responds; you can keep dressing existing chara
 known job ID and reuse saved results. If a submitted request has an unknown outcome, generation stops for review in
 **Activity**; it is never automatically sent again. **Try again** starts a new paid attempt and may incur additional charges.
 When creation is done, press **Add idle + walk** to queue both moves (the button shows the price) or **Start dressing up**
-to dress the Default pose first. **Moves → Add idle + walk** offers the same later.
+to dress the Default pose first. **Moves → Add idle + walk** offers the same later. While a move is being added,
+**Queue another move** lines up the next one; it runs by itself when the current move finishes.
 **Default** is the character's standing pose: one still frame per direction, listed first in Moves and Share and
 exported like any move. "Default" can't be used as the name of another move.
 

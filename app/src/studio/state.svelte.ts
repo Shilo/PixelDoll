@@ -700,7 +700,7 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
     g.phase = 'failed';
     g.error = (e as Error).message;
   }
-  if (g.phase === 'failed' && Object.values(doc.drafts).includes(g.draft.spec.id)) toast(`${g.input.name} failed and was taken off. Its card says why.`, { tone: 'danger' });
+  if (g.phase === 'failed' && Object.values(doc.drafts).includes(g.draft.spec.id)) toast(`${g.input.name} failed and was taken off. Its card says why.`, { tone: 'danger', duration: 8000 });
   takeOffGone();
   await saveGens();
   if (g.phase !== 'review') return;
@@ -985,7 +985,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
       const error = await persistFlowFailure(MOVE_KEY, { spec, projectId, progress: $state.snapshot(moving.progress) }, e, storeMove);
       if (current()) moving.error = error;
       // queued moves now run unattended: a failure that holds them says so wherever the user is
-      if (current() && ui.sheet !== 'move') toast(`${moveName} failed. Open Moves to try again or start over.`, { tone: 'danger' });
+      if (current() && ui.sheet !== 'move') toast(`${moveName} failed. Open Moves to try again or start over.`, { tone: 'danger', duration: 8000 }); // timed: the Moves panel keeps the failure, and a persistent error would hide later successes
     }
   } finally {
     if (revision === moveRevision) moveRunning = false;

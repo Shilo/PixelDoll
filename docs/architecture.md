@@ -103,7 +103,8 @@ unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](researc
   posable item and accepted shared design the character has when the user taps (the price shown covers them), one random seed, and the request shapes creation used to send (authored idle,
   managed walk → estimates → raw render), so it costs what creation used to spend (≈ 11 gens per drawn direction plus item
   poses).
-- **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`. The
+- **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`; Add a
+  move queues behind a running move ("Queue another move") and never queues the same move twice. The
   queue is persisted with the running move's record (`studio-move`), and the next move replaces that record in one write.
   A failed move holds the queue: Try again continues it, Start over (dismiss) drops that character's queued moves while
   other characters' moves go on.

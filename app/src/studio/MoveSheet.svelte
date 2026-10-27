@@ -13,7 +13,7 @@
   import { posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
   import { MOVE_STEPS, isV13, reservedMove, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
-  import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, openProject, withKey } from './state.svelte.ts'
+  import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, openProject, pendingMoves, withKey } from './state.svelte.ts'
   import { bodyQualityNote } from './model.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
@@ -42,6 +42,11 @@
   const est = $derived(m && id && targetDirs.length ? moveEstimate(m, { action: text.trim() ? undefined : action, frames, items: chosen, dirs: targetDirs, replace: replacing }) : null)
   const dirs = $derived(targetDirs.length)
   const mine = $derived(!!moving.spec && moving.projectId === doc.id)
+  // "Queue another move" shows the form over this character's running move; a new move then waits its turn
+  let adding = $state(false)
+  const progress = $derived(mine && !adding)
+  const busy = $derived(!!moving.spec && !moving.done)
+  const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id))
   const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId))
   // another character's failed move holds every new move; only its own sheet can try it again or start over
   const holder = $derived(!mine && moving.spec && moving.error ? store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character' : '')
@@ -86,7 +91,7 @@
     const projectId = doc.id
     const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1' as const, seed: 1 + Math.floor(Math.random() * 1_000_000), ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) }
     formDrafts.move = { projectId, action, text, skip: $state.snapshot(skip), dirs: [...selectedDirs], poseStyle: 'visible-side-v1' }
-    withKey(() => { formDrafts.move = undefined; void queueMoves(projectId, [spec]); ui.sheet = 'move' }, true)
+    withKey(() => { formDrafts.move = undefined; adding = false; void queueMoves(projectId, [spec]); ui.sheet = 'move' }, true)
   }
   function chooseAction(next: string) {
     action = next; text = ''
@@ -97,25 +102,26 @@
 </script>
 
 {#snippet foot()}
-  {#if mine && moving.done}
+  {#if progress && moving.done}
     <button class="bu-action btn primary" data-variant="primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
-  {:else if mine && moving.error}
+  {:else if progress && moving.error}
     <button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}>Start over</button>
     <span class="api-action"><ApiPeek scope="move-retry" label="Generate move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : []} /><button class="bu-action btn" data-variant="outline" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' }, true)}>{recovery || colorRepair ? 'Generate new frames' : 'Try again'}</button></span>
     {#if recovery}<button class="bu-action btn primary" data-variant="primary" onclick={retryChecks}>Retry joint checks</button>{/if}
     {#if colorRepair}<button class="bu-action btn primary" data-variant="primary" onclick={matchColors}>Match body colors</button>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
-  {:else if mine}
+  {:else if progress}
     <span class="foot-note">You can keep working.</span>
+    <button class="bu-action btn" data-variant="outline" onclick={() => (adding = true)}>Queue another move</button>
     <button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
     <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
-    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) })} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!id || !!reservedMove(id) || !targetDirs.length || !!moving.spec || (!!settingUp.spec && !settingUp.done)} onclick={go}>{replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
+    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) })} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!id || !!reservedMove(id) || !targetDirs.length || pendingIds.includes(id) || (!!settingUp.spec && !settingUp.done)} onclick={go}>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
   {/if}
 {/snippet}
 
-<Sheet title={mine && moving.spec?.itemMethod === 'grid' ? 'Repair item frames' : (mine ? moving.spec?.replace : replacing) ? 'Replace move views' : 'Add a move'} cancel={mine && !moving.done ? 'Hide' : 'Cancel'} onclose={() => (ui.sheet = null)} footer={isDemo() || (!ok && !mine) ? undefined : foot}>
+<Sheet title={progress && moving.spec?.itemMethod === 'grid' ? 'Repair item frames' : (progress ? moving.spec?.replace : replacing) ? 'Replace move views' : 'Add a move'} cancel={progress && !moving.done ? 'Hide' : 'Cancel'} onclose={() => (ui.sheet = null)} footer={isDemo() || (!ok && !progress) ? undefined : foot}>
   {#if holder}<p class="notice small"><CircleAlert size={14} /><span>{nice(moving.spec!.id)} failed on {holder}, so new moves wait. Open it to try again or start over.</span><button class="bu-action btn sm" data-variant="outline" onclick={() => void openProject(moving.projectId)}>Open {holder}</button></p>{/if}
-  {#if mine}
+  {#if progress}
     <div class="form">
       <p style="font-weight:600">{nice(moving.spec!.id)}{moving.spec?.dirs ? ` · ${moving.spec.dirs.map(nice).join(', ')}` : ''}<ApiPeek scope="move-progress" label="Current move generation" plan={moving.spec ? movePlan(rec, moving.spec) : []} activityScope={moving.spec?.activityScope} /></p>
       {#if moving.spec?.itemMethod === 'grid'}<p class="muted small">Only the selected item frames are redrawn; the body stays fixed. Results that fail hard checks keep the previous item frames.</p>{/if}
@@ -164,7 +170,7 @@
         <span class="label">Or describe it <span class="faint">(optional)</span></span>
         <input class="bu-input input" bind:value={text} placeholder="e.g. jumping in place" maxlength="120" />
       </label>
-      {#if reservedMove(id)}<p class="notice warn small"><CircleAlert size={14} />{reservedMove(id)}</p>{/if}
+      {#if reservedMove(id)}<p class="notice warn small"><CircleAlert size={14} />{reservedMove(id)}</p>{:else if pendingIds.includes(id)}<p class="notice small"><CircleAlert size={14} />{nice(id)} is already queued.</p>{:else if busy}<p class="faint small">It waits for the move in progress, then runs by itself.</p>{/if}
       {#if items.length}
         <div class="field">
           <span class="label">Animate these items too</span>

@@ -145,6 +145,39 @@ test('same seeded output creates separate projects and a resumed workflow preser
 
 })
 
+test('Add a move queues behind the running move and runs it next', async ({ page, context }) => {
+  test.setTimeout(150_000)
+  const api = new CharacterApi()
+  let held = true
+  await context.route('https://*.pixellab.ai/**', async route => {
+    const req = route.request(), path = new URL(req.url()).pathname
+    // keep the first move running: its pose jobs report processing until released, as a busy PixelLab queue does
+    if (held && path.startsWith('/v2/background-jobs/') && api.calls.some(c => c.path === '/v2/animate-with-skeleton-v3')) return route.fulfill({ json: { id: path.split('/').pop(), status: 'processing' } })
+    await fulfill(route, await api.handle(req.method(), req.url(), req.postDataJSON()))
+  })
+  const sheet = await open(page)
+  await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A plain human')
+  await sheet.getByRole('button', { name: 'Side-scroller 2', exact: true }).click()
+  await sheet.getByRole('button', { name: 'Create character', exact: true }).click(); await connect(page)
+  await sheet.getByRole('button', { name: 'Start dressing up', exact: true }).click({ timeout: 90_000 })
+  await equipmentMode(page, 'Moves')
+  await page.getByRole('button', { name: 'Add a move', exact: true }).click()
+  const move = page.getByRole('dialog', { name: 'Add a move', exact: true })
+  await move.getByRole('radio', { name: 'Idle', exact: true }).click()
+  await move.getByRole('button', { name: /^Add Idle/ }).click()
+  await move.getByRole('button', { name: 'Queue another move', exact: true }).click()
+  await move.getByRole('radio', { name: 'Idle', exact: true }).click()
+  await expect(move).toContainText('Idle is already queued.')
+  await expect(move.getByRole('button', { name: /^Queue Idle/ })).toBeDisabled()
+  await move.getByRole('radio', { name: 'Walk', exact: true }).click()
+  await expect(move).toContainText('It waits for the move in progress, then runs by itself.')
+  await move.getByRole('button', { name: /^Queue Walk/ }).click()
+  await expect(move).toContainText('Queued next: Walk')
+  await expect(page.locator('.move-row', { hasText: 'Walk' })).toContainText('Queued')
+  held = false
+  await expect(page.locator('.move-list .move-row b')).toHaveText(['Default', 'Idle', 'Walk'], { timeout: 120_000 })
+})
+
 test('a failed required measurement stops the queued idle without paying for an art reroll', async ({ page, context }) => {
   test.setTimeout(120_000)
   const api = new CharacterApi()
