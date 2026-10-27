@@ -3,7 +3,7 @@ import { makeImg } from '../../src/lib/image/png.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
 import type { Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts'
 import { buildPresentation } from '../../src/studio/experience/presentation.ts'
-import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, encodeShareMedia, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
+import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canShareDirection, encodeShareMedia, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
 
 const hash = (name: string) => `sha256:${name}` as Sha256
 function fixture(): Project {
@@ -53,11 +53,25 @@ describe('share media', () => {
     expect(delays).toEqual([7, 12])
   })
 
-  test('missing requested artwork fails visibly instead of substituting a different direction', () => {
+  test('aggregate choices omit unavailable pairs, while an explicit pair never substitutes artwork', () => {
     const project = fixture()
     delete project.manifest.items[0].layers[0].cells!.walk.east
     const a = buildPresentation(project, { sourceProject: project })
+    expect(canShareDirection(a, {}, 'walk', 'east')).toBe(false)
+    expect(canShareDirection(a, {}, ALL_MOVES, 'east')).toBe(true)
     expect(() => buildShareMedia(a, {}, 'walk', 'east', true)).toThrow(/East has no complete artwork/)
-    expect(() => buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, false)).toThrow(/East has no complete artwork/)
+    const oneMove = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true)
+    expect(oneMove.omitted.map(pair => [pair.move, pair.direction])).toEqual([['walk', 'east']])
+    expect(oneMove.frames.map(frame => [frame.image.w, frame.image.h])).toEqual([[2, 1], [2, 1]])
+    const oneFacing = buildShareMedia(a, {}, ALL_MOVES, 'east', true)
+    expect(oneFacing.omitted.map(pair => [pair.move, pair.direction])).toEqual([['walk', 'east']])
+    expect(oneFacing.extension).toBe('png')
+    const all = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, true)
+    expect(all.omitted.map(pair => [pair.move, pair.direction])).toEqual([['walk', 'east']])
+    expect(all.frames.map(frame => [frame.image.w, frame.image.h])).toEqual([[8, 1], [8, 1], [8, 1]])
+    expect(sharePreviewFrames(all).map(frame => [frame.w, frame.h])).toEqual([[8, 1], [8, 1], [8, 1]])
+    expect([all.still.w, all.still.h]).toEqual([8, 6])
+    delete project.manifest.items[0].layers[0].cells!.walk.south
+    expect(() => buildShareMedia(buildPresentation(project), {}, 'walk', ALL_DIRECTIONS, true)).toThrow(/No complete move and direction pairs/)
   })
 })

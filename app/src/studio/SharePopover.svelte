@@ -5,8 +5,8 @@
   import { buildPresentation } from './experience/presentation.ts'
   import { directionLabel } from './experience/movement.ts'
   import { popoverFocus } from './experience/focus.ts'
-  import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, encodeShareMedia, sharePreviewFrames } from './shareMedia.ts'
-  import { Clapperboard, Compass, Download, PersonStanding, Share2, ChevronDown } from './icons.ts'
+  import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canShareDirection, encodeShareMedia, sharePreviewFrames } from './shareMedia.ts'
+  import { Clapperboard, Compass, Download, LoaderCircle, PersonStanding, Share2, ChevronDown } from './icons.ts'
 
   let popover: HTMLElement
   let open = $state(false)
@@ -27,11 +27,20 @@
     try { return { media: buildShareMedia(availability, doc.items, move, direction, animate), error: '' } }
     catch (error) { return { media: null, error: (error as Error).message } }
   })
+  const directionOptions = $derived.by(() => (availability?.directions ?? []).map(id => {
+    return { id, disabled: !canShareDirection(availability!, doc.items, move, id) && id !== direction }
+  }))
   const previewFrames = $derived(planned.media ? sharePreviewFrames(planned.media) : [])
   const image = $derived(previewFrames[index % previewFrames.length] ?? null)
   const label = $derived(planned.media?.animated ? 'GIF' : 'PNG')
   const canShare = $derived(!!file && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] }))
   const name = $derived((store.projects.find(project => project.id === doc.id)?.name ?? store.project?.manifest.name ?? 'character').replace(/[^a-z0-9-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'character')
+  const omittedText = $derived.by(() => {
+    const missing = planned.media?.omitted ?? []
+    if (!missing.length) return ''
+    const names = missing.slice(0, 3).map(entry => `${entry.move === STANDING ? 'Standing' : entry.move.replaceAll('-', ' ')} ${directionLabel(entry.direction)}`)
+    return `${missing.length} unavailable ${missing.length === 1 ? 'view' : 'views'} omitted: ${names.join(', ')}${missing.length > 3 ? `, and ${missing.length - 3} more` : ''}`
+  })
 
   $effect(() => {
     const frames = planned.media?.frames
@@ -47,7 +56,8 @@
     if (!open || !media) { encoding = false; return }
     encoding = true
     const run = ++serial
-    void encodeShareMedia(media).then(bytes => {
+    // Let the disabled Preparing state paint before GIF quantization runs on the main thread.
+    void new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0))).then(() => encodeShareMedia(media)).then(bytes => {
       if (run !== serial) return
       file = new File([bytes as Uint8Array<ArrayBuffer>], `${name}-${move === STANDING ? 'standing' : move === ALL_MOVES ? 'all-moves' : move}-${direction === ALL_DIRECTIONS ? 'all-directions' : direction}.${media.extension}`, { type: media.mime })
       encoding = false
@@ -76,7 +86,6 @@
     const link = document.createElement('a')
     link.href = url; link.download = file.name; document.body.append(link); link.click(); link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
-    feedback = `${label} download started`
   }
   function share() {
     if (!file || !canShare) return
@@ -103,7 +112,7 @@
     <label class="share-picker">
       <Compass size={16} aria-hidden="true" />
       <select class="bu-select" aria-label="Direction" bind:value={direction} onchange={() => index = 0}>
-        {#each store.project?.manifest.rig.directions ?? [] as entry (entry.id)}<option value={entry.id}>{directionLabel(entry.id as DirectionName)}</option>{/each}
+        {#each store.project?.manifest.rig.directions ?? [] as entry (entry.id)}<option value={entry.id} disabled={directionOptions.find(option => option.id === entry.id)?.disabled ?? false}>{directionLabel(entry.id as DirectionName)}</option>{/each}
         <option value={ALL_DIRECTIONS}>All directions</option>
       </select>
       <ChevronDown size={14} aria-hidden="true" />
@@ -113,10 +122,11 @@
       <input class="bu-switch" type="checkbox" role="switch" bind:checked={animate} onchange={() => index = 0} />
     </label>
   </div>
-  {#if planned.error}<p class="share-message bu-error" role="status">{planned.error}</p>{/if}
   <div class="share-actions">
-    <button class="bu-action" data-variant="primary" disabled={!file || encoding} onclick={download}><Download size={16} />Download {label}</button>
+    <button class="bu-action" data-variant="primary" disabled={!file || encoding} onclick={download}>{#if encoding}<LoaderCircle class="share-spinner" size={16} />Preparing {label}…{:else}<Download size={16} />Download {label}{/if}</button>
     <button class="bu-action" data-variant="outline" disabled={!canShare || encoding} title={!canShare ? 'File sharing is unavailable in this browser; use Download instead' : undefined} onclick={share}><Share2 size={16} />Share to…</button>
   </div>
+  {#if planned.error}<p class="share-message bu-error" role="status">{planned.error}</p>{/if}
+  {#if omittedText}<p class="share-message bu-badge" data-tone="warning" role="status" title={planned.media?.omitted.map(entry => entry.reason).join(' · ')}>{omittedText}</p>{/if}
   {#if feedback}<p class="share-message" role="status">{feedback}</p>{/if}
 </div>
