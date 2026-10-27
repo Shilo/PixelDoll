@@ -105,9 +105,10 @@ unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](researc
   poses).
 - **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`. The
   queue is persisted with the running move's record (`studio-move`), and the next move replaces that record in one write.
-  A failed move holds the queue: Try again continues it, Start over (dismiss) drops it.
+  A failed move holds the queue: Try again continues it, Start over (dismiss) drops that character's queued moves while
+  other characters' moves go on.
 - Items treat `default` like any single-cell `imported-rest` clip: its cell is the dressed standing view, with no pose call.
-- Every character has exactly one `default` move (UI "Default"); `rig.rest` stays the internal standing data sent to
+- Every created or imported character has exactly one `default` move (UI "Default"); `rig.rest` stays the internal standing data sent to
   PixelLab and is never shown on its own. Imports name their rotations `default` (a ZIP animation of that name becomes
   `default-copy`), and the id is reserved for user moves. Characters saved by earlier versions are not upgraded (the app
   is in preview): they keep their old moves and have no Default.

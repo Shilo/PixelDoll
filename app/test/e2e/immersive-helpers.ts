@@ -1,4 +1,17 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
+
+/** A disabled control looks the same hovered as at rest and shows the not-allowed cursor. */
+export async function noDisabledHover(page: Page, locator: Locator) {
+  const surface = () => locator.evaluate(element => {
+    const style = getComputedStyle(element)
+    return { background: style.backgroundColor, border: style.borderColor, color: style.color, cursor: style.cursor }
+  })
+  await page.mouse.move(0, 0)
+  const resting = await surface()
+  await locator.hover()
+  expect(await surface()).toEqual(resting)
+  expect(resting.cursor).toBe('not-allowed')
+}
 
 /** Enter through Characters and open Head, which the former all-category sidebar always exposed. */
 export async function enterStudio(page: Page) {

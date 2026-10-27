@@ -1,4 +1,4 @@
-import { openStudio, reloadStudio, equipmentMode, openAccount } from './immersive-helpers.ts'
+import { openStudio, reloadStudio, equipmentMode, openAccount, noDisabledHover } from './immersive-helpers.ts'
 import { expect, test, type Page, type Route } from '@playwright/test'
 import { CharacterApi } from '../fixtures/character-api.ts'
 import { readFile } from 'node:fs/promises'
@@ -529,6 +529,7 @@ test(`offline creation, persistence and export: ${config.preset}, ${config.frame
   await shareMove.selectOption('default')
   await expect(share.getByRole('switch')).toBeDisabled()
   await expect(share.getByRole('switch')).not.toBeChecked()
+  await noDisabledHover(page, share.locator('.share-animate'))
   await expect(share.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
   await shareMove.selectOption('walk')
   await expect(share.getByRole('switch')).toBeEnabled()

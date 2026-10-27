@@ -1,5 +1,5 @@
-import { openStudio } from './immersive-helpers.ts'
-import { expect, test, type Locator } from '@playwright/test'
+import { noDisabledHover, openStudio } from './immersive-helpers.ts'
+import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
 
@@ -76,17 +76,6 @@ test('Share popover follows the selected move, direction and Animate switch on d
       expect(right).toBeLessThanOrEqual(page.viewportSize()!.width)
       if (index) expect(left).toBeGreaterThanOrEqual(buttons[index - 1][1])
     }
-  }
-  const disabledSurface = (locator: Locator) => locator.evaluate(element => {
-    const style = getComputedStyle(element)
-    return { background: style.backgroundColor, border: style.borderColor, color: style.color, cursor: style.cursor }
-  })
-  const noDisabledHover = async (locator: Locator) => {
-    await page.mouse.move(0, 0)
-    const resting = await disabledSurface(locator)
-    await locator.hover()
-    expect(await disabledSurface(locator)).toEqual(resting)
-    expect(resting.cursor).toBe('not-allowed')
   }
   const desktopLayout = await geometry()
   const desktopMove = (await popover.getByRole('combobox', { name: 'Move' }).boundingBox())!
@@ -236,11 +225,11 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await expect(page.getByRole('button', { name: 'Export game assets' })).toHaveCount(0)
   const disabledRedo = page.locator('.mobile-redo')
   await expect(disabledRedo).toBeDisabled()
-  await noDisabledHover(disabledRedo)
+  await noDisabledHover(page, disabledRedo)
   await page.getByRole('button', { name: 'Inspect all API calls' }).click()
   const disabledCopy = page.getByRole('button', { name: 'Copy all calls' })
   await expect(disabledCopy).toBeDisabled()
-  await noDisabledHover(disabledCopy)
+  await noDisabledHover(page, disabledCopy)
   expect(errors).toEqual([])
   expect(apiRequests).toEqual([])
 })

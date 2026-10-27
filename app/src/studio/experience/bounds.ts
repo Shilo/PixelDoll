@@ -67,13 +67,6 @@ export function paintedFrame(project: Project, items: Preset['items']): Frame {
       }
     }
   }
-  // Rest originals are not necessarily referenced by a body clip layer. Their
-  // dimensions/pivot are the rig's, not an oversize equipment layer's.
-  const body = m.items.find(item => item.id === m.rig.baseItem);
-  if (!body) return fallback;
-  if (!hidden.has(body.slot)) for (const rest of Object.values(m.rig.rest ?? {})) {
-    if (!rest || typeof rest.image !== 'string' || !include(project.images.get(rest.image), rig)) return fallback;
-  }
   return Number.isFinite(left) ? { w: right - left, h: bottom - top, x: left === 0 ? 0 : -left, y: top === 0 ? 0 : -top } : fallback;
 }
 

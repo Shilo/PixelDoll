@@ -572,6 +572,18 @@ describe('move queue', () => {
     await vi.waitFor(() => expect(records.has('studio-move')).toBe(false))
   })
 
+  test('paid buttons that pose (requiresRig) open Connect on a plan that cannot pose and queue nothing', async () => {
+    storage()
+    const { app } = await import('../../src/lib/app.svelte.ts') as unknown as { app: { key: string; balance: unknown } }
+    app.key = 'test-key'; app.balance = { subscription: { status: 'trial', plan: 'Free trial' } }
+    const s = await import('../../src/studio/state.svelte.ts'), run = vi.fn()
+    s.withKey(run, true)
+    expect(run).not.toHaveBeenCalled()
+    expect(s.ui.sheet).toBe('connect')
+    s.withKey(run)
+    expect(run).toHaveBeenCalledOnce()
+  })
+
   test('moves already running or queued for an item are pending for it, so it is not offered them at a second price', async () => {
     storage()
     const running = pending<typeof done>()

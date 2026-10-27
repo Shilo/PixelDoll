@@ -76,15 +76,6 @@ describe('stable painted outfit frame', () => {
     expect(paintedFrame(p, {})).toEqual({ w: 10, h: 40, x: 7, y: 46 });
   });
 
-  test('includes originals outside clip layers and supports rest-only bodies', () => {
-    const p = fixture();
-    p.images.set('sha256:rest', rectangle(64, 64, 0, 0));
-    p.manifest.rig.rest = { north: { image: 'sha256:rest', keypoints: [] } };
-    expect(paintedFrame(p, {})).toEqual({ w: 44, h: 56, x: 32, y: 56 });
-    p.manifest.items[0].layers = [];
-    expect(paintedFrame(p, {})).toEqual({ w: 1, h: 1, x: 32, y: 56 });
-  });
-
   test('conservatively includes horizontal counterparts for declared mirrors', () => {
     const p = fixture(); p.images.set(bodyHash, rectangle(64, 64, 10, 10, 2, 3));
     p.manifest.rig.directions.push({ id: 'west', mirrorOf: 'east' }, { id: 'east' });
