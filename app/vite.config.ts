@@ -87,6 +87,9 @@ export default defineConfig(({ command, mode }) => {
     base: './', // ponytail: relative base so GitHub Pages subpath just works
     envDir: false, // never load .env files: nothing reaches import.meta.env, in any mode
     plugins: [svelte(), devTools(), command === 'serve' && mode === 'agent' && agentKey()],
+    // Vite ignores only test-results/. Each agent's own TEST_OUTPUT_DIR (test-results-*, as in .gitignore) streams trace
+    // files all run long; watched, they saturate the dev server's CPU and later dev-server specs time out.
+    server: { watch: { ignored: ['**/test-results*/**'] } },
     build: { rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 }, { name: startupChunk(), debugName: 'startup' }] } } } },
   }
 })
