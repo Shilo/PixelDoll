@@ -6,6 +6,7 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import Thumb from './Thumb.svelte'
   import GroupIcon from './GroupIcon.svelte'
+  import PopoverArrow from './PopoverArrow.svelte'
   import Colors from './Colors.svelte'
   import Moves from './Moves.svelte'
   import Lazy from './Lazy.svelte'
@@ -41,7 +42,7 @@
           </button>
         {/each}
         <button class="slot-chip bu-action" data-variant="tab" aria-pressed={extraGroups.some(g=>g.id===ui.group)} popovertarget="more-equipment"><Ellipsis size={18}/><span>More</span></button>
-        <div id="more-equipment" class="menu more-equipment bu-floating" popover bind:this={more} ontoggle={popoverFocus}><p class="menu-sec">Additional equipment</p>{#each extraGroups as group}<button class="row bu-action" data-variant="quiet" aria-pressed={ui.group===group.id} onclick={()=>{ui.group=group.id;more?.hidePopover()}}><GroupIcon group={group.id}/><span>{group.id==='Hands'?'Held item':group.id}</span></button>{/each}</div>
+        <div id="more-equipment" class="menu more-equipment bu-popover-anchor" data-placement="top-end" popover bind:this={more} ontoggle={popoverFocus}><PopoverArrow /><div class="menu-surface bu-popover-surface bu-floating"><p class="menu-sec">Additional equipment</p>{#each extraGroups as group}<button class="row bu-action" data-variant="quiet" aria-pressed={ui.group===group.id} onclick={()=>{ui.group=group.id;more?.hidePopover()}}><GroupIcon group={group.id}/><span>{group.id==='Hands'?'Held item':group.id}</span></button>{/each}</div></div>
       </div>
     </div>
     {#if m && view.project}

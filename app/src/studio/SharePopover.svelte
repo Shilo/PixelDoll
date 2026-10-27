@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { DirectionName } from '../lib/store/manifest.ts'
   import Sprite from './Sprite.svelte'
+  import PopoverArrow from './PopoverArrow.svelte'
   import { doc, store, ui, view } from './state.svelte.ts'
   import { buildPresentation } from './experience/presentation.ts'
   import { directionLabel } from './experience/movement.ts'
@@ -83,7 +84,7 @@
       direction = store.project?.manifest.rig.directions.some(entry => entry.id === ui.dir) ? ui.dir : store.project?.manifest.rig.directions[0]?.id ?? 'south'
       wantedAnimate = true
       index = 0
-      popover.querySelector<HTMLSelectElement>('select')?.focus()
+      requestAnimationFrame(() => { if (open) popover.querySelector<HTMLSelectElement>('select')?.focus() })
     }
   }
   function download() {
@@ -102,7 +103,9 @@
 </script>
 
 <svelte:window bind:innerWidth={viewportWidth} bind:innerHeight={viewportHeight} />
-<div id="share-popover" class="share-popover bu-popover bu-floating" popover bind:this={popover} role="dialog" aria-label="Share character preview" ontoggle={toggle}>
+<div id="share-popover" class="share-popover bu-popover-anchor" data-placement="bottom-end" popover bind:this={popover} role="dialog" aria-label="Share character preview" ontoggle={toggle}>
+  <PopoverArrow />
+  <div class="share-surface bu-popover bu-popover-surface bu-floating">
   <div class="share-preview" class:share-grid={planned.media?.grid} style:--share-preview-height="{previewHeight}px" aria-label="Selected artwork preview" role="img">
     {#if image}<Sprite img={image} k={Math.max(1, Math.floor(3 * ui.dpr))} limit={previewLimit} label="Selected artwork" />{/if}
   </div>
@@ -136,4 +139,5 @@
   {#if planned.error}<p class="share-message bu-error" role="status">{planned.error}</p>{/if}
   {#if omittedText}<p class="share-message bu-badge" data-tone="warning" role="status" title={planned.media?.omitted.map(entry => entry.reason).join(' · ')}>{omittedText}</p>{/if}
   {#if feedback}<p class="share-message" role="status">{feedback}</p>{/if}
+  </div>
 </div>

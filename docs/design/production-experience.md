@@ -27,7 +27,7 @@ Actor fitting uses a cached union of painted bounds across the body's poses and 
 
 The [direct prototype parity review](production-prototype-parity.md) corrects the first integration's typography, hierarchy, scale and creator composition. Desktop view navigation sits at the top center, independent of the identity block. The right rail uses stacked category icons, a category heading/count, large equipment cards, a separate None action and contextual creation/design actions. Phones retain search and Import/New actions above the cast; the studio uses the compact lower rail. Native dialog content scrolls while its action footer remains accessible.
 
-`focus.ts` restores actual activation targets, including WebKit pointer behavior, and positions native top-layer popovers against their trigger with viewport clamping. `appearance.js` restores the saved light/dark choice before the app initializes, including native color-scheme.
+`focus.ts` restores actual activation targets, including WebKit pointer behavior, and positions the compact native top-layer popovers against their trigger with four-side collision handling and a decorative pointer. The large API Peek inspector retains its own panel layout and placement; Bronze Help is a separate tooltip family. `appearance.js` restores the saved light/dark choice before the app initializes, including native color-scheme.
 
 ## Intentional differences from a mockup
 

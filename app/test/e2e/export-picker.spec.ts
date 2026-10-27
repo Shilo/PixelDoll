@@ -23,6 +23,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await trigger.click()
   const popover = page.getByRole('dialog', { name: 'Share character preview' })
   await expect(popover).toBeVisible()
+  await expect(popover.getByRole('combobox', { name: 'Move' })).toBeFocused()
   await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('walk')
   await expect(popover.getByRole('combobox', { name: 'Direction' })).toHaveValue('south')
   await expect(popover.getByRole('switch')).toBeChecked()

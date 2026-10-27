@@ -28,6 +28,7 @@
     "vitest": "4.1.12"
   },
   "dependencies": {
+    "@floating-ui/dom": "1.8.0",
     "@lucide/svelte": "1.61.0",
     "@shilo/bronze-ui": "https://github.com/Shilo/bronze-ui/releases/download/v0.2.2/shilo-bronze-ui-0.2.2.tgz",
     "gifenc": "1.0.3"

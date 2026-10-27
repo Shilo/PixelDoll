@@ -4,6 +4,7 @@
   import { experience, characters } from './experience/state.svelte.ts'
   import CharacterThumb from './experience/CharacterThumb.svelte'
   import SharePopover from './SharePopover.svelte'
+  import PopoverArrow from './PopoverArrow.svelte'
   import ApiPeek from './ApiPeek.svelte'
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
@@ -41,7 +42,9 @@
   </div>
 </header>
 <SharePopover />
-<div id="experience-options" class="menu options-menu bu-floating" popover ontoggle={popoverFocus}>
+<div id="experience-options" class="menu options-menu bu-popover-anchor" data-placement="bottom-end" popover ontoggle={popoverFocus}>
+  <PopoverArrow />
+  <div class="menu-surface bu-popover-surface bu-floating">
   {#if experience.screen==='studio'}<button class="row bu-action mobile-redo" data-variant="quiet" disabled={!redoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); redo() }}><Redo2 size={18}/><span class="row-name">{redoLabel?'Redo '+redoLabel:'Redo'}</span></button>{/if}
   {#if experience.screen==='studio'}<button class="row bu-action mobile-export" data-variant="quiet" disabled={!m} onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='export' }}><Download size={18}/><span class="row-name">Export game assets</span></button>{/if}
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='activity' }}><Activity size={18}/><span class="row-name">Activity</span>{#if $queue.role==='follower'}<span class="small">Other tab</span>{/if}</button>
@@ -52,10 +55,13 @@
   <hr />
   <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll" target="_blank" rel="noreferrer"><Github size={18}/><span class="row-name">Source code</span><span class="row-aside faint small">Shilo/PixelDoll</span><ExternalLink size={16}/></a>
   <a class="row bu-action" data-variant="quiet" href="https://github.com/Shilo/PixelDoll/commit/{__APP_COMMIT__}" target="_blank" rel="noreferrer"><PersonStanding size={18}/><span class="row-name">Version {__APP_VERSION__}</span><span class="row-aside faint small num">{__APP_COMMIT__}</span><ExternalLink size={16}/></a>
+  </div>
 </div>
 
-<div id="project-menu" class="menu" popover bind:this={menu} role="menu" aria-label="Characters"
+<div id="project-menu" class="menu bu-popover-anchor" data-placement="bottom-start" popover bind:this={menu} role="menu" aria-label="Characters"
   ontoggle={popoverFocus}>
+  <PopoverArrow />
+  <div class="menu-surface bu-popover-surface bu-floating">
   <p class="menu-sec">Characters</p>
   {#snippet proj(p: (typeof store.projects)[number])}
     <button class="row" role="menuitemradio" aria-checked={p.id === doc.id} aria-label={p.name} onclick={() => pick(p.id)}>
@@ -81,4 +87,5 @@
       {#each devRigs as p (p.id)}{@render proj(p)}{/each}
     </details>
   {/if}
+  </div>
 </div>

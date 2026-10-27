@@ -249,12 +249,13 @@ html[data-app="studio"], html[data-app="studio"] body { margin: 0; height: 100%;
 .move-text { flex: 1; display: flex; flex-direction: column; color: var(--text); }
 
 /* popover menu (project switcher) */
-.menu { position: fixed; inset: auto; top: calc(var(--tb-h) + 4px); left: 8px; margin: 0; width: min(320px, calc(100vw - 16px)); max-height: calc(100dvh - var(--tb-h) - 16px); overflow: auto;
-  padding: 6px; border: 1px solid var(--line); border-radius: var(--r-card); background: var(--bg-raised); color: var(--text); box-shadow: var(--shadow-pop); font: 400 var(--fs)/1.4 var(--font-ui); }
+.studio-app .menu { width:min(320px,calc(100vw - 16px)); max-height:calc(100dvh - 16px); font:400 var(--fs)/1.4 var(--font-ui); }
+.studio-app .bu-popover-anchor:popover-open:not([data-positioned]) { visibility:hidden; }
+.menu-surface { box-sizing:border-box; width:100%; max-height:inherit; overflow:auto; padding:6px; }
 .menu-sec { padding: 6px 8px 2px; font-size: var(--fs-sm); font-weight: 600; color: var(--text-3); }
 .menu .row { min-height: var(--ctl-h); }
 .menu hr { border: 0; border-top: 1px solid var(--line); margin: 6px 0; }
-.options-menu { container-type: inline-size; }
+.options-menu .menu-surface { container-type: inline-size; }
 @container (max-width: 19.5em) { .options-menu .row-aside { display: none; } } /* measured: the widest row needs ~19 em; the muted extras give way before names truncate */
 .dev-rigs > summary { list-style: none; cursor: pointer; color: var(--text-2); }
 .dev-rigs > summary::-webkit-details-marker { display: none; }

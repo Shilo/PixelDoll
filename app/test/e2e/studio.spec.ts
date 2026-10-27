@@ -233,7 +233,7 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   await idb({ id: 'rig-e2edevrig00', savedAt: '', manifest: { format: 'pixeldoll/1', name: 'E2E dev rig' }, rigQa: { pivotFrom: 'idle/south/0' } })
   await page.locator('.project-btn').click()
   await page.locator('#project-menu summary', { hasText: 'Developer rigs' }).waitFor()
-  assert.equal(await page.locator('#project-menu > .row', { hasText: 'E2E dev rig' }).count(), 0)
+  assert.equal(await page.locator('#project-menu > .menu-surface > .row', { hasText: 'E2E dev rig' }).count(), 0)
   assert.equal(await page.locator('#project-menu .dev-rigs .row', { hasText: 'E2E dev rig' }).isVisible(), false)
   await page.keyboard.press('Escape')
   await idb(null)

@@ -23,7 +23,6 @@
 .studio-app .bu-action { font-family:var(--bu-font); }
 .studio-app .bu-input { font-size:16px; }
 .studio-app .sheet { background:var(--bu-surface); }
-.studio-app .menu { background:var(--bu-floating); border:1px solid var(--bu-rim); box-shadow:var(--bu-shadow); }
 .studio-app .sheet-title { font-size:18px; }
 /* Legacy wrappers drew a chevron for appearance:none selects; Bronze base-select draws its own picker icon. */
 @supports (appearance:base-select) and selector(select::picker(select)) { .studio-app .select-wrap>svg { display:none; } .studio-app .select-wrap>.bu-select { padding-right:8px; } }
