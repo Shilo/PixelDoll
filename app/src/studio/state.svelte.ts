@@ -86,8 +86,10 @@ export const ui = $state({
   toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
   toastSheet: null as SheetId,
   toastAction: null as (() => void | Promise<void>) | null,
+  waitingForTab: false, // a spending action waits in Activity for the other tab that runs the jobs
 });
 let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
+let afterTakeOver: (() => void) | null = null;
 
 export function initUi() {
   const on = () => { ui.size = sizeNow(); ui.dpr = devicePixelRatio || 1; };
@@ -144,16 +146,20 @@ export function toast(s: string, options: number | ToastOptions = 4000) {
   return true;
 }
 
-/** Only the queue-leader tab drives generations. Explain blocked actions above any open native modal. */
-const follower = () => {
+/** Only the queue-leader tab drives generations. Explain blocked actions above any open native modal. A spending action
+ *  `waits` there and runs once this tab takes over the jobs; leaving Activity cancels it. */
+const follower = (waits?: () => void) => {
   if (queue.role !== 'follower') return false;
+  afterTakeOver = waits ?? null;
+  ui.waitingForTab = !!waits;
   ui.sheet = 'activity';
   return true;
 };
+export function cancelWaitingForTab() { afterTakeOver = null; ui.waitingForTab = false; }
 
 /** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. */
 export function withKey(fn: () => void, requiresRig = false) {
-  if (follower()) return;
+  if (follower(() => withKey(fn, requiresRig))) return;
   if (requiresRig && app.key && accountTier(app.balance) === 0) { afterConnect = null; ui.sheet = 'connect'; return; }
   if (app.key && !app.keyRejected) return fn();
   afterConnect = { run: fn, requiresRig };
@@ -633,6 +639,11 @@ function drive() {
   void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
 }
 queue.subscribe((s) => {
+  if (s.role !== 'follower' && afterTakeOver) {
+    const run = ui.sheet === 'activity' ? afterTakeOver : null; // still waiting in Activity, not left for another sheet
+    cancelWaitingForTab();
+    run?.();
+  }
   if (!gensReady || driving) return;
   if (s.role !== 'follower') { void takeOver(); return; }
   if (Date.now() - mirrorAt < 2000) return;

@@ -5,7 +5,7 @@
   import { queue, type JobRec } from '../lib/pixellab/queue.ts'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { fmtNum } from './model.ts'
-  import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts'
+  import { ui, store, cleanUp, toast, equipment, refreshFits, openFit, cancelWaitingForTab } from './state.svelte.ts'
   async function clear() {
     let n: Awaited<ReturnType<typeof cleanUp>>
     try { n = await cleanUp() } catch (e) { console.error('clear finished', e); toast(`Could not clear finished jobs: ${(e as Error).message}`, { tone: 'danger' }); return }
@@ -35,7 +35,7 @@
   const cost = (r: JobRec) => [r.gens ? `${+r.gens.toFixed(2)} gens` : '', r.usd ? `$${r.usd.toFixed(3)}` : ''].filter(Boolean).join(' + ')
 </script>
 
-<Sheet title="Activity" cancel="Done" onclose={() => (ui.sheet = null)}>
+<Sheet title="Activity" cancel="Done" onclose={() => { cancelWaitingForTab(); ui.sheet = null }}>
   <div class="act-list">
     <div class="field-row">
       <span class="balance" style="display:flex;gap:6px;align-items:center"><Coins size={16} />
@@ -47,7 +47,9 @@
     {#if $queue.capacityRetryAt > now}
       <p class="notice small" role="status">PixelLab is busy, possibly in another app. Waiting {Math.ceil(($queue.capacityRetryAt - now) / 1000)} s before trying again. Your jobs stay queued.</p>
     {/if}
-    {#if $queue.role === 'follower'}
+    {#if $queue.role === 'follower' && ui.waitingForTab}
+      <p class="notice small"><CircleAlert size={14} />PixelDoll is running jobs in another tab, so this tab can’t start yours yet. Close that tab and it starts here, or press Done to cancel.</p>
+    {:else if $queue.role === 'follower'}
       <p class="notice small"><CircleAlert size={14} />Running in another tab. Keys stay in the tab where you connect. Connect PixelLab in the active queue tab, or close it to run jobs here.</p>
     {/if}
     {#if $queue.paused}

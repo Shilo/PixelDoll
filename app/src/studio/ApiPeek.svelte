@@ -37,16 +37,19 @@
     }
     return c.generations !== undefined ? `~${format(c.generations)} gens` : c.method === 'POST' ? 'Estimate varies' : 'Free'
   }
-  async function toggled(e: ToggleEvent) {
+  // The event's own element, not the binding: an open panel closes (and toggles) after its sheet unmounts it.
+  async function toggled(e: ToggleEvent & { currentTarget: HTMLDivElement }) {
+    const el = e.currentTarget
     open = e.newState === 'open'
     if (open) {
       copied = ''; inspectionError = false
       await tick()
-      panel.dataset.placement = opener.getBoundingClientRect().top < 100 ? 'bottom-end' : 'top-end'
-      popoverFocus({ currentTarget: panel, newState: e.newState }, false)
-      panel.querySelector<HTMLButtonElement>('[aria-label="Close API calls"]')?.focus()
+      if (!el.isConnected) return
+      el.dataset.placement = opener.getBoundingClientRect().top < 100 ? 'bottom-end' : 'top-end'
+      popoverFocus({ currentTarget: el, newState: e.newState }, false)
+      el.querySelector<HTMLButtonElement>('[aria-label="Close API calls"]')?.focus()
     } else {
-      popoverFocus({ currentTarget: panel, newState: e.newState }, false)
+      popoverFocus({ currentTarget: el, newState: e.newState }, false)
     }
   }
   $effect(() => {
