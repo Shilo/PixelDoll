@@ -673,7 +673,7 @@ Round 9 questions (§16):
 
 6. Adopt the skeleton-free pipeline (§16.6): text-animated moves, items edited onto the real frames, tracked paste for
    hair and helmets, armed-then-split weapon attacks?
-7. Natural motion costs about 2–3× more per worn item (≈ 70 vs 25 gens for idle + walk in 3 directions), while the body
+7. Natural motion costs about 4× more per worn item (≈ 70 vs 19 gens for idle + walk in 3 directions; 110 vs 25 in 5), while the body
    gets ~5–10× cheaper. Accept, or spend ~100 gens first on the untested 512 px inpaint sheets (≈ 6 gens per
    move-direction)?
 8. Best-of-N for body moves (1 gen each): pick automatically by the clip checks, or show the user 2–3 takes?
@@ -868,11 +868,11 @@ sharing**: each new character costs one anchor call per item plus its moves.
 
 | Item | Today | Skeleton-free |
 |---|---|---|
-| Worn item | 25 gens | ≈ 10 + 6 × 10 = **70 gens** (≈ 45 with sheets, untested at that size) |
+| Worn item | 19 gens (10 + 3 × 3; 25 with 5 drawn directions) | ≈ 10 + 6 × 10 = **70 gens** (≈ 45 with sheets, untested at that size) |
 | Hair / helmet | 25 gens | **10** (anchor only) |
 | Weapon | 50 gens | idle/walk via edit-animation-v2 ≈ 70; each attack +10 per direction |
 
-**Natural motion costs about 2–3× more per worn item.** The body becomes ~5–10× cheaper and much faster: no 12–19 min
+**Natural motion costs about 4× more per worn item.** The body becomes ~5–10× cheaper and much faster: no 12–19 min
 skeleton chain.
 
 ### 16.7 Not tested (budget), next if wanted
@@ -1013,7 +1013,9 @@ Both routes have PixelLab draw the item. The difference is **which body it draws
 **Cost:**
 - A pose call is 3 gens for up to 12 frames (idle 4 + walk 8 in one call).
 - `edit-animation-v2` is 10 gens per 8 frames at ≤ 80 px, and takes only 4 frames per call above that.
-- A worn item for idle + walk in 3 drawn directions is ≈ 25 gens today, against ≈ 70 dressed on the real frames (§16.6).
+- A worn item for idle + walk in 3 drawn directions is 19 gens today (1 dress call at 10 + 3 pose calls at 3), against 70
+  dressed on the real frames (1 dress call + 6 edit calls at 10). With the default 5 drawn directions it is 25 against 110.
+  (Earlier drafts of this section and §16.6 said 25 against 70, which mixed 5 and 3 directions.)
 
 **Quality is better in some ways and worse in others. It was not measured head-to-head on the same body.**
 - **Better:**
@@ -1109,7 +1111,7 @@ That is why it is tied to the skeleton decision.
 
 **Decisions waiting on the owner:**
 - **The skeleton route:** keep skeleton-v3 with better motion (such as mocap), or go skeleton-free per §16.6 at about
-  2–3× the item cost.
+  4× the item cost.
 - **The large-size dresser.**
 - **West mirroring.**
 - **Idle wording:** whether it may change, at the cost of reusing stored results.
