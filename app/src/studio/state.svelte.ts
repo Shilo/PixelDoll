@@ -297,11 +297,13 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
   }
 }
 export const lastProject = () => lsGet(K.last) ?? DEMO;
-/** Item drafts, a move (running, failed or queued) or a rig setup planned on this character's current moves. */
+/** Item drafts, an equipment fit, a move (running, failed or queued) or a rig setup planned on this character's current moves
+ *  (a fit's target and extension stamps include them). */
 async function planned(id: string): Promise<boolean> {
   const drafts = [...(await readGens()).map((g) => g.draft), ...(await loadDrafts())];
   const flows = await Promise.all([MOVE_KEY, SETUP_KEY].map((k) => db.get<{ projectId?: string; spec?: { projectId?: string }; queued?: { projectId: string }[] }>('projects', k)));
-  return drafts.some((d) => d.rigId === id && !d.acceptedAt) || flows.some((f) => !!f && [f.projectId, f.spec?.projectId, ...(f.queued ?? []).map((q) => q.projectId)].includes(id));
+  return drafts.some((d) => d.rigId === id && !d.acceptedAt) || (await listFits()).some((f) => f.targetId === id && f.stage !== 'accepted' && f.stage !== 'discarded')
+    || flows.some((f) => !!f && [f.projectId, f.spec?.projectId, ...(f.queued ?? []).map((q) => q.projectId)].includes(id));
 }
 
 // ---- undo/redo: snapshots of the dress state (outfit, colors, presets, layer order, hides) ----

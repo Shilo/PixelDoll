@@ -163,6 +163,7 @@ test('a created character saved before Default gains it from its standing views,
   const base = m.items[0].layers[0].cells!
   for (const d of ['south', 'east', 'north'] as const) expect(base.default[d]).toEqual([rig.rest![d]!.image])
   expect(project.images.get(base.default.west![0]!)!.data).toEqual(flipH(project.images.get(rig.rest!.east!.image)!).data)
+  expect(planItem(rig, { ...coverage({ rec: { manifest: m } } as RigCtx), method: 'skel', key: 'green', slot: 'back' }).flatMap((c) => c.cells).filter((k) => k.startsWith('default/'))).toEqual([]) // imported-rest: never posed
   expect(rig.baseHash).not.toBe(oldHash)
   expect(m.items.map((i) => [i.id, i.baseHash === rig.baseHash])).toEqual([['base', true], ['armor', true], ['scarf', true], ['old', false]]) // never "made for another body"
   const armor = m.items.find((i) => i.id === 'armor')!
@@ -191,6 +192,9 @@ test('an imported character saved before Default has its standing move renamed, 
   await upgradeDefault('rig-old', project)
   expect(m.rig.animations.map((a) => a.id)).toEqual(['default', 'default-copy']) // the ZIP's own "default" steps aside
   expect(m.rig.animations.filter((a) => a.sources?.south?.motion === 'imported-rest')).toHaveLength(1)
+  // setup's imported-rest sources travel with the rename, so items and fits never pose or price Default cells
+  expect(['south', 'east', 'north'].map((d) => m.rig.animations[0].sources![d as DirectionName]!.motion)).toEqual(Array(3).fill('imported-rest'))
+  expect(planItem(m.rig, { ...coverage({ rec: { manifest: m } } as RigCtx), method: 'skel', key: 'green', slot: 'back' }).flatMap((c) => c.cells).filter((k) => k.startsWith('default/'))).toEqual([])
   expect(JSON.stringify(m.items)).not.toMatch(/"rest"|"rest\//)
   const armor = m.items.find((i) => i.id === 'armor')!
   expect(armor.layers[0].cells!.default.south).toEqual(['sha256:dressed']) // kept, not re-extracted
