@@ -584,29 +584,93 @@ describe('move queue', () => {
     expect(run).toHaveBeenCalledOnce()
   })
 
-  test('a paid action in a tab that does not run the jobs waits in Activity, runs once this tab takes over, and leaving Activity cancels it', async () => {
+  test('a paid action in a tab that does not run the jobs waits in Activity, runs once this tab has taken over, and leaving Activity cancels it', async () => {
     storage()
     const { app } = await import('../../src/lib/app.svelte.ts') as unknown as { app: { key: string } }
     const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { role: string } }
     app.key = 'test-key'; queue.role = 'follower'
-    const s = await import('../../src/studio/state.svelte.ts'), run = vi.fn()
-    const notify = mocks.subscribe.mock.calls.at(-1)![0] as (snapshot: { role: string }) => void
-    s.withKey(run)
-    expect(run).not.toHaveBeenCalled()
-    expect([s.ui.sheet, s.ui.waitingForTab]).toEqual(['activity', true])
-    expect(mocks.handoff).toHaveBeenCalledWith() // asks an idle leader tab to hand over now
-    notify({ role: 'follower' })
-    expect(run).not.toHaveBeenCalled()
-    queue.role = 'leader'; notify({ role: 'leader' })
-    expect(run).toHaveBeenCalledOnce()
-    expect(s.ui.waitingForTab).toBe(false)
-    queue.role = 'follower'; s.withKey(run); s.ui.sheet = null
-    queue.role = 'leader'; notify({ role: 'leader' })
-    expect(run).toHaveBeenCalledOnce()
-    queue.role = 'follower'; s.withKey(run); s.cancelWaitingForTab()
-    expect(mocks.handoff).toHaveBeenLastCalledWith(false)
-    queue.role = 'leader'; notify({ role: 'leader' })
-    expect(run).toHaveBeenCalledOnce()
+    try {
+      const s = await import('../../src/studio/state.svelte.ts'), run = vi.fn()
+      const notify = mocks.subscribe.mock.calls.at(-1)![0] as (snapshot: { role: string }) => void
+      const lead = () => { queue.role = 'leader'; notify({ role: 'leader' }) }, follow = () => { queue.role = 'follower'; notify({ role: 'follower' }) }
+      await s.loadGens()
+      s.withKey(run)
+      expect(run).not.toHaveBeenCalled()
+      expect([s.ui.sheet, s.ui.waitingForTab]).toEqual(['activity', true])
+      expect(mocks.handoff).toHaveBeenLastCalledWith(true) // asks an idle leader tab to hand over now
+      notify({ role: 'follower' })
+      lead()
+      await vi.waitFor(() => expect(run).toHaveBeenCalledOnce())
+      expect([s.ui.waitingForTab, mocks.handoff.mock.lastCall]).toEqual([false, [false]])
+      follow(); s.withKey(run); s.ui.sheet = null // left Activity some other way
+      lead()
+      await vi.waitFor(() => expect(mocks.fits.mock.calls.length).toBeGreaterThanOrEqual(2)) // the second takeover finished
+      expect(run).toHaveBeenCalledOnce()
+      follow(); s.withKey(run); s.cancelWaitingForTab()
+      expect(mocks.handoff).toHaveBeenLastCalledWith(false)
+      lead()
+      await vi.waitFor(() => expect(mocks.fits.mock.calls.length).toBeGreaterThanOrEqual(3))
+      expect(run).toHaveBeenCalledOnce()
+    } finally { queue.role = 'leader' }
+  })
+
+  test('a waiting Add move runs only after this tab resumed the running move of the closed tab, and queues behind it', async () => {
+    const records = storage()
+    // The old leader tab (now closed) was running idle with walk queued behind it.
+    mocks.move.mockReturnValue(new Promise(() => {}))
+    const { REQUEST_TEXT } = await import('../../src/studio/state.svelte.ts')
+    records.set('studio-move', { id: 'studio-move', spec: idle, projectId: 'project', status: 'running', requestText: REQUEST_TEXT, queued: [{ projectId: 'project', spec: walk }] })
+    vi.resetModules()
+    const { app } = await import('../../src/lib/app.svelte.ts') as unknown as { app: { key: string } }
+    const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { role: string } }
+    app.key = 'test-key'; queue.role = 'follower'
+    try {
+      const s = await import('../../src/studio/state.svelte.ts')
+      const notify = mocks.subscribe.mock.calls.at(-1)![0] as (snapshot: { role: string }) => void
+      await s.loadGens()
+      s.withKey(() => { void s.queueMoves('project', [{ ...walk, id: 'jump' }]) })
+      queue.role = 'leader'; notify({ role: 'leader' })
+      await vi.waitFor(() => expect(s.pendingMoves('project').map((m) => m.id)).toEqual(['idle', 'walk', 'jump']))
+      expect(mocks.move.mock.calls.map((c) => c[1].id)).toEqual(['idle'])
+    } finally { queue.role = 'leader' }
+  })
+
+  test('a tab that handed the jobs over resumes the stored move of another tab when it leads again', async () => {
+    const records = storage()
+    mocks.move.mockReturnValue(new Promise(() => {}))
+    const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { role: string } }
+    try {
+      const s = await import('../../src/studio/state.svelte.ts')
+      const notify = mocks.subscribe.mock.calls.at(-1)![0] as (snapshot: { role: string }) => void
+      await s.loadGens(); await s.resumeMove() // Studio mount as leader
+      queue.role = 'follower'; notify({ role: 'follower' }) // handed the jobs to another tab
+      records.set('studio-move', { id: 'studio-move', spec: idle, projectId: 'project', status: 'running', requestText: s.REQUEST_TEXT, queued: [] })
+      queue.role = 'leader'; notify({ role: 'leader' }) // that tab closed mid-move
+      await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+    } finally { queue.role = 'leader' }
+  })
+
+  test('this tab never offers its jobs between queued moves, during a fit stage or while Connect holds a paid action', async () => {
+    const records = storage(), first = pending<typeof done>()
+    mocks.move.mockReturnValueOnce(first.promise).mockReturnValue(new Promise(() => {}))
+    const { app } = await import('../../src/lib/app.svelte.ts') as unknown as { app: { key: string } }
+    const s = await import('../../src/studio/state.svelte.ts')
+    const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { canYield: () => boolean } }
+    void s.queueMoves('project', [idle, walk])
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+    let between: boolean | undefined
+    mocks.put.mockImplementation(async (_store, id, value) => { if (id === 'studio-move' && value.spec?.id === 'walk' && between === undefined) between = queue.canYield(); records.set(id, structuredClone(value)) })
+    first.resolve(done)
+    await vi.waitFor(() => expect(between).toBe(false))
+    vi.resetModules(); storage()
+    const t = await import('../../src/studio/state.svelte.ts')
+    const { queue: q } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { canYield: () => boolean } }
+    expect(q.canYield()).toBe(true)
+    t.equipment.running = ['equipment-fit:x'] // a fit stage preparing before its first job
+    expect(q.canYield()).toBe(false)
+    t.equipment.running = []
+    app.key = ''; t.withKey(vi.fn()) // Connect waits with a paid action
+    expect([t.ui.sheet, q.canYield()]).toEqual(['connect', false])
   })
 
   test('this tab offers its jobs to another tab only while none of its generation work runs', async () => {

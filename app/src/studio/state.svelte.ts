@@ -147,15 +147,24 @@ export function toast(s: string, options: number | ToastOptions = 4000) {
 }
 
 /** Only the queue-leader tab drives generations. Explain blocked actions above any open native modal. A spending action
- *  `waits` there and runs once this tab takes over the jobs; leaving Activity cancels it. */
+ *  `waits` there and runs once this tab takes over the jobs and has resumed the old leader's work; leaving Activity
+ *  cancels it. */
 const follower = (waits?: () => void) => {
   if (queue.role !== 'follower') return false;
   afterTakeOver = waits ?? null;
   ui.waitingForTab = !!waits;
   ui.sheet = 'activity';
-  if (waits) queue.requestHandoff(); // an idle leader tab hands the jobs over at once
+  queue.requestHandoff(!!waits); // an idle leader tab hands the jobs over at once
   return true;
 };
+/** Run the waiting click: only in the lead, after takeOver resumed the stored create, move and setup (so it queues behind
+ *  them instead of overwriting them), and only while the user is still in Activity. */
+function runWaiting() {
+  if (!afterTakeOver || queue.role === 'follower' || !driving || takeOverRunning) return;
+  const run = ui.sheet === 'activity' ? afterTakeOver : null;
+  cancelWaitingForTab();
+  run?.();
+}
 export function cancelWaitingForTab() { afterTakeOver = null; ui.waitingForTab = false; queue.requestHandoff(false); }
 
 /** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. */
@@ -436,14 +445,16 @@ export function deletionBlocked(): string {
   if (doc.loading) return 'Wait for the character to finish loading.';
   if (queue.role === 'follower') return 'Manage characters in the other PixelDoll tab, or close it first.';
   if (equipment.fits.some((f) => f.targetId === doc.id && f.stage !== 'accepted' && f.stage !== 'discarded')) return 'Finish or discard this character’s equipment fits in Activity before deleting it.';
-  if (!workIdle()) return 'Finish or dismiss pending generation work before deleting a character.';
+  if (!queue.idle() || gens.some((g) => g.phase === 'running') || settling.size || (creating.spec && !creating.projectId) || (moving.spec && !moving.done) || (settingUp.spec && !settingUp.done)) return 'Finish or dismiss pending generation work before deleting a character.';
   return '';
 }
-/** Nothing of this tab's generation work is running or holding the queue (a failed create or move holds it). */
+/** Nothing in this tab is generating, between steps of a flow, holding the queue (a failed create or move holds it),
+ *  taking over, or waiting in Connect to spend, so another tab may take over the jobs. */
 function workIdle() {
   return queue.idle() && !gens.some((g) => g.phase === 'running') && !settling.size && !(creating.spec && !creating.projectId)
-    && !(moving.spec && !moving.done) && !(settingUp.spec && !settingUp.done) && !equipment.preparing.length
-    && !equipment.fits.some((f) => f.stage.endsWith('running'));
+    && !(moving.spec && !moving.done) && !moving.queued.length && !(settingUp.spec && !settingUp.done)
+    && !createRunning && !moveRunning && !setupRunning && !takeOverRunning && !afterConnect
+    && !equipment.preparing.length && !equipment.running.length && !equipment.fits.some((f) => f.stage.endsWith('running'));
 }
 queue.canYield = workIdle;
 
@@ -610,7 +621,7 @@ const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state
 // other's studio-drafts). A follower tab shows the leader's drafts, re-read when the ledger changes, and takes over when
 // the leader's tab closes.
 const runningGens = new Set<string>();
-let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, mirrored = '', mirrorAt = 0;
+let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, takeOverRunning = false, mirrored = '', mirrorAt = 0;
 // A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
 const readGens = async () => uniqueBy((await db.get<{ gens: Gen[] }>('projects', GENS_KEY))?.gens ?? [], (g) => g.draft.spec.id);
 /** The ONLY way the list is replaced: one entry per draft id (already-persisted duplicates heal on the next save). Synchronous,
@@ -647,13 +658,9 @@ function drive() {
   void cleanUp(WEEK, false).catch((e) => console.error('cleanup', e)); // R6 P2-14: prune week-old records nothing needs (blobs: Clear finished only)
 }
 queue.subscribe((s) => {
-  if (s.role !== 'follower' && afterTakeOver) {
-    const run = ui.sheet === 'activity' ? afterTakeOver : null; // still waiting in Activity, not left for another sheet
-    cancelWaitingForTab();
-    run?.();
-  }
-  // This tab handed the jobs to another (only ever while idle): mirror its drafts again, and take over again later.
-  if (s.role === 'follower' && driving) { driving = false; takingOver = false; }
+  // This tab handed the jobs to another (only ever while idle): mirror its drafts again, and resume again when it leads.
+  if (s.role === 'follower' && driving) driving = takingOver = createResumed = moveResumed = setupResumed = false;
+  runWaiting();
   if (!gensReady || driving) return;
   if (s.role !== 'follower') { void takeOver(); return; }
   if (Date.now() - mirrorAt < 2000) return;
@@ -667,16 +674,19 @@ queue.subscribe((s) => {
 /** This follower tab just became the leader: continue the old leader's drafts, create and move. */
 async function takeOver() {
   if (driving || takingOver) return;
-  takingOver = true;
-  const list = await readGens();
-  if (driving) return;
-  setGens(list);
-  drive();
-  await resumeCreate();
-  await resumeMove();
-  await resumeSetup();
-  await resumeFitStages();
-  await refreshFits();
+  takingOver = takeOverRunning = true;
+  try {
+    const list = await readGens();
+    if (driving) return;
+    setGens(list);
+    drive();
+    await resumeCreate();
+    await resumeMove();
+    await resumeSetup();
+    await resumeFitStages();
+    await refreshFits();
+  } finally { takeOverRunning = false; }
+  runWaiting();
 }
 
 export async function startItem(input: NewItemInput) {
@@ -781,7 +791,8 @@ const drop = (g: Gen) => { const i = gens.findIndex((x) => x.draft.spec.id === g
  *  and reloads the open character in place. True when saved. */
 export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
   const id = g.draft.spec.id;
-  if (follower() || settling.has(id)) return false;
+  // A background auto-save never pops Activity open in a tab that just handed the jobs over; the new leader saves it.
+  if ((auto ? queue.role === 'follower' : follower()) || settling.has(id)) return false;
   settling.add(id);
   try {
     const ctx = await loadProject(g.draft.rigId);
@@ -921,7 +932,7 @@ export async function resumeCreate() {
   if (hmrReloading || createResumed || queue.role === 'follower') return; // the leader resumes it (takeOver)
   createResumed = true;
   const r = await db.get<FlowDraft<CreateSpec>>('projects', CREATE_KEY).catch(() => undefined);
-  if (!r?.spec || creating.spec) return;
+  if (!r?.spec || (creating.spec && !creating.projectId)) return; // a finished create here never hides another tab's
   if (halted(r)) Object.assign(creating, { spec: r.spec, progress: r.progress ?? null, error: r.error || STOPPED, projectId: '', warnings: [], views: [] });
   else void startCreate(r.spec);
 }
@@ -1047,7 +1058,7 @@ export async function resumeMove() {
   if (hmrReloading || moveResumed || queue.role === 'follower') return;
   moveResumed = true;
   const r = await db.get<FlowDraft<MoveSpec> & { projectId: string; queued?: QueuedMove[] }>('projects', MOVE_KEY).catch(() => undefined);
-  if (!r?.spec || moving.spec) return;
+  if (!r?.spec || (moving.spec && !moving.done)) return;
   const { queued, ...record } = r;
   moving.queued = queued ?? [];
   moveRecord = record; // a halted move keeps its stored record while moves are queued behind it
@@ -1106,7 +1117,7 @@ export async function resumeSetup() {
   if (hmrReloading || setupResumed || queue.role === 'follower') return;
   setupResumed = true;
   const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
-  if (!rec?.spec || settingUp.spec) return;
+  if (!rec?.spec || (settingUp.spec && !settingUp.done)) return;
   if (halted(rec)) Object.assign(settingUp, { spec: rec.spec, progress: rec.progress ?? null, error: rec.error || 'Setup stopped. Review Activity before trying again.', done: false, warnings: [] });
   else void startSetup(rec.spec);
 }

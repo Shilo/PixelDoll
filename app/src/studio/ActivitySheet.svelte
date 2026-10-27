@@ -5,7 +5,7 @@
   import { queue, type JobRec } from '../lib/pixellab/queue.ts'
   import { app, refreshBalance } from '../lib/app.svelte.ts'
   import { fmtNum } from './model.ts'
-  import { ui, store, cleanUp, toast, equipment, refreshFits, openFit, cancelWaitingForTab } from './state.svelte.ts'
+  import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts'
   async function clear() {
     let n: Awaited<ReturnType<typeof cleanUp>>
     try { n = await cleanUp() } catch (e) { console.error('clear finished', e); toast(`Could not clear finished jobs: ${(e as Error).message}`, { tone: 'danger' }); return }
@@ -35,7 +35,7 @@
   const cost = (r: JobRec) => [r.gens ? `${+r.gens.toFixed(2)} gens` : '', r.usd ? `$${r.usd.toFixed(3)}` : ''].filter(Boolean).join(' + ')
 </script>
 
-<Sheet title="Activity" cancel="Done" onclose={() => { cancelWaitingForTab(); ui.sheet = null }}>
+<Sheet title="Activity" cancel="Done" onclose={() => (ui.sheet = null)}>
   <div class="act-list">
     <div class="field-row">
       <span class="balance" style="display:flex;gap:6px;align-items:center"><Coins size={16} />

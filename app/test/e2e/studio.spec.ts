@@ -1052,6 +1052,65 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 })
 
 
+/** Tab A holds a failed character create (which keeps the jobs there); tab B opens second and follows. */
+async function busyFirstTab(page: Page, context: import('@playwright/test').BrowserContext, posts: string[]) {
+  await context.route('https://api.pixellab.ai/**', (r) => { if (r.request().method() === 'POST') posts.push(r.request().url()); return r.abort() })
+  await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, '/')
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  await page.evaluate(() => new Promise<void>((resolve, reject) => {
+    const r = indexedDB.open('pixeldoll'); r.onerror = () => reject(r.error)
+    r.onsuccess = () => {
+      const db = r.result, t = db.transaction('projects', 'readwrite')
+      t.objectStore('projects').put({ id: 'studio-create', status: 'failed', error: 'Saved terminal failure', spec: { name: 'Failed', description: 'body', size: 48, dirs: 4, seed: 1, projectId: 'rig-failed-x', directionPolicy: 'independent' } }, 'studio-create')
+      t.oncomplete = () => { db.close(); resolve() }
+    }
+  }))
+  await reloadStudio(page)
+  const second = await context.newPage()
+  await openStudio(second, '/')
+  await second.getByRole('button', { name: 'More options', exact: true }).click()
+  await expect(second.locator('#experience-options')).toContainText('Other tab')
+  await second.keyboard.press('Escape')
+  await second.locator('.project-btn').click()
+  await second.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  const create = second.getByRole('dialog', { name: 'New character', exact: true })
+  await create.getByRole('textbox', { name: 'Details', exact: true }).fill('a cheerful copper clockwork scout')
+  await create.getByRole('button', { name: /^Create/ }).click()
+  const activity = second.getByRole('dialog', { name: 'Activity', exact: true })
+  await expect(activity).toContainText('Close that tab and it starts here, or press Done to cancel.')
+  return { second, activity }
+}
+
+test('a click waiting on a busy first tab continues as soon as that tab is idle, without closing it', async ({ page, context }) => {
+  const posts: string[] = []
+  const { second, activity } = await busyFirstTab(page, context, posts)
+  await second.waitForTimeout(1500) // several handoff requests: the failed create keeps the jobs in the first tab
+  await expect(activity).toBeVisible()
+  await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toHaveCount(0)
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'New character…', exact: true }).click()
+  await page.getByRole('dialog', { name: 'New character', exact: true }).getByRole('button', { name: 'Start over', exact: true }).click()
+  await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toBeVisible({ timeout: 15000 }) // no key: Connect
+  expect(posts).toEqual([])
+})
+
+test('leaving Activity by Back cancels a waiting click, so closing the busy tab later starts nothing', async ({ page, context }) => {
+  const posts: string[] = []
+  const { second, activity } = await busyFirstTab(page, context, posts)
+  await second.goBack()
+  await expect(activity).toHaveCount(0)
+  await second.getByRole('button', { name: 'More options', exact: true }).click()
+  await second.locator('#experience-options').getByRole('button', { name: /Activity/ }).click()
+  await expect(activity).toBeVisible()
+  await expect(activity).not.toContainText('Close that tab and it starts here')
+  await page.close() // with Activity open again, as a user who only looks
+  await expect(activity).not.toContainText('Running in another tab', { timeout: 15000 })
+  await second.waitForTimeout(1000) // the takeover has resumed; nothing waits to run
+  await expect(second.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toHaveCount(0)
+  expect(posts).toEqual([])
+})
+
 test('Create in a second tab takes the jobs from the idle first tab at once and preserves its draft', async ({ page, context }) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })

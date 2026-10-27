@@ -14,7 +14,7 @@
   import RenameSheet from './RenameSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, toast, resumeCreate, resumeMove, resumeSetup, resumeFitStages, prefetchFlows, clearPendingConnection, undo, redo } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, toast, resumeCreate, resumeMove, resumeSetup, resumeFitStages, prefetchFlows, clearPendingConnection, cancelWaitingForTab, undo, redo } from './state.svelte.ts'
   import { lazy } from '../lib/lazy.ts'
   import { WifiOff } from './icons.ts'
   import { PREVIEW_NOTICE } from './previewNotice.ts'
@@ -70,6 +70,8 @@
   })
   // Closing Connect cancels its spending action, also when the sheet closes before its code loaded (ConnectSheet never mounted).
   $effect(() => { if (ui.sheet !== 'connect') clearPendingConnection() })
+  // Leaving Activity by any route (Done, Back, another sheet) cancels a click waiting there for the other tab.
+  $effect(() => { if (ui.sheet !== 'activity') cancelWaitingForTab() })
   const onpop = () => {
     if (!sheetEntry) return
     // An atomic local save/publish has the same disabled-close rule for browser Back as for Cancel/Escape.

@@ -93,7 +93,7 @@ export interface Deps {
   online: () => boolean; // navigator.onLine
 }
 
-const POLL_MS = 5000, SYNC_MS = 1500, FULL_SYNC_MS = 30_000, MAX_TRIES = 10, MAX_PX = 2048, LOCK = 'pixeldoll-queue';
+const POLL_MS = 5000, SYNC_MS = 1500, ASK_MS = 500, FULL_SYNC_MS = 30_000, MAX_TRIES = 10, MAX_PX = 2048, LOCK = 'pixeldoll-queue';
 const LOST_AFTER_MS = 120_000;
 const PROBE_MS = 15_000;
 const NO_ANIMATION_JOBS = /^Failed to start any animation jobs[.!]?$/i;
@@ -220,6 +220,7 @@ export class Queue {
   /** The app's own check that nothing in this tab is mid-generation; an idle leader hands the jobs to a tab that asks. */
   canYield: () => boolean = () => true;
   private wantsLead = false;
+  private asking: (() => void) | null = null;
   paused: QueueSnapshot['paused'] = null;
   concurrency: number = PLAN_JOB_LIMITS.unknown;
   current: number = PLAN_JOB_LIMITS.unknown;
@@ -316,7 +317,7 @@ export class Queue {
         // Let a connected tab drive its work without sending its credential to this keyless tab.
         if (m.keyReady === true && this.role === 'leader' && this.release && !this.key && !this.busy.size) void this.connect();
         // Another tab has a click waiting: step back (rejoin as follower) when nothing here is in flight.
-        if (m.handoff === true && this.role === 'leader' && this.release && !this.busy.size && this.idle() && this.canYield()) void this.connect();
+        if (m.handoff === true && this.role === 'leader' && this.release && !this.busy.size && this.idle() && this.canYield()) this.stepBack();
         if (typeof m.rec === 'string') void this.pull(m.rec);
         if (m.sync && this.role === 'follower') void this.sync();
         if (m.capacity && this.role === 'follower') { Object.assign(this, m.capacity); this.emit(); this.requestLeadership(); }
@@ -356,7 +357,7 @@ export class Queue {
     if (connection.signal.aborted) return;
     this.follower?.();
     this.follower = null;
-    this.wantsLead = false;
+    this.requestHandoff(false);
     this.role = 'leader';
     this.capacityCheckedAt = -Infinity;
     this.capacityKnown = false;
@@ -516,10 +517,19 @@ export class Queue {
     if (this.role === 'follower' && this.key && [...this.recs.values()].some(live)) this.chan?.postMessage({ keyReady: true } satisfies Msg);
     if (this.role === 'follower' && this.wantsLead) this.chan?.postMessage({ handoff: true } satisfies Msg);
   }
-  /** A follower with a waiting click asks the leader to hand over now, and again on each leader update until it leads. */
+  /** A follower with a waiting click asks the leader to hand over now, then every ASK_MS until it leads: a busy leader
+   *  can turn idle without any queue update. */
   requestHandoff(want = true) {
     this.wantsLead = want;
+    this.asking?.();
+    this.asking = want ? every(ASK_MS, () => this.requestLeadership()) : null;
     this.requestLeadership();
+  }
+  /** Leader to follower before the lock changes hands, so nothing new starts here in between; rejoin the lock queue. */
+  private stepBack() {
+    this.role = 'follower';
+    this.emit();
+    void this.connect();
   }
   resume() {
     this.paused = null;
@@ -1408,7 +1418,7 @@ async function handoffTest() {
 }
 
 // A tab with a waiting click takes the jobs from an idle leader at once; never while the leader has a job in flight or
-// the app says that tab is mid-generation. It keeps asking on each leader update, and the old leader does not ask back.
+// the app says that tab is mid-generation. It keeps asking until it leads, and the old leader does not ask back.
 async function idleHandoffTest() {
   const store = new Map<string, JobRec>(), locks = fakeLocks();
   const deps: Partial<Deps> = {
@@ -1427,7 +1437,7 @@ async function idleHandoffTest() {
   appBusy = true; finishBusy(); await busy; emit();
   await delivered(deps.channel!); await delivered(deps.channel!);
   console.assert(a.role === 'leader' && b.role === 'follower', 'a leader the app reports mid-generation keeps the jobs');
-  appBusy = false; emit(); // its next update reaches the follower, which asks again
+  appBusy = false; // no queue update follows: the follower's re-ask finds the leader idle
   await until(() => b.role === 'leader');
   console.assert(b.role === 'leader' && a.role === 'follower', 'an idle leader hands the jobs to the tab that asked');
   (b as unknown as { emit(): void }).emit();
