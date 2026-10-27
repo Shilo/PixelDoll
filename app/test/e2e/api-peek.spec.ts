@@ -73,6 +73,41 @@ test('request preview follows the current character draft and copying never subm
   expect(requests).toEqual([])
 })
 
+test('a failed or policy-refused job shows its final status and error in the peek and Copy', async ({ page, context }, info) => {
+  await context.route('https://api.pixellab.ai/**', async (route) => {
+    const path = new URL(route.request().url()).pathname
+    if (path === '/v2/edit-animation-v2') return route.fulfill({ status: 202, json: { background_job_id: route.request().postDataJSON().seed === 1 ? 'stalled-job' : 'refused-job' } })
+    if (path === '/v2/background-jobs/stalled-job') return route.fulfill({ json: { id: 'stalled-job', status: 'failed', last_response: { error: 'Generation timed out' } } })
+    if (path === '/v2/background-jobs/refused-job') return route.fulfill({ json: { id: 'refused-job', status: 'failed', last_response: { code: 5000, error: 'Request rejected by content filter' } } })
+    await route.fulfill({ json: { subscription: { generations: 100, total: 100 }, credits: { usd: 0 } } })
+  })
+  await openStudio(page, info.config.projects.find((project) => project.name === 'browser-selftests')!.use.baseURL!)
+  await expect(page.locator('.world-actors').first()).toBeVisible()
+  // Intercepted fixture responses: no real credential is obtained and nothing is generated.
+  await page.evaluate(async () => {
+    const path = '/src/lib/pixellab/client.ts'
+    const { api } = await import(path)
+    for (const [seed, job] of [[1, 'stalled-job'], [2, 'refused-job']] as const) {
+      await api('offline-fixture-not-a-key', 'POST', '/edit-animation-v2', { description: 'stockings', seed }, undefined, { label: 'Stockings' })
+      await api('offline-fixture-not-a-key', 'GET', `/background-jobs/${job}`, undefined, undefined, { label: 'Stockings' })
+    }
+  })
+  await page.getByRole('button', { name: 'More options', exact: true }).click()
+  await page.getByRole('button', { name: 'Inspect all API calls', exact: true }).click()
+  await peek(page).getByRole('button', { name: 'Show background calls', exact: true }).click()
+  for (const [job, text] of [['stalled-job', 'Job failed: Generation timed out'], ['refused-job', 'Job refused by content policy: Request rejected by content filter']]) {
+    const poll = peek(page).locator('details').filter({ has: page.locator('summary', { hasText: job }) })
+    await poll.locator('summary').click()
+    await expect(poll).toContainText(text)
+  }
+  await peek(page).getByRole('button', { name: 'Copy all calls', exact: true }).click()
+  const copied = JSON.parse((await page.evaluate(() => sessionStorage.getItem('api-peek-copy')))!) as { calls: { endpoint: string; job?: unknown }[] }
+  expect(copied.calls.filter((call) => call.job).map(({ endpoint, job }) => ({ endpoint, job }))).toEqual([
+    { endpoint: '/background-jobs/stalled-job', job: { status: 'failed', error: 'Generation timed out' } },
+    { endpoint: '/background-jobs/refused-job', job: { status: 'failed', error: 'Request rejected by content filter', policy: true } },
+  ])
+})
+
 test('automatic account checks remain inspectable without flooding the default global list', async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => {
