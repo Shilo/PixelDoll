@@ -15,12 +15,12 @@ import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
-import { ANCHORS, DEFAULT_MOVE, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, defaultMs, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
+import { ANCHORS, DEFAULT_MOVE, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, defaultMs, playlist, retainPlaybackChoices, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
 import { repairBodyPalette } from '../lib/rig/palette.ts';
-import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
+import { RIG_GATES, actionOf, bodyComponents, clipQa, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
 import { posable, poseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
 import { coverage } from './itemRoute.ts';
@@ -621,7 +621,7 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
   if (!fresh || moveRigVersion(fresh) !== version) throw new Error('This character changed in another tab while the move was generating. Reopen it before trying again.');
   const fm = fresh.manifest, frig = fm.rig, baseIt = fm.items.find((i) => i.id === frig.baseItem)!;
   const old = frig.animations.find((a) => a.id === spec.id);
-  const anim: RigAnimation = { ...old, id: spec.id, cells: n, loop: loops(spec.id), frames: old?.cells === n ? old.frames : playlist(n, defaultMs(spec.id)), sources: { ...old?.sources } };
+  const anim: RigAnimation = { ...old, id: spec.id, cells: n, loop: old?.loop ?? true, frames: old?.cells === n ? old.frames : playlist(n, defaultMs(spec.id)), sources: { ...old?.sources } };
   for (const d of affected) delete anim.sources![d];
   if (spec.dirs && clips.some(({ out: { qa } }) => qa.fails.length || qa.adherence === null || qa.adherence > RIG_GATES.adherence || qa.feetDrift > RIG_GATES.silhouetteBottomDelta || qa.paletteFit < RIG_GATES.paletteFit || qa.border > RIG_GATES.border)) throw new Error('The replacement still fails body-pose quality checks. Existing directions were kept. Review the results before trying again.');
   const layer = baseIt.layers[0], cellMap: Partial<Record<DirectionName, (Sha256 | null)[]>> = { ...baseIt.layers[0].cells?.[spec.id] };
@@ -667,6 +667,8 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
     clearMovePoseData(cur.manifest.rig, cur.skeletons ??= {}, spec.id, dirs);
     const cb = cur.manifest.items.find((i) => i.id === frig.baseItem)!;
     if (old) invalidateMoveItems(cur.manifest, spec.id, dirs);
+    // Export choices can change while artwork is being generated. The current record owns those choices.
+    retainPlaybackChoices(frig, cur.manifest.rig);
     cur.manifest.rig = frig;
     cb.provenance = baseIt.provenance;
     cb.layers[0].cells = layer.cells;

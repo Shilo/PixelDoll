@@ -27,7 +27,6 @@ export function shiftMotionPoses(poses: Keypoint[][], dy: number, size: number):
 
 /** The `action` label of a clip. Base frames and item poses send the same one (same request shape, S3). */
 export const actionOf = (anim: string) => (anim.includes('idle') ? 'breathing idle' : anim.includes('walk') ? 'walking' : anim.includes('run') ? 'running' : anim);
-export const loops = (anim: string) => /idle|walk|run/.test(anim);
 
 /** Raw /animate-with-skeleton-v3: pose `first` (in pose `rest`) through `keypoints`; one output frame per entry. */
 export const rawClip = (o: { first: string; rest: Keypoint[]; keypoints: Keypoint[][]; description: string; action: string; dir: Direction; seed: number; view?: 'low top-down' | 'high top-down' | 'side' }): Req =>
@@ -146,5 +145,5 @@ export function selfTest() {
   const bad = clipQa({ anim: 'slash', rest: clean, frames: [im], requested: [k], measured: [k2], stray: 0 });
   console.assert(!ok.fails.length && ok.adherence === 0, `clean clip passes: ${ok.fails}`);
   console.assert(bad.fails.length === 0 && bad.warnings.length === 3 && bad.adherence === 2.4 && bad.border === 2, `observations: ${bad.warnings} ${bad.adherence} ${bad.border}`);
-  console.assert(actionOf('walk') === 'walking' && actionOf('slash') === 'slash' && loops('idle') && !loops('slash'), 'clip kinds');
+  console.assert(actionOf('walk') === 'walking' && actionOf('slash') === 'slash', 'clip action labels');
 }

@@ -5,8 +5,8 @@
   import { WORLDS } from './experience/config.ts'
   import { ui } from './state.svelte.ts'
   import Toast from './Toast.svelte'
-  let { title, children, footer, heading, onclose, cancel = 'Cancel', cancelDisabled = false, wide = false, className = '' }: {
-    title: string; children: Snippet; footer?: Snippet; heading?: Snippet; onclose: () => void; cancel?: string; cancelDisabled?: boolean; wide?: boolean; className?: string
+  let { title, children, footer, heading, leading, trailing, onclose, cancel = 'Cancel', cancelDisabled = false, wide = false, className = '' }: {
+    title: string; children: Snippet; footer?: Snippet; heading?: Snippet; leading?: Snippet; trailing?: Snippet; onclose: () => void; cancel?: string; cancelDisabled?: boolean; wide?: boolean; className?: string
   } = $props()
   let dlg: HTMLDialogElement
   // The native `close` event from our own unmount fires after a replacement sheet is already set; ignore it.
@@ -25,7 +25,7 @@
     }
   })
   // HIG: Done/Close confirm and sit trailing; Cancel/Hide sit leading
-  const trailing = $derived(cancel === 'Done' || cancel === 'Close')
+  const cancelTrailing = $derived(cancel === 'Done' || cancel === 'Close')
   const kind = $derived(ui.size === 'compact' ? 'bottom' : ui.size === 'landscape' ? 'side' : 'center')
 </script>
 
@@ -33,9 +33,9 @@
   onclick={(e) => { if (e.target === dlg && !cancelDisabled) onclose() }}>
   {#if kind === 'bottom'}<div class="grabber" aria-hidden="true"></div>{/if}
   <header class="sheet-head">
-    {#if trailing}<span></span>{:else}<button class="bu-action btn plain link" data-variant="quiet" disabled={cancelDisabled} onclick={onclose}>{cancel}</button>{/if}
+    {#if leading}{@render leading()}{:else if cancelTrailing}<span></span>{:else}<button class="bu-action btn plain link" data-variant="quiet" disabled={cancelDisabled} onclick={onclose}>{cancel}</button>{/if}
     <div class="sheet-heading"><h2 id="sheet-title" class="sheet-title">{title}</h2>{#if heading}{@render heading()}{/if}</div>
-    {#if trailing}<button class="bu-action btn plain link done" data-variant="quiet" disabled={cancelDisabled} onclick={onclose}>{cancel}</button>{:else}<span></span>{/if}
+    {#if trailing}{@render trailing()}{:else if cancelTrailing}<button class="bu-action btn plain link done" data-variant="quiet" disabled={cancelDisabled} onclick={onclose}>{cancel}</button>{:else}<span></span>{/if}
   </header>
   <div class="sheet-body">{@render children()}</div>
   {#if footer}<footer class="sheet-foot">{@render footer()}</footer>{/if}

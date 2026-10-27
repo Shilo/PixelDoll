@@ -40,6 +40,20 @@ test('targeted replacement preserves every unselected body/item/pose row and cle
  for(const d of ['south','north','west'] as const){expect(next.manifest.items[0].layers[0].cells!.idle![d]).toEqual(before.manifest.items[0].layers[0].cells!.idle![d]);expect(next.manifest.items[1].layers[0].cells!.idle![d]).toEqual(before.manifest.items[1].layers[0].cells!.idle![d]);expect(next.manifest.rig.animations[0].sources![d]).toEqual(before.manifest.rig.animations[0].sources![d]);expect(next.manifest.rig.anchors!.hand_r!.idle![d]).toEqual(before.manifest.rig.anchors!.hand_r!.idle![d]);expect(next.skeletons![`idle/${d}/0`]).toEqual(before.skeletons![`idle/${d}/0`])}
  expect(next.manifest.items[1].layers[0].cells!.idle!.east).toBeUndefined();expect((next.rigQa as {warnings:string[]}).warnings).toEqual(['idle/south: retained'])
 })
+
+test('regeneration keeps explicit play-once preferences, including choices changed during frame publication', async () => {
+ const f = await fixture()
+ f.saved().manifest.rig.animations[0].loop = false
+ await f.run()
+ expect(f.saved().manifest.rig.animations[0].loop).toBe(false)
+ vi.restoreAllMocks()
+ const g = await fixture(), m = g.saved().manifest
+ m.rig.animations.push({ ...structuredClone(m.rig.animations[0]), id: 'cast' })
+ for (const item of m.items) item.layers[0].cells!.cast = structuredClone(item.layers[0].cells!.idle)
+ g.put.mockImplementation(async store => { if (store === 'blobs') for (const animation of g.saved().manifest.rig.animations) animation.loop = false })
+ await g.run()
+ expect(g.saved().manifest.rig.animations.map(a => [a.id, a.loop])).toEqual([['idle', false], ['cast', false]])
+})
 test('failed genuine measurements cannot publish a targeted replacement or invalidate prior equipment',async()=>{const f=await fixture(true);await expect(f.run()).rejects.toThrow('still fails body-pose');expect(f.put).not.toHaveBeenCalled();expect(f.update).not.toHaveBeenCalled();expect(f.saved()).toEqual(f.original)})
 test('invalid subset, new partial move and changed partial frame count are rejected before spending',async()=>{for(const change of [{dirs:[]},{dirs:['east','east']},{dirs:['bad']},{id:'cast',dirs:['east']},{action:'slash'}]){const f=await fixture();await expect(f.run(change)).rejects.toThrow();expect(f.enqueue).not.toHaveBeenCalled();vi.restoreAllMocks()}})
 test('selected direction costs distinguish body replacement from frozen-frame equipment repair',async()=>{const f=await fixture(),m=f.original.manifest;expect(moveDirections(m,['west','east'])).toEqual(['east','west']);expect(moveEstimate(m,{action:'idle',frames:4,items:['hat'],dirs:['east','west']}).gens).toBeCloseTo(12.8);expect(moveEstimate(m,{action:'idle',frames:4,items:['hat'],dirs:['west'],itemMethod:'grid'})).toMatchObject({body:0,items:10,gens:10})})

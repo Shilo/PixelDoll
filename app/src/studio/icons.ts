@@ -58,3 +58,4 @@ export { default as Copy } from '@lucide/svelte/icons/copy';
 export { default as Scaling } from '@lucide/svelte/icons/scaling';
 export { default as ListPlus } from '@lucide/svelte/icons/list-plus';
 export { default as ListMinus } from '@lucide/svelte/icons/list-minus';
+export { default as Settings2 } from '@lucide/svelte/icons/settings-2';

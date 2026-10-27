@@ -2,7 +2,7 @@
 // IndexedDB projects (M2/M3 records with a manifest) are written back in place; fixtures get a side record "dress-<source>".
 import { loadFixture } from '../compose/fixture.ts';
 import { loadProject, type StoredProject } from '../store/project.ts';
-import { stableStringify } from '../image/hash.ts';
+import { rigArtworkVersion } from '../rig/rig.ts';
 import * as db from '../store/db.ts';
 import type { Manifest, Material, Preset, Project, ZOverride } from '../store/manifest.ts';
 import { supportedFormat } from '../store/manifest.ts';
@@ -74,7 +74,7 @@ export async function saveSplit(id: string, m: Manifest, split: { oldHash: strin
     const cur = rec.manifest, cb = cur.items.find((i) => i.id === cur.rig.baseItem)!;
     if (cur.rig.baseHash === m.rig.baseHash && cur.rig.baseHash !== split.oldHash && cb.regions === base.regions) return rec; // another tab completed the same split
     if (cur.rig.baseHash !== split.oldHash && cur.rig.baseHash !== m.rig.baseHash) throw new Error('This character changed while preparing its colors. Open it again before editing.');
-    const receiptMatches = rec.moveRecovery?.bodyRigVersion === stableStringify({ rig: cur.rig, character: rec.character });
+    const receiptMatches = rec.moveRecovery?.bodyRigVersion === rigArtworkVersion(cur.rig, rec.character);
     cb.layers = structuredClone(base.layers);
     cb.regions = base.regions;
     cb.materials = [...base.materials];
@@ -83,7 +83,7 @@ export async function saveSplit(id: string, m: Manifest, split: { oldHash: strin
       cur.rig.baseHash = m.rig.baseHash;
       for (const it of cur.items) if (it.baseHash === split.oldHash) it.baseHash = m.rig.baseHash;
     }
-    if (receiptMatches && rec.moveRecovery) rec.moveRecovery = { ...rec.moveRecovery, bodyRigVersion: stableStringify({ rig: cur.rig, character: rec.character }) };
+    if (receiptMatches && rec.moveRecovery) rec.moveRecovery = { ...rec.moveRecovery, bodyRigVersion: rigArtworkVersion(cur.rig, rec.character) };
     return rec;
   });
 }

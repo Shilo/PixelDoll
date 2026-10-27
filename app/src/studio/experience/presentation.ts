@@ -4,7 +4,7 @@ import type { Img } from '../../lib/image/png.ts';
 import type { DirectionName, Item, Layer, Preset, Project, RigAnimation } from '../../lib/store/manifest.ts';
 import { directionInfo, directionLabel, dot, nearestDirection, unit, type Vector } from './movement.ts';
 
-export interface BodySequence { clip: string; direction: DirectionName; frames: RigAnimation['frames']; duration: number; loop: boolean }
+export interface BodySequence { clip: string; direction: DirectionName; frames: RigAnimation['frames']; duration: number }
 export interface Presentation {
   kind: 'animation' | 'still' | 'unavailable';
   moving: boolean;
@@ -116,7 +116,7 @@ export function buildPresentation(project: Project, options: PresentationOptions
         if (!validTimeline || !directions.includes(direction)) continue;
         const cells = animation.frames.map(frame => frame.cell);
         if (!complete(body, animation.id, direction, cells) || !cells.some(index => body.layers.some(layer => cell(layer, animation.id, direction, index).visible))) continue;
-        usable.set(direction, { clip: animation.id, direction, frames: animation.frames, duration, loop: animation.loop });
+        usable.set(direction, { clip: animation.id, direction, frames: animation.frames, duration });
       }
     }
   }
@@ -202,7 +202,7 @@ export function advancePlayback(presentation: Presentation, previous: PlaybackCl
   if (!sequence) return { key, elapsedMs: 0, duration: 0, cell: presentation.cell };
   const dt = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
   let elapsedMs = previous?.key === key ? (previous.duration > 0 ? previous.elapsedMs / previous.duration * sequence.duration : 0) + dt : 0;
-  elapsedMs = sequence.loop ? elapsedMs % sequence.duration : Math.min(elapsedMs, sequence.duration);
+  elapsedMs %= sequence.duration;
   let remaining = elapsedMs, cell = sequence.frames.at(-1)!.cell;
   for (const frame of sequence.frames) { if (remaining < frame.ms) { cell = frame.cell; break; } remaining -= frame.ms; }
   return { key, elapsedMs, duration: sequence.duration, cell };

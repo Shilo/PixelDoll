@@ -71,6 +71,9 @@ test('move input version detects same-body rig/reference changes while allowing 
   outfit.manifest.name = 'New name'
   outfit.manifest.presets = [{ id: 'new-outfit', name: 'New outfit', items: {}, variants: {} }]
   expect(moveRigVersion(outfit)).toBe(version)
+  const playback = structuredClone(original)
+  playback.manifest.rig.animations[0].loop = !playback.manifest.rig.animations[0].loop
+  expect(moveRigVersion(playback)).toBe(version)
   const rest = structuredClone(original)
   rest.manifest.rig.rest = { south: { image: hash, keypoints: [{ label: 'NOSE', x: 0.5, y: 0.5 }] } }
   expect(rest.manifest.rig.baseHash).toBe(original.manifest.rig.baseHash)

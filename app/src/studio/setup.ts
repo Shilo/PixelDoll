@@ -1,7 +1,7 @@
 // Paid setup is explicit, resumable through the same queue as creation, and commits only when every measurement exists.
 import { b64, joints, provOf, run, type Progress } from './create.ts';
 import { attachImportedRig, setupPlan } from '../lib/rig/setup.ts';
-import { DIRECTIONS, cellHash, type Keypoint } from '../lib/rig/rig.ts';
+import { DIRECTIONS, cellHash, retainPlaybackChoices, type Keypoint } from '../lib/rig/rig.ts';
 import { skeletonInput } from '../lib/rig/estimate.ts';
 import { png, routes } from '../lib/pixellab/routes.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
@@ -54,6 +54,7 @@ export async function setupCharacter(spec: SetupSpec, progress: (p: Progress) =>
   }
   await db.updateCharacter(spec.projectId, blobs, (current: StoredProject | undefined) => {
     if (!current || current.manifest.rig.baseHash !== spec.baseHash) throw new Error('The character changed during setup. Its current work has been kept.');
+    retainPlaybackChoices(result.manifest.rig, current.manifest.rig);
     current.manifest.rig = result.manifest.rig;
     current.manifest.items.find((i) => i.id === current.manifest.rig.baseItem)!.provenance = result.manifest.items.find((i) => i.id === result.manifest.rig.baseItem)!.provenance;
     current.character = { id, looks: spec.looks.trim() };

@@ -30,6 +30,7 @@ test('generated controller preserves playlist boundaries, independent dolls, bod
   expect(d.cell).toBe(1); d.update(80); expect(d.cell).toBe(0); expect(second.cell).toBe(1);
   expect([...d.nodes.keys()]).toContain(gdObjectName('hair~hat', 'main', gdCharacterKey(m)));
   expect(d.nodes.get(gdObjectName('hat', 'main', gdCharacterKey(m))).z).toBe(0);
+  d.update(280); expect(d.cell).toBe(1); // exactly one full 360 ms loop
   expect(() => d.play('walk', 'east')).toThrow('unavailable');
   expect(() => d.equip('body', null)).toThrow('invalid equipment');
   expect(() => d.equip('head', 'base')).toThrow('invalid equipment');

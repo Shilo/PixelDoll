@@ -94,12 +94,16 @@ test('generated Phaser loader preserves nonuniform repeated-frame timing and avo
   const loaded = await api.loadPaperdoll(h.scene, 'assets/hero');
   expect(h.animations.size).toBe(1);
   const animation = [...h.animations.values()][0];
+  expect(animation.repeat).toBe(-1);
   expect(animation.frames.map((f: any) => 1000 / animation.frameRate + f.duration)).toEqual([80, 180, 100]);
   expect(animation.frames.map((f: any) => f.frame)).toEqual(['walk_south_1', 'walk_south_0', 'walk_south_1']);
   expect(h.scene.load.queued[0].url).toBe('https://game.test/assets/hero/sources/body.png');
   expect(await api.loadPaperdoll(h.scene, 'assets/hero/')).toBe(loaded);
   await api.loadPaperdoll(h.scene, 'assets/other/');
   expect(h.animations.size).toBe(2);
+  m.rig.animations[0].loop = false;
+  await api.loadPaperdoll(h.scene, 'assets/once/');
+  expect([...h.animations.values()].at(-1).repeat).toBe(0);
 });
 
 test('concurrent scenes share a folder load through the game-global TextureManager', async () => {

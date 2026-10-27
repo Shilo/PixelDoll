@@ -225,7 +225,7 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string): Promi
       cells[id][dir] = [];
       for (const frame of frames) cells[id][dir]!.push(await put(frame.path));
     }
-    animations.push({ id, cells: n, loop: !/death|die|attack|punch|slash|hurt/i.test(rawId), frames: playlist(n, 100) });
+    animations.push({ id, cells: n, loop: true, frames: playlist(n, 100) });
   }
   const rest = images.get(cells[restId][directions[0]]![0]!)!;
   const view = meta.view ?? meta.character?.view ?? 'low top-down', template = meta.template_id ?? meta.character?.template_id ?? 'mannequin';

@@ -1,8 +1,7 @@
-import { stableStringify } from '../lib/image/hash.ts';
 import type { StoredProject } from '../lib/store/project.ts';
 import { mergeQa, summaryOf } from '../lib/items/qa-summary.ts';
 import { dropCut } from '../lib/compose/compose.ts';
-import type { DirectionName, Rig } from '../lib/rig/rig.ts';
+import { rigArtworkVersion, type DirectionName, type Rig } from '../lib/rig/rig.ts';
 import type { Skeleton } from '../lib/rig/skeleton.ts';
 import type { ItemQa, Manifest } from '../lib/store/manifest.ts';
 
@@ -62,4 +61,4 @@ export function clearMovePoseData(rig: Manifest['rig'], skeletons: Record<string
 
 /** Optimistic generation input version: excludes outfits/materials, includes same-body rig setup/reference changes. */
 export const moveRigVersion = (record: Pick<StoredProject, 'manifest' | 'character'>): string =>
-  stableStringify({ rig: record.manifest.rig, character: record.character });
+  rigArtworkVersion(record.manifest.rig, record.character);

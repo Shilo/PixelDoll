@@ -76,6 +76,16 @@ test('the rotations are the Default move; a ZIP animation named default steps as
   expect(m.rig.animations.map((a) => [a.id, a.cells])).toEqual([['default', 1], ['default-copy', 2]])
 })
 
+test('PixelLab animations default to looping regardless of their names', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  const clip = meta.states[0].frames.animations.walking
+  meta.states[0].frames.animations = Object.fromEntries(['jump', 'cast', 'swim', 'dance', 'death', 'attack', 'soldier-walk', 'custom'].map(name => [name, clip]))
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const animations = (await readCharacterZip(await zip(entries), id)).project.manifest.rig.animations
+  expect(animations).toHaveLength(9)
+  expect(animations.every(animation => animation.loop === true)).toBe(true)
+})
+
 test('PixelLab legacy root exports import; opaque cropping is refused', async () => {
   const entries = [{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Legacy' })) }, { name: 'rotations/south.png', data: await encodePngBytes(sprite(100)) }]
   expect((await readCharacterZip(await zip(entries))).project.manifest.name).toBe('Legacy')

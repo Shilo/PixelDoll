@@ -107,8 +107,10 @@ describe('production body presentation', () => {
     expect(renderPresentation(a, {}, resolveLive(a, { velocity: moving })).image).toBeNull();
   });
 
-  test('phase carries across facing and different timeline durations, with authored cell order and nonlooping endings', () => {
-    const a = buildPresentation(fixture(['south', 'east']));
+  test('phase carries across facing and timeline durations while export-only once choices keep previewing in a loop', () => {
+    const project = fixture(['south', 'east']);
+    project.manifest.rig.animations[0].loop = false;
+    const a = buildPresentation(project);
     const south = resolvePreview(a, { clip: 'walk', direction: 'south' });
     let clock = advancePlayback(south, null, 500);
     expect(clock.cell).toBe(0);
@@ -119,8 +121,9 @@ describe('production body presentation', () => {
     const carried = advancePlayback(stretched, clock, 0);
     expect(carried).toMatchObject({ elapsedMs: 300, cell: 0 });
     expect(advancePlayback(resolvePreview(a, { clip: 'idle', direction: 'south' }), carried, 0).elapsedMs).toBe(0);
-    const once = { ...south, sequence: { ...south.sequence!, loop: false } };
-    expect(advancePlayback(once, advancePlayback(once, null, 0), 9999)).toMatchObject({ elapsedMs: 300, cell: 1 });
+    expect(advancePlayback(south, advancePlayback(south, null, 0), 9999)).toMatchObject({ elapsedMs: 99, cell: 0 });
+    const live = resolveLive(a, { velocity: moving });
+    expect(advancePlayback(live, advancePlayback(live, null, 0), 9999)).toMatchObject({ elapsedMs: 99, cell: 0 });
   });
 
   test('pending loading suppresses missing coverage diagnostics', () => {

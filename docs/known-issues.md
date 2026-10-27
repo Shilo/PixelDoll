@@ -69,6 +69,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 
+## Exports
+
+- **Aseprite repeat metadata.** Play animation once exports tag repeat `1`; looping exports repeat `0`, which loops in the editor. Aseprite interprets `0` as unspecified for its own later export, so users must choose repetition there when exporting again. See [Aseprite tag repeats](https://www.aseprite.org/api/tag#tagrepeats).
+
 ## Imports
 
 - **No Default on older characters.** Characters saved before Default (and the demo) are not upgraded and have no Default

@@ -92,3 +92,27 @@ export async function deleteItem(id: string, itemId: string): Promise<void> {
     return rec;
   });
 }
+
+export type ExportSettingChange = { animation: string; loop: boolean } | { dressedCharacterSheets: boolean };
+
+/** Patch only the selected export preference, preserving concurrent outfits, artwork and other animation choices. */
+export function applyExportSetting(manifest: Manifest, change: ExportSettingChange): void {
+  if ('animation' in change) {
+    const animation = manifest.rig.animations.find(a => a.id === change.animation);
+    if (!animation) throw new Error(`Animation ${change.animation} no longer exists. Reopen Export.`);
+    if (typeof change.loop !== 'boolean') throw new Error('Animation loop must be true or false.');
+    animation.loop = change.loop;
+  } else {
+    if (typeof change.dressedCharacterSheets !== 'boolean') throw new Error('Include dressed character sheets must be true or false.');
+    manifest.exportSettings = { dressedCharacterSheets: change.dressedCharacterSheets };
+  }
+}
+
+export async function saveExportSetting(id: string, change: ExportSettingChange): Promise<void> {
+  await db.update<StoredProject>('projects', id, rec => {
+    if (!rec) throw new Error(`project ${id} not found`);
+    applyExportSetting(rec.manifest, change);
+    rec.savedAt = new Date().toISOString();
+    return rec;
+  });
+}

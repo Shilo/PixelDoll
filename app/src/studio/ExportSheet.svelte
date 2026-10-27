@@ -1,13 +1,14 @@
 <script lang="ts">
   // Export (M5): one engine at a time; the zip is built when the sheet opens so the button can name its size.
   import Sheet from './Sheet.svelte'
+  import { tick } from 'svelte'
   import { exportZip } from '../lib/export/export.ts'
   import { coverageGaps, moveDirs, storeVariants } from '../lib/dress/dress.ts'
   import * as db from '../lib/store/db.ts'
-  import type { StoredProject } from '../lib/store/project.ts'
+  import { applyExportSetting, saveExportSetting, type ExportSettingChange, type StoredProject } from '../lib/store/project.ts'
   import type { Engine, Manifest, Preset } from '../lib/store/manifest.ts'
   import { ui, doc, store, toast, isDemo } from './state.svelte.ts'
-  import { ChevronRight, Download, TriangleAlert } from './icons.ts'
+  import { ChevronLeft, ChevronRight, Download, Settings2, TriangleAlert, X } from './icons.ts'
 
   type Target = { id: Engine; name: string; sub: string; detail: string }
   // Product order for this layered 2D workflow; asset formats are useful across engines.
@@ -27,13 +28,46 @@
   const LS = 'pixeldoll.export.engine'
   let engine = $state<Engine>((() => { try { const saved = localStorage.getItem(LS); return ENGINES.find((e) => e.id === saved)?.id ?? 'godot' } catch { return 'godot' } })())
   const selected = $derived(ENGINES.find((target) => target.id === engine)!)
-  let baked = $state(true)
+  let settings = $state(false)
+  let saving = $state(false)
+  let saveError = $state('')
+  let content = $state<HTMLDivElement>()
+  let navigation: HTMLButtonElement
   let result = $state.raw<{ zip: Uint8Array | null; files: string[]; warnings: string[]; errors: string[]; rigIssues: string[] } | null>(null)
   let busy = $state(false)
   const m = $derived(store.project?.manifest)
+  const baked = $derived(m?.exportSettings?.dressedCharacterSheets ?? true)
+  const once = $derived(m?.rig.animations.filter(a => !a.loop) ?? [])
+  const playbackSummary = $derived(!once.length ? 'None' : once.length === m?.rig.animations.length ? 'All' : once.map(a => nice(a.id)).join(', '))
+  const outfits = $derived(m?.presets.filter(p => p.id !== 'current') ?? [])
+  const outfitSummary = $derived(!baked ? 'None' : outfits.length ? 'Current look + saved outfits' : 'Current look')
   const items = $derived(m ? m.items.filter((i) => i.slot !== 'body') : [])
   const reviewItems = $derived(m ? m.items.filter((i) => i.designWarnings?.length || (i.qa && i.qa.status !== 'pass')).map((i) => i.name) : [])
   const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
+  const PLAY_ONCE = 'Play animation once'
+  const DRESSED_SHEETS = 'Include dressed character sheets'
+  async function navigate() {
+    settings = !settings
+    await tick()
+    content?.closest('.sheet-body')?.scrollTo(0, 0)
+    navigation.focus()
+  }
+  async function changeSetting(input: HTMLInputElement, change: ExportSettingChange) {
+    const projectId = doc.id, checked = input.checked, demo = isDemo()
+    saving = true
+    saveError = ''
+    try {
+      if (!demo) await saveExportSetting(projectId, change)
+      if (doc.id === projectId && store.project) {
+        const manifest = structuredClone(store.project.manifest)
+        applyExportSetting(manifest, change)
+        store.project = { ...store.project, manifest }
+      }
+    } catch (e) {
+      input.checked = !checked
+      saveError = `Could not save export settings: ${e instanceof Error ? e.message : String(e)}`
+    } finally { saving = false }
+  }
   // B10 (T1 P1-1): views a move or an item doesn't have are empty in the sheets; say so before the download
   const gaps = $derived.by(() => {
     if (!m) return []
@@ -77,7 +111,7 @@
   const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`
   const kb = $derived(result?.zip ? Math.max(1, Math.round(result.zip.length / 1024)) : 0)
   function download() {
-    if (!result?.zip || !m) return
+    if (!result?.zip || !m || busy || saving) return
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([result.zip as Uint8Array<ArrayBuffer>], { type: 'application/zip' }))
     a.download = `${(store.projects.find((p) => p.id === doc.id)?.name ?? m.name).replace(/\s*\(demo\)/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${engine}.pixeldoll.zip`
@@ -88,14 +122,48 @@
   }
 </script>
 
-<Sheet title="Export" onclose={() => (ui.sheet = null)}>
+{#snippet exportFooter()}
+  <span class="foot-note">Free · includes an editable copy</span>
+  <button class="bu-action btn primary lg" data-variant="primary" onclick={download} disabled={busy || saving || !result?.zip}><Download size={16} />{busy ? 'Preparing…' : `Download ZIP · ${kb} KB`}</button>
+{/snippet}
+
+<Sheet title={settings ? 'Export settings' : 'Export'} className="export-sheet" onclose={() => (ui.sheet = null)} cancelDisabled={saving} footer={settings ? undefined : exportFooter}>
+  {#snippet leading()}
+    <button class="bu-action btn plain link" data-variant="quiet" bind:this={navigation} disabled={saving} onclick={navigate}>
+      {#if settings}<ChevronLeft size={16} aria-hidden="true" />Back{:else}<Settings2 size={16} aria-hidden="true" />Settings{/if}
+    </button>
+  {/snippet}
+  {#snippet trailing()}
+    <button class="bu-action btn plain link done" data-variant="quiet" aria-label="Close export" disabled={saving} onclick={() => (ui.sheet = null)}><X size={18} aria-hidden="true" /></button>
+  {/snippet}
+  {#key settings}
+  <div class="export-page" class:settings-page={settings} bind:this={content}>
+  {#if saveError}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{saveError}</p>{/if}
+  {#if settings}
+    <fieldset class="export-playback" aria-describedby="export-playback-description">
+      <legend class="label">{PLAY_ONCE}</legend>
+      <p class="muted small" id="export-playback-description">Stops selected animations after one play instead of looping.</p>
+      <div class="export-moves">
+        {#each m?.rig.animations ?? [] as a (a.id)}
+          <label class="bu-action bu-check export-move" data-variant="field" aria-disabled={saving}>
+            <span>{nice(a.id)}</span><input type="checkbox" checked={!a.loop} disabled={saving} onchange={(e) => changeSetting(e.currentTarget, { animation: a.id, loop: !e.currentTarget.checked })} />
+          </label>
+        {/each}
+      </div>
+    </fieldset>
+    <hr class="bu-separator export-divider" />
+    <label class="check export-dressed">
+      <input type="checkbox" checked={baked} disabled={saving} aria-label={DRESSED_SHEETS} aria-describedby="export-dressed-description" onchange={(e) => changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })} />
+      <span><span>{DRESSED_SHEETS}</span><span class="muted small" id="export-dressed-description">Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included.</span></span>
+    </label>
+  {:else}
   <fieldset class="export-picker" aria-label="Export format">
     {#each GROUPS as group (group.id)}
       <section aria-labelledby={`export-${group.id}`}>
         <h3 class="label" id={`export-${group.id}`}>{group.name}</h3>
         <div class="export-targets">
           {#each group.targets as e (e.id)}
-            <label class="export-target" title={e.detail}>
+            <label class="export-target">
               <span class="target-icon" aria-hidden="true" style:mask-image={`url("${import.meta.env.BASE_URL}icons/exports/${e.id}.svg")`}></span>
               <span class="target-label"><span class="engine-name">{e.name}</span><span class="engine-sub">{e.sub}</span></span>
               <input type="radio" name="export-format" value={e.id} bind:group={engine} aria-label={e.name} aria-describedby={engine === e.id ? 'export-description' : undefined} />
@@ -116,20 +184,46 @@
     {#each result.errors as e (e)}<p class="notice bad small"><TriangleAlert size={14} />{e}</p>{/each}
   {/if}
   {#each result?.warnings ?? [] as w (w)}<p class="notice warn small"><TriangleAlert size={14} />{w}</p>{/each}
+  <hr class="bu-separator export-divider" />
+  <section aria-labelledby="export-settings-summary">
+    <h3 class="label" id="export-settings-summary">Current settings</h3>
+    <dl class="export-summary small">
+      <dt>{PLAY_ONCE}</dt><dd>{playbackSummary}</dd>
+      <dt>{DRESSED_SHEETS}</dt><dd>{outfitSummary}</dd>
+    </dl>
+  </section>
   <details class="disclosure">
-    <summary><ChevronRight size={14} />Details</summary>
+    <summary><ChevronRight size={14} />Files included</summary>
     <div>
-      <label class="check"><input type="checkbox" bind:checked={baked} />Also export finished characters (one sheet per outfit)</label>
       {#if result}<p class="faint small">{result.files.length} files:</p><pre class="mono faint" style="max-height:160px;overflow:auto;margin:0">{result.files.join('\n')}</pre>{/if}
     </div>
   </details>
-  {#snippet footer()}
-    <span class="foot-note">Free · includes an editable copy</span>
-    <button class="bu-action btn primary lg" data-variant="primary" onclick={download} disabled={busy || !result?.zip}><Download size={16} />{busy ? 'Preparing…' : `Download ZIP · ${kb} KB`}</button>
-  {/snippet}
+  {/if}
+  </div>
+  {/key}
 </Sheet>
 
 <style>
+  :global(dialog.export-sheet) { height:min(680px,calc(100dvh - 32px)); }
+  .export-page { display:flex; flex-direction:column; gap:16px; min-width:0; animation:export-back 150ms ease-out; }
+  .settings-page { animation-name:export-forward; }
+  @keyframes export-forward { from { transform:translateX(12px); } to { transform:translateX(0); } }
+  @keyframes export-back { from { transform:translateX(-12px); } to { transform:translateX(0); } }
+  @media (prefers-reduced-motion:reduce) { .export-page { animation:none; } }
+  .export-playback { min-width:0; border:0; padding:0; margin:0; }
+  .export-playback legend { padding:0; margin-bottom:8px; }
+  .export-playback p { margin:0 0 12px; }
+  .export-moves { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .export-move { display:flex; justify-content:space-between; gap:10px; min-width:0; min-height:44px; padding:10px 12px; }
+  .export-move span { min-width:0; overflow-wrap:anywhere; }
+  .export-move input { flex:none; }
+  .export-dressed { align-items:flex-start; gap:10px; }
+  .export-dressed input { flex:none; margin-top:3px; }
+  .export-dressed > span { display:flex; flex-direction:column; gap:4px; min-width:0; }
+  .export-divider { width:100%; margin:0; }
+  .export-summary { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px 16px; margin:8px 0 0; }
+  .export-summary dt { color:var(--text-2); }
+  .export-summary dd { margin:0; overflow-wrap:anywhere; }
   .export-picker { border:0; padding:0; margin:0; min-width:0; display:flex; flex-direction:column; gap:16px; }
   .export-picker h3 { margin:0 0 8px; }
   .export-targets { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
@@ -147,5 +241,5 @@
     .export-target { grid-template-columns:24px minmax(0, 1fr) 16px; gap:8px; padding:10px; }
     .target-icon { width:24px; height:24px; }
   }
-  @media (max-width:359px) { .export-targets { grid-template-columns:1fr; } }
+  @media (max-width:359px) { .export-targets, .export-moves { grid-template-columns:1fr; } }
 </style>

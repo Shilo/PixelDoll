@@ -1,5 +1,5 @@
 // Rig contract (manifest-spec §2 `Rig`), per-cell hashes, baseHash and validation.
-import { sha256 } from '../image/hash.ts';
+import { sha256, stableStringify } from '../image/hash.ts';
 import type { Img } from '../image/png.ts';
 
 export type DirectionName = 'south' | 'south-east' | 'east' | 'north-east' | 'north' | 'north-west' | 'west' | 'south-west';
@@ -28,6 +28,7 @@ export interface RigAnimation {
   /** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
   directions?: DirectionName[];
   cells: number;
+  /** Explicit export playback preference. In-app previews and sharing always loop. */
   loop: boolean;
   frames: { cell: number; ms: number }[];
   source?: { endpoint: string; mode?: string; template_animation_id?: string; action_description?: string };
@@ -71,6 +72,15 @@ export async function baseHashOf(rig: Pick<Rig, 'directions' | 'animations'>, ha
 
 const ID = /^[a-z0-9][a-z0-9_-]*$/;
 
+/** Playback preferences do not change the artwork inputs of a pending generation or recovery. */
+export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
+  stableStringify({ rig: { ...rig, animations: rig.animations.map(({ loop: _loop, ...animation }) => animation) }, character });
+
+/** The latest export choices survive artwork/pose publication; genuinely new moves default to Loop. */
+export function retainPlaybackChoices(next: Rig, current: Rig): void {
+  for (const animation of next.animations) animation.loop = current.animations.find(a => a.id === animation.id)?.loop ?? true;
+}
+
 /** Invariants of a frozen rig. Returns human-readable errors (empty = valid). */
 export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[] {
   const e: string[] = [];
@@ -90,6 +100,7 @@ export function validateRig(rig: Rig, hashes?: Record<string, Sha256>): string[]
   for (const a of rig.animations) {
     if (!ID.test(a.id)) e.push(`animation id "${a.id}" must match ${ID}`);
     if (!Number.isInteger(a.cells) || !(a.cells >= 1)) e.push(`${a.id}: no cells`);
+    if (typeof a.loop !== 'boolean') e.push(`${a.id}: loop must be true or false`);
     if (!a.frames.length) e.push(`${a.id}: empty playlist`);
     for (const f of a.frames) if (!Number.isInteger(f.cell) || !(f.cell >= 0 && f.cell < a.cells) || !Number.isInteger(f.ms) || f.ms <= 0) e.push(`${a.id}: bad frame ${JSON.stringify(f)}`);
   }

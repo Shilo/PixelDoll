@@ -2,6 +2,7 @@ import { expect, test, vi } from 'vitest'
 import type { Manifest } from '../../src/lib/store/manifest.ts'
 import { saveDress, saveSplit } from '../../src/lib/dress/project.ts'
 import { deleteItem, type StoredProject } from '../../src/lib/store/project.ts'
+import { rigArtworkVersion } from '../../src/lib/rig/rig.ts'
 
 const { records } = vi.hoisted(() => ({ records: new Map<string, unknown>() }))
 vi.mock('../../src/lib/store/db.ts', () => ({
@@ -16,7 +17,7 @@ vi.mock('../../src/lib/store/db.ts', () => ({
 function record() {
   const material = (owner: string) => ({ id: `${owner}_1`, owner, label: 'Cloth', ramp: ['#112233'], variants: {} })
   return { id: 'rig-test', manifest: { items: [{ id: 'base', materials: ['base_1'] }, { id: 'hat', materials: ['hat_1'] }],
-    materials: [material('base'), material('hat')], slots: [{ id: 'head' }], rig: { baseItem: 'base' },
+    materials: [material('base'), material('hat')], slots: [{ id: 'head' }], rig: { baseItem: 'base', animations: [{ id: 'idle', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }] },
     presets: [{ id: 'look', items: { body: 'base', head: 'hat' }, variants: { hat_1: 'gold' } }],
   }, dress: { current: { items: { head: 'hat' }, variants: { hat_1: 'gold' } } } } as unknown as StoredProject & { dress: { current: { items: Record<string, string | null>; variants: Record<string, string> } } }
 }
@@ -65,20 +66,18 @@ test('region preparation cannot overwrite a newer frozen base, and metadata-only
 })
 
 test('legitimate color-region preparation advances only the exact current body publication receipt', async () => {
-  const { stableStringify } = await import('../../src/lib/image/hash.ts')
   const live = record(); live.manifest.rig.baseHash = 'sha256:before'; live.character = { id: 'managed', looks: 'body' }
-  live.moveRecovery = { id: 'consent', originalRigVersion: 'original', bodyRigVersion: stableStringify({ rig: live.manifest.rig, character: live.character }), specHash: 'exact-spec' }
+  live.moveRecovery = { id: 'consent', originalRigVersion: 'original', bodyRigVersion: rigArtworkVersion(live.manifest.rig, live.character), specHash: 'exact-spec' }
   const incoming = structuredClone(live.manifest); incoming.rig.baseHash = 'sha256:regions'; incoming.items[0].regions = 'shirt-shorts'
   records.set(live.id, live)
   await saveSplit(live.id, incoming, { oldHash: 'sha256:before', images: new Map() })
   const next = records.get(live.id) as StoredProject
-  expect(next.moveRecovery).toEqual({ ...live.moveRecovery, bodyRigVersion: stableStringify({ rig: next.manifest.rig, character: next.character }) })
+  expect(next.moveRecovery).toEqual({ ...live.moveRecovery, bodyRigVersion: rigArtworkVersion(next.manifest.rig, next.character) })
   expect(next.moveRecovery?.bodyRigVersion).not.toBe(live.moveRecovery.bodyRigVersion)
 })
 test('a stale body receipt cannot be blessed by a later color-region split', async () => {
-  const { stableStringify } = await import('../../src/lib/image/hash.ts')
   const live = record(); live.manifest.rig.baseHash = 'sha256:before'
-  live.moveRecovery = { id: 'consent', originalRigVersion: 'original', bodyRigVersion: stableStringify({ rig: live.manifest.rig, character: live.character }), specHash: 'exact-spec' }
+  live.moveRecovery = { id: 'consent', originalRigVersion: 'original', bodyRigVersion: rigArtworkVersion(live.manifest.rig, live.character), specHash: 'exact-spec' }
   const receipt = structuredClone(live.moveRecovery)
   live.manifest.rig.rest = { south: { image: 'sha256:changed-reference', keypoints: [] } }
   const incoming = structuredClone(live.manifest); incoming.rig.baseHash = 'sha256:regions'; incoming.items[0].regions = 'shirt-shorts'
@@ -86,7 +85,7 @@ test('a stale body receipt cannot be blessed by a later color-region split', asy
   await saveSplit(live.id, incoming, { oldHash: 'sha256:before', images: new Map() })
   const next = records.get(live.id) as StoredProject
   expect(next.moveRecovery).toEqual(receipt)
-  expect(next.moveRecovery?.bodyRigVersion).not.toBe(stableStringify({ rig: next.manifest.rig, character: next.character }))
+  expect(next.moveRecovery?.bodyRigVersion).not.toBe(rigArtworkVersion(next.manifest.rig, next.character))
 })
 
 

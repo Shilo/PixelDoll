@@ -18,6 +18,8 @@ export interface Manifest {
   slots: Slot[]; // array order = tie-break for equal z
   items: Item[]; // includes the base (slot "body")
   presets: Preset[]; // presets[0] = default
+  /** Export choices saved with the editable character; absent means dressed sheets are included. */
+  exportSettings?: { dressedCharacterSheets: boolean };
   export?: ExportInfo;
 }
 

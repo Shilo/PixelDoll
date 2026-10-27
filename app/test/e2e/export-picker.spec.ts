@@ -1,7 +1,145 @@
-import { noDisabledHover, openStudio } from './immersive-helpers.ts'
-import { expect, test } from '@playwright/test'
+import { enterStudio, noDisabledHover, openStudio } from './immersive-helpers.ts'
+import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
+
+async function savedExport(page: Page, dev: string) {
+  await page.setViewportSize({ width: 800, height: 600 }) // Eight parallel settings runs do not need eight full-size animated worlds.
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.route('https://*.pixellab.ai/**', route => route.abort())
+  await openStudio(page, dev)
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', createPath = '/src/studio/create.ts', rigPath = '/src/lib/rig/rig.ts'
+    const state = await import(statePath), { saveCopy } = await import(createPath), { baseHashOf } = await import(rigPath)
+    const source = state.store.project, manifest = structuredClone(source.manifest)
+    const body = manifest.items.find((item: { id: string }) => item.id === manifest.rig.baseItem)
+    // The real demo is covered by the existing export tests. Settings need only two small clips and saved outfits.
+    manifest.items = [body]; manifest.slots = manifest.slots.filter((slot: { id: string }) => slot.id === body.slot)
+    manifest.materials = manifest.materials.filter((material: { owner: string }) => material.owner === body.id)
+    manifest.presets = manifest.presets.map((preset: object) => ({ ...preset, items: { body: body.id }, variants: {} }))
+    manifest.rig.directions = [{ id: 'south' }]; delete manifest.rig.rest; delete manifest.rig.anchors
+    const hashes: Record<string, string> = {}, used = new Set<string>()
+    for (const animation of manifest.rig.animations) {
+      animation.cells = 2; animation.loop = true; animation.frames = [{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }]; delete animation.sources
+      for (const layer of body.layers) {
+        layer.cells[animation.id] = { south: layer.cells[animation.id].south.slice(0, 2) }
+        layer.cells[animation.id].south.forEach((hash: string, index: number) => { used.add(hash); hashes[`${animation.id}/south/${index}`] = hash })
+      }
+    }
+    manifest.rig.baseHash = await baseHashOf(manifest.rig, hashes); body.baseHash = manifest.rig.baseHash
+    const images = new Map([...source.images].filter(([hash]) => used.has(hash)))
+    const id = await saveCopy({ manifest, images }, 'Export settings test')
+    await state.refreshProjects(); await state.openProject(id)
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+}
+
+test('Export settings persist explicit None, list and All choices, and toggle combined sheets in downloaded ZIPs', async ({ page }, info) => {
+  const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+  await savedExport(page, dev)
+  const dialog = page.getByRole('dialog'), summary = dialog.locator('.export-summary dd')
+  const openSettings = async () => { await dialog.getByRole('button', { name: 'Settings', exact: true }).click(); await expect(dialog).toHaveAccessibleName('Export settings') }
+  const back = async () => { await dialog.getByRole('button', { name: 'Back', exact: true }).click(); await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeFocused() }
+  await openSettings()
+  const moves = dialog.locator('.export-moves input'), count = await moves.count()
+  expect(count).toBeGreaterThan(1)
+  for (let i = 0; i < count; i++) { await moves.nth(i).uncheck(); await expect(moves.nth(i)).toBeEnabled() }
+  await back(); await expect(summary.nth(0)).toHaveText('None')
+  await openSettings()
+  const firstName = await dialog.locator('.export-move span').first().innerText()
+  await moves.first().check(); await expect(moves.first()).toBeEnabled()
+  await back(); await expect(summary.nth(0)).toHaveText(firstName)
+  await openSettings()
+  for (let i = 0; i < count; i++) { await moves.nth(i).check(); await expect(moves.nth(i)).toBeEnabled() }
+  const dressed = dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
+  await expect(dressed).toHaveAccessibleDescription('Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included.')
+  await dressed.uncheck(); await expect(dressed).toBeEnabled()
+  await back(); await expect(summary).toHaveText(['All', 'None'])
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(() => location.reload())
+  await enterStudio(page)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(summary).toHaveText(['All', 'None'])
+  await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check()
+  const downloadZip = async () => {
+    const button = dialog.getByRole('button', { name: /^Download ZIP/ }); await expect(button).toBeEnabled()
+    const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
+    return unzip(new Uint8Array(await readFile((await download.path())!)))
+  }
+  const off = await downloadZip(), manifest = JSON.parse(new TextDecoder().decode(off.get('manifest.json')!))
+  expect(manifest.rig.animations.every((a: { loop: boolean }) => a.loop === false)).toBe(true)
+  expect(manifest.presets.length).toBeGreaterThan(1)
+  expect([...off.keys()].some(name => name.startsWith('baked/'))).toBe(false)
+  expect([...off.keys()].some(name => name.startsWith('layers/'))).toBe(true)
+  expect(JSON.parse(new TextDecoder().decode(off.get('project.json')!)).manifest.exportSettings.dressedCharacterSheets).toBe(false)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await openSettings()
+  for (let i = 0; i < count; i++) { await moves.nth(i).uncheck(); await expect(moves.nth(i)).toBeEnabled() }
+  await dressed.check(); await expect(dressed).toBeEnabled()
+  await back(); await expect(summary).toHaveText(['None', 'Current look + saved outfits'])
+  await dialog.getByText('Files included', { exact: true }).click()
+  await expect(dialog.locator('pre')).toContainText('baked/current/')
+  const on = await downloadZip()
+  expect([...on.keys()].some(name => name.startsWith('baked/current/'))).toBe(true)
+  expect(JSON.parse(new TextDecoder().decode(on.get('manifest.json')!)).rig.animations.every((a: { loop: boolean }) => a.loop === true)).toBe(true)
+})
+
+test('Export settings show storage failures without changing the choice or trapping navigation', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.locator('.export-summary dd')).toHaveCount(2)
+  const before = await dialog.locator('.export-summary dd').allTextContents()
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  const input = dialog.locator('.export-moves input').first(), checked = await input.isChecked()
+  await page.evaluate(() => {
+    const studio = (window as unknown as { __studio: { doc: { id: string } } }).__studio, original = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, key) {
+      if (this.name === 'projects' && key === studio.doc.id) { IDBObjectStore.prototype.put = original; throw new Error('Synthetic settings write failure') }
+      return original.call(this, value, key)
+    }
+  })
+  await input.click() // Failed persistence immediately restores the old checkbox state.
+  await expect(dialog.getByRole('alert')).toContainText('Synthetic settings write failure')
+  await expect(input).toBeEnabled()
+  if (checked) await expect(input).toBeChecked(); else await expect(input).not.toBeChecked()
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+  await expect(dialog.locator('.export-summary dd')).toHaveText(before)
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  await expect(dialog).toHaveCount(0)
+})
+
+test('Export navigation and settings fit phones, landscape and both themes, including a character without saved outfits', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', state = await import(path), project = state.store.project
+    state.store.project = { ...project, manifest: { ...project.manifest, presets: [] } }
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.locator('.export-summary dd').nth(1)).toHaveText('Current look')
+  for (const theme of ['light', 'dark']) for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }]) {
+    await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme)
+    await page.setViewportSize(viewport)
+    const close = dialog.getByRole('button', { name: 'Close export' }), settings = dialog.getByRole('button', { name: 'Settings', exact: true })
+    const closeBefore = await close.boundingBox(), nav = await settings.boundingBox()
+    expect(nav!.x + nav!.width).toBeLessThan(closeBefore!.x)
+    await settings.click()
+    await expect(dialog.getByRole('group', { name: 'Play animation once' })).toBeVisible()
+    const closeAfter = await close.boundingBox()
+    expect(closeAfter!.x).toBeCloseTo(closeBefore!.x, 0)
+    expect(closeAfter!.y).toBeCloseTo(closeBefore!.y, 0)
+    expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    await expect(dialog.locator('[title]')).toHaveCount(0)
+    await dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true }).scrollIntoViewIfNeeded()
+    await expect(dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })).toBeVisible()
+    await page.screenshot({ path: info.outputPath(`export-settings-${theme}-${viewport.width}.png`) })
+    await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+    await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeVisible()
+  }
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeFocused()
+})
 
 test('Share preview and downloaded GIF loop continuously for a one-shot move', async ({ page, context }, testInfo) => {
   await context.route('https://api.pixellab.ai/**', route => route.abort())
