@@ -153,9 +153,10 @@ const follower = (waits?: () => void) => {
   afterTakeOver = waits ?? null;
   ui.waitingForTab = !!waits;
   ui.sheet = 'activity';
+  if (waits) queue.requestHandoff(); // an idle leader tab hands the jobs over at once
   return true;
 };
-export function cancelWaitingForTab() { afterTakeOver = null; ui.waitingForTab = false; }
+export function cancelWaitingForTab() { afterTakeOver = null; ui.waitingForTab = false; queue.requestHandoff(false); }
 
 /** Run a spending action; without a key the Connect sheet opens first and the action runs once a key is set. */
 export function withKey(fn: () => void, requiresRig = false) {
@@ -435,9 +436,16 @@ export function deletionBlocked(): string {
   if (doc.loading) return 'Wait for the character to finish loading.';
   if (queue.role === 'follower') return 'Manage characters in the other PixelDoll tab, or close it first.';
   if (equipment.fits.some((f) => f.targetId === doc.id && f.stage !== 'accepted' && f.stage !== 'discarded')) return 'Finish or discard this character’s equipment fits in Activity before deleting it.';
-  if (!queue.idle() || gens.some((g) => g.phase === 'running') || settling.size || (creating.spec && !creating.projectId) || (moving.spec && !moving.done) || (settingUp.spec && !settingUp.done)) return 'Finish or dismiss pending generation work before deleting a character.';
+  if (!workIdle()) return 'Finish or dismiss pending generation work before deleting a character.';
   return '';
 }
+/** Nothing of this tab's generation work is running or holding the queue (a failed create or move holds it). */
+function workIdle() {
+  return queue.idle() && !gens.some((g) => g.phase === 'running') && !settling.size && !(creating.spec && !creating.projectId)
+    && !(moving.spec && !moving.done) && !(settingUp.spec && !settingUp.done) && !equipment.preparing.length
+    && !equipment.fits.some((f) => f.stage.endsWith('running'));
+}
+queue.canYield = workIdle;
 
 export async function removeProject(): Promise<void> {
   await refreshFits(); // Persisted drafts may have changed in another tab since the menu opened.
@@ -644,6 +652,8 @@ queue.subscribe((s) => {
     cancelWaitingForTab();
     run?.();
   }
+  // This tab handed the jobs to another (only ever while idle): mirror its drafts again, and take over again later.
+  if (s.role === 'follower' && driving) { driving = false; takingOver = false; }
   if (!gensReady || driving) return;
   if (s.role !== 'follower') { void takeOver(); return; }
   if (Date.now() - mirrorAt < 2000) return;

@@ -1052,7 +1052,7 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
 })
 
 
-test('a follower explains blocked Create above the modal, preserves its draft and continues it once the other tab closes',async ({ page, context }) => {
+test('Create in a second tab takes the jobs from the idle first tab at once and preserves its draft', async ({ page, context }) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', (r) => { requests.push(r.request().method()); return r.abort() })
   await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
@@ -1072,20 +1072,18 @@ test('a follower explains blocked Create above the modal, preserves its draft an
   await create.getByRole('textbox', { name: 'Details', exact: true }).fill('a cheerful copper clockwork scout')
   await create.getByRole('button', { name: 'Side-scroller 2', exact: true }).click()
   await create.getByRole('button', { name: /^Create/ }).click()
-  const activity = follower.getByRole('dialog', { name: 'Activity', exact: true })
-  await expect(activity).toBeVisible()
-  await expect(activity).toContainText('running jobs in another tab')
-  await expect(activity).toContainText('Close that tab and it starts here, or press Done to cancel.')
-  await expect(follower.getByRole('dialog', { name: 'New character', exact: true })).toHaveCount(0)
-  await activity.getByRole('button', { name: 'Done', exact: true }).click()
+  // The first tab runs nothing, so it hands the jobs over and the click continues here (no key: Connect).
+  // A busy first tab keeps them and the click waits in Activity (unit and queue self-tests).
+  const connect = follower.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
+  await expect(connect).toBeVisible({ timeout: 15000 })
+  await expect(follower.getByRole('dialog', { name: 'Activity', exact: true })).toHaveCount(0)
+  await page.getByRole('button', {name:'More options',exact:true}).click()
+  await expect(page.locator('#experience-options')).toContainText('Other tab')
+  await page.keyboard.press('Escape')
+  await connect.getByRole('button', { name: 'Cancel', exact: true }).click()
   create = await openCreate()
   await expect(create.getByRole('textbox', { name: 'Details', exact: true })).toHaveValue('a cheerful copper clockwork scout')
   await expect(create.getByRole('button', { name: 'Side-scroller 2', exact: true })).toHaveAttribute('aria-pressed', 'true')
-  // Done canceled the first click; this one waits and continues by itself (no key: Connect) once the other tab closes
-  await create.getByRole('button', { name: /^Create/ }).click()
-  await expect(activity).toContainText('Close that tab and it starts here')
-  await page.close()
-  await expect(follower.getByRole('dialog', { name: 'Connect PixelLab', exact: true })).toBeVisible({ timeout: 15000 })
   expect(requests).toEqual([])
 })
 

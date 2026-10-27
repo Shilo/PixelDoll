@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), update: vi.fn(), clear: vi.fn(), subscribe: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), update: vi.fn(), clear: vi.fn(), subscribe: vi.fn(), handoff: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
@@ -13,7 +13,7 @@ vi.mock('../../src/lib/equipment/fits.ts', async original => ({ ...await origina
 
 vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del, update: mocks.update }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
-vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', subscribe: mocks.subscribe, idle: () => true, clearFinished: mocks.clear } }))
+vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', subscribe: mocks.subscribe, requestHandoff: mocks.handoff, idle: () => true, clearFinished: mocks.clear } }))
 
 function stubGlobals() {
   // Isolate asynchronous controller logic; no rendering or Svelte reactivity is under test.
@@ -594,6 +594,7 @@ describe('move queue', () => {
     s.withKey(run)
     expect(run).not.toHaveBeenCalled()
     expect([s.ui.sheet, s.ui.waitingForTab]).toEqual(['activity', true])
+    expect(mocks.handoff).toHaveBeenCalledWith() // asks an idle leader tab to hand over now
     notify({ role: 'follower' })
     expect(run).not.toHaveBeenCalled()
     queue.role = 'leader'; notify({ role: 'leader' })
@@ -603,8 +604,24 @@ describe('move queue', () => {
     queue.role = 'leader'; notify({ role: 'leader' })
     expect(run).toHaveBeenCalledOnce()
     queue.role = 'follower'; s.withKey(run); s.cancelWaitingForTab()
+    expect(mocks.handoff).toHaveBeenLastCalledWith(false)
     queue.role = 'leader'; notify({ role: 'leader' })
     expect(run).toHaveBeenCalledOnce()
+  })
+
+  test('this tab offers its jobs to another tab only while none of its generation work runs', async () => {
+    storage()
+    const running = pending<typeof done>()
+    mocks.move.mockReturnValueOnce(running.promise)
+    const s = await import('../../src/studio/state.svelte.ts')
+    const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { canYield: () => boolean } }
+    expect(queue.canYield()).toBe(true)
+    const queued = s.queueMoves('project', [idle])
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+    expect(queue.canYield()).toBe(false)
+    running.resolve(done)
+    await queued
+    await vi.waitFor(() => expect(queue.canYield()).toBe(true))
   })
 
   test('moves already running or queued for an item are pending for it, so it is not offered them at a second price', async () => {
