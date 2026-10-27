@@ -24,5 +24,5 @@
 </script>
 
 {#if specs.length}
-  <span class="api-action"><ApiPeek scope="moves-base" label="Add {label}" plan={specs.flatMap((spec, i) => movePlan(rec, spec).filter((call) => i === specs.length - 1 || !call.background))} /><button class="bu-action btn" data-variant="outline" onclick={add}><Plus size={16} />Add {label} <span class="cost">Est. {gens} gens</span></button></span>
+  <span class="api-action base-moves"><ApiPeek scope="moves-base" label="Add {label}" plan={specs.flatMap((spec, i) => movePlan(rec, spec).filter((call) => i === specs.length - 1 || !call.background))} /><button class="bu-action btn" data-variant="outline" onclick={add}><Plus size={16} />Add {label} <span class="cost">Est. {gens} gens</span></button></span>
 {/if}

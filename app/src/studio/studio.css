@@ -304,6 +304,7 @@ dialog.sheet.bottom .sheet-foot .btn.primary { width: 100%; }
 dialog.sheet.bottom .sheet-foot .api-action > .btn.primary { width:auto; flex:1; }
 dialog.sheet.bottom.character-sheet .sheet-foot { flex-direction:row; flex-wrap:wrap; align-items:center; gap:8px; padding-inline:16px; }
 dialog.sheet.bottom.character-sheet .sheet-foot .api-action { flex:1; justify-content:flex-end; }
+dialog.sheet.bottom.character-sheet .sheet-foot .base-moves { flex-basis:100%; } /* its own row: beside the note it wraps mid-price */
 dialog.sheet.bottom.character-sheet .sheet-foot .creator-cost { font-size:11px; }
 @media (max-width:599px), (max-height:499px) {
   .character-sheet:has(.character-name) .sheet-head { grid-template-columns:auto minmax(0,1fr); gap:8px; }
