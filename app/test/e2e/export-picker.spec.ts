@@ -1,5 +1,5 @@
 import { openStudio } from './immersive-helpers.ts'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
 
@@ -69,6 +69,17 @@ test('Share popover follows the selected move, direction and Animate switch on d
       if (index) expect(left).toBeGreaterThanOrEqual(buttons[index - 1][1])
     }
   }
+  const disabledSurface = (locator: Locator) => locator.evaluate(element => {
+    const style = getComputedStyle(element)
+    return { background: style.backgroundColor, border: style.borderColor, color: style.color, cursor: style.cursor }
+  })
+  const noDisabledHover = async (locator: Locator) => {
+    await page.mouse.move(0, 0)
+    const resting = await disabledSurface(locator)
+    await locator.hover()
+    expect(await disabledSurface(locator)).toEqual(resting)
+    expect(resting.cursor).toBe('not-allowed')
+  }
   const desktopLayout = await geometry()
   const desktopMove = (await popover.getByRole('combobox', { name: 'Move' }).boundingBox())!
   const desktopSwitch = (await popover.locator('.share-animate').boundingBox())!
@@ -85,6 +96,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await fixedLayout(desktopLayout)
   await expect(popover.getByRole('switch')).toBeDisabled()
   await expect(popover.getByRole('switch')).not.toBeChecked()
+  await noDisabledHover(popover.locator('.share-animate'))
   await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
   await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk')
   await expect(popover.getByRole('switch')).toBeEnabled()
@@ -220,6 +232,13 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await expect(page.locator('.header-export')).toBeVisible()
   await page.getByRole('button', { name: 'More options' }).click()
   await expect(page.getByRole('button', { name: 'Export game assets' })).toHaveCount(0)
+  const disabledRedo = page.locator('.mobile-redo')
+  await expect(disabledRedo).toBeDisabled()
+  await noDisabledHover(disabledRedo)
+  await page.getByRole('button', { name: 'Inspect all API calls' }).click()
+  const disabledCopy = page.getByRole('button', { name: 'Copy all calls' })
+  await expect(disabledCopy).toBeDisabled()
+  await noDisabledHover(disabledCopy)
   expect(errors).toEqual([])
   expect(apiRequests).toEqual([])
 })
