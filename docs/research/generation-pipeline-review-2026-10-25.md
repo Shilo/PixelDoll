@@ -1,6 +1,6 @@
 # Generation pipeline review and plan (2026-10-25)
 
-Status: **proposal, nothing implemented in the app; experiments spent 94.1 generations (§13) plus 937 in rounds 8–9 (§15–§16). Skeleton-v3 is deferred by the owner (§15); the skeleton-free route is §16.6.** The owner's concerns are recorded with verdicts in §1
+Status: **round 10 is implemented and merged (§17). §18 has the current verdicts, open concerns and deferred cards. Skeleton-v3 stays for now and is deferred for replacement (§15); the skeleton-free route is §16.6. Experiments spent 94.1 generations (§13) plus 937 in rounds 8–9 (§15–§16); live checks spent 82.55 (§17, §18).** The owner's concerns are recorded with verdicts in §1
 (round 1), §8 (round 2), §9 (round 3), §10 (round 4, the bottleneck), §11 (round 5, the approach decision), §12 (round 6, a friend's PixelLab vs Godot comparison), §13 (round 7, experiment results), §15 (round 8, mocap move library; skeleton-v3 deferred) and §16 (round 9, the skeleton-free route); the plan is §4–§7 as revised by §10.5 and §11.4, superseded for moves and items by §16.6. Branch `claude/peaceful-robinson-0f1148` (rounds 1–7 started on `claude/paper-doll-system-optimization-c411d9`, uncommitted there).
 Sources: a code trace of `app/src` (file:line refs below), the live PixelLab OpenAPI and docs (same 102 paths as
 [pixellab-openapi-v2.json](pixellab/pixellab-openapi-v2.json)), and our own measurements (S1–S5, the 2026-10-25 campaign
@@ -964,3 +964,152 @@ tests that failed once each (import cancel, free color matching) pass 8/8 on rep
 | Dismissing a failed move dropped other characters' queued moves | **Valid** | Only that character's queue is dropped; others continue. |
 | Stale known issue, orphaned comment, "1 frames", "idle missing — showing default" on new characters, "Take off, pressed", raw plan-skip text, StageNote bypassing the queue | **Valid** (minor) | Fixed. |
 | An old in-flight creation resumes as Default-only; Top-down 4 vs 8 | Unreproduced | Documented only. |
+
+## 18. Status after the merge, open concerns and next work (2026-10-27)
+
+Everything from round 10 (§17) and the follow-up fixes is merged and pushed (`main` at `607737e2`, CI and Pages).
+
+**Checks on that commit:**
+- `npm run check` is clean.
+- 878 unit tests pass (1 skipped).
+- The full e2e suite passes 123/123.
+
+A live check spent 12.25 gens: one item on a new Default-first character, verified on the Default pose, in Share and in
+export.
+
+### 18.1 The owner's ten concerns: verdicts
+
+| # | Concern | Verdict | What is true now |
+|---|---|---|---|
+| 1 | Too many calls | **Partly fixed** | Creation makes 2 paid calls (draw, re-import) plus a free keypoint read, down from 117. Idle + walk still make ~115 calls and ~55 gens, now optional and queued. Items are unchanged: 6 calls worn, 12 held. |
+| 2 | Wrong endpoints | **Researched, deferred** | `create-character-state` edits standing views only. `edit-animation-v2` takes 16/9/4 frames, not 3. `edit-images-v2` moves the body (rejected). The best skeleton-free dresser is `edit-animation-v2` on the real frames (§16.4). Not switched, because it depends on the skeleton decision. |
+| 3 | Skeleton overuse | **Partly fixed** | Creation reads PixelLab's rotation keypoints and estimates only missing ones. Moves still run managed walk → estimates → raw re-render, and those estimates also feed item cuts. Replacing skeleton-v3 is deferred. |
+| 4 | Simpler workflow | **No change** | The item route already works this way: create, key color, dress, key out, save. Choosing the dresser by size is deferred. |
+| 5 | Size cap | **Not a bug** | Body 32–256 px in 4 px steps (typed; 48/64/96/128 are shortcuts). 256 is PixelLab's maximum on every tier. Large sizes cost more (4 frames per dress call above 80 px). |
+| 6 | Weapons moved by code | **Partly fixed** | PixelLab draws every weapon frame. Our code nudges frames ±1 px and closes ≤ 2 px grip gaps. On near-still frames where the weapon vanished, it pastes the standing weapon (shifted, never rotated); those frames now raise a review warning. |
+| 7 | Items made from the standing pose | **No change, deferred** | See 18.2. |
+| 8 | Too slow | **Improved** | Creation takes ~4 min instead of 12–19 (live: 4 min, 2.25 gens). Static idle hair is by design (idle moves 0–1 px); deferred. |
+| 9 | Live streaming | **Done** | The Default pose shows at once and moves queue. Item directions stream per call, items can be worn while loading, and review is optional. Not verified: whether body moves stream per direction. |
+| 10 | Other concerns | **Deferred** | See 18.4. |
+
+### 18.2 Posing items versus dressing the real frames
+
+Both routes have PixelLab draw the item. The difference is **which body it draws on**.
+
+- **Today (pose):**
+  - The item is dressed once on the green standing views (`edit-animation-v2`).
+  - Then, per direction, `animate-with-skeleton-v3` redraws the **whole dressed green body** in every pose of the move,
+    from the same keypoints the bare body was rendered from.
+  - The item layer is cut from that new render and laid over the bare body's own frames.
+
+  These are sibling renders, so they agree only to about ±1–3 px at the hands and feet (§11.1). The item also moves
+  exactly as stiffly as the skeleton motion.
+- **Dressing the real frames:**
+  - The bare body's actual animation frames are recolored green.
+  - They are sent to `edit-animation-v2`, with the dressed standing view as the anchor.
+  - The editor adds the item onto **those exact frames**, so it fits the body that is shown, and cloth follows that
+    frame's motion (the cloak swayed with the stride, §16.4).
+
+**Cost:**
+- A pose call is 3 gens for up to 12 frames (idle 4 + walk 8 in one call).
+- `edit-animation-v2` is 10 gens per 8 frames at ≤ 80 px, and takes only 4 frames per call above that.
+- A worn item for idle + walk in 3 drawn directions is ≈ 25 gens today, against ≈ 70 dressed on the real frames (§16.6).
+
+**Quality is better in some ways and worse in others. It was not measured head-to-head on the same body.**
+- **Better:**
+  - It fits the shown body exactly.
+  - Cloth moves naturally.
+- **Worse:**
+  - Each call can redraw the design a little: palette distance about 8 from the anchor, against 0.4–1.3 for posing
+    (§11.3, §16.4).
+  - Hair painted over part of the face, so hair and helmets would use a free tracked paste instead.
+  - Dressing a sword onto an unarmed attack added a second sword, so weapons would use the armed-then-split route
+    (§16.3).
+
+It is the item route the skeleton-free pipeline needs: text-animated body moves have no keypoints to pose items with.
+That is why it is tied to the skeleton decision.
+
+### 18.3 What changed overall
+
+**Improved:**
+- Creation is 2 calls, ~2–5 gens and ~4 min (was 117 calls, ~57 gens and 12–19 min).
+- Idle + walk are one optional tap, queued.
+
+**New:**
+- **Default move:**
+  - One standing move, with one frame per direction.
+  - The old Standing and Rest names are gone.
+  - "Default" cannot be used as a move name.
+- **Move queue:** it survives reloads, and "Add a move" queues behind a running move.
+- **Items:**
+  - Directions stream as each call lands.
+  - Items can be worn while loading; they are never saved or exported until done.
+  - Clean items save themselves. Warned items stay as drafts with a badge and can be reviewed any time (D26).
+  - An item lacking idle or walk offers a priced "Make for Idle + Walk" button instead of spending on its own.
+- **Failure messages:** moves and worn drafts that fail unattended show a message.
+
+**Fixed:**
+- Tier 1 no longer waits forever for a Tier 2 fallback grid.
+- Pasted weapon frames are flagged.
+- Missing cells show as loading, not blank.
+- **Queue:** it survives character switches, and dismissing one character's failure keeps other characters' queues.
+- An item saved after its body gained a move rebases instead of failing.
+- "Make for" buttons check the plan first.
+- The phone creator footer keeps "Add idle + walk" visible.
+- A flaky e2e test is fixed: Vite was watching Playwright output.
+
+**Unchanged by decision:**
+- The skeleton-v3 animation system.
+- Every PixelLab request body, so stored results are still reused.
+- The item dressing route.
+- The idle "walking" caption.
+
+**Removed:**
+- The Default upgrade for characters saved earlier. There is no backward compatibility while the app is in preview (rule
+  in `AGENTS.md`), so older characters simply have no Default move.
+
+### 18.4 Open concerns
+
+1. **Moves are still the slow, costly part.** Idle + walk cost ~55 gens and ~115 calls, including a managed walk that is
+   drawn only to read its poses. Fixing this needs the skeleton decision.
+2. **Motion quality.** Authored skeleton moves are stiff (arms only), idle barely moves, and hair is static in idle.
+   Items inherit that motion. Mocap and text animation were more natural (§13, §15, §16).
+3. **Item drift of 1–3 px** at hands and feet, from posing items as sibling renders (18.2).
+4. **Weapons on near-still frames** are pasted and now flagged, but not fixed.
+5. **Large characters:**
+   - Dressing takes 4 frames per call above 80 px.
+   - Held items need a 256 px padded canvas.
+   - Fallback grids above 256 px need Tier 2, so Tier 1 skips them.
+6. **Mirrored west views flip handedness:** a right-hand sword shows in the left hand facing west.
+7. **A Top-down 4 character came out with 8 directions** once in the live run. Not reproduced.
+8. **One toast at a time:** a danger toast blocks others, and the preview notice can be displaced.
+9. **Not verified:** whether body moves appear direction by direction while they run.
+10. **Test stability:** "reload restores failed create, move and setup" failed once and passed on retry. The
+    interrupted-estimates e2e test has its own card.
+11. **PixelLab gaps:**
+    - The character ZIP has no animation keypoints, despite the docs (E0b).
+    - The content policy refuses some hair wording on bare bodies (§13.1).
+
+### 18.5 Deferred work (board cards)
+
+| Card | Status | Covers |
+|---|---|---|
+| Replace skeleton-v3 animation for natural motion | Later, needs decision | Concerns 1–3; questions 6–9 in §14; the §16.6 pipeline |
+| Dress characters larger than 80 px | Later, needs decision | Concern 5; `create-character-state` as a large-size dresser (§13.2) |
+| Make idle visibly breathe and caption idle item poses | Later, needs decision | Concern 2 (idle, static hair). Changing the "walking" caption invalidates stored-result reuse. |
+| Validate weapon actions: 8 directions, west grip, off-hand | Ready, paid | Concerns 4 and 6 |
+| Decide whether west faces mirror by default | Later, needs decision | Concern 6 (about +60 % item cost if unmirrored) |
+| Investigate a Top-down 4 creation that came out with 8 directions | Later, paid | Concern 7 |
+| Support stacked toast notifications | Later | Concern 8 |
+| Confirm the interrupted-estimates end-to-end test is stable | Later | Concern 10 |
+| Send the feature requests to PixelLab | Later, needs decision | Concern 11 |
+| Build the skeleton pose lab | Later, needs decision | A joint editor if skeleton-v3 stays |
+| Regenerate the demo character | Later, paid | The demo predates Default |
+| Rerun a fresh 4-direction idle + walk live validation | Ready, paid | A full live run of the queued moves |
+
+**Decisions waiting on the owner:**
+- **The skeleton route:** keep skeleton-v3 with better motion (such as mocap), or go skeleton-free per §16.6 at about
+  2–3× the item cost.
+- **The large-size dresser.**
+- **West mirroring.**
+- **Idle wording:** whether it may change, at the cost of reusing stored results.
