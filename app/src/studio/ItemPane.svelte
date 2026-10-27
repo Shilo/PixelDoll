@@ -7,7 +7,7 @@
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
-  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
+  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, makeItemMoves, pendingMoves, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
   let { id }: { id: string } = $props()
@@ -41,13 +41,18 @@
     const projectId = doc.id, spec = { ...$state.snapshot(repairSpec), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
   }
-  // moves the character gained after this item was made (Default-first: idle and walk), offered with their price
-  const missingMoves = $derived(m && it && !isDemo() ? missingItemMoves(m, it.id, 0) : [])
+  // moves the character gained after this item was made (Default-first: idle and walk), offered with their price unless a
+  // running or queued move already poses this item onto them
+  const missingMoves = $derived.by(() => {
+    if (!m || !it || isDemo()) return []
+    const pending = pendingMoves(doc.id, it.id).map((s) => s.id)
+    return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id))
+  })
   const missingCost = $derived(missingMoves.reduce((n, s) => n + poseGens(1, s.frames, s.dirs?.length ?? 0), 0))
   const missingNames = $derived(missingMoves.map((s) => s.id[0].toUpperCase() + s.id.slice(1).replace(/-/g, ' ')).join(' + '))
   function makeMissing() {
     const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingMoves.map((s) => ({ ...$state.snapshot(s), seed }))
-    withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move' })
+    makeItemMoves(projectId, specs)
   }
   let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
   let colorBusy = $state(false)
