@@ -94,6 +94,9 @@ known job ID and reuse saved results. If a submitted request has an unknown outc
 **Activity**; it is never automatically sent again. **Try again** starts a new paid attempt and may incur additional charges.
 When creation is done, press **Add idle + walk** to queue both moves (the button shows the price) or **Start dressing up**
 to dress the Default pose first. **Moves → Add idle + walk** offers the same later.
+**Default** is every character's standing pose: one still frame per direction, listed first in Moves and Share and
+exported like any move. Characters saved before it existed (including imported ones, whose standing pose was called
+Rest) gain it for free the next time they are opened. "Default" can't be used as the name of another move.
 
 ## Share equipment designs between characters
 
