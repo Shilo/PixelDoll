@@ -31,7 +31,7 @@
   const id = $derived(text.trim() ? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) : action)
   const items = $derived(m ? posable(m).filter((item) => !item.design) : [])
   const sharedItems = $derived(m?.items.filter((item) => item.design && item.status === 'accepted') ?? [])
-  const replacing = $derived(have.has(id))
+  const replacing = $derived(have.has(id) && !reservedMove(id))
   const availableDirs = $derived(m?.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id) ?? [])
   let selectedDirs = $state<DirectionName[]>(draft?.dirs ?? untrack(() => [...availableDirs]))
   const targetDirs = $derived(replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs)
