@@ -71,6 +71,8 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | [paperdoll-py-asset-review-2026-10-24.md](research/paperdoll-py-asset-review-2026-10-24.md) | External diff-extractor + state pipeline compared with ours: offline benchmark, what to adopt, bugs found. |
 | [generation-quality-campaign-2026-10-25.md](research/generation-quality-campaign-2026-10-25.md) | Paid A/B campaign (909 gens, 2 bodies, blind judging): third chroma key, concept items via transfer-outfit-v2, rejected prompt variants. |
 | [generation-pipeline-review-2026-10-25.md](research/generation-pipeline-review-2026-10-25.md) | Generation pipeline research (rounds 1–10): call chains, endpoint and skeleton findings, what shipped, open concerns and deferred cards (§18). |
+| [visuals/three-ways-to-draw-an-item.html](research/visuals/three-ways-to-draw-an-item.html) | Visual, step-by-step comparison of today's item route with the create-state and edit-image ideas: every input and output image, fit numbers, pros and cons. Open the file in a browser. |
+| [visuals/how-items-are-drawn.html](research/visuals/how-items-are-drawn.html) | Frame scrubber comparing today's posing with dressing the real frames, with every PixelLab call and its price. Open the file in a browser. |
 | [SHARED_NOTES.md](research/SHARED_NOTES.md) | Append-only cross-agent findings. |
 | [pixellab-openapi-v2.json](research/pixellab/pixellab-openapi-v2.json) | PixelLab REST v2 OpenAPI snapshot (102 paths). |
 | [Shared equipment designs with fitted copies](research/shared-equipment-fitted-copies-plan.md) | Agreed design and qualification plan; implemented local library, exact reuse and independent fitted copies. Paid fitting starts with an experimental single-material headwear route. |

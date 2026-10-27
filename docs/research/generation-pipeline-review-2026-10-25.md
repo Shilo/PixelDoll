@@ -994,6 +994,9 @@ export.
 
 ### 18.2 Posing items versus dressing the real frames
 
+Visual versions, built from the stored test frames (open in a browser): [three ways to draw an item](visuals/three-ways-to-draw-an-item.html)
+(today, create state, edit image) and [how items are drawn](visuals/how-items-are-drawn.html) (today versus dressing the real frames).
+
 Both routes have PixelLab draw the item. The difference is **which body it draws on**.
 
 - **Today (pose):**
