@@ -47,7 +47,6 @@
       panel.querySelector<HTMLButtonElement>('[aria-label="Close API calls"]')?.focus()
     } else {
       popoverFocus({ currentTarget: panel, newState: e.newState }, false)
-      opener?.focus()
     }
   }
   $effect(() => {
@@ -60,11 +59,6 @@
     // Keep Studio playback, direction and undo shortcuts outside this inspector.
     e.stopPropagation()
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return }
-    if (e.key !== 'Tab') return
-    const controls = [...panel.querySelectorAll<HTMLElement>('button:not(:disabled), summary, [tabindex="0"]')].filter((x) => x.getClientRects().length)
-    const first = controls[0], last = controls.at(-1)
-    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus() }
-    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus() }
   }
   async function copy() {
     const text = recorded ? exportActivityJson(actual) : JSON.stringify({ format: 'pixeldoll-calls/1', scope, costBasis: 'estimated', total: { generations: knownEstimate, unknown: unknownEstimate }, calls: sanitizeActivityValue(plan) }, null, 2)

@@ -78,6 +78,23 @@ test('anchored popovers point at their triggers on all four sides', async ({ pag
   await check('more-equipment', '[popovertarget="more-equipment"]', 'top')
 })
 
+test('closing a popover with a clipped trigger restores focus to a visible control', async ({ page }) => {
+  await landing(page)
+  const opener = page.locator('.selected-name')
+  const menu = page.locator('#project-menu')
+  await opener.click()
+  await expect(menu).toBeVisible()
+  await opener.evaluate(element => {
+    const parent = element.parentElement!
+    parent.style.maxHeight = '0px'
+    parent.style.overflow = 'hidden'
+    window.dispatchEvent(new Event('scroll'))
+  })
+  await expect(menu).not.toBeVisible()
+  await expect(opener).not.toBeFocused()
+  await expect(page.locator('.experience-header button').first()).toBeFocused()
+})
+
 const world = (page: Page) => page.locator('.world-stage')
 const selection = (page: Page) => page.getByRole('application', { name: /^Character selection\./ })
 const modes = (page: Page) => page.getByRole('navigation', { name: 'Character view', exact: true })

@@ -9,19 +9,36 @@ export function rememberActivation(event: Event) {
   trigger = popover ? document.querySelector<HTMLElement>(`[popovertarget="${popover.id}"]`) : target
 }
 export function openingTrigger(): HTMLElement | null { return trigger?.isConnected ? trigger : document.activeElement as HTMLElement | null }
+function visibleInViewport(target: HTMLElement | null): target is HTMLElement {
+  if (!target?.isConnected || !target.getClientRects().length || target.closest('[popover]:not(:popover-open)')) return false
+  let { left, top, right, bottom } = target.getBoundingClientRect()
+  left = Math.max(left, 0); top = Math.max(top, 0)
+  right = Math.min(right, innerWidth); bottom = Math.min(bottom, innerHeight)
+  for (let parent = target.parentElement; parent && right > left && bottom > top; parent = parent.parentElement) {
+    const style = getComputedStyle(parent)
+    const bounds = parent.getBoundingClientRect()
+    if (/auto|scroll|hidden|clip/.test(style.overflowX)) { left = Math.max(left, bounds.left); right = Math.min(right, bounds.right) }
+    if (/auto|scroll|hidden|clip/.test(style.overflowY)) { top = Math.max(top, bounds.top); bottom = Math.min(bottom, bounds.bottom) }
+  }
+  return right > left && bottom > top
+}
 export function restoreTrigger(target: HTMLElement | null) {
-  if (document.querySelector('dialog[open]')) return
-  const visible = target?.isConnected && target.getClientRects().length && !target.closest('[popover]:not(:popover-open)')
-  ;(visible ? target : document.querySelector<HTMLElement>('.project-btn,.experience-header button'))?.focus({preventScroll:true})
+  const dialog = document.querySelector<HTMLDialogElement>('dialog[open]')
+  if (dialog) {
+    if (visibleInViewport(target) && dialog.contains(target)) target.focus({ preventScroll: true })
+    return
+  }
+  const fallback = [...document.querySelectorAll<HTMLElement>('.project-btn,.experience-header button')].find(visibleInViewport)
+  ;(visibleInViewport(target) ? target : fallback)?.focus({ preventScroll: true })
 }
 const placements = new WeakMap<HTMLElement, () => void>()
 const openers = new WeakMap<HTMLElement, HTMLElement>()
 export function popoverFocus(event: {currentTarget: HTMLElement; newState: string}, focusFirst = true) {
   const menu = event.currentTarget
   const activated = openingTrigger()
-  const source = activated?.getAttribute('popovertarget') === menu.id && activated.getClientRects().length
+  const source = activated?.getAttribute('popovertarget') === menu.id && visibleInViewport(activated)
     ? activated
-    : [...document.querySelectorAll<HTMLElement>(`[popovertarget="${CSS.escape(menu.id)}"]`)].find(el => el.getClientRects().length) ?? null
+    : [...document.querySelectorAll<HTMLElement>(`[popovertarget="${CSS.escape(menu.id)}"]`)].find(visibleInViewport) ?? null
   const opener = event.newState === 'open' ? source : openers.get(menu) ?? source
   const prior = placements.get(menu)
   prior?.()
