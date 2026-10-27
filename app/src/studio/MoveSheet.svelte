@@ -129,7 +129,8 @@
         {/each}
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
-      {#if moving.queued.length}<p class="muted small">Queued next: {moving.queued.map((q) => nice(q.spec.id)).join(', ')}{moving.error ? '. Try again continues with them; Start over drops them.' : ''}</p>{/if}
+      {@const ownQueued = moving.queued.filter((q) => q.projectId === moving.projectId)}
+      {#if ownQueued.length}<p class="muted small">Queued next: {ownQueued.map((q) => nice(q.spec.id)).join(', ')}{moving.error ? '. Try again continues with them; Start over drops them.' : ''}</p>{/if}
       {#if recovery}
         <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint {recovery.checks === 1 ? 'check' : 'checks'} · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>
       {/if}
