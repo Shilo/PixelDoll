@@ -82,6 +82,9 @@ export const ui = $state({
   zoom: 0, // device px per sprite px; 0 = fit
   bg: 'checker' as 'checker' | 'solid',
   toast: '',
+  toastTitle: '',
+  toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
+  toastSheet: null as SheetId,
 });
 let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
 
@@ -93,7 +96,7 @@ export function initUi() {
   const hide = () => { if (document.visibilityState === 'hidden') { keepUnsaved(); void flushSave(); } };
   const leave = () => { keepUnsaved(); void flushSave(); };
   // Actions started without awaiting them (Make item, Keep it, Reset, a review check) would otherwise drop a load failure.
-  const unhandled = (e: PromiseRejectionEvent) => { if (e.reason instanceof LoadError) { e.preventDefault(); toast(e.reason.message); } };
+  const unhandled = (e: PromiseRejectionEvent) => { if (e.reason instanceof LoadError) { e.preventDefault(); toast(e.reason.message, { tone: 'danger' }); } };
   addEventListener('unhandledrejection', unhandled);
   addEventListener('resize', on);
   addEventListener('pagehide', leave);
@@ -105,7 +108,28 @@ export function applyTheme() { document.documentElement.dataset.theme = ui.theme
 export function toggleTheme() { ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; lsSet(K.theme, ui.theme); applyTheme(); }
 export function dismissWelcome() { ui.welcome = false; lsSet(K.welcomed, '1'); }
 let toastT: ReturnType<typeof setTimeout> | undefined;
-export function toast(s: string, duration = 4000) { ui.toast = s; clearTimeout(toastT); toastT = setTimeout(() => (ui.toast = ''), duration); }
+let toastRemaining = 0, toastStarted = 0;
+const toastPauses = new Set<'pointer' | 'focus'>();
+type ToastOptions = { title?: string; tone?: typeof ui.toastTone; duration?: number };
+function stopToastTimer() { clearTimeout(toastT); toastT = undefined; }
+export function dismissToast() { stopToastTimer(); toastRemaining = 0; toastPauses.clear(); ui.toast = ''; ui.toastTitle = ''; }
+function armToast() {
+  if (!toastRemaining || toastPauses.size) return;
+  toastStarted = Date.now(); toastT = setTimeout(dismissToast, toastRemaining);
+}
+export function pauseToast(reason: 'pointer' | 'focus') {
+  if (toastT) { stopToastTimer(); toastRemaining = Math.max(1, toastRemaining - (Date.now() - toastStarted)); }
+  toastPauses.add(reason);
+}
+export function resumeToast(reason: 'pointer' | 'focus') { toastPauses.delete(reason); if (!toastT) armToast(); }
+/** A zero duration keeps the message until dismissed or replaced. Return false when an unresolved error takes priority. */
+export function toast(s: string, options: number | ToastOptions = 4000) {
+  const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
+  if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
+  stopToastTimer(); ui.toast = s; ui.toastTitle = o.title ?? ''; ui.toastTone = o.tone ?? 'info'; ui.toastSheet = ui.sheet;
+  toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000); armToast();
+  return true;
+}
 
 /** Only the queue-leader tab drives generations. Explain blocked actions above any open native modal. */
 const follower = () => {
@@ -156,7 +180,7 @@ export const equipment = new EquipmentState();
 export async function refreshFits() { equipment.fits = await listFits(); }
 /** Resuming a stage loads the fitting pipeline. If that (or storage) fails, say so; the fit stays running and a reload
  * resumes it. */
-export async function resumeFitStages() { try { await resumeFits(); } catch (e) { toast(e instanceof Error ? e.message : String(e)); } }
+export async function resumeFitStages() { try { await resumeFits(); } catch (e) { toast(e instanceof Error ? e.message : String(e), { tone: 'danger' }); } }
 export function openFit(id: string) { equipment.previewDesign = null; ui.fitId = id; ui.designId = ''; ui.sheet = 'fitdesign'; }
 /** Accepted items pin the source even after its library entry has been deleted. */
 export function openPinnedDesign(itemId: string) {
@@ -178,7 +202,7 @@ export async function openItemExtension(itemId: string, anims?: string[]) {
     await refreshFits();
     if (doc.id === id && ui.sheet === sheet) openFit(fit.id);
     else toast('Equipment fit prepared in Activity');
-  } catch (e) { toast(e instanceof Error ? e.message : 'Could not prepare this equipment fit.'); }
+  } catch (e) { toast(e instanceof Error ? e.message : 'Could not prepare this equipment fit.', { tone: 'danger' }); }
   finally { equipment.preparing = equipment.preparing.filter((key) => key !== pending); }
 }
 export const extensionPreparing = (itemId: string) => equipment.preparing.includes(`${doc.id}/${itemId}`);
@@ -188,8 +212,8 @@ async function trackFit(id: string, action: () => Promise<FitDraft>) {
   equipment.running = [...equipment.running, id];
   try {
     const finished = await action();
-    toast(finished.stage === 'rest-review' || finished.stage === 'fit-review' ? 'Equipment fit is ready for review in Activity' : 'Equipment fit needs attention in Activity');
-  } catch (e) { toast(e instanceof Error ? e.message : 'The equipment fit needs attention in Activity.'); }
+    toast(finished.stage === 'rest-review' || finished.stage === 'fit-review' ? 'Equipment fit is ready for review in Activity' : 'Equipment fit needs attention in Activity', { tone: finished.stage === 'needs-attention' ? 'warning' : 'info' });
+  } catch (e) { toast(e instanceof Error ? e.message : 'The equipment fit needs attention in Activity.', { tone: 'danger' }); }
   finally { equipment.running = equipment.running.filter((x) => x !== id); await refreshFits(); }
 }
 export const runFitStage = (id: string, stage: 'rest' | 'pose', poseBudget = 0) => trackFit(id, async () => { const f = await fitFlow(); return stage === 'rest' ? f.runRestFit(id) : f.approveRestAndPose(id, poseBudget); });
@@ -234,7 +258,7 @@ class View {
 export const view = new View();
 
 export async function refreshProjects() {
-  const listed = await listProjects().catch((e: unknown) => { console.error('projects', e); toast(`Could not read your saved characters: ${(e as Error).message}`); return null; }), own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+  const listed = await listProjects().catch((e: unknown) => { console.error('projects', e); toast(`Could not read your saved characters: ${(e as Error).message}`, { tone: 'danger' }); return null; }), own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
   store.projects = [{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' }, ...own.map((p) => ({ id: p.id, name: p.manifest.name, demo: false, dev: originOf(p) === 'dev', savedAt: p.savedAt }))];
   // Drop unload snapshots of characters deleted here or in another tab (only when the listing is known to be complete).
   if (listed) try { for (const k of Object.keys(localStorage)) if (k.startsWith(UNSAVED) && !store.projects.some((p) => k === UNSAVED + p.id)) localStorage.removeItem(k); } catch { /* storage blocked */ }
@@ -284,7 +308,7 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
     if (request !== openRequest) return;
     doc.error = (e as Error).message;
     // The demo's own open clears doc.error: say why the requested character is not shown.
-    if (id !== DEMO) { console.error('open', e); toast(`Could not open that character: ${doc.error}`); return openProject(DEMO); }
+    if (id !== DEMO) { console.error('open', e); toast(`Could not open that character: ${doc.error}`, { tone: 'danger' }); return openProject(DEMO); }
   } finally {
     if (request === openRequest) { doc.loading = false; opening = ''; }
   }
@@ -359,7 +383,7 @@ function save() {
       await saveDress(id, m, cur);
       doc.saved = new Date().toLocaleTimeString();
       if (n === edits) { savedEdits = n; lsSet(unsavedKey(id), null); }
-    } catch (e) { console.error('autosave', e); toast(`Could not save: ${(e as Error).message}`); }
+    } catch (e) { console.error('autosave', e); toast(`Could not save: ${(e as Error).message}`, { tone: 'danger' }); }
   };
   saveT = setTimeout(() => void flushSave(), 400);
 }
@@ -624,7 +648,7 @@ async function takeOver() {
 export async function startItem(input: NewItemInput) {
   if (hmrReloading) return;
   // Startup may still be reading the stored drafts: saving before they load would overwrite them.
-  try { await loadGens(); } catch (e) { toast(`Saved item drafts could not be read: ${(e as Error).message}. Reload to try again.`); return; }
+  try { await loadGens(); } catch (e) { toast(`Saved item drafts could not be read: ${(e as Error).message}. Reload to try again.`, { tone: 'danger' }); return; }
   const ctx = await loadProject(doc.id), route = await itemFlow();
   const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
   gens.push({ draft: route.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
@@ -659,7 +683,7 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
     g.status = '';
   } catch (e) {
     // The pipeline did not load, so this attempt submitted nothing: keep the draft running for a reload to resume.
-    if (e instanceof LoadError) { g.status = ''; toast(e.message); return; }
+    if (e instanceof LoadError) { g.status = ''; toast(e.message, { tone: 'danger' }); return; }
     g.phase = 'failed';
     g.error = (e as Error).message;
   }

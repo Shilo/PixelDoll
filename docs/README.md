@@ -52,6 +52,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | [user-guide.md](user-guide.md) | The Studio in plain language. |
 | [pixellab-plans.md](pixellab-plans.md) | Editable tier limits, Free/Trial handling, and the plan requirements of the REST endpoints PixelDoll calls. |
 | [agent-instructions.md](agent-instructions.md) | How to keep AGENTS.md short and effective: what belongs, how to word rules, how to verify an edit. |
+| [task-management.md](task-management.md) | Automatic task tracking: rationale, accepted CLI limits, review findings and validation scope. |
 | [github-cli-workflow.md](github-cli-workflow.md) | Reuse saved GitHub CLI authorization, diagnose access failures, and request login or scopes only when needed. |
 
 ## Research (R1–R5, 2026-10-20)

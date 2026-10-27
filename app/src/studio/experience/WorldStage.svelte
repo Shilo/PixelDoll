@@ -129,7 +129,11 @@
         note=[p.issue,result?.hiddenItems.length?`${result.hiddenItems.length} equipped item${result.hiddenItems.length===1?'':'s'} hidden for this view`:''].filter(Boolean).join(' · ')
         loadingNote=result?.loading??''
         if((velocity.x||velocity.y)&&!hasMoved){hasMoved=true;hint=false}
-        if(live&&hasMoved){const issues=[[p.issueKey,p.issue],[result?.issueKey,result?.issue]];for(const [id,text] of issues)if(id&&text&&!noticed.has(id)){noticed.add(id);toast(text)}}
+        if(live&&hasMoved&&!ui.sheet){
+          const issues=[[p.issueKey,p.issue],[result?.issueKey,result?.issue]].filter(([id,text])=>id&&text&&!noticed.has(id))
+          // An unresolved error can defer this batch; only consume warnings the toast accepts.
+          if(issues.length&&toast([...new Set(issues.map(([,text])=>text))].join(' '), { tone: 'warning' }))for(const [id] of issues)noticed.add(id!)
+        }
         if(img&&result){
           const frame=result.frame, point=s?s.project(position,options):anchor
           const scale=actorScale(fitFrame??frame,rect,dpr,preferred,anchorRatio)

@@ -8,6 +8,124 @@ test.beforeEach(async ({ context }) => {
   await context.route('https://*.pixellab.ai/**', route => route.abort()) // stay offline by default; a test's own route overrides this
 })
 
+async function showNotification(page: Page, message: string, options?: Parameters<typeof import('../../src/studio/state.svelte.ts').toast>[1]) {
+  await page.evaluate(async ({ message, options }) => {
+    const path = '/src/studio/state.svelte.ts', state = await import(path)
+    state.toast(message, options)
+  }, { message, options })
+}
+
+test('notifications support optional titles, keyboard dismissal and visible errors inside dialogs', async ({ page }, info) => {
+  const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+  await page.goto(dev)
+  const notice = page.locator('.toast')
+  await expect(notice.locator('strong')).toHaveText(/^Preview · v/)
+  await expect(notice.locator('[data-tone]')).toHaveAttribute('data-tone', 'warning')
+  await expect(notice).not.toContainText('—')
+  const world = page.locator('.selection-world')
+  await world.focus()
+  const dismiss = () => notice.getByRole('button', { name: 'Dismiss notification' })
+  await dismiss().focus(); await page.keyboard.press('Enter')
+  await expect(notice).toHaveCount(0)
+  await expect(world).toBeFocused()
+  await showNotification(page, 'Saved changes')
+  await expect(notice).toContainText('Saved changes')
+  await expect(notice.locator('strong')).toHaveCount(0)
+  await dismiss().click()
+  await enterStudio(page)
+  await showNotification(page, 'Preview details', { title: 'Preview', tone: 'warning', duration: 0 })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await expect(notice).toHaveCount(0)
+  await showNotification(page, 'Could not save your character.', { tone: 'danger' })
+  await expect(dialog.getByRole('alert')).toContainText('Could not save your character.')
+  await showNotification(page, 'Downloaded example.zip')
+  await expect(dialog.getByRole('alert')).toContainText('Could not save your character.')
+  await expect(notice).not.toContainText('Downloaded example.zip')
+  await dismiss().click()
+  await expect(dialog).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await showNotification(page, 'Could not save before opening Export.', { tone: 'danger' })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('Could not save before opening Export.')
+  await page.setViewportSize({ width: 320, height: 568 })
+  await showNotification(page, 'Could not save. ' + 'Detailed-recovery-information-without-spaces'.repeat(35), { tone: 'danger' })
+  await expect.poll(() => notice.evaluate(el => el.scrollHeight > el.clientHeight)).toBe(true)
+  await notice.evaluate(el => el.scrollTop = el.scrollHeight)
+  const close = await dismiss().boundingBox()
+  expect(close).not.toBeNull()
+  expect(close!.x).toBeGreaterThanOrEqual(0); expect(close!.y).toBeGreaterThanOrEqual(0)
+  expect(close!.x + close!.width).toBeLessThanOrEqual(320); expect(close!.y + close!.height).toBeLessThanOrEqual(568)
+  await dismiss().click()
+  await expect(notice).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+})
+
+test('top notifications fit both themes across desktop, tablet and phone orientations', async ({ page }, info) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+  await page.goto(dev)
+  await expect(page.locator('.customize-action')).toBeEnabled()
+  const sizes = [[320,568],[360,640],[390,844],[430,932],[568,320],[667,375],[844,390],[932,430],[768,1024],[1024,768],[900,900],[1280,800],[1440,900],[1920,1080]]
+  const evidence: unknown[] = []
+  for (const screen of ['characters', 'studio']) {
+    if (screen === 'studio') await enterStudio(page)
+    for (const theme of ['dark', 'light']) {
+      await page.evaluate(async theme => {
+        const path = '/src/studio/state.svelte.ts', state = await import(path)
+        if (state.ui.theme !== theme) state.toggleTheme()
+      }, theme)
+      for (const [width, height] of sizes) {
+        await page.setViewportSize({ width, height })
+        for (const tone of ['info', 'warning', 'danger'] as const) {
+        await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts'; (await import(path)).dismissToast() })
+        await showNotification(page, tone === 'warning' ? 'Features and saved work may change. Export your work to keep a backup.' : tone === 'danger' ? 'Could not save your character. Try again.' : 'Saved changes', { title: tone === 'warning' ? 'Preview · v0.2.29-dev' : undefined, tone, duration: 0 })
+        const notice = page.locator('.toast')
+        await expect(notice).toBeVisible()
+        const measure = () => notice.evaluate(el => {
+          const r = el.getBoundingClientRect(), issues: string[] = []
+          if (r.left < 0 || r.top < 0 || r.right > innerWidth + 1 || r.bottom > innerHeight + 1) issues.push('outside viewport')
+          if (Math.abs(r.left + r.width / 2 - innerWidth / 2) > 1) issues.push('off center')
+          if (el.scrollWidth > el.clientWidth) issues.push('horizontal clipping')
+          for (const target of document.querySelectorAll<HTMLElement>('.experience-header,.view-modes,.selection-import,.selection-create,.cast-library>.bu-input,.equipment-modes,.sheet-expand')) {
+            if (!target.getClientRects().length) continue
+            const b = target.getBoundingClientRect()
+            if (b.width && b.height && b.left < r.right && b.right > r.left && b.top < r.bottom && b.bottom > r.top) issues.push('covers ' + target.className)
+          }
+          const card = el.querySelector<HTMLElement>('.bu-toast')!, style = getComputedStyle(card)
+          const surface = card.getBoundingClientRect(), icon = card.querySelector('svg')!.getBoundingClientRect()
+          if (Math.abs(icon.top + icon.height / 2 - surface.top - surface.height / 2) > 1) issues.push('status icon off center')
+          const close = card.querySelector('button')!.getBoundingClientRect()
+          if (close.width < 44 || close.height < 44) issues.push('small dismiss target')
+          if (card.dataset.tone === 'info') {
+            const text = document.createRange(); text.selectNodeContents(card.querySelector('.bu-notice-content')!)
+            if (close.left - text.getBoundingClientRect().right > 13) issues.push('short message stretches')
+          }
+          const context = document.createElement('canvas').getContext('2d')!
+          const rgb = (color: string) => { context.fillStyle = color; context.fillRect(0,0,1,1); return [...context.getImageData(0,0,1,1).data] }
+          const foreground = rgb(style.color), background = rgb(style.backgroundColor)
+          const luminance = (p: number[]) => p.slice(0,3).map(v => { v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4 }).reduce((n,v,i) => n + v * [.2126,.7152,.0722][i], 0)
+          const a = luminance(foreground), b = luminance(background), contrast = (Math.max(a,b) + .05) / (Math.min(a,b) + .05)
+          if (background[3] !== 255) issues.push('transparent surface')
+          if (contrast < 4.5) issues.push('low text contrast')
+          return { issues, x:r.x, y:r.y, width:r.width, height:r.height, contrast }
+        })
+        await expect.poll(async () => (await measure()).issues, { message: `${screen} ${theme} ${tone} ${width}x${height}` }).toEqual([])
+        evidence.push({ screen, theme, tone, viewportWidth: width, viewportHeight: height, ...await measure() })
+        if (tone === 'warning' && [320,390,844,1440].includes(width)) await page.screenshot({ path: info.outputPath(`notification-${screen}-${theme}-${width}x${height}.png`) })
+        if (tone === 'info' && width === 1440) await page.screenshot({ path: info.outputPath(`notification-${screen}-${theme}-short.png`) })
+        }
+      }
+    }
+  }
+  await info.attach('notification-layouts', { body: Buffer.from(JSON.stringify(evidence, null, 2)), contentType: 'application/json' })
+  expect(errors).toEqual([])
+})
+
 declare global {
   interface Window {
     __queue?: { paused: string | null }
@@ -146,7 +264,8 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
   // zip names (stored uncompressed in the zip headers)
   for (const f of ['README.txt', 'CREDITS.txt', 'godot/README.txt']) assert.ok(bytes.includes(Buffer.from(f)), `zip has ${f}`)
   assert.ok(download.suggestedFilename().startsWith('adventurer-'), download.suggestedFilename())
-  await page.waitForFunction(() => !document.querySelector('dialog[open]') && document.querySelector('.toast')?.textContent?.startsWith('Downloaded'))
+  await expect(page.locator('dialog[open]')).toHaveCount(0)
+  await expect(page.locator('.toast').getByText(/^Downloaded/)).toBeVisible()
 
   // ---- B15: base colors, Create options, offline banner ----
   await equipmentMode(page, 'Colors')

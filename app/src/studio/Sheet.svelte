@@ -4,6 +4,7 @@
   import type { Snippet } from 'svelte'
   import { WORLDS } from './experience/config.ts'
   import { ui } from './state.svelte.ts'
+  import Toast from './Toast.svelte'
   let { title, children, footer, heading, onclose, cancel = 'Cancel', cancelDisabled = false, wide = false, className = '' }: {
     title: string; children: Snippet; footer?: Snippet; heading?: Snippet; onclose: () => void; cancel?: string; cancelDisabled?: boolean; wide?: boolean; className?: string
   } = $props()
@@ -38,6 +39,7 @@
   </header>
   <div class="sheet-body">{@render children()}</div>
   {#if footer}<footer class="sheet-foot">{@render footer()}</footer>{/if}
+  <Toast />
 </dialog>
 
 <style>

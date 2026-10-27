@@ -12,7 +12,7 @@
     lazy(load).then((m) => { if (live) Loaded = m.default }, (e: Error) => {
       if (!live) return
       if (sheet) ui.sheet = null
-      toast(e.message)
+      toast(e.message, { tone: 'danger' })
     })
     return () => { live = false }
   })

@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), clear: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), update: vi.fn(), clear: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
@@ -11,7 +11,7 @@ vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original
 vi.mock('../../src/lib/dress/project.ts', async original => ({ ...await original<typeof import('../../src/lib/dress/project.ts')>(), openSource: mocks.source }))
 vi.mock('../../src/lib/equipment/fits.ts', async original => ({ ...await original<typeof import('../../src/lib/equipment/fits.ts')>(), listFits: mocks.fits }))
 
-vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del }))
+vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del, update: mocks.update }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', subscribe: () => () => {}, idle: () => true, clearFinished: mocks.clear } }))
 
@@ -784,4 +784,90 @@ test('a worn draft saved or discarded in another tab comes off when the drafts a
   s.doc.drafts = { head: 'saved_elsewhere' }
   await s.loadGens()
   expect(s.doc.drafts).toEqual({})
+})
+
+test('notifications preserve description-only calls, optional titles and persistent errors', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  vi.useFakeTimers()
+  try {
+    s.toast('Preview details', { title: 'Preview', tone: 'warning', duration: 0 })
+    vi.advanceTimersByTime(60_000)
+    expect(s.ui.toast).toBe('Preview details')
+    expect(s.ui.toastTitle).toBe('Preview')
+    s.toast('Saved changes')
+    expect(s.ui.toastTitle).toBe('')
+    expect(s.ui.toastTone).toBe('info')
+    vi.advanceTimersByTime(3999)
+    expect(s.ui.toast).toBe('Saved changes')
+    vi.advanceTimersByTime(1)
+    expect(s.ui.toast).toBe('')
+    s.toast('Could not save', { tone: 'danger' })
+    vi.advanceTimersByTime(60_000)
+    expect(s.ui.toast).toBe('Could not save')
+    s.dismissToast()
+    s.toast('Legacy duration', 8000)
+    vi.advanceTimersByTime(7999)
+    expect(s.ui.toast).toBe('Legacy duration')
+    vi.advanceTimersByTime(1)
+    expect(s.ui.toast).toBe('')
+  } finally { s.dismissToast(); vi.useRealTimers() }
+})
+
+test('unresolved errors reject lower-priority messages without changing their content, timer or pauses', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  vi.useFakeTimers()
+  try {
+    expect(s.toast('Could not save', { title: 'Storage unavailable', tone: 'danger', duration: 8000 })).toBe(true)
+    vi.advanceTimersByTime(1000)
+    s.pauseToast('focus')
+    const original = { ...s.ui }
+    for (const options of [undefined, 100, { tone: 'info' }, { tone: 'success' }, { tone: 'warning', duration: 0 }] as const) {
+      expect(s.toast('Lower-priority feedback', options)).toBe(false)
+      expect(s.ui).toEqual(original)
+    }
+    vi.advanceTimersByTime(60_000)
+    expect(s.ui.toast).toBe('Could not save')
+    s.resumeToast('focus')
+    vi.advanceTimersByTime(6999)
+    expect(s.ui.toast).toBe('Could not save')
+    vi.advanceTimersByTime(1)
+    expect(s.ui.toast).toBe('')
+    expect(s.toast('Saved changes')).toBe(true)
+    expect(s.toast('Could not export', { tone: 'danger' })).toBe(true)
+    expect(s.toast('Could not import', { tone: 'danger' })).toBe(true)
+    expect(s.ui.toast).toBe('Could not import')
+    expect(s.toast('Saved changes')).toBe(false)
+    s.dismissToast()
+    expect(s.toast('Deferred warning', { tone: 'warning' })).toBe(true)
+    expect(s.ui.toast).toBe('Deferred warning')
+  } finally { s.dismissToast(); vi.useRealTimers() }
+})
+
+test('notification timers pause for pointer and focus, and dismissal cannot pause the next message', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  vi.useFakeTimers()
+  try {
+    s.toast('Saved changes')
+    vi.advanceTimersByTime(1000)
+    s.pauseToast('pointer'); s.pauseToast('focus')
+    vi.advanceTimersByTime(10_000)
+    s.resumeToast('pointer')
+    vi.advanceTimersByTime(10_000)
+    expect(s.ui.toast).toBe('Saved changes')
+    s.resumeToast('focus')
+    vi.advanceTimersByTime(2999)
+    expect(s.ui.toast).toBe('Saved changes')
+    vi.advanceTimersByTime(1)
+    expect(s.ui.toast).toBe('')
+    s.toast('Dismiss me'); s.pauseToast('pointer'); s.pauseToast('focus'); s.dismissToast()
+    s.toast('Next message')
+    vi.advanceTimersByTime(4000)
+    expect(s.ui.toast).toBe('')
+    s.toast('Hovered message'); s.pauseToast('pointer')
+    s.toast('Replacement')
+    vi.advanceTimersByTime(10_000)
+    expect(s.ui.toast).toBe('Replacement')
+    s.resumeToast('pointer'); vi.advanceTimersByTime(4000)
+    expect(s.ui.toast).toBe('')
+  } finally { s.dismissToast(); vi.useRealTimers() }
 })

@@ -365,9 +365,6 @@ dialog.sheet.bottom .foot-note { justify-content: center; text-align: center; }
 .acc-text { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
 .acc-text b { font-size: var(--fs-sm); font-weight: 600; }
 .acc-text span { font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30; padding: 10px 16px; border-radius: 20px;
-  background: var(--text); color: var(--bg); font-weight: 500; box-shadow: var(--shadow-pop); max-width: calc(100vw - 32px); }
-.studio.compact .toast { bottom: calc(140px + env(safe-area-inset-bottom)); }
 /* B15: offline banner, under the toolbar, never in the way (no pointer events) */
 .offline-banner { position: fixed; left: 50%; top: calc(60px + env(safe-area-inset-top)); transform: translateX(-50%); z-index: 29; display: flex; align-items: center; gap: 8px;
   padding: 6px 14px; border-radius: 16px; font-size: var(--fs-sm); font-weight: 500; pointer-events: none; max-width: calc(100vw - 32px);

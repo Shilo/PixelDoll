@@ -26,4 +26,3 @@
 .studio-app .sheet-title { font-size:18px; }
 /* Legacy wrappers drew a chevron for appearance:none selects; Bronze base-select draws its own picker icon. */
 @supports (appearance:base-select) and selector(select::picker(select)) { .studio-app .select-wrap>svg { display:none; } .studio-app .select-wrap>.bu-select { padding-right:8px; } }
-.studio-app .toast { background:var(--bu-floating); color:var(--bu-text); border-color:var(--bu-rim); }
