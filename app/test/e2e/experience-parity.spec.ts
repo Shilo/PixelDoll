@@ -104,6 +104,40 @@ async function landing(page: Page) {
   await expect(page.locator('.customize-action')).toBeEnabled()
 }
 
+test('movement warnings are combined and remain eligible while an error takes priority', async ({ page }, info) => {
+  const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+  await page.goto(dev)
+  await expect(page.locator('.customize-action')).toBeEnabled()
+  await page.locator('.customize-action').click()
+  await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click()
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    const manifest = s.store.project.manifest
+    manifest.rig.directions.push({ id: 'notification-fixture' })
+    const head = manifest.items.find((item: { slot: string }) => item.slot === 'head')
+    head.coverage = []
+    s.doc.items[head.slot] = head.id
+    s.doc.rev++
+    s.toast('Could not save your work.', { tone: 'danger' })
+  })
+  const notice = page.locator('.toast')
+  await world(page).focus()
+  await page.keyboard.down('ArrowRight')
+  try {
+    await expect.poll(() => world(page).evaluate(el => Number(el.dataset.position!.split(',')[0]))).toBeGreaterThan(0)
+    await expect(notice.getByRole('alert')).toContainText('Could not save your work.')
+  } finally { await page.keyboard.up('ArrowRight') }
+  // The demo has no Idle or stored rest image, so stopping uses a still pose.
+  await expect(world(page)).toHaveAttribute('data-presentation', 'still')
+  await notice.getByRole('button', { name: 'Dismiss notification' }).click()
+  await expect(notice.locator('[data-tone]')).toHaveAttribute('data-tone', 'warning')
+  await expect(notice).toContainText('Unknown direction: notification-fixture')
+  await expect(notice).toContainText('1 item hidden')
+  await notice.getByRole('button', { name: 'Dismiss notification' }).click()
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+  await expect(notice).toHaveCount(0)
+})
+
 test('screen transitions preserve world keyboard focus while creator fields remain native', async ({ page }) => {
   await landing(page)
   await expect(selection(page)).toBeFocused()

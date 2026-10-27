@@ -40,7 +40,7 @@
   onDestroy(() => { resumeToast('pointer'); resumeToast('focus') })
 </script>
 
-{#if ui.toast && (!ui.sheet || ui.toastSheet === ui.sheet)}
+{#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}
   <div class="toast" bind:this={host} role="presentation" onpointerenter={() => pauseToast('pointer')} onpointerleave={() => resumeToast('pointer')}
     onfocusin={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) focusFrom = e.relatedTarget as HTMLElement | null; pauseToast('focus') }}
     onfocusout={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) resumeToast('focus') }}>

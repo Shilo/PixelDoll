@@ -451,11 +451,42 @@ test('notifications preserve description-only calls, optional titles and persist
     s.toast('Could not save', { tone: 'danger' })
     vi.advanceTimersByTime(60_000)
     expect(s.ui.toast).toBe('Could not save')
+    s.dismissToast()
     s.toast('Legacy duration', 8000)
     vi.advanceTimersByTime(7999)
     expect(s.ui.toast).toBe('Legacy duration')
     vi.advanceTimersByTime(1)
     expect(s.ui.toast).toBe('')
+  } finally { s.dismissToast(); vi.useRealTimers() }
+})
+
+test('unresolved errors reject lower-priority messages without changing their content, timer or pauses', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  vi.useFakeTimers()
+  try {
+    expect(s.toast('Could not save', { title: 'Storage unavailable', tone: 'danger', duration: 8000 })).toBe(true)
+    vi.advanceTimersByTime(1000)
+    s.pauseToast('focus')
+    const original = { ...s.ui }
+    for (const options of [undefined, 100, { tone: 'info' }, { tone: 'success' }, { tone: 'warning', duration: 0 }] as const) {
+      expect(s.toast('Lower-priority feedback', options)).toBe(false)
+      expect(s.ui).toEqual(original)
+    }
+    vi.advanceTimersByTime(60_000)
+    expect(s.ui.toast).toBe('Could not save')
+    s.resumeToast('focus')
+    vi.advanceTimersByTime(6999)
+    expect(s.ui.toast).toBe('Could not save')
+    vi.advanceTimersByTime(1)
+    expect(s.ui.toast).toBe('')
+    expect(s.toast('Saved changes')).toBe(true)
+    expect(s.toast('Could not export', { tone: 'danger' })).toBe(true)
+    expect(s.toast('Could not import', { tone: 'danger' })).toBe(true)
+    expect(s.ui.toast).toBe('Could not import')
+    expect(s.toast('Saved changes')).toBe(false)
+    s.dismissToast()
+    expect(s.toast('Deferred warning', { tone: 'warning' })).toBe(true)
+    expect(s.ui.toast).toBe('Deferred warning')
   } finally { s.dismissToast(); vi.useRealTimers() }
 })
 

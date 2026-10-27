@@ -121,11 +121,13 @@ export function pauseToast(reason: 'pointer' | 'focus') {
   toastPauses.add(reason);
 }
 export function resumeToast(reason: 'pointer' | 'focus') { toastPauses.delete(reason); if (!toastT) armToast(); }
-/** A zero duration keeps the message until dismissed or replaced; existing string calls stay description-only. */
+/** A zero duration keeps the message until dismissed or replaced. Return false when an unresolved error takes priority. */
 export function toast(s: string, options: number | ToastOptions = 4000) {
   const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
+  if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
   stopToastTimer(); ui.toast = s; ui.toastTitle = o.title ?? ''; ui.toastTone = o.tone ?? 'info'; ui.toastSheet = ui.sheet;
   toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000); armToast();
+  return true;
 }
 
 /** Only the queue-leader tab drives generations. Explain blocked actions above any open native modal. */
