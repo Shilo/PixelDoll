@@ -55,5 +55,6 @@ export { default as WifiOff } from '@lucide/svelte/icons/wifi-off';
 export { default as CodeXml } from '@lucide/svelte/icons/code-xml';
 export { default as Github } from './GithubIcon.svelte';
 export { default as Copy } from '@lucide/svelte/icons/copy';
+export { default as Scaling } from '@lucide/svelte/icons/scaling';
 export { default as ListPlus } from '@lucide/svelte/icons/list-plus';
 export { default as ListMinus } from '@lucide/svelte/icons/list-minus';

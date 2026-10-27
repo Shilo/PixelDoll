@@ -7,6 +7,7 @@ import { directionLabel } from './experience/movement.ts'
 
 export const ALL_MOVES = '__all_moves__'
 export const ALL_DIRECTIONS = '__all_directions__'
+export const SHARE_SCALES = [1, 2, 3, 4, 6, 8, 10] as const
 
 export interface ShareFrame { image: Img; ms: number }
 export interface ShareMedia { frames: ShareFrame[]; still: Img; animated: boolean; grid: boolean; previewRows: number; repeat: number; omitted: { move: string; direction: DirectionName; reason: string }[]; mime: 'image/png' | 'image/gif'; extension: 'png' | 'gif' }
@@ -140,13 +141,50 @@ function paletteFor(image: Img): { colors: number[][]; indices: Uint8Array } {
   return { colors, indices }
 }
 
-export async function encodeShareMedia(media: ShareMedia): Promise<Uint8Array> {
-  if (!media.animated) return encodePngBytes(media.still)
+const outputImage = (media: ShareMedia) => media.animated ? media.frames[0].image : media.still
+
+export function shareDimensions(media: ShareMedia, scale = 1): { w: number; h: number } {
+  const image = outputImage(media)
+  return { w: image.w * scale, h: image.h * scale }
+}
+
+function scaled(image: Img, scale: number): Img {
+  if (!SHARE_SCALES.some(value => value === scale)) throw new Error('Select an available image size')
+  const w = image.w * scale, h = image.h * scale
+  // Bound the working raster, PNG scanlines and GIF palette buffers on small devices.
+  if (w * h > 16_777_216) throw new Error('Selected image is too large. Choose a smaller size or fewer views')
+  if (scale === 1) return image
+  const data = new Uint8ClampedArray(w * h * 4)
+  for (let y = 0; y < image.h; y++) {
+    const row = y * scale * w * 4
+    for (let x = 0; x < image.w; x++) {
+      const pixel = image.data.subarray((y * image.w + x) * 4, (y * image.w + x + 1) * 4)
+      for (let n = 0; n < scale; n++) data.set(pixel, row + (x * scale + n) * 4)
+    }
+    for (let n = 1; n < scale; n++) data.copyWithin(row + n * w * 4, row, row + w * 4)
+  }
+  return { w, h, data }
+}
+
+/** Clipboard PNG represents the fixed first output frame, even while preview playback advances. */
+export function encodeSharePng(media: ShareMedia, scale = 1): Promise<Uint8Array> {
+  return encodePngBytes(scaled(outputImage(media), scale))
+}
+
+export async function encodeShareMedia(media: ShareMedia, scale = 1, signal?: AbortSignal): Promise<Uint8Array> {
+  signal?.throwIfAborted()
+  if (!media.animated) return encodeSharePng(media, scale)
   const gif = GIFEncoder()
   for (const { image, ms } of media.frames) {
-    const { colors, indices } = paletteFor(image)
-    gif.writeFrame(indices, image.w, image.h, { palette: colors, transparent: true, transparentIndex: 0, delay: ms, repeat: media.repeat, dispose: 2 })
+    signal?.throwIfAborted()
+    const frame = scaled(image, scale)
+    if (frame.w > 65535 || frame.h > 65535) throw new Error('Selected GIF dimensions are too large. Choose a smaller size or fewer views')
+    const { colors, indices } = paletteFor(frame)
+    gif.writeFrame(indices, frame.w, frame.h, { palette: colors, transparent: true, transparentIndex: 0, delay: ms, repeat: media.repeat, dispose: 2 })
+    // Release each scaled frame and allow selection changes to cancel remaining work.
+    await new Promise<void>(resolve => setTimeout(resolve, 0))
   }
+  signal?.throwIfAborted()
   gif.finish()
   return gif.bytes()
 }

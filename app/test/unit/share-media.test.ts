@@ -3,7 +3,7 @@ import { makeImg } from '../../src/lib/image/png.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
 import type { DirectionName, Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts'
 import { buildPresentation } from '../../src/studio/experience/presentation.ts'
-import { ALL_DIRECTIONS, ALL_MOVES, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
+import { ALL_DIRECTIONS, ALL_MOVES, SHARE_SCALES, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, encodeSharePng, shareDimensions, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
 
 const hash = (name: string) => `sha256:${name}` as Sha256
 function fixture(directions: DirectionName[] = ['south', 'east']): Project {
@@ -27,6 +27,46 @@ function fixture(directions: DirectionName[] = ['south', 'east']): Project {
 }
 
 describe('share media', () => {
+  test('every size preserves exact RGBA blocks and clipboard uses the first animated frame, not the contact sheet', async () => {
+    const project = fixture(), a = buildPresentation(project)
+    const media = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, true)
+    expect(media.still.h).toBeGreaterThan(media.frames[0].image.h)
+    const source = media.frames[0].image
+    for (const scale of SHARE_SCALES) {
+      const png = await decodePngBytes(await encodeSharePng(media, scale))
+      expect([png.w, png.h]).toEqual([source.w * scale, source.h * scale])
+      expect(shareDimensions(media, scale)).toEqual({ w: png.w, h: png.h })
+      let mismatch = -1
+      for (let y = 0; y < png.h; y++) for (let x = 0; x < png.w; x++) for (let c = 0; c < 4; c++) {
+        if (png.data[(y * png.w + x) * 4 + c] !== source.data[(Math.floor(y / scale) * source.w + Math.floor(x / scale)) * 4 + c]) mismatch = (y * png.w + x) * 4 + c
+      }
+      expect(mismatch).toBe(-1)
+    }
+    const still = buildShareMedia(a, {}, ALL_MOVES, ALL_DIRECTIONS, false)
+    expect(await encodeSharePng(still, 2)).toEqual(await encodeShareMedia(still, 2))
+  })
+
+  test('scaled GIF preserves dimensions, frame delays, transparency and nonlooping playback; stale encoding can abort', async () => {
+    const project = fixture()
+    project.manifest.rig.animations[1].loop = false
+    const media = buildShareMedia(buildPresentation(project), {}, 'walk', 'south', true)
+    const bytes = await encodeShareMedia(media, 3)
+    expect([bytes[6] | bytes[7] << 8, bytes[8] | bytes[9] << 8]).toEqual([6, 3])
+    const controls: number[][] = []
+    for (let i = 0; i < bytes.length - 7; i++) if (bytes[i] === 0x21 && bytes[i + 1] === 0xf9 && bytes[i + 2] === 4) controls.push([bytes[i + 3] & 1, bytes[i + 4] | bytes[i + 5] << 8])
+    expect(controls).toEqual([[1, 7], [1, 12]])
+    expect(new TextDecoder().decode(bytes)).not.toContain('NETSCAPE2.0')
+    const controller = new AbortController()
+    const pending = encodeShareMedia(media, 10, controller.signal)
+    controller.abort()
+    await expect(pending).rejects.toThrow(/abort/i)
+    await expect(encodeShareMedia(media, 5)).rejects.toThrow(/available image size/)
+    const huge = { ...media, frames: [{ image: { w: 5000, h: 5000, data: new Uint8ClampedArray() }, ms: 100 }] }
+    await expect(encodeShareMedia(huge, 1)).rejects.toThrow(/smaller size/)
+    const wide = { ...media, frames: [{ image: makeImg(7000, 1), ms: 100 }] }
+    await expect(encodeShareMedia(wide, 10)).rejects.toThrow(/GIF dimensions/)
+  })
+
   test('Default is a dressed one-frame PNG and all selections make a deterministic contact sheet', async () => {
     const project = fixture(), a = buildPresentation(project)
     expect(canAnimateShare(a, { head: 'hat' }, 'default', 'south')).toBe(false)

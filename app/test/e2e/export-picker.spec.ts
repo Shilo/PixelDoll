@@ -3,16 +3,54 @@ import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
 
+test('Copy PNG writes a readable image through the real browser clipboard in animated mode', async ({ page, context }, testInfo) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await context.route('https://api.pixellab.ai/**', route => route.abort())
+  await context.addInitScript(() => {
+    localStorage.setItem('pixeldoll.agentKey', 'off')
+    localStorage.setItem('pixeldoll.welcomed', '1')
+  })
+  await openStudio(page, testInfo.project.use.baseURL! + '/#/', { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: 'Share character' }).click()
+  const popover = page.getByRole('dialog', { name: 'Share character preview' })
+  await popover.getByRole('combobox', { name: 'Size' }).selectOption('2')
+  await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled()
+  const [download] = await Promise.all([page.waitForEvent('download'), popover.getByRole('button', { name: 'Download GIF' }).click()])
+  const gif = [...await readFile((await download.path())!)]
+  await popover.getByRole('button', { name: 'Copy PNG', exact: true }).click()
+  await expect(popover.getByRole('status')).toHaveText('PNG copied')
+  const pixels = await page.evaluate(async gifBytes => {
+    const items = await navigator.clipboard.read()
+    const png = await items.find(item => item.types.includes('image/png'))!.getType('image/png')
+    const [copied, firstFrame] = await Promise.all([createImageBitmap(png), createImageBitmap(new Blob([new Uint8Array(gifBytes)], { type: 'image/gif' }))])
+    const data = (image: ImageBitmap) => {
+      const canvas = document.createElement('canvas'); canvas.width = image.width; canvas.height = image.height
+      const ctx = canvas.getContext('2d')!; ctx.drawImage(image, 0, 0)
+      return ctx.getImageData(0, 0, canvas.width, canvas.height).data
+    }
+    const a = data(copied), b = data(firstFrame)
+    const matches = a.length === b.length && a.every((value, i) => value === b[i])
+    const dimensions = [copied.width, copied.height]
+    copied.close(); firstFrame.close()
+    return { matches, dimensions }
+  }, gif)
+  expect(pixels).toEqual({ matches: true, dimensions: [128, 128] })
+})
+
 test('Share popover follows the selected move, direction and Animate switch on desktop and phone', async ({ page, context }, testInfo) => {
   const apiRequests: string[] = []
   await context.route('https://api.pixellab.ai/**', route => { apiRequests.push(route.request().url()); return route.abort() })
   await context.addInitScript(() => {
     localStorage.setItem('pixeldoll.agentKey', 'off')
     localStorage.setItem('pixeldoll.welcomed', '1')
+    Object.defineProperty(Navigator.prototype, 'clipboard', { configurable: true, value: { write: async (items: ClipboardItem[]) => {
+      const png = await items[0].getType('image/png')
+      ;(window as unknown as { __copied?: number[] }).__copied = [...new Uint8Array(await png.arrayBuffer())]
+    } } })
     Object.defineProperty(Navigator.prototype, 'canShare', { configurable: true, value: (data: ShareData) => !!data.files?.length })
     Object.defineProperty(Navigator.prototype, 'share', { configurable: true, value: async (data: ShareData) => {
       const file = data.files?.[0]
-      ;(window as unknown as { __shared?: { type: string; name: string; size: number } }).__shared = file && { type: file.type, name: file.name, size: file.size }
+      ;(window as unknown as { __shared?: { type: string; name: string; size: number; header: number[] } }).__shared = file && { type: file.type, name: file.name, size: file.size, header: [...new Uint8Array(await file.slice(0, 24).arrayBuffer())] }
     } })
   })
   const errors: string[] = []
@@ -33,10 +71,11 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await expect(popover.getByRole('combobox', { name: 'Move' })).toBeFocused()
   await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('walk')
   await expect(popover.getByRole('combobox', { name: 'Direction' })).toHaveValue('south')
+  await expect(popover.getByRole('combobox', { name: 'Size' }).locator('option')).toHaveText(['1x size', '2x size', '3x size', '4x size', '6x size', '8x size', '10x size'])
   await expect(popover.getByRole('switch')).toBeChecked()
   await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled()
-  await expect(popover.getByRole('button', { name: 'Download GIF' })).toHaveText('Download')
-  await expect(popover.locator('.share-animate')).toContainText('Animate as GIF')
+  await expect(popover.getByRole('button', { name: 'Download GIF' })).toContainText('Download GIF')
+  await expect(popover.locator('.share-animate')).toContainText('Animated')
   const geometry = () => popover.evaluate(element => {
     const rect = (selector: string) => {
       const box = (selector === '#share-popover' ? element : element.querySelector(selector)!).getBoundingClientRect()
@@ -46,7 +85,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
     return {
       popover: rect('#share-popover'), preview: rect('.share-preview'),
       move: rect('select[aria-label="Move"]'), direction: rect('select[aria-label="Direction"]'),
-      animate: rect('.share-animate'), actions: rect('.share-actions'),
+      size: rect('select[aria-label="Size"]'), animate: rect('.share-animate'), actions: rect('.share-actions'),
       overflow: preview.scrollHeight > preview.clientHeight + 1 || preview.scrollWidth > preview.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1,
     }
   })
@@ -56,7 +95,9 @@ test('Share popover follows the selected move, direction and Animate switch on d
     expect(actual.preview).toEqual(expected.preview)
     expect(actual.move).toEqual(expected.move)
     expect(actual.direction).toEqual(expected.direction)
+    expect(actual.size).toEqual(expected.size)
     expect(actual.animate).toEqual(expected.animate)
+    expect(actual.size[2]).toBe(actual.animate[2])
     expect(actual.actions).toEqual(expected.actions)
     expect(actual.move[2]).toBe(actual.direction[2])
     expect(actual.overflow).toBe(false)
@@ -86,6 +127,22 @@ test('Share popover follows the selected move, direction and Animate switch on d
   const gifBytes = await readFile((await gif.path())!)
   expect(gif.suggestedFilename()).toMatch(/-walk-south\.gif$/)
   expect(gifBytes.subarray(0, 6).toString()).toBe('GIF89a')
+  await expect(popover.locator('[title]')).toHaveCount(0)
+  await popover.getByRole('combobox', { name: 'Size' }).selectOption('3')
+  await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled()
+  await expect(popover.locator('.share-resolution')).toHaveText('192 × 192 px')
+  await expect(popover.getByRole('button', { name: 'Download GIF' })).toHaveAccessibleDescription('192 × 192 px')
+  const [scaledGif] = await Promise.all([page.waitForEvent('download'), popover.getByRole('button', { name: 'Download GIF' }).click()])
+  const scaledBytes = await readFile((await scaledGif.path())!)
+  expect([scaledBytes.readUInt16LE(6), scaledBytes.readUInt16LE(8)]).toEqual([192, 192])
+  await popover.getByRole('button', { name: 'Copy PNG', exact: true }).click()
+  await expect(popover.getByRole('status')).toHaveText('PNG copied')
+  const copied = Buffer.from(await page.evaluate(() => (window as unknown as { __copied: number[] }).__copied))
+  expect([copied.readUInt32BE(16), copied.readUInt32BE(20)]).toEqual([192, 192])
+  await popover.getByRole('button', { name: 'Share to…' }).click()
+  await expect.poll(() => page.evaluate(() => (window as unknown as { __shared?: { header: number[] } }).__shared?.header)).toEqual([...scaledBytes.subarray(0, 24)])
+  await popover.getByRole('combobox', { name: 'Size' }).selectOption('1')
+  await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled()
   await popover.getByRole('button', { name: 'Share to…' }).click()
   await expect.poll(() => page.evaluate(() => (window as unknown as { __shared?: { type: string } }).__shared?.type)).toBe('image/gif')
 
@@ -97,11 +154,14 @@ test('Share popover follows the selected move, direction and Animate switch on d
 
   await popover.getByRole('switch').uncheck()
   await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
-  await expect(popover.getByRole('button', { name: 'Download PNG' })).toHaveText('Download')
+  await expect(popover.getByRole('button', { name: 'Download PNG' })).toContainText('Download PNG')
   const [png] = await Promise.all([page.waitForEvent('download'), popover.getByRole('button', { name: 'Download PNG' }).click()])
   const pngBytes = await readFile((await png.path())!)
   expect(png.suggestedFilename()).toMatch(/-walk-south\.png$/)
   expect([...pngBytes.subarray(0, 4)]).toEqual([137, 80, 78, 71])
+  await popover.getByRole('button', { name: 'Copy PNG', exact: true }).click()
+  await expect(popover.getByRole('status')).toHaveText('PNG copied')
+  expect(Buffer.from(await page.evaluate(() => (window as unknown as { __copied: number[] }).__copied)).equals(pngBytes)).toBe(true)
   await popover.getByRole('button', { name: 'Share to…' }).click()
   await expect.poll(() => page.evaluate(() => (window as unknown as { __shared?: { type: string } }).__shared?.type)).toBe('image/png')
 
@@ -157,7 +217,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
   const directionBox = (await popover.getByRole('combobox', { name: 'Direction' }).boundingBox())!
   const animateBox = (await popover.locator('.share-animate').boundingBox())!
   expect(moveBox.width).toBeCloseTo(directionBox.width, 0)
-  expect(animateBox.width).toBeGreaterThan(moveBox.width * 1.9)
+  expect(animateBox.width).toBeCloseTo(moveBox.width, 0)
   const phoneLayout = await geometry()
   await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk')
   await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south')
@@ -219,6 +279,33 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await fixedLayout(shortLayout)
   await popover.getByRole('combobox', { name: 'Move' }).selectOption('__all_moves__')
   await fixedLayout(shortLayout)
+  await popover.getByRole('combobox', { name: 'Move' }).selectOption('walk')
+  await popover.getByRole('combobox', { name: 'Direction' }).selectOption('south')
+  await popover.getByRole('combobox', { name: 'Size' }).selectOption('10')
+  await popover.getByRole('combobox', { name: 'Size' }).selectOption('2')
+  await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
+  await expect(popover.locator('.share-resolution')).toHaveText('128 × 128 px')
+  const [rapidPng] = await Promise.all([page.waitForEvent('download'), popover.getByRole('button', { name: 'Download PNG' }).click()])
+  const rapidBytes = await readFile((await rapidPng.path())!)
+  expect([rapidBytes.readUInt32BE(16), rapidBytes.readUInt32BE(20)]).toEqual([128, 128])
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { write: () => Promise.reject(new DOMException('Clipboard permission denied', 'NotAllowedError')) } })
+  })
+  await popover.getByRole('button', { name: 'Copy PNG', exact: true }).click()
+  await expect(popover.getByRole('status')).toHaveText('Could not copy PNG: Clipboard permission denied')
+  await expect(popover.getByRole('button', { name: 'Copy PNG', exact: true })).toBeEnabled()
+  await page.evaluate(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined }) })
+  await popover.getByRole('button', { name: 'Copy PNG', exact: true }).click()
+  await expect(popover.getByRole('status')).toContainText('Image copying is unavailable')
+  await page.setViewportSize({ width: 280, height: 390 })
+  const wrapped = await geometry()
+  expect(wrapped.direction[1]).toBeGreaterThanOrEqual(wrapped.move[1] + wrapped.move[3])
+  expect(wrapped.animate[1]).toBeGreaterThanOrEqual(wrapped.size[1] + wrapped.size[3])
+  expect(wrapped.popover[1]).toBeGreaterThanOrEqual(0)
+  expect(wrapped.popover[1] + wrapped.popover[3]).toBeLessThanOrEqual(390)
+  await popover.getByRole('button', { name: 'Download PNG' }).scrollIntoViewIfNeeded()
+  const reachableDownload = (await popover.getByRole('button', { name: 'Download PNG' }).boundingBox())!
+  expect(reachableDownload.y + reachableDownload.height).toBeLessThanOrEqual(390)
   await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.locator('.header-export')).toBeVisible()
   await page.getByRole('button', { name: 'More options' }).click()
@@ -248,6 +335,7 @@ test('Share choices reset to the current stage when switching characters', async
   await move.selectOption('__all_moves__')
   await direction.selectOption('__all_directions__')
   await popover.getByRole('switch').uncheck()
+  await popover.getByRole('combobox', { name: 'Size' }).selectOption('4')
   await page.keyboard.press('Escape')
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const download = page.waitForEvent('download')
@@ -264,6 +352,7 @@ test('Share choices reset to the current stage when switching characters', async
   await expect(move).toHaveValue(await stageMove.inputValue())
   await expect(direction).toHaveValue(await stageDirection())
   await expect(popover.getByRole('switch')).toBeChecked()
+  await expect(popover.getByRole('combobox', { name: 'Size' })).toHaveValue('1')
   await move.selectOption('__all_moves__')
   await direction.selectOption('__all_directions__')
   await page.keyboard.press('Escape')

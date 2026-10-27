@@ -6,8 +6,8 @@
   import { buildPresentation } from './experience/presentation.ts'
   import { directionLabel } from './experience/movement.ts'
   import { popoverFocus } from './experience/focus.ts'
-  import { ALL_DIRECTIONS, ALL_MOVES, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, sharePreviewFrames } from './shareMedia.ts'
-  import { Clapperboard, Compass, Download, LoaderCircle, PersonStanding, Share2, ChevronDown } from './icons.ts'
+  import { ALL_DIRECTIONS, ALL_MOVES, SHARE_SCALES, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, encodeSharePng, shareDimensions, sharePreviewFrames } from './shareMedia.ts'
+  import { Clapperboard, Compass, Copy, Download, LoaderCircle, PersonStanding, Scaling, Share2, ChevronDown } from './icons.ts'
 
   let popover: HTMLElement
   let open = $state(false)
@@ -15,6 +15,9 @@
   let direction = $state<string>('south')
   let wantedAnimate = $state(true)
   let index = $state(0)
+  let scale = $state(1)
+  let png = $state.raw<Blob | null>(null)
+  let copying = $state(false)
   let file = $state.raw<File | null>(null)
   let encoding = $state(false)
   let feedback = $state('')
@@ -38,10 +41,11 @@
   }))
   const previewFrames = $derived(planned.media ? sharePreviewFrames(planned.media) : [])
   const image = $derived(previewFrames[index % previewFrames.length] ?? null)
-  const previewHeight = $derived(Math.max(72, Math.min(220, viewportHeight - 320)))
+  const previewHeight = $derived(Math.max(72, Math.min(220, viewportHeight - 370)))
   const previewWidth = $derived(Math.min(360, viewportWidth - 16) - (viewportWidth <= 440 ? 14 : 18))
   const previewLimit = $derived(image ? Math.max(1, Math.floor(Math.min((previewWidth - 8) * Math.max(image.w, image.h) / image.w, (previewHeight - 12) * Math.max(image.w, image.h) / image.h))) : 112)
   const label = $derived(planned.media?.animated ? 'GIF' : 'PNG')
+  const dimensions = $derived(planned.media ? shareDimensions(planned.media, scale) : null)
   const canShare = $derived(!!file && typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] }))
   const name = $derived((store.projects.find(project => project.id === doc.id)?.name ?? store.project?.manifest.name ?? 'character').replace(/[^a-z0-9-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'character')
   const omittedText = $derived.by(() => {
@@ -65,22 +69,32 @@
   })
   $effect(() => {
     const media = planned.media
+    const size = scale
+    const filename = `${name}-${move === ALL_MOVES ? 'all-moves' : move}-${direction === ALL_DIRECTIONS ? 'all-directions' : direction}`
     file = null
+    png = null
     feedback = ''
+    copying = false
     if (!open || !media) { encoding = false; return }
     encoding = true
     const run = ++serial
-    // Let the disabled Preparing state paint before GIF quantization runs on the main thread.
-    void new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0))).then(() => encodeShareMedia(media)).then(bytes => {
+    const controller = new AbortController()
+    // Prepare both outputs before activation, retaining the click's clipboard/share permission.
+    void new Promise<void>(resolve => requestAnimationFrame(() => setTimeout(resolve, 0))).then(async () => {
+      controller.signal.throwIfAborted()
+      const pngBytes = await encodeSharePng(media, size)
       if (run !== serial) return
-      file = new File([bytes as Uint8Array<ArrayBuffer>], `${name}-${move === ALL_MOVES ? 'all-moves' : move}-${direction === ALL_DIRECTIONS ? 'all-directions' : direction}.${media.extension}`, { type: media.mime })
+      png = new Blob([pngBytes as Uint8Array<ArrayBuffer>], { type: 'image/png' })
+      const bytes = media.animated ? await encodeShareMedia(media, size, controller.signal) : pngBytes
+      if (run !== serial) return
+      file = new File([bytes as Uint8Array<ArrayBuffer>], `${filename}.${media.extension}`, { type: media.mime })
       encoding = false
     }).catch(error => {
       if (run !== serial) return
       feedback = `Could not prepare ${media.extension.toUpperCase()}: ${(error as Error).message}`
       encoding = false
     })
-    return () => { serial++ }
+    return () => { serial++; controller.abort() }
   })
 
   function reconcileSelection() {
@@ -95,6 +109,7 @@
       move = currentMove
       direction = currentDirection
       wantedAnimate = true
+      scale = 1
       index = 0
       return
     }
@@ -116,6 +131,25 @@
     const link = document.createElement('a')
     link.href = url; link.download = file.name; document.body.append(link); link.click(); link.remove()
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  }
+  function copyPng() {
+    if (!png || copying) return
+    if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') {
+      feedback = 'Image copying is unavailable in this browser. Download PNG instead.'
+      return
+    }
+    const run = serial
+    copying = true
+    try {
+      void navigator.clipboard.write([new ClipboardItem({ 'image/png': png })]).then(() => {
+        if (run === serial) feedback = 'PNG copied'
+      }).catch(error => {
+        if (run === serial) feedback = `Could not copy PNG: ${(error as Error).message}`
+      }).finally(() => { if (run === serial) copying = false })
+    } catch (error) {
+      copying = false
+      feedback = `Could not copy PNG: ${(error as Error).message}`
+    }
   }
   function share() {
     if (!file || !canShare) return
@@ -149,17 +183,32 @@
       </select>
       <ChevronDown size={14} aria-hidden="true" />
     </label>
+  </div>
+  <div class="share-controls">
+    <label class="share-picker">
+      <Scaling size={16} aria-hidden="true" />
+      <select class="bu-select" aria-label="Size" bind:value={scale}>
+        {#each SHARE_SCALES as size}<option value={size}>{size}x size</option>{/each}
+      </select>
+      <ChevronDown size={14} aria-hidden="true" />
+    </label>
     <label class="share-animate bu-check bu-action" data-variant="field">
-      <span><Clapperboard size={16} aria-hidden="true" />Animate as GIF</span>
+      <span><Clapperboard size={16} aria-hidden="true" />Animated</span>
       <input class="bu-switch" type="checkbox" role="switch" checked={animate} disabled={!canAnimate} onchange={(event) => { wantedAnimate = event.currentTarget.checked; index = 0 }} />
     </label>
   </div>
+  <hr class="share-divider bu-separator" />
   <div class="share-actions">
-    <button class="bu-action" data-variant="primary" aria-label={encoding ? `Preparing ${label}` : `Download ${label}`} title={encoding ? undefined : `Download ${label}`} disabled={!file || encoding} onclick={download}>{#if encoding}<LoaderCircle class="share-spinner" size={16} />Preparing…{:else}<Download size={16} />Download{/if}</button>
-    <button class="bu-action" data-variant="outline" disabled={!canShare || encoding} title={!canShare ? 'File sharing is unavailable in this browser; use Download instead' : undefined} onclick={share}><Share2 size={16} />Share to…</button>
+    <button class="bu-action" data-variant="outline" disabled={!png || copying} onclick={copyPng}><Copy size={16} aria-hidden="true" />{copying ? 'Copying…' : 'Copy PNG'}</button>
+    <button class="bu-action" data-variant="outline" disabled={!canShare || encoding} onclick={share}><Share2 size={16} aria-hidden="true" />Share to…</button>
+    <button class="share-download bu-action" data-variant="primary" aria-label={encoding ? `Preparing ${label}` : `Download ${label}`} aria-describedby={dimensions ? 'share-output-resolution' : undefined} disabled={!file || encoding} onclick={download}>
+      {#if encoding}<LoaderCircle class="share-spinner" size={16} aria-hidden="true" />{:else}<Download size={16} aria-hidden="true" />{/if}
+      <span>{encoding ? 'Preparing…' : `Download ${label}`}</span>
+      {#if dimensions}<span id="share-output-resolution" class="share-resolution">{dimensions.w} × {dimensions.h} px</span>{/if}
+    </button>
   </div>
   {#if planned.error}<p class="share-message bu-error" role="status">{planned.error}</p>{/if}
-  {#if omittedText}<p class="share-message bu-badge" data-tone="warning" role="status" title={planned.media?.omitted.map(entry => entry.reason).join(' · ')}>{omittedText}</p>{/if}
+  {#if omittedText}<p class="share-message bu-badge" data-tone="warning" role="status">{omittedText}</p>{/if}
   {#if feedback}<p class="share-message" role="status">{feedback}</p>{/if}
   </div>
 </div>
