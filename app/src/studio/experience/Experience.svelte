@@ -88,6 +88,7 @@
     <!-- Keyboard focus on this game region scopes selection shortcuts. -->
     <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
     <div class="selection-world bu-focus" role="application" aria-label="Character selection. WASD or arrows select; Enter customizes." tabindex="0" bind:this={selection} onkeydown={selectionKey}>
+      <span class="world-focus-cue bu-floating" aria-hidden="true">Shortcuts ready</span>
       <div class="cast">
         {#each neighbors as {p,offset} (p.id)}
           <button class="cast-character" class:chosen={!offset} onclick={()=>pick(p.id)} aria-label={offset?`Select ${p.name}`:`Customize ${name}`}>

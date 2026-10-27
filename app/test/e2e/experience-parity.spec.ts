@@ -90,8 +90,12 @@ async function landing(page: Page) {
 test('screen transitions preserve world keyboard focus while creator fields remain native', async ({ page }) => {
   await landing(page)
   await expect(selection(page)).toBeFocused()
+  await expect(selection(page).locator('.world-focus-cue')).toBeVisible()
+  expect(await selection(page).evaluate(el => getComputedStyle(el, '::after').content)).toBe('none')
   await page.keyboard.press('Enter')
   await expect(world(page)).toBeFocused()
+  await expect(world(page).locator('.world-focus-cue')).toBeVisible()
+  expect(await world(page).evaluate(el => getComputedStyle(el, '::after').content)).toBe('none')
   await page.keyboard.press('ArrowLeft')
   await expect(world(page)).toHaveAttribute('data-facing', 'west')
   const prompt = page.locator('.prompt-disclosure')
@@ -112,6 +116,10 @@ test('screen transitions preserve world keyboard focus while creator fields rema
   await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
   await expect(create).toBeFocused()
   await expect(selection(page)).toBeVisible()
+  await expect(selection(page).locator('.world-focus-cue')).toBeHidden()
+  await page.locator('.customize-action').click()
+  await expect(world(page)).toBeFocused()
+  await expect(world(page).locator('.world-focus-cue')).toBeVisible()
 })
 
 test('Preview resolves partial chord releases, preserves pause and clip selection, and rejects stale repeats', async ({ page }) => {

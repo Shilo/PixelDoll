@@ -25,7 +25,7 @@
 
 <header class="experience-header">
   <div class="header-start">
-    {#if experience.screen === 'studio'}<button class="bu-action header-back" data-variant="quiet" onclick={characters}><ChevronLeft size={18} />Characters</button>{:else}<span class="brand"><PersonStanding size={20}/>PixelDoll</span>{/if}
+    {#if experience.screen === 'studio'}<button class="bu-action header-back" data-variant="quiet" aria-label="Characters" onclick={characters}><ChevronLeft size={18} /><span class="header-back-label">Characters</span></button>{:else}<span class="brand"><PersonStanding size={20}/>PixelDoll</span>{/if}
   </div>
   <div class="header-actions">
     {#if experience.screen === 'characters'}
@@ -35,7 +35,7 @@
       <button class="bu-action header-undo" data-variant="quiet" aria-label={undoLabel ? 'Undo '+undoLabel : 'Undo'} disabled={!undoLabel} onclick={undo}><Undo2 size={18} /></button>
       <button class="bu-action header-redo" data-variant="quiet" aria-label={redoLabel ? 'Redo '+redoLabel : 'Redo'} disabled={!redoLabel} onclick={redo}><Redo2 size={18} /></button>
       <button class="bu-action header-share" data-variant="outline" aria-label="Share character" popovertarget="share-popover" disabled={!m}><Share2 size={16} /><span>Share</span></button>
-      <button class="bu-action header-export" data-variant="outline" onclick={() => ui.sheet='export'} disabled={!m}><Download size={16} /><span>Export</span></button>
+      <button class="bu-action header-export" data-variant="outline" aria-label="Export" onclick={() => ui.sheet='export'} disabled={!m}><Download size={16} /><span>Export</span></button>
     {/if}
     {#if busy}<button class="bu-action" data-variant="quiet" aria-label="Activity" onclick={() => ui.sheet='activity'}><span class="ring spin"></span><span class="num">{active || ''}</span></button>{/if}
     <button class="bu-action" data-variant="quiet" aria-label="More options" popovertarget="experience-options"><Ellipsis size={20} /></button>
@@ -45,8 +45,8 @@
 <div id="experience-options" class="menu options-menu bu-popover-anchor" data-placement="bottom-end" popover ontoggle={popoverFocus}>
   <PopoverArrow />
   <div class="menu-surface bu-popover-surface bu-floating">
+  {#if experience.screen==='studio'}<button class="row bu-action mobile-undo" data-variant="quiet" disabled={!undoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); undo() }}><Undo2 size={18}/><span class="row-name">{undoLabel?'Undo '+undoLabel:'Undo'}</span></button>{/if}
   {#if experience.screen==='studio'}<button class="row bu-action mobile-redo" data-variant="quiet" disabled={!redoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); redo() }}><Redo2 size={18}/><span class="row-name">{redoLabel?'Redo '+redoLabel:'Redo'}</span></button>{/if}
-  {#if experience.screen==='studio'}<button class="row bu-action mobile-export" data-variant="quiet" disabled={!m} onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='export' }}><Download size={18}/><span class="row-name">Export game assets</span></button>{/if}
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='activity' }}><Activity size={18}/><span class="row-name">Activity</span>{#if $queue.role==='follower'}<span class="small">Other tab</span>{/if}</button>
   <ApiPeek scope="all" all menu />
   <hr />
