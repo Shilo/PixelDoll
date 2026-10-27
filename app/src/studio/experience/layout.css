@@ -111,7 +111,7 @@
 .world-stick span { width:24px;height:24px;border-radius:50%;background:var(--bu-gesture-thumb);border:1px solid var(--bu-accent); }
 .experience-error { position:absolute; bottom:16px; left:var(--edge); z-index:6; color:var(--bu-danger); }
 .studio-app .offline-banner { position:fixed; z-index:30; bottom:20px; left:50%; transform:translateX(-50%); max-width:calc(100vw - 32px); }
-.toast { position:fixed; z-index:40; top:max(env(safe-area-inset-top),var(--toast-top,88px)); left:50%; transform:translateX(-50%); width:min(480px,calc(100vw - 32px)); max-height:var(--toast-height,45dvh); overflow:auto; }
+.toast { position:fixed; z-index:40; top:max(env(safe-area-inset-top),var(--toast-top,88px)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(480px,calc(100vw - 32px)); max-height:var(--toast-height,45dvh); overflow:auto; }
 .toast>.bu-toast { position:static; transform:none; width:100%; max-width:none; margin:0; }
 /* The existing real creator becomes a full-screen work surface, retaining every
    validation, recovery, request preview and saving control. */

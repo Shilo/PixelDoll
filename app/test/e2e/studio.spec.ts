@@ -88,6 +88,14 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
             if (b.width && b.height && b.left < r.right && b.right > r.left && b.top < r.bottom && b.bottom > r.top) issues.push('covers ' + target.className)
           }
           const card = el.querySelector<HTMLElement>('.bu-toast')!, style = getComputedStyle(card)
+          const surface = card.getBoundingClientRect(), icon = card.querySelector('svg')!.getBoundingClientRect()
+          if (Math.abs(icon.top + icon.height / 2 - surface.top - surface.height / 2) > 1) issues.push('status icon off center')
+          const close = card.querySelector('button')!.getBoundingClientRect()
+          if (close.width < 44 || close.height < 44) issues.push('small dismiss target')
+          if (card.dataset.tone === 'info') {
+            const text = document.createRange(); text.selectNodeContents(card.querySelector('.bu-notice-content')!)
+            if (close.left - text.getBoundingClientRect().right > 13) issues.push('short message stretches')
+          }
           const context = document.createElement('canvas').getContext('2d')!
           const rgb = (color: string) => { context.fillStyle = color; context.fillRect(0,0,1,1); return [...context.getImageData(0,0,1,1).data] }
           const foreground = rgb(style.color), background = rgb(style.backgroundColor)
@@ -100,6 +108,7 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
         await expect.poll(async () => (await measure()).issues, { message: `${screen} ${theme} ${tone} ${width}x${height}` }).toEqual([])
         evidence.push({ screen, theme, tone, viewportWidth: width, viewportHeight: height, ...await measure() })
         if (tone === 'warning' && [320,390,844,1440].includes(width)) await page.screenshot({ path: info.outputPath(`notification-${screen}-${theme}-${width}x${height}.png`) })
+        if (tone === 'info' && width === 1440) await page.screenshot({ path: info.outputPath(`notification-${screen}-${theme}-short.png`) })
         }
       }
     }
