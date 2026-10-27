@@ -541,6 +541,24 @@ describe('move queue', () => {
     await vi.waitFor(() => expect(records.has('studio-move')).toBe(false))
   })
 
+  test('a move started while a dismissed one is cleared keeps the waiting move of another character', async () => {
+    const records = storage(), clearing = pending<void>()
+    mocks.move.mockRejectedValueOnce(new Error('Idle failed')).mockResolvedValue(done)
+    const s = await import('../../src/studio/state.svelte.ts')
+    await s.queueMoves('project', [idle])
+    await vi.waitFor(() => expect(s.moving.error).toBe('Idle failed'))
+    s.moving.queued = [{ projectId: 'other', spec: walk }]
+    const put = mocks.put.getMockImplementation()!, del = mocks.del.getMockImplementation()!
+    mocks.put.mockImplementationOnce(async (...args) => { await clearing.promise; return put(...args) })
+    mocks.del.mockImplementationOnce(async (...args) => { await clearing.promise; return del(...args) })
+    const dismissing = s.dismissMove()
+    const repair = s.startMove('project', { ...idle, seed: 2 }) // e.g. an item repair, enabled again once the failed move is gone
+    clearing.resolve(); await dismissing; await repair
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledTimes(3))
+    expect(mocks.move.mock.calls.map((call) => call[0])).toEqual(['project', 'project', 'other'])
+    await vi.waitFor(() => expect(records.has('studio-move')).toBe(false))
+  })
+
   test('an interrupted queue resumes its running move and then the waiting one', async () => {
     const records = storage()
     mocks.move.mockResolvedValue(done)
@@ -691,6 +709,41 @@ describe('optional review', () => {
     expect(accept).toHaveBeenCalledOnce()
     other.resolve(opened()); await opening
     expect(s.doc.id).toBe('other')
+  })
+
+  const opened = () => ({ project: { manifest: fixtureManifest(), images: new Map() }, current: { items: { body: 'base' }, variants: {} } })
+  const finished = { id: 'cross-punch', action: 'cross-punch', frames: 4, items: [], seed: 1 } // a move the fixture has, so the view could switch to it
+  test.each(['move', 'item poses', 'setup'] as const)('a %s finishing never cancels the open of another character', async (kind) => {
+    routeMock(async () => null) // only for the mocked base split
+    const other = pending<unknown>()
+    mocks.source.mockImplementation(async (id: string) => (id === 'other' ? other.promise : opened()))
+    mocks.move.mockResolvedValue({ fitIds: [], warnings: [] }); mocks.setup.mockResolvedValue(undefined)
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.store.project = { manifest: fixtureManifest(), images: new Map() }
+    s.doc.id = 'project'; s.doc.items = { body: 'base' }; s.ui.anim = 'walk'
+    const opening = s.openProject('other') // the user picks another character while the work finishes
+    if (kind === 'setup') await s.startSetup({ projectId: 'project', baseHash: 'sha256:' + 'a'.repeat(64), restAnim: 'idle', looks: 'body', seed: 1 })
+    else await s.startMove('project', { ...finished, ...(kind === 'item poses' ? { itemsOnly: true } : {}) })
+    other.resolve(opened()); await opening
+    expect(s.doc.id).toBe('other')
+    expect(mocks.source.mock.calls.map((call) => call[0])).toEqual(['other'])
+    expect(s.ui.anim).toBe('walk')
+  })
+
+  test('a character picked while a finished move reloads its own keeps the move from switching the view', async () => {
+    routeMock(async () => null) // only for the mocked base split
+    const reload = pending<unknown>()
+    mocks.source.mockImplementation(async (id: string) => (id === 'project' ? reload.promise : opened()))
+    mocks.move.mockResolvedValue({ fitIds: [], warnings: [] })
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.store.project = { manifest: fixtureManifest(), images: new Map() }
+    s.doc.id = 'project'; s.doc.items = { body: 'base' }; s.ui.anim = 'walk'
+    const run = s.startMove('project', finished)
+    await vi.waitFor(() => expect(mocks.source).toHaveBeenCalledOnce())
+    const opening = s.openProject('other')
+    reload.resolve(opened()); await run; await opening
+    expect(s.doc.id).toBe('other')
+    expect(s.ui.anim).toBe('walk')
   })
 
   test('an edit made while the open character reloads in place is kept', async () => {

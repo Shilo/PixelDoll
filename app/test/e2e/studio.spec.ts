@@ -1226,6 +1226,28 @@ test('reload restores failed create, move and setup for review without paid subm
   expect(posts).toEqual([])
 })
 
+test('moves waiting behind another character’s failed move point to it', async ({ page }, info) => {
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.locator('.world-actors').first().waitFor()
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(/* @vite-ignore */ path), dbPath = '/src/lib/store/db.ts', db = await import(/* @vite-ignore */ dbPath)
+    const failed = await s.copyDemo(), rec = await db.get('projects', failed), waiting = 'rig-waiting-fixture'
+    rec.manifest.name = 'Failed mover'; await db.put('projects', failed, rec)
+    await db.put('projects', waiting, { ...rec, id: waiting, manifest: { ...rec.manifest, name: 'Waiting mover' } }); await s.openProject(waiting)
+    await db.put('projects', 'studio-move', { id: 'studio-move', projectId: failed, spec: { id: 'cast', action: 'cast', frames: 8, items: [], seed: 1 }, status: 'failed', error: 'Cast stopped', requestText: s.REQUEST_TEXT, queued: [{ projectId: waiting, spec: { id: 'jump', action: 'jump', frames: 8, items: [], seed: 1 } }] })
+  })
+  await reloadStudio(page)
+  await equipmentMode(page, 'Moves')
+  await page.getByRole('button', { name: /^Jump Waiting for the failed move/ }).click()
+  const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true })
+  await expect(sheet).toContainText('Cast failed on Failed mover, so new moves wait. Open it to try again or start over.')
+  await sheet.getByRole('button', { name: 'Open Failed mover', exact: true }).click()
+  await expect(page.locator('.project-btn')).toContainText('Failed mover')
+  await expect(sheet.getByRole('button', { name: 'Try again', exact: true })).toBeVisible()
+  await expect(sheet.getByRole('button', { name: 'Start over', exact: true })).toBeVisible()
+})
+
 
 test('Activity shows plan-derived capacity without a manual override or network request', async ({ page, context }, info) => {
   const requests: string[] = []

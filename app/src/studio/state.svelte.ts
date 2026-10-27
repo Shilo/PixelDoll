@@ -290,6 +290,9 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
   }
 }
 export const lastProject = () => lsGet(K.last) ?? DEMO;
+/** Work finishing in the background reloads only the character in view, never one the user is leaving: reopening it would
+ *  cancel the open of the newly picked one. */
+const viewing = (id: string) => doc.id === id && (!opening || opening === id);
 
 // ---- undo/redo: snapshots of the dress state (outfit, colors, presets, layer order, hides) ----
 const snap = () => JSON.stringify(dressOf(store.project!.manifest, { items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }));
@@ -728,7 +731,7 @@ export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
     drop(g);
     await saveGens();
     // a draft saving itself never cancels the open of another character the user just started
-    if (doc.id === g.draft.rigId && !(auto && opening && opening !== doc.id)) {
+    if (auto ? viewing(g.draft.rigId) : doc.id === g.draft.rigId) {
       if (ui.selected === `gen:${id}`) ui.selected = item.id;
       await openProject(doc.id, auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id });
     }
@@ -926,11 +929,11 @@ export async function startMove(projectId: string, spec: MoveSpec) {
     if (!current()) return;
     const moveName = spec.id[0].toUpperCase() + spec.id.slice(1).replace(/-/g, ' ');
     if (spec.itemsOnly) { // items posed onto a move the body already had: the move and the undo history stay as they are
-      if (doc.id === projectId) { await openProject(projectId, { quiet: true }); if (!current()) return; }
+      if (viewing(projectId)) { await openProject(projectId, { quiet: true }); if (!current()) return; }
       const names = spec.items.map((id) => store.project?.manifest.items.find((i) => i.id === id)?.name ?? 'Equipment').join(', ');
       toast(`${names} ${spec.itemMethod === 'grid' ? 'redrawn' : 'posed'} for ${moveName}`);
     } else {
-      if (doc.id === projectId) { await openProject(projectId); if (!current()) return; ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
+      if (viewing(projectId)) { await openProject(projectId); if (!current()) return; if (viewing(projectId)) { ui.anim = spec.id; ui.frame = 0; ui.playing = true; } }
       toast(`${moveName} added`);
     }
   } catch (e) {
@@ -991,9 +994,13 @@ export async function dismissMove() {
   if (moveRunning) return;
   moveRevision++;
   const others = moving.queued.filter((q) => q.projectId !== moving.projectId);
-  Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false, fitIds: [], warnings: [], queued: [] });
+  Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false, fitIds: [], warnings: [], queued: others });
   await storeMove(null);
-  if (others.length) { const [next, ...rest] = others; moving.queued = rest; await startMove(next.projectId, next.spec); }
+  // others stay queued until one starts: a move started meanwhile (e.g. an item repair) takes them up when it finishes
+  if (moveRunning || moving.spec || !moving.queued.length) return;
+  const [next, ...rest] = moving.queued;
+  moving.queued = rest;
+  await startMove(next.projectId, next.spec);
 }
 
 // ---------- imported character setup ----------
@@ -1018,7 +1025,7 @@ export async function startSetup(spec: SetupSpec) {
     settingUp.warnings = rec?.rigQa?.warnings ?? [];
     await db.del('projects', SETUP_KEY);
     if (!current()) return;
-    if (doc.id === spec.projectId) await openProject(spec.projectId);
+    if (viewing(spec.projectId)) await openProject(spec.projectId);
     toast('Character ready for skeleton-posed items and new moves');
   } catch (e) {
     if (current()) {

@@ -14,7 +14,7 @@
   import { AUTHORED } from '../lib/rig/poses.ts'
   import { DEFAULT_MOVE } from '../lib/rig/rig.ts'
   import { MOVE_STEPS, isV13, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
-  import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, withKey } from './state.svelte.ts'
+  import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, openProject, withKey } from './state.svelte.ts'
   import { bodyQualityNote } from './model.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
@@ -43,6 +43,8 @@
   const est = $derived(m && id && targetDirs.length ? moveEstimate(m, { action: text.trim() ? undefined : action, frames, items: chosen, dirs: targetDirs, replace: replacing }) : null)
   const dirs = $derived(targetDirs.length)
   const mine = $derived(!!moving.spec && moving.projectId === doc.id)
+  // another character's failed move holds every new move; only its own sheet can try it again or start over
+  const holder = $derived(!mine && moving.spec && moving.error ? store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character' : '')
   const stepIx = $derived(MOVE_STEPS.findIndex((s) => s.id === moving.progress?.step))
   const nice = (s: string) => s[0].toUpperCase() + s.slice(1).replace(/-/g, ' ')
   let recovery = $state<Awaited<ReturnType<typeof measurementRecoveryPlan>> | null>(null)
@@ -112,6 +114,7 @@
 {/snippet}
 
 <Sheet title={mine && moving.spec?.itemMethod === 'grid' ? 'Repair item frames' : (mine ? moving.spec?.replace : replacing) ? 'Replace move views' : 'Add a move'} cancel={mine && !moving.done ? 'Hide' : 'Cancel'} onclose={() => (ui.sheet = null)} footer={isDemo() || (!ok && !mine) ? undefined : foot}>
+  {#if holder}<p class="notice small"><CircleAlert size={14} /><span>{nice(moving.spec!.id)} failed on {holder}, so new moves wait. Open it to try again or start over.</span><button class="bu-action btn sm" data-variant="outline" onclick={() => void openProject(moving.projectId)}>Open {holder}</button></p>{/if}
   {#if mine}
     <div class="form">
       <p style="font-weight:600">{nice(moving.spec!.id)}{moving.spec?.dirs ? ` · ${moving.spec.dirs.map(nice).join(', ')}` : ''}<ApiPeek scope="move-progress" label="Current move generation" plan={moving.spec ? movePlan(rec, moving.spec) : []} activityScope={moving.spec?.activityScope} /></p>
