@@ -6,12 +6,12 @@
 .share-preview:not(.share-grid) .sprite { max-height:116px; }
 .share-preview.share-grid { align-items:safe center; overflow:auto; }
 .share-preview.share-grid .sprite-box { max-height:none; }
-.share-controls { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:9px; width:max-content; max-width:100%; }
+.share-controls { display:grid; grid-template-columns:max-content max-content; align-items:center; gap:6px; margin-top:9px; width:max-content; max-width:100%; }
 .share-picker { position:relative; display:inline-flex; align-items:center; min-width:0; }
 .share-picker > svg:first-child { position:absolute; left:9px; z-index:1; pointer-events:none; color:var(--bu-muted); }
 .share-picker > svg:last-child { position:absolute; right:8px; pointer-events:none; }
 .share-picker select.bu-select { appearance:none; width:max-content; min-height:44px; padding:8px 27px 8px 31px; font-size:13px; cursor:pointer; }
-.share-animate.bu-check { display:inline-flex; justify-content:space-between; min-height:44px; width:max-content; padding:0 8px; font-size:13px; white-space:nowrap; }
+.share-animate.bu-check { display:inline-flex; grid-column:1 / -1; justify-content:space-between; min-height:44px; width:100%; padding:0 8px; font-size:13px; white-space:nowrap; }
 .share-animate > span { display:inline-flex; align-items:center; gap:5px; }
 .share-animate > span svg { color:var(--bu-muted); }
 .share-actions { display:flex; gap:6px; margin-top:9px; }

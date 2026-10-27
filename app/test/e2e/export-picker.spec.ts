@@ -27,6 +27,11 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await expect(popover.getByRole('combobox', { name: 'Direction' })).toHaveValue('south')
   await expect(popover.getByRole('switch')).toBeChecked()
   await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled()
+  await expect(popover.getByRole('button', { name: 'Download GIF' })).toHaveText('Download')
+  await expect(popover.locator('.share-animate')).toContainText('Animate as GIF')
+  const desktopMove = (await popover.getByRole('combobox', { name: 'Move' }).boundingBox())!
+  const desktopSwitch = (await popover.locator('.share-animate').boundingBox())!
+  expect(desktopSwitch.y).toBeGreaterThanOrEqual(desktopMove.y + desktopMove.height)
   await page.screenshot({ path: testInfo.outputPath('share-desktop.png') })
   const [gif] = await Promise.all([page.waitForEvent('download'), popover.getByRole('button', { name: 'Download GIF' }).click()])
   const gifBytes = await readFile((await gif.path())!)
@@ -37,6 +42,7 @@ test('Share popover follows the selected move, direction and Animate switch on d
 
   await popover.getByRole('switch').uncheck()
   await expect(popover.getByRole('button', { name: 'Download PNG' })).toBeEnabled()
+  await expect(popover.getByRole('button', { name: 'Download PNG' })).toHaveText('Download')
   const [png] = await Promise.all([page.waitForEvent('download'), popover.getByRole('button', { name: 'Download PNG' }).click()])
   const pngBytes = await readFile((await png.path())!)
   expect(png.suggestedFilename()).toMatch(/-walk-south\.png$/)

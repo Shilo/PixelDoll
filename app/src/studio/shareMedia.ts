@@ -98,8 +98,13 @@ export function buildShareMedia(a: PresentationAvailability, items: Preset['item
   }
   if (!entries.length) throw new Error('No complete move and direction pairs are available to share')
   const layoutDirections = directions.filter(id => entries.some(entry => entry.views.has(id)))
-  const columns = layoutDirections.length, gap = columns > 1 || entries.length > 1 ? 4 : 0
-  const still = tile(entries.flatMap(entry => layoutDirections.map(id => entry.views.get(id)?.[0] ?? null)), columns, gap)
+  const columns = layoutDirections.length <= 4 ? layoutDirections.length : layoutDirections.length <= 6 ? 3 : 4
+  const rowsPerMove = Math.ceil(layoutDirections.length / columns)
+  const gap = columns > 1 || entries.length > 1 ? 4 : 0
+  const still = tile(entries.flatMap(entry => [
+    ...layoutDirections.map(id => entry.views.get(id)?.[0] ?? null),
+    ...Array<null>(columns * rowsPerMove - layoutDirections.length).fill(null),
+  ]), columns, gap)
   const frames: ShareFrame[] = []
   if (animate) for (const entry of entries) for (let i = 0; i < entry.timeline.length; i++) {
     const images = layoutDirections.map(id => entry.views.get(id)?.[i] ?? null)
@@ -108,7 +113,7 @@ export function buildShareMedia(a: PresentationAvailability, items: Preset['item
   const animated = animate && frames.length > 1
   if (animated && (frames[0].image.w > 65535 || frames[0].image.h > 65535)) throw new Error('Selected GIF is too large')
   const repeat = entries.length === 1 && entries[0].move !== STANDING && a.project.manifest.rig.animations.find(animation => animation.id === entries[0].move)?.loop === false ? -1 : 0
-  return { frames: animated ? frames : [{ image: still, ms: 1000 }], still, animated, grid: columns > 1 || entries.length > 1, previewRows: animated ? 1 : entries.length, repeat, omitted, mime: animated ? 'image/gif' : 'image/png', extension: animated ? 'gif' : 'png' }
+  return { frames: animated ? frames : [{ image: still, ms: 1000 }], still, animated, grid: columns > 1 || entries.length > 1, previewRows: animated ? rowsPerMove : entries.length * rowsPerMove, repeat, omitted, mime: animated ? 'image/gif' : 'image/png', extension: animated ? 'gif' : 'png' }
 }
 
 function paletteFor(image: Img): { colors: number[][]; indices: Uint8Array } {

@@ -1,15 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { makeImg } from '../../src/lib/image/png.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
-import type { Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts'
+import type { DirectionName, Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts'
 import { buildPresentation } from '../../src/studio/experience/presentation.ts'
 import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canShareDirection, encodeShareMedia, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
 
 const hash = (name: string) => `sha256:${name}` as Sha256
-function fixture(): Project {
+function fixture(directions: DirectionName[] = ['south', 'east']): Project {
   const body0 = hash('body0'), body1 = hash('body1'), rest = hash('rest'), hat = hash('hat')
   const image = (r: number, x: number) => { const out = makeImg(2, 1); out.data.set([r, 0, 0, 255], x * 4); return out }
-  const directions = ['south', 'east'] as const
   const cells = (a: Sha256, b: Sha256) => Object.fromEntries(directions.map(direction => [direction, [a, b]]))
   const item = (id: string, slot: string, layer: Layer): Item => ({ id, slot, layers: [layer], name: id, prompt: '', baseHash: body0, status: 'accepted', mirror: 'flip', materials: [], provenance: [] })
   const manifest: Manifest = {
@@ -81,5 +80,31 @@ describe('share media', () => {
     const a = buildPresentation(project, { sourceProject: project })
     expect(canShareDirection(a, { head: 'hat' }, 'walk', 'south')).toBe(false)
     expect(() => buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)).toThrow(/hat missing walk \/ South artwork/)
+  })
+
+  test('one through eight available facings use legible rows without changing rig order', () => {
+    const compass: DirectionName[] = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west']
+    for (let count = 1; count <= 8; count++) {
+      const project = fixture(compass.slice(0, count))
+      compass.slice(0, count).forEach((id, index) => {
+        const directionHash = hash(`direction-${index}`), image = makeImg(2, 1)
+        image.data.set([20 + index, 0, 0, 255])
+        project.images.set(directionHash, image)
+        project.manifest.items[0].layers[0].cells!.walk[id] = [directionHash, directionHash]
+      })
+      const a = buildPresentation(project, { sourceProject: project })
+      const still = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, false)
+      const columns = count <= 4 ? count : count <= 6 ? 3 : 4
+      const rows = Math.ceil(count / columns)
+      expect([still.still.w, still.still.h, still.previewRows]).toEqual([columns * 2 + (columns - 1) * 4, rows + (rows - 1) * 4, rows])
+      compass.slice(0, count).forEach((_, index) => {
+        const x = index % columns * 6, y = Math.floor(index / columns) * 5
+        expect(still.still.data[(y * still.still.w + x) * 4]).toBe(20 + index)
+      })
+      const gif = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true)
+      expect(gif.frames.map(frame => [frame.image.w, frame.image.h])).toEqual([[still.still.w, still.still.h], [still.still.w, still.still.h]])
+      const one = buildShareMedia(a, {}, 'walk', compass[0], false)
+      expect([one.still.w, one.still.h]).toEqual([2, 1])
+    }
   })
 })

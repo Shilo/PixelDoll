@@ -123,12 +123,12 @@
       <ChevronDown size={14} aria-hidden="true" />
     </label>
     <label class="share-animate bu-check bu-action" data-variant="field">
-      <span><Clapperboard size={16} aria-hidden="true" />Animate</span>
+      <span><Clapperboard size={16} aria-hidden="true" />Animate as GIF</span>
       <input class="bu-switch" type="checkbox" role="switch" bind:checked={animate} onchange={() => index = 0} />
     </label>
   </div>
   <div class="share-actions">
-    <button class="bu-action" data-variant="primary" disabled={!file || encoding} onclick={download}>{#if encoding}<LoaderCircle class="share-spinner" size={16} />Preparing {label}…{:else}<Download size={16} />Download {label}{/if}</button>
+    <button class="bu-action" data-variant="primary" aria-label={encoding ? `Preparing ${label}` : `Download ${label}`} title={encoding ? undefined : `Download ${label}`} disabled={!file || encoding} onclick={download}>{#if encoding}<LoaderCircle class="share-spinner" size={16} />Preparing…{:else}<Download size={16} />Download{/if}</button>
     <button class="bu-action" data-variant="outline" disabled={!canShare || encoding} title={!canShare ? 'File sharing is unavailable in this browser; use Download instead' : undefined} onclick={share}><Share2 size={16} />Share to…</button>
   </div>
   {#if planned.error}<p class="share-message bu-error" role="status">{planned.error}</p>{/if}
