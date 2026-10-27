@@ -71,6 +71,7 @@ export async function baseHashOf(rig: Pick<Rig, 'directions' | 'animations'>, ha
 }
 
 const ID = /^[a-z0-9][a-z0-9_-]*$/;
+export const validAnimationId = (id: string): boolean => ID.test(id);
 
 /** Playback preferences do not change the artwork inputs of a pending generation or recovery. */
 export const rigArtworkVersion = (rig: Rig, character: unknown): string =>

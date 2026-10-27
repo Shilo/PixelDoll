@@ -27,15 +27,24 @@ export async function listSources(): Promise<{ id: string; label: string }[]> {
 /** Material labels derived by earlier versions. */
 const currentLabels = (project: Project) => { for (const m of project.manifest.materials) if (typeof m.label === 'string') m.label = m.label.replace(/^Grey\b/, 'Gray'); return project; };
 
-export async function openSource(id: string): Promise<{ project: Project; current?: Outfit }> {
+export async function openSource(id: string, signal?: AbortSignal): Promise<{ project: Project; current?: Outfit }> {
+  signal?.throwIfAborted();
   if (id.startsWith('fixture:')) {
     const name = id.slice(8);
-    const project = await loadFixture(async (p) => new Uint8Array(await (await fetch(`./fixtures/${name}/${p}`)).arrayBuffer()));
+    const project = await loadFixture(async (p) => {
+      signal?.throwIfAborted();
+      const bytes = new Uint8Array(await (await fetch(`./fixtures/${name}/${p}`, { signal })).arrayBuffer());
+      signal?.throwIfAborted();
+      return bytes;
+    });
+    signal?.throwIfAborted();
     const saved = await db.get<DressState>('projects', `dress-${id}`).catch(() => undefined);
+    signal?.throwIfAborted();
     if (saved) applyDress(project.manifest, saved);
     return { project: currentLabels(project), current: saved?.current };
   }
-  const { rec, project } = await loadProject(id); // B4's loader (store/project.ts)
+  const { rec, project } = await loadProject(id, signal); // B4's loader (store/project.ts)
+  signal?.throwIfAborted();
   return { project: currentLabels(project), current: (rec as ProjectRecord).dress?.current };
 }
 

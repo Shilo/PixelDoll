@@ -1,8 +1,9 @@
 import { enterStudio, noDisabledHover, openStudio } from './immersive-helpers.ts'
-import { expect, test, type Page } from '@playwright/test'
+import { chromium, expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
+import { EXPORT_SETTINGS_KEY } from '../../src/lib/store/export-settings.ts'
 
 async function savedExport(page: Page, dev: string) {
   await page.setViewportSize({ width: 800, height: 600 }) // Eight parallel settings runs do not need eight full-size animated worlds.
@@ -33,40 +34,282 @@ async function savedExport(page: Page, dev: string) {
     await state.refreshProjects(); await state.openProject(id)
   })
   await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(page.getByRole('dialog').getByRole('radio', { name: 'Godot', exact: true })).toBeEnabled()
 }
 
-async function holdProjectTransaction(page: Page, mode: IDBTransactionMode) {
-  await page.evaluate(mode => {
-    const host = window as unknown as { __studio: { doc: { id: string } }; exportTransaction: { ready: boolean; release: () => void } }
-    const hold: { ready: boolean; release: () => void } = host.exportTransaction = { ready: false, release: () => { throw new Error('Transaction has not finished yet') } }
+async function holdProjectTransaction(page: Page, mode: IDBTransactionMode, target: 'settings' | 'character' = 'settings') {
+  await page.evaluate(({ mode, target, key }) => {
+    const host = window as unknown as { __studio: { doc: { id: string } }; exportTransaction: { ready: boolean; release: () => void; reject: () => void } }
+    const unfinished = () => { throw new Error('Transaction has not finished yet') }
+    const hold: { ready: boolean; release: () => void; reject: () => void } = host.exportTransaction = { ready: false, release: unfinished, reject: unfinished }
     const original = IDBObjectStore.prototype.get
     IDBObjectStore.prototype.get = function(query) {
       const request = original.call(this, query)
-      if (this.name === 'projects' && query === host.__studio.doc.id && this.transaction.mode === mode) {
+      if (this.name === 'projects' && query === (target === 'character' ? host.__studio.doc.id : key) && this.transaction.mode === mode) {
         IDBObjectStore.prototype.get = original
         const transaction = this.transaction
         Object.defineProperty(transaction, 'oncomplete', { set(callback: (this: IDBTransaction, event: Event) => void) {
           transaction.addEventListener('complete', event => {
             hold.ready = true
             hold.release = () => callback.call(transaction, event)
+            hold.reject = () => {
+              Object.defineProperty(transaction, 'error', { value: new DOMException('Synthetic stale read failure', 'UnknownError') })
+              transaction.dispatchEvent(new Event('error'))
+            }
           }, { once: true })
         } })
       }
       return request
     }
-  }, mode)
+  }, { mode, target, key: EXPORT_SETTINGS_KEY })
 }
 
 async function releaseProjectTransaction(page: Page) {
   await page.evaluate(() => (window as unknown as { exportTransaction: { release: () => void } }).exportTransaction.release())
 }
 
+test('loading global preferences preserves native focus and permits settings navigation before the read completes', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  await holdProjectTransaction(page, 'readonly')
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect.poll(() => page.evaluate(() => (window as unknown as { exportTransaction: { ready: boolean } }).exportTransaction.ready)).toBe(true)
+  await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeFocused()
+  await expect(dialog.getByRole('radio', { name: 'Godot', exact: true })).toBeDisabled()
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  const back = dialog.getByRole('button', { name: 'Back', exact: true })
+  await expect(back).toBeFocused()
+  await expect(dialog.getByRole('status')).toHaveText('Loading export settings…')
+  const dressed = dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
+  await expect(dressed).toBeDisabled()
+  await releaseProjectTransaction(page)
+  await expect(dressed).toBeEnabled(); await expect(back).toBeFocused()
+  await expect(dialog.getByRole('status')).toHaveCount(0)
+})
+
+test('a committed earlier format and a failed latest format keep the write error visible after refresh', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled()
+  await holdProjectTransaction(page, 'readwrite')
+  await dialog.getByRole('radio', { name: 'Unity', exact: true }).check()
+  await expect.poll(() => page.evaluate(() => (window as unknown as { exportTransaction: { ready: boolean } }).exportTransaction.ready)).toBe(true)
+  await page.evaluate(key => {
+    const original = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, id) {
+      if (this.name === 'projects' && id === key) { IDBObjectStore.prototype.put = original; throw new Error('Latest format could not save') }
+      return original.call(this, value, id)
+    }
+    window.dispatchEvent(new Event('focus')) // Queue a refresh while the first completion is held.
+  }, EXPORT_SETTINGS_KEY)
+  await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check()
+  await expect(dialog.getByRole('alert')).toContainText('Latest format could not save')
+  await releaseProjectTransaction(page)
+  await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked()
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled()
+  await expect(dialog.getByRole('alert')).toContainText('Latest format could not save')
+})
+
+test('a stale rejected global refresh cannot block a newer successful format save', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled()
+  await page.evaluate(() => {
+    const original = BroadcastChannel.prototype.postMessage
+    BroadcastChannel.prototype.postMessage = function(value) { if (this.name !== 'pixeldoll-export-settings') original.call(this, value) }
+  }) // Keep the held read as the latest request; this test isolates its stale rejection guard.
+  await holdProjectTransaction(page, 'readonly')
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect.poll(() => page.evaluate(() => (window as unknown as { exportTransaction: { ready: boolean } }).exportTransaction.ready)).toBe(true)
+  await dialog.getByRole('radio', { name: 'Unity', exact: true }).check()
+  await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled()
+  // Release the held transaction as a failed read, after the newer write has committed.
+  await page.evaluate(() => (window as unknown as { exportTransaction: { reject: () => void } }).exportTransaction.reject())
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled()
+  await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked()
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+})
+
+test('global Export choices survive a browser restart, character changes and dynamic move names', async ({}, info) => {
+  const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+  const profile = info.outputPath('persistent-export-profile')
+  const launch = async () => {
+    const context = await chromium.launchPersistentContext(profile, { headless: true, channel: info.project.use.channel, viewport: { width: 800, height: 600 } })
+    await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+    await context.route('https://*.pixellab.ai/**', route => route.abort())
+    return context
+  }
+  let context = await launch()
+  try {
+    let page = context.pages()[0]
+    await savedExport(page, dev)
+    let dialog = page.getByRole('dialog')
+    await dialog.getByRole('radio', { name: 'Unity', exact: true }).check()
+    await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+    await dialog.getByRole('checkbox', { name: 'Walk', exact: true }).check()
+    let dressed = dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
+    await expect(dressed).toBeEnabled(); await dressed.uncheck(); await expect(dressed).toBeEnabled()
+    await dialog.getByRole('button', { name: 'Close export' }).click()
+    const identities = await page.evaluate(async () => {
+      const statePath = '/src/studio/state.svelte.ts', importPath = '/src/lib/store/import.ts'
+      const s = await import(statePath), { saveImportedCharacter } = await import(importPath)
+      const first = s.doc.id, project = { ...s.store.project, manifest: structuredClone(s.store.project.manifest) }
+      project.manifest.rig.animations.forEach((move: { loop: boolean }) => { move.loop = false }) // Imported metadata must not seed global preferences.
+      const second = await saveImportedCharacter({ project, extra: {}, warnings: [] }, 'Second character')
+      await s.refreshProjects(); await s.openProject(second)
+      return { first, second }
+    })
+    await page.getByRole('button', { name: 'Export', exact: true }).click()
+    await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked()
+    await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None'])
+    await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check()
+    await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+    await expect(dialog.getByRole('checkbox', { name: 'Walk', exact: true })).toHaveCount(1)
+    await expect(dialog.getByRole('checkbox', { name: 'Walk', exact: true })).toBeChecked()
+    await expect(dialog.getByRole('checkbox', { name: 'Cross punch', exact: true })).not.toBeChecked()
+    await dressed.check(); await expect(dressed).toBeEnabled()
+    await dialog.getByRole('button', { name: 'Close export' }).click()
+    await page.evaluate(async ids => {
+      const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', rigPath = '/src/lib/rig/rig.ts'
+      const s = await import(statePath), db = await import(dbPath), { baseHashOf } = await import(rigPath)
+      await s.renameProject('Renamed second character')
+      const record = await db.get('projects', ids.first), m = record.manifest
+      const walk = m.rig.animations.find((a: { id: string }) => a.id === 'walk')
+      walk.id = 'renamed-walk'; walk.frames[0].ms = 80
+      m.rig.animations = [walk, { ...structuredClone(walk), id: 'new-move', loop: true }]
+      const hashes: Record<string, string> = {}
+      for (const layer of m.items[0].layers) {
+        const cells = layer.cells.walk
+        layer.cells = { 'renamed-walk': cells, 'new-move': structuredClone(cells) }
+        for (const id of ['renamed-walk', 'new-move']) layer.cells[id].south.forEach((hash: string, i: number) => { hashes[id + '/south/' + i] = hash })
+      }
+      m.rig.baseHash = await baseHashOf(m.rig, hashes); m.items[0].baseHash = m.rig.baseHash
+      await db.put('projects', ids.first, record); await s.openProject(ids.first)
+    }, identities)
+    await page.evaluate(() => location.reload()); await enterStudio(page)
+    await page.getByRole('button', { name: 'Export', exact: true }).click()
+    await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked()
+    await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'Current look + saved outfits'])
+    await dialog.getByRole('button', { name: 'Close export' }).click()
+    await context.close() // Close the actual browser process, retaining only its on-disk profile.
+    context = await launch(); page = context.pages()[0]; dialog = page.getByRole('dialog')
+    await openStudio(page, dev)
+    await page.getByRole('button', { name: 'Export', exact: true }).click()
+    await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked()
+    await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+    await expect(dialog.getByRole('checkbox', { name: 'Walk', exact: true })).toBeChecked()
+    await expect(dialog.getByRole('checkbox', { name: 'Renamed walk', exact: true })).not.toBeChecked()
+    await expect(dialog.getByRole('checkbox', { name: 'New move', exact: true })).not.toBeChecked()
+    await expect(dialog.getByRole('checkbox', { name: 'Cross punch', exact: true })).not.toBeChecked()
+    await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+    const button = dialog.getByRole('button', { name: /^Download ZIP/ }); await expect(button).toBeEnabled()
+    const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
+    const zip = await unzip(new Uint8Array(await readFile((await download.path())!)))
+    const firstExport = JSON.parse(new TextDecoder().decode(zip.get('manifest.json')!))
+    expect(firstExport.rig.animations.map((move: { id: string; loop: boolean }) => [move.id, move.loop])).toEqual([['renamed-walk', true], ['new-move', true]])
+    await page.evaluate(async second => { const path = '/src/studio/state.svelte.ts', s = await import(path); await s.openProject(second) }, identities.second)
+    await page.getByRole('button', { name: 'Export', exact: true }).click()
+    await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked()
+    await expect(button).toBeEnabled()
+    const [secondDownload] = await Promise.all([page.waitForEvent('download'), button.click()])
+    const secondZip = await unzip(new Uint8Array(await readFile((await secondDownload.path())!)))
+    const secondExport = JSON.parse(new TextDecoder().decode(secondZip.get('manifest.json')!))
+    expect(secondExport.rig.animations.find((move: { id: string }) => move.id === 'walk').loop).toBe(false)
+    expect(secondExport.rig.animations.find((move: { id: string }) => move.id === 'cross-punch').loop).toBe(true)
+    expect(await page.evaluate(async ids => {
+      const path = '/src/lib/store/db.ts', db = await import(path)
+      const [a, b] = await Promise.all([db.get('projects', ids.first), db.get('projects', ids.second)])
+      return [a.manifest.rig.animations.map((move: { loop: boolean }) => move.loop), b.manifest.rig.animations.map((move: { loop: boolean }) => move.loop)]
+    }, identities)).toEqual([[true, true], [false, false]])
+    await expect(page.getByRole('heading', { name: 'Renamed second character', exact: true })).toHaveCount(1)
+  } finally { await context.close() }
+})
+
+test('global Export choices persist through demo reload, editable copying and character switching', async ({ page }, info) => {
+  await page.setViewportSize({ width: 800, height: 600 })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.route('https://*.pixellab.ai/**', route => route.abort())
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('radio', { name: 'Phaser', exact: true }).check()
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  await dialog.getByRole('checkbox', { name: 'Walk', exact: true }).check()
+  const dressed = dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
+  await expect(dressed).toBeEnabled(); await dressed.uncheck(); await expect(dressed).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(() => location.reload()); await enterStudio(page)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked()
+  await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None'])
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  const copy = await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', createPath = '/src/studio/create.ts'
+    const s = await import(statePath), { saveCopy } = await import(createPath), id = await saveCopy(s.store.project, 'Demo copy')
+    await s.refreshProjects(); await s.openProject(id)
+    return id
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked()
+  await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None'])
+  await dialog.getByRole('radio', { name: 'Unity', exact: true }).check()
+  await expect(dialog.getByRole('button', { name: 'Close export' })).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts', s = await import(path); await s.openProject(s.DEMO) })
+  const same = await page.evaluate(async () => { const statePath = '/src/studio/state.svelte.ts', createPath = '/src/studio/create.ts'; const s = await import(statePath), { saveCopy } = await import(createPath); return saveCopy(s.store.project, 'Should reopen existing copy') })
+  expect(same).toBe(copy)
+  await page.evaluate(async id => { const path = '/src/studio/state.svelte.ts', s = await import(path); await s.openProject(id) }, copy)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked()
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts', s = await import(path); await s.openProject(s.DEMO) })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked()
+  await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None'])
+})
+
+test('two tabs merge independent Export saves and refresh on reactivation without losing keyboard focus', async ({ page, context }, info) => {
+  const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+  await context.route('https://*.pixellab.ai/**', route => route.abort())
+  await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await savedExport(page, dev)
+  const second = await context.newPage()
+  await second.setViewportSize({ width: 800, height: 600 }); await openStudio(second, dev)
+  await second.getByRole('button', { name: 'Export', exact: true }).click()
+  const a = page.getByRole('dialog'), b = second.getByRole('dialog')
+  await a.getByRole('radio', { name: 'Unity', exact: true }).check()
+  await expect(a.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled()
+  await b.getByRole('button', { name: 'Settings', exact: true }).click()
+  const dressed = b.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
+  await dressed.uncheck(); await expect(dressed).toBeEnabled()
+  await b.getByRole('button', { name: 'Back', exact: true }).click()
+  await expect(b.getByRole('radio', { name: 'Unity', exact: true })).toBeChecked()
+  await a.getByRole('button', { name: 'Settings', exact: true }).click()
+  const walk = a.getByRole('checkbox', { name: 'Walk', exact: true })
+  await walk.focus()
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')))
+  await expect(a.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })).not.toBeChecked()
+  await expect(walk).toBeFocused()
+  await walk.check(); await expect(walk).toBeEnabled()
+  await b.getByRole('radio', { name: 'PNG + JSON', exact: true }).check()
+  await expect(b.getByRole('button', { name: 'Settings', exact: true })).toBeEnabled()
+  await expect(b.locator('.export-summary dd')).toHaveText(['Walk', 'None'])
+  const button = b.getByRole('button', { name: /^Download ZIP/ }); await expect(button).toBeEnabled()
+  const [download] = await Promise.all([second.waitForEvent('download'), button.click()])
+  const zip = await unzip(new Uint8Array(await readFile((await download.path())!)))
+  const manifest = JSON.parse(new TextDecoder().decode(zip.get('manifest.json')!))
+  expect(manifest.export.engines).toEqual(['generic'])
+  expect([...zip.keys()].some(name => name.startsWith('baked/'))).toBe(false)
+  expect(manifest.rig.animations.find((move: { id: string }) => move.id === 'walk').loop).toBe(false)
+})
+
 test('a same-character reload cannot replace export choices saved after its read started', async ({ page }, info) => {
   await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   const dialog = page.getByRole('dialog')
   await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
   for (const kind of ['animation', 'dressed']) {
-    await holdProjectTransaction(page, 'readonly')
+    await holdProjectTransaction(page, 'readonly', 'character')
     await page.evaluate(async () => {
       const path = '/src/studio/state.svelte.ts', state = await import(path)
       ;(window as unknown as { exportReload: Promise<void> }).exportReload = state.openProject(state.doc.id, { quiet: true })
@@ -79,9 +322,9 @@ test('a same-character reload cannot replace export choices saved after its read
     await page.evaluate(async () => await (window as unknown as { exportReload: Promise<void> }).exportReload)
     if (wanted) await expect(input).toBeChecked(); else await expect(input).not.toBeChecked()
     const saved = await page.evaluate(async kind => {
-      const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', state = await import(statePath), db = await import(dbPath)
-      const record = await db.get('projects', state.doc.id)
-      return kind === 'animation' ? !record.manifest.rig.animations[0].loop : record.manifest.exportSettings.dressedCharacterSheets
+      const path = '/src/lib/store/export-settings.ts', { readExportSettings } = await import(path)
+      const settings = await readExportSettings()
+      return kind === 'animation' ? settings.playOnce.includes('cross-punch') : settings.dressedCharacterSheets
     }, kind)
     expect(saved).toBe(wanted)
   }
@@ -200,7 +443,7 @@ test('one-frame and hundred-animation characters keep exact summaries, readable 
         layer.cells = Object.fromEntries(manifest.rig.animations.map((a: { id: string }) => { hashes[`${a.id}/south/0`] = first[j]; return [a.id, { south: [first[j]] }] }))
       })
       manifest.rig.baseHash = await baseHashOf(manifest.rig, hashes); base.baseHash = manifest.rig.baseHash
-      if (count === 100) manifest.exportSettings = { dressedCharacterSheets: false }
+      await db.put('projects', 'studio-export-settings', { engine: 'godot', dressedCharacterSheets: count !== 100, playOnce: count === 100 ? manifest.rig.animations.map((move: { id: string }) => move.id) : [] })
       await db.put('projects', state.doc.id, record); await state.openProject(state.doc.id)
     }, count)
     await page.setViewportSize({ width: 320, height: 568 }); await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -264,7 +507,7 @@ test('Export settings persist explicit None, list and All choices, and toggle co
   expect(manifest.presets.length).toBeGreaterThan(1)
   expect([...off.keys()].some(name => name.startsWith('baked/'))).toBe(false)
   expect([...off.keys()].some(name => name.startsWith('layers/'))).toBe(true)
-  expect(JSON.parse(new TextDecoder().decode(off.get('project.json')!)).manifest.exportSettings.dressedCharacterSheets).toBe(false)
+  expect(JSON.parse(new TextDecoder().decode(off.get('project.json')!)).manifest.rig.animations.every((move: { loop: boolean }) => !move.loop)).toBe(true)
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   await openSettings()
   for (let i = 0; i < count; i++) { await moves.nth(i).uncheck(); await expect(moves.nth(i)).toBeEnabled() }
@@ -286,9 +529,9 @@ test('Export settings show storage failures without changing the choice or trapp
   for (const input of [dialog.locator('.export-moves input').first(), dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })]) {
     const checked = await input.isChecked()
     await page.evaluate(() => {
-    const studio = (window as unknown as { __studio: { doc: { id: string } } }).__studio, original = IDBObjectStore.prototype.put
+    const original = IDBObjectStore.prototype.put
     IDBObjectStore.prototype.put = function(value, key) {
-      if (this.name === 'projects' && key === studio.doc.id) { IDBObjectStore.prototype.put = original; throw new Error('Synthetic settings write failure') }
+      if (this.name === 'projects' && key === 'studio-export-settings') { IDBObjectStore.prototype.put = original; throw new Error('Synthetic settings write failure') }
       return original.call(this, value, key)
     }
     })
@@ -299,8 +542,83 @@ test('Export settings show storage failures without changing the choice or trapp
   }
   await dialog.getByRole('button', { name: 'Back', exact: true }).click()
   await expect(dialog.locator('.export-summary dd')).toHaveText(before)
+  const originalEngine = dialog.getByRole('radio', { name: 'Godot', exact: true })
+  await expect(originalEngine).toBeChecked()
+  await page.evaluate(() => {
+    const original = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, key) {
+      if (this.name === 'projects' && key === 'studio-export-settings') { IDBObjectStore.prototype.put = original; throw new Error('Synthetic format write failure') }
+      return original.call(this, value, key)
+    }
+  })
+  await dialog.getByRole('radio', { name: 'Unity', exact: true }).click() // The expected rollback can finish before check() verifies its opposite postcondition.
+  await expect(dialog.getByRole('alert')).toContainText('Synthetic format write failure')
+  await expect(originalEngine).toBeChecked()
+  await expect(dialog.getByRole('radio', { name: 'Unity', exact: true })).not.toBeChecked()
+  await expect(dialog.locator('#export-description')).toContainText('Godot:')
   await dialog.getByRole('button', { name: 'Close export' }).click()
   await expect(dialog).toHaveCount(0)
+})
+
+test('invalid stored Export preferences show a clear error and allow closing the dialog', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
+  await page.evaluate(async key => {
+    const path = '/src/lib/store/db.ts', db = await import(path)
+    await db.put('projects', key, { engine: 'unsupported', dressedCharacterSheets: true, playOnce: [] })
+  }, EXPORT_SETTINGS_KEY)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('alert')).toContainText('supported format')
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled()
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  await expect(dialog).toHaveCount(0)
+  expect(errors).toEqual([])
+})
+
+test('an unrelated malformed character shows an identifiable library error without crashing Export', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
+  await page.evaluate(async () => {
+    const path = '/src/lib/store/db.ts', db = await import(path)
+    await db.put('projects', 'rig-broken-export-names', { id: 'rig-broken-export-names', manifest: { format: 'pixeldoll/2', name: 'Broken library character', rig: { animations: null } } })
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('alert')).toContainText('Broken library character')
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled()
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  expect(errors).toEqual([])
+})
+
+test('distinct imported IDs with identical pretty names remain distinguishable global choices', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', rigPath = '/src/lib/rig/rig.ts'
+    const s = await import(statePath), db = await import(dbPath), { baseHashOf } = await import(rigPath)
+    const rec = await db.get('projects', s.doc.id), m = rec.manifest, oldIds = m.rig.animations.map((a: { id: string }) => a.id)
+    const ids = ['jump-loop', 'jump--loop'], hashes: Record<string, string> = {}
+    m.rig.animations.forEach((a: { id: string }, i: number) => { a.id = ids[i] })
+    for (const layer of m.items[0].layers) {
+      const cells = layer.cells
+      layer.cells = Object.fromEntries(ids.map((id, i) => [id, cells[oldIds[i]]]))
+      for (const id of ids) layer.cells[id].south.forEach((hash: string, i: number) => { hashes[`${id}/south/${i}`] = hash })
+    }
+    m.rig.baseHash = await baseHashOf(m.rig, hashes); m.items[0].baseHash = m.rig.baseHash
+    await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id)
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  const once = dialog.getByRole('checkbox', { name: 'Jump loop (jump-loop)', exact: true })
+  await once.check(); await expect(once).toBeEnabled()
+  await expect(dialog.getByRole('checkbox', { name: 'Jump loop (jump--loop)', exact: true })).not.toBeChecked()
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+  await expect(dialog.locator('.export-summary dd').first()).toHaveText('Jump loop (jump-loop)')
+  expect(await page.evaluate(async () => { const path = '/src/lib/store/export-settings.ts'; return (await import(path)).readExportSettings() })).toMatchObject({ playOnce: ['jump-loop'] })
 })
 
 test('Export navigation and settings fit phones, landscape and both themes, including a character without saved outfits', async ({ page }, info) => {
@@ -336,6 +654,50 @@ test('Export navigation and settings fit phones, landscape and both themes, incl
   await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeFocused()
 })
 
+test('Preview, Top-down and Side-scroller always loop with global Play once both on and off', async ({ page }, info) => {
+  await page.setViewportSize({ width: 800, height: 600 })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await page.route('https://*.pixellab.ai/**', route => route.abort())
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.clock.install({ time: new Date('2026-10-27T12:00:00Z') })
+  await page.clock.pauseAt(new Date('2026-10-27T12:00:01Z'))
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    const walk = s.store.project.manifest.rig.animations.find((move: { id: string }) => move.id === 'walk')
+    walk.loop = false; walk.frames = [{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }]
+    s.ui.anim = 'walk'; s.ui.dir = 'south'; s.ui.playing = true; s.doc.rev++
+    const host = window as unknown as { appLoopFrames: number[] }
+    host.appLoopFrames = []
+    const original = CanvasRenderingContext2D.prototype.drawImage
+    CanvasRenderingContext2D.prototype.drawImage = function(image: CanvasImageSource, ...coordinates: number[]) {
+      Reflect.apply(original, this, [image, ...coordinates])
+      // Observe the source pixels actually drawn for the actor, before camera motion or reflections.
+      if (!this.canvas.classList.contains('world-actors') || this.globalAlpha !== 1 || !(image instanceof HTMLCanvasElement)) return
+      const pixels = image.getContext('2d')!.getImageData(0, 0, image.width, image.height).data
+      let hash = 2166136261
+      for (const byte of pixels) hash = Math.imul(hash ^ byte, 16777619)
+      const value = hash >>> 0
+      if (host.appLoopFrames.at(-1) !== value) host.appLoopFrames.push(value)
+    }
+  })
+  const modes = page.getByRole('navigation', { name: 'Character view' })
+  for (const playOnce of [true, false]) {
+    await page.evaluate(async playOnce => { const path = '/src/lib/store/export-settings.ts', settings = await import(path); await settings.saveExportSetting({ animation: 'WALK', playOnce }) }, playOnce)
+    for (const mode of ['Preview', 'Top-down', 'Side-scroller']) {
+      await modes.getByRole('button', { name: mode, exact: true }).click()
+      await page.locator('.world-stage').focus()
+      const key = mode === 'Top-down' ? 's' : mode === 'Side-scroller' ? 'd' : null
+      if (key) await page.keyboard.down(key)
+      await page.evaluate(() => { (window as unknown as { appLoopFrames: number[] }).appLoopFrames = [] })
+      await page.clock.runFor(1100)
+      const frames = await page.evaluate(() => (window as unknown as { appLoopFrames: number[] }).appLoopFrames)
+      expect(new Set(frames).size, `${mode}, Play once ${playOnce}`).toBe(2)
+      expect(frames.length, `${mode}, Play once ${playOnce}`).toBeGreaterThanOrEqual(8)
+      if (key) await page.keyboard.up(key)
+    }
+  }
+})
+
 test('Share preview and downloaded GIF loop continuously for a one-shot move', async ({ page, context }, testInfo) => {
   await context.route('https://api.pixellab.ai/**', route => route.abort())
   await context.addInitScript(() => {
@@ -344,7 +706,9 @@ test('Share preview and downloaded GIF loop continuously for a one-shot move', a
   })
   const dev = testInfo.config.projects.find(project => project.name === 'browser-selftests')!.use.baseURL!
   await openStudio(page, dev + '/#/', { waitUntil: 'networkidle' })
-  await page.evaluate(() => {
+  await page.evaluate(async () => {
+    const path = '/src/lib/store/export-settings.ts', settings = await import(path)
+    await settings.saveExportSetting({ animation: 'WALK', playOnce: true })
     const studio = (window as unknown as { __studio: { doc: { rev: number }; store: { project: { manifest: { rig: { animations: { id: string; loop: boolean; frames: { cell: number; ms: number }[] }[] } } } } } }).__studio
     const clip = studio.store.project.manifest.rig.animations.find(move => move.id === 'walk')!
     clip.loop = false

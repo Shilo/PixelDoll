@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { repairBodyPalette } from '../../src/lib/rig/palette.ts';
+import { PaletteRepairUnavailable, repairBodyPalette } from '../../src/lib/rig/palette.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 const frame = (rgb: number[], count = 20) => { const im = makeImg(count, 1); for (let i = 0; i < count; i++) im.data.set([...rgb, 255], i * 4); return im; };
 const pixel = (rgb: number[], reference: number[] = [0, 0, 0]) => { const rest = frame(reference), im = frame(reference); im.data.set([...rgb, 255], 0); return { rest, im }; };
@@ -37,6 +37,7 @@ test.each([[[84, 84, 76], [100, 70, 60]], [[100, 64, 76], [100, 80, 60]]])('refu
 test('broad drift over5% refuses the whole operation without mutating inputs', () => {
   const { rest, im } = pixel([13, 5, 2]); im.data.set([13, 5, 2, 255], 4); const before = structuredClone(im);
   expect(() => repairBodyPalette(rest, [im])).toThrow('Too much color drift'); expect(im).toEqual(before);
+  expect(() => repairBodyPalette(rest, [im])).toThrow(PaletteRepairUnavailable);
 });
 test('transparent RGB, every alpha value and all unaffected pixels are preserved exactly', () => {
   const { rest, im } = pixel([13, 5, 2], [0, 0, 0]); im.data.set([88, 99, 111, 0], 4);
@@ -53,4 +54,6 @@ test('a palette-valid invented gray object is left unchanged; palette repair doe
 test('missing reference or incompatible frame geometry is rejected', () => {
   expect(() => repairBodyPalette(makeImg(20, 1), [frame([0, 0, 0])])).toThrow('visible reference');
   expect(() => repairBodyPalette(frame([0, 0, 0]), [makeImg(2, 2)])).toThrow('matching complete frames');
+  expect(() => repairBodyPalette(makeImg(20, 1), [frame([0, 0, 0])])).not.toThrow(PaletteRepairUnavailable);
+  expect(() => repairBodyPalette(frame([0, 0, 0]), [makeImg(2, 2)])).not.toThrow(PaletteRepairUnavailable);
 });

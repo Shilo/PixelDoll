@@ -337,12 +337,10 @@ test('a palette refresh re-reads export preferences saved after its project read
   const refreshing = s.matchItemPalette('project', 'sword', 'walk', 'south', itemColorPlan)
   await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledOnce())
   s.store.project.manifest.rig.animations[0].loop = false
-  s.store.project.manifest.exportSettings = { dressedCharacterSheets: false }
   s.doc.rev++
   first.resolve({ project: original }); await refreshing
   expect(mocks.load).toHaveBeenCalledTimes(2)
   expect(s.store.project.manifest.rig.animations[0].loop).toBe(false)
-  expect(s.store.project.manifest.exportSettings).toEqual({ dressedCharacterSheets: false })
   expect(mocks.match).toHaveBeenCalledOnce()
 })
 

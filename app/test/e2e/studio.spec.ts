@@ -1732,9 +1732,38 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
   })
   await reloadStudio(page)
   await expect(page.locator('.world-actors').first()).toBeVisible()
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', state = await import(statePath), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    const record = await db.get('projects', state.doc.id), excluded = new Set(Object.values(record.manifest.rig.rest as Record<string, { image: string }>).map(rest => rest.image.slice(7)))
+    for (const job of await db.all('jobs')) for (const sub of job.jobs ?? []) for (const result of sub.results ?? []) excluded.add(result.sha)
+    const hash = record.manifest.items.filter((item: { id: string }) => item.id !== record.manifest.rig.baseItem).flatMap((item: { layers: { cells: Record<string, Record<string, string[]>> }[] }) => item.layers.flatMap(layer => Object.values(layer.cells).flatMap(dirs => Object.values(dirs).flat()))).find((hash: string) => hash && !excluded.has(hash.slice(7)))
+    if (!hash) throw new Error('Recovery fixture needs unrelated equipment pixels')
+    const original = IDBObjectStore.prototype.get, audit: { reads: number; stacks: string[]; failRest: boolean; pauseRest: boolean; ready: boolean; release: () => void } = { reads: 0, stacks: [], failRest: true, pauseRest: true, ready: false, release: () => { throw new Error('Standing image read is not ready') } }, restHash = record.manifest.rig.rest.west.image.slice(7)
+    ;(window as unknown as { recoveryBlobAudit: typeof audit }).recoveryBlobAudit = audit
+    IDBObjectStore.prototype.get = function(query) {
+      if (this.name === 'blobs' && query === hash.slice(7)) { const error = new Error('Unrelated equipment must not be decoded for recovery'); audit.reads++; audit.stacks.push(error.stack ?? error.message); throw error }
+      if (this.name === 'blobs' && query === restHash && audit.failRest) { audit.failRest = false; throw new Error('Synthetic standing image storage failure') }
+      if (this.name === 'blobs' && query === restHash && audit.pauseRest) {
+        audit.pauseRest = false
+        const transaction = this.transaction
+        Object.defineProperty(transaction, 'oncomplete', { set(callback: (this: IDBTransaction, event: Event) => void) {
+          transaction.addEventListener('complete', event => { audit.ready = true; audit.release = () => callback.call(transaction, event) }, { once: true })
+        } })
+      }
+      return original.call(this, query)
+    }
+  })
   await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
   const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true })
   await expect(sheet).toContainText('Joint-check outcome unknown')
+  await expect(sheet).toContainText('Could not check cached frames: Synthetic standing image storage failure')
+  await sheet.getByRole('button', { name: 'Hide', exact: true }).click()
+  await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
+  await expect(sheet.getByRole('status')).toHaveText('Checking cached frames…')
+  await expect.poll(() => page.evaluate(() => (window as unknown as { recoveryBlobAudit: { ready: boolean } }).recoveryBlobAudit.ready)).toBe(true)
+  await page.evaluate(() => (window as unknown as { recoveryBlobAudit: { release: () => void } }).recoveryBlobAudit.release())
+  await expect(sheet).toContainText('Wait for the current joint checks to finish before recovering them.')
+  await expect(sheet.getByRole('status')).toHaveCount(0)
   await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toHaveCount(0)
   await page.evaluate(async () => {
     const dbPath = '/src/lib/store/db.ts', db = await import(dbPath), statePath = '/src/studio/state.svelte.ts', s = await import(statePath), qPath = '/src/lib/pixellab/queue.ts', q = await import(qPath)
@@ -1745,6 +1774,8 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
   const diagnosis = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p), c = '/src/studio/create.ts', create = await import(c); try { return await create.measurementRecoveryPlan(s.moving.projectId, s.moving.spec) } catch(e) { return String(e) } })
   expect(diagnosis).toMatchObject({ checks: 1, recordIds: ['offline-joint-lost'] })
   await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toBeVisible()
+  const audited = await page.evaluate(() => (window as unknown as { recoveryBlobAudit: { reads: number; stacks: string[] } }).recoveryBlobAudit)
+  expect(audited.reads, audited.stacks.join('\n')).toBe(0)
   await expect(sheet).toContainText('Retry 1 unfinished joint check ·')
   await expect(sheet).toContainText('estimated 0.1 gens or $0.005')
   await expect(sheet).toContainText('Unknown checks may already have charged; retrying can charge again')
@@ -1754,6 +1785,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
   await connect.getByRole('button', { name: 'Cancel', exact: true }).click()
   await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.sheet = 'move' })
   await expect(sheet.getByRole('button', { name: 'Retry joint checks', exact: true })).toBeVisible()
+  expect(await page.evaluate(() => (window as unknown as { recoveryBlobAudit: { reads: number } }).recoveryBlobAudit.reads)).toBe(0)
   await page.evaluate(() => {
     const put = IDBObjectStore.prototype.put
     IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move' && value.status === 'running') throw new Error('Offline consent storage blocked'); return put.call(this, value, key) }

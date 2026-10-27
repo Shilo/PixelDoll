@@ -27,18 +27,24 @@ export const listProjects = async () =>
   (await db.all<StoredProject>('projects')).filter((p) => supportedFormat(p?.manifest?.format) && p.id?.startsWith('rig-'));
 
 /** Decode every cell referenced by the manifest's layers (and the v1.3 rest views) into Project.images. */
-export async function loadProject(id: string): Promise<{ rec: StoredProject; project: Project }> {
+export async function loadProject(id: string, signal?: AbortSignal): Promise<{ rec: StoredProject; project: Project }> {
+  signal?.throwIfAborted();
   const rec = await db.get<StoredProject>('projects', id);
+  signal?.throwIfAborted();
   if (!rec) throw new Error(`project ${id} not found`);
   // B14: the head slot's old default hid hair (long hair vanished under a helmet); it now tucks it under (slot.clips). Slot-level
   // hides are always the ladder default (the UI edits item.hides), so old records take the new one.
   for (const s of rec.manifest.slots) if (s.id === 'head' && !s.clips && s.hides?.join() === 'hair') { delete s.hides; s.clips = ['hair']; }
   const images = new Map<string, Img>();
   const add = async (h: Sha256 | null | undefined, owner: string) => {
+    signal?.throwIfAborted();
     if (!h || images.has(h)) return;
     const b = await db.getBlob(h.slice(7));
+    signal?.throwIfAborted();
     if (!b) throw new Error(`${owner}: cell blob ${h.slice(0, 19)} missing`);
-    images.set(h, await decodePng(b));
+    const image = await decodePng(b);
+    signal?.throwIfAborted();
+    images.set(h, image);
   };
   for (const v of Object.values(rec.manifest.rig.rest ?? {})) await add(v?.image, 'rest view');
   for (const it of rec.manifest.items) {
@@ -49,6 +55,7 @@ export async function loadProject(id: string): Promise<{ rec: StoredProject; pro
         for (const cells of Object.values(dirs ?? {}))
           for (const h of cells ?? []) await add(h, it.id);
   }
+  signal?.throwIfAborted();
   return { rec, project: { manifest: rec.manifest, images } };
 }
 
@@ -88,30 +95,6 @@ export async function deleteItem(id: string, itemId: string): Promise<void> {
       for (const slot of Object.keys(preset.items)) if (preset.items[slot] === itemId) preset.items[slot] = null;
       for (const material of materials) delete preset.variants[material];
     }
-    rec.savedAt = new Date().toISOString();
-    return rec;
-  });
-}
-
-export type ExportSettingChange = { animation: string; loop: boolean } | { dressedCharacterSheets: boolean };
-
-/** Patch only the selected export preference, preserving concurrent outfits, artwork and other animation choices. */
-export function applyExportSetting(manifest: Manifest, change: ExportSettingChange): void {
-  if ('animation' in change) {
-    const animation = manifest.rig.animations.find(a => a.id === change.animation);
-    if (!animation) throw new Error(`Animation ${change.animation} no longer exists. Reopen Export.`);
-    if (typeof change.loop !== 'boolean') throw new Error('Animation loop must be true or false.');
-    animation.loop = change.loop;
-  } else {
-    if (typeof change.dressedCharacterSheets !== 'boolean') throw new Error('Include dressed character sheets must be true or false.');
-    manifest.exportSettings = { dressedCharacterSheets: change.dressedCharacterSheets };
-  }
-}
-
-export async function saveExportSetting(id: string, change: ExportSettingChange): Promise<void> {
-  await db.update<StoredProject>('projects', id, rec => {
-    if (!rec) throw new Error(`project ${id} not found`);
-    applyExportSetting(rec.manifest, change);
     rec.savedAt = new Date().toISOString();
     return rec;
   });

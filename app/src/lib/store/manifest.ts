@@ -18,8 +18,6 @@ export interface Manifest {
   slots: Slot[]; // array order = tie-break for equal z
   items: Item[]; // includes the base (slot "body")
   presets: Preset[]; // presets[0] = default
-  /** Export choices saved with the editable character; absent means dressed sheets are included. */
-  exportSettings?: { dressedCharacterSheets: boolean };
   export?: ExportInfo;
 }
 
@@ -146,7 +144,8 @@ export interface Preset {
   items: Record<string, string | null>; // slot -> item id
   variants: Record<string, string>;
 }
-export type Engine = 'generic' | 'godot' | 'unity' | 'phaser' | 'gdevelop' | 'aseprite';
+export const EXPORT_ENGINES = ['generic', 'godot', 'unity', 'phaser', 'gdevelop', 'aseprite'] as const;
+export type Engine = typeof EXPORT_ENGINES[number];
 export interface ExportInfo {
   exportedAt: string;
   layout: 'pixeldoll-sheets/1';

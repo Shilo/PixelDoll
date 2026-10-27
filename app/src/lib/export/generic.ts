@@ -20,7 +20,6 @@ const validCut = (m: Manifest, cut: NonNullable<Item['baseCut']>) => typeof cut 
 });
 export function validate(p: Project): string[] {
   const m = p.manifest, e = validateRig(m.rig);
-  if (m.exportSettings !== undefined && (typeof m.exportSettings !== 'object' || m.exportSettings === null || Array.isArray(m.exportSettings) || typeof m.exportSettings.dressedCharacterSheets !== 'boolean')) e.push('Export settings must specify dressedCharacterSheets as true or false.');
   // IDs become archive paths and engine resource names; validate them before producing either.
   const id = /^[a-z0-9][a-z0-9_-]*$/;
   for (const [kind, rows] of [['slot', m.slots], ['material', m.materials], ['preset', m.presets]] as const) {

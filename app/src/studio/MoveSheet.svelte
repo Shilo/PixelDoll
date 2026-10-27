@@ -12,7 +12,7 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
-  import { MOVE_STEPS, isV13, reservedMove, bodyPaletteRepairPlan, measurementRecoveryPlan, moveEstimate } from './create.ts'
+  import { MOVE_STEPS, isV13, reservedMove, reviewMoveRecovery, moveEstimate, type BodyPaletteRepairPlan, type MeasurementRecoveryPlan } from './create.ts'
   import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, openProject, pendingMoves, withKey } from './state.svelte.ts'
   import { bodyQualityNote } from './model.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
@@ -52,19 +52,28 @@
   const holder = $derived(!mine && moving.spec && moving.error ? store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character' : '')
   const stepIx = $derived(MOVE_STEPS.findIndex((s) => s.id === moving.progress?.step))
   const nice = (s: string) => s[0].toUpperCase() + s.slice(1).replace(/-/g, ' ')
-  let recovery = $state<Awaited<ReturnType<typeof measurementRecoveryPlan>> | null>(null)
+  let recovery = $state<MeasurementRecoveryPlan | null>(null)
   let recoveryError = $state('')
-  let colorRepair = $state<Awaited<ReturnType<typeof bodyPaletteRepairPlan>> | null>(null)
+  let recoveryChecking = $state(false)
+  let recoveryUnavailable = $state('')
+  let colorRepair = $state<BodyPaletteRepairPlan | null>(null)
   const recoveryItemGens = $derived(recovery && m && moving.spec ? moveEstimate(m, moving.spec).items : 0)
   const ledgerStates = $derived($queue.jobs.map((r) => `${r.id}:${r.state}`).join('|'))
   $effect(() => {
     void ledgerStates // Re-check finished siblings without decoding PNGs on every progress poll.
     const projectId = moving.projectId, spec = moving.spec && $state.snapshot(moving.spec), error = moving.error
     let current = true
-    recovery = null; colorRepair = null; recoveryError = ''
+    recovery = null; colorRepair = null; recoveryError = ''; recoveryUnavailable = ''; recoveryChecking = false
     if (mine && error && spec && !moving.done && spec.itemMethod !== 'grid') {
-      void measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined }).then((plan) => { if (current && plan.checks > 0 && plan.recordIds.length > 0) recovery = plan }).catch(() => {})
-      if (!spec.bodyPaletteRepair) void bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined }).then((plan) => { if (current && plan.changedPixels > 0 && plan.changedFrames > 0 && plan.directions.length) colorRepair = plan }).catch(() => {})
+      recoveryChecking = true
+      void reviewMoveRecovery(projectId, spec).then((review) => {
+        if (!current) return
+        recovery = review.recovery ?? null
+        colorRepair = review.colorRepair ?? null
+        recoveryUnavailable = review.unavailable ?? ''
+      }).catch((error: unknown) => {
+        if (current) recoveryError = `Could not check cached frames: ${error instanceof Error ? error.message : String(error)}`
+      }).finally(() => { if (current) recoveryChecking = false })
     }
     return () => { current = false }
   })
@@ -135,6 +144,8 @@
         {/each}
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
+      {#if recoveryChecking}<p class="muted small" role="status">Checking cached frames…</p>{/if}
+      {#if recoveryUnavailable}<p class="notice small">{recoveryUnavailable}</p>{/if}
       {#if ownQueued.length}<p class="muted small">Queued next: {ownQueued.map((q) => nice(q.spec.id)).join(', ')}{moving.error ? '. Try again continues with them; Start over drops them.' : ''}</p>{/if}
       {#if recovery}
         <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint {recovery.checks === 1 ? 'check' : 'checks'} · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>

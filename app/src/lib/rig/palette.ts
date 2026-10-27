@@ -31,6 +31,8 @@ export interface BodyPaletteRepair {
   remainingOutliers: number;
   changedFrames: number[];
 }
+/** The input is valid, but recoloring it would exceed the bounded repair policy. */
+export class PaletteRepairUnavailable extends Error {}
 /** Correct only unique nearest same-family colors at most 16/255 per channel from the actual reference.
  * Colors already within the unchanged 12/255 gate tolerance stay untouched. Larger/ambiguous/hue-changing
  * matches stay outliers; a result need not pass QA. Refuse broad drift rather than quantizing a new design. */
@@ -72,6 +74,6 @@ export function repairBodyPalette(rest: Img, frames: Img[]): BodyPaletteRepair {
     if (changed) changedFrames.push(index);
     return out;
   });
-  if (opaque && (rawOutliers / opaque > MAX_SHARE || changedPixels / opaque > MAX_SHARE)) throw new Error('Too much color drift for a small palette repair. Existing artwork was kept.');
+  if (opaque && (rawOutliers / opaque > MAX_SHARE || changedPixels / opaque > MAX_SHARE)) throw new PaletteRepairUnavailable('Too much color drift for a small palette repair. Existing artwork was kept.');
   return { frames: repaired, rawPaletteFit: paletteFit(rest, frames), paletteFit: paletteFit(rest, repaired), rawOutliers, changedPixels, remainingOutliers: rawOutliers - changedPixels, changedFrames };
 }

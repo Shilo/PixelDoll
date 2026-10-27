@@ -17,7 +17,7 @@ Version 2 also permits `Material.defaultVariant`: the approved baseline when an 
 
 An accepted shared copy may carry `Item.design` lineage: the design ID/revision, immutable minimal source snapshot, palette-role mapping and target audit. Its referenced source images travel in `cells/` alongside the target frames. Library deletion therefore does not remove the copy's artwork or its portable reference. A separate equipment archive uses `pixeldoll-design/1` in `design.json`; it is not a character ZIP.
 
-Animation `loop` is an explicit export preference, edited per animation in Export settings. New animations and PixelLab imports default to `true`; editable PixelDoll imports retain their stored Boolean. Animation names never decide repetition. App previews, live views and sharing always loop. `Manifest.exportSettings.dressedCharacterSheets` controls extra combined PNG sheets (default `true` when absent); separate layers and outfit definitions remain included either way.
+Animation `loop` records playback in exported files. Studio Export applies the user's global, persistent Play animation once choices to a cloned manifest, matching exact lowercase animation IDs. Unselected names loop; names never imply playback automatically. Imported playback metadata does not change global preferences. App previews, live views and sharing always loop. Format, dressed sheets and selected animation names are stored separately in IndexedDB under `studio-export-settings`, owned by `lib/store/export-settings.ts`; they are not per-character settings. Dressed sheets are optional extra PNGs; separate layers and outfit definitions remain included either way.
 
 ---
 
@@ -56,7 +56,6 @@ export interface Manifest {
   slots: Slot[];                  // array order = tie-break for equal z (earlier draws first)
   items: Item[];                  // includes the base: the one item in slot "body"
   presets: Preset[];              // saved outfits; presets[0] is the default
-  exportSettings?: { dressedCharacterSheets: boolean }; // absent = true; saved with the editable character
   export?: ExportInfo;            // only in an exported manifest.json
 }
 

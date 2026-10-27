@@ -19,7 +19,7 @@ import { ANCHORS, DEFAULT_MOVE, DIRECTIONS, baseHashOf, cellHash, cellKey, cellK
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
-import { repairBodyPalette } from '../lib/rig/palette.ts';
+import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, bodyComponents, clipQa, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
 import { posable, poseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
@@ -131,9 +131,10 @@ export async function run(req: Req, label: string, tag: string, cache = false, r
 }
 export const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
 /** Result images of a record, in frame order (labels "south/3" or "3"; character rotations are labeled by direction). */
-async function imagesOf(r: JobRec): Promise<{ label: string; img: Img }[]> {
+async function imagesOf(r: JobRec, read?: (sha: string) => Promise<Img>): Promise<{ label: string; img: Img }[]> {
   const res = r.jobs.flatMap((s) => s.results).sort((a, b) => +a.label.split('/').pop()! - +b.label.split('/').pop()!);
   return Promise.all(res.map(async (x) => {
+    if (read) return { label: x.label, img: await read(x.sha) };
     const blob = await db.getBlob(x.sha);
     if (!blob) throw new Error(`result ${x.label} missing in storage`);
     return { label: x.label, img: await decodePng(blob) };
@@ -222,24 +223,32 @@ async function renderClip(j: ClipJob): Promise<ClipOut> {
   throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames or the wrong number of frames`);
 }
 
+async function measurementInput(frame: Img) {
+  const input = skeletonInput(frame);
+  return { input, hash: (await requestIdentity(routes.estimateSkeleton(png(await b64(input.image))))).requestHash };
+}
 /** A palette repair is available only after complete original measurements prove every other body gate passed. */
-async function paletteCandidate(anim: string, dir: DirectionName, rest: Img, frames: Img[], requested: Keypoint[][], stray: number): Promise<{ frames: Img[]; processing?: ClipSource['processing'] }> {
-  const jobs = queue.snapshot().jobs;
+async function paletteCandidate(anim: string, dir: DirectionName, rest: Img, frames: Img[], requested: Keypoint[][], stray: number, review?: RecoveryContext): Promise<{ frames: Img[]; processing?: ClipSource['processing'] }> {
+  const jobs = review?.jobs ?? queue.snapshot().jobs;
   const measured = await Promise.all(frames.map(async frame => {
-    const input = skeletonInput(frame);
-    const hash = (await requestIdentity(routes.estimateSkeleton(png(await b64(input.image))))).requestHash;
+    const { input, hash } = await (review?.measurement(frame) ?? measurementInput(frame));
     const record = jobs.find(r => r.requestHash === hash && r.state === 'done');
     const points = record && checkedKeypoints((record.response as { keypoints?: unknown })?.keypoints);
     return points ? checkedKeypoints(unpadSkeleton(points, input, frame)) : undefined;
   }));
-  if (measured.some(k => !hasAll(k))) throw new Error(`${dir}: match body colors only after all original joint checks have completed.`);
+  if (measured.some(k => !hasAll(k))) throw new RecoveryUnavailable(`${dir}: match body colors only after all original joint checks have completed.`);
   const rawQa = clipQa({ anim, rest, frames, requested, measured, stray });
   if (rawQa.paletteFit >= RIG_GATES.paletteFit) return { frames }; // already-good views are bit-for-bit unchanged
   // Observations no longer trigger redraws, but an explicit palette-only repair still requires other checks to pass.
-  if (rawQa.fails.length || rawQa.adherence === null || rawQa.adherence > RIG_GATES.adherence || rawQa.feetDrift > RIG_GATES.silhouetteBottomDelta || rawQa.border > RIG_GATES.border) throw new Error(`${dir}: color matching cannot repair pose, feet or border failures.`);
-  const fixed = repairBodyPalette(rest, frames);
-  if (!fixed.changedPixels) throw new Error(`${dir}: the color drift is outside the bounded reference-palette repair.`);
-  if (fixed.paletteFit < RIG_GATES.paletteFit) throw new Error(`${dir}: bounded color matching still fails the palette quality check. No new joint checks were started.`);
+  if (rawQa.fails.length || rawQa.adherence === null || rawQa.adherence > RIG_GATES.adherence || rawQa.feetDrift > RIG_GATES.silhouetteBottomDelta || rawQa.border > RIG_GATES.border) throw new RecoveryUnavailable(`${dir}: color matching cannot repair pose, feet or border failures.`);
+  let fixed: ReturnType<typeof repairBodyPalette>;
+  try { fixed = repairBodyPalette(rest, frames); }
+  catch (error) {
+    if (error instanceof PaletteRepairUnavailable) throw new RecoveryUnavailable(error.message);
+    throw error;
+  }
+  if (!fixed.changedPixels) throw new RecoveryUnavailable(`${dir}: the color drift is outside the bounded reference-palette repair.`);
+  if (fixed.paletteFit < RIG_GATES.paletteFit) throw new RecoveryUnavailable(`${dir}: bounded color matching still fails the palette quality check. No new joint checks were started.`);
   return { frames: fixed.frames, processing: { version: 'near-rest-v1', rawPaletteFit: fixed.rawPaletteFit, rawOutliers: fixed.rawOutliers,
     changedPixels: fixed.changedPixels, remainingOutliers: fixed.remainingOutliers, changedFrames: fixed.changedFrames,
     rawInputHashes: await Promise.all(frames.map(async f => `sha256:${await sha256(await encodePngBytes(f))}` as Sha256)),
@@ -420,51 +429,112 @@ export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): Di
 interface BodyPaletteStats { directions: DirectionName[]; changedPixels: number; rawOutliers: number; remainingOutliers: number; changedFrames: number }
 export interface MeasurementRecoveryPlan { recordIds: string[]; checks: number; gens: number; usd: number; rigVersion: string; rawHashes: string[]; palette?: BodyPaletteStats }
 export interface BodyPaletteRepairPlan extends MeasurementRecoveryPlan, BodyPaletteStats { itemGens: number }
+/** An expected eligibility limit, distinct from a failed storage read or malformed PNG. */
+class RecoveryUnavailable extends Error {}
+/** Review only the selected standing views and exact cached results, never unrelated equipment sheets. */
+async function recoveryContext(projectId: string) {
+  const rec = await db.get<StoredProject>('projects', projectId);
+  if (!rec) throw new Error(`project ${projectId} not found`);
+  const images = new Map<string, Promise<Img>>(), normalized = new WeakMap<Img, ReturnType<typeof normalize>>();
+  const encoded = new WeakMap<Img, Promise<string>>(), measurements = new WeakMap<Img, ReturnType<typeof measurementInput>>();
+  return {
+    rec, jobs: queue.snapshot().jobs,
+    read(sha: string): Promise<Img> {
+      let image = images.get(sha);
+      if (!image) {
+        image = db.getBlob(sha).then(blob => {
+          if (!blob) throw new Error(`Cached recovery image ${sha.slice(0, 12)} is missing in storage.`);
+          return decodePng(blob);
+        });
+        images.set(sha, image);
+      }
+      return image;
+    },
+    normalize(image: Img) {
+      let value = normalized.get(image);
+      if (!value) { value = normalize(image, rec.manifest.rig.cell.w, rec.manifest.rig.cell.h, 128, rec.manifest.rig.cell.w); normalized.set(image, value); }
+      return value;
+    },
+    encode(image: Img) {
+      let value = encoded.get(image);
+      if (!value) { value = b64(image); encoded.set(image, value); }
+      return value;
+    },
+    measurement(image: Img) {
+      let value = measurements.get(image);
+      if (!value) { value = measurementInput(image); measurements.set(image, value); }
+      return value;
+    },
+  };
+}
+type RecoveryContext = Awaited<ReturnType<typeof recoveryContext>>;
+export interface MoveRecoveryReview { recovery?: MeasurementRecoveryPlan; colorRepair?: BodyPaletteRepairPlan; unavailable?: string }
+/** One local review owns its memoized images. Reopening or executing always reads and validates fresh state. */
+export async function reviewMoveRecovery(projectId: string, spec: MoveSpec): Promise<MoveRecoveryReview> {
+  if (!spec.replace || spec.itemMethod || !spec.action || !ACTIONS[spec.action] || !spec.dirs?.length) return {};
+  const context = await recoveryContext(projectId);
+  try {
+    const plan = await inspectMeasurementRecovery(context, { ...spec, measurementRecovery: undefined });
+    if (plan.checks && plan.recordIds.length) return { recovery: plan };
+    if (plan.checks) return { unavailable: 'Cached frames have no failed joint checks to retry.' };
+    if (spec.bodyPaletteRepair) return {};
+    return { colorRepair: await inspectBodyPaletteRepair(context, spec) };
+  } catch (error) {
+    if (error instanceof RecoveryUnavailable) return { unavailable: error.message };
+    throw error;
+  }
+}
 /** Preview the fixed, versioned color repair against cached raw art; no body or joint request is sent. */
 export async function bodyPaletteRepairPlan(projectId: string, spec: MoveSpec): Promise<BodyPaletteRepairPlan> {
-  const { rec } = await loadProject(projectId);
-  const plan = await measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined,
+  return inspectBodyPaletteRepair(await recoveryContext(projectId), spec);
+}
+async function inspectBodyPaletteRepair(context: RecoveryContext, spec: MoveSpec): Promise<BodyPaletteRepairPlan> {
+  const { rec } = context;
+  const plan = await inspectMeasurementRecovery(context, { ...spec, measurementRecovery: undefined,
     bodyPaletteRepair: { id: 'palette-review', version: 'near-rest-v1', rigVersion: moveRigVersion(rec) } });
-  if (!plan.palette?.directions.length) throw new Error('No palette-only body failure can be matched safely.');
-  if (plan.recordIds.length) throw new Error('Review unknown joint-check outcomes before matching these body colors.');
+  if (!plan.palette?.directions.length) throw new RecoveryUnavailable('No palette-only body failure can be matched safely.');
+  if (plan.recordIds.length) throw new RecoveryUnavailable('Review unknown joint-check outcomes before matching these body colors.');
   return { ...plan, ...plan.palette, itemGens: poseGens(spec.items.filter(id => !rec.manifest.items.find(item => item.id === id)?.design).length, moveFrames(rec.manifest, spec), moveDirections(rec.manifest, spec.dirs).length) };
 }
 /** API-free review of exact cached body renders. Consent never applies to an unrelated image or regenerated body. */
 export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec): Promise<MeasurementRecoveryPlan> {
-  const { rec, project } = await loadProject(projectId);
+  return inspectMeasurementRecovery(await recoveryContext(projectId), spec);
+}
+async function inspectMeasurementRecovery(context: RecoveryContext, spec: MoveSpec): Promise<MeasurementRecoveryPlan> {
+  const { rec, jobs } = context;
   const rig = rec.manifest.rig, rigVersion = moveRigVersion(rec);
-  if (!spec.replace || spec.itemMethod || !spec.action || !ACTIONS[spec.action] || !spec.dirs?.length) throw new Error('Joint-check recovery needs the original authored body-repair settings.');
+  if (!spec.replace || spec.itemMethod || !spec.action || !ACTIONS[spec.action] || !spec.dirs?.length) throw new RecoveryUnavailable('Joint-check recovery needs the original authored body-repair settings.');
   if (spec.bodyPaletteRepair && (spec.bodyPaletteRepair.version !== 'near-rest-v1' || !spec.bodyPaletteRepair.id || spec.bodyPaletteRepair.rigVersion !== rigVersion)) throw new Error('This character or color-repair policy changed since review.');
   if (spec.measurementRecovery && spec.measurementRecovery.rigVersion !== rigVersion) throw new Error('This character changed since these joint checks were reviewed.');
-  const jobs = queue.snapshot().jobs, approved = spec.measurementRecovery?.recordIds;
+  const approved = spec.measurementRecovery?.recordIds;
   if (approved && (!approved.length || new Set(approved).size !== approved.length || !spec.measurementRecovery?.id)) throw new Error('The joint-check recovery intent is invalid.');
   const seen = new Set<string>(), needed = new Set<string>(), recordIds = new Set<string>(), rawHashes: string[] = [];
   const palette: BodyPaletteStats = { directions: [], changedPixels: 0, rawOutliers: 0, remainingOutliers: 0, changedFrames: 0 };
   for (const d of moveDirections(rec.manifest, spec.dirs)) {
-    const rest = rig.rest?.[d], restImg = rest && project.images.get(rest.image);
-    if (!rest || !restImg || !hasAll(rest.keypoints)) throw new Error(`${d}: original standing artwork or joints are missing.`);
+    const rest = rig.rest?.[d];
+    if (!rest || !hasAll(rest.keypoints)) throw new Error(`${d}: original standing artwork or joints are missing.`);
+    const restImg = await context.read(rest.image.slice(7));
     const keypoints = authoredPoses(spec.action, fromApi(rest.keypoints, rig.cell), d, rig.cell.w, spec.poseStyle).map(p => toApi(p, rig.cell));
     for (let attempt = 0; attempt < (spec.bodyPaletteRepair ? 1 : CLIP_ATTEMPTS); attempt++) {
-      const req = rawClip({ first: await b64(restImg), rest: rest.keypoints, keypoints, description: rec.character!.looks,
+      const req = rawClip({ first: await context.encode(restImg), rest: rest.keypoints, keypoints, description: rec.character!.looks,
         action: actionOf(spec.id) + (spec.poseStyle === 'visible-side-v1' ? ', empty hands, no weapon, no props, no effects' : ''), dir: d,
         seed: spec.seed + 101 + attempt * 7919, view: rig.view });
       const rawHash = (await requestIdentity(req)).requestHash;
       const raw = jobs.find(r => r.requestHash === rawHash && r.state === 'done');
-      if (!raw) { if (!attempt) throw new Error(`${d}: the original completed body render is unavailable. No body was regenerated.`); break; }
-      const outputs = await imagesOf(raw);
+      if (!raw) { if (!attempt) throw new RecoveryUnavailable(`${d}: the original completed body render is unavailable. No body was regenerated.`); break; }
+      const outputs = await imagesOf(raw, context.read);
       if (outputs.length !== keypoints.length || outputs.some(o => !o.img.w || !o.img.h)) throw new Error(`${d}: the cached body render is incomplete.`);
       rawHashes.push(rawHash);
-      const normalized = outputs.map(out => normalize(out.img, rig.cell.w, rig.cell.h, 128, rig.cell.w));
+      const normalized = outputs.map(out => context.normalize(out.img));
       if (normalized.some(n => n.cutPx || !opaqueBox(n.img))) throw new Error(`${d}: the cached body frames do not fit this character. No body was regenerated.`);
       const frames = normalized.map(n => n.img);
-      const candidate = spec.bodyPaletteRepair ? await paletteCandidate(spec.id, d, restImg, frames, keypoints, 0) : { frames };
+      const candidate = spec.bodyPaletteRepair ? await paletteCandidate(spec.id, d, restImg, frames, keypoints, 0, context) : { frames };
       if ('processing' in candidate && candidate.processing) {
         palette.directions.push(d); palette.changedPixels += candidate.processing.changedPixels; palette.rawOutliers += candidate.processing.rawOutliers;
         palette.remainingOutliers += candidate.processing.remainingOutliers; palette.changedFrames += candidate.processing.changedFrames.length;
       }
       for (const frame of candidate.frames) {
-        const input = skeletonInput(frame);
-        const hash = (await requestIdentity(routes.estimateSkeleton(png(await b64(input.image))))).requestHash;
+        const { input, hash } = await context.measurement(frame);
         if (seen.has(hash)) continue;
         seen.add(hash);
         const matches = jobs.filter(r => r.requestHash === hash).reverse().sort((a,b) => b.createdAt-a.createdAt);
@@ -478,7 +548,7 @@ export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec)
         }
         const active = matches.find(live);
         if (active) {
-          if (!spec.measurementRecovery || active.estimateRecovery?.id !== spec.measurementRecovery.id) throw new Error('Wait for the current joint checks to finish before recovering them.');
+          if (!spec.measurementRecovery || active.estimateRecovery?.id !== spec.measurementRecovery.id) throw new RecoveryUnavailable('Wait for the current joint checks to finish before recovering them.');
           needed.add(hash); continue;
         }
         const latest = matches[0];

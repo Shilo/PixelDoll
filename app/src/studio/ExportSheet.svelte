@@ -1,11 +1,13 @@
 <script lang="ts">
   // Export (M5): one engine at a time; the zip is built when the sheet opens so the button can name its size.
   import Sheet from './Sheet.svelte'
-  import { tick } from 'svelte'
+  import { tick, untrack } from 'svelte'
   import { exportZip } from '../lib/export/export.ts'
+  import { stableStringify } from '../lib/image/hash.ts'
   import { coverageGaps, moveDirs, storeVariants } from '../lib/dress/dress.ts'
   import * as db from '../lib/store/db.ts'
-  import { applyExportSetting, saveExportSetting, type ExportSettingChange, type StoredProject } from '../lib/store/project.ts'
+  import { listProjects, type StoredProject } from '../lib/store/project.ts'
+  import { animationNames, applyExportSettings, readExportSettings, saveExportSetting, subscribeExportSettings, type ExportSettingChange, type ExportSettings } from '../lib/store/export-settings.ts'
   import type { Engine, Manifest, Preset } from '../lib/store/manifest.ts'
   import { ui, doc, store, toast, isDemo } from './state.svelte.ts'
   import { ChevronLeft, ChevronRight, Download, Settings2, TriangleAlert, X } from './icons.ts'
@@ -25,27 +27,75 @@
     ] },
   ]
   const ENGINES = GROUPS.flatMap((group) => group.targets)
-  const LS = 'pixeldoll.export.engine'
-  let engine = $state<Engine>((() => { try { const saved = localStorage.getItem(LS); return ENGINES.find((e) => e.id === saved)?.id ?? 'godot' } catch { return 'godot' } })())
-  const selected = $derived(ENGINES.find((target) => target.id === engine)!)
+  let preferences = $state.raw<ExportSettings | null>(null)
+  let savedProjects = $state.raw<StoredProject[]>([])
+  let formatChoice = $state<Engine | null>(null)
+  const engine = $derived(formatChoice ?? preferences?.engine ?? 'godot')
+  const selected = $derived(ENGINES.find((target) => target.id === engine))
   let settings = $state(false)
-  let saving = $state(false)
+  let pendingWrites = $state(0)
+  const saving = $derived(pendingWrites > 0)
+  let writeSequence = 0, publishedSequence = 0
+  let refreshAgain = false, refreshPreferences = async () => {}
+  let refreshing = $state(true)
+  let ready = $state(false)
   let saveError = $state('')
+  let loadError = $state('')
   let content = $state<HTMLDivElement>()
   let navigation: HTMLButtonElement
   let result = $state.raw<{ zip: Uint8Array | null; files: string[]; warnings: string[]; errors: string[]; rigIssues: string[] } | null>(null)
   let busy = $state(false)
   const m = $derived(store.project?.manifest)
-  const baked = $derived(m?.exportSettings?.dressedCharacterSheets ?? true)
-  const once = $derived(m?.rig.animations.filter(a => !a.loop) ?? [])
-  const playbackSummary = $derived(!once.length ? 'None' : once.length === m?.rig.animations.length ? 'All' : once.map(a => nice(a.id)).join(', '))
+  const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
+  const baked = $derived(preferences?.dressedCharacterSheets ?? true)
+  const names = $derived(preferences ? animationNames([...(m ? [m] : []), ...savedProjects.filter(p => p.id !== doc.id).map(p => p.manifest)], preferences) : [])
+  const once = $derived(preferences?.playOnce ?? [])
+  const playbackSummary = $derived(!once.length ? 'None' : once.length === names.length ? 'All' : once.map(animationLabel).join(', '))
   const outfits = $derived(m?.presets.filter(p => p.id !== 'current') ?? [])
   const outfitSummary = $derived(!baked ? 'None' : outfits.length ? 'Current look + saved outfits' : 'Current look')
   const items = $derived(m ? m.items.filter((i) => i.slot !== 'body') : [])
   const reviewItems = $derived(m ? m.items.filter((i) => i.designWarnings?.length || (i.qa && i.qa.status !== 'pass')).map((i) => i.name) : [])
-  const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
   const PLAY_ONCE = 'Play animation once'
   const DRESSED_SHEETS = 'Include dressed character sheets'
+  function animationLabel(id: string): string {
+    const display = nice(id).replace(/\s+/g, ' ')
+    return names.some(other => other !== id && nice(other).replace(/\s+/g, ' ') === display) ? `${display} (${id})` : display
+  }
+  $effect(() => {
+    const openedId = doc.id
+    let active = true, request = 0
+    ready = false
+    async function refresh() {
+      if (openedId !== doc.id || document.visibilityState === 'hidden') return
+      if (saving) { refreshAgain = true; return }
+      const current = ++request, sequence = writeSequence
+      refreshing = true
+      try {
+        const [saved, projects] = await Promise.all([readExportSettings(), listProjects()])
+        if (!active || current !== request) return
+        if (saving) { refreshAgain = true; return }
+        if (sequence !== writeSequence) { void refresh(); return }
+        // Validate the library union before exposing it to the template's derived name list.
+        animationNames([...(store.project ? [store.project.manifest] : []), ...projects.map(p => p.manifest)], saved)
+        if (stableStringify(preferences) !== stableStringify(saved)) preferences = saved
+        savedProjects = projects
+        ready = true
+        loadError = ''
+      } catch (error) {
+        if (!active || current !== request) return
+        if (saving) { refreshAgain = true; return }
+        if (sequence !== writeSequence) { void refresh(); return }
+        ready = false
+        loadError = `Could not load export settings: ${error instanceof Error ? error.message : String(error)}`
+      } finally { if (active && current === request) refreshing = false }
+    }
+    refreshPreferences = refresh
+    untrack(() => void refresh())
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', refresh)
+    const unsubscribe = subscribeExportSettings(() => void refresh())
+    return () => { active = false; unsubscribe(); window.removeEventListener('focus', refresh); document.removeEventListener('visibilitychange', refresh) }
+  })
   async function navigate() {
     settings = !settings
     await tick()
@@ -53,22 +103,23 @@
     navigation.focus()
   }
   async function changeSetting(input: HTMLInputElement, change: ExportSettingChange) {
-    const projectId = doc.id, checked = input.checked, demo = isDemo(), hadFocus = document.activeElement === input
-    saving = true
+    const checked = input.checked, hadFocus = document.activeElement === input, sequence = ++writeSequence
+    pendingWrites++
+    if ('engine' in change) formatChoice = change.engine
     saveError = ''
     try {
-      if (!demo) await saveExportSetting(projectId, change)
-      if (doc.id === projectId && store.project) {
-        const manifest = structuredClone(store.project.manifest)
-        applyExportSetting(manifest, change)
-        store.project = { ...store.project, manifest }
-        doc.rev++
-      }
+      const saved = await saveExportSetting(change)
+      if (sequence > publishedSequence) { preferences = saved; publishedSequence = sequence }
+      if (sequence === writeSequence) saveError = ''
     } catch (e) {
-      input.checked = !checked
-      saveError = `Could not save export settings: ${e instanceof Error ? e.message : String(e)}`
+      if (input.type !== 'radio') input.checked = !checked
+      if (sequence === writeSequence) saveError = `Could not save export settings: ${e instanceof Error ? e.message : String(e)}`
     } finally {
-      saving = false
+      pendingWrites--
+      if (!saving) {
+        formatChoice = null
+        if (refreshAgain) { refreshAgain = false; void refreshPreferences() }
+      }
       await tick()
       // Disabling a focused checkbox blurs it. Keep keyboard navigation at that setting without stealing a moved focus.
       if (hadFocus && input.isConnected && (document.activeElement === document.body || document.activeElement === input.closest('dialog'))) input.focus({ preventScroll: true })
@@ -86,12 +137,12 @@
   $effect(() => {
     const e = engine, b = baked, p = store.project
     const projectId = doc.id, demo = isDemo()
-    if (!p) return
-    try { localStorage.setItem(LS, e) } catch { /* ignore */ }
+    if (!p || !ready || saving) return
     busy = true
     result = null
     const presets: Preset[] = [{ id: 'current', name: 'Current look', items: $state.snapshot(doc.items), variants: $state.snapshot(doc.variants) }, ...p.manifest.presets.filter((x) => x.id !== 'current')]
     const manifest = structuredClone({ ...p.manifest, presets }) as Manifest
+    applyExportSettings(manifest, preferences!)
     storeVariants(manifest, ...presets.map((x) => x.variants))
     let stale = false
     void (async () => {
@@ -117,7 +168,7 @@
   const n = (k: number, w: string) => `${k} ${w}${k === 1 ? '' : 's'}`
   const kb = $derived(result?.zip ? Math.max(1, Math.round(result.zip.length / 1024)) : 0)
   function download() {
-    if (!result?.zip || !m || busy || saving) return
+    if (!result?.zip || !m || busy || saving || refreshing || !ready) return
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([result.zip as Uint8Array<ArrayBuffer>], { type: 'application/zip' }))
     a.download = `${(store.projects.find((p) => p.id === doc.id)?.name ?? m.name).replace(/\s*\(demo\)/, '').toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${engine}.pixeldoll.zip`
@@ -130,7 +181,7 @@
 
 {#snippet exportFooter()}
   <span class="foot-note">Free · includes an editable copy</span>
-  <button class="bu-action btn primary lg" data-variant="primary" onclick={download} disabled={busy || saving || !result?.zip}><Download size={16} />{busy ? 'Preparing…' : `Download ZIP · ${kb} KB`}</button>
+  <button class="bu-action btn primary lg" data-variant="primary" onclick={download} disabled={busy || saving || refreshing || !ready || !result?.zip}><Download size={16} />{busy || refreshing ? 'Preparing…' : `Download ZIP · ${kb} KB`}</button>
 {/snippet}
 
 <Sheet title={settings ? 'Export settings' : 'Export'} className="export-sheet" onclose={() => (ui.sheet = null)} cancelDisabled={saving} footer={settings ? undefined : exportFooter}>
@@ -144,22 +195,23 @@
   {/snippet}
   {#key settings}
   <div class="export-page" class:settings-page={settings} bind:this={content}>
-  {#if saveError}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{saveError}</p>{/if}
+  {#if loadError || saveError}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{loadError || saveError}</p>{/if}
+  {#if !ready && refreshing}<p class="muted small" role="status">Loading export settings…</p>{/if}
   {#if settings}
     <fieldset class="export-playback" aria-describedby="export-playback-description">
       <legend class="label">{PLAY_ONCE}</legend>
-      <p class="muted small" id="export-playback-description">Stops selected animations after one play instead of looping.</p>
+      <p class="muted small" id="export-playback-description">Selected animation names play once across all character exports.</p>
       <div class="export-moves">
-        {#each m?.rig.animations ?? [] as a (a.id)}
+        {#each names as name (name)}
           <label class="bu-action bu-check export-move" data-variant="field" aria-disabled={saving}>
-            <span>{nice(a.id)}</span><input type="checkbox" checked={!a.loop} disabled={saving} onchange={(e) => changeSetting(e.currentTarget, { animation: a.id, loop: !e.currentTarget.checked })} />
+            <span>{animationLabel(name)}</span><input type="checkbox" checked={once.includes(name)} disabled={saving || !ready} onchange={(e) => changeSetting(e.currentTarget, { animation: name, playOnce: e.currentTarget.checked })} />
           </label>
         {/each}
       </div>
     </fieldset>
     <hr class="bu-separator export-divider" />
     <label class="check export-dressed">
-      <input type="checkbox" checked={baked} disabled={saving} aria-label={DRESSED_SHEETS} aria-describedby="export-dressed-description" onchange={(e) => changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })} />
+      <input type="checkbox" checked={baked} disabled={saving || !ready} aria-label={DRESSED_SHEETS} aria-describedby="export-dressed-description" onchange={(e) => changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })} />
       <span><span>{DRESSED_SHEETS}</span><span class="muted small" id="export-dressed-description">Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included.</span></span>
     </label>
   {:else}
@@ -172,14 +224,14 @@
             <label class="export-target">
               <span class="target-icon" aria-hidden="true" style:mask-image={`url("${import.meta.env.BASE_URL}icons/exports/${e.id}.svg")`}></span>
               <span class="target-label"><span class="engine-name">{e.name}</span><span class="engine-sub">{e.sub}</span></span>
-              <input type="radio" name="export-format" value={e.id} bind:group={engine} aria-label={e.name} aria-describedby={engine === e.id ? 'export-description' : undefined} />
+              <input type="radio" name="export-format" value={e.id} checked={engine === e.id} disabled={!ready} onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })} aria-label={e.name} aria-describedby={engine === e.id ? 'export-description' : undefined} />
             </label>
           {/each}
         </div>
       </section>
     {/each}
   </fieldset>
-  <p class="export-description muted small" id="export-description" aria-live="polite"><strong>{selected.name}:</strong> {selected.detail}</p>
+  {#if selected}<p class="export-description muted small" id="export-description" aria-live="polite"><strong>{selected.name}:</strong> {selected.detail}</p>{/if}
   {#if m}
     <p class="muted">Includes {n(m.rig.directions.length, 'direction')} · {n(m.rig.animations.length, 'move')} · {n(items.length, 'item')} · {m.presets.filter((x) => x.id !== 'current').length ? `${n(m.presets.filter((x) => x.id !== 'current').length, 'outfit')} + your current look` : 'your current look'}, each item on its own layer sheet.</p>
     {#if reviewItems.length}<p class="notice warn small"><TriangleAlert size={14} /><span>Saved quality or appearance flags: {reviewItems.join(', ')}. Review the flagged moves and directions before using these sprites. Export remains available, including explicitly accepted artwork.</span></p>{/if}

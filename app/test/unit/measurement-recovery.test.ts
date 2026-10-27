@@ -1,6 +1,6 @@
 import { accountBalance } from './account-fixture.ts'
 import { afterEach, expect, test, vi } from 'vitest'
-import { addMove, b64, bodyPaletteRepairPlan, measurementRecoveryPlan, type MoveSpec } from '../../src/studio/create.ts'
+import { addMove, b64, bodyPaletteRepairPlan, measurementRecoveryPlan, reviewMoveRecovery, type MoveSpec } from '../../src/studio/create.ts'
 import { Queue, queue, requestIdentity, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import { ApiError } from '../../src/lib/pixellab/client.ts'
 import { png, routes } from '../../src/lib/pixellab/routes.ts'
@@ -17,7 +17,7 @@ import type { Manifest } from '../../src/lib/store/manifest.ts'
 import * as itemRun from '../../src/lib/items/run.ts'
 
 afterEach(()=>vi.restoreAllMocks())
-async function fixture(palette:boolean|'partial'=false) {
+async function fixture(palette:boolean|'partial'|'broad'=false) {
  const im=makeImg(64,64);for(let y=10;y<60;y++)for(let x=25;x<39;x++)im.data.set([180,140,120,255],(y*64+x)*4)
  if(palette)im.data.set([0,0,0,255],(10*64+25)*4)
  const hash=await cellHash(im),points:Keypoint[]=LABELS.map((label,i)=>({label,x:.3+i*.01,y:.3+i*.015})),dirs=['south','east','north','west'] as const
@@ -25,19 +25,20 @@ async function fixture(palette:boolean|'partial'=false) {
  const manifest:Manifest={format:'pixeldoll/1',name:'Recover',app:'',rig,slots:[],materials:[],presets:[],items:[{id:'base',name:'Body',slot:'body',status:'accepted',mirror:'generate',prompt:'body',materials:[],baseHash:hash,provenance:[],layers:[{id:'main',role:'fg',z:0,cells:{idle:Object.fromEntries(dirs.map(d=>[d,[hash,hash,hash,hash]]))}}]}]}
  let saved:projects.StoredProject={id:'rig-recover',savedAt:'old',manifest,character:{id:'managed',looks:'body'},skeletons:{},rigQa:{warnings:[]}}
  const before=structuredClone(saved),records=new Map<string,JobRec>(),blobs=new Map<string,Blob>(),expected=new Map<string,Keypoint[]>();let time=10,posts=0,inflight=0,maxInflight=0,bad=false,failOnce=false
+ blobs.set(hash.slice(7),new Blob([await encodePngBytes(im) as Uint8Array<ArrayBuffer>],{type:'image/png'}))
  const spec:MoveSpec={id:'idle',action:'idle',frames:4,items:[],seed:23,replace:true,dirs:['east','west'],poseStyle:'visible-side-v1'}
  const lostIds:string[]=[]
  for(const [di,d] of (['east','west'] as const).entries()) {
   const keypoints=authoredPoses('idle',fromApi(points,rig.cell),d,64,spec.poseStyle).map(p=>toApi(p,rig.cell)),outputs=[],frames=[]
   for(let i=0;i<4;i++){
    const frame=structuredClone(im);frame.data[(10*64+26)*4]=181+di*4+i
-   if(palette&&d==='west'&&i>0)for(let j=0;j<(palette==='partial'?40:30);j++){const x=25+j%14,y=12+Math.floor(j/14);frame.data.set(palette==='partial'&&j>=5?[40,0,0,255]:[13,5,2,255],(y*64+x)*4)}
+   if(palette&&d==='west'&&i>0)for(let j=0;j<(palette==='partial'?40:palette==='broad'?60:30);j++){const x=25+j%14,y=12+Math.floor(j/14);frame.data.set(palette==='partial'&&j>=5?[40,0,0,255]:[13,5,2,255],(y*64+x)*4)}
    frames.push(frame)
    const bytes=await encodePngBytes(frame),sha=await sha256(bytes);blobs.set(sha,new Blob([bytes as Uint8Array<ArrayBuffer>],{type:'image/png'}));outputs.push({label:String(i),sha});expected.set(sha,keypoints[i])
    const measurement=await requestIdentity(routes.estimateSkeleton(png(await b64(frame))))
    if(d==='west') {const id='old-'+i;lostIds.push(id);records.set(id,{id,method:'POST',endpoint:'/estimate-skeleton',label:id,...measurement,state:i<2?'lost':'canceled',...(i>=2?{autoCanceledAttempts:[23]}:{}),createdAt:time++,attempts:1,nextAt:0,jobs:[],gens:0,usd:0,error:'HTTP 500'})}
   }
-  if(palette&&d==='west'){const fixed=repairBodyPalette(im,frames);for(let i=0;i<fixed.frames.length;i++)expected.set(await sha256(await encodePngBytes(fixed.frames[i])),keypoints[i])}
+  if(palette&&palette!=='broad'&&d==='west'){const fixed=repairBodyPalette(im,frames);for(let i=0;i<fixed.frames.length;i++)expected.set(await sha256(await encodePngBytes(fixed.frames[i])),keypoints[i])}
   const raw=rawClip({first:await b64(im),rest:points,keypoints,description:'body',action:'breathing idle, empty hands, no weapon, no props, no effects',dir:d,seed:spec.seed+101})
   records.set('raw-'+d,{id:'raw-'+d,label:'raw '+d,method:'POST',endpoint:raw.path,...await requestIdentity(raw),state:'done',createdAt:time++,attempts:1,nextAt:0,jobs:[{id:'remote-'+d,status:'completed',done:true,results:outputs}],gens:3,usd:0})
  }
@@ -59,6 +60,54 @@ async function fixture(palette:boolean|'partial'=false) {
 }
 
 test('review is API-free and finds only exact cached raw-frame checks with honest estimates',async()=>{const f=await fixture(),plan=await measurementRecoveryPlan('rig-recover',f.spec);expect(plan).toMatchObject({recordIds:f.lostIds.sort(),checks:8,gens:.8,usd:.04104});expect(plan.rawHashes).toHaveLength(2);expect(f.enqueue).not.toHaveBeenCalled();expect(f.posts()).toBe(0)})
+
+test('recovery reads only selected standing and cached raw images, never the full equipment project', async () => {
+ const f = await fixture()
+ vi.mocked(projects.loadProject).mockRejectedValue(new Error('Unrelated equipment must not be decoded'))
+ const plan = await measurementRecoveryPlan('rig-recover', f.spec)
+ expect(plan.recordIds).toEqual(f.lostIds.sort())
+ expect(projects.loadProject).not.toHaveBeenCalled()
+ expect(db.getBlob).toHaveBeenCalledTimes(9)
+ expect(f.enqueue).not.toHaveBeenCalled()
+})
+
+test('one combined review skips color work while joint checks are unfinished and decodes repeated images once', async () => {
+ const f = await fixture(), first = f.records.get('raw-west')!.jobs[0].results[0].sha
+ for (const raw of ['raw-east', 'raw-west']) for (const result of f.records.get(raw)!.jobs[0].results) result.sha = first
+ await f.q.sync()
+ const review = await reviewMoveRecovery('rig-recover', f.spec)
+ expect(review.recovery).toMatchObject({ recordIds: ['old-0'], checks: 1 })
+ expect(review.colorRepair).toBeUndefined()
+ expect(db.getBlob).toHaveBeenCalledTimes(2)
+ expect(f.enqueue).not.toHaveBeenCalled()
+})
+
+test('combined review distinguishes ineligibility from real storage failures and does not cache across reviews', async () => {
+ const f = await fixture()
+ expect(await reviewMoveRecovery('rig-recover', { ...f.spec, action: undefined })).toEqual({})
+ f.records.delete('raw-west'); await f.q.sync()
+ expect((await reviewMoveRecovery('rig-recover', f.spec)).unavailable).toContain('unavailable')
+ vi.mocked(db.getBlob).mockRejectedValue(new Error('Storage read failed'))
+ await expect(reviewMoveRecovery('rig-recover', f.spec)).rejects.toThrow('Storage read failed')
+ expect(f.posts()).toBe(0)
+})
+
+test('combined review shares image reads with color checking after all original joint checks finish', async () => {
+ const f = await fixture(true); await f.finishOriginalChecks()
+ vi.mocked(db.getBlob).mockClear()
+ const before = f.posts(), review = await reviewMoveRecovery('rig-recover', f.spec)
+ expect(review.recovery).toBeUndefined()
+ expect(review.colorRepair).toMatchObject({ directions: ['west'], changedPixels: 90, checks: 3 })
+ expect(db.getBlob).toHaveBeenCalledTimes(9)
+ expect(f.posts()).toBe(before)
+})
+
+test('broad color drift is an explained policy limit rather than a failed cached-frame check', async () => {
+ const f = await fixture('broad'); await f.finishOriginalChecks()
+ const before = f.posts(), review = await reviewMoveRecovery('rig-recover', f.spec)
+ expect(review).toEqual({ unavailable: 'Too much color drift for a small palette repair. Existing artwork was kept.' })
+ expect(f.posts()).toBe(before)
+})
 
 test('explicit recovery reuses both body renders, checks sequentially and publishes genuine measured output',async()=>{const f=await fixture(),spec=await f.recovery(),old=f.lostIds.map(id=>structuredClone(f.records.get(id)));await addMove('rig-recover',spec);expect(f.posts()).toBe(8);expect(f.max()).toBe(1);expect(f.update).toHaveBeenCalledTimes(1);for(let i=0;i<f.lostIds.length;i++)expect(f.records.get(f.lostIds[i])).toEqual(old[i]);expect(f.saved().manifest.rig.animations[0].sources!.east!.measured).toHaveLength(4);expect(f.saved().manifest.rig.animations[0].sources!.west!.measured).toHaveLength(4)})
 

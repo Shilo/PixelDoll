@@ -76,11 +76,9 @@ test('unrelated latest outfit/name changes survive the atomic free edit',async()
 test('export playback preferences do not invalidate reviewed colors or concurrent free-edit publication', async () => {
  const f = await fixture(), plan = await itemPaletteRepairPlan('rig-test', 'sword', 'slash', 'south')
  f.current.manifest.rig.animations[0].loop = false
- f.current.manifest.exportSettings = { dressedCharacterSheets: false }
  f.setRace(() => { f.current.manifest.rig.animations[1].loop = true })
  await matchItemColors('rig-test', 'sword', 'slash', 'south', plan)
  expect(f.current.manifest.rig.animations.map(a => a.loop)).toEqual([false, true])
- expect(f.current.manifest.exportSettings).toEqual({ dressedCharacterSheets: false })
  expect(f.current.manifest.items[1].paletteRepairs).toHaveLength(1)
  expect(f.posts).not.toHaveBeenCalled()
 })

@@ -8,13 +8,21 @@
   let { id, name, size = 64 }: { id:string; name:string; size?:number } = $props()
   let project = $state.raw<Project | null>(null)
   let items = $state<Preset['items']>({})
+  const selected = $derived(id === doc.id)
   $effect(() => {
-    const key = id; let alive = true
-    void openSource(key).then(r => { if (alive) { const outfit=r.current ?? r.project.manifest.presets[0]; project=recolor(r.project, outfit?.variants ?? {}); items=outfit?.items ?? {} } }).catch(() => {})
-    return () => { alive=false }
+    const key = id
+    project = null; items = {}
+    if (selected) return // The selected character already uses the live project below.
+    const controller = new AbortController()
+    void openSource(key, controller.signal).then(r => {
+      if (controller.signal.aborted) return
+      const outfit = r.current ?? r.project.manifest.presets[0]
+      project = recolor(r.project, outfit?.variants ?? {}); items = outfit?.items ?? {}
+    }).catch((error: unknown) => { if (!controller.signal.aborted) console.warn('Could not load character thumbnail', key, error) })
+    return () => controller.abort()
   })
-  const p = $derived(id===doc.id ? view.project : project)
-  const outfit = $derived(id===doc.id ? doc.items : items)
+  const p = $derived(selected ? view.project : project)
+  const outfit = $derived(selected ? doc.items : items)
   const assets=$derived(p?buildPresentation(p):null)
   const rendered=$derived(assets?renderPresentation(assets,outfit,southStill(assets)):null)
   const frame=$derived(rendered?.frame)
