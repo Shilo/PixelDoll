@@ -23,6 +23,13 @@ test('Share popover follows the selected move, direction and Animate switch on d
   await trigger.click()
   const popover = page.getByRole('dialog', { name: 'Share character preview' })
   await expect(popover).toBeVisible()
+  await expect(popover).toHaveAttribute('data-positioned', '')
+  await expect(popover.locator('.bu-popover-arrow')).toBeVisible()
+  expect(await popover.evaluate(element => {
+    const arrow = element.querySelector('.bu-popover-arrow')!.getBoundingClientRect()
+    const trigger = document.querySelector('[popovertarget="share-popover"]')!.getBoundingClientRect()
+    return Math.abs(arrow.x + arrow.width / 2 - trigger.x - trigger.width / 2)
+  })).toBeLessThanOrEqual(12)
   await expect(popover.getByRole('combobox', { name: 'Move' })).toBeFocused()
   await expect(popover.getByRole('combobox', { name: 'Move' })).toHaveValue('walk')
   await expect(popover.getByRole('combobox', { name: 'Direction' })).toHaveValue('south')
