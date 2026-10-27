@@ -170,7 +170,7 @@ saved, undone, put in outfits or exported until it becomes an item. Wearing anot
 
 ### Review: Clean or Needs a look
 
-Review is optional. A **Clean** item saves itself when it finishes ("<name> saved"); if you were wearing it, it stays on.
+Review is optional. A **Clean** item saves itself when it finishes; if you were wearing it, it stays on.
 An item that **Needs a look** stays a draft with a badge until you decide. Use **Preview move** to inspect every generated
 move and direction, including frame edges and the grip of held items.
 

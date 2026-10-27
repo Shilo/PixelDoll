@@ -111,6 +111,8 @@ for (const kind of ['create', 'move', 'setup'] as const) {
     const failed = structuredClone(records.get(key))
     expect(failed).toMatchObject({ status: 'failed', error: 'Known terminal failure', spec })
     expect(stateOf(first).error).toBe('Known terminal failure')
+    // a failed move holds the queue while its sheet is closed, so it says so
+    if (kind === 'move') expect(first.ui).toMatchObject({ toast: expect.stringMatching(/ failed\. Open Moves to try again or start over\.$/), toastTone: 'danger' })
     mocks[kind].mockClear()
     vi.resetModules()
     const restored = await import('../../src/studio/state.svelte.ts')

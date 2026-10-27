@@ -687,6 +687,7 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
     g.phase = 'failed';
     g.error = (e as Error).message;
   }
+  if (g.phase === 'failed' && Object.values(doc.drafts).includes(g.draft.spec.id)) toast(`${g.input.name} failed and was taken off. Its card says why.`, { tone: 'danger' });
   takeOffGone();
   await saveGens();
   if (g.phase !== 'review') return;
@@ -943,6 +944,7 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
   moveRunning = true;
   const revision = ++moveRevision, current = () => revision === moveRevision && moveRunning;
+  const moveName = spec.id[0].toUpperCase() + spec.id.slice(1).replace(/-/g, ' ');
   let failed = false;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   try {
@@ -955,7 +957,6 @@ export async function startMove(projectId: string, spec: MoveSpec) {
     moving.done = true;
     await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
     if (!current()) return;
-    const moveName = spec.id[0].toUpperCase() + spec.id.slice(1).replace(/-/g, ' ');
     if (spec.itemsOnly) { // items posed onto a move the body already had: the move and the undo history stay as they are
       if (viewing(projectId)) { await openProject(projectId, { quiet: true }); if (!current()) return; }
       const names = spec.items.map((id) => store.project?.manifest.items.find((i) => i.id === id)?.name ?? 'Equipment').join(', ');
@@ -970,6 +971,8 @@ export async function startMove(projectId: string, spec: MoveSpec) {
       moving.error = e instanceof Error ? e.message : String(e);
       const error = await persistFlowFailure(MOVE_KEY, { spec, projectId, progress: $state.snapshot(moving.progress) }, e, storeMove);
       if (current()) moving.error = error;
+      // queued moves now run unattended: a failure that holds them says so wherever the user is
+      if (current() && ui.sheet !== 'move') toast(`${moveName} failed. Open Moves to try again or start over.`, { tone: 'danger' });
     }
   } finally {
     if (revision === moveRevision) moveRunning = false;

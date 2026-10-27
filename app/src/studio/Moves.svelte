@@ -49,7 +49,7 @@
       </div>
     </details>
     {#if mine && moving.spec}
-      <button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}><span class="ring spin" aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
+      <button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}><span class="ring" class:spin={!moving.error} aria-hidden="true"></span><span class="move-text"><b>{nice(moving.spec.id)}</b><span class="muted small">{moving.error ? 'Failed: tap for details' : `Adding… ${moving.progress?.done ?? 0}/${moving.progress?.total ?? '?'}`}</span></span></button>
     {/if}
     {#each queued as q, i (i)}
       <button class="move-row bu-action" data-variant="row" onclick={() => (ui.sheet = 'move')}><span class="ring" aria-hidden="true"></span><span class="move-text"><b>{nice(q.spec.id)}</b><span class="muted small">{moving.error ? 'Waiting for the failed move' : 'Queued'}</span></span></button>
