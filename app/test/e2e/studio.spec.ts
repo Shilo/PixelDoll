@@ -74,7 +74,7 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
       for (const [width, height] of sizes) {
         await page.setViewportSize({ width, height })
         for (const tone of ['info', 'warning', 'danger'] as const) {
-        await showNotification(page, tone === 'warning' ? 'Features and saved work may change. Keep an export.' : tone === 'danger' ? 'Could not save your character. Try again.' : 'Saved changes', { title: tone === 'warning' ? 'Preview · v0.2.29-dev' : undefined, tone, duration: 0 })
+        await showNotification(page, tone === 'warning' ? 'Features and saved work may change. Export your work to keep a backup.' : tone === 'danger' ? 'Could not save your character. Try again.' : 'Saved changes', { title: tone === 'warning' ? 'Preview · v0.2.29-dev' : undefined, tone, duration: 0 })
         const notice = page.locator('.toast')
         await expect(notice).toBeVisible()
         const measure = () => notice.evaluate(el => {
