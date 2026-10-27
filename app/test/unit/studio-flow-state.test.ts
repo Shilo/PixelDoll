@@ -328,6 +328,24 @@ test('free item palette applies only the newest refresh when two item correction
   expect(s.store.project).toBe(currentProject)
 })
 
+test('a palette refresh re-reads export preferences saved after its project read started', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  const original = { manifest: fixtureManifest(), images: new Map() }, first = pending<{ project: typeof original }>()
+  s.doc.id = 'project'; s.store.project = structuredClone(original)
+  mocks.match.mockResolvedValue(undefined)
+  mocks.load.mockReturnValueOnce(first.promise).mockImplementationOnce(async () => ({ project: structuredClone(s.store.project) }))
+  const refreshing = s.matchItemPalette('project', 'sword', 'walk', 'south', itemColorPlan)
+  await vi.waitFor(() => expect(mocks.load).toHaveBeenCalledOnce())
+  s.store.project.manifest.rig.animations[0].loop = false
+  s.store.project.manifest.exportSettings = { dressedCharacterSheets: false }
+  s.doc.rev++
+  first.resolve({ project: original }); await refreshing
+  expect(mocks.load).toHaveBeenCalledTimes(2)
+  expect(s.store.project.manifest.rig.animations[0].loop).toBe(false)
+  expect(s.store.project.manifest.exportSettings).toEqual({ dressedCharacterSheets: false })
+  expect(mocks.match).toHaveBeenCalledOnce()
+})
+
 
 test('merged move flow keeps durable guards while publishing separately reviewed shared fit results', async () => {
   const body = pending<{ fitIds: string[]; warnings: string[] }>(), fits = pending<any[]>()

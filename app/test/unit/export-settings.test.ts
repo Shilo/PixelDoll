@@ -4,7 +4,7 @@ import { cellHash, playlist, retainPlaybackChoices } from '../../src/lib/rig/rig
 import { exportFiles } from '../../src/lib/export/export.ts'
 import { readAseprite } from '../../src/lib/export/aseprite.ts'
 import { applyExportSetting, saveExportSetting, type StoredProject } from '../../src/lib/store/project.ts'
-import { readCharacterZip } from '../../src/lib/store/import.ts'
+import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts'
 import { zip } from '../../src/lib/store/zip.ts'
 import * as db from '../../src/lib/store/db.ts'
 import type { Engine, Project } from '../../src/lib/store/manifest.ts'
@@ -96,4 +96,14 @@ test('invalid playback metadata is rejected without coercion and failed saves pr
   expect(() => applyExportSetting(project.manifest, { animation: 'missing', loop: false })).toThrow('no longer exists')
   vi.spyOn(db, 'update').mockRejectedValue(new Error('Quota exceeded'))
   await expect(saveExportSetting('rig-settings', { animation: 'walk', loop: true })).rejects.toThrow('Quota exceeded')
+})
+
+test('native imports reject missing animations and malformed export preferences with a clear error', async () => {
+  for (const invalid of ['loop', 'settings', 'empty'] as const) {
+    const project = await fixture()
+    if (invalid === 'loop') Object.assign(project.manifest.rig.animations[0], { loop: 'false' })
+    if (invalid === 'settings') Object.assign(project.manifest, { exportSettings: { dressedCharacterSheets: 'false' } })
+    if (invalid === 'empty') project.manifest.rig.animations = []
+    await expect(readCharacterZip(await zip(await projectEntries(project)))).rejects.toThrow(invalid === 'loop' ? 'loop must be true or false' : invalid === 'settings' ? 'Export settings must specify' : 'no animations')
+  }
 })

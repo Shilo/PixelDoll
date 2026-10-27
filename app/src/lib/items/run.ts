@@ -4,7 +4,7 @@
 import { queue, type JobRec } from '../pixellab/queue.ts';
 import { binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
-import { cellHash, type Sha256 } from '../rig/rig.ts';
+import { cellHash, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
 import { itemPaletteMatcher, ITEM_PALETTE_POLICY, validPaletteRepairs } from '../dress/item-palette.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import * as db from '../store/db.ts';
@@ -587,7 +587,7 @@ const failCount = (q: QaResult) => [...q.failCalls.values()].flat().length;
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
 export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
   const { rig } = ctx.rec.manifest, key = item.key!;
-  const version = stableStringify({ rig, character: ctx.rec.character }), originalItem = stableStringify(item);
+  const version = rigArtworkVersion(rig, ctx.rec.character), originalItem = stableStringify(item);
   const count = rig.animations.find((a) => a.id === anim)?.cells;
   const expected = new Set(dirs.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`)));
   if (!count || !expected.size || cells.length !== expected.size || new Set(cells.map((c) => c.key)).size !== expected.size || cells.some((c) => !expected.has(c.key))
@@ -611,7 +611,7 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
   out.provenance = [...out.provenance, ...prov];
   out.qa = mergeQa(item, q.qa, qaCells);
   await saveItem(ctx.rec.id, out, built.images, SLOTS, current => {
-    if (stableStringify({ rig: current.manifest.rig, character: current.character }) !== version || stableStringify(current.manifest.items.find(i => i.id === item.id)) !== originalItem) throw new Error('This character or item changed while the repair was generating. Existing artwork was kept. Reopen it before trying again.');
+    if (rigArtworkVersion(current.manifest.rig, current.character) !== version || stableStringify(current.manifest.items.find(i => i.id === item.id)) !== originalItem) throw new Error('This character or item changed while the repair was generating. Existing artwork was kept. Reopen it before trying again.');
   });
 }
 /** Prepare a bounded frozen-frame edit without making an API call, for visible review and execution. */
@@ -695,7 +695,7 @@ export interface ItemPaletteRepairPlan {
   unmatchedPixels: number;
 }
 const paletteVersion = (rec: StoredProject, itemId: string) => stableStringify({
-  rig: rec.manifest.rig, character: rec.character,
+  rig: rigArtworkVersion(rec.manifest.rig, rec.character),
   item: rec.manifest.items.find(i => i.id === itemId), materials: rec.manifest.materials,
 });
 /** Inspect only stored equipment pixels. No queue, PixelLab call, material membership edit or image mutation. */

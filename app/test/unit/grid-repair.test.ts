@@ -54,6 +54,15 @@ test('successful fixed-frame repair retains96px pivot, other directions and idle
 test('failed quality keeps old pixels and never calls publication',async()=>{const f=await fixture('fail'),before=structuredClone(f.item),r=await regridClip(f.ctx,f.item,'slash','west',123);expect(r.saved).toBe(false);expect(f.save).not.toHaveBeenCalled();expect(f.item).toEqual(before)})
 test.each(['geometry','lost'] as const)('invalid or unknown %s output cannot publish',async mode=>{const f=await fixture(mode);await expect(regridClip(f.ctx,f.item,'slash','west',123)).rejects.toThrow();expect(f.save).not.toHaveBeenCalled()})
 test('concurrent rig edits reject inside the atomic publication guard',async()=>{const f=await fixture('race');await expect(regridClip(f.ctx,f.item,'slash','west',123)).rejects.toThrow('changed while');expect(f.saved()).toBeUndefined()})
+
+test('export playback preferences do not invalidate frozen-frame equipment repair output', async () => {
+ const f = await fixture()
+ f.current().manifest.rig.animations[0].loop = true
+ const result = await regridClip(f.ctx, f.item, 'slash', 'west', 123)
+ expect(result.saved).toBe(true)
+ expect(f.saved()).toBeDefined()
+ expect(f.current().manifest.rig.animations[0].loop).toBe(true)
+})
 test('missing actual measurements, excessive canvas and wrong selected frame identities fail before paid enqueue',async()=>{
  const f=await fixture();delete f.ctx.rec.skeletons;delete f.ctx.rec.manifest.rig.animations[0].sources!.west!.measured
  await expect(gridRepairRequest(f.ctx,f.item,'slash','west',1)).rejects.toThrow('measured hand positions')

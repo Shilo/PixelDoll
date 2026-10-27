@@ -53,7 +53,7 @@
     navigation.focus()
   }
   async function changeSetting(input: HTMLInputElement, change: ExportSettingChange) {
-    const projectId = doc.id, checked = input.checked, demo = isDemo()
+    const projectId = doc.id, checked = input.checked, demo = isDemo(), hadFocus = document.activeElement === input
     saving = true
     saveError = ''
     try {
@@ -62,11 +62,17 @@
         const manifest = structuredClone(store.project.manifest)
         applyExportSetting(manifest, change)
         store.project = { ...store.project, manifest }
+        doc.rev++
       }
     } catch (e) {
       input.checked = !checked
       saveError = `Could not save export settings: ${e instanceof Error ? e.message : String(e)}`
-    } finally { saving = false }
+    } finally {
+      saving = false
+      await tick()
+      // Disabling a focused checkbox blurs it. Keep keyboard navigation at that setting without stealing a moved focus.
+      if (hadFocus && input.isConnected && (document.activeElement === document.body || document.activeElement === input.closest('dialog'))) input.focus({ preventScroll: true })
+    }
   }
   // B10 (T1 P1-1): views a move or an item doesn't have are empty in the sheets; say so before the download
   const gaps = $derived.by(() => {

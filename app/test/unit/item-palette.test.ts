@@ -73,6 +73,18 @@ test('unrelated latest outfit/name changes survive the atomic free edit',async()
  await matchItemColors('rig-test','sword','slash','south',plan);expect(f.current.manifest.name).toBe('Latest');expect(f.current.manifest.presets[0].name).toBe('Latest outfit');expect(f.posts).not.toHaveBeenCalled();
 });
 
+test('export playback preferences do not invalidate reviewed colors or concurrent free-edit publication', async () => {
+ const f = await fixture(), plan = await itemPaletteRepairPlan('rig-test', 'sword', 'slash', 'south')
+ f.current.manifest.rig.animations[0].loop = false
+ f.current.manifest.exportSettings = { dressedCharacterSheets: false }
+ f.setRace(() => { f.current.manifest.rig.animations[1].loop = true })
+ await matchItemColors('rig-test', 'sword', 'slash', 'south', plan)
+ expect(f.current.manifest.rig.animations.map(a => a.loop)).toEqual([false, true])
+ expect(f.current.manifest.exportSettings).toEqual({ dressedCharacterSheets: false })
+ expect(f.current.manifest.items[1].paletteRepairs).toHaveLength(1)
+ expect(f.posts).not.toHaveBeenCalled()
+})
+
 const historyEntry = (before: `sha256:${string}`, after = `sha256:${'1'.repeat(64)}` as const) => ({version:'neutral-owned-v1' as const,materialId:'old_material',anim:'removed_move',dir:'west' as const,frames:[{cell:4096,changedPixels:1,layers:[{id:'fg',before,after}]}]});
 test('prospective1001st repair and1001 changed frames refuse with zero publication, preserving existing project',async()=>{
  const f=await fixture();f.current.manifest.items[1].paletteRepairs=Array.from({length:1000},()=>historyEntry(f.h));const before=structuredClone(f.current);

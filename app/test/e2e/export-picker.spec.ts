@@ -2,6 +2,7 @@ import { enterStudio, noDisabledHover, openStudio } from './immersive-helpers.ts
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
+import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
 
 async function savedExport(page: Page, dev: string) {
   await page.setViewportSize({ width: 800, height: 600 }) // Eight parallel settings runs do not need eight full-size animated worlds.
@@ -33,6 +34,198 @@ async function savedExport(page: Page, dev: string) {
   })
   await page.getByRole('button', { name: 'Export', exact: true }).click()
 }
+
+async function holdProjectTransaction(page: Page, mode: IDBTransactionMode) {
+  await page.evaluate(mode => {
+    const host = window as unknown as { __studio: { doc: { id: string } }; exportTransaction: { ready: boolean; release: () => void } }
+    const hold: { ready: boolean; release: () => void } = host.exportTransaction = { ready: false, release: () => { throw new Error('Transaction has not finished yet') } }
+    const original = IDBObjectStore.prototype.get
+    IDBObjectStore.prototype.get = function(query) {
+      const request = original.call(this, query)
+      if (this.name === 'projects' && query === host.__studio.doc.id && this.transaction.mode === mode) {
+        IDBObjectStore.prototype.get = original
+        const transaction = this.transaction
+        Object.defineProperty(transaction, 'oncomplete', { set(callback: (this: IDBTransaction, event: Event) => void) {
+          transaction.addEventListener('complete', event => {
+            hold.ready = true
+            hold.release = () => callback.call(transaction, event)
+          }, { once: true })
+        } })
+      }
+      return request
+    }
+  }, mode)
+}
+
+async function releaseProjectTransaction(page: Page) {
+  await page.evaluate(() => (window as unknown as { exportTransaction: { release: () => void } }).exportTransaction.release())
+}
+
+test('a same-character reload cannot replace export choices saved after its read started', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  for (const kind of ['animation', 'dressed']) {
+    await holdProjectTransaction(page, 'readonly')
+    await page.evaluate(async () => {
+      const path = '/src/studio/state.svelte.ts', state = await import(path)
+      ;(window as unknown as { exportReload: Promise<void> }).exportReload = state.openProject(state.doc.id, { quiet: true })
+    })
+    await expect.poll(() => page.evaluate(() => (window as unknown as { exportTransaction: { ready: boolean } }).exportTransaction.ready)).toBe(true)
+    const input = kind === 'animation' ? dialog.locator('.export-moves input').first() : dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
+    const wanted = !await input.isChecked()
+    await input.setChecked(wanted); await expect(input).toBeEnabled()
+    await releaseProjectTransaction(page)
+    await page.evaluate(async () => await (window as unknown as { exportReload: Promise<void> }).exportReload)
+    if (wanted) await expect(input).toBeChecked(); else await expect(input).not.toBeChecked()
+    const saved = await page.evaluate(async kind => {
+      const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', state = await import(statePath), db = await import(dbPath)
+      const record = await db.get('projects', state.doc.id)
+      return kind === 'animation' ? !record.manifest.rig.animations[0].loop : record.manifest.exportSettings.dressedCharacterSheets
+    }, kind)
+    expect(saved).toBe(wanted)
+  }
+})
+
+test('pending export settings saves block conflicting actions and restore keyboard focus when complete', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  const input = dialog.locator('.export-moves input').first()
+  await holdProjectTransaction(page, 'readwrite')
+  await input.focus(); await input.press('Space')
+  await expect.poll(() => page.evaluate(() => (window as unknown as { exportTransaction: { ready: boolean } }).exportTransaction.ready)).toBe(true)
+  await expect(input).toBeDisabled()
+  await expect(dialog.getByRole('button', { name: 'Back', exact: true })).toBeDisabled()
+  await expect(dialog.getByRole('button', { name: 'Close export' })).toBeDisabled()
+  await expect(dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })).toBeDisabled()
+  await page.keyboard.press('Escape'); await expect(dialog).toBeVisible()
+  await releaseProjectTransaction(page)
+  await expect(input).toBeEnabled(); await expect(input).toBeChecked(); await expect(input).toBeFocused()
+  await page.keyboard.press('Tab')
+  await expect(dialog.locator('.export-moves input').nth(1)).toBeFocused()
+})
+
+test('an older ZIP finishing last cannot replace the latest engine and settings export', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const dialog = page.getByRole('dialog'), download = dialog.getByRole('button', { name: /^Download ZIP/ })
+  await dialog.getByRole('radio', { name: 'Unity', exact: true }).check(); await expect(download).toBeEnabled()
+  await dialog.getByText('Files included', { exact: true }).click()
+  const entries = (await dialog.locator('pre').innerText()).trim().split('\n').length
+  await page.evaluate(expected => {
+    const host = window as unknown as { exportZipGate: { entered: boolean; finished: number; release: () => void } }
+    let release!: () => void, first = true, released = false
+    const gate = new Promise<void>(resolve => { release = resolve })
+    const state: { entered: boolean; finished: number; release: () => void } = host.exportZipGate = { entered: false, finished: 0, release: () => { released = true; release() } }
+    const Native = CompressionStream
+    window.CompressionStream = new Proxy(Native, { construct(target, args) {
+      const stream = Reflect.construct(target, args) as CompressionStream
+      if (args[0] !== 'deflate-raw') return stream
+      const held = first; first = false
+      if (!held && !released) return stream // The newer ZIP is allowed to finish first.
+      return { writable: stream.writable, readable: stream.readable.pipeThrough(new TransformStream({ async flush() {
+        if (held) { state.entered = true; await gate }
+        state.finished++
+        if (state.finished === expected) window.CompressionStream = Native
+      } })) }
+    } })
+  }, entries)
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  const walk = dialog.getByRole('checkbox', { name: 'Walk', exact: true })
+  await walk.check(); await expect(walk).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+  await expect.poll(() => page.evaluate(() => (window as unknown as { exportZipGate: { entered: boolean } }).exportZipGate.entered)).toBe(true)
+  await expect(dialog.getByRole('button', { name: 'Preparing…', exact: true })).toBeDisabled()
+  await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check(); await expect(download).toBeEnabled()
+  await page.evaluate(() => (window as unknown as { exportZipGate: { release: () => void } }).exportZipGate.release())
+  await expect.poll(() => page.evaluate(() => (window as unknown as { exportZipGate: { finished: number } }).exportZipGate.finished)).toBe(entries)
+  await dialog.getByText('Files included', { exact: true }).click()
+  await expect(dialog.locator('pre')).toContainText('generic/')
+  await expect(dialog.locator('pre')).not.toContainText('unity/')
+  const [file] = await Promise.all([page.waitForEvent('download'), download.click()])
+  const zip = await unzip(new Uint8Array(await readFile((await file.path())!)))
+  expect(file.suggestedFilename()).toMatch(/-generic\.pixeldoll\.zip$/)
+  const manifest = JSON.parse(new TextDecoder().decode(zip.get('manifest.json')!))
+  expect(manifest.export.engines).toEqual(['generic'])
+  expect(manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').loop).toBe(false)
+})
+
+test('Export takes the live current look and keeps a different saved outfit in the combined PNGs', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  const sample = await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', state = await import(statePath), db = await import(dbPath)
+    const project = state.store.project, body = project.manifest.items[0], image = project.images.get(body.layers[0].cells.walk.south[0])
+    let pixel = -1
+    const material = project.manifest.materials.find((material: { owner: string; ramp: string[] }) => material.owner === body.id && material.ramp.some(color => {
+      for (let i = 0; i < image.data.length; i += 4) if (image.data[i + 3] && '#' + [...image.data.slice(i, i + 3)].map(n => n.toString(16).padStart(2, '0')).join('') === color) { pixel = i / 4; return true }
+      return false
+    }))
+    if (!material || pixel < 0) throw new Error('Fixture needs a visible body material')
+    await db.update('projects', state.doc.id, (record: { manifest: typeof project.manifest }) => {
+      const mat = record.manifest.materials.find((m: { id: string }) => m.id === material.id)
+      mat.variants['audit-current'] = mat.ramp.map(() => '#ff0000'); mat.variants['audit-saved'] = mat.ramp.map(() => '#0000ff'); delete mat.defaultVariant
+      record.manifest.presets = [{ id: 'audit-saved', name: 'Saved blue outfit', items: { body: body.id }, variants: { [mat.id]: 'audit-saved' } }]
+      return record
+    })
+    await state.openProject(state.doc.id)
+    state.setVariant(material.id, 'audit-current'); await state.flushSave()
+    return { x: pixel % image.w, y: Math.floor(pixel / image.w), material: material.id }
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog'), button = dialog.getByRole('button', { name: /^Download ZIP/ })
+  await dialog.getByRole('radio', { name: 'PNG + JSON', exact: true }).check(); await expect(button).toBeEnabled()
+  const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
+  const entries = await unzip(new Uint8Array(await readFile((await download.path())!)))
+  const manifest = JSON.parse(new TextDecoder().decode(entries.get('manifest.json')!))
+  expect(manifest.presets.find((p: { id: string }) => p.id === 'current').variants[sample.material]).toBe('audit-current')
+  expect(manifest.presets.find((p: { id: string }) => p.id === 'audit-saved').variants[sample.material]).toBe('audit-saved')
+  const current = await decodePngBytes(entries.get('baked/current/walk.png')!), saved = await decodePngBytes(entries.get('baked/audit-saved/walk.png')!)
+  expect([...current.data.slice((sample.y * current.w + sample.x) * 4, (sample.y * current.w + sample.x) * 4 + 4)]).toEqual([255, 0, 0, 255])
+  expect([...saved.data.slice((sample.y * saved.w + sample.x) * 4, (sample.y * saved.w + sample.x) * 4 + 4)]).toEqual([0, 0, 255, 255])
+})
+
+test('one-frame and hundred-animation characters keep exact summaries, readable names and reachable controls', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const dialog = page.getByRole('dialog')
+  for (const count of [1, 100]) {
+    await dialog.getByRole('button', { name: 'Close export' }).click()
+    await page.evaluate(async count => {
+      const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', rigPath = '/src/lib/rig/rig.ts'
+      const state = await import(statePath), db = await import(dbPath), { baseHashOf } = await import(rigPath)
+      const record = await db.get('projects', state.doc.id), manifest = record.manifest, base = manifest.items[0]
+      const hashes: Record<string, string> = {}, first = base.layers.map((layer: { cells: Record<string, { south: string[] }> }) => layer.cells[manifest.rig.animations[0].id].south[0])
+      manifest.rig.animations = Array.from({ length: count }, (_, i) => ({ id: count === 1 ? 'default' : `animation-${i}-${'longname'.repeat(12)}`, cells: 1, loop: count === 1, frames: [{ cell: 0, ms: 100 }] }))
+      base.layers.forEach((layer: { cells: Record<string, { south: string[] }> }, j: number) => {
+        layer.cells = Object.fromEntries(manifest.rig.animations.map((a: { id: string }) => { hashes[`${a.id}/south/0`] = first[j]; return [a.id, { south: [first[j]] }] }))
+      })
+      manifest.rig.baseHash = await baseHashOf(manifest.rig, hashes); base.baseHash = manifest.rig.baseHash
+      if (count === 100) manifest.exportSettings = { dressedCharacterSheets: false }
+      await db.put('projects', state.doc.id, record); await state.openProject(state.doc.id)
+    }, count)
+    await page.setViewportSize({ width: 320, height: 568 }); await page.emulateMedia({ reducedMotion: 'reduce' })
+    await page.getByRole('button', { name: 'Export', exact: true }).click()
+    const summary = dialog.locator('.export-summary dd').first()
+    await expect(summary).toHaveText(count === 1 ? 'None' : 'All')
+    await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+    const inputs = dialog.locator('.export-moves input'), labels = dialog.locator('.export-move span')
+    await expect(inputs).toHaveCount(count)
+    expect(await dialog.locator('.export-page').evaluate(element => getComputedStyle(element).animationName)).toBe('none')
+    if (count === 1) { await inputs.first().check(); await expect(inputs.first()).toBeEnabled() }
+    else {
+      await inputs.first().uncheck(); await expect(inputs.first()).toBeEnabled()
+      await inputs.last().uncheck(); await expect(inputs.last()).toBeEnabled()
+    }
+    const names = await labels.allTextContents()
+    await dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true }).scrollIntoViewIfNeeded()
+    expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+    await page.screenshot({ path: info.outputPath(`export-${count}-animations.png`) })
+    await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+    await expect(summary).toHaveText(count === 1 ? 'All' : names.slice(1, -1).join(', '))
+    await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeVisible()
+    expect(await dialog.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true)
+  }
+})
 
 test('Export settings persist explicit None, list and All choices, and toggle combined sheets in downloaded ZIPs', async ({ page }, info) => {
   const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
@@ -90,18 +283,20 @@ test('Export settings show storage failures without changing the choice or trapp
   await expect(dialog.locator('.export-summary dd')).toHaveCount(2)
   const before = await dialog.locator('.export-summary dd').allTextContents()
   await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
-  const input = dialog.locator('.export-moves input').first(), checked = await input.isChecked()
-  await page.evaluate(() => {
+  for (const input of [dialog.locator('.export-moves input').first(), dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })]) {
+    const checked = await input.isChecked()
+    await page.evaluate(() => {
     const studio = (window as unknown as { __studio: { doc: { id: string } } }).__studio, original = IDBObjectStore.prototype.put
     IDBObjectStore.prototype.put = function(value, key) {
       if (this.name === 'projects' && key === studio.doc.id) { IDBObjectStore.prototype.put = original; throw new Error('Synthetic settings write failure') }
       return original.call(this, value, key)
     }
-  })
-  await input.click() // Failed persistence immediately restores the old checkbox state.
-  await expect(dialog.getByRole('alert')).toContainText('Synthetic settings write failure')
-  await expect(input).toBeEnabled()
-  if (checked) await expect(input).toBeChecked(); else await expect(input).not.toBeChecked()
+    })
+    await input.focus(); await input.press('Space') // Failed persistence immediately restores the old checkbox state.
+    await expect(dialog.getByRole('alert')).toContainText('Synthetic settings write failure')
+    await expect(input).toBeEnabled(); await expect(input).toBeFocused()
+    if (checked) await expect(input).toBeChecked(); else await expect(input).not.toBeChecked()
+  }
   await dialog.getByRole('button', { name: 'Back', exact: true }).click()
   await expect(dialog.locator('.export-summary dd')).toHaveText(before)
   await dialog.getByRole('button', { name: 'Close export' }).click()

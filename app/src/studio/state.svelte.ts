@@ -297,7 +297,7 @@ let openRequest = 0, opening = ''; // opening: the character the newest open is 
 /** keep.wear: equip that item (Keep it). keep.quiet: reload the open character in place (a draft saved itself): the view, the
  *  selection and undo stay, and the stage does not show loading. */
 export async function openProject(id: string, keep?: { wear?: string; quiet?: boolean }) {
-  const request = ++openRequest, quiet = !!keep?.quiet && id === doc.id, seen = edits; // edits so far are saved before the read
+  const request = ++openRequest, quiet = !!keep?.quiet && id === doc.id, seen = edits, revision = doc.rev; // edits so far are saved before the read
   opening = id;
   await flushSave();
   if (request !== openRequest) return;
@@ -312,8 +312,8 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
     if (request !== openRequest) return;
     await flushSave(); // an edit made to the previous character while this one loaded lands before it is replaced
     if (request !== openRequest) return;
-    // an edit to this same character while it reloaded (outfits, layer order, hides) is newer than the read: read it again
-    if (id === doc.id && edits !== seen) return openProject(id, keep);
+    // Outfit edits and explicit metadata changes made during a reload are newer than its read.
+    if (id === doc.id && (edits !== seen || doc.rev !== revision)) return openProject(id, keep);
     const m = r.project.manifest;
     const pr = r.current ?? m.presets[0] ?? { items: {}, variants: {} };
     const unsaved = takeUnsaved(id, m), current = unsaved ?? pr; // replace, never merge: a reset or removal deletes keys
@@ -560,10 +560,15 @@ export async function matchItemPalette(projectId: string, itemId: string, anim: 
   await flushSave();
   await (await itemRun()).matchItemColors(projectId, itemId, anim, dir, reviewed);
   if (doc.id !== projectId || request !== openRequest) return;
-  const refresh = ++itemPaletteRefresh, fresh = await loadProject(projectId);
-  if (doc.id !== projectId || request !== openRequest || refresh !== itemPaletteRefresh) return;
-  store.project = fresh.project;
-  doc.rev++;
+  const refresh = ++itemPaletteRefresh;
+  for (;;) {
+    const revision = doc.rev, fresh = await loadProject(projectId);
+    if (doc.id !== projectId || request !== openRequest || refresh !== itemPaletteRefresh) return;
+    if (doc.rev !== revision) continue;
+    store.project = fresh.project;
+    doc.rev++;
+    return;
+  }
 }
 
 export async function removeItem(itemId: string) {
