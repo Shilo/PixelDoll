@@ -27,14 +27,21 @@ test('anchored popovers point at their triggers on all four sides', async ({ pag
       const axis = node.getAttribute('data-side') === 'top' || node.getAttribute('data-side') === 'bottom' ? 'x' : 'y'
       const pointerCenter = axis === 'x' ? pointer.x + pointer.width / 2 : pointer.y + pointer.height / 2
       const triggerCenter = axis === 'x' ? trigger.x + trigger.width / 2 : trigger.y + trigger.height / 2
-      return { panel: panel.toJSON(), pointer: pointer.toJSON(), delta: Math.abs(pointerCenter - triggerCenter), hidden: node.hasAttribute('data-arrow-hidden') }
+      const path = node.querySelector<SVGPathElement>('.bu-popover-arrow path:last-child')!
+      const transform = path.getScreenCTM()!
+      const ends = [new DOMPoint(0, 8), new DOMPoint(12, 8)].map(point => point.matrixTransform(transform))
+      const side = node.getAttribute('data-side')
+      const border = side === 'bottom' ? panel.top + 0.5 : side === 'top' ? panel.bottom - 0.5 : side === 'right' ? panel.left + 0.5 : panel.right - 0.5
+      const seam = Math.max(...ends.map(point => Math.abs((axis === 'x' ? point.y : point.x) - border)))
+      return { panel: panel.toJSON(), pointer: pointer.toJSON(), delta: Math.abs(pointerCenter - triggerCenter), seam, hidden: node.hasAttribute('data-arrow-hidden') }
     }, triggerSelector)
     expect(geometry.hidden).toBe(false)
     expect(geometry.delta).toBeLessThanOrEqual(12)
-    if (side === 'bottom') expect(geometry.pointer.bottom).toBeLessThan(geometry.panel.top + 4)
-    if (side === 'top') expect(geometry.pointer.top).toBeGreaterThan(geometry.panel.bottom - 4)
-    if (side === 'left') expect(geometry.pointer.left).toBeGreaterThan(geometry.panel.right - 4)
-    if (side === 'right') expect(geometry.pointer.right).toBeLessThan(geometry.panel.left + 4)
+    expect(geometry.seam).toBeLessThanOrEqual(1)
+    if (side === 'bottom') expect(geometry.pointer.bottom).toBeLessThanOrEqual(geometry.panel.top + 4)
+    if (side === 'top') expect(geometry.pointer.top).toBeGreaterThanOrEqual(geometry.panel.bottom - 4)
+    if (side === 'left') expect(geometry.pointer.left).toBeGreaterThanOrEqual(geometry.panel.right - 4)
+    if (side === 'right') expect(geometry.pointer.right).toBeLessThanOrEqual(geometry.panel.left + 4)
     if (side === 'left') {
       await page.setViewportSize({ width: 900, height: initialViewport.height })
       await expect(menu).toHaveAttribute('data-side', 'left')
