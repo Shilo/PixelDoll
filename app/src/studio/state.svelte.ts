@@ -160,7 +160,7 @@ const follower = (waits?: () => void) => {
 /** Run the waiting click: only in the lead, after takeOver resumed the stored create, move and setup (so it queues behind
  *  them instead of overwriting them), and only while the user is still in Activity. */
 function runWaiting() {
-  if (!afterTakeOver || queue.role === 'follower' || !driving || takeOverRunning) return;
+  if (!afterTakeOver || queue.role === 'follower' || !resumedHere) return;
   const run = ui.sheet === 'activity' ? afterTakeOver : null;
   cancelWaitingForTab();
   run?.();
@@ -454,6 +454,7 @@ function workIdle() {
   return queue.idle() && !gens.some((g) => g.phase === 'running') && !settling.size && !(creating.spec && !creating.projectId)
     && !(moving.spec && !moving.done) && !moving.queued.length && !(settingUp.spec && !settingUp.done)
     && !createRunning && !moveRunning && !setupRunning && !takeOverRunning && !afterConnect
+    && !itemStarting && !runningGens.size
     && !equipment.preparing.length && !equipment.running.length && !equipment.fits.some((f) => f.stage.endsWith('running'));
 }
 queue.canYield = workIdle;
@@ -621,7 +622,7 @@ const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state
 // other's studio-drafts). A follower tab shows the leader's drafts, re-read when the ledger changes, and takes over when
 // the leader's tab closes.
 const runningGens = new Set<string>();
-let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, takeOverRunning = false, mirrored = '', mirrorAt = 0;
+let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, takeOverRunning = false, resumedHere = false, itemStarting = 0, mirrored = '', mirrorAt = 0;
 // A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
 const readGens = async () => uniqueBy((await db.get<{ gens: Gen[] }>('projects', GENS_KEY))?.gens ?? [], (g) => g.draft.spec.id);
 /** The ONLY way the list is replaced: one entry per draft id (already-persisted duplicates heal on the next save). Synchronous,
@@ -659,7 +660,7 @@ function drive() {
 }
 queue.subscribe((s) => {
   // This tab handed the jobs to another (only ever while idle): mirror its drafts again, and resume again when it leads.
-  if (s.role === 'follower' && driving) driving = takingOver = createResumed = moveResumed = setupResumed = false;
+  if (s.role === 'follower' && driving) driving = takingOver = resumedHere = createResumed = moveResumed = setupResumed = false;
   runWaiting();
   if (!gensReady || driving) return;
   if (s.role !== 'follower') { void takeOver(); return; }
@@ -677,7 +678,7 @@ async function takeOver() {
   takingOver = takeOverRunning = true;
   try {
     const list = await readGens();
-    if (driving) return;
+    if (driving) return; // startup drove first; its own resumes follow and call startupResumed
     setGens(list);
     drive();
     await resumeCreate();
@@ -685,12 +686,25 @@ async function takeOver() {
     await resumeSetup();
     await resumeFitStages();
     await refreshFits();
+    resumedHere = true;
+  } catch (e) {
+    cancelWaitingForTab(); // never run a click on top of work this tab could not resume
+    toast(`This tab could not take over the jobs: ${(e as Error).message}. Reload to try again.`, { tone: 'danger' });
   } finally { takeOverRunning = false; }
+  runWaiting();
+}
+/** Studio's startup resumes are done; as the leader, a click waiting from before can now run. */
+export function startupResumed() {
+  if (queue.role !== 'follower') resumedHere = true;
   runWaiting();
 }
 
 export async function startItem(input: NewItemInput) {
   if (hmrReloading) return;
+  itemStarting++; // counted from the click, before the draft exists, so this tab keeps the jobs meanwhile
+  try { await startItemDraft(input); } finally { itemStarting--; }
+}
+async function startItemDraft(input: NewItemInput) {
   // Startup may still be reading the stored drafts: saving before they load would overwrite them.
   try { await loadGens(); } catch (e) { toast(`Saved item drafts could not be read: ${(e as Error).message}. Reload to try again.`, { tone: 'danger' }); return; }
   const ctx = await loadProject(doc.id), route = await itemFlow();
@@ -791,7 +805,7 @@ const drop = (g: Gen) => { const i = gens.findIndex((x) => x.draft.spec.id === g
  *  and reloads the open character in place. True when saved. */
 export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
   const id = g.draft.spec.id;
-  // A background auto-save never pops Activity open in a tab that just handed the jobs over; the new leader saves it.
+  // A background auto-save never pops Activity open in a follower tab; the draft stays ready to review there.
   if ((auto ? queue.role === 'follower' : follower()) || settling.has(id)) return false;
   settling.add(id);
   try {
@@ -895,8 +909,11 @@ function withActivityScope<T extends { seed: number; activityScope?: string }>(s
 export const creating = $state({ spec: null as CreateSpec | null, progress: null as Progress | null, error: '', projectId: '', warnings: [] as string[], views: [] as { id: DirectionName; img: Img }[] });
 const CREATE_KEY = 'studio-create';
 let createRunning = false, createRevision = 0;
+/** A create (perhaps one resumed from a closed tab) runs here, so another cannot start yet. */
+export const createBusy = () => createRunning;
 export async function startCreate(spec: CreateSpec) {
-  if (hmrReloading || createRunning) return;
+  if (hmrReloading) return;
+  if (createRunning) { toast('Another character is still being created, so yours did not start. Your details are kept.', { tone: 'warning' }); return; }
   createRunning = true;
   const revision = ++createRevision, current = () => revision === createRevision && createRunning;
   let failed = false;
@@ -985,7 +1002,8 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
   [...(moving.spec && !moving.done && moving.projectId === projectId ? [moving.spec] : []), ...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)]
     .filter((s) => !itemId || s.items.includes(itemId));
 export async function startMove(projectId: string, spec: MoveSpec) {
-  if (hmrReloading || moveRunning) return;
+  if (hmrReloading) return;
+  if (moveRunning) { toast('Another move is still being added, so this one did not start. Try again when it finishes.', { tone: 'warning' }); return; }
   spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
   moveRunning = true;
   const revision = ++moveRevision, current = () => revision === moveRevision && moveRunning;
@@ -1083,8 +1101,11 @@ export async function dismissMove() {
 export const settingUp = $state({ spec: null as SetupSpec | null, progress: null as Progress | null, error: '', done: false, warnings: [] as string[] });
 const SETUP_KEY = 'studio-setup';
 let setupRunning = false, setupResumed = false, setupRevision = 0;
+/** A setup (perhaps one resumed from a closed tab) runs here, so another cannot start yet. */
+export const setupBusy = () => setupRunning;
 export async function startSetup(spec: SetupSpec) {
-  if (hmrReloading || setupRunning) return;
+  if (hmrReloading) return;
+  if (setupRunning) { toast('Another rig setup is still running, so this one did not start. Your choices are kept.', { tone: 'warning' }); return; }
   spec = withActivityScope(spec, 'setup');
   setupRunning = true;
   const revision = ++setupRevision, current = () => revision === setupRevision && setupRunning;

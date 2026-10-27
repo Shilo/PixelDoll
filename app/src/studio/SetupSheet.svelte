@@ -9,7 +9,7 @@
   import * as db from '../lib/store/db.ts'
   import type { StoredProject } from '../lib/store/project.ts'
   import { SETUP_STEPS } from './setup.ts'
-  import { ui, doc, store, settingUp, moving, creating, startSetup, dismissSetup, withKey } from './state.svelte.ts'
+  import { ui, doc, store, settingUp, moving, creating, startSetup, setupBusy, dismissSetup, withKey } from './state.svelte.ts'
   import { Check, TriangleAlert } from './icons.ts'
   const m = $derived(store.project?.manifest)
   let rec = $state.raw<StoredProject | null>(null), plan = $state.raw<SetupPlan | null>(null)
@@ -32,7 +32,7 @@
     if (!m || !plan || !looks.trim()) return
     const spec = { projectId: doc.id, baseHash: m.rig.baseHash, restAnim: plan.restAnim, looks: looks.trim(), seed: 1 + Math.floor(Math.random() * 2_000_000) }
     formDrafts.setup = { projectId: doc.id, looks, restAnim }
-    withKey(() => { formDrafts.setup = undefined; void startSetup(spec); ui.sheet = 'setup' }, true)
+    withKey(() => { if (!setupBusy()) formDrafts.setup = undefined; void startSetup(spec); ui.sheet = 'setup' }, true) // refused (a resumed setup runs): keep the choices
   }
 </script>
 

@@ -14,7 +14,7 @@
   import CharacterForm from './CharacterForm.svelte'
   import { autoFrame, draftErrors, facingOf, freshSeed, newCharacterDraft } from './characterConfig.ts'
   import { nameFrom, bodyQualityNote as plain } from './model.ts'
-  import { ui, creating, startCreate, cancelCreate, openProject, withKey } from './state.svelte.ts'
+  import { ui, creating, startCreate, createBusy, cancelCreate, openProject, withKey } from './state.svelte.ts'
   import { Check, CircleAlert, TriangleAlert } from './icons.ts'
   let d = $state(formDrafts.character ?? newCharacterDraft())
   let enhancing = $state(false)
@@ -55,7 +55,7 @@
     if (errors.length || enhancing) return
     formDrafts.character = $state.snapshot(d)
     const spec = { ...$state.snapshot(formSpec), seed: d.seed ? Number(d.seed) : freshSeed() }
-    withKey(() => { formDrafts.character = undefined; void startCreate(spec); ui.sheet = 'create' }, true)
+    withKey(() => { if (!createBusy()) formDrafts.character = undefined; void startCreate(spec); ui.sheet = 'create' }, true) // refused (a resumed create runs): keep the form
   }
   const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
   async function open() {

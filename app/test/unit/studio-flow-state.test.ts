@@ -3,7 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), update: vi.fn(), clear: vi.fn(), subscribe: vi.fn(), handoff: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), update: vi.fn(), clear: vi.fn(), subscribe: vi.fn(), handoff: vi.fn(), all: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
@@ -11,7 +11,7 @@ vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original
 vi.mock('../../src/lib/dress/project.ts', async original => ({ ...await original<typeof import('../../src/lib/dress/project.ts')>(), openSource: mocks.source }))
 vi.mock('../../src/lib/equipment/fits.ts', async original => ({ ...await original<typeof import('../../src/lib/equipment/fits.ts')>(), listFits: mocks.fits }))
 
-vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del, update: mocks.update }))
+vi.mock('../../src/lib/store/db.ts', () => ({ put: mocks.put, get: mocks.get, del: mocks.del, update: mocks.update, all: mocks.all }))
 vi.mock('../../src/lib/app.svelte.ts', () => ({ app: { key: '' } }))
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { role: 'leader', subscribe: mocks.subscribe, requestHandoff: mocks.handoff, idle: () => true, clearFinished: mocks.clear } }))
 
@@ -28,7 +28,7 @@ beforeAll(async () => { stubGlobals(); await import('../../src/studio/state.svel
 beforeEach(() => {
   vi.resetModules()
   Object.values(mocks).forEach((m) => m.mockReset())
-  mocks.put.mockResolvedValue(undefined); mocks.get.mockResolvedValue(undefined); mocks.del.mockResolvedValue(undefined); mocks.fits.mockResolvedValue([]); mocks.clear.mockResolvedValue(0)
+  mocks.put.mockResolvedValue(undefined); mocks.get.mockResolvedValue(undefined); mocks.del.mockResolvedValue(undefined); mocks.fits.mockResolvedValue([]); mocks.clear.mockResolvedValue(0); mocks.all.mockResolvedValue([])
   stubGlobals()
 })
 afterEach(() => vi.unstubAllGlobals())
@@ -432,7 +432,8 @@ test('a character that cannot open says why before the demo replaces it', async 
 test('an unreadable character list is reported instead of showing only the demo silently', async () => {
   const s = await import('../../src/studio/state.svelte.ts')
   vi.spyOn(console, 'error').mockImplementation(() => {})
-  await s.refreshProjects() // the mocked store has no `all`: listing throws
+  mocks.all.mockRejectedValue(new Error('storage unavailable'))
+  await s.refreshProjects() // listing throws
   expect(s.store.projects.map((p) => p.id)).toEqual([s.DEMO])
   expect(s.ui.toast).toMatch(/^Could not read your saved characters: /)
 })
@@ -671,6 +672,72 @@ describe('move queue', () => {
     t.equipment.running = []
     app.key = ''; t.withKey(vi.fn()) // Connect waits with a paid action
     expect([t.ui.sheet, q.canYield()]).toEqual(['connect', false])
+  })
+
+  const specA = { description: 'A body', name: 'A', seed: 1, size: 48, dirs: 4 as const, projectId: 'rig-a' }
+  const specB = { description: 'B body', name: 'B', seed: 2, size: 48, dirs: 4 as const }
+
+  test('a waiting Create after this tab resumed the closed tab create keeps that create and says why it did not start', async () => {
+    const records = storage()
+    mocks.create.mockReturnValue(new Promise(() => {}))
+    const { REQUEST_TEXT } = await import('../../src/studio/state.svelte.ts')
+    records.set('studio-create', { id: 'studio-create', spec: specA, status: 'running', requestText: REQUEST_TEXT })
+    vi.resetModules()
+    const { app } = await import('../../src/lib/app.svelte.ts') as unknown as { app: { key: string } }
+    const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { role: string } }
+    app.key = 'test-key'; queue.role = 'follower'
+    try {
+      const s = await import('../../src/studio/state.svelte.ts')
+      const notify = mocks.subscribe.mock.calls.at(-1)![0] as (snapshot: { role: string }) => void
+      await s.loadGens()
+      let ran = false
+      s.withKey(() => { ran = true; void s.startCreate(specB) })
+      queue.role = 'leader'; notify({ role: 'leader' })
+      await vi.waitFor(() => expect(ran).toBe(true))
+      expect(mocks.create.mock.calls.map((c) => c[0].name)).toEqual(['A'])
+      expect([s.createBusy(), s.ui.toast]).toEqual([true, 'Another character is still being created, so yours did not start. Your details are kept.'])
+    } finally { queue.role = 'leader' }
+  })
+
+  test('a tab that leads before its drafts loaded runs a waiting click only after the startup resumes', async () => {
+    const records = storage()
+    mocks.create.mockReturnValue(new Promise(() => {}))
+    const { REQUEST_TEXT } = await import('../../src/studio/state.svelte.ts')
+    vi.resetModules()
+    const drafts = pending<undefined>()
+    mocks.get.mockImplementation(async (_store, id) => id === 'studio-drafts' ? drafts.promise : structuredClone(records.get(id)))
+    const { app } = await import('../../src/lib/app.svelte.ts') as unknown as { app: { key: string } }
+    const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { role: string } }
+    app.key = 'test-key'; queue.role = 'follower'
+    try {
+      const s = await import('../../src/studio/state.svelte.ts')
+      const notify = mocks.subscribe.mock.calls.at(-1)![0] as (snapshot: { role: string }) => void
+      const loaded = s.loadGens() // Studio mount, still reading the drafts
+      records.set('studio-create', { id: 'studio-create', spec: specA, status: 'running', requestText: REQUEST_TEXT }) // the other tab's create
+      let ran = 0
+      s.withKey(() => { ran++; void s.startCreate(specB) })
+      queue.role = 'leader'; notify({ role: 'leader' }) // the other tab closed
+      drafts.resolve(undefined); await loaded
+      notify({ role: 'leader' }) // a later queue update
+      expect(ran).toBe(0)
+      await s.resumeCreate(); await s.resumeMove(); await s.resumeSetup() // Studio mount continues
+      s.startupResumed()
+      expect(ran).toBe(1)
+      await vi.waitFor(() => expect(mocks.create.mock.calls.map((c) => c[0].name)).toEqual(['A']))
+      expect(records.get('studio-create')?.spec.name).toBe('A')
+    } finally { queue.role = 'leader' }
+  })
+
+  test('Make item keeps the jobs in this tab from the click, before its draft exists', async () => {
+    storage()
+    const loading = pending<never>()
+    mocks.load.mockReturnValue(loading.promise)
+    const s = await import('../../src/studio/state.svelte.ts')
+    const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { canYield: () => boolean } }
+    await s.loadGens()
+    void s.startItem({ slot: 'hat', prompt: 'hat', name: 'Hat' } as never)
+    await new Promise((r) => setTimeout(r, 30))
+    expect([s.gens.length, queue.canYield()]).toEqual([0, false])
   })
 
   test('this tab offers its jobs to another tab only while none of its generation work runs', async () => {
