@@ -1,18 +1,17 @@
 import { bakedFrame, composeCell, equipped, hiddenSlots, shownItems, type Frame } from '../../lib/compose/compose.ts';
-import { recolor } from '../../lib/dress/dress.ts';
 import { DEFAULT_MOVE } from '../../lib/rig/rig.ts';
 import type { Img } from '../../lib/image/png.ts';
-import type { DirectionName, Item, Layer, Preset, Project, RigAnimation, Sha256 } from '../../lib/store/manifest.ts';
+import type { DirectionName, Item, Layer, Preset, Project, RigAnimation } from '../../lib/store/manifest.ts';
 import { directionInfo, directionLabel, dot, nearestDirection, unit, type Vector } from './movement.ts';
 
 export interface BodySequence { clip: string; direction: DirectionName; frames: RigAnimation['frames']; duration: number; loop: boolean }
 export interface Presentation {
-  kind: 'animation' | 'still' | 'rest' | 'unavailable';
+  kind: 'animation' | 'still' | 'unavailable';
   moving: boolean;
   requestedClip: string;
   intendedDirection: DirectionName | null;
   direction: DirectionName | null;
-  /** Null for a stored original rest image or unavailable artwork. */
+  /** Null for unavailable artwork. */
   clip: string | null;
   cell: number;
   sequence?: BodySequence;
@@ -25,9 +24,6 @@ export interface PresentationAvailability {
   project: Project;
   directions: DirectionName[];
   animations: Map<string, Map<DirectionName, BodySequence>>;
-  rests: Map<DirectionName, Sha256>;
-  /** Render-only owner-local original views; their stored hashes and project pixels remain untouched. */
-  restImages: Map<DirectionName, Img>;
   stills: Map<DirectionName, { clip: string; cell: number }>;
   metadataIssues: string[];
   loading: boolean;
@@ -36,12 +32,7 @@ export interface PresentationAvailability {
 }
 
 interface CheckedCell { valid: boolean; visible: boolean; source?: DirectionName }
-export interface PresentationOptions {
-  loading?: boolean;
-  /** Optional raw project plus the current selected variants, for rest originals outside clip layer cells. */
-  sourceProject?: Project;
-  variants?: Preset['variants'];
-}
+export interface PresentationOptions { loading?: boolean }
 
 /** Rebuild when the project, its images, or coverage changes. No requests or storage writes occur here. */
 export function buildPresentation(project: Project, options: PresentationOptions = {}): PresentationAvailability {
@@ -105,18 +96,7 @@ export function buildPresentation(project: Project, options: PresentationOptions
     cache.set(key, valid); return valid;
   };
   const body = m.items.find(item => item.id === m.rig.baseItem);
-  const animations = new Map<string, Map<DirectionName, BodySequence>>(), rests = new Map<DirectionName, Sha256>(), restImages = new Map<DirectionName, Img>(), stills = new Map<DirectionName, { clip: string; cell: number }>();
-  // recolor() deliberately visits layer cells, so add a transient body-only layer
-  // for original standing views. Never recolor already-rendered clip pixels twice.
-  const restLayer: Layer = { id: 'main', role: 'fg', z: body?.layers[0]?.z ?? 0, cells: { rest: Object.fromEntries(Object.entries(m.rig.rest ?? {}).flatMap(([id, rest]) => rest ? [[id, [rest.image]]] : [])) } };
-  const restSource = options.sourceProject && body
-    ? recolor({ manifest: { ...m, items: [{ ...body, layers: [restLayer] }] }, images: options.sourceProject.images }, options.variants ?? {})
-    : null;
-  for (const [id, rest] of Object.entries(m.rig.rest ?? {}) as [DirectionName, NonNullable<typeof m.rig.rest>[DirectionName]][]) {
-    const image = rest && (restSource?.layerImages?.get(restLayer)?.get(rest.image) ?? restSource?.images.get(rest.image)
-      ?? body?.layers.map(layer => project.layerImages?.get(layer)?.get(rest.image)).find(Boolean) ?? project.images.get(rest.image));
-    if (directionInfo(id) && rest && validImage(image, m.rig.cell.w, m.rig.cell.h) && hasPixels(image)) { rests.set(id, rest.image); restImages.set(id, image); }
-  }
+  const animations = new Map<string, Map<DirectionName, BodySequence>>(), stills = new Map<DirectionName, { clip: string; cell: number }>();
   if (body) {
     // Rescue stills may use stored original directions outside the intentional animated set.
     const storedDirections = [...new Set([...directions, ...body.layers.flatMap(layer => Object.values(layer.cells ?? {}).flatMap(dirs => Object.keys(dirs) as DirectionName[]))])].filter(id => directionInfo(id));
@@ -140,14 +120,13 @@ export function buildPresentation(project: Project, options: PresentationOptions
       }
     }
   }
-  return { project, directions, animations, rests, restImages, stills, metadataIssues, loading: options.loading ?? false, complete };
+  return { project, directions, animations, stills, metadataIssues, loading: options.loading ?? false, complete };
 }
 
 const defaultFacing = (a: PresentationAvailability): DirectionName | undefined => a.directions.includes('south') ? 'south' : a.directions.includes('east') ? 'east' : a.directions[0];
 const initial = (a: PresentationAvailability, requestedClip: string, intendedDirection: DirectionName | null, moving = false): Presentation => ({ kind: 'unavailable', moving, requestedClip, intendedDirection, direction: null, clip: null, cell: 0, issue: null, issueKey: null, loading: a.loading });
 const animated = (base: Presentation, sequence: BodySequence): Presentation => ({ ...base, kind: 'animation', direction: sequence.direction, clip: sequence.clip, sequence, cell: sequence.frames[0].cell });
 const still = (a: PresentationAvailability, base: Presentation, direction: DirectionName): Presentation => {
-  if (a.rests.has(direction)) return { ...base, kind: 'rest', direction };
   const pose = a.stills.get(direction);
   return pose ? { ...base, kind: 'still', direction, ...pose } : base;
 };
@@ -190,7 +169,6 @@ export function resolveLive(a: PresentationAvailability, options: { velocity: Ve
   if (a.loading && previous?.direction && !a.animations.get(base.requestedClip)?.has(intended!)) {
     const sequence = previous.kind === 'animation' && previous.clip ? a.animations.get(previous.clip)?.get(previous.direction) : undefined;
     if (sequence) return animated(base, sequence);
-    if (previous.kind === 'rest' && a.rests.has(previous.direction)) return still(a, base, previous.direction);
     if (previous.kind === 'still' && previous.clip) {
       const body = a.project.manifest.items.find(item => item.id === a.project.manifest.rig.baseItem);
       if (body && a.complete(body, previous.clip, previous.direction, [previous.cell])) return { ...base, kind: 'still', clip: previous.clip, direction: previous.direction, cell: previous.cell };
@@ -201,10 +179,7 @@ export function resolveLive(a: PresentationAvailability, options: { velocity: Ve
     const direction = intended && directions.includes(intended) ? intended : nearestDirection(directions, desired, previous?.direction, previous?.intendedDirection, saved);
     if (direction) return withIssue(a, animated(base, sequences!.get(direction)!));
   }
-  const resting = [...a.rests.keys()].filter(direction => a.directions.includes(direction) && eligible(direction));
-  const restDirection = nearestDirection(resting, desired, previous?.direction, previous?.intendedDirection, saved);
-  if (restDirection) return withIssue(a, still(a, base, restDirection));
-  const artwork = [...new Set([...a.rests.keys(), ...a.stills.keys()])], declared = artwork.filter(direction => a.directions.includes(direction));
+  const artwork = [...a.stills.keys()], declared = artwork.filter(direction => a.directions.includes(direction));
   const direction = nearestDirection(declared.length ? declared : artwork, desired, previous?.direction, previous?.intendedDirection, saved);
   return withIssue(a, direction ? still(a, base, direction) : base);
 }
@@ -216,9 +191,7 @@ export function southStill(a: PresentationAvailability): Presentation {
   const sequence = a.animations.get('idle')?.get('south') ?? [...a.animations.values()].map(dirs => dirs.get('south')).find(Boolean);
   if (sequence) return { ...base, kind: 'still', direction: 'south', clip: sequence.clip, cell: sequence.frames[0].cell };
   const pose = a.stills.get('south');
-  if (pose) return { ...base, kind: 'still', direction: 'south', ...pose };
-  if (a.rests.has('south')) return still(a, base, 'south');
-  return base;
+  return pose ? { ...base, kind: 'still', direction: 'south', ...pose } : base;
 }
 
 export interface PlaybackClock { key: string; elapsedMs: number; duration: number; cell: number }
@@ -242,16 +215,13 @@ export function renderPresentation(a: PresentationAvailability, items: Preset['i
   const p = a.project, m = p.manifest, frame = bakedFrame(m);
   const result: RenderedPresentation = { image: null, frame, hiddenItems: [], issue: null, issueKey: null, loading: null };
   if (presentation.kind === 'unavailable' || !presentation.direction) return result;
-  const direction = presentation.direction, clip = presentation.kind === 'rest' ? 'rest' : presentation.clip!;
-  const cells = presentation.kind === 'animation' ? presentation.sequence!.frames.map(f => f.cell) : [presentation.kind === 'rest' ? 0 : presentation.cell];
+  const direction = presentation.direction, clip = presentation.clip!;
+  const cells = presentation.kind === 'animation' ? presentation.sequence!.frames.map(f => f.cell) : [presentation.cell];
   const on = equipped(m, items), hidden = hiddenSlots(m, on), worn = shownItems(m, on);
   const filtered = { ...items }, loading: string[] = [], mirrored = m.rig.directions.find(d => d.id === direction)?.mirrorOf;
   for (const item of worn) {
     if (item.id === m.rig.baseItem) continue;
-    // rig.rest stores original artwork, including views that differ from an
-    // animated mirror. Mirrored clip equipment cannot certify that rest pose.
-    const exactRest = presentation.kind !== 'rest' || item.layers.every(layer => Object.hasOwn(layer.cells?.rest?.[direction] ?? [], 0));
-    if (!exactRest || !a.complete(item, clip, direction, cells)) {
+    if (!a.complete(item, clip, direction, cells)) {
       filtered[item.slot] = null;
       // a generating draft's cells are on their way, not missing
       const pending = [...new Set((item.pending ?? []).filter(k => k.startsWith(`${clip}/`)).map(k => k.split('/')[1]))];
@@ -260,16 +230,7 @@ export function renderPresentation(a: PresentationAvailability, items: Preset['i
     }
   }
   result.loading = loading.join(' · ') || null;
-  // A rest original is a distinct body source. Only explicit rest equipment cells accompany it.
-  let source = p;
-  if (presentation.kind === 'rest') {
-    const hash = a.rests.get(direction); if (!hash) return result;
-    const layer: Layer = { id: 'main', role: 'fg', z: m.items.find(item => item.id === m.rig.baseItem)?.layers[0]?.z ?? 0, cells: { rest: { [direction]: [hash] } } };
-    const layerImages = new Map(p.layerImages);
-    layerImages.set(layer, new Map([[hash, a.restImages.get(direction)!]]));
-    source = { ...p, layerImages, manifest: { ...m, items: m.items.map(item => item.id !== m.rig.baseItem ? item : { ...item, layers: [layer] }) } };
-  }
-  result.image = composeCell(source, filtered, clip, direction, cells.includes(cell) ? cell : cells[0], frame);
+  result.image = composeCell(p, filtered, clip, direction, cells.includes(cell) ? cell : cells[0], frame);
   if (result.hiddenItems.length && !a.loading) {
     result.issue = `${result.hiddenItems.length} ${result.hiddenItems.length === 1 ? 'item' : 'items'} hidden — missing ${clip} / ${directionLabel(direction)} frames`;
     result.issueKey = `items:${clip}:${direction}:${result.hiddenItems.map(item => item.variantOf ?? item.id).sort().join(',')}`;

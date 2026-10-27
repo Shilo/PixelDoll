@@ -1,14 +1,12 @@
 import { describe, expect, test } from 'vitest';
 import { makeImg } from '../../src/lib/image/png.ts';
-import { recolor } from '../../src/lib/dress/dress.ts';
 import type { DirectionName, Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts';
 import { advancePlayback, buildPresentation, renderPresentation, resolveLive, resolvePreview, southStill } from '../../src/studio/experience/presentation.ts';
 
-const bodyHash: Sha256 = 'sha256:body', gearHash: Sha256 = 'sha256:gear', restHash: Sha256 = 'sha256:rest';
+const bodyHash: Sha256 = 'sha256:body', gearHash: Sha256 = 'sha256:gear';
 function fixture(directions: DirectionName[] = ['south', 'east', 'north', 'west'], clips = ['walk', 'idle']): Project {
   const body = makeImg(2, 1); body.data.set([40, 0, 0, 255]);
   const gear = makeImg(2, 1); gear.data.set([90, 0, 0, 255], 4);
-  const rest = makeImg(2, 1); rest.data.set([70, 0, 0, 255]);
   const layers: Layer[] = [{ id: 'main', role: 'fg', z: 1, cells: Object.fromEntries(clips.map(clip => [clip, Object.fromEntries(directions.map(dir => [dir, [bodyHash, bodyHash]]))])) }];
   const item = (id: string, slot: string, ls: Layer[]): Item => ({ id, slot, layers: ls, name: id, prompt: '', baseHash: bodyHash, status: 'accepted', mirror: 'flip', materials: [], provenance: [] });
   const manifest: Manifest = {
@@ -16,7 +14,7 @@ function fixture(directions: DirectionName[] = ['south', 'east', 'north', 'west'
     rig: { cell: { w: 2, h: 1 }, pivot: { x: 1, y: 1 }, baseItem: 'base', baseHash: bodyHash, directions: directions.map(id => ({ id })), animations: clips.map(id => ({ id, cells: 2, loop: true, frames: [{ cell: 0, ms: 100 }, { cell: 1, ms: 200 }] })) },
     slots: [{ id: 'body', z: 1, class: 'base' }, { id: 'head', z: 2, class: 'rigid' }], items: [item('base', 'body', layers), item('hat', 'head', [{ id: 'main', role: 'fg', z: 2, cells: { walk: { south: [gearHash, null] }, idle: { south: [gearHash, gearHash] } } }])],
   };
-  return { manifest, images: new Map([[bodyHash, body], [gearHash, gear], [restHash, rest]]) };
+  return { manifest, images: new Map([[bodyHash, body], [gearHash, gear]]) };
 }
 const moving = { x: 1, y: 1 };
 
@@ -53,35 +51,26 @@ describe('production body presentation', () => {
     expect(nearNorth.issueKey).toBe(northwest.issueKey);
   });
 
-  test('missing locomotion moves with Idle, stops never loop Walk, and rest is a separate source', () => {
+  test('missing locomotion moves with Idle, stops never loop Walk, and Idle comes before Default', () => {
     const idleOnly = buildPresentation(fixture(['south'], ['idle']));
     expect(resolveLive(idleOnly, { velocity: { x: 0, y: -1 } })).toMatchObject({ moving: true, clip: 'idle', issueKey: 'walk:all' });
     const project = fixture(['south'], ['walk']);
-    project.manifest.rig.rest = { south: { image: restHash, keypoints: [] } };
     const a = buildPresentation(project), moving = resolveLive(a, { velocity: { x: 0, y: -1 } });
     const stopped = resolveLive(a, { velocity: { x: 0, y: 0 }, previous: moving });
-    expect(stopped).toMatchObject({ moving: false, kind: 'rest', direction: 'south', clip: null, issueKey: 'idle:all' });
+    expect(stopped).toMatchObject({ moving: false, kind: 'still', direction: 'south', clip: 'walk', cell: 0, issueKey: 'idle:all' });
     const rendered = renderPresentation(a, { head: 'hat' }, stopped);
-    expect(rendered.hiddenItems.map(item => item.id)).toEqual(['hat']);
-    expect(rendered.image?.data[0]).toBe(70);
-    expect(rendered.image?.data[7]).toBe(0);
-  });
-
-  test('legacy still rescue can use an original outside D without changing intended directions', () => {
-    const project = fixture(['east'], []);
-    project.manifest.rig.rest = { south: { image: restHash, keypoints: [] } };
-    const a = buildPresentation(project), result = resolveLive(a, { velocity: { x: 1, y: 0 } });
-    expect(result).toMatchObject({ intendedDirection: 'east', direction: 'south', kind: 'rest', moving: true, issueKey: 'walk:all' });
-    expect(a.directions).toEqual(['east']);
+    expect(rendered.hiddenItems).toEqual([]);
+    expect([rendered.image?.data[0], rendered.image?.data[4]]).toEqual([40, 90]);
+    expect(resolveLive(buildPresentation(fixture(['south'], ['default', 'idle'])), { velocity: { x: 0, y: 0 } })).toMatchObject({ kind: 'animation', clip: 'idle', issue: null });
+    expect(resolveLive(buildPresentation(fixture(['south'], ['default', 'walk'])), { velocity: { x: 0, y: 0 } })).toMatchObject({ kind: 'animation', clip: 'default', issue: null });
   });
 
   test('Preview preserves requested clip and exact declared facing across gaps and never substitutes another direction', () => {
-    const project = fixture(['south', 'north'], ['walk']);
+    const project = fixture(['south', 'north'], ['walk', 'default']);
     delete project.manifest.items[0].layers[0].cells!.walk.north;
-    project.manifest.rig.rest = { north: { image: restHash, keypoints: [] } };
     let a = buildPresentation(project);
-    expect(resolvePreview(a, { clip: 'walk', direction: 'north' })).toMatchObject({ requestedClip: 'walk', intendedDirection: 'north', direction: 'north', kind: 'rest', clip: null });
-    delete project.manifest.rig.rest.north;
+    expect(resolvePreview(a, { clip: 'walk', direction: 'north' })).toMatchObject({ requestedClip: 'walk', intendedDirection: 'north', direction: 'north', kind: 'still', clip: 'default' });
+    delete project.manifest.items[0].layers[0].cells!.default.north;
     a = buildPresentation(project);
     expect(resolvePreview(a, { clip: 'walk', direction: 'north' })).toMatchObject({ requestedClip: 'walk', intendedDirection: 'north', direction: null, kind: 'unavailable' });
     expect(resolvePreview(a, { clip: 'walk', direction: 'south' }).kind).toBe('animation');
@@ -155,67 +144,6 @@ describe('production body presentation', () => {
 });
 
 describe('synchronized production equipment', () => {
-  test('original rest equipment requires exact authored cells while clip mirrors and transparent rest cells remain valid', () => {
-    const project = fixture(['east', 'west'], ['walk']);
-    project.manifest.rig.directions[1].mirrorOf = 'east';
-    project.manifest.rig.rest = { west: { image: restHash, keypoints: [] } };
-    delete project.manifest.items[0].layers[0].cells!.walk.west;
-    const layer = project.manifest.items[1].layers[0];
-    layer.cells = { walk: { east: [gearHash, gearHash] }, rest: { east: [gearHash] } };
-    let a = buildPresentation(project);
-    const walking = renderPresentation(a, { head: 'hat' }, resolvePreview(a, { clip: 'walk', direction: 'west' }));
-    expect(walking.hiddenItems).toEqual([]);
-    expect(walking.image?.data[0]).toBe(90); // Authorized animated mirror still draws.
-    let pose = resolvePreview(a, { clip: 'idle', direction: 'west' });
-    expect(pose.kind).toBe('rest');
-    expect(renderPresentation(a, { head: 'hat' }, pose).hiddenItems.map(item => item.id)).toEqual(['hat']);
-    layer.cells.rest.west = [null];
-    a = buildPresentation(project); pose = resolvePreview(a, { clip: 'idle', direction: 'west' });
-    const transparent = renderPresentation(a, { head: 'hat' }, pose);
-    expect(transparent.hiddenItems).toEqual([]);
-    expect(transparent.image?.data[0]).toBe(70);
-    layer.cells.rest.west = [gearHash];
-    a = buildPresentation(project); pose = resolvePreview(a, { clip: 'idle', direction: 'west' });
-    const exact = renderPresentation(a, { head: 'hat' }, pose);
-    expect(exact.hiddenItems).toEqual([]);
-    expect(exact.image?.data[0]).toBe(70);
-    expect(exact.image?.data[4]).toBe(90);
-  });
-
-  test('original rest fallbacks use current body variants without recoloring shared gear hashes or persisted pixels', () => {
-    const raw = fixture(['south'], []);
-    raw.manifest.rig.rest = { south: { image: restHash, keypoints: [] } };
-    raw.manifest.materials = [
-      { id: 'body-palette', owner: 'base', label: 'Body', ramp: ['#280000', '#460000'], variants: { cool: ['#002800', '#004600'] } },
-      { id: 'gear-palette', owner: 'hat', label: 'Gear', ramp: ['#460000'], variants: { cool: ['#000046'] }, defaultVariant: 'cool' },
-    ];
-    raw.manifest.items[0].materials = ['body-palette'];
-    raw.manifest.items[1].materials = ['gear-palette'];
-    raw.manifest.items[1].layers[0].cells = { rest: { south: [restHash] } };
-    const variants = { 'body-palette': 'cool' }, view = recolor(raw, variants);
-    // The global image map now contains the gear owner's color for this shared hash.
-    expect([...view.images.get(restHash)!.data.slice(0, 3)]).toEqual([0, 0, 70]);
-    const a = buildPresentation(view, { sourceProject: raw, variants });
-    const pose = resolvePreview(a, { clip: 'idle', direction: 'south' });
-    expect(pose.kind).toBe('rest');
-    const body = renderPresentation(a, {}, pose), dressed = renderPresentation(a, { head: 'hat' }, pose);
-    expect([...body.image!.data.slice(0, 3)]).toEqual([0, 70, 0]);
-    expect([...dressed.image!.data.slice(0, 3)]).toEqual([0, 0, 70]);
-    expect(dressed.hiddenItems).toEqual([]);
-    expect([...raw.images.get(restHash)!.data.slice(0, 3)]).toEqual([70, 0, 0]);
-    expect(raw.manifest.rig.rest.south!.image).toBe(restHash);
-  });
-
-  test('approved default body variants also apply to rest originals when no explicit outfit color is selected', () => {
-    const raw = fixture(['south'], []);
-    raw.manifest.rig.rest = { south: { image: restHash, keypoints: [] } };
-    raw.manifest.materials = [{ id: 'skin', owner: 'base', label: 'Skin', ramp: ['#460000'], variants: { moss: ['#004600'] }, defaultVariant: 'moss' }];
-    raw.manifest.items[0].materials = ['skin'];
-    const a = buildPresentation(recolor(raw, {}), { sourceProject: raw });
-    const image = renderPresentation(a, {}, resolveLive(a, { velocity: { x: 0, y: 0 } })).image;
-    expect([...image!.data.slice(0, 3)]).toEqual([0, 70, 0]);
-  });
-
   test('authored transparent cells are covered, incomplete sequences hide the entire item, and repair restores it', () => {
     const project = fixture(['south']);
     let a = buildPresentation(project), walk = resolvePreview(a, { clip: 'walk', direction: 'south' });
@@ -243,7 +171,6 @@ describe('synchronized production equipment', () => {
 
   test('outfit thumbnails use the current south composite and preserve production pivots and oversized layers', () => {
     const project = fixture(['south']);
-    project.manifest.rig.rest = { south: { image: restHash, keypoints: [] } };
     const big = makeImg(4, 3); big.data.set([123, 0, 0, 255], (1 * 4 + 3) * 4);
     project.images.set(gearHash, big);
     Object.assign(project.manifest.items[1].layers[0], { cell: { w: 4, h: 3 }, pivot: { x: 2, y: 2 } });

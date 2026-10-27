@@ -3,7 +3,7 @@ import { makeImg } from '../../src/lib/image/png.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
 import type { DirectionName, Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts'
 import { buildPresentation } from '../../src/studio/experience/presentation.ts'
-import { ALL_DIRECTIONS, ALL_MOVES, STANDING, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
+import { ALL_DIRECTIONS, ALL_MOVES, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, sharePreviewFrames } from '../../src/studio/shareMedia.ts'
 
 const hash = (name: string) => `sha256:${name}` as Sha256
 function fixture(directions: DirectionName[] = ['south', 'east']): Project {
@@ -15,23 +15,23 @@ function fixture(directions: DirectionName[] = ['south', 'east']): Project {
     format: 'pixeldoll/2', name: 'Test character', app: '', materials: [], presets: [],
     rig: { cell: { w: 2, h: 1 }, pivot: { x: 1, y: 1 }, baseItem: 'base', baseHash: body0,
       directions: directions.map(id => ({ id })), rest: Object.fromEntries(directions.map(id => [id, { image: rest, keypoints: [] }])),
-      animations: [{ id: 'walk', cells: 2, loop: true, frames: [{ cell: 0, ms: 70 }, { cell: 1, ms: 120 }] }],
+      animations: [{ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] }, { id: 'walk', cells: 2, loop: true, frames: [{ cell: 0, ms: 70 }, { cell: 1, ms: 120 }] }],
     },
     slots: [{ id: 'body', z: 1, class: 'base' }, { id: 'head', z: 2, class: 'rigid' }],
     items: [
-      item('base', 'body', { id: 'main', role: 'fg', z: 1, cells: { walk: cells(body0, body1) } }),
-      item('hat', 'head', { id: 'main', role: 'fg', z: 2, cells: { walk: cells(hat, hat), rest: Object.fromEntries(directions.map(id => [id, [hat]])) } }),
+      item('base', 'body', { id: 'main', role: 'fg', z: 1, cells: { default: Object.fromEntries(directions.map(id => [id, [rest]])), walk: cells(body0, body1) } }),
+      item('hat', 'head', { id: 'main', role: 'fg', z: 2, cells: { default: Object.fromEntries(directions.map(id => [id, [hat]])), walk: cells(hat, hat) } }),
     ],
   }
   return { manifest, images: new Map([[body0, image(40, 0)], [body1, image(50, 0)], [rest, image(60, 0)], [hat, image(90, 1)]]) }
 }
 
 describe('share media', () => {
-  test('Standing is a dressed first-frame PNG and all selections make a deterministic contact sheet', async () => {
-    const project = fixture(), a = buildPresentation(project, { sourceProject: project })
-    expect(canAnimateShare(a, { head: 'hat' }, STANDING, 'south')).toBe(false)
+  test('Default is a dressed one-frame PNG and all selections make a deterministic contact sheet', async () => {
+    const project = fixture(), a = buildPresentation(project)
+    expect(canAnimateShare(a, { head: 'hat' }, 'default', 'south')).toBe(false)
     expect(canAnimateShare(a, { head: 'hat' }, 'walk', 'south')).toBe(true)
-    const standing = buildShareMedia(a, { head: 'hat' }, STANDING, 'south', true)
+    const standing = buildShareMedia(a, { head: 'hat' }, 'default', 'south', true)
     expect(standing.extension).toBe('png')
     expect([...standing.still.data]).toEqual([60, 0, 0, 255, 90, 0, 0, 255])
     const decoded = await decodePngBytes(await encodeShareMedia(standing))
@@ -39,10 +39,12 @@ describe('share media', () => {
     const all = buildShareMedia(a, { head: 'hat' }, ALL_MOVES, ALL_DIRECTIONS, false)
     expect([all.still.w, all.still.h, all.extension]).toEqual([8, 6, 'png'])
     expect([...all.still.data.slice(0, 8)]).toEqual([...standing.still.data])
+    // All moves lists Default once: one standing moment, then the two walk frames
+    expect(buildShareMedia(a, { head: 'hat' }, ALL_MOVES, 'south', true).frames.map(frame => frame.ms)).toEqual([100, 70, 120])
   })
 
   test('GIF uses authored frame delays, transparency and the same composed frames as preview', async () => {
-    const project = fixture(), a = buildPresentation(project, { sourceProject: project })
+    const project = fixture(), a = buildPresentation(project)
     const media = buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)
     expect(media.frames.map(frame => frame.ms)).toEqual([70, 120])
     expect(media.frames.map(frame => frame.image.data[0])).toEqual([40, 50])
@@ -57,7 +59,7 @@ describe('share media', () => {
   test('aggregate choices omit unavailable pairs, while an explicit pair never substitutes artwork', () => {
     const project = fixture()
     delete project.manifest.items[0].layers[0].cells!.walk.east
-    const a = buildPresentation(project, { sourceProject: project })
+    const a = buildPresentation(project)
     expect(canShareDirection(a, {}, 'walk', 'east')).toBe(false)
     expect(canShareDirection(a, {}, ALL_MOVES, 'east')).toBe(true)
     expect(() => buildShareMedia(a, {}, 'walk', 'east', true)).toThrow(/East has no complete artwork/)
@@ -79,15 +81,15 @@ describe('share media', () => {
   test('picker availability rejects equipment missing a later animation frame', () => {
     const project = fixture()
     project.manifest.items[1].layers[0].cells!.walk.south = [hash('hat')]
-    const a = buildPresentation(project, { sourceProject: project })
+    const a = buildPresentation(project)
     expect(canShareDirection(a, { head: 'hat' }, 'walk', 'south')).toBe(false)
     expect(() => buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)).toThrow(/hat missing walk \/ South artwork/)
   })
 
   test('one-frame moves cannot advertise GIF animation even with many directions', () => {
     const project = fixture()
-    project.manifest.rig.animations[0].frames = [{ cell: 0, ms: 100 }]
-    const a = buildPresentation(project, { sourceProject: project })
+    project.manifest.rig.animations[1].frames = [{ cell: 0, ms: 100 }]
+    const a = buildPresentation(project)
     expect(canAnimateShare(a, {}, 'walk', ALL_DIRECTIONS)).toBe(false)
     expect(buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, true).extension).toBe('png')
   })
@@ -102,7 +104,7 @@ describe('share media', () => {
         project.images.set(directionHash, image)
         project.manifest.items[0].layers[0].cells!.walk[id] = [directionHash, directionHash]
       })
-      const a = buildPresentation(project, { sourceProject: project })
+      const a = buildPresentation(project)
       const still = buildShareMedia(a, {}, 'walk', ALL_DIRECTIONS, false)
       const columns = count <= 4 ? count : count <= 6 ? 3 : 4
       const rows = Math.ceil(count / columns)

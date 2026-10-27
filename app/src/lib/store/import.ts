@@ -3,7 +3,7 @@ import { decodePng, makeImg, pngSize, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { cellImg, layerFrame } from '../compose/compose.ts';
 import { validate } from '../export/generic.ts';
-import { baseHashOf, cellHash, DIRECTIONS, playlist, type DirectionName, type Sha256 } from '../rig/rig.ts';
+import { baseHashOf, cellHash, DEFAULT_MOVE, DIRECTIONS, playlist, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { normalize, opaqueBox, pivotOf } from '../rig/normalize.ts';
 import type { Manifest, Project } from './manifest.ts';
 import { CURRENT_FORMAT, supportedFormat } from './manifest.ts';
@@ -208,9 +208,8 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string): Promi
     semi += n.semiAlpha;
     const h = await cellHash(n.img); images.set(h, n.img); return h;
   };
-  // Use a distinct rest clip so a supplied idle animation is preserved, too.
-  let restId = 'rest';
-  while (source.has(restId)) restId += '-pose';
+  // The rotations are the Default move (its id is reserved: a supplied animation of that name takes a -copy suffix below).
+  const restId = DEFAULT_MOVE;
   cells[restId] = {};
   for (const r of rotations) cells[restId][r.dir] = [await put(r.path)];
   const animations: Manifest['rig']['animations'] = [{ id: restId, cells: 1, loop: true, frames: playlist(1, 150) }];

@@ -15,16 +15,16 @@ import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
-import { ANCHORS, DEFAULT_MOVE, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, defaultMs, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
+import { ANCHORS, DEFAULT_MOVE, DIRECTIONS, needsDefault, standingMove, baseHashOf, cellHash, cellKey, cellKeys, defaultMs, playlist, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
 import { repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
-import { posable, poseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
+import { posable, poseGens, poseItemClip, regridClip, withStandingCells, type RigCtx } from '../lib/items/run.ts';
 import { coverage } from './itemRoute.ts';
-import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
+import { CURRENT_FORMAT, type CellKey, type Manifest, type Project, type Provenance } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
 import { affectedMoveDirections, clearMovePoseData, invalidateMoveItems, moveRigVersion } from './replaceMove.ts';
 import { facingErrors, sizeErrors, validBodySize } from './characterConfig.ts';
@@ -407,6 +407,8 @@ export const MOVE_STEPS = [
   { id: 'save', label: 'Saving' },
 ];
 export const isV13 = rigReady;
+/** Why a move can't take this id: Default is every character's standing views, never generated or replaced. */
+export const reservedMove = (id: string) => (id === DEFAULT_MOVE ? 'Default is the standing pose. Name the move something else.' : '');
 const genDirs = (m: Manifest) => m.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id);
 /** Explicit subsets name authored views; mirrored children are handled at publication. */
 export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): DirectionName[] {
@@ -549,6 +551,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
   const dirs = moveDirections(rec.manifest, spec.dirs), existing = rec.manifest.rig.animations.find(a => a.id === spec.id);
   if (spec.itemMethod === 'grid' && !existing) throw new Error('Choose an existing move before repairing its equipment.');
+  if (reservedMove(spec.id) && (spec.replace || !existing)) throw new Error(reservedMove(spec.id));
   if (!existing && dirs.length !== genDirs(rec.manifest).length) throw new Error('A new move needs every independently drawn direction.');
   if (existing && dirs.length !== genDirs(rec.manifest).length && existing.cells !== moveFrames(rec.manifest, spec)) throw new Error('A partial repair must keep the existing frame count.');
   const receipt = rec.moveRecovery, intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
@@ -682,6 +685,90 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
     return cur;
   });
 
+}
+
+// ---------- Default for characters saved before it ----------
+/**
+ * A character saved before every character had a Default move gets it when opened, free and offline: an import's standing move
+ * is renamed (a move of its own named default steps aside), a created one gains it from its standing views (rig.rest, as
+ * createCharacter makes it), and items made for this body that lack it get their Default cells from their dressed standing
+ * views. Items without dressed views (anchor, grid and diff routes) have no offline source and stay hidden on Default.
+ * baseHash moves, and the items made for the old one with it, in one atomic update. A fixture changes in memory only.
+ */
+export async function upgradeDefault(id: string, project: Project): Promise<void> {
+  const m = project.manifest, rig = m.rig;
+  if (!needsDefault(m)) return;
+  const read = stableStringify({ rig, items: m.items }), oldHash = rig.baseHash, standing = standingMove(m);
+  const base = m.items.find((i) => i.id === rig.baseItem)!.layers[0], added: Record<string, Skeleton> = {}, images = new Map<Sha256, Img>();
+  let aside = `${DEFAULT_MOVE}-copy`;
+  while (rig.animations.some((a) => a.id === aside)) aside += '-copy';
+  const renames = [...(rig.animations.some((a) => a.id === DEFAULT_MOVE) ? [[DEFAULT_MOVE, aside]] : []), ...(standing ? [[standing.id, DEFAULT_MOVE]] : [])] as [string, string][];
+  for (const [from, to] of renames) renameMove(m, from, to);
+  if (!standing) {
+    const cells: Partial<Record<DirectionName, Sha256[]>> = {}, sources: NonNullable<RigAnimation['sources']> = {};
+    for (const d of rig.directions) {
+      const rest = rig.rest![d.mirrorOf ?? d.id]!, key = cellKey(DEFAULT_MOVE, d.id, 0), s = fromApi(rest.keypoints, rig.cell);
+      if (d.mirrorOf) { const im = flipH(project.images.get(rest.image)!), h = await cellHash(im); images.set(h, im); cells[d.id] = [h]; added[key] = flipSkeleton(s, rig.cell.w); continue; }
+      cells[d.id] = [rest.image];
+      added[key] = s;
+      sources[d.id] = { route: 'v3', reference: rest.image, keypoints: [rest.keypoints], measured: [rest.keypoints], motion: 'imported-rest', provenance: [] };
+      for (const a of ANCHORS) { const p = anchorsOf(s)[a]; if (p) (((rig.anchors ??= {})[a] ??= {})[DEFAULT_MOVE] ??= {})[d.id] = [p]; }
+    }
+    rig.animations.unshift({ id: DEFAULT_MOVE, cells: 1, loop: true, frames: playlist(1, defaultMs(DEFAULT_MOVE)), sources });
+    (base.cells ??= {})[DEFAULT_MOVE] = cells;
+  }
+  const hashes: Record<string, Sha256> = {};
+  for (const k of cellKeys(rig)) { const [a, d, i] = k.split('/') as [string, DirectionName, string], h = base.cells?.[a]?.[d]?.[+i]; if (h) hashes[k] = h; }
+  rig.baseHash = await baseHashOf(rig, hashes);
+  const ctx = { rec: { id, manifest: m }, project } as RigCtx;
+  for (const [i, it] of m.items.entries()) {
+    if (it.baseHash !== oldHash) continue; // made for another body: left as it was
+    it.baseHash = rig.baseHash;
+    const r = await withStandingCells(ctx, it, DEFAULT_MOVE);
+    if (!r) continue;
+    m.items[i] = r.out;
+    for (const [h, im] of r.images) images.set(h, im);
+  }
+  for (const [h, im] of images) project.images.set(h, im);
+  if (id.startsWith('fixture:')) return;
+  const blobs = new Map<string, Blob>();
+  for (const [h, im] of images) blobs.set(h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  await db.updateCharacter<StoredProject>(id, blobs, (cur) => {
+    if (!cur) throw new Error(`project ${id} vanished`);
+    if (stableStringify({ rig: cur.manifest.rig, items: cur.manifest.items }) !== read) {
+      if (!needsDefault(cur.manifest)) return cur; // another tab upgraded it
+      throw new Error('This character changed while it was opening. Open it again.');
+    }
+    let skeletons = cur.skeletons ?? {};
+    const qa = cur.rigQa as { clips?: Record<string, unknown> } | undefined;
+    for (const [from, to] of renames) {
+      renameMove(cur.manifest, from, to); // its slots
+      skeletons = rekey(skeletons, from, to);
+      if (qa?.clips) qa.clips = rekey(qa.clips, from, to);
+    }
+    Object.assign(cur.manifest, { rig, items: m.items });
+    cur.skeletons = { ...skeletons, ...added };
+    return cur;
+  });
+}
+
+/** A move id or a cell key ("walk/south/0") of move `from` renamed to `to`. */
+const movedKey = <K extends string>(k: K, from: string, to: string) => (k === from ? to : k.startsWith(`${from}/`) ? to + k.slice(from.length) : k) as K;
+const rekey = <V>(o: Record<string, V>, from: string, to: string) => Object.fromEntries(Object.entries(o).map(([k, v]) => [movedKey(k, from, to), v]));
+/** Rename a move wherever a manifest keys data by move id or cell key. Provenance keeps its history. */
+function renameMove(m: Manifest, from: string, to: string) {
+  const cell = <K extends string>(k: K) => movedKey(k, from, to), re = <V>(o: Record<string, V>) => rekey(o, from, to);
+  for (const a of m.rig.animations) if (a.id === from) a.id = to;
+  for (const track of Object.values(m.rig.anchors ?? {})) if (track?.[from]) { track[to] = track[from]; delete track[from]; }
+  for (const s of m.slots) for (const z of s.zOverrides ?? []) if (z.anim === from) z.anim = to;
+  for (const it of m.items) {
+    for (const l of it.layers) l.cells &&= re(l.cells);
+    it.baseCut &&= re(it.baseCut);
+    it.coverage &&= it.coverage.map(cell);
+    it.anchorCell &&= cell(it.anchorCell);
+    for (const r of it.paletteRepairs ?? []) if (r.anim === from) r.anim = to;
+    if (it.qa) it.qa = { ...it.qa, cells: re(it.qa.cells), ...(it.qa.clips ? { clips: re(it.qa.clips) } : {}), ...(it.qa.legacy ? { legacy: { ...it.qa.legacy, clips: it.qa.legacy.clips.map(cell) } } : {}) };
+  }
 }
 
 /** Copy a loaded (fixture) project into IndexedDB as an editable rig project, so items can be generated for it. */
