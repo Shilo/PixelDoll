@@ -105,7 +105,7 @@ export function applyTheme() { document.documentElement.dataset.theme = ui.theme
 export function toggleTheme() { ui.theme = ui.theme === 'dark' ? 'light' : 'dark'; lsSet(K.theme, ui.theme); applyTheme(); }
 export function dismissWelcome() { ui.welcome = false; lsSet(K.welcomed, '1'); }
 let toastT: ReturnType<typeof setTimeout> | undefined;
-export function toast(s: string) { ui.toast = s; clearTimeout(toastT); toastT = setTimeout(() => (ui.toast = ''), 4000); }
+export function toast(s: string, duration = 4000) { ui.toast = s; clearTimeout(toastT); toastT = setTimeout(() => (ui.toast = ''), duration); }
 
 /** Only the queue-leader tab drives generations. Explain blocked actions above any open native modal. */
 const follower = () => {

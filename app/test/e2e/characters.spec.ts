@@ -46,7 +46,7 @@ test('canceling a downloading import closes it and cannot reopen a late preview'
   await page.getByLabel('Character ID or PixelLab link', { exact: true }).fill(ID)
   await page.getByRole('button', { name: 'Preview character', exact: true }).click()
   try {
-    await expect(page.getByRole('status')).toContainText('Preparing your character')
+    await expect(page.getByRole('dialog').getByRole('status')).toContainText('Preparing your character')
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(page.getByRole('dialog')).toHaveCount(0)
   } finally { finish() }

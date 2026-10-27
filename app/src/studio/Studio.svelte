@@ -17,6 +17,7 @@
   import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, toast, resumeCreate, resumeMove, resumeSetup, resumeFitStages, prefetchFlows, clearPendingConnection, undo, redo } from './state.svelte.ts'
   import { lazy } from '../lib/lazy.ts'
   import { WifiOff } from './icons.ts'
+  import { PREVIEW_NOTICE } from './previewNotice.ts'
 
   // On-demand parts, out of the startup bundle (GenCard renders in PhonePanel).
   const parts = {
@@ -32,6 +33,7 @@
     document.documentElement.dataset.app = 'studio'
     if (import.meta.env.DEV) (window as unknown as { __studio: unknown }).__studio = { ui, doc, store, gens, creating, loadGens }
     const off = initUi()
+    toast(PREVIEW_NOTICE, 8000)
     void (async () => {
       await refreshProjects()
       await openProject(lastProject())
