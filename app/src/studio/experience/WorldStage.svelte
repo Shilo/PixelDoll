@@ -156,6 +156,7 @@
 <!-- A focused game surface owns directional input; controls remain native outside it. -->
 <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions -->
 <div class="world-stage bu-focus" bind:this={host} role="application" tabindex="0" aria-label={experience.mode==='preview'?'Character preview. WASD or arrows change facing. Keys 1, 2, 3 switch views.':experience.mode==='side'?'Side-scroller test world. A/D, left/right arrows or horizontal drag to move. Keys 1, 2, 3 switch views.':'Character test world. WASD, arrows or drag to move. Keys 1, 2, 3 switch views.'} onkeydown={key} onfocusout={()=>keys.clear()} onpointerdown={down} onpointermove={drag} onpointerup={up} onpointercancel={up} onlostpointercapture={up} class:live={experience.mode!=='preview'}>
+  <span class="world-focus-cue bu-floating" aria-hidden="true">Shortcuts ready</span>
   <div class="world-input" aria-hidden="true"></div>
   <canvas class="world-sky" bind:this={sky} aria-hidden="true"></canvas>
   <canvas class="world-ground" bind:this={floor} aria-hidden="true"></canvas>
@@ -163,5 +164,5 @@
   {#if doc.loading}<span class="world-loading">Loading character…</span>{/if}
 </div>
 <!-- One bottom-anchored stack: the movement hint always sits above the fallback note, whatever the note wraps to. -->
-{#if hint||note||rendererWarning}<div class="world-notes">{#if hint}<p class="world-hint">{matchMedia('(pointer:coarse)').matches?'Drag in the world to move':experience.mode==='side'?'Focus world · A/D or ←/→ to move':'Focus world · WASD or arrow keys to move'}</p>{/if}{#if note||rendererWarning}<p class="world-coverage">{[rendererWarning,note].filter(Boolean).join(' · ')}</p>{/if}</div>{/if}
+{#if hint||note||rendererWarning}<div class="world-notes">{#if hint}<p class="world-hint">{#if matchMedia('(pointer:coarse)').matches}Drag in the world to move{:else}<span class="world-focus-prompt">Focus world ·&nbsp;</span>{experience.mode==='side'?'A/D or ←/→ to move':'WASD or arrow keys to move'}{/if}</p>{/if}{#if note||rendererWarning}<p class="world-coverage">{[rendererWarning,note].filter(Boolean).join(' · ')}</p>{/if}</div>{/if}
 {#if stick}<div class="world-stick" style:left="{stick.x}px" style:top="{stick.y}px" aria-hidden="true"><span style:transform="translate({Math.max(-40,Math.min(40,stick.dx))}px,{Math.max(-40,Math.min(40,stick.dy))}px)"></span></div>{/if}
