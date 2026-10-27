@@ -7,7 +7,7 @@
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
-  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, makeItemMoves, pendingMoves, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
+  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, pendingMoves, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
   let { id }: { id: string } = $props()
@@ -52,7 +52,7 @@
   const missingNames = $derived(missingMoves.map((s) => s.id[0].toUpperCase() + s.id.slice(1).replace(/-/g, ' ')).join(' + '))
   function makeMissing() {
     const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingMoves.map((s) => ({ ...$state.snapshot(s), seed }))
-    makeItemMoves(projectId, specs)
+    withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move' }, true) // pose calls: a plan that cannot run them opens Connect
   }
   let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
   let colorBusy = $state(false)

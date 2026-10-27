@@ -43,6 +43,7 @@
   const est = $derived(m && id && targetDirs.length ? moveEstimate(m, { action: text.trim() ? undefined : action, frames, items: chosen, dirs: targetDirs, replace: replacing }) : null)
   const dirs = $derived(targetDirs.length)
   const mine = $derived(!!moving.spec && moving.projectId === doc.id)
+  const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId))
   // another character's failed move holds every new move; only its own sheet can try it again or start over
   const holder = $derived(!mine && moving.spec && moving.error ? store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character' : '')
   const stepIx = $derived(MOVE_STEPS.findIndex((s) => s.id === moving.progress?.step))
@@ -129,7 +130,6 @@
         {/each}
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
-      {@const ownQueued = moving.queued.filter((q) => q.projectId === moving.projectId)}
       {#if ownQueued.length}<p class="muted small">Queued next: {ownQueued.map((q) => nice(q.spec.id)).join(', ')}{moving.error ? '. Try again continues with them; Start over drops them.' : ''}</p>{/if}
       {#if recovery}
         <p class="notice warn small">Reuse the completed body frames and joint results. Retry {recovery.checks} unfinished joint {recovery.checks === 1 ? 'check' : 'checks'} · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{#if recoveryItemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>

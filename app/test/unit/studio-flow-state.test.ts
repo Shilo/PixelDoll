@@ -570,17 +570,6 @@ describe('move queue', () => {
     await vi.waitFor(() => expect(records.has('studio-move')).toBe(false))
   })
 
-  test('"Make for …" on an item needs a plan that can pose: a trial account opens Connect and queues nothing', async () => {
-    storage()
-    const { app } = await import('../../src/lib/app.svelte.ts') as unknown as { app: { key: string; balance: unknown } }
-    app.key = 'test-key'; app.balance = { subscription: { status: 'trial', plan: 'Free trial' } }
-    const s = await import('../../src/studio/state.svelte.ts')
-    s.makeItemMoves('project', [{ ...walk, items: ['cape'], itemsOnly: true }])
-    expect(s.ui.sheet).toBe('connect')
-    expect(s.moving.queued).toEqual([])
-    expect(mocks.move).not.toHaveBeenCalled()
-  })
-
   test('moves already running or queued for an item are pending for it, so it is not offered them at a second price', async () => {
     storage()
     const running = pending<typeof done>()

@@ -914,11 +914,6 @@ export async function queueMoves(projectId: string, specs: MoveSpec[]) {
 export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
   [...(moving.spec && !moving.done && moving.projectId === projectId ? [moving.spec] : []), ...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec)]
     .filter((s) => !itemId || s.items.includes(itemId));
-/** "Make for …" on an item: pose calls, so a plan that cannot run them opens Connect instead of queueing work the queue would
- *  hold forever (blocking every later move and character deletion), as every other move action does. */
-export function makeItemMoves(projectId: string, specs: MoveSpec[]) {
-  withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move'; }, true);
-}
 export async function startMove(projectId: string, spec: MoveSpec) {
   if (hmrReloading || moveRunning) return;
   spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
