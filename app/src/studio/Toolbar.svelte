@@ -3,11 +3,12 @@
   import { popoverFocus } from './experience/focus.ts'
   import { experience, characters } from './experience/state.svelte.ts'
   import CharacterThumb from './experience/CharacterThumb.svelte'
+  import SharePopover from './SharePopover.svelte'
   import ApiPeek from './ApiPeek.svelte'
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
   import { ui, doc, store, creating, settingUp, gens, openProject, undo, redo, toggleTheme, isDemo } from './state.svelte.ts'
-  import { Github, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
+  import { Github, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Share2, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
   const devRigs = $derived(store.projects.filter((p) => p.dev))
@@ -32,14 +33,17 @@
     {:else}
       <button class="bu-action header-undo" data-variant="quiet" aria-label={undoLabel ? 'Undo '+undoLabel : 'Undo'} disabled={!undoLabel} onclick={undo}><Undo2 size={18} /></button>
       <button class="bu-action header-redo" data-variant="quiet" aria-label={redoLabel ? 'Redo '+redoLabel : 'Redo'} disabled={!redoLabel} onclick={redo}><Redo2 size={18} /></button>
-      <button class="bu-action" data-variant="outline" onclick={() => ui.sheet='export'} disabled={!m}><Download size={16} /><span>Export</span></button>
+      <button class="bu-action header-share" data-variant="outline" aria-label="Share character" popovertarget="share-popover" disabled={!m}><Share2 size={16} /><span>Share</span></button>
+      <button class="bu-action header-export" data-variant="outline" onclick={() => ui.sheet='export'} disabled={!m}><Download size={16} /><span>Export</span></button>
     {/if}
     {#if busy}<button class="bu-action" data-variant="quiet" aria-label="Activity" onclick={() => ui.sheet='activity'}><span class="ring spin"></span><span class="num">{active || ''}</span></button>{/if}
     <button class="bu-action" data-variant="quiet" aria-label="More options" popovertarget="experience-options"><Ellipsis size={20} /></button>
   </div>
 </header>
+<SharePopover />
 <div id="experience-options" class="menu options-menu bu-floating" popover ontoggle={popoverFocus}>
   {#if experience.screen==='studio'}<button class="row bu-action mobile-redo" data-variant="quiet" disabled={!redoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); redo() }}><Redo2 size={18}/><span class="row-name">{redoLabel?'Redo '+redoLabel:'Redo'}</span></button>{/if}
+  {#if experience.screen==='studio'}<button class="row bu-action mobile-export" data-variant="quiet" disabled={!m} onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='export' }}><Download size={18}/><span class="row-name">Export game assets</span></button>{/if}
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='activity' }}><Activity size={18}/><span class="row-name">Activity</span>{#if $queue.role==='follower'}<span class="small">Other tab</span>{/if}</button>
   <ApiPeek scope="all" all menu />
   <hr />

@@ -6,6 +6,7 @@
 .experience-header { position:absolute; inset:20px var(--edge) auto; display:flex; justify-content:space-between; align-items:center; z-index:5; gap:16px; height:44px; pointer-events:none; }
 .header-actions,.header-start { display:flex; align-items:center; gap:8px; pointer-events:auto; }
 .mobile-redo { display:none!important; }
+.mobile-export { display:none!important; }
 .experience-header .bu-action,.view-modes .bu-action { display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:40px; padding:8px 12px; font-size:14px; }
 .brand { display:flex;align-items:center;gap:8px;font-weight:500;font-size:16px; }
 .mobile-name { display:none; }
@@ -194,8 +195,10 @@
   .experience { --edge:20px; --rail:0px; }
   .experience-header { inset:12px var(--edge) auto; gap:8px; }
   .experience-header .bu-action { min-height:44px; padding:8px; gap:5px; }
-  .header-actions { gap:4px; } .header-redo { display:none!important; }
+  .header-actions { gap:4px; } .header-redo,.header-export { display:none!important; }
+  .header-share span { display:none; }
   .mobile-redo { display:flex!important; }
+  .mobile-export { display:flex!important; }
   .scene-identity { top:75px; max-width:calc(100% - 40px); right:20px; }
   .scene-identity h1 { font-size:30px; } .scene-identity p { font-size:12px; margin-bottom:8px; }
   .view-modes { gap:24px; margin-top:14px; } .view-modes .bu-action { font-size:14px; }
