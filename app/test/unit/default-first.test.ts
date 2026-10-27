@@ -1,10 +1,12 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { baseMoveSpecs, createCharacter, estimate, missingItemMoves, moveEstimate, type CreateSpec } from '../../src/studio/create.ts'
+import { addMove, b64, baseMoveSpecs, createCharacter, creationLooks, estimate, missingItemMoves, moveEstimate, type CreateSpec } from '../../src/studio/create.ts'
 import { movePlan } from '../../src/studio/apiPlans.ts'
 import { coverage } from '../../src/studio/itemRoute.ts'
-import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts'
+import { queue, requestIdentity, type JobRec } from '../../src/lib/pixellab/queue.ts'
+import { BASE_ANIMS, baseAnimation, routes, type Req } from '../../src/lib/pixellab/routes.ts'
+import { actionOf, rawClip } from '../../src/lib/rig/clips.ts'
 import * as db from '../../src/lib/store/db.ts'
-import { LABELS } from '../../src/lib/rig/poses.ts'
+import { LABELS, authoredPoses, fromApi, toApi } from '../../src/lib/rig/poses.ts'
 import { DIRECTIONS, cellKeys, validateRig, type DirectionName, type Keypoint, type Sha256 } from '../../src/lib/rig/rig.ts'
 import { rigReady } from '../../src/lib/rig/setup.ts'
 import { planItem } from '../../src/lib/items/items.ts'
@@ -90,6 +92,34 @@ test('"Add idle + walk" restores what creation used to make, at the old price', 
   // existing moves are not offered again
   rec.manifest.rig.animations.push({ id: 'idle', cells: 4, loop: true, frames: [] })
   expect(baseMoveSpecs(rec.manifest).map((s) => s.id)).toEqual(['walk'])
+})
+
+test('"Add idle + walk" sends the requests a creation interrupted before Default-first sent, so the ledger reuses them', async () => {
+  const spec: CreateSpec = { name: 'Default', description: 'body', size: 48, seed: 7, dirs: 4, projectId: 'rig-default-resume' }
+  const { rec, project } = await create(spec), m = rec.manifest, rig = m.rig, cell = { w: rig.cell.w, h: rig.cell.h }
+  const blobs = await Promise.all([...project.images].map(async ([h, im]) => [h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })] as const))
+  vi.spyOn(db, 'get').mockImplementation(async (_store, id) => (id === rec.id ? structuredClone(rec) : undefined))
+  vi.spyOn(db, 'getBlob').mockImplementation(async (sha) => new Map(blobs).get(sha))
+  // The new path: capture each first paid request (idle render, walk motion) and hold it there; nothing is answered.
+  const sent: Req[] = []
+  vi.spyOn(queue, 'enqueue').mockImplementation((req) => { sent.push(req); return new Promise(() => {}) })
+  const dirs = rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id)
+  const [idle, walk] = baseMoveSpecs(m) // no seed passed: the one BaseMoves sends
+  void addMove(rec.id, idle)
+  await vi.waitFor(() => expect(sent).toHaveLength(dirs.length))
+  void addMove(rec.id, walk)
+  await vi.waitFor(() => expect(sent).toHaveLength(2 * dirs.length))
+  // The old path, argument for argument as 9045bb8c's createCharacter built them (looks, view and seed from the creation spec).
+  const looks = creationLooks(spec), view = spec.view ?? 'low top-down', walking = BASE_ANIMS.find((a) => a.name === 'walk')!
+  const old = await Promise.all(dirs.flatMap((d) => {
+    const restKps = rig.rest![d]!.keypoints, rest = project.images.get(rig.rest![d]!.image)!
+    return [b64(rest).then((first) => rawClip({ first, rest: restKps, keypoints: authoredPoses('idle', fromApi(restKps, cell), d, cell.w).map((p) => toApi(p, cell)), description: looks, action: actionOf('idle'), dir: d, seed: spec.seed + 101, view })),
+      Promise.resolve(routes.animateCharacter(baseAnimation('skeleton-v3', rec.character!.id, walking, [d], spec.seed)))]
+  }))
+  const ids = async (reqs: Req[]) => (await Promise.all(reqs.map(async (r) => (await requestIdentity(r)).requestHash))).sort()
+  expect(await ids(sent)).toEqual(await ids(old))
+  // walk's render then sends the reused motion's keypoints unshifted: a created character has no managed-motion offset
+  expect(rec.character?.motionOffsets).toBeUndefined()
 })
 
 test('an item saved before idle and walk existed gets items-only poses for exactly the moves it lacks', async () => {
