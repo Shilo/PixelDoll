@@ -63,7 +63,6 @@
   $effect(() => {
     const frames = planned.media?.frames
     if (!open || !frames || frames.length < 2) return
-    if (planned.media?.repeat === -1 && index === frames.length - 1) return
     const timer = window.setTimeout(() => { index = (index + 1) % frames.length }, Math.max(20, frames[index % frames.length].ms))
     return () => window.clearTimeout(timer)
   })

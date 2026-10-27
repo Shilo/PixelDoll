@@ -46,7 +46,7 @@ describe('share media', () => {
     expect(await encodeSharePng(still, 2)).toEqual(await encodeShareMedia(still, 2))
   })
 
-  test('scaled GIF preserves dimensions, frame delays, transparency and nonlooping playback; stale encoding can abort', async () => {
+  test('scaled GIF preserves dimensions, delays and transparency, and loops even for one-shot moves; stale encoding can abort', async () => {
     const project = fixture()
     project.manifest.rig.animations[1].loop = false
     const media = buildShareMedia(buildPresentation(project), {}, 'walk', 'south', true)
@@ -55,7 +55,10 @@ describe('share media', () => {
     const controls: number[][] = []
     for (let i = 0; i < bytes.length - 7; i++) if (bytes[i] === 0x21 && bytes[i + 1] === 0xf9 && bytes[i + 2] === 4) controls.push([bytes[i + 3] & 1, bytes[i + 4] | bytes[i + 5] << 8])
     expect(controls).toEqual([[1, 7], [1, 12]])
-    expect(new TextDecoder().decode(bytes)).not.toContain('NETSCAPE2.0')
+    const loopExtension = Buffer.from(bytes).indexOf('NETSCAPE2.0')
+    expect(loopExtension).toBeGreaterThan(0)
+    expect([...bytes.slice(loopExtension + 11, loopExtension + 16)]).toEqual([3, 1, 0, 0, 0])
+    expect(project.manifest.rig.animations[1].loop).toBe(false)
     const controller = new AbortController()
     const pending = encodeShareMedia(media, 10, controller.signal)
     controller.abort()

@@ -3,6 +3,52 @@ import { expect, test } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { unzip } from '../../src/lib/store/zip.ts'
 
+test('Share preview and downloaded GIF loop continuously for a one-shot move', async ({ page, context }, testInfo) => {
+  await context.route('https://api.pixellab.ai/**', route => route.abort())
+  await context.addInitScript(() => {
+    localStorage.setItem('pixeldoll.agentKey', 'off')
+    localStorage.setItem('pixeldoll.welcomed', '1')
+  })
+  const dev = testInfo.config.projects.find(project => project.name === 'browser-selftests')!.use.baseURL!
+  await openStudio(page, dev + '/#/', { waitUntil: 'networkidle' })
+  await page.evaluate(() => {
+    const studio = (window as unknown as { __studio: { doc: { rev: number }; store: { project: { manifest: { rig: { animations: { id: string; loop: boolean; frames: { cell: number; ms: number }[] }[] } } } } } }).__studio
+    const clip = studio.store.project.manifest.rig.animations.find(move => move.id === 'walk')!
+    clip.loop = false
+    clip.frames = [{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }]
+    studio.doc.rev++
+  })
+  await page.clock.install({ time: new Date('2026-10-27T12:00:00Z') })
+  await page.clock.pauseAt(new Date('2026-10-27T12:00:01Z'))
+  await page.getByRole('button', { name: 'Share character' }).click()
+  const popover = page.getByRole('dialog', { name: 'Share character preview' })
+  const frameData = () => popover.locator('.share-preview canvas').evaluate(element => {
+    const canvas = element as HTMLCanvasElement
+    const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
+    let hash = 2166136261
+    for (const byte of data) hash = Math.imul(hash ^ byte, 16777619)
+    return hash >>> 0
+  })
+  await page.clock.runFor(50)
+  const first = await frameData()
+  await page.clock.runFor(100)
+  const second = await frameData()
+  expect(second).not.toBe(first)
+  for (let cycle = 0; cycle < 3; cycle++) {
+    await page.clock.runFor(100)
+    expect(await frameData()).toBe(first)
+    await page.clock.runFor(100)
+    expect(await frameData()).toBe(second)
+  }
+  await page.clock.resume()
+  await expect(popover.getByRole('button', { name: 'Download GIF' })).toBeEnabled()
+  const [download] = await Promise.all([page.waitForEvent('download'), popover.getByRole('button', { name: 'Download GIF' }).click()])
+  const bytes = await readFile((await download.path())!)
+  const loop = bytes.indexOf('NETSCAPE2.0')
+  expect(loop).toBeGreaterThan(0)
+  expect([...bytes.subarray(loop + 11, loop + 16)]).toEqual([3, 1, 0, 0, 0])
+})
+
 test('Copy PNG writes a readable image through the real browser clipboard in animated mode', async ({ page, context }, testInfo) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
   await context.route('https://api.pixellab.ai/**', route => route.abort())

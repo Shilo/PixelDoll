@@ -10,7 +10,7 @@ export const ALL_DIRECTIONS = '__all_directions__'
 export const SHARE_SCALES = [1, 2, 3, 4, 6, 8, 10] as const
 
 export interface ShareFrame { image: Img; ms: number }
-export interface ShareMedia { frames: ShareFrame[]; still: Img; animated: boolean; grid: boolean; previewRows: number; repeat: number; omitted: { move: string; direction: DirectionName; reason: string }[]; mime: 'image/png' | 'image/gif'; extension: 'png' | 'gif' }
+export interface ShareMedia { frames: ShareFrame[]; still: Img; animated: boolean; grid: boolean; previewRows: number; omitted: { move: string; direction: DirectionName; reason: string }[]; mime: 'image/png' | 'image/gif'; extension: 'png' | 'gif' }
 
 /** Remove only transparent outer padding for the small on-screen preview; downloads keep full frame alignment. */
 export function sharePreviewFrames(media: ShareMedia): Img[] {
@@ -116,8 +116,7 @@ export function buildShareMedia(a: PresentationAvailability, items: Preset['item
   }
   const animated = animate && frames.length > 1
   if (animated && (frames[0].image.w > 65535 || frames[0].image.h > 65535)) throw new Error('Selected GIF is too large')
-  const repeat = entries.length === 1 && a.project.manifest.rig.animations.find(animation => animation.id === entries[0].move)?.loop === false ? -1 : 0
-  return { frames: animated ? frames : [{ image: still, ms: 1000 }], still, animated, grid: columns > 1 || entries.length > 1, previewRows: animated ? rowsPerMove : entries.length * rowsPerMove, repeat, omitted, mime: animated ? 'image/gif' : 'image/png', extension: animated ? 'gif' : 'png' }
+  return { frames: animated ? frames : [{ image: still, ms: 1000 }], still, animated, grid: columns > 1 || entries.length > 1, previewRows: animated ? rowsPerMove : entries.length * rowsPerMove, omitted, mime: animated ? 'image/gif' : 'image/png', extension: animated ? 'gif' : 'png' }
 }
 
 function paletteFor(image: Img): { colors: number[][]; indices: Uint8Array } {
@@ -180,7 +179,8 @@ export async function encodeShareMedia(media: ShareMedia, scale = 1, signal?: Ab
     const frame = scaled(image, scale)
     if (frame.w > 65535 || frame.h > 65535) throw new Error('Selected GIF dimensions are too large. Choose a smaller size or fewer views')
     const { colors, indices } = paletteFor(frame)
-    gif.writeFrame(indices, frame.w, frame.h, { palette: colors, transparent: true, transparentIndex: 0, delay: ms, repeat: media.repeat, dispose: 2 })
+    // Shared previews repeat continuously, including moves authored to play once in the game.
+    gif.writeFrame(indices, frame.w, frame.h, { palette: colors, transparent: true, transparentIndex: 0, delay: ms, repeat: 0, dispose: 2 })
     // Release each scaled frame and allow selection changes to cancel remaining work.
     await new Promise<void>(resolve => setTimeout(resolve, 0))
   }
