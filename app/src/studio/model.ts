@@ -157,6 +157,8 @@ export function plainReason(s: string): string {
   if (s.startsWith('D1')) return 'The design has gray smudges';
   const pasted = /^R1 ([^/]+)\/([^:]+): dressed item pasted on (\d+)/.exec(s);
   if (pasted) return `Held item pasted on ${pasted[3]} ${pasted[1].replaceAll('-', ' ')} ${pasted[3] === '1' ? 'frame' : 'frames'} (${pasted[2].replaceAll('-', ' ')}); check that it moves`;
+  const noGrid = /^([^/]+)\/([^:]+): no inpaint-v3 repair grid \((.+)\); kept the best pose roll/.exec(s);
+  if (noGrid) return `No repair grid for ${noGrid[1].replaceAll('-', ' ')} (${noGrid[2].replaceAll('-', ' ')}): ${noGrid[3]}; the best try was kept`;
   return s;
 }
 

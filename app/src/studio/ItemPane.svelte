@@ -2,12 +2,12 @@
   import { coverageGaps, moveDirs } from '../lib/dress/dress.ts'
   import { hiddenSlots, equipped } from '../lib/compose/compose.ts'
   import { SLOTS } from '../lib/items/items.ts'
-  import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
-  import { moveEstimate } from './create.ts'
+  import { itemPaletteRepairPlan, poseGens, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
+  import { missingItemMoves, moveEstimate } from './create.ts'
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
-  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
+  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
   let { id }: { id: string } = $props()
@@ -33,13 +33,21 @@
   const moveName = $derived(ui.anim ? ui.anim[0].toUpperCase() + ui.anim.slice(1).replace(/-/g, ' ') : '')
   const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir)
   const repairSpec = $derived(it && !it.design && anim && it.route === 'skeleton-pose' && it.key && it.dressed?.[sourceDir] && anim.sources?.[sourceDir]?.keypoints?.length === anim.cells
-    ? { id: anim.id, frames: anim.cells, items: [it.id], dirs: [sourceDir], itemMethod: 'grid' as const, seed: 0 } : null)
+    ? { id: anim.id, frames: anim.cells, items: [it.id], dirs: [sourceDir], itemMethod: 'grid' as const, itemsOnly: true as const, seed: 0 } : null)
   const repairCost = $derived(m && repairSpec ? moveEstimate(m, repairSpec).gens : 0)
   const repairBusy = $derived(!!moving.spec && !moving.done || !!settingUp.spec && !settingUp.done)
   function repairFrames() {
     if (!repairSpec) return
     const projectId = doc.id, spec = { ...$state.snapshot(repairSpec), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
+  }
+  // moves the character gained after this item was made (Default-first: idle and walk), offered with their price
+  const missingMoves = $derived(m && it && !isDemo() ? missingItemMoves(m, it.id, 0) : [])
+  const missingCost = $derived(missingMoves.reduce((n, s) => n + poseGens(1, s.frames, s.dirs?.length ?? 0), 0))
+  const missingNames = $derived(missingMoves.map((s) => s.id[0].toUpperCase() + s.id.slice(1).replace(/-/g, ' ')).join(' + '))
+  function makeMissing() {
+    const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingMoves.map((s) => ({ ...$state.snapshot(s), seed }))
+    withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move' })
   }
   let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
   let colorBusy = $state(false)
@@ -142,6 +150,12 @@
       <ul class="reasons small">{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
     {/if}
     {#if moveGaps.length}<p class="notice warn small"><TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left out there.</p>{/if}
+    {#if missingMoves.length}
+      <div class="field">
+        <button class="bu-action btn" data-variant="outline" onclick={makeMissing}>Make for {missingNames} <span class="cost">Est. {Math.ceil(missingCost)} gens</span></button>
+        <p class="faint small">Poses this item onto moves added after it was made. The body stays as it is. PixelLab may bill dollars; queue time varies.</p>
+      </div>
+    {/if}
     {#if health === 'stale'}<p class="notice warn small"><TriangleAlert size={14} />Made for another body. It may not line up.</p>{/if}
 
     {#if !isDemo() && repairSpec}

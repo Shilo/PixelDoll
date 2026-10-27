@@ -100,7 +100,7 @@ the creator as soon as the draw is normalized (`onViews`). The animation workflo
 unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](research/generation-pipeline-review-2026-10-25.md)).
 
 - **Add idle + walk** (creator result and Moves; `BaseMoves.svelte`, `baseMoveSpecs`) queues the missing base moves with every
-  posable item and accepted shared design the character has when each move starts (`allItems`), one random seed, and the request shapes creation used to send (authored idle,
+  posable item and accepted shared design the character has when the user taps (the price shown covers them), one random seed, and the request shapes creation used to send (authored idle,
   managed walk → estimates → raw render), so it costs what creation used to spend (≈ 11 gens per drawn direction plus item
   poses).
 - **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`. The

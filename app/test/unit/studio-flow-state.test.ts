@@ -3,8 +3,8 @@ import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vi
 import type { Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), missing: vi.fn((): unknown[] => []), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), clear: vi.fn() }))
-vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, missingItemMoves: mocks.missing, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
+const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), clear: vi.fn() }))
+vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
 vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: mocks.load }))
@@ -526,14 +526,19 @@ describe('move queue', () => {
     await run
   })
 
-  test('"Add idle + walk" hands addMove the allItems flag, so each move picks its items at its item stage', async () => {
-    storage()
-    mocks.move.mockResolvedValue(done)
+  test('dismissing a failed move drops the queue of that character only; other characters go on', async () => {
+    const records = storage()
+    mocks.move.mockRejectedValueOnce(new Error('Idle failed')).mockResolvedValue(done)
     const s = await import('../../src/studio/state.svelte.ts')
-    await s.queueMoves('project', [{ ...idle, allItems: true }, { ...walk, allItems: true }])
+    const other = { projectId: 'other', spec: { ...walk, id: 'walk' } }
+    s.moving.queued = []
+    await s.queueMoves('project', [idle, walk])
+    await vi.waitFor(() => expect(s.moving.error).toBe('Idle failed'))
+    s.moving.queued = [...s.moving.queued, other]
+    await s.dismissMove()
     await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledTimes(2))
-    // items saved while a move's body frames generate are posed too (addMove reads moveItems from the fresh project)
-    for (const call of mocks.move.mock.calls) expect(call[1]).toMatchObject({ allItems: true })
+    expect(mocks.move.mock.calls[1][0]).toBe('other') // the other character's walk goes on; this one's queued walk is dropped
+    await vi.waitFor(() => expect(records.has('studio-move')).toBe(false))
   })
 
   test('an interrupted queue resumes its running move and then the waiting one', async () => {
@@ -616,23 +621,16 @@ describe('optional review', () => {
     expect(s.ui).toMatchObject({ selected: 'helm0', frame: 3 })
   })
 
-  test('a saved item missing moves added while it generated queues their poses; a failure there keeps the save', async () => {
+  test('a saved item never queues paid poses on its own (missing moves are a priced offer)', async () => {
     routeMock(async () => clean)
     mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: fixtureManifest() } })
     mocks.source.mockResolvedValue({ project: { manifest: fixtureManifest(), images: new Map() }, current: { items: { body: 'base' }, variants: {} } })
-    const missing = { id: 'walk', frames: 8, items: ['helm0'], seed: 7 }
-    mocks.missing.mockReturnValueOnce([missing])
-    mocks.move.mockResolvedValue({ fitIds: [], warnings: [] })
     const s = await import('../../src/studio/state.svelte.ts')
     s.doc.id = 'project'
     await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
-    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
-    expect(mocks.move.mock.calls[0][0]).toBe('project')
-    expect(mocks.move.mock.calls[0][1]).toMatchObject(missing)
-    mocks.missing.mockImplementationOnce(() => { throw new Error('rig unreadable') })
-    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
-    await vi.waitFor(() => expect(s.ui.toast).toBe('New helm saved, but its poses for the newer moves could not be queued: rig unreadable'))
-    expect(s.gens).toHaveLength(0) // saved, not sent back to review
+    await vi.waitFor(() => expect(s.ui.toast).toBe('New helm saved'))
+    expect(mocks.move).not.toHaveBeenCalled()
+    expect(s.moving.queued).toEqual([])
   })
 
   test('a warned draft stays a draft with its review; nothing is saved for it', async () => {

@@ -62,9 +62,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
   not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** picks a new
   random seed on every tap; the character's seed no longer reaches its moves, so an earlier attempt cannot be reproduced.
-- **A late key switch discards early poses.** Poses of a direction start as soon as its dress chunk passes. If a later dress
-  chunk of a held item then fails G3 (a key/item color collision), the whole item switches key and restarts, so the poses
-  already started for the earlier directions are paid but discarded.
+- **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
+  the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** poses the items the
+  character has when it is tapped (the ones it is priced for). Held items split over several dress calls pose only after
+  every dress call passed, as before, so a late key switch never wastes poses.
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 

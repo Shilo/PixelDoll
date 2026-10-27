@@ -157,6 +157,7 @@ function withIssue(a: PresentationAvailability, result: Presentation): Presentat
   if (a.metadataIssues.length) return { ...result, issue: a.metadataIssues[0], issueKey: 'metadata' };
   if (result.kind === 'animation' && result.clip === result.requestedClip && result.direction === result.intendedDirection) return result;
   const wholeClip = !a.animations.get(result.requestedClip)?.size;
+  if (wholeClip && result.clip === DEFAULT_MOVE) return result; // a new character stands in its Default pose until idle/walk are added
   const missing = wholeClip ? result.requestedClip : `${directionLabel(result.intendedDirection ?? '')} ${result.requestedClip}`;
   const showing = result.kind === 'unavailable' ? 'no artwork available' : result.kind !== 'animation' ? 'showing a still pose' : result.clip !== result.requestedClip ? `showing ${result.clip}` : `showing ${directionLabel(result.direction!)}`;
   return { ...result, issue: `${missing} missing — ${showing}`, issueKey: `${result.requestedClip}:${wholeClip ? 'all' : result.intendedDirection}` };

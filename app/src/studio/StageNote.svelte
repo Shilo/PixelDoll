@@ -4,7 +4,7 @@
   import type { DirectionName, Item } from '../lib/store/manifest.ts'
   import { posable, poseGens } from '../lib/items/run.ts'
   import { groupOf } from './model.ts'
-  import { ui, doc, store, isDemo, moving, startMove, withKey, openNewItem, openItemExtension, extensionPreparing } from './state.svelte.ts'
+  import { ui, doc, store, isDemo, moving, queueMoves, withKey, openNewItem, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { TriangleAlert } from './icons.ts'
   import { default as ApiPeek } from './ApiPeek.svelte'
   import { movePlan } from './apiPlans.ts'
@@ -31,8 +31,8 @@
 
   function makePose() {
     const projectId = doc.id
-    const spec = { id: anim!.id, frames: anim!.cells, items: pose.map((i) => i.id), dirs: [...targetDirs], seed: 1 + Math.floor(Math.random() * 1_000_000) }
-    withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' }, true)
+    const spec = { id: anim!.id, frames: anim!.cells, items: pose.map((i) => i.id), dirs: [...targetDirs], itemsOnly: true as const, seed: 1 + Math.floor(Math.random() * 1_000_000) }
+    withKey(() => { void queueMoves(projectId, [spec]); ui.sheet = 'move' }, true)
   }
 </script>
 

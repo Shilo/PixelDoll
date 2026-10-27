@@ -733,15 +733,6 @@ export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
       await openProject(doc.id, auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id });
     }
     toast(auto ? `${item.name} saved` : `${item.name} added`);
-    // moves added while the draft generated (Default-first: idle and walk) get this item's poses through the move queue; a
-    // failure here never undoes the save
-    try {
-      const extend = (await createFlow()).missingItemMoves((await loadProject(g.draft.rigId)).rec.manifest, item.id);
-      if (extend.length) void queueMoves(g.draft.rigId, extend);
-    } catch (e) {
-      console.error(e);
-      toast(`${item.name} saved, but its poses for the newer moves could not be queued: ${e instanceof Error ? e.message : String(e)}`);
-    }
     return true;
   } finally {
     settling.delete(id);
@@ -933,8 +924,15 @@ export async function startMove(projectId: string, spec: MoveSpec) {
     moving.done = true;
     await storeMove(null); // the next waiting move replaces this record in one write, so a reload between moves keeps the queue
     if (!current()) return;
-    if (doc.id === projectId) { await openProject(projectId); if (!current()) return; ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
-    toast(`${spec.id[0].toUpperCase() + spec.id.slice(1)} added`);
+    const moveName = spec.id[0].toUpperCase() + spec.id.slice(1).replace(/-/g, ' ');
+    if (spec.itemsOnly) { // items posed onto a move the body already had: the move and the undo history stay as they are
+      if (doc.id === projectId) { await openProject(projectId, { quiet: true }); if (!current()) return; }
+      const names = spec.items.map((id) => store.project?.manifest.items.find((i) => i.id === id)?.name ?? 'Equipment').join(', ');
+      toast(`${names} ${spec.itemMethod === 'grid' ? 'redrawn' : 'posed'} for ${moveName}`);
+    } else {
+      if (doc.id === projectId) { await openProject(projectId); if (!current()) return; ui.anim = spec.id; ui.frame = 0; ui.playing = true; }
+      toast(`${moveName} added`);
+    }
   } catch (e) {
     if (current()) {
       failed = true;
@@ -988,11 +986,14 @@ export async function resumeMove() {
   if (halted(r)) Object.assign(moving, { spec: r.spec, projectId: r.projectId, progress: r.progress ?? null, error: r.error || STOPPED, done: false, fitIds: [], warnings: [] });
   else void startMove(r.projectId, r.spec);
 }
+/** Drops the failed or finished move and the moves queued for the same character; other characters' queued moves go on. */
 export async function dismissMove() {
   if (moveRunning) return;
   moveRevision++;
+  const others = moving.queued.filter((q) => q.projectId !== moving.projectId);
   Object.assign(moving, { spec: null, projectId: '', progress: null, error: '', done: false, fitIds: [], warnings: [], queued: [] });
   await storeMove(null);
+  if (others.length) { const [next, ...rest] = others; moving.queued = rest; await startMove(next.projectId, next.spec); }
 }
 
 // ---------- imported character setup ----------

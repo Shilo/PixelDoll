@@ -22,7 +22,8 @@ import { rigReady } from '../lib/rig/setup.ts';
 import { repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, bodyComponents, clipQa, loops, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
-import { posable, poseGens, poseItemClip, regridClip } from '../lib/items/run.ts';
+import { posable, poseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
+import { coverage } from './itemRoute.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
 import { affectedMoveDirections, clearMovePoseData, invalidateMoveItems, moveRigVersion } from './replaceMove.ts';
@@ -397,9 +398,8 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
-/** allItems: items and sharedItems are re-read when the move reaches its item stage (moveItems), so a queued "Add idle + walk"
- *  also poses items saved while it waited or while its body frames generated. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; allItems?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
+/** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
 export const MOVE_STEPS = [
   { id: 'animate', label: 'Animating the body' },
@@ -493,25 +493,26 @@ export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec)
   return { recordIds: [...recordIds].sort(), checks: needed.size, gens: +(needed.size * EST).toFixed(2), usd: +(needed.size * .00513).toFixed(5), rigVersion, rawHashes, ...(spec.bodyPaletteRepair ? { palette } : {}) };
 }
 
-/** Every posable item and accepted shared design of a character, as "Add a move" offers them. */
-/** Moves a saved item lacks because they were added while its draft generated (Default-first: idle and walk often land after
- * an item was planned on the standing views). Items-only specs: addMove keeps the existing body clip and poses only the
- * directions the item is missing, the same request "Make it" sends. */
+/** Moves a saved item lacks, e.g. idle and walk added after it was planned on the standing views, as items-only specs (addMove
+ * keeps the body clip and poses only these directions, the same request "Make it" sends). Only directions the body has frames
+ * and stored keypoints for count (the Default move's standing views are never posed). The user starts them from a priced offer; nothing is queued automatically (credits are real money). */
 export function missingItemMoves(m: Manifest, itemId: string, seed = 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
   const item = posable(m).find((i) => i.id === itemId && !i.design);
   if (!item) return [];
-  const dirs = genDirs(m);
+  const { clipDirs } = coverage({ rec: { manifest: m } } as RigCtx);
+  const posableDir = (a: RigAnimation, d: DirectionName) => a.sources?.[d]?.motion !== 'imported-rest' && a.sources?.[d]?.keypoints?.length === a.cells;
   return m.rig.animations
-    .filter((a) => !Object.values(a.sources ?? {}).every((src) => src?.motion === 'imported-rest'))
-    .filter((a) => dirs.some((d) => !item.layers.every((l) => l.cells?.[a.id]?.[d]?.length === a.cells)))
-    .map((a) => ({ id: a.id, frames: a.cells, items: [item.id], seed }));
+    .map((a) => ({ a, dirs: (clipDirs?.[a.id] ?? []).filter((d) => posableDir(a, d) && !item.layers.every((l) => l.cells?.[a.id]?.[d]?.length === a.cells)) }))
+    .filter(({ dirs }) => dirs.length)
+    .map(({ a, dirs }) => ({ id: a.id, frames: a.cells, items: [item.id], dirs, itemsOnly: true, seed }));
 }
+/** Every posable item and accepted shared design of a character, as "Add a move" offers them. */
 export const moveItems = (m: Manifest) => ({ items: posable(m).filter((i) => !i.design).map((i) => i.id), sharedItems: m.items.filter((i) => i.design && i.status === 'accepted').map((i) => i.id) });
 /** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
- * shapes as creation made them (no poseStyle); the items follow the character until the move starts (allItems). */
+ * shapes as creation made them (no poseStyle), with the items the character has when the user taps (and is quoted for). */
 export function baseMoveSpecs(m: Manifest, seed = 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
   const have = new Set(m.rig.animations.map((a) => a.id));
-  return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({ id: a.name, action: a.name, frames: a.frames, ...moveItems(m), allItems: true, seed }));
+  return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({ id: a.name, action: a.name, frames: a.frames, ...moveItems(m), seed }));
 }
 
 /** Frames of a move: the authored table's length, or the text frame count. */
@@ -555,8 +556,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   deriveMaterials(normalized.project);
   if (split.dirty) await saveSplit(projectId, normalized.project.manifest, split);
   const fresh = await loadProject(projectId), frames = fresh.rec.manifest.rig.animations.find(a => a.id === spec.id)!.cells;
-  const pick = spec.allItems ? moveItems(fresh.rec.manifest) : spec;
-  const plans = pick.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it && !it.design ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !it.layers.every(l => l.cells?.[spec.id]?.[d]?.length === frames)) }] : []; });
+  const plans = spec.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it && !it.design ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !it.layers.every(l => l.cells?.[spec.id]?.[d]?.length === frames)) }] : []; });
   const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0); let posed = 0;
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
   const tick = () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
@@ -575,7 +575,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   }
   // Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.
   const shared = (await loadProject(projectId)).rec;
-  const sharedIds = [...new Set([...(pick.sharedItems ?? []), ...pick.items.filter((id) => shared.manifest.items.find((item) => item.id === id)?.design)])];
+  const sharedIds = [...new Set([...(spec.sharedItems ?? []), ...spec.items.filter((id) => shared.manifest.items.find((item) => item.id === id)?.design)])];
   const clipQa = (shared.rigQa as { clips?: Record<string, ClipQa> } | undefined)?.clips ?? {};
   // Include this move's current nested observations, including after resume. Flattened historical notes may be stale.
   const fitIds: string[] = [], warnings: string[] = Object.entries(clipQa).filter(([clip]) => clip.startsWith(`${spec.id}/`)).flatMap(([clip, qa]) => warn(clip, qa));

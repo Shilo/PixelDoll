@@ -74,7 +74,7 @@
   {/if}
 
   {#if g.draft.rigId === doc.id && g.phase !== 'failed'}
-    <button class="bu-action btn" data-variant="outline" aria-pressed={worn} onclick={() => wearDraft(g.draft.spec.id)}>{worn ? 'Take off' : 'Wear'}</button>
+    <button class="bu-action btn" data-variant="outline" onclick={() => wearDraft(g.draft.spec.id)}>{worn ? 'Take off' : 'Wear'}</button>
   {/if}
 
   {#if prev && anim}

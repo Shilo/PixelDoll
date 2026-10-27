@@ -945,10 +945,22 @@ tests that failed once each (import cancel, free color matching) pass 8/8 on rep
 | Create | Done in about 4 min, about 2.25 gens, 0 animation or estimate calls. The result screen offers "Add idle + walk · Est. 55 gens" and "Start dressing up". |
 | Add idle + walk | Queued: idle "Adding… n/25", then walk "Queued"; the character opens at once with **Default** selectable. |
 | Item while moves generate | A red cape costs 10 gens (dress only) and can be worn while loading (overlay only, never saved). The stage shows "Red cape loading — South, South-east, East, North-east, North". It **saved itself** ("Red cape saved") and appears in Default. |
-| A gap the live run exposed | The cape had been planned on the Default-only rig and saved after walk's item stage had begun, so it missed idle and walk. **Fixed in `fae47bba`:** base moves pick their items at their item stage, and a saved item queues items-only poses (the "Make it" request) for moves added while it generated. Verified live with one 3-gen "Make it" (walk south). |
+| A gap the live run exposed | The cape had been planned on the Default-only rig and saved after walk's item stage had begun, so it missed idle and walk. `fae47bba` first auto-queued the missing poses; the review below replaced that with a **priced offer** (credits need the user's tap). Verified live with one 3-gen "Make it" (walk south). |
 | Old characters | A character created before the change opens with idle and walk and plays. |
 
 **Not verified:**
 - The run used Top-down 8, not the Top-down 4 that was clicked. A code trace found no cause and the branch does not touch
   that logic; unreproduced.
 - An items-only queued move still toasts "<Move> added".
+
+**Second review (adversarial agent, then challenged):**
+
+| Finding | Verdict | Change |
+|---|---|---|
+| Saving an item auto-queued paid poses, and `allItems` posed items the shown estimate did not cover | **Valid** (credits need the user's tap) | Removed both. "Add idle + walk" poses the items it is priced for. An item lacking moves shows **"Make for Idle + Walk · Est. N gens"** in its details. |
+| The missing-move check ignored partial body moves | **Valid** | Only directions the body has frames for count (`coverage().clipDirs`). |
+| Items-only runs reset the open character and toasted "<Move> added" | **Valid** | Callers mark items-only specs. Finishing reloads in place and toasts "<item> posed for <Move>". |
+| Deleting a character left its queued moves behind | **Not reachable** | `deletionBlocked` refuses deletion while any move runs or failed. No change. |
+| Dismissing a failed move dropped other characters' queued moves | **Valid** | Only that character's queue is dropped; others continue. |
+| Stale known issue, orphaned comment, "1 frames", "idle missing — showing default" on new characters, "Take off, pressed", raw plan-skip text, StageNote bypassing the queue | **Valid** (minor) | Fixed. |
+| An old in-flight creation resumes as Default-only; Top-down 4 vs 8 | Unreproduced | Documented only. |

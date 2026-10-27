@@ -78,7 +78,7 @@ test('creation publishes a Default-only rig that items, moves, exports and live 
 test('"Add idle + walk" restores what creation used to make, at the old price', async () => {
   const { rec } = await create({ name: 'Default', description: 'body', size: 48, seed: 7, dirs: 4, projectId: 'rig-default-moves' })
   const specs = baseMoveSpecs(rec.manifest, 7)
-  expect(specs).toEqual([{ id: 'idle', action: 'idle', frames: 4, items: [], sharedItems: [], allItems: true, seed: 7 }, { id: 'walk', action: 'walk', frames: 8, items: [], sharedItems: [], allItems: true, seed: 7 }]) // allItems: re-read at each move's item stage
+  expect(specs).toEqual([{ id: 'idle', action: 'idle', frames: 4, items: [], sharedItems: [], seed: 7 }, { id: 'walk', action: 'walk', frames: 8, items: [], sharedItems: [], seed: 7 }]) // the items it is priced for
   // Creation + idle + walk = the pre-Default-first creation estimate (35.25 gens for Top-down 4).
   expect(estimate(4).gens + specs.reduce((n, s) => n + moveEstimate(rec.manifest, s).gens, 0)).toBeCloseTo(35.25)
   const calls = specs.flatMap((s) => movePlan(rec, s))
@@ -96,12 +96,18 @@ test('an item saved before idle and walk existed gets items-only poses for exact
   const { rec } = await create({ name: 'Default', description: 'body', size: 48, seed: 7, dirs: 4, projectId: 'rig-default-extend' })
   const m = rec.manifest, dirs = m.rig.directions.filter((d) => !d.mirrorOf).map((d) => d.id)
   const cells = (n: number) => Object.fromEntries(dirs.map((d) => [d, Array.from({ length: n }, () => 'x' as Sha256)]))
-  m.rig.animations.push({ id: 'walk', cells: 8, loop: true, frames: [], sources: Object.fromEntries(dirs.map((d) => [d, { route: 'skeleton-v3', reference: 'r' as Sha256, keypoints: [], motion: 'managed-skeleton-v3:walking-8-frames' }])) })
+  m.rig.animations.push({ id: 'walk', cells: 8, loop: true, frames: [], sources: Object.fromEntries(dirs.map((d) => [d, { route: 'skeleton-v3', reference: 'r' as Sha256, keypoints: Array.from({ length: 8 }, () => points(0)), motion: 'managed-skeleton-v3:walking-8-frames' }])) })
   const cape = { id: 'cape', name: 'Cape', slot: 'back', status: 'accepted', route: 'skeleton-pose', key: 'green', dressed: {}, baseHash: m.rig.baseHash, layers: [{ cells: { default: cells(1) } }] }
   m.items.push(cape as never)
-  // the Default move (standing views) is never re-posed; walk is, with this item only
-  expect(missingItemMoves(m, 'cape', 9)).toEqual([{ id: 'walk', frames: 8, items: ['cape'], seed: 9 }])
+  const base = m.items.find((i) => i.id === m.rig.baseItem)!.layers[0]
+  base.cells = { ...base.cells, walk: { ...cells(8), [dirs[0]]: [] } } // the body lacks walk facing the first direction
+  // the Default move (standing views) is never re-posed; walk is, with this item only, where the body has frames
+  expect(missingItemMoves(m, 'cape', 9)).toEqual([{ id: 'walk', frames: 8, items: ['cape'], dirs: dirs.slice(1), itemsOnly: true, seed: 9 }])
   cape.layers[0].cells = { default: cells(1), walk: cells(8) } as never
   expect(missingItemMoves(m, 'cape', 9)).toEqual([])
   expect(missingItemMoves(m, 'no-such-item', 9)).toEqual([])
+  // without stored keypoints (e.g. a demo copy), nothing can be posed, so nothing is offered
+  cape.layers[0].cells = { default: cells(1) } as never
+  for (const src of Object.values(m.rig.animations.find((a) => a.id === 'walk')!.sources!)) src!.keypoints = []
+  expect(missingItemMoves(m, 'cape', 9)).toEqual([])
 })
