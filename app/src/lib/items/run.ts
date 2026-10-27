@@ -476,6 +476,8 @@ const toProv = (r: JobRec, c: CallState): Provenance => ({
   seed: c.seed, requestHash: `sha256:${r.requestHash}`, jobId: r.jobs[0]?.id, usage: { generations: r.gens, usd: r.usd },
   createdAt: new Date(r.submittedAt ?? r.createdAt).toISOString(), produced: [...c.cells] as Provenance['produced'],
 });
+/** The body cells (what baseHash covers) of `anims`, comparable across records. */
+const bodyCells = (m: Manifest, anims: string[]) => stableStringify([m.rig.directions.map((d) => d.id), anims.map((a) => m.items.find((i) => i.id === m.rig.baseItem)?.layers[0].cells?.[a] ?? null)]);
 /** Write the item (layers + cell blobs + provenance + QA) into the rig's project record. A non-pass QA becomes "accepted". */
 export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promise<{ item: Item; cells: number }> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
@@ -496,7 +498,15 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
   });
   const designWarnings = [...new Set([...r.g1.values()].flatMap((why) => why.split(/;\s*/)))];
   if (designWarnings.length) item.designWarnings = designWarnings;
-  await saveItem(d.rigId, item, images, SLOTS);
+  // A move published since ctx was read (addBodyClip rebases only items already stored) changed baseHash. When every body cell
+  // this item was made against is unchanged (moves were only added), it still fits and moves to the new hash, as addBodyClip
+  // would have moved it; a replaced or recolored cell means it may not, so it is refused rather than saved for another body.
+  const made = ctx.rec.manifest, anims = made.rig.animations.map((a) => a.id);
+  await saveItem(d.rigId, item, images, SLOTS, (cur) => {
+    if (cur.manifest.rig.baseHash === item.baseHash) return;
+    if (bodyCells(cur.manifest, anims) !== bodyCells(made, anims)) throw new Error(`${d.spec.name}: the character's body changed while this item was being made, so it was not saved. Make it again for the current body.`);
+    item.baseHash = cur.manifest.rig.baseHash;
+  });
   d.acceptedAt = new Date().toISOString();
   return { item, cells: images.size };
 }

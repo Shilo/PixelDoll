@@ -60,8 +60,9 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   wording had no reliable effect (round 2 arm A).
 - **Default-only characters (round 10, D26).** All standing views arrive together, because PixelLab draws every rotation
   in one job; the creator cannot show them one by one. The pivot comes from the standing south view (`default/south/0`),
-  not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** picks a new
-  random seed on every tap; the character's seed no longer reaches its moves, so an earlier attempt cannot be reproduced.
+  not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** sends the seed
+  the character was drawn with, as creation did, so a creation interrupted before Default-first reuses its paid idle and
+  walk from the ledger (an imported character uses its rig setup's seed).
 - **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
   the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** poses the items the
   character has when it is tapped (the ones it is priced for). Held items split over several dress calls pose only after

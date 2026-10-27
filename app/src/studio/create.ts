@@ -508,9 +508,15 @@ export function missingItemMoves(m: Manifest, itemId: string, seed = 1 + Math.fl
 }
 /** Every posable item and accepted shared design of a character, as "Add a move" offers them. */
 export const moveItems = (m: Manifest) => ({ items: posable(m).filter((i) => !i.design).map((i) => i.id), sharedItems: m.items.filter((i) => i.design && i.status === 'accepted').map((i) => i.id) });
+/** The seed the character was drawn (or its rig set up) with, which creation also gave idle and walk before Default-first. */
+const creationSeed = (m: Manifest) => {
+  const seed = m.items.find((i) => i.id === m.rig.baseItem)?.provenance.find((p) => p.endpoint === '/create-character-v3')?.params.seed;
+  return Number.isSafeInteger(seed) ? seed as number : undefined;
+};
 /** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
- * shapes as creation made them (no poseStyle), with the items the character has when the user taps (and is quoted for). */
-export function baseMoveSpecs(m: Manifest, seed = 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
+ * shapes and seed as creation made them (no poseStyle), so a creation interrupted under that code reuses its paid idle and
+ * walk from the ledger; with the items the character has when the user taps (and is quoted for). */
+export function baseMoveSpecs(m: Manifest, seed = creationSeed(m) ?? 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
   const have = new Set(m.rig.animations.map((a) => a.id));
   return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({ id: a.name, action: a.name, frames: a.frames, ...moveItems(m), seed }));
 }

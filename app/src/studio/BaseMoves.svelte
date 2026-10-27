@@ -7,13 +7,13 @@
   import * as db from '../lib/store/db.ts'
   import type { Manifest } from '../lib/store/manifest.ts'
   import type { StoredProject } from '../lib/store/project.ts'
-  import { doc, moving, queueMoves, withKey } from './state.svelte.ts'
+  import { doc, pendingMoves, queueMoves, withKey } from './state.svelte.ts'
   import { Plus } from './icons.ts'
 
   let { projectId, manifest, onadd = () => {} }: { projectId: string; manifest: Manifest; onadd?: () => void } = $props()
   let rec = $state.raw<StoredProject | null>(null)
   $effect(() => { void doc.rev; const id = projectId; void db.get<StoredProject>('projects', id).then((r) => { if (id === projectId) rec = r ?? null }) })
-  const pending = $derived([...(moving.spec && !moving.done && moving.projectId === projectId ? [moving.spec.id] : []), ...moving.queued.filter((q) => q.projectId === projectId).map((q) => q.spec.id)])
+  const pending = $derived(pendingMoves(projectId).map((s) => s.id))
   const specs = $derived(rec && isV13({ ...rec, manifest }) ? baseMoveSpecs(manifest).filter((s) => !pending.includes(s.id)) : [])
   const gens = $derived(Math.ceil(specs.reduce((n, spec) => n + moveEstimate(manifest, spec).gens, 0)))
   const label = $derived(specs.map((s) => s.id).join(' + '))
@@ -24,5 +24,5 @@
 </script>
 
 {#if specs.length}
-  <span class="api-action"><ApiPeek scope="moves-base" label="Add {label}" plan={specs.flatMap((spec, i) => movePlan(rec, { ...spec, seed: undefined }).filter((call) => i === specs.length - 1 || !call.background))} /><button class="bu-action btn" data-variant="outline" onclick={add}><Plus size={16} />Add {label} <span class="cost">Est. {gens} gens</span></button></span>
+  <span class="api-action"><ApiPeek scope="moves-base" label="Add {label}" plan={specs.flatMap((spec, i) => movePlan(rec, spec).filter((call) => i === specs.length - 1 || !call.background))} /><button class="bu-action btn" data-variant="outline" onclick={add}><Plus size={16} />Add {label} <span class="cost">Est. {gens} gens</span></button></span>
 {/if}

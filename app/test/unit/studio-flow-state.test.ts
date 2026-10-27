@@ -569,6 +569,32 @@ describe('move queue', () => {
     expect(mocks.move.mock.calls.map(call => call[1].id)).toEqual(['idle', 'walk'])
     await vi.waitFor(() => expect(records.has('studio-move')).toBe(false))
   })
+
+  test('"Make for …" on an item needs a plan that can pose: a trial account opens Connect and queues nothing', async () => {
+    storage()
+    const { app } = await import('../../src/lib/app.svelte.ts') as unknown as { app: { key: string; balance: unknown } }
+    app.key = 'test-key'; app.balance = { subscription: { status: 'trial', plan: 'Free trial' } }
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.makeItemMoves('project', [{ ...walk, items: ['cape'], itemsOnly: true }])
+    expect(s.ui.sheet).toBe('connect')
+    expect(s.moving.queued).toEqual([])
+    expect(mocks.move).not.toHaveBeenCalled()
+  })
+
+  test('moves already running or queued for an item are pending for it, so it is not offered them at a second price', async () => {
+    storage()
+    const running = pending<typeof done>()
+    mocks.move.mockReturnValueOnce(running.promise)
+    const s = await import('../../src/studio/state.svelte.ts')
+    const queued = s.queueMoves('project', [{ ...idle, items: ['cape'] }, walk, { ...walk, id: 'jump', items: ['cape'] }])
+    await vi.waitFor(() => expect(mocks.move).toHaveBeenCalledOnce())
+    void s.queueMoves('other', [{ ...walk, items: ['cape'] }])
+    expect(s.pendingMoves('project', 'cape').map((m) => m.id)).toEqual(['idle', 'jump'])
+    expect(s.pendingMoves('project').map((m) => m.id)).toEqual(['idle', 'walk', 'jump'])
+    running.resolve(done)
+    await vi.waitFor(() => expect(s.pendingMoves('project', 'cape').map((m) => m.id)).toEqual(['jump']))
+    await queued
+  })
 })
 
 type GenOf<S> = S extends { gens: (infer G)[] } ? G : never

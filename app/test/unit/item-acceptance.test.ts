@@ -4,7 +4,7 @@ import type { Rig } from '../../src/lib/rig/rig.ts'
 import { makeImg } from '../../src/lib/image/png.ts'
 import { itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts'
 import { acceptItem, evaluateItem, gensOf, hasStructuralFailure, usdOf, type Draft, type ItemResult, type RigCtx } from '../../src/lib/items/run.ts'
-import { saveItem } from '../../src/lib/store/project.ts'
+import { saveItem, type StoredProject } from '../../src/lib/store/project.ts'
 import * as db from '../../src/lib/store/db.ts'
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts'
 import { toChroma } from '../../src/lib/image/chroma.ts'
@@ -121,4 +121,21 @@ test('dressed imported-rest cells survive a design-art warning and retain their 
   const saved = await acceptItem(draft, ctx, result)
   expect(saved.item.designWarnings?.some((why) => why.startsWith('D1'))).toBe(true)
   expect(saveItem).toHaveBeenCalledOnce()
+})
+
+test('an item saved after its body gained a move takes the new body hash; a body whose cells changed refuses it', async () => {
+  const { draft, ctx, result } = fixture()
+  const record = (hash: string, cells: Record<string, { south: string[] }>) => ({ id: 'rig', savedAt: '', manifest: {
+    rig: { ...rig, baseHash: hash, animations: Object.keys(cells).map((id) => ({ id, cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }] })) },
+    items: [{ id: 'base', layers: [{ cells }] }] } }) as unknown as StoredProject
+  ctx.rec = record('sha256:test', { idle: { south: ['sha256:idle'] } })
+  // "Add idle + walk" published walk between reading ctx and the save transaction: the idle cells the item fits are untouched
+  let current = record('sha256:with-walk', { idle: { south: ['sha256:idle'] }, walk: { south: ['sha256:walk'] } })
+  vi.mocked(saveItem).mockImplementationOnce(async (_id, _item, _images, _slots, check) => check?.(current))
+  const { item } = await acceptItem(draft, ctx, result)
+  expect(item.baseHash).toBe('sha256:with-walk') // still posable and offered "Make for Walk", not "Made for another body"
+  // a replaced idle: the item was drawn on frames the body no longer has
+  current = record('sha256:new-idle', { idle: { south: ['sha256:idle-2'] } })
+  vi.mocked(saveItem).mockImplementationOnce(async (_id, _item, _images, _slots, check) => check?.(current))
+  await expect(acceptItem(draft, ctx, result)).rejects.toThrow("the character's body changed while this item was being made")
 })
