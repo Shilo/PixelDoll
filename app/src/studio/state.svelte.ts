@@ -85,6 +85,7 @@ export const ui = $state({
   toastTitle: '',
   toastTone: 'info' as 'info' | 'success' | 'warning' | 'danger',
   toastSheet: null as SheetId,
+  toastAction: null as (() => void | Promise<void>) | null,
 });
 let afterConnect: { run: () => void; requiresRig: boolean } | null = null;
 
@@ -109,12 +110,24 @@ export function toggleTheme() { ui.theme = ui.theme === 'dark' ? 'light' : 'dark
 export function dismissWelcome() { ui.welcome = false; lsSet(K.welcomed, '1'); }
 let toastT: ReturnType<typeof setTimeout> | undefined;
 let toastRemaining = 0, toastStarted = 0;
+let toastRevision = 0, toastActivating: number | null = null;
 const toastPauses = new Set<'pointer' | 'focus'>();
-type ToastOptions = { title?: string; tone?: typeof ui.toastTone; duration?: number };
+type ToastOptions = { title?: string; tone?: typeof ui.toastTone; duration?: number; action?: () => void | Promise<void> };
 function stopToastTimer() { clearTimeout(toastT); toastT = undefined; }
-export function dismissToast() { stopToastTimer(); toastRemaining = 0; toastPauses.clear(); ui.toast = ''; ui.toastTitle = ''; }
+export function dismissToast() { stopToastTimer(); toastRevision++; toastRemaining = 0; toastPauses.clear(); ui.toast = ''; ui.toastTitle = ''; ui.toastAction = null; }
+export async function activateToast() {
+  if (!ui.toast || toastActivating === toastRevision) return;
+  const revision = toastRevision;
+  toastActivating = revision; stopToastTimer();
+  try { await ui.toastAction?.(); }
+  finally {
+    if (toastActivating === revision) toastActivating = null;
+    // The action may have opened a different notification while it was running.
+    if (toastRevision === revision) dismissToast();
+  }
+}
 function armToast() {
-  if (!toastRemaining || toastPauses.size) return;
+  if (!toastRemaining || toastPauses.size || toastActivating === toastRevision) return;
   toastStarted = Date.now(); toastT = setTimeout(dismissToast, toastRemaining);
 }
 export function pauseToast(reason: 'pointer' | 'focus') {
@@ -126,7 +139,7 @@ export function resumeToast(reason: 'pointer' | 'focus') { toastPauses.delete(re
 export function toast(s: string, options: number | ToastOptions = 4000) {
   const o: ToastOptions = typeof options === 'number' ? { duration: options } : options;
   if (ui.toast && ui.toastTone === 'danger' && o.tone !== 'danger') return false;
-  stopToastTimer(); ui.toast = s; ui.toastTitle = o.title ?? ''; ui.toastTone = o.tone ?? 'info'; ui.toastSheet = ui.sheet;
+  stopToastTimer(); toastRevision++; ui.toast = s; ui.toastTitle = o.title ?? ''; ui.toastTone = o.tone ?? 'info'; ui.toastSheet = ui.sheet; ui.toastAction = o.action ?? null;
   toastRemaining = o.duration ?? (o.tone === 'danger' ? 0 : o.tone === 'warning' ? 8000 : 4000); armToast();
   return true;
 }

@@ -114,7 +114,7 @@
 .experience-error { position:absolute; bottom:16px; left:var(--edge); z-index:6; color:var(--bu-danger); }
 .studio-app .offline-banner { position:fixed; z-index:30; bottom:20px; left:50%; transform:translateX(-50%); max-width:calc(100vw - 32px); }
 .toast { position:fixed; z-index:40; top:max(env(safe-area-inset-top),var(--toast-top,88px)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(480px,calc(100vw - 32px)); max-height:var(--toast-height,45dvh); overflow:auto; }
-.toast>.bu-toast { position:static; transform:none; width:100%; max-width:none; margin:0; }
+.toast>.bu-toast { position:relative; inset:auto; transform:none; width:100%; max-width:none; margin:0; }
 /* The existing real creator becomes a full-screen work surface, retaining every
    validation, recovery, request preview and saving control. */
 .studio-app dialog.sheet.character-sheet { width:100vw; height:100dvh; max-width:none; max-height:none; border-radius:0; margin:0; background:linear-gradient(90deg,var(--bu-reading-start),var(--bu-reading-end)),var(--creator-world) center/cover; }

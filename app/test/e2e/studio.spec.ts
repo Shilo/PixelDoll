@@ -64,6 +64,34 @@ test('notifications support optional titles, keyboard dismissal and visible erro
   await expect(dialog).toHaveCount(0)
 })
 
+for (const [width, height] of [[1440, 900], [390, 844], [844, 390]]) test.describe(`toast activation ${width}x${height}`, () => {
+  test.use({ viewport: { width, height }, hasTouch: width < 1000, isMobile: width < 1000 })
+  test('body dismisses or runs its primary action, while close only dismisses', async ({ page }, info) => {
+    const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+    await page.goto(dev)
+    const notice = page.locator('.toast'), gesture = width < 1000 ? 'tap' : 'click'
+    await notice.getByRole('button', { name: /^Preview · v/ })[gesture]({ position: { x: 8, y: 8 } })
+    await expect(notice).toHaveCount(0)
+    await enterStudio(page)
+    const offerExport = () => page.evaluate(async () => {
+      const path = '/src/studio/state.svelte.ts', s = await import(path)
+      s.toast('Open export', { duration: 0, action: () => { s.ui.sheet = 'export' } })
+    })
+    await offerExport()
+    await notice.getByRole('button', { name: 'Dismiss notification' })[gesture]()
+    await expect(notice).toHaveCount(0)
+    await expect(page.getByRole('dialog')).toHaveCount(0)
+    await offerExport()
+    await notice.getByRole('button', { name: 'Open export', exact: true })[gesture]()
+    const dialog = page.getByRole('dialog', { name: 'Export', exact: true })
+    await expect(dialog).toBeVisible()
+    await expect(notice).toHaveCount(0)
+    await expect(dialog.getByRole('button', { name: 'Cancel', exact: true })).toBeFocused()
+    await dialog.getByRole('button', { name: 'Cancel', exact: true })[gesture]()
+    await expect(dialog).toHaveCount(0)
+  })
+})
+
 test('top notifications fit both themes across desktop, tablet and phone orientations', async ({ page }, info) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
@@ -99,7 +127,7 @@ test('top notifications fit both themes across desktop, tablet and phone orienta
           const card = el.querySelector<HTMLElement>('.bu-toast')!, style = getComputedStyle(card)
           const surface = card.getBoundingClientRect(), icon = card.querySelector('svg')!.getBoundingClientRect()
           if (Math.abs(icon.top + icon.height / 2 - surface.top - surface.height / 2) > 1) issues.push('status icon off center')
-          const close = card.querySelector('button')!.getBoundingClientRect()
+          const close = card.querySelector('[aria-label="Dismiss notification"]')!.getBoundingClientRect()
           if (close.width < 44 || close.height < 44) issues.push('small dismiss target')
           if (card.dataset.tone === 'info') {
             const text = document.createRange(); text.selectNodeContents(card.querySelector('.bu-notice-content')!)

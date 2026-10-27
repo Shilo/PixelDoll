@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Notice } from '@shilo/bronze-ui/svelte'
   import { onDestroy } from 'svelte'
-  import { ui, doc, dismissToast, pauseToast, resumeToast } from './state.svelte.ts'
+  import { ui, doc, activateToast, dismissToast, pauseToast, resumeToast } from './state.svelte.ts'
   import { experience } from './experience/state.svelte.ts'
   import { restoreTrigger } from './experience/focus.ts'
 
@@ -11,6 +11,11 @@
     const focused = host?.contains(document.activeElement)
     dismissToast()
     if (focused) restoreTrigger(focusFrom)
+  }
+  async function activate() {
+    const focused = host?.contains(document.activeElement), from = focusFrom
+    try { await activateToast() }
+    finally { if (focused && document.activeElement === document.body) restoreTrigger(from) }
   }
   $effect(() => {
     if (!host) return
@@ -44,6 +49,6 @@
   <div class="toast" bind:this={host} role="presentation" onpointerenter={() => pauseToast('pointer')} onpointerleave={() => resumeToast('pointer')}
     onfocusin={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) focusFrom = e.relatedTarget as HTMLElement | null; pauseToast('focus') }}
     onfocusout={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) resumeToast('focus') }}>
-    <Notice class="bu-toast" title={ui.toastTitle || undefined} tone={ui.toastTone} live ondismiss={dismiss}>{ui.toast}</Notice>
+    <Notice class="bu-toast" title={ui.toastTitle || undefined} tone={ui.toastTone} live onactivate={activate} ondismiss={dismiss}>{ui.toast}</Notice>
   </div>
 {/if}
