@@ -8,7 +8,7 @@
   import { ui, store, cleanUp, toast, equipment, refreshFits, openFit } from './state.svelte.ts'
   async function clear() {
     let n: Awaited<ReturnType<typeof cleanUp>>
-    try { n = await cleanUp() } catch (e) { console.error('clear finished', e); toast(`Could not clear finished jobs: ${(e as Error).message}`); return }
+    try { n = await cleanUp() } catch (e) { console.error('clear finished', e); toast(`Could not clear finished jobs: ${(e as Error).message}`, { tone: 'danger' }); return }
     toast(`Cleared ${n.jobs} finished job${n.jobs === 1 ? '' : 's'}${n.blobs ? ` and ${n.blobs} unused image${n.blobs === 1 ? '' : 's'}` : ''}. Jobs your drafts or a running create or move still use are kept.`)
   }
   import { ChevronRight, CircleAlert, CircleCheck, Coins, RefreshCw } from './icons.ts'
@@ -16,7 +16,7 @@
   let now = $state(Date.now())
   const balanceScope = crypto.randomUUID()
   $effect(() => { const t = setInterval(() => (now = Date.now()), 1000); return () => clearInterval(t) })
-  const refreshEquipment = () => { void refreshFits().catch(() => toast('Could not load saved equipment fits.')) }
+  const refreshEquipment = () => { void refreshFits().catch(() => toast('Could not load saved equipment fits.', { tone: 'danger' })) }
   $effect(() => { refreshEquipment() })
   const fits = $derived(equipment.fits.filter((f) => f.stage !== 'accepted' && f.stage !== 'discarded'))
   const fitLabel = (stage: string) => ({ ready: 'Ready to preview', 'rest-running': 'Fitting at rest', 'rest-review': 'Review rest fit', 'pose-running': 'Animating fit', 'fit-review': 'Review fitted copy', 'needs-attention': 'Needs attention' })[stage] ?? stage

@@ -343,7 +343,10 @@ test('saved light appearance applies before the application module initializes',
 test.describe('two-finger equipment input', () => {
   test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
   test('a second finger equips an item while the first continues moving', async ({ page, context }) => {
-    await landing(page); await page.locator('.customize-action').click()
+    await landing(page)
+    // The startup warning overlays part of the world until explicitly dismissed.
+    await page.locator('.toast').getByRole('button', { name: 'Dismiss notification' }).click()
+    await page.locator('.customize-action').click()
     await equipmentGroup(page, 'Head')
     await modes(page).getByRole('button', { name: 'Top-down', exact: true }).click()
     const box = (await world(page).boundingBox())!

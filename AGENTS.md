@@ -92,6 +92,7 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - Never print, log, screenshot or commit a PixelLab token or the .env file.
 - Follow the Git Conventional Commits standard for every commit.
 - Use American English spelling.
+- Do not use em dashes in text.
 
 ## Agent testing
 

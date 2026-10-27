@@ -18,6 +18,7 @@
   import { lazy } from '../lib/lazy.ts'
   import { WifiOff } from './icons.ts'
   import { PREVIEW_NOTICE } from './previewNotice.ts'
+  import Toast from './Toast.svelte'
 
   // On-demand parts, out of the startup bundle (GenCard renders in PhonePanel).
   const parts = {
@@ -33,12 +34,12 @@
     document.documentElement.dataset.app = 'studio'
     if (import.meta.env.DEV) (window as unknown as { __studio: unknown }).__studio = { ui, doc, store, gens, creating, loadGens }
     const off = initUi()
-    toast(PREVIEW_NOTICE, 8000)
+    toast(PREVIEW_NOTICE.description, PREVIEW_NOTICE)
     void (async () => {
       await refreshProjects()
       await openProject(lastProject())
       // A failed read keeps item work stopped (startItem and Clear finished wait for it); create and moves still resume.
-      await loadGens().catch((e: Error) => { console.error('drafts', e); toast(`Saved item drafts could not be read: ${e.message}. Reload to try again.`) })
+      await loadGens().catch((e: Error) => { console.error('drafts', e); toast(`Saved item drafts could not be read: ${e.message}. Reload to try again.`, { tone: 'danger' }) })
       await resumeCreate()
       await resumeMove()
       await resumeSetup()
@@ -135,7 +136,7 @@
 <div class="studio-app" onclickcapture={rememberActivation}>
   <Experience />
   {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You’re offline — generation paused; everything else works</div>{/if}
-  {#if ui.toast}<div class="toast" role="status">{ui.toast}</div>{/if}
+  {#if !ui.sheet}<Toast />{/if}
 
   {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><Lazy load={parts.notes} sheet={false} /></div></Sheet>{/if}
   {#if ui.sheet === 'connect'}<Lazy load={parts.connect} />{/if}
