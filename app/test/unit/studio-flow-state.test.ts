@@ -857,6 +857,58 @@ test('unresolved errors reject lower-priority messages without changing their co
   } finally { s.dismissToast(); vi.useRealTimers() }
 })
 
+test('toast activation runs its optional action before dismissal, while close only dismisses', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  s.toast('Preview', { duration: 0 })
+  await s.activateToast()
+  expect(s.ui.toast).toBe('')
+  const action = vi.fn(() => expect(s.ui.toast).toBe('Open Activity'))
+  s.toast('Open Activity', { action, duration: 0 })
+  await s.activateToast()
+  expect(action).toHaveBeenCalledOnce()
+  expect(s.ui.toast).toBe('')
+  expect(s.ui.toastAction).toBeNull()
+  s.toast('Close without acting', { action, duration: 0 })
+  s.dismissToast()
+  expect(action).toHaveBeenCalledOnce()
+  s.toast('No stale action', { duration: 0 })
+  await s.activateToast()
+  expect(action).toHaveBeenCalledOnce()
+})
+
+test.each([false, true])('toast activation dismisses and surfaces an action failure (async: %s)', async asynchronous => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  const error = new Error('Primary action failed')
+  s.toast('Try action', { duration: 0, action: () => { if (asynchronous) return Promise.reject(error); throw error } })
+  await expect(s.activateToast()).rejects.toBe(error)
+  expect(s.ui.toast).toBe('')
+  expect(s.ui.toastAction).toBeNull()
+})
+
+test('async toast activation runs once, pauses expiry and preserves newer notifications', async () => {
+  const s = await import('../../src/studio/state.svelte.ts')
+  vi.useFakeTimers()
+  try {
+    const work = pending<void>(), action = vi.fn(() => work.promise)
+    s.toast('Working', { action })
+    const activating = s.activateToast()
+    await s.activateToast()
+    s.pauseToast('pointer'); s.resumeToast('pointer')
+    vi.advanceTimersByTime(60_000)
+    expect(s.ui.toast).toBe('Working')
+    expect(action).toHaveBeenCalledOnce()
+    s.dismissToast()
+    s.toast('New message')
+    work.resolve(); await activating
+    expect(s.ui.toast).toBe('New message')
+    vi.advanceTimersByTime(4000)
+    expect(s.ui.toast).toBe('')
+    s.toast('Create a confirmation', { action: () => { s.toast('Action completed') } })
+    await s.activateToast()
+    expect(s.ui.toast).toBe('Action completed')
+  } finally { s.dismissToast(); vi.useRealTimers() }
+})
+
 test('notification timers pause for pointer and focus, and dismissal cannot pause the next message', async () => {
   const s = await import('../../src/studio/state.svelte.ts')
   vi.useFakeTimers()
