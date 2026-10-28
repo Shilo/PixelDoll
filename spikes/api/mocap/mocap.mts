@@ -49,6 +49,20 @@ const toHeadLocal = (w: V3): V3 => { // inverse of the (orthonormal) rest head r
 };
 const FACE_LOCAL = Object.fromEntries(Object.entries(FACE).map(([k, [l, u, f]]) => [k, toHeadLocal(add(add(mul(RIGHT, -l), mul(UP, u)), mul(FWD, f)))])) as Record<string, V3>;
 
+/** Source sampling only, independent of either historical retargeter. Canonical axes: left/up/forward. */
+export function sourcePose(at: [string,number] | null): Record<string,V3> {
+  const W=at?worldMatrices(g,animByName(g,at[0]),at[1]):REST;
+  const p:Record<string,V3>={};
+  for(const[label,bone]of Object.entries(BONE))p[label]=pos(W,bone!);
+  const hc=[xformDir(W[nodeId('Head')],[1,0,0]),xformDir(W[nodeId('Head')],[0,1,0]),xformDir(W[nodeId('Head')],[0,0,1])].map(norm),hp=pos(W,'Head');
+  for(const[label,v]of Object.entries(FACE_LOCAL))p[label]=add(hp,add(add(mul(hc[0],v[0]),mul(hc[1],v[1])),mul(hc[2],v[2])));
+  if(!at)for(const side of ['RIGHT','LEFT']){
+    const shoulder=p[`${side} SHOULDER`],upper=len(sub(p[`${side} ELBOW`],shoulder)),lower=len(sub(p[`${side} ARM`],p[`${side} ELBOW`]));
+    p[`${side} ELBOW`]=sub(shoulder,mul(UP,upper));p[`${side} ARM`]=sub(shoulder,mul(UP,upper+lower));
+  }
+  return Object.fromEntries(Object.entries(p).map(([label,v])=>[label,[-dot(v,RIGHT),dot(v,UP),dot(v,FWD)] as V3]));
+}
+
 // ---------- camera ----------
 // Orthographic, camera on horizontal direction H from the character, raised by `elev`. Screen x = p.SX, y down = -p.CU,
 // depth (toward camera) = p.V. east: camera on the character's right, yawed toward the front by the measured turn.
@@ -67,10 +81,11 @@ const CELL = body.rig.cell.w;
 const restPx = (dir: string) => Object.fromEntries(body.rig.rest[dir].keypoints.map((k: Kp) => [k.label, { x: k.x * CELL, y: k.y * CELL }])) as Record<Label, { x: number; y: number }>;
 
 /** Low top-down from the body's stored PixelLab walk: east near-side joints drop by sin(e)*width*cos(yaw); east yaw from how far the far shoulder/hip leads at rest. */
-export function calibrate() {
-  const px = (kps: Kp[]) => Object.fromEntries(kps.map((k) => [k.label, [k.x * CELL, k.y * CELL]]));
-  const s = px(body.rig.rest.south.keypoints), e = px(body.rig.rest.east.keypoints);
-  const walk = body.rig.animations.find((a: any) => a.id === 'walk');
+export function calibrate(sourceBody=body) {
+  const cell=sourceBody.rig.cell.w;
+  const px = (kps: Kp[]) => Object.fromEntries(kps.map((k) => [k.label, [k.x * cell, k.y * cell]]));
+  const s = px(sourceBody.rig.rest.south.keypoints), e = px(sourceBody.rig.rest.east.keypoints);
+  const walk = sourceBody.rig.animations.find((a: any) => a.id === 'walk');
   const E = walk.sources.east.keypoints.map(px), S = walk.sources.south.keypoints.map(px);
   const width = (p: string) => s['LEFT ' + p][0] - s['RIGHT ' + p][0];
   const yaws = ['SHOULDER', 'HIP'].map((p) => Math.asin((e['LEFT ' + p][0] - e['RIGHT ' + p][0]) / width(p)));

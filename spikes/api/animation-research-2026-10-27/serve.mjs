@@ -2,7 +2,8 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-const root=path.resolve(import.meta.dirname,'../out/animation-research-2026-10-27');
+const root=process.argv[2]?path.resolve(process.argv[2]):path.resolve(import.meta.dirname,'../out/animation-research-2026-10-27');
+const port=Number(process.argv[3]??5269);
 http.createServer((req,res)=>{
   if(req.method!=='GET'){res.writeHead(405);res.end();return;}
   let file;
@@ -13,4 +14,4 @@ http.createServer((req,res)=>{
   res.setHeader('Content-Type',({'html':'text/html; charset=utf-8','png':'image/png','json':'application/json'})[file.split('.').at(-1)]??'application/octet-stream');
   res.setHeader('Cache-Control','no-store');
   fs.createReadStream(file).pipe(res);
-}).listen(5269,'127.0.0.1',()=>console.log('Evidence gallery: http://127.0.0.1:5269/'));
+}).listen(port,'127.0.0.1',()=>console.log(`Evidence gallery: http://127.0.0.1:${port}/`));
