@@ -3,13 +3,14 @@ import { LABELS, hasAll } from './poses.ts';
 import type { Keypoint, DirectionName } from './rig.ts';
 
 export type Vec3 = [number, number, number];
+export const MOTION_REVISION='ground-support-v2' as const;
 export type Joint = typeof LABELS[number];
 export type Pose3 = Record<string, Vec3>;
 export type Foot = 'RIGHT LEG' | 'LEFT LEG';
 export interface MotionSample {
   time: number;
   points: Pose3;
-  contacts: Partial<Record<Foot, { weight: number; target: Vec3 }>>;
+  contacts: Partial<Record<Foot, { weight: number }>>;
 }
 export interface MotionClip {
   id: string; name: string; source: string; duration: number; loop: boolean; nominalSpeed: number;
@@ -50,6 +51,7 @@ export function swing3(v: Vec3, from: Vec3, to: Vec3, gain=1): Vec3 {
 export function motionCamera(direction: DirectionName, elevation: number, azimuth?: number): MotionCamera {
   const bearings: Record<DirectionName,number>={south:0,'south-east':45,east:90,'north-east':135,north:180,'north-west':225,west:270,'south-west':315};
   if(!Number.isFinite(elevation)||elevation<0||elevation>80)throw new Error('Camera elevation must be between 0 and 80 degrees.');
+  if(azimuth!==undefined&&!Number.isFinite(azimuth))throw new Error('Camera bearing must be a finite angle.');
   const a=(azimuth??bearings[direction])*Math.PI/180,e=elevation*Math.PI/180;
   return {right:[Math.cos(a),0,Math.sin(a)],up:[Math.sin(a)*Math.sin(e),Math.cos(e),-Math.cos(a)*Math.sin(e)],toward:[-Math.sin(a)*Math.cos(e),Math.sin(e),Math.cos(a)*Math.cos(e)]};
 }
@@ -139,10 +141,11 @@ export function retargetMotion(clip: MotionClip, calibration: MotionCalibration,
     for(const foot of ['RIGHT LEG','LEFT LEG'] as const){
       const contact=sample.contacts[foot];if(!contact||!options.gain||!options.contact)continue;
       if(!Number.isFinite(contact.weight)||contact.weight<0||contact.weight>1)throw new Error('Contact weights must be 0-1.');
+      if(!contact.weight)continue;
       const side=foot.startsWith('RIGHT')?'RIGHT':'LEFT',hip=`${side} HIP`,knee=`${side} KNEE`;
-      const posedTarget=faceForward({...completePose(sample.points),CONTACT:contact.target},sourceReference,options.facing).CONTACT;
-      const d=inPlane(sub3(posedTarget,source[foot]));
-      const target=add3(targetRest[foot],mul3([d[0]*options.travel,d[1],d[2]*options.travel],scale*options.gain*weights.legs));
+      // Ground support must not pull a foot toward the source actor's foreign stride or proportions.
+      // Keep the target FK path in X/Z; confidence blends only toward its calibrated ankle-ground height.
+      const target:Vec3=[q[foot][0],targetRest[foot][1],q[foot][2]];
       const blended=mix3(q[foot],target,contact.weight*options.contact);
       footTargets[foot]=blended;
       const reach=length3(sub3(q[knee],q[hip]))+length3(sub3(q[foot],q[knee]))-0.001;
@@ -176,7 +179,7 @@ export function sampleMotion(clip:MotionClip,times:number[]):MotionClip{
     const u=b.time===a.time?0:(time-a.time)/(b.time-a.time);
     const points:Pose3=Object.fromEntries(Object.keys(a.points).map(k=>[k,mix3(a.points[k],b.points[k],u)]));
     const contacts:MotionSample['contacts']={};
-    for(const foot of ['RIGHT LEG','LEFT LEG'] as const){const ca=a.contacts[foot],cb=b.contacts[foot];if(ca&&cb)contacts[foot]={weight:ca.weight+(cb.weight-ca.weight)*u,target:mix3(ca.target,cb.target,u)};}
+    for(const foot of ['RIGHT LEG','LEFT LEG'] as const){const ca=a.contacts[foot],cb=b.contacts[foot];if(ca&&cb)contacts[foot]={weight:ca.weight+(cb.weight-ca.weight)*u};}
     return {time,points,contacts};
   });return {...clip,samples};
 }

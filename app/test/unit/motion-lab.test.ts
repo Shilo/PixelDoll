@@ -26,6 +26,8 @@ test('padding copies every native pixel without resampling and preserves transpa
 test('invalid imports and unreachable edits fail before a paid request can be constructed',()=>{
   const d=newDocument(library);expect(()=>validateDocument({...d,durations:[100]})).toThrow('invalid motion document');
   expect(()=>validateDocument({...d,times:[0.3,0.2,0.4]})).toThrow();expect(()=>editPose(d,0,'RIGHT ARM',3,3,128)).toThrow('limb reach');
+  const broken=structuredClone(d);broken.fixture.references.south!.png='';expect(()=>renderPoses(broken)).toThrow('artwork');
+  for(const fixture of library.fixtures){expect(Object.keys(fixture.references)).toHaveLength(4);expect(()=>newDocument(library,fixture,library.clips[0],'north-east')).toThrow('stored artwork');}
 });
 test('view-specific fall and restrained strike preserve calibration and bone lengths',()=>{
   for(const id of ['attack','death']){
@@ -35,4 +37,12 @@ test('view-specific fall and restrained strike preserve calibration and bone len
   }
   const d=newDocument(library),fit=buildDocument(d),k=fit.frames[0].keypoints.find(k=>k.label==='RIGHT HIP')!;
   expect(()=>validateDocument(editPose(d,0,k.label,k.x+0.01,k.y,k.depth))).not.toThrow();
+});
+test('non-looping preset playback follows source intervals and the fall samples its fast phase',()=>{
+  for(const clip of library.clips.filter(c=>!c.loop)){
+    const d=newDocument(library,library.fixtures[0],clip);
+    for(let i=0;i<d.times.length-1;i++)expect(Math.abs(d.durations[i]-(d.times[i+1]-d.times[i])*1000)).toBeLessThan(1);
+    expect(d.durations.at(-1)).toBeGreaterThanOrEqual(100);
+    if(clip.id==='death'){expect(d.times).toHaveLength(13);expect(d.times).toContain(1);}
+  }
 });

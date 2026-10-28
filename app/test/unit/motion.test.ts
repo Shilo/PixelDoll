@@ -19,6 +19,11 @@ test('the former lowest-ankle threshold introduces no whole-body jump',()=>{
   const jumps=fit.frames[0].keypoints.map((k,i)=>Math.hypot(k.x-fit.frames[1].keypoints[i].x,k.y-fit.frames[1].keypoints[i].y)*80);
   expect(Math.max(...jumps)).toBeLessThan(0.05);
 });
+test('ground support cannot import the source actor horizontal stride into a target foot',()=>{
+  const run=library.clips.find(c=>c.id==='run')!,clip=sampleMotion(run,[0,run.samples[1].time]),cal=calibration('east',2);
+  const supported=retargetMotion(clip,cal),free=retargetMotion(clip,cal,{...DEFAULT_MOTION_OPTIONS,contact:0});
+  for(let i=0;i<2;i++)for(const foot of ['LEFT LEG','RIGHT LEG'])for(const axis of [0,2])expect(supported.frames[i].points[foot][axis]).toBeCloseTo(free.frames[i].points[foot][axis],3);
+});
 test('3D segment lengths remain fixed through contact IK for every baked move and proportion',()=>{
   for(let fixture=0;fixture<library.fixtures.length;fixture++)for(const clip of library.clips){
     const fit=retargetMotion(clip,calibration('south',fixture));

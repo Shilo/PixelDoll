@@ -19,6 +19,8 @@ test('offline Motion Lab edits and roundtrips motions without requesting generat
   await field.fill(String(Number(previous)+0.005));await page.getByRole('button',{name:'Apply joint edit',exact:true}).click();
   await page.getByRole('button',{name:'Undo',exact:true}).click();await expect(field).toHaveValue(previous);
   await page.getByRole('button',{name:'Redo',exact:true}).click();await expect(field).not.toHaveValue(previous);
+  const calibrated=await field.inputValue();await page.getByRole('combobox',{name:'Preset',exact:true}).selectOption('walk');await expect(field).toHaveValue(calibrated);
+  await page.getByRole('combobox',{name:'Preset',exact:true}).selectOption('idle');await expect(field).toHaveValue(calibrated);
   const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'Save motion document'}).click();const file=await(await downloading).path();
   await page.getByRole('combobox',{name:'Body',exact:true}).selectOption('chibi');
   await page.locator('input[type=file]').setInputFiles(file!);await expect(page.getByRole('combobox',{name:'Body',exact:true})).toHaveValue('c27man');
@@ -27,23 +29,50 @@ test('offline Motion Lab edits and roundtrips motions without requesting generat
 });
 
 test('Motion Lab preserves candidate review, buffer exclusion and authored hold in credential-free exports',async({page})=>{
+  await page.clock.install();
   const paid:string[]=[];await page.addInitScript(()=>localStorage.setItem('pixeldoll.agentKey','off'));await page.route('https://*.pixellab.ai/**',route=>{paid.push(route.request().method());return route.abort()});
   await page.goto('/motion-lab.html');await expect(page.getByRole('status')).toContainText('Offline lab ready');
   await page.evaluate(async()=>{
     const dbPath='/src/lib/store/db.ts',modelPath='/src/ui/motion-lab/model.ts',db=await import(dbPath),model=await import(modelPath),library=await(await fetch('/fixtures/motion-lab/library.json')).json();
     const document=model.newDocument(library,library.fixtures[0],library.clips.find((c:{id:string})=>c.id==='death')),png=document.fixture.references.south.png;
-    const bytes=Uint8Array.from(atob(png),(c)=>c.charCodeAt(0)),sha=await db.putBlob(bytes),now=Date.now();
-    await db.put('jobs','motion-review-fixture',{id:'motion-review-fixture',label:'Review fixture',tag:'motion-lab-2026-10-28',method:'POST',endpoint:'/animate-with-skeleton-v3',params:{},inputs:[sha],requestHash:'fixture',state:'done',attempts:1,nextAt:0,createdAt:now,finishedAt:now,jobs:[{id:'fixture-remote',status:'completed',done:true,results:Array.from({length:10},(_,i)=>({label:String(i),sha}))}],gens:3,usd:0});
+    document.times=[0,1.1,2.2];document.durations=[1100,1100,400];
+    const pngPath='/src/lib/image/pngraw.ts',codec=await import(pngPath),native=await codec.decodePngBytes(Uint8Array.from(atob(png),(c)=>c.charCodeAt(0)));
+    const bytes=await codec.encodePngBytes(model.paddedReference(native,document.padding)),sha=await db.putBlob(bytes),now=Date.now();
+    const rendered=model.renderPoses(document),params={first_frame:{$blob:sha},first_frame_keypoints:rendered.result.rest,keypoints:rendered.poses};
+    await db.put('jobs','motion-review-fixture',{id:'motion-review-fixture',label:'Review fixture',tag:'motion-lab-2026-10-28',method:'POST',endpoint:'/animate-with-skeleton-v3',params,inputs:[sha],requestHash:'fixture',state:'done',attempts:1,nextAt:0,createdAt:now,finishedAt:now,jobs:[{id:'fixture-remote',status:'completed',done:true,results:Array.from({length:4},(_,i)=>({label:String(i),sha}))}],gens:3,usd:0});
     localStorage.setItem('pixeldoll.motionLab.2026-10-28',JSON.stringify({version:1,reservations:[{id:'fixture',jobId:'motion-review-fixture',estimate:3,label:'Review fixture',document,seed:7,createdAt:new Date(now).toISOString()}]}));
   });
   await page.reload();const candidate=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Review fixture',exact:true})});
   await expect(candidate.getByRole('button',{name:'Export reviewed clip',exact:true})).toBeDisabled();
-  await candidate.getByRole('button',{name:'Inspect raw frame 10',exact:true}).click();await expect(candidate.getByRole('checkbox',{name:'Use selected frame'})).not.toBeChecked();
+  await candidate.getByRole('button',{name:'Inspect raw frame 4',exact:true}).click();await expect(candidate.getByRole('checkbox',{name:'Use selected frame'})).not.toBeChecked();
+  await candidate.getByRole('button',{name:'Inspect raw frame 3',exact:true}).click();await candidate.getByRole('spinbutton',{name:'Selected frame duration, ms',exact:true}).fill('450');
   await candidate.getByRole('combobox',{name:'Review status',exact:true}).selectOption('accepted');await candidate.getByRole('textbox').fill('Fixture for export persistence only; no visual qualification.');
+  await page.evaluate(async()=>{const path='/src/ui/motion-lab/run.ts';await(await import(path)).connectLab()});
+  await expect(candidate.getByRole('textbox')).toHaveValue('Fixture for export persistence only; no visual qualification.');
   await candidate.getByRole('button',{name:'Save review',exact:true}).click();await expect(candidate.getByRole('status')).toHaveText('Review saved locally.');await page.reload();
   await expect(candidate.getByRole('textbox')).toHaveValue('Fixture for export persistence only; no visual qualification.');
   const downloading=page.waitForEvent('download');await candidate.getByRole('button',{name:'Export reviewed clip',exact:true}).click();const output=JSON.parse(await readFile((await(await downloading).path())!,'utf8'));
-  expect(output.frames).toHaveLength(9);expect(output.frames.at(-1).sourceIndex).toBe(8);expect(output.frames.at(-1).duration).toBe(output.frames[0].duration+600);expect(output.kind).toBe('pixeldoll-reviewed-motion');expect(paid).toEqual([]);
+  expect(output.frames).toHaveLength(3);expect(output.frames.at(-1).sourceIndex).toBe(2);expect(output.frames.at(-1).duration).toBe(1050);expect(output.frames[0].duration).toBe(1100);expect(output.frames[0].keypoints).toHaveLength(18);expect(output.reference.keypoints).toHaveLength(18);expect(output.loop).toBe(false);expect(output.kind).toBe('pixeldoll-reviewed-motion');expect(output.cell).toEqual({w:128,h:128});expect(output.pivot.x).toBe(output.fixture.pivot.x+24);
+  await candidate.getByRole('button',{name:'Inspect raw frame 1',exact:true}).click();await candidate.getByRole('button',{name:'Play candidate',exact:true}).click();await page.clock.runFor(4000);await expect(candidate.getByRole('button',{name:'Play candidate',exact:true})).toBeVisible();await expect(candidate.getByText('Raw frame 3/4',{exact:true})).toBeVisible();expect(paid).toEqual([]);
+});
+
+test('Motion Lab blocks mirrors, unresolved reservations and an exhausted budget before paid transport',async({page})=>{
+  const paid:string[]=[];await page.addInitScript(()=>localStorage.setItem('pixeldoll.agentKey','off'));
+  await page.route('https://*.pixellab.ai/**',route=>{if(route.request().method()==='POST')paid.push(route.request().url());return route.abort()});
+  await page.goto('/motion-lab.html');await expect(page.getByRole('status')).toContainText('Offline lab ready');
+  const result=await page.evaluate(async()=>{
+    const runPath='/src/ui/motion-lab/run.ts',modelPath='/src/ui/motion-lab/model.ts',run=await import(runPath),model=await import(modelPath),library=await(await fetch('/fixtures/motion-lab/library.json')).json();
+    const messages:string[]=[];try{await run.generateCandidate(model.newDocument(library,library.fixtures[0],library.clips[0],'west'),7)}catch(e){messages.push((e as Error).message)}
+    const doc=model.newDocument(library),original=run.labQueue.enqueue;let calls=0;run.labQueue.setKey('synthetic-test-value');
+    run.labQueue.enqueue=async()=>{calls++;throw new Error('Simulated enqueue preparation failure')};
+    try{await run.generateCandidate(doc,7)}catch(e){messages.push((e as Error).message)}finally{run.labQueue.enqueue=original}
+    try{await run.generateCandidate(doc,7)}catch(e){messages.push((e as Error).message)}
+    const ledger=run.readLedger(),unresolved=ledger.reservations.length;ledger.reservations[0].estimate=run.LAB_CAP;localStorage.setItem('pixeldoll.motionLab.2026-10-28',JSON.stringify(ledger));
+    try{await run.generateCandidate(doc,8)}catch(e){messages.push((e as Error).message)}
+    return{messages,calls,unresolved,finalReservations:run.readLedger().reservations.length};
+  });
+  expect(result.messages[0]).toContain('mirrored frozen');expect(result.messages[1]).toBe('Simulated enqueue preparation failure');expect(result.messages[2]).toContain('unresolved reservation');expect(result.messages[3]).toContain('allowance is exhausted');
+  expect(result.calls).toBe(1);expect(result.unresolved).toBe(1);expect(result.finalReservations).toBe(1);expect(paid).toEqual([]);
 });
 
 test('browser PNG and IndexedDB self-tests preserve every registered check', async ({ page }) => {

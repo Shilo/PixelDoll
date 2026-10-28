@@ -5,7 +5,8 @@ import { encodePngBytes, decodePngBytes } from '../../../app/src/lib/image/pngra
 import { bodyComponents, paletteFit, borderPx } from '../../../app/src/lib/rig/clips.ts';
 import { jobImages } from '../../../app/src/lib/pixellab/routes.ts';
 import { trackPatch } from '../../../app/src/lib/rig/skeleton.ts';
-type Img = { w:number; h:number; data:Uint8ClampedArray };
+import type { Img } from '../../../app/src/lib/image/png.ts';
+import { sheet } from './preview.mts';
 const out=path.resolve(import.meta.dirname,'../out/animation-research-2026-10-27');
 const file=process.argv[2]??path.join(out,'evidence.json');
 const evidence=JSON.parse(fs.readFileSync(file,'utf8'));
@@ -14,24 +15,6 @@ const decode=async(b64:string)=>decodePngBytes(new Uint8Array(Buffer.from(b64.re
 const save=async(name:string,im:Img)=>fs.writeFileSync(path.join(out,name),await encodePngBytes(im));
 const area=(im:Img)=>{let n=0;for(let i=3;i<im.data.length;i+=4)if(im.data[i])n++;return n;};
 const changed=(a:Img,b:Img)=>{let n=0;for(let i=0;i<a.data.length;i+=4)if((a.data[i+3]||b.data[i+3])&&(a.data[i]!==b.data[i]||a.data[i+1]!==b.data[i+1]||a.data[i+2]!==b.data[i+2]||a.data[i+3]!==b.data[i+3]))n++;return n;};
-const edges=[['NOSE','NECK'],['NECK','RIGHT SHOULDER'],['RIGHT SHOULDER','RIGHT ELBOW'],['RIGHT ELBOW','RIGHT ARM'],['NECK','LEFT SHOULDER'],['LEFT SHOULDER','LEFT ELBOW'],['LEFT ELBOW','LEFT ARM'],['NECK','RIGHT HIP'],['RIGHT HIP','RIGHT KNEE'],['RIGHT KNEE','RIGHT LEG'],['NECK','LEFT HIP'],['LEFT HIP','LEFT KNEE'],['LEFT KNEE','LEFT LEG']];
-function sheet(images:Img[],poses?:any[][]):Img{
-  const scale=3,w=images[0].w*scale,h=images[0].h*scale,width=w*images.length;
-  const data=new Uint8ClampedArray(width*h*4);
-  for(const [i,im]of images.entries())for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-    const a=(Math.floor(y/scale)*im.w+Math.floor(x/scale))*4,b=(y*width+i*w+x)*4,alpha=im.data[a+3]/255;
-    const bg=((Math.floor(x/12)+Math.floor(y/12))%2)*5+34;
-    for(let k=0;k<3;k++)data[b+k]=Math.round(im.data[a+k]*alpha+bg*(1-alpha));data[b+3]=255;
-  }
-  const dot=(x:number,y:number,c:number[])=>{x=Math.round(x);y=Math.round(y);if(x<0||y<0||x>=width||y>=h)return;const p=(y*width+x)*4;data.set([...c,255],p);};
-  poses?.forEach((pose,i)=>{
-    const kp=Object.fromEntries(pose.map(k=>[k.label,k]));
-    for(const [a,b]of edges){const p=kp[a],q=kp[b],n=Math.ceil(Math.hypot(p.x-q.x,p.y-q.y)*Math.max(w,h));
-      const c=(a+b).includes('RIGHT')?[255,80,80]:(a+b).includes('LEFT')?[60,180,255]:[255,240,100];
-      for(let t=0;t<=n;t++)dot(i*w+(p.x+(q.x-p.x)*t/Math.max(1,n))*w,(p.y+(q.y-p.y)*t/Math.max(1,n))*h,c);
-    }
-  });return{w:width,h,data};
-}
 const reports:any[]=[];
 for(const [id,row]of Object.entries<any>(evidence.cases)){
   if(row.result?.status!=='completed')continue;
