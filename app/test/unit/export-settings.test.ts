@@ -123,7 +123,7 @@ test('canonical rig names reject case-only duplicates and native imports do not 
 
 test('invalid saved preferences and failed writes surface errors instead of silently resetting choices', async () => {
   const database = storedSettings()
-  for (const invalid of [null, [], 'true', {}, { engine: 'missing', dressedCharacterSheets: true, playOnce: [] }, { engine: 'godot', dressedCharacterSheets: 'false', playOnce: [] }, { engine: 'godot', dressedCharacterSheets: true, playOnce: ['Jump'] }, { engine: 'godot', dressedCharacterSheets: true, playOnce: ['jump', 'jump'] }, { engine: 'godot', dressedCharacterSheets: true, playOnce: ['jump/../walk'] }]) {
+  for (const invalid of [null, [], 'true', {}, { engine: 'missing', dressedCharacterSheets: true, playOnce: [] }, { engine: 'godot', dressedCharacterSheets: 'false', playOnce: [] }, { engine: 'godot', dressedCharacterSheets: true, playOnce: ['Jump'] }, { engine: 'godot', dressedCharacterSheets: true, playOnce: ['jump', 'jump'] }, { engine: 'godot', dressedCharacterSheets: true, playOnce: ['jump/../walk'] }, ...[Array(1), Array(2), [, 'walk']].map(playOnce => ({ engine: 'godot', dressedCharacterSheets: true, playOnce }))]) {
     database.records.set(EXPORT_SETTINGS_KEY, invalid)
     await expect(readExportSettings()).rejects.toThrow('Saved export settings')
     await expect(saveExportSetting({ engine: 'unity' })).rejects.toThrow('Saved export settings')
@@ -142,6 +142,12 @@ test('explicit invalid-preference reset is scoped, atomic, failure-visible and p
   database.records.set('rig-character', character)
   await expect(readExportSettings()).rejects.toBeInstanceOf(InvalidExportSettings)
   expect(await resetInvalidExportSettings()).toEqual(defaultExportSettings())
+  for (const playOnce of [Array(1), Array(2), [, 'walk']]) {
+    database.records.set(EXPORT_SETTINGS_KEY, { engine: 'godot', dressedCharacterSheets: true, playOnce })
+    await expect(readExportSettings()).rejects.toBeInstanceOf(InvalidExportSettings)
+    expect(await resetInvalidExportSettings()).toEqual(defaultExportSettings())
+    expect(await readExportSettings()).toEqual(defaultExportSettings())
+  }
   expect(database.records.get('rig-character')).toBe(character)
   const repaired = { engine: 'unity', dressedCharacterSheets: false, playOnce: ['jump'] }
   database.records.set(EXPORT_SETTINGS_KEY, repaired)
@@ -163,6 +169,8 @@ test('animation catalog isolates damaged unrelated characters but validates curr
   expect(catalog.names).toEqual(['death', 'jump', 'remembered', 'walk'])
   expect(catalog.warnings).toHaveLength(1)
   expect(catalog.warnings[0]).toContain('Damaged character')
+  damaged.rig.animations = Array(1)
+  expect(exportAnimationCatalog(current, [damaged, other], settings)).toEqual(catalog)
   expect(() => exportAnimationCatalog(damaged, [current], settings)).toThrow('Damaged character')
   expect(() => exportAnimationCatalog(current, [damaged], { ...settings, engine: 'removed' as Engine })).toThrow(InvalidExportSettings)
 })

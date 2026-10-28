@@ -50,7 +50,7 @@ function checkedSettings(value: unknown): ExportSettings {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new InvalidExportSettings('Saved export settings are invalid.');
   const stored = value as Partial<ExportSettings>;
   if (!EXPORT_ENGINES.some(engine => engine === stored.engine) || typeof stored.dressedCharacterSheets !== 'boolean' || !Array.isArray(stored.playOnce)
-    || stored.playOnce.some(name => typeof name !== 'string' || !validAnimationId(name)) || new Set(stored.playOnce).size !== stored.playOnce.length) throw new InvalidExportSettings('Saved export settings must contain a supported format, a dressed sheets choice and unique lowercase animation names.');
+    || [...stored.playOnce].some(name => typeof name !== 'string' || !validAnimationId(name)) || new Set(stored.playOnce).size !== stored.playOnce.length) throw new InvalidExportSettings('Saved export settings must contain a supported format, a dressed sheets choice and unique lowercase animation names.');
   return { engine: stored.engine!, dressedCharacterSheets: stored.dressedCharacterSheets, playOnce: [...stored.playOnce].sort() };
 }
 
@@ -105,7 +105,7 @@ export function applyExportSettings(manifest: Manifest, settings: ExportSettings
 export function animationNames(manifests: readonly Manifest[], settings: ExportSettings): string[] {
   const names = new Set(checkedSettings(settings).playOnce);
   for (const manifest of manifests) {
-    if (!manifest?.rig || !Array.isArray(manifest.rig.animations) || manifest.rig.animations.some(animation => !animation || typeof animation.id !== 'string' || !validAnimationId(animation.id.trim().toLowerCase()))) throw new InvalidAnimationNames(`Character "${manifest?.name ?? 'Unknown'}" has invalid animation names in storage.`);
+    if (!manifest?.rig || !Array.isArray(manifest.rig.animations) || [...manifest.rig.animations].some(animation => !animation || typeof animation.id !== 'string' || !validAnimationId(animation.id.trim().toLowerCase()))) throw new InvalidAnimationNames(`Character "${manifest?.name ?? 'Unknown'}" has invalid animation names in storage.`);
     for (const animation of manifest.rig.animations) names.add(animationName(animation.id));
   }
   return [...names].sort();

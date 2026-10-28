@@ -567,17 +567,17 @@ test('Export settings show storage failures without changing the choice or trapp
   await expect(dialog).toHaveCount(0)
 })
 
-test('invalid Export preferences can be reset without deleting characters, and a failed reset remains recoverable', async ({ page }, info) => {
+for (const corruption of ['unsupported-format', 'sparse-array'] as const) test(`invalid Export preferences can be reset without deleting characters, and a failed reset remains recoverable (${corruption})`, async ({ page }, info) => {
   await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   await page.getByRole('button', { name: 'Close export' }).click()
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
-  await page.evaluate(async key => {
+  await page.evaluate(async ({ key, corruption }) => {
     const path = '/src/lib/store/db.ts', db = await import(path)
-    await db.put('projects', key, { engine: 'unsupported', dressedCharacterSheets: true, playOnce: [] })
-  }, EXPORT_SETTINGS_KEY)
+    await db.put('projects', key, corruption === 'sparse-array' ? { engine: 'godot', dressedCharacterSheets: true, playOnce: Array(1) } : { engine: 'unsupported', dressedCharacterSheets: true, playOnce: [] })
+  }, { key: EXPORT_SETTINGS_KEY, corruption })
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('alert')).toContainText('supported format')
+  await expect(dialog.getByRole('alert')).toContainText('Saved export settings')
   await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled()
   await expect(dialog.locator('.export-summary dd')).toHaveText(['Unavailable', 'Unavailable'])
   const before = await page.evaluate(async () => {
@@ -615,14 +615,14 @@ test('invalid Export preferences can be reset without deleting characters, and a
   expect(errors).toEqual([])
 })
 
-test('an unrelated malformed character warns without blocking settings or the current character ZIP', async ({ page }, info) => {
+for (const corruption of ['null-list', 'sparse-array'] as const) test(`an unrelated malformed character warns without blocking settings or the current character ZIP (${corruption})`, async ({ page }, info) => {
   await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   await page.getByRole('button', { name: 'Close export' }).click()
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
-  await page.evaluate(async () => {
+  await page.evaluate(async corruption => {
     const path = '/src/lib/store/db.ts', db = await import(path)
-    await db.put('projects', 'rig-broken-export-names', { id: 'rig-broken-export-names', manifest: { format: 'pixeldoll/2', name: 'Broken library character', rig: { animations: null } } })
-  })
+    await db.put('projects', 'rig-broken-export-names', { id: 'rig-broken-export-names', manifest: { format: 'pixeldoll/2', name: 'Broken library character', rig: { animations: corruption === 'sparse-array' ? Array(1) : null } } })
+  }, corruption)
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const dialog = page.getByRole('dialog')
   await expect(dialog.locator('.notice.warn')).toContainText('Broken library character')
@@ -638,10 +638,12 @@ test('an unrelated malformed character warns without blocking settings or the cu
   const exported = JSON.parse(new TextDecoder().decode(entries.get('manifest.json')!))
   expect(exported.name).toBe('Export settings test')
   expect(exported.rig.animations.find((move: { id: string }) => move.id === 'walk').loop).toBe(false)
-  expect(await page.evaluate(async () => {
+  const unchanged = await page.evaluate(async () => {
     const path = '/src/lib/store/db.ts', db = await import(path)
-    return (await db.get('projects', 'rig-broken-export-names')).manifest.rig.animations
-  })).toBeNull()
+    const animations = (await db.get('projects', 'rig-broken-export-names')).manifest.rig.animations
+    return animations === null ? null : { length: animations.length, keys: Object.keys(animations) }
+  })
+  expect(unchanged).toEqual(corruption === 'sparse-array' ? { length: 1, keys: [] } : null)
   expect(errors).toEqual([])
 })
 
@@ -742,6 +744,7 @@ test('Export navigation and settings fit phones, landscape and both themes, incl
   for (const theme of ['light', 'dark']) for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }]) {
     await page.evaluate(theme => document.documentElement.dataset.theme = theme, theme)
     await page.setViewportSize(viewport)
+    await expect(dialog).toHaveClass(viewport.width === 320 ? /\bbottom\b/ : /\bside\b/)
     const close = dialog.getByRole('button', { name: 'Close export' }), settings = dialog.getByRole('button', { name: 'Settings', exact: true })
     const closeBefore = await close.boundingBox(), nav = await settings.boundingBox()
     expect(nav!.x + nav!.width).toBeLessThan(closeBefore!.x)
