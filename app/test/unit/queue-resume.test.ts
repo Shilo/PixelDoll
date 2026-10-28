@@ -382,10 +382,13 @@ test('synchronous requests publish their HTTP start while pending and retain the
 test('submission-start notification occurs after HTTP invocation even when a subscriber disconnects', async () => {
   let posts = 0, finished!: (response: { background_job_id: string }) => void, sent!: () => void
   const entered = new Promise<void>((resolve) => { sent = resolve })
-  const q = new Queue({ locks: null, all: async () => [], online: () => true, put: async () => {},
+  const records = new Map<string, JobRec>()
+  const deps: Partial<Deps> = { locks: null, all: async () => [...records.values()].map(r => structuredClone(r)), online: () => true,
+    put: async (id, r) => { records.set(id, structuredClone(r)) },
     api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
       if (path === '/balance') return accountBalance as T; posts++; sent(); return await new Promise<T>((resolve) => { finished = resolve as typeof finished }) },
-  })
+  }
+  const q = new Queue(deps)
   await q.connect(); q.setKey('synthetic-key')
   const un = q.subscribe((s) => { if (s.jobs.some((r) => r.state === 'submitting' && r.submittedAt !== undefined)) { expect(posts).toBe(1); q.disconnect() } })
   const record = await q.enqueue(request)
@@ -396,5 +399,11 @@ test('submission-start notification occurs after HTTP invocation even when a sub
   expect(posts).toBe(1)
   expect(record.state).toBe('running')
   expect(record.jobs[0].id).toBe('already-sent-job')
+  expect(records.get(record.id)?.jobs[0].id).toBe('already-sent-job')
+  const resumed = new Queue(deps)
+  await resumed.load()
+  expect((await resumed.enqueue(request)).id).toBe(record.id)
+  expect(resumed.snapshot().jobs[0]).toMatchObject({ state: 'running', jobs: [{ id: 'already-sent-job' }] })
+  expect(posts).toBe(1)
   un(); q.disconnect()
 })

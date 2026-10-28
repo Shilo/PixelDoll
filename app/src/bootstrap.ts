@@ -7,6 +7,9 @@ import { app, setKey } from './lib/app.svelte.ts'
 
 askPersist()
 const target = document.getElementById('app')!
+// Release before document cleanup, which can lag tab closure. Cached documents keep their existing connection.
+const leave = (event: PageTransitionEvent) => { if (!event.persisted) queue.disconnect() }
+addEventListener('pagehide', leave)
 try {
   // leader tab resumes the ledger; other tabs mirror it (Web Locks). Only a real open error fails here (no IndexedDB,
   // onerror, onblocked in db.ts): a slow open (big ledger, hidden throttled tab) just takes longer.
@@ -17,7 +20,7 @@ try {
   target.querySelector('p:last-child')!.textContent = `Details: ${(e as Error)?.message ?? e}`
   throw e
 }
-import.meta.hot?.dispose(() => queue.disconnect())
+import.meta.hot?.dispose(() => { removeEventListener('pagehide', leave); queue.disconnect() })
 if (import.meta.env.DEV) (window as unknown as { __queue: unknown }).__queue = queue // dev: inspect role/ledger
 
 // AI-agent automation only (`npm run dev:agent`, Vite mode "agent"): connect with the key the agent dev server serves from
