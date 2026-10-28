@@ -35,6 +35,37 @@ async function record(cells: string[], images: Img[], endpoint='/transfer-outfit
   const results=await Promise.all(images.map(async(im,i)=>{const sha=`result-${++serial}`;blobs.set(sha,new Blob([await encodePngBytes(im) as Uint8Array<ArrayBuffer>]));return {label:String(i),sha};}));
   return {call:{cells,seed:99},rec:{id:crypto.randomUUID(),label:'test',method:'POST',endpoint,params:{},inputs:[],requestHash:'a'.repeat(64),state:'done',attempts:1,nextAt:0,createdAt:1,jobs:[{id:'remote',status:'completed',done:true,results}],gens:10,usd:0} as JobRec};
 }
+async function suspiciousImportedFit() {
+  const source = await project(5, true), target = await project(7), design = await createDesign(source, 'helmet');
+  const rest = structuredClone(points);
+  const set = (label: string, x: number, y: number) => Object.assign(rest.find(p => p.label === label)!, { x, y });
+  for (const [side, sign] of [['LEFT', -1], ['RIGHT', 1]] as const) {
+    set(`${side} SHOULDER`, 0.5 + sign * 0.15, 0.3);
+    set(`${side} HIP`, 0.5 + sign * 0.1, 0.6);
+    set(`${side} ELBOW`, 0.5 + sign * 0.2, 0.45);
+    set(`${side} EAR`, 0.5 + sign * 0.1, 0.2);
+  }
+  const bad = rest.map(p => /SHOULDER|HIP/.test(p.label) ? { ...p, x: 1 - p.x } : p.label === 'LEFT EAR' ? { ...p, x: 0.6 } : { ...p });
+  const rig = target.manifest.rig, reference = rig.rest!.south!;
+  reference.keypoints = rest;
+  rig.animations.push({ id: 'walking', cells: 3, loop: true, frames: Array.from({ length: 3 }, (_, cell) => ({ cell, ms: 100 })), sources: { south: { route: 'import', reference: reference.image, keypoints: [rest, bad, rest], provenance: [] } } });
+  target.manifest.items[0].layers[0].cells!.walking = { south: Array(3).fill(reference.image) };
+  const approved = Object.fromEntries(dirs.map(d => [d, target.images.get(rig.rest![d]!.image)!]));
+  return { source, target, design, approved };
+}
+test('shared fitting rejects suspicious imported targets before standing transfer or animation preparation', async () => {
+  const { source, target, design, approved } = await suspiciousImportedFit();
+  expect(qualifiedFit(design, target)).toContain('walking/south frame 2');
+  await expect(restFitRequests(design, source, target, 1)).rejects.toThrow('walking/south frame 2');
+  await expect(poseFitRequests(design, target, approved, 1, ['walking/south/1'])).rejects.toThrow('walking/south frame 2');
+});
+test('a fitting retry may pose clean selected frames without resubmitting suspicious frames in the same clip', async () => {
+  const { target, design, approved } = await suspiciousImportedFit();
+  const selected = ['walking/south/0', 'walking/south/2'];
+  const calls = await poseFitRequests(design, target, approved, 1, selected);
+  expect(calls.flatMap(c => c.cells)).toEqual(selected);
+  expect(calls).toHaveLength(1);
+});
 test('a contained fitted headwear border is a framing observation, not proof of clipping',async()=>{
   const source=await project(5,true),target=await project(7),design=await createDesign(source,'helmet');
   const output=toChroma(target.images.get(target.manifest.rig.rest!.south!.image)!,'green');

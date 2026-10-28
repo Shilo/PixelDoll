@@ -8,10 +8,12 @@ import { encodePngBytes } from '../image/pngraw.ts';
 import { stableStringify } from '../image/hash.ts';
 import { bandOf, buildItem, canPose, extractCell, GATES, g2Fails, hiddenViews, itemQa, itemRoute, paletteDistance, postProcess, slotOf, unrotate, f0Last, type CellOut, type ItemSpec } from '../items/items.ts';
 import { withH4 } from '../items/run.ts';
+import { referenceBodies } from '../items/garment-coverage.ts';
 import { png, type Req } from '../pixellab/routes.ts';
 import type { JobRec } from '../pixellab/queue.ts';
 import { borderPx, paddedPoses, poseBatches } from '../rig/clips.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
+import { assertImportedPoses } from '../rig/pose-review.ts';
 import { HEADROOM_MIN } from '../rig/freeze.ts';
 import { opaqueBox } from '../rig/normalize.ts';
 import { cellHash, cellKey, type DirectionName } from '../rig/rig.ts';
@@ -28,7 +30,7 @@ const size = { width: 64, height: 64 };
 const b64 = async (im: Img) => { let s = ''; for (const n of await encodePngBytes(im)) s += String.fromCharCode(n); return btoa(s); };
 
 /** This is a paid trial, never a guarantee of arbitrary design identity or quality. */
-export function qualifiedFit(design: EquipmentDesign, target: Project): string | null {
+export function qualifiedFit(design: EquipmentDesign, target: Project, selectedCells?: string[]): string | null {
   const source = design.source, rig = target.manifest.rig, item = designItem(design);
   if (item.slot !== 'head') return 'Reference fitting is currently an experimental trial for headwear. Other slots support exact free copies.';
   if(source.materials.filter(m=>m.owner===item.id).length!==1)return 'This experimental fitting trial supports single-material headwear. Multi-material designs can still be copied onto matching frames for free.';
@@ -55,6 +57,8 @@ export function qualifiedFit(design: EquipmentDesign, target: Project): string |
     const rest = rig.rest?.[d], image = rest && target.images.get(rest.image);
     if (!rest || !hasAll(rest.keypoints) || !image || image.w !== 64 || image.h !== 64 || !opaqueBox(image)) return 'The target standing views need complete joints and nonempty 64 × 64 images.';
   }
+  try { assertImportedPoses(rig, { anims: rig.animations.filter(a => clipDirs[a.id].length).map(a => a.id), dirs: directions(target), clipDirs, cells: selectedCells }); }
+  catch (error) { return (error as Error).message; }
   return null;
 }
 export function fitFramingWarnings(target: Project): string[] {
@@ -94,7 +98,7 @@ export async function restFitRequests(design: EquipmentDesign, source: Project, 
   } }, cells: dirs.map(d => `rest/${d}/0`), limit: 10 }];
 }
 export async function poseFitRequests(design: EquipmentDesign, target: Project, rest: Partial<Record<DirectionName, Img>>, seed: number, selectedCells?:string[]): Promise<GeneratedFitCall[]> {
-  const reason = qualifiedFit(design, target); if (reason) throw new Error(reason);
+  const reason = qualifiedFit(design, target, selectedCells); if (reason) throw new Error(reason);
   const rig = target.manifest.rig, spec = specFor(design, target), calls: GeneratedFitCall[] = [], selected=selectionFor(spec,target,selectedCells);
   for (const a of rig.animations.filter(a => spec.anims.includes(a.id))) for (const dir of spec.clipDirs![a.id]) {
     const poses = a.sources?.[dir]?.keypoints, first = rest[dir], reference = rig.rest?.[dir];
@@ -174,7 +178,7 @@ export async function evaluatePoseFit(design: EquipmentDesign, target: Project, 
   }
   if (new Set(cells.map(c=>c.key)).size !== selected.size || cells.length !== selected.size || cells.some(c=>!selected.has(c.key))) throw new Error('Fitted animation coverage is incomplete or duplicated.');
   postProcess(rig,slotOf(spec.slot),cells,keys);
-  const qa = withH4(itemQa(rig,slotOf(spec.slot),spec.key,cells,0,GATES.keyOutsidePosed,0,hiddenViews(kfCells,keys)),slotOf(spec.slot),cells,keys,rig);
+  const qa = withH4(itemQa(rig,slotOf(spec.slot),spec.key,cells,0,GATES.keyOutsidePosed,0,hiddenViews(kfCells,keys)),slotOf(spec.slot),cells,keys,rig,referenceBodies(rig,target.images));
   for(const [clip,summary]of Object.entries(qa.qa.clips??{})) {
     const count=rig.animations.find(a=>a.id===clip.split('/')[0])!.cells;
     if(cells.filter(c=>c.key.startsWith(clip+'/')).length<count){if(summary.status==='pass')summary.status='warn';if(qa.qa.status==='pass')qa.qa.status='warn';qa.warnings.push(`${clip}: only newly fitted cells were checked. Earlier frames retain their existing checks.`);}

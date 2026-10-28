@@ -3,6 +3,7 @@ import { cellImg } from '../compose/compose.ts';
 import { DIRECTIONS, cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from './rig.ts';
 import { HEADROOM_MIN, anchorTracks, type Built } from './freeze.ts';
 import { clipQa } from './clips.ts';
+import { fixedFacingLocomotion, importedPoseIssues } from './pose-review.ts';
 import { opaqueBox } from './normalize.ts';
 import { fromApi, hasAll } from './poses.ts';
 import { flipSkeleton, type Skeleton } from './skeleton.ts';
@@ -91,7 +92,7 @@ export async function attachImportedRig(p: Project, plan: SetupPlan, measured: M
       const reference = rig.rest[d.id]!;
       const isRest = a.cells === 1 && await cellHash(frames[0]!) === reference.image;
       a.sources[d.id] = { route: 'import', reference: reference.image, keypoints: poses, measured: poses, motion: isRest ? 'imported-rest' : 'estimated:frozen-import', provenance: provenance.map((_, i) => start + i) };
-      const qa = clipQa({ anim: a.id, rest: plan.rest[d.id]!, frames: frames as Img[], measured: poses, stray: 0 });
+      const qa = clipQa({ anim: a.id, rest: plan.rest[d.id]!, frames: frames as Img[], measured: poses, stray: 0, ...(fixedFacingLocomotion(a.id) ? { facing: { dir: d.id, rest: reference.keypoints } } : {}) });
       clips[`${a.id}/${d.id}`] = qa;
       warnings.push(...[...qa.fails, ...qa.warnings].map((f) => `${a.id}/${d.id}: ${f}`));
     }
@@ -102,5 +103,6 @@ export async function attachImportedRig(p: Project, plan: SetupPlan, measured: M
   }
   const tracks = anchorTracks(built, byHash);
   rig.anchors = tracks.anchors;
+  warnings.push(...importedPoseIssues(rig));
   return { manifest, images, skeletons, rigQa: { warnings, pivotFrom: built.pivotFrom, clips, tracks: tracks.stats.map(({ points: _, ...t }) => t) } };
 }

@@ -137,6 +137,8 @@ export const HEALTH_LABEL: Record<Health, string> = { clean: 'Clean', look: 'Nee
 
 /** QA gate messages in plain words (D1 §5.5). */
 export function plainReason(s: string): string {
+  if (s.startsWith('G11 ')) return 'Some lower clothing is missing compared with the standing design';
+  if (s.startsWith('G12 ')) return 'Footwear differs from the standing design; inspect the feet';
   if (s.startsWith('G2') || s.startsWith('G3')) return 'Some body pixels were changed by the model';
   if (s.startsWith('G4')) return 'The item is missing in some frames';
   if (s.startsWith('G5')) return 'The item changes size between frames';

@@ -1,4 +1,4 @@
-import { openStudio, reloadStudio, equipmentMode, newItem, selectedItemDetails } from './immersive-helpers.ts'
+import { openStudio, reloadStudio, equipmentMode, equipmentGroup, newItem, selectedItemDetails } from './immersive-helpers.ts'
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { makeImg } from '../../src/lib/image/png.ts'
@@ -24,6 +24,66 @@ test('import can be canceled before choosing a file and reopened', async ({ page
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(page.locator('.project-btn')).toBeFocused()
   }
+})
+
+test('suspicious imported walking joints disable item generation with a visible frame-specific reason', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', route => { requests.push(route.request().method()); return route.abort() })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', posesPath = '/src/lib/rig/poses.ts'
+    const s = await import(statePath), db = await import(dbPath), { LABELS } = await import(posesPath)
+    await s.copyDemo()
+    const rec = await db.get('projects', s.doc.id), rig = rec.manifest.rig
+    const points = LABELS.map((label: string) => {
+      const side = label.startsWith('LEFT') ? -1 : label.startsWith('RIGHT') ? 1 : 0
+      const name = label.replace(/^(LEFT|RIGHT) /, '')
+      const [spread, y] = ({ NOSE: [0, .2], NECK: [0, .35], SHOULDER: [.15, .35], ELBOW: [.2, .5], ARM: [.22, .65], HIP: [.1, .62], KNEE: [.11, .77], LEG: [.12, .93], EYE: [.06, .17], EAR: [.12, .19] } as Record<string, number[]>)[name]
+      return { label, x: .5 + side * spread, y }
+    })
+    const broken = points.map((p: { label: string; x: number; y: number }) => /SHOULDER|HIP/.test(p.label) ? { ...p, x: 1 - p.x } : p.label === 'LEFT EAR' ? { ...p, x: .62 } : p)
+    const base = rec.manifest.items.find((i: { slot: string }) => i.slot === 'body').layers[0]
+    rig.rest = {}
+    for (const d of rig.directions.filter((d: { mirrorOf?: string }) => !d.mirrorOf)) {
+      rig.rest[d.id] = { image: base.cells.walk[d.id][0], keypoints: points }
+      for (const a of rig.animations) {
+        a.sources ??= {}
+        a.sources[d.id] = { route: 'import', reference: rig.rest[d.id].image, keypoints: Array.from({ length: a.cells }, (_, i) => a.id === 'walk' && d.id === 'south' && i === 0 ? broken : points), provenance: [] }
+      }
+    }
+    rec.character = { id: 'synthetic-imported-pose', looks: 'Synthetic pose fixture' }
+    await db.put('projects', s.doc.id, rec)
+    s.store.project = { ...s.store.project, manifest: rec.manifest }
+  })
+  await newItem(page, 'Body')
+  const sheet = page.getByRole('dialog', { name: 'New item', exact: true })
+  await sheet.locator('textarea').fill('long coat and boots')
+  await expect(sheet.getByRole('alert')).toContainText('walk/south frame 1: suspicious estimated joints')
+  await expect(sheet.getByRole('alert')).toContainText('No new generation was submitted')
+  await expect(sheet.getByRole('button', { name: /^Make / })).toBeDisabled()
+  expect(requests).toEqual([])
+})
+
+test('saved garment coverage warnings keep their specific review reasons after reload', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', route => { requests.push(route.request().method()); return route.abort() })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts'
+    const s = await import(statePath), db = await import(dbPath)
+    await s.copyDemo()
+    const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((i: { slot: string }) => i.slot === 'torso_inner')
+    item.qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'accepted', rerolls: 0, cells: {}, missingLowerFrames: 2, footwearReviewFrames: 1 }
+    await db.put('projects', s.doc.id, rec)
+  })
+  await reloadStudio(page)
+  await equipmentGroup(page, 'Body')
+  const pane = await selectedItemDetails(page)
+  await expect(pane.locator('.badge.look')).toContainText('Needs a look')
+  await expect(pane.getByText('Some lower clothing is missing compared with the standing design', { exact: true })).toBeVisible()
+  await expect(pane.getByText('Footwear differs from the standing design; inspect the feet', { exact: true })).toBeVisible()
+  await expect(pane.getByText('PixelLab returned an unexpected image', { exact: true })).toHaveCount(0)
+  expect(requests).toEqual([])
 })
 
 test('canceling a downloading import closes it and cannot reopen a late preview', async ({ page, context }, info) => {

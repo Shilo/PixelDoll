@@ -84,8 +84,11 @@
   const designReasons = $derived([...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))])
   const reasons = $derived.by(() => {
     const q = it?.qa
-    if (!q || q.unmeasured) return []
+    if (!q) return []
     const r: string[] = []
+    if (q.missingLowerFrames) r.push('G11 lower-garment coverage')
+    if (q.footwearReviewFrames) r.push('G12 footwear coverage')
+    if (q.unmeasured) return r.map(plainReason)
     if (q.minKeyKept < 0.97) r.push('G2')
     if (q.maxKeyOutside > 0.02) r.push('G3')
     if (q.minAreaRatio < 0.5) r.push('G4')

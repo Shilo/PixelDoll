@@ -111,3 +111,39 @@ test('mixed tracked and untracked held views explain their per-clip review warni
   expect(q.qa.clips!['idle/east'].status).toBe('warn')
   expect(q.warnings).toContain('G8 idle/east: hand positions are missing for 1 of 1 frames; set up the character’s pose rig and check this view')
 })
+
+test('replacing garment checks clears obsolete counts while retaining other directions', () => {
+  const q = check([cell('walk/south/0'), cell('walk/south/1'), cell('walk/east/0')]).qa
+  Object.assign(q.clips!['walk/south'], { status: 'fail', missingLowerFrames: 1, footwearReviewFrames: 2 })
+  Object.assign(q.clips!['walk/east'], { status: 'warn', missingLowerFrames: 1, footwearReviewFrames: 1 })
+  Object.assign(q, { status: 'fail', missingLowerFrames: 2, footwearReviewFrames: 3 })
+  const accepted = acceptQa(q)
+  const retained = item(JSON.parse(JSON.stringify(accepted)) as ItemQa)
+  const fixedSouth = merge(retained, [cell('walk/south/0'), cell('walk/south/1')])
+  expect(fixedSouth.qa).toMatchObject({ missingLowerFrames: 1, footwearReviewFrames: 1, status: 'accepted' })
+  expect(fixedSouth.qa.clips!['walk/east']).toEqual(accepted.clips!['walk/east'])
+  expect(fixedSouth.qa.clips!['walk/south']).not.toHaveProperty('missingLowerFrames')
+  expect(fixedSouth.qa.clips!['walk/south']).not.toHaveProperty('footwearReviewFrames')
+  const fixed = merge(fixedSouth, [cell('walk/east/0')])
+  expect(fixed.qa.status).toBe('pass')
+  expect(fixed.qa).not.toHaveProperty('missingLowerFrames')
+  expect(fixed.qa).not.toHaveProperty('footwearReviewFrames')
+  expect(retained.qa).toMatchObject({ missingLowerFrames: 2, footwearReviewFrames: 3 })
+})
+
+test('accepted garment review counts persist without requiring fields on older summaries', () => {
+  const raw = check([cell('idle/south/0')]).qa
+  Object.assign(raw, { status: 'warn', footwearReviewFrames: 1 })
+  Object.assign(raw.clips!['idle/south'], { status: 'warn', footwearReviewFrames: 1 })
+  const before = structuredClone(raw), accepted = acceptQa(raw)
+  expect(JSON.parse(JSON.stringify(accepted))).toMatchObject({ status: 'accepted', footwearReviewFrames: 1, clips: { 'idle/south': { status: 'accepted', footwearReviewFrames: 1 } } })
+  expect(raw).toEqual(before)
+  const old = initial()
+  expect(merge(old, [cell('walk/south/0')]).qa).not.toHaveProperty('footwearReviewFrames')
+  expect(merge(old, [cell('walk/south/0')]).qa).not.toHaveProperty('missingLowerFrames')
+  old.qa!.unmeasured = true; old.qa!.clips!['idle/south'].unmeasured = true
+  const partial = check([cell('walk/east/0')]).qa
+  Object.assign(partial, { status: 'warn', footwearReviewFrames: 1 })
+  Object.assign(partial.clips!['walk/east'], { status: 'warn', footwearReviewFrames: 1 })
+  expect(mergeQa(old, partial, partial.cells)).toMatchObject({ unmeasured: true, footwearReviewFrames: 1 })
+})

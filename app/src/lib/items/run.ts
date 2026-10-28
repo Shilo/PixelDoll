@@ -13,9 +13,11 @@ import type { CellKey, Item, Manifest, Project, Provenance, Slot } from '../stor
 import { dropCut } from '../compose/compose.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
+import { assertImportedPoses } from '../rig/pose-review.ts';
 import { paddedPoses, poseBatches, poseGensFor } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
-import { switchTo, type Key } from '../image/chroma.ts';
+import { chromaLayer, switchTo, type Key } from '../image/chroma.ts';
+import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { DESIGN, GATES, GRID_COLS, anchored, planGens, GRAYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, grayShare, gridPrompt, packGrid, bandOf, buildItem, gridFits, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
@@ -35,7 +37,11 @@ const seed = () => 1 + Math.floor(Math.random() * 2_000_000);
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '') || 'item';
 
 /** Default method for a rig: skeleton posing when every needed cell has keypoints (S4 Q4), else the anchor-cell edit route. */
-export const defaultMethod = (ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) => (canPose(ctx.rec.manifest.rig, spec) ? 'skel' : 'anchor');
+export function defaultMethod(ctx: RigCtx, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) {
+  if (!canPose(ctx.rec.manifest.rig, spec)) return 'anchor';
+  assertImportedPoses(ctx.rec.manifest.rig, spec);
+  return 'skel';
+}
 
 /** New draft with a unique id and its call plan (spec.id is derived from name/prompt when empty; method defaults per rig). */
 export function newDraft(ctx: RigCtx, spec: Omit<ItemSpec, 'id'> & { id?: string }, taken: string[] = []): Draft {
@@ -43,6 +49,7 @@ export function newDraft(ctx: RigCtx, spec: Omit<ItemSpec, 'id'> & { id?: string
   while (taken.includes(id) || ctx.rec.manifest.items.some((i) => i.id === id)) id += '_2';
   const s: ItemSpec = { ...spec, id, name: spec.name || id, method: spec.method ?? defaultMethod(ctx, spec) };
   if (s.method === 'skel' && (s.key === 'none' || !canPose(ctx.rec.manifest.rig, s))) s.method = 'anchor';
+  if (s.method === 'skel') assertImportedPoses(ctx.rec.manifest.rig, s);
   return { spec: s, rigId: ctx.rec.id, calls: planItem(ctx.rec.manifest.rig, s).map((c) => ({ ...c, seed: seed(), rerolls: 0, old: [] })), keySwitched: false, log: [] };
 }
 
@@ -128,8 +135,13 @@ async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'ke
   gridEstimate({ w, h }, cells.length, refs.length); // same packed geometry used by the displayed estimate
   if (refs.some(r => r.im.w !== w || r.im.h !== h)) throw new Error('Equipment reference dimensions do not match its repair canvas.');
   const held = slotOf(spec.slot).class === 'held';
+  const designs = new Map(refs.map(r => [r.dir, chromaLayer(r.im, spec.key as Key, padImg(baseCell(ctx, restKey(r.dir), true), pad)).layer]));
   const masks = cells.map(k => {
-    if (!held) return bandMask(bandOf(spec.slot, skelOf(ctx, k), h), w, h);
+    if (!held) {
+      const direction = k.split('/')[1] as DirectionName, design = designs.get(direction);
+      if (!design) throw new Error(`${direction}: no dressed garment reference for repair`);
+      return bandMask(garmentBand(bandOf(spec.slot, skelOf(ctx, k), h), design, skelOf(ctx, restKey(direction), true), skelOf(ctx, k)), w, h);
+    }
     const [a, d, i] = k.split('/') as [string, DirectionName, string], measured = rig.animations.find(a0 => a0.id === a)?.sources?.[d]?.measured?.[+i];
     const observed = skelOf(ctx, k) ?? (hasAll(measured) ? fromApi(measured!, rig.cell) : undefined);
     const point = observed?.[spec.slot === 'off_hand' ? 'LEFT ARM' : 'RIGHT ARM'];
@@ -285,6 +297,7 @@ export const isClean = (r: ItemResult) => r.qa?.qa.status === 'pass' && !r.g1.si
  */
 export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<ItemResult | null> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
+  if (d.spec.method === 'skel') assertImportedPoses(ctx.rec.manifest.rig, d.spec);
   const persist = h.persist ?? (async () => {}), status = h.status ?? (() => {});
   // One evaluation at a time, so an older result never replaces a newer one. Each caller handles its own evaluation's error;
   // the chain itself only orders them.
@@ -442,19 +455,25 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   }
   postProcess(rig, slot, cells, keys, pad);
   const kOut = d.spec.method === 'skel' ? GATES.keyOutsidePosed : GATES.keyOutside;
-  const qa = cells.length ? withH4(itemQa(rig, slot, route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut, pad, hidden), slot, cells, keys, rig) : null;
+  const qa = cells.length ? withH4(itemQa(rig, slot, route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut, pad, hidden), slot, cells, keys, rig, referenceBodies(rig, ctx.project.images)) : null;
   if (qa && hiddenWarnings.length) { qa.warnings.push(...hiddenWarnings); if (qa.qa.status === 'pass') qa.qa.status = 'warn'; }
   return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa, pending) : null };
 }
 /** itemQa + the H4 keyframe-consistency gate (posed cells only). */
-export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig: Rig): QaResult {
-  const h = dirGate(slot, cells, keys, rig);
+export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig: Rig, bodies?: Partial<Record<DirectionName, Img>>): QaResult {
+  const h = dirGate(slot, cells, keys, rig, bodies);
+  const reviewCounts = (summary: { missingLowerFrames?: number; footwearReviewFrames?: number }, checks: ReturnType<typeof dirGate>) => {
+    if (checks.missingLowerFrames) summary.missingLowerFrames = checks.missingLowerFrames; else delete summary.missingLowerFrames;
+    if (checks.footwearReviewFrames) summary.footwearReviewFrames = checks.footwearReviewFrames; else delete summary.footwearReviewFrames;
+  };
+  reviewCounts(q.qa, h);
   for (const [k, why] of h.fails) q.failCalls.set(k, [...(q.failCalls.get(k) ?? []), ...why]);
   q.warnings.push(...h.warnings);
   if (h.fails.size) q.qa.status = 'fail';
   else if (h.warnings.length && q.qa.status === 'pass') q.qa.status = 'warn';
   for (const [clip, summary] of Object.entries(q.qa.clips ?? {})) {
-    const part = dirGate(slot, cells.filter((c) => clipOf(c.key) === clip), keys, rig);
+    const part = dirGate(slot, cells.filter((c) => clipOf(c.key) === clip), keys, rig, bodies);
+    reviewCounts(summary, part);
     if (part.fails.size) summary.status = 'fail';
     else if (part.warnings.length && summary.status === 'pass') summary.status = 'warn';
   }
@@ -529,10 +548,12 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   const available = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   if (selectedDirs && (!selectedDirs.length || new Set(selectedDirs).size !== selectedDirs.length || selectedDirs.some(d => !available.includes(d)))) throw new Error('Choose supported independently drawn equipment directions.');
   const dirs = selectedDirs ?? available;
+  assertImportedPoses(rig, { anims: [anim], dirs });
   const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
   let rerolls = 0; // actual additional attempted calls, independent of which candidate wins
   const skipped: string[] = []; // grids the account's plan cannot run
   const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad);
+  const bodies = referenceBodies(rig, ctx.project.images);
   Object.assign(keys, k0);
   const perDir = await Promise.all(dirs.map(async (dir, k) => {
     const allPoses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
@@ -556,7 +577,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
       if (images.some((im) => im.w !== rig.cell.w + 2 * pad || im.h !== rig.cell.h + 2 * pad)) continue; // G1: wrong geometry is not a candidate
       const candidate = cells.map((c, i) => extractCell({ key: c, call: k, base: padImg(baseCell(ctx, c), pad), out: images[i], route: key, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), rig.cell.h + 2 * pad), posed: true, clip: slot.band, held: slot.class === 'held', pad, cut: cutFor(ctx, item.slot, c, true, cuts) }));
       postProcess(rig, slot, candidate, keys, pad);
-      const fails = failCount(withH4(itemQa(rig, slot, key, candidate, attempt, GATES.keyOutsidePosed, pad, hidden), slot, candidate, keys, rig));
+      const fails = failCount(withH4(itemQa(rig, slot, key, candidate, attempt, GATES.keyOutsidePosed, pad, hidden), slot, candidate, keys, rig, bodies));
       // Keep pixels and provenance together. A later equal/worse or malformed roll cannot replace the earlier candidate.
       if (fails < bestFails) { best = candidate; bestFails = fails; bestProv = toProv(r, { cells, seed, rerolls: attempt, old: [] }); }
       if (!fails) break;
@@ -568,7 +589,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
       else {
         onCall();
         rerolls++;
-        if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad, hidden), slot, g.cells, keys, rig)) < bestFails) { best = g.cells; bestProv = g.prov; }
+        if (failCount(withH4(itemQa(rig, slot, key, g.cells, 2, GATES.keyOutsidePosed, pad, hidden), slot, g.cells, keys, rig, bodies)) < bestFails) { best = g.cells; bestProv = g.prov; }
       }
     }
     prov.push(bestProv!);
@@ -578,7 +599,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   }));
   const cells = perDir.flat();
   if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
-  const q = withH4(itemQa(rig, slot, key, cells, rerolls, GATES.keyOutsidePosed, pad, hidden), slot, cells, keys, rig);
+  const q = withH4(itemQa(rig, slot, key, cells, rerolls, GATES.keyOutsidePosed, pad, hidden), slot, cells, keys, rig, bodies);
   if (skipped.length) { q.warnings.push(...skipped); if (q.qa.status === 'pass') q.qa.status = 'warn'; }
   await mergeClip(ctx, item, anim, dirs, cells, prov, q, pad);
   return q;
@@ -655,7 +676,7 @@ export async function regridClip(ctx: RigCtx, item: Item, anim: string, dir: Dir
   const { keys, cuts, hidden } = await dressedKeys(ctx, item, pad);
   const g = await gridItemClip(ctx, item, anim, dir, 0, keys, cuts, seedN);
   if ('blocked' in g) throw new Error(g.blocked);
-  const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed, pad, hidden), slot, g.cells, keys, rig);
+  const qa = withH4(itemQa(rig, slot, key, g.cells, 0, GATES.keyOutsidePosed, pad, hidden), slot, g.cells, keys, rig, referenceBodies(rig, ctx.project.images));
   const saved = !qa.failCalls.size;
   if (saved) await mergeClip(ctx, item, anim, [dir], g.cells, [g.prov], qa, pad);
   return { qa, saved, cells: g.cells };

@@ -7,11 +7,13 @@ import { over } from '../compose/compose.ts';
 import { splitFgBg } from '../compose/split.ts';
 import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
-import { backView, hasAll } from '../rig/poses.ts';
+import { backView, fromApi, hasAll } from '../rig/poses.ts';
 import { actionOf, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { clipOf, summaryOf } from './qa-summary.ts';
+import { missingLowerGarment } from './garment-coverage.ts';
+import { footwearWarnings } from './footwear-review.ts';
 
 /**
  * Item routes (S4 §Q4), swappable without touching extraction, QA or the UI:
@@ -1014,8 +1016,28 @@ export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 
  * frames: hair, chest and the cape's front view scored 0.20–0.74 on 31 frames that look right; the cape wrapping the raised arm
  * from behind scored 0.31–0.46). Off for legs, feet (S and N look alike: trousers own ≈ opposite on 13 good frames) and held items.
  */
-export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig): { fails: Map<number, string[]>; warnings: string[] } {
+export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, referenceBodies?: Partial<Record<DirectionName, Img>>): { fails: Map<number, string[]>; warnings: string[]; missingLowerFrames: number; footwearReviewFrames: number } {
   const fails = new Map<number, string[]>(), warnings: string[] = [];
+  const missingLower = new Set<string>(), footwearReview = new Set<string>();
+  const result = () => ({ fails, warnings, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size });
+  // A cape can swing above the knees or behind the body. This check is for body-covering garments.
+  if (rig && slot.class === 'worn' && slot.bgZ == null) for (const c of cells) {
+    const [anim, dir, frame] = c.key.split('/') as [string, DirectionName, string], design = keys[dir];
+    if (!c.posed || !design || isAction(c.key)) continue;
+    const rest = rig.rest?.[dir]?.keypoints, pose = cellKeypoints(rig, c.key);
+    if (missingLowerGarment(design, c.layer, rest && fromApi(rest, rig.cell), pose && fromApi(pose, rig.cell))) {
+      missingLower.add(c.key);
+      (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(`G11 ${c.key}: lower garment is missing compared with the dressed standing design`);
+    }
+    // Historical numeric-only callers lack standing body alpha. Runtime review supplies it explicitly.
+    const referenceBody = referenceBodies?.[dir];
+    const measured = rig.animations.find(a => a.id === anim)?.sources?.[dir]?.measured?.[+frame];
+    const observed = hasAll(measured) ? measured : pose;
+    if (referenceBody && rest && observed) for (const side of footwearWarnings(referenceBody, design, c.base, c.layer, fromApi(rest, rig.cell), fromApi(observed, rig.cell))) {
+      footwearReview.add(c.key);
+      warnings.push(`G12 ${c.key}: clothing coverage near the ${side} foot differs from the standing design; inspect the footwear`);
+    }
+  }
   // G6 against the dressed design, every slot: the call-level G6 measures later calls against the first pose call, so a clip
   // that drifts together with that call passed (round 3 review). Warning only: the corpus max is 14.0 against the 15 cut-off
   const clips = new Map<string, CellOut[]>();
@@ -1024,7 +1046,7 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     const K = keys[clip.split('/')[1] as DirectionName], d = K ? paletteDistance(colors(K), cs.map((c) => c.layer)) : 0;
     if (d > GATES.paletteDist) warnings.push(`G6 ${clip}: palette distance ${d.toFixed(1)} to the dressed design`);
   }
-  if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return { fails, warnings };
+  if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return result();
   // soft items: the clip's best body coverage (item px on the base silhouette / base px)
   const cover = new Map<string, number>();
   if (!slot.band)
@@ -1054,7 +1076,7 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     if (slot.band) (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(why);
     else warnings.push(why);
   }
-  return { fails, warnings };
+  return result();
 }
 
 // ---------- manifest Item ----------

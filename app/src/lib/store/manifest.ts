@@ -98,11 +98,13 @@ export interface QaSummary {
   clipPx: number; // historical name: border-contact observations, not a measurement of pixels lost outside the frame
   handedness?: 'ok' | 'switched';
   shiftedFrames?: number; // cells whose silhouette fits the base better at a non-zero 1 px shift
+  missingLowerFrames?: number; // distinct frames missing lower-garment coverage compared with their standing design
+  footwearReviewFrames?: number; // distinct frames whose observed foot coverage needs review; one frame counts once even if both feet differ
   grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
   strayPx?: number; // removed by the largest-component filter (posed cells)
   status: 'pass' | 'warn' | 'fail' | 'accepted';
 }
-/** Gates G1–G10 and H4 (architecture §3.3). */
+/** Gates G1–G12 and H4 (architecture §3.3). */
 export interface ItemQa extends QaSummary {
   rerolls: number; // recorded retry history, not a count of current frames
   cells: Record<CellKey, CellQa>;
