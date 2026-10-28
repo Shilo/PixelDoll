@@ -179,7 +179,7 @@ export async function encodeShareMedia(media: ShareMedia, scale = 1, signal?: Ab
     const frame = scaled(image, scale)
     if (frame.w > 65535 || frame.h > 65535) throw new Error('Selected GIF dimensions are too large. Choose a smaller size or fewer views')
     const { colors, indices } = paletteFor(frame)
-    // Shared previews repeat continuously, including moves authored to play once in the game.
+    // Shared previews repeat continuously regardless of exported playback metadata.
     gif.writeFrame(indices, frame.w, frame.h, { palette: colors, transparent: true, transparentIndex: 0, delay: ms, repeat: 0, dispose: 2 })
     // Release each scaled frame and allow selection changes to cancel remaining work.
     await new Promise<void>(resolve => setTimeout(resolve, 0))

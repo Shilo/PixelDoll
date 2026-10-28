@@ -11,6 +11,8 @@ export type ExportSettingChange = { engine: Engine } | { dressedCharacterSheets:
 export const EXPORT_SETTINGS_KEY = 'studio-export-settings';
 export const defaultExportSettings = (): ExportSettings => ({ engine: 'godot', dressedCharacterSheets: true, playOnce: [] });
 const CHANNEL = 'pixeldoll-export-settings';
+export class InvalidExportSettings extends Error {}
+class InvalidAnimationNames extends Error {}
 
 /** Notifications carry no preferences. Opening or refocusing Export remains the fallback when channels are unavailable. */
 export function subscribeExportSettings(listener: () => void): () => void {
@@ -45,16 +47,30 @@ function animationName(value: string): string {
 
 /** Persist canonical names only. An unreadable preference is a visible error, never a silent replacement with defaults. */
 function checkedSettings(value: unknown): ExportSettings {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new Error('Saved export settings are invalid.');
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new InvalidExportSettings('Saved export settings are invalid.');
   const stored = value as Partial<ExportSettings>;
   if (!EXPORT_ENGINES.some(engine => engine === stored.engine) || typeof stored.dressedCharacterSheets !== 'boolean' || !Array.isArray(stored.playOnce)
-    || stored.playOnce.some(name => typeof name !== 'string' || !validAnimationId(name)) || new Set(stored.playOnce).size !== stored.playOnce.length) throw new Error('Saved export settings must contain a supported format, a dressed sheets choice and unique lowercase animation names.');
+    || stored.playOnce.some(name => typeof name !== 'string' || !validAnimationId(name)) || new Set(stored.playOnce).size !== stored.playOnce.length) throw new InvalidExportSettings('Saved export settings must contain a supported format, a dressed sheets choice and unique lowercase animation names.');
   return { engine: stored.engine!, dressedCharacterSheets: stored.dressedCharacterSheets, playOnce: [...stored.playOnce].sort() };
 }
 
 export async function readExportSettings(): Promise<ExportSettings> {
   const saved = await db.get<unknown>('projects', EXPORT_SETTINGS_KEY);
   return saved === undefined ? defaultExportSettings() : checkedSettings(saved);
+}
+
+/** Explicit recovery changes only invalid preferences, preserving a repair another tab has already committed. */
+export async function resetInvalidExportSettings(): Promise<ExportSettings> {
+  const committed = await db.update<ExportSettings>('projects', EXPORT_SETTINGS_KEY, current => {
+    if (current === undefined) return defaultExportSettings();
+    try { return checkedSettings(current); }
+    catch (error) {
+      if (!(error instanceof InvalidExportSettings)) throw error;
+      return defaultExportSettings();
+    }
+  });
+  notifySettingsChanged();
+  return structuredClone(committed);
 }
 
 /** Patch one field against the latest transaction record so independent tab changes are retained. */
@@ -89,8 +105,21 @@ export function applyExportSettings(manifest: Manifest, settings: ExportSettings
 export function animationNames(manifests: readonly Manifest[], settings: ExportSettings): string[] {
   const names = new Set(checkedSettings(settings).playOnce);
   for (const manifest of manifests) {
-    if (!manifest?.rig || !Array.isArray(manifest.rig.animations) || manifest.rig.animations.some(animation => !animation || typeof animation.id !== 'string' || !validAnimationId(animation.id.trim().toLowerCase()))) throw new Error(`Character "${manifest?.name ?? 'Unknown'}" has invalid animation names in storage.`);
+    if (!manifest?.rig || !Array.isArray(manifest.rig.animations) || manifest.rig.animations.some(animation => !animation || typeof animation.id !== 'string' || !validAnimationId(animation.id.trim().toLowerCase()))) throw new InvalidAnimationNames(`Character "${manifest?.name ?? 'Unknown'}" has invalid animation names in storage.`);
     for (const animation of manifest.rig.animations) names.add(animationName(animation.id));
   }
   return [...names].sort();
+}
+
+/** An unrelated damaged character must not block exporting the current character. */
+export function exportAnimationCatalog(current: Manifest | undefined, others: readonly Manifest[], settings: ExportSettings): { names: string[]; warnings: string[] } {
+  const names = new Set(animationNames(current ? [current] : [], settings)), warnings: string[] = [];
+  for (const manifest of others) {
+    try { for (const name of animationNames([manifest], settings)) names.add(name); }
+    catch (error) {
+      if (!(error instanceof InvalidAnimationNames)) throw error;
+      warnings.push(`${error.message} Its animation names are omitted from settings. You can still export the current character.`);
+    }
+  }
+  return { names: [...names].sort(), warnings };
 }

@@ -84,7 +84,7 @@ export interface RestView {
 export interface Clip {
   id: string;                            // "idle", "walk", "slash", "hurt"
   cells: number;                         // stored poses per direction = sheet columns
-  loop: boolean;                        // explicit export preference; new animations default true
+  loop: boolean;                        // serialized playback metadata; global Export settings replace it on export copies
   frames: { cell: number; ms: number }[]; // playlist; cells may repeat (holds, ping-pong)
   sources: Partial<Record<DirectionName, ClipSource>>; // generated directions only (mirrors derive)
 }

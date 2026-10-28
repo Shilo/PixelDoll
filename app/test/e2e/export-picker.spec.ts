@@ -1,6 +1,8 @@
 import { enterStudio, noDisabledHover, openStudio } from './immersive-helpers.ts'
-import { chromium, expect, test, type Page } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
+import { chromium, expect, test, type BrowserContext, type Page } from '@playwright/test'
+import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { unzip } from '../../src/lib/store/zip.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
 import { EXPORT_SETTINGS_KEY } from '../../src/lib/store/export-settings.ts'
@@ -133,15 +135,17 @@ test('a stale rejected global refresh cannot block a newer successful format sav
 
 test('global Export choices survive a browser restart, character changes and dynamic move names', async ({}, info) => {
   const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
-  const profile = info.outputPath('persistent-export-profile')
+  // Chromium's IndexedDB paths can exceed Windows limits under a descriptive test output directory.
+  const profile = await mkdtemp(join(tmpdir(), 'pd-export-'))
   const launch = async () => {
     const context = await chromium.launchPersistentContext(profile, { headless: true, channel: info.project.use.channel, viewport: { width: 800, height: 600 } })
     await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
     await context.route('https://*.pixellab.ai/**', route => route.abort())
     return context
   }
-  let context = await launch()
+  let context: BrowserContext | undefined
   try {
+    context = await launch()
     let page = context.pages()[0]
     await savedExport(page, dev)
     let dialog = page.getByRole('dialog')
@@ -223,7 +227,10 @@ test('global Export choices survive a browser restart, character changes and dyn
       return [a.manifest.rig.animations.map((move: { loop: boolean }) => move.loop), b.manifest.rig.animations.map((move: { loop: boolean }) => move.loop)]
     }, identities)).toEqual([[true, true], [false, false]])
     await expect(page.getByRole('heading', { name: 'Renamed second character', exact: true })).toHaveCount(1)
-  } finally { await context.close() }
+  } finally {
+    try { await context?.close() }
+    finally { await rm(profile, { recursive: true, force: true }) }
+  }
 })
 
 test('global Export choices persist through demo reload, editable copying and character switching', async ({ page }, info) => {
@@ -560,7 +567,7 @@ test('Export settings show storage failures without changing the choice or trapp
   await expect(dialog).toHaveCount(0)
 })
 
-test('invalid stored Export preferences show a clear error and allow closing the dialog', async ({ page }, info) => {
+test('invalid Export preferences can be reset without deleting characters, and a failed reset remains recoverable', async ({ page }, info) => {
   await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   await page.getByRole('button', { name: 'Close export' }).click()
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
@@ -572,12 +579,43 @@ test('invalid stored Export preferences show a clear error and allow closing the
   const dialog = page.getByRole('dialog')
   await expect(dialog.getByRole('alert')).toContainText('supported format')
   await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled()
+  await expect(dialog.locator('.export-summary dd')).toHaveText(['Unavailable', 'Unavailable'])
+  const before = await page.evaluate(async () => {
+    const path = '/src/lib/store/db.ts', db = await import(path)
+    return (await db.all('projects')).filter((r: { id?: string }) => r.id?.startsWith('rig-'))
+  })
+  await page.evaluate(key => {
+    const put = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, id) {
+      if (this.name === 'projects' && id === key) { IDBObjectStore.prototype.put = put; throw new Error('Reset storage failure') }
+      return put.call(this, value, id)
+    }
+  }, EXPORT_SETTINGS_KEY)
+  const reset = dialog.getByRole('button', { name: 'Reset export settings', exact: true })
+  await reset.click()
+  await expect(dialog.getByRole('alert')).toContainText('Reset storage failure')
+  await expect(reset).toBeEnabled()
+  await reset.click()
+  await expect(reset).toHaveCount(0)
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await expect(dialog.getByRole('radio', { name: 'Godot', exact: true })).toBeChecked()
+  await expect(dialog.locator('.export-summary dd')).toHaveText(['None', 'Current look + saved outfits'])
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled()
+  expect(await page.evaluate(async () => {
+    const path = '/src/lib/store/db.ts', db = await import(path)
+    return (await db.all('projects')).filter((r: { id?: string }) => r.id?.startsWith('rig-'))
+  })).toEqual(before)
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(() => location.reload()); await enterStudio(page)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled()
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
   await dialog.getByRole('button', { name: 'Close export' }).click()
   await expect(dialog).toHaveCount(0)
   expect(errors).toEqual([])
 })
 
-test('an unrelated malformed character shows an identifiable library error without crashing Export', async ({ page }, info) => {
+test('an unrelated malformed character warns without blocking settings or the current character ZIP', async ({ page }, info) => {
   await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   await page.getByRole('button', { name: 'Close export' }).click()
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message))
@@ -587,10 +625,80 @@ test('an unrelated malformed character shows an identifiable library error witho
   })
   await page.getByRole('button', { name: 'Export', exact: true }).click()
   const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('alert')).toContainText('Broken library character')
+  await expect(dialog.locator('.notice.warn')).toContainText('Broken library character')
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  const walk = dialog.getByRole('checkbox', { name: 'Walk', exact: true })
+  await walk.check(); await expect(walk).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+  const button = dialog.getByRole('button', { name: /^Download ZIP/ })
+  await expect(button).toBeEnabled()
+  const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
+  const entries = await unzip(new Uint8Array(await readFile((await download.path())!)))
+  const exported = JSON.parse(new TextDecoder().decode(entries.get('manifest.json')!))
+  expect(exported.name).toBe('Export settings test')
+  expect(exported.rig.animations.find((move: { id: string }) => move.id === 'walk').loop).toBe(false)
+  expect(await page.evaluate(async () => {
+    const path = '/src/lib/store/db.ts', db = await import(path)
+    return (await db.get('projects', 'rig-broken-export-names')).manifest.rig.animations
+  })).toBeNull()
+  expect(errors).toEqual([])
+})
+
+test('invalid current-character names still block export and storage outages do not offer a preferences reset', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(() => {
+    const get = IDBObjectStore.prototype.get
+    IDBObjectStore.prototype.get = function(query) {
+      if (query === 'studio-export-settings') { IDBObjectStore.prototype.get = get; throw new Error('Storage unavailable') }
+      return get.call(this, query)
+    }
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByRole('alert')).toContainText('Storage unavailable')
+  await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0)
   await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled()
   await dialog.getByRole('button', { name: 'Close export' }).click()
-  expect(errors).toEqual([])
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    const project = s.store.project
+    const manifest = structuredClone(project.manifest)
+    manifest.rig.animations[0].id = 'invalid/name'
+    s.store.project = { ...project, manifest }
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('Export settings test')
+  await expect(dialog.getByRole('button', { name: 'Reset export settings' })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled()
+  await dialog.getByRole('button', { name: 'Close export' }).click()
+})
+
+test('reset preserves preferences already repaired elsewhere and waits for its committed transaction', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  await page.evaluate(async key => { const path = '/src/lib/store/db.ts'; await (await import(path)).put('projects', key, {}) }, EXPORT_SETTINGS_KEY)
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog'), reset = dialog.getByRole('button', { name: 'Reset export settings' })
+  await expect(reset).toBeEnabled()
+  await page.evaluate(async key => {
+    const path = '/src/lib/store/db.ts'
+    await (await import(path)).put('projects', key, { engine: 'phaser', dressedCharacterSheets: false, playOnce: ['walk'] })
+  }, EXPORT_SETTINGS_KEY)
+  await holdProjectTransaction(page, 'readwrite')
+  await reset.click()
+  await expect.poll(() => page.evaluate(() => (window as unknown as { exportTransaction: { ready: boolean } }).exportTransaction.ready)).toBe(true)
+  await expect(reset).toBeDisabled()
+  await expect(dialog.getByRole('button', { name: 'Close export' })).toBeDisabled()
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeDisabled()
+  await page.keyboard.press('Escape'); await expect(dialog).toBeVisible()
+  await releaseProjectTransaction(page)
+  await expect(reset).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: 'Settings', exact: true })).toBeFocused()
+  await expect(dialog.getByRole('radio', { name: 'Phaser', exact: true })).toBeChecked()
+  await expect(dialog.locator('.export-summary dd')).toHaveText(['Walk', 'None'])
+  await expect(dialog.getByRole('button', { name: /^Download ZIP/ })).toBeEnabled()
 })
 
 test('distinct imported IDs with identical pretty names remain distinguishable global choices', async ({ page }, info) => {

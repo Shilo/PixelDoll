@@ -102,6 +102,14 @@ test('combined review shares image reads with color checking after all original 
  expect(f.posts()).toBe(before)
 })
 
+test('completed original checks with no color drift need no recovery notice', async () => {
+ const f = await fixture(); await f.finishOriginalChecks()
+ const before = f.posts()
+ expect(await reviewMoveRecovery('rig-recover', f.spec)).toEqual({})
+ await expect(bodyPaletteRepairPlan('rig-recover', f.spec)).rejects.toThrow('No palette-only body failure')
+ expect(f.posts()).toBe(before)
+})
+
 test('broad color drift is an explained policy limit rather than a failed cached-frame check', async () => {
  const f = await fixture('broad'); await f.finishOriginalChecks()
  const before = f.posts(), review = await reviewMoveRecovery('rig-recover', f.spec)
@@ -121,7 +129,40 @@ test('bad real recovered measurements never trigger an uncached raw reroll or pu
 test('body publication receipt survives a failed item step and resumes only missing equipment without rerender',async()=>{
  const f=await fixture();f.addItem();const spec=await f.recovery();const pose=vi.spyOn(itemRun,'poseItemClip').mockRejectedValueOnce(Error('synthetic item failure')).mockResolvedValue({} as Awaited<ReturnType<typeof itemRun.poseItemClip>>)
  await expect(addMove('rig-recover',spec)).rejects.toThrow('synthetic item failure');expect(f.posts()).toBe(8);expect(f.saved().moveRecovery?.id).toBe('explicit-review');const published=structuredClone(f.saved().manifest.rig)
+ vi.mocked(db.getBlob).mockClear()
+ expect(await reviewMoveRecovery('rig-recover', spec)).toEqual({})
+ expect(db.getBlob).not.toHaveBeenCalled()
  const calls=f.enqueue.mock.calls.length;await addMove('rig-recover',spec);expect(f.posts()).toBe(8);expect(f.enqueue.mock.calls).toHaveLength(calls);expect(f.saved().manifest.rig).toEqual(published);expect(pose).toHaveBeenCalledTimes(2)
+})
+
+test.each([false, true])('published recovery review requires an exact receipt and current rig (palette=%s)', async palette => {
+ const f = await fixture(palette); f.addItem()
+ if (palette) await f.finishOriginalChecks()
+ const plan = palette ? await bodyPaletteRepairPlan('rig-recover', f.spec) : await measurementRecoveryPlan('rig-recover', f.spec)
+ const spec: MoveSpec = palette
+  ? { ...f.spec, bodyPaletteRepair: { id: 'published-colors', version: 'near-rest-v1', rigVersion: plan.rigVersion } }
+  : { ...f.spec, measurementRecovery: { id: 'published-checks', recordIds: plan.recordIds, rigVersion: plan.rigVersion } }
+ const pose = vi.spyOn(itemRun, 'poseItemClip').mockRejectedValueOnce(Error('synthetic item failure')).mockResolvedValue({} as Awaited<ReturnType<typeof itemRun.poseItemClip>>)
+ await expect(addMove('rig-recover', spec)).rejects.toThrow('synthetic item failure')
+ const receipt = structuredClone(f.saved().moveRecovery!), before = f.posts(), calls = f.enqueue.mock.calls.length
+ vi.mocked(db.getBlob).mockClear()
+ expect(await reviewMoveRecovery('rig-recover', spec)).toEqual({})
+ expect(db.getBlob).not.toHaveBeenCalled()
+ for (const field of ['id', 'originalRigVersion', 'bodyRigVersion', 'specHash'] as const) {
+  f.saved().moveRecovery = { ...receipt, [field]: 'not-the-published-intent' }
+  await expect(reviewMoveRecovery('rig-recover', spec)).rejects.toThrow('changed')
+  await expect(addMove('rig-recover', spec)).rejects.toThrow('changed')
+ }
+ f.saved().moveRecovery = receipt
+ await expect(reviewMoveRecovery('rig-recover', { ...spec, seed: spec.seed + 1 })).rejects.toThrow('changed')
+ await expect(addMove('rig-recover', { ...spec, seed: spec.seed + 1 })).rejects.toThrow('changed')
+ await addMove('rig-recover', spec)
+ expect(pose).toHaveBeenCalledTimes(2)
+ expect(f.posts()).toBe(before); expect(f.enqueue.mock.calls).toHaveLength(calls)
+ f.changeRig()
+ await expect(reviewMoveRecovery('rig-recover', spec)).rejects.toThrow('changed')
+ await expect(addMove('rig-recover', spec)).rejects.toThrow('changed')
+ expect(f.posts()).toBe(before); expect(f.enqueue.mock.calls).toHaveLength(calls)
 })
 
 
@@ -146,6 +187,9 @@ test('unknown corrected-PNG checks require new explicit consent and never reopen
  const f=await fixture(true);await f.finishOriginalChecks();const plan=await bodyPaletteRepairPlan('rig-recover',f.spec),before=f.posts()
  const spec:MoveSpec={...f.spec,bodyPaletteRepair:{id:'color-consent',version:'near-rest-v1',rigVersion:plan.rigVersion}};f.failCheck();await expect(addMove('rig-recover',spec)).rejects.toThrow('lost');expect(f.posts()-before).toBe(1);expect(f.update).not.toHaveBeenCalled()
  await expect(addMove('rig-recover',spec)).rejects.toThrow('lost');expect(f.posts()-before).toBe(1)
+ const review = await reviewMoveRecovery('rig-recover', spec)
+ expect(review.recovery?.recordIds).toHaveLength(1); expect(review.recovery?.checks).toBe(3)
+ expect(review.colorRepair).toBeUndefined()
  const retry=await measurementRecoveryPlan('rig-recover',spec);expect(retry.recordIds).toHaveLength(1);expect(retry.checks).toBe(3)
  await addMove('rig-recover',{...spec,measurementRecovery:{id:'explicit-corrected-checks',recordIds:retry.recordIds,rigVersion:retry.rigVersion}})
  expect(f.posts()-before).toBe(4);expect(f.saved().manifest.rig.animations[0].sources!.west!.processing?.changedPixels).toBe(90);expect(f.saved().moveRecovery?.id).toBe('explicit-corrected-checks')

@@ -28,7 +28,7 @@ export interface RigAnimation {
   /** Export metadata: views with base frames; absent in editable rigs until sheets are built. */
   directions?: DirectionName[];
   cells: number;
-  /** Explicit export playback preference. In-app previews and sharing always loop. */
+  /** Serialized playback metadata. Global Export preferences replace it on export copies; app previews and sharing always loop. */
   loop: boolean;
   frames: { cell: number; ms: number }[];
   source?: { endpoint: string; mode?: string; template_animation_id?: string; action_description?: string };
@@ -77,7 +77,7 @@ export const validAnimationId = (id: string): boolean => ID.test(id);
 export const rigArtworkVersion = (rig: Rig, character: unknown): string =>
   stableStringify({ rig: { ...rig, animations: rig.animations.map(({ loop: _loop, ...animation }) => animation) }, character });
 
-/** The latest export choices survive artwork/pose publication; genuinely new moves default to Loop. */
+/** Preserve archived playback metadata through artwork/pose publication; new moves default to Loop. */
 export function retainPlaybackChoices(next: Rig, current: Rig): void {
   for (const animation of next.animations) animation.loop = current.animations.find(a => a.id === animation.id)?.loop ?? true;
 }

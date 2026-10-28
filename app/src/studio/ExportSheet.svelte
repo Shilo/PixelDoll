@@ -7,7 +7,7 @@
   import { coverageGaps, moveDirs, storeVariants } from '../lib/dress/dress.ts'
   import * as db from '../lib/store/db.ts'
   import { listProjects, type StoredProject } from '../lib/store/project.ts'
-  import { animationNames, applyExportSettings, readExportSettings, saveExportSetting, subscribeExportSettings, type ExportSettingChange, type ExportSettings } from '../lib/store/export-settings.ts'
+  import { exportAnimationCatalog, applyExportSettings, InvalidExportSettings, readExportSettings, resetInvalidExportSettings, saveExportSetting, subscribeExportSettings, type ExportSettingChange, type ExportSettings } from '../lib/store/export-settings.ts'
   import type { Engine, Manifest, Preset } from '../lib/store/manifest.ts'
   import { ui, doc, store, toast, isDemo } from './state.svelte.ts'
   import { ChevronLeft, ChevronRight, Download, Settings2, TriangleAlert, X } from './icons.ts'
@@ -41,6 +41,7 @@
   let ready = $state(false)
   let saveError = $state('')
   let loadError = $state('')
+  let invalidPreferences = $state(false)
   let content = $state<HTMLDivElement>()
   let navigation: HTMLButtonElement
   let result = $state.raw<{ zip: Uint8Array | null; files: string[]; warnings: string[]; errors: string[]; rigIssues: string[] } | null>(null)
@@ -48,7 +49,8 @@
   const m = $derived(store.project?.manifest)
   const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
   const baked = $derived(preferences?.dressedCharacterSheets ?? true)
-  const names = $derived(preferences ? animationNames([...(m ? [m] : []), ...savedProjects.filter(p => p.id !== doc.id).map(p => p.manifest)], preferences) : [])
+  const catalog = $derived(preferences && ready ? exportAnimationCatalog(m, savedProjects.filter(p => p.id !== doc.id).map(p => p.manifest), preferences) : { names: [], warnings: [] })
+  const names = $derived(catalog.names)
   const once = $derived(preferences?.playOnce ?? [])
   const playbackSummary = $derived(!once.length ? 'None' : once.length === names.length ? 'All' : once.map(animationLabel).join(', '))
   const outfits = $derived(m?.presets.filter(p => p.id !== 'current') ?? [])
@@ -75,17 +77,19 @@
         if (!active || current !== request) return
         if (saving) { refreshAgain = true; return }
         if (sequence !== writeSequence) { void refresh(); return }
-        // Validate the library union before exposing it to the template's derived name list.
-        animationNames([...(store.project ? [store.project.manifest] : []), ...projects.map(p => p.manifest)], saved)
+        // Current-character errors block its export; unrelated damaged catalogs produce warnings only.
+        exportAnimationCatalog(store.project?.manifest, projects.filter(p => p.id !== openedId).map(p => p.manifest), saved)
         if (stableStringify(preferences) !== stableStringify(saved)) preferences = saved
         savedProjects = projects
         ready = true
         loadError = ''
+        invalidPreferences = false
       } catch (error) {
         if (!active || current !== request) return
         if (saving) { refreshAgain = true; return }
         if (sequence !== writeSequence) { void refresh(); return }
         ready = false
+        invalidPreferences = error instanceof InvalidExportSettings
         loadError = `Could not load export settings: ${error instanceof Error ? error.message : String(error)}`
       } finally { if (active && current === request) refreshing = false }
     }
@@ -103,16 +107,26 @@
     navigation.focus()
   }
   async function changeSetting(input: HTMLInputElement, change: ExportSettingChange) {
-    const checked = input.checked, hadFocus = document.activeElement === input, sequence = ++writeSequence
+    return persistSettings(() => saveExportSetting(change), input, 'engine' in change ? change.engine : undefined)
+  }
+  async function resetSettings(event: MouseEvent) {
+    const trigger = event.currentTarget, hadFocus = document.activeElement === trigger
+    refreshAgain = true
+    await persistSettings(resetInvalidExportSettings)
+    await tick()
+    if (hadFocus && (document.activeElement === document.body || document.activeElement === content?.closest('dialog'))) navigation.focus({ preventScroll: true })
+  }
+  async function persistSettings(commit: () => Promise<ExportSettings>, input?: HTMLInputElement, optimisticEngine?: Engine) {
+    const checked = input?.checked, hadFocus = !!input && document.activeElement === input, sequence = ++writeSequence
     pendingWrites++
-    if ('engine' in change) formatChoice = change.engine
+    if (optimisticEngine) formatChoice = optimisticEngine
     saveError = ''
     try {
-      const saved = await saveExportSetting(change)
+      const saved = await commit()
       if (sequence > publishedSequence) { preferences = saved; publishedSequence = sequence }
       if (sequence === writeSequence) saveError = ''
     } catch (e) {
-      if (input.type !== 'radio') input.checked = !checked
+      if (input && input.type !== 'radio') input.checked = !checked
       if (sequence === writeSequence) saveError = `Could not save export settings: ${e instanceof Error ? e.message : String(e)}`
     } finally {
       pendingWrites--
@@ -122,7 +136,7 @@
       }
       await tick()
       // Disabling a focused checkbox blurs it. Keep keyboard navigation at that setting without stealing a moved focus.
-      if (hadFocus && input.isConnected && (document.activeElement === document.body || document.activeElement === input.closest('dialog'))) input.focus({ preventScroll: true })
+      if (hadFocus && input?.isConnected && (document.activeElement === document.body || document.activeElement === input.closest('dialog'))) input.focus({ preventScroll: true })
     }
   }
   // B10 (T1 P1-1): views a move or an item doesn't have are empty in the sheets; say so before the download
@@ -195,8 +209,13 @@
   {/snippet}
   {#key settings}
   <div class="export-page" class:settings-page={settings} bind:this={content}>
-  {#if loadError || saveError}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{loadError || saveError}</p>{/if}
+  {#if loadError || saveError}<p class="notice bad small" role="alert"><TriangleAlert size={14} />{saveError || loadError}</p>{/if}
+  {#if invalidPreferences}
+    <p class="muted small">Reset only Export preferences to their defaults. Your characters and outfits are kept.</p>
+    <button class="bu-action btn" onclick={resetSettings} disabled={saving || refreshing}>Reset export settings</button>
+  {/if}
   {#if !ready && refreshing}<p class="muted small" role="status">Loading export settings…</p>{/if}
+  {#each catalog.warnings as warning}<p class="notice warn small"><TriangleAlert size={14} />{warning}</p>{/each}
   {#if settings}
     <fieldset class="export-playback" aria-describedby="export-playback-description">
       <legend class="label">{PLAY_ONCE}</legend>
@@ -246,8 +265,8 @@
   <section aria-labelledby="export-settings-summary">
     <h3 class="label" id="export-settings-summary">Current settings</h3>
     <dl class="export-summary small">
-      <dt>{PLAY_ONCE}</dt><dd>{playbackSummary}</dd>
-      <dt>{DRESSED_SHEETS}</dt><dd>{outfitSummary}</dd>
+      <dt>{PLAY_ONCE}</dt><dd>{ready ? playbackSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>
+      <dt>{DRESSED_SHEETS}</dt><dd>{ready ? outfitSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>
     </dl>
   </section>
   <details class="disclosure">

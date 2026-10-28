@@ -410,6 +410,12 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 /** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
 export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
+/** A completed body publication can outlive failed equipment work; only its exact durable receipt permits resuming. */
+async function publishedMoveRecovery(rec: StoredProject, spec: MoveSpec): Promise<boolean> {
+  const receipt = rec.moveRecovery, intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
+  return !!intent && receipt?.id === intent.id && receipt.originalRigVersion === intent.rigVersion &&
+    receipt.specHash === await recoverySpecHash(spec) && receipt.bodyRigVersion === moveRigVersion(rec);
+}
 export const MOVE_STEPS = [
   { id: 'animate', label: 'Animating the body' },
   { id: 'items', label: 'Posing your items' },
@@ -473,12 +479,15 @@ export interface MoveRecoveryReview { recovery?: MeasurementRecoveryPlan; colorR
 export async function reviewMoveRecovery(projectId: string, spec: MoveSpec): Promise<MoveRecoveryReview> {
   if (!spec.replace || spec.itemMethod || !spec.action || !ACTIONS[spec.action] || !spec.dirs?.length) return {};
   const context = await recoveryContext(projectId);
+  if (await publishedMoveRecovery(context.rec, spec)) return {};
+  if (spec.measurementRecovery && spec.measurementRecovery.rigVersion !== moveRigVersion(context.rec)) throw new Error('This character changed since these joint checks were reviewed.');
   try {
     const plan = await inspectMeasurementRecovery(context, { ...spec, measurementRecovery: undefined });
     if (plan.checks && plan.recordIds.length) return { recovery: plan };
     if (plan.checks) return { unavailable: 'Cached frames have no failed joint checks to retry.' };
     if (spec.bodyPaletteRepair) return {};
-    return { colorRepair: await inspectBodyPaletteRepair(context, spec) };
+    const colorRepair = await inspectBodyPaletteRepair(context, spec);
+    return colorRepair ? { colorRepair } : {};
   } catch (error) {
     if (error instanceof RecoveryUnavailable) return { unavailable: error.message };
     throw error;
@@ -486,13 +495,15 @@ export async function reviewMoveRecovery(projectId: string, spec: MoveSpec): Pro
 }
 /** Preview the fixed, versioned color repair against cached raw art; no body or joint request is sent. */
 export async function bodyPaletteRepairPlan(projectId: string, spec: MoveSpec): Promise<BodyPaletteRepairPlan> {
-  return inspectBodyPaletteRepair(await recoveryContext(projectId), spec);
+  const plan = await inspectBodyPaletteRepair(await recoveryContext(projectId), spec);
+  if (!plan) throw new RecoveryUnavailable('No palette-only body failure can be matched safely.');
+  return plan;
 }
-async function inspectBodyPaletteRepair(context: RecoveryContext, spec: MoveSpec): Promise<BodyPaletteRepairPlan> {
+async function inspectBodyPaletteRepair(context: RecoveryContext, spec: MoveSpec): Promise<BodyPaletteRepairPlan | undefined> {
   const { rec } = context;
   const plan = await inspectMeasurementRecovery(context, { ...spec, measurementRecovery: undefined,
     bodyPaletteRepair: { id: 'palette-review', version: 'near-rest-v1', rigVersion: moveRigVersion(rec) } });
-  if (!plan.palette?.directions.length) throw new RecoveryUnavailable('No palette-only body failure can be matched safely.');
+  if (!plan.palette?.directions.length) return undefined;
   if (plan.recordIds.length) throw new RecoveryUnavailable('Review unknown joint-check outcomes before matching these body colors.');
   return { ...plan, ...plan.palette, itemGens: poseGens(spec.items.filter(id => !rec.manifest.items.find(item => item.id === id)?.design).length, moveFrames(rec.manifest, spec), moveDirections(rec.manifest, spec.dirs).length) };
 }
@@ -618,9 +629,8 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   if (reservedMove(spec.id) && (spec.replace || !existing)) throw new Error(reservedMove(spec.id));
   if (!existing && dirs.length !== genDirs(rec.manifest).length) throw new Error('A new move needs every independently drawn direction.');
   if (existing && dirs.length !== genDirs(rec.manifest).length && existing.cells !== moveFrames(rec.manifest, spec)) throw new Error('A partial repair must keep the existing frame count.');
-  const receipt = rec.moveRecovery, intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
-  const published = !!intent && receipt?.id === intent.id && receipt.originalRigVersion === intent.rigVersion &&
-    receipt.specHash === await recoverySpecHash(spec) && receipt.bodyRigVersion === moveRigVersion(rec);
+  const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
+  const published = await publishedMoveRecovery(rec, spec);
   const recovery = intent && !published ? await measurementRecoveryPlan(projectId, spec) : undefined;
   if (!published && (spec.replace || !existing)) await addBodyClip(projectId, spec, onProgress, recovery);
   // Freeze durable garment-region colors before either direct posing or shared-fit target stamps.

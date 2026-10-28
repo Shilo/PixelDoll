@@ -3,7 +3,7 @@ import { makeImg } from '../../src/lib/image/png.ts'
 import { cellHash, playlist, retainPlaybackChoices, validateRig } from '../../src/lib/rig/rig.ts'
 import { exportFiles } from '../../src/lib/export/export.ts'
 import { readAseprite } from '../../src/lib/export/aseprite.ts'
-import { animationNames, applyExportSettings, defaultExportSettings, EXPORT_SETTINGS_KEY, readExportSettings, saveExportSetting, subscribeExportSettings, type ExportSettings } from '../../src/lib/store/export-settings.ts'
+import { animationNames, applyExportSettings, defaultExportSettings, exportAnimationCatalog, EXPORT_SETTINGS_KEY, InvalidExportSettings, readExportSettings, resetInvalidExportSettings, saveExportSetting, subscribeExportSettings, type ExportSettings } from '../../src/lib/store/export-settings.ts'
 import { projectEntries, readCharacterZip } from '../../src/lib/store/import.ts'
 import { zip } from '../../src/lib/store/zip.ts'
 import * as db from '../../src/lib/store/db.ts'
@@ -134,6 +134,37 @@ test('invalid saved preferences and failed writes surface errors instead of sile
   await expect(saveExportSetting({ dressedCharacterSheets: 'false' as unknown as boolean })).rejects.toThrow('true or false')
   database.update.mockRejectedValue(new Error('Quota exceeded'))
   await expect(saveExportSetting({ animation: 'jump', playOnce: true })).rejects.toThrow('Quota exceeded')
+})
+
+test('explicit invalid-preference reset is scoped, atomic, failure-visible and preserves another tab repair', async () => {
+  const database = storedSettings({ engine: 'removed' })
+  const character = { manifest: { name: 'Untouched character' } }
+  database.records.set('rig-character', character)
+  await expect(readExportSettings()).rejects.toBeInstanceOf(InvalidExportSettings)
+  expect(await resetInvalidExportSettings()).toEqual(defaultExportSettings())
+  expect(database.records.get('rig-character')).toBe(character)
+  const repaired = { engine: 'unity', dressedCharacterSheets: false, playOnce: ['jump'] }
+  database.records.set(EXPORT_SETTINGS_KEY, repaired)
+  const result = await resetInvalidExportSettings()
+  expect(result).toEqual(repaired)
+  result.playOnce.push('walk')
+  expect(await readExportSettings()).toEqual(repaired)
+  database.update.mockRejectedValue(new Error('Storage unavailable'))
+  await expect(resetInvalidExportSettings()).rejects.toThrow('Storage unavailable')
+  expect(database.update.mock.calls.every(([store, key]) => store === 'projects' && key === EXPORT_SETTINGS_KEY)).toBe(true)
+})
+
+test('animation catalog isolates damaged unrelated characters but validates current character and preferences', async () => {
+  const current = (await fixture()).manifest, damaged = structuredClone(current), other = structuredClone(current)
+  damaged.name = 'Damaged character'; damaged.rig.animations = null as unknown as typeof damaged.rig.animations
+  other.rig.animations[0].id = 'jump'
+  const settings = { ...defaultExportSettings(), playOnce: ['remembered'] }
+  const catalog = exportAnimationCatalog(current, [damaged, other], settings)
+  expect(catalog.names).toEqual(['death', 'jump', 'remembered', 'walk'])
+  expect(catalog.warnings).toHaveLength(1)
+  expect(catalog.warnings[0]).toContain('Damaged character')
+  expect(() => exportAnimationCatalog(damaged, [current], settings)).toThrow('Damaged character')
+  expect(() => exportAnimationCatalog(current, [damaged], { ...settings, engine: 'removed' as Engine })).toThrow(InvalidExportSettings)
 })
 
 test('only committed settings send payload-free cross-tab invalidations and listeners clean up', async () => {
