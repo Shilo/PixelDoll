@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { unzip } from '../../src/lib/store/zip.ts'
 import { decodePngBytes } from '../../src/lib/image/pngraw.ts'
+import { readAseprite } from '../../src/lib/export/aseprite.ts'
 import { EXPORT_SETTINGS_KEY } from '../../src/lib/store/export-settings.ts'
 
 async function savedExport(page: Page, dev: string) {
@@ -433,6 +434,97 @@ test('Export takes the live current look and keeps a different saved outfit in t
   const current = await decodePngBytes(entries.get('baked/current/walk.png')!), saved = await decodePngBytes(entries.get('baked/audit-saved/walk.png')!)
   expect([...current.data.slice((sample.y * current.w + sample.x) * 4, (sample.y * current.w + sample.x) * 4 + 4)]).toEqual([255, 0, 0, 255])
   expect([...saved.data.slice((sample.y * saved.w + sample.x) * 4, (sample.y * saved.w + sample.x) * 4 + 4)]).toEqual([0, 0, 255, 255])
+})
+
+test('actual UI ZIPs materialize global playback in all six engine and asset formats', async ({ page }, info) => {
+  await savedExport(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.getByRole('button', { name: 'Close export' }).click()
+  const original = await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts'
+    const state = await import(statePath), db = await import(dbPath)
+    await db.update('projects', state.doc.id, (record: { manifest: { rig: { animations: { id: string; loop: boolean }[] } } }) => {
+      // Both archived flags contradict the global choices this test will make.
+      record.manifest.rig.animations.forEach(move => { move.loop = move.id === 'walk' })
+      return record
+    })
+    await state.openProject(state.doc.id)
+    return { manifest: (await db.get('projects', state.doc.id)).manifest, revision: state.doc.rev }
+  })
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('button', { name: 'Settings', exact: true }).click()
+  const walk = dialog.getByRole('checkbox', { name: 'Walk', exact: true })
+  await walk.check(); await expect(walk).toBeEnabled()
+  await expect(dialog.getByRole('checkbox', { name: 'Cross punch', exact: true })).not.toBeChecked()
+  const dressed = dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
+  await dressed.uncheck(); await expect(dressed).toBeEnabled()
+  await dialog.getByRole('button', { name: 'Back', exact: true }).click()
+  const playback = (animations: { id: string; loop: boolean }[]) => Object.fromEntries(animations.map(move => [move.id, move.loop]))
+  const expected = { walk: false, 'cross-punch': true }
+  for (const [engine, label] of [['godot', 'Godot'], ['unity', 'Unity'], ['phaser', 'Phaser'], ['gdevelop', 'GDevelop'], ['aseprite', 'Aseprite'], ['generic', 'PNG + JSON']] as const) {
+    await dialog.getByRole('radio', { name: label, exact: true }).check()
+    const button = dialog.getByRole('button', { name: /^Download ZIP/ }); await expect(button).toBeEnabled()
+    const [download] = await Promise.all([page.waitForEvent('download'), button.click()])
+    await download.saveAs(info.outputPath(`${engine}.pixeldoll.zip`))
+    const entries = await unzip(new Uint8Array(await readFile((await download.path())!)))
+    const file = (name: string) => { const bytes = entries.get(name); expect(bytes, name).toBeDefined(); return bytes! }
+    const text = (name: string) => new TextDecoder().decode(file(name))
+    const manifest = JSON.parse(text('manifest.json'))
+    expect(manifest.export.engines).toEqual([engine])
+    expect(playback(manifest.rig.animations)).toEqual(expected)
+    expect(playback(JSON.parse(text('project.json')).manifest.rig.animations)).toEqual(expected)
+    expect([...entries.keys()].some(name => name.startsWith('baked/'))).toBe(false)
+    if (engine === 'godot') {
+      const layers = [...entries].filter(([name, data]) => name.endsWith('.tres') && new TextDecoder().decode(data).startsWith('[gd_resource type="SpriteFrames"'))
+      expect(layers).toHaveLength(manifest.items.reduce((total: number, item: { layers: unknown[] }) => total + item.layers.length, 0))
+      for (const [name, data] of layers) {
+        const flags = [...new TextDecoder().decode(data).matchAll(/"loop": (true|false),\s*"name": &"([^"]+)"/g)].map(([, loop, id]) => [id, loop === 'true'])
+        const wanted = manifest.rig.animations.flatMap((move: { id: string; loop: boolean }) => manifest.rig.directions.map((dir: { id: string }) => [`${move.id}_${dir.id}`, move.loop]))
+        expect(flags, name).toEqual(wanted)
+      }
+    } else if (engine === 'unity') {
+      expect(playback(JSON.parse(text('unity/pixeldoll_unity.json')).animations)).toEqual(expected)
+    } else if (engine === 'gdevelop') {
+      const project = JSON.parse(text('gdevelop/game.json'))
+      const code = project.layouts[0].events[0].inlineCode.join('\n') as string
+      expect(text('gdevelop/Paperdoll.js')).toBe(code + '\n')
+      const embedded = code.match(/\n  const m = (.+);\n  const names = /)
+      expect(embedded).not.toBeNull()
+      expect(playback(JSON.parse(embedded![1]).rig.animations)).toEqual(expected)
+    } else if (engine === 'aseprite') {
+      const files = [...entries.keys()].filter(name => name.endsWith('.aseprite'))
+      expect(files).toHaveLength(1)
+      const native = await readAseprite(file(files[0]))
+      expect(native.tags.map(tag => [tag.name, tag.repeat])).toEqual(manifest.rig.animations.flatMap((move: { id: string; loop: boolean; directions: string[] }) => move.directions.map(dir => [`${move.id}_${dir}`, move.loop ? 0 : 1])))
+    } else if (engine === 'phaser') {
+      const base = new URL('/__engine_export__/', page.url()).href
+      await page.route(base + '**', route => {
+        const name = route.request().url().slice(base.length), data = entries.get(name)
+        return data ? route.fulfill({ contentType: name.endsWith('.js') ? 'text/javascript' : 'application/json', body: Buffer.from(data) }) : route.fulfill({ status: 404 })
+      })
+      try {
+        // Execute the delivered adapter with a stub scene; native Phaser execution is a separate engine check.
+        const configs = await page.evaluate(async base => {
+          const api = await import(base + 'phaser/PaperdollContainer.js')
+          type Config = { key: string; repeat: number; frameRate: number; frames: { duration: number }[] }
+          const created: Config[] = []
+          const scene = { textures: { exists: () => true }, anims: { exists: () => false, create: (config: Config) => created.push(config) } }
+          const manifest = await api.loadPaperdoll(scene, base)
+          return manifest.rig.animations.map((move: { id: string; directions: string[] }) => {
+            const config = created.find(config => config.key === api.animKey(manifest, move.id, move.directions[0]))!
+            return { id: move.id, repeat: config.repeat, durations: config.frames.map(frame => 1000 / config.frameRate + frame.duration) }
+          })
+        }, base)
+        expect(configs).toEqual(manifest.rig.animations.map((move: { id: string; loop: boolean; frames: { ms: number }[] }) => ({ id: move.id, repeat: move.loop ? -1 : 0, durations: move.frames.map(frame => frame.ms) })))
+      } finally { await page.unroute(base + '**') }
+    }
+    if (engine !== 'generic') await page.getByRole('button', { name: 'Export', exact: true }).click()
+  }
+  expect(await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts'
+    const state = await import(statePath), db = await import(dbPath)
+    return { manifest: (await db.get('projects', state.doc.id)).manifest, revision: state.doc.rev }
+  })).toEqual(original)
 })
 
 test('one-frame and hundred-animation characters keep exact summaries, readable names and reachable controls', async ({ page }, info) => {

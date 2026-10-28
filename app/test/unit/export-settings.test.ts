@@ -175,6 +175,26 @@ test('animation catalog isolates damaged unrelated characters but validates curr
   expect(() => exportAnimationCatalog(current, [damaged], { ...settings, engine: 'removed' as Engine })).toThrow(InvalidExportSettings)
 })
 
+test('extreme sparse lengths reject at the first hole before copying or scanning their declared size', async () => {
+  const playOnce = Array<string>(2 ** 31)
+  playOnce[0] = 'walk'; playOnce[playOnce.length - 1] = 'jump'
+  const record = { engine: 'godot', dressedCharacterSheets: true, playOnce }
+  vi.spyOn(db, 'get').mockResolvedValue(record)
+  vi.spyOn(db, 'update').mockImplementation(async (_store, _key, change) => change(record))
+  await expect(readExportSettings()).rejects.toBeInstanceOf(InvalidExportSettings)
+  expect(await resetInvalidExportSettings()).toEqual(defaultExportSettings())
+  expect(playOnce.length).toBe(2 ** 31)
+  const current = (await fixture()).manifest, damaged = structuredClone(current)
+  damaged.name = 'Huge sparse character'
+  damaged.rig.animations = Array(2 ** 31)
+  damaged.rig.animations[0] = current.rig.animations[0]
+  const catalog = exportAnimationCatalog(current, [damaged], defaultExportSettings())
+  expect(catalog.names).toEqual(['death', 'walk'])
+  expect(catalog.warnings).toHaveLength(1)
+  expect(catalog.warnings[0]).toContain('Huge sparse character')
+  expect(() => exportAnimationCatalog(damaged, [], defaultExportSettings())).toThrow('Huge sparse character')
+})
+
 test('only committed settings send payload-free cross-tab invalidations and listeners clean up', async () => {
   storedSettings()
   const messages: unknown[] = [], channels: { name: string; onmessage?: () => void; closed: boolean }[] = []

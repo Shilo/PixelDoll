@@ -49,9 +49,15 @@ function animationName(value: string): string {
 function checkedSettings(value: unknown): ExportSettings {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new InvalidExportSettings('Saved export settings are invalid.');
   const stored = value as Partial<ExportSettings>;
-  if (!EXPORT_ENGINES.some(engine => engine === stored.engine) || typeof stored.dressedCharacterSheets !== 'boolean' || !Array.isArray(stored.playOnce)
-    || [...stored.playOnce].some(name => typeof name !== 'string' || !validAnimationId(name)) || new Set(stored.playOnce).size !== stored.playOnce.length) throw new InvalidExportSettings('Saved export settings must contain a supported format, a dressed sheets choice and unique lowercase animation names.');
-  return { engine: stored.engine!, dressedCharacterSheets: stored.dressedCharacterSheets, playOnce: [...stored.playOnce].sort() };
+  const invalid = 'Saved export settings must contain a supported format, a dressed sheets choice and unique lowercase animation names.';
+  if (!EXPORT_ENGINES.some(engine => engine === stored.engine) || typeof stored.dressedCharacterSheets !== 'boolean' || !Array.isArray(stored.playOnce)) throw new InvalidExportSettings(invalid);
+  const names = new Set<string>();
+  // Visit holes without copying the array: even a corrupt sparse length must fail before allocating its declared size.
+  for (const name of stored.playOnce) {
+    if (typeof name !== 'string' || !validAnimationId(name) || names.has(name)) throw new InvalidExportSettings(invalid);
+    names.add(name);
+  }
+  return { engine: stored.engine!, dressedCharacterSheets: stored.dressedCharacterSheets, playOnce: [...names].sort() };
 }
 
 export async function readExportSettings(): Promise<ExportSettings> {
@@ -105,8 +111,12 @@ export function applyExportSettings(manifest: Manifest, settings: ExportSettings
 export function animationNames(manifests: readonly Manifest[], settings: ExportSettings): string[] {
   const names = new Set(checkedSettings(settings).playOnce);
   for (const manifest of manifests) {
-    if (!manifest?.rig || !Array.isArray(manifest.rig.animations) || [...manifest.rig.animations].some(animation => !animation || typeof animation.id !== 'string' || !validAnimationId(animation.id.trim().toLowerCase()))) throw new InvalidAnimationNames(`Character "${manifest?.name ?? 'Unknown'}" has invalid animation names in storage.`);
-    for (const animation of manifest.rig.animations) names.add(animationName(animation.id));
+    const invalid = `Character "${manifest?.name ?? 'Unknown'}" has invalid animation names in storage.`;
+    if (!manifest?.rig || !Array.isArray(manifest.rig.animations)) throw new InvalidAnimationNames(invalid);
+    for (const animation of manifest.rig.animations) {
+      if (!animation || typeof animation.id !== 'string' || !validAnimationId(animation.id.trim().toLowerCase())) throw new InvalidAnimationNames(invalid);
+      names.add(animationName(animation.id));
+    }
   }
   return [...names].sort();
 }
