@@ -1,0 +1,1127 @@
+{
+  "date": "2026-10-27",
+  "scope": "Research only; single-seed motion comparisons, two-seed adult standing controls. Metrics do not certify naturalness.",
+  "authorizedGenerationCap": 1000,
+  "reportedGenerations": 86,
+  "requests": 30,
+  "returnedFrames": 270,
+  "unresolvedSubmissions": [],
+  "cases": [
+    {
+      "id": "hold_south_7",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        1009,
+        1009
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hold_south_17",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 17,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        1009,
+        1009
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hold_badref_south",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        1009,
+        1009
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hold_east_7",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        589,
+        589
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hold_east_17",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 17,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        589,
+        589
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hold_badref_east",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        589,
+        589
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "stored_walk_south",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        941,
+        1001
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "walk_south_depth",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        907,
+        962
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "walk2_south_depth",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        992,
+        1026
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "slash2_south_depth",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 12,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        957,
+        1128
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "slash2_south_xy",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 12,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        947,
+        1101
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "slash2_south_short",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 12,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        964,
+        1114
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "die2s_south_depth",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 9,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        493,
+        1002
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        34
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        10,
+        24,
+        15,
+        14,
+        0
+      ]
+    },
+    {
+      "id": "stored_walk_east",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        630,
+        810
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "walk_east_depth",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        611,
+        732
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "walk2_east_depth",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        617,
+        755
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "slash2_east_depth",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 12,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        611,
+        884
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "slash2_east_xy",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 12,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        611,
+        894
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "slash2_east_short",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 12,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        610,
+        887
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "die2s_east_depth",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 9,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        371,
+        746
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        21,
+        44
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        6,
+        7,
+        7,
+        0
+      ]
+    },
+    {
+      "id": "lying_from_standing_south",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        849,
+        878
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        19,
+        19,
+        19,
+        19,
+        19,
+        19,
+        19
+      ]
+    },
+    {
+      "id": "lying_from_lying_south",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        821,
+        821
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        13,
+        13,
+        13,
+        13,
+        13,
+        13,
+        13,
+        13
+      ]
+    },
+    {
+      "id": "text_attack_south",
+      "endpoint": "/animate-with-text-v3",
+      "seed": 7,
+      "frames": 9,
+      "generations": 1,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        982,
+        1036
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "lying_from_standing_east",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        540,
+        662
+      ],
+      "detachedPixels": [
+        7,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        2,
+        11,
+        11,
+        11,
+        11,
+        11,
+        11,
+        11
+      ]
+    },
+    {
+      "id": "lying_from_lying_east",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        693,
+        693
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7,
+        7
+      ]
+    },
+    {
+      "id": "text_attack_east",
+      "endpoint": "/animate-with-text-v3",
+      "seed": 7,
+      "frames": 9,
+      "generations": 1,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        588,
+        775
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hold_chibi_south",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        1422,
+        1422
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "hold_body128_south",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 8,
+      "generations": 3,
+      "referenceSize": [
+        160,
+        160
+      ],
+      "areaRange": [
+        3775,
+        3775
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "die2s_repairedlast_south",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 9,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        485,
+        998
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        52
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        11,
+        25,
+        13,
+        14,
+        0
+      ]
+    },
+    {
+      "id": "die2s_repairedlast_east",
+      "endpoint": "/animate-with-skeleton-v3",
+      "seed": 7,
+      "frames": 9,
+      "generations": 3,
+      "referenceSize": [
+        80,
+        80
+      ],
+      "areaRange": [
+        377,
+        742
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32
+      ],
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        6,
+        7,
+        7,
+        0
+      ]
+    }
+  ],
+  "fallEndpointControl": {
+    "onlyLastTargetChanged": true,
+    "identicalLastTwoTargets": true,
+    "lastTargetBoundaryClamps": 0,
+    "interpretation": "Last frame still breaks in both views; repeating an unclamped preceding pose does not cure this sequence. Static lying controls remain coherent. Earlier frame border contact persists."
+  }
+}

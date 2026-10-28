@@ -1,5 +1,7 @@
 # Skeleton pose lab (future tool, 2026-10-26)
 
+Follow-up: the [October 27 diagnosis](../research/2026-10-27-animation-diagnosis.md) reproduces remaining depth and support-switch defects in `retarget2.mts`. Its motion is not yet validated as clean or universally proportion-independent. The lint and fit claims below are proposed goals, not proven acceptance criteria.
+
 Status: **proposal, not built.** Skeleton-v3 is deferred by the owner until PixelLab improves it, and this tool is its
 companion: build it when skeleton-v3 is picked up again, or to give PixelLab a reproducible bug report. Evidence:
 [generation-pipeline-review §15–§16](../research/generation-pipeline-review-2026-10-25.md); the skeleton-free route is

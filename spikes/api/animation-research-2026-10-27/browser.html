@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PixelDoll animation diagnosis</title>
+<style>body{font:16px system-ui;background:#17191d;color:#eee;margin:24px}button,select,input{font:inherit;margin:8px;padding:8px}pre{white-space:pre-wrap}canvas{image-rendering:pixelated;background:#333}article{border-top:1px solid #666;margin:20px 0;padding:12px 0}.strip{overflow:auto}h1{font-size:24px}</style>
+<h1>PixelDoll animation diagnosis</h1>
+<p>Local research only. Agent mode. Credential is held in memory. Paid requests are never automatically resent.</p>
+<label>Research inputs <input id="input" type="file" accept="application/json"></label>
+<label>Batch <select id="group"><option>reference</option><option>motion</option><option>alternative</option><option>shape</option><option>lying</option><option>remaining controls</option><option>fall settle</option></select></label>
+<button id="balance">Check balance</button><button id="run" disabled>Submit selected batch once</button>
+<button id="resume">Resume free polling</button><button id="download">Download evidence</button>
+<pre id="status" role="status">Loading agent access...</pre><main></main>
+<script type="module">
+import { api } from '/src/lib/pixellab/client.ts';
+import { jobIdsOf, jobImages } from '/src/lib/pixellab/routes.ts';
+import { decodePngBytes } from '/src/lib/image/pngraw.ts';
+const STORE = 'pixeldoll.animation-research.2026-10-27';
+const status = document.querySelector('#status'), main = document.querySelector('main');
+let key = '', input;
+let evidence = JSON.parse(localStorage.getItem(STORE) || '{"cases":{},"balances":[]}');
+let busy = false;
+const say = text => { status.textContent = text; };
+const persist = () => { localStorage.setItem(STORE,JSON.stringify(evidence)); };
+const safeError = e => String(e.message ?? e).replaceAll(key || '[no-key]','[redacted]');
+async function balance() {
+  const result = await api(key,'GET','/balance');
+  evidence.balances.push({ at:new Date().toISOString(), result }); persist();
+  say(JSON.stringify(result));
+}
+async function render(id, result) {
+  const images = jobImages(result.last_response);
+  let article = document.getElementById(id);
+  if (!article) { article = document.createElement('article'); article.id = id; main.append(article); }
+  article.replaceChildren();
+  const title = document.createElement('h2'); title.textContent = id; article.append(title);
+  const note = document.createElement('p'); note.textContent = result.status + ', ' + images.length + ' frames'; article.append(note);
+  if (!images.length) return;
+  const imgs = await Promise.all(images.map(async im => {
+    if (im.b64) return decodePngBytes(Uint8Array.from(atob(im.b64.replace(/^data:[^,]+,/,'')), c=>c.charCodeAt(0)));
+    if (im.rgba) return { w:im.rgba.w,h:im.rgba.h,data:Uint8ClampedArray.from(atob(im.rgba.b64),c=>c.charCodeAt(0)) };
+    throw Error('URL-only result: preserve job and inspect separately; do not discard.');
+  }));
+  const box = document.createElement('div'); box.className='strip'; article.append(box);
+  const canvas = document.createElement('canvas'), w=imgs[0].w,h=imgs[0].h; canvas.width=w*imgs.length; canvas.height=h;
+  canvas.style.width=canvas.width*3+'px'; canvas.style.height=h*3+'px';
+  const context = canvas.getContext('2d'); imgs.forEach((im,i)=>context.putImageData(new ImageData(new Uint8ClampedArray(im.data),im.w,im.h),i*w,0));
+  box.append(canvas);
+  const animated=document.createElement('canvas'); animated.width=w;animated.height=h;animated.style.width=w*3+'px';animated.style.height=h*3+'px'; article.append(animated);
+  let frame=0; const animation=animated.getContext('2d');
+  const durations=evidence.cases[id].durations??120;
+  const tick=()=>{const i=frame++%imgs.length,im=imgs[i];animation.putImageData(new ImageData(new Uint8ClampedArray(im.data),w,h),0,0);setTimeout(tick,Array.isArray(durations)?durations[i]:durations);};tick();
+}
+async function poll(id) {
+  const row=evidence.cases[id];
+  if (!row.jobId || row.result) return;
+  for (let n=0;n<120;n++) {
+    const result=await api(key,'GET','/background-jobs/'+encodeURIComponent(row.jobId));
+    if (['completed','failed','canceled'].includes(result.status)) {
+      row.result=result;row.finishedAt=new Date().toISOString();persist();await render(id,result);return;
+    }
+    await new Promise(resolve=>setTimeout(resolve,10000));
+  }
+  throw Error('Polling time limit reached; keep job ID and resume free polling later.');
+}
+async function submit(c) {
+  if (evidence.cases[c.id]) return;
+  const reserved=Object.values(evidence.cases).reduce((n,c)=>n+c.estimate,0);
+  if (reserved+c.estimate>1000) throw Error('1,000-generation reservation cap reached.');
+  const row={...c,submittedAt:new Date().toISOString(),state:'reserved'};
+  evidence.cases[c.id]=row;persist();
+  try {
+    row.state='sending';persist();
+    const response=await api(key,'POST',c.path,c.body);
+    row.submission=response;row.jobId=jobIdsOf(response)[0];row.state='submitted';persist();
+    if (!row.jobId) throw Error('No job ID. Unknown paid outcome; never resubmit.');
+    await poll(c.id);
+  } catch(e) { row.error=safeError(e);persist();throw e; }
+}
+document.querySelector('#input').onchange=async event=>{
+  try { input=JSON.parse(await event.target.files[0].text()); if(input.cap!==1000||!Array.isArray(input.cases))throw Error('Invalid research inputs');
+    document.querySelector('#run').disabled=!key;say('Loaded '+input.cases.length+' cases; pilot estimate '+input.pilotEstimate+' generations.');
+  } catch(e) { say(safeError(e)); }
+};
+document.querySelector('#balance').onclick=()=>balance().catch(e=>say(safeError(e)));
+document.querySelector('#run').onclick=async()=>{
+  if(busy||!input)return; busy=true;document.querySelector('#run').disabled=true;
+  const group=document.querySelector('#group').value;
+  try { const cases=input.cases.filter(c=>(c.group===group||(group==='remaining controls'&&['alternative','shape','lying'].includes(c.group)))&&!evidence.cases[c.id]);
+    say('Running '+cases.length+' '+group+' cases.');
+    const pending=cases.slice();
+    const workers=Array.from({length:Math.min(8,pending.length)},async()=>{while(pending.length){const c=pending.shift();await submit(c);}});
+    const results=await Promise.allSettled(workers);
+    say(JSON.stringify({group,results:results.map(r=>r.status==='fulfilled'?'complete':safeError(r.reason)),completed:Object.values(evidence.cases).filter(c=>c.result).length}));
+    await balance();
+  }catch(e){say(safeError(e));}finally{busy=false;document.querySelector('#run').disabled=false;}
+};
+document.querySelector('#resume').onclick=async()=>{
+  try { for(const id of Object.keys(evidence.cases))await poll(id);say('Polling complete.'); }catch(e){say(safeError(e));}
+};
+document.querySelector('#download').onclick=()=>{
+  const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([JSON.stringify(evidence)],{type:'application/json'}));
+  link.download='animation-evidence-2026-10-27.json';link.click();URL.revokeObjectURL(link.href);
+};
+try {
+  if(location.hostname!=='localhost'||location.port!=='5199')throw Error('Use only the localhost:5199 agent server.');
+  const response=await fetch('/__dev/pixellab-key',{cache:'no-store'});if(!response.ok)throw Error('Agent key unavailable: '+response.status);
+  key=await response.text();say('Agent access ready. Load research inputs; no paid request has been sent.');
+  for(const [id,row] of Object.entries(evidence.cases))if(row.result)await render(id,row.result);
+}catch(e){say(safeError(e));}
+</script></html>

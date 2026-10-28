@@ -1,5 +1,7 @@
 # Generation pipeline review and plan (2026-10-25)
 
+Follow-up research: [October 27 animation diagnosis](2026-10-27-animation-diagnosis.md) qualifies section 15's claim of corrected/clean retargeted motion. It reproduces remaining conversion defects before rendering and records new controlled tests; [the companion source survey](2026-10-27-animation-rigging-sources.md) reviews free CC0 animation assets and MIT tooling. This does not adopt a new production pipeline.
+
 Status: **round 10 is implemented and merged (§17). §18 has the current verdicts, open concerns and deferred cards. Skeleton-v3 stays for now and is deferred for replacement (§15); the skeleton-free route is §16.6. Experiments spent 94.1 generations (§13) plus 937 in rounds 8–9 (§15–§16); live checks spent 82.55 (§17, §18).** The owner's concerns are recorded with verdicts in §1
 (round 1), §8 (round 2), §9 (round 3), §10 (round 4, the bottleneck), §11 (round 5, the approach decision), §12 (round 6, a friend's PixelLab vs Godot comparison), §13 (round 7, experiment results), §15 (round 8, mocap move library; skeleton-v3 deferred) and §16 (round 9, the skeleton-free route); the plan is §4–§7 as revised by §10.5 and §11.4, superseded for moves and items by §16.6. Branch `claude/peaceful-robinson-0f1148` (rounds 1–7 started on `claude/paper-doll-system-optimization-c411d9`, uncommitted there).
 Sources: a code trace of `app/src` (file:line refs below), the live PixelLab OpenAPI and docs (same 102 paths as
