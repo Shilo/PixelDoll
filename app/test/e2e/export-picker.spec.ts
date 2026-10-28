@@ -442,9 +442,9 @@ test('actual UI ZIPs materialize global playback in all six engine and asset for
   const original = await page.evaluate(async () => {
     const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts'
     const state = await import(statePath), db = await import(dbPath)
-    await db.update('projects', state.doc.id, (record: { manifest: { rig: { animations: { id: string; loop: boolean }[] } } }) => {
+    await db.update('projects', state.doc.id, (record: { manifest: { rig: { animations: { id: string; loop: boolean; frames: { cell: number; ms: number }[] }[] } } }) => {
       // Both archived flags contradict the global choices this test will make.
-      record.manifest.rig.animations.forEach(move => { move.loop = move.id === 'walk' })
+      record.manifest.rig.animations.forEach(move => { move.loop = move.id === 'walk'; move.frames = [{ cell: 0, ms: 80 }, { cell: 1, ms: 180 }, { cell: 0, ms: 100 }] })
       return record
     })
     await state.openProject(state.doc.id)
@@ -506,16 +506,16 @@ test('actual UI ZIPs materialize global playback in all six engine and asset for
         // Execute the delivered adapter with a stub scene; native Phaser execution is a separate engine check.
         const configs = await page.evaluate(async base => {
           const api = await import(base + 'phaser/PaperdollContainer.js')
-          type Config = { key: string; repeat: number; frameRate: number; frames: { duration: number }[] }
+          type Config = { key: string; repeat: number; duration: number; frames: { duration: number }[] }
           const created: Config[] = []
           const scene = { textures: { exists: () => true }, anims: { exists: () => false, create: (config: Config) => created.push(config) } }
           const manifest = await api.loadPaperdoll(scene, base)
           return manifest.rig.animations.map((move: { id: string; directions: string[] }) => {
             const config = created.find(config => config.key === api.animKey(manifest, move.id, move.directions[0]))!
-            return { id: move.id, repeat: config.repeat, durations: config.frames.map(frame => 1000 / config.frameRate + frame.duration) }
+            return { id: move.id, repeat: config.repeat, total: config.duration, durations: config.frames.map(frame => frame.duration || config.duration / config.frames.length) }
           })
         }, base)
-        expect(configs).toEqual(manifest.rig.animations.map((move: { id: string; loop: boolean; frames: { ms: number }[] }) => ({ id: move.id, repeat: move.loop ? -1 : 0, durations: move.frames.map(frame => frame.ms) })))
+        expect(configs).toEqual(manifest.rig.animations.map((move: { id: string; loop: boolean; frames: { ms: number }[] }) => ({ id: move.id, repeat: move.loop ? -1 : 0, total: move.frames.reduce((total, frame) => total + frame.ms, 0), durations: move.frames.map(frame => frame.ms) })))
       } finally { await page.unroute(base + '**') }
     }
     if (engine !== 'generic') await page.getByRole('button', { name: 'Export', exact: true }).click()
