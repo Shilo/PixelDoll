@@ -105,12 +105,14 @@ const tucked = (p: Project, im: Img | null, l: Layer, under: Item[], anim: strin
   im && under.length ? tuck(im, layerFrame(p.manifest.rig, l), under.flatMap((c) => c.layers.map((cl) => [cellImg(p, cl, anim, dir, cell), layerFrame(p.manifest.rig, cl)] as [Img | null, Frame]))) : im;
 
 /** Export copy of `p` with a baked "<item>~<over>" variant per (tucked item, covering item) pair: engines swap to it when both
- *  are worn (stored directions only; a mirrored view is the flip of its source, and tucking commutes with the flip). */
+ *  are worn (stored directions only; a mirrored view is the flip of its source, and tucking commutes with the flip). Stale
+ *  items are not exported, and a cover that hides the slot never shows the tucked copy, so neither gets one. */
 export async function withTuckVariants(p: Project): Promise<Project> {
-  const m = p.manifest, images = new Map(p.images), add: Item[] = [];
-  for (const over of m.items)
-    for (const slot of m.slots.find((s) => s.id === over.slot)?.clips ?? [])
-      for (const it of m.items.filter((x) => x.slot === slot && !x.variantOf)) {
+  const m = p.manifest, images = new Map(p.images), add: Item[] = [], current = (x: Item) => !x.variantOf && x.baseHash === m.rig.baseHash;
+  for (const over of m.items.filter(current)) {
+    const overSlot = m.slots.find((s) => s.id === over.slot), hides = over.hides ?? overSlot?.hides ?? [];
+    for (const slot of (overSlot?.clips ?? []).filter((s) => !hides.includes(s)))
+      for (const it of m.items.filter((x) => x.slot === slot && current(x))) {
         const v: Item = { ...structuredClone(it), id: tuckedId(it.id, over.id), name: `${it.name} under ${over.name}`, variantOf: it.id, under: over.id };
         delete v.qa;
         for (const [li, l] of v.layers.entries())
@@ -126,6 +128,7 @@ export async function withTuckVariants(p: Project): Promise<Project> {
               }));
         add.push(v);
       }
+  }
   const base = m.items.find((x) => x.id === m.rig.baseItem);
   for (const over of m.items.filter((x) => x.baseCut && !x.variantOf && x.baseHash === m.rig.baseHash))
     if (base) { // engines swap to "<base>~<item>" while the item is worn (the same rule as tucked hair), they never mask
