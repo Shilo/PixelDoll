@@ -101,7 +101,7 @@ export function assertCreatedDirections(rig: Pick<Rig, 'directions'>, dirs: 4 | 
 // ---------- queue helpers ----------
 /** Cancel sibling continuations when one direction fails; already submitted jobs remain queue-owned. */
 const generationAttempts = new WeakMap<AbortSignal, number>();
-interface GenerationRecovery { intent: EstimateRetryIntent; rawHashes: Set<string>; tail: Promise<void> }
+interface GenerationRecovery { intent: EstimateRetryIntent; rawHashes: Set<string>; checkHashes: Set<string>; tail: Promise<void> }
 const measurementRecoveries = new WeakMap<AbortSignal, GenerationRecovery>();
 export async function parallelGeneration<T>(tasks: ((signal: AbortSignal) => Promise<T>)[], attempt?: number, recovery?: GenerationRecovery): Promise<T[]> {
   const scope = new AbortController();
@@ -116,9 +116,15 @@ export async function parallelGeneration<T>(tasks: ((signal: AbortSignal) => Pro
 export async function run(req: Req, label: string, tag: string, cache = false, resumeSafe = req.method === 'POST', signal?: AbortSignal, activityScope?: string): Promise<JobRec> {
   signal?.throwIfAborted();
   const recovery = signal ? measurementRecoveries.get(signal) : undefined;
-  if (recovery && req.path !== '/estimate-skeleton') {
+  if (recovery) {
     const { requestHash } = await requestIdentity(req);
-    if (!recovery.rawHashes.has(requestHash) || !queue.snapshot().jobs.some(r => r.requestHash === requestHash && r.state === 'done')) throw new Error('Joint-check recovery cannot generate or re-roll body artwork. Existing results were kept.');
+    const completed = queue.snapshot().jobs.find(record => record.requestHash === requestHash && record.state === 'done');
+    if (req.path !== '/estimate-skeleton' && (!recovery.rawHashes.has(requestHash) || !completed)) throw new Error('Joint-check recovery cannot generate or re-roll body artwork. Existing results were kept.');
+    signal?.throwIfAborted();
+    // Consume a reviewed check once, including when another tab already completed it. Repeated frames cannot buy it twice.
+    const allowed = req.path === '/estimate-skeleton' && recovery.checkHashes.delete(requestHash);
+    if (completed) return completed;
+    if (!allowed) throw new Error('Cached joint results changed. Review the body frames again before continuing. No replacement request was made.');
   }
   const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, signal, activityScope, minimumTier: 1, attempt: signal ? generationAttempts.get(signal) : undefined,
     ...(recovery && req.path === '/estimate-skeleton' ? { estimateRetry: recovery.intent } : {}) });
@@ -408,12 +414,43 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
 /** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; rigVersion: string } }
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; checkHashes: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; checkHashes: string[]; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
+function approvedCheckHashes(value: unknown): Set<string> {
+  const invalid = () => new Error('The reviewed joint-check hashes are invalid. Review the body frames and cost again.');
+  if (!Array.isArray(value)) throw invalid();
+  const hashes = new Set<string>();
+  for (const hash of value) {
+    if (typeof hash !== 'string' || !/^[a-f0-9]{64}$/.test(hash) || hashes.has(hash)) throw invalid();
+    hashes.add(hash);
+  }
+  return hashes;
+}
+function approvedMeasurementIds(intent: unknown): string[] | undefined {
+  if (intent === undefined) return undefined;
+  const invalid = () => new Error('The joint-check recovery intent is invalid.');
+  if (!intent || typeof intent !== 'object' || Array.isArray(intent)) throw invalid();
+  const value = intent as Partial<NonNullable<MoveSpec['measurementRecovery']>>;
+  if (typeof value.id !== 'string' || !value.id.trim() || typeof value.rigVersion !== 'string' || !value.rigVersion || !Array.isArray(value.recordIds)) throw invalid();
+  const seen = new Set<string>();
+  for (const id of value.recordIds) {
+    if (typeof id !== 'string' || !id.trim() || seen.has(id)) throw invalid();
+    seen.add(id);
+  }
+  approvedCheckHashes(value.checkHashes);
+  return value.recordIds;
+}
+function checkedPaletteIntent(intent: unknown, checkHashes = true): void {
+  if (intent === undefined) return;
+  if (!intent || typeof intent !== 'object' || Array.isArray(intent)) throw new Error('The body color-repair intent is invalid.');
+  const value = intent as Partial<NonNullable<MoveSpec['bodyPaletteRepair']>>;
+  if (value.version !== 'near-rest-v1' || typeof value.id !== 'string' || !value.id.trim() || typeof value.rigVersion !== 'string' || !value.rigVersion) throw new Error('This character or color-repair policy changed since review.');
+  if (checkHashes) approvedCheckHashes(value.checkHashes);
+}
 /** A completed body publication can outlive failed equipment work; only its exact durable receipt permits resuming. */
 async function publishedMoveRecovery(rec: StoredProject, spec: MoveSpec): Promise<boolean> {
   const receipt = rec.moveRecovery, intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
-  return !!intent && receipt?.id === intent.id && receipt.originalRigVersion === intent.rigVersion &&
+  return !!intent && !!receipt && receipt.id === intent.id && receipt.originalRigVersion === intent.rigVersion &&
     receipt.specHash === await recoverySpecHash(spec) && receipt.bodyRigVersion === moveRigVersion(rec);
 }
 export const MOVE_STEPS = [
@@ -433,7 +470,7 @@ export function moveDirections(m: Manifest, dirs?: readonly DirectionName[]): Di
   return all.filter(d => dirs.includes(d));
 }
 interface BodyPaletteStats { directions: DirectionName[]; changedPixels: number; rawOutliers: number; remainingOutliers: number; changedFrames: number }
-export interface MeasurementRecoveryPlan { recordIds: string[]; checks: number; gens: number; usd: number; rigVersion: string; rawHashes: string[]; palette?: BodyPaletteStats }
+export interface MeasurementRecoveryPlan { recordIds: string[]; checkHashes: string[]; checks: number; gens: number; usd: number; rigVersion: string; rawHashes: string[]; palette?: BodyPaletteStats }
 export interface BodyPaletteRepairPlan extends MeasurementRecoveryPlan, BodyPaletteStats { itemGens: number }
 /** An expected eligibility limit, distinct from a failed storage read or malformed PNG. */
 class RecoveryUnavailable extends Error {}
@@ -480,14 +517,16 @@ export async function reviewMoveRecovery(projectId: string, spec: MoveSpec): Pro
   if (!spec.replace || spec.itemMethod || !spec.action || !ACTIONS[spec.action] || !spec.dirs?.length) return {};
   const context = await recoveryContext(projectId);
   if (await publishedMoveRecovery(context.rec, spec)) return {};
-  if (spec.measurementRecovery && spec.measurementRecovery.rigVersion !== moveRigVersion(context.rec)) throw new Error('This character changed since these joint checks were reviewed.');
+  // A new review grants no consent. Reconstruct the candidate against current inputs, keeping the exact color policy.
+  const inspection = { ...spec, measurementRecovery: undefined,
+    bodyPaletteRepair: spec.bodyPaletteRepair && { ...spec.bodyPaletteRepair, rigVersion: moveRigVersion(context.rec) } };
   try {
-    const plan = await inspectMeasurementRecovery(context, { ...spec, measurementRecovery: undefined });
+    const plan = await inspectMeasurementRecovery(context, inspection, true);
     if (plan.checks && plan.recordIds.length) return { recovery: plan };
     if (plan.checks) return { unavailable: 'Cached frames have no failed joint checks to retry.' };
-    if (spec.bodyPaletteRepair) return {};
-    const colorRepair = await inspectBodyPaletteRepair(context, spec);
-    return colorRepair ? { colorRepair } : {};
+    if (spec.bodyPaletteRepair) return { recovery: plan };
+    const colorRepair = await inspectBodyPaletteRepair(context, inspection);
+    return colorRepair ? { colorRepair } : spec.measurementRecovery ? { recovery: plan } : {};
   } catch (error) {
     if (error instanceof RecoveryUnavailable) return { unavailable: error.message };
     throw error;
@@ -502,7 +541,7 @@ export async function bodyPaletteRepairPlan(projectId: string, spec: MoveSpec): 
 async function inspectBodyPaletteRepair(context: RecoveryContext, spec: MoveSpec): Promise<BodyPaletteRepairPlan | undefined> {
   const { rec } = context;
   const plan = await inspectMeasurementRecovery(context, { ...spec, measurementRecovery: undefined,
-    bodyPaletteRepair: { id: 'palette-review', version: 'near-rest-v1', rigVersion: moveRigVersion(rec) } });
+    bodyPaletteRepair: { id: 'palette-review', version: 'near-rest-v1', checkHashes: [], rigVersion: moveRigVersion(rec) } }, true);
   if (!plan.palette?.directions.length) return undefined;
   if (plan.recordIds.length) throw new RecoveryUnavailable('Review unknown joint-check outcomes before matching these body colors.');
   return { ...plan, ...plan.palette, itemGens: poseGens(spec.items.filter(id => !rec.manifest.items.find(item => item.id === id)?.design).length, moveFrames(rec.manifest, spec), moveDirections(rec.manifest, spec.dirs).length) };
@@ -511,14 +550,16 @@ async function inspectBodyPaletteRepair(context: RecoveryContext, spec: MoveSpec
 export async function measurementRecoveryPlan(projectId: string, spec: MoveSpec): Promise<MeasurementRecoveryPlan> {
   return inspectMeasurementRecovery(await recoveryContext(projectId), spec);
 }
-async function inspectMeasurementRecovery(context: RecoveryContext, spec: MoveSpec): Promise<MeasurementRecoveryPlan> {
+async function inspectMeasurementRecovery(context: RecoveryContext, spec: MoveSpec, reviewOnly = false): Promise<MeasurementRecoveryPlan> {
   const { rec, jobs } = context;
   const rig = rec.manifest.rig, rigVersion = moveRigVersion(rec);
   if (!spec.replace || spec.itemMethod || !spec.action || !ACTIONS[spec.action] || !spec.dirs?.length) throw new RecoveryUnavailable('Joint-check recovery needs the original authored body-repair settings.');
+  const approved = reviewOnly ? undefined : approvedMeasurementIds(spec.measurementRecovery);
+  checkedPaletteIntent(spec.bodyPaletteRepair, !reviewOnly);
+  const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
+  const allowed = !reviewOnly && intent ? approvedCheckHashes(intent.checkHashes) : undefined;
   if (spec.bodyPaletteRepair && (spec.bodyPaletteRepair.version !== 'near-rest-v1' || !spec.bodyPaletteRepair.id || spec.bodyPaletteRepair.rigVersion !== rigVersion)) throw new Error('This character or color-repair policy changed since review.');
   if (spec.measurementRecovery && spec.measurementRecovery.rigVersion !== rigVersion) throw new Error('This character changed since these joint checks were reviewed.');
-  const approved = spec.measurementRecovery?.recordIds;
-  if (approved && (!approved.length || new Set(approved).size !== approved.length || !spec.measurementRecovery?.id)) throw new Error('The joint-check recovery intent is invalid.');
   const seen = new Set<string>(), needed = new Set<string>(), recordIds = new Set<string>(), rawHashes: string[] = [];
   const palette: BodyPaletteStats = { directions: [], changedPixels: 0, rawOutliers: 0, remainingOutliers: 0, changedFrames: 0 };
   for (const d of moveDirections(rec.manifest, spec.dirs)) {
@@ -573,7 +614,9 @@ async function inspectMeasurementRecovery(context: RecoveryContext, spec: MoveSp
     }
   }
   if (approved && (recordIds.size !== approved.length || approved.some(id => !recordIds.has(id)))) throw new Error('The reviewed joint checks do not match these exact cached body frames.');
-  return { recordIds: [...recordIds].sort(), checks: needed.size, gens: +(needed.size * EST).toFixed(2), usd: +(needed.size * .00513).toFixed(5), rigVersion, rawHashes, ...(spec.bodyPaletteRepair ? { palette } : {}) };
+  if (approved && !approved.length && needed.size) throw new Error('Cached body reuse requires completed joint checks. Review the unfinished checks before continuing.');
+  if (allowed && [...needed].some(hash => !allowed.has(hash))) throw new Error('The pending joint checks changed. Review their exact frames and cost again.');
+  return { recordIds: [...recordIds].sort(), checkHashes: [...needed].sort(), checks: needed.size, gens: +(needed.size * EST).toFixed(2), usd: +(needed.size * .00513).toFixed(5), rigVersion, rawHashes, ...(spec.bodyPaletteRepair ? { palette } : {}) };
 }
 
 /** Moves a saved item lacks, e.g. idle and walk added after it was planned on the standing views, as items-only specs (addMove
@@ -622,6 +665,8 @@ export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' 
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
 export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<{ fitIds: string[]; warnings: string[] }> {
+  approvedMeasurementIds(spec.measurementRecovery);
+  checkedPaletteIntent(spec.bodyPaletteRepair);
   const { rec } = await loadProject(projectId);
   if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
   const dirs = moveDirections(rec.manifest, spec.dirs), existing = rec.manifest.rig.animations.find(a => a.id === spec.id);
@@ -674,6 +719,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void, recovery?: MeasurementRecoveryPlan) {
   const { rec, project } = await loadProject(projectId), m = rec.manifest, rig = m.rig;
   const version = moveRigVersion(rec);
+  if (recovery && recovery.rigVersion !== version) throw new Error('This character changed since these joint checks were reviewed.');
   const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
   const receiptSpecHash = intent ? await recoverySpecHash(spec) : undefined;
   const dirs = moveDirections(m, spec.dirs) as Direction[], affected = affectedMoveDirections(rig, dirs), n = moveFrames(m, spec), name = m.name;
@@ -694,7 +740,7 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
       extra[k] = [(await queue.enqueue(req, { signal })) as JobRec];
     }
     return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, authored: !!(spec.action && ACTIONS[spec.action]), looks: rec.character!.looks, seed: spec.seed + 101, name, tick: checkedTick, view: rig.view, signal, activityScope: spec.activityScope, unarmed: spec.poseStyle === 'visible-side-v1', paletteRepair: !!spec.bodyPaletteRepair }) };
-  }), spec.seed, recovery && { intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] }, rawHashes: new Set(recovery.rawHashes), tail: Promise.resolve() });
+  }), spec.seed, recovery && { intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] }, rawHashes: new Set(recovery.rawHashes), checkHashes: new Set(recovery.checkHashes), tail: Promise.resolve() });
 
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });
   const fresh = (await db.get<StoredProject>('projects', projectId))!;

@@ -1052,17 +1052,21 @@ export async function startMove(projectId: string, spec: MoveSpec) {
     await startMove(next.projectId, next.spec);
   }
 }
-/** Explicit consent to retry only the reviewed joint checks, keeping the original body request identity. */
+/** Explicit consent to reuse cached body frames or retry only the reviewed checks, keeping the original body identity. */
 export async function retryMoveMeasurements(projectId: string, spec: MoveSpec, reviewed: MeasurementRecoveryPlan) {
   const pending = JSON.stringify($state.snapshot(spec));
   const unchanged = () => !hmrReloading && !moveRunning && moving.projectId === projectId && !!moving.error && !moving.done && JSON.stringify($state.snapshot(moving.spec)) === pending;
   if (!unchanged()) throw new Error('This operation changed. Review the joint checks again.');
-  const current = await (await createFlow()).measurementRecoveryPlan(projectId, { ...spec, measurementRecovery: undefined });
-  const ids = (value: string[]) => JSON.stringify([...value].sort());
-  if (!unchanged() || current.checks <= 0 || !current.recordIds.length || current.rigVersion !== reviewed.rigVersion || current.checks !== reviewed.checks || ids(current.recordIds) !== ids(reviewed.recordIds)) {
+  const current = (await (await createFlow()).reviewMoveRecovery(projectId, spec)).recovery;
+  const review = (plan: MeasurementRecoveryPlan) => JSON.stringify({ ...plan, recordIds: [...plan.recordIds].sort(), checkHashes: [...plan.checkHashes].sort(), rawHashes: [...plan.rawHashes].sort(),
+    palette: plan.palette && { ...plan.palette, directions: [...plan.palette.directions].sort() } });
+  const eligible = current && (current.checks > 0 ? current.recordIds.length > 0 : current.checks === 0 && !current.recordIds.length && !!(spec.measurementRecovery || spec.bodyPaletteRepair));
+  if (!unchanged() || !current || !eligible || review(current) !== review(reviewed) || (spec.bodyPaletteRepair && !current.palette)) {
     throw new Error('The pending joint checks changed. Review their cost again.');
   }
-  await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: { id: crypto.randomUUID(), recordIds: [...current.recordIds], rigVersion: current.rigVersion } });
+  const next = { ...$state.snapshot(spec), measurementRecovery: { id: crypto.randomUUID(), recordIds: [...current.recordIds], checkHashes: [...current.checkHashes], rigVersion: current.rigVersion } };
+  if (next.bodyPaletteRepair) next.bodyPaletteRepair = { ...next.bodyPaletteRepair, checkHashes: [...current.checkHashes], rigVersion: current.rigVersion };
+  await startMove(projectId, next);
 }
 /** Explicit bounded color cleanup on the reviewed cached body; all paid measurements still use the changed PNGs. */
 export async function matchMoveBodyColors(projectId: string, spec: MoveSpec, reviewed: BodyPaletteRepairPlan) {
@@ -1070,11 +1074,11 @@ export async function matchMoveBodyColors(projectId: string, spec: MoveSpec, rev
   const unchanged = () => !hmrReloading && !moveRunning && moving.projectId === projectId && !!moving.error && !moving.done && !spec.bodyPaletteRepair && JSON.stringify($state.snapshot(moving.spec)) === pending;
   if (!unchanged()) throw new Error('This operation changed. Review the body colors again.');
   const current = await (await createFlow()).bodyPaletteRepairPlan(projectId, { ...spec, measurementRecovery: undefined });
-  const review = (plan: typeof current) => JSON.stringify({ ...plan, directions: [...plan.directions].sort(), rawHashes: [...plan.rawHashes].sort(), recordIds: [...plan.recordIds].sort() });
+  const review = (plan: typeof current) => JSON.stringify({ ...plan, directions: [...plan.directions].sort(), rawHashes: [...plan.rawHashes].sort(), checkHashes: [...plan.checkHashes].sort(), recordIds: [...plan.recordIds].sort() });
   if (!unchanged() || current.changedPixels <= 0 || current.changedFrames <= 0 || !current.directions.length || review(current) !== review(reviewed)) {
     throw new Error('The body color corrections changed. Review their cost again.');
   }
-  await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: undefined, bodyPaletteRepair: { id: crypto.randomUUID(), version: 'near-rest-v1', rigVersion: current.rigVersion } });
+  await startMove(projectId, { ...$state.snapshot(spec), measurementRecovery: undefined, bodyPaletteRepair: { id: crypto.randomUUID(), version: 'near-rest-v1', checkHashes: [...current.checkHashes], rigVersion: current.rigVersion } });
 }
 let moveResumed = false;
 export async function resumeMove() {

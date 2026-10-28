@@ -1,10 +1,10 @@
 /// <reference types="svelte" />
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
-import type { Progress } from '../../src/studio/create.ts'
+import type { MoveSpec, Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), update: vi.fn(), clear: vi.fn(), subscribe: vi.fn(), handoff: vi.fn(), all: vi.fn() }))
-vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, measurementRecoveryPlan: mocks.recovery, bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
+vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, moveItems: mocks.moveItems, reviewMoveRecovery: async (...args: unknown[]) => ({ recovery: await mocks.recovery(...args) }), bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
 vi.mock('../../src/studio/setup.ts', () => ({ setupCharacter: mocks.setup }))
 vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match }))
 vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: mocks.load }))
@@ -168,7 +168,7 @@ for (const kind of ['create', 'move', 'setup'] as const) {
 }
 
 
-const recoveryPlan = { recordIds: ['lost-west-0', 'canceled-west-1'], rigVersion: 'rig-fingerprint', checks: 2, gens: 0.2, usd: 0.01026, rawHashes: [] }
+const recoveryPlan = { checkHashes: ['a'.repeat(64), 'b'.repeat(64)], recordIds: ['lost-west-0', 'canceled-west-1'], rigVersion: 'rig-fingerprint', checks: 2, gens: 0.2, usd: 0.01026, rawHashes: [] }
 const recoverySpec = { id: 'slash', action: 'slash', frames: 8, items: ['sword'], seed: 2438, replace: true, dirs: ['east', 'west'] as import('../../src/lib/store/manifest.ts').DirectionName[], poseStyle: 'visible-side-v1' as const }
 
 test('explicit joint-check recovery preserves the body identity and persists one reviewed intent before work', async () => {
@@ -198,13 +198,47 @@ test('explicit joint-check recovery preserves the body identity and persists one
   expect(reloaded.moving.spec).toEqual(stored.spec)
 })
 
-test.each(['recordIds', 'rigVersion', 'checks', 'empty'] as const)('joint recovery rejects changed %s without clearing the failed operation or writing consent', async (field) => {
-  mocks.recovery.mockResolvedValue(field === 'empty' ? { ...recoveryPlan, recordIds: [], checks: 0 } : { ...recoveryPlan, [field]: field === 'recordIds' ? ['another-record'] : field === 'checks' ? 3 : 'changed-rig' })
+test.each(['recordIds', 'rigVersion', 'checks', 'checkHashes', 'rawHashes', 'gens', 'usd', 'palette', 'empty', 'unavailable'] as const)('joint recovery rejects changed %s without clearing the failed operation or writing consent', async (field) => {
+  const changes = { recordIds: ['another-record'], rigVersion: 'changed-rig', checks: 3, checkHashes: ['c'.repeat(64), 'd'.repeat(64)], rawHashes: ['changed-art'], gens: .9, usd: .99, palette: { directions: ['west'], changedPixels: 4, rawOutliers: 4, remainingOutliers: 0, changedFrames: 1 } }
+  mocks.recovery.mockResolvedValue(field === 'unavailable' ? undefined : field === 'empty' ? { ...recoveryPlan, recordIds: [], checks: 0 } : { ...recoveryPlan, [field]: changes[field] })
   const s = await import('../../src/studio/state.svelte.ts')
   Object.assign(s.moving, { projectId: 'project', spec: structuredClone(recoverySpec), error: 'Original failure', done: false })
   await expect(s.retryMoveMeasurements('project', structuredClone(recoverySpec), recoveryPlan)).rejects.toThrow('Review their cost again')
   expect(s.moving.error).toBe('Original failure')
   expect(mocks.move).not.toHaveBeenCalled(); expect(mocks.put).not.toHaveBeenCalled()
+})
+
+test.each([false, true])('fresh recovery consent replaces the stale rig version only after durable review (palette=%s)', async palette => {
+  const current = { ...recoveryPlan, rigVersion: 'current-rig', rawHashes: ['exact-original-art'], ...(palette ? { palette: { directions: ['west'] as import('../../src/lib/store/manifest.ts').DirectionName[], changedPixels: 39, rawOutliers: 39, remainingOutliers: 0, changedFrames: 3 } } : {}) }
+  const spec = { ...recoverySpec, measurementRecovery: { id: 'old-joint-consent', recordIds: ['old-check'], rigVersion: 'old-rig', checkHashes: [] },
+    ...(palette ? { bodyPaletteRepair: { id: 'original-color-policy', version: 'near-rest-v1' as const, rigVersion: 'old-rig', checkHashes: [] } } : {}) }
+  const persisted = pending<void>()
+  mocks.recovery.mockResolvedValue(current); mocks.put.mockImplementationOnce(() => persisted.promise)
+  mocks.move.mockRejectedValue(new Error('Offline after fresh consent'))
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(spec), error: 'Unknown joint check', done: false })
+  const running = s.retryMoveMeasurements('project', structuredClone(spec), current)
+  await vi.waitFor(() => expect(mocks.put).toHaveBeenCalledOnce())
+  expect(mocks.recovery).toHaveBeenCalledWith('project', spec)
+  expect(mocks.move).not.toHaveBeenCalled()
+  const stored = mocks.put.mock.calls[0][2]
+  expect(stored).toMatchObject({ status: 'running', spec: { ...recoverySpec, measurementRecovery: { recordIds: current.recordIds, rigVersion: 'current-rig' } } })
+  expect(stored.spec.measurementRecovery.id).not.toBe('old-joint-consent')
+  expect(stored.spec.measurementRecovery.id).toMatch(/^[a-f0-9-]{36}$/)
+  if (palette) expect(stored.spec.bodyPaletteRepair).toEqual({ id: 'original-color-policy', version: 'near-rest-v1', checkHashes: current.checkHashes, rigVersion: 'current-rig' })
+  else expect(stored.spec.bodyPaletteRepair).toBeUndefined()
+  persisted.resolve(); await running
+  expect(mocks.move).toHaveBeenCalledOnce()
+  expect(mocks.move.mock.calls[0][1]).toEqual(stored.spec)
+})
+
+test('corrected-frame consent cannot proceed if the fresh review loses the palette candidate', async () => {
+  const spec = { ...recoverySpec, bodyPaletteRepair: { id: 'color-policy', version: 'near-rest-v1' as const, rigVersion: 'old-rig', checkHashes: [] } }
+  mocks.recovery.mockResolvedValue(recoveryPlan)
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(spec), error: 'Original corrected-frame failure', done: false })
+  await expect(s.retryMoveMeasurements('project', spec, recoveryPlan)).rejects.toThrow('Review their cost again')
+  expect(mocks.put).not.toHaveBeenCalled(); expect(mocks.move).not.toHaveBeenCalled()
 })
 
 test('joint recovery refuses a superseded pending operation and a failed durable-intent write cannot start paid work', async () => {
@@ -226,8 +260,8 @@ test('joint recovery refuses a superseded pending operation and a failed durable
 })
 
 
-const palettePlan = { ...recoveryPlan, recordIds: [], rawHashes: ['cached-body-hash'], checks: 4, gens: 0.4, usd: 0.02052, directions: ['west'] as import('../../src/lib/store/manifest.ts').DirectionName[], changedPixels: 39, rawOutliers: 177, remainingOutliers: 138, changedFrames: 4, itemGens: 6 }
-const paletteSpec = { ...recoverySpec, measurementRecovery: { id: 'previous-joint-consent', recordIds: ['old-lost'], rigVersion: 'rig-fingerprint' } }
+const palettePlan = { ...recoveryPlan, checkHashes: ['a', 'b', 'c', 'd'].map(value => value.repeat(64)), recordIds: [], rawHashes: ['cached-body-hash'], checks: 4, gens: 0.4, usd: 0.02052, directions: ['west'] as import('../../src/lib/store/manifest.ts').DirectionName[], changedPixels: 39, rawOutliers: 177, remainingOutliers: 138, changedFrames: 4, itemGens: 6 }
+const paletteSpec = { ...recoverySpec, measurementRecovery: { id: 'previous-joint-consent', recordIds: ['old-lost'], rigVersion: 'rig-fingerprint', checkHashes: [] } }
 
 test('body color consent preserves the raw render identity, clears old check consent, and persists before work', async () => {
   const persisted = pending<void>()
@@ -253,8 +287,45 @@ test('body color consent preserves the raw render identity, clears old check con
   expect(restored.moving.spec).toEqual(stored.spec)
 })
 
-test.each(['rawHashes', 'rigVersion', 'changedPixels', 'checks', 'itemGens'] as const)('body color consent rejects changed %s without paid work', async field => {
-  mocks.palette.mockResolvedValue({ ...palettePlan, [field]: field === 'rawHashes' ? ['different-body'] : field === 'rigVersion' ? 'changed-rig' : 999 })
+test.each([false, true])('all-cached reuse saves a fresh current-rig intent before work (palette=%s)', async palette => {
+  const current = { ...recoveryPlan, recordIds: [], checkHashes: [], rigVersion: 'current-rig', checks: 0, gens: 0, usd: 0,
+    ...(palette ? { palette: { directions: ['west'] as import('../../src/lib/store/manifest.ts').DirectionName[], changedPixels: 39, rawOutliers: 39, remainingOutliers: 0, changedFrames: 3 } } : {}) }
+  const spec = { ...recoverySpec, measurementRecovery: { id: 'old-check-consent', recordIds: ['old-lost-check'], rigVersion: 'old-rig', checkHashes: [] },
+    ...(palette ? { bodyPaletteRepair: { id: 'old-color-consent', version: 'near-rest-v1' as const, rigVersion: 'old-rig', checkHashes: [] } } : {}) }
+  const persisted = pending<void>()
+  mocks.recovery.mockResolvedValue(current); mocks.put.mockImplementationOnce(() => persisted.promise)
+  mocks.move.mockRejectedValue(new Error('Offline after fresh color consent'))
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(spec), error: 'Publication interrupted', done: false })
+  const running = s.retryMoveMeasurements('project', structuredClone(spec), current)
+  await vi.waitFor(() => expect(mocks.put).toHaveBeenCalledOnce())
+  expect(mocks.move).not.toHaveBeenCalled()
+  const stored = mocks.put.mock.calls[0][2]
+  expect(stored.spec.measurementRecovery).toMatchObject({ recordIds: [], rigVersion: 'current-rig' })
+  expect(stored.spec.measurementRecovery.id).not.toBe('old-check-consent')
+  expect(stored.spec.measurementRecovery.id).toMatch(/^[a-f0-9-]{36}$/)
+  if (palette) expect(stored.spec.bodyPaletteRepair).toEqual({ id: 'old-color-consent', version: 'near-rest-v1', checkHashes: current.checkHashes, rigVersion: 'current-rig' })
+  else expect(stored.spec.bodyPaletteRepair).toBeUndefined()
+  persisted.resolve(); await running
+  expect(mocks.move.mock.calls[0][1]).toEqual(stored.spec)
+})
+
+test('explicit cached reuse replaces missing old palette hash authorization with the fresh reviewed hashes', async () => {
+  const current = { ...recoveryPlan, recordIds: [], checkHashes: [], rigVersion: 'current-rig', checks: 0, gens: 0, usd: 0,
+    palette: { directions: ['west'] as import('../../src/lib/store/manifest.ts').DirectionName[], changedPixels: 39, rawOutliers: 39, remainingOutliers: 0, changedFrames: 3 } }
+  const spec = { ...recoverySpec, bodyPaletteRepair: { id: 'retained-known-policy', version: 'near-rest-v1', rigVersion: 'old-rig' } } as MoveSpec
+  mocks.recovery.mockResolvedValue(current); mocks.move.mockRejectedValue(new Error('Offline after explicit reapproval'))
+  const s = await import('../../src/studio/state.svelte.ts')
+  Object.assign(s.moving, { projectId: 'project', spec: structuredClone(spec), error: 'Old interrupted repair', done: false })
+  await s.retryMoveMeasurements('project', spec, current)
+  const stored = mocks.put.mock.calls[0][2].spec
+  expect(stored.bodyPaletteRepair).toEqual({ id: 'retained-known-policy', version: 'near-rest-v1', rigVersion: 'current-rig', checkHashes: [] })
+  expect(stored.measurementRecovery).toMatchObject({ rigVersion: 'current-rig', recordIds: [], checkHashes: [] })
+  expect(mocks.move.mock.calls[0][1]).toEqual(stored)
+})
+
+test.each(['rawHashes', 'checkHashes', 'rigVersion', 'changedPixels', 'checks', 'itemGens'] as const)('body color consent rejects changed %s without paid work', async field => {
+  mocks.palette.mockResolvedValue({ ...palettePlan, [field]: field === 'rawHashes' ? ['different-body'] : field === 'checkHashes' ? ['e'.repeat(64)] : field === 'rigVersion' ? 'changed-rig' : 999 })
   const s = await import('../../src/studio/state.svelte.ts')
   Object.assign(s.moving, { projectId: 'project', spec: structuredClone(paletteSpec), error: 'Palette fit failed', done: false })
   await expect(s.matchMoveBodyColors('project', structuredClone(paletteSpec), palettePlan)).rejects.toThrow('Review their cost again')
@@ -263,7 +334,7 @@ test.each(['rawHashes', 'rigVersion', 'changedPixels', 'checks', 'itemGens'] as 
 })
 
 test('existing body color intent cannot be applied twice and interrupted resume retains its identity', async () => {
-  const spec = { ...recoverySpec, bodyPaletteRepair: { id: 'existing-color-consent', version: 'near-rest-v1' as const, rigVersion: palettePlan.rigVersion } }
+  const spec = { ...recoverySpec, bodyPaletteRepair: { id: 'existing-color-consent', version: 'near-rest-v1' as const, checkHashes: palettePlan.checkHashes, rigVersion: palettePlan.rigVersion } }
   const s = await import('../../src/studio/state.svelte.ts')
   Object.assign(s.moving, { projectId: 'project', spec, error: 'A corrected check stopped', done: false })
   await expect(s.matchMoveBodyColors('project', spec, palettePlan)).rejects.toThrow('Review the body colors again')
