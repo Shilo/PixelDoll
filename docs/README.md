@@ -120,6 +120,9 @@ Screenshots for all reports: [`testing/img/` at 1f95029](https://github.com/Shil
 | Doc | What |
 |---|---|
 | [Professional product audit](testing/professional-audit-2026-10-22.md) | Independent pipeline/data/Studio reviews, adversarial team challenges, fixes and fresh browser/live validation. |
+| [Integration and crash recovery](testing/integration-and-crash-2026-10-28.md) | Coordinated main integration, abrupt browser termination, durable Export choices and submission recovery. |
+| [Phaser playback](testing/phaser-playback-2026-10-28.md) | Native runtime verification of exported frame timing, looping, play once and layer synchronization. |
+| [Unity playback](testing/unity-playback-2026-10-28.md) | Installed Editor activation prerequisite, offline C# compilation and remaining native checks. |
 | [Test performance](testing/test-performance.md) | Why unit and e2e runs are fast (parallel files, 16 one-worker CI shards), budgets and warning signs, anti-patterns that made them slow, rules for new tests. |
 | [Toolchain standardization](testing/toolchain-standardization-2026-10-22.md) | Exact runtime/dependencies, Vitest and Playwright migration, production byte parity and validation. |
 | [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |
