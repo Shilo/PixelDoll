@@ -69,7 +69,8 @@ test('Unity importer preserves native asset references and lossless geometry set
   expect(cs).toContain('1f - (float)l.pivotY / l.cellH');
   expect(cs).toContain('layers.First(l => l.role == "fg")');
   expect(cs).toContain('EditorCurveBinding.PPtrCurve("clock"');
-  expect(cs).toContain('keys.Add(new ObjectReferenceKeyframe { time = t, value = keys[keys.Count - 1].value })');
+  expect(cs).toContain('time = elapsedMs / 1000f');
+  expect(cs).toContain('if (a.frames.Last().ms > gcd) keys.Add(new ObjectReferenceKeyframe { time = (elapsedMs - gcd) / 1000f');
   expect(cs).toContain('var initial = d.animations.First(a => a.directions.Length > 0)');
   expect(cs).not.toContain('d.animations[0].directions[0]');
 });
