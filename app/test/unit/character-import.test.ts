@@ -13,6 +13,7 @@ import { cellHash } from '../../src/lib/rig/rig.ts'
 import { expectPixels } from './pixels.ts'
 import { CharacterImportError, projectEntries, readCharacterZip } from '../../src/lib/store/import.ts'
 import { unzip, zip, type ZipEntry } from '../../src/lib/store/zip.ts'
+import { CURRENT_FORMAT } from '../../src/lib/store/manifest.ts'
 
 const enc = new TextEncoder()
 const id = '5352683c-54aa-4617-b303-e942e472c66d'
@@ -54,6 +55,7 @@ test('current PixelLab multi-state ZIP preserves independent directions and spar
   const bytes = await zip(await pixelLabFiles())
   const imported = await readCharacterZip(bytes, id), { manifest: m, images } = imported.project
   expect(m.name).toBe('Test adventurer')
+  expect(m.format).toBe(CURRENT_FORMAT) // pixeldoll/1 recolor skips item colors the body uses
   expect(imported.states).toHaveLength(2)
   expect(m.rig.directions.map((d) => [d.id, d.mirrorOf])).toEqual([['south', undefined], ['east', undefined], ['west', undefined]])
   const base = m.items[0].layers[0]
