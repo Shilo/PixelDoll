@@ -22,7 +22,7 @@ import { rigReady } from '../lib/rig/setup.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, bodyComponents, clipQa, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { gridEstimate } from '../lib/items/items.ts';
-import { posable, poseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
+import { posable, poseGens, itemPoseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
 import { coverage } from './itemRoute.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
@@ -647,15 +647,15 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
   const r = dir && m.rig.rest?.[dir];
   return s.action === 'walk' ? 8 : s.action && ACTIONS[s.action] && r && dir ? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length : s.frames;
 };
-export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace'>) {
+export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace'>) {
   const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = s.itemMethod === 'grid' && !s.replace ? 0 : dirs * (poseCallGens(n) + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
   const directItems = s.items.filter(id => !m.items.find(item => item.id === id)?.design);
   const items = s.itemMethod === 'grid' ? directItems.reduce((sum, id) => {
     const item = m.items.find(i => i.id === id);
     if (!item) throw new Error('The selected equipment is no longer available.');
     const cell = item.layers[0]?.cell ?? m.rig.cell;
-    return sum + gridEstimate(cell, n, Object.keys(item.dressed ?? {}).length).gens * dirs;
-  }, 0) : poseGens(directItems.length, n, dirs);
+    return sum + gridEstimate(cell, n, 1).gens * dirs;
+  }, 0) : directItems.reduce((sum, id) => sum + itemPoseGens(m.rig, m.items.find(i => i.id === id)!, s.id, n, moveDirections(m, s.dirs)), 0);
   return { gens: body + items, body, items, frames: n, minutes: 4 + directItems.length * 3 };
 
 }

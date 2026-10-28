@@ -114,7 +114,7 @@
           {/each}
         </div>
       </div>
-      <p class="faint small">PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.</p>
+      <p class="faint small">Consistency checks run automatically. Quality retries and repairs cost extra; unresolved details need review. PixelLab may bill dollars and queue time varies.</p>
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>

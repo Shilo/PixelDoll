@@ -637,7 +637,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword')
   await item.getByRole('radio', { name: 'azure', exact: true }).click()
   await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/Est\. \d+ gens/)
-  await expect(item.getByText('PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.', { exact: true })).toBeVisible()
+  await expect(item.getByText('Consistency checks run automatically. Quality retries and repairs cost extra; unresolved details need review. PixelLab may bill dollars and queue time varies.', { exact: true })).toBeVisible()
   await item.getByRole('button', { name: /^Make/ }).click()
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
   await newItem(page, 'Head')
@@ -1173,7 +1173,9 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
   await page.evaluate(() => {
     const s = (window as unknown as { __studio: { ui: { selected: string }; store: { results: Record<string, any> } } }).__studio
     const id = s.ui.selected.slice(4), r = s.store.results[id]
-    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % gray smudges in a colorful design']]) } }
+    const count = r.preview.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').cells
+    const cells = ['south', 'east'].flatMap(dir => Array.from({ length: count }, (_, i) => ({ key: `walk/${dir}/${i}` })))
+    s.store.results = { ...s.store.results, [id]: { ...r, cells, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % gray smudges in a colorful design']]) } }
   })
   await expect(review.locator('.badge.look')).toHaveText('Needs a look')
   await expect(review.getByText('The design has gray smudges', { exact: true })).toBeVisible()

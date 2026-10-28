@@ -3,7 +3,7 @@
   // itself; Keep it / Try again / Discard stay available for the rest). Wear shows the draft on the character meanwhile.
   import { bakedFrame, composeCell } from '../lib/compose/compose.ts'
   import { queue } from '../lib/pixellab/queue.ts'
-  import { failsOf, gensOf, usdOf, hasStructuralFailure, isClean } from '../lib/items/run.ts'
+  import { failsOf, gensOf, usdOf, hasStructuralFailure, incompleteCoverage, isClean } from '../lib/items/run.ts'
   import { loadProject } from '../lib/store/project.ts'
   import { itemRoute } from './itemRoute.ts'
   import Sprite from './Sprite.svelte'
@@ -27,7 +27,8 @@
   const frame = $derived(prev ? bakedFrame(prev.manifest) : undefined) // a 96 px held item shows whole
   const reasons = $derived(res ? [...new Set(g.draft.calls.flatMap((_, i) => failsOf(res, i)).map(plainReason))] : [])
   const warns = $derived(res?.qa?.warnings.map(plainReason) ?? [])
-  const clean = $derived(!!res && isClean(res))
+  const incomplete = $derived(!res || !prev || incompleteCoverage(g.draft, prev.manifest.rig, res))
+  const clean = $derived(!!res && !incomplete && isClean(res))
   const worn = $derived(doc.drafts[g.draft.spec.slot] === g.draft.spec.id)
   // views whose frames are still generating (the preview item lists them as pending)
   const loadingDirs = $derived(g.phase === 'running' && anim ? new Set(prev?.manifest.items.find((i) => i.id === g.draft.spec.id)?.pending?.filter((k) => k.startsWith(`${anim.id}/`)).map((k) => k.split('/')[1])) : new Set<string>())
@@ -100,10 +101,11 @@
       <p class="muted small">Some checks need review.</p>
     {/if}
     <div class="actions">
-      <button class="bu-action btn primary" data-variant="primary" onclick={accept} disabled={busy || !res?.qa || hasStructuralFailure(res)}>Keep it</button>
+      <button class="bu-action btn primary" data-variant="primary" onclick={accept} disabled={busy || !res?.qa || hasStructuralFailure(res) || incomplete}>Keep it</button>
       <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="bu-action btn" data-variant="outline" onclick={() => retryGen(g)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
       <button class="bu-action btn plain danger" data-variant="quiet" onclick={() => discardGen(g)} disabled={busy}>Discard</button>
     </div>
+    {#if incomplete}<p class="notice warn small">Some frames were not generated. Try again to resolve the standing design before animation continues.</p>{/if}
   {:else if g.phase === 'failed'}
     <p class="notice bad small"><CircleAlert size={14} />{g.error?.includes('5000') || g.error?.toLowerCase().includes('policy') ? 'PixelLab declined this prompt. Try different words.' : 'This item could not be made.'}</p>
     <div class="actions">

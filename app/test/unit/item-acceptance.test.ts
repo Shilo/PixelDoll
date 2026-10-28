@@ -110,7 +110,7 @@ test('dressed imported-rest cells survive a design-art warning and retain their 
   draft.calls[0].cells = ['rest/south/0']
   const composite = toChroma(base, 'green')
   for (let y = 0; y < 3; y++) for (let x = 2; x < 6; x++) composite.data.set(y === 0 ? [95, 90, 85, 255] : [220, 20, 30, 255], (y * 8 + x) * 4)
-  ledger.records[0].jobs = [{ id: 'job', status: 'completed', done: true, results: [{ label: '0', sha: 'design-warning-fixture' }] }]
+  ledger.records[0].jobs = [{ id: 'job', status: 'completed', done: true, results: ['0', '1'].map(label => ({ label, sha: 'design-warning-fixture' })) }]
   const blob = new Blob([(await encodePngBytes(composite)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
   vi.spyOn(db, 'getBlob').mockResolvedValue(blob)
   const result = await evaluateItem(draft, ctx)

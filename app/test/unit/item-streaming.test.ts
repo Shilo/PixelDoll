@@ -71,7 +71,7 @@ test('after a key switch a direction poses as soon as its own dress chunk passes
   d.keySwitched = true // no later chunk can switch the key again, so early poses are never restarted
   const run = runItem(d, ctx, { result: (r) => results.push(r) })
   await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-  await land(q.order[0].id, [dressed])
+  await land(q.order[0].id, [dressed, dressed]) // Single-view edits use the API's two-frame minimum.
   // south poses while the east dress chunk is still generating; east waits for its own keyframe
   await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined())
   const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1]
@@ -101,17 +101,18 @@ test('a failing design call poses nothing early (its re-roll drops every later c
   const empty = toChroma(makeImg(16, 16), 'green') // the item is missing: G4 on the keyframe
   void runItem(d, ctx, {})
   await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-  await land(q.order[0].id, [empty])
+  await land(q.order[0].id, [empty, empty])
   await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
   await land(q.order[1].id, [empty, empty])
   await vi.waitFor(() => expect(d.calls[0].rerolls).toBe(1)) // re-rolled at the checkpoint
+  expect(d.log.join(' ')).toContain('G4')
   expect(call('/animate-with-skeleton-v3')).toBeUndefined()
 })
 
 test('a pose fallback grid the account plan cannot run is never enqueued: the pose roll stays for review', async () => {
   const { ctx, d, dressed } = await fixture()
   for (const [k, c] of d.calls.entries()) {
-    const id = `done${k}`, outs = c.kind === 'pose' ? Array(4).fill(dressed) : k ? [dressed, dressed] : [dressed]
+    const id = `done${k}`, outs = c.kind === 'pose' ? Array(4).fill(dressed) : [dressed, dressed]
     q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec)
     c.recId = id
     await land(id, outs)
@@ -158,7 +159,7 @@ test('several dress chunks on the first key pose nothing until all landed: a lat
   const { ctx, d, dressed } = await fixture()
   void runItem(d, ctx, {})
   await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-  await land(q.order[0].id, [dressed]) // south passes its gates
+  await land(q.order[0].id, [dressed, dressed]) // south passes its gates
   await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
   const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1]
   await land(east.id, [dressed, collision(dressed)])
@@ -176,7 +177,7 @@ test('a call re-rolled while its request is built keeps the paid record counted 
   vi.mocked(db.getBlob).mockImplementation(async (sha) => { if (holding) { held = true; await hold } return blobs.get(sha) })
   void runItem(d, ctx, { result: () => { holding = true } }) // the next blob read after the gate evaluation is the pose's keyframe
   await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-  await land(q.order[0].id, [dressed])
+  await land(q.order[0].id, [dressed, dressed])
   await vi.waitFor(() => expect(held).toBe(true))
   rerollCall(d, 0, 'a new design') // drops the south pose while its request is being built
   holding = false; release()
@@ -193,7 +194,7 @@ test('an early pose that fails is handled where the run awaits it, never as an u
   try {
     const run = runItem(d, ctx, {})
     await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
-    await land(q.order[0].id, [dressed]) // the south pose fails at once, long before the coverage step
+    await land(q.order[0].id, [dressed, dressed]) // the south pose fails at once, long before the coverage step
     await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
     await new Promise((r) => setTimeout(r, 50))
     await land(q.order.filter((o) => o.path === '/edit-animation-v2')[1].id, [dressed, dressed])

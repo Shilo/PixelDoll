@@ -1,3 +1,5 @@
+import { centroid, maskOf, simAligned } from '../image/similarity.ts';
+export { simAligned } from '../image/similarity.ts';
 // Item lab core (architecture §3.1–3.4, §4): slot ladder, call packing, prompts, per-cell extraction, gates G1–G8, fg/bg split,
 // manifest Item. Pure over Img; the UI (ui/M3.svelte) only runs calls through the queue and persists.
 import { chromaLayer, chromaPrompt, components, fillHoles, KEY_NAME, keyKept, keyOutside, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
@@ -10,10 +12,13 @@ import type { Skeleton } from '../rig/skeleton.ts';
 import { backView, fromApi, hasAll } from '../rig/poses.ts';
 import { actionOf, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
-import { editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
+import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { clipOf, summaryOf } from './qa-summary.ts';
 import { missingLowerGarment } from './garment-coverage.ts';
 import { footwearWarnings } from './footwear-review.ts';
+import { expectsWaistBand, waistBandEvidence } from './design-consistency.ts';
+import { torsoConsistency } from './torso-consistency.ts';
+import { assertImportedPoses, importedPoseIssues } from '../rig/pose-review.ts';
 
 /**
  * Item routes (S4 §Q4), swappable without touching extraction, QA or the UI:
@@ -29,7 +34,9 @@ export const itemRoute = {
   name: 'skeleton-posed keyframe / edit-animation-v2',
   edit: (framesPngB64: string[], description: string, seed: number, cell: { w: number; h: number }): Req => {
     const size = { width: cell.w, height: cell.h };
-    return routes.editAnimationV2({ description, frames: framesPngB64.map((b) => ({ image: png(b), size })), image_size: size, no_background: true, seed });
+    if (!framesPngB64.length) throw new Error('Equipment editing needs at least one source frame.');
+    const frames = Array.from({ length: Math.max(EDIT_MIN_FRAMES, framesPngB64.length) }, (_, i) => framesPngB64[Math.min(i, framesPngB64.length - 1)]);
+    return routes.editAnimationV2({ description, frames: frames.map((b) => ({ image: png(b), size })), image_size: size, no_background: true, seed });
   },
   /**
    * Pose a dressed chroma keyframe (in pose `rest`) through a stored keypoint sequence (rig-cell API coords; `pad` moves them
@@ -94,6 +101,7 @@ export function gridPrompt(o: { item: string; slot: string; key: Key; anim: stri
     `The first ${o.n} frames (left to right, top to bottom) are ${(o.parts && o.parts.length > 1 ? o.parts : [{ anim: o.anim, n: o.n }]).map((p, i) => `${i ? 'then ' : ''}a ${p.n}-frame ${actionOf(p.anim)} animation`).join(', ')} ${facing(o.dir)}. ` +
     `The next ${o.refs.length} frames show the reference design (${o.refs.map((d) => facing(d)).join(', ')}): ${o.item}. ` +
     `The ${color} color is intentional (a chroma key) and must stay exactly the same ${color}. ` +
+    `Every target keeps ${facing(o.dir)} throughout the animation. Match that reference's front or back features; never turn around or swap front and back details between frames. ` +
     instruction +
     `Keep every other pixel, the poses, the outlines, the grid layout and the transparent background unchanged.`;
 }
@@ -179,8 +187,15 @@ export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clip
   const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method, rig.cell) : 0));
   return [
     ...anchorChunks(spec.dirs.map(restKey), cap).map((cells) => ({ kind: 'dress' as const, cells })),
-    ...posePlan(rig, spec),
+    ...posePlan(rig, spec).map(c => ({ ...c, kind: frozenGrid(rig, spec, c.cells) ? 'grid' as const : c.kind })),
   ];
+}
+/** Keep imported artwork and avoid posing through corroborated bad estimates. Never guess replacement joints. */
+export function frozenGrid(rig: Rig, spec: { slot?: string; key?: Route }, cells: string[]): boolean {
+  if (!importedPoseIssues(rig, { cells }).length) return false;
+  if (spec.key && spec.key !== 'none' && spec.slot && slotOf(spec.slot).class !== 'held' && gridFits(rig.cell, cells.length, 1)) return true;
+  assertImportedPoses(rig, { cells });
+  return false;
 }
 /**
  * Pose calls: one per clip-direction (split above 15 frames), except that idle and walk of one direction share a call when they
@@ -215,8 +230,7 @@ export const anchored = (k: number, kind: CallKind = 'edit') => k > 0 && (kind =
  *  160 px, 25 for a 192 px held canvas). */
 export const editGens = (canvas: { w: number; h: number }) => { const s = Math.max(canvas.w, canvas.h); return s <= 128 ? 10 : s <= 170 ? 15 : 25; };
 export function planGens(p: { kind: CallKind; cells: string[] }[], gridCell = { w: 64, h: 64 }): number {
-  const refs = new Set(p.filter(c => c.kind === 'dress').flatMap(c => c.cells)).size;
-  return p.reduce((s, c) => s + (c.kind === 'pose' ? poseCallGens(c.cells.length) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, refs).gens : editGens(gridCell)), 0);
+  return p.reduce((s, c) => s + (c.kind === 'pose' ? poseCallGens(c.cells.length) : c.kind === 'grid' ? gridEstimate(gridCell, c.cells.length, 1).gens : editGens(gridCell)), 0);
 }
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
@@ -740,11 +754,6 @@ export function alignedIoU(a: Uint8Array, b: Uint8Array, w: number): number {
   }
   return i / (sum(a) + sum(b) - i);
 }
-const centroid = (m: Uint8Array, w: number): [number, number] | null => {
-  let n = 0, sx = 0, sy = 0;
-  for (let p = 0; p < m.length; p++) if (m[p]) { n++; sx += p % w; sy += (p / w) | 0; }
-  return n ? [sx / n, sy / n] : null;
-};
 
 /** Compare held silhouettes in wrist coordinates. Only a missing pixel behind the other frame's body can be hidden.
  * One pixel of body tolerance matches posed extraction. This cannot prove the hidden shape: callers must warn, not pass.
@@ -952,35 +961,12 @@ export const DESIGN = { gray: 0.05 };
 export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|\bfur(?!i)|stone|\bash/i; // not sash, cashmere, furious
 
 // ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------
-const maskOf = (im: Img) => { const m = new Uint8Array(im.w * im.h); for (let p = 0; p < m.length; p++) m[p] = im.data[p * 4 + 3] ? 1 : 0; return m; };
 const despeck = (im: Img, min = 4) => {
   const o = makeImg(im.w, im.h);
   for (const c of components(maskOf(im), im.w, im.h)) if (c.length >= min) for (const p of c) o.data.set(im.data.subarray(p * 4, p * 4 + 4), p * 4);
   return o;
 };
-/** Appearance similarity of layer A to keyframe layer K after centroid alignment (±1 px): over the union of both masks a pixel
- * scores 1 − maxChannelDiff/128 when both are opaque, 0 when only one is; K px landing on `occ` (visible mannequin) are skipped.
- * Optional `shift` maps layer coordinates to keyframe coordinates using stored joints instead of a partial mask's centroid. */
-export function simAligned(A: Img, K: Img, occ?: Uint8Array, shift?: [number, number]): number {
-  const { w, h } = A, a = maskOf(A), b = maskOf(K), ca = centroid(a, w), cb = centroid(b, w);
-  if (!ca || !cb) return 0;
-  let best = 0;
-  for (let ey = -1; ey <= 1; ey++)
-    for (let ex = -1; ex <= 1; ex++) {
-      const dx = (shift?.[0] ?? Math.round(cb[0] - ca[0])) + ex, dy = (shift?.[1] ?? Math.round(cb[1] - ca[1])) + ey;
-      let S = 0, U = 0;
-      for (let y = 0; y < h; y++)
-        for (let x = 0; x < w; x++) {
-          const p = y * w + x, X = x + dx, Y = y + dy, inB = X >= 0 && Y >= 0 && X < w && Y < h && b[Y * w + X];
-          if ((!a[p] && !inB) || (!a[p] && occ?.[p])) continue;
-          U++;
-          const q = (Y * w + X) * 4;
-          if (a[p] && inB) S += Math.max(0, 1 - Math.max(Math.abs(A.data[p * 4] - K.data[q]), Math.abs(A.data[p * 4 + 1] - K.data[q + 1]), Math.abs(A.data[p * 4 + 2] - K.data[q + 2])) / 128);
-        }
-      best = Math.max(best, U ? S / U : 0);
-    }
-  return best;
-}
+
 const OPP: Partial<Record<DirectionName, DirectionName>> = { south: 'north', north: 'south' };
 /** A raised forearm can cover a helmet. Limit possible occlusion to visible key-colored body pixels near its stored
  * elbow-to-wrist segment, not the whole head/mannequin. At a 64 px cell, a 4 px forearm gets 1 px of pose tolerance.
@@ -1016,10 +1002,10 @@ export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 
  * frames: hair, chest and the cape's front view scored 0.20–0.74 on 31 frames that look right; the cape wrapping the raised arm
  * from behind scored 0.31–0.46). Off for legs, feet (S and N look alike: trousers own ≈ opposite on 13 good frames) and held items.
  */
-export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, referenceBodies?: Partial<Record<DirectionName, Img>>): { fails: Map<number, string[]>; warnings: string[]; missingLowerFrames: number; footwearReviewFrames: number } {
+export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, referenceBodies?: Partial<Record<DirectionName, Img>>, prompt = ''): { fails: Map<number, string[]>; warnings: string[]; missingLowerFrames: number; footwearReviewFrames: number; waistReviewFrames: number; facingReviewFrames: number } {
   const fails = new Map<number, string[]>(), warnings: string[] = [];
-  const missingLower = new Set<string>(), footwearReview = new Set<string>();
-  const result = () => ({ fails, warnings, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size });
+  const missingLower = new Set<string>(), footwearReview = new Set<string>(), waistReview = new Set<string>(), facingReview = new Set<string>();
+  const result = () => ({ fails, warnings, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size, waistReviewFrames: waistReview.size, facingReviewFrames: facingReview.size });
   // A cape can swing above the knees or behind the body. This check is for body-covering garments.
   if (rig && slot.class === 'worn' && slot.bgZ == null) for (const c of cells) {
     const [anim, dir, frame] = c.key.split('/') as [string, DirectionName, string], design = keys[dir];
@@ -1036,6 +1022,20 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     if (referenceBody && rest && observed) for (const side of footwearWarnings(referenceBody, design, c.base, c.layer, fromApi(rest, rig.cell), fromApi(observed, rig.cell))) {
       footwearReview.add(c.key);
       warnings.push(`G12 ${c.key}: clothing coverage near the ${side} foot differs from the standing design; inspect the footwear`);
+    }
+    if (expectsWaistBand(prompt) && referenceBody && rest && observed
+      && waistBandEvidence({ body: referenceBody, layer: design, pose: fromApi(rest, rig.cell) }) === 'present'
+      && waistBandEvidence({ body: c.base, layer: c.layer, pose: fromApi(observed, rig.cell) }) === 'missing') {
+      waistReview.add(c.key);
+      warnings.push(`G13 ${c.key}: the requested waist band is missing compared with its standing design`);
+    }
+    const opposite = OPP[dir], oppositeBody = opposite && referenceBodies?.[opposite], oppositeLayer = opposite && keys[opposite], oppositeRest = opposite && rig.rest?.[opposite]?.keypoints;
+    if (referenceBody && rest && observed && oppositeBody && oppositeLayer && oppositeRest
+      && torsoConsistency(anim, dir, { body: referenceBody, layer: design, pose: fromApi(rest, rig.cell) },
+        { body: oppositeBody, layer: oppositeLayer, pose: fromApi(oppositeRest, rig.cell) },
+        { body: c.base, layer: c.layer, pose: fromApi(observed, rig.cell) })) {
+      facingReview.add(c.key);
+      warnings.push(`G14 ${c.key}: upper torso resembles the opposite standing view; inspect front and back details`);
     }
   }
   // G6 against the dressed design, every slot: the call-level G6 measures later calls against the first pose call, so a clip

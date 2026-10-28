@@ -3,7 +3,8 @@ import { assertImportedPoses, fixedFacingLocomotion, importedPoseIssues } from '
 import { hasAll, LABELS } from '../../src/lib/rig/poses.ts';
 import type { DirectionName, Keypoint, Rig } from '../../src/lib/rig/rig.ts';
 import type { Item } from '../../src/lib/store/manifest.ts';
-import { newDraft, poseItemClip, runItem, type Draft, type RigCtx } from '../../src/lib/items/run.ts';
+import { itemPoseGens, newDraft, runItem, type Draft, type RigCtx } from '../../src/lib/items/run.ts';
+import { planGens } from '../../src/lib/items/items.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
 
 afterEach(() => vi.restoreAllMocks());
@@ -70,25 +71,36 @@ function context(): RigCtx {
 }
 const spec = { id: 'robe', name: 'Robe', slot: 'torso_inner', prompt: 'a long robe', key: 'green' as const, method: 'skel' as const, anims: ['walking'], dirs: ['south' as const] };
 
-test('new default and explicitly skeleton-posed drafts stop before any paid dressing request', () => {
+test('new worn drafts plan and price frozen-grid dressing instead of unsafe skeleton targets before any request', () => {
   const ctx = context(), enqueue = vi.spyOn(queue, 'enqueue').mockRejectedValue(new Error('Unexpected paid request'));
+  for (const draft of [newDraft(ctx, spec), newDraft(ctx, { ...spec, method: undefined })]) {
+    expect(draft.calls.map(c => c.kind)).toEqual(['dress', 'grid']);
+    expect(draft.calls[1]).toMatchObject({ frozen: true, cells: ['walking/south/0', 'walking/south/1', 'walking/south/2'] });
+    expect(planGens(draft.calls as Parameters<typeof planGens>[0], ctx.rec.manifest.rig.cell)).toBe(20);
+  }
+  expect(() => newDraft(ctx, { ...spec, slot: 'main_hand' })).toThrow('walking/south frame 2');
+  ctx.rec.manifest.rig.cell = { w: 160, h: 160 };
   expect(() => newDraft(ctx, spec)).toThrow('walking/south frame 2');
-  expect(() => newDraft(ctx, { ...spec, method: undefined })).toThrow('walking/south frame 2');
   expect(enqueue).not.toHaveBeenCalled();
 });
 
-test('persisted skeleton drafts cannot bypass the imported-pose preflight on resume', async () => {
+test('persisted unsafe pose calls reroute to frozen grids before any new skeleton request', async () => {
   const ctx = context(), enqueue = vi.spyOn(queue, 'enqueue').mockRejectedValue(new Error('Unexpected paid request'));
-  const draft: Draft = { rigId: ctx.rec.id, spec, calls: [{ kind: 'dress', cells: ['rest/south/0'], seed: 1, rerolls: 0, old: [] }], keySwitched: false, log: [] };
-  await expect(runItem(draft, ctx)).rejects.toThrow('walking/south frame 2');
-  expect(enqueue).not.toHaveBeenCalled();
+  const draft: Draft = { rigId: ctx.rec.id, spec, calls: [{ kind: 'dress', cells: ['rest/south/0'], seed: 1, rerolls: 0, old: [] }, { kind: 'pose', cells: ['walking/south/0', 'walking/south/1', 'walking/south/2'], seed: 2, rerolls: 0, old: [] }], keySwitched: false, log: [] };
+  await runItem(draft, ctx);
+  expect(draft.calls[1]).toMatchObject({ kind: 'grid', frozen: true });
+  expect(enqueue.mock.calls.map(([req]) => req.path)).not.toContain('/animate-with-skeleton-v3');
   expect(draft.calls[0].recId).toBeUndefined();
+  enqueue.mockClear();
+  await expect(runItem({ ...draft, spec: { ...spec, slot: 'main_hand' }, calls: [{ kind: 'pose', cells: ['walking/south/1'], seed: 1, rerolls: 0, old: [] }] }, ctx)).rejects.toThrow('walking/south frame 2');
+  expect(enqueue).not.toHaveBeenCalled();
 });
 
-test('extending accepted equipment stops before pose or fallback requests for suspicious imported targets', async () => {
+test('accepted equipment estimates the actual safe route and still refuses unsafe held targets', () => {
   const ctx = context(), enqueue = vi.spyOn(queue, 'enqueue').mockRejectedValue(new Error('Unexpected paid request'));
   const item: Item = { id: 'robe', name: 'Robe', slot: 'torso_inner', prompt: 'a long robe', status: 'accepted', mirror: 'generate', materials: [], baseHash: ctx.rec.manifest.rig.baseHash, key: 'green', route: 'skeleton-pose', dressed: { south: 'sha256:design' }, layers: [{ id: 'main', role: 'fg', z: 40, cells: {} }], provenance: [] };
-  await expect(poseItemClip(ctx, item, 'walking')).rejects.toThrow('walking/south frame 2');
+  expect(itemPoseGens(ctx.rec.manifest.rig, item, 'walking', 3, ['south'])).toBe(10);
+  expect(() => itemPoseGens(ctx.rec.manifest.rig, { ...item, slot: 'main_hand' }, 'walking', 3, ['south'])).toThrow('walking/south frame 2');
   expect(enqueue).not.toHaveBeenCalled();
 });
 
@@ -96,6 +108,6 @@ test('equipment preflight does not block independently selected clean moves', ()
   const ctx = context(), clean = rig('south', 'idle').animations[0];
   clean.sources!.south!.keypoints = [rest(), rest(), rest()];
   ctx.rec.manifest.rig.animations.push(clean);
-  expect(newDraft(ctx, { ...spec, anims: ['idle'] }).calls[0].kind).toBe('dress');
-  expect(() => newDraft(ctx, { ...spec, anims: ['walking', 'idle'] })).toThrow('walking/south frame 2');
+  expect(newDraft(ctx, { ...spec, anims: ['idle'] }).calls.map(c => c.kind)).toEqual(['dress', 'pose']);
+  expect(newDraft(ctx, { ...spec, anims: ['walking', 'idle'] }).calls.map(c => c.kind)).toEqual(['dress', 'grid', 'pose']);
 });

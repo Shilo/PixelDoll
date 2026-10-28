@@ -23,8 +23,8 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
   const parts: (QaSummary & { hand?: 'r' | 'l' | '?' })[] = [...Object.values(clips), ...(legacy?.summary ? [legacy.summary] : [])];
   const min = (k: 'minKeyKept' | 'minAreaRatio') => Math.min(1, ...parts.map((p) => p[k]));
   const max = (k: 'maxKeyOutside' | 'maxAreaCV' | 'maxPaletteDist') => Math.max(0, ...parts.map((p) => p[k]));
-  const sum = (k: 'clipPx' | 'shiftedFrames' | 'strayPx' | 'missingLowerFrames' | 'footwearReviewFrames') => parts.reduce((n, p) => n + (p[k] ?? 0), 0);
-  const missingLowerFrames = sum('missingLowerFrames'), footwearReviewFrames = sum('footwearReviewFrames');
+  const sum = (k: 'clipPx' | 'shiftedFrames' | 'strayPx' | 'missingLowerFrames' | 'footwearReviewFrames' | 'waistReviewFrames' | 'facingReviewFrames') => parts.reduce((n, p) => n + (p[k] ?? 0), 0);
+  const missingLowerFrames = sum('missingLowerFrames'), footwearReviewFrames = sum('footwearReviewFrames'), waistReviewFrames = sum('waistReviewFrames'), facingReviewFrames = sum('facingReviewFrames');
   const decided = parts.filter((p) => p.hand === 'r' || p.hand === 'l');
   const switched = new Set(decided.map((p) => p.hand)).size > 1 || parts.some((p) => p.handedness === 'switched');
   // Each clip already checks its hand against the slot. Do not reopen accepted exceptions by majority vote.
@@ -40,6 +40,8 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
     minKeyKept: min('minKeyKept'), minAreaRatio: min('minAreaRatio'), maxKeyOutside: max('maxKeyOutside'), maxAreaCV: max('maxAreaCV'), maxPaletteDist: max('maxPaletteDist'),
     clipPx: sum('clipPx'), shiftedFrames: sum('shiftedFrames'), strayPx: sum('strayPx'),
     ...(missingLowerFrames ? { missingLowerFrames } : {}), ...(footwearReviewFrames ? { footwearReviewFrames } : {}),
+    ...(waistReviewFrames ? { waistReviewFrames } : {}),
+    ...(facingReviewFrames ? { facingReviewFrames } : {}),
     ...(grip ? { grip } : {}), ...(parts.some((p) => p.handedness) ? { handedness: switched ? 'switched' : 'ok' } : {}),
     status, rerolls: (old?.rerolls ?? 0) + next.rerolls, clips, ...(legacy ? { legacy } : {}),
     cells: { ...Object.fromEntries(Object.entries(old?.cells ?? {}).filter(([k]) => !replaced.has(clipOf(k)))), ...cells },

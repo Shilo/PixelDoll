@@ -26,11 +26,11 @@ test('import can be canceled before choosing a file and reopened', async ({ page
   }
 })
 
-test('suspicious imported walking joints disable item generation with a visible frame-specific reason', async ({ page, context }, info) => {
+test('suspicious imported walking joints plan a priced frozen-frame alternative before any API request', async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', route => { requests.push(route.request().method()); return route.abort() })
   await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
-  await page.evaluate(async () => {
+  const planned = await page.evaluate(async () => {
     const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', posesPath = '/src/lib/rig/poses.ts'
     const s = await import(statePath), db = await import(dbPath), { LABELS } = await import(posesPath)
     await s.copyDemo()
@@ -54,13 +54,25 @@ test('suspicious imported walking joints disable item generation with a visible 
     rec.character = { id: 'synthetic-imported-pose', looks: 'Synthetic pose fixture' }
     await db.put('projects', s.doc.id, rec)
     s.store.project = { ...s.store.project, manifest: rec.manifest }
+    const plansPath = '/src/studio/apiPlans.ts', { itemPlan } = await import(plansPath)
+    const calls = itemPlan({ rec, project: s.store.project }, { name: 'Coat', slot: 'torso_inner', prompt: 'long coat and boots' })
+    return { gens: calls.reduce((n: number, c: { generations?: number }) => n + (c.generations ?? 0), 0), grids: calls.filter((c: { label: string }) => c.label?.startsWith('Dress frozen frames')) }
   })
   await newItem(page, 'Body')
   const sheet = page.getByRole('dialog', { name: 'New item', exact: true })
   await sheet.locator('textarea').fill('long coat and boots')
-  await expect(sheet.getByRole('alert')).toContainText('walk/south frame 1: suspicious estimated joints')
-  await expect(sheet.getByRole('alert')).toContainText('No new generation was submitted')
-  await expect(sheet.getByRole('button', { name: /^Make / })).toBeDisabled()
+  expect(planned.grids).toHaveLength(1)
+  expect(planned.grids[0]).toMatchObject({ path: '/inpaint-v3', generations: 10 })
+  await expect(sheet.getByRole('alert')).toHaveCount(0)
+  await expect(sheet.getByRole('button', { name: `Make · Est. ${planned.gens} gens`, exact: true })).toBeEnabled()
+  await sheet.getByRole('button', { name: 'Inspect API calls', exact: true }).click()
+  const api = page.getByRole('dialog', { name: 'API calls', exact: true })
+  const frozen = api.locator('.peek-call').filter({ hasText: planned.grids[0].label })
+  await expect(frozen).toHaveCount(1)
+  await expect(frozen.locator('.call-price')).toHaveText('~10 gens')
+  await frozen.locator('summary').click()
+  await expect(frozen).toContainText('Automatic alternative to suspicious imported joints')
+  await expect(frozen).toContainText('frozen body frames')
   expect(requests).toEqual([])
 })
 
@@ -73,7 +85,7 @@ test('saved garment coverage warnings keep their specific review reasons after r
     const s = await import(statePath), db = await import(dbPath)
     await s.copyDemo()
     const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((i: { slot: string }) => i.slot === 'torso_inner')
-    item.qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'accepted', rerolls: 0, cells: {}, missingLowerFrames: 2, footwearReviewFrames: 1 }
+    item.qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'accepted', rerolls: 0, cells: {}, missingLowerFrames: 2, footwearReviewFrames: 1, waistReviewFrames: 1, facingReviewFrames: 1 }
     await db.put('projects', s.doc.id, rec)
   })
   await reloadStudio(page)
@@ -82,7 +94,32 @@ test('saved garment coverage warnings keep their specific review reasons after r
   await expect(pane.locator('.badge.look')).toContainText('Needs a look')
   await expect(pane.getByText('Some lower clothing is missing compared with the standing design', { exact: true })).toBeVisible()
   await expect(pane.getByText('Footwear differs from the standing design; inspect the feet', { exact: true })).toBeVisible()
+  await expect(pane.getByText('The waist band differs from the standing design; inspect the clothing', { exact: true })).toBeVisible()
+  await expect(pane.getByText('Some frames resemble the opposite view; inspect the torso', { exact: true })).toBeVisible()
   await expect(pane.getByText('PixelLab returned an unexpected image', { exact: true })).toHaveCount(0)
+  expect(requests).toEqual([])
+})
+
+test('a standing consistency stop cannot keep an item before its requested walking coverage exists', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', route => { requests.push(route.request().method()); return route.abort() })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await equipmentGroup(page, 'Body')
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', s = await import(statePath)
+    await s.copyDemo()
+    const p = s.store.project, item = p.manifest.items.find((i: { slot: string }) => i.slot === 'torso_inner')
+    const dirs = p.manifest.rig.directions.filter((d: { mirrorOf?: string }) => !d.mirrorOf).map((d: { id: string }) => d.id)
+    s.ui.playing = false; s.ui.anim = 'walk'; s.ui.inspTab = 'item'
+    const calls = [{ kind: 'dress', cells: dirs.map((d: string) => `rest/${d}/0`), seed: 1, rerolls: 0, old: [] }, ...dirs.map((d: string) => ({ kind: 'pose', cells: Array.from({ length: 8 }, (_, i) => `walk/${d}/${i}`), seed: 2, rerolls: 0, old: [] }))]
+    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: item.id, name: 'Unresolved standing design', slot: item.slot, prompt: 'white waistband', key: 'green', method: 'skel', anims: ['walk'], dirs }, calls, keySwitched: false, log: [] }, input: { name: 'Unresolved standing design', slot: item.slot, prompt: 'white waistband' }, phase: 'review', status: 'Standing design needs review' })
+    s.store.results = { ...s.store.results, [item.id]: { cells: [], qa: { qa: { status: 'warn' }, warnings: [], failCalls: new Map(), softCalls: new Map() }, g1: new Map([[0, 'D2 keyframe north: the requested wraparound waist band is missing compared with the other standing views']]), preview: p } }
+    s.ui.selected = `gen:${item.id}`
+  })
+  const review = page.locator('.gen')
+  await expect(review.locator('.badge.look')).toContainText('Needs a look')
+  await expect(review.getByRole('button', { name: 'Keep it', exact: true })).toBeDisabled()
+  await expect(review.locator('.badge.clean')).toHaveCount(0)
   expect(requests).toEqual([])
 })
 
