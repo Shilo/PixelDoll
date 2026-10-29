@@ -960,6 +960,13 @@ export const DESIGN = { gray: 0.05 };
 /** Prompts that ask for gray/black/white parts: the gray check does not apply. */
 export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|\bfur(?!i)|stone|\bash/i; // not sash, cashmere, furious
 
+/** Neutral pupils, eyebrows and eye whites are expected in tiny facial glyphs; their palette ratios cannot establish smudges. */
+export function designGraySmudges(slot: string, prompt: string, layer: Img): boolean {
+  if (GRAYISH.test(prompt)) return false;
+  if (slot === 'face_acc' && sum(maskOf(layer)) <= 32 * layer.w * layer.h / (64 * 64)) return false;
+  return grayShare(layer) > DESIGN.gray;
+}
+
 // ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------
 const despeck = (im: Img, min = 4) => {
   const o = makeImg(im.w, im.h);

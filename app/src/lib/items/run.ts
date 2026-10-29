@@ -19,7 +19,7 @@ import { chromaLayer, switchTo, type Key } from '../image/chroma.ts';
 import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { designConsistency, expectsWaistBand, waistBandEvidence, type StandingDesignView, type WaistBandConsistency } from './design-consistency.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { DESIGN, GATES, GRID_COLS, anchored, planGens, GRAYISH, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, grayShare, gridPrompt, packGrid, bandOf, buildItem, gridFits, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { GATES, GRID_COLS, anchored, planGens, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, designGraySmudges, grayShare, gridPrompt, packGrid, bandOf, buildItem, gridFits, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 /** fallback: B14, a pose call redone as an inpaint-v3 grid keeps its best pose roll (and that roll's failed-check count). */
@@ -173,7 +173,7 @@ function standingViews(d: Draft, ctx: RigCtx, refs: { dir: DirectionName; im: Im
 }
 const standingFailures = (d: Draft, ctx: RigCtx, dir: DirectionName, out: Img) => {
   const c = extractCell({ key: restKey(dir), call: 0, base: baseCell(ctx, restKey(dir), true), out, route: d.spec.key, band: bandOf(d.spec.slot, skelOf(ctx, restKey(dir), true), out.h) });
-  return Number(g2Fails(c)) + Number((c.keyOutside ?? 0) > GATES.keyOutside) + Number(!c.area) + Number(!GRAYISH.test(d.spec.prompt) && grayShare(c.layer) > DESIGN.gray);
+  return Number(g2Fails(c)) + Number((c.keyOutside ?? 0) > GATES.keyOutside) + Number(!c.area) + Number(designGraySmudges(d.spec.slot, d.spec.prompt, c.layer));
 };
 
 /** One durable, masked correction before any poses copy inconsistent standing artwork. Never resets on reload. */
@@ -588,7 +588,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
       !c.area && !hidden.has(o.key.split('/')[1]) && `G4 keyframe ${o.key}: item missing`,
       // B14: re-roll a smudged design (10 gens) before 36 gens of poses copy it (T3: red cape north hem)
-      !GRAYISH.test(d.spec.prompt) && grayShare(c.layer) > DESIGN.gray && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
+      designGraySmudges(d.spec.slot, d.spec.prompt, c.layer) && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
   }
   const designIssue = designConsistency(d.spec.prompt, standingViews(d, ctx, dressOuts.map(o => ({ dir: dirOf(o.key), im: o.out }))));

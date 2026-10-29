@@ -113,6 +113,21 @@ test('a padded single-view edit retains only the first logical artwork and prove
   expect(accepted.item.layers[0].cells!.walking!.south).toHaveLength(1);
 });
 
+test('tiny natural eye colors pass the real dress runner without a smudge reroll', async () => {
+  const f = await singleStandingFixture();
+  f.draft.spec.slot = 'face_acc'; f.draft.spec.prompt = 'serious eyes and subtle eyebrows';
+  const eyes = toChroma(f.ctx.project.images.get(f.ctx.rec.manifest.rig.rest!.south!.image)!, 'green');
+  paint(eyes, 14, 6, 2, 2, [180, 90, 20]); paint(eyes, 14, 8, 2, 1, [40, 40, 40]);
+  ledger.output = async () => [eyes, eyes];
+  const result = await runItem(f.draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2']);
+  expect(result!.g1.size).toBe(0);
+  expect(result!.cells).toHaveLength(1);
+  expect(result!.cells[0].area).toBe(6);
+  const saved = await acceptItem(f.draft, f.ctx, result!);
+  expect(saved.item.designWarnings).toBeUndefined();
+});
+
 test.each(['one output', 'three outputs', 'wrong-size padding'] as const)('a single-view edit with %s fails structurally and cannot be accepted', async variant => {
   const f = await singleStandingFixture();
   ledger.output = async () => variant === 'one output' ? [f.dressed] : variant === 'three outputs' ? [f.dressed, f.dressed, f.dressed] : [f.dressed, makeImg(16, 16)];
