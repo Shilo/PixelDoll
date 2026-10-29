@@ -5,7 +5,7 @@ import { basePrompt } from './model.ts'
 import { ACTIONS } from '../lib/rig/poses.ts'
 import { actionOf, poseBatches, poseCallGens } from '../lib/rig/clips.ts'
 import { pickKey } from '../lib/image/chroma.ts'
-import { gridEstimate, frozenGrid, planItem, itemPrompt, planGens, slotOf, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
+import { gridEstimate, frozenGrid, planItem, itemPrompt, planGens, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
 import { defaultMethod, type Draft, type RigCtx } from '../lib/items/run.ts'
 import { coverage, type NewItemInput } from './itemRoute.ts'
 import type { StoredProject } from '../lib/store/project.ts'
@@ -14,7 +14,6 @@ import type { FitDraft, FitPlan } from '../lib/equipment/types.ts'
 import type { JobRec } from '../lib/pixellab/queue.ts'
 import { characterId } from '../lib/pixellab/library.ts'
 import type { Manifest } from '../lib/store/manifest.ts'
-import { expectsWaistBand } from '../lib/items/design-consistency.ts'
 
 export interface PeekCall {
   method: Req['method']; path: string; body?: unknown; label?: string; background?: boolean; generations?: number; note?: string
@@ -52,7 +51,7 @@ function itemCalls(spec: Pick<ItemSpec, 'prompt' | 'key' | 'slot' | 'method'>, c
     if (call.kind === 'grid') {
       return { method: 'POST', path: '/inpaint-v3', label: `Dress frozen frames · ${call.cells.length} frames`,
         ...(cell ? { generations: gridEstimate({ w: cell.w + 2 * pad, h: cell.h + 2 * pad }, call.cells.length, 1).gens } : {}),
-        note: 'Automatic alternative to suspicious imported joints. Sends frozen body frames, editable garment masks and one protected matching-view standing reference. Quality checks can add bounded retries; unresolved differences need manual review.' }
+        note: 'Automatic alternative to suspicious imported joints. Sends frozen body frames, editable garment masks and one protected matching-view standing reference. Each planned batch runs once. Quality checks never request a paid retry or repair without your action.' }
     }
     const pose = call.kind === 'pose', anchor = index > 0 && !pose ? calls[0].cells[0] : undefined
     return { method: 'POST', path: pose ? '/animate-with-skeleton-v3' : '/edit-animation-v2', label: `${pose ? 'Pose equipment' : call.kind === 'dress' ? 'Dress standing views' : 'Edit packed frames'} · ${call.cells.length} frames`,
@@ -67,13 +66,11 @@ export function itemPlan(ctx: RigCtx | null, input: NewItemInput): PeekCall[] {
     const spec = { prompt: input.prompt, slot: input.slot, key: pickKey(input.prompt), ...coverage(ctx) }
     const method = defaultMethod(ctx, spec)
     const calls = planItem(ctx.rec.manifest.rig, { ...spec, method })
-    const fallback: PeekCall[] = calls.some(call => call.kind === 'pose') && slotOf(spec.slot).class !== 'held' ? [{ method: 'POST', path: '/inpaint-v3', label: 'Conditional packed-grid fallback', note: 'After bounded pose retries: one grid fallback, plus at most one refinement if only observable clothing or footwear differences remain. Sends a packed image grid, mask, final prompt and seed. The better checked result is retained; unresolved details need review.' }] : []
-    const design: PeekCall[] = method === 'skel' && expectsWaistBand(spec.prompt) ? [{ method: 'POST', path: '/inpaint-v3', label: 'Conditional standing consistency repair', note: 'At most one masked correction before animation if enough standing views establish a missing requested waist band. Good views and unmasked pixels are protected. Additional paid work; failed correction stops for review.' }] : []
-    return [...itemCalls({ ...spec, method }, calls, ctx.rec.manifest.rig.cell), ...design, ...fallback, ...lifecycle()]
+    return [...itemCalls({ ...spec, method }, calls, ctx.rec.manifest.rig.cell), ...lifecycle()]
   } catch { return [] }
 }
-export const draftPlan = (draft: Draft): PeekCall[] => [...itemCalls(draft.spec, draft.calls.map(call => ({ ...call, seed: undefined }))), ...(draft.spec.method === 'skel' && slotOf(draft.spec.slot).class !== 'held' ? [{ method: 'POST' as const, path: '/inpaint-v3', label: 'Conditional grid fallback', note: dependent }] : []), ...lifecycle()]
-export const draftQueueIds = (draft: Draft): string[] => [...draft.calls.flatMap(call => [...(call.recId ? [call.recId] : []), ...call.old, ...(call.fallback ? [call.fallback.recId] : [])]), ...(draft.designRepair?.recId ? [draft.designRepair.recId] : [])]
+export const draftPlan = (draft: Draft): PeekCall[] => [...itemCalls(draft.spec, draft.calls.map(call => ({ ...call, seed: undefined }))), ...lifecycle()]
+export const draftQueueIds = (draft: Draft): string[] => draft.calls.flatMap(call => [...(call.recId ? [call.recId] : []), ...call.old])
 
 export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | null, spec: Omit<MoveSpec, 'seed'> & { seed?: number }): PeekCall[] {
   if (!rec) return []
@@ -89,7 +86,7 @@ export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | nu
       }
       calls.push({ method: 'POST', path: '/animate-with-skeleton-v3', label: `${spec.id} ${direction} · render body`, generations: poseCallGens(frames),
         body: { description: rec.character?.looks, action: actionOf(spec.id) + (spec.poseStyle === 'visible-side-v1' ? ', empty hands, no weapon, no props, no effects' : ''), direction, view: m.rig.view ?? 'low top-down', ...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }), no_background: true },
-        note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${spec.action && ACTIONS[spec.action] ? 'locally authored' : 'generated motion'} keypoints. Empty output or a wrong frame count can add one re-roll; review observations do not.` })
+        note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${spec.action && ACTIONS[spec.action] ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.` })
       for (let frame = 0; frame < frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${spec.id} ${direction} · check frame ${frame + 1}`, generations: 0.1, note: 'Sends the rendered body frame as image (base64 PNG), unless already measured.' })
     }
   }
@@ -102,7 +99,7 @@ export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | nu
         const grid = frozenGrid(m.rig, item, cells)
         calls.push({ method: 'POST', path: grid ? '/inpaint-v3' : '/animate-with-skeleton-v3', label: `${item.name} ${direction} · frames ${batch.start + 1}–${batch.start + batch.count}`,
           generations: grid ? gridEstimate(item.layers[0]?.cell ?? m.rig.cell, batch.count, 1).gens : planGens([{ kind: 'pose', cells }]),
-          note: grid ? 'Automatically dresses the frozen body frames instead of following suspicious imported joints. Protected standing references and garment masks preserve the design. One quality retry is possible.' : 'Sends this item’s dressed reference, stored base rest keypoints and selected move poses, appearance, action, direction and seed. Missing clothing or footwear can add one re-roll and a conditional packed-grid fallback.' })
+          note: grid ? 'Dresses the frozen body frames instead of following suspicious imported joints. Protected standing references and garment masks preserve the design. One attempt per planned batch; any paid retry requires your action.' : 'Sends this item’s dressed reference, stored base rest keypoints and selected move poses, appearance, action, direction and seed. One attempt per planned batch; any paid retry or repair requires your action.' })
       }
     }
   }

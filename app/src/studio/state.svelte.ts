@@ -613,7 +613,7 @@ export function pick(id: string) {
 // ---------- item generations ----------
 // Bump when PixelLab request wording changes. Work saved with other wording no longer matches its ledger records and would
 // resend paid calls, so it waits for review instead of resuming by itself.
-export const REQUEST_TEXT = 2;
+export const REQUEST_TEXT = 3;
 const STOPPED = 'Generation stopped. Review Activity before trying again.';
 const halted = (r: { status?: string; requestText?: number }) => r.status === 'failed' || r.requestText !== REQUEST_TEXT;
 export interface Gen { draft: Draft; input: NewItemInput; phase: 'running' | 'review' | 'failed'; status: string; error?: string; requestText?: number }
@@ -704,21 +704,34 @@ export function startupResumed() {
   runWaiting();
 }
 
-export async function startItem(input: NewItemInput) {
+interface ItemAttemptConsent { projectId: string; gens: number; rig?: string; replaces?: Gen }
+export async function startItem(input: NewItemInput, consent?: ItemAttemptConsent) {
   if (hmrReloading) return;
   itemStarting++; // counted from the click, before the draft exists, so this tab keeps the jobs meanwhile
-  try { await startItemDraft(input); } finally { itemStarting--; }
+  try { await startItemDraft(input, consent); } finally { itemStarting--; }
 }
-async function startItemDraft(input: NewItemInput) {
+async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent) {
+  const projectId = consent?.projectId ?? doc.id;
   // Startup may still be reading the stored drafts: saving before they load would overwrite them.
   try { await loadGens(); } catch (e) { toast(`Saved item drafts could not be read: ${(e as Error).message}. Reload to try again.`, { tone: 'danger' }); return; }
-  const ctx = await loadProject(doc.id), route = await itemFlow();
+  const ctx = await loadProject(projectId), route = await itemFlow();
+  if (doc.id !== projectId || consent?.rig && JSON.stringify(ctx.rec.manifest.rig) !== consent.rig
+    || consent?.replaces && (!gens.includes(consent.replaces) || consent.replaces.phase === 'running' || JSON.stringify(consent.replaces.input) !== JSON.stringify(input))) {
+    toast('This character or item changed. Reopen it and review the attempt before generating.', { tone: 'warning' }); return;
+  }
+  if (consent && (!Number.isFinite(consent.gens) || route.plan(ctx.rec.manifest.rig, ctx, input).gens !== consent.gens)) {
+    toast('The attempt price changed. Review the current estimate before generating.', { tone: 'warning' }); return;
+  }
   const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
-  gens.push({ draft: route.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
-  const g = gens.at(-1)!;
+  const g: Gen = { draft: route.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT };
+  const replaced = consent?.replaces, index = replaced ? gens.indexOf(replaced) : -1;
+  if (replaced) gens.splice(index, 1, g); else gens.push(g);
+  const selected = ui.selected;
   ui.selected = `gen:${g.draft.spec.id}`;
   ui.group = groupOf(input.slot).id;
-  await saveGens();
+  try { await saveGens(); }
+  catch (error) { const nextIndex = gens.indexOf(g); if (nextIndex >= 0) { if (replaced) gens.splice(nextIndex, 1, replaced); else gens.splice(nextIndex, 1); } ui.selected = selected; throw error; }
+  if (replaced && doc.drafts[replaced.draft.spec.slot] === replaced.draft.spec.id) delete doc.drafts[replaced.draft.spec.slot];
   void runGen(g, ctx);
 }
 async function runGen(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>) {
@@ -750,14 +763,36 @@ async function runGenOnce(g: Gen, ctx?: Awaited<ReturnType<typeof loadProject>>)
     g.phase = 'failed';
     g.error = (e as Error).message;
   }
-  if (g.phase === 'failed' && Object.values(doc.drafts).includes(g.draft.spec.id)) toast(`${g.input.name} failed and was taken off. Its card says why.`, { tone: 'danger', duration: 8000 });
   takeOffGone();
   await saveGens();
+  if (g.phase === 'failed') toast(`${g.input.name} could not finish. No paid retry was started. Open its review to try again.`, { tone: 'danger', duration: 8000, action: () => openGenerationReview(g.draft.spec.id) });
   if (g.phase !== 'review') return;
   // Review is optional (round 10, changes D7): a clean draft saves itself; warned or failed ones wait with their badge.
   const res = store.results[g.draft.spec.id];
   if (res && (await itemRun()).isClean(res) && (await autoSave(g))) return;
-  toast(`${g.input.name} is ready to review`);
+  toast(`${g.input.name} has issues to review. No paid retry was started.`, { tone: 'warning', action: () => openGenerationReview(g.draft.spec.id) });
+}
+/** Notification dismissal only hides the notification; accepting artwork is a separate explicit action. */
+export async function openGenerationReview(id: string) {
+  const g = gens.find(g => g.draft.spec.id === id);
+  if (!g || g.phase === 'running') return;
+  await openProject(g.draft.rigId);
+  if (!gens.includes(g) || doc.id !== g.draft.rigId) return;
+  ui.sheet = null; ui.tab = 'wardrobe'; ui.inspTab = 'item'; ui.group = groupOf(g.input.slot).id; ui.selected = `gen:${id}`;
+}
+export async function acceptItemIssues(projectId: string, itemId: string, reviewed: Item) {
+  if (follower()) return;
+  await (await itemRun()).acceptItemReview(projectId, itemId, reviewed);
+  if (viewing(projectId)) await openProject(projectId, { quiet: true });
+  toast(`${reviewed.name} accepted as is`);
+}
+async function openItemReview(projectId: string, itemId: string, anim?: string) {
+  await openProject(projectId);
+  const item = store.project?.manifest.items.find(item => item.id === itemId);
+  if (doc.id !== projectId || !item) return;
+  ui.selected = item.id; ui.group = groupOf(item.slot).id; ui.tab = 'wardrobe'; ui.inspTab = 'item';
+  if (anim) { ui.anim = anim; ui.frame = 0; }
+  ui.sheet = 'item';
 }
 async function autoSave(g: Gen): Promise<boolean> {
   try { return await acceptGen(g, true); }
@@ -844,9 +879,10 @@ export async function discardGen(g: Gen): Promise<boolean> {
     settling.delete(id);
   }
 }
-export function retryGen(g: Gen) {
-  const input = g.input;
-  withKey(() => void discardGen(g).then((ok) => { if (ok) return startItem(input); })); // closing Connect keeps the draft
+export function retryGen(g: Gen, reviewedGens: number) {
+  const input = structuredClone($state.snapshot(g.input));
+  const consent = { projectId: g.draft.rigId, gens: reviewedGens, ...(doc.id === g.draft.rigId && store.project ? { rig: JSON.stringify(store.project.manifest.rig) } : {}), replaces: g };
+  withKey(() => void startItem(input, consent).catch(error => toast(error instanceof Error ? error.message : 'This retry could not start. Existing artwork was kept.', { tone: 'danger' }))); // closing Connect keeps the draft
 }
 
 const WEEK = 7 * 86_400_000;
@@ -1033,6 +1069,8 @@ export async function startMove(projectId: string, spec: MoveSpec) {
       if (viewing(projectId)) { await openProject(projectId); if (!current()) return; if (viewing(projectId)) { ui.anim = spec.id; ui.frame = 0; ui.playing = true; } }
       toast(`${moveName} added`);
     }
+    const reviewItem = result.reviewItems?.[0];
+    if (reviewItem) toast(`${moveName} has item issues to review. No paid retry was started.`, { tone: 'warning', action: () => openItemReview(projectId, reviewItem, spec.id) });
   } catch (e) {
     if (current()) {
       failed = true;

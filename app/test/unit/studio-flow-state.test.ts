@@ -473,7 +473,7 @@ test('Try again keeps the draft when Connect is closed without a key', async () 
   const s = await import('../../src/studio/state.svelte.ts')
   const g = { draft: { spec: { id: 'hat' }, rigId: 'project', calls: [], log: [] }, input: { name: 'Hat', slot: 'head', prompt: 'a hat' }, phase: 'failed', status: '' } as unknown as (typeof s.gens)[number]
   s.gens.push(g)
-  s.retryGen(g)
+  s.retryGen(g, 10)
   expect(s.ui.sheet).toBe('connect')
   s.clearPendingConnection()
   await Promise.resolve()
@@ -894,9 +894,9 @@ test('a worn draft overlays the outfit but never reaches autosave, undo or saved
 
 describe('optional review', () => {
   const clean = { cells: [{}], qa: { qa: { status: 'pass' }, failCalls: new Map(), softCalls: new Map(), warnings: [] as string[] }, g1: new Map(), preview: null }
-  function routeMock(result: (d: unknown, ctx: unknown, h: { result?: (r: unknown) => void }) => Promise<unknown>) {
+  function routeMock(result: (d: unknown, ctx: unknown, h: { result?: (r: unknown) => void }) => Promise<unknown>, price = () => 10) {
     const accept = vi.fn(async (d: { spec: { id: string } }) => ({ id: d.spec.id, name: 'New helm', slot: 'head' }))
-    vi.doMock('../../src/studio/itemRoute.ts', () => ({ itemRoute: { draft: (ctx: { rec: { id: string } }, input: { name: string; slot: string }, taken: string[]) => ({ spec: { id: `helm${taken.length}`, name: input.name, slot: input.slot, prompt: 'a new helm', key: 'green', anims: [], dirs: [] }, rigId: ctx.rec.id, calls: [], keySwitched: false, log: [] }), run: result, accept } }))
+    vi.doMock('../../src/studio/itemRoute.ts', () => ({ itemRoute: { plan: () => ({ gens: price(), calls: 1, cells: 1, minutes: 1, minimumTier: 0 }), draft: (ctx: { rec: { id: string } }, input: { name: string; slot: string }, taken: string[]) => ({ spec: { id: `helm${taken.length}`, name: input.name, slot: input.slot, prompt: 'a new helm', key: 'green', anims: [], dirs: [] }, rigId: ctx.rec.id, calls: [], keySwitched: false, log: [] }), run: result, accept } }))
     vi.doMock('../../src/lib/dress/regions.ts', () => ({ splitBase: async () => ({ dirty: false }) }))
     vi.doMock('../../src/lib/dress/dress.ts', async (original) => ({ ...await original<typeof import('../../src/lib/dress/dress.ts')>(), deriveMaterials: () => {} }))
     return accept
@@ -944,9 +944,66 @@ describe('optional review', () => {
     const s = await import('../../src/studio/state.svelte.ts')
     s.doc.id = 'project'
     await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
-    await vi.waitFor(() => expect(s.ui.toast).toBe('New helm is ready to review'))
+    await vi.waitFor(() => expect(s.ui.toast).toBe('New helm has issues to review. No paid retry was started.'))
     expect(s.gens.map((g) => g.phase)).toEqual(['review'])
     expect(accept).not.toHaveBeenCalled()
+  })
+
+  test.each(['dismiss', 'open'] as const)('quality notification %s never accepts an item or starts another attempt', async action => {
+    const result = { ...clean, qa: { ...clean.qa, warnings: ['G12 walk/south/0: footwear differs'] } }
+    const run = vi.fn(async () => result), accept = routeMock(run), manifest = fixtureManifest()
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest } })
+    mocks.source.mockResolvedValue({ project: { manifest, images: new Map() }, current: { items: { body: 'base' }, variants: {} } })
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.doc.id = 'project'; s.store.project = { manifest, images: new Map() }
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    await vi.waitFor(() => expect(s.gens[0]?.phase).toBe('review'))
+    await vi.waitFor(() => expect(s.ui.toastAction).toBeTypeOf('function'))
+    s.ui.selected = ''; s.ui.tab = 'moves'; s.ui.sheet = 'activity'
+    if (action === 'dismiss') s.dismissToast(); else await s.activateToast()
+    expect(run).toHaveBeenCalledOnce(); expect(accept).not.toHaveBeenCalled()
+    expect(s.gens.map(g => g.phase)).toEqual(['review'])
+    if (action === 'open') expect(s.ui).toMatchObject({ selected: 'gen:helm0', tab: 'wardrobe', inspTab: 'item', sheet: null })
+    else expect(s.ui.selected).toBe('')
+  })
+
+  test('an explicitly priced retry creates exactly one fresh attempt and leaves any new warning for review', async () => {
+    const run = vi.fn(async () => ({ ...clean, qa: { ...clean.qa, warnings: ['G12 walk/south/0: footwear differs'] } }))
+    const accept = routeMock(run), manifest = fixtureManifest()
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest } })
+    const s = await import('../../src/studio/state.svelte.ts'), { app } = await import('../../src/lib/app.svelte.ts')
+    s.doc.id = 'project'; s.store.project = { manifest, images: new Map() }
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    await vi.waitFor(() => expect(s.gens[0]?.phase).toBe('review'))
+    const original = s.gens[0]; app.key = 'synthetic-retry-key'
+    s.retryGen(original, 10)
+    await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(s.gens[0]?.phase).toBe('review'))
+    expect(s.gens.map(g => g.draft.spec.id)).toEqual(['helm1'])
+    expect(accept).not.toHaveBeenCalled()
+  })
+
+  test.each(['target', 'price', 'rig', 'input'] as const)('a deferred retry refuses changed %s without discarding the reviewed item', async changed => {
+    let price = 10
+    const run = vi.fn(async () => ({ ...clean, qa: { ...clean.qa, warnings: ['G12 walk/south/0: footwear differs'] } }))
+    const accept = routeMock(run, () => price), manifest = fixtureManifest()
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest } })
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.doc.id = 'project'; s.store.project = { manifest, images: new Map() }
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    await vi.waitFor(() => expect(s.gens[0]?.phase).toBe('review'))
+    const { app } = await import('../../src/lib/app.svelte.ts'); app.key = ''
+    const original = s.gens[0]; s.retryGen(original, 10)
+    expect(s.ui.sheet).toBe('connect')
+    if (changed === 'target') s.doc.id = 'other-project'
+    if (changed === 'price') price = 20
+    if (changed === 'rig') manifest.rig.baseHash = 'changed-body'
+    if (changed === 'input') original.input.prompt = 'different hat'
+    s.connected()
+    await vi.waitFor(() => expect(s.ui.toast).toMatch(/changed.*[Rr]e(view|open)/))
+    expect(run).toHaveBeenCalledOnce(); expect(accept).not.toHaveBeenCalled()
+    expect(s.gens).toEqual([original])
+    expect(original.phase).toBe('review')
   })
 
   test('a worn draft that fails comes off, so the item under it shows again', async () => {

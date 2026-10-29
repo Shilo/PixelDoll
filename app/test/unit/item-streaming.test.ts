@@ -9,7 +9,7 @@ import { LABELS } from '../../src/lib/rig/poses.ts'
 import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts'
 import * as db from '../../src/lib/store/db.ts'
 import { itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts'
-import { gridFallback, MAX_REROLLS, rerollCall, runItem, type Draft, type ItemResult, type RigCtx } from '../../src/lib/items/run.ts'
+import { rerollCall, runItem, type Draft, type ItemResult, type RigCtx } from '../../src/lib/items/run.ts'
 import { plainReason } from '../../src/studio/model.ts'
 import type { Manifest } from '../../src/lib/store/manifest.ts'
 
@@ -60,25 +60,25 @@ async function fixture() {
   const dressed = toChroma(body, 'green')
   for (let y = 7; y < 10; y++) for (let x = 5; x < 11; x++) dressed.data.set([120, 120, 130, 255], (y * 16 + x) * 4)
   const d: Draft = {
-    spec: { id: 'armor', name: 'Armor', slot: 'torso_outer', prompt: 'iron armor', key: 'green', anims: ['walk'], dirs, method: 'skel' }, rigId: 'rig', keySwitched: false, log: [],
+    spec: { id: 'armor', name: 'Armor', slot: 'torso_outer', prompt: 'iron armor', key: 'green', anims: ['walk'], dirs, method: 'skel' }, rigId: 'rig', log: [],
     calls: [{ kind: 'dress' as const, cells: ['rest/south/0'] }, { kind: 'dress' as const, cells: ['rest/east/0'] }, ...dirs.map((dir) => ({ kind: 'pose' as const, cells: [0, 1, 2, 3].map((i) => `walk/${dir}/${i}`) }))].map((c, i) => ({ ...c, seed: i + 1, rerolls: 0, old: [] })),
   }
   return { ctx, d, dressed }
 }
 
-test('after a key switch a direction poses as soon as its own dress chunk passes, and the preview streams landed cells with the rest pending', async () => {
+test('planned direction poses stream landed cells while the remaining original coverage stays pending', async () => {
   const { ctx, d, dressed } = await fixture(), results: ItemResult[] = []
-  d.keySwitched = true // no later chunk can switch the key again, so early poses are never restarted
   const run = runItem(d, ctx, { result: (r) => results.push(r) })
   await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
   await land(q.order[0].id, [dressed, dressed]) // Single-view edits use the API's two-frame minimum.
-  // south poses while the east dress chunk is still generating; east waits for its own keyframe
-  await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined())
+  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/edit-animation-v2')).toHaveLength(2))
+  expect(call('/animate-with-skeleton-v3', 'south')).toBeUndefined()
   const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1]
   expect(east).toBeDefined()
   expect(q.recs.get(east.id)!.state).toBe('queued')
   expect(call('/animate-with-skeleton-v3', 'east')).toBeUndefined()
   await land(east.id, [dressed, dressed]) // anchored chunk: its first output is the anchor's
+  await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined())
   await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'east')).toBeDefined())
   // the south walk lands: the preview shows it while east is still pending (loading, not transparent)
   await land(call('/animate-with-skeleton-v3', 'south')!.id, Array(4).fill(dressed))
@@ -89,46 +89,43 @@ test('after a key switch a direction poses as soon as its own dress chunk passes
   expect(streamed.layers[0].cells!.walk.east).toEqual([null, null, null, null])
   await land(call('/animate-with-skeleton-v3', 'east')!.id, Array(4).fill(dressed))
   const res = await run
-  expect(d.log.at(-1)).toMatch(/^gates passed/)
+  expect(d.log.at(-1)).toMatch(/passed the checks/)
   expect(q.order.map((o) => o.path).sort()).toEqual(['/animate-with-skeleton-v3', '/animate-with-skeleton-v3', '/edit-animation-v2', '/edit-animation-v2']) // no call twice
   const done = res!.preview!.manifest.items.find((i) => i.id === 'armor')!
   expect(done.pending).toBeUndefined()
   expect(done.coverage).toHaveLength(8)
 })
 
-test('a failing design call poses nothing early (its re-roll drops every later call)', async () => {
-  const { ctx, d } = await fixture()
+test('ordinary standing failures finish only planned coverage and remain flagged without a reroll', async () => {
+  const { ctx, d, dressed } = await fixture()
   const empty = toChroma(makeImg(16, 16), 'green') // the item is missing: G4 on the keyframe
-  void runItem(d, ctx, {})
+  const run = runItem(d, ctx, {})
   await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
   await land(q.order[0].id, [empty, empty])
   await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
   await land(q.order[1].id, [empty, empty])
-  await vi.waitFor(() => expect(d.calls[0].rerolls).toBe(1)) // re-rolled at the checkpoint
-  expect(d.log.join(' ')).toContain('G4')
-  expect(call('/animate-with-skeleton-v3')).toBeUndefined()
+  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/animate-with-skeleton-v3')).toHaveLength(2))
+  for (const c of q.order.filter(o => o.path === '/animate-with-skeleton-v3')) await land(c.id, Array(4).fill(dressed))
+  const result = await run
+  expect([...result!.g1.values()].join(';')).toContain('G4')
+  expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
+  expect(d.spec.key).toBe('green'); expect(q.order).toHaveLength(4)
 })
 
-test('a pose fallback grid the account plan cannot run is never enqueued: the pose roll stays for review', async () => {
-  const { ctx, d, dressed } = await fixture()
+test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])('cached failing poses never create an automatic grid regardless of plan restriction %s', async blocked => {
+  const { ctx, d, dressed } = await fixture(), damaged = structuredClone(dressed)
+  for (let y = 3; y < 16; y++) if (y < 7 || y >= 10) for (let x = 5; x < 11; x++) damaged.data.fill(0, (y * 16 + x) * 4, (y * 16 + x) * 4 + 4)
   for (const [k, c] of d.calls.entries()) {
-    const id = `done${k}`, outs = c.kind === 'pose' ? Array(4).fill(dressed) : [dressed, dressed]
+    const id = 'cached' + k, outs = c.kind === 'pose' ? Array(4).fill(damaged) : [dressed, dressed]
     q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec)
-    c.recId = id
-    await land(id, outs)
+    c.recId = id; await land(id, outs)
   }
-  Object.assign(d.calls[2], { rerolls: MAX_REROLLS })
-  q.blocked = 'Needs PixelLab Tier 2 or higher. No request sent.'
-  expect(await gridFallback(d, 2, ctx)).toBe(false)
-  expect(d.calls[2]).toMatchObject({ kind: 'pose', recId: 'done2' })
-  expect(d.calls[2].fallback).toBeUndefined()
-  expect(d.log).toEqual(['call 3: no inpaint-v3 grid fallback (Needs PixelLab Tier 2 or higher. No request sent.); kept the best pose roll for review'])
-  expect(vi.mocked(queue.planBlocks).mock.calls[0][0].path).toBe('/inpaint-v3')
-  expect(vi.mocked(queue.planBlocks).mock.calls[0][1]).toBe(1)
-  expect(queue.enqueue).not.toHaveBeenCalled()
-  q.blocked = null
-  expect(await gridFallback(d, 2, ctx)).toBe(true) // a plan that can run it gets the grid
-  expect(d.calls[2]).toMatchObject({ kind: 'grid', recId: undefined, fallback: { recId: 'done2' } })
+  q.blocked = blocked
+  const result = await runItem(d, ctx)
+  expect([...result!.qa!.failCalls.values()].flat().some(w => w.startsWith('G2 '))).toBe(true)
+  expect(d.calls.map(c => c.recId)).toEqual(['cached0', 'cached1', 'cached2', 'cached3'])
+  expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
+  expect(queue.planBlocks).not.toHaveBeenCalled(); expect(queue.enqueue).not.toHaveBeenCalled()
 })
 
 test('a held item pasted on near-rest frames says so in review, without changing its pixels', () => {
@@ -155,24 +152,27 @@ function collision(dressed: Img) {
   return im
 }
 
-test('several dress chunks on the first key pose nothing until all landed: a later G3 switches the key with no pose sent', async () => {
+test('a later standing collision remains flagged without switching keys or restarting planned calls', async () => {
   const { ctx, d, dressed } = await fixture()
-  void runItem(d, ctx, {})
+  const run = runItem(d, ctx, {})
   await vi.waitFor(() => expect(call('/edit-animation-v2')).toBeDefined())
   await land(q.order[0].id, [dressed, dressed]) // south passes its gates
   await vi.waitFor(() => expect(q.order.filter((o) => o.path === '/edit-animation-v2')).toHaveLength(2))
   const east = q.order.filter((o) => o.path === '/edit-animation-v2')[1]
   await land(east.id, [dressed, collision(dressed)])
-  await vi.waitFor(() => expect(d.keySwitched).toBe(true))
-  expect(d.log.some((l) => l.startsWith('switch key') && l.includes('G3'))).toBe(true)
-  expect(call('/animate-with-skeleton-v3')).toBeUndefined() // the old flow posed south first, then restarted it on the new key
+  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/animate-with-skeleton-v3')).toHaveLength(2))
+  for (const c of q.order.filter(o => o.path === '/animate-with-skeleton-v3')) await land(c.id, Array(4).fill(dressed))
+  const result = await run
+  expect([...result!.g1.values()].join(';')).toContain('G3')
+  expect(d.spec.key).toBe('green'); expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
+  expect(q.order).toHaveLength(4)
 })
 
 test('a call re-rolled while its request is built keeps the paid record counted but never uses it', async () => {
   const { ctx, d, dressed } = await fixture()
+  d.calls = [{ ...d.calls[0], cells: ['rest/south/0', 'rest/east/0'] }, ...d.calls.slice(2)]
   let release!: () => void
   const hold = new Promise<void>((r) => { release = r })
-  d.keySwitched = true
   let holding = false, held = false
   vi.mocked(db.getBlob).mockImplementation(async (sha) => { if (holding) { held = true; await hold } return blobs.get(sha) })
   void runItem(d, ctx, { result: () => { holding = true } }) // the next blob read after the gate evaluation is the pose's keyframe
@@ -183,13 +183,12 @@ test('a call re-rolled while its request is built keeps the paid record counted 
   holding = false; release()
   await vi.waitFor(() => expect(call('/animate-with-skeleton-v3', 'south')).toBeDefined())
   const pose = call('/animate-with-skeleton-v3', 'south')!.id
-  await vi.waitFor(() => expect(d.calls[2].old).toContain(pose))
-  expect(d.calls[2].recId).toBeUndefined()
+  await vi.waitFor(() => expect(d.calls[1].old).toContain(pose))
+  expect(d.calls[1].recId).toBeUndefined()
 })
 
-test('an early pose that fails is handled where the run awaits it, never as an unhandled rejection', async () => {
+test('a planned pose that fails surfaces its error without a retry or unhandled rejection', async () => {
   const { ctx, d, dressed } = await fixture(), enqueue = vi.mocked(queue.enqueue).getMockImplementation()!
-  d.keySwitched = true
   vi.mocked(queue.enqueue).mockImplementation(async (req, meta) => { if (req.path === '/animate-with-skeleton-v3') throw new Error('offline'); return enqueue(req, meta) })
   try {
     const run = runItem(d, ctx, {})

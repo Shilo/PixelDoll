@@ -84,12 +84,12 @@ test('new worn drafts plan and price frozen-grid dressing instead of unsafe skel
   expect(enqueue).not.toHaveBeenCalled();
 });
 
-test('persisted unsafe pose calls reroute to frozen grids before any new skeleton request', async () => {
+test('an obsolete unsafe pose plan stops before any unreviewed route or paid request', async () => {
   const ctx = context(), enqueue = vi.spyOn(queue, 'enqueue').mockRejectedValue(new Error('Unexpected paid request'));
-  const draft: Draft = { rigId: ctx.rec.id, spec, calls: [{ kind: 'dress', cells: ['rest/south/0'], seed: 1, rerolls: 0, old: [] }, { kind: 'pose', cells: ['walking/south/0', 'walking/south/1', 'walking/south/2'], seed: 2, rerolls: 0, old: [] }], keySwitched: false, log: [] };
-  await runItem(draft, ctx);
-  expect(draft.calls[1]).toMatchObject({ kind: 'grid', frozen: true });
-  expect(enqueue.mock.calls.map(([req]) => req.path)).not.toContain('/animate-with-skeleton-v3');
+  const draft: Draft = { rigId: ctx.rec.id, spec, calls: [{ kind: 'dress', cells: ['rest/south/0'], seed: 1, rerolls: 0, old: [] }, { kind: 'pose', cells: ['walking/south/0', 'walking/south/1', 'walking/south/2'], seed: 2, rerolls: 0, old: [] }], log: [] };
+  await expect(runItem(draft, ctx)).rejects.toThrow('Review a new priced attempt');
+  expect(draft.calls[1].kind).toBe('pose');
+  expect(enqueue).not.toHaveBeenCalled();
   expect(draft.calls[0].recId).toBeUndefined();
   enqueue.mockClear();
   await expect(runItem({ ...draft, spec: { ...spec, slot: 'main_hand' }, calls: [{ kind: 'pose', cells: ['walking/south/1'], seed: 1, rerolls: 0, old: [] }] }, ctx)).rejects.toThrow('walking/south frame 2');

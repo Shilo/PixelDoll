@@ -1,55 +1,53 @@
 import { expect, test, vi } from 'vitest'
-import { MAX_REROLLS, retry, type Draft } from '../../src/lib/items/run.ts'
+import { rerollCall, type Draft } from '../../src/lib/items/run.ts'
 
 vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: { subscribe: () => () => {} } }))
 
-// Round 3 review: a key/item color collision shows on the dressed keyframe as G3 (key px outside the body), never as G2 (key-
-// colored item px count as kept). So only a design-call G3 switches key, at once; G2 and posed failures re-roll, then go to review.
-const draft = (prompt = 'an iron helmet'): Draft => ({
-  spec: { id: 'helmet', name: 'Helmet', slot: 'head', prompt, key: 'green', anims: ['walk'], dirs: ['south'], method: 'skel' }, rigId: 'rig', keySwitched: false, log: [],
+// Color collisions are observations. Only an explicit player action may invalidate a paid batch; it never changes the key.
+const draft = (): Draft => ({
+  spec: { id: 'helmet', name: 'Helmet', slot: 'head', prompt: 'an iron helmet', key: 'green', anims: ['walk'], dirs: ['south', 'east'], method: 'skel' }, rigId: 'rig', log: [],
   calls: [
     { kind: 'dress', cells: ['rest/south/0'], seed: 1, recId: 'd1', old: [], rerolls: 0 },
-    { kind: 'pose', cells: ['walk/south/0'], seed: 2, recId: 'p1', old: [], rerolls: 0 },
-    { kind: 'grid', cells: ['walk/south/1'], seed: 3, recId: 'g1', old: ['p2'], rerolls: MAX_REROLLS, fallback: { recId: 'p2', fails: 3 } },
+    { kind: 'dress', cells: ['rest/east/0'], seed: 2, recId: 'd2', old: [], rerolls: 0 },
+    { kind: 'pose', cells: ['walk/south/0'], seed: 3, recId: 'p1', old: [], rerolls: 0 },
+    { kind: 'grid', cells: ['walk/east/0'], seed: 4, recId: 'g1', old: [], rerolls: 0 },
   ],
 })
 
-test('a design-call G3 switches to the next allowed key at once and restarts every call on it', () => {
-  const d = draft()
-  expect(retry(d, 0, ['G2 keyframe rest/south/0 key kept 0.960 (9 px); G3 keyframe rest/south/0 key outside 0.050'])).toBe(true)
-  expect(d.spec.key).toBe('magenta')
-  expect(d.keySwitched).toBe(true)
-  expect(d.calls.every((c) => !c.recId && c.rerolls === 0)).toBe(true)
-  expect(d.calls[2]).toMatchObject({ kind: 'pose', old: ['p2', 'g1'] }) // the grid's kept pose roll used the old key
-  expect(d.calls[2].fallback).toBeUndefined()
-})
-
-test('G2 and posed-frame failures re-roll on the same key, then go to review without a switch', () => {
-  const d = draft()
-  for (let i = 0; i < MAX_REROLLS; i++) expect(retry(d, 0, ['G2 keyframe rest/south/0 key kept 0.940 (20 px)'])).toBe(true)
-  expect(retry(d, 0, ['G2 keyframe rest/south/0 key kept 0.940 (20 px)'])).toBe(false)
-  for (let i = 0; i < MAX_REROLLS; i++) retry(d, 1, ['G3 walk/south/0 key outside 0.090'])
-  expect(retry(d, 1, ['G3 walk/south/0 key outside 0.090'])).toBe(false)
+test('an explicit failed-pose retry invalidates only that batch and keeps its original key and paid history', () => {
+  const d = draft(), other = structuredClone(d.calls.filter((_, i) => i !== 2))
+  rerollCall(d, 2, 'player requested one additional attempt after G2')
   expect(d.spec.key).toBe('green')
-  expect(d.keySwitched).toBe(false)
+  expect(d.calls[2]).toMatchObject({ kind: 'pose', recId: undefined, old: ['p1'], rerolls: 1 })
+  expect(d.calls.filter((_, i) => i !== 2)).toEqual(other)
+  expect(d.log).toHaveLength(1)
 })
 
-test('a collision with no other allowed key re-rolls instead, and a key switches only once', () => {
-  const none = draft('a green, red, blue and purple banner') // every key collides: the magenta fallback has nowhere to go
-  none.spec.key = 'magenta'
-  expect(retry(none, 0, ['G3 keyframe rest/south/0 key outside 0.050'])).toBe(true)
-  expect(none.spec.key).toBe('magenta')
-  expect(none.calls[0].rerolls).toBe(1)
-  const once = draft()
-  retry(once, 0, ['G3 keyframe rest/south/0 key outside 0.050'])
-  retry(once, 0, ['G3 keyframe rest/south/0 key outside 0.050'])
-  expect(once.spec.key).toBe('magenta')
-  expect(once.calls[0].rerolls).toBe(1)
-})
-
-test('re-rolling the design call drops every later call (their keyframes came from the old design)', () => {
+test('an explicit first-design retry invalidates dependent artwork without switching keys', () => {
   const d = draft()
-  retry(d, 0, ['D1 keyframe rest/south/0: 30 % gray smudges in a colorful design'])
-  expect(d.calls.map((c) => c.recId)).toEqual([undefined, undefined, undefined])
-  expect(d.calls[1].old).toEqual(['p1'])
+  rerollCall(d, 0, 'player requested a new design after G3')
+  expect(d.spec.key).toBe('green')
+  expect(d.calls.map(c => c.recId)).toEqual([undefined, undefined, undefined, undefined])
+  expect(d.calls.map(c => c.old)).toEqual([['d1'], ['d2'], ['p1'], ['g1']])
+  expect(d.calls.map(c => c.rerolls)).toEqual([1, 0, 0, 0])
+  expect(d.calls[3].kind).toBe('grid')
+})
+
+test('an explicit later dress retry invalidates only its dependent direction and preserves unrelated results', () => {
+  const d = draft(), southDesign = structuredClone(d.calls[0]), southPose = structuredClone(d.calls[2])
+  rerollCall(d, 1, 'player requested another east design')
+  expect(d.calls[0]).toEqual(southDesign); expect(d.calls[2]).toEqual(southPose)
+  expect(d.calls[1]).toMatchObject({ recId: undefined, old: ['d2'], rerolls: 1 })
+  expect(d.calls[3]).toMatchObject({ kind: 'grid', recId: undefined, old: ['g1'], rerolls: 0 })
+  expect(d.spec.key).toBe('green')
+})
+
+test('each additional grid invalidation requires a separate explicit action and retains every paid record', () => {
+  const d = draft()
+  rerollCall(d, 3, 'first player click')
+  expect(d.calls[3]).toMatchObject({ kind: 'grid', old: ['g1'], rerolls: 1 })
+  d.calls[3].recId = 'g2'
+  rerollCall(d, 3, 'second player click')
+  expect(d.calls[3]).toMatchObject({ kind: 'grid', recId: undefined, old: ['g1', 'g2'], rerolls: 2 })
+  expect(d.log).toHaveLength(2); expect(d.spec.key).toBe('green')
 })

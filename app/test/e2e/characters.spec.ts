@@ -1,4 +1,4 @@
-import { openStudio, reloadStudio, equipmentMode, equipmentGroup, newItem, selectedItemDetails } from './immersive-helpers.ts'
+import { openStudio, reloadStudio, equipmentMode, equipmentGroup, newItem, selectedItemDetails, pickItem } from './immersive-helpers.ts'
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { makeImg } from '../../src/lib/image/png.ts'
@@ -76,7 +76,7 @@ test('suspicious imported walking joints plan a priced frozen-frame alternative 
   expect(requests).toEqual([])
 })
 
-test('saved garment coverage warnings keep their specific review reasons after reload', async ({ page, context }, info) => {
+test('saved garment issues wait for explicit acceptance, preserve their notes and never submit a retry', async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', route => { requests.push(route.request().method()); return route.abort() })
   await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
@@ -85,7 +85,7 @@ test('saved garment coverage warnings keep their specific review reasons after r
     const s = await import(statePath), db = await import(dbPath)
     await s.copyDemo()
     const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((i: { slot: string }) => i.slot === 'torso_inner')
-    item.qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'accepted', rerolls: 0, cells: {}, missingLowerFrames: 2, footwearReviewFrames: 1, waistReviewFrames: 1, facingReviewFrames: 1 }
+    item.qa = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'warn', rerolls: 0, cells: {}, missingLowerFrames: 2, footwearReviewFrames: 1, waistReviewFrames: 1, facingReviewFrames: 1 }
     await db.put('projects', s.doc.id, rec)
   })
   await reloadStudio(page)
@@ -97,6 +97,26 @@ test('saved garment coverage warnings keep their specific review reasons after r
   await expect(pane.getByText('The waist band differs from the standing design; inspect the clothing', { exact: true })).toBeVisible()
   await expect(pane.getByText('Some frames resemble the opposite view; inspect the torso', { exact: true })).toBeVisible()
   await expect(pane.getByText('PixelLab returned an unexpected image', { exact: true })).toHaveCount(0)
+  await expect(pane).toContainText('No paid retry was started')
+  const before = await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', s = await import(statePath), db = await import(dbPath)
+    const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((i: { id: string }) => i.id === s.ui.selected)
+    return { id: item.id, projectId: s.doc.id, item }
+  })
+  await pane.getByRole('button', { name: 'Accept as is', exact: true }).click()
+  await expect(pane.locator('.badge.accepted')).toHaveText('Accepted')
+  await expect(pane.getByRole('button', { name: 'Accept as is', exact: true })).toHaveCount(0)
+  await expect(pane.getByText('Some frames resemble the opposite view; inspect the torso', { exact: true })).toBeVisible()
+  const after = await page.evaluate(async ({ id, projectId }) => {
+    const dbPath = '/src/lib/store/db.ts', db = await import(dbPath), rec = await db.get('projects', projectId)
+    return rec.manifest.items.find((i: { id: string }) => i.id === id)
+  }, before)
+  expect(after).toEqual({ ...before.item, qa: { ...before.item.qa, status: 'accepted' } })
+  await reloadStudio(page)
+  await pickItem(page, before.item.name)
+  await selectedItemDetails(page)
+  await expect(pane.locator('.badge.accepted')).toHaveText('Accepted')
+  await expect(pane.getByText('Some lower clothing is missing compared with the standing design', { exact: true })).toBeVisible()
   expect(requests).toEqual([])
 })
 
@@ -497,7 +517,7 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
     return it.id
   })
   const pane = await selectedItemDetails(page)
-  await expect(pane.locator('.badge.look')).toContainText('Needs a look')
+  await expect(pane.locator('.badge.accepted')).toContainText('Accepted')
   await expect(pane.getByText('Accepted appearance warnings', { exact: true })).toBeVisible()
   await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible()
   await expect(pane.getByText('Some body pixels were changed by the model', { exact: true })).toBeVisible()
@@ -510,6 +530,6 @@ test('accepted appearance warnings remain visible with clean or removed frame QA
     s.store.project = { ...s.store.project, manifest: { ...s.store.project.manifest, items: s.store.project.manifest.items.map((x: { id: string }) => x.id === id ? it : x) } }
     s.doc.rev++
   }, id)
-  await expect(pane.locator('.badge.look')).toContainText('Needs a look')
+  await expect(pane.locator('.badge.accepted')).toContainText('Accepted')
   await expect(pane.getByText('The design has gray smudges', { exact: true })).toBeVisible()
 })

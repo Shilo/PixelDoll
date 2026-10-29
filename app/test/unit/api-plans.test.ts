@@ -43,7 +43,7 @@ test('authored moves count frames from an available unique rest view when south 
   expect(moveFrames(manifest, { action: 'walk', frames: 4 })).toBe(8)
 })
 
-test('item preflight reuses the real planner and reports conditional fallback separately', async () => {
+test('item preflight contains only the requested plan and no automatic paid fallback', async () => {
   const project = await equipmentFixture(), rec = { id: 'fixture', savedAt: '', manifest: project.manifest }
   const points = LABELS.map(label => ({ label, x: 0.5, y: 0.5 })), reference = project.manifest.items[0].layers[0].cells!.rest!.south![0]!
   project.manifest.rig.rest = { south: { image: reference, keypoints: points } }
@@ -55,8 +55,8 @@ test('item preflight reuses the real planner and reports conditional fallback se
   expect(baseline.reduce((sum, call) => sum + (call.generations ?? 0), 0)).toBe(expected.gens)
   expect(baseline[0].body).toHaveProperty('description')
   expect(baseline[0].body).not.toHaveProperty('frames')
-  expect(plan.find(c => c.path === '/inpaint-v3')).toMatchObject({ label: 'Conditional packed-grid fallback' })
-  expect(plan.find(c => c.path === '/inpaint-v3')?.generations).toBeUndefined()
+  expect(plan.find(c => c.path === '/inpaint-v3')).toBeUndefined()
+  expect(plan.filter(c => c.method === 'POST')).toHaveLength(expected.calls)
   expect(itemPlan(null, input)).toEqual([])
 })
 
@@ -90,7 +90,7 @@ test('cancellation depends on actual queue state and generation history retains 
   expect(cancelPlan(queued)).toEqual([])
   const running = { state: 'running', jobs: [{ id: 'pending/id', done: false }, { id: 'remote-done', done: false, remoteDone: true }, { id: 'done', done: true }] } as unknown as JobRec
   expect(cancelPlan(running)).toEqual([{ method: 'DELETE', path: '/background-jobs/pending%2Fid', label: 'Stop submitted generation', note: expect.any(String) }])
-  const draft = { calls: [{ recId: 'current', old: ['paid-first', 'paid-reroll'], fallback: { recId: 'grid' } }] } as Draft
+  const draft = { calls: [{ recId: 'current', old: ['paid-first', 'paid-reroll', 'grid'] }] } as Draft
   expect(draftQueueIds(draft)).toEqual(['current', 'paid-first', 'paid-reroll', 'grid'])
 })
 

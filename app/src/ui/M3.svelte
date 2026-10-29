@@ -185,7 +185,7 @@
       <div class="item" data-testid="item-{d.spec.id}">
         <div class="row">
           <button onclick={() => (open = open === d.spec.id ? '' : d.spec.id)}>{open === d.spec.id ? '▾' : '▸'}</button>
-          <b>{d.spec.name}</b> <code>{d.spec.id}</code> · {d.spec.slot} · {d.spec.method === 'skel' ? 'skeleton posing' : 'edit + anchor'} · key <b>{d.spec.key}</b>{d.keySwitched ? ' (switched)' : ''} ·
+          <b>{d.spec.name}</b> <code>{d.spec.id}</code> · {d.spec.slot} · {d.spec.method === 'skel' ? 'skeleton posing' : 'edit + anchor'} · key <b>{d.spec.key}</b> ·
           <span class={q?.qa.status === 'pass' ? 'ok' : q?.qa.status === 'fail' ? 'bad' : 'warnc'} data-testid="status-{d.spec.id}">
             {running[d.spec.id] ? `running: ${running[d.spec.id]}` : !q ? 'no results' : d.calls.some((c) => callState(c, $queue.jobs) !== 'done') ? `partial (${d.calls.filter((c) => callState(c, $queue.jobs) === 'done').length}/${d.calls.length} calls, ${q.qa.status})` : q.qa.status}{d.acceptedAt ? ' · accepted' : ''}
           </span>

@@ -787,7 +787,7 @@ export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rer
     }
     return [clip, { ...summary, ...(hand ? { hand } : {}) }];
   }));
-  // Reporting is per clip; the existing per-call palette retry budget is unchanged.
+  // Reporting is per clip; these observations never authorize another paid attempt.
   q.qa.maxPaletteDist = Math.max(0, ...Object.values(q.qa.clips).map((s) => s.maxPaletteDist));
   if (q.qa.status === 'pass' && Object.values(q.qa.clips).some((s) => s.status === 'warn')) q.qa.status = 'warn';
   return q;

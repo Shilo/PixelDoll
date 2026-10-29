@@ -41,12 +41,12 @@
   })
   const plan = $derived(planned.plan)
 
-  async function make(i: typeof input) {
+  async function make(i: typeof input, consent?: Parameters<typeof startItem>[1]) {
     formDrafts.item = undefined
     busy = true
     try {
       ui.sheet = null
-      await startItem(i)
+      await startItem(i, consent)
       if (ui.size === 'expanded' || ui.size === 'medium') ui.inspTab = 'item'
       else ui.tab = 'wardrobe'
     } finally { busy = false }
@@ -58,7 +58,8 @@
   function go() {
     formDrafts.item = { projectId: doc.id, sourceGroup: ui.newItem.group, group, slot, prompt, color, name }
     const i = $state.snapshot(input)
-    withKey(() => void make(i), !!plan?.minimumTier)
+    const consent = plan ? { projectId: doc.id, gens: plan.gens, rig: JSON.stringify(m!.rig) } : undefined
+    withKey(() => void make(i, consent), !!plan?.minimumTier)
   }
 </script>
 
@@ -114,7 +115,7 @@
           {/each}
         </div>
       </div>
-      <p class="faint small">Consistency checks run automatically. Quality retries and repairs cost extra; unresolved details need review. PixelLab may bill dollars and queue time varies.</p>
+      <p class="faint small">Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request. PixelLab may bill dollars and queue time varies.</p>
       <details class="disclosure">
         <summary><ChevronRight size={14} />Details</summary>
         <div>
@@ -124,7 +125,7 @@
               <span class="select-wrap boxed"><select class="bu-select select" bind:value={slot} onchange={() => (slotPicked = true)}>{#each g.slots as s (s)}<option value={s}>{slotLabel(s)}</option>{/each}</select><ChevronDown size={12} /></span>
             </label>
           {/if}
-          {#if plan}<p class="faint small">{plan.calls} PixelLab calls · {plan.cells} frames · {itemRoute.label}{plan.cell ? ` · ${plan.cell} px canvas so long weapons are never cut off` : ''}. Failed checks re-roll automatically (up to 2×).</p>{/if}
+          {#if plan}<p class="faint small">{plan.calls} PixelLab calls · {plan.cells} frames · {itemRoute.label}{plan.cell ? ` · ${plan.cell} px canvas so long weapons are never cut off` : ''}. Each planned batch runs once. Failed checks wait for your review.</p>{/if}
         </div>
       </details>
     </div>

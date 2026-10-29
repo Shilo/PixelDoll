@@ -10,7 +10,7 @@ import { fromApi, LABELS } from '../../src/lib/rig/poses.ts';
 import { toChroma } from '../../src/lib/image/chroma.ts';
 import { over } from '../../src/lib/compose/compose.ts';
 import { itemRoute, packGrid } from '../../src/lib/items/items.ts';
-import { acceptItem, gensOf, newDraft, poseItemClip, runItem, type RigCtx } from '../../src/lib/items/run.ts';
+import { acceptItem, gensOf, isClean, newDraft, poseItemClip, rerollCall, runItem, type RigCtx } from '../../src/lib/items/run.ts';
 import { draftQueueIds } from '../../src/studio/apiPlans.ts';
 
 const ledger = vi.hoisted(() => ({ records: new Map<string, JobRec>(), requests: [] as Req[], blobs: new Map<string, Blob>(), identities: new Map<string, string>(), listeners: new Set<(s: { jobs: JobRec[] }) => void>(), next: 0, enqueues: 0, project: null as StoredProject | null, output: null as null | ((req: Req) => Promise<Img[]>) }));
@@ -138,123 +138,6 @@ test.each(['one output', 'three outputs', 'wrong-size padding'] as const)('a sin
   await expect(acceptItem(f.draft, f.ctx, result!)).rejects.toThrow('missing or malformed frames');
 });
 
-test('new items automatically retry footwear loss then use one grid and resume without resubmission', async () => {
-  const f = await fixture();
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.missing) : [f.grid(f.dressed)];
-  const draft = newDraft(f.ctx, { name: 'Auto outfit', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
-  const result = await runItem(draft, f.ctx);
-  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', ...Array(3).fill('/animate-with-skeleton-v3'), '/inpaint-v3']);
-  expect(result!.qa!.failCalls.size).toBe(0); expect(result!.qa!.warnings.some(w => w.startsWith('G12 '))).toBe(false);
-  expect(draft.calls[1].kind).toBe('grid'); expect(draft.calls[1].old).toHaveLength(3);
-  const requests = ledger.requests.length;
-  await runItem(JSON.parse(JSON.stringify(draft)), f.ctx);
-  expect(ledger.requests).toHaveLength(requests);
-});
-
-test('exhausted footwear attempts retain the best pose and cannot restart another grid loop on reload', async () => {
-  const f = await fixture();
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.missing) : [f.grid(f.missing)];
-  const draft = newDraft(f.ctx, { name: 'Auto outfit', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
-  const result = await runItem(draft, f.ctx);
-  expect(ledger.requests.filter(r => r.path === '/inpaint-v3')).toHaveLength(2);
-  expect(draft.calls[1].kind).toBe('pose'); expect(draft.calls[1].fallback).toBeDefined();
-  expect(result!.qa!.qa.footwearReviewFrames).toBe(3);
-  const count = ledger.requests.length; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.requests).toHaveLength(count);
-});
-
-test('one persisted grid refinement repairs the remaining observable footwear loss', async () => {
-  const f = await fixture(); let grids = 0;
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.missing) : [f.grid(++grids === 1 ? f.missing : f.dressed)];
-  const draft = newDraft(f.ctx, { name: 'Refined outfit', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
-  const result = await runItem(draft, f.ctx);
-  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', ...Array(3).fill('/animate-with-skeleton-v3'), '/inpaint-v3', '/inpaint-v3']);
-  expect(result!.qa!.warnings.some(w => /^G1[23] /.test(w))).toBe(false);
-  expect(result!.qa!.failCalls.size).toBe(0);
-  expect(draft.calls[1]).toMatchObject({ kind: 'grid', gridRefined: true });
-  const chosen = ledger.records.get(draft.calls[1].recId!)!;
-  expect(chosen.endpoint).toBe('/inpaint-v3');
-  expect(chosen.id).toBe([...ledger.records.values()].at(-1)!.id);
-  const count = ledger.requests.length; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.requests).toHaveLength(count);
-});
-
-test('a worse grid refinement preserves the earlier grid and its source record', async () => {
-  const f = await fixture(), damaged = structuredClone(f.dressed); let grids = 0;
-  for (let y = 4; y < 11; y++) for (let x = 13; x < 19; x++) damaged.data.fill(0, (y * 32 + x) * 4, (y * 32 + x) * 4 + 4);
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.missing) : [++grids === 1 ? packGrid([f.dressed, f.missing, f.missing, f.dressed], Array(4).fill(null)).image : f.grid(damaged)];
-  const draft = newDraft(f.ctx, { name: 'Refined outfit', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
-  const result = await runItem(draft, f.ctx);
-  const gridRecords = [...ledger.records.values()].filter(r => r.endpoint === '/inpaint-v3');
-  expect(gridRecords).toHaveLength(2);
-  expect(draft.calls[1]).toMatchObject({ kind: 'grid', gridRefined: true, recId: gridRecords[0].id });
-  expect(draft.calls[1].old).toContain(gridRecords[1].id);
-  expect(result!.qa!.failCalls.size).toBe(0); expect(result!.qa!.qa.footwearReviewFrames).toBe(2);
-  const accepted = await acceptItem(draft, f.ctx, result!);
-  expect(accepted.item.provenance.at(-1)!.jobId).toBe(`${gridRecords[0].id}-job`);
-  const count = ledger.requests.length; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.requests).toHaveLength(count);
-});
-
-test('hard failures in the first grid cannot trigger another refinement spend', async () => {
-  const f = await fixture(), damaged = structuredClone(f.missing);
-  for (let y = 4; y < 11; y++) for (let x = 13; x < 19; x++) damaged.data.fill(0, (y * 32 + x) * 4, (y * 32 + x) * 4 + 4);
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.missing) : [f.grid(damaged)];
-  const draft = newDraft(f.ctx, { name: 'No unsafe refinement', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
-  const result = await runItem(draft, f.ctx);
-  expect(ledger.requests.filter(r => r.path === '/inpaint-v3')).toHaveLength(1);
-  expect(draft.calls[1].kind).toBe('pose');
-  expect(result!.qa!.failCalls.size).toBe(0);
-});
-
-test('a grid that fixes shoes but damages the frozen body cannot replace a safer pose', async () => {
-  const f = await fixture(), damaged = structuredClone(f.dressed);
-  for (let y = 4; y < 11; y++) for (let x = 13; x < 19; x++) damaged.data.fill(0, (y * 32 + x) * 4, (y * 32 + x) * 4 + 4);
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.missing) : [f.grid(damaged)];
-  const draft = newDraft(f.ctx, { name: 'Auto outfit', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
-  const result = await runItem(draft, f.ctx);
-  expect(draft.calls[1].kind).toBe('pose');
-  expect(ledger.records.get(draft.calls[1].recId!)!.endpoint).toBe('/animate-with-skeleton-v3');
-  expect(result!.qa!.failCalls.size).toBe(0); expect(result!.qa!.qa.footwearReviewFrames).toBe(3);
-});
-
-test('accepted equipment uses bounded footwear recovery and keeps winning grid provenance', async () => {
-  const f = await fixture();
-  ledger.output = async req => req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.missing) : [f.grid(f.dressed)];
-  const qa = await poseItemClip(f.ctx, f.item, 'walking');
-  expect(ledger.requests.map(r => r.path)).toEqual(['/animate-with-skeleton-v3', '/animate-with-skeleton-v3', '/inpaint-v3']);
-  expect(qa.failCalls.size).toBe(0); expect(qa.qa.footwearReviewFrames).toBeUndefined();
-  const saved = ledger.project!.manifest.items.find(i => i.id === f.item.id)!;
-  expect(saved.provenance.at(-1)!.endpoint).toBe('/inpaint-v3');
-  expect(Object.values(saved.qa!.cells).every(c => c.provenance === saved.provenance.length - 1)).toBe(true);
-  const count = ledger.requests.length;
-  const ctx = { rec: ledger.project!, project: { ...f.ctx.project, manifest: ledger.project!.manifest } };
-  await poseItemClip(ctx, saved, 'walking'); expect(ledger.requests).toHaveLength(count);
-});
-
-test.each(['clean', 'worse'] as const)('accepted equipment checks one grid refinement and retains the %s candidate provenance', async variant => {
-  const f = await fixture(), damaged = structuredClone(f.dressed); let grids = 0;
-  for (let y = 4; y < 11; y++) for (let x = 13; x < 19; x++) damaged.data.fill(0, (y * 32 + x) * 4, (y * 32 + x) * 4 + 4);
-  ledger.output = async req => req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.missing) : [++grids === 1 ? packGrid([f.dressed, f.missing, f.missing, f.dressed], Array(4).fill(null)).image : f.grid(variant === 'clean' ? f.dressed : damaged)];
-  const qa = await poseItemClip(f.ctx, f.item, 'walking');
-  expect(ledger.requests.map(r => r.path)).toEqual(['/animate-with-skeleton-v3', '/animate-with-skeleton-v3', '/inpaint-v3', '/inpaint-v3']);
-  const gridRecords = [...ledger.records.values()].filter(r => r.endpoint === '/inpaint-v3'), saved = ledger.project!.manifest.items.find(i => i.id === f.item.id)!;
-  const chosen = gridRecords[variant === 'clean' ? 1 : 0];
-  expect(saved.provenance.at(-1)!.jobId).toBe(`${chosen.id}-job`);
-  expect(qa.failCalls.size).toBe(0);
-  expect(qa.qa.footwearReviewFrames).toBe(variant === 'clean' ? undefined : 2);
-  const count = ledger.requests.length, ctx = { rec: ledger.project!, project: { ...f.ctx.project, manifest: ledger.project!.manifest } };
-  await poseItemClip(ctx, saved, 'walking'); expect(ledger.requests).toHaveLength(count);
-});
-
-test('suspicious imported targets dress frozen frames directly without sending malformed joints', async () => {
-  const f = await fixture(true);
-  ledger.output = async () => [f.grid(f.dressed)];
-  const qa = await poseItemClip(f.ctx, f.item, 'walking');
-  expect(ledger.requests.map(r => r.path)).toEqual(['/inpaint-v3']);
-  expect(qa.failCalls.size).toBe(0);
-  const before = ledger.requests.length;
-  await expect(poseItemClip(f.ctx, { ...f.item, slot: 'main_hand' }, 'walking')).rejects.toThrow('suspicious estimated joints');
-  expect(ledger.requests).toHaveLength(before);
-});
-
 async function standingFixture() {
   const f = await fixture(), rig = f.ctx.rec.manifest.rig, source = rig.animations[0].sources!.south!, points = rig.rest!.south!.keypoints, bodyHash = rig.rest!.south!.image;
   rig.directions = DIRECTIONS.map(id => ({ id }));
@@ -269,125 +152,6 @@ async function standingFixture() {
   return { ...f, draft, good, refs };
 }
 
-test('one standing correction precedes all poses, enforces its mask, persists, and accounts for winning provenance', async () => {
-  const f = await standingFixture(), before = structuredClone(f.ctx.rec.manifest.items[0]), raw = structuredClone(f.good);
-  // Even a provider changing an unmasked head must not change that part of a standing reference.
-  paint(raw, 13, 4, 6, 7, [0, 0, 255]);
-  ledger.output = async req => {
-    if (req.path === '/edit-animation-v2') return f.refs;
-    if (req.path === '/inpaint-v3') return [packGrid([...Array(3).fill(raw), ...Array(5).fill(f.good)], Array(8).fill(null)).image];
-    const body = req.body as { first_frame: { base64: string } };
-    const first = await decodePngBytes(Buffer.from(body.first_frame.base64, 'base64'));
-    expect(first.data).toEqual(f.good.data); // Corrected back views feed walking; outside-mask blue never propagates.
-    return Array(3).fill(first);
-  };
-  const result = await runItem(f.draft, f.ctx);
-  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/inpaint-v3', ...Array(8).fill('/animate-with-skeleton-v3')]);
-  expect(f.draft.designRepair).toMatchObject({ checked: true, approved: true, missingDirections: ['north-east', 'north', 'north-west'] });
-  expect(result!.g1.size).toBe(0);
-  expect(gensOf(f.draft)).toBe(36);
-  expect(draftQueueIds(f.draft)).toContain(f.draft.designRepair!.recId);
-  expect(new Set(draftQueueIds(f.draft)).size).toBe(10);
-  const count = ledger.requests.length;
-  const resumed = JSON.parse(JSON.stringify(f.draft)); await runItem(resumed, f.ctx); expect(ledger.requests).toHaveLength(count);
-  const accepted = await acceptItem(resumed, f.ctx, result!);
-  expect(accepted.item.provenance.at(-1)).toMatchObject({ endpoint: '/inpaint-v3', jobId: `${f.draft.designRepair!.recId}-job`, produced: ['rest/north-east/0', 'rest/north/0', 'rest/north-west/0'] });
-  expect(accepted.item.provenance.reduce((sum, p) => sum + (p.usage?.generations ?? 0), 0)).toBe(36);
-  for (const hash of Object.values(accepted.item.dressed!)) {
-    const saved = await decodePngBytes(new Uint8Array(await ledger.blobs.get(hash!.slice(7))!.arrayBuffer()));
-    expect(saved.data).toEqual(f.good.data);
-  }
-  expect(ledger.project!.manifest.items[0]).toEqual(before);
-});
-
-test.each(['malformed', 'worse', 'unknown', 'unchanged'] as const)('a %s standing correction is rejected once and never propagates or resets on reload', async variant => {
-  const f = await standingFixture(), failed = structuredClone(f.dressed), body = f.ctx.project.images.get(f.ctx.rec.manifest.rig.rest!.south!.image)!;
-  if (variant === 'worse') for (let y = 16; y < 21; y++) for (let x = 11; x < 21; x++) failed.data.fill(0, (y * 32 + x) * 4, (y * 32 + x) * 4 + 4);
-  if (variant === 'unknown') {
-    const key = toChroma(body, 'green');
-    for (let y = 16; y < 21; y++) for (let x = 11; x < 21; x++) failed.data.set(key.data.subarray((y * 32 + x) * 4, (y * 32 + x) * 4 + 4), (y * 32 + x) * 4);
-  }
-  ledger.output = async req => req.path === '/edit-animation-v2' ? f.refs : [variant === 'malformed' ? makeImg(8, 8) : packGrid([...Array(3).fill(failed), ...Array(5).fill(f.good)], Array(8).fill(null)).image];
-  const result = await runItem(f.draft, f.ctx);
-  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/inpaint-v3']);
-  expect(f.draft.designRepair?.checked).toBe(true); expect(f.draft.designRepair?.approved).not.toBe(true);
-  expect([...result!.g1.values()].join(';')).toContain('D2');
-  expect(f.draft.calls.filter(c => c.kind === 'pose').every(c => !c.recId)).toBe(true);
-  const count = ledger.requests.length; await runItem(JSON.parse(JSON.stringify(f.draft)), f.ctx); expect(ledger.requests).toHaveLength(count);
-});
-
-test('a safe but partial standing improvement still stops unresolved views before animation', async () => {
-  const f = await standingFixture();
-  ledger.output = async req => req.path === '/edit-animation-v2' ? f.refs : [packGrid([f.good, f.dressed, f.dressed, ...Array(5).fill(f.good)], Array(8).fill(null)).image];
-  const result = await runItem(f.draft, f.ctx);
-  expect(f.draft.designRepair).toMatchObject({ checked: true, approved: true });
-  expect([...result!.g1.values()].join(';')).toContain('D2 keyframe north:');
-  expect([...result!.g1.values()].join(';')).toContain('D2 keyframe north-west:');
-  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/inpaint-v3']);
-  const count = ledger.requests.length; await runItem(JSON.parse(JSON.stringify(f.draft)), f.ctx); expect(ledger.requests).toHaveLength(count);
-});
-
-test('a missing durable standing-correction record fails closed without an enqueue attempt', async () => {
-  const f = await standingFixture();
-  ledger.output = async req => {
-    if (req.path === '/edit-animation-v2') return f.refs;
-    if (req.path === '/inpaint-v3') return [packGrid([...Array(8).fill(f.good)], Array(8).fill(null)).image];
-    return Array(3).fill(f.good);
-  };
-  await runItem(f.draft, f.ctx);
-  expect(f.draft.designRepair?.approved).toBe(true);
-  ledger.records.delete(f.draft.designRepair!.recId!);
-  for (const cb of ledger.listeners) cb({ jobs: [...ledger.records.values()] });
-  const count = ledger.enqueues, resumed = JSON.parse(JSON.stringify(f.draft));
-  let failure = '';
-  const result = await runItem(resumed, f.ctx).catch(error => { failure = String(error); return null; });
-  expect(ledger.enqueues).toBe(count);
-  expect(!result || result.g1.size > 0 || result.qa?.qa.status !== 'pass').toBe(true);
-  expect([failure, resumed.designRepair?.reason, resumed.log.at(-1)].join(';')).toMatch(/missing|unavailable|complete image|automatic resend/i);
-});
-
-test('a visible per-frame waistband omission triggers bounded automatic recovery after standing views pass', async () => {
-  const f = await fixture(), good = structuredClone(f.dressed);
-  paint(good, 12, 18, 8, 1, [220, 220, 220]);
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [good, good] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.dressed) : [packGrid([good, good, good, good], Array(4).fill(null)).image];
-  const draft = newDraft(f.ctx, { name: 'Belted outfit', slot: 'torso_inner', prompt: 'a black robe and white boots with a white waistband', key: 'green', anims: ['walking'], dirs: ['south'] });
-  const evaluated: Awaited<ReturnType<typeof runItem>>[] = [];
-  const result = await runItem(draft, f.ctx, { result: q => evaluated.push(q) });
-  expect(evaluated.some(q => q?.qa?.qa.waistReviewFrames === 3 && q.qa.warnings.some(w => w.startsWith('G13 ')))).toBe(true);
-  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', ...Array(3).fill('/animate-with-skeleton-v3'), '/inpaint-v3']);
-  expect(result!.qa!.qa.waistReviewFrames).toBeUndefined();
-  expect(result!.qa!.qa.clips!['walking/south'].waistReviewFrames).toBeUndefined();
-  expect(result!.qa!.warnings.some(w => w.startsWith('G13 '))).toBe(false);
-});
-
-test('unresolved waistband observations persist per frame after bounded attempts finish', async () => {
-  const f = await fixture(), good = structuredClone(f.dressed);
-  paint(good, 12, 18, 8, 1, [220, 220, 220]);
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [good, good] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.dressed) : [packGrid([f.dressed, f.dressed, f.dressed, good], Array(4).fill(null)).image];
-  const draft = newDraft(f.ctx, { name: 'Belted outfit', slot: 'torso_inner', prompt: 'a black robe and white boots with a white waistband', key: 'green', anims: ['walking'], dirs: ['south'] });
-  const result = await runItem(draft, f.ctx);
-  expect(result!.qa!.failCalls.size).toBe(0);
-  expect(result!.qa!.qa).toMatchObject({ status: 'warn', waistReviewFrames: 3 });
-  expect(result!.qa!.qa.clips!['walking/south']).toMatchObject({ status: 'warn', waistReviewFrames: 3 });
-  expect(ledger.requests.filter(r => r.path === '/inpaint-v3')).toHaveLength(2);
-  const count = ledger.requests.length; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.requests).toHaveLength(count);
-});
-
-test.each(['occluded', 'no intent', 'no positive reference'] as const)('%s waistband evidence cannot trigger paid consistency retries', async mode => {
-  const f = await fixture(), good = structuredClone(f.dressed);
-  paint(good, 12, 18, 8, 1, [220, 220, 220]);
-  if (mode === 'occluded') {
-    const rig = f.ctx.rec.manifest.rig, source = rig.animations[0].sources!.south!;
-    const hidden = rig.rest!.south!.keypoints.map(p => p.label === 'LEFT ELBOW' ? { ...p, x: 16 / 32, y: 16 / 32 } : p.label === 'LEFT ARM' ? { ...p, x: 16 / 32, y: 20 / 32 } : p);
-    source.keypoints = Array(3).fill(hidden); source.measured = Array(3).fill(hidden);
-  }
-  ledger.output = async req => req.path === '/edit-animation-v2' ? Array(2).fill(mode === 'no positive reference' ? f.dressed : good) : Array(3).fill(f.dressed);
-  const draft = newDraft(f.ctx, { name: 'Outfit', slot: 'torso_inner', prompt: mode === 'no intent' ? f.item.prompt! : 'a black robe and white boots with a white waistband', key: 'green', anims: ['walking'], dirs: ['south'] });
-  const result = await runItem(draft, f.ctx);
-  expect(result!.qa!.warnings.some(w => w.startsWith('G13 '))).toBe(false);
-  expect(result!.qa!.qa.waistReviewFrames).toBeUndefined();
-  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3']);
-});
 
 async function facingFixture(opposite = true, occluded = false) {
   const f = await fixture(), rig = f.ctx.rec.manifest.rig, front = structuredClone(f.dressed);
@@ -405,31 +169,266 @@ async function facingFixture(opposite = true, occluded = false) {
   return { ...f, front };
 }
 
-test('strong opposite-torso evidence receives bounded automatic repair and clears frame review counts', async () => {
-  const f = await facingFixture();
-  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.front, f.dressed] : req.path === '/animate-with-skeleton-v3' ? Array(3).fill(f.dressed) : [packGrid([f.front, f.front, f.front, f.front], Array(4).fill(null)).image];
-  const draft = newDraft(f.ctx, { name: 'Facing trial', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south', 'north'] });
-  const evaluated: Awaited<ReturnType<typeof runItem>>[] = [];
-  const result = await runItem(draft, f.ctx, { result: r => evaluated.push(r) });
-  expect(evaluated.some(r => r?.qa?.qa.facingReviewFrames === 3 && r.qa.warnings.some(w => w.startsWith('G14 ')))).toBe(true);
-  const poses = ledger.requests.filter(r => r.path === '/animate-with-skeleton-v3');
-  expect(poses.filter(r => (r.body as { direction: string }).direction === 'south')).toHaveLength(3);
-  expect(poses.filter(r => (r.body as { direction: string }).direction === 'north')).toHaveLength(1);
-  expect(ledger.requests.filter(r => r.path === '/inpaint-v3')).toHaveLength(1);
+
+test('footwear observations retain the first result and cost with no automatic reroll, key change or grid', async () => {
+  const f = await fixture(), baseBefore = structuredClone(f.ctx.rec.manifest.items[0]);
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : Array(3).fill(f.missing);
+  const draft = newDraft(f.ctx, { name: 'Review outfit', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  const result = await runItem(draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3']);
   expect(result!.qa!.failCalls.size).toBe(0);
-  expect(result!.qa!.qa.facingReviewFrames).toBeUndefined();
-  expect(result!.qa!.qa.clips!['walking/south'].facingReviewFrames).toBeUndefined();
-  const count = ledger.requests.length; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.requests).toHaveLength(count);
+  expect(result!.qa!.qa).toMatchObject({ status: 'warn', footwearReviewFrames: 3 });
+  expect(result!.qa!.warnings.some(w => w.startsWith('G12 '))).toBe(true);
+  expect(isClean(result!)).toBe(false);
+  expect(draft.spec.key).toBe('green'); expect(draft.calls.every(c => !c.old.length && !c.rerolls)).toBe(true);
+  expect(gensOf(draft)).toBe(12);
+  const chosen = draft.calls[1].recId!, accepted = await acceptItem(draft, f.ctx, result!);
+  expect(accepted.item.provenance.at(-1)!.jobId).toBe(`${chosen}-job`);
+  expect(accepted.item.qa!.footwearReviewFrames).toBe(3);
+  expect(ledger.project!.manifest.items[0]).toEqual(baseBefore);
+  const count = ledger.enqueues; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.enqueues).toBe(count);
 });
 
-test.each(['symmetric references', 'opposite absent', 'occluded'] as const)('%s cannot trigger an automatic torso-facing retry', async mode => {
+test('an explicit pose reroll authorizes one additional batch and does not launch child retries', async () => {
+  const f = await fixture();
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : Array(3).fill(f.missing);
+  const draft = newDraft(f.ctx, { name: 'Manual retry', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  await runItem(draft, f.ctx); const original = draft.calls[1].recId, design = draft.calls[0].recId;
+  rerollCall(draft, 1, 'player requested one paid attempt');
+  const result = await runItem(draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3', '/animate-with-skeleton-v3']);
+  expect(draft.calls[0].recId).toBe(design);
+  expect(draft.calls[1].old).toEqual([original]); expect(draft.calls[1].rerolls).toBe(1);
+  expect(draft.calls[1].recId).not.toBe(original);
+  expect(result!.qa!.qa.footwearReviewFrames).toBe(3); expect(isClean(result!)).toBe(false);
+  expect(gensOf(draft)).toBe(14); expect(draft.spec.key).toBe('green');
+  const count = ledger.enqueues; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.enqueues).toBe(count);
+});
+
+test('body-preservation failures retain the first checked artwork without paying for an alternate', async () => {
+  const f = await fixture(), damaged = structuredClone(f.dressed);
+  for (let y = 4; y < 11; y++) for (let x = 13; x < 19; x++) damaged.data.fill(0, (y * 32 + x) * 4, (y * 32 + x) * 4 + 4);
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : Array(3).fill(damaged);
+  const draft = newDraft(f.ctx, { name: 'Damaged art', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  const result = await runItem(draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3']);
+  expect([...result!.qa!.failCalls.values()].flat().some(w => w.startsWith('G2 '))).toBe(true);
+  expect(result!.qa!.qa.status).toBe('fail'); expect(isClean(result!)).toBe(false);
+  expect(gensOf(draft)).toBe(12); expect(draft.calls[1].old).toEqual([]);
+});
+
+test('lower garment loss is a hard observation rather than authorization for another paid call', async () => {
+  const f = await fixture(), missing = structuredClone(f.dressed), body = toChroma(f.ctx.project.images.get(f.ctx.rec.manifest.rig.rest!.south!.image)!, 'green');
+  for (let y = 23; y < 32; y++) for (let x = 0; x < 32; x++) missing.data.set(body.data.subarray((y * 32 + x) * 4, (y * 32 + x) * 4 + 4), (y * 32 + x) * 4);
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : Array(3).fill(missing);
+  const draft = newDraft(f.ctx, { name: 'Missing pants', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  const result = await runItem(draft, f.ctx);
+  expect(result!.qa!.qa.missingLowerFrames).toBe(3);
+  expect([...result!.qa!.failCalls.values()].flat().some(w => w.startsWith('G11 '))).toBe(true);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3']);
+  expect(draft.calls.every(c => !c.rerolls && !c.old.length)).toBe(true);
+});
+
+test('a D1 standing palette defect is retained for review without a dress retry', async () => {
+  const f = await singleStandingFixture(), smudged = structuredClone(f.dressed);
+  const clothing = f.ctx.project.images.get(f.item.layers[0].cells!.default!.south![0]!)!;
+  for (let p = 0; p < clothing.w * clothing.h; p++) if (clothing.data[p * 4 + 3]) smudged.data.set([190, 30, 45, 255], p * 4);
+  paint(smudged, 12, 13, 6, 2, [90, 90, 90]);
+  f.draft.spec.prompt = 'a scarlet tunic';
+  ledger.output = async () => [smudged, smudged];
+  const result = await runItem(f.draft, f.ctx);
+  expect([...result!.g1.values()].some(w => w.startsWith('D1 '))).toBe(true);
+  expect(isClean(result!)).toBe(false); expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2']);
+  expect(gensOf(f.draft)).toBe(10); expect(f.draft.calls[0].old).toEqual([]);
+});
+
+test('a G6 soft palette failure cannot spend another pose or fallback call', async () => {
+  const f = await facingFixture(), drifted = structuredClone(f.dressed);
+  paint(drifted, 12, 13, 8, 8, [190, 30, 45]);
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : Array(3).fill((req.body as { direction: string }).direction === 'north' ? drifted : f.dressed);
+  const draft = newDraft(f.ctx, { name: 'Palette drift', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south', 'north'] });
+  const result = await runItem(draft, f.ctx);
+  expect(result!.qa!.softCalls.has(2)).toBe(true);
+  expect(result!.qa!.warnings.some(w => w.startsWith('G6 '))).toBe(true);
+  expect(isClean(result!)).toBe(false);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3', '/animate-with-skeleton-v3']);
+  expect(draft.calls.every(c => !c.rerolls && !c.old.length)).toBe(true);
+});
+
+test('a standing chroma collision is flagged while the approved initial coverage keeps the same key', async () => {
+  const f = await fixture(), collision = structuredClone(f.dressed), key = toChroma(f.ctx.project.images.get(f.ctx.rec.manifest.rig.rest!.south!.image)!, 'green');
+  for (let y = 4; y < 25; y++) for (let x = 0; x < 4; x++) collision.data.set(key.data.subarray((10 * 32 + 16) * 4, (10 * 32 + 16) * 4 + 4), (y * 32 + x) * 4);
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [collision, collision] : Array(3).fill(f.dressed);
+  const draft = newDraft(f.ctx, { name: 'Collision', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  const result = await runItem(draft, f.ctx);
+  expect([...result!.g1.values()].some(w => w.includes('G3 keyframe'))).toBe(true);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3']);
+  expect(draft.spec.key).toBe('green'); expect(draft.calls.every(c => !c.old.length && !c.rerolls)).toBe(true);
+  expect(result!.cells).toHaveLength(3); expect(isClean(result!)).toBe(false);
+});
+
+test.each(['missing frames', 'empty response', 'wrong canvas'] as const)('malformed pose %s stops once and cannot be accepted or retried on reload', async variant => {
+  const f = await fixture();
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : variant === 'empty response' ? [] : variant === 'missing frames' ? [f.dressed, f.dressed] : Array(3).fill(makeImg(16, 16));
+  const draft = newDraft(f.ctx, { name: 'Malformed pose', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  const result = await runItem(draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3']);
+  expect([...result!.g1.values()].some(w => w.startsWith('G1 '))).toBe(true);
+  await expect(acceptItem(draft, f.ctx, result!)).rejects.toThrow('missing or malformed frames');
+  const count = ledger.enqueues; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.enqueues).toBe(count);
+});
+
+test('missing durable draft records fail closed without any new submission', async () => {
+  const f = await fixture(), draft = newDraft(f.ctx, { name: 'Missing history', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  draft.calls[0].recId = 'missing-paid-record';
+  const result = await runItem(draft, f.ctx);
+  expect(ledger.enqueues).toBe(0); expect(ledger.requests).toHaveLength(0);
+  expect(result).toBeNull(); expect(draft.log.join(' ')).toMatch(/record|history|unavailable|missing/i);
+});
+
+test('an unknown paid result never grants a fresh request or seed', async () => {
+  const f = await fixture(), draft = newDraft(f.ctx, { name: 'Unknown outcome', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  draft.calls[0].recId = 'unknown-paid-record';
+  ledger.records.set('unknown-paid-record', { id: 'unknown-paid-record', state: 'lost', jobs: [], error: 'outcome unknown' } as unknown as JobRec);
+  for (const cb of ledger.listeners) cb({ jobs: [...ledger.records.values()] });
+  const seed = draft.calls[0].seed;
+  await runItem(draft, f.ctx); await runItem(JSON.parse(JSON.stringify(draft)), f.ctx);
+  expect(ledger.enqueues).toBe(0); expect(draft.calls[0].seed).toBe(seed); expect(draft.calls[0].old).toEqual([]);
+});
+
+test('standing waist differences remain reviewable without a hidden standing repair or changed references', async () => {
+  const f = await standingFixture(), base = structuredClone(f.ctx.rec.manifest.items[0]);
+  ledger.output = async req => {
+    if (req.path === '/edit-animation-v2') return f.refs;
+    expect(req.path).toBe('/animate-with-skeleton-v3');
+    const b = req.body as { first_frame: { base64: string }; direction: string };
+    const first = await decodePngBytes(Buffer.from(b.first_frame.base64, 'base64'));
+    expect(first.data).toEqual(f.refs[DIRECTIONS.indexOf(b.direction as typeof DIRECTIONS[number])].data);
+    return Array(3).fill(first);
+  };
+  const result = await runItem(f.draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', ...Array(8).fill('/animate-with-skeleton-v3')]);
+  expect([...result!.g1.values()].join(';')).toContain('D2');
+  expect(result!.cells).toHaveLength(24); expect(isClean(result!)).toBe(false);
+  expect(gensOf(f.draft)).toBe(26); expect(new Set(draftQueueIds(f.draft)).size).toBe(9);
+  const accepted = await acceptItem(f.draft, f.ctx, result!);
+  expect(accepted.item.designWarnings!.some(w => w.startsWith('D2 '))).toBe(true);
+  for (const [i, dir] of DIRECTIONS.entries()) {
+    const bytes = ledger.blobs.get(accepted.item.dressed![dir]!.slice(7))!;
+    expect((await decodePngBytes(new Uint8Array(await bytes.arrayBuffer()))).data).toEqual(f.refs[i].data);
+  }
+  expect(ledger.project!.manifest.items[0]).toEqual(base);
+  const count = ledger.enqueues; await runItem(JSON.parse(JSON.stringify(f.draft)), f.ctx); expect(ledger.enqueues).toBe(count);
+});
+
+test('a visible walking waistband omission stays flagged and incurs only its planned call', async () => {
+  const f = await fixture(), good = structuredClone(f.dressed); paint(good, 12, 18, 8, 1, [220, 220, 220]);
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [good, good] : Array(3).fill(f.dressed);
+  const draft = newDraft(f.ctx, { name: 'Belted outfit', slot: 'torso_inner', prompt: 'a black robe and white boots with a white waistband', key: 'green', anims: ['walking'], dirs: ['south'] });
+  const result = await runItem(draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3']);
+  expect(result!.qa!.qa).toMatchObject({ status: 'warn', waistReviewFrames: 3 });
+  expect(result!.qa!.qa.clips!['walking/south'].waistReviewFrames).toBe(3);
+  expect(result!.qa!.warnings.some(w => w.startsWith('G13 '))).toBe(true);
+  const count = ledger.enqueues; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.enqueues).toBe(count);
+});
+
+test.each(['occluded', 'no intent', 'no positive reference'] as const)('%s waistband evidence neither diagnoses an omission nor spends extra', async mode => {
+  const f = await fixture(), good = structuredClone(f.dressed); paint(good, 12, 18, 8, 1, [220, 220, 220]);
+  if (mode === 'occluded') {
+    const source = f.ctx.rec.manifest.rig.animations[0].sources!.south!;
+    const hidden = f.ctx.rec.manifest.rig.rest!.south!.keypoints.map(p => p.label === 'LEFT ELBOW' ? { ...p, x: 16 / 32, y: 16 / 32 } : p.label === 'LEFT ARM' ? { ...p, x: 16 / 32, y: 20 / 32 } : p);
+    source.keypoints = Array(3).fill(hidden); source.measured = Array(3).fill(hidden);
+  }
+  ledger.output = async req => req.path === '/edit-animation-v2' ? Array(2).fill(mode === 'no positive reference' ? f.dressed : good) : Array(3).fill(f.dressed);
+  const draft = newDraft(f.ctx, { name: 'Outfit', slot: 'torso_inner', prompt: mode === 'no intent' ? f.item.prompt! : 'a black robe and white boots with a white waistband', key: 'green', anims: ['walking'], dirs: ['south'] });
+  const result = await runItem(draft, f.ctx);
+  expect(result!.qa!.warnings.some(w => w.startsWith('G13 '))).toBe(false);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3']);
+});
+
+test('strong opposite-torso evidence stays visible without a paid alternate or automatic acceptance', async () => {
+  const f = await facingFixture();
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.front, f.dressed] : Array(3).fill(f.dressed);
+  const draft = newDraft(f.ctx, { name: 'Facing trial', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south', 'north'] });
+  const result = await runItem(draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/animate-with-skeleton-v3', '/animate-with-skeleton-v3']);
+  expect(result!.qa!.qa).toMatchObject({ status: 'warn', facingReviewFrames: 3 });
+  expect(result!.qa!.warnings.some(w => w.startsWith('G14 '))).toBe(true); expect(isClean(result!)).toBe(false);
+  const count = ledger.enqueues; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.enqueues).toBe(count);
+});
+
+test.each(['symmetric references', 'opposite absent', 'occluded'] as const)('%s cannot diagnose the opposite torso or trigger extra submissions', async mode => {
   const f = await facingFixture(mode !== 'opposite absent', mode === 'occluded');
   const refs = mode === 'opposite absent' || mode === 'symmetric references' ? [f.front, f.front] : [f.front, f.dressed];
   ledger.output = async req => req.path === '/edit-animation-v2' ? refs : Array(3).fill((req.body as { direction: string }).direction === 'north' && mode === 'symmetric references' ? f.front : f.dressed);
-  const draft = newDraft(f.ctx, { name: 'Uncertain facing trial', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: mode === 'opposite absent' ? ['south'] : ['south', 'north'] });
+  const draft = newDraft(f.ctx, { name: 'Uncertain facing', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: mode === 'opposite absent' ? ['south'] : ['south', 'north'] });
   const result = await runItem(draft, f.ctx);
   expect(result!.qa!.warnings.some(w => w.startsWith('G14 '))).toBe(false);
-  expect(result!.qa!.qa.facingReviewFrames).toBeUndefined();
   expect(ledger.requests.filter(r => r.path === '/animate-with-skeleton-v3')).toHaveLength(mode === 'opposite absent' ? 1 : 2);
   expect(ledger.requests.filter(r => r.path === '/inpaint-v3')).toHaveLength(0);
+});
+
+test('posing accepted equipment submits one batch, preserves its warnings and source provenance', async () => {
+  const f = await fixture(), base = structuredClone(f.ctx.rec.manifest.items[0]);
+  ledger.output = async () => Array(3).fill(f.missing);
+  const qa = await poseItemClip(f.ctx, f.item, 'walking');
+  expect(ledger.requests.map(r => r.path)).toEqual(['/animate-with-skeleton-v3']);
+  expect(qa.qa).toMatchObject({ status: 'warn', footwearReviewFrames: 3 });
+  const saved = ledger.project!.manifest.items.find(i => i.id === f.item.id)!;
+  expect(saved.provenance.at(-1)!.jobId).toBe([...ledger.records.values()][0].jobs[0].id);
+  expect(saved.qa!.footwearReviewFrames).toBe(3); expect(ledger.project!.manifest.items[0]).toEqual(base);
+  const count = ledger.requests.length;
+  await poseItemClip({ rec: ledger.project!, project: { ...f.ctx.project, manifest: ledger.project!.manifest } }, saved, 'walking');
+  expect(ledger.requests).toHaveLength(count);
+});
+
+test('a long accepted-item move makes one request for each planned batch and keeps each source identity', async () => {
+  const f = await fixture(), rig = f.ctx.rec.manifest.rig, animation = rig.animations[0], points = rig.rest!.south!.keypoints;
+  animation.cells = 18; animation.frames = Array.from({ length: 18 }, (_, cell) => ({ cell, ms: 100 }));
+  animation.sources!.south!.keypoints = Array(18).fill(points); animation.sources!.south!.measured = Array(18).fill(points);
+  const bodyHash = rig.rest!.south!.image;
+  f.ctx.rec.manifest.items[0].layers[0].cells!.walking!.south = Array(18).fill(bodyHash);
+  f.ctx.rec.skeletons = Object.fromEntries(Array.from({ length: 18 }, (_, i) => [`walking/south/${i}`, fromApi(points, rig.cell)]));
+  ledger.project = structuredClone(f.ctx.rec);
+  ledger.output = async req => Array((req.body as { keypoints: unknown[] }).keypoints.length).fill(f.missing);
+  const qa = await poseItemClip(f.ctx, f.item, 'walking');
+  expect(ledger.requests.map(r => r.path)).toEqual(['/animate-with-skeleton-v3', '/animate-with-skeleton-v3']);
+  expect(ledger.requests.map(r => (r.body as { keypoints: unknown[] }).keypoints.length)).toEqual([9, 9]);
+  expect(qa.qa.footwearReviewFrames).toBe(18); expect(qa.qa.rerolls).toBe(0);
+  const saved = ledger.project!.manifest.items.find(i => i.id === f.item.id)!;
+  expect(saved.provenance.map(p => p.produced.length)).toEqual([9, 9]);
+  for (let i = 0; i < 18; i++) {
+    const source = saved.qa!.cells[`walking/south/${i}`].provenance;
+    expect(saved.provenance[source!].jobId).toBe([...ledger.records.values()][i < 9 ? 0 : 1].jobs[0].id);
+  }
+});
+
+test.each(['empty', 'count', 'canvas'] as const)('malformed accepted-item %s output fails after one request and keeps existing artwork', async variant => {
+  const f = await fixture(), before = structuredClone(ledger.project);
+  ledger.output = async () => variant === 'empty' ? [] : variant === 'count' ? [f.dressed] : Array(3).fill(makeImg(16, 16));
+  await expect(poseItemClip(f.ctx, f.item, 'walking')).rejects.toThrow(/missing|malformed|invalid|frame/i);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/animate-with-skeleton-v3']);
+  expect(ledger.project).toEqual(before);
+});
+
+test('suspicious imported targets use one priced frozen-grid request without a quality retry', async () => {
+  const f = await fixture(true);
+  ledger.output = async () => [f.grid(f.missing)];
+  const qa = await poseItemClip(f.ctx, f.item, 'walking');
+  expect(ledger.requests.map(r => r.path)).toEqual(['/inpaint-v3']);
+  expect(qa.qa.footwearReviewFrames).toBe(3);
+  const before = ledger.requests.length;
+  await expect(poseItemClip(f.ctx, { ...f.item, slot: 'main_hand' }, 'walking')).rejects.toThrow('suspicious estimated joints');
+  expect(ledger.requests).toHaveLength(before);
+});
+
+test('an initial frozen-grid item retains its first flagged grid and never submits a refinement on reload', async () => {
+  const f = await fixture(true);
+  ledger.output = async req => req.path === '/edit-animation-v2' ? [f.dressed, f.dressed] : [f.grid(f.missing)];
+  const draft = newDraft(f.ctx, { name: 'Frozen art', slot: 'torso_inner', prompt: f.item.prompt!, key: 'green', anims: ['walking'], dirs: ['south'] });
+  const result = await runItem(draft, f.ctx);
+  expect(ledger.requests.map(r => r.path)).toEqual(['/edit-animation-v2', '/inpaint-v3']);
+  expect(result!.qa!.qa.footwearReviewFrames).toBe(3); expect(draft.calls[1].old).toEqual([]);
+  const count = ledger.enqueues; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.enqueues).toBe(count);
 });

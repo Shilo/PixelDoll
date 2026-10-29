@@ -51,6 +51,7 @@ export const genDirsOf = (n: 4 | 8 = 4, policy: DirectionPolicy = 'mirrored'): D
   : n === 8 ? ['south', 'south-east', 'east', 'north-east', 'north'] : ['south', 'east', 'north'];
 const MIRRORS: [Direction, Direction][] = [['west', 'east'], ['south-west', 'south-east'], ['north-west', 'north-east']];
 const CELL = 64, EST = 0.1;
+// Read-only receipt lookup includes previously completed render attempts. New renders submit once.
 export const CLIP_ATTEMPTS = 2;
 /** Base sizes in the 64 cell (D4): the 4 px floor stays, so 56 px leaves 4 px of canvas above the character's own canvas
  * and the rest views are checked for HEADROOM_MIN free px above the head. */
@@ -126,7 +127,7 @@ export async function run(req: Req, label: string, tag: string, cache = false, r
     if (completed) return completed;
     if (!allowed) throw new Error('Cached joint results changed. Review the body frames again before continuing. No replacement request was made.');
   }
-  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, signal, activityScope, minimumTier: 1, attempt: signal ? generationAttempts.get(signal) : undefined,
+  const rec = await queue.enqueue(req, { label, tag, cache, resumeSafe, signal, activityScope, playerRequested: true, minimumTier: 1, attempt: signal ? generationAttempts.get(signal) : undefined,
     ...(recovery && req.path === '/estimate-skeleton' ? { estimateRetry: recovery.intent } : {}) });
   // Queue cancellation is consumer-aware: a failed flow cannot cancel deduplicated work another flow still needs.
   signal?.throwIfAborted();
@@ -206,27 +207,24 @@ interface ClipJob { anim: string; dir: Direction; rest: Img; restKps: Keypoint[]
 interface ClipOut { frames: Img[]; measured: (Keypoint[] | undefined)[]; qa: ClipQa; recs: JobRec[]; processing?: ClipSource['processing'] }
 async function renderClip(j: ClipJob): Promise<ClipOut> {
   const restB64 = await b64(j.rest), recs: JobRec[] = [];
-  for (let attempt = 0; attempt < (j.paletteRepair ? 1 : CLIP_ATTEMPTS); attempt++) { // Only empty output or a wrong frame count may retry with a new seed.
-    const r = await run(rawClip({ first: restB64, rest: j.restKps, keypoints: j.keypoints, description: j.looks, action: actionOf(j.anim) + (j.unarmed ? ', empty hands, no weapon, no props, no effects' : ''), dir: j.dir, seed: j.seed + attempt * 7919, view: j.view }),
-      `${j.name} · ${j.anim} ${j.dir}${attempt ? ' (re-roll)' : ''}`, 'studio-rig', false, true, j.signal, j.activityScope);
-    recs.push(r);
-    j.tick();
-    const outs = await imagesOf(r);
-    if (outs.length !== j.keypoints.length) continue;
-    const normalized = outs.map(o => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
-    if (normalized.some(n => n.cutPx)) throw new Error(`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`);
-    const rawFrames = normalized.map(n => n.img);
-    // Empty art is a rendering failure; do not pay to estimate joints on it. One art re-roll is allowed.
-    if (rawFrames.some(f => !opaqueBox(f))) continue;
-    const candidate = j.paletteRepair ? await paletteCandidate(j.anim, j.dir, j.rest, rawFrames, j.keypoints, 0) : { frames: rawFrames };
-    const frames = candidate.frames;
-    // Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
-    const measured = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, j.signal, j.activityScope); j.tick(); return k; }));
-    if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`);
-    const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: 0, disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0), ...(j.authored ? {} : { facing: { dir: j.dir, rest: j.restKps } }) });
-    return { frames, measured, qa, recs, ...('processing' in candidate ? { processing: candidate.processing } : {}) };
-  }
-  throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames or the wrong number of frames`);
+  const r = await run(rawClip({ first: restB64, rest: j.restKps, keypoints: j.keypoints, description: j.looks, action: actionOf(j.anim) + (j.unarmed ? ', empty hands, no weapon, no props, no effects' : ''), dir: j.dir, seed: j.seed, view: j.view }),
+    `${j.name} · ${j.anim} ${j.dir}`, 'studio-rig', false, true, j.signal, j.activityScope);
+  recs.push(r);
+  j.tick();
+  const outs = await imagesOf(r);
+  if (outs.length !== j.keypoints.length) throw new Error(`${j.anim} ${j.dir}: PixelLab returned the wrong number of frames. No paid retry was started. Review Activity before requesting another attempt.`);
+  const normalized = outs.map(o => normalize(o.img, j.rest.w, j.rest.h, 128, j.rest.w));
+  if (normalized.some(n => n.cutPx)) throw new Error(`${j.anim} ${j.dir}: animation exceeds the ${j.rest.w} px frame. Increase Frame or reduce Body size before creating again.`);
+  const rawFrames = normalized.map(n => n.img);
+  // Do not spend on joint measurements or another render when the returned artwork is empty.
+  if (rawFrames.some(f => !opaqueBox(f))) throw new Error(`${j.anim} ${j.dir}: PixelLab returned empty frames. No paid retry was started. Review Activity before requesting another attempt.`);
+  const candidate = j.paletteRepair ? await paletteCandidate(j.anim, j.dir, j.rest, rawFrames, j.keypoints, 0) : { frames: rawFrames };
+  const frames = candidate.frames;
+  // Observation failures retain the generated art. Never re-roll it or silently freeze an incomplete rig.
+  const measured = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, j.signal, j.activityScope); j.tick(); return k; }));
+  if (measured.some(k => !hasAll(k))) throw new Error(`${j.anim} ${j.dir}: valid joints were not found on every frame. Generated images are retained in Activity; setup stopped without redrawing them.`);
+  const qa = clipQa({ anim: j.anim, rest: j.rest, frames, requested: j.keypoints, measured, stray: 0, disconnectedPixels: frames.reduce((sum, f) => sum + bodyComponents(f).detachedPixels, 0), ...(j.authored ? {} : { facing: { dir: j.dir, rest: j.restKps } }) });
+  return { frames, measured, qa, recs, ...('processing' in candidate ? { processing: candidate.processing } : {}) };
 }
 
 async function measurementInput(frame: Img) {
@@ -664,7 +662,7 @@ export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'f
  * Authored (raw skeleton-v3 with keypoints from the rest pose) or text (pixminimax motion source -> raw re-render) move, then
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
-export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<{ fitIds: string[]; warnings: string[] }> {
+export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<{ fitIds: string[]; warnings: string[]; reviewItems?: string[] }> {
   approvedMeasurementIds(spec.measurementRecovery);
   checkedPaletteIntent(spec.bodyPaletteRepair);
   const { rec } = await loadProject(projectId);
@@ -707,13 +705,15 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   const clipQa = (shared.rigQa as { clips?: Record<string, ClipQa> } | undefined)?.clips ?? {};
   // Include this move's current nested observations, including after resume. Flattened historical notes may be stale.
   const fitIds: string[] = [], warnings: string[] = Object.entries(clipQa).filter(([clip]) => clip.startsWith(`${spec.id}/`)).flatMap(([clip, qa]) => warn(clip, qa));
+  const reviewItems = shared.manifest.items.filter(item => spec.items.includes(item.id) && Object.entries(item.qa?.clips ?? {}).some(([clip, qa]) => clip.startsWith(`${spec.id}/`) && (qa.status === 'warn' || qa.status === 'fail'))).map(item => item.id);
+  for (const id of reviewItems) warnings.push(`${shared.manifest.items.find(item => item.id === id)!.name}: item quality checks need review. No paid retry was started.`);
   for (const id of sharedIds) {
     const item = shared.manifest.items.find((i) => i.id === id);
     if (!item?.design) continue;
     try { fitIds.push((await prepareExtensionFit(projectId, id, { anims: [spec.id], dirs })).id); }
     catch (e) { warnings.push(`${item.name}: ${e instanceof Error ? e.message : 'The equipment fit could not be prepared.'}`); }
   }
-  return { fitIds, warnings: [...new Set(warnings)] };
+  return { fitIds, warnings: [...new Set(warnings)], ...(reviewItems.length ? { reviewItems } : {}) };
 }
 
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void, recovery?: MeasurementRecoveryPlan) {

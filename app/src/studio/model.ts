@@ -126,14 +126,15 @@ export function itemNameFrom(desc: string): string {
   return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
 }
 
-export type Health = 'clean' | 'look' | 'stale' | 'demo';
+export type Health = 'clean' | 'accepted' | 'look' | 'stale' | 'demo';
 export function healthOf(m: Manifest, it: Item): Health {
   if (it.baseHash !== m.rig.baseHash) return 'stale';
-  if (it.designWarnings?.length) return 'look';
+  if (it.qa?.status === 'fail' || it.qa?.status === 'warn') return 'look';
+  if (it.designWarnings?.length || it.qa?.status === 'accepted') return 'accepted';
   if (!it.qa) return 'demo';
   return it.qa.status === 'pass' ? 'clean' : 'look';
 }
-export const HEALTH_LABEL: Record<Health, string> = { clean: 'Clean', look: 'Needs a look', stale: 'Made for another body', demo: 'Demo' };
+export const HEALTH_LABEL: Record<Health, string> = { clean: 'Clean', accepted: 'Accepted', look: 'Needs a look', stale: 'Made for another body', demo: 'Demo' };
 
 /** QA gate messages in plain words (D1 §5.5). */
 export function plainReason(s: string): string {

@@ -22,7 +22,7 @@ function fixture() {
   const base = makeImg(8, 8), layer = makeImg(8, 8), mask = new Uint8Array(64)
   for (const p of [18, 19, 20, 26, 27, 28, 34, 35, 36]) { mask[p] = 1; layer.data.set([90, 90, 100, 255], p * 4) }
   const cell: CellOut = { key: 'idle/south/0', call: 0, base, input: base, out: layer, layer, mask, area: 9, outBand: 0, baseBand: 0, specks: 0, pinholes: 0, shifted: false, offset: [0, 0], stray: 0, posed: false, keyKept: 1, keyOutside: 0 }
-  const draft: Draft = { spec: { id: 'helmet', name: 'Helmet', slot: 'head', prompt: 'iron helmet', key: 'green', anims: ['idle'], dirs: ['south'], method: 'anchor' }, rigId: 'rig', calls: [{ kind: 'edit', cells: ['idle/south/0'], seed: 1, recId: 'current', old: [], rerolls: 0 }], keySwitched: false, log: [] }
+  const draft: Draft = { spec: { id: 'helmet', name: 'Helmet', slot: 'head', prompt: 'iron helmet', key: 'green', anims: ['idle'], dirs: ['south'], method: 'anchor' }, rigId: 'rig', calls: [{ kind: 'edit', cells: ['idle/south/0'], seed: 1, recId: 'current', old: [], rerolls: 0 }], log: [] }
   const ctx = { rec: { id: 'rig', manifest: { rig } }, project: { manifest: { rig }, images: new Map() } } as unknown as RigCtx
   const result: ItemResult = { cells: [cell], qa: itemQa(rig, slotOf('head'), 'green', [cell], 0), g1: new Map(), preview: null }
   ledger.records.push(record('current', 10, 0))
@@ -47,7 +47,7 @@ test.each(['G2 keyframe rest/south/0 key kept 0.8', 'G3 keyframe rest/south/0 ke
   expect(hasStructuralFailure(result)).toBe(false)
   const saved = await acceptItem(draft, ctx, result)
   expect(saveItem).toHaveBeenCalledOnce()
-  expect(saved.item.qa?.status).toBe('pass')
+  expect(saved.item.qa?.status).toBe('accepted')
   expect(saved.item.designWarnings).toEqual([why])
   expect(draft.acceptedAt).toBeDefined()
 })
@@ -88,7 +88,7 @@ test('accepted keyframe design reasons are retained individually without rewriti
   result.g1.set(0, 'G2 keyframe rest/south/0 key kept 0.8; D1 keyframe rest/south/0: gray smudges')
   const saved = await acceptItem(draft, ctx, result)
   expect(saved.item.designWarnings).toEqual(['G2 keyframe rest/south/0 key kept 0.8', 'D1 keyframe rest/south/0: gray smudges'])
-  expect(saved.item.qa?.status).toBe('pass')
+  expect(saved.item.qa?.status).toBe('accepted')
   expect(saved.item.qa?.clips?.['idle/south'].status).toBe('pass')
 })
 

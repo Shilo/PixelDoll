@@ -7,7 +7,7 @@
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
-  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, pendingMoves, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
+  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, pendingMoves, moving, settingUp, matchItemPalette, acceptItemIssues, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
   let { id }: { id: string } = $props()
@@ -110,6 +110,16 @@
   })
   let confirmRemove = $state(false)
   let onlyDir = $state(false)
+  let acceptingIssues = $state(false)
+  let acceptanceError = $state('')
+  async function acceptIssues() {
+    if (!it || acceptingIssues) return
+    const projectId = doc.id, itemId = it.id, reviewed = $state.snapshot(it)
+    acceptingIssues = true; acceptanceError = ''
+    try { await acceptItemIssues(projectId, itemId, reviewed) }
+    catch (error) { if (doc.id === projectId && it?.id === itemId) acceptanceError = error instanceof Error ? error.message : String(error) }
+    finally { acceptingIssues = false }
+  }
 </script>
 
 {#if m && it && view.project}
@@ -156,8 +166,18 @@
         <ul class="reasons small">{#each designReasons as reason (reason)}<li><TriangleAlert size={12} />{reason}</li>{/each}</ul>
       </div>
     {/if}
-    {#if health === 'look' && reasons.length}
+    {#if (health === 'look' || health === 'accepted') && reasons.length}
       <ul class="reasons small">{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
+    {/if}
+    {#if !isDemo() && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
+      <div class="field">
+        <p class="notice warn small">Checks found issues. No paid retry was started. You can request another attempt or accept this item as it is.</p>
+        <button class="bu-action btn" data-variant="outline" disabled={acceptingIssues || repairBusy} onclick={acceptIssues}>Accept as is</button>
+        <p class="faint small">Accepts the current artwork without spending credits. The detected issues remain in its details.</p>
+        {#if acceptanceError}<p class="notice bad small" role="alert">{acceptanceError}</p>{/if}
+      </div>
+    {:else if health === 'accepted'}
+      <p class="muted small">You accepted this artwork with its recorded quality notes.</p>
     {/if}
     {#if moveGaps.length}<p class="notice warn small"><TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left out there.</p>{/if}
     {#if missingMoves.length}
