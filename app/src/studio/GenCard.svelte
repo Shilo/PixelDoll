@@ -12,7 +12,7 @@
   import { CircleAlert, CircleCheck, ChevronRight, LoaderCircle, TriangleAlert } from './icons.ts'
   import { app } from '../lib/app.svelte.ts'
   import { default as ApiPeek } from './ApiPeek.svelte'
-  import { draftPlan, draftQueueIds } from './apiPlans.ts'
+  import { draftPlan, draftQueueIds, itemPlan, type PeekCall } from './apiPlans.ts'
 
   let { g }: { g: Gen } = $props()
   const p = $derived(genProgress(g, $queue.jobs))
@@ -33,16 +33,17 @@
   // views whose frames are still generating (the preview item lists them as pending)
   const loadingDirs = $derived(g.phase === 'running' && anim ? new Set(prev?.manifest.items.find((i) => i.id === g.draft.spec.id)?.pending?.filter((k) => k.startsWith(`${anim.id}/`)).map((k) => k.split('/')[1])) : new Set<string>())
   let retryGens = $state<number | null>(null)
+  let retryPlan = $state<PeekCall[]>([])
   let retryEstimateError = $state('')
   $effect(() => {
     const projectId = g.draft.rigId, input = $state.snapshot(g.input)
     void store.project?.manifest // Re-price when the character's coverage changes.
     let current = true
-    retryGens = null; retryEstimateError = ''
+    retryGens = null; retryPlan = []; retryEstimateError = ''
     // Try again creates a fresh item plan; old fallback calls are not the next attempt's plan.
     void loadProject(projectId).then((ctx) => {
       const plan = itemRoute.plan(ctx.rec.manifest.rig, ctx, input)
-      if (current) retryGens = plan.gens
+      if (current) { retryGens = plan.gens; retryPlan = itemPlan(ctx, input) }
     }).catch(() => { if (current) retryEstimateError = 'Could not estimate this retry. Reopen the character and try again.' })
     return () => { current = false }
   })
@@ -103,20 +104,20 @@
     {#if !clean}<p class="notice warn small">No paid retry has been started. Choose Try again for a new attempt, or Keep it to accept the complete artwork with these warnings. Closing this review keeps it waiting.</p>{/if}
     <div class="actions">
       <button class="bu-action btn primary" data-variant="primary" onclick={accept} disabled={busy || !res?.qa || hasStructuralFailure(res) || incomplete}>Keep it</button>
-      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="bu-action btn" data-variant="outline" onclick={() => retryGens !== null && retryGen(g, retryGens)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
+      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={retryPlan} /><button class="bu-action btn" data-variant="outline" onclick={() => retryGens !== null && retryGen(g, retryGens)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
       <button class="bu-action btn plain danger" data-variant="quiet" onclick={() => discardGen(g)} disabled={busy}>Discard</button>
     </div>
     {#if incomplete}<p class="notice warn small">Some frames were not generated. A new attempt is required before this item can be kept.</p>{/if}
   {:else if g.phase === 'failed'}
     <p class="notice bad small"><CircleAlert size={14} />{g.error?.includes('5000') || g.error?.toLowerCase().includes('policy') ? 'PixelLab declined this prompt. Try different words.' : 'This item could not be made.'}</p>
     <div class="actions">
-      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={draftPlan(g.draft)} /><button class="bu-action btn primary" data-variant="primary" onclick={() => retryGens !== null && retryGen(g, retryGens)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
+      <span class="api-action"><ApiPeek scope={`item-retry-${g.draft.spec.id}`} label={`Try ${g.input.name} again`} plan={retryPlan} /><button class="bu-action btn primary" data-variant="primary" onclick={() => retryGens !== null && retryGen(g, retryGens)} disabled={busy || retryGens === null}>Try again <span class="cost">Est. {retryGens ?? '–'} gens</span></button></span>
       <button class="bu-action btn plain danger" data-variant="quiet" onclick={() => discardGen(g)}>Discard</button>
     </div>
   {/if}
 
   {#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small"><CircleAlert size={14} />{retryEstimateError}</p>{/if}
-  {#if g.phase !== 'running'}<p class="faint small">Try again starts one fresh item attempt at the displayed estimate. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.</p>{/if}
+  {#if g.phase !== 'running'}<p class="faint small">Try again redraws the whole item for all current moves and directions at the displayed estimate. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.</p>{/if}
   <details class="disclosure">
     <summary><ChevronRight size={14} />Details</summary>
     <div>

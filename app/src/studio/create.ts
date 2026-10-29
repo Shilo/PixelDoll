@@ -15,7 +15,7 @@ import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import { HEADROOM_MIN, anchorTracks, buildRig } from '../lib/rig/freeze.ts';
 import { normalize, opaqueBox } from '../lib/rig/normalize.ts';
 import { flipH } from '../lib/rig/mirror.ts';
-import { ANCHORS, DEFAULT_MOVE, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, defaultMs, playlist, retainPlaybackChoices, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
+import { ANCHORS, DEFAULT_MOVE, DIRECTIONS, baseHashOf, cellHash, cellKey, cellKeys, defaultMs, playlist, retainPlaybackChoices, rigArtworkVersion, validateRig, type ClipSource, type DirectionName, type Keypoint, type RigAnimation, type RigDirection, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import { anchorsOf, flipSkeleton, type Skeleton } from '../lib/rig/skeleton.ts';
 import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/rig/poses.ts';
 import { rigReady } from '../lib/rig/setup.ts';
@@ -412,7 +412,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
 /** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; checkHashes: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; checkHashes: string[]; rigVersion: string } }
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; itemReview?: { gens: number; artwork: string }; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; checkHashes: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; checkHashes: string[]; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
 function approvedCheckHashes(value: unknown): Set<string> {
   const invalid = () => new Error('The reviewed joint-check hashes are invalid. Review the body frames and cost again.');
@@ -645,7 +645,7 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
   const r = dir && m.rig.rest?.[dir];
   return s.action === 'walk' ? 8 : s.action && ACTIONS[s.action] && r && dir ? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length : s.frames;
 };
-export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace'>) {
+export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace' | 'itemsOnly'>) {
   const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = s.itemMethod === 'grid' && !s.replace ? 0 : dirs * (poseCallGens(n) + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
   const directItems = s.items.filter(id => !m.items.find(item => item.id === id)?.design);
   const items = s.itemMethod === 'grid' ? directItems.reduce((sum, id) => {
@@ -653,19 +653,59 @@ export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'f
     if (!item) throw new Error('The selected equipment is no longer available.');
     const cell = item.layers[0]?.cell ?? m.rig.cell;
     return sum + gridEstimate(cell, n, 1).gens * dirs;
-  }, 0) : directItems.reduce((sum, id) => sum + itemPoseGens(m.rig, m.items.find(i => i.id === id)!, s.id, n, moveDirections(m, s.dirs)), 0);
+  }, 0) : directItems.reduce((sum, id) => {
+    const item = m.items.find(i => i.id === id)!;
+    const targets = moveDirections(m, s.dirs).filter(d => !s.itemsOnly || s.replace || !item.layers.every(l => l.cells?.[s.id]?.[d]?.length === n));
+    return sum + itemPoseGens(m.rig, item, s.id, n, targets);
+  }, 0);
   return { gens: body + items, body, items, frames: n, minutes: 4 + directItems.length * 3 };
 
+}
+
+/** Bind a delayed item-only click to its priced artwork. Other queued moves may update this item's unrelated clips. */
+export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
+  if (!spec.itemsOnly) throw new Error('Only existing item frames can use this review.');
+  const dirs = moveDirections(m, spec.dirs);
+  const rows = <T>(value: Partial<Record<DirectionName, T>> | undefined) => {
+    const entries = dirs.filter(dir => value?.[dir] !== undefined).map(dir => [dir, value![dir]]);
+    return entries.length ? Object.fromEntries(entries) : undefined;
+  };
+  const items = [m.rig.baseItem, ...spec.items].map(id => {
+    const item = m.items.find(i => i.id === id);
+    if (!item) throw new Error('The selected equipment is no longer available.');
+    return { ...item, qa: undefined, provenance: undefined, designWarnings: undefined,
+      coverage: item.coverage?.filter(key => key.startsWith(`${spec.id}/`) && dirs.includes(key.split('/')[1] as DirectionName)),
+      baseCut: rows(item.baseCut?.[spec.id]), paletteRepairs: item.paletteRepairs?.filter(p => p.anim === spec.id && dirs.includes(p.dir)),
+      layers: item.layers.map(layer => ({ ...layer, cells: rows(layer.cells?.[spec.id]), sheets: layer.sheets?.[spec.id], sourceSheets: layer.sourceSheets?.[spec.id] })) };
+  });
+  const artwork = stableStringify({ rig: rigArtworkVersion(m.rig, undefined), items, scope: { id: spec.id, frames: spec.frames, dirs: spec.dirs, items: spec.items, itemMethod: spec.itemMethod } });
+  return { ...spec, itemReview: { gens: moveEstimate(m, spec).items, artwork } };
+}
+
+/** An unsupported pose or grid has no valid price. Keep the offer visible with its reason instead of breaking the view. */
+export function itemMoveOffer(m: Manifest, specs: MoveSpec[]): { specs: MoveSpec[]; gens: number | null; error: string } {
+  try {
+    const reviewed = specs.map(spec => reviewItemMove(m, spec));
+    return { specs: reviewed, gens: reviewed.reduce((sum, spec) => sum + spec.itemReview!.gens, 0), error: '' };
+  } catch (error) {
+    return { specs: [], gens: null, error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 /**
  * Authored (raw skeleton-v3 with keypoints from the rest pose) or text (pixminimax motion source -> raw re-render) move, then
  * the chosen items posed onto it. Resumable: a body clip already saved is kept, items that already have it are skipped.
  */
-export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}): Promise<{ fitIds: string[]; warnings: string[]; reviewItems?: string[] }> {
+export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void = () => {}, onReviewed: () => Promise<void> = async () => {}): Promise<{ fitIds: string[]; warnings: string[]; reviewItems?: string[] }> {
   approvedMeasurementIds(spec.measurementRecovery);
   checkedPaletteIntent(spec.bodyPaletteRepair);
   const { rec } = await loadProject(projectId);
+  const assertReview = (m: Manifest) => {
+    if (spec.itemReview && stableStringify(reviewItemMove(m, spec).itemReview) !== stableStringify(spec.itemReview)) {
+      throw new Error('This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.');
+    }
+  };
+  assertReview(rec.manifest);
   if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
   const dirs = moveDirections(rec.manifest, spec.dirs), existing = rec.manifest.rig.animations.find(a => a.id === spec.id);
   if (spec.itemMethod === 'grid' && !existing) throw new Error('Choose an existing move before repairing its equipment.');
@@ -682,6 +722,18 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   deriveMaterials(normalized.project);
   if (split.dirty) await saveSplit(projectId, normalized.project.manifest, split);
   const fresh = await loadProject(projectId), frames = fresh.rec.manifest.rig.animations.find(a => a.id === spec.id)!.cells;
+  assertReview(fresh.rec.manifest);
+  if (spec.itemReview) {
+    const reviewed = spec.itemReview;
+    delete spec.itemReview;
+    try { await onReviewed(); } // A resume may reuse the operation's own saved frames after durable consent.
+    catch (error) { spec.itemReview = reviewed; throw error; }
+  }
+  const assertArtwork = (m: Manifest, id: string, targetDirs: DirectionName[]) => {
+    if (!spec.itemsOnly) return;
+    const target = { ...spec, items: [id], dirs: targetDirs };
+    if (reviewItemMove(m, target).itemReview!.artwork !== reviewItemMove(fresh.rec.manifest, target).itemReview!.artwork) throw new Error('The item frames changed before generation. Reopen the item to review them again.');
+  };
   const plans = spec.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it && !it.design ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !it.layers.every(l => l.cells?.[spec.id]?.[d]?.length === frames)) }] : []; });
   const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0); let posed = 0;
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
@@ -690,9 +742,11 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
     if (!plan.dirs.length) continue;
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find(i => i.id === plan.id);
     if (!it || it.design) throw new Error('This item changed or was removed while the move was being prepared.');
+    assertArtwork(ctx.rec.manifest, plan.id, plan.dirs);
     if (spec.itemMethod === 'grid') for (const d of plan.dirs) {
       const current = await loadProject(projectId), item = current.rec.manifest.items.find(i => i.id === plan.id);
       if (!item || item.design) throw new Error('This item changed or was removed while the move was being prepared.');
+      assertArtwork(current.rec.manifest, plan.id, [d]);
       const result = await regridClip(current, item, spec.id, d, spec.seed); tick();
       if (!result.saved) throw new Error(`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`);
     }

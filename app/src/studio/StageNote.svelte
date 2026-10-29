@@ -2,7 +2,8 @@
   // B10 (T1 P1-1): a worn item without frames for the shown view would silently vanish. Say so, with one action to fix it.
   import { missingAt, moveDirs } from '../lib/dress/dress.ts'
   import type { DirectionName, Item } from '../lib/store/manifest.ts'
-  import { posable, poseGens } from '../lib/items/run.ts'
+  import { posable } from '../lib/items/run.ts'
+  import { itemMoveOffer } from './create.ts'
   import { groupOf } from './model.ts'
   import { ui, doc, store, isDemo, moving, queueMoves, withKey, openNewItem, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { TriangleAlert } from './icons.ts'
@@ -24,14 +25,16 @@
   }
   const pose = $derived(m && anim ? posable(m).filter((i) => !i.design && missing.includes(i) && missingDirs(i).length) : [])
   const targetDirs = $derived([...new Set(pose.flatMap(missingDirs))])
-  const cost = $derived(anim ? pose.reduce((sum, i) => sum + poseGens(1, anim.cells, missingDirs(i).length), 0) : 0)
+  const poseOffer = $derived(m && anim && pose.length ? itemMoveOffer(m, [{ id: anim.id, frames: anim.cells, items: pose.map(i => i.id), dirs: [...targetDirs], itemsOnly: true, seed: 0 }]) : null)
+  const poseSpec = $derived(poseOffer?.specs[0])
   const shared = $derived(missing.find((i) => i.design))
   const remake = $derived(missing.find((i) => !i.design && i.prompt))
   const busy = $derived(!!moving.spec && moving.projectId === doc.id && moving.spec.id === anim?.id && !moving.done && !moving.error)
 
   function makePose() {
+    if (!poseSpec) return
     const projectId = doc.id
-    const spec = { id: anim!.id, frames: anim!.cells, items: pose.map((i) => i.id), dirs: [...targetDirs], itemsOnly: true as const, seed: 1 + Math.floor(Math.random() * 1_000_000) }
+    const spec = { ...$state.snapshot(poseSpec), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void queueMoves(projectId, [spec]); ui.sheet = 'move' }, true)
   }
 </script>
@@ -47,7 +50,8 @@
     {:else if shared}
       <button class="bu-action btn sm" data-variant="outline" disabled={extensionPreparing(shared.id)} onclick={() => openItemExtension(shared.id, [anim!.id])}>{extensionPreparing(shared.id) ? 'Checking fit…' : 'Review equipment fit'}</button>
     {:else if pose.length === missing.length}
-      <span class="api-action"><ApiPeek scope="equipment-missing-move" label="Make missing equipment frames" plan={m && anim ? movePlan({ manifest: m }, { id: anim.id, frames: anim.cells, items: pose.map(i => i.id), dirs: [...targetDirs] }) : []} /><button class="bu-action btn sm primary" data-variant="primary" disabled={!!moving.spec && !moving.done} onclick={makePose}>Make it <span class="cost">Est. {cost} gens</span></button></span>
+      <span class="api-action"><ApiPeek scope="equipment-missing-move" label="Make missing equipment frames" plan={m && poseSpec ? movePlan({ manifest: m }, poseSpec) : []} /><button class="bu-action btn sm primary" data-variant="primary" disabled={!!moving.spec && !moving.done || !poseSpec} onclick={makePose}>Make it <span class="cost">{poseOffer?.gens == null ? 'Unavailable' : `Est. ${poseOffer.gens} gens`}</span></button></span>
+      {#if poseOffer?.error}<span role="status">{poseOffer.error}</span>{/if}
     {:else if remake}
       <button class="bu-action btn sm" data-variant="outline" onclick={() => withKey(() => openNewItem(groupOf(remake.slot).id, { slot: remake.slot, prompt: remake.prompt }))}>Make it again…</button>
     {/if}

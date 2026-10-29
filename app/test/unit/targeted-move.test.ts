@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { addMove, moveDirections, moveEstimate } from '../../src/studio/create.ts'
+import { addMove, moveDirections, moveEstimate, reviewItemMove } from '../../src/studio/create.ts'
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import * as db from '../../src/lib/store/db.ts'
 import * as projects from '../../src/lib/store/project.ts'
@@ -57,3 +57,85 @@ test('regeneration keeps explicit play-once preferences, including choices chang
 test('failed genuine measurements cannot publish a targeted replacement or invalidate prior equipment',async()=>{const f=await fixture(true);await expect(f.run()).rejects.toThrow('still fails body-pose');expect(f.put).not.toHaveBeenCalled();expect(f.update).not.toHaveBeenCalled();expect(f.saved()).toEqual(f.original)})
 test('invalid subset, new partial move and changed partial frame count are rejected before spending',async()=>{for(const change of [{dirs:[]},{dirs:['east','east']},{dirs:['bad']},{id:'cast',dirs:['east']},{action:'slash'}]){const f=await fixture();await expect(f.run(change)).rejects.toThrow();expect(f.enqueue).not.toHaveBeenCalled();vi.restoreAllMocks()}})
 test('selected direction costs distinguish body replacement from frozen-frame equipment repair',async()=>{const f=await fixture(),m=f.original.manifest;expect(moveDirections(m,['west','east'])).toEqual(['east','west']);expect(moveEstimate(m,{id:'idle',action:'idle',frames:4,items:['hat'],dirs:['east','west']}).gens).toBeCloseTo(12.8);expect(moveEstimate(m,{id:'idle',action:'idle',frames:4,items:['hat'],dirs:['west'],itemMethod:'grid'})).toMatchObject({body:0,items:10,gens:10})})
+
+test('item review binds artwork and cost while unrelated queued clips and playback choices can change', async () => {
+ const f = await fixture(), m = f.original.manifest;
+ const spec = { id: 'idle', frames: 4, items: ['hat'], dirs: ['south' as const], itemsOnly: true as const, itemMethod: 'grid' as const, seed: 1 };
+ const reviewed = reviewItemMove(m, spec).itemReview!;
+ expect(reviewed.gens).toBe(10);
+ const item = m.items[1];
+ item.layers[0].cells!.walk = { south: ['sha256:new'] };
+ item.provenance.push({ endpoint: 'synthetic', params: {}, seed: 1, requestHash: 'sha256:test', createdAt: '', produced: ['walk/south/0'] });
+ m.rig.animations[0].loop = false;
+ expect(reviewItemMove(m, spec).itemReview).toEqual(reviewed);
+ item.layers[0].cells!.idle!.south![0] = 'sha256:changed';
+ expect(reviewItemMove(m, spec).itemReview!.artwork).not.toBe(reviewed.artwork);
+ item.layers[0].cell = { w: 96, h: 96 };
+ expect(reviewItemMove(m, spec).itemReview!.gens).toBe(15);
+});
+
+test('missing-item pricing skips coverage already present for each item', async () => {
+ const f = await fixture(), m = f.original.manifest;
+ const item = m.items[1];
+ delete item.layers[0].cells!.idle!.south;
+ expect(moveEstimate(m, { id: 'idle', frames: 4, items: ['hat'], dirs: ['south', 'east'], itemsOnly: true }).items).toBe(3);
+});
+
+async function reviewedItemFixture() {
+ const f = await fixture(), m = f.saved().manifest, item = m.items[1];
+ m.items[0].regions = 'shirt-shorts';
+ item.key = 'green'; item.route = 'skeleton-pose'; item.dressed = { south: m.rig.rest!.south!.image };
+ delete item.layers[0].cells!.idle!.south;
+ const bytes = await encodePngBytes(makeImg(64, 64));
+ vi.mocked(db.getBlob).mockResolvedValue(new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+ const spec = reviewItemMove(m, { id: 'idle', frames: 4, items: ['hat'], dirs: ['south'], itemsOnly: true, seed: 1 });
+ return { ...f, spec };
+}
+
+test.each(['initial load', 'post-normalization reload'] as const)('reviewed item rejects changed artwork at %s before paid work', async boundary => {
+ const f = await reviewedItemFixture(), reviewed = structuredClone(f.spec.itemReview), consumed = vi.fn(async () => {});
+ if (boundary === 'initial load') f.saved().manifest.items[1].prompt = 'Replacement hat';
+ else {
+  const load = vi.mocked(projects.loadProject).getMockImplementation()!;
+  let reads = 0;
+  vi.mocked(projects.loadProject).mockImplementation(async id => {
+   const ctx = await load(id);
+   if (++reads === 2) f.saved().manifest.items[1].prompt = 'Replacement hat';
+   return ctx;
+  });
+ }
+ await expect(addMove('rig-target', f.spec, undefined, consumed)).rejects.toThrow('review its current estimate');
+ expect(f.enqueue).not.toHaveBeenCalled(); expect(consumed).not.toHaveBeenCalled();
+ expect(f.spec.itemReview).toEqual(reviewed);
+});
+
+test('reviewed item waits for durable consumption before preparing exactly one paid request', async () => {
+ const f = await reviewedItemFixture();
+ let release!: () => void;
+ const stored = new Promise<void>(resolve => { release = resolve; });
+ const consumed = vi.fn(async () => { expect(f.spec).not.toHaveProperty('itemReview'); await stored; });
+ f.enqueue.mockRejectedValue(new Error('Synthetic request boundary reached'));
+ const run = addMove('rig-target', f.spec, undefined, consumed);
+ const stopped = expect(run).rejects.toThrow('Synthetic request boundary reached');
+ await vi.waitFor(() => expect(consumed).toHaveBeenCalledOnce());
+ expect(f.enqueue).not.toHaveBeenCalled();
+ release(); await stopped;
+ expect(f.enqueue).toHaveBeenCalledOnce();
+ expect(f.enqueue.mock.calls[0][0].path).toBe('/animate-with-skeleton-v3');
+ expect(f.spec).not.toHaveProperty('itemReview');
+});
+
+test('failed durable review consumption sends no paid request', async () => {
+ const f = await reviewedItemFixture(), reviewed = structuredClone(f.spec.itemReview);
+ const consumed = vi.fn(async () => { throw new Error('Review receipt storage failed'); });
+ await expect(addMove('rig-target', f.spec, undefined, consumed)).rejects.toThrow('Review receipt storage failed');
+ expect(consumed).toHaveBeenCalledOnce(); expect(f.enqueue).not.toHaveBeenCalled();
+ expect(f.spec.itemReview).toEqual(reviewed);
+});
+
+test('artwork replaced during durable consumption cannot enter the subsequent request context', async () => {
+ const f = await reviewedItemFixture();
+ const consumed = vi.fn(async () => { f.saved().manifest.items[1].prompt = 'Replacement after review persistence'; });
+ await expect(addMove('rig-target', f.spec, undefined, consumed)).rejects.toThrow('changed before generation');
+ expect(consumed).toHaveBeenCalledOnce(); expect(f.enqueue).not.toHaveBeenCalled();
+});

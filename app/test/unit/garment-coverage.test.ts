@@ -66,6 +66,20 @@ test('missing lower clothing fails locomotion QA and leaves action occlusion for
   expect([...dirGate(slotOf('back'), [cell], { south: robe() }, rig).fails.values()].flat().some(s => s.startsWith('G11'))).toBe(false);
 });
 
+test('lower garment QA follows measured knees when the rendered body differs from its requested pose', () => {
+  const measured = toApi(rest, { w: 64, h: 64 });
+  const requested = measured.map(p => p.label.endsWith('KNEE') ? { ...p, y: 51 / 64 } : p);
+  const rig = { cell: { w: 64, h: 64 }, rest: { south: { keypoints: measured } }, animations: [{ id: 'walk', cells: 1, sources: { south: { keypoints: [requested], measured: [measured] } } }] } as unknown as Rig;
+  const base = paint(makeImg(64, 64), 24, 10, 40, 61, [170, 120, 90]);
+  const design = paint(makeImg(64, 64), 22, 30, 42, 51);
+  const cell = { key: 'walk/south/0', call: 0, base, layer: design, mask: new Uint8Array(64 * 64), posed: true } as Parameters<typeof dirGate>[1][number];
+  expect(dirGate(slotOf('torso_inner'), [cell], { south: design }, rig).missingLowerFrames).toBe(0);
+  // Actual missing coverage still fails with the same measured body.
+  expect(dirGate(slotOf('torso_inner'), [{ ...cell, layer: paint(makeImg(64, 64), 22, 30, 42, 45) }], { south: design }, rig).missingLowerFrames).toBe(1);
+  delete rig.animations[0].sources!.south!.measured;
+  expect(dirGate(slotOf('torso_inner'), [cell], { south: design }, rig).missingLowerFrames).toBe(1);
+});
+
 test('the actual inpaint request enables lower clothing and keeps reference cells protected', async () => {
   const body = paint(makeImg(64, 64), 24, 10, 40, 61, [170, 120, 90]), hash = await cellHash(body);
   const points = toApi(rest, { w: 64, h: 64 }), reference = inputCell(body, 'green');

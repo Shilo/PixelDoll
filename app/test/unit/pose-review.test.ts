@@ -6,6 +6,7 @@ import type { Item } from '../../src/lib/store/manifest.ts';
 import { itemPoseGens, newDraft, runItem, type Draft, type RigCtx } from '../../src/lib/items/run.ts';
 import { planGens } from '../../src/lib/items/items.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
+import { itemMoveOffer, moveEstimate, reviewItemMove } from '../../src/studio/create.ts';
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -100,7 +101,16 @@ test('accepted equipment estimates the actual safe route and still refuses unsaf
   const ctx = context(), enqueue = vi.spyOn(queue, 'enqueue').mockRejectedValue(new Error('Unexpected paid request'));
   const item: Item = { id: 'robe', name: 'Robe', slot: 'torso_inner', prompt: 'a long robe', status: 'accepted', mirror: 'generate', materials: [], baseHash: ctx.rec.manifest.rig.baseHash, key: 'green', route: 'skeleton-pose', dressed: { south: 'sha256:design' }, layers: [{ id: 'main', role: 'fg', z: 40, cells: {} }], provenance: [] };
   expect(itemPoseGens(ctx.rec.manifest.rig, item, 'walking', 3, ['south'])).toBe(10);
+  ctx.rec.manifest.items.push({ ...item, id: ctx.rec.manifest.rig.baseItem }, item);
+  const offer = reviewItemMove(ctx.rec.manifest, { id: 'walking', frames: 3, items: [item.id], dirs: ['south'], itemsOnly: true, seed: 1 });
+  expect(offer.itemReview!.gens).toBe(10);
+  expect(moveEstimate(ctx.rec.manifest, offer).items).toBe(10);
   expect(() => itemPoseGens(ctx.rec.manifest.rig, { ...item, slot: 'main_hand' }, 'walking', 3, ['south'])).toThrow('walking/south frame 2');
+  item.slot = 'main_hand';
+  const blocked = itemMoveOffer(ctx.rec.manifest, [offer]);
+  expect(blocked.gens).toBeNull();
+  expect(blocked.specs).toEqual([]);
+  expect(blocked.error).toContain('walking/south frame 2');
   expect(enqueue).not.toHaveBeenCalled();
 });
 

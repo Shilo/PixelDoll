@@ -2,8 +2,8 @@
   import { coverageGaps, moveDirs } from '../lib/dress/dress.ts'
   import { hiddenSlots, equipped } from '../lib/compose/compose.ts'
   import { SLOTS } from '../lib/items/items.ts'
-  import { itemPaletteRepairPlan, poseGens, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
-  import { missingItemMoves, moveEstimate } from './create.ts'
+  import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
+  import { missingItemMoves, itemMoveOffer } from './create.ts'
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
@@ -34,11 +34,11 @@
   const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir)
   const repairSpec = $derived(it && !it.design && anim && it.route === 'skeleton-pose' && it.key && it.dressed?.[sourceDir] && anim.sources?.[sourceDir]?.keypoints?.length === anim.cells
     ? { id: anim.id, frames: anim.cells, items: [it.id], dirs: [sourceDir], itemMethod: 'grid' as const, itemsOnly: true as const, seed: 0 } : null)
-  const repairCost = $derived(m && repairSpec ? moveEstimate(m, repairSpec).gens : 0)
+  const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null)
   const repairBusy = $derived(!!moving.spec && !moving.done || !!settingUp.spec && !settingUp.done)
   function repairFrames() {
-    if (!repairSpec) return
-    const projectId = doc.id, spec = { ...$state.snapshot(repairSpec), seed: 1 + Math.floor(Math.random() * 1_000_000) }
+    if (!repairOffer?.specs[0]) return
+    const projectId = doc.id, spec = { ...$state.snapshot(repairOffer.specs[0]), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
   }
   // moves the character gained after this item was made (Default-first: idle and walk), offered with their price unless a
@@ -48,10 +48,11 @@
     const pending = pendingMoves(doc.id, it.id).map((s) => s.id)
     return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id))
   })
-  const missingCost = $derived(missingMoves.reduce((n, s) => n + poseGens(1, s.frames, s.dirs?.length ?? 0), 0))
+  const missingOffer = $derived(m ? itemMoveOffer(m, missingMoves) : null)
   const missingNames = $derived(missingMoves.map((s) => s.id[0].toUpperCase() + s.id.slice(1).replace(/-/g, ' ')).join(' + '))
   function makeMissing() {
-    const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingMoves.map((s) => ({ ...$state.snapshot(s), seed }))
+    if (!missingOffer?.specs.length) return
+    const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingOffer.specs.map((s) => ({ ...$state.snapshot(s), seed }))
     withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move' }, true) // pose calls: a plan that cannot run them opens Connect
   }
   let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
@@ -182,7 +183,8 @@
     {#if moveGaps.length}<p class="notice warn small"><TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left out there.</p>{/if}
     {#if missingMoves.length}
       <div class="field">
-        <button class="bu-action btn" data-variant="outline" onclick={makeMissing}>Make for {missingNames} <span class="cost">Est. {Math.ceil(missingCost)} gens</span></button>
+        <button class="bu-action btn" data-variant="outline" disabled={missingOffer?.gens == null} onclick={makeMissing}>Make for {missingNames} <span class="cost">{missingOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(missingOffer.gens)} gens`}</span></button>
+        {#if missingOffer?.error}<p class="notice warn small" role="status">{missingOffer.error}</p>{/if}
         <p class="faint small">Poses this item onto moves added after it was made. The body stays as it is. PixelLab may bill dollars; queue time varies.</p>
       </div>
     {/if}
@@ -190,7 +192,8 @@
 
     {#if !isDemo() && repairSpec}
       <div class="field">
-        <button class="bu-action btn" data-variant="outline" disabled={repairBusy} onclick={repairFrames}>Try new item frames <span class="cost">Est. {Math.ceil(repairCost)} gens</span></button>
+        <button class="bu-action btn" data-variant="outline" disabled={repairBusy || repairOffer?.gens == null} onclick={repairFrames}>Try new item frames <span class="cost">{repairOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(repairOffer.gens)} gens`}</span></button>
+        {#if repairOffer?.error}<p class="notice warn small" role="status">{repairOffer.error}</p>{/if}
         <p class="faint small">Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard failures keep the previous frames. PixelLab may bill dollars; queue time varies.</p>
       </div>
     {/if}

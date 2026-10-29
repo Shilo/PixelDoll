@@ -21,6 +21,7 @@ import { listFits, clearFinishedFits, resumeFits } from '../lib/equipment/fits.t
 import type { EquipmentDesign, FitDraft } from '../lib/equipment/types.ts';
 import { lazy, LoadError } from '../lib/lazy.ts';
 import type { Img } from '../lib/image/png.ts';
+import { stableStringify } from '../lib/image/hash.ts';
 
 // Replacing this module must not leave old paid-flow closures driving beside newly resumed state.
 // A full dev reload destroys those closures; the disconnected queue refuses further submissions.
@@ -704,7 +705,7 @@ export function startupResumed() {
   runWaiting();
 }
 
-interface ItemAttemptConsent { projectId: string; gens: number; rig?: string; replaces?: Gen }
+interface ItemAttemptConsent { projectId: string; gens: number; rig?: string; replaces?: { id: string; reviewed: string } }
 export async function startItem(input: NewItemInput, consent?: ItemAttemptConsent) {
   if (hmrReloading) return;
   itemStarting++; // counted from the click, before the draft exists, so this tab keeps the jobs meanwhile
@@ -715,8 +716,10 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
   // Startup may still be reading the stored drafts: saving before they load would overwrite them.
   try { await loadGens(); } catch (e) { toast(`Saved item drafts could not be read: ${(e as Error).message}. Reload to try again.`, { tone: 'danger' }); return; }
   const ctx = await loadProject(projectId), route = await itemFlow();
+  // Taking over another tab rehydrates drafts. Match reviewed content, not the old in-memory object.
+  const replaced = consent?.replaces && gens.find(g => g.draft.spec.id === consent.replaces!.id);
   if (doc.id !== projectId || consent?.rig && JSON.stringify(ctx.rec.manifest.rig) !== consent.rig
-    || consent?.replaces && (!gens.includes(consent.replaces) || consent.replaces.phase === 'running' || JSON.stringify(consent.replaces.input) !== JSON.stringify(input))) {
+    || consent?.replaces && (!replaced || replaced.phase === 'running' || stableStringify({ draft: replaced.draft, input: replaced.input, phase: replaced.phase }) !== consent.replaces.reviewed || stableStringify(replaced.input) !== stableStringify(input))) {
     toast('This character or item changed. Reopen it and review the attempt before generating.', { tone: 'warning' }); return;
   }
   if (consent && (!Number.isFinite(consent.gens) || route.plan(ctx.rec.manifest.rig, ctx, input).gens !== consent.gens)) {
@@ -724,7 +727,7 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
   }
   const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
   const g: Gen = { draft: route.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT };
-  const replaced = consent?.replaces, index = replaced ? gens.indexOf(replaced) : -1;
+  const index = replaced ? gens.indexOf(replaced) : -1;
   if (replaced) gens.splice(index, 1, g); else gens.push(g);
   const selected = ui.selected;
   ui.selected = `gen:${g.draft.spec.id}`;
@@ -881,7 +884,7 @@ export async function discardGen(g: Gen): Promise<boolean> {
 }
 export function retryGen(g: Gen, reviewedGens: number) {
   const input = structuredClone($state.snapshot(g.input));
-  const consent = { projectId: g.draft.rigId, gens: reviewedGens, ...(doc.id === g.draft.rigId && store.project ? { rig: JSON.stringify(store.project.manifest.rig) } : {}), replaces: g };
+  const consent = { projectId: g.draft.rigId, gens: reviewedGens, ...(doc.id === g.draft.rigId && store.project ? { rig: JSON.stringify(store.project.manifest.rig) } : {}), replaces: { id: g.draft.spec.id, reviewed: stableStringify($state.snapshot({ draft: g.draft, input: g.input, phase: g.phase })) } };
   withKey(() => void startItem(input, consent).catch(error => toast(error instanceof Error ? error.message : 'This retry could not start. Existing artwork was kept.', { tone: 'danger' }))); // closing Connect keeps the draft
 }
 
@@ -1052,8 +1055,23 @@ export async function startMove(projectId: string, spec: MoveSpec) {
   let failed = false;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });
   try {
+    if (spec.itemReview) {
+      const { rec } = await loadProject(projectId);
+      const reviewed = (await createFlow()).reviewItemMove(rec.manifest, spec).itemReview!;
+      if (reviewed.artwork !== spec.itemReview.artwork || reviewed.gens !== spec.itemReview.gens) {
+        throw new Error('This character, item or price changed. Reopen the item and review its current estimate before generating. No paid request was made.');
+      }
+    }
     await storeMove({ id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT });
-    const result = await (await createFlow()).addMove(projectId, spec, (p) => { if (current() && !failed) moving.progress = p; });
+    const flow = await createFlow(), progress = (p: Progress) => { if (current() && !failed) moving.progress = p; }, reviewedItems = spec.itemReview;
+    const result = reviewedItems
+      ? await flow.addMove(projectId, spec, progress, async () => {
+        // The pipeline mutates its raw spec. Clear the reactive copy too, including any cached property read by the sheet.
+        if (current() && moving.spec) delete moving.spec.itemReview;
+        try { await storeMove({ id: MOVE_KEY, spec, projectId, status: 'running', requestText: REQUEST_TEXT }); }
+        catch (error) { if (current() && moving.spec) moving.spec.itemReview = reviewedItems; throw error; }
+      })
+      : await flow.addMove(projectId, spec, progress);
     if (!current()) return;
     moving.fitIds = result.fitIds; moving.warnings = result.warnings;
     await refreshFits();

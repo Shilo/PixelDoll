@@ -1018,14 +1018,14 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     const [anim, dir, frame] = c.key.split('/') as [string, DirectionName, string], design = keys[dir];
     if (!c.posed || !design || isAction(c.key)) continue;
     const rest = rig.rest?.[dir]?.keypoints, pose = cellKeypoints(rig, c.key);
-    if (missingLowerGarment(design, c.layer, rest && fromApi(rest, rig.cell), pose && fromApi(pose, rig.cell))) {
+    const measured = rig.animations.find(a => a.id === anim)?.sources?.[dir]?.measured?.[+frame];
+    const observed = hasAll(measured) ? measured : pose;
+    if (missingLowerGarment(design, c.layer, rest && fromApi(rest, rig.cell), observed && fromApi(observed, rig.cell))) {
       missingLower.add(c.key);
       (fails.get(c.call) ?? (fails.set(c.call, []), fails.get(c.call)!)).push(`G11 ${c.key}: lower garment is missing compared with the dressed standing design`);
     }
     // Historical numeric-only callers lack standing body alpha. Runtime review supplies it explicitly.
     const referenceBody = referenceBodies?.[dir];
-    const measured = rig.animations.find(a => a.id === anim)?.sources?.[dir]?.measured?.[+frame];
-    const observed = hasAll(measured) ? measured : pose;
     if (referenceBody && rest && observed) for (const side of footwearWarnings(referenceBody, design, c.base, c.layer, fromApi(rest, rig.cell), fromApi(observed, rig.cell))) {
       footwearReview.add(c.key);
       warnings.push(`G12 ${c.key}: clothing coverage near the ${side} foot differs from the standing design; inspect the footwear`);
