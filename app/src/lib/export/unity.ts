@@ -90,12 +90,16 @@ namespace PixelDoll
 
         public SpriteRenderer Body => nodes.Find(n => n.slot == "body" && n.role == "fg")?.renderer;
 
-        /// Plays the "<anim>_<dir>" state of the generated Animator Controller.
+        /// Selects the generated state, preserving active playback and replaying a completed non-looping clip.
         public void Play(string anim, string dir)
         {
             var move = Array.Find(data.animations, a => a.id == anim);
             if (move == null || Array.IndexOf(move.directions, dir) < 0) return;
-            GetComponent<Animator>().Play(anim + "_" + dir);
+            var animator = GetComponent<Animator>();
+            var stateName = anim + "_" + dir;
+            var current = animator.GetCurrentAnimatorStateInfo(0);
+            if (!move.loop && current.shortNameHash == Animator.StringToHash(stateName) && current.normalizedTime >= 1f) animator.Play(stateName, 0, 0f);
+            else animator.Play(stateName);
         }
 
         /// Equips itemId in slot (null or "" = empty); hides are re-applied on the next LateUpdate.
@@ -332,13 +336,14 @@ namespace PixelDoll.Editor
                     int gcd = a.frames.Aggregate(0, (g, f) => Gcd(g, f.ms));
                     var clip = new AnimationClip { name = a.id + "_" + dir, frameRate = 1000f / gcd };
                     var keys = new List<ObjectReferenceKeyframe>();
-                    float t = 0;
+                    long elapsedMs = 0;
                     foreach (var f in a.frames)
                     {
-                        keys.Add(new ObjectReferenceKeyframe { time = t, value = body[a.id + "_" + dir + "_" + f.cell] });
-                        t += f.ms / 1000f;
+                        keys.Add(new ObjectReferenceKeyframe { time = elapsedMs / 1000f, value = body[a.id + "_" + dir + "_" + f.cell] });
+                        elapsedMs += f.ms;
                     }
-                    keys.Add(new ObjectReferenceKeyframe { time = t, value = keys[keys.Count - 1].value }); // hold the last frame its ms
+                    // Unity includes one sample after the final object-reference key.
+                    if (a.frames.Last().ms > gcd) keys.Add(new ObjectReferenceKeyframe { time = (elapsedMs - gcd) / 1000f, value = keys[keys.Count - 1].value });
                     AnimationUtility.SetObjectReferenceCurve(clip, EditorCurveBinding.PPtrCurve("clock", typeof(SpriteRenderer), "m_Sprite"), keys.ToArray());
                     var settings = AnimationUtility.GetAnimationClipSettings(clip);
                     settings.loopTime = a.loop;
@@ -473,6 +478,7 @@ Output in unity/Generated/: sliced sheets (Point, no compression, PPU ${m.export
 <anim>_<dir>.anim clips for supported views, ${unityJson(m).name}.controller and ${unityJson(m).name}.prefab
 (Sorting Group + Paperdoll + one SpriteRenderer per slot/role and a hidden animation clock).
 Runtime namespace: ${ns}. Paperdoll.Play(anim, dir), Equip(slot, itemId), ApplyPreset(presetId), SetVariant(materialId, variantName).
+Play preserves an active clip's progress. Calling it again after the same non-looping clip completes replays that clip.
 SetVariant uses the exported exact ramps (including linked material defaults); null restores the default.
 Palettes are owner-local, use the original source sheets and cache recolored textures/sprites per doll until it is destroyed.
 Source textures are readable for these swaps. Do not put them in a Sprite Atlas (packing/rotation changes their source coordinates).

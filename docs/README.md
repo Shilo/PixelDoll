@@ -67,10 +67,13 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | R5 [paperdoll_tools_survey.md](research/tools/paperdoll_tools_survey.md) | Paperdoll and character-creator tools: data models and UX to copy. |
 | R5 [fralonra_paperdoll_review.md](research/tools/fralonra/fralonra_paperdoll_review.md), [lpc_generator_review.md](research/tools/lpc/lpc_generator_review.md) | Code reviews of fralonra/paperdoll and the Universal LPC generator. |
 | [bare-skin-base-wording-2026-10-25.md](research/bare-skin-base-wording-2026-10-25.md) | Wording for a fully bare base body that passes PixelLab's filter: every clause tried, garments per sex and seed, the ablation, the shipped prompt. |
+| [paperdoll-repos-review-2026-10-27.md](research/paperdoll-repos-review-2026-10-27.md) | ComfyUI 2D pipeline and Ultima paperdoll drawer reviewed against PixelDoll: ten verified PixelDoll flaws, features worth adding, what not to adopt. |
 | [lexingel-paperdoll-findings-round5-2026-10-25.md](research/lexingel-paperdoll-findings-round5-2026-10-25.md) | Lexingel's UO-style research, attack pipelines and Godot render route vs ours; round 5 tests: bare bases, small accessories, text-move facing. |
 | [paperdoll-py-asset-review-2026-10-24.md](research/paperdoll-py-asset-review-2026-10-24.md) | External diff-extractor + state pipeline compared with ours: offline benchmark, what to adopt, bugs found. |
 | [generation-quality-campaign-2026-10-25.md](research/generation-quality-campaign-2026-10-25.md) | Paid A/B campaign (909 gens, 2 bodies, blind judging): third chroma key, concept items via transfer-outfit-v2, rejected prompt variants. |
 | [generation-pipeline-review-2026-10-25.md](research/generation-pipeline-review-2026-10-25.md) | Generation pipeline research (rounds 1–10): call chains, endpoint and skeleton findings, what shipped, open concerns and deferred cards (§18). |
+| [Animation diagnosis (2026-10-27)](research/2026-10-27-animation-diagnosis.md) | Revisited mocap failures, reproducible retarget defects, controlled browser tests, and a proposed path to qualified motion presets. |
+| [Free animation and rigging sources (2026-10-27)](research/2026-10-27-animation-rigging-sources.md) | Independent CC0 asset and MIT tooling survey, license exclusions, browser fit, and limits of arbitrary-sprite retargeting. |
 | [visuals/three-ways-to-draw-an-item.html](research/visuals/three-ways-to-draw-an-item.html) | Visual, step-by-step comparison of today's item route with the create-state and edit-image ideas: every input and output image, fit numbers, pros and cons. Open the file in a browser. |
 | [visuals/how-items-are-drawn.html](research/visuals/how-items-are-drawn.html) | Frame scrubber comparing today's posing with dressing the real frames, with every PixelLab call and its price. Open the file in a browser. |
 | [SHARED_NOTES.md](research/SHARED_NOTES.md) | Append-only cross-agent findings. |
@@ -117,6 +120,9 @@ Screenshots for all reports: [`testing/img/` at 1f95029](https://github.com/Shil
 | Doc | What |
 |---|---|
 | [Professional product audit](testing/professional-audit-2026-10-22.md) | Independent pipeline/data/Studio reviews, adversarial team challenges, fixes and fresh browser/live validation. |
+| [Integration and crash recovery](testing/integration-and-crash-2026-10-28.md) | Coordinated main integration, abrupt browser termination, durable Export choices and submission recovery. |
+| [Phaser playback](testing/phaser-playback-2026-10-28.md) | Native runtime verification of exported frame timing, looping, play once and layer synchronization. |
+| [Unity playback](testing/unity-playback-2026-10-28.md) | Installed Editor activation prerequisite, offline C# compilation and remaining native checks. |
 | [Test performance](testing/test-performance.md) | Why unit and e2e runs are fast (parallel files, 16 one-worker CI shards), budgets and warning signs, anti-patterns that made them slow, rules for new tests. |
 | [Toolchain standardization](testing/toolchain-standardization-2026-10-22.md) | Exact runtime/dependencies, Vitest and Playwright migration, production byte parity and validation. |
 | [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |
