@@ -31,6 +31,8 @@ test('offline Motion Lab edits and roundtrips motions without requesting generat
   await page.getByRole('combobox',{name:'KayKit control',exact:true}).selectOption('walk');await expect(page.getByRole('combobox',{name:'Preset',exact:true})).toHaveValue('kaykit-walk');
   await page.getByRole('combobox',{name:'Body',exact:true}).selectOption('chibi');await expect(page.getByRole('combobox',{name:'Preset',exact:true})).toHaveValue('kaykit-walk');
   await expect(page.getByRole('button',{name:/Generate candidate/})).toBeDisabled();
+  await page.getByRole('combobox',{name:'Preset',exact:true}).selectOption('run');await page.getByRole('button',{name:'Draft stance contacts',exact:true}).click();await page.getByRole('button',{name:'Sample contact events',exact:true}).click();await expect(page.getByRole('spinbutton',{name:'World Z speed, px/s',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Remove authored contacts',exact:true}).click();await expect(page.getByRole('button',{name:'Sample contact events',exact:true})).toBeDisabled();
   await page.screenshot({path:testInfo.outputPath('motion-lab.png'),fullPage:true});expect(paid).toEqual([]);expect(errors).toEqual([]);
 });
 
@@ -60,6 +62,13 @@ test('Motion Lab preserves candidate review, buffer exclusion and authored hold 
   const downloading=page.waitForEvent('download');await candidate.getByRole('button',{name:'Export reviewed clip',exact:true}).click();const output=JSON.parse(await readFile((await(await downloading).path())!,'utf8'));
   expect(output.frames).toHaveLength(3);expect(output.frames.at(-1).sourceIndex).toBe(2);expect(output.frames.at(-1).duration).toBe(1050);expect(output.frames[0].duration).toBe(1100);expect(output.frames[0].keypoints).toHaveLength(18);expect(output.reference.keypoints).toHaveLength(18);expect(output.loop).toBe(false);expect(output.kind).toBe('pixeldoll-reviewed-motion');expect(output.cell).toEqual({w:128,h:128});expect(output.pivot.x).toBe(output.fixture.pivot.x+24);
   await candidate.getByRole('button',{name:'Inspect raw frame 1',exact:true}).click();await candidate.getByRole('button',{name:'Play candidate',exact:true}).click();await page.clock.runFor(4000);await expect(candidate.getByRole('button',{name:'Play candidate',exact:true})).toBeVisible();await expect(candidate.getByText('Raw frame 3/4',{exact:true})).toBeVisible();expect(paid).toEqual([]);
+  await candidate.getByRole('button',{name:'Author held item',exact:true}).click();const editor=page.getByRole('region',{name:'Authored held item',exact:true});
+  await editor.getByLabel('Attachment PNG',{exact:true}).setInputFiles({name:'synthetic-source.png',mimeType:'image/png',buffer:Buffer.from(output.reference.png,'base64')});
+  await editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true}).fill('35');await editor.getByRole('textbox',{name:'Attachment review notes',exact:true}).fill('Synthetic UI fixture only, no weapon quality claim.');
+  await editor.getByRole('button',{name:'Save attachment draft',exact:true}).click();await expect(editor.getByRole('status')).toContainText('saved locally');
+  const attachmentDownload=page.waitForEvent('download');await editor.getByRole('button',{name:'Save attachment document',exact:true}).click();const attachment=JSON.parse(await readFile((await(await attachmentDownload).path())!,'utf8'));
+  expect(attachment.body.hashes).toHaveLength(4);expect(attachment.frames[0].angle).toBe(35);expect(attachment.body.jobId).toBe('motion-review-fixture');expect(attachment.body.padding).toBeGreaterThan(0);
+  await page.reload();await candidate.getByRole('button',{name:'Author held item',exact:true}).click();await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toHaveValue('35');expect(paid).toEqual([]);
 });
 
 test('Motion Lab blocks mirrors, unresolved reservations and an exhausted budget before paid transport',async({page})=>{
@@ -75,10 +84,28 @@ test('Motion Lab blocks mirrors, unresolved reservations and an exhausted budget
     try{await run.generateCandidate(doc,7)}catch(e){messages.push((e as Error).message)}
     const ledger=run.readLedger(),unresolved=ledger.reservations.length;ledger.reservations[0].estimate=run.LAB_CAP;localStorage.setItem('pixeldoll.motionLab.2026-10-28',JSON.stringify(ledger));
     try{await run.generateCandidate(doc,8)}catch(e){messages.push((e as Error).message)}
-    return{messages,calls,unresolved,finalReservations:run.readLedger().reservations.length};
+    const charged={...ledger,reservations:ledger.reservations.map((r:Record<string,unknown>)=>({...r,jobId:'charge-fixture'}))};
+    return{messages,calls,unresolved,finalReservations:run.readLedger().reservations.length,chargedReserved:run.phaseReserved(charged,new Map([['charge-fixture',run.LAB_CAP+5]])),cap:run.LAB_CAP};
   });
   expect(result.messages[0]).toContain('mirrored frozen');expect(result.messages[1]).toBe('Simulated enqueue preparation failure');expect(result.messages[2]).toContain('unresolved reservation');expect(result.messages[3]).toContain('allowance is exhausted');
-  expect(result.calls).toBe(1);expect(result.unresolved).toBe(1);expect(result.finalReservations).toBe(1);expect(paid).toEqual([]);
+  expect(result.calls).toBe(1);expect(result.unresolved).toBe(1);expect(result.finalReservations).toBe(1);expect(result.chargedReserved).toBe(result.cap+5);expect(paid).toEqual([]);
+});
+
+test('Motion Lab stores visible sole marks and reports only sampled projected displacement',async({page})=>{
+  const paid:string[]=[];await page.addInitScript(()=>localStorage.setItem('pixeldoll.agentKey','off'));await page.route('https://*.pixellab.ai/**',route=>{paid.push(route.request().method());return route.abort()});
+  await page.goto('/motion-lab.html');await expect(page.getByRole('status')).toContainText('Offline lab ready');
+  const sole=await page.evaluate(async()=>{
+    const dbPath='/src/lib/store/db.ts',modelPath='/src/ui/motion-lab/model.ts',diagnosticsPath='/src/ui/motion-lab/diagnostics.ts',codecPath='/src/lib/image/pngraw.ts',db=await import(dbPath),model=await import(modelPath),diagnostics=await import(diagnosticsPath),codec=await import(codecPath),library=await(await fetch('/fixtures/motion-lab/library.json')).json();
+    const doc=model.newDocument(library,library.fixtures[0],library.clips.find((c:{id:string})=>c.id==='run'),'east');doc.planting=diagnostics.proposePlanting(doc,[0,50]);Object.assign(doc,diagnostics.contactSampling(doc));const png=doc.fixture.references.east.png,bytes=Uint8Array.from(atob(png),(c)=>c.charCodeAt(0)),image=await codec.decodePngBytes(bytes),sha=await db.putBlob(bytes),now=Date.now(),rendered=model.renderPoses(doc);
+    let point={x:0,y:0};for(let y=Math.floor(image.h*0.75);y<image.h;y++)for(let x=0;x<image.w;x++)if(image.data[(y*image.w+x)*4+3])point={x:x+0.5,y:y+0.5};
+    await db.put('jobs','sole-fixture',{id:'sole-fixture',label:'Synthetic sole fixture',tag:'motion-lab-2026-10-28',method:'POST',endpoint:'/animate-with-skeleton-v3',params:{first_frame:{$blob:sha},first_frame_keypoints:rendered.result.rest,keypoints:rendered.poses},inputs:[sha],requestHash:'fixture',state:'done',attempts:1,nextAt:0,createdAt:now,finishedAt:now,jobs:[{id:'fixture-remote',status:'completed',done:true,results:Array.from({length:12},(_,i)=>({label:String(i),sha}))}],gens:3,usd:0});
+    localStorage.setItem('pixeldoll.motionLab.2026-10-28',JSON.stringify({version:1,reservations:[{id:'fixture',jobId:'sole-fixture',estimate:3,label:'Synthetic sole fixture',document:doc,seed:7,createdAt:new Date(now).toISOString()}]}));return{x:point.x/image.w*320,y:point.y/image.h*320};
+  });
+  await page.reload();await page.getByRole('button',{name:'Measure rendered soles',exact:true}).click();const editor=page.getByRole('region',{name:'Rendered sole qualification',exact:true});await editor.getByRole('combobox',{name:'Measured foot',exact:true}).selectOption('LEFT LEG');
+  for(const frame of [2,3]){await page.getByRole('button',{name:`Inspect raw frame ${frame}`,exact:true}).click();await editor.getByLabel('Mark visible sole landmark',{exact:true}).click({position:sole});}
+  await editor.getByRole('textbox',{name:'Sole review notes',exact:true}).fill('Synthetic UI fixture, not a rendered quality claim.');await editor.getByRole('button',{name:'Save sole measurements',exact:true}).click();await expect(editor.getByRole('status')).toContainText('saved locally');
+  const downloading=page.waitForEvent('download');await editor.getByRole('button',{name:'Export sole measurements',exact:true}).click();const output=JSON.parse(await readFile((await(await downloading).path())!,'utf8')),left=output.measurements.find((m:{foot:string})=>m.foot==='LEFT LEG');expect(left.complete).toBe(true);expect(left.worldSpan).toBeGreaterThan(0.1);expect(output.qualified).toBe(false);
+  await page.reload();await page.getByRole('button',{name:'Measure rendered soles',exact:true}).click();await expect(editor.getByRole('textbox',{name:'Sole review notes',exact:true})).toHaveValue('Synthetic UI fixture, not a rendered quality claim.');expect(paid).toEqual([]);
 });
 
 test('browser PNG and IndexedDB self-tests preserve every registered check', async ({ page }) => {

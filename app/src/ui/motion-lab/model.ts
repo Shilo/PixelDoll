@@ -3,6 +3,7 @@ import { LABELS, hasAll } from '../../lib/rig/poses.ts';
 import { base64ToBytes,pngSize,type Img } from '../../lib/image/png.ts';
 import { padImg } from '../../lib/items/items.ts';
 import { DIRECTIONS,type DirectionName,type Keypoint } from '../../lib/rig/rig.ts';
+import {plantMotion,validatePlanting,type PlantingPlan} from '../../lib/rig/planting.ts';
 export interface MotionFixture { id:string;name:string;cell:{w:number;h:number};pivot:{x:number;y:number};camera:{elev:number;yaw:number};directions:{id:DirectionName;mirrorOf?:DirectionName}[];references:Partial<Record<DirectionName,{keypoints:Keypoint[];png:string}>> }
 export interface MotionLibrary { version:1;provenance:{source:string;license:string;url:string;sha256:string};camera:{elev:number;yaw:number};fixtures:MotionFixture[];clips:MotionClip[] }
 export const actionOfMotion=(clip:Pick<MotionClip,'id'|'action'>)=>clip.action??clip.id;
@@ -10,6 +11,8 @@ export interface MotionDocument {
   version:1;revision:typeof MOTION_REVISION;fixture:MotionFixture;direction:DirectionName;clip:MotionClip;reference:Keypoint[];
   times:number[];durations:number[];padding:number;elevation:number;azimuth:number;options:MotionOptions;
   edits:Record<number,MotionPoint[]>;buffer:boolean;
+  planting?:PlantingPlan;
+  hands?:'closed-fists';
 }
 function referenceOf(fixture:MotionFixture,direction:DirectionName){
   const reference=fixture.references[direction];
@@ -44,6 +47,8 @@ export function validateDocument(value:unknown):MotionDocument{
   if(!d||d.version!==1||!d.fixture?.references?.[d.direction]||!d.clip?.samples||!Array.isArray(d.times)||d.times.length<3||d.times.length>14||!Array.isArray(d.durations)||d.durations.length!==d.times.length||d.durations.some(n=>!Number.isFinite(n)||n<10||n>10000)||!Number.isSafeInteger(d.padding)||d.padding<0||d.padding>64||!hasAll(d.reference)||!d.options||typeof d.buffer!=='boolean')throw new Error('Unsupported or invalid motion document. Expected version 1, 3-14 poses, valid joints and durations.');
   if(!DIRECTIONS.includes(d.direction)||!Array.isArray(d.fixture.directions)||!d.fixture.camera||![d.fixture.camera.elev,d.fixture.camera.yaw].every(Number.isFinite)||!d.edits||typeof d.edits!=='object')throw new Error('The motion document is missing valid body calibration, directions or pose edits.');
   if(d.clip.action!==undefined&&(typeof d.clip.action!=='string'||!d.clip.action.trim()||d.clip.action.length>300))throw new Error('Source action must be a nonempty description of at most 300 characters.');
+  if(d.planting)validatePlanting(d.planting,d.clip.duration);
+  if(d.hands!==undefined&&d.hands!=='closed-fists')throw new Error('Unsupported authored hand posture.');
   if(!d.fixture.pivot||![d.fixture.pivot.x,d.fixture.pivot.y].every(Number.isFinite))throw new Error('The body needs its original pixel pivot.');
   if(Object.keys(d.fixture.references).some(k=>!DIRECTIONS.includes(k as DirectionName))||d.fixture.directions.some(v=>!DIRECTIONS.includes(v.id)||!d.fixture.references[v.id]||(v.mirrorOf&&!d.fixture.references[v.mirrorOf])))throw new Error('The body view or mirror metadata is invalid.');
   if(d.clip.samples.length>3000||d.fixture.cell.w+2*d.padding>256||d.fixture.cell.h+2*d.padding>256)throw new Error('The motion or padded canvas exceeds its supported size.');
@@ -59,12 +64,12 @@ export function buildDocument(d:MotionDocument){
   const width=d.fixture.cell.w+2*d.padding,height=d.fixture.cell.h+2*d.padding;
   const rest=d.reference.map(k=>({...k,x:(k.x*d.fixture.cell.w+d.padding)/width,y:(k.y*d.fixture.cell.h+d.padding)/height}));
   const calibration:MotionCalibration={width,height,rest,direction:d.direction,elevation:d.elevation,azimuth:d.azimuth};
-  const clip=sampleMotion(d.clip,d.times),result=retargetMotion(clip,calibration,d.options);
+  const clip=sampleMotion(d.clip,d.times),base=retargetMotion(clip,calibration,d.options),result=d.planting?plantMotion(base,d.times,calibration,d.planting,d.clip.duration,d.clip.loop):base;
   const frames=result.frames.map((frame,i)=>{
     const edit=d.edits[i];if(!edit)return frame;
     const points:Pose3=Object.fromEntries(edit.map(k=>[k.label,add3(add3(mul3(result.camera.right,k.x*width-result.origin[0]),mul3(result.camera.up,result.origin[1]-k.y*height)),mul3(result.camera.toward,dot3(frame.points.PELVIS,result.camera.toward)+(k.depth-128)/result.depthScale))]));
     const issues=edit.flatMap(k=>k.x<0||k.x>1||k.y<0||k.y>1||k.depth<0||k.depth>255?[`${k.label}: edited pose exceeds the supported canvas or depth range`]:[]);
-    return{...frame,points:completePose(points),keypoints:edit,issues};
+    return{...frame,points:completePose(points),keypoints:edit,issues,planting:frame.planting?.map(c=>({...c,error:length3(sub3(points[c.foot],c.target))}))};
   });
   return{...result,frames,calibration,clip};
 }
@@ -76,6 +81,7 @@ export function paddedReference(image:Img,padding:number):Img{
 export function renderPoses(d:MotionDocument){
   referenceOf(d.fixture,d.direction);
   const result=buildDocument(d);
+  if(d.planting&&(result.frames.some(f=>f.issues.length)||result.frames.some(f=>f.planting?.some(c=>c.weight>0.999&&c.error>0.1))))throw new Error('Authored contacts are unreachable or outside bounds. Correct the plan before generating.');
   const poses=result.frames.map(f=>f.keypoints);
   if(d.buffer)poses.push(structuredClone(poses.at(-1)!));
   if(poses.some(p=>!hasAll(p)||p.some(k=>!Number.isFinite(k.depth)||k.depth<0||k.depth>255)))throw new Error('A requested pose extends outside the supported canvas or depth range. Add padding or edit it before generation.');

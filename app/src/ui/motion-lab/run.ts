@@ -10,14 +10,15 @@ import type { Balance,Req } from '../../lib/pixellab/routes.ts';
 import { sha256, stableStringify } from '../../lib/image/hash.ts';
 import { hasAll } from '../../lib/rig/poses.ts';
 import type { MotionPoint } from '../../lib/rig/motion.ts';
-export const LAB_TAG='motion-lab-2026-10-28',LAB_CAP=914;
+import {get} from 'svelte/store';
+export const LAB_TAG='motion-lab-2026-10-28',LAB_PHASE='authored-contact-v1',LAB_CAP=194;
 // Isolated records/channel prevent this lab from resuming unrelated Studio work on the same origin.
 export const labQueue=new Queue({all:async()=>(await db.all<JobRec>('jobs')).filter(r=>r.tag===LAB_TAG),channel:LAB_TAG});
 if(import.meta.hot)import.meta.hot.dispose(()=>labQueue.disconnect());
 export type DocumentRecord=Omit<MotionDocument,'fixture'|'clip'>&{fixture:Pick<MotionDocument['fixture'],'id'|'name'|'cell'>&Partial<Pick<MotionDocument['fixture'],'pivot'|'camera'|'directions'>>;clip:Pick<MotionDocument['clip'],'id'|'name'|'source'|'duration'|'loop'|'nominalSpeed'|'events'|'action'>};
-export interface EquipmentContext {kind:'equipment-dress'|'equipment-pose';name:string;slot:string;prompt:string;key:'green'|'magenta'|'blue'|'azure';pad:number;referenceSha:string;bodyId:string;bodyIds:string[];references:Partial<Record<MotionDocument['direction'],{sha:string;index:number}>>;dressId?:string;rotated?:boolean}
+export interface EquipmentContext {kind:'equipment-dress'|'equipment-pose'|'equipment-grid';name:string;slot:string;prompt:string;key:'green'|'magenta'|'blue'|'azure';pad:number;referenceSha:string;bodyId:string;bodyIds:string[];references:Partial<Record<MotionDocument['direction'],{sha:string;index:number}>>;dressId?:string;rotated?:boolean;indices?:number[]}
 export interface CandidateReview { accepted:boolean[];status:'unreviewed'|'needs-work'|'accepted'|'rejected';notes:string;terminalHold:number;durationOverrides?:Record<number,number> }
-interface Reservation { id:string;jobId?:string;estimate:number;label:string;document:DocumentRecord;seed:number;createdAt:string;error?:string;review?:CandidateReview;context?:EquipmentContext }
+interface Reservation { id:string;phase?:string;jobId?:string;estimate:number;label:string;document:DocumentRecord;seed:number;createdAt:string;error?:string;review?:CandidateReview;context?:EquipmentContext }
 export interface LabLedger { version:1;reservations:Reservation[] }
 const LEDGER='pixeldoll.motionLab.2026-10-28';
 export function readLedger():LabLedger{
@@ -25,6 +26,7 @@ export function readLedger():LabLedger{
   const ledger=JSON.parse(text) as LabLedger;if(ledger.version!==1||!Array.isArray(ledger.reservations))throw new Error('Unsupported motion lab ledger. Export it before clearing this origin.');return ledger;
 }
 const save=(ledger:LabLedger)=>localStorage.setItem(LEDGER,JSON.stringify(ledger));
+export const phaseReserved=(ledger:LabLedger,charges=new Map(get(labQueue).jobs.map(j=>[j.id,j.gens])))=>ledger.reservations.filter(r=>r.phase===LAB_PHASE).reduce((n,r)=>n+Math.max(r.estimate,r.jobId?(charges.get(r.jobId)??0):0),0);
 export function candidateRecord(jobId:string){return readLedger().reservations.findLast(r=>r.jobId===jobId);}
 export async function saveReview(jobId:string,review:CandidateReview){
   if(!Number.isFinite(review.terminalHold)||review.terminalHold<0||review.terminalHold>10000||!Array.isArray(review.accepted)||review.accepted.some(v=>typeof v!=='boolean')||!['unreviewed','needs-work','accepted','rejected'].includes(review.status)||typeof review.notes!=='string')throw new Error('Review needs valid frame selections, status, notes and a 0-10000 ms final hold.');
@@ -66,7 +68,8 @@ export async function generateCandidate(document:MotionDocument,seed:number):Pro
   const {result,poses}=renderPoses(document),ref=document.fixture.references[document.direction]!;
   const image=paddedReference(await decodePngBytes(base64ToBytes(ref.png)),document.padding),first=bytesToBase64(await encodePngBytes(image));
   const action=actionOfMotion(document.clip);
-  const request=rawClip({first,rest:result.rest,keypoints:poses,description:document.fixture.id==='chibi'?'a short bald humanoid in a gray shirt and dark pants':'a bald humanoid with the same appearance and colors as the reference, empty hands',action:action==='attack'?'overhead arm strike, empty hands, no weapon, no props, no effects':action==='death'?'falling down and lying still, no effects':action,dir:document.direction,seed});
+  const description=(document.fixture.id==='chibi'?'a short bald humanoid in a gray shirt and dark pants':'a bald humanoid with the same appearance and colors as the reference, empty hands')+(document.hands==='closed-fists'?'; both empty hands clenched into closed fists ready to grasp a weapon handle, no weapon or props':'');
+  const request=rawClip({first,rest:result.rest,keypoints:poses,description,action:action==='attack'?'overhead arm strike, empty hands, no weapon, no props, no effects':action==='death'?'falling down and lying still, no effects':action,dir:document.direction,seed});
   return enqueueLab(document,seed,request,poseCallGens(poses.length));
 }
 /** Every paid lab route shares the same atomic budget and unresolved-outcome contract. Preparation is free. */
@@ -75,15 +78,15 @@ export async function enqueueLab(document:DocumentRecord,seed:number,request:Req
   if(!labQueue.key)throw new Error('Live generation requires the localhost agent server.');
   if(!Number.isSafeInteger(gens)||gens<1)throw new Error('A paid request needs a positive whole generation reservation.');
   const {requestHash}=await requestIdentity(request);
-  const id=await sha256(new TextEncoder().encode(stableStringify({document,seed,requestHash,...(context?{context}:{})})));
+  const id=await sha256(new TextEncoder().encode(stableStringify({phase:LAB_PHASE,document,seed,requestHash,...(context?{context}:{})})));
   if(!navigator.locks)throw new Error('Safe live generation requires browser Web Locks. Offline editing is available.');
   const reservation=await navigator.locks.request(LAB_TAG+'-budget',()=>{
     const ledger=readLedger(),old=ledger.reservations.find(r=>r.id===id);
     if(old){if(old.jobId)return old;throw new Error('This candidate has an unresolved reservation. Inspect it; do not send it again.');}
-    if(ledger.reservations.reduce((n,r)=>n+r.estimate,0)+gens>LAB_CAP)throw new Error('The approved remaining generation allowance is exhausted.');
+    if(phaseReserved(ledger)+gens>LAB_CAP)throw new Error('The approved remaining generation allowance is exhausted.');
     const {id:clipId,name,source,duration,loop,nominalSpeed,events,action}=document.clip,clip={id:clipId,name,source,duration,loop,nominalSpeed,events,action};
     const {id:fixtureId,name:fixtureName,cell,pivot,camera,directions}=document.fixture,fixture={id:fixtureId,name:fixtureName,cell,pivot,camera,directions};
-    const row:Reservation={id,estimate:gens,label:`${context?`${context.name} ${context.kind} / `:''}${document.fixture.name} / ${document.clip.name} / ${document.direction} / ${seed} / ${id.slice(-8)}`,document:structuredClone({...document,clip,fixture}),seed,createdAt:new Date().toISOString(),...(context?{context}: {})};
+    const row:Reservation={id,phase:LAB_PHASE,estimate:gens,label:`${context?`${context.name} ${context.kind} / `:''}${document.fixture.name} / ${document.clip.name} / ${document.direction} / ${seed} / ${id.slice(-8)}`,document:structuredClone({...document,clip,fixture}),seed,createdAt:new Date().toISOString(),...(context?{context}: {})};
     ledger.reservations.push(row);save(ledger);return row;
   });
   if(reservation.jobId)return reservation.jobId;
@@ -102,5 +105,5 @@ export async function exportEvidence(){
     records.push({...reservation,job,inputs,images});
   }
   const uniqueJobs=new Map(records.filter(r=>r.job).map(r=>[r.job!.id,r.job!]));
-  return{version:1,cap:LAB_CAP,reserved:ledger.reservations.reduce((n,r)=>n+r.estimate,0),uniqueJobs:uniqueJobs.size,providerGenerations:[...uniqueJobs.values()].reduce((n,j)=>n+j.gens,0),records};
+  return{version:1,phase:LAB_PHASE,cap:LAB_CAP,reserved:phaseReserved(ledger,new Map([...uniqueJobs.values()].map(j=>[j.id,j.gens]))),estimatedReserved:ledger.reservations.filter(r=>r.phase===LAB_PHASE).reduce((n,r)=>n+r.estimate,0),historicalReserved:ledger.reservations.reduce((n,r)=>n+r.estimate,0),priorResearchGenerations:86,originalCap:1000,uniqueJobs:uniqueJobs.size,providerGenerations:[...uniqueJobs.values()].reduce((n,j)=>n+j.gens,0),records};
 }

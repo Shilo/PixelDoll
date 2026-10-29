@@ -1,4 +1,4 @@
-import { makeImg,type Img } from '../../lib/image/png.ts';
+import {makeImg,base64ToBytes,pngSize,type Img} from '../../lib/image/png.ts';
 export interface PixelPoint {x:number;y:number}
 /** Rigid, nearest-neighbor placement around an explicitly calibrated grip. No pose or occlusion inference. */
 export function rigidAttachment(source:Img,grip:PixelPoint,target:PixelPoint,radians:number,cell:{w:number;h:number}){
@@ -14,4 +14,23 @@ export function rigidAttachment(source:Img,grip:PixelPoint,target:PixelPoint,rad
     if(sx>=0&&sy>=0&&sx<source.w&&sy<source.h)image.data.set(source.data.subarray((sy*source.w+sx)*4,(sy*source.w+sx)*4+4),(y*cell.w+x)*4);
   }
   return{image,clippedSourcePixels};
+}
+export interface AttachmentBinding {jobId:string;hashes:string[];cell:{w:number;h:number};pivot:PixelPoint;direction:string;padding:number}
+export interface AttachmentFrame {grip:PixelPoint;angle:number;occluder:string}
+export interface AttachmentDocument {version:1;kind:'pixeldoll-authored-attachment';body:AttachmentBinding;asset:{png:string;grip:PixelPoint;axis:PixelPoint};frames:AttachmentFrame[];notes:string}
+export function validateAttachment(value:unknown,binding:AttachmentBinding):AttachmentDocument{
+  const d=value as AttachmentDocument;
+  if(d?.version!==1||d.kind!=='pixeldoll-authored-attachment'||!d.body||d.body.jobId!==binding.jobId||d.body.direction!==binding.direction||d.body.padding!==binding.padding||d.body.cell?.w!==binding.cell.w||d.body.cell.h!==binding.cell.h||d.body.pivot?.x!==binding.pivot.x||d.body.pivot.y!==binding.pivot.y||JSON.stringify(d.body.hashes)!==JSON.stringify(binding.hashes)||!Array.isArray(d.frames)||d.frames.length!==binding.hashes.length||typeof d.notes!=='string')throw new Error('Attachment document does not match these exact frozen frames, canvas, pivot and direction.');
+  if(!d.asset?.grip||!d.asset.axis)throw new Error('Attachment source needs a grip and blade-axis point.');
+  const size=pngSize(base64ToBytes(d.asset?.png??''));if(!size||size.w>512||size.h>512||![d.asset.grip.x,d.asset.grip.y,d.asset.axis.x,d.asset.axis.y].every(Number.isFinite)||d.asset.grip.x<0||d.asset.grip.y<0||d.asset.grip.x>=size.w||d.asset.grip.y>=size.h||Math.hypot(d.asset.axis.x-d.asset.grip.x,d.asset.axis.y-d.asset.grip.y)<1)throw new Error('Calibrate a valid attachment grip and blade-axis point.');
+  const w=binding.cell.w+2*binding.padding,h=binding.cell.h+2*binding.padding;
+  for(const f of d.frames){if(!f?.grip||typeof f.occluder!=='string')throw new Error('Attachment frame is missing its grip or occlusion mask.');const mask=pngSize(base64ToBytes(f.occluder));if(![f.grip.x,f.grip.y,f.angle].every(Number.isFinite)||f.grip.x<0||f.grip.y<0||f.grip.x>=w||f.grip.y>=h||mask?.w!==w||mask.h!==h)throw new Error('Attachment frames need finite grip/angle and matching native occlusion masks.');}
+  return d;
+}
+/** Only the equipment layer changes. An occluder is effective only on actual frozen body pixels. */
+export function occludeAttachment(layer:Img,body:Img,occluder:Img){
+  if([body,occluder].some(im=>im.w!==layer.w||im.h!==layer.h))throw new Error('Body, item and occlusion masks must share one native canvas.');
+  const image={...layer,data:new Uint8ClampedArray(layer.data)};let hidden=0;
+  for(let p=0;p<image.w*image.h;p++)if(body.data[p*4+3]&&occluder.data[p*4+3]){if(image.data[p*4+3])hidden++;image.data.fill(0,p*4,p*4+4);}
+  return{image,hidden};
 }

@@ -23,7 +23,7 @@ export interface MotionCalibration {
 }
 export interface MotionOptions { gain: number; travel: number; contact: number; facing: number; plane?:number; weights?:{torso:number;legs:number;leftArm:number;rightArm:number} }
 export interface MotionPoint extends Keypoint { depth: number; z_index: number }
-export interface MotionFrame { points: Pose3; keypoints: MotionPoint[]; contacts: MotionSample['contacts']; issues: string[] }
+export interface MotionFrame { points: Pose3; keypoints: MotionPoint[]; contacts: MotionSample['contacts']; issues: string[];planting?:{foot:Foot;weight:number;target:Vec3;error:number}[] }
 export const DEFAULT_MOTION_OPTIONS: MotionOptions = { gain: 1, travel: 1, contact: 1, facing: 1 };
 export const MOTION_EDGES: [string, string][] = [
   ['PELVIS', 'RIGHT HIP'], ['RIGHT HIP', 'RIGHT KNEE'], ['RIGHT KNEE', 'RIGHT LEG'],

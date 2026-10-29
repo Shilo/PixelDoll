@@ -1,0 +1,5475 @@
+{
+  "version": 1,
+  "date": "2026-10-28",
+  "source": {
+    "source": "Quaternius Universal Animation Library",
+    "license": "CC0-1.0",
+    "url": "https://quaternius.itch.io/universal-animation-library",
+    "sha256": "bccd7586a5b6b088397965dd69d431d2209bc07fb3a602bafca9492a7dca69da"
+  },
+  "paidRequests": 0,
+  "nativeViews": [
+    "south",
+    "east",
+    "north"
+  ],
+  "derivedViews": {
+    "west": "Mirror east; flips visible handedness. Not independently qualified."
+  },
+  "missingViews": [
+    "south-east",
+    "north-east",
+    "north-west",
+    "south-west"
+  ],
+  "presets": [
+    {
+      "key": "c27man/idle/south",
+      "jobId": "b3f46107-e170-4884-964b-8a01478e99b7",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "75d59c8826fd93ab15cf323730ed27a118d0154d750687aaeaeaf047ca4fd883",
+        "09235736c9d3c9ee8f9cd600a1efd32b80a6d4da2791d293ab406fcc7e988aff",
+        "f5c65f44939795e1bd314d3f47092f8817f33a583b32a1585d503f196bd7bb03",
+        "e388b58ea915b7a59984cd370d5720535af3c5f9662283068e482b2639f51626",
+        "a54c44d84f5c0c0721caf45280146b8ea8502eff303d539e6cc2d1a7cf8eb82a",
+        "38833a68e5a3cc03db1da6dc9fc5122dc89d5e53051892bfb04eb033898970b2",
+        "58e5186061b1a4b54106badc9d3674341d6435955bae34f67f7ae050c040802e",
+        "2f9ea1cd93500eb85431decf98a966da0606fa540ded83cd4d61cd1fc3a81fe1",
+        "9b1e5669b846f117fb5b9161f71b8785c01ca373b421ee09f25431d42f9df7c6",
+        "c6b80233b183cefe2c6c27ea6796d61b425090fa5a3cf5d4264ff99f7a0bdf21",
+        "2cf75650adf3a67457b5b29399f348be0be3b0d7e3081973ffbbc0d53321c1c9",
+        "25cd27ebb3427231cae69f353694beb830c396bb74242ccce82f30b9d950b1d6"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "19f67853-5afa-4a33-a711-7ac869f0c040",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "670f1a20-3123-4e0a-82ff-616b1621212a",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "942f9895-caa7-47a3-921b-31878cd12d5e",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/idle/east",
+      "jobId": "b6d82b09-b3a1-49c8-85e9-7cc42df233b1",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "299ae2c825c941097bb092fe588729024860d3595c9f5ed66fa76af3573ea98a",
+        "837ad05a45dfb5b9843c85589c448db70c73828268e280751240d9186e5cc683",
+        "9e8f303d064d584222de4dbd98d157273a038a7b0905a36b8d94a6bee188310f",
+        "6d9f5d6c9a70c849b38ff0b1312a88d66e2a6d660f3b47d5af83853b96c1c341",
+        "1a0f03c67c2734a34bec03cf2134d593560a29d2ccdb931798352951ba900142",
+        "d6ba33bf3a56fbb782954e5ff8eefd715c41a395019557d7efe8328f825426fd",
+        "c670901c126ca4c8f17bc6d93e221303992303b4ba2fae78c061b32e08ef05a9",
+        "72d4e33da4260d22b1f139e6f4afbdf0a476ae5352ac7f2fd4433123a5862819",
+        "9354eef66b3755b1a418c9cb9d82dba9ee432166399eec9fb15cf3f52f249e2d",
+        "3087b77dfdbec90eac3b92ebc79e97042248ebcc77fa85a50cf8574ee7c51d96",
+        "8604254bf8c0d28999d78437c18da124f6c47248cff0d80c59fe66daa963454b",
+        "5909ec2ca757ba776b1610ed8312b64813d1a876f4f51ee447c5953cd469d7f5"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "02e77263-5984-4176-a558-30851305b7c2",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "9663d168-7ac2-4e82-9dff-e4b927a6062d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b08c1ac0-f8f3-4526-acf6-5188ae16c6a8",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/idle/north",
+      "jobId": "f727e2c3-8654-4125-837e-6bf3e5e8975d",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "08a988da01594a6c95300fb5322c780a1124c08f858fc4bbd75d1eed8fd91988",
+        "981e739d731120a3709d0e7da781f72bf477c292b27de43c8a61195a8a02ac41",
+        "47865529e5e7f6f908862b3902e2005a0018ffa44207beb9eb542b393d6c94fa",
+        "c718cfa8d799262a29009324908aa6858ad9118f5aea3b02ba459ed840d8dfb2",
+        "bdb651a368839187416fccfa140e20f4830811874dfb80ed62addc5889d91a63",
+        "ae27da0e9ef9b8648e79b43f1e1005c288cebf399855b05a5dc4030f910b152e",
+        "5b9deb07982240867ce5cf931938e7ea6f7c76431af20971e1f92ba5729f63b6",
+        "ccbd4547a1b7679e4dd2762eea77ca0f0789a34d8160746249f09c04652e9dd2",
+        "8271f6c892b8dd3e812dd06995c7a8dc78bf9c29489f8d6ccd6797f09f85b02f",
+        "5c81c5c4295c9a9ef00d7f1d8c46c7306b8818670fd267e11c618c1a49d5aa10",
+        "a5e3e08047e28635127a7245462b032bed7c2b6528d514a940bcc465d5dda069",
+        "6d0071b492f0ba47938f338afc8835d4f2d9f8d2bb477a7e923778d3f0e28d31"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "e3e83982-3de2-44fb-8b2b-d5cf66888a5c",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "dc29db1a-2b59-4547-a4f0-0ab34d9b08e3",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "c92ba603-bb54-4f07-aeeb-147b8e671757",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/walk/south",
+      "jobId": "3fe9f3de-a0d8-41fc-9e50-1bd8fc62facf",
+      "seed": 7,
+      "status": "reviewed-experimental",
+      "professionalQualification": false,
+      "selection": "Preserve the existing explicit experimental review; new contact renders are comparisons.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "7dff1f6a6dc3f45876fa02b79d0f34f8ef2f5e7492b128a709f344ca8c6bf0b1",
+        "498c43c8c459a14a37cdb9e2442eac3f150f626acd36b6d68b8e19297f91ca0f",
+        "8adf5f0c8ce4a58a487fa5c16f9a428158db0b5cfe0128fd1839b3716c5b8f61",
+        "6a716bb2c77b62798fe9b43bb6abd2496c24e0ef186bf6b9438a0af24b667de2",
+        "97e3eb59f397526f3542d5a32ac82d48df09c5eb2e8b943761a7d36262c9a907",
+        "c9b1472a08209c57792f7c1bd302c947d78a1f3b900b8d42610eb8611d182530",
+        "e988245be9f74d7243cbb491029b84217fa80c49ab15460bc149550f79ab4bd5",
+        "354533c149c9b2be0d05273862ed05b5349c3fcb51a791212d168f1ae72d503b",
+        "60cd48cf8be3af85363481e80e0168ba22ed4acc43245fd24227a0a07922a589",
+        "1d1d8bff171b44473a80b5d88cbfd692b37a48046b4a1de66c839badcd871ce5",
+        "65f9092251b792668c7493b08171c9b5d665dd9263ba36982f9503d2e12850fa",
+        "7095a4eaf1c888d5bed4b2f9bec2057828a904de17820e1df5c651adf0b0f2bd"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.11111111442248027,
+        0.22222222884496054,
+        0.3333333432674408,
+        0.4444444576899211,
+        0.5555555721124014,
+        0.6666666865348816,
+        0.7777778009573618,
+        0.8888889153798422,
+        1.0000000298023224,
+        1.1111111442248027,
+        1.2222222586472828
+      ],
+      "durations": [
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "769e4802-31ec-48ca-9446-a443818fc860",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "5f9ae930-4986-4091-8998-0c74d2e21220",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "33e43032-113b-4bd1-ab1e-120e3dc29cd2",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "501fb2c2-fc2f-4687-b065-f73b1b47afce",
+          "seed": 7,
+          "authoredContacts": true,
+          "hands": "relaxed",
+          "phase": "authored-contact-v1"
+        }
+      ]
+    },
+    {
+      "key": "c27man/walk/east",
+      "jobId": "e4cdef7e-9fc6-4eb4-b9fa-45ec0a3d6ecc",
+      "seed": 7,
+      "status": "reviewed-experimental",
+      "professionalQualification": false,
+      "selection": "Preserve the existing explicit experimental review; new contact renders are comparisons.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "1d25b81ce4358d32dc93c61e0389ad1ee9d8ce66dc3bd6d769393c02b95d507e",
+        "ce29ed0a832326e4586fea1fdbaebfaaf6fef3730bbf1b3d1858530fe62e164f",
+        "c74444c7dfaf3ff88bc337e6106538ee08b27d1a39eb14c2dccab348cdf5a940",
+        "2d6a065eeb8e0aece03afeb1093c14c3b8438181f10d7e2d92a3b7837948f104",
+        "8a90ae9dff15d848b55b0e00141d7edc13d6faad2c1f51f05dfabceee43ff0d4",
+        "9abadf34b9c4fdc9548a89fd99c56291e9cc3d47886ba9ba06146511128e968f",
+        "4813ee6dfd0ed997a6ca0ee330102f49dfc936733defcc912980d3b283deb83d",
+        "4cecc5d07d4dd808e3c1ece21dd64a0b25bdf6eddbace9843301e86f1f34f8a8",
+        "9beddf187d760602291ce24436f3368284be157b41227d4499703f82112d2f54",
+        "f5be413357d850a1a3dd305976cc111a08d4e1334bd773114fce43890fde3d53",
+        "236e55fec6ee27e1c6c5cbbce6a1037c825d22ca8ae305345778bfc391b2efb5",
+        "0e176678a958c1f9bf58e6dd0c1afcf4245e8f368d23c88a954b60cc6e2f935c"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.11111111442248027,
+        0.22222222884496054,
+        0.3333333432674408,
+        0.4444444576899211,
+        0.5555555721124014,
+        0.6666666865348816,
+        0.7777778009573618,
+        0.8888889153798422,
+        1.0000000298023224,
+        1.1111111442248027,
+        1.2222222586472828
+      ],
+      "durations": [
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111,
+        111
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "00d220b5-30fc-4bf4-9a6e-77a8891823f5",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "8c67ac75-3a6a-40e4-9e1e-d96400ffde82",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "cf56b055-d81e-4b2f-9c9c-16967fda8352",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "8c0c23ad-7225-4761-9a5d-e094b2d8c16c",
+          "seed": 7,
+          "authoredContacts": true,
+          "hands": "relaxed",
+          "phase": "authored-contact-v1"
+        }
+      ]
+    },
+    {
+      "key": "c27man/walk/north",
+      "jobId": "69c9b786-0280-4146-b9ce-e8ff60b59008",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "930a168ad7c4e585bdf6d37dcca40eb53f72d289bd639d7c9bc1ef151ecf04e1",
+        "8a56ab26df7372dab2266205ba14b10b074d11707a7ab1828d2b9c0905bc281f",
+        "f32e8c8a3681dfabddf87fa2e055e162d0ccba6e540818de6ffaa12d911c0171",
+        "31325bdeaf4df8de0a7d28aba7773f3a1db5bbf75a987d9daf7f14a71baac0d2",
+        "88118eeaff768b7c002664d23bda4c33bb6a32fb9971e5750bccd600cef96d41",
+        "991f9e00637abec3a97c216f7056dea889d775c605eb1ed5bf2b5920973cad90",
+        "aa4e138835b29b4b86578865c991f179e7a4dbdb27adeabb588dce35fb11d7ae",
+        "9e6ee2abb305d5fb1b043bb9cad680b02d7bf14a2c1964fb42aeea0a9fb04042",
+        "372c5d07b8473ddaa026e43be062d0fec1a04d773ec72e5452013e884ebb84d7",
+        "45a61bd5f5436879b1a0c9dc7268f69c4b125933d3fd3b3b3908fed8f687c4ac",
+        "2aa5a9ed9cbda1b20c173c1947e06e01c94eaeea799e467a7f025f3bf5c62a47",
+        "7795681a93849c1b62755160c0e1d6bd2e797312c8fa93661b14a23f378c7ab4"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.10111111442248027,
+        0.20222222884496055,
+        0.3033333432674408,
+        0.4044444576899211,
+        0.5267489868917583,
+        0.6490535160935955,
+        0.7442798569761677,
+        0.8395061978587398,
+        0.9347325387413119,
+        1.029958879623884,
+        1.1816461263468236
+      ],
+      "durations": [
+        101,
+        101,
+        101,
+        101,
+        123,
+        122,
+        95,
+        96,
+        95,
+        95,
+        152,
+        151
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          24.253608260638128
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.6090535160935955,
+            "end": 1.0699588796238841,
+            "fade": 0.04,
+            "anchor": [
+              -5.582661855713676,
+              -23.95111503602586,
+              24.560216211634234
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": -0.04938271752110235,
+            "end": 0.4444444576899211,
+            "fade": 0.04,
+            "anchor": [
+              5.3375481829646905,
+              -23.95111505093795,
+              7.891247298611442
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "passed-extraction-gates-only",
+        "cases": [
+          {
+            "item": "Helmet",
+            "jobId": "9930a3df-64ea-47a8-9c57-6bd8efcfabff",
+            "status": "pass",
+            "failures": [],
+            "warnings": []
+          },
+          {
+            "item": "Tunic",
+            "jobId": "6ab54d94-8215-47a1-a34a-c59ffeb72f89",
+            "status": "pass",
+            "failures": [],
+            "warnings": []
+          },
+          {
+            "item": "Sword",
+            "jobId": "8822a40b-d252-44e3-9772-79713fc3d795",
+            "status": "pass",
+            "failures": [],
+            "warnings": []
+          }
+        ]
+      },
+      "alternatives": [
+        {
+          "jobId": "61a6ce6a-4547-4fe7-9036-38384f1a0bc1",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "f046919e-464d-47a7-873f-ca6794f1119d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "d7637ee6-fb90-401d-8da2-e91b186b82df",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "114c175a-1cf9-4004-a618-3f01ef9635c0",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/run/south",
+      "jobId": "eb34866b-99d2-4ccb-bd9d-d6a3f63c13f7",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "ed715b6bae23998293ad7caf8f9e5ca3eaeedd9a13b7be1a4386aabcff380cbc",
+        "23d639a61a4ec3f6089a3df70139dd38752a59cac84960b5febbef50e72fb05f",
+        "71e92a4500e057e59a6c665eccd12427c0d75fcb5bc2d2ff91663b079ca8ed4a",
+        "80d6281ea5392b19719e3486d8fd6dfb583e1021c96e703f67751b094c65f04b",
+        "263f53574b36f5dd9e1f4ea87eab8ae66e3a026450bb3229aefec288453951b9",
+        "faf1c7995a55afc55ce1bd422b7dd050c76b8d9b5db98034840949a430bf40be",
+        "e632a8291e9ae18b1d901e643b09ce62be879bf7b96cf4d37d8a09c2e36ac497",
+        "b21c878db1008687e5867fa22142e3b329ecb68f9587d6ea95fd4c401c533aa0",
+        "0b67cc8cdaf56b27247973bb611d28b5b7ba37e616c9207003b40e91b43db413",
+        "f74bceb087a861deef294be3572fad09340e1d6f419812c892464b85576f3c84",
+        "4c6a622b0adf29af1a5ff90d59d64d0bad62ab7e05cbae046aafc2d7cfdb7c2c",
+        "0dc5c585385520b4ee20b8b364fd804c4590138a5b8522b54369946e15a9c0e1"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          133.58222713870742
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -5.452029929787323,
+              -24.669635276214297,
+              76.88340591302432
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              5.438139289434372,
+              -24.66963534368998,
+              14.69426882245823
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "3dceaafc-e27d-4a9d-b62b-aa2b279eef40",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "deeea98c-7407-48d5-a748-2998704df0a1",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "de84c094-bcad-44a3-8b14-86adb1d14faf",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "6ba9619e-a6ed-4fd1-98e0-c5aa1acc8cde",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/run/east",
+      "jobId": "24b1eb69-d836-48e4-b724-1097551b8e37",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "e9559ee785a9ae79c70c4aada34acaf8d68e7fd0417a713ec273ecb54e686d45",
+        "88043c20d6dba530946ef1b0975bbd6baea0501434166bad188449c5e94d8053",
+        "8eb3d52564317a8de6206607bb8d890d4d241e4fef6259e8c036c0e9e9505b8f",
+        "29374cc9199532b04322770272b618e6f79543a2a96e0d6aea978b091460d69f",
+        "b8039462837e47601eb01bed5109ec52138e620ba1cb1df48925675e1d48bc6b",
+        "5a46351e68567e4f634465db1e26296b51c695d33dd9708514cbe87668a54e63",
+        "b248c09deed98dee7d1ec64e729f1bc91a398e726109dd049cbc806dc854b40b",
+        "c979c6f708d6928e69d8bd3aa38b1ef4ed53a6e05c45a6cd0ee69825a50e5879",
+        "90899802353a214056e046a4b7b3cd1775c6a5350824f816eac1d64918d9cb94",
+        "6bce2f5c9fe01ee8607ff71c674ac2b3564afe23ae9ce84972d0c1185d35073f",
+        "6548b383db6a24d94d0e59bcafd2aefdd93395b43629fb5c63a52bce427b31a3",
+        "e14ec58ff961d3fa5366f026f6352ebd900f9a76093747c8d245ef2a0a52228e"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          133.58222713870742
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -2.2179337997302078,
+              -24.25835516263844,
+              76.63460935404811
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              2.9099452271697133,
+              -21.854448902841924,
+              13.681444087216398
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "a7245970-17d0-4b05-aaea-0c108c8b08bd",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "a77dd7ee-ec9e-4a7e-9864-2fb66f7e1970",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "be4f739d-0e94-460c-a67c-d9caa78b282d",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "0537b6ef-e4c6-4b1b-a97f-7b3412d66476",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/run/north",
+      "jobId": "a685af6f-64bf-44c3-8694-95be5d9115f2",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "d67e4bd8ac1470925f26e6c0053d0939ed020698c72eba5c780041907db9ad79",
+        "2bf5bdc10027a15e0bd8979ceee618a776ea95a8fe62eddffaeb401ce85ddd6a",
+        "7b97befd2cc2e7c61af40cafcf6c9e036bd18321afdf12c31f8976b7b5259a21",
+        "35ea3a51f4dc7bf5c39e4d827e29a99fa21cdeb83946272b0f996d25db59f879",
+        "93d13153b173d1ae76ad7d73ed19825f0e3c33d02cd34da0823765fa3773429e",
+        "95c43418abcbd6a6814c9f5757282ccf52b8821d8b57a86790dbfb664672607a",
+        "c94e63e5eaf422c89b369c50942d0bf5e1f698e64e0103db189b888df2d6ef5c",
+        "04fbceef6d09126388cb40f7087fb9b8c7d010e093b73f56a61c1365c24fb2e6",
+        "3382f6e4313756789e51878c45dde9c27c3d2735fb9cd84fcbe1959e1b72ece4",
+        "0718c7e26d83cb894ac1e229b838d6d8619fbe9d6561092f7c9a188f42edbdb6",
+        "f08ae09c1eb3abcdde0594821ded509a679acc0ee94690521d8ca9fa6758f96b",
+        "f9ec2083f900120703f8ba10fb52a71fae489ee37792bc2bca7598e15650d57d"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          133.58222713870742
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -5.169775024875057,
+              -23.95111503602586,
+              76.96093106355987
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              5.002892270607776,
+              -23.95111505093795,
+              14.494580366956846
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "ebb0c932-d3f2-49c2-9d4d-f8559fbfadc3",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "445c0ae6-bcff-41d7-957c-ab5c077e0f09",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "d39faa9b-668a-4aae-9111-3512825b3206",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "c657996b-01ab-43fc-ac60-e5594055bcfe",
+          "seed": 9,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/attack/south",
+      "jobId": "8cc67dad-89b1-48ef-8619-95e0835c815c",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Exact body used by the grip/occlusion experiments; known attack defects remain.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "74903937c669ca7aa6a920487fe46a8862007d2044b3ef3cf34e05ab1aae6506",
+        "38006c1f367c30b2dce827ff3b892d9c12651157caea87431e0455e0ccfdbb0a",
+        "83c9ffbdcc7a0405805b54a021f9a87d1581543292407f02b53b8116f6498891",
+        "713cef2c7de471172ae8d8daccafc0f3cdad83829f77060e76ad7f0a81157bb3",
+        "533817a77e77b8cb95f4710128a6171493712a5485aea9bb5c8f426cebd5db25",
+        "810f654198f91a7909cb207f822b1142502a6c4dab9a8eb523a00a80a77e58da",
+        "7e5167e658f0a18d9ef1e3f7f6f6e6fcaff3f9220ba4be55eea43147bf8f760b",
+        "f59fbfde32c1b1b8bcb154df93646ce403f118bc1d483a7facae703e54386292",
+        "e40c062b49796ce7ffebf765da35e9fc27d4ca303beee1b21dddaef28d21d24b",
+        "c8623e9aa2ce5b4b043f84e7c449d0e2c72625fa6781ca811dd55233f703948a",
+        "c325c7c92c087feb9bb55215faeb3f816e3f4d1b5bf85fdbab905c864da45fe1",
+        "6cbd81017c891b3a57cae2a7aae64ce67017da0d82a9f0944d3ff193a8a15a7b"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        430,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "needs-work",
+        "cases": [
+          {
+            "item": "Helmet",
+            "jobId": "83a0a817-c973-4578-9810-4bcb68eb4a0a",
+            "status": "fail",
+            "failures": [
+              "H4 attack/south/4: looks like the opposite view (own 0.71, opposite 0.63)",
+              "H4 attack/south/5: looks like the opposite view (own 0.70, opposite 0.63)"
+            ],
+            "warnings": []
+          },
+          {
+            "item": "Tunic",
+            "jobId": "b2fb23dd-9088-4a4e-ba27-22bf35db8c9a",
+            "status": "pass",
+            "failures": [],
+            "warnings": []
+          },
+          {
+            "item": "Sword",
+            "jobId": "7657d3da-a179-43c9-aec3-fc65835cf507",
+            "status": "fail",
+            "failures": [
+              "G4 attack/south: min area 7 % of median"
+            ],
+            "warnings": [
+              "G7 attack/south/0: 4 pixels touch the cell border; review framing",
+              "G7 attack/south/10: 2 pixels touch the cell border; review framing",
+              "G7 attack/south/11: 4 pixels touch the cell border; review framing"
+            ]
+          }
+        ]
+      },
+      "alternatives": [
+        {
+          "jobId": "13340386-d94a-4de0-a6e4-ecbd0870a572",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "5fa3052d-031f-4896-8bfa-55492bec6ef6",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "03bea649-ba4c-40f5-9968-9e0dd44355d4",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "48385c35-b716-41ff-9aaf-8fc9c96cd3e9",
+          "seed": 9,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "4ecbe26b-40c5-4734-889d-1ccbbaf2fcd7",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "closed-fists",
+          "phase": "authored-contact-v1"
+        }
+      ]
+    },
+    {
+      "key": "c27man/attack/east",
+      "jobId": "82038950-a3ab-4e4f-ab92-da53503749d7",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Exact body used by the grip/occlusion experiments; known attack defects remain.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "e0f54a934f75d35bd405bc25c4dc6b297890def9843ee955999e175f7b818734",
+        "8458b37063a1ce469ad8d99e76f47d39b4d61f522f2654bb2ae8a9869a93e6b3",
+        "4f33ccbeb13f86e4ee015ab2e4a644726c0edb2ffd5be2d2c9af1c2cb6542ef7",
+        "0f9d70c7c5c9044987c92e006340ef76e5f8482ac0791a73e8ba0b43af97ab26",
+        "ae5f9d43b6056d25dbdbe4ba236274e3d9d3e43bab20d443ad3caa0176a69e14",
+        "2787cd66bb968a2f893ff1758d0947671f41a246a4171bf2ff7b56351775e5dc",
+        "1edf3e744957d1d752c6fa72525b3c3adb1d28344dd9b3d9a39bda3311def31e",
+        "a1577a88a7454065d2a92a5fb84941d17936fb350008447e241d015dba05bee4",
+        "f4df3b96d814b93a7396c590e7a06feb4531f4d402f5b47a2c4dd3f057a492cf",
+        "9726d6129505cab79368e1073a847dbb80bbde0ed22173ee1d21dca5383b6e2d",
+        "f78d02ab2f63cc2c844f03fc0134fea6842b7dc128463d28fb80f7f7436a6ecd",
+        "e32b93b53fb3cf3d64a329cbff86e0b0e3b49e3f88e459a410a040d9e30b5467"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        430,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "needs-work",
+        "cases": [
+          {
+            "item": "Helmet",
+            "jobId": "ef472ae4-c0aa-4fd6-926c-3cbdfa983d5b",
+            "status": "pass",
+            "failures": [],
+            "warnings": []
+          },
+          {
+            "item": "Tunic",
+            "jobId": "cf5c6775-35b6-4e1e-801c-b1fb50d64858",
+            "status": "pass",
+            "failures": [],
+            "warnings": []
+          },
+          {
+            "item": "Sword",
+            "jobId": "646b8e74-da07-4629-93b7-411caa72d473",
+            "status": "fail",
+            "failures": [
+              "G4 attack/east: min area 21 % of median"
+            ],
+            "warnings": []
+          }
+        ]
+      },
+      "alternatives": [
+        {
+          "jobId": "a14ee462-598e-4abb-992d-4909ca68d9d0",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "d0486ce6-cad4-4fd9-8c12-723c6f900835",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "441a5cc2-699a-4d2a-9a7f-0eb99943609d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b59a0f10-cded-411c-9c1d-ae3ec8df930a",
+          "seed": 9,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "3183977c-0493-4583-9a31-81061e3fa572",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "closed-fists",
+          "phase": "authored-contact-v1"
+        }
+      ]
+    },
+    {
+      "key": "c27man/attack/north",
+      "jobId": "d6ac5a99-2236-4908-97e2-d1a2487b49b7",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Exact body used by the grip/occlusion experiments; known attack defects remain.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "44e25fc1616ced66e7da961074b21a741d9e8743884415445a9f91386c0425ba",
+        "6b71c9b613601445047005133171f00dd76792ef17d843c5ca88bd7f4a16d21a",
+        "a587a3180920d3a25451556883ae3338a719dff916a1610d133fd75dd0f340d2",
+        "a212ea997ca096f694ca861dcf1f62213dd5c761db3fbe408e96b48d0cb17188",
+        "9188098e729c51fa8c618fae2854f892fce8e41ec74c57b60d9a48eea835aa71",
+        "af2946dba82609c2ee734845368e2ef24f40f6ffad0facfe696b1b2e18508b6a",
+        "a458a37744045f792ef833ff0f6a73e9da4db095433c40cf5d6449db8f0369df",
+        "46fe49c17d8e5fd2cfa21618258e196f7a6e077cb262e15c4fff4b21093a8c15",
+        "8b6193466bf791d57b22c30f4ddb401a4c2d0f7ac4878ecb7a29c79a026e5c1c",
+        "8f3cb750ca86b96c5c511998df5b1533c318aa312051920f4416528db75ccaa0",
+        "999488dad0b473b62bc80daa3df8523490f3236cfc8534c7e7a2dbddb0b6e6ac",
+        "15ff0f851ade94184278257bec578d20c13d80d226c65c512572aa02dcf8c638"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        430,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "needs-work",
+        "cases": [
+          {
+            "item": "Helmet",
+            "jobId": "948e8f76-4717-4661-9d67-781a8317def8",
+            "status": "fail",
+            "failures": [
+              "H4 attack/north/7: does not match its keyframe (extra or missing parts) (own 0.72, opposite 0.53)",
+              "H4 attack/north/8: does not match its keyframe (extra or missing parts) (own 0.72, opposite 0.49)"
+            ],
+            "warnings": []
+          },
+          {
+            "item": "Tunic",
+            "jobId": "2636a69d-41e3-41a8-b347-23f275cba572",
+            "status": "pass",
+            "failures": [],
+            "warnings": []
+          },
+          {
+            "item": "Sword",
+            "jobId": "57ec1c3c-3133-48fc-b701-496827a8830b",
+            "status": "warn",
+            "failures": [],
+            "warnings": [
+              "G4 attack/north: min area 19 % of median",
+              "G8 attack/north: item is more than 6 px from both hands in 1 of 12 frames; check its grip"
+            ]
+          }
+        ]
+      },
+      "alternatives": [
+        {
+          "jobId": "8dc9baea-b56b-464d-877a-36017ee2de67",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "22bb84c6-fed4-4ddb-8bda-52fab9fd6b12",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "a7651b0a-a15b-45d4-9191-a58a46f894cd",
+          "seed": 9,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "c2fd2c58-6b56-4db1-bafb-e6075e48a874",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "closed-fists",
+          "phase": "authored-contact-v1"
+        }
+      ]
+    },
+    {
+      "key": "c27man/hurt/south",
+      "jobId": "368d6924-ce49-4ed0-9ef3-c5602dd20591",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "97ed457c1131dce51c351741010e6586acdfc81ae51dc3c3f43495def9cf5f40",
+        "8269c64fb89fc0710a9192b9aa3694563940d0df86b8d127c0f6054d0d7351b6",
+        "fe0860ca25e86c90d7e169a76e8e82303beaaeda9007e11d1a0cd3625aa520e4",
+        "a1b406676bbddc5a4163d356110380ac3b6c726288444f48f7f0014dc6d1e7cf",
+        "22b608aa4754c33f997e219de8d33576fa16ef0b34ad84bf2491f32b9cfb26da",
+        "6ef001c1d6b6844d96b99d2a3120cbc913a9078b5f4bd3ddd346b437fea7d146"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        56,
+        56,
+        56,
+        56,
+        56,
+        56
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "e518e426-8ebb-4055-a9f7-a9f14f3feb5d",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "75b59eb0-c6cd-4e4d-93f6-ebf52b2ee189",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "a5634598-4702-48c7-8e18-b49bf9311d8e",
+          "seed": 9,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/hurt/east",
+      "jobId": "90f0a463-9902-4143-93db-588bdf721ff8",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "6f327eec583828f13d7d95c3492bb959a64a7d2c257c0bc03c8a0fb2c4222d13",
+        "a49da0ec2d9bb92edfe43bdd0516504f0c5f0e684c8dffd7ed67bb5556cabcff",
+        "52822785b20d1ad38df67ba8b768888e2732155870bcae74a3223a53e7c3c194",
+        "f7d81f692dbf23325fe110f13e6fb55cc6d45460e1c13c8f64edfb690532a063",
+        "c385101d80c45eaa39f1091a749b81c1f53d8cc3c5171db57b28b91b573a7396",
+        "778d3f1e929a7dddbca8eea0915a9e86bb1a041bfd3825851bfc01fbe9010d70"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        56,
+        56,
+        56,
+        56,
+        56,
+        56
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "37361cd5-8c2d-4889-85f7-635f1c2bf173",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "05312c40-3335-4c0c-9325-1d04c406a99a",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "27edcd77-2a53-4a9c-9bb4-c89add2f9d07",
+          "seed": 9,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/hurt/north",
+      "jobId": "0b7119d7-818c-4bd3-bc61-b0ade3c593a0",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "faa4c0bced5f1b1850836d3dab81618588ebb8fe632d34cafb6a70a1a9efc5bd",
+        "cfaa90dc8c99e6be1e1b8e0eb55a4edc06dd96d0ee5ced71e0f1f9e94c0cab9a",
+        "2905a6088024063f0b92ad5ebfb30fc2ff67a435d7ffbae0740d2d72d905e059",
+        "d4798ede85ccf7184bf9ab2a62f81400f5aa723a2925c985797a65b477e0d0a7",
+        "cad188278ce21867e9d5662642b1c088030357a74c53343294bd5ff01c79e83c",
+        "2137ae44cff67ca8bc33055ae2c6b8cd3eeb5f83f2565e9d72d8c2b5358b30e3"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 75
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        56,
+        56,
+        56,
+        56,
+        56,
+        56
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "5e25c918-61e8-49b7-9cd3-2a423103e2e7",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "5b13318a-b288-48c1-966a-e9194300c203",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "c4bf1151-00c7-485a-8726-5683af55524f",
+          "seed": 9,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/death/south",
+      "jobId": "26e09c02-e581-49ea-ac4f-a5d4c396d479",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "8d35a2e658aaa92fe46ba98af7be4c10b9959807e39cd8d323f55e333fa376e8",
+        "65a27a7d2003eaf3c7b61cd88efa8f8c8438c923e7441ca24c0901e739cc8dd0",
+        "b8c8b05e9182313062ac43c62b205a7f740a2dcb610f2e401e19626951b47e9d",
+        "c56807981c0c5646758d4b2202ec267a35bd75e3a3d1c6984cb33c1ba07f91ff",
+        "a782bb2ab7f91e5bfa8e4e720775e592bfb4a3b424cb7aa07578d8d9f9b70554",
+        "f6842c184f0008e93b84a72f038ec3d1315dc4c4b68c09ef64ce4a0f9976a234",
+        "82f03dde88e63d48fcd87036e41f0fd57c61ee9c687f933418c1e74bca6d66d6",
+        "9403848c78d3049c67232419f0db976973d57811e510d3e02d99a6d9f199589b",
+        "511c1d54e990bc17049f0b412b8e0d87b401aad404606cf8abd6bc27f0011a86",
+        "04cf5c765c9e5a0496847a66f6c34d050d2f4f5046a0b74cd234638b87b6febb",
+        "ef2b8fc7859cc36f56ba2a6553db4f6fd1dd9a81c8b8763c7ac3aba4bfa2020e",
+        "10b1a8e3771bb79dea5b59fde277e7ce05ae4ddea0bfc45b26104ab69545735a",
+        "55eb296d5f680652910824660bd111f95216f5754eae0c06dbc0d1795d65984e",
+        "526ab824574cec2114b0bfe5f1747213d5fc6313ccb85ec8a16ab43212e3859c"
+      ],
+      "cell": {
+        "w": 128,
+        "h": 128
+      },
+      "pivot": {
+        "x": 64,
+        "y": 99
+      },
+      "padding": 24,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "80234536-3938-4251-9a01-dc38a78ccd11",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "6b9c6285-d171-41a0-a575-c372fc0b5a5d",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "4b010832-1dd5-435d-8e15-f32df3494d11",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "0b2c32b9-9a39-4f2d-980e-e5cf2d325c76",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "08dc023e-45da-4229-a1cf-5214bb6dade7",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/death/east",
+      "jobId": "91809519-1a58-4150-bba4-2d636b12fcdf",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "2bbcdd9717c81414078e9a0904093f6e3fa161b0626a176f4d3c28549beb3b1e",
+        "4dfb796cbc96f796bf0b7dbbe3a27e13377d39003395c5a0af0d81ef9448a7eb",
+        "1d3cba9e3dfe6f6190f2d6b3322c2ca8d30717521a55aafb9cd6e530a143fee1",
+        "e0480c92e4f862c24f29548b15d2c880394c9c5b323673f01a438ba9bc9e63d3",
+        "11b735ac1134a22e6fdc25c00575f2625e737de71a75380fc5fa6b30b22cc8a7",
+        "e9da4e5f07de3f6e1d98b05c62755ee58d9044074a21234db2c5abfda0ecd6e7",
+        "58e3a4747c736b1a86fb08329aa1dad772f1a542a0b7f6b901d3b5a80ad0f11f",
+        "5720ed776fe7c3a2d45e848f45b63649ad5010c4254b473b5c37bf86e576e7f3",
+        "76025d3d3e97b367546121ba612ea0e0f23be2fe521b04b28b1a85fd57fc301c",
+        "fc56704c7029833217ca51ec5d08c49052ad04c897789f5e3783b62e59c9fe12",
+        "aed50e8ec6318753e493f8f31decdf3cf41c509a4261af9c408d2da47a80f824",
+        "9e389a98a263d32a6b9a6e5b08d6275ff5b16742169073f4ab8f0cea39558d3f",
+        "f4b8cdc416964ed81291ffb1937b499cd7f01ada6548801bc291f41f20bafb8f",
+        "d8cfc81799e09064b4fff484c3eb7a362a10fe7d33b43c7df9307b9f34613cd6"
+      ],
+      "cell": {
+        "w": 128,
+        "h": 128
+      },
+      "pivot": {
+        "x": 64,
+        "y": 99
+      },
+      "padding": 24,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "f8877534-b112-4d8d-aac3-193699f0175d",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "187004ae-bc54-4b0f-911d-9a27cd8c7494",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "973c0eab-19f8-48cb-a4d0-5e239b32e369",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "167a1c81-f144-4987-a87e-5827613831cb",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "c27man/death/north",
+      "jobId": "259cd4db-401c-4fe8-b8ce-0f193c1fa174",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "95691fd0d16fc268f233293a46daa88e2420895b9a09454160b1f5ac7645b732",
+        "0f64987aa0bb32487cdaf29e60d4e7267308fae48b08fa2ae2bc5b052b2a35aa",
+        "f5fda0e9419bf804225831fb022ba8a0ce1d324c908f8705524b99d43f923dfa",
+        "502e03d9f1bf47c887c975bc8e81732b28ecc853aa5dbed01cf33985097e255e",
+        "c7f7f03a925435d20a2f26ddf70cb3c5f262146113c7db440c42cd1ecedc29e4",
+        "7fdf8676d8c213b7203e560c6f7f28f121f4023b12bf309f1f5f0fad0bf27aec",
+        "ba4d6de7cc651e8ec230f699b37bca69651a0ec0401e08946237fa88e28b2e82",
+        "1331b8a9a18a4ea5af61e893d626912fe1cbe7d9c7567176395afad1438c0455",
+        "6a2b6a92654b8c360bed0f2dfc04a56d92991ac77443b132feb5fe52a571455b",
+        "b113391a8a832a16a1d089a33cbed01c5546612c321b2dd82648731ed2b3e39e",
+        "d9c57fbb2f00ceaf14c8457053dd4fae8970ee7a3239dad8329fd3e26e611f4d",
+        "a5d3022c4e137e6383ff09a1a62e868c05b40891f08e9e66f65d69a3202aca7d",
+        "ee5a21cfc87e0b2325edab72bec07064583150f47166ca978a4e66446c17ffb1",
+        "01bc10d4d7682b6fb9b2c837cb336432b19349b345968827f5870fe653d3806f"
+      ],
+      "cell": {
+        "w": 128,
+        "h": 128
+      },
+      "pivot": {
+        "x": 64,
+        "y": 99
+      },
+      "padding": 24,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "473ca454-0d78-443c-9b50-b8ba7b8caac5",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "3f9ce543-105e-40a3-9563-35f3cf302fd1",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "607e6c65-86e8-4d3c-8b59-0d2e3d60f89c",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "9fdb9e01-b328-4982-9272-e89f0c88e9db",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/idle/south",
+      "jobId": "8c9db627-2d74-4a48-af81-42d1a4e80117",
+      "seed": 8,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "6cddedc3a285a8544f537789e3d0fa19ca4b1c5c0f5556b0b4642c8cfb18bef5",
+        "12e40f0f1d67d216076d7ea8d522303ab9b6b995d93bbab7f4ec7ba0414046de",
+        "2e1288b2b7b3a93511d12160025d15396088ae9164c816286e87952d9c1b6818",
+        "0ec68d6f3345bdff3755d40e44c2aa6508a4571b06cdda6dd20f2e860580963a",
+        "bba8788baf69eb4889d1102ebe98f739ea5ef2233d7756778ea03135aaa04408",
+        "d5772c4e7176f3b35ce1a5630b018a7b98eb36f8941315fbbab565b636945653",
+        "d75fe67616ebf5e2a50d8b4b0abf3f0925d5ed4f60a53e7c5bdd85efbc8837f8",
+        "f137d783ffc14ba57f29ca049994ac3ab89b630c17418dd6d4309a2e74edeb75",
+        "d628853b3cd008ec180b3b5833212c7d9def89299be111b1bc2240e67bd5d5f0",
+        "4410d0f5b534be1a152a85b06cee59209ab53815214f4a71d40816ac3e0dcc3b",
+        "f33973872bbd54117332d863eb89b4b4f3e92a1828610a654880f03a42b55fc8",
+        "8341b2b872e4186afcc18bf7dcbe11d7d15399c7c2ea0046bc03a9a95ed68150"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "b7e030a7-a598-497c-976b-a2de95bd040c",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "4e3a885b-3ce3-4f76-8cd2-78c9e05852ad",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "5d145827-f1fb-44ed-927f-9c073d5012c9",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "88e2b40e-565f-448f-8059-12aab04f24fd",
+          "seed": 9,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/idle/east",
+      "jobId": "f21084ab-88a9-4fdf-a7d2-5b45c70934c2",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "adfda9d7d6ed456930a5d8ecb7645a7acafa577b0fc894a199af2a211549f3fb",
+        "e4e0fa548372a1c68f0fd667c980bc13367e69620902849b42feb0b4a74e869e",
+        "c14b54dc3080c84aebe7dc1341214cc604ea3b99fca1ccc26777f7825b10baea",
+        "a2816486dd393ae34a3f802be048b47a3d4f6c4d55bbaef2f07ace4202e440e9",
+        "96f55bffe410c47193cc30e4ce3273202445f6000c8402ec453d5cd90fcb3b9c",
+        "74bc1c34c5a0f4109318cf624b28db7dd6cb5a960429e40a1bbde5e7deac6330",
+        "99b659288e7849d15b66fcdaf086b2f66eea1adca72a01402fd846919fd791af",
+        "9657c00665771623646af8af2ed5d269baf350303c0e71be84a97d81b5656812",
+        "9cfc5a6f77afb1a569c3f728ece0594284a94d3dc136d0fcf19e8cfd4387de9b",
+        "2659d630bc939900e7bf47d0bb72aa623dd65f7e95a597479a357d86adeb7ec2",
+        "9a80612824282e0f14c5328636eebff4e91b9288762cd118a2a930184fe97c40",
+        "3bc30867db25724570bfa8e91bc7f7cc1c06975f5c2a55b6f3327abb9a56d1aa"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "9be42e34-9402-471f-a2c6-43540a4a96f6",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "8337eda2-6d28-43cc-b880-8ebbe37cf8f3",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "60eb4c24-3ab1-4b61-bfb2-5130e7ecc7e7",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "05f91770-6de4-49c7-8683-61e4ad314129",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/idle/north",
+      "jobId": "d2bd5245-b181-4a53-a2af-040acec7d5f1",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "19e764a66c05e484b990761784f5507a6f2d8edac5bc5d502b03153fdcd6617d",
+        "fff5dfdadb79f6b813bc121a57fa3997a15330c9355b13a95ea01a27d6848649",
+        "bf3ed48b742b0f195f4117271e6bb1e5049ae47b6b0f8ff14b1bf7a0cb9c5bdd",
+        "6948c74393d6423443acc7abbd0e32487f4dbf895ee39862d02283033948d483",
+        "f582d4216016ee8a240180a93389bdc61502420a66bd1fb89dfac19c1aa27061",
+        "6e519da86f7dce8d4240a8970416f2109ee2c03b6772d34b977345de3fbaf55d",
+        "b73748d4abd0b2573d9afca7e2bdf7790e22866bf16a901702232831f19b05d5",
+        "09517ee80419c2a6b3e797e6d6c1199a681edb03e2abb0521038015655b967c4",
+        "e2a83b0fb1f611a00af2e33dc2f1d2a0408b54b6d384856f4d56fd5495478b05",
+        "87b79aaf114a94f4357cdc3d8a0b21c4c27839079f2466b10fa40746923cb447",
+        "fd5da23db86ab1aaaec057ce2fe9e1b4fd20145fc841c8de4b64de451f9399e6",
+        "a48774cd14c23797da434aa3aca1e66319616fd27b886ca39135550e32c892e5"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "chibi/walk/south",
+      "jobId": "66278232-6dc9-471f-8d70-9dd0a7b9d47d",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "412efd22a73510cbb4fe80ae33b9cbd2b7265fc50797e9f1429909dfb851d31c",
+        "55aaf0dabbd0ce80b95414cfff0edabe7d4e8d879d92880b63e15e882728f191",
+        "a9e595d614fe799b949b322f6b994312d74c1bbe57e235bfae638433161dd748",
+        "26b5c670371add8458748efb6dcc353e6bd7cf01166eb2d74327586ef075a1f3",
+        "158ccf9a14fd5ff8cd4bc5a1eca84ddaf3ecda5dcc00b4e402b64c032aa0cf3e",
+        "891266d6f5099a5d9b2029759265217585c7de4f52006c253496bffcd1a9c61a",
+        "38d1f289ac6d57b67e3c5880f50e5a3e18db36a0893c57585365945787c42a74",
+        "76c63f6386ed3e6cc1c7f10248470a95fbcad2301f25b8b08420dcaa5e00f473",
+        "71a544f30a64745fd36159c53a7815d71e59b52dd652c8391091c11767cfb90c",
+        "c15aff0cebbfa71f82607f7f78d63095dfe57492843b213b25e54eb3b8890cf6",
+        "57d2e43d1521fc7f21b07c348849ddcbe7a5c1fda3923d42a51e0a41dd146e25",
+        "8b814173523c028a402f69c91567d8b84ccaceae3e049e6f2d45a88c140fc5b8"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.10111111442248027,
+        0.20222222884496055,
+        0.3033333432674408,
+        0.4044444576899211,
+        0.5267489868917583,
+        0.6490535160935955,
+        0.7442798569761677,
+        0.8395061978587398,
+        0.9347325387413119,
+        1.029958879623884,
+        1.1816461263468236
+      ],
+      "durations": [
+        101,
+        101,
+        101,
+        101,
+        123,
+        122,
+        95,
+        96,
+        95,
+        95,
+        152,
+        151
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          12.465813217279372
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.6090535160935955,
+            "end": 1.0699588796238841,
+            "fade": 0.04,
+            "anchor": [
+              -6.809622026650812,
+              -12.663137474382955,
+              12.382711361915264
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": -0.04938271752110235,
+            "end": 0.4444444576899211,
+            "fade": 0.04,
+            "anchor": [
+              6.725132178229185,
+              -12.663137516062985,
+              3.9502144362911755
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "523c75e1-dad1-4469-bf86-99d946933cb7",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b17910bc-202d-4b7c-91db-db81863f01d2",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "7f33503f-fcaa-44a8-8a51-00ef64c101db",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "44d854ee-0f9c-409e-8273-db3b09f46646",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "2dd86f05-3b89-4385-be31-afaef310b1a4",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/walk/east",
+      "jobId": "70474413-54f0-4fb0-8572-ce78d3dca7c6",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "188f9de2a95bbfc62645ef6168775087a974d7db9fb032ec12e8834f2abfe104",
+        "2e1d42e16b5b42869a6c5c09734ee2e991a405f9df2b55eee368f0bdaa1a17fa",
+        "638f2c6a0ff56b882b0c1ac77a725c86301689294dd3dd7a7521d4e1aa306e38",
+        "8849efc3780bb41bdf7f33089a6e0891924ba6252dac717b1b8cc73023e853cc",
+        "80e23b2b891faaee61c9d339d665fb3054b7154d1c2576fb77b2a73c6f140c55",
+        "0d450bc5778eb6130f4d753948e517c88d851e54e868f545942a9aeaa2def57b",
+        "1f294d931243277ea0098c603276f287434ba717eabf8b7f31745a5b2c8d8231",
+        "3d40dcf91ac980f631d767ebf1691625865d4726709af8105b08427008305668",
+        "fd04cd47b863b69eeb3b9cf9c8fda83e293f6d45b8a31c9d7ce1ba1a9e17537a",
+        "1cf476956a9584f1cce650955e17c2a04c9ef1f8a052251479d9d9746088ce57",
+        "20c72ea86d710efc5fcee39c1210820bf697f9fa6c722603346adfc838417ba2",
+        "204de8774a297cc295c81339a8bd8906d893b68e6b1d445aeb50af059c9b6ab8"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.10111111442248027,
+        0.20222222884496055,
+        0.3033333432674408,
+        0.4044444576899211,
+        0.5267489868917583,
+        0.6490535160935955,
+        0.7442798569761677,
+        0.8395061978587398,
+        0.9347325387413119,
+        1.029958879623884,
+        1.1816461263468236
+      ],
+      "durations": [
+        101,
+        101,
+        101,
+        101,
+        123,
+        122,
+        95,
+        96,
+        95,
+        95,
+        152,
+        151
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          12.465813217279372
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.6090535160935955,
+            "end": 1.0699588796238841,
+            "fade": 0.04,
+            "anchor": [
+              -2.2972618375543683,
+              -14.1902590090604,
+              10.49199486301044
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": -0.04938271752110235,
+            "end": 0.4444444576899211,
+            "fade": 0.04,
+            "anchor": [
+              2.1861796780166634,
+              -11.953240637512415,
+              5.004859361790058
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "243c0a33-3fa1-4174-8fc3-fc3dceee6d97",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "78df6420-3065-4517-b462-c82e4cef2667",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "ef08cb20-9a6d-4229-992b-f5b1d4ad31b9",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "88f1bd52-ba62-413d-9e8e-5fdebd733d8e",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "96a3e555-d884-43bf-a22b-7d1ee330f332",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/walk/north",
+      "jobId": "540b1d85-36cf-4daf-a822-08a4d475aeca",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "e98deba213390098d401a5d86102e8a17eeb9158e6e08b4931f7b89e59103459",
+        "91098b060a499953af447b9b70be56a88baacb4c18956ad4aec6c4ffb3dcec50",
+        "a6b24c022b3e8609381c4f27bfb043a2aebd7de86aceac14425cb26693c135ce",
+        "c6fbc8819b208c03ea27ea70ab477e96164c7267c6da5148bc9958104e1b66d4",
+        "de5e68db521231b8154db8e4d9b51331eac6829be9bbadddd752fcd8a5f72b99",
+        "1186763da8f35abdf7e792dad5ac25a4f3a1bd84ccac1380a4cc31b5c4e86e5b",
+        "1bff3ff6bcf224366e2fe8041118698c208f9c07cb3c5207116417f8ae8a23b0",
+        "54554b42d074b0606eb1d811dd188890589bd5ff427ecee02365ad858e7d9850",
+        "283be9d738abcd6b68d050a9e02bf4b51a11a33016698bb80a7d0d3d12668c3e",
+        "b2887c8610022996e69e669f402b7ea060bf8f250be353041cff0347bcf50051",
+        "59e96109c61c6b4c89e1f94a5062dd8bf2faec69d75183c6b24f51164316d148",
+        "4626015c13711b42039c3eea57724cb457a3a70b372de4a951e85b4a7c7908c2"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.10111111442248027,
+        0.20222222884496055,
+        0.3033333432674408,
+        0.4044444576899211,
+        0.5267489868917583,
+        0.6490535160935955,
+        0.7442798569761677,
+        0.8395061978587398,
+        0.9347325387413119,
+        1.029958879623884,
+        1.1816461263468236
+      ],
+      "durations": [
+        101,
+        101,
+        101,
+        101,
+        123,
+        122,
+        95,
+        96,
+        95,
+        95,
+        152,
+        151
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          12.465813217279372
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.6090535160935955,
+            "end": 1.0699588796238841,
+            "fade": 0.04,
+            "anchor": [
+              -6.245401190436588,
+              -12.974232385389511,
+              12.822750800890127
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": -0.04938271752110235,
+            "end": 0.4444444576899211,
+            "fade": 0.04,
+            "anchor": [
+              6.16831981391413,
+              -12.974232397721496,
+              4.253263472310923
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "chibi/run/south",
+      "jobId": "5eab7076-10e6-4a19-959b-7c8edd27be02",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "694f9fe259eb05200075c3ab4c0de13fa90f45d8d9e5254db793b807caf23902",
+        "04252f25b3c4c949eecb82485ab3897d71bda4a67f7c570a49933397384814f0",
+        "871b505ab5eab5abc8f32aaa5e5018133663f39330f42539c48108965b3063c9",
+        "d24932b53b5fb0aa19af07640a753b34652776bb1138b16c00cb58cc37dbdde5",
+        "227cbcef8ef67d2c14983a97dfa8d1b4b02594d49d166778d26473f2ce0d2ff4",
+        "1e6f8680e5c142cf5d2a25432387f826672aa2a5cf953c5c1922f057db0d8f35",
+        "e39f35f2815b93f53d5df5645d1ebe45677014f43cef3dbb45bd3b36ab866417",
+        "c52383e57efa75122cd1b308602e69f43386d3f8bc9c14af9794b8b033ff6235",
+        "7f076d63500814124208af1290ef205b47cf24388c095237092528aa59fe7e4e",
+        "ebc03a6c369e27acbfc1040b436fcc52fcf33105a57f71b196d57d414e630f98",
+        "33c9e8a0042c18a681df5b5ed4016c653a0ab510f253f3427075972ae771071c",
+        "13ee98f9cb87fcb20ba27d3fcea2670070b2d02126cb79bddd16b4b7643cdeae"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          76.84036484636633
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -6.790344396672088,
+              -12.663137474382955,
+              43.21169550376211
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              6.671575887027427,
+              -12.663137516062985,
+              7.469002760435588
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "5342fde7-b46c-4656-90d1-65c32a7ad909",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "f5d9b395-2db1-4ff2-bad3-3f166b142d92",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "7729ce24-fc57-4990-bf54-91b97bb5ad7a",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "fe56764a-aa33-4a0f-a7d1-9c062b09db76",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "8b78e1ac-8a71-48e8-8b28-27f27d0bff73",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/run/east",
+      "jobId": "9569d8e1-7ce8-49fb-8370-821b89e34a7c",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "7757bf97f5991e5b2ca5d815578e23d1449d88b0943e82fcafda42993d2f3164",
+        "a371ad389ded8d72e1687b1cdf3f0be9304b90df5b5fa43e27d7d3a7bacc2de7",
+        "28ebb6a4c82b66dd9127f12d6e936e4c9ea4fc7406499378a58c2dfe674ebf69",
+        "c42a43382044026be39ed078975029b25ba4b6b60e88515ee499994a8db887fd",
+        "031534fb277cd71c29ea8ffb9f544428228fea3bef9a859515e5863c8aad34e9",
+        "8f5fab0a27b65d52cd269867a8dbd0b51678e71474c629c9675b404df50b1396",
+        "01fc6fc959e697de8a8b070b96236a4fbc1c0e1bb5e2923b05df817de83c0fc2",
+        "9154c447f9cd243f5b5c57c9590f88e1466bb10b0d4445908f1e35785fb1b502",
+        "e1fc0cbaf409a1d69475153776132e738478ca00f80b3c1715f7b7a1447e1d2b",
+        "6c3a097fb88dcb6ce5e153801bb6b7f1d0166443ee0c4f11dd7118474b43a170",
+        "677152ddf5d4351278e685f7519f593b5458897f2e2e510ce7cf25eb1f0f9bbf",
+        "c343669c5fec64bf7781f1968fcdb4618acce744c0549534a7638032ea7e6c09"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          76.84036484636633
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -2.3109432237260368,
+              -14.1902590090604,
+              41.415234324068024
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              2.2885996371276986,
+              -11.953240637512415,
+              8.751163020191552
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "896dead2-d3f2-4541-a515-1afd170296fc",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "fd688fad-84f6-4b84-b022-63b19d5991f4",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "3d2e7e95-afcc-4d5f-afa7-878bb73d60ac",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b87b8824-3391-4f3b-b767-05b4c63e39bb",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "48b946d0-1a1d-41db-ae0e-d82a7b0a71db",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/run/north",
+      "jobId": "7b64770e-63aa-4af8-9985-ac8bd847e19a",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "fc1b7e8e96595a91c8fea636fc4a08284d708f915860083a0f670388766b38a2",
+        "360256396849fdaff8c0cdf06b416102d05004b2342e5013e2c666e228b3e25a",
+        "b70ae0c6c815faeff7294865cd9e860ffad8af2ff7c78a3a9cb86569725db56c",
+        "7efa937a6dfd14d644e795925382ce9c2e12667561e81d605e1285e3cfe6d537",
+        "871b9a2d8fbc421edf373d1e406ead02d16feaf6c3ade52106de8bc94aa8992f",
+        "a7b53cc86c95180af661a6896eec1d007b9d09c277540cdf44bc2030ba9a07ce",
+        "a3bd7ef535cc81f3319e9b16d44c39e0930cfa16d4516700c7b266c467f0f22f",
+        "bc1cd87009de8e0027cfeeec531853b9faea62a4b09eb906e317a583761cae1b",
+        "1c606d777df2be5485c1043a9867581557f27efc39abe18d578bcdadf59180ad",
+        "b18d21d16a09da5a1a54ffffa263a36175de4014b0faa6aaff1883b277cfdc81",
+        "626b7e4f061ec993db4de87d27eab85c55803f3b858c70ce80b11eb65d52be99",
+        "d06ef56a71a8129d889735fc1deb9ed3379f778c64da8ebcaefef6007f373ad3"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          76.84036484636633
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -6.2146876805093845,
+              -12.974232385389511,
+              44.12023245623572
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              6.178046767184763,
+              -12.974232397721496,
+              8.341327141267014
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "chibi/attack/south",
+      "jobId": "2e3a00a0-a011-4cbf-86b6-1c58e33e2cec",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "614650289820c8fbf517b6c738824b3b8e182987378b750d9548fa4ecb965a76",
+        "820a21a5c92f74124b049948c3cad2dcdf6125134a2e59b7ce5f2f96be8f0024",
+        "5f3a333ce578b3d40fb03840f6aabc9308daf503ea5c02bf221cb82f02dfc57a",
+        "1441051407c755bfffe34ba648eaa0c341475249ed22c15429296f0345f38175",
+        "a659d6790381ac7c41463ef61a850433977f1d32f72e952a55fbc133c6fd7f5f",
+        "c30e7999ba350f022b6ff4e6a1a978d2da4077a9648c927f93cb4321a6ab3e6c",
+        "562ece2e46d663c3a55e7b05b4efa148175044f5c55fd48b489ec4b6f815478d",
+        "38d1542d8702f52cd7d9825fc741af70bcb964feebe6e63796f70b1a481868af",
+        "f8798da7c712715007522c44e1a75a2646f0d25be3e6f305fab4fb49d2311aee",
+        "36c0f74b13b8d388c08a9b874cf5835ee986aa010d28bc40d15b8249c329ccac",
+        "5403aaca0def8bc7315c98e3e05fcf62fe4e694138f73afd2c9b386c3fd81de3",
+        "971412996d6110f27cb142eb6fc304460365fcbad517be7b385be4585db0096b"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        430,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "f920bcfe-c230-4eb6-96c7-606202e1a6e5",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "480f58c5-feee-4a4c-93af-2cd6d58f1951",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "cd28b9cf-a8e9-4735-a75b-7df4dd9b451d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "731d8f19-953b-4435-bc23-3f13aadf3db4",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/attack/east",
+      "jobId": "8fb28bc9-d3e7-47c7-9f73-f0d1552b10f5",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "760d21a4f1b9db5bc252e8bd1124f288dd71c389c9a98e50c86efe1c16963d6b",
+        "3cc2d98232cb6e8178c1be9c67fa9817d8cc05349c2beb37d85bed95c61c786e",
+        "a287d4c766aaa3d5cbab42f58008476f4f17b30dc8ce321a37cdf406e67c6207",
+        "c0d1db6293cb506870183b3a9a462faf1e7ff2620c6e8ed7eab93271b9f2100b",
+        "4247d10eaaaef9ec45f36942c192491707465efb82ed30740f5298f8403c7b59",
+        "4f79b19298402ec09a407edc230ae936b11e714d5a3dcc55c9fbfcee3a21310f",
+        "ef3755fafa2d02f0fb99a5ceda969af524d6276b377a0256daa2e9487334a4de",
+        "566f184b15f5975af61f44143a1acee534fa263fe211df3c8c0610dbf1eee85c",
+        "8d9ad737cc9dd25bba538f4a2ca008cad5ec35dbafbc0bf2b1970da311c7ec94",
+        "fa541b5f43ea8068d724ffca999a3ad0a95848e0a176c2898b347ff15dc6f6cc",
+        "68463e2806482a92f75f727d2d6be91d1b4b4342529ae0c78cc9d17a99d10e05",
+        "f405b98afdb02c9654b5ae06c7b3ab8d409b077b6b5085b2c0ff45cf89c6c785"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        430,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "34d09420-4810-4081-873e-ae284420bd65",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "03299ca5-e701-449f-90dd-1bf7884feed0",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "4ff8b686-a1aa-4e15-9a90-d7752437c68d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "3b6a8ac9-5700-4c82-a7bd-ff6a63dd066d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/attack/north",
+      "jobId": "34506fd1-dcac-49c1-be99-fe758eac7b54",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "89fde6772cadfb2bf47b89c95806866a112945edc4017b1ef8efe03ecb8c5683",
+        "7a94de58fe2c50afdcf183cde1c36d688f12ecd7825ff357ff959b599a857a8c",
+        "fd712e74ebff67eee7690cde1cbba3465adcd66e70f8bd3441fe666edb950f6e",
+        "790c89057acc71a3c5d4211c6daf82ff1a01d5bab0ca72559d1bdb2a212792e3",
+        "e0198e93203ecf147898d7eb9664a436ff5b2d8e40b8197a3c39e5f4aac151d9",
+        "78983e4ebee6ef6f8013174409a6680b178d150aae7c9843e479c0b7194d4826",
+        "911b8a4047523d264829e60e36005c5fe1978ae61798be180cb49aca89fd9da8",
+        "c4a97ca9aabe100f60a96f9a1e383a1bd0e9a0095983739ffe8e552d1397b38a",
+        "0f95e83392b863d565b8d6d38965d07081cbf3e8dd94dcc4f22d37a07a7ea2ca",
+        "7728a0821050f65d82feda6402b0b25cae784df6838f6b8d572b8a471afc0010",
+        "9c5d0c62e0276bb626c9522ff9401d23eed912bda0ebec800e976b446b28f775",
+        "147a7c4cfd350da82197759ef55fc0d33132e745191d7ec6e476e4a5d64d7a05"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        433,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "chibi/hurt/south",
+      "jobId": "e7e50d2b-0d1b-4a70-a223-3cb6cc11c694",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "b80bdf108b81b6cc374537f1d4b97806217f46fe49c785ef9bd356dbdc2acf64",
+        "2f17ef99a76fd2da6c77b8133f2a280b3f62f5572174778f265bb6118426d0c7",
+        "1476b7565d4a5272ae96a6eba3340697410a37c9ac6a65993ae5d520a2f262aa",
+        "4a67b5e236282346415bd241084e4d9e4b97d4f6b72b847a75cade315bfe66d7",
+        "f84d7c61449141488532c39a146f0846520b2c2201a12902a91c0c9dd562d478",
+        "70f3ff3f3b2ad8005f456c1e1f497e1c515da8746d50fa9231c8111047c7c349"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        56,
+        56,
+        56,
+        56,
+        56,
+        56
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "150e62dc-3ed1-46f6-85ca-382399d965c5",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "a9f86322-a08e-4f33-8b7a-7d31dd70456d",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "9cb1341a-c17e-426e-a966-5c776095759b",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "fb662a65-b256-4780-95ae-b6848a46c602",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/hurt/east",
+      "jobId": "d8efb87c-9d82-4a44-bad7-a8952faf759c",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "4c3f10c3c9acf3c355409541fc0414b8981134e907dc840b87cd409e2a341ea5",
+        "d0e740d5479b8faf67892d302acf5803b51068bffd8091a37c722a6632262c51",
+        "a0a20133993afffd5b22ad286462915f609ef7692005290c334f65cbdb2c6fab",
+        "8b0552f9c87597c0b330a1aabd9bea88e2be56a3c5c0b0c987900cee5e77ecad",
+        "728906db56c6c9818c7288096d95fedddcb886f48d2d28c75426ef9e5ca36c68",
+        "8fd1215788bc12a4314e595fe37a60f6a6086b482778e33ec94aab2270cce623"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        56,
+        56,
+        56,
+        56,
+        56,
+        56
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "e108fc98-3a78-44f9-8b2b-70b775618e58",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "eea8da97-480e-472d-9bbf-d91ab74bf2da",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "f5a34def-fc38-45e8-b342-5b0021a5d594",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "5a762575-c353-430c-989e-0bac259e6dda",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/hurt/north",
+      "jobId": "bd0bd174-e9cd-45ed-875e-912bf708928b",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "42b86066dd5a32442b1cfb19bef914ba5af18fbdddb93887e4358145e03be063",
+        "edaee5db9a453668fda8d5cd34bec6dd47284dff968db0a0e911dc0536ba403b",
+        "c030cdb2de004de71505ddfac4752b0ff2b65842054fbf2b63349106cf7abb01",
+        "f670af297e83dae3002c81567b19db9fd6437415d736a0633b289662be25e6a7",
+        "b796cfc2817662e25874b951cfd41c1bded96c7eb0a80e37e9be6932b288dbfa",
+        "4971bb237b575890b4be21095ef7ce5d1baddabbe989bdad04da7b7aba3af3eb"
+      ],
+      "cell": {
+        "w": 80,
+        "h": 80
+      },
+      "pivot": {
+        "x": 40,
+        "y": 73
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        67,
+        67,
+        67,
+        67,
+        67,
+        120
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "chibi/death/south",
+      "jobId": "61903b43-632c-4454-b945-96cd918edc91",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "fb1c9b50a775a56d1bfe6520090b6e210ece2352b58eab37db58f3fe66d9b61e",
+        "42b5baf088e8d003beb90450a1721714266b1caa98df91dcd791dd63c281d6ee",
+        "effbf5f8b48d9168d35cca33fa13f219650d1df2e2b4f2411c3e76a9b49a51d2",
+        "6aeb9a8bf665e6d5ed857baa6de6c7b536a2b1d45792b1a14225e97e9ee99efd",
+        "8e3ab53cda1f407fa1288b833dfff7e4ac799b4c0a82dcc24e465b9c5af5814b",
+        "e280feb45258ef4066939eccbbf597f5f777a2e8e6f2acd9ed9ba2da2208123d",
+        "2b043631506ae3d6f93fcf0311b590a1dfd1603354adf9259236002376f7c8cd",
+        "32c514fa4b23564d84714fa52eb1d6b123d207bc8ef5729edd6340bce5b116b0",
+        "c6b7495f8612445f7014a290269b5e60cd7ce0a79a602b043200c0cdd9b25ece",
+        "0cc81008a93a61d349248be459c44127dc323145b1acfc559d8b70046d1049fa",
+        "b2a59b01e34eb29cead3441bb1ea5f05916ed89eebf637496e6843357cd6359f",
+        "3fb0368641ad8f3bb9166be047ad57927f6fa944bf23af5c31da0e8ca3607ed5",
+        "deeca893c72c487c47de133b2ca51ee787bd663d0737c832f1534749bd2db6b5",
+        "14fe53f82f192f6e5bf9cddbc9d89ccea4ab920552603aca8479c0cf9f43f3c5"
+      ],
+      "cell": {
+        "w": 128,
+        "h": 128
+      },
+      "pivot": {
+        "x": 64,
+        "y": 97
+      },
+      "padding": 24,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "0d4be1ac-6ace-4c70-bb69-1aac347ef93d",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "a774f38b-0a40-4ede-9d7a-9b499722651e",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "5885d4a8-6ad6-4d1e-8c59-18af15c419f1",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "3c64bb49-2c8e-4c08-a319-ed2c0f4dc04c",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "94e14af3-0005-4b73-b1af-18506d1b516d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "28cb2a0b-cb50-479b-b7e3-42aa0ec9f982",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/death/east",
+      "jobId": "2ac3505e-36df-4568-b37b-a05bf1bf69e4",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "86bf5f711f9413598ab2bc20357ca7c736905cb632259a4ef6b9612833190934",
+        "f7ce8ed3feee2a3dee6bb35fe7fc6f4116faba6cd4fa25e9a27f4455b6984693",
+        "987619225b74391f8aafb1dd25b5c2b3df73090147233145ba319b28fefce076",
+        "35f8256b51ad037f0af3082f063fbdfbda9f7013bd2965b1e01cf46ceea31f2f",
+        "849a4616d13db28768d54de4e94e300829423b879155ebafb46574684b4c2562",
+        "deb690536d74dcaa925ec885f329eb79b8fae368bed99a2d69d21d1c2532645c",
+        "26e74cf8c6d15b697e83c9c20498a6597aa11cea34ee49d091bec6d327bca2d2",
+        "10e53cae54fb12aea4c13fdbe9c9f1ab0cb43f497fac6e3723bb08b671d2fb61",
+        "cda3c2b5a9e5ba4b5e6d01b47410d11ff22308ca915542d2589c26ba3bdac567",
+        "576d2dae4d3a844a33e60d62c56b42dac2bd6c384685b988dcd4fbded4d8ffdf",
+        "ac7d84fe060a07beef7ec1d6053e7d8e7d9c228eabb82e3c5f8381fa4072bb4a",
+        "29ff19d14c4abc0f7a5317840539b68fe5c6124a175d5ff1dfa2b5484a4a8245",
+        "2a35842f80a848837b02d73f49a5a3e14963c958f2530415f55277f891b953e1",
+        "3448f53f8a3d76f259ba8967cb739bb6873364c7c7aef26365c0e027f23d49d9"
+      ],
+      "cell": {
+        "w": 128,
+        "h": 128
+      },
+      "pivot": {
+        "x": 64,
+        "y": 97
+      },
+      "padding": 24,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "5dc3148f-bfad-455e-83b7-e4980239e318",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "77f6d672-cd00-46f6-a5d4-c1df2bcc96d4",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "c5c4c5db-3630-4c7e-8daa-c8dbff7b6055",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "3aa1d656-3489-4e9b-9506-e74e3d441962",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "bde1ae4b-a2cf-4fff-8eff-480f2612ccd1",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "23f782ee-e64a-45c9-99b6-448280f6331a",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "chibi/death/north",
+      "jobId": "21625d83-c60a-426d-955b-676dc889bfd4",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "5afb64a40de1782451eb9584ec0fb76332bd0c478c68fd626bd3506e7cf4a8d3",
+        "7bd2c48d291b6bdcd4b0d9c1be346f875056485b7faa282c09a7da242c0c096c",
+        "dfaa5c8fe5196c6c46d77c0e795d812e0e648c309a4a5a968aab9e03f3c365b6",
+        "112af5327226cf7a5bd85833dfde263316f57f71cc07f5e59e87f4051eb3042e",
+        "60dadcfdd929dfea9ea3663809448bf2e4a2aa8419c1614d9b47f9120845c457",
+        "0d464dd48db02f925e31550df058e34f27e21d5ed9a40bb99e683844332cd6bb",
+        "29f0957e6438919c3d91eea2ea551a5823c1fbeb33f4784e08bf7ea5863f60b7",
+        "8e250e40c37bbb0916994388d23442ffc6ec211902fbc694a7775774857a3c35",
+        "b5e02335b7f68cbae95ad5228e609759bad9d4fd4c597388ef4fd93ca2719609",
+        "d24535fde800d2825557271cb5180be26420c85e2995e61e33b7e8408d2e144c",
+        "de82e9e440564bd53fa6e27b655e9dd6120e18a60e1778a0ca3ea06b51a6c275",
+        "a99f8a3df73f138862c788351847ff60db8ce1d259863460d42ee94dbaff02ab",
+        "10885cf40fdc692e2d111d03dc8a813c2e3cb912b028d2dd1f76481055b803f2",
+        "455a0e04529f1cf260ec294e09f3f6dc8bb1abac0837d2029140b6f98542bb3b"
+      ],
+      "cell": {
+        "w": 128,
+        "h": 128
+      },
+      "pivot": {
+        "x": 64,
+        "y": 97
+      },
+      "padding": 24,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "body128/idle/south",
+      "jobId": "d40bf4cf-bd7c-4755-bd4a-4e2741bd38cb",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "ee17f4b616ab2e980b16fa44db68ad6e269dbd348d7767d0b613d83f60f7ef15",
+        "1b2227ffb4a5b8ac2fa4d69253d1b442069c33b6738f1740a6e08208cfb83fb4",
+        "122ce79be977b7481ffdfded848f5dc5ea43034ae47cbe4e87676d42707b739b",
+        "3109978180fd6506ebbc8704579fb267499f6ca0357f72f15aa6afc55474ad5d",
+        "b7ae0a37ed874ae5d9d55277cd9fc45892138192c59f5d7326aef38220098d58",
+        "cca164672f44b1ed276be18c49d3efd1e03b11e9ae545eaed96b6831aed8d851",
+        "59898b3cc03df2283f666380516e89d4f0cc692d14dcae1b35bd4306d3264ef2",
+        "7547b137e48af14307e89a23d10d3a012b2594f79bf2aca2505e3cd9df52a51e",
+        "e1755bec77d09950d9af5921667e199fec6287c4b711eff240ec202297e024e5",
+        "2d7f1388da9915efe7f20d33222811573c9ed895dd122501c17b0543ac727363",
+        "9de945c7f1816a2b1e2095dfc1689c591b8a8f37b0920215c7565f654ec0c06c",
+        "44d7949aa69deb0e03ea1c590cc26ba81435adac792fe5019b3bd00e0c6cce5b"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "323d6591-3076-4c43-92f9-357272cc8c38",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "dc2bc380-d401-466f-8b49-29f08537162a",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "40726838-7950-46e2-84db-7703a6ec8034",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b8c69576-a04d-42d0-bdec-5d0c87d266fa",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/idle/east",
+      "jobId": "d92b0f15-9cd9-4503-8c69-4727cca46cae",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "6a388d98323c10349f6a76cebd41a2b938584dd7e2eadb3105588dc59e141b56",
+        "afec87c96c45e40a3b91390c4b04bd7c518ecd3c329eb728a1b9a264ec409d0c",
+        "6ce8d1a1e9b628c459a9b71b58cd00cdab5bd32f2245a573ca841a0db225152d",
+        "32c70424d36848adcf782d756bfca507e02d95f9984f068996f8e102e278d84c",
+        "3973267649f966c07c9f2dc6a472e6d69e37660fd4d63141a1222248870d0914",
+        "499cde13db1377e4690e4dfc0d6583a2385cb6108a20da98a6eb532f255eaeb7",
+        "ee1365ccbdd958863b1bb285e651637edced5d237c3f13c30a5d31a68d626278",
+        "04c7dc560f840577af4514ad30a4070b4f02dbdf44743b0e8d546716842d37b8",
+        "5c0a0405a792880b38dbac56705efa422cff1f4a019e68f65f123c6e1d69f0e6",
+        "68d50be1b5015f6169c9e0ef1a2a3cd3129e2e88f7a1a3eaa793c40e821b1bc5",
+        "b02e05edcf329d233102ef798b0f4a454d36f3c049c3ed8c39f03a062e4965bb",
+        "46bf74d9d6d471c6ecd3d6438158abb22a5d355937a8b7e9cc774a7c5f823fc6"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "3d25d00d-9cb7-4a43-96ad-481756680678",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "c447b2c4-974b-4ed5-bae8-83490698b672",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "5b5a0ee1-9029-4625-9c3d-52eaf6a9e908",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "34d0e6ff-898b-434b-bd61-34ac304bfdb9",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/idle/north",
+      "jobId": "cf8eca4d-4f00-4c00-8c78-ef83cd4c3ab9",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "327ee260437c92d0edd8adae304c5ec857f161bb2759d2291ecd0f8e2c10b004",
+        "75944f30844612fffeb108e52c9b8cfbef73427eaaae8eee714abbf227ad8bd0",
+        "3f7411ae2e1ea40a141b18d561da55a8b4662d3bad522a1eba7400b5a874b80d",
+        "46fc414cea355b1ffddd155eaecdf228f0a7196874a123278f801d73417cfd27",
+        "3dcfbdc2595fe7473dfae89f92d58c099047dd8efb24e4c6cb02acf3787a1fc5",
+        "1956b0bcb18b923061393791ca1c2b1ce58a366d3e260f34741d6ef0b93263c0",
+        "e9c1add4b0fe66c90c2aef41e157ab77f5d39a26ead154d79eee8bb07814ce1e",
+        "a69035bc40df7a0a1a207d3970ac1b0c2334cca0ce8714c038b63c5342c68f9d",
+        "6c763ddcc5d1f7bb5c5ec217bd030f55eb409db7ed9cde79f0be01a421c7bb6a",
+        "fc3119331fb1f75ed3f588226a6aa54e32d1f0c55e385fcc0dc2109a0607403e",
+        "a30a8eb3df454e37333bc2c62b2b62d8ad9fea4f95e59eb54b35b45c9fab5a26",
+        "3e23fd2be087262260e6d78efeb8d78e38fae0fef4badce636751169dcc99195"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.20833333333333334,
+        0.4166666666666667,
+        0.625,
+        0.8333333333333334,
+        1.0416666666666667,
+        1.25,
+        1.4583333333333333,
+        1.6666666666666667,
+        1.875,
+        2.0833333333333335,
+        2.2916666666666665
+      ],
+      "durations": [
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208,
+        208
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "body128/walk/south",
+      "jobId": "c8135e31-e948-491d-9ff3-d8418518a7ac",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "7a52f9128a06281dc403f61340e7a538f4af89b89b66c32d0deee0371eae9ede",
+        "e7d29e54c842c886283f4dd314b88c0fced96863e34e0aeefdfa5e1d7196c5a7",
+        "cfc36c344ea7dbcc0d00a5c2e8d68b697318bfb304475cbbc4dd05a0c4885435",
+        "39883e969c8f44df86259fa86979675879a63976f009949734d5481784cbdb6a",
+        "79d5050552fa7d5f51e3f4c1db231c3a95fef759d459f31d909d52d7dcdf5092",
+        "45c97982db1e9eb120820f1d730f8a0927d70bbc663f0aabf40b9e12d809f4fe",
+        "2b0d41ba6bcd526a10fbca08cb31cd3fe01f8151f0e5ce48969d3994e4116e7d",
+        "3a0cfe76f62977bad65fe2f7630703ce8d6a8c6ffbaadc84f3b83223652c3671",
+        "7220c48590c01125334991a3cf9c0855855646074b700724b18f59f202e41ba0",
+        "e9b216946b06cf6c5eac354075f98fae1441676d70368d0c992bf7af34da9a83",
+        "4c20ee2d1ddd9c790ffed05a1507b8e98acf670b97c85677a84b385d1e088fc1",
+        "757e861485c54b9a87175b81b6cde0da6c76cbd063618f6b6989d8f2fede4143"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.10111111442248027,
+        0.20222222884496055,
+        0.3033333432674408,
+        0.4044444576899211,
+        0.5267489868917583,
+        0.6490535160935955,
+        0.7442798569761677,
+        0.8395061978587398,
+        0.9347325387413119,
+        1.029958879623884,
+        1.1816461263468236
+      ],
+      "durations": [
+        101,
+        101,
+        101,
+        101,
+        123,
+        122,
+        95,
+        96,
+        95,
+        95,
+        152,
+        151
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          45.975764862670694
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.6090535160935955,
+            "end": 1.0699588796238841,
+            "fade": 0.04,
+            "anchor": [
+              -10.34202395722968,
+              -46.56150617671021,
+              46.246045226606924
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": -0.04938271752110235,
+            "end": 0.4444444576899211,
+            "fade": 0.04,
+            "anchor": [
+              10.908962069443579,
+              -47.14249578809972,
+              14.960944912612828
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "01be229e-232c-4374-8aea-3ee915b0d775",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "ee00f102-7916-48ac-aed6-910f794b3200",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "fa35c780-164f-4230-90c6-2b33167a1c4d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "41f52a66-90df-4478-b72a-6ef8f61cffd6",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "bd8922ef-ccb9-4c3d-8a44-be5ff05e201c",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/walk/east",
+      "jobId": "249c041f-61ad-4232-8496-046c8ccda294",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "a32c6501e99087fc3595bce647f3e21c8b36a26262bfff56dc36a2a7f49383d1",
+        "e4f8edd740ffbbd954cdb9934cd387950379e6717caf86906997ae57232b1dcc",
+        "0b5edc870e7c796a4e0ec98eb03bcb7323fe5662f93b4ab85f5fe5f5ddd0bf17",
+        "44a2725d7ee1e017743f41ddb477bef2adb2527a86b1bc030adc8f7cf9c95bd1",
+        "607c0e7bece95dd0a8a72da283c36a325f747bd0b0e9a441408d061059ee1260",
+        "9b2ac0d1f9b0ded833e394370e6d53e23e9c201dc4eed809cea8d02268855a20",
+        "4723a6bc7a39f458e69b68dcc8bc5744dafc014eedfb32c3dbfadfa964b511a4",
+        "0abf23cc1eea2da68251e93757383d17b2f862342a82972a494a78017c4cf5f9",
+        "d24fbbc52dcef72d3cedc60aed4c91d6930e8e804e6a6a9e468491bd1ce2c2a5",
+        "e66bf4b68e4e32f235093b33039cdc9f3330ebc156822fc7e756b2deed2c9149",
+        "f44e663e2e8757f3b89217a4a345f0614a360bcf84bd04bbdcfcaabfe5b10c24",
+        "1e547d8bcbbf7cc1f83b8b4477286d953f7d8408f5f08e21035f1d4ee8aa0fa9"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.10111111442248027,
+        0.20222222884496055,
+        0.3033333432674408,
+        0.4044444576899211,
+        0.5267489868917583,
+        0.6490535160935955,
+        0.7442798569761677,
+        0.8395061978587398,
+        0.9347325387413119,
+        1.029958879623884,
+        1.1816461263468236
+      ],
+      "durations": [
+        101,
+        101,
+        101,
+        101,
+        123,
+        122,
+        95,
+        96,
+        95,
+        95,
+        152,
+        151
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          45.975764862670694
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.6090535160935955,
+            "end": 1.0699588796238841,
+            "fade": 0.04,
+            "anchor": [
+              -5.707123700318398,
+              -48.59302722810827,
+              44.21914187867414
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": -0.04938271752110235,
+            "end": 0.4444444576899211,
+            "fade": 0.04,
+            "anchor": [
+              5.807250474604206,
+              -41.93079468516879,
+              13.780656546873571
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "45ac1368-5026-4e26-b6f8-d53e837f53e1",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "635b6d8c-0355-4105-9028-1511f12a4408",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "3c7cc03e-5c7d-4c91-97e4-5b744327e978",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "2497c691-14e6-4700-88cc-e65bd6bcab9f",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "13fd41d1-40fe-4436-9f44-97c6f71b28da",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/walk/north",
+      "jobId": "355b2774-cef5-410d-a890-a154fb2d0472",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "1c9f253efdc4ab48f4f8a13ee80dc7cb25b277b10a5b7e056b8c30bf1964b3ac",
+        "a784aa6a71698cece8336c13b25cd06b6a01372652a40914b5261ada4620ace8",
+        "787c500369fff79be0e7009ac81d03bc91349e531fe9d641504e1edd22a34193",
+        "eb8d672fdf5783f1b85d76a97e0d26b8325c33df1bbd03194d9ebb1bf483fe94",
+        "d029aa8f946cdaccf364d1639f1a5ff42318612176a87b436c2e45e8719ee278",
+        "e29d0757b83560fc9874e849af8f153164038bfd104149fa2901da23eaf84cef",
+        "d6abc566c7a8e892929f6c09fe50283d268021080b9802e11888db1033566c97",
+        "9d3522d625c00b1d402af7d79749ac97135fcf5d635df4364d51cfd9f2e69faf",
+        "b5e5ae3c34e8c483b5e22e711635c4328fcc7ac669e7258f287e9f01e773dbd1",
+        "6f500efe892fd01d85530ea76dc7f76db3867e6a1b682374b1a6e2a838096457",
+        "4aaa35d9b9bbb1db0b65fa0a60b1b9ea404abae15e903a93781b5175dfb537b3",
+        "dedc78b259dd2dceb5f16a9ea09228eece52fbf4f1a13eb2f48c5720708281ae"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.10111111442248027,
+        0.20222222884496055,
+        0.3033333432674408,
+        0.4044444576899211,
+        0.5267489868917583,
+        0.6490535160935955,
+        0.7442798569761677,
+        0.8395061978587398,
+        0.9347325387413119,
+        1.029958879623884,
+        1.1816461263468236
+      ],
+      "durations": [
+        101,
+        101,
+        101,
+        101,
+        123,
+        122,
+        95,
+        96,
+        95,
+        95,
+        152,
+        151
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          45.975764862670694
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.6090535160935955,
+            "end": 1.0699588796238841,
+            "fade": 0.04,
+            "anchor": [
+              -9.396516545039532,
+              -45.86743249632061,
+              45.52324049689551
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": -0.04938271752110235,
+            "end": 0.4444444576899211,
+            "fade": 0.04,
+            "anchor": [
+              9.736843429921352,
+              -45.5847890487623,
+              14.274644364564173
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "body128/run/south",
+      "jobId": "38a7fa43-4d4d-478b-8c52-3fd723bb62d7",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "f42039aec5cdfbf50ed58b89a462041c31f6107435e479d4f7732e5ff0364f91",
+        "6af299804297da22c83d8bbaf384b4f6a5b0efddfe2e1b616557189c89c1b286",
+        "41d9c63dcb252b636514b39eec7a599b7d1049bc426d1c699a918979bc51da82",
+        "9311d625d634db11c504494d69e9e2e4699b24fb4647f2e4071031e64f24351f",
+        "9102e6b3afd4fecdc10a44206b8e74bd9a38edf680cf1b6273ae0e9186e588ca",
+        "eb0721a1b8e70ba141b3bfbcb2a4ffc1de6ed3d7106acf365e24fdcea8c2c0c4",
+        "f11a634c1de1ef5d787a7553dea35dd7074a4d8b15577c944221ef3d5084060e",
+        "3898d86769b4d932c20907c19cd003fd4077e53489fc2cdfe8b38ddd35e50593",
+        "8eef7e847c1b400679ada8027d936ceac7072013651ffafbad876a74ce641f75",
+        "8435266b4472d8005cb2c2a878e8c1d8e988a8274e21bc31dba06bd79c8793c1",
+        "b882c3c97a04258727ff4371b27bf6b282d037f0e8b7c393753a833579ebbbbf",
+        "6ed542befc8394c23beaca963722841d7ff5fb6b09b85c118b5d2c3b002e73ba"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          270.67915431883495
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -9.972625643057269,
+              -46.56150617671021,
+              153.8312283601867
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              10.44592571785498,
+              -47.14249578809972,
+              27.60775382884981
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "4afaea2a-ab20-4194-99ed-f27356be5503",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "08a3160b-7b7b-4fa9-b60e-4bde7695bc0a",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b5e9ccb8-d040-48f3-9732-18b809a5c8fc",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "c11b8deb-3c38-4802-bdfb-dcf1bbcd0082",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b1febd11-ad7b-41b1-9022-72ad7a15679d",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/run/east",
+      "jobId": "297ef94f-1998-4f12-b496-f61c7d068693",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "294c0eb77a33234d006e820e4c06b25e98c65dc9abf9cbc2175dcc6c32f58ed6",
+        "78cf50b67b43405905b163415ad26011ac895e2843b69bda0175e5cc36fd8300",
+        "b8be76f4d5708b4d27dd3aedfe4563d29a1e1b51d97a07d0b98a02d3580b5afe",
+        "266b91f3feaa96fc7ce323564cc6544637c3e4508306bd02c3e93290243d3a01",
+        "87c896b3f1c5691059a81856ef487cfbf5921bf73bf1638fdbbc317f3a9683f1",
+        "4e63924fcf0b102cb54c78cc1ec19cf899a136cf383efe7b7a2436adae80c568",
+        "f6e3b5e992bdeeed63f67f7b63c16dc328af43445546649d4763a2a57278dd41",
+        "d1841d0d4e9ea1efd76229d4aa3e36d9f89d3bec5d06f051293388b10a2381ce",
+        "03658b558f538c70b8f977ff498f95b53a6c0898fb8b73882d37c887e59ff47f",
+        "eecaed879dec1b0501e51bfcd1bd01ebfceb51fcfe49ac9c0bc79921c1df7d21",
+        "663b8b1df42ff626de8bc34fbf6d8a2d99d3a61b7ad7c7a7ac59866455658c15",
+        "30f85474d971d98f1d2279f55200906894760173a92ae163448bc1867cab75b7"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          270.67915431883495
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -5.559744154434306,
+              -48.59302722810827,
+              151.70374727313515
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              6.337915509869131,
+              -41.93079468516879,
+              26.977804075109532
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "071723f7-0ea7-4a85-bb04-648f6842af4c",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "fb3326e8-634c-4673-952b-eb858662db2f",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "717e1361-01cd-4bd7-bcee-c512c9bbcbb4",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "a158ee01-481e-4612-a2ff-d5a793363d88",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b3bfd801-ac17-4733-bc5a-0071cbbac3ef",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/run/north",
+      "jobId": "a3ade8d4-cbca-4b49-be00-c10eda6b79c3",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "e823d96927daeab8f18e690329ee15afc9ee95656a90c6b01634c53cfbd98a41",
+        "30c1ede602fe58d399803f749df608216a5e011a31112c6c0bb31c67d28aeb88",
+        "4adef528c600874b8ead47b6f78e5f198e6e931182c3816f4f9729cc3f41190c",
+        "1b1684670cf68610bb523fa0b9cbc5a6910bd815e9813beb25e29defc9ff155b",
+        "21cdb6b1372853a446a8313cde85e27e873d8f6d0631cda7cf1729c0efaf93df",
+        "5d4ca9f68ca1439db89b710c3da7d57a8db2957206e9719c94bf1d0c165723f8",
+        "fc25d307e9f044d16ee33d2c51ff5b9d1b8d760e1639041911af1d07bce2a06b",
+        "a9ec4f283ac357fcaac7163267e59f8096d628fc6d939ab11e05d16cae9d3bbc",
+        "b81ab1ea39a8f2402ebf046401432c932945285f57dcc1bf17fbdb020a552960",
+        "06602218c2824397ad52ab3c684590fc8821fc4563a857d0f59cb1f51f1cf3f6",
+        "782172f3565884494e7717090841ffcb948961325812405e1496f899672c9b51",
+        "f53c92a6f6d796e9e8c3dea9eb624fe87d76799cae1ca151427d55b74d78a23a"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": true,
+      "times": [
+        0,
+        0.032748538151122,
+        0.065497076302244,
+        0.1187134507978172,
+        0.1719298252933904,
+        0.2783625742845368,
+        0.3847953232756832,
+        0.49122807226682963,
+        0.5239766104179515,
+        0.6263157921402077,
+        0.7286549738624639,
+        0.8309941555847201
+      ],
+      "durations": [
+        33,
+        32,
+        54,
+        53,
+        106,
+        107,
+        106,
+        33,
+        102,
+        103,
+        102,
+        102
+      ],
+      "bufferExcluded": false,
+      "contacts": {
+        "version": 1,
+        "velocity": [
+          0,
+          270.67915431883495
+        ],
+        "windows": [
+          {
+            "foot": "RIGHT LEG",
+            "start": 0.47485380319126863,
+            "end": 0.5403508794935126,
+            "fade": 0.016374269075560985,
+            "anchor": [
+              -8.973515923761244,
+              -45.86743249632061,
+              153.0661952464883
+            ]
+          },
+          {
+            "foot": "LEFT LEG",
+            "start": 0.01637426907556099,
+            "end": 0.08187134537780494,
+            "fade": 0.01637426907556099,
+            "anchor": [
+              9.41216536767699,
+              -45.5847890487623,
+              26.853881183645633
+            ]
+          }
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "body128/attack/south",
+      "jobId": "4959d22a-7e07-4976-b2f5-16e12666035e",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "08cf85b6c0d137868cf9a5d9e3aef9caa5c658a98c22b2916f155ef20024edb1",
+        "2ecbeb019c91cdfb263bb0147829214e03e414c8434d917d69e82b711d76046b",
+        "4a33d35d637740cf95a4d043ac1f45507c0b3f4a59a6009b883ab2ebe8aff706",
+        "0ba6e9934118b6b1d1d2ead32c5f3e40f41f7cec2fd35b4b0cc24ac3e9186107",
+        "cb29f088f87ec6bb8473c32fdb5f41d5f2a3462ac83d5ba0bb5de599d3dedfd9",
+        "c7d606df6430705c8f7d33b3bb7497978db63df1c40a2db62d50c51bb7bdeaa8",
+        "25e2b2f19da5fd1262895d463fff31afeb29294439abe33dd758f86e104b8dbd",
+        "1fbca7266b14d2311ea24cd4c144a6214ea8e71bcdd2b9fd7e89e1127299507b",
+        "94ca7494a626507b79b2c8b1852fa88a7c58b9d53733874fa776f1ab25fb2270",
+        "245b423d56efdfa8caa101ca998bb2874cc0a4e87cd58586abc9a51dab8d9908",
+        "f7648ec3a0f4e9b90734b3cb2536e6ca3b0a3f5c6a7a1ca71276a38e25cf59a4",
+        "1f5d973ad1ee460e8cf32679fc1349c1524f343cdafcb1b95261c10b679def7d"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        430,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "bb5f3f51-4329-4343-be60-ab435edda81d",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "07d3a104-f50f-42e9-aeb9-b806d4672689",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "8b9b0660-9f12-4f57-b9de-d36dc7701f31",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "13e6419e-fcb1-46f2-9cdd-3ae48303600c",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/attack/east",
+      "jobId": "44edaf51-b038-4234-bc28-aacced5bbd04",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "018d710c9fe7ffc4e5ccfbc4ef57b14c6137b3b4fdb039aa0e0b0a0c6b313149",
+        "8f4e9a0a30d87cb421b597b406274dcc33696ec60b7804d6f87a25b8512862b9",
+        "c3e518c10c854428b6918556edaa24c6daac140a7b6bf070eee82d964c5f0a77",
+        "328b1c09acb13f73e0710cb5b55121ec8fd2c425ef10803bf051f47e8957b088",
+        "96538ed21402517ddb4a9d12bea81e635d4d945e9c835e8414ab476a1b254245",
+        "f2246b3c0ea8f8029a6c4d7ed7435a3cd5f17d48b7af7bb2217084af52e62190",
+        "6176292f874f91d68bec1d74e5d9cd43526b230a0983a7d6c896007a94aa8d6e",
+        "cdd613463406a12602593e9327bdbc0dddc1d4e5fe63d5632d19ce15dd3f62ff",
+        "394e80ba4cc654203063f6a5f1fbed6a37cdb7315070e6a0a2155696c7c0bab0",
+        "5ccc751d4579912c6fe1ac16f7aea2f8b86d10e02816c086f20753da53fad081",
+        "ff0cda45fc9c29da9776e27aaf4624b0911615d31014e2fa712de4099913d91f",
+        "0cdb72b690c836bd6d242be18675db85bbd8a0a5f6e125cd744ea8ad0de42da7"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        430,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "9563f7f9-5117-4bbb-abca-9bafe5763456",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "057aa5b0-6cef-45cb-83ad-c2899a1c2b3c",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "d95ec41d-5334-4e26-ab33-4bd377506c15",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "c3a540e0-ad92-448d-8879-333c5af71aa9",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/attack/north",
+      "jobId": "2057d748-2b17-4566-9286-9fd991a3f295",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "6709ed45071bb161c0a9c2ae75e06b5a97697d05df6dc9d41f82b70a5b920ad5",
+        "fa1e5a78006b32afc0e251fabcd0dda599ab4779f7c707d1b48d4285197e2b49",
+        "2ea8b1a1e0c2c077c990a4852ee1a93c1fe2319510ce91159811b5417d3570e8",
+        "f1e114ed56026ea49ab31f5953cf4e5a9b0352a58e69e20f55b0319503fda78b",
+        "e9db9ca58c1e5acb7c8a66c6904c7ebfb65cec7b49cefa5902f307c4f598369e",
+        "86026db9933ed7ab1fecc9c44c61b1b4fd51082f8b306c06e337397752ae6e0a",
+        "f852c4be30c2fa5f11deb605e7a38036fd1afa237585e8d4b1c096f3e8be22b3",
+        "bbc260a697a2d13e339b0142876a9dce5e4c40cf9199a865472dd0948ac646fa",
+        "256f10557f4682135dffaaa8cbba9091ca8676fe1c7eb82ea1966db46ab433ad",
+        "56b4c89f8a53e7d2a8b3cf9749bef7eda6029e1b711000e212425c7304f24192",
+        "3172b211e9813fccd43d1b2ac74ea06dcee071fa021e487c9fce7e318943a62a",
+        "310565ea89e3a0d2f31a6646c6886705cda1f07f76036154359271af74a97869"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.15,
+        0.27,
+        0.33,
+        0.37,
+        0.4,
+        0.44,
+        0.5,
+        0.62,
+        0.85,
+        1.1,
+        1.5333333015441895
+      ],
+      "durations": [
+        150,
+        120,
+        60,
+        40,
+        30,
+        40,
+        60,
+        120,
+        230,
+        250,
+        433,
+        140
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "body128/hurt/south",
+      "jobId": "d8e861ff-f844-4c80-93ad-6763ad872b10",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "fd1b9c41df749f60973abfd0c9d8489877134d4226db1be0b12e8bd032fd9fb5",
+        "01547f065c85344ebff4290a75fdc72273f3f8f5f82ffc86fed3983c0760aa1a",
+        "13c7fe8cf8dcfd8307e531248e810e378c80a50863dab3cf5a4a9ed5f7a943cd",
+        "69e70c24cc4dc8e3b57332fe0d07015b5b4adc72ae0102010e625dd751755e7b",
+        "d1d71b112c2bf1f13159da188e45e18f2dfacaa67d276bcf1048519e393ac59e",
+        "72db38ec3eb3c9522745479134438e38b17f054459ea7f4e74d3a74684c7197c"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        56,
+        56,
+        56,
+        56,
+        56,
+        56
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "91846dba-03b7-4ecf-a294-2a95fbe6294e",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "bc314ffc-aeaa-4ef1-b181-67d93eaf2243",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "81b5c83a-14c9-46d7-b1c2-b4163fde4382",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "60b4da46-a497-4213-b004-e49f5cfd510c",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/hurt/east",
+      "jobId": "33150a72-2608-452d-9319-ecd661db8648",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "457cd7f62f9bc5b33e13c604de40d0a6e136f6e2a008efb765881eaf7da14d74",
+        "66bc0edac85e03791cc49132d03b23016f52cfc4fc273e348ffa2f91e026a916",
+        "a7c53c3cade31f26896e07b2c51deb782e1d9969324875cfd85b1034af863e3b",
+        "e72bbab372d5ac37252eb2303be5881621ae6a638fb0a9684874bdafde7b0975",
+        "6959b95b76b9a5d697912e17b6450657c909fdc81493686cab0ab81d1b0b022f",
+        "22c0af3efdb5a63b82cc038efb5109dcfb9642cfaf9c228ee7725758fa10db7e"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        56,
+        56,
+        56,
+        56,
+        56,
+        56
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "2ce8c075-0bee-4475-815d-0a471d12dac7",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "23bec93c-ca37-4dd0-aa2d-5a92459f6962",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "959d23c8-fa74-4068-b2ef-c2010390b7aa",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "bb0a8cdb-4eb5-4718-9188-6828806cedb6",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/hurt/north",
+      "jobId": "b64afd56-1350-4e1c-80f4-d94cf526921c",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "a61f3eea77a68aa11777039028ec7b95d6d13ca29366b2d07a200e2f0dcf9dd2",
+        "d5d2fcd08d432e3e686ffb2b8f67f879e5ae098cd215d41ab2fcd6af6dddabcc",
+        "984a5959cceffdff405725c28ad26ff318898a444bfe4e25498e2161c08aa50c",
+        "52cc547d10416ccd322d9b14622b05dce7b3724c470680f8f029b3652545b864",
+        "fddfaa68c08a1a3d58bdde4e04c9e1f13f3701c108d8d5a08e54701736f2d1a9",
+        "bbff14817bab0f750183f805976915522d3336c3fdfe40920875e3a41ae3acc4"
+      ],
+      "cell": {
+        "w": 160,
+        "h": 160
+      },
+      "pivot": {
+        "x": 80,
+        "y": 152
+      },
+      "padding": 0,
+      "loop": false,
+      "times": [
+        0,
+        0.06666666865348816,
+        0.13333333730697633,
+        0.20000000596046447,
+        0.26666667461395266,
+        0.3333333432674408
+      ],
+      "durations": [
+        67,
+        67,
+        67,
+        67,
+        67,
+        120
+      ],
+      "bufferExcluded": false,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    },
+    {
+      "key": "body128/death/south",
+      "jobId": "8025d909-93df-416f-b431-2d8ff623dce3",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "cd964fcc29f67a9c21a6dd9a136999313c96f598b04929a1f9c064b35255ffb6",
+        "110c1b6670fadfb07723a743c30438ec0ebecb5c94917f36dd2a803d24948461",
+        "6e8903318f488c68f99e0ab60db46c7ca744c7462b48a9e0f0fcf2262084a1b0",
+        "c2847fb839562a44d9952d299af52d7c22c1e9796da294d75ba30bf8d9f1c107",
+        "4b36b325f14b0229bb749c804a8b08c5a8b14072d3bb2d12a787574d77b3bd4c",
+        "0e89c0ce36f548386f5bce71a0e6c22e945c88e6fb37b14541e9c977c1b652d7",
+        "2263d64fa8d422e12e3a5b7c19306763605ce46c33ba65e16b5ea72317a7664a",
+        "d7717c1fbacfca5ce9e54f4ca7dcc80a4ed9c277cc555338ebac2cf9d9276eec",
+        "30aa7f748a9b1501d0ffd5a20827e7c038c0311130a29aa04f18829768b3c755",
+        "7763a446922eb2f8f980a09bd974757923ff9404016ffa28455a378646806098",
+        "20c70a37120d442564d3ad3d68340d72cea62cf3b585844b748c911f17821717",
+        "49cb31d3aa47ea5e16412bcad1cfff2b0caf22f9f1a61b31c88a8cb53b8dad96",
+        "96977173213bea61d638490d41c532d0cc480dee61affdcd487cda6379d35df7",
+        "5a858df42ad3a7cb19f8e6e7e512e4703d65b80d49027c42b933919c0a2d6894"
+      ],
+      "cell": {
+        "w": 256,
+        "h": 256
+      },
+      "pivot": {
+        "x": 128,
+        "y": 200
+      },
+      "padding": 48,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "0deaac52-d42b-4435-b295-dde5968cd20e",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "fda8a484-d06f-48a9-b007-3db4af84f777",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "0c50fdbe-1606-480c-bb66-781791a6b33f",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "fdafeda9-24e4-4597-88e8-d21acea5a0df",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "180172af-4dd8-4a1e-b03a-5da75676394b",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "b38b5ddc-5f9a-4798-a086-9c2e394a740c",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/death/east",
+      "jobId": "78395352-6c94-4574-8e5d-3225d5cb6c39",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Retain the previous catalog choice.",
+      "evidenceCampaign": "motion-lab-2026-10-28",
+      "bodyHashes": [
+        "36603b9eb1d39b21a2e508cf2b7244514cc6dc4054e225fd0cf7fc6505b559d5",
+        "cef0bed0e04415a403e640bf9626a8120b7c2caefaed06442256216b00bcfaf8",
+        "133285520a0d314b69bc2bfb630d5cffb57fc466ad693a2e86e82fe7fbea9406",
+        "87509f7463a3245887941fa04248ed19b0e5064aa4f86e15a5ff0a2fda5f0466",
+        "5386cdddf7ca22275c962532d2f918ac0aa66ca3c7a69fec81fb7babf253d891",
+        "247f02b47bccfd47e73122b5a2379e0650c516ef4cb97194183a4ed051c22f56",
+        "5ffb217dfc81606a140ec9f5c962edb4e5cd492fa9637880be3c4bc83a36da10",
+        "700884e94113f22a87dc75e7c945c19d0a040a10fe4767c83dced8795f2f6d57",
+        "88b84ed0819aa89f0c192e9d21a6eff0481ee24a735b6f14c0483f7be09e901f",
+        "f29221e1b940222f69390e12dbc522bd52366624b9fd9e57101d2db65b5717e6",
+        "71829d98a1e13863f0cd8d50fc40c9e18475ef3b99e11406b5c672b522cd93d2",
+        "d94fc1d3997b8a53de330c0f98e57c0678da3f9b710668ec11fbcd04df421c87",
+        "1715719cb9f2852959adb1e570e207168502b350e7e0ea8533bf573fddd79a28",
+        "7a11b0fa25684ba0b580888b41c85eb3b6b6b002f2ffb1b89972658f2aa359e8"
+      ],
+      "cell": {
+        "w": 256,
+        "h": 256
+      },
+      "pivot": {
+        "x": 128,
+        "y": 200
+      },
+      "padding": 48,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": [
+        {
+          "jobId": "c8d943ef-148c-45f3-842b-9a59d2d0e6b4",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "9da9b556-0776-437c-88a2-04bc0bd0d0c5",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "744c6a2c-f58c-4df9-ad1d-5779156e3236",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "0b8e149b-26b3-4239-b9bf-3c372e90848c",
+          "seed": 7,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "f57d7928-3640-4964-b36d-d0e9d769f9cd",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        },
+        {
+          "jobId": "030dda82-393e-447e-83b4-624a91375a58",
+          "seed": 8,
+          "authoredContacts": false,
+          "hands": "relaxed",
+          "phase": "historical"
+        }
+      ]
+    },
+    {
+      "key": "body128/death/north",
+      "jobId": "7afd50c7-e891-49b1-919d-0f24c730ee24",
+      "seed": 7,
+      "status": "needs-visual-qualification",
+      "professionalQualification": false,
+      "selection": "Current native-view experiment; no professional acceptance.",
+      "evidenceCampaign": "motion-targeted-2026-10-28",
+      "bodyHashes": [
+        "bf358f9cbf5bd4e2b2411d1d7b1809fe2a0467ca6b9c2e90d0745d8f0435f441",
+        "e054c563c5b707285192926311137eb10c8c646d5d29ddb344b4c6750e3e054c",
+        "51f0320241c879edbab54884cbaa13221ce44b719c4ab22ee7768abf2ae55b2d",
+        "ba33d8c5724ade7520e450a97765956278cf6f171f179ab9cefc92ba9f844d13",
+        "f89ae738497bb8ff597e1ee502b9eab78c4a276a08eb9216817ee25c4df7ffaf",
+        "5a1d89a524feaace63db38f6538b906f9b52cc27dddfe36e8464e4d03646598d",
+        "7c00b37aefa29fa2e583ce99f7fde4e26ed61752e6884814df04b2ca0d6dd3b8",
+        "df64306aa82b45efb2d43506c3f47585a9981d42f10442f1a2bdabb44b493c49",
+        "15b20dbec189895e665518f737a78386f507b59572eba46ac21671fecdb1e05a",
+        "689f4d6e03af2bb12a019be536735c12759e892b49bf911aa2d6edf508b3caa6",
+        "ea6ec54b5b49170b8a1a039afdef426bb8fdc63e3724075659e4ac4752f9c5fc",
+        "92d3b83e7d32f2625ac3f713a20757de3ef1c60a6b83100713fca6d41cee0193",
+        "117dbde27bd33c0cc8ac44f7e6bef5a05341dba2fe5ed2bfd4354763c57bc9cd",
+        "ea6bda3be94b69af2b996a11c36e81a279a5ac6e130d6361ef83303b1b5802cd"
+      ],
+      "cell": {
+        "w": 256,
+        "h": 256
+      },
+      "pivot": {
+        "x": 128,
+        "y": 200
+      },
+      "padding": 48,
+      "loop": false,
+      "times": [
+        0,
+        0.25,
+        0.5,
+        0.7,
+        0.82,
+        0.92,
+        1,
+        1.08,
+        1.18,
+        1.35,
+        1.6,
+        1.9,
+        2.2
+      ],
+      "durations": [
+        250,
+        250,
+        200,
+        120,
+        100,
+        80,
+        80,
+        100,
+        170,
+        250,
+        300,
+        300,
+        400
+      ],
+      "bufferExcluded": true,
+      "contacts": null,
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "alternatives": []
+    }
+  ],
+  "limits": [
+    "All 54 native profiles have completed raw candidates, not 54 approved presets.",
+    "Two older explicit walk reviews are retained; authored replacements were not automatically promoted.",
+    "Rendered soles were manually measured only for adult east walk/run, one seed.",
+    "Extraction gates do not certify fingers, grip, orientation, contact or naturalness.",
+    "Frozen bodies require native per-view art and manual correction where generation fails.",
+    "No Studio defaults changed."
+  ]
+}
