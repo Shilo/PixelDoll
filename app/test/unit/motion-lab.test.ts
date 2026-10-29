@@ -25,6 +25,7 @@ test('padding copies every native pixel without resampling and preserves transpa
 });
 test('invalid imports and unreachable edits fail before a paid request can be constructed',()=>{
   const d=newDocument(library);expect(()=>validateDocument({...d,durations:[100]})).toThrow('invalid motion document');
+  expect(()=>validateDocument({...d,clip:{...d.clip,action:[]}})).toThrow('Source action');
   expect(()=>validateDocument({...d,times:[0.3,0.2,0.4]})).toThrow();expect(()=>editPose(d,0,'RIGHT ARM',3,3,128)).toThrow('limb reach');
   const broken=structuredClone(d);broken.fixture.references.south!.png='';expect(()=>renderPoses(broken)).toThrow('artwork');
   for(const fixture of library.fixtures){expect(Object.keys(fixture.references)).toHaveLength(4);expect(()=>newDocument(library,fixture,library.clips[0],'north-east')).toThrow('stored artwork');}

@@ -14,6 +14,7 @@ export interface MotionSample {
 }
 export interface MotionClip {
   id: string; name: string; source: string; duration: number; loop: boolean; nominalSpeed: number;
+  action?:string;
   reference: Pose3; samples: MotionSample[]; events: { name: string; time: number }[];
 }
 export interface MotionCamera { right: Vec3; up: Vec3; toward: Vec3 }

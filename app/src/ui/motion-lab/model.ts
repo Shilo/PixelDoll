@@ -5,6 +5,7 @@ import { padImg } from '../../lib/items/items.ts';
 import { DIRECTIONS,type DirectionName,type Keypoint } from '../../lib/rig/rig.ts';
 export interface MotionFixture { id:string;name:string;cell:{w:number;h:number};pivot:{x:number;y:number};camera:{elev:number;yaw:number};directions:{id:DirectionName;mirrorOf?:DirectionName}[];references:Partial<Record<DirectionName,{keypoints:Keypoint[];png:string}>> }
 export interface MotionLibrary { version:1;provenance:{source:string;license:string;url:string;sha256:string};camera:{elev:number;yaw:number};fixtures:MotionFixture[];clips:MotionClip[] }
+export const actionOfMotion=(clip:Pick<MotionClip,'id'|'action'>)=>clip.action??clip.id;
 export interface MotionDocument {
   version:1;revision:typeof MOTION_REVISION;fixture:MotionFixture;direction:DirectionName;clip:MotionClip;reference:Keypoint[];
   times:number[];durations:number[];padding:number;elevation:number;azimuth:number;options:MotionOptions;
@@ -42,6 +43,7 @@ export function validateDocument(value:unknown):MotionDocument{
   if(d?.revision!==MOTION_REVISION)throw new Error('This motion document uses a different converter revision. Keep it as before evidence and create a current document.');
   if(!d||d.version!==1||!d.fixture?.references?.[d.direction]||!d.clip?.samples||!Array.isArray(d.times)||d.times.length<3||d.times.length>14||!Array.isArray(d.durations)||d.durations.length!==d.times.length||d.durations.some(n=>!Number.isFinite(n)||n<10||n>10000)||!Number.isSafeInteger(d.padding)||d.padding<0||d.padding>64||!hasAll(d.reference)||!d.options||typeof d.buffer!=='boolean')throw new Error('Unsupported or invalid motion document. Expected version 1, 3-14 poses, valid joints and durations.');
   if(!DIRECTIONS.includes(d.direction)||!Array.isArray(d.fixture.directions)||!d.fixture.camera||![d.fixture.camera.elev,d.fixture.camera.yaw].every(Number.isFinite)||!d.edits||typeof d.edits!=='object')throw new Error('The motion document is missing valid body calibration, directions or pose edits.');
+  if(d.clip.action!==undefined&&(typeof d.clip.action!=='string'||!d.clip.action.trim()||d.clip.action.length>300))throw new Error('Source action must be a nonempty description of at most 300 characters.');
   if(!d.fixture.pivot||![d.fixture.pivot.x,d.fixture.pivot.y].every(Number.isFinite))throw new Error('The body needs its original pixel pivot.');
   if(Object.keys(d.fixture.references).some(k=>!DIRECTIONS.includes(k as DirectionName))||d.fixture.directions.some(v=>!DIRECTIONS.includes(v.id)||!d.fixture.references[v.id]||(v.mirrorOf&&!d.fixture.references[v.mirrorOf])))throw new Error('The body view or mirror metadata is invalid.');
   if(d.clip.samples.length>3000||d.fixture.cell.w+2*d.padding>256||d.fixture.cell.h+2*d.padding>256)throw new Error('The motion or padded canvas exceeds its supported size.');

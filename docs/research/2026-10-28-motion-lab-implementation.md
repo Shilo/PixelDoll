@@ -26,7 +26,7 @@ The owner approved use of the remaining original generation allowance: **914 gen
 
 ## Results
 
-The offline lab and corrected conversion are implemented and tested. The strongest bounded result is the adult 64 px south/east walk: two frozen visual candidates were reviewed and exported, and all six representative equipment cases pass existing gates after documented cleanup. The full six-action set is **not professionally qualified for arbitrary humanoids**. Attack equipment and some front falls still fail. Studio defaults remain unchanged. See the final qualification below; earlier checkpoints describe intermediate results.
+The offline lab and corrected conversion are implemented and tested. The strongest bounded result is the adult 64 px south/east walk: two frozen visual candidates were reviewed and exported, and all six representative equipment cases pass existing gates after documented cleanup. The full six-action set is **not professionally qualified for arbitrary humanoids**. Attack equipment and raw fall terminal buffers still fail; the observed worst fall corruption is excluded from playback. Studio defaults remain unchanged. See the final qualification below; earlier checkpoints describe intermediate results. The subsequent [documentation audit and executed recommendations](2026-10-28-motion-followup.md) add persistent calibration, a 42-candidate catalog, contact diagnostics and independent/rigid source controls without more generations.
 
 ## Implemented changes and first pilot, October 28
 

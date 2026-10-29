@@ -12802,7 +12802,7 @@
     },
     {
       "name": "motion-review.zip",
-      "sha256": "9ad0df85872078deef429ddc2a24715b7ec21e440028b3af9411cf2aa6344979"
+      "sha256": "b9006732f7ac5c4add5141a13f123ce44b4e2284ecc93dab6c0d5472d8163d84"
     }
   ],
   "reviews": [
@@ -12858,5 +12858,6 @@
     "No eight-native-view or independent animator qualification",
     "Raw terminal buffers can corrupt; excluded from playback",
     "Studio defaults unchanged"
-  ]
+  ],
+  "followup": "2026-10-28-motion-followup-results.json"
 }

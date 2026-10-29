@@ -3,14 +3,17 @@
   import type { JobRec } from '../../lib/pixellab/queue.ts';
   import { getBlob } from '../../lib/store/db.ts';
   import { candidateRecord, saveReview, exportReviewed, type CandidateReview } from './run.ts';
+  import {decodePngBytes} from '../../lib/image/pngraw.ts';
+  import {borderPx,bodyComponents} from '../../lib/rig/clips.ts';
   let {job,buffer=false}:{job:JobRec;buffer?:boolean}=$props();
   let urls=$state<string[]>([]),error=$state(''),index=$state(0),playing=$state(false),saved=$state('');
+  let diagnostics=$state<{border:number;detached:number}[]>([]);
   let review=$state<CandidateReview>({accepted:[],status:'unreviewed',notes:'',terminalHold:0});
   const record=$derived.by(()=>candidateRecord(job.id)),durations=$derived(record?.document.durations??[]);
   const results=$derived(job.jobs.flatMap(j=>j.results));
   const finished=$derived(job.state==='done'),resultKey=$derived(results.map(r=>r.sha).join(':'));
   $effect(()=>{if(!finished||!resultKey)return;const values=untrack(()=>results),stored=untrack(()=>record?.review);let disposed=false;const created:string[]=[];
-    void(async()=>{for(const result of values){const blob=await getBlob(result.sha);if(!blob)throw new Error('Candidate image is missing from storage.');created.push(URL.createObjectURL(blob));}if(!disposed){urls=created;review=stored??{accepted:created.map((_,i)=>!buffer||i<created.length-1),status:'unreviewed',notes:'',terminalHold:buffer?600:0};}})().catch(e=>{error=(e as Error).message;});
+    void(async()=>{const measured=[];for(const result of values){const blob=await getBlob(result.sha);if(disposed)return;if(!blob)throw new Error('Candidate image is missing from storage.');created.push(URL.createObjectURL(blob));const image=await decodePngBytes(new Uint8Array(await blob.arrayBuffer()));measured.push({border:borderPx(image),detached:bodyComponents(image).detachedPixels});}if(!disposed){urls=created;diagnostics=measured;review=stored??{accepted:created.map((_,i)=>!buffer||i<created.length-1),status:'unreviewed',notes:'',terminalHold:buffer?600:0};}})().catch(e=>{if(!disposed)error=(e as Error).message;});
     return()=>{disposed=true;for(const url of created)URL.revokeObjectURL(url);};
   });
   $effect(()=>{if(!playing||!urls.length)return;const last=review.accepted.lastIndexOf(true),next=()=>{if(index===last&&!record?.document.clip.loop){playing=false;return;}const start=index;do{index=(index+1)%urls.length;}while(!review.accepted[index]&&index!==start);};const timer=setTimeout(next,(review.durationOverrides?.[index]??durations[Math.min(index,durations.length-1)]??120)+(index===last?review.terminalHold:0));return()=>clearTimeout(timer);});
@@ -25,6 +28,7 @@
   {#if urls.length}
     <div class="bu-actions"><button class="bu-btn" disabled={!review.accepted.some(Boolean)} onclick={()=>{if(!review.accepted[index]||(!playing&&!record?.document.clip.loop&&index===review.accepted.lastIndexOf(true)))index=review.accepted.indexOf(true);playing=!playing;}}>{playing?'Pause candidate':'Play candidate'}</button><span>Raw frame {index+1}/{urls.length}{buffer&&index===urls.length-1?' · terminal buffer':''}</span><label><input type="checkbox" bind:checked={review.accepted[index]}> Use selected frame</label></div>
     <img class="preview" src={urls[index]} alt={`Raw generated frame ${index+1}`}>
+    {#if diagnostics[index]}<p>Raw frame diagnostics: {diagnostics[index].border} border pixels; {diagnostics[index].detached} pixels outside the largest connected component. Inspect these details before accepting. Pixels are retained.</p>{/if}
     <label>Selected frame duration, ms <input class="bu-input" type="number" min="10" max="10000" value={review.durationOverrides?.[index]??durations[Math.min(index,durations.length-1)]??120} onchange={e=>{review.durationOverrides??={};review.durationOverrides[index]=+e.currentTarget.value;saved='';}}></label>
     <div class="frames">{#each urls as url,i}<button class="bu-action" aria-label={`Inspect raw frame ${i+1}`} aria-pressed={index===i} onclick={()=>{index=i;playing=false;}}><img src={url} alt="">{i+1}{review.accepted[i]?'':' excluded'}</button>{/each}</div>
     <div class="bu-actions"><label>Review status <select class="bu-select" bind:value={review.status}><option value="unreviewed">Unreviewed</option><option value="needs-work">Needs work</option><option value="accepted">Accepted by reviewer</option><option value="rejected">Rejected</option></select></label><label>Final local hold, ms <input class="bu-input" type="number" min="0" max="10000" step="50" bind:value={review.terminalHold}></label></div>

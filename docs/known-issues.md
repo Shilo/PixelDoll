@@ -25,6 +25,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Generation and quality
 
+- **Experimental motion retargeting is not universally qualified.** The dev-only Motion Lab fixes reproduced conversion bugs and supports calibrated preset review. Equipped attack, rendered sole planting, and broader native-view coverage remain unresolved. Two agent-reviewed walks and 40 selected candidates are not a professional all-body guarantee. See the [executed recommendations and limitations](research/2026-10-28-motion-followup.md).
+
 - **Generation is not bit-repeatable.** Same request + seed ≠ same pixels, so base frames are frozen and never
   regenerated; changing the base (`baseHash`) makes existing items stale.
 - **Mirrored directions flip handedness and one-sided items** (west holds the sword in the left hand; an eyepatch, a single

@@ -21,9 +21,15 @@ test('offline Motion Lab edits and roundtrips motions without requesting generat
   await page.getByRole('button',{name:'Redo',exact:true}).click();await expect(field).not.toHaveValue(previous);
   const calibrated=await field.inputValue();await page.getByRole('combobox',{name:'Preset',exact:true}).selectOption('walk');await expect(field).toHaveValue(calibrated);
   await page.getByRole('combobox',{name:'Preset',exact:true}).selectOption('idle');await expect(field).toHaveValue(calibrated);
+  await page.getByRole('spinbutton',{name:'Camera elevation',exact:true}).fill('17');
+  await page.getByRole('button',{name:'Save body/view calibration',exact:true}).click();await expect(page.getByRole('status')).toContainText('Calibration saved');
+  await page.getByRole('combobox',{name:'Body',exact:true}).selectOption('chibi');await page.getByRole('combobox',{name:'Body',exact:true}).selectOption('c27man');await page.getByRole('combobox',{name:'Direction',exact:true}).selectOption('east');await expect(field).toHaveValue(calibrated);await expect(page.getByRole('spinbutton',{name:'Camera elevation',exact:true})).toHaveValue('17');
+  await page.reload();await expect(page.getByRole('status')).toContainText('Offline lab ready');await page.getByRole('combobox',{name:'Direction',exact:true}).selectOption('east');await page.getByRole('checkbox',{name:'Correct reference joints'}).check();await expect(field).toHaveValue(calibrated);await expect(page.getByRole('spinbutton',{name:'Camera elevation',exact:true})).toHaveValue('17');
   const downloading=page.waitForEvent('download');await page.getByRole('button',{name:'Save motion document'}).click();const file=await(await downloading).path();
   await page.getByRole('combobox',{name:'Body',exact:true}).selectOption('chibi');
   await page.locator('input[type=file]').setInputFiles(file!);await expect(page.getByRole('combobox',{name:'Body',exact:true})).toHaveValue('c27man');
+  await page.getByRole('combobox',{name:'KayKit control',exact:true}).selectOption('walk');await expect(page.getByRole('combobox',{name:'Preset',exact:true})).toHaveValue('kaykit-walk');
+  await page.getByRole('combobox',{name:'Body',exact:true}).selectOption('chibi');await expect(page.getByRole('combobox',{name:'Preset',exact:true})).toHaveValue('kaykit-walk');
   await expect(page.getByRole('button',{name:/Generate candidate/})).toBeDisabled();
   await page.screenshot({path:testInfo.outputPath('motion-lab.png'),fullPage:true});expect(paid).toEqual([]);expect(errors).toEqual([]);
 });

@@ -7,6 +7,7 @@ import { fromApi } from '../../../app/src/lib/rig/poses.ts';
 import type { Rig,DirectionName,Keypoint } from '../../../app/src/lib/rig/rig.ts';
 import { padImg,extractCell,postProcess,itemQa,dirGate,slotOf,bandOf,cutRows,cutAllow,posedTol,g2Fails,GATES,recompose,contactSheet,unrotate,type CellOut } from '../../../app/src/lib/items/items.ts';
 import type { EquipmentContext } from '../../../app/src/ui/motion-lab/run.ts';
+import { rigidAttachment } from '../../../app/src/ui/motion-lab/attachment.ts';
 const root=path.resolve(import.meta.dirname,'../../..'),out=path.join(root,'spikes/api/out/motion-lab-2026-10-28');
 const evidence=JSON.parse(fs.readFileSync(process.argv[2]??path.join(out,'evidence.json'),'utf8'));
 const byJob=new Map<string,any>(),inputs=new Map<string,string>();
@@ -19,7 +20,7 @@ for(const row of byJob.values())if(row.context?.kind==='equipment-dress'&&row.jo
   await save(name,contactSheet([await Promise.all(row.images.map((im:any)=>decode(im.png)))],3));
   designs.push({jobId:row.job.id,equipment:row.context.name,frames:row.images.length,gens:row.job.gens,image:name});
 }
-const rows=[];
+const rows=[],attachments=[];
 for(const [jobId,row]of byJob){
   const context=row.context as EquipmentContext|undefined;if(context?.kind!=='equipment-pose'||row.job.state!=='done')continue;
   const body=byJob.get(context.bodyId),dress=byJob.get(context.dressId!);
@@ -47,6 +48,19 @@ for(const [jobId,row]of byJob){
   const failures=[...keyFailures,...qa.failCalls.values(),...design.fails.values()].flat(),warnings=[...qa.warnings,...design.warnings];
   await save(`${id}.after.png`,contactSheet([[keys[direction]!,...cells.map(recompose)]],2));
   await save(`${id}.layers.png`,contactSheet([cells.map(c=>c.layer)],2));
+  if(slot.class==='held'||context.slot==='head'){
+    const anchor=slot.class==='held'?'RIGHT ARM':'NECK',start=slot.class==='held'?'RIGHT ELBOW':'RIGHT EAR',end=slot.class==='held'?'RIGHT ARM':'LEFT EAR';
+    const at=(pose:Keypoint[],label:string)=>{const p=pose.find(p=>p.label===label);if(!p)throw new Error('Missing attachment joint '+label);return{x:p.x*cell.w+pad,y:p.y*cell.h+pad}};
+    const angle=(pose:Keypoint[])=>{const a=at(pose,start),b=at(pose,end);if(Math.hypot(b.x-a.x,b.y-a.y)<1)throw new Error('Projected attachment orientation is ambiguous.');return Math.atan2(b.y-a.y,b.x-a.x)};
+    const grip=at(params.first_frame_keypoints,anchor),source=keys[direction]!,areas:number[]=[],clipped:number[]=[],layers:Img[]=[],composites:Img[]=[];let restAngle:number|null=null;
+    let ambiguity:string|undefined;
+    try{restAngle=angle(params.first_frame_keypoints);for(let i=0;i<n;i++){
+      const placed=rigidAttachment(source,grip,at(params.keypoints[i],anchor),angle(params.keypoints[i])-restAngle,{w:source.w,h:source.h});layers.push(placed.image);clipped.push(placed.clippedSourcePixels);areas.push(placed.image.data.filter((a,i)=>i%4===3&&a>0).length);composites.push(recompose({base:cells[i].base,layer:placed.image}));
+    }}catch(e){ambiguity=(e as Error).message;}
+    if(!ambiguity){await save(`${id}.rigid.png`,contactSheet(Array.from({length:Math.ceil(composites.length/5)},(_,i)=>composites.slice(i*5,i*5+5)),2));await save(`${id}.rigid-layers.png`,contactSheet(Array.from({length:Math.ceil(layers.length/5)},(_,i)=>layers.slice(i*5,i*5+5)),2));}
+    attachments.push({id,jobId,kind:slot.class==='held'?'forearm-attached':'neck-and-ear-attached',referenceGrip:grip,referenceAngle:restAngle,areas,clippedSourcePixels:clipped,ambiguity:ambiguity??null,qualified:false,limitations:['Requested joints are not measured rendered grips','Single reference cannot supply unseen surfaces or foreshortening','Foreground-only placement has no authored hand/body occlusion','Nearest-neighbor rotation can change pixel coverage']});
+  }
   rows.push({id,jobId,bodyId:context.bodyId,dressId:context.dressId,fixture:doc.fixture.id,direction,clip:doc.clip.id,equipment:context.name,status:failures.length?'fail':warnings.length?'warn':'pass',failures,warnings,cleanup,cells:cells.map(c=>({key:c.key,area:c.area,shifted:c.shifted,offset:c.offset,keyKept:c.keyKept,keyOutside:c.keyOutside,specks:c.specks,pinholes:c.pinholes,stray:c.stray,repaired:c.repaired}))});
 }
 fs.writeFileSync(path.join(out,'equipment-analysis.json'),JSON.stringify({designs,cases:rows.length,rows},null,2));console.log(JSON.stringify({designs,cases:rows.map(r=>({id:r.id,status:r.status,failures:r.failures.length,warnings:r.warnings.length,cleanup:r.cleanup}))}));
+fs.writeFileSync(path.join(out,'rigid-attachment-analysis.json'),JSON.stringify({paidRequests:0,cases:attachments},null,2));

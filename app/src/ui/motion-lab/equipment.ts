@@ -8,6 +8,7 @@ import type { Keypoint } from '../../lib/rig/rig.ts';
 import * as db from '../../lib/store/db.ts';
 import { candidateRecord,enqueueLab,type EquipmentContext } from './run.ts';
 import type { JobRec } from '../../lib/pixellab/queue.ts';
+import {actionOfMotion} from './model.ts';
 export const EQUIPMENT={helmet:{name:'Helmet',slot:'head',prompt:'a simple steel open-face helmet, no plume'},tunic:{name:'Tunic',slot:'torso_inner',prompt:'a sleeveless red tunic covering the torso and hips, no belt, no cape'},sword:{name:'Sword',slot:'main_hand',prompt:'a steel longsword with a simple brown grip'}} as const;
 export type EquipmentName=keyof typeof EQUIPMENT;
 interface BodyParams {first_frame:{$blob:string};first_frame_keypoints:Keypoint[];keypoints:Keypoint[][]}
@@ -37,6 +38,7 @@ export async function poseEquipment(bodyId:string,dressId:string,seed:number){
   const result=dress.jobs.flatMap(j=>j.results);if(result.length!==context.bodyIds.length)throw new Error('The paired equipment reference outputs are incomplete.');
   const blob=await db.getBlob(result[reference.index].sha);if(!blob)throw new Error('The dressed equipment image is missing.');
   const cell={w:body.image.w,h:body.image.h},doc=body.row.document;
-  const request=itemRoute.pose({keyframePngB64:bytesToBase64(new Uint8Array(await blob.arrayBuffer())),rest:body.params.first_frame_keypoints,poses:body.params.keypoints,item:context.prompt,slot:context.slot,key:context.key,anim:doc.clip.id==='attack'?'overhead arm strike':doc.clip.id,dir:doc.direction,seed,cell,pad:context.pad,view:'low top-down'});
+  const action=actionOfMotion(doc.clip);
+  const request=itemRoute.pose({keyframePngB64:bytesToBase64(new Uint8Array(await blob.arrayBuffer())),rest:body.params.first_frame_keypoints,poses:body.params.keypoints,item:context.prompt,slot:context.slot,key:context.key,anim:action==='attack'?'overhead arm strike':action,dir:doc.direction,seed,cell,pad:context.pad,view:'low top-down'});
   return enqueueLab(doc,seed,request,poseCallGens(body.params.keypoints.length),{...context,kind:'equipment-pose',bodyId,dressId,referenceSha:body.sha,rotated:f0Last(context.slot,body.params.first_frame_keypoints,body.params.keypoints,cell)});
 }

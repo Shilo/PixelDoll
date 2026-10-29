@@ -1,0 +1,4011 @@
+{
+  "version": 1,
+  "date": "2026-10-28",
+  "paidRequests": 0,
+  "source": {
+    "source": "Quaternius Universal Animation Library",
+    "license": "CC0-1.0",
+    "url": "https://quaternius.itch.io/universal-animation-library",
+    "sha256": "bccd7586a5b6b088397965dd69d431d2209bc07fb3a602bafca9492a7dca69da"
+  },
+  "presets": [
+    {
+      "key": "c27man/idle/south",
+      "jobId": "b3f46107-e170-4884-964b-8a01478e99b7",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/idle/south/7",
+        "stem": "review-c27man-idle-south-7",
+        "jobId": "b3f46107-e170-4884-964b-8a01478e99b7",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.0005459394218892216,
+            "z": -0.0018021140717418903
+          },
+          "speed": 0.0018829936218540072,
+          "rms": 0.4521907473624369,
+          "supportSeconds": 4.9993476311965805,
+          "samples": 300
+        },
+        "loopJointStep": 0.629643129416962,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "942f9895-caa7-47a3-921b-31878cd12d5e",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/idle/east",
+      "jobId": "b6d82b09-b3a1-49c8-85e9-7cc42df233b1",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/idle/east/7",
+        "stem": "review-c27man-idle-east-7",
+        "jobId": "b6d82b09-b3a1-49c8-85e9-7cc42df233b1",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.00029636684498067685,
+            "z": -0.0013371777025896832
+          },
+          "speed": 0.0013696267794938968,
+          "rms": 0.3399390132014762,
+          "supportSeconds": 4.9993476311965805,
+          "samples": 300
+        },
+        "loopJointStep": 0.6320449594287901,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "b08c1ac0-f8f3-4526-acf6-5188ae16c6a8",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/idle/north",
+      "jobId": "f727e2c3-8654-4125-837e-6bf3e5e8975d",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/idle/north/7",
+        "stem": "review-c27man-idle-north-7",
+        "jobId": "f727e2c3-8654-4125-837e-6bf3e5e8975d",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.0006013422888028822,
+            "z": -0.0018357494145937866
+          },
+          "speed": 0.0019317319848995923,
+          "rms": 0.4709369963363502,
+          "supportSeconds": 4.9993476311965805,
+          "samples": 300
+        },
+        "loopJointStep": 0.6309667959566558,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "c92ba603-bb54-4f07-aeeb-147b8e671757",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/walk/south",
+      "jobId": "3fe9f3de-a0d8-41fc-9e50-1bd8fc62facf",
+      "seed": 7,
+      "status": "reviewed-experimental",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/walk/south/7",
+        "stem": "review-c27man-walk-south-7",
+        "jobId": "3fe9f3de-a0d8-41fc-9e50-1bd8fc62facf",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "passed-tested-cases",
+        "cases": [
+          {
+            "equipment": "Helmet",
+            "status": "pass",
+            "jobId": "a9eae0ba-d434-4067-9059-90eda60a9037",
+            "failures": []
+          },
+          {
+            "equipment": "Tunic",
+            "status": "pass",
+            "jobId": "4739ca98-e45e-40c7-b7d4-887fc6a7f131",
+            "failures": []
+          },
+          {
+            "equipment": "Sword",
+            "status": "pass",
+            "jobId": "a4a955d6-7f0d-4953-b7ed-d918ed81756d",
+            "failures": []
+          }
+        ]
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.06228875854126294,
+            "z": 24.253608260638128
+          },
+          "speed": 24.25368824632523,
+          "rms": 9.84302028285758,
+          "supportSeconds": 0.8532147763841348,
+          "samples": 58
+        },
+        "loopJointStep": 4.3748225719008085,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "33e43032-113b-4bd1-ab1e-120e3dc29cd2",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": {
+        "accepted": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "status": "accepted",
+        "notes": "Accepted as a frozen experimental adult 64 px south walk candidate: coherent alternating limbs, stable identity and readable silhouette across all frames. Helmet, tunic and sword variants pass production gates after documented cleanup. World-space sole planting and movement speed are not qualified; no automatic Studio promotion. Keep authored loop timing and zero final hold.",
+        "terminalHold": 0
+      }
+    },
+    {
+      "key": "c27man/walk/east",
+      "jobId": "e4cdef7e-9fc6-4eb4-b9fa-45ec0a3d6ecc",
+      "seed": 7,
+      "status": "reviewed-experimental",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/walk/east/7",
+        "stem": "review-c27man-walk-east-7",
+        "jobId": "e4cdef7e-9fc6-4eb4-b9fa-45ec0a3d6ecc",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "passed-tested-cases",
+        "cases": [
+          {
+            "equipment": "Helmet",
+            "status": "pass",
+            "jobId": "0ba0a117-b7d4-4845-8962-262424802c37",
+            "failures": []
+          },
+          {
+            "equipment": "Tunic",
+            "status": "pass",
+            "jobId": "3ade087a-6ecf-4af1-9436-162f728f3fbe",
+            "failures": []
+          },
+          {
+            "equipment": "Sword",
+            "status": "pass",
+            "jobId": "f3b04bff-9d20-44c9-bae3-5e8ba6fe99d3",
+            "failures": []
+          }
+        ]
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.008862417433401467,
+            "z": 22.55682449008167
+          },
+          "speed": 22.556826231072293,
+          "rms": 9.298949937345531,
+          "supportSeconds": 0.8532147763841348,
+          "samples": 58
+        },
+        "loopJointStep": 3.8260022477565423,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "cf56b055-d81e-4b2f-9c9c-16967fda8352",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": {
+        "accepted": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "status": "accepted",
+        "notes": "Accepted as a frozen experimental adult 64 px east walk candidate: readable stride and alternating arms, coherent anatomy and identity across all frames. Helmet, tunic and sword variants pass production gates after documented cleanup. Ground sliding and engine travel speed remain unqualified. Body/view-specific acceptance only, with original authored loop timing and zero final hold.",
+        "terminalHold": 0
+      }
+    },
+    {
+      "key": "c27man/walk/north",
+      "jobId": "d7637ee6-fb90-401d-8da2-e91b186b82df",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/walk/north/7",
+        "stem": "review-c27man-walk-north-7",
+        "jobId": "d7637ee6-fb90-401d-8da2-e91b186b82df",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.11043139699029957,
+            "z": 23.684594515077297
+          },
+          "speed": 23.684851961476788,
+          "rms": 9.508156227836432,
+          "supportSeconds": 0.8532147763841348,
+          "samples": 58
+        },
+        "loopJointStep": 3.625153740971526,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "114c175a-1cf9-4004-a618-3f01ef9635c0",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/run/south",
+      "jobId": "de84c094-bcad-44a3-8b14-86adb1d14faf",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/run/south/7",
+        "stem": "review-c27man-run-south-7",
+        "jobId": "de84c094-bcad-44a3-8b14-86adb1d14faf",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.136186602709571,
+            "z": 133.58222713870742
+          },
+          "speed": 133.58229655956652,
+          "rms": 7.873908477357334,
+          "supportSeconds": 0.10131438418432373,
+          "samples": 8
+        },
+        "loopJointStep": 7.382702354310174,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "6ba9619e-a6ed-4fd1-98e0-c5aa1acc8cde",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/run/east",
+      "jobId": "0537b6ef-e4c6-4b1b-a97f-7b3412d66476",
+      "seed": 8,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/run/east/8",
+        "stem": "review-c27man-run-east-8",
+        "jobId": "0537b6ef-e4c6-4b1b-a97f-7b3412d66476",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.19403241567825869,
+            "z": 134.17753203210626
+          },
+          "speed": 134.1776723259322,
+          "rms": 12.145413123507275,
+          "supportSeconds": 0.10131438418432373,
+          "samples": 8
+        },
+        "loopJointStep": 6.200270560612303,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "be4f739d-0e94-460c-a67c-d9caa78b282d",
+          "seed": 7,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            16,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/run/north",
+      "jobId": "d39faa9b-668a-4aae-9111-3512825b3206",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/run/north/7",
+        "stem": "review-c27man-run-north-7",
+        "jobId": "d39faa9b-668a-4aae-9111-3512825b3206",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.43933761722263004,
+            "z": 127.97832250030177
+          },
+          "speed": 127.97907660056448,
+          "rms": 10.84072937301174,
+          "supportSeconds": 0.10131438418432373,
+          "samples": 8
+        },
+        "loopJointStep": 6.693825007805819,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "c657996b-01ab-43fc-ac60-e5594055bcfe",
+          "seed": 9,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/attack/south",
+      "jobId": "8cc67dad-89b1-48ef-8619-95e0835c815c",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/attack/south/7",
+        "stem": "review-c27man-attack-south-7",
+        "jobId": "8cc67dad-89b1-48ef-8619-95e0835c815c",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "failed",
+        "cases": [
+          {
+            "equipment": "Helmet",
+            "status": "fail",
+            "jobId": "f6c9d115-8d3b-4b9f-bae2-cf4772e9968a",
+            "failures": [
+              "H4 attack/south/4: does not match its keyframe (extra or missing parts) (own 0.66, opposite 0.00)",
+              "H4 attack/south/5: does not match its keyframe (extra or missing parts) (own 0.72, opposite 0.00)",
+              "H4 attack/south/6: does not match its keyframe (extra or missing parts) (own 0.70, opposite 0.00)",
+              "H4 attack/south/7: does not match its keyframe (extra or missing parts) (own 0.72, opposite 0.00)"
+            ]
+          },
+          {
+            "equipment": "Tunic",
+            "status": "pass",
+            "jobId": "8cd55322-57ad-4d20-87b2-c0669cd46f08",
+            "failures": []
+          },
+          {
+            "equipment": "Sword",
+            "status": "fail",
+            "jobId": "911bf131-52cf-4634-bd28-d4cc290a57c2",
+            "failures": [
+              "G4 attack/south: min area 43 % of median"
+            ]
+          }
+        ]
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.11934596154014446,
+            "z": -0.06136190793463554
+          },
+          "speed": 0.13419665525384875,
+          "rms": 8.750882828231019,
+          "supportSeconds": 2.951915439096177,
+          "samples": 184
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "48385c35-b716-41ff-9aaf-8fc9c96cd3e9",
+          "seed": 9,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/attack/east",
+      "jobId": "82038950-a3ab-4e4f-ab92-da53503749d7",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/attack/east/7",
+        "stem": "review-c27man-attack-east-7",
+        "jobId": "82038950-a3ab-4e4f-ab92-da53503749d7",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "failed",
+        "cases": [
+          {
+            "equipment": "Helmet",
+            "status": "pass",
+            "jobId": "7b9177fc-1db0-4418-af68-0b46602f160c",
+            "failures": []
+          },
+          {
+            "equipment": "Tunic",
+            "status": "pass",
+            "jobId": "37328b2e-a218-459a-bd95-05072c231bf9",
+            "failures": []
+          },
+          {
+            "equipment": "Sword",
+            "status": "fail",
+            "jobId": "df168b59-a306-41f8-abae-fd45b90810aa",
+            "failures": [
+              "G4 attack/east: min area 18 % of median"
+            ]
+          }
+        ]
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.12502316129304467,
+            "z": -0.058648283228403424
+          },
+          "speed": 0.1380956624421842,
+          "rms": 7.884194900975658,
+          "supportSeconds": 2.951915439096177,
+          "samples": 184
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "b59a0f10-cded-411c-9c1d-ae3ec8df930a",
+          "seed": 9,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            15,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/attack/north",
+      "jobId": "d6ac5a99-2236-4908-97e2-d1a2487b49b7",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/attack/north/7",
+        "stem": "review-c27man-attack-north-7",
+        "jobId": "d6ac5a99-2236-4908-97e2-d1a2487b49b7",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.10977943892660826,
+            "z": -0.06123491372148957
+          },
+          "speed": 0.12570298273915056,
+          "rms": 8.45257016732732,
+          "supportSeconds": 2.951915439096177,
+          "samples": 184
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "a7651b0a-a15b-45d4-9191-a58a46f894cd",
+          "seed": 9,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/hurt/south",
+      "jobId": "368d6924-ce49-4ed0-9ef3-c5602dd20591",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/hurt/south/7",
+        "stem": "review-c27man-hurt-south-7",
+        "jobId": "368d6924-ce49-4ed0-9ef3-c5602dd20591",
+        "poses": 6
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.6127864632998798,
+            "z": 0.7191064713244526
+          },
+          "speed": 0.9447864132724819,
+          "rms": 0.5369781485530422,
+          "supportSeconds": 0.6665800641804352,
+          "samples": 42
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "a5634598-4702-48c7-8e18-b49bf9311d8e",
+          "seed": 9,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/hurt/east",
+      "jobId": "90f0a463-9902-4143-93db-588bdf721ff8",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/hurt/east/7",
+        "stem": "review-c27man-hurt-east-7",
+        "jobId": "90f0a463-9902-4143-93db-588bdf721ff8",
+        "poses": 6
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.5373092777077992,
+            "z": 0.5878726084579344
+          },
+          "speed": 0.796426684438695,
+          "rms": 0.5620068606794751,
+          "supportSeconds": 0.6665800641804352,
+          "samples": 42
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "27edcd77-2a53-4a9c-9bb4-c89add2f9d07",
+          "seed": 9,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/hurt/north",
+      "jobId": "0b7119d7-818c-4bd3-bc61-b0ade3c593a0",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/hurt/north/7",
+        "stem": "review-c27man-hurt-north-7",
+        "jobId": "0b7119d7-818c-4bd3-bc61-b0ade3c593a0",
+        "poses": 6
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.6273100471959,
+            "z": 0.7172693320297746
+          },
+          "speed": 0.952886766611522,
+          "rms": 0.5514425557178576,
+          "supportSeconds": 0.6665800641804352,
+          "samples": 42
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "c4bf1151-00c7-485a-8726-5683af55524f",
+          "seed": 9,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/idle/east",
+      "jobId": "f21084ab-88a9-4fdf-a7d2-5b45c70934c2",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/idle/east/7",
+        "stem": "review-chibi-idle-east-7",
+        "jobId": "f21084ab-88a9-4fdf-a7d2-5b45c70934c2",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.00002831756036060605,
+            "z": -0.0004964791048167146
+          },
+          "speed": 0.0004972860200572533,
+          "rms": 0.12139591789040252,
+          "supportSeconds": 4.9993476311965805,
+          "samples": 300
+        },
+        "loopJointStep": 0.6441249683006313,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "05f91770-6de4-49c7-8683-61e4ad314129",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/walk/south",
+      "jobId": "44d854ee-0f9c-409e-8273-db3b09f46646",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/walk/south/7",
+        "stem": "review-chibi-walk-south-7",
+        "jobId": "44d854ee-0f9c-409e-8273-db3b09f46646",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.052394404030645804,
+            "z": 12.465813217279372
+          },
+          "speed": 12.465923324875332,
+          "rms": 5.2595958782567145,
+          "supportSeconds": 0.8532147763841348,
+          "samples": 58
+        },
+        "loopJointStep": 2.7167239156809417,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "2dd86f05-3b89-4385-be31-afaef310b1a4",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/walk/east",
+      "jobId": "88f1bd52-ba62-413d-9e8e-5fdebd733d8e",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/walk/east/7",
+        "stem": "review-chibi-walk-east-7",
+        "jobId": "88f1bd52-ba62-413d-9e8e-5fdebd733d8e",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.0705552680635634,
+            "z": 12.98630014536469
+          },
+          "speed": 12.986491809235876,
+          "rms": 5.564616746148264,
+          "supportSeconds": 0.8532147763841348,
+          "samples": 58
+        },
+        "loopJointStep": 1.9186246516444974,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "96a3e555-d884-43bf-a22b-7d1ee330f332",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/run/south",
+      "jobId": "fe56764a-aa33-4a0f-a7d1-9c062b09db76",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/run/south/7",
+        "stem": "review-chibi-run-south-7",
+        "jobId": "fe56764a-aa33-4a0f-a7d1-9c062b09db76",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.3293083486515287,
+            "z": 76.84036484636633
+          },
+          "speed": 76.84107048780088,
+          "rms": 3.8472023804181195,
+          "supportSeconds": 0.10131438418432373,
+          "samples": 8
+        },
+        "loopJointStep": 3.531858671787973,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "8b78e1ac-8a71-48e8-8b28-27f27d0bff73",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/run/east",
+      "jobId": "b87b8824-3391-4f3b-b767-05b4c63e39bb",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/run/east/7",
+        "stem": "review-chibi-run-east-7",
+        "jobId": "b87b8824-3391-4f3b-b767-05b4c63e39bb",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.24140765772448253,
+            "z": 82.9316867464652
+          },
+          "speed": 82.93203810513185,
+          "rms": 8.367545574986465,
+          "supportSeconds": 0.10131438418432373,
+          "samples": 8
+        },
+        "loopJointStep": 3.1392243787189438,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "48b946d0-1a1d-41db-ae0e-d82a7b0a71db",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/attack/south",
+      "jobId": "2e3a00a0-a011-4cbf-86b6-1c58e33e2cec",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/attack/south/7",
+        "stem": "review-chibi-attack-south-7",
+        "jobId": "2e3a00a0-a011-4cbf-86b6-1c58e33e2cec",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.07272272866082136,
+            "z": -0.028468010455057327
+          },
+          "speed": 0.07809624115887207,
+          "rms": 4.309064831702253,
+          "supportSeconds": 2.951915439096177,
+          "samples": 184
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "731d8f19-953b-4435-bc23-3f13aadf3db4",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/attack/east",
+      "jobId": "8fb28bc9-d3e7-47c7-9f73-f0d1552b10f5",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/attack/east/7",
+        "stem": "review-chibi-attack-east-7",
+        "jobId": "8fb28bc9-d3e7-47c7-9f73-f0d1552b10f5",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.08651998673812446,
+            "z": -0.02831616378978517
+          },
+          "speed": 0.0910357799820223,
+          "rms": 4.417370287817984,
+          "supportSeconds": 2.951915439096177,
+          "samples": 184
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "3b6a8ac9-5700-4c82-a7bd-ff6a63dd066d",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/hurt/south",
+      "jobId": "e7e50d2b-0d1b-4a70-a223-3cb6cc11c694",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/hurt/south/7",
+        "stem": "review-chibi-hurt-south-7",
+        "jobId": "e7e50d2b-0d1b-4a70-a223-3cb6cc11c694",
+        "poses": 6
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.26258098066023927,
+            "z": 0.1942261656829445
+          },
+          "speed": 0.3266076772526812,
+          "rms": 0.16610493956811528,
+          "supportSeconds": 0.6665800641804352,
+          "samples": 42
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "fb662a65-b256-4780-95ae-b6848a46c602",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/hurt/east",
+      "jobId": "d8efb87c-9d82-4a44-bad7-a8952faf759c",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/hurt/east/7",
+        "stem": "review-chibi-hurt-east-7",
+        "jobId": "d8efb87c-9d82-4a44-bad7-a8952faf759c",
+        "poses": 6
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.23446929074853606,
+            "z": 0.22014134551926334
+          },
+          "speed": 0.32161787933999136,
+          "rms": 0.21934741714467915,
+          "supportSeconds": 0.6665800641804352,
+          "samples": 42
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "5a762575-c353-430c-989e-0bac259e6dda",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/idle/south",
+      "jobId": "8c9db627-2d74-4a48-af81-42d1a4e80117",
+      "seed": 8,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/idle/south/8",
+        "stem": "review-chibi-idle-south-8",
+        "jobId": "8c9db627-2d74-4a48-af81-42d1a4e80117",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.00009569177649373773,
+            "z": -0.0005775521353102544
+          },
+          "speed": 0.0005854258151892192,
+          "rms": 0.13300465893499197,
+          "supportSeconds": 4.9993476311965805,
+          "samples": 300
+        },
+        "loopJointStep": 0.7055092025957473,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "88e2b40e-565f-448f-8059-12aab04f24fd",
+          "seed": 9,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/idle/south",
+      "jobId": "d40bf4cf-bd7c-4755-bd4a-4e2741bd38cb",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/idle/south/7",
+        "stem": "review-body128-idle-south-7",
+        "jobId": "d40bf4cf-bd7c-4755-bd4a-4e2741bd38cb",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.0007614369366372251,
+            "z": -0.002712720328938681
+          },
+          "speed": 0.002817558835501517,
+          "rms": 0.6604901540500506,
+          "supportSeconds": 4.9993476311965805,
+          "samples": 300
+        },
+        "loopJointStep": 1.3227721036320605,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "b8c69576-a04d-42d0-bdec-5d0c87d266fa",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/idle/east",
+      "jobId": "d92b0f15-9cd9-4503-8c69-4727cca46cae",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/idle/east/7",
+        "stem": "review-body128-idle-east-7",
+        "jobId": "d92b0f15-9cd9-4503-8c69-4727cca46cae",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.0000856759101810511,
+            "z": -0.0023377781888521813
+          },
+          "speed": 0.002339347606034284,
+          "rms": 0.5995983337447235,
+          "supportSeconds": 4.9993476311965805,
+          "samples": 300
+        },
+        "loopJointStep": 1.259954300484764,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "34d0e6ff-898b-434b-bd61-34ac304bfdb9",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/walk/south",
+      "jobId": "41f52a66-90df-4478-b72a-6ef8f61cffd6",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/walk/south/7",
+        "stem": "review-body128-walk-south-7",
+        "jobId": "41f52a66-90df-4478-b72a-6ef8f61cffd6",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.10340913307102251,
+            "z": 45.975764862670694
+          },
+          "speed": 45.97588115693258,
+          "rms": 18.963376709791092,
+          "supportSeconds": 0.8532147763841348,
+          "samples": 58
+        },
+        "loopJointStep": 7.780951189054473,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "bd8922ef-ccb9-4c3d-8a44-be5ff05e201c",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/walk/east",
+      "jobId": "2497c691-14e6-4700-88cc-e65bd6bcab9f",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/walk/east/7",
+        "stem": "review-body128-walk-east-7",
+        "jobId": "2497c691-14e6-4700-88cc-e65bd6bcab9f",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.002588486228103606,
+            "z": 44.77512232967032
+          },
+          "speed": 44.77512240449157,
+          "rms": 18.83090505084807,
+          "supportSeconds": 0.8532147763841348,
+          "samples": 58
+        },
+        "loopJointStep": 6.895488288410566,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "13fd41d1-40fe-4436-9f44-97c6f71b28da",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/run/south",
+      "jobId": "c11b8deb-3c38-4802-bdfb-dcf1bbcd0082",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/run/south/7",
+        "stem": "review-body128-run-south-7",
+        "jobId": "c11b8deb-3c38-4802-bdfb-dcf1bbcd0082",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.9846321026327564,
+            "z": 270.67915431883495
+          },
+          "speed": 270.6809451792593,
+          "rms": 13.145133226817864,
+          "supportSeconds": 0.10131438418432373,
+          "samples": 8
+        },
+        "loopJointStep": 13.490071405196627,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "b1febd11-ad7b-41b1-9022-72ad7a15679d",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/run/east",
+      "jobId": "a158ee01-481e-4612-a2ff-d5a793363d88",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/run/east/7",
+        "stem": "review-body128-run-east-7",
+        "jobId": "a158ee01-481e-4612-a2ff-d5a793363d88",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.02871350054957839,
+            "z": 272.4322409046572
+          },
+          "speed": 272.4322424178135,
+          "rms": 38.40214870486511,
+          "supportSeconds": 0.10131438418432373,
+          "samples": 8
+        },
+        "loopJointStep": 11.586604052581068,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "b3bfd801-ac17-4733-bc5a-0071cbbac3ef",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/attack/south",
+      "jobId": "4959d22a-7e07-4976-b2f5-16e12666035e",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/attack/south/7",
+        "stem": "review-body128-attack-south-7",
+        "jobId": "4959d22a-7e07-4976-b2f5-16e12666035e",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.24263582075041767,
+            "z": -0.11021190205218133
+          },
+          "speed": 0.2664935362540496,
+          "rms": 16.092331156977853,
+          "supportSeconds": 2.951915439096177,
+          "samples": 184
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "13e6419e-fcb1-46f2-9cdd-3ae48303600c",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/attack/east",
+      "jobId": "44edaf51-b038-4234-bc28-aacced5bbd04",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/attack/east/7",
+        "stem": "review-body128-attack-east-7",
+        "jobId": "44edaf51-b038-4234-bc28-aacced5bbd04",
+        "poses": 12
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": 0.28321252760313803,
+            "z": -0.10475704525278738
+          },
+          "speed": 0.3019658495947063,
+          "rms": 15.620885738414271,
+          "supportSeconds": 2.951915439096177,
+          "samples": 184
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "c3a540e0-ad92-448d-8879-333c5af71aa9",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/hurt/south",
+      "jobId": "d8e861ff-f844-4c80-93ad-6763ad872b10",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/hurt/south/7",
+        "stem": "review-body128-hurt-south-7",
+        "jobId": "d8e861ff-f844-4c80-93ad-6763ad872b10",
+        "poses": 6
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -1.1162852764853677,
+            "z": 0.9831129026740504
+          },
+          "speed": 1.487482368938271,
+          "rms": 0.8074564927364836,
+          "supportSeconds": 0.6665800641804352,
+          "samples": 42
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "60b4da46-a497-4213-b004-e49f5cfd510c",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/hurt/east",
+      "jobId": "33150a72-2608-452d-9319-ecd661db8648",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/hurt/east/7",
+        "stem": "review-body128-hurt-east-7",
+        "jobId": "33150a72-2608-452d-9319-ecd661db8648",
+        "poses": 6
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": {
+          "velocity": {
+            "x": -0.8455564725051381,
+            "z": 1.1654481881207146
+          },
+          "speed": 1.4398733372728274,
+          "rms": 1.157084797809013,
+          "supportSeconds": 0.6665800641804352,
+          "samples": 42
+        },
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "bb0a8cdb-4eb5-4718-9188-6828806cedb6",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/death/south",
+      "jobId": "26e09c02-e581-49ea-ac4f-a5d4c396d479",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/death/south/7",
+        "stem": "review-c27man-death-south-7",
+        "jobId": "26e09c02-e581-49ea-ac4f-a5d4c396d479",
+        "poses": 13
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": null,
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "08dc023e-45da-4229-a1cf-5214bb6dade7",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/death/east",
+      "jobId": "91809519-1a58-4150-bba4-2d636b12fcdf",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/death/east/7",
+        "stem": "review-c27man-death-east-7",
+        "jobId": "91809519-1a58-4150-bba4-2d636b12fcdf",
+        "poses": 13
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": null,
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "167a1c81-f144-4987-a87e-5827613831cb",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "c27man/death/north",
+      "jobId": "259cd4db-401c-4fe8-b8ce-0f193c1fa174",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "c27man/death/north/7",
+        "stem": "review-c27man-death-north-7",
+        "jobId": "259cd4db-401c-4fe8-b8ce-0f193c1fa174",
+        "poses": 13
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": null,
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "9fdb9e01-b328-4982-9272-e89f0c88e9db",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/death/south",
+      "jobId": "61903b43-632c-4454-b945-96cd918edc91",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/death/south/7",
+        "stem": "review-chibi-death-south-7",
+        "jobId": "61903b43-632c-4454-b945-96cd918edc91",
+        "poses": 13
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": null,
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "28cb2a0b-cb50-479b-b7e3-42aa0ec9f982",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "chibi/death/east",
+      "jobId": "2ac3505e-36df-4568-b37b-a05bf1bf69e4",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "chibi/death/east/7",
+        "stem": "review-chibi-death-east-7",
+        "jobId": "2ac3505e-36df-4568-b37b-a05bf1bf69e4",
+        "poses": 13
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": null,
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "23f782ee-e64a-45c9-99b6-448280f6331a",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/death/south",
+      "jobId": "8025d909-93df-416f-b431-2d8ff623dce3",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/death/south/7",
+        "stem": "review-body128-death-south-7",
+        "jobId": "8025d909-93df-416f-b431-2d8ff623dce3",
+        "poses": 13
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": null,
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "b38b5ddc-5f9a-4798-a086-9c2e394a740c",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    },
+    {
+      "key": "body128/death/east",
+      "jobId": "78395352-6c94-4574-8e5d-3225d5cb6c39",
+      "seed": 7,
+      "status": "candidate",
+      "professionalQualification": false,
+      "reference": {
+        "key": "body128/death/east/7",
+        "stem": "review-body128-death-east-7",
+        "jobId": "78395352-6c94-4574-8e5d-3225d5cb6c39",
+        "poses": 13
+      },
+      "bodyDiagnostics": {
+        "borderPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "detachedPixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "equipment": {
+        "status": "untested",
+        "cases": []
+      },
+      "currentGeometry": {
+        "revision": "ground-support-v2",
+        "contactFit": null,
+        "loopJointStep": null,
+        "note": "Dense current template, excluding manual edits, in target pixel units. Ankle proxies, not measured rendered soles or engine speed."
+      },
+      "alternatives": [
+        {
+          "jobId": "030dda82-393e-447e-83b4-624a91375a58",
+          "seed": 8,
+          "detachedPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "borderPixels": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      ],
+      "review": null
+    }
+  ],
+  "limits": [
+    "Ranking by pixel diagnostics does not judge naturalness",
+    "Only explicit saved reviews count as reviewed",
+    "Equipment approval applies only to the exact tested body frames and layers",
+    "No Studio defaults changed"
+  ]
+}

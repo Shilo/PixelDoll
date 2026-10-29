@@ -1,0 +1,732 @@
+{
+  "date": "2026-10-28",
+  "branch": "codex/motion-lab",
+  "baseCommit": "36fd9030",
+  "newGenerations": 0,
+  "totalGenerations": 806,
+  "reserved": 887,
+  "campaignCap": 914,
+  "checks": {
+    "types": "passed, zero errors and warnings",
+    "unit": {
+      "files": 106,
+      "passed": 1023,
+      "existingSkipped": 1
+    },
+    "browser": {
+      "spec": "selftests.spec.ts",
+      "passed": 6
+    },
+    "calibrationLoad": {
+      "repeats": 10,
+      "workers": 8,
+      "passed": 10
+    },
+    "ciSettings": {
+      "workers": 1,
+      "passed": 3
+    },
+    "finalSourceFixtureBrowser": {
+      "passed": 1
+    },
+    "productionBuild": "passed",
+    "distGuard": "passed",
+    "fullProductionE2E": "not run, isolated dev entry",
+    "remoteCI": "not run",
+    "sandboxFailures": "Vitest cache rename and Chrome launch permissions; native approved runs passed",
+    "correctedTest": "Return to the saved east view before asserting calibration; original coordinate assertion retained"
+  },
+  "catalog": {
+    "path": "2026-10-28-motion-preset-catalog.json",
+    "selected": 42,
+    "reviewedExperimental": 2,
+    "candidates": 40,
+    "professionalQualification": false
+  },
+  "rigidAttachment": {
+    "paidRequests": 0,
+    "cases": 16,
+    "completed": 12,
+    "ambiguous": 4,
+    "results": [
+      {
+        "id": "equipment-adeb5b95-helmet-walk-east",
+        "jobId": "adeb5b95-a44b-407e-bc17-64ae88db75f6",
+        "kind": "neck-and-ear-attached",
+        "referenceGrip": {
+          "x": 39.184,
+          "y": 30.456000000000003
+        },
+        "referenceAngle": null,
+        "areas": [],
+        "clippedSourcePixels": [],
+        "ambiguity": "Projected attachment orientation is ambiguous.",
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-b7f2610e-sword-walk-east",
+        "jobId": "b7f2610e-bd66-44b3-bd59-ee345e60683f",
+        "kind": "forearm-attached",
+        "referenceGrip": {
+          "x": 56.552,
+          "y": 64.992
+        },
+        "referenceAngle": 1.1894613121526019,
+        "areas": [
+          169,
+          171,
+          170,
+          174,
+          171,
+          171,
+          169,
+          171,
+          170,
+          171,
+          169,
+          171
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-d26f393a-helmet-walk-south",
+        "jobId": "d26f393a-5af4-40d4-8c33-20a19d68f5b7",
+        "kind": "neck-and-ear-attached",
+        "referenceGrip": {
+          "x": 38.424,
+          "y": 29.768
+        },
+        "referenceAngle": 0,
+        "areas": [
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-6c933ac3-sword-walk-south",
+        "jobId": "6c933ac3-de8f-4135-80a0-c433b7f4263e",
+        "kind": "forearm-attached",
+        "referenceGrip": {
+          "x": 41.936,
+          "y": 64.392
+        },
+        "referenceAngle": 1.7999726040263113,
+        "areas": [
+          150,
+          149,
+          151,
+          149,
+          148,
+          151,
+          151,
+          150,
+          150,
+          151,
+          152,
+          148
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-270a96e1-helmet-attack-south",
+        "jobId": "270a96e1-dc0c-4238-95be-ceb972aa2937",
+        "kind": "neck-and-ear-attached",
+        "referenceGrip": {
+          "x": 38.424,
+          "y": 29.768
+        },
+        "referenceAngle": 0,
+        "areas": [
+          152,
+          152,
+          152,
+          152,
+          153,
+          151,
+          152,
+          151,
+          152,
+          152,
+          152,
+          152
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-7b716b55-sword-attack-south",
+        "jobId": "7b716b55-dff5-41c6-b18a-4d60c3bfc8e0",
+        "kind": "forearm-attached",
+        "referenceGrip": {
+          "x": 41.936,
+          "y": 64.392
+        },
+        "referenceAngle": 1.7999726040263113,
+        "areas": [
+          148,
+          146,
+          152,
+          148,
+          151,
+          151,
+          150,
+          151,
+          149,
+          146,
+          152,
+          148
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-f98d1bd3-helmet-attack-east",
+        "jobId": "f98d1bd3-33a8-43c8-ab32-21f60b2d6ce4",
+        "kind": "neck-and-ear-attached",
+        "referenceGrip": {
+          "x": 39.184,
+          "y": 30.456000000000003
+        },
+        "referenceAngle": null,
+        "areas": [],
+        "clippedSourcePixels": [],
+        "ambiguity": "Projected attachment orientation is ambiguous.",
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-6586860d-sword-attack-east",
+        "jobId": "6586860d-cdc7-407e-9ed2-e31f235c3385",
+        "kind": "forearm-attached",
+        "referenceGrip": {
+          "x": 56.552,
+          "y": 64.992
+        },
+        "referenceAngle": 1.1894613121526019,
+        "areas": [
+          171,
+          169,
+          170,
+          173,
+          169,
+          170,
+          173,
+          167,
+          168,
+          171,
+          170,
+          171
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-a9eae0ba-helmet-walk-south",
+        "jobId": "a9eae0ba-d434-4067-9059-90eda60a9037",
+        "kind": "neck-and-ear-attached",
+        "referenceGrip": {
+          "x": 38.424,
+          "y": 29.768
+        },
+        "referenceAngle": 0,
+        "areas": [
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152,
+          152
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-a4a955d6-sword-walk-south",
+        "jobId": "a4a955d6-7f0d-4953-b7ed-d918ed81756d",
+        "kind": "forearm-attached",
+        "referenceGrip": {
+          "x": 41.936,
+          "y": 64.392
+        },
+        "referenceAngle": 1.7999726040263113,
+        "areas": [
+          149,
+          149,
+          151,
+          149,
+          148,
+          151,
+          151,
+          150,
+          150,
+          151,
+          152,
+          148
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-0ba0a117-helmet-walk-east",
+        "jobId": "0ba0a117-b7d4-4845-8962-262424802c37",
+        "kind": "neck-and-ear-attached",
+        "referenceGrip": {
+          "x": 39.184,
+          "y": 30.456000000000003
+        },
+        "referenceAngle": null,
+        "areas": [],
+        "clippedSourcePixels": [],
+        "ambiguity": "Projected attachment orientation is ambiguous.",
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-f3b04bff-sword-walk-east",
+        "jobId": "f3b04bff-9d20-44c9-bae3-5e8ba6fe99d3",
+        "kind": "forearm-attached",
+        "referenceGrip": {
+          "x": 56.552,
+          "y": 64.992
+        },
+        "referenceAngle": 1.1894613121526019,
+        "areas": [
+          169,
+          171,
+          170,
+          174,
+          171,
+          171,
+          171,
+          171,
+          170,
+          171,
+          169,
+          171
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-f6c9d115-helmet-attack-south",
+        "jobId": "f6c9d115-8d3b-4b9f-bae2-cf4772e9968a",
+        "kind": "neck-and-ear-attached",
+        "referenceGrip": {
+          "x": 38.424,
+          "y": 29.768
+        },
+        "referenceAngle": 0,
+        "areas": [
+          152,
+          152,
+          152,
+          152,
+          153,
+          151,
+          152,
+          151,
+          152,
+          152,
+          152,
+          152
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-911bf131-sword-attack-south",
+        "jobId": "911bf131-52cf-4634-bd28-d4cc290a57c2",
+        "kind": "forearm-attached",
+        "referenceGrip": {
+          "x": 41.936,
+          "y": 64.392
+        },
+        "referenceAngle": 1.7999726040263113,
+        "areas": [
+          148,
+          146,
+          152,
+          148,
+          151,
+          151,
+          150,
+          151,
+          149,
+          146,
+          152,
+          148
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-7b9177fc-helmet-attack-east",
+        "jobId": "7b9177fc-1db0-4418-af68-0b46602f160c",
+        "kind": "neck-and-ear-attached",
+        "referenceGrip": {
+          "x": 39.184,
+          "y": 30.456000000000003
+        },
+        "referenceAngle": null,
+        "areas": [],
+        "clippedSourcePixels": [],
+        "ambiguity": "Projected attachment orientation is ambiguous.",
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      },
+      {
+        "id": "equipment-df168b59-sword-attack-east",
+        "jobId": "df168b59-a306-41f8-abae-fd45b90810aa",
+        "kind": "forearm-attached",
+        "referenceGrip": {
+          "x": 56.552,
+          "y": 64.992
+        },
+        "referenceAngle": 1.1894613121526019,
+        "areas": [
+          171,
+          169,
+          170,
+          173,
+          169,
+          170,
+          173,
+          167,
+          168,
+          171,
+          170,
+          171
+        ],
+        "clippedSourcePixels": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "ambiguity": null,
+        "qualified": false,
+        "limitations": [
+          "Requested joints are not measured rendered grips",
+          "Single reference cannot supply unseen surfaces or foreshortening",
+          "Foreground-only placement has no authored hand/body occlusion",
+          "Nearest-neighbor rotation can change pixel coverage"
+        ]
+      }
+    ],
+    "professionalQualification": false
+  },
+  "independentSource": {
+    "path": "2026-10-28-kaykit-comparison.json",
+    "archiveSha256": "65882f31f905ad2e953819648a59287cdeab8f623908d5ef701971d3758be20f",
+    "cases": 72,
+    "initialCasesWithIssues": 4,
+    "finalCasesWithIssues": 0,
+    "maxLengthError": 8.171241461241152e-14,
+    "renderedQualification": false
+  },
+  "artifacts": [
+    {
+      "name": "motion-review.zip",
+      "bytes": 41226569,
+      "sha256": "b9006732f7ac5c4add5141a13f123ce44b4e2284ecc93dab6c0d5472d8163d84"
+    },
+    {
+      "name": "followup-preview.jpg",
+      "bytes": 81426,
+      "sha256": "3554fca7f6202c02e844d3984633d943b9e84f9cbb10b7b3b753541669b8b8ec"
+    },
+    {
+      "name": "preset-catalog.json",
+      "bytes": 86455,
+      "sha256": "b10411309a54584b2c4d3a81b8a8230ff2e07a056910a277a89d19e1564ca78a"
+    },
+    {
+      "name": "rigid-attachment-analysis.json",
+      "bytes": 14628,
+      "sha256": "87f30a9b3319f708093bbbbd90a9d7cd65291823d6b73414466ad667cefc641a"
+    },
+    {
+      "name": "kaykit-comparison.json",
+      "bytes": 48419,
+      "sha256": "35454888346c8807a962db541979f89c2ae80d9e12f959ddb30af97f6da8550b"
+    }
+  ],
+  "zipEntries": 472,
+  "remaining": [
+    "Equipped attack fails three of six corrected generative cases",
+    "Rigid prototypes do not solve grip, occlusion, perspective or raster stepping",
+    "Dense ankle heuristics do not establish rendered sole planting or engine speed",
+    "Independent source needs animator-approved timing/readability and actual renderer qualification",
+    "Broader native directions and arbitrary morphology not qualified",
+    "No Studio defaults changed"
+  ]
+}

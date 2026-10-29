@@ -5,7 +5,7 @@ import { encodePngBytes } from '../../lib/image/pngraw.ts';
 import { base64ToBytes, bytesToBase64,pngSize } from '../../lib/image/png.ts';
 import { decodePngBytes } from '../../lib/image/pngraw.ts';
 import * as db from '../../lib/store/db.ts';
-import { paddedReference, renderPoses, type MotionDocument } from './model.ts';
+import { paddedReference, renderPoses,actionOfMotion, type MotionDocument } from './model.ts';
 import type { Balance,Req } from '../../lib/pixellab/routes.ts';
 import { sha256, stableStringify } from '../../lib/image/hash.ts';
 import { hasAll } from '../../lib/rig/poses.ts';
@@ -14,7 +14,7 @@ export const LAB_TAG='motion-lab-2026-10-28',LAB_CAP=914;
 // Isolated records/channel prevent this lab from resuming unrelated Studio work on the same origin.
 export const labQueue=new Queue({all:async()=>(await db.all<JobRec>('jobs')).filter(r=>r.tag===LAB_TAG),channel:LAB_TAG});
 if(import.meta.hot)import.meta.hot.dispose(()=>labQueue.disconnect());
-export type DocumentRecord=Omit<MotionDocument,'fixture'|'clip'>&{fixture:Pick<MotionDocument['fixture'],'id'|'name'|'cell'>&Partial<Pick<MotionDocument['fixture'],'pivot'|'camera'|'directions'>>;clip:Pick<MotionDocument['clip'],'id'|'name'|'source'|'duration'|'loop'|'nominalSpeed'|'events'>};
+export type DocumentRecord=Omit<MotionDocument,'fixture'|'clip'>&{fixture:Pick<MotionDocument['fixture'],'id'|'name'|'cell'>&Partial<Pick<MotionDocument['fixture'],'pivot'|'camera'|'directions'>>;clip:Pick<MotionDocument['clip'],'id'|'name'|'source'|'duration'|'loop'|'nominalSpeed'|'events'|'action'>};
 export interface EquipmentContext {kind:'equipment-dress'|'equipment-pose';name:string;slot:string;prompt:string;key:'green'|'magenta'|'blue'|'azure';pad:number;referenceSha:string;bodyId:string;bodyIds:string[];references:Partial<Record<MotionDocument['direction'],{sha:string;index:number}>>;dressId?:string;rotated?:boolean}
 export interface CandidateReview { accepted:boolean[];status:'unreviewed'|'needs-work'|'accepted'|'rejected';notes:string;terminalHold:number;durationOverrides?:Record<number,number> }
 interface Reservation { id:string;jobId?:string;estimate:number;label:string;document:DocumentRecord;seed:number;createdAt:string;error?:string;review?:CandidateReview;context?:EquipmentContext }
@@ -65,7 +65,8 @@ export async function generateCandidate(document:MotionDocument,seed:number):Pro
   if(document.fixture.directions.find(d=>d.id===document.direction)?.mirrorOf)throw new Error('This view derives from mirrored frozen source frames. Generate and review its source direction instead.');
   const {result,poses}=renderPoses(document),ref=document.fixture.references[document.direction]!;
   const image=paddedReference(await decodePngBytes(base64ToBytes(ref.png)),document.padding),first=bytesToBase64(await encodePngBytes(image));
-  const request=rawClip({first,rest:result.rest,keypoints:poses,description:document.fixture.id==='chibi'?'a short bald humanoid in a gray shirt and dark pants':'a bald humanoid with the same appearance and colors as the reference, empty hands',action:document.clip.id==='attack'?'overhead arm strike, empty hands, no weapon, no props, no effects':document.clip.id==='death'?'falling down and lying still, no effects':document.clip.id,dir:document.direction,seed});
+  const action=actionOfMotion(document.clip);
+  const request=rawClip({first,rest:result.rest,keypoints:poses,description:document.fixture.id==='chibi'?'a short bald humanoid in a gray shirt and dark pants':'a bald humanoid with the same appearance and colors as the reference, empty hands',action:action==='attack'?'overhead arm strike, empty hands, no weapon, no props, no effects':action==='death'?'falling down and lying still, no effects':action,dir:document.direction,seed});
   return enqueueLab(document,seed,request,poseCallGens(poses.length));
 }
 /** Every paid lab route shares the same atomic budget and unresolved-outcome contract. Preparation is free. */
@@ -80,7 +81,7 @@ export async function enqueueLab(document:DocumentRecord,seed:number,request:Req
     const ledger=readLedger(),old=ledger.reservations.find(r=>r.id===id);
     if(old){if(old.jobId)return old;throw new Error('This candidate has an unresolved reservation. Inspect it; do not send it again.');}
     if(ledger.reservations.reduce((n,r)=>n+r.estimate,0)+gens>LAB_CAP)throw new Error('The approved remaining generation allowance is exhausted.');
-    const {id:clipId,name,source,duration,loop,nominalSpeed,events}=document.clip,clip={id:clipId,name,source,duration,loop,nominalSpeed,events};
+    const {id:clipId,name,source,duration,loop,nominalSpeed,events,action}=document.clip,clip={id:clipId,name,source,duration,loop,nominalSpeed,events,action};
     const {id:fixtureId,name:fixtureName,cell,pivot,camera,directions}=document.fixture,fixture={id:fixtureId,name:fixtureName,cell,pivot,camera,directions};
     const row:Reservation={id,estimate:gens,label:`${context?`${context.name} ${context.kind} / `:''}${document.fixture.name} / ${document.clip.name} / ${document.direction} / ${seed} / ${id.slice(-8)}`,document:structuredClone({...document,clip,fixture}),seed,createdAt:new Date().toISOString(),...(context?{context}: {})};
     ledger.reservations.push(row);save(ledger);return row;

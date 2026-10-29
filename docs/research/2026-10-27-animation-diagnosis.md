@@ -4,6 +4,8 @@ Research date: October 27, 2026. Scope: documentation and source audit, independ
 
 Companion: [free motion assets and rigging libraries](2026-10-27-animation-rigging-sources.md).
 
+Follow-up: the approved [implementation and paid qualification](2026-10-28-motion-lab-implementation.md) and [recommendation coverage](2026-10-28-motion-followup.md) record what was subsequently built, tested and left unqualified. The recommendations below retain their October 27 research context.
+
 ## Finding
 
 **There are real problems in our conversion, and a separate fall-sequence rendering failure remains after correcting its endpoint. The evidence does not justify blaming either the prompt alone or PixelLab alone.** In particular, the earlier conclusion that the revised retargeter produced “clean” or “correct” motion was too strong. We can reproduce inconsistent depth and a discontinuous foot switch without calling PixelLab at all.

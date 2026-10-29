@@ -1,5 +1,7 @@
 # Free animation and rigging sources for PixelDoll
 
+Implementation follow-up: [executed recommendations and independent KayKit control](2026-10-28-motion-followup.md). The survey below retains its original research scope; the later report identifies downloaded files, licenses, exact hashes and actual offline tests.
+
 Research date: October 27, 2026. This companion report covers external sources; the coordinating investigation owns local failure diagnosis and PixelLab tests. This is a broad, prioritized survey, not an exhaustive inventory of every animation project. No packages were installed, no new animation archives were imported, no paid calls were made, and no application behavior changed for this report. Asset counts below are publisher claims unless stated otherwise. Exact downloadable archive contents and browser integration were not tested here.
 
 ## Findings that change the recommendation

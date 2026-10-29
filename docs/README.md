@@ -73,6 +73,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | [generation-pipeline-review-2026-10-25.md](research/generation-pipeline-review-2026-10-25.md) | Generation pipeline research (rounds 1–10): call chains, endpoint and skeleton findings, what shipped, open concerns and deferred cards (§18). |
 | [Animation diagnosis (2026-10-27)](research/2026-10-27-animation-diagnosis.md) | Revisited mocap failures, reproducible retarget defects, controlled browser tests, and a proposed path to qualified motion presets. |
 | [Motion Lab implementation and qualification (2026-10-28)](research/2026-10-28-motion-lab-implementation.md) | Corrected conversion, offline authoring tool, before/after measurements, live preset revisions and explicit qualification limits. |
+| [Motion follow-up and recommendation coverage](research/2026-10-28-motion-followup.md) | Documentation audit, persistent calibration, contact diagnostics, 42-candidate catalog, independent KayKit control and deterministic equipment experiments with explicit remaining limits. |
 | [Free animation and rigging sources (2026-10-27)](research/2026-10-27-animation-rigging-sources.md) | Independent CC0 asset and MIT tooling survey, license exclusions, browser fit, and limits of arbitrary-sprite retargeting. |
 | [visuals/three-ways-to-draw-an-item.html](research/visuals/three-ways-to-draw-an-item.html) | Visual, step-by-step comparison of today's item route with the create-state and edit-image ideas: every input and output image, fit numbers, pros and cons. Open the file in a browser. |
 | [visuals/how-items-are-drawn.html](research/visuals/how-items-are-drawn.html) | Frame scrubber comparing today's posing with dressing the real frames, with every PixelLab call and its price. Open the file in a browser. |
@@ -110,7 +111,7 @@ Code: `spikes/api/`. Evidence: [`spikes/api/out/` at 1f95029](https://github.com
 | [D1_design_research.md](design/D1_design_research.md) | User flows for casual users, information architecture, look candidates A–E. |
 | [glasskit_review.md](design/glasskit_review.md) | GlassKit as a theme base (look B): reviewed and not chosen. |
 | [D2_mockups_report.md](design/D2_mockups_report.md) | The `design-mockups/` app: looks A–E in dark and light. The user chose **look A only**, dark by default (D9). |
-| [skeleton-pose-lab.md](design/skeleton-pose-lab.md) | Future tool (deferred with skeleton-v3): mocap templates, pose editor, free puppet preview and pose lint, paid render/compare, and a PixelLab bug report export. |
+| [skeleton-pose-lab.md](design/skeleton-pose-lab.md) | Implemented dev-only offline calibration and motion authoring, source/target previews, FK/IK editing, diagnostics, and reviewed candidate/evidence export. |
 | [Screenshot gallery](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/README.md) | Every look, screen and device (`<look>_<scheme>_<screen>_<device>.png`). Grid view: [index.html](https://github.com/Shilo/PixelDoll/blob/1f950291f90d43f5c6f27572445664f757f5716e/docs/design/screenshots/index.html) (open from a checkout of that commit). |
 
 ## Testing reports

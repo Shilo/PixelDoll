@@ -1,0 +1,1791 @@
+{
+  "date": "2026-10-28",
+  "paidRequests": 0,
+  "archiveSha256": "65882f31f905ad2e953819648a59287cdeab8f623908d5ef701971d3758be20f",
+  "sources": [
+    {
+      "url": "https://kaylousberg.itch.io/kaykit-character-animations",
+      "license": "CC0-1.0",
+      "packVersion": "Free 1.1",
+      "file": "Rig_Medium_General.glb",
+      "sha256": "5f725c0f745f36078c7238968cd5c04843cbc6260689eb6e7f5e2bbd7ffdd7ad",
+      "animation": "Idle_A"
+    },
+    {
+      "url": "https://kaylousberg.itch.io/kaykit-character-animations",
+      "license": "CC0-1.0",
+      "packVersion": "Free 1.1",
+      "file": "Rig_Medium_MovementBasic.glb",
+      "sha256": "11422afd50abf7e8c92ea107e2e0bc94abd38023d6d15f55ad580347efbfa29e",
+      "animation": "Walking_A"
+    },
+    {
+      "url": "https://kaylousberg.itch.io/kaykit-character-animations",
+      "license": "CC0-1.0",
+      "packVersion": "Free 1.1",
+      "file": "Rig_Medium_MovementBasic.glb",
+      "sha256": "11422afd50abf7e8c92ea107e2e0bc94abd38023d6d15f55ad580347efbfa29e",
+      "animation": "Running_A"
+    },
+    {
+      "url": "https://kaylousberg.itch.io/kaykit-character-animations",
+      "license": "CC0-1.0",
+      "packVersion": "Free 1.1",
+      "file": "Rig_Medium_CombatMelee.glb",
+      "sha256": "c55e6ec1c79e83ae21d46fe1cd921c1b64be8b9a524a24517e51c6ba99231459",
+      "animation": "Melee_1H_Attack_Chop"
+    },
+    {
+      "url": "https://kaylousberg.itch.io/kaykit-character-animations",
+      "license": "CC0-1.0",
+      "packVersion": "Free 1.1",
+      "file": "Rig_Medium_General.glb",
+      "sha256": "5f725c0f745f36078c7238968cd5c04843cbc6260689eb6e7f5e2bbd7ffdd7ad",
+      "animation": "Hit_A"
+    },
+    {
+      "url": "https://kaylousberg.itch.io/kaykit-character-animations",
+      "license": "CC0-1.0",
+      "packVersion": "Free 1.1",
+      "file": "Rig_Medium_General.glb",
+      "sha256": "5f725c0f745f36078c7238968cd5c04843cbc6260689eb6e7f5e2bbd7ffdd7ad",
+      "animation": "Death_A"
+    }
+  ],
+  "mapping": {
+    "NECK": "head",
+    "RIGHT SHOULDER": "upperarm.r",
+    "RIGHT ELBOW": "lowerarm.r",
+    "RIGHT ARM": "wrist.r",
+    "LEFT SHOULDER": "upperarm.l",
+    "LEFT ELBOW": "lowerarm.l",
+    "LEFT ARM": "wrist.l",
+    "RIGHT HIP": "upperleg.r",
+    "RIGHT KNEE": "lowerleg.r",
+    "RIGHT LEG": "foot.r",
+    "LEFT HIP": "upperleg.l",
+    "LEFT KNEE": "lowerleg.l",
+    "LEFT LEG": "foot.l"
+  },
+  "assumptions": [
+    "Neutral arm directions calibrated from Idle_A at time zero, retaining rest lengths; before control uses synthetic arms-down neutral",
+    "Walk/run arm motion weight 0.5, other body weights 1",
+    "Face landmarks are synthetic offsets, not supplied facial joints",
+    "Uniform 12-pose source controls, not approved attack/fall timing",
+    "Ankle-height contacts are heuristic; nominalSpeed 0 means unqualified, not a measured speed",
+    "No rendered-body, equipment or professional quality qualification"
+  ],
+  "cases": [
+    {
+      "fixture": "c27man",
+      "action": "idle",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 64.21247355207211,
+        "after": 33.41607467287247
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -3.5655369441179035e-14,
+          "z": 1.0634334474437367e-12
+        },
+        "speed": 1.064031015766015e-12,
+        "rms": 0.39512624995041495,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "idle",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 48.401029956158496,
+        "after": 45.42572347587823
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -9.363535200007853e-14,
+          "z": 1.3772495841831865e-12
+        },
+        "speed": 1.3804289175024327e-12,
+        "rms": 0.5447716636289188,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "idle",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.2434497875801753e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 58.063501303565715,
+        "after": 34.66757006204318
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -4.3565047410555955e-14,
+          "z": 8.520033617626138e-13
+        },
+        "speed": 8.531164292232799e-13,
+        "rms": 0.30339178710972026,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "idle",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.2434497875801753e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 51.05968260681557,
+        "after": 44.57135198522574
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -1.512150543366851e-13,
+          "z": 1.3804822683241325e-12
+        },
+        "speed": 1.3887394592994715e-12,
+        "rms": 0.5473530176954715,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "idle",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 7.105427357601002e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 68.97738989234655,
+        "after": 28.7586250133383
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -7.899873139986092e-14,
+          "z": 9.797502895017043e-13
+        },
+        "speed": 9.829300226066251e-13,
+        "rms": 0.35600501790771566,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "idle",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.1546319456101628e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 51.175562283575545,
+        "after": 29.53603056431743
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -9.596531717535926e-14,
+          "z": 1.0997560141162052e-12
+        },
+        "speed": 1.1039350672414251e-12,
+        "rms": 0.4286933732163957,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "idle",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 65.63558882687065,
+        "after": 32.184725439891295
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -2.2674653833189566e-14,
+          "z": 2.7048387302940445e-13
+        },
+        "speed": 2.7143261685995287e-13,
+        "rms": 0.0969307511752649,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "idle",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 6.217248937900877e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 47.355720754266514,
+        "after": 31.644811350353518
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -1.0040626199143104e-13,
+          "z": 1.1022559470317683e-12
+        },
+        "speed": 1.1068195834073374e-12,
+        "rms": 0.4286489858308198,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "idle",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 2.4868995751603507e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 60.26216416622271,
+        "after": 29.82948929578807
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -1.6716997153912364e-13,
+          "z": 2.9991203739518136e-12
+        },
+        "speed": 3.003775760078847e-12,
+        "rms": 1.067987239109284,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "idle",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 3.197442310920451e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 48.59324997079672,
+        "after": 42.67013412164859
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -2.0376012225900118e-13,
+          "z": 2.8655535170043757e-12
+        },
+        "speed": 2.8727887402729687e-12,
+        "rms": 1.2208928885291512,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "idle",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.7763568394002505e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 55.093750919522996,
+        "after": 32.77484964395281
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -1.992790217304897e-13,
+          "z": 2.7218086449088594e-12
+        },
+        "speed": 2.7290940672689284e-12,
+        "rms": 0.9861150279527943,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "idle",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 3.907985046680551e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 51.15752807349569,
+        "after": 41.70533351045803
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -3.0923603500501187e-13,
+          "z": 2.876257437942457e-12
+        },
+        "speed": 2.8928331743577832e-12,
+        "rms": 1.2227744506883367,
+        "supportSeconds": 2.1333334399715618,
+        "samples": 130
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "walk",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 8.171241461241152e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 89.22266884526549,
+        "after": 53.70436910107532
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -0.018183298552112218,
+          "z": 45.79879457215296
+        },
+        "speed": 45.79879818177125,
+        "rms": 29.01554443430257,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "walk",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.7763568394002505e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 86.0900092087071,
+        "after": 60.12274534528549
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.6088832827126959,
+          "z": 42.26958739595095
+        },
+        "speed": 42.27397257741343,
+        "rms": 29.792077514196418,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "walk",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 6.750155989720952e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 86.91084484754059,
+        "after": 54.8224514896296
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -0.03468496029807673,
+          "z": 44.52121379908178
+        },
+        "speed": 44.52122731001495,
+        "rms": 27.03784965129761,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "walk",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 4.796163466380676e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 84.77597127740836,
+        "after": 57.836036276320215
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -0.5826765984960741,
+          "z": 42.141692595240336
+        },
+        "speed": 42.14572062274139,
+        "rms": 29.741010046666425,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "walk",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.509903313490213e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 97.17788504344854,
+        "after": 44.0958026786425
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -0.05886833497182518,
+          "z": 22.742730190363478
+        },
+        "speed": 22.742806378996693,
+        "rms": 16.646629904995404,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "walk",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 4.440892098500626e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 85.39576165645573,
+        "after": 48.98625946127208
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.2057732995852539,
+          "z": 23.3320610351138
+        },
+        "speed": 23.332968409465135,
+        "rms": 18.666086486249558,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "walk",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.2434497875801753e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 93.11638764335297,
+        "after": 50.254110427296524
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -0.00793001523255716,
+          "z": 24.405346882885095
+        },
+        "speed": 24.40534817123269,
+        "rms": 14.271512306796405,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "walk",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 84.66875468362358,
+        "after": 48.61638746228037
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -0.44335413644195365,
+          "z": 23.07562400781258
+        },
+        "speed": 23.079882717211465,
+        "rms": 18.622342723310474,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "walk",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 3.907985046680551e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 87.75041211753927,
+        "after": 51.06045894706272
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.0028246259942905074,
+          "z": 85.36021264216069
+        },
+        "speed": 85.36021268889505,
+        "rms": 58.6407895008172,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "walk",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 2.1316282072803006e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 84.9596814258639,
+        "after": 58.928114060931726
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.5325893913293627,
+          "z": 82.23367694180031
+        },
+        "speed": 82.24795713943779,
+        "rms": 61.45976772380324,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "walk",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.7763568394002505e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 84.44260254172565,
+        "after": 53.61272624834054
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.13282218828346468,
+          "z": 82.50480263032284
+        },
+        "speed": 82.50490954362793,
+        "rms": 54.558770285902504,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "walk",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 2.4868995751603507e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 83.41486920629958,
+        "after": 55.359010765563525
+      },
+      "contactFit": {
+        "velocity": {
+          "x": -1.1204651388903337,
+          "z": 81.8421405356429
+        },
+        "speed": 81.84981007664825,
+        "rms": 61.13165906252863,
+        "supportSeconds": 0.858416577259355,
+        "samples": 59
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "run",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 95.31787174333866,
+        "after": 59.907057050879736
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 2.4660565856945578,
+          "z": 160.35160543987377
+        },
+        "speed": 160.37056713196722,
+        "rms": 50.88975952249315,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "run",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 8.881784197001252e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 92.58619671127948,
+        "after": 63.15755649391013
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.3617891411358103,
+          "z": 148.24244975165533
+        },
+        "speed": 148.24870447338475,
+        "rms": 50.146652774375305,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "run",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 85.19056963447967,
+        "after": 60.98791706350806
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.95301019482839,
+          "z": 155.87598792438087
+        },
+        "speed": 155.8882223268417,
+        "rms": 48.761712989369926,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "run",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 1.2434497875801753e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 92.19258766189395,
+        "after": 60.99728579297332
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 3.051816453509377,
+          "z": 148.50198047843654
+        },
+        "speed": 148.5333356175773,
+        "rms": 49.52141284538546,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "run",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 3.552713678800501e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 93.73103128818659,
+        "after": 49.54159840973113
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.3852094173163378,
+          "z": 80.15382360178724
+        },
+        "speed": 80.16579222533915,
+        "rms": 28.25928597363304,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "run",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 3.552713678800501e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 95.30023368718415,
+        "after": 52.682778421562695
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.9709156392816046,
+          "z": 81.64893385069858
+        },
+        "speed": 81.65470639304483,
+        "rms": 30.94788006272804,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "run",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 4.440892098500626e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 91.65961158538394,
+        "after": 56.0763044152603
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.2435970014190858,
+          "z": 85.18532499949313
+        },
+        "speed": 85.19440198024286,
+        "rms": 27.683700730013914,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "run",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 7.105427357601002e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 95.3136951260644,
+        "after": 54.25826734946958
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 2.5874335658216174,
+          "z": 82.24539648713365
+        },
+        "speed": 82.28608664764266,
+        "rms": 29.713481555194935,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "run",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 95.38950127533559,
+        "after": 57.461601488909835
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 4.621079281961935,
+          "z": 300.0460543098637
+        },
+        "speed": 300.0816373599822,
+        "rms": 99.83262822205513,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "run",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 2.1316282072803006e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 91.7818790039484,
+        "after": 62.042472982615756
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 2.56186244794917,
+          "z": 287.2291962990104
+        },
+        "speed": 287.2406209883583,
+        "rms": 104.3535501240885,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "run",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 84.93478885182529,
+        "after": 59.921393912191085
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 4.817831627227878,
+          "z": 290.72280704227796
+        },
+        "speed": 290.76272463321345,
+        "rms": 91.85721232096246,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "run",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 2.1316282072803006e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.5,
+      "upperArmFromDownDegrees": {
+        "before": 91.75499279149646,
+        "after": 60.12560912853185
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 8.09788967717184,
+          "z": 288.2878915821317
+        },
+        "speed": 288.4016023708859,
+        "rms": 99.40979546802978,
+        "supportSeconds": 0.23995406618806298,
+        "samples": 16
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "attack",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 8.881784197001252e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 91.95724469749067,
+        "after": 69.25139161033798
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 2.232943490997661,
+          "z": -0.019382994058372884
+        },
+        "speed": 2.233027616140805,
+        "rms": 13.781433216457366,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "attack",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 83.59994229868724,
+        "after": 99.89437464984405
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 2.0343944994125027,
+          "z": -0.2249783746770985
+        },
+        "speed": 2.0467965820550407,
+        "rms": 15.294135180359705,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "attack",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 94.72206767161457,
+        "after": 68.34792015105486
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 2.157749506346314,
+          "z": 0.03507743614230262
+        },
+        "speed": 2.1580346055297817,
+        "rms": 12.157980691755533,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "attack",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 7.105427357601002e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 82.93998856685013,
+        "after": 83.24425002731716
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 2.0457368905262965,
+          "z": -0.23142070593626593
+        },
+        "speed": 2.0587848280955052,
+        "rms": 15.679571416799572,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "attack",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 4.440892098500626e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 98.4179357196239,
+        "after": 79.0945466633686
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.1467100852331105,
+          "z": -0.1345224538368732
+        },
+        "speed": 1.1545736486520126,
+        "rms": 8.624629414391148,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "attack",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.1546319456101628e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 78.12133091124682,
+        "after": 90.76120881494577
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.167285629846778,
+          "z": -0.2330717524471658
+        },
+        "speed": 1.1903269229231026,
+        "rms": 10.167402015522944,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "attack",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 94.04978180311338,
+        "after": 71.86840353560345
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.1499756069964076,
+          "z": 0.07607241309073769
+        },
+        "speed": 1.1524890058999278,
+        "rms": 6.358761387451336,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "attack",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 3.552713678800501e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 79.31025196939498,
+        "after": 74.7263733913948
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 1.1855861194888044,
+          "z": -0.2334487265797299
+        },
+        "speed": 1.2083512546715127,
+        "rms": 10.082434954659284,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "attack",
+      "direction": "south",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 2.1316282072803006e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 90.66444660684144,
+        "after": 67.17772964590779
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 4.224503689128597,
+          "z": -0.32929343904323977
+        },
+        "speed": 4.237318207127953,
+        "rms": 28.018311211272398,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "attack",
+      "direction": "east",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 3.197442310920451e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 83.0071813237854,
+        "after": 99.1711750894304
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 3.986216497446374,
+          "z": -0.5585398357497815
+        },
+        "speed": 4.025156979874578,
+        "rms": 33.0467894916131,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "attack",
+      "direction": "north",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.4210854715202004e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 92.9051663647945,
+        "after": 66.73349416447492
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 4.155865549276519,
+          "z": -0.22227605434853254
+        },
+        "speed": 4.16180551059275,
+        "rms": 25.563722751462013,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "attack",
+      "direction": "west",
+      "poses": 12,
+      "duration": 1.0666667222976685,
+      "maxLengthError": 1.7763568394002505e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 82.39508667385729,
+        "after": 79.99363561868162
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 4.07323518007571,
+          "z": -0.5665420651212891
+        },
+        "speed": 4.112446321079255,
+        "rms": 33.12456883146141,
+        "supportSeconds": 1.765907331028796,
+        "samples": 113
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "hurt",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 8.881784197001252e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 85.65352371665033,
+        "after": 54.46723131492974
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.000012993501898555932,
+          "z": 0.00007751539336572655
+        },
+        "speed": 0.00007859686571505954,
+        "rms": 12.391069285129108,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "hurt",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 74.98005852577532,
+        "after": 71.6953393455661
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.000012237943700757165,
+          "z": 0.00008085959990397856
+        },
+        "speed": 0.00008178045098099173,
+        "rms": 13.108438615715627,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "hurt",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 79.9631890114348,
+        "after": 54.44751322066687
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.000012408675256077518,
+          "z": 0.00007664132275984396
+        },
+        "speed": 0.00007763934296469391,
+        "rms": 12.181022630391611,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "hurt",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 70.90781219787071,
+        "after": 64.34550271669752
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.000011992740116035515,
+          "z": 0.00008084131423942362
+        },
+        "speed": 0.00008172602953434116,
+        "rms": 13.100541117225953,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "hurt",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 4.440892098500626e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 90.38405488976655,
+        "after": 53.75135176147633
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.0000067587262484926705,
+          "z": 0.00003825635330649982
+        },
+        "speed": 0.00003884879597637234,
+        "rms": 6.289322783162792,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "hurt",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 7.105427357601002e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 71.34582448207671,
+        "after": 56.458946362570025
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.00000687927996446167,
+          "z": 0.0000451050122202793
+        },
+        "speed": 0.0000456265999195753,
+        "rms": 7.482125561603813,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "hurt",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 87.62270767088913,
+        "after": 55.417036809016956
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.00000687866758274309,
+          "z": 0.000041461560170574275
+        },
+        "speed": 0.000042028288562491235,
+        "rms": 6.532701281640004,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "chibi",
+      "action": "hurt",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 7.993605777301127e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 70.71632704414847,
+        "after": 51.94451740913392
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.000006872872199572786,
+          "z": 0.000045118623463061265
+        },
+        "speed": 0.00004563909021303079,
+        "rms": 7.482670328251175,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "hurt",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 2.1316282072803006e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 84.07189313518286,
+        "after": 52.10400809353641
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.000024751035369826826,
+          "z": 0.0001436472274506125
+        },
+        "speed": 0.00014576398631392605,
+        "rms": 23.312537228929926,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "hurt",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 2.1316282072803006e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 74.9288758894033,
+        "after": 69.29464452198586
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.000023894919917835373,
+          "z": 0.00016499184766007006
+        },
+        "speed": 0.00016671315782554037,
+        "rms": 27.009982474632775,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "hurt",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 2.1316282072803006e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 77.69168335322544,
+        "after": 52.284487390000464
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.00002369723995009852,
+          "z": 0.00014679867360665267
+        },
+        "speed": 0.00014869905767665473,
+        "rms": 23.77719851468467,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "body128",
+      "action": "hurt",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.6666666865348816,
+      "maxLengthError": 2.1316282072803006e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 1,
+      "upperArmFromDownDegrees": {
+        "before": 71.05228162437372,
+        "after": 61.750258368536535
+      },
+      "contactFit": {
+        "velocity": {
+          "x": 0.00002418276706518394,
+          "z": 0.00016501247646380287
+        },
+        "speed": 0.00016677506891512903,
+        "rms": 27.0163775699917,
+        "supportSeconds": 1.3332342117325267,
+        "samples": 82
+      }
+    },
+    {
+      "fixture": "c27man",
+      "action": "death",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [
+        "RIGHT EAR: outside the canvas; add padding or edit the pose",
+        "NOSE: outside the canvas; add padding or edit the pose",
+        "RIGHT EYE: outside the canvas; add padding or edit the pose",
+        "LEFT EYE: outside the canvas; add padding or edit the pose",
+        "LEFT EAR: outside the canvas; add padding or edit the pose"
+      ],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 92.1135984240254,
+        "after": 91.78012960124956
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "c27man",
+      "action": "death",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 3.552713678800501e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 72.06297489429556,
+        "after": 96.0952554726878
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "c27man",
+      "action": "death",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 7.105427357601002e-15,
+      "beforeIssues": [
+        "NOSE: outside the canvas; add padding or edit the pose",
+        "RIGHT EYE: outside the canvas; add padding or edit the pose",
+        "LEFT EYE: outside the canvas; add padding or edit the pose"
+      ],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 86.57808520856868,
+        "after": 92.43316596724073
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "c27man",
+      "action": "death",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 77.46059983360244,
+        "after": 91.80667195391173
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "chibi",
+      "action": "death",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 3.552713678800501e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 97.0119783861185,
+        "after": 98.70565114409126
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "chibi",
+      "action": "death",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 72.6146310804624,
+        "after": 87.81419039490292
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "chibi",
+      "action": "death",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 5.329070518200751e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 94.21191612000881,
+        "after": 96.82412154224382
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "chibi",
+      "action": "death",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 3.552713678800501e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 73.0663030892248,
+        "after": 87.38465091124152
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "body128",
+      "action": "death",
+      "direction": "south",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [
+        "NOSE: outside the canvas; add padding or edit the pose",
+        "RIGHT EYE: outside the canvas; add padding or edit the pose",
+        "LEFT EYE: outside the canvas; add padding or edit the pose",
+        "RIGHT EAR: outside the canvas; add padding or edit the pose"
+      ],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 90.49973389100968,
+        "after": 89.92124723646326
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "body128",
+      "action": "death",
+      "direction": "east",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 73.53336829286414,
+        "after": 96.02033815166159
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "body128",
+      "action": "death",
+      "direction": "north",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 1.0658141036401503e-14,
+      "beforeIssues": [
+        "NOSE: outside the canvas; add padding or edit the pose",
+        "RIGHT EYE: outside the canvas; add padding or edit the pose",
+        "LEFT EYE: outside the canvas; add padding or edit the pose"
+      ],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 84.29638467981286,
+        "after": 90.27027873168805
+      },
+      "contactFit": null
+    },
+    {
+      "fixture": "body128",
+      "action": "death",
+      "direction": "west",
+      "poses": 12,
+      "duration": 0.800000011920929,
+      "maxLengthError": 7.105427357601002e-15,
+      "beforeIssues": [],
+      "issues": [],
+      "rootTravel": 0.25,
+      "upperArmFromDownDegrees": {
+        "before": 76.90458663203697,
+        "after": 93.27923585802544
+      },
+      "contactFit": null
+    }
+  ]
+}
