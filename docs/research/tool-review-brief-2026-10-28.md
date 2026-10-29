@@ -1,7 +1,7 @@
 # Brief: review external sprite tools for ideas (2026-10-28)
 
 A task brief for a new session (board card "Research and test external sprite tools for PixelDoll ideas"). Nothing here
-is done yet.
+is done yet. Tools are numbered in the order they were added.
 
 ## Goal
 
@@ -19,6 +19,8 @@ Take inspiration and ideas only (no code or assets), and turn the worthwhile one
 | 3 | PixelSprite FX, 3D to pixel art (itch.io) | https://pixelspritefx.itch.io/3d-to-pixel-art | Free, in-browser, local. Takes GLB, GLTF, FBX or OBJ (Mixamo clips). Camera presets including isometric; 1, 4 or 8 directions; every frame in the same box (no jitter); toon shading, 1 to 2 px outlines, PICO-8 / DB32 / Endesga palettes, dithering. Exports PNG sheets, a JSON atlas (Phaser, TexturePacker), GIF and frames at x1 to x8. | 3D motion as the skeleton's motion source (research §12.3, §15), stable framing, palette and outline post-processing, export formats. |
 | 4 | Fantasy Character Generator (itch.io) | https://toshaangel.itch.io/fantasy-character-generator | Windows app, $24.99 (free demo). A modular paper doll rendered from Blender: 76 items, 4 bodies, up to 3 color zones per item, 40 animations x 8 directions, weapons held or stowed on hip or back, batches of random NPCs. Exports sheets, strips or frames, separate item layers, and JSON with frame size, row order, fps and feet position. | The closest paper-doll competitor: slots (cloak, travel pack and quiver together), color zones versus our ramps, stowed weapons, body variants, the animation list, export JSON (anchors), presets and random NPCs. |
 | 5 | ComfyUI 2D character pipeline (GitHub) | https://github.com/mor-o/comfyui-2d-character-pipeline | Already reviewed on 2026-10-27: [paperdoll-repos-review-2026-10-27.md](paperdoll-repos-review-2026-10-27.md). | Build on that review, do not repeat it. Look for anything it missed, and test its two remaining ideas with PixelLab-allowed tools: the tight second-pass inpaint mask and a loop-seam check. |
+| 6 | Skeleton Tool (satoshi-tools on lysle.net) | https://lysle.net/satoshi/skeleton, videos https://www.youtube.com/watch?v=Xdz77-Ynddw ("Generate An Entire Spritesheet from a single sprite with this Tool") and https://www.youtube.com/watch?v=PV-oXn8_EzM ("How to make a 100 pose spritesheet in under an hour") | A browser tool that rigs a single sprite with a skeleton and poses it into a whole sprite sheet. Toolbar: New, Save/Load JSON, Import/Export PNG, Export Frame, Samples. Its code is a plain ES module loaded by the page (`/satoshi/scripts/skeleton/Main.js`), so it can be read; no license is shown. | Free, deterministic posing of one drawn sprite: compare with skeleton-v3 (paid, redraws every frame), our round 8 2D cut-out retarget (`spikes/api/mocap/retarget2.mts`) and the "shift rigid items along the head track" idea. Could it pose items or bodies without paid calls, or prepare pose references for PixelLab? |
+| 7 | Ultima Online paperdoll drawer (GitHub) | https://github.com/ppardalj/ultima-paperdoll-drawer-php | Already reviewed on 2026-10-27 (same review doc as tool 5): a small 2017 PHP renderer with UO layers, hue tables and race/gender art, GPL-3.0+ (ideas only). | Build on that review: its open ideas were split slots (cloak and backpack, inner and outer legs), a dye mode that keeps each material's lightness, an index sheet plus palette texture for runtime dye, and per-item draw-order exceptions. |
 
 ## Read first
 
@@ -96,6 +98,22 @@ Take inspiration and ideas only (no code or assets), and turn the worthwhile one
    - Design a free offline test of a tighter inpaint-v3 repair mask (the failed layer grown 1 to 2 px) and of a
      loop-seam score on stored clips.
    - Propose a small paid A/B only if the offline numbers justify it.
+6. **Skeleton Tool.**
+   - Watch both videos (transcripts and descriptions, as for the AutoSprite video) and try the tool in Claude Browser
+     with its Samples and with a PixelDoll standing view exported from the demo project.
+   - Read its JavaScript (`Main.js` and the modules it imports) to learn how it binds pixels to bones, how it deforms or
+     rotates parts (rigid cut-out, mesh, or per-pixel), how it keeps pixel art crisp, and its JSON format. No license is
+     shown: learn from it, do not copy code; ask the owner before contacting the author.
+   - Test the idea offline: pose a stored PixelDoll item layer (for example the helmet or the cape in
+     `spikes/api/out/x26`, `x28`) with a small re-implementation, and measure it against the PixelLab-posed frames
+     (fit to the body, pixel quality, flicker).
+   - Decide where it could fit: free poses for rigid items, a pose editor, cheap previews before paid generation, or
+     pose references for `animate-with-skeleton-v3` (see the Later card "Build the skeleton pose lab").
+7. **Ultima paperdoll drawer.**
+   - Start from the 2026-10-27 review; check whether the new tools (especially Fantasy Character Generator's slots and
+     color zones) change its recommendations.
+   - Test the open ideas offline against the demo project: per-item draw-order exceptions, lightness-keeping dye, and
+     what an index sheet plus palette texture would cost in export size and engine code.
 
 ## Owner actions this task needs
 
