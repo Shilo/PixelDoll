@@ -2,7 +2,8 @@
 export const RESEARCH_PHASE = 'workflow-reconciliation-v1';
 export const RESEARCH_BUDGET_KEY = 'pixeldoll.motionLab.researchBudget.2026-11-01';
 export const RESEARCH_PRIOR_UNITS = 998, RESEARCH_TOTAL_CAP = 2000, RESEARCH_PHASE_CAP = 1000, RESEARCH_PILOT_CAP = 200;
-export const RESEARCH_STAGE_CAPS = { body: 25, equipment: 100, replication: 75 } as const;
+// Finish the first eight-frame grip family before spending on repeat/transfer controls. Total pilot stays 200.
+export const RESEARCH_STAGE_CAPS = { body: 25, equipment: 150, replication: 25 } as const;
 export type ResearchStage = keyof typeof RESEARCH_STAGE_CAPS;
 export type ResearchStatus = 'reserved' | 'accepted' | 'completed' | 'failed' | 'unknown';
 export interface ResearchCall { id: string; label: string; stage: ResearchStage; units: number; status: ResearchStatus; at: string; jobIds?: string[]; billedUnits?: number; note?: string }

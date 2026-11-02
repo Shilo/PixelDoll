@@ -1,16 +1,13 @@
 // One reviewed, frozen-frame diagnostic. This is not a production fitting route.
-import {get} from 'svelte/store';
-import {routes,png,type InpaintV3} from '../../lib/pixellab/routes.ts';
-import {requestIdentity,type JobRec} from '../../lib/pixellab/queue.ts';
-import {base64ToBytes,bytesToBase64,pngSize} from '../../lib/image/png.ts';
+import type {InpaintV3} from '../../lib/pixellab/routes.ts';
+import {base64ToBytes,pngSize} from '../../lib/image/png.ts';
 import {decodePngBytes} from '../../lib/image/pngraw.ts';
 import {toChroma} from '../../lib/image/chroma.ts';
 import {padImg} from '../../lib/items/items.ts';
 import {sha256,stableStringify} from '../../lib/image/hash.ts';
-import * as db from '../../lib/store/db.ts';
 import {readPilot} from './pilot.ts';
-import {labQueue,LAB_TAG,reconcileResearchJobs,existingLabRequest} from './run.ts';
-import {RESEARCH_PHASE,reserveResearchCall,recordResearchOutcome,readResearchBudget} from './research-budget.ts';
+import {labQueue} from './run.ts';
+import {dispatchFixedInpaint,exportFixedInpaint,readFixedInpaint} from './fixed-inpaint.ts';
 export interface ManagedEquipmentProbe {
   version:1;kind:'managed-equipment-probe';characterId:string;animationGroupId:string;direction:'east';cell:144;cols:3;
   indices:number[];frames:{index:number;sha256:string}[];request:InpaintV3;
@@ -19,12 +16,15 @@ export interface ManagedEquipmentProbe {
 const KEY='pixeldoll.motionPilot.equipment.2026-11-01',indices=[1,3,4,6];
 // Binds the reviewed prompt, mask, references and provenance, not just a mutable file's dimensions.
 export const MANAGED_PROBE_SHA256='3c20bfe77c4198521731c283082a00d6445e92beaf8d01298cc7db69c04aa43f';
-interface ProbeRecord {version:1;packet:ManagedEquipmentProbe;callId:string;jobId?:string;error?:string}
-export function readManagedEquipment():ProbeRecord|null {const text=localStorage.getItem(KEY);if(!text)return null;const row=JSON.parse(text) as ProbeRecord;if(row.version!==1)throw new Error('Unsupported managed equipment receipt.');return row;}
+export const ARMED_COMPLETION_SHA256='2b468a4513c58953fcb1688e9988d4a1de618cba1c2bc4a80397358d5191f52e';
+const COMPLETION_KEY='pixeldoll.motionPilot.armedCompletion.2026-11-02',completionIndices=[0,2,5,7];
+const profileOf=(p:ManagedEquipmentProbe)=>p.request.seed===734?{key:COMPLETION_KEY,sha:ARMED_COMPLETION_SHA256,label:'Complete weapon-aware source, east frames 0/2/5/7'}:{key:KEY,sha:MANAGED_PROBE_SHA256,label:'Frozen managed east sword diagnostic, frames 1/3/4/6'};
+export function readManagedEquipment(){return readFixedInpaint<ManagedEquipmentProbe>(KEY);}
 export function parseManagedEquipment(value:unknown):ManagedEquipmentProbe {
   const p=value as ManagedEquipmentProbe;
-  if(p?.version!==1||p.kind!=='managed-equipment-probe'||p.direction!=='east'||p.cell!==144||p.cols!==3||typeof p.characterId!=='string'||typeof p.animationGroupId!=='string'||JSON.stringify(p.indices)!==JSON.stringify(indices)||!Array.isArray(p.frames)||p.frames.length!==4||p.frames.some((f,i)=>f.index!==indices[i]||!/^[a-f0-9]{64}$/.test(f.sha256)))throw new Error('Expected the reviewed four-frame east managed equipment diagnostic.');
-  if(typeof p.request?.description!=='string'||!p.request.description.trim()||p.request.description.length>10000||p.request.seed!==731||p.request.no_background!==true)throw new Error('The diagnostic prompt, seed or transparency contract is invalid.');
+  const selectedIndices=p?.request?.seed===734?completionIndices:indices;
+  if(p?.version!==1||p.kind!=='managed-equipment-probe'||p.direction!=='east'||p.cell!==144||p.cols!==3||typeof p.characterId!=='string'||typeof p.animationGroupId!=='string'||JSON.stringify(p.indices)!==JSON.stringify(selectedIndices)||!Array.isArray(p.frames)||p.frames.length!==4||p.frames.some((f,i)=>f.index!==selectedIndices[i]||!/^[a-f0-9]{64}$/.test(f.sha256)))throw new Error('Expected the reviewed four-frame east managed equipment diagnostic.');
+  if(typeof p.request?.description!=='string'||!p.request.description.trim()||p.request.description.length>10000||![731,734].includes(p.request.seed??0)||p.request.no_background!==true)throw new Error('The diagnostic prompt, seed or transparency contract is invalid.');
   for(const image of [p.request.inpainting_image,p.request.mask_image]) {
     if(image?.image?.type!=='base64'||typeof image.image.base64!=='string'||image.image.base64.length>2_000_000||image.size?.width!==432||image.size.height!==288)throw new Error('The diagnostic needs two bounded 432 by 288 PNG grids.');
     const size=pngSize(base64ToBytes(image.image.base64));if(size?.w!==432||size.h!==288)throw new Error('Diagnostic PNG dimensions do not match their declared grid.');
@@ -51,21 +51,11 @@ async function verifyFrozenFrames(packet:ManagedEquipmentProbe) {
 }
 export async function submitManagedEquipment(value:unknown) {
   if(!labQueue.key)throw new Error('Connect the localhost agent session first.');
-  const packet=parseManagedEquipment(value);if(await sha256(stableStringify(packet))!==MANAGED_PROBE_SHA256)throw new Error('This file differs from the one reviewed equipment diagnostic. No request was submitted.');await verifyFrozenFrames(packet);await reconcileResearchJobs();
-  if(!navigator.locks)throw new Error('Safe diagnostic accounting requires browser Web Locks.');
-  return navigator.locks.request(KEY,async()=>{
-    if(readManagedEquipment())throw new Error('This one-shot diagnostic already has a receipt or unknown outcome. It will not be resent.');
-    const request=routes.inpaintV3({description:packet.request.description,inpainting_image:{image:png(packet.request.inpainting_image.image.base64),size:{width:432,height:288}},mask_image:{image:png(packet.request.mask_image.image.base64),size:{width:432,height:288}},seed:731,no_background:true});
-    const {requestHash}=await requestIdentity(request),existing=existingLabRequest(requestHash);if(existing)throw new Error(`This request already has receipt ${existing.id}. Inspect it instead of reserving or resending.`);
-    const callId=RESEARCH_PHASE+'-managed-equipment-'+requestHash,approval=await reserveResearchCall({id:callId,label:'Frozen managed east sword diagnostic, frames 1/3/4/6',stage:'equipment',units:25});
-    if(!approval.created)throw new Error('This diagnostic already has a reservation. Inspect its existing result.');
-    const state:ProbeRecord={version:1,packet,callId};localStorage.setItem(KEY,JSON.stringify(state));
-    try{const job=await labQueue.enqueue(request,{label:approval.record.label,tag:LAB_TAG,activityScope:LAB_TAG,playerRequested:true});state.jobId=job.id;localStorage.setItem(KEY,JSON.stringify(state));await recordResearchOutcome(callId,{status:'accepted',jobIds:[job.id]});return state;}
-    catch(e){state.error=(e as Error).message;localStorage.setItem(KEY,JSON.stringify(state));await recordResearchOutcome(callId,{status:'unknown',note:state.error});throw e;}
-  });
+  const packet=parseManagedEquipment(value),profile=profileOf(packet);if(await sha256(stableStringify(packet))!==profile.sha)throw new Error('This file differs from the one reviewed equipment diagnostic. No request was submitted.');await verifyFrozenFrames(packet);
+  return dispatchFixedInpaint({key:profile.key,label:profile.label,units:25},packet,packet.request);
 }
 export async function exportManagedEquipment() {
-  await reconcileResearchJobs();const probe=readManagedEquipment(),job=probe?.jobId?await db.get<JobRec>('jobs',probe.jobId):undefined;
-  const images=await Promise.all((job?.jobs.flatMap(j=>j.results)??[]).map(async r=>{const blob=await db.getBlob(r.sha);if(!blob)throw new Error('A diagnostic result image is missing.');return{...r,png:bytesToBase64(new Uint8Array(await blob.arrayBuffer()))};}));
-  return{version:1,probe,job,images,budget:readResearchBudget(),currentQueueState:probe?.jobId?get(labQueue).jobs.find(j=>j.id===probe.jobId)?.state:null};
+  return exportFixedInpaint<ManagedEquipmentProbe>(KEY);
 }
+export const readArmedCompletion=()=>readFixedInpaint<ManagedEquipmentProbe>(COMPLETION_KEY);
+export const exportArmedCompletion=()=>exportFixedInpaint<ManagedEquipmentProbe>(COMPLETION_KEY);

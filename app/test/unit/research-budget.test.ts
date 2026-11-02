@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { RESEARCH_BUDGET_KEY, readResearchBudget, researchBudgetUsage, reserveResearchCall, recordResearchOutcome, recordResearchGate } from '../../src/ui/motion-lab/research-budget.ts';
+import { RESEARCH_BUDGET_KEY, RESEARCH_STAGE_CAPS, RESEARCH_PILOT_CAP, RESEARCH_PHASE_CAP, readResearchBudget, researchBudgetUsage, reserveResearchCall, recordResearchOutcome, recordResearchGate } from '../../src/ui/motion-lab/research-budget.ts';
 
 function storage() {
   const values = new Map<string, string>([['pixeldoll.motionLab.2026-10-28', 'historical reservations'], ['pixeldoll.motionLab.custom-v3.2026-11-01', 'historical custom receipt']]);
@@ -44,15 +44,31 @@ test('explicit reviewed gates unlock stages, enforce the 200-unit pilot, and inv
   await expect(recordResearchGate('body', { passed: true, notes: '', evidence: [] })).rejects.toThrow('explicit evidence');
   await recordResearchGate('body', gate());
   await reserveResearchCall(call('body', 25));
-  await reserveResearchCall(call('equipment', 100, 'equipment'));
+  await reserveResearchCall(call('equipment', 150, 'equipment'));
   await expect(reserveResearchCall(call('replication', 1, 'replication'))).rejects.toThrow('equipment qualification');
   await recordResearchGate('equipment', gate());
-  await reserveResearchCall(call('replication', 75, 'replication'));
+  await reserveResearchCall(call('replication', 25, 'replication'));
   expect(researchBudgetUsage()).toMatchObject({ reservedUnits: 200, pilotRemaining: 0, phaseRemaining: 800 });
   await expect(reserveResearchCall(call('extra', 0.1, 'replication'))).rejects.toThrow('pilot or phase');
   await recordResearchGate('body', gate(false));
   expect(readResearchBudget().gates.equipment).toBeUndefined();
   await expect(reserveResearchCall(call('closed', 1, 'equipment'))).rejects.toThrow('body qualification');
+});
+
+test('the revised equipment allocation preserves the total pilot and phase limits without clearing failed qualification', async () => {
+  storage();
+  expect(RESEARCH_STAGE_CAPS).toEqual({ body: 25, equipment: 150, replication: 25 });
+  expect(Object.values(RESEARCH_STAGE_CAPS).reduce((n, cap) => n + cap, 0)).toBe(200);
+  expect(RESEARCH_PILOT_CAP).toBe(200); expect(RESEARCH_PHASE_CAP).toBe(1000);
+  await recordResearchGate('body', gate()); await recordResearchGate('equipment', gate(false));
+  const failed = structuredClone(readResearchBudget().gates.equipment);
+  await reserveResearchCall(call('body-evidence', 21));
+  await reserveResearchCall(call('bounded-equipment-evidence', 150, 'equipment'));
+  expect(researchBudgetUsage()).toMatchObject({ reservedUnits: 171, pilotRemaining: 29, phaseRemaining: 829 });
+  await expect(reserveResearchCall(call('equipment-overflow', 0.1, 'equipment'))).rejects.toThrow('stage allocation');
+  await expect(reserveResearchCall(call('still-unqualified-replication', 1, 'replication'))).rejects.toThrow('equipment qualification');
+  expect(readResearchBudget().gates.equipment).toEqual(failed);
+  expect(readResearchBudget().calls.map(row => row.id)).toEqual(['body-evidence', 'bounded-equipment-evidence']);
 });
 
 test('unknown and failed outcomes retain reservations; discovered job IDs resume without granting another send', async () => {
