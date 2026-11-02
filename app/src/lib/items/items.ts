@@ -307,6 +307,7 @@ export interface CellOut {
   erased?: number;
   keyOutside?: number;
   rawKeyOutside?: ReturnType<typeof newKeyPixels>; // held-item observation before registration; mask stays in memory only
+  stencil?: Uint8Array; // optional hard item/cut boundary in raw cell coordinates; never persisted
   outBand: number; // layer px outside the slot band (info)
   baseBand: number; // base opaque px inside the slot band (how much the covered body region itself changes per frame)
   specks: number; // components <= 2 px
@@ -351,6 +352,13 @@ const setMask = (c: CellOut, keep: Uint8Array) => {
   c.stray += removed;
   return removed;
 };
+function clipToStencil(c: CellOut): number {
+  const stencil=c.stencil;if(stencil===undefined)return 0;
+  if(!(stencil instanceof Uint8Array)||stencil.length!==c.layer.w*c.layer.h||stencil.length!==c.mask.length||stencil.some(v=>v!==0&&v!==1))throw new Error('An item stencil must be a binary Uint8Array matching the cell canvas.');
+  const removed=setMask(c,stencil);
+  for(let p=0;p<stencil.length;p++)if(!stencil[p]){c.layer.data.fill(0,p*4,p*4+4);if(c.cut)c.cut[p]=0;}
+  return removed;
+}
 const dilate = (m: Uint8Array, w: number, r: number) => {
   const h = m.length / w, o = new Uint8Array(m.length);
   for (let p = 0; p < m.length; p++) {
@@ -597,8 +605,10 @@ export function sizeFloor(cells: CellOut[], keys: Partial<Record<DirectionName, 
 
 /** Clip-level cleanup after extraction (posed cells): size floor and streak trim for head items, attachment + repair for held items. */
 export function postProcess(rig: Rig, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): { removed: number; repaired: string[] } {
-  if (slot.class === 'held') { const removed = attachHeld(rig, slot, cells, pad) + clipFloor(cells); closeGrip(cells); return { removed, repaired: repairDropped(rig, slot, cells, keys, pad) }; }
-  return { removed: sizeFloor(cells, keys) + (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells), repaired: [] };
+  let removed=cells.reduce((n,c)=>n+clipToStencil(c),0),repaired:string[]=[];
+  if (slot.class === 'held') { removed += attachHeld(rig, slot, cells, pad) + clipFloor(cells); closeGrip(cells); repaired=repairDropped(rig, slot, cells, keys, pad); }
+  else removed += sizeFloor(cells, keys) + (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells);
+  return {removed:removed+cells.reduce((n,c)=>n+clipToStencil(c),0),repaired};
 }
 
 /**
@@ -645,11 +655,11 @@ function translate(im: Img, dx: number, dy: number): Img {
   return o;
 }
 
-export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean; pad?: number; cut?: { maxY: number; allow?: Uint8Array } }): CellOut {
+export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean; pad?: number; cut?: { maxY: number; allow?: Uint8Array }; stencil?: Uint8Array }): CellOut {
   const { base, route, band } = o, { w, h } = base;
   const rawKeyOutside = o.held && route !== 'none' ? newKeyPixels(base, o.out, route) : undefined;
   // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
-  const reg = o.posed ? bestShift(base, o.out) : ([0, 0] as [number, number]);
+  const reg = o.posed && o.stencil===undefined ? bestShift(base, o.out) : ([0, 0] as [number, number]);
   const out = reg[0] || reg[1] ? translate(o.out, -reg[0], -reg[1]) : o.out;
   let r: { layer: Img; mask: Uint8Array; stray?: number } = route === 'none' ? diffLayer(base, out, band, o.useCc) : chromaLayer(out, route, base);
   let clipY: number | undefined;
@@ -676,13 +686,16 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
   // on the stand-in, so they read as erased (round 5: 10–13 px beside the head failed G2 on every item, idle east 1–3)
   const fx = detachedOf(base), skip = qm.map((v, p) => v | (cut?.[p] ?? 0) | fx[p]);
   const tol = o.posed ? posedTol(w, h, o.pad) : 0, kk = route === 'none' ? null : keyKept(base, out, route, skip, undefined, tol);
-  return {
+  const cell:CellOut = {
     key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
+    ...(o.stencil!==undefined?{stencil:o.stencil}:{}),
     ...(rawKeyOutside ? { rawKeyOutside } : {}),
     ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, qm, tol) } : {}),
     ...cleanliness(qm, w, h), ...(route !== 'none' ? { chroma: route } : {}), shifted: bestShift(base, out).some(Boolean), offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
     ...(clipY != null ? { clipY } : {}), ...(cut ? { cut } : {}),
   };
+  clipToStencil(cell);if(cell.stencil)cell.stencil=new Uint8Array(cell.stencil);
+  return cell;
 }
 
 /** Layer drawn over the real base (what the game shows). */
