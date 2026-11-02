@@ -28,7 +28,7 @@ async function fixture(mode='pass'){
   if(mode==='lost')return{state:'lost',error:'unknown test response'} as JobRec
   const raw=(req.body as {inpainting_image:{image:{base64:string}}}).inpainting_image.image.base64
   const grid=mode==='geometry'?makeImg(256,192):await decodePngBytes(base64ToBytes(raw))
-  for(let i=0;i<8&&mode!=='geometry';i++){const ox=i%4*96,oy=Math.floor(i/4)*96;for(let y=25;y<47;y++)for(let x=39;x<42;x++)grid.data.set([180,180,190,255],((oy+y)*grid.w+ox+x)*4);if(mode==='fail')for(let y=35;y<50;y++)for(let x=45;x<51;x++)grid.data.fill(0,((oy+y)*grid.w+ox+x)*4,((oy+y)*grid.w+ox+x)*4+4)}
+  for(let i=0;i<8&&mode!=='geometry';i++){const ox=i%4*96,oy=Math.floor(i/4)*96;for(let y=mode==='outside-mask'?0:25;y<47;y++)for(let x=39;x<42;x++)grid.data.set([180,180,190,255],((oy+y)*grid.w+ox+x)*4);if(mode==='fail')for(let y=35;y<50;y++)for(let x=45;x<51;x++)grid.data.fill(0,((oy+y)*grid.w+ox+x)*4,((oy+y)*grid.w+ox+x)*4+4)}
   if(mode==='race')current.manifest.rig.pivot.y++
   const hash=await put(grid)
   return{id:'grid',state:'done',endpoint:req.path,params:req.body,requestHash:'grid',createdAt:0,gens:10,usd:0,jobs:[{id:'grid-job',results:[{label:'0',sha:hash}]}]} as unknown as JobRec
@@ -50,6 +50,24 @@ test('successful fixed-frame repair retains96px pivot, other directions and idle
  expect(r.saved).toBe(true);expect(r.qa.failCalls.size).toBe(0);expect(f.enqueue.mock.calls[0][0].path).toBe('/inpaint-v3')
  const item=f.saved()!;expect(item.layers[0].cell).toEqual({w:96,h:96});expect(item.layers[0].pivot).toEqual({x:48,y:76});expect(item.layers[0].cells!.idle).toEqual(before.layers[0].cells!.idle);expect(item.layers[0].cells!.slash!.south).toEqual(before.layers[0].cells!.slash!.south)
  expect(item.layers[0].cells!.slash!.west).toHaveLength(8);expect(item.provenance.at(-1)?.endpoint).toBe('/inpaint-v3');expect(f.ctx.rec.manifest.rig).toEqual(f.current().manifest.rig)
+})
+
+test('a production grid repair clips connected provider spill to its submitted mask after all cleanup',async()=>{
+ const f=await fixture('outside-mask'),r=await regridClip(f.ctx,f.item,'slash','west',123)
+ const request=f.enqueue.mock.calls[0][0].body as {mask_image:{image:{base64:string}}}
+ const mask=await decodePngBytes(base64ToBytes(request.mask_image.image.base64))
+ expect(r.cells).toHaveLength(8)
+ for(const [i,c]of r.cells.entries()){
+  expect(c.stencil).toBeDefined();expect(c.offset.every(v=>v===0)).toBe(true)
+  expect(c.base.data[(46*96+41)*4+3]).toBe(255)
+  expect(c.layer.data[(46*96+41)*4+3]).toBe(255) // allowed foreground over the body
+  expect(c.layer.data[(4*96+40)*4+3]).toBe(0) // connected smear outside the paid permission
+  const ox=i%4*96,oy=Math.floor(i/4)*96
+  for(let y=0;y<96;y++)for(let x=0;x<96;x++)if(mask.data[((oy+y)*mask.w+ox+x)*4]===0){
+   expect(c.mask[y*96+x]).toBe(0);expect(c.layer.data[(y*96+x)*4+3]).toBe(0);expect(c.cut?.[y*96+x]??0).toBe(0)
+  }
+ }
+ expect(f.enqueue).toHaveBeenCalledOnce()
 })
 test('failed quality keeps old pixels and never calls publication',async()=>{const f=await fixture('fail'),before=structuredClone(f.item),r=await regridClip(f.ctx,f.item,'slash','west',123);expect(r.saved).toBe(false);expect(f.save).not.toHaveBeenCalled();expect(f.item).toEqual(before)})
 test.each(['geometry','lost'] as const)('invalid or unknown %s output cannot publish',async mode=>{const f=await fixture(mode);await expect(regridClip(f.ctx,f.item,'slash','west',123)).rejects.toThrow();expect(f.save).not.toHaveBeenCalled()})

@@ -1,6 +1,7 @@
 // Fixed reverse experiment: adopt an armed source, remove its prop, then review a newly frozen base.
 import {base64ToBytes} from '../../lib/image/png.ts';
 import {decodePngBytes} from '../../lib/image/pngraw.ts';
+import {hardMaskBits} from '../../lib/image/hard-mask.ts';
 import {sha256,stableStringify} from '../../lib/image/hash.ts';
 import {cutGrid} from '../../lib/items/items.ts';
 import {keyScore,KT} from '../../lib/image/chroma.ts';
@@ -26,9 +27,17 @@ export function parseDisarmPacket(value:unknown):DisarmPacket {
   for(const image of [p.request.inpainting_image,p.request.mask_image])if(image?.image?.type!=='base64'||typeof image.image.base64!=='string'||image.image.base64.length>2_000_000||image.size?.width!==288||image.size.height!==288)throw new Error('The disarm probe requires two bounded 288 by 288 PNG grids.');
   return p;
 }
-export async function maskBits(png:string,size:number){
-  const image=await decodePngBytes(base64ToBytes(png));if(image.w!==size||image.h!==size)throw new Error('A disarm mask has the wrong canvas.');
-  const bits=new Uint8Array(size*size);for(let p=0;p<bits.length;p++){const i=p*4,v=image.data[i];if(image.data[i+3]!==255||![0,255].includes(v)||image.data[i+1]!==v||image.data[i+2]!==v)throw new Error('Disarm masks must be opaque binary hard masks.');bits[p]=v===255?1:0;}return bits;
+export async function maskBits(png:string,width:number,height=width){
+  const image=await decodePngBytes(base64ToBytes(png));if(image.w!==width||image.h!==height)throw new Error('A disarm mask has the wrong canvas.');
+  return hardMaskBits(image);
+}
+export async function verifiedOriginalSourceFrames(job:JobRec){
+  const originalHash=(job.params as {inpainting_image?:{image?:{$blob?:string}}}).inpainting_image?.image?.$blob;
+  if(typeof originalHash!=='string'||!hex(originalHash)||!job.inputs.includes(originalHash))throw new Error('The completion source is missing its original input identity.');
+  const originalBlob=await db.getBlob(originalHash);if(!originalBlob)throw new Error('The completion source original input is missing.');
+  const originalBytes=new Uint8Array(await originalBlob.arrayBuffer());if(await sha256(originalBytes)!==originalHash)throw new Error('The completion source original input hash changed.');
+  const original=await decodePngBytes(originalBytes);if(original.w!==432||original.h!==288)throw new Error('The completion source original input has a different canvas.');
+  return cutGrid(original,6,144,144,3);
 }
 export async function submitDisarm(value:unknown){
   const packet=parseDisarmPacket(value),profile=profileOf(packet),completion=packet.request.seed===735,unsigned={...packet,canonicalHash:undefined};
@@ -40,15 +49,7 @@ export async function submitDisarm(value:unknown){
   const source=await decodePngBytes(bytes),inputBytes=base64ToBytes(packet.request.inpainting_image.image.base64),maskBytes=base64ToBytes(packet.request.mask_image.image.base64),input=await decodePngBytes(inputBytes);
   if(source.w!==432||source.h!==288||input.w!==288||input.h!==288||await sha256(inputBytes)!==packet.gridSha256||await sha256(maskBytes)!==packet.maskSha256)throw new Error('The source or prepared grid differs from the reviewed dimensions/hash.');
   const raw=cutGrid(source,6,144,144,3),targets=cutGrid(input,4,144,144,2),mask=await maskBits(packet.request.mask_image.image.base64,288);
-  let originals:ReturnType<typeof cutGrid>|undefined;
-  if(completion){
-    const originalHash=(job.params as {inpainting_image?:{image?:{$blob?:string}}}).inpainting_image?.image?.$blob;
-    if(typeof originalHash!=='string'||!hex(originalHash)||!job.inputs.includes(originalHash))throw new Error('The completion source is missing its original input identity.');
-    const originalBlob=await db.getBlob(originalHash);if(!originalBlob)throw new Error('The completion source original input is missing.');
-    const originalBytes=new Uint8Array(await originalBlob.arrayBuffer());if(await sha256(originalBytes)!==originalHash)throw new Error('The completion source original input hash changed.');
-    const original=await decodePngBytes(originalBytes);if(original.w!==432||original.h!==288)throw new Error('The completion source original input has a different canvas.');
-    originals=cutGrid(original,6,144,144,3);
-  }
+  const originals=completion?await verifiedOriginalSourceFrames(job):undefined;
   for(const [i,frame]of packet.frames.entries()){
     const image=raw[i];if(await sha256(new Uint8Array(image.data))!==frame.rawRgbaSha256)throw new Error('A source frame differs from the retained provider pixels.');
     const corrected=new Set<number>();if(completion&&frame.cleanup.length!==completionCleanupCounts[i])throw new Error('The completion source correction count differs from its reviewed ledger.');

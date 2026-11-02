@@ -3,14 +3,15 @@ import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import type { Req } from '../../src/lib/pixellab/routes.ts';
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts';
 import type { StoredProject } from '../../src/lib/store/project.ts';
-import { makeImg, type Img } from '../../src/lib/image/png.ts';
+import { base64ToBytes, makeImg, type Img } from '../../src/lib/image/png.ts';
+import { sha256 } from '../../src/lib/image/hash.ts';
 import { decodePngBytes, encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash, DIRECTIONS, type Keypoint } from '../../src/lib/rig/rig.ts';
 import { fromApi, LABELS } from '../../src/lib/rig/poses.ts';
 import { toChroma } from '../../src/lib/image/chroma.ts';
 import { over } from '../../src/lib/compose/compose.ts';
-import { itemRoute, packGrid } from '../../src/lib/items/items.ts';
-import { acceptItem, gensOf, isClean, newDraft, poseItemClip, rerollCall, runItem, type RigCtx } from '../../src/lib/items/run.ts';
+import { itemRoute, packGrid, padImg } from '../../src/lib/items/items.ts';
+import { acceptItem, evaluateItem, gensOf, isClean, newDraft, poseItemClip, rerollCall, runItem, type Draft, type RigCtx } from '../../src/lib/items/run.ts';
 import { draftQueueIds } from '../../src/studio/apiPlans.ts';
 
 const ledger = vi.hoisted(() => ({ records: new Map<string, JobRec>(), requests: [] as Req[], blobs: new Map<string, Blob>(), identities: new Map<string, string>(), listeners: new Set<(s: { jobs: JobRec[] }) => void>(), next: 0, enqueues: 0, project: null as StoredProject | null, output: null as null | ((req: Req) => Promise<Img[]>) }));
@@ -27,7 +28,14 @@ vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: {
       const sha = `${id}-${index}`, bytes = await encodePngBytes(im);
       ledger.blobs.set(sha, new Blob([bytes as Uint8Array<ArrayBuffer>])); results.push({ sha, label: String(index) });
     }
-    const rec = { id, label: meta.label, method: 'POST', endpoint: req.path, params: req.body, inputs: [], requestHash: id, state: 'done', attempts: 1, nextAt: 0, createdAt: 1, gens: req.path === '/animate-with-skeleton-v3' ? 2 : 10, usd: 0, jobs: [{ id: `${id}-job`, done: true, status: 'completed', results }] } as JobRec;
+    const params = structuredClone(req.body), inputs: string[] = [];
+    if (req.path === '/inpaint-v3') {
+      const mask = (params as { mask_image: { image: { base64?: string; $blob?: string } } }).mask_image.image;
+      const bytes = base64ToBytes(mask.base64!), hash = await sha256(bytes);
+      ledger.blobs.set(hash, new Blob([bytes as Uint8Array<ArrayBuffer>]));
+      delete mask.base64; mask.$blob = hash; inputs.push(hash);
+    }
+    const rec = { id, label: meta.label, method: 'POST', endpoint: req.path, params, inputs, requestHash: id, state: 'done', attempts: 1, nextAt: 0, createdAt: 1, gens: req.path === '/animate-with-skeleton-v3' ? 2 : 10, usd: 0, jobs: [{ id: `${id}-job`, done: true, status: 'completed', results }] } as JobRec;
     ledger.identities.set(fingerprint, id); ledger.records.set(id, rec); ledger.requests.push(req);
     for (const cb of ledger.listeners) cb({ jobs: [...ledger.records.values()] });
     return rec;
@@ -97,6 +105,90 @@ async function singleStandingFixture() {
   ledger.project = structuredClone(f.ctx.rec);
   return { ...f, draft };
 }
+
+async function retainedMaskedGrid(badMask?: 'gray' | 'alpha' | 'canvas') {
+  const f = await fixture(), rig = f.ctx.rec.manifest.rig, animation = rig.animations[0];
+  animation.cells = 2; animation.frames = animation.frames.slice(0, 2);
+  animation.sources!.south!.keypoints = animation.sources!.south!.keypoints!.slice(0, 2);
+  animation.sources!.south!.measured = animation.sources!.south!.measured!.slice(0, 2);
+  const body = f.ctx.project.images.get(rig.rest!.south!.image)!;
+  const base = padImg(body, 16), input = toChroma(base, 'green'), bits = new Uint8Array(64 * 64);
+  const output = { ...input, data: new Uint8ClampedArray(input.data) };
+  for (let y = 31; y < 36; y++) for (let x = 34; x < 44; x++) {
+    bits[y * 64 + x] = 1; output.data.set([160, 160, 170, 255], (y * 64 + x) * 4);
+  }
+  // This real body pixel is a protected finger-shaped hole that closeGrip would otherwise refill.
+  bits[33 * 64 + 35] = 0;
+  output.data.set(input.data.subarray((33 * 64 + 35) * 4, (33 * 64 + 36) * 4), (33 * 64 + 35) * 4);
+  // Connected provider repaint outside the saved permission, but inside today's broad wrist circle.
+  paint(output, 32, 29, 2, 2, [120, 80, 40]);
+  const grid = packGrid([input, input, input], [bits, bits, null]);
+  const result = packGrid([output, output, input], [null, null, null]).image;
+  // Unused tail cells are not target permissions and may have transparent pixels.
+  for (let y = 0; y < 64; y++) for (let x = 192; x < 256; x++) grid.mask.data.fill(0, (y * 256 + x) * 4, (y * 256 + x + 1) * 4);
+  if (badMask === 'gray') grid.mask.data.set([127, 127, 127, 255], (32 * 256 + 34) * 4);
+  if (badMask === 'alpha') grid.mask.data.set([255, 255, 255, 0], (32 * 256 + 34) * 4);
+  const put = async (image: Img) => {
+    const bytes = await encodePngBytes(image), hash = await sha256(bytes);
+    ledger.blobs.set(hash, new Blob([bytes as Uint8Array<ArrayBuffer>])); return hash;
+  };
+  const maskHash = await put(badMask === 'canvas' ? makeImg(128, 64) : grid.mask), resultHash = await put(result);
+  const record: JobRec = { id: 'retained-mask', method: 'POST', endpoint: '/inpaint-v3', label: 'Saved grid',
+    params: { inpainting_image: { size: { width: 256, height: 64 } }, mask_image: { image: { type: 'base64', $blob: maskHash }, size: { width: 256, height: 64 } } },
+    inputs: [maskHash], requestHash: 'retained-identity', state: 'done', attempts: 1, nextAt: 0, createdAt: 1, gens: 10, usd: 0,
+    jobs: [{ id: 'retained-remote', status: 'completed', done: true, results: [{ label: '0', sha: resultHash }] }] };
+  const draft: Draft = { rigId: f.ctx.rec.id, spec: { id: 'masked', name: 'Masked sword', slot: 'main_hand', prompt: 'steel sword', key: 'green', method: 'skel', anims: ['walking'], dirs: ['south'] }, calls: [{ kind: 'grid', cells: ['walking/south/0', 'walking/south/1'], seed: 7, recId: record.id, rerolls: 0, old: [] }], log: [] };
+  ledger.records.set(record.id, record);
+  const publish = () => { for (const cb of ledger.listeners) cb({ jobs: [...ledger.records.values()] }); };
+  publish();
+  return { ...f, base, input, bits, maskHash, record, draft, put, publish };
+}
+
+test('restored inpaint uses its saved mask, retains allowed foreground, and cannot regrow protected body or finger pixels', async () => {
+  const f = await retainedMaskedGrid(), result = await evaluateItem(f.draft, f.ctx);
+  expect(result.g1.size).toBe(0); expect(result.cells).toHaveLength(2);
+  for (const cell of result.cells) {
+    expect(cell.stencil).toEqual(f.bits); expect(cell.offset.every(v => v === 0)).toBe(true);
+    expect(f.base.data[(32 * 64 + 34) * 4 + 3]).toBe(255);
+    expect(cell.layer.data[(32 * 64 + 34) * 4 + 3]).toBe(255); // genuine foreground over the body
+    for (const p of [29 * 64 + 32, 30 * 64 + 33, 33 * 64 + 35]) {
+      expect(cell.mask[p]).toBe(0); expect(cell.layer.data.subarray(p * 4, p * 4 + 4)).toEqual(new Uint8ClampedArray(4));
+      expect(cell.cut?.[p] ?? 0).toBe(0);
+    }
+    for (let p = 0; p < f.bits.length; p++) if (!f.bits[p]) expect(cell.mask[p]).toBe(0);
+  }
+  expect(ledger.enqueues).toBe(0); // reload evaluates retained artwork without sending anything
+});
+
+test.each(['identity', 'input', 'missing', 'hash', 'declared'] as const)('unavailable or changed saved inpaint mask %s is a visible structural failure', async mode => {
+  const f = await retainedMaskedGrid();
+  const params = f.record.params as { mask_image: { image: { $blob?: string }; size: { width: number } } };
+  if (mode === 'identity') delete params.mask_image.image.$blob;
+  if (mode === 'input') f.record.inputs = [];
+  if (mode === 'missing') ledger.blobs.delete(f.maskHash);
+  if (mode === 'hash') ledger.blobs.set(f.maskHash, new Blob([await encodePngBytes(makeImg(256, 64)) as Uint8Array<ArrayBuffer>]));
+  if (mode === 'declared') params.mask_image.size.width = 128;
+  const result = await evaluateItem(f.draft, f.ctx);
+  expect(result.cells).toHaveLength(0); expect(result.g1.get(0)).toMatch(/G1.*(?:mask|layout)/);
+  expect(result.preview).toBeNull(); expect(ledger.enqueues).toBe(0);
+});
+
+test.each(['gray', 'alpha', 'canvas'] as const)('invalid saved target-mask %s cannot fall back to an unbounded extraction', async mode => {
+  const f = await retainedMaskedGrid(mode), result = await evaluateItem(f.draft, f.ctx);
+  expect(result.cells).toHaveLength(0); expect(result.g1.get(0)).toMatch(/G1.*(?:binary|canvas)/);
+  expect(ledger.enqueues).toBe(0);
+});
+
+test('raw skeleton outputs retain their existing one-pixel registration and have no inpaint stencil', async () => {
+  const f = await retainedMaskedGrid(), shifted = makeImg(64, 64);
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 63; x++) shifted.data.set(f.input.data.subarray((y * 64 + x) * 4, (y * 64 + x + 1) * 4), (y * 64 + x + 1) * 4);
+  const hash = await f.put(shifted);
+  f.draft.calls[0].kind = 'pose'; f.record.endpoint = '/animate-with-skeleton-v3'; f.record.params = {}; f.record.inputs = [];
+  f.record.jobs[0].results = [0, 1, 2].map(i => ({ label: String(i), sha: hash })); f.publish();
+  const result = await evaluateItem(f.draft, f.ctx);
+  expect(result.g1.size).toBe(0); expect(result.cells).toHaveLength(2);
+  for (const cell of result.cells) { expect(cell.stencil).toBeUndefined(); expect(cell.offset).toEqual([-1, -0]); }
+});
 
 test('a padded single-view edit retains only the first logical artwork and provenance', async () => {
   const f = await singleStandingFixture(), extra = structuredClone(f.dressed);
