@@ -1,5 +1,7 @@
 # PixelLab (pixellab.ai) — current capabilities & limits, 2026-10
 
+November 2 follow-up: the [shared custom Skeleton V3 REST contract](2026-11-02-managed-custom-v3-contract.json) now explicitly documents text-described 3D motion shared across native directions by `animation_group_id`. The [starter-pack implementation and live qualification](../2026-11-02-eight-direction-starter-pack.md) records its tested boundaries. This dated snapshot remains historical; explicit MCP pose/move field parity is not inferred.
+
 Agent: R2 · Date: 2026-10-20 · Scope: verify/correct `pixellab-first_paperdolling_frame-based_2d_rpgs.md` and
 `proper_paperdolling_in_pixellab.md` against PixelLab as it is today.
 

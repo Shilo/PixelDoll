@@ -1,0 +1,192 @@
+{
+  "checkedAt": "2026-11-02T13:51:45.192Z",
+  "source": "https://api.pixellab.ai/v2/openapi.json",
+  "liveSchemaSha256": "71480968f253d33474b34d0163c50377bfc87f5fcd9d585071e13ad7524eb704",
+  "priorSchemaSha256": "445a1ec4adb5b4f25b44a848616aafae6ff32d44d23bcfeafca57f45a8c29b7a",
+  "path": "/characters/animations",
+  "method": "POST",
+  "requestSchema": "#/components/schemas/CreateCharacterAnimationRequest",
+  "properties": {
+    "mode": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "template",
+            "skeleton-v3",
+            "v3",
+            "pixminimax",
+            "pro"
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Mode",
+      "description": "Animation mode. \"template\": skeleton-based from template_animation_id (1 gen/direction; canvases over ~100px run in batches billed 1 each, up to one per clip frame at 256px). \"skeleton-v3\": the same template_animation_id posed onto the character, which moves the character instead of redrawing it each frame — steadier identity and colours, 2-4 generations and ~3-5 min per direction, beta. Without template_animation_id, \"skeleton-v3\" animates action_description instead: the action is written into one 3D motion (3-15 frames, ~15 s before the jobs start) that every direction of the animation is drawn from, so directions added later with animation_group_id move the same way (humanoid characters). \"v3\": custom animation from action_description with frame_count control. \"pixminimax\": custom animation from action_description on PixMiniMax (beta) — up to 40 frames at any size, priced by size and frame count (64x64 at 8 frames = 1 generation, 40 frames = 6), ~1-7 min per direction. \"pro\" (legacy, prefer v3 or pixminimax): custom animation that generates directions sequentially, using completed sides as reference (10-25 gen/direction). Auto-detected: template if template_animation_id is provided, v3 otherwise."
+    },
+    "action_description": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Action Description",
+      "description": "Action description (e.g., 'walking', 'running', 'jumping'). Required for custom mode (when template_animation_id is omitted). For template mode, defaults to a description based on the template."
+    },
+    "frame_count": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "maximum": 40,
+          "minimum": 3
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Frame Count",
+      "description": "Number of animation frames. v3 mode: 4-16, even. pixminimax mode: a multiple of 4 from 4 to 40. skeleton-v3 with action_description: 3-15 (a later direction of the same animation keeps the animation's own count). Not used in other modes.",
+      "default": 8
+    },
+    "directions": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string",
+            "enum": [
+              "south",
+              "south-east",
+              "east",
+              "north-east",
+              "north",
+              "north-west",
+              "west",
+              "south-west"
+            ]
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Directions",
+      "description": "List of directions to animate (south, north, east, west, etc.). Template mode: defaults to all character directions. Custom mode: defaults to south only."
+    },
+    "animation_group_id": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "uuid"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Animation Group Id",
+      "description": "Pass the animation_group_id of an existing animation on this character to add more directions to it. Omit to create a new animation; the new animation_group_id is returned so subsequent calls can extend it. Same semantics as animate_object. A direction the group already has is rejected with 409: delete it first, or omit the id to create a new animation."
+    },
+    "seed": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Seed",
+      "description": "Seed for reproducible generation"
+    }
+  },
+  "responseSchema": {
+    "properties": {
+      "background_job_ids": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Background Job Ids",
+        "description": "List of background job IDs (one per direction)"
+      },
+      "directions": {
+        "items": {
+          "type": "string"
+        },
+        "type": "array",
+        "title": "Directions",
+        "description": "List of directions being animated"
+      },
+      "animation_group_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Animation Group Id",
+        "description": "The group these directions belong to. Pass it back on a later call to add more directions to the same animation."
+      },
+      "status": {
+        "type": "string",
+        "title": "Status",
+        "description": "Overall status (processing, completed, failed)",
+        "default": "processing"
+      },
+      "enhanced_prompt": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "title": "Enhanced Prompt",
+        "description": "The expanded motion description used for generation. Populated only when enhance_prompt=true (mode='v3')."
+      },
+      "enhance_usage": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/Usage"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "description": "Cost of the prompt enhancement, separate from generation usage. Populated only when enhance_prompt=true."
+      }
+    },
+    "type": "object",
+    "required": [
+      "background_job_ids",
+      "directions"
+    ],
+    "title": "CreateCharacterAnimationResponse",
+    "description": "Response model for character animation (background jobs)",
+    "example": {
+      "background_job_ids": [
+        "123e4567-e89b-12d3-a456-426614174000",
+        "223e4567-e89b-12d3-a456-426614174001"
+      ],
+      "directions": [
+        "south",
+        "north"
+      ],
+      "status": "processing"
+    }
+  },
+  "limits": [
+    "Documentation establishes availability, not output quality or a measured animation pivot.",
+    "paste_x/paste_y are not a documented managed-animation alignment contract.",
+    "The previous saved schema did not document custom action_description motion for skeleton-v3."
+  ]
+}

@@ -4,6 +4,9 @@ import { browserSelfTests } from '../../src/lib/selftests.ts'
 import { readFile } from 'node:fs/promises'
 import {unzip} from '../../src/lib/store/zip.ts'
 import {decodePngBytes} from '../../src/lib/image/pngraw.ts'
+import { readCharacterZip } from '../../src/lib/store/import.ts'
+import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts'
+import { sha256 } from '../../src/lib/image/hash.ts'
 
 test('offline Motion Lab edits and roundtrips motions without requesting generations',async({page},testInfo)=>{
   const paid:string[]=[],errors:string[]=[];
@@ -242,4 +245,240 @@ test('Motion Lab research grids retain raw inspection without motion review cont
   await expect(card.getByRole('alert')).toHaveCount(0);
   expect(await page.evaluate(()=>localStorage.getItem('pixeldoll.motionLab.2026-10-28'))).toBeNull();
   expect(paid).toEqual([]);expect(errors).toEqual([]);
+});
+
+test('native eight-direction starter pack reviews exact frames, exports evidence and imports into Studio without paid requests', async ({ page }, testInfo) => {
+  const requests: string[] = [], errors: string[] = [];
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1'); });
+  await page.route('https://*.pixellab.ai/**', route => { requests.push(route.request().method()); return route.abort(); });
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto('/motion-lab.html');
+  await expect(page.getByRole('status')).toContainText('Offline lab ready');
+  await page.evaluate(async () => {
+    const dbPath = '/src/lib/store/db.ts', imagePath = '/src/lib/image/png.ts', codecPath = '/src/lib/image/pngraw.ts', rigPath = '/src/lib/rig/rig.ts', posesPath = '/src/lib/rig/poses.ts';
+    const db = await import(dbPath), image = await import(imagePath), codec = await import(codecPath), { DIRECTIONS, cellHash, baseHashOf } = await import(rigPath), { LABELS } = await import(posesPath);
+    const rest: Record<string, unknown> = {}, standing: Record<string, string[]> = {}, blobs = new Map<string, Blob>();
+    for (const [index, direction] of DIRECTIONS.entries()) {
+      const im = image.makeImg(32, 32); im.data.set([220 + index, 120, 80, 255], (20 * 32 + 16) * 4); im.data.set([180, 70, 40, 255], (27 * 32 + 16) * 4);
+      const hash = await cellHash(im), bytes = await codec.encodePngBytes(im); blobs.set(hash.slice(7), new Blob([bytes], { type: 'image/png' }));
+      standing[direction] = [hash]; rest[direction] = { image: hash, keypoints: LABELS.map((label: string) => ({ label, x: .5, y: .5 })) };
+    }
+    const rig = { template: 'mannequin', view: 'low top-down', cell: { w: 32, h: 32 }, pivot: { x: 16, y: 28 }, directions: DIRECTIONS.map((id: string) => ({ id })), rest,
+      animations: [{ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 150 }] }], baseItem: 'body', baseHash: `sha256:${'a'.repeat(64)}` };
+    rig.baseHash = await baseHashOf(rig, Object.fromEntries(DIRECTIONS.map((d: string) => [`default/${d}/0`, standing[d][0]])));
+    const manifest = { format: 'pixeldoll/2', name: 'Synthetic starter source', app: 'Offline UI fixture, no art qualification', rig, materials: [], slots: [{ id: 'body', z: 10, class: 'base', required: true }],
+      items: [{ id: 'body', name: 'Synthetic body', slot: 'body', status: 'accepted', mirror: 'generate', materials: [], prompt: 'Synthetic native standing source', layers: [{ id: 'main', role: 'fg', z: 10, cells: { default: standing } }], baseHash: rig.baseHash, provenance: [] }],
+      presets: [{ id: 'source', name: 'Source', items: { body: 'body' }, variants: {} }] };
+    const record = { id: 'rig-starter-native-eight', savedAt: new Date().toISOString(), manifest, origin: 'studio', character: { id: 'synthetic-starter-character', looks: 'Synthetic body' } };
+    await db.putCharacter(record.id, record, blobs);
+    const mirrored = structuredClone(record); mirrored.id = 'rig-starter-mirrored-eight'; mirrored.manifest.name = 'Synthetic mirrored source';
+    Object.assign(mirrored.manifest.rig.directions.find((d: { id: string }) => d.id === 'west'), { mirrorOf: 'east' });
+    await db.put('projects', mirrored.id, mirrored); localStorage.setItem('pixeldoll.studio.project', record.id);
+  });
+  const starter = page.getByRole('region', { name: 'Eight-direction starter pack', exact: true });
+  await starter.getByRole('button', { name: 'Refresh saved results', exact: true }).click();
+  await starter.getByRole('combobox', { name: 'Studio source', exact: true }).selectOption('rig-starter-mirrored-eight');
+  await starter.getByRole('button', { name: 'Prepare native source', exact: true }).click();
+  await expect(starter.getByRole('alert')).toContainText('independently authored');
+  await starter.getByRole('combobox', { name: 'Studio source', exact: true }).selectOption('rig-starter-native-eight');
+  await starter.getByRole('button', { name: 'Prepare native source', exact: true }).click();
+  await expect(starter.getByRole('status')).toContainText('Preparation is free. Existing paid calls and reservations are retained.');
+  await expect(starter.getByRole('button', { name: 'Generate south + east · Est. 8 gens', exact: true })).toBeDisabled();
+  const pinned = await page.evaluate(async () => {
+    const starterPath = '/src/ui/motion-lab/starter-pack.ts', projectPath = '/src/lib/store/project.ts', dbPath = '/src/lib/store/db.ts';
+    const starter = await import(starterPath), projects = await import(projectPath), db = await import(dbPath), state = starter.readStarter();
+    return { id: state.sourceSnapshotId, exists: !!await db.get('projects', state.sourceSnapshotId), listed: (await projects.listProjects()).some((p: { id: string }) => p.id === state.sourceSnapshotId) };
+  });
+  expect(pinned.id).toMatch(/^starter-source-/); expect(pinned.exists).toBe(true); expect(pinned.listed).toBe(false);
+  expect(await starter.getByRole('combobox', { name: 'Studio source', exact: true }).locator('option').evaluateAll(options => options.map(o => (o as HTMLOptionElement).value))).not.toContain(pinned.id);
+  const expected = await page.evaluate(async () => {
+    const dbPath = '/src/lib/store/db.ts', imagePath = '/src/lib/image/png.ts', codecPath = '/src/lib/image/pngraw.ts', rigPath = '/src/lib/rig/rig.ts', runPath = '/src/ui/motion-lab/run.ts', starterPath = '/src/ui/motion-lab/starter-pack.ts', presetPath = '/src/lib/rig/starter-presets.ts';
+    const db = await import(dbPath), image = await import(imagePath), codec = await import(codecPath), { DIRECTIONS, cellHash } = await import(rigPath), { LAB_TAG } = await import(runPath), starter = await import(starterPath), { starterRequest } = await import(presetPath);
+    const session = starter.readStarter(); if (session.calls.length) throw new Error('Free preparation submitted work.');
+    const expected: { preset: string; direction: string; index: number; size: number; rgbaHash: string; outputHash: string }[] = [], now = Date.now();
+    for (const [action, preset] of ['idle', 'walk', 'slash'].entries()) {
+      const plan = session.plans[preset], receipts: unknown[] = [];
+      let pilotReview: unknown;
+      for (const [batch, directions] of [['south', 'east'], DIRECTIONS.filter((d: string) => !['south', 'east'].includes(d))].entries()) {
+        const id = `starter-${preset}-${batch}`, group = `starter-group-${preset}`, jobs = [];
+        for (const direction of directions) {
+          const results = [];
+          for (let index = 0; index < plan.frames; index++) {
+            const size = direction === 'north' ? 40 : 48, offset = direction === 'north' ? 4 : 0;
+            const im = image.makeImg(size, size); im.data.set([100 + action, 20 + DIRECTIONS.indexOf(direction), 30 + index, 255], (20 * size + 10) * 4); im.data.set([40, 55, 60, 255], (21 * size + 11) * 4);
+            const placed = image.makeImg(48, 48); placed.data.set([100 + action, 20 + DIRECTIONS.indexOf(direction), 30 + index, 255], ((20 + offset) * 48 + 10 + offset) * 4); placed.data.set([40, 55, 60, 255], ((21 + offset) * 48 + 11 + offset) * 4);
+            const sha = await db.putBlob(await codec.encodePngBytes(im)); results.push({ label: `${direction}/${index}`, sha, w: size, h: size });
+            expected.push({ preset, direction, index, size, rgbaHash: await cellHash(im), outputHash: await cellHash(placed) });
+          }
+          jobs.push({ id: `${preset}-${direction}`, status: 'completed', done: true, results });
+        }
+        const response = { animation_group_id: group, directions, background_job_ids: jobs.map(job => job.id), status: 'completed' };
+        const request = starterRequest(plan, directions, receipts), record = { id, label: `Synthetic starter ${preset}`, tag: LAB_TAG, method: 'POST', endpoint: request.path, params: request.body, inputs: [], requestHash: `synthetic-starter-${preset}-${batch}`, state: 'done', attempts: 1, nextAt: 0, createdAt: now, finishedAt: now, response, jobs, gens: directions.length * 3, usd: 0 };
+        await db.put('jobs', id, record); session.calls.push({ id: `call-${id}`, plan, directions, units: directions.length * 4, recordId: id, ...(pilotReview ? { pilotReview } : {}) });
+        const contractsPath = '/src/lib/rig/starter-presets.ts', { validateStarterReceipt } = await import(contractsPath);
+        receipts.push(validateStarterReceipt(plan, directions, response, receipts));
+        if (batch === 0) pilotReview = { ...await starter.describeStarterPilot(await starter.starterFrames(session, preset, await starter.starterJobs(session), false)), notes: 'Synthetic pilot reviewed for transport only, not art quality.' };
+      }
+    }
+    localStorage.setItem(starter.STARTER_KEY, JSON.stringify(session)); return expected;
+  });
+  await starter.getByRole('button', { name: 'Refresh saved results', exact: true }).click();
+  const paidBindings = await page.evaluate(() => JSON.parse(localStorage.getItem('pixeldoll.starterPack.2026-11-02')!).plans);
+  await starter.getByRole('button', { name: 'Prepare native source', exact: true }).click();
+  const preparedAgain = await page.evaluate(() => JSON.parse(localStorage.getItem('pixeldoll.starterPack.2026-11-02')!));
+  expect(preparedAgain.plans).toEqual(paidBindings); expect(preparedAgain.calls).toHaveLength(6);
+  // Optional rejected research must never become a prerequisite for the free standing idle.
+  const validIdleRecord = await page.evaluate(async () => {
+    const dbPath = '/src/lib/store/db.ts', db = await import(dbPath), record = await db.get('jobs', 'starter-idle-1');
+    const malformed = structuredClone(record); malformed.response.animation_group_id = 'different-idle-group';
+    await db.put('jobs', malformed.id, malformed); return record;
+  });
+  await starter.getByRole('button', { name: 'Load complete three-action pack', exact: true }).click();
+  await expect(starter.getByRole('status')).toContainText('Generated idle could not be archived');
+  await expect(starter.getByRole('status')).toContainText('retained in the saved job journal, not included in this free pack');
+  await starter.getByRole('textbox', { name: 'Layout review notes', exact: true }).fill('Standing idle with valid walk and attack reviewed; malformed breathing research intentionally excluded.');
+  await starter.getByRole('checkbox', { name: 'I reviewed whole-view alignment and the common pivot. This does not certify anatomy or weapon quality.', exact: true }).check();
+  const freeDownload = page.waitForEvent('download'); await starter.getByRole('button', { name: 'Export experimental Studio pack · Free', exact: true }).click();
+  const freeBytes = new Uint8Array(await readFile((await(await freeDownload).path())!)), freeFiles = await unzip(freeBytes), freePack = (await readCharacterZip(freeBytes)).project;
+  const freeEvidence = JSON.parse(new TextDecoder().decode(freeFiles.get('starter-evidence.json')!)), freeIdle = freeEvidence.clips.find((c: { preset: string }) => c.preset === 'idle');
+  expect([...freeFiles.keys()].filter(name => name.startsWith('raw/'))).toHaveLength(136);
+  expect(freeIdle).toMatchObject({ playableSource: 'standing-reference', researchOnly: false, jobs: [], frames: [] });
+  expect(freeIdle).not.toHaveProperty('animationGroupId'); expect(freeIdle).not.toHaveProperty('binding');
+  expect(freePack.manifest.rig.animations.find(a => a.id === 'idle')).toMatchObject({ cells: 1, frames: Array(4).fill({ cell: 0, ms: 150 }) });
+  for (const standing of freeEvidence.source.rest) {
+    expect(freePack.manifest.items[0].layers[0].cells!.idle[standing.direction as DirectionName]).toEqual([standing.outputHash]);
+    expect(await cellHash(freePack.images.get(standing.outputHash)!)).toBe(standing.outputHash);
+  }
+  for (const preset of ['walk', 'slash']) {
+    const required = freeEvidence.clips.find((c: { preset: string }) => c.preset === preset);
+    expect(required.jobs).toHaveLength(8); expect(required.frames).toHaveLength(64);
+  }
+  await starter.getByRole('combobox', { name: 'Starter action', exact: true }).selectOption('idle');
+  await starter.getByRole('combobox', { name: 'Idle art source', exact: true }).selectOption('generated');
+  await starter.getByRole('button', { name: 'Load complete three-action pack', exact: true }).click();
+  await expect(starter.getByRole('alert')).toContainText('mismatched starter receipt');
+  await page.evaluate(async record => { const dbPath = '/src/lib/store/db.ts', db = await import(dbPath); await db.put('jobs', record.id, record); }, validIdleRecord);
+  await starter.getByRole('combobox', { name: 'Idle art source', exact: true }).selectOption('standing');
+  const retained = await page.evaluate(async () => {
+    const dbPath = '/src/lib/store/db.ts', starterPath = '/src/ui/motion-lab/starter-pack.ts', projectPath = '/src/lib/store/project.ts';
+    const db = await import(dbPath), starter = await import(starterPath), projects = await import(projectPath), state = starter.readStarter();
+    // The negative mirror fixture shares the same blobs, so remove it too before testing real pin reachability.
+    await db.deleteCharacter(state.projectId); await db.deleteCharacter('rig-starter-mirrored-eight');
+    const orphan = await db.putBlob(new Uint8Array([21, 22, 23])), removed = await db.gcBlobs(), retained = await starter.loadStarterSource(state);
+    localStorage.removeItem('pixeldoll.studio.project'); // The directly seeded fixture is no longer a Studio destination.
+    return { originalExists: !!await db.get('projects', state.projectId), pinExists: !!await db.get('projects', state.sourceSnapshotId), images: retained.project.images.size,
+      pinListed: (await projects.listProjects()).some((p: { id: string }) => p.id === state.sourceSnapshotId), removed, orphanExists: !!await db.getBlob(orphan) };
+  });
+  expect(retained).toMatchObject({ originalExists: false, pinExists: true, images: 8, pinListed: false, orphanExists: false }); expect(retained.removed).toBeGreaterThan(0);
+  await page.reload(); await expect(starter.getByRole('combobox', { name: 'Studio source', exact: true })).toHaveValue('rig-starter-native-eight');
+  await expect(starter.getByRole('button', { name: 'Prepare native source', exact: true })).toBeDisabled();
+  await expect(starter.getByRole('button', { name: 'Generate south + east · Est. 8 gens', exact: true })).toBeDisabled();
+  await starter.getByRole('button', { name: 'Load complete three-action pack', exact: true }).click();
+  await expect(starter.getByRole('status')).toContainText('Still idle is free; any retained generated idle is research evidence');
+  const motion = starter.getByLabel('Starter native motion', { exact: true });
+  const pixel = (x: number, y: number) => motion.evaluate((canvas: HTMLCanvasElement, point) => [...canvas.getContext('2d')!.getImageData(point.x, point.y, 1, 1).data], { x, y });
+  const opaque = () => motion.evaluate((canvas: HTMLCanvasElement) => canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data.some((v, i) => i % 4 === 3 && v > 0));
+  const directions = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west'];
+  for (const [action, preset] of ['idle', 'walk', 'slash'].entries()) {
+    await starter.getByRole('combobox', { name: 'Starter action', exact: true }).selectOption(preset);
+    if (preset === 'idle') {
+      await expect(starter.getByRole('combobox', { name: 'Idle art source', exact: true })).toHaveValue('standing');
+      await expect(starter.getByRole('combobox', { name: 'Native source sample', exact: true })).toHaveCount(0);
+      await expect(starter.getByRole('spinbutton', { name: 'Motion X', exact: true })).toBeDisabled();
+      await expect(starter.getByRole('button', { name: 'Generate south + east · Est. 8 gens', exact: true })).toBeDisabled();
+    }
+    for (const [d, direction] of directions.entries()) {
+      await starter.getByRole('combobox', { name: 'Native view', exact: true }).selectOption(direction);
+      const offset = direction === 'north' ? 4 : 0;
+      if (preset === 'idle') await expect.poll(() => pixel(24, 28)).toEqual([220 + d, 120, 80, 255]);
+      else await expect.poll(() => pixel(10 + offset, 20 + offset)).toEqual([100 + action, 20 + d, 30, 255]);
+    }
+  }
+  await starter.getByRole('button', { name: 'Previous native frame', exact: true }).click(); await expect.poll(() => pixel(10, 20)).toEqual([102, 27, 37, 255]);
+  await starter.getByRole('button', { name: 'Next native frame', exact: true }).click();
+  const sharedSources = [7, 1, 1, 3, 4, 5, 6, 7], sourceSample = starter.getByRole('combobox', { name: 'Native source sample', exact: true });
+  for (const [slot, sample] of sharedSources.entries()) {
+    await sourceSample.selectOption(String(sample));
+    await expect(starter.getByText(`slash south-west, frame ${slot + 1}/8 · native sample ${sample + 1}`, { exact: true })).toBeVisible();
+    await expect.poll(() => pixel(10, 20)).toEqual([102, 27, 30 + sample, 255]);
+    await starter.getByRole('button', { name: 'Next native frame', exact: true }).click();
+  }
+  for (const [d, direction] of directions.entries()) {
+    await starter.getByRole('combobox', { name: 'Native view', exact: true }).selectOption(direction);
+    const offset = direction === 'north' ? 4 : 0;
+    await expect(sourceSample).toHaveValue('7'); await expect.poll(() => pixel(10 + offset, 20 + offset)).toEqual([102, 20 + d, 37, 255]);
+  }
+  const reviewed = starter.getByRole('checkbox', { name: 'I reviewed whole-view alignment and the common pivot. This does not certify anatomy or weapon quality.', exact: true });
+  const exportButton = starter.getByRole('button', { name: 'Export experimental Studio pack · Free', exact: true });
+  await starter.getByRole('textbox', { name: 'Layout review notes', exact: true }).fill('Synthetic eight-view alignment reviewed. This test does not certify art quality.');
+  await reviewed.check(); await expect(exportButton).toBeEnabled();
+  await sourceSample.selectOption('1'); await expect(reviewed).not.toBeChecked(); await sourceSample.selectOption('7'); await reviewed.check();
+  const motionX = starter.getByRole('spinbutton', { name: 'Motion X', exact: true });
+  await motionX.fill('1'); await motionX.press('Tab'); await expect(reviewed).not.toBeChecked();
+  await motionX.fill('0.5'); await motionX.press('Tab'); await expect(starter.getByRole('alert')).toContainText('integer'); await expect.poll(opaque).toBe(false);
+  await motionX.fill('-100'); await motionX.press('Tab'); await expect(starter.getByRole('alert')).toContainText('clips visible artwork'); await expect.poll(opaque).toBe(false);
+  await motionX.fill('0'); await motionX.press('Tab'); await expect.poll(opaque).toBe(true); await expect(starter.getByRole('alert')).toHaveCount(0);
+  await reviewed.check(); const downloading = page.waitForEvent('download'); await exportButton.click();
+  const bytes = new Uint8Array(await readFile((await(await downloading).path())!)), files = await unzip(bytes), parsed = await readCharacterZip(bytes);
+  const evidence = JSON.parse(new TextDecoder().decode(files.get('starter-evidence.json')!));
+  expect(evidence).toMatchObject({ qualified: false, equippedQualified: false, providerTiming: false });
+  expect(evidence.clips.map((c: { animationGroupId: string }) => c.animationGroupId)).toEqual(['starter-group-idle', 'starter-group-walk', 'starter-group-slash']);
+  expect([...files.keys()].filter(name => name.startsWith('raw/'))).toHaveLength(168);
+  expect(parsed.extra).toEqual({}); expect(parsed.project.manifest.rig.pivot).toEqual({ x: 24, y: 36 });
+  expect(parsed.project.manifest.rig.directions).toEqual(directions.map(id => ({ id })));
+  expect(parsed.project.manifest.rig.animations.map(a => [a.id, a.cells, a.loop])).toEqual([['default', 1, true], ['idle', 1, true], ['walk', 8, true], ['slash', 6, false]]);
+  const idle = parsed.project.manifest.rig.animations.find(a => a.id === 'idle')!;
+  expect(idle.frames).toEqual(Array(4).fill({ cell: 0, ms: 150 })); expect(idle).not.toHaveProperty('source');
+  const stillIdle = evidence.clips.find((clip: { preset: string }) => clip.preset === 'idle');
+  expect(stillIdle).toMatchObject({ playableSource: 'standing-reference', researchOnly: true, sourceFrames: [], uniquePlayableSourceFrames: [] });
+  expect(stillIdle.frames).toHaveLength(32);
+  for (const direction of directions) {
+    const standing = evidence.source.rest.find((r: { direction: string }) => r.direction === direction);
+    const playable = stillIdle.playableFrames.find((r: { direction: string }) => r.direction === direction);
+    expect(playable).toEqual({ direction, sourceKind: 'standing-reference', cell: 0, outputHash: standing.outputHash });
+    expect(parsed.project.manifest.items[0].layers[0].cells!.idle[direction as DirectionName]).toEqual([standing.outputHash]);
+  }
+  expect(parsed.project.manifest.rig.animations.find(a => a.id === 'slash')!.frames.map(f => f.cell)).toEqual([0, 1, 1, 2, 3, 4, 5, 0]);
+  const curatedAttack = evidence.clips.find((clip: { preset: string }) => clip.preset === 'slash');
+  expect(curatedAttack.sourceFrames).toEqual(sharedSources); expect(curatedAttack.uniquePlayableSourceFrames).toEqual([7, 1, 3, 4, 5, 6]);
+  expect(curatedAttack.playableFrames).toHaveLength(48);
+  expect(curatedAttack.nativeCells.north).toEqual({ w: 40, h: 40 }); expect(curatedAttack.nativeCells.east).toEqual({ w: 48, h: 48 });
+  expect(evidence.layout.offsets.slash.north).toEqual({ x: 4, y: 4 });
+  expect(parsed.project.manifest.items[0].qa).toMatchObject({ status: 'warn', unmeasured: true });
+  for (const frame of expected) {
+    const row = evidence.clips.find((clip: { preset: string }) => clip.preset === frame.preset).frames.find((f: { direction: string; index: number }) => f.direction === frame.direction && f.index === frame.index);
+    const raw = files.get(row.path)!, decoded = await decodePngBytes(raw); expect([decoded.w, decoded.h]).toEqual([frame.size, frame.size]);
+    expect(await cellHash(decoded)).toBe(frame.rgbaHash); expect(`sha256:${await sha256(raw)}`).toBe(row.archivePngHash);
+    if (frame.preset === 'idle' || (frame.preset === 'slash' && [0, 2].includes(frame.index))) {
+      expect(row).not.toHaveProperty('outputHash'); expect(row).not.toHaveProperty('playableCell'); expect(parsed.project.images.has(frame.outputHash)).toBe(false);
+    } else expect(row.outputHash).toBe(frame.outputHash);
+  }
+  await openStudio(page, '/');
+  await page.locator('.project-btn').click(); await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click();
+  await page.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'starter.pixeldoll.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) });
+  await expect(page.getByRole('img', { name: 'Character import preview', exact: true })).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true }).uncheck(); await page.getByRole('button', { name: 'Import character', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'EXPERIMENTAL Synthetic starter source starter pack', exact: true })).toBeVisible();
+  const pause = page.getByRole('button', { name: 'Pause', exact: true }); if (await pause.count()) await pause.click();
+  await page.getByRole('combobox', { name: 'Move', exact: true }).selectOption('slash'); await page.getByRole('button', { name: 'Inspect', exact: true }).click();
+  const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true });
+  await expect(inspect.getByRole('combobox', { name: 'Move', exact: true }).locator('option')).toHaveText(['Default', 'Idle', 'Walk', 'Slash']);
+  await expect(inspect.getByRole('group', { name: 'Direction', exact: true }).getByRole('button')).toHaveCount(8);
+  await inspect.getByRole('button', { name: 'Face north-west', exact: true }).click(); await expect(inspect.getByRole('button', { name: 'Face north-west', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect.poll(() => inspect.getByRole('img').locator('canvas').evaluate((canvas: HTMLCanvasElement) => {
+    const scale = canvas.width / 48; return [...canvas.getContext('2d')!.getImageData(Math.floor(10.5 * scale), Math.floor(20.5 * scale), 1, 1).data];
+  })).toEqual([102, 25, 37, 255]);
+  await expect(inspect.getByText('Frame 1 of 8', { exact: true })).toBeVisible();
+  await inspect.getByRole('button', { name: 'Next frame', exact: true }).click();
+  await expect(inspect.getByText('Frame 2 of 8', { exact: true })).toBeVisible();
+  const studioPixel = () => inspect.getByRole('img').locator('canvas').evaluate((canvas: HTMLCanvasElement) => {
+    const scale = canvas.width / 48; return [...canvas.getContext('2d')!.getImageData(Math.floor(10.5 * scale), Math.floor(20.5 * scale), 1, 1).data];
+  });
+  await expect.poll(studioPixel).toEqual([102, 25, 31, 255]);
+  await inspect.getByRole('button', { name: 'Next frame', exact: true }).click();
+  await expect(inspect.getByText('Frame 3 of 8', { exact: true })).toBeVisible(); await expect.poll(studioPixel).toEqual([102, 25, 31, 255]);
+  await inspect.getByRole('button', { name: 'Done', exact: true }).click(); await page.getByRole('button', { name: 'Export', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Export', exact: true })).toContainText('Saved quality or appearance flags');
+  await page.screenshot({ path: testInfo.outputPath('starter-pack-studio-warnings.png') });
+  expect(requests).toEqual([]); expect(errors).toEqual([]);
 });

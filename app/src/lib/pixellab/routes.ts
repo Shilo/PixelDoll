@@ -38,7 +38,7 @@ export interface EnhancedCharacterV3Prompt { enhanced_prompt: string; usage?: Us
 export interface CharacterAnimation {
   character_id: string;
   mode?: BaseAnimMode; // newer models only: legacy template/pro modes do not type-check (D8, user rule 2026-10-21)
-  template_animation_id?: string; // mode skeleton-v3, e.g. "walking-8-frames", "breathing-idle"
+  template_animation_id?: string; // optional in skeleton-v3: omit for one custom action_description motion shared by group
   action_description?: string;
   animation_name?: string;
   animation_group_id?: string;
@@ -49,7 +49,7 @@ export interface CharacterAnimation {
   seed?: number;
 }
 
-// Base animations with the newer models only: skeleton-v3 (template poses), v3 / pixminimax (action text).
+// Newer models only. skeleton-v3 supports template poses or a shared custom action_description motion.
 export type BaseAnimMode = 'skeleton-v3' | 'v3' | 'pixminimax';
 export interface BaseAnim { name: string; template: string; action: string; frames: number }
 export const BASE_ANIMS: BaseAnim[] = [

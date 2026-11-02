@@ -1,5 +1,7 @@
 # Custom Skeleton v3: documentation and live qualification
 
+**November 2 REST clarification:** the [eight-direction starter follow-up](2026-11-02-eight-direction-starter-pack.md) verifies that the current official REST schema explicitly supports shared custom Skeleton V3 motion from `action_description` without a template animation ID, including continuation by group ID. Fixed text-described actions do not require MCP. Explicit MCP `poses`/`move`/`scale` parity remains unverified; this does not retroactively change the historical experiment below.
+
 **Later same-day follow-up:** [Claude workflow reconciliation and controlled second pilot](2026-11-01-workflow-reconciliation.md) records the new allowance and exact-artwork comparison. The six-generation result and 998-unit total below describe the earlier checkpoint, not the new phase's spending or final canvas contract.
 
 Checked November 1, 2026 local time, including live completion on November 2 UTC. The initial documentation-only check was followed by free MCP preflight and a six-generation two-direction experiment. This supplements the [October qualification results](2026-10-28-motion-targeted-authoring.md). Machine-readable results: [custom V3 results](2026-11-01-custom-skeleton-v3-results.json).

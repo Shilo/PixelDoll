@@ -11,6 +11,7 @@
   import Candidate from './motion-lab/Candidate.svelte';
   import McpProbe from './motion-lab/McpProbe.svelte';
   import ResearchPilot from './motion-lab/ResearchPilot.svelte';
+  import StarterPack from './motion-lab/StarterPack.svelte';
   import { EQUIPMENT,dressEquipment,poseEquipment,repairEquipmentProbe,type EquipmentName } from './motion-lab/equipment.ts';
   import type { DirectionName } from '../lib/rig/rig.ts';
   import { CALIBRATION_KEY,calibrationOf,calibratedDocument,readCalibrations,type CalibrationProfile } from './motion-lab/calibration.ts';
@@ -150,6 +151,7 @@
       {#if inspected}{#key inspected.id}<Candidate job={inspected} buffer={campaign.byJob.get(inspected.id)?.document.buffer}/>{/key}{/if}
     </section>
   {/if}
+  <StarterPack {connected}/>
 </main>
 <style>
   .lab{max-width:1600px;margin:auto;padding:24px}.lab header{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}h1,h2,p{margin:0}h1{font-size:28px}.controls,.joint-fields{display:flex;gap:16px;flex-wrap:wrap;align-items:end}.controls,.timeline,.diagnostics{padding:16px}.controls .bu-field{width:160px}.previews{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}.previews figure{margin:0;padding:12px;min-width:0}.previews canvas{width:100%;max-height:360px;object-fit:contain;image-rendering:pixelated;touch-action:none}.previews figcaption{min-height:48px}.timeline{display:grid;gap:16px}.frame-buttons{display:flex;gap:6px;overflow:auto}.frame-buttons button{min-width:44px}.joint-fields .bu-field{width:150px}.diagnostics{display:grid;gap:8px}.controls input[type=file]{max-width:200px}.bu-field input[type=number]{font-variant-numeric:tabular-nums}@media(max-width:1050px){.previews{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:560px){.lab{padding:12px}.previews{grid-template-columns:1fr}.controls .bu-field{width:100%}}
