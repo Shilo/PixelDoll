@@ -1,10 +1,10 @@
-import { DEFAULT_MOTION_OPTIONS, MOTION_EDGES, MOTION_REVISION, completePose, add3, sub3, mul3, swing3, solveLimb, dot3, length3, projectMotionPose, retargetMotion, sampleMotion, type MotionClip, type MotionCalibration, type MotionOptions, type MotionPoint, type Pose3 } from '../../lib/rig/motion.ts';
+import { DEFAULT_MOTION_OPTIONS, MOTION_EDGES, MOTION_REVISION, completePose, validateDepthReference, add3, sub3, mul3, swing3, solveLimb, dot3, length3, projectMotionPose, retargetMotion, sampleMotion, type MotionClip, type MotionCalibration, type MotionOptions, type MotionPoint, type Pose3 } from '../../lib/rig/motion.ts';
 import { LABELS, hasAll } from '../../lib/rig/poses.ts';
 import { base64ToBytes,pngSize,type Img } from '../../lib/image/png.ts';
 import { padImg } from '../../lib/items/items.ts';
 import { DIRECTIONS,type DirectionName,type Keypoint } from '../../lib/rig/rig.ts';
 import {plantMotion,validatePlanting,type PlantingPlan} from '../../lib/rig/planting.ts';
-export interface MotionFixture { id:string;name:string;cell:{w:number;h:number};pivot:{x:number;y:number};camera:{elev:number;yaw:number};directions:{id:DirectionName;mirrorOf?:DirectionName}[];references:Partial<Record<DirectionName,{keypoints:Keypoint[];png:string}>> }
+export interface MotionFixture { id:string;name:string;cell:{w:number;h:number};pivot:{x:number;y:number};camera:{elev:number;yaw:number};directions:{id:DirectionName;mirrorOf?:DirectionName}[];references:Partial<Record<DirectionName,{keypoints:Keypoint[];png:string}>>;depthReference?:Pose3;depthSource?:string }
 export interface MotionLibrary { version:1;provenance:{source:string;license:string;url:string;sha256:string};camera:{elev:number;yaw:number};fixtures:MotionFixture[];clips:MotionClip[] }
 export const actionOfMotion=(clip:Pick<MotionClip,'id'|'action'>)=>clip.action??clip.id;
 export interface MotionDocument {
@@ -15,6 +15,8 @@ export interface MotionDocument {
   hands?:'closed-fists';
 }
 function referenceOf(fixture:MotionFixture,direction:DirectionName){
+  if(fixture.depthReference!==undefined)validateDepthReference(fixture.depthReference);
+  if(fixture.depthSource!==undefined&&(typeof fixture.depthSource!=='string'||!fixture.depthSource.trim()))throw new Error('Target depth source must be a nonempty label.');
   const reference=fixture.references[direction];
   if(!reference||typeof reference.png!=='string'||!hasAll(reference.keypoints))throw new Error('This direction has no complete stored artwork and reference joints.');
   const size=pngSize(base64ToBytes(reference.png));if(size?.w!==fixture.cell.w||size.h!==fixture.cell.h)throw new Error('Reference artwork does not match the body canvas.');
@@ -63,7 +65,7 @@ export function validateDocument(value:unknown):MotionDocument{
 export function buildDocument(d:MotionDocument){
   const width=d.fixture.cell.w+2*d.padding,height=d.fixture.cell.h+2*d.padding;
   const rest=d.reference.map(k=>({...k,x:(k.x*d.fixture.cell.w+d.padding)/width,y:(k.y*d.fixture.cell.h+d.padding)/height}));
-  const calibration:MotionCalibration={width,height,rest,direction:d.direction,elevation:d.elevation,azimuth:d.azimuth};
+  const calibration:MotionCalibration={width,height,rest,direction:d.direction,elevation:d.elevation,azimuth:d.azimuth,...(d.fixture.depthReference!==undefined?{depthReference:d.fixture.depthReference}:{})};
   const clip=sampleMotion(d.clip,d.times),base=retargetMotion(clip,calibration,d.options),result=d.planting?plantMotion(base,d.times,calibration,d.planting,d.clip.duration,d.clip.loop):base;
   const frames=result.frames.map((frame,i)=>{
     const edit=d.edits[i];if(!edit)return frame;

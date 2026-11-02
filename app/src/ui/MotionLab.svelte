@@ -10,6 +10,7 @@
   import { drawOverlay, drawPuppet, drawRig3 } from './motion-lab/preview.ts';
   import Candidate from './motion-lab/Candidate.svelte';
   import McpProbe from './motion-lab/McpProbe.svelte';
+  import ResearchPilot from './motion-lab/ResearchPilot.svelte';
   import { EQUIPMENT,dressEquipment,poseEquipment,repairEquipmentProbe,type EquipmentName } from './motion-lab/equipment.ts';
   import type { DirectionName } from '../lib/rig/rig.ts';
   import { CALIBRATION_KEY,calibrationOf,calibratedDocument,readCalibrations,type CalibrationProfile } from './motion-lab/calibration.ts';
@@ -68,6 +69,7 @@
     <section class="bu-dialog-surface controls" aria-label="Motion source and calibration">
       <label class="bu-field">KayKit control<select class="bu-input" value="" onchange={e=>sourceControl(e.currentTarget.value)}><option value="">Load independent source</option>{#each ['idle','walk','run','attack','hurt','death'] as action}<option value={action}>{action}</option>{/each}</select></label>
       <p>Current source: {doc.clip.source}</p>
+      <p>Target depth: {doc.fixture.depthSource??'Source-reference proxy; hidden depth is an estimate.'}</p>
       <label class="bu-field">Body<select class="bu-input" value={doc.fixture.id} onchange={e=>choose(e.currentTarget.value,doc!.clip.id,'south')}>{#if !library.fixtures.some(f=>f.id===doc!.fixture.id)}<option value={doc.fixture.id}>{doc.fixture.name}</option>{/if}{#each library.fixtures as f}<option value={f.id}>{f.name}</option>{/each}</select></label>
       <label class="bu-field">Preset<select class="bu-input" value={doc.clip.id} onchange={e=>choose(doc!.fixture.id,e.currentTarget.value,doc!.direction)}>{#if !library.clips.some(c=>c.id===doc!.clip.id)}<option value={doc.clip.id}>{doc.clip.name}</option>{/if}{#each library.clips as c}<option value={c.id}>{c.name}</option>{/each}</select></label>
       <label class="bu-field">Direction<select class="bu-input" value={doc.direction} onchange={e=>choose(doc!.fixture.id,doc!.clip.id,e.currentTarget.value as DirectionName)}>{#each Object.keys(doc.fixture.references) as d}<option value={d}>{d}</option>{/each}</select></label>
@@ -123,7 +125,7 @@
       <button class="bu-btn" data-variant="primary" disabled={!fit||busy||!connected||!!mirroredFrom||campaign.reserved+poseCallGens(doc.times.length+(doc.buffer?1:0))>LAB_CAP} onclick={generate}>Generate candidate ({poseCallGens(doc.times.length+(doc.buffer?1:0))} gens)</button>
       {#if mirroredFrom}<p>This view is a pixel mirror of {mirroredFrom}. Derive it from frozen {mirroredFrom} outputs without another generation. Mirroring also flips visible handedness.</p>{/if}
       <button class="bu-btn" onclick={async()=>{try{download('pixeldoll-motion-evidence.json',await exportEvidence());}catch(e){error=(e as Error).message;}}}>Export all evidence</button>
-      <p>Historical raw-motion campaign: {806+campaign.phaseReported}/1000 approved generations used, including 806 before this phase. This phase used {campaign.phaseReported} provider-reported generations. The custom V3 comparison below has a separate reservation for the remaining eight.</p>
+      <p>First research campaign settled at 998/1000 generations. New phase raw-motion jobs have used {campaign.phaseReported} reported generations. The controlled pilot below separately tracks all new calls against the additional allowance and its staged 200-unit limit.</p>
       <p>{campaign.reserved}/{LAB_CAP} generations conservatively reserved in this phase. Reservations retain historical estimates and increase for higher reported charges; they can exceed actual spending. Further paid requests are blocked at this limit. Unknown outcomes are never automatically resent.</p>
       <p>{campaign.phaseWithoutJob} current-phase reservations have no queued job; {campaign.withoutJob} across the full history remain in the evidence for inspection.</p>
     </section>
@@ -140,6 +142,7 @@
       <p class="bu-muted">Uses production chroma dressing and posing builders. Dressing reserves 10-25 gens by canvas; posing reserves 2-4 by frame count. Reuse a design only with the identical standing image and view. Raw results require extraction and alignment review before use.</p>
     </section>
     <McpProbe {connected} {download}/>
+    {#if library.fixtures.find(f=>f.id==='c27man')}<ResearchPilot {connected} {download} fixture={library.fixtures.find(f=>f.id==='c27man')!}/>{/if}
     <section aria-label="Generated candidates" class="bu-stack">
       <label class="bu-field">Inspect candidate<select class="bu-input" bind:value={candidateId}><option value="">Most recent candidate</option>{#each $labQueue.jobs as job}<option value={job.id}>{job.label} · {job.state} · {job.gens} gens</option>{/each}</select></label>
       <p>{$labQueue.counts.done} completed · {$labQueue.counts.running} running · {$labQueue.counts.pending} queued · {$labQueue.counts.failed} failed</p>

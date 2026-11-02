@@ -47,3 +47,20 @@ test('non-looping preset playback follows source intervals and the fall samples 
     if(clip.id==='death'){expect(d.times).toHaveLength(13);expect(d.times).toContain(1);}
   }
 });
+
+test('optional target depth calibration and its provenance survive model roundtrips without replacing source motion',()=>{
+  const fixture=structuredClone(library.fixtures[0]),clip=library.clips.find(c=>c.id==='walk')!;
+  fixture.depthReference=Object.fromEntries(Object.entries(clip.reference).map(([label,p])=>[label,[p[0]*1.5,p[1],p[2]*0.6]]));fixture.depthSource='Experimental target rest; fixed 2D camera remains unchanged.';
+  const document=newDocument(library,fixture,clip,'east'),roundtrip=validateDocument(JSON.parse(JSON.stringify(document))),fit=buildDocument(roundtrip);
+  expect(roundtrip.fixture.depthReference).toEqual(fixture.depthReference);expect(roundtrip.fixture.depthSource).toBe(fixture.depthSource);
+  expect(fit.calibration.depthReference).toEqual(fixture.depthReference);expect(fit.clip.reference).toEqual(clip.reference);
+  expect(fit.calibration.elevation).toBe(document.elevation);expect(fit.calibration.azimuth).toBe(document.azimuth);
+  fit.rest.forEach((k,i)=>{expect(k.x).toBeCloseTo(document.reference[i].x,12);expect(k.y).toBeCloseTo(document.reference[i].y,12);});
+});
+
+test('model input rejects invalid optional target depth and provenance before using it',()=>{
+  const fixture=structuredClone(library.fixtures[0]);fixture.depthReference=structuredClone(library.clips[0].reference);delete fixture.depthReference['LEFT ARM'];
+  expect(()=>newDocument(library,fixture)).toThrow('18 finite 3D joints');
+  fixture.depthReference=structuredClone(library.clips[0].reference);fixture.depthReference['LEFT LEG']=[...fixture.depthReference['LEFT KNEE']];expect(()=>newDocument(library,fixture)).toThrow('zero-length');
+  delete fixture.depthReference;fixture.depthSource=' ';expect(()=>newDocument(library,fixture)).toThrow('nonempty label');
+});

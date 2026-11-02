@@ -20,6 +20,7 @@ export interface MotionClip {
 export interface MotionCamera { right: Vec3; up: Vec3; toward: Vec3 }
 export interface MotionCalibration {
   width: number; height: number; rest: Keypoint[]; direction: DirectionName; elevation: number; azimuth?: number;
+  depthReference?: Pose3;
 }
 export interface MotionOptions { gain: number; travel: number; contact: number; facing: number; plane?:number; weights?:{torso:number;legs:number;leftArm:number;rightArm:number} }
 export interface MotionPoint extends Keypoint { depth: number; z_index: number }
@@ -59,6 +60,12 @@ export function motionCamera(direction: DirectionName, elevation: number, azimut
 const pelvis=(p:Pose3)=>mul3(add3(p['RIGHT HIP'],p['LEFT HIP']),0.5);
 const head=(p:Pose3)=>mul3(add3(p['RIGHT EAR'],p['LEFT EAR']),0.5);
 export function completePose(p: Pose3): Pose3 { return {...p,PELVIS:pelvis(p),HEAD:head(p)}; }
+export function validateDepthReference(value: unknown): asserts value is Pose3 {
+  const p=value as Pose3;
+  if(!p||LABELS.some(label=>!Array.isArray(p[label])||p[label].length!==3||!p[label].every(Number.isFinite)))throw new Error('Target depth reference needs 18 finite 3D joints.');
+  const full=completePose(p);
+  if(MOTION_EDGES.some(([a,b])=>{const n=length3(sub3(full[b],full[a]));return !Number.isFinite(n)||n<1e-9;}))throw new Error('Target depth reference contains a zero-length or nonfinite rig segment.');
+}
 const legLength=(p:Pose3)=>length3(sub3(p['RIGHT KNEE'],p['RIGHT HIP']))+length3(sub3(p['RIGHT LEG'],p['RIGHT KNEE']));
 const clonePose=(p:Pose3):Pose3=>Object.fromEntries(Object.entries(p).map(([k,v])=>[k,[...v] as Vec3]));
 export function projectMotionPose(points:Pose3,calibration:MotionCalibration,camera:MotionCamera,origin:[number,number],depthScale:number):MotionPoint[]{
@@ -70,7 +77,9 @@ export function projectMotionPose(points:Pose3,calibration:MotionCalibration,cam
 export function liftReference(calibration: MotionCalibration, sourceReference: Pose3): { points: Pose3; camera: MotionCamera; origin: [number,number]; scale: number } {
   const {width,height,rest}=calibration;
   if(!hasAll(rest)||!Number.isInteger(width)||!Number.isInteger(height)||width<16||height<16||width>256||height>256)throw new Error('Reference needs 18 finite in-frame joints and a 16-256 px canvas.');
-  const source=completePose(sourceReference),camera=motionCamera(calibration.direction,calibration.elevation,calibration.azimuth);
+  if(calibration.depthReference!==undefined)validateDepthReference(calibration.depthReference);
+  // A supplied target rest changes the latent-depth proxy only; source rotations and camera remain separate.
+  const source=completePose(calibration.depthReference??sourceReference),camera=motionCamera(calibration.direction,calibration.elevation,calibration.azimuth);
   const by=Object.fromEntries(rest.map(k=>[k.label,k]));
   const origin:[number,number]=[(by['RIGHT HIP'].x+by['LEFT HIP'].x)*width/2,(by['RIGHT HIP'].y+by['LEFT HIP'].y)*height/2];
   const visibleLeg=Math.hypot((by['RIGHT KNEE'].x-by['RIGHT HIP'].x)*width,(by['RIGHT KNEE'].y-by['RIGHT HIP'].y)*height)+Math.hypot((by['RIGHT LEG'].x-by['RIGHT KNEE'].x)*width,(by['RIGHT LEG'].y-by['RIGHT KNEE'].y)*height);
