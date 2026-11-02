@@ -492,8 +492,7 @@ test('selection search shows an honest zero-result state and preserves native ed
 })
 
 test('saved light appearance applies before the application module initializes', async ({ page, context }) => {
-  await landing(page)
-  await page.evaluate(() => localStorage.setItem('pixeldoll.theme', 'light'))
+  await context.addInitScript(() => localStorage.setItem('pixeldoll.theme', 'light'))
   let release!: () => void
   const held = new Promise<void>((resolve) => { release = resolve })
   let blocked = 0
@@ -506,7 +505,7 @@ test('saved light appearance applies before the application module initializes',
     await route.fallback().catch(() => {})
   })
   try {
-    await page.reload({ waitUntil: 'commit' })
+    await page.goto('/', { waitUntil: 'commit' })
     await expect.poll(() => blocked).toBeGreaterThan(0)
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
     expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe('light')

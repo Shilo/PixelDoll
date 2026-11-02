@@ -204,10 +204,14 @@ old-tab safety apply here; its state restoration and long retry backoff do not. 
 [service-worker lifecycle](https://web.dev/articles/service-worker-lifecycle) and
 [update guidance](https://web.dev/learn/pwa/update) explain why unconditional activation and cache deletion are unsafe.
 
-Validation (2026-11-02): Node 24.22.1/npm 11.19.1; type checking, 1,579 unit tests (one existing skip), all 190 browser
+Validation (2026-11-02): Node 24.22.1/npm 11.19.1; type checking, 1,597 unit tests (one existing skip), all 190 browser
 tests, production build/dist guard and theme ownership passed. The full suite includes fullscreen and the new busy-modal
 keyboard regression, which reproduced before its capture guard was added. Two preview tests were corrected to inspect
 the Fetch API cache policy instead of synthesized HTTP headers and to decode a valid PNG instead of a corrupt fixture.
+CI exposed an early-theme test race: cached worker responses bypass network routing. The test now gates the first
+navigation's application scripts with the saved preference already set, preserving every pre-bootstrap assertion;
+the PWA case separately verifies controlled offline light appearance. All 30 affected cases passed with CI's one-worker
+settings before the follow-up push.
 Native Chromium manifest and installability checks returned no errors; subpath identity, start URL and scope were verified.
 Codex browser checks independently confirmed a blocked form retains its text, explicit versioned update/reload, fullscreen
 entry/exit, and server-unavailable launch, recolor and prepared export. No PixelLab credits were spent. Physical devices
