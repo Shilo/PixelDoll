@@ -1,0 +1,479 @@
+{
+  "version": 1,
+  "phase": "workflow-reconciliation-v1",
+  "priorSettledUnits": 998,
+  "additionalAllowance": 1000,
+  "pilotCap": 200,
+  "newBilledUnits": 43.25,
+  "newConservativeReservedUnits": 46,
+  "additionalActualRemaining": 956.75,
+  "professionalQualification": false,
+  "studioAnimationDefaultChanged": false,
+  "bodyGate": {
+    "passed": true,
+    "notes": "LIMITED diagnostic eligibility for managed B only, not production qualification. Independent blind review favors B overhead action. Manually tracked visible toe/heel outlines span 0-1 native px; far heel and south heels remain unobserved, landmark uncertainty about1px. Timing is illustrative, fist partly hidden. Permit only the reviewed four-frame east sword diagnostic, no replication or Studio promotion. A/C raw variants fail action semantics.",
+    "evidence": [
+      "docs/research/2026-11-01-workflow-reconciliation.md",
+      "spikes/api/out/workflow-reconciliation-2026-11-01/body-evidence.json",
+      "spikes/api/out/workflow-reconciliation-2026-11-01/reviewed-hand-landmarks.json"
+    ]
+  },
+  "equipmentGate": {
+    "passed": false,
+    "notes": "FAIL. Exact black-mask preservation (111882px) did not preserve actual grip. Frame1 added green hand-like anatomy above original fist; extraction removes it, leaving hilt at skull, not frozen hand. New key-colored outside-body pixels31/15/7/21. Frames3/4 partial successes; frame6 inferred grip remains unknown. Stop remaining75 equipment expansion and replication. No production promotion or new skin patch inside weapon layer.",
+    "evidence": [
+      "docs/research/2026-11-01-workflow-reconciliation.md",
+      "spikes/api/out/workflow-reconciliation-2026-11-01/managed-equipment-analysis.json",
+      "spikes/api/out/workflow-reconciliation-2026-11-01/managed-equipment-comparison.png"
+    ]
+  },
+  "calls": [
+    {
+      "id": "workflow-reconciliation-v1-import-7088911ed94355ce7c3c431c3bc184b26e16ae8daadd47d406a4cbb2a6bc4a33",
+      "label": "Exact adult benchmark import, four supplied views",
+      "stage": "body",
+      "status": "completed",
+      "reserved": 1,
+      "billed": 0.25,
+      "jobIds": [
+        "291d9b36-c89b-4fb9-857b-76fb9072257a"
+      ]
+    },
+    {
+      "id": "workflow-reconciliation-v1-custom-e818846b7481e8f4e85d7784d05ac7e3823b5a6d440d0a3c8b8f908818615fd7",
+      "label": "Controlled planted overhead, exact adult source",
+      "stage": "body",
+      "status": "completed",
+      "reserved": 8,
+      "billed": 6,
+      "jobIds": [
+        "d75fd4a3-afee-4998-ade1-430fa3164b18",
+        "4061f83a-4347-435b-a0d4-aee1e1b7f8e5"
+      ]
+    },
+    {
+      "id": "2b3ea2d51b4e493734e647b26f9f1561ebc59cfcbdcb3c6ade69ade95e4d8cc7",
+      "label": "Adult 64 px / Standing overhead strike / south / 731 / 5e4d8cc7",
+      "stage": "body",
+      "status": "completed",
+      "reserved": 3,
+      "billed": 3,
+      "jobIds": [
+        "2ff61a06-e752-4d9f-be6a-85dc3769672c"
+      ]
+    },
+    {
+      "id": "d061d58ec2bd10c9cdcd0929bc54910163bd8a2addda87a7f787dff6f98e2cde",
+      "label": "Adult 64 px / Standing overhead strike / east / 731 / f98e2cde",
+      "stage": "body",
+      "status": "completed",
+      "reserved": 3,
+      "billed": 3,
+      "jobIds": [
+        "bcda4fc5-4ce8-49e5-939f-bcb1cf861c8e"
+      ]
+    },
+    {
+      "id": "bfe27aa5def574d8f9126f2aa490adc92e25b38a929fe7c435cde7e893d43152",
+      "label": "Adult 64 px / provider-depth control / Standing overhead strike / south / 731 / 93d43152",
+      "stage": "body",
+      "status": "completed",
+      "reserved": 3,
+      "billed": 3,
+      "jobIds": [
+        "cfd4a77f-8f4c-43e7-9bc5-dc4d8cdc1019"
+      ]
+    },
+    {
+      "id": "e71e99c06b3d8512c9695c676b8ebc1d6613013879d15aa275e19c8df9bddae3",
+      "label": "Adult 64 px / provider-depth control / Standing overhead strike / east / 731 / f9bddae3",
+      "stage": "body",
+      "status": "completed",
+      "reserved": 3,
+      "billed": 3,
+      "jobIds": [
+        "f2b58736-bfd2-4029-a7f7-5da08e917775"
+      ]
+    },
+    {
+      "id": "workflow-reconciliation-v1-managed-equipment-e6811866bc84089b3bcd3b96b09043a13d43d1856936655d31ac1ae6761f8aba",
+      "label": "Frozen managed east sword diagnostic, frames 1/3/4/6",
+      "stage": "equipment",
+      "status": "completed",
+      "reserved": 25,
+      "billed": 25,
+      "jobIds": [
+        "d7f9b2eb-6b1d-4489-8889-e8449cb2f89a"
+      ]
+    }
+  ],
+  "bodyCases": [
+    {
+      "label": "A",
+      "variant": "source-proxy",
+      "direction": "south",
+      "jobId": "2ff61a06-e752-4d9f-be6a-85dc3769672c",
+      "requestHash": "f2695912a8cbeaf531e9e47543111feb45c6fa1e10517df21c8248f72cd94bd6",
+      "frames": 8,
+      "cell": [
+        80,
+        80
+      ],
+      "displayPadding": 16,
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "paletteFit": 1,
+      "professionalQualification": false
+    },
+    {
+      "label": "A",
+      "variant": "source-proxy",
+      "direction": "east",
+      "jobId": "bcda4fc5-4ce8-49e5-939f-bcb1cf861c8e",
+      "requestHash": "d05777c23cd45b14759f421b1d80487ac4ad2fe05ed70ee81feaf95c63bc408a",
+      "frames": 8,
+      "cell": [
+        80,
+        80
+      ],
+      "displayPadding": 16,
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "paletteFit": 0.9888258839226151,
+      "professionalQualification": false
+    },
+    {
+      "label": "C",
+      "variant": "native-depth",
+      "direction": "south",
+      "jobId": "cfd4a77f-8f4c-43e7-9bc5-dc4d8cdc1019",
+      "requestHash": "836fe22466148114719d270939b7e27a84f98a0326da91e8ee1c528217f8a738",
+      "frames": 8,
+      "cell": [
+        80,
+        80
+      ],
+      "displayPadding": 16,
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "paletteFit": 1,
+      "professionalQualification": false
+    },
+    {
+      "label": "C",
+      "variant": "native-depth",
+      "direction": "east",
+      "jobId": "f2b58736-bfd2-4029-a7f7-5da08e917775",
+      "requestHash": "3126aa455d7ab80757870bbad254710ca01f367e85fecb35ee6b99c4e39fd17e",
+      "frames": 8,
+      "cell": [
+        80,
+        80
+      ],
+      "displayPadding": 16,
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "detachedPixels": [
+        0,
+        30,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "paletteFit": 0.9792797237296498,
+      "professionalQualification": false
+    },
+    {
+      "label": "B",
+      "variant": "managed",
+      "direction": "south",
+      "groupId": "b356b46f-b7f4-4296-8902-267a269683cd",
+      "frames": 8,
+      "cell": [
+        112,
+        112
+      ],
+      "displayPadding": 0,
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "paletteFit": 1,
+      "professionalQualification": false
+    },
+    {
+      "label": "B",
+      "variant": "managed",
+      "direction": "east",
+      "groupId": "b356b46f-b7f4-4296-8902-267a269683cd",
+      "frames": 8,
+      "cell": [
+        112,
+        112
+      ],
+      "displayPadding": 0,
+      "borderPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "detachedPixels": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "paletteFit": 1,
+      "professionalQualification": false
+    }
+  ],
+  "equipment": {
+    "jobId": "d7f9b2eb-6b1d-4489-8889-e8449cb2f89a",
+    "requestHash": "e6811866bc84089b3bcd3b96b09043a13d43d1856936655d31ac1ae6761f8aba",
+    "evidenceSha256": "0a02cd5f4e06bbe6fd173e362e927a9b181667d1da17c967d13d0f956f1df305",
+    "resultSha256": "4c6efdd48437ad312ead85b3ae6751f60905ec4e7711ae946644eb0670cc2e1f",
+    "blackPixels": 111882,
+    "changedBlackPixels": 0,
+    "whitePixels": 12534,
+    "changedWhitePixels": 1109,
+    "references": [
+      {
+        "direction": "east",
+        "sha256": "c4f86ce8894166d1c2e08388384f7a8821acb813828493975e6f6c1ab296d2bd",
+        "inputChangedPixels": 0,
+        "changedPixels": 0,
+        "unprotectedPixels": 0
+      },
+      {
+        "direction": "south",
+        "sha256": "2e4032a20d07d11694d296fe5fe218bbf4d2847361e3c8d521a904b48e40f772",
+        "inputChangedPixels": 0,
+        "changedPixels": 0,
+        "unprotectedPixels": 0
+      }
+    ],
+    "frames": [
+      {
+        "frame": 1,
+        "bodySha256": "54d9e0a35023fdb82e72bea723732f4efde3e9c471d830a6b57be2720e48ef5b",
+        "grip": {
+          "x": 44,
+          "y": 36,
+          "uncertaintyPx": 2,
+          "status": "partly-visible",
+          "description": "External fist/palm visible behind head; occluded interior fingers are not measured."
+        },
+        "whiteBodyPixels": 56,
+        "changedWhiteBodyPixels": 52,
+        "newKeyOutsideBody": {
+          "pixels": 31,
+          "bounds": {
+            "xMin": 43,
+            "xMax": 53,
+            "yMin": 24,
+            "yMax": 33
+          }
+        }
+      },
+      {
+        "frame": 3,
+        "bodySha256": "cdcef28e295670ed543d9a7eab57d5764606674bae9b19d7c37329b21a57e407",
+        "grip": {
+          "x": 77,
+          "y": 55,
+          "uncertaintyPx": 2,
+          "status": "visible",
+          "description": "Visible rounded fist at end of forward right forearm."
+        },
+        "whiteBodyPixels": 73,
+        "changedWhiteBodyPixels": 73,
+        "newKeyOutsideBody": {
+          "pixels": 15,
+          "bounds": {
+            "xMin": 73,
+            "xMax": 79,
+            "yMin": 59,
+            "yMax": 62
+          }
+        }
+      },
+      {
+        "frame": 4,
+        "bodySha256": "96cb23bb9f353456fc2ca0b159af9f3bcc0a31843af813a688d451e9a2f80ae3",
+        "grip": {
+          "x": 75,
+          "y": 65,
+          "uncertaintyPx": 2,
+          "status": "visible",
+          "description": "Visible fist in front of torso during downward follow-through."
+        },
+        "whiteBodyPixels": 76,
+        "changedWhiteBodyPixels": 75,
+        "newKeyOutsideBody": {
+          "pixels": 7,
+          "bounds": {
+            "xMin": 71,
+            "xMax": 74,
+            "yMin": 67,
+            "yMax": 70
+          }
+        }
+      },
+      {
+        "frame": 6,
+        "bodySha256": "595909ece3422c48c63d2f848df375942afdcc6f87db697242294cd53c523c8b",
+        "grip": {
+          "x": 61,
+          "y": 70,
+          "uncertaintyPx": 3,
+          "status": "inferred-partly-occluded",
+          "description": "Hand blends into hip; center is an authoring hypothesis, not an independently measured visible grip."
+        },
+        "whiteBodyPixels": 125,
+        "changedWhiteBodyPixels": 125,
+        "newKeyOutsideBody": {
+          "pixels": 21,
+          "bounds": {
+            "xMin": 50,
+            "xMax": 63,
+            "yMin": 54,
+            "yMax": 74
+          }
+        }
+      }
+    ],
+    "result": "Failed original-fist grip in frame1 after frozen-body recomposition. Do not expand or promote."
+  },
+  "reviewLimits": [
+    "Full available local Claude history reviewed; no claim to unsynced cloud-only turns.",
+    "Independent body reviewer used ordered strips/native pixels, not continuous playback.",
+    "Managed timing and export pivot not verified.",
+    "Hidden foot landmarks and inferred handgrips remain unknown.",
+    "Brown handle color candidates are supporting geometry, not a true hilt detector."
+  ],
+  "applicationChange": {
+    "kind": "informational held-item raw body differences",
+    "rawBeforeRegistration": true,
+    "persistedFields": [
+      "pixels",
+      "bounds",
+      "space",
+      "nearestWristPx when available",
+      "rawKeyReviewFrames"
+    ],
+    "qaStatusChanged": false,
+    "cleanAutoSaveChanged": false,
+    "automaticPaidRetryAdded": false,
+    "newGenerationDefault": false,
+    "scope": "Existing Details disclosures; not deployed"
+  },
+  "verification": {
+    "strict": {
+      "errors": 0,
+      "warnings": 0
+    },
+    "unit": {
+      "filesPassed": 122,
+      "passed": 1220,
+      "preexistingSkipped": 1
+    },
+    "fullEndToEnd": {
+      "passed": 166,
+      "minutes": 3.4
+    },
+    "productionBuild": true,
+    "distGuard": true,
+    "researchMarkersAbsentFromProduction": true,
+    "originalBenchmarkVerdictsUnchanged": true
+  }
+}

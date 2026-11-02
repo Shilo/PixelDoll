@@ -1,5 +1,7 @@
 # Targeted contacts, grip and native-view qualification
 
+**Later reconciliation:** [November 1 workflow review](2026-11-01-workflow-reconciliation.md) corrects the scope of rigid weapon placement and historical armed/split preservation claims, and adds a controlled same-artwork body comparison. The internal grip/mask tools below are not a general normal-user weapon solution.
+
 Branch: `codex/motion-lab`. Continuation of [the previous follow-up](2026-10-28-motion-followup.md). This document records this phase separately so that historical results, paid usage and rejected experiments remain intact.
 
 ## Scope and acceptance

@@ -26,6 +26,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 ## Generation and quality
 
 - **Experimental motion retargeting is not universally qualified.** The dev-only Motion Lab now covers all 54 available native body/action/view profiles and supports authored contacts, measured soles and explicit weapon grips/masks. Equipped attacks and rendered foot planting still fail in some cases. A two-frame frozen-body grid repair is promising; full-clip quality, independent west/diagonal artwork and repeatability remain unqualified. Two older experimental walk reviews are retained. See the [targeted results and limitations](research/2026-10-28-motion-targeted-authoring.md).
+  The [controlled November 1 comparison](research/2026-11-01-workflow-reconciliation.md) favors managed custom V3 body motion, but its equipment test adds a new hand and fails after weapon extraction. Exact protected pixels do not establish correct grip; neither route is a qualified Studio replacement.
 
 - **Generation is not bit-repeatable.** Same request + seed ≠ same pixels, so base frames are frozen and never
   regenerated; changing the base (`baseHash`) makes existing items stale.

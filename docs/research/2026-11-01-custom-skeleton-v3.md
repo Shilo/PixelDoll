@@ -1,5 +1,7 @@
 # Custom Skeleton v3: documentation and live qualification
 
+**Later same-day follow-up:** [Claude workflow reconciliation and controlled second pilot](2026-11-01-workflow-reconciliation.md) records the new allowance and exact-artwork comparison. The six-generation result and 998-unit total below describe the earlier checkpoint, not the new phase's spending or final canvas contract.
+
 Checked November 1, 2026 local time, including live completion on November 2 UTC. The initial documentation-only check was followed by free MCP preflight and a six-generation two-direction experiment. This supplements the [October qualification results](2026-10-28-motion-targeted-authoring.md). Machine-readable results: [custom V3 results](2026-11-01-custom-skeleton-v3-results.json).
 
 ## Decision
