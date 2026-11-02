@@ -147,6 +147,10 @@ Open `/review.html` on the loopback viewer, or unpack `motion-targeted-review.zi
 
 Verification includes the strict app check, full unit suite and the browser self-test spec. The new checks cover world-anchor preservation, no bone stretching, wrapped contacts, deterministic adjacent-window ownership, unreachable-plan blocking, short running-stance sampling, exact timing, body-only occlusion, exact-hash attachment imports, visible-sole projection, missing temporal evidence, saved authoring and upward charge reconciliation. A new textarea persistence test initially used a text-content assertion; its trace showed the saved value was present. The assertion now checks the textarea value and passes. Final counts and any omitted checks are recorded in the result ledger. No paid request was retried.
 
+## November 1 documentation update
+
+The [custom Skeleton v3 follow-up](2026-11-01-custom-skeleton-v3.md) identifies a newly documented managed authoring workflow that this campaign did not test. One bounded comparison is now recommended before further conversion tuning. The previous rendered findings and 992-generation total remain unchanged; no new quality claim follows from the documentation alone.
+
 ## Research rationale and boundaries
 
 A read-only research subagent reviewed the targeted contact/attachment problem without using credits. These primary sources informed the original implementation; no third-party runtime or copied implementation was added:
