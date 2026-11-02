@@ -2,6 +2,8 @@
 
 November 2, 2026, branch `codex/motion-lab`. Follow-up to the owner's request to implement the next recommended fix. No broad research, new dependencies, external assets or paid generations were used.
 
+**Later visual correction:** the owner correctly found that these two examples still had an unconvincing hand connection. Restoring the axe artwork did not qualify its grip. The [palm-centered follow-up](2026-11-02-palm-grip-correction.md) redefines the source attachment point inside the shaft, moves the target to the palm, reviews all eight poses and records the remaining limits. Do not treat the images below as accepted grip results.
+
 ## Problem and delivered behavior
 
 The [clean-grip test](2026-11-02-clean-grip-qualification.md) failed even with correct body protection and a complete desired axe head inside the mask. The model omitted one head and changed the other shaft. Another generation is not required to repair those item pixels if native artwork is already available.

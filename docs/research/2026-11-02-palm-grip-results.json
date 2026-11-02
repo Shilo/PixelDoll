@@ -1,0 +1,309 @@
+{
+  "focused": {
+    "sourcePacketCanonicalHash": "516a48a77fea477e0c3bc7d39ba35bfad8d6ca78a9e169dfa70314ca60daba0c",
+    "paidRequests": 0,
+    "sourcePixelsEdited": 0,
+    "bodyPixelsEdited": 0,
+    "frames": [
+      {
+        "frame": 3,
+        "oldEndAnchor": {
+          "x": 93,
+          "y": 82,
+          "uncertaintyPx": 2,
+          "status": "Visible forward/down fist; uncertain undersaturated hilt/body seam."
+        },
+        "authoredShaftAnchor": {
+          "x": 98.33506820991519,
+          "y": 84.74536831692076
+        },
+        "anchorDepthPx": 6,
+        "oldTarget": {
+          "x": 93,
+          "y": 73,
+          "uncertaintyPx": 2,
+          "status": "Visible green fist/palm with uncertain dark boundary pixels."
+        },
+        "authoredPalmCenter": {
+          "x": 90.5,
+          "y": 75.5
+        },
+        "hiddenItemPixels": 27,
+        "placedNeutralPixels": 85,
+        "visibleNeutralPixels": 85,
+        "clippedSourcePixels": 0,
+        "qualified": false
+      },
+      {
+        "frame": 4,
+        "oldEndAnchor": {
+          "x": 93,
+          "y": 82,
+          "uncertaintyPx": 2,
+          "status": "Visible forward/down fist; uncertain undersaturated hilt/body seam."
+        },
+        "authoredShaftAnchor": {
+          "x": 98.33506820991519,
+          "y": 84.74536831692076
+        },
+        "anchorDepthPx": 6,
+        "oldTarget": {
+          "x": 90,
+          "y": 82,
+          "uncertaintyPx": 2,
+          "status": "Explicit artist placement within observed grip uncertainty, not a new measured joint."
+        },
+        "authoredPalmCenter": {
+          "x": 88.5,
+          "y": 84.5
+        },
+        "hiddenItemPixels": 21,
+        "placedNeutralPixels": 83,
+        "visibleNeutralPixels": 83,
+        "clippedSourcePixels": 0,
+        "qualified": false
+      }
+    ],
+    "qualified": false
+  },
+  "fullClip": {
+    "version": 1,
+    "kind": "pixeldoll-gripped-axe-inspection",
+    "sourcePacketCanonicalHash": "516a48a77fea477e0c3bc7d39ba35bfad8d6ca78a9e169dfa70314ca60daba0c",
+    "bodyRecipeCanonicalHash": "4458544f88245b1a96db2c1781f857a2f306271014009574bf0ac11de5fb8fd8",
+    "sourceGrip": {
+      "x": 98.33506820991519,
+      "y": 84.74536831692076
+    },
+    "anchorDepthPx": 6,
+    "sourceAssetSha256": "a89607348dea69e000cd98abd0ddc401987d89d0fe6b015afb15d5c29db7393a",
+    "cell": {
+      "w": 144,
+      "h": 144
+    },
+    "pivot": {
+      "x": 72,
+      "y": 107
+    },
+    "direction": "east",
+    "frames": [
+      {
+        "frame": 0,
+        "authoredPalmCenter": {
+          "x": 73.5,
+          "y": 84.5
+        },
+        "authoredAngleDegrees": 26.12823003202393,
+        "hiddenItemPixels": 17,
+        "bodyPixelChanges": 0,
+        "clippedSourcePixels": 0,
+        "sourceBodySha256": "a5e67bc19022a9e96d9527e6ed5dfe386ade9beaf51e0ceb3eff3f5ea37f1563",
+        "sourceMode": "single-native-asset-with-authored-track",
+        "durationMs": 120,
+        "visibleFrontToe": {
+          "x": 76.5,
+          "y": 106.5,
+          "opaque": true
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "qualified": false
+      },
+      {
+        "frame": 1,
+        "authoredPalmCenter": {
+          "x": 67.5,
+          "y": 42.5
+        },
+        "authoredAngleDegrees": 205.8067562463386,
+        "hiddenItemPixels": 14,
+        "bodyPixelChanges": 0,
+        "clippedSourcePixels": 0,
+        "sourceBodySha256": "9e5193d7907217f9ffb054e891479d2ab0883cae865c02f1ce69066b11a0b8f6",
+        "sourceMode": "single-native-asset-with-authored-track",
+        "durationMs": 120,
+        "visibleFrontToe": {
+          "x": 76.5,
+          "y": 106.5,
+          "opaque": true
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "qualified": false
+      },
+      {
+        "frame": 2,
+        "authoredPalmCenter": {
+          "x": 67.5,
+          "y": 42.5
+        },
+        "authoredAngleDegrees": 204.0460116454131,
+        "hiddenItemPixels": 9,
+        "bodyPixelChanges": 0,
+        "clippedSourcePixels": 0,
+        "sourceBodySha256": "a1590f69269a1ecd4488f5c54648dc85c1e17e1b14bf8f8c952d1984bf0e6cba",
+        "sourceMode": "single-native-asset-with-authored-track",
+        "durationMs": 80,
+        "visibleFrontToe": {
+          "x": 76.5,
+          "y": 106.5,
+          "opaque": true
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "qualified": false
+      },
+      {
+        "frame": 3,
+        "authoredPalmCenter": {
+          "x": 90.5,
+          "y": 75.5
+        },
+        "authoredAngleDegrees": -42.80094874280415,
+        "hiddenItemPixels": 27,
+        "bodyPixelChanges": 0,
+        "clippedSourcePixels": 0,
+        "sourceBodySha256": "dccc5c6dee133dfb234062c5742c55d5bb7aacf303d2d3cb4f38e7bae18d44d6",
+        "sourceMode": "single-native-asset-with-authored-track",
+        "durationMs": 80,
+        "visibleFrontToe": {
+          "x": 76.5,
+          "y": 106.5,
+          "opaque": true
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "qualified": false
+      },
+      {
+        "frame": 4,
+        "authoredPalmCenter": {
+          "x": 88.5,
+          "y": 84.5
+        },
+        "authoredAngleDegrees": -22.316990081946578,
+        "hiddenItemPixels": 21,
+        "bodyPixelChanges": 0,
+        "clippedSourcePixels": 0,
+        "sourceBodySha256": "adfc044e682285d419216427c459030804b2b0a4013981554156c552766aed8f",
+        "sourceMode": "single-native-asset-with-authored-track",
+        "durationMs": 80,
+        "visibleFrontToe": {
+          "x": 76.5,
+          "y": 106.5,
+          "opaque": true
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "qualified": false
+      },
+      {
+        "frame": 5,
+        "authoredPalmCenter": {
+          "x": 93.5,
+          "y": 83.5
+        },
+        "authoredAngleDegrees": 27.229859814449476,
+        "hiddenItemPixels": 20,
+        "bodyPixelChanges": 0,
+        "clippedSourcePixels": 0,
+        "sourceBodySha256": "c8620cd306b065237049ebe6120db35d95469a7d6e748fb6cbda6d57c7b255fb",
+        "sourceMode": "single-native-asset-with-authored-track",
+        "durationMs": 120,
+        "visibleFrontToe": {
+          "x": 76.5,
+          "y": 106.5,
+          "opaque": true
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "qualified": false
+      },
+      {
+        "frame": 6,
+        "authoredPalmCenter": {
+          "x": 75.5,
+          "y": 85.5
+        },
+        "authoredAngleDegrees": 29.62345203393701,
+        "hiddenItemPixels": 31,
+        "bodyPixelChanges": 0,
+        "clippedSourcePixels": 0,
+        "sourceBodySha256": "7c9125140f8b68d859cbe462ceb101ff9729e0617ea82cce6abd32860dd43242",
+        "sourceMode": "single-native-asset-with-authored-track",
+        "durationMs": 100,
+        "visibleFrontToe": {
+          "x": 76.5,
+          "y": 106.5,
+          "opaque": true
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "qualified": false
+      },
+      {
+        "frame": 7,
+        "authoredPalmCenter": {
+          "x": 73.5,
+          "y": 84.5
+        },
+        "authoredAngleDegrees": 25.124635822008898,
+        "hiddenItemPixels": 21,
+        "bodyPixelChanges": 0,
+        "clippedSourcePixels": 0,
+        "sourceBodySha256": "31207fc89712a962a84f88c284755c9a94061adf018cfa4d81f79f3e830367b4",
+        "sourceMode": "single-native-asset-with-authored-track",
+        "durationMs": 220,
+        "visibleFrontToe": {
+          "x": 76.5,
+          "y": 106.5,
+          "opaque": true
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        },
+        "qualified": false
+      }
+    ],
+    "loop": false,
+    "providerTiming": false,
+    "paidRequests": 0,
+    "qualified": false,
+    "visibleToeReview": {
+      "landmark": "Artist-picked outer front-toe sole pixel",
+      "markedFrames": 8,
+      "screenSpanPx": 0,
+      "root": "Fixed at0,0 for the whole clip",
+      "scope": "One visible pixel landmark on this exact fixed-root clip, not heel/sole orientation, the hidden rear foot, weight transfer or an engine moving the character."
+    },
+    "notes": [
+      "All eight item layers come from one source asset, not selected AI successes.",
+      "Palm centers and directions are explicit2D authoring choices. The source hand anchor is6pixels into the shaft.",
+      "The frozen body is unchanged. Hidden finger anatomy, native perspective and general foot planting are not certified by this attachment test.",
+      "Timing is manually chosen for inspection and must be reviewed with actual playback."
+    ]
+  },
+  "exportAudit": {
+    "zipSha256": "2b753653143df05b8b2a08d9e940c19230d2fa405e87f679b964522e416b27f3",
+    "entries": 26,
+    "exactEntryRoundtrip": true,
+    "sharedRendererParityFrames": 8,
+    "qualified": false
+  },
+  "browserDownloadMatchesAudit": true
+}
