@@ -76,5 +76,29 @@
     }
   },
   "art": "unchanged, experimental and unqualified",
-  "ci": "not run or claimed by local verification"
+  "ci": "main build, all16 browser shards and Pages deployment passed",
+  "integration": {
+    "implementation": "85a187ca9dd05de3a417e47c90452de3937a6168",
+    "appTree": "896879be12a35e32a360f641a69d3909f7e0fcac",
+    "independentReview": {
+      "blockers": 0,
+      "focusedFiles": 7,
+      "testsPassed": 128,
+      "postPushTreeCheck": "passed"
+    },
+    "branchRun": {
+      "id": 41499627791,
+      "conclusion": "success"
+    },
+    "mainRun": {
+      "id": 41503295351,
+      "conclusion": "success",
+      "deployment": "success"
+    },
+    "localBranchDeleted": true,
+    "remoteBranchDeleted": true,
+    "unrelatedLocalFilesUnchanged": true,
+    "boardSynchronization": "pending: saved authorization lacks project scope",
+    "additionalGenerations": 0
+  }
 }

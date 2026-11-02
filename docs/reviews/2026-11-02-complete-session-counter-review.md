@@ -181,3 +181,27 @@ failures. They are not claimed fixed. No PixelLab token or agent server was used
 No broad research, second external-review loop, automatic paid retry, artwork promotion or deployed main change is part
 of this pass. The implemented fixes and documented art limits complete this bounded review response; missing unknown
 receipts remain explicitly unresolved rather than being converted into free retries.
+
+## Independent merge review and main integration
+
+The owner subsequently requested a sub-agent review, integration to main and deletion of the local and remote branch.
+A read-only reviewer inspected the actual diff in `85a187ca` against `05274fe0`, focusing on queue ownership, paid-response
+classification, source binding, unsent resolution, probe grips and native contact timing. It found no concrete merge
+blocker and independently passed **128 tests across seven focused files** under Node 24.22.1. It did not independently
+repeat strict checking, the full browser suite or art qualification, and made no source edits or PixelLab requests.
+
+[Branch CI run 41499627791](https://github.com/Shilo/PixelDoll/actions/runs/41499627791) passed build and all sixteen
+browser shards; deployment was correctly skipped on the branch. Main was then fast-forwarded to
+`85a187ca9dd05de3a417e47c90452de3937a6168` and pushed normally. The same reviewer verified that committed main,
+origin/main and the reviewed branch had identical `app` tree `896879be12a35e32a360f641a69d3909f7e0fcac`.
+
+The five unrelated main-checkout token-handling files were excluded from integration. Board reads still lack project
+scope, so no board completion or permission expansion is claimed. This authorized integration does not promote any
+experimental artwork, relax payment consent or spend generations.
+
+[Main CI and Pages run 41503295351](https://github.com/Shilo/PixelDoll/actions/runs/41503295351) completed successfully:
+build, all sixteen browser shards and deployment passed on that exact implementation commit. The retained worktree was
+then detached at main, and the fully merged `codex/claude-review-fixes` branch was deleted locally and on origin.
+The five unrelated local files were verified byte-for-byte unchanged through integration. This final record changes
+documentation only; application code remains identical to the successfully deployed commit. No additional tests or
+generations were needed for the documentation update.
