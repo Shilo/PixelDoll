@@ -6,6 +6,7 @@
   import SharePopover from './SharePopover.svelte'
   import PopoverArrow from './PopoverArrow.svelte'
   import ApiPeek from './ApiPeek.svelte'
+  import FullscreenButton from './FullscreenButton.svelte'
   import { queue } from '../lib/pixellab/queue.ts'
   import { fmtNum } from './model.ts'
   import { ui, doc, store, creating, settingUp, gens, openProject, undo, redo, toggleTheme, isDemo } from './state.svelte.ts'
@@ -38,6 +39,7 @@
       <button class="bu-action header-export" data-variant="outline" aria-label="Export" onclick={() => ui.sheet='export'} disabled={!m}><Download size={16} /><span>Export</span></button>
     {/if}
     {#if busy}<button class="bu-action" data-variant="quiet" aria-label="Activity" onclick={() => ui.sheet='activity'}><span class="ring spin"></span><span class="num">{active || ''}</span></button>{/if}
+    <FullscreenButton />
     <button class="bu-action" data-variant="quiet" aria-label="More options" popovertarget="experience-options"><Ellipsis size={20} /></button>
   </div>
 </header>

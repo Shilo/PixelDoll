@@ -182,7 +182,6 @@
 }
 @media (max-width:1100px) { .experience { --rail:300px; --edge:24px; } .scene-identity { max-width:calc(100% - var(--rail) - 65px); } .equipment-modes { gap:8px; } .equipment-scroll .slot-chips { gap:10px; } .equipment-scroll .slot-chip svg { width:22px;height:22px; } .character-sheet .sheet-body { justify-content:flex-start; } }
 @media (min-width:761px) and (max-width:1100px) and (min-height:541px) {
-  .view-modes { position:fixed;top:76px;left:24px;margin:0;gap:24px; }
   .world-hint { font-size:13px; }
   .scene-identity { top:17%; }
   .scene-identity h1 { font-size:32px; }
@@ -192,8 +191,10 @@
   .playback-bar .bu-action { font-size:14px;min-width:32px; }
   .playback-bar select { font-size:16px;max-width:130px; }
 }
-/* Header-centered tabs need room beside the header actions, including the Activity button shown while jobs run. */
-@media (min-width:920px) and (max-width:1100px) and (min-height:541px) { .view-modes { top:22px;left:47%;transform:translateX(-50%); } }
+/* Keep view tabs with character details until Full screen and busy Activity both have room. */
+@media (min-width:761px) and (max-width:1279px) and (min-height:541px) {
+  .view-modes { position:static;margin-top:22px;gap:24px;transform:none; }
+}
 @media (max-width:760px) and (min-height:541px) {
   .experience { --edge:20px; --rail:0px; }
   .experience-header { inset:12px var(--edge) auto; gap:8px; }

@@ -104,6 +104,148 @@ async function landing(page: Page) {
   await expect(page.locator('.customize-action')).toBeEnabled()
 }
 
+test('full screen includes the whole app and survives screen changes, dialogs and external exit', async ({ page }) => {
+  await landing(page)
+  const enter = page.getByRole('button', { name: 'Enter full screen', exact: true })
+  const exit = page.getByRole('button', { name: 'Exit full screen', exact: true })
+  const rootIsFullscreen = () => page.evaluate(() => document.fullscreenElement === document.documentElement)
+  await expect(enter).toBeVisible()
+  expect(await rootIsFullscreen()).toBe(false)
+  expect(await enter.evaluate(node => node.nextElementSibling?.getAttribute('aria-label'))).toBe('More options')
+  await enter.focus()
+  await page.keyboard.press('Enter')
+  await expect.poll(rootIsFullscreen).toBe(true)
+  await expect(exit).toBeEnabled()
+  await page.locator('.customize-action').click()
+  for (const mode of ['Preview', 'Top-down', 'Side-scroller']) {
+    await modes(page).getByRole('button', { name: mode, exact: true }).click()
+    await expect(exit).toBeVisible()
+    expect(await rootIsFullscreen()).toBe(true)
+  }
+  // Some browsers consume Escape before dispatching keydown; if delivered, it must not navigate.
+  await world(page).dispatchEvent('keydown', { key: 'Escape', bubbles: true })
+  await expect(modes(page)).toBeVisible()
+  await page.getByRole('button', { name: 'More options', exact: true }).click()
+  await expect(page.locator('#experience-options')).toBeVisible()
+  await page.getByRole('button', { name: 'Activity', exact: true }).click()
+  await expect(page.getByRole('dialog')).toBeVisible()
+  expect(await rootIsFullscreen()).toBe(true)
+  await page.getByRole('dialog').getByRole('button', { name: 'Done', exact: true }).click()
+  // Browser-owned exits (Escape, tab switching) update state without a click on our control.
+  await page.evaluate(() => document.exitFullscreen())
+  await expect(enter).toBeVisible()
+  await enter.click()
+  await expect(exit).toBeEnabled()
+  await exit.click()
+  await expect.poll(rootIsFullscreen).toBe(false)
+  await expect(enter).toBeEnabled()
+})
+
+test('full screen stays reachable beside More on narrow and landscape screens', async ({ page }) => {
+  await landing(page)
+  await page.getByRole('button', { name: 'Dismiss notification', exact: true }).click()
+  for (const viewport of [
+    { width: 320, height: 568 }, { width: 360, height: 800 }, { width: 390, height: 844 },
+    { width: 568, height: 320 }, { width: 667, height: 375 }, { width: 844, height: 390 },
+    { width: 768, height: 1024 }, { width: 1024, height: 768 }, { width: 920, height: 600 },
+    { width: 1101, height: 600 }, { width: 1280, height: 720 }, { width: 1920, height: 1080 },
+    { width: 2560, height: 1080 },
+  ]) {
+    await page.setViewportSize(viewport)
+    for (const studio of [false, true]) {
+      if (studio) await page.locator('.customize-action').click()
+      const toggle = page.getByRole('button', { name: 'Enter full screen', exact: true })
+      await expect(toggle).toBeInViewport()
+      const box = (await toggle.boundingBox())!
+      expect(box.width).toBeGreaterThanOrEqual(44)
+      expect(box.x).toBeGreaterThanOrEqual(0)
+      expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
+      // A real pointer activation also detects overlapping header controls or navigation tabs.
+      await toggle.click()
+      await page.getByRole('button', { name: 'Exit full screen', exact: true }).click()
+      if (studio) await page.locator('.header-back').click()
+    }
+  }
+})
+
+test('full screen failures surface without changing the action and allow retry', async ({ page }) => {
+  await landing(page)
+  const enter = page.getByRole('button', { name: 'Enter full screen', exact: true })
+  await page.evaluate(() => {
+    document.documentElement.requestFullscreen = () => Promise.reject(new TypeError('Denied'))
+  })
+  await enter.click()
+  await expect(page.getByRole('alert')).toContainText('Could not enter full screen.')
+  await expect(enter).toBeEnabled()
+  await page.evaluate(() => { delete (document.documentElement as Partial<HTMLElement>).requestFullscreen })
+  await enter.click()
+  const exit = page.getByRole('button', { name: 'Exit full screen', exact: true })
+  await expect(exit).toBeEnabled()
+  await page.evaluate(() => { document.exitFullscreen = () => Promise.reject(new TypeError('Denied')) })
+  await exit.click()
+  await expect(page.getByRole('alert')).toContainText('Could not exit full screen.')
+  await expect(exit).toBeEnabled()
+  await page.evaluate(() => { delete (document as Partial<Document>).exitFullscreen })
+  await exit.click()
+  await expect(enter).toBeEnabled()
+})
+
+test('full screen and view navigation stay separate while Activity is in the header', async ({ page }, info) => {
+  const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+  await page.goto(dev)
+  await expect(page.locator('.customize-action')).toBeEnabled()
+  await page.locator('.customize-action').click()
+  // A presentation-only running draft on another rig shows Activity without scheduling any work.
+  await page.evaluate(async () => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path)
+    s.gens.push({ phase: 'running', draft: { rigId: 'fullscreen-layout', spec: { id: 'fullscreen-layout' } }, input: { slot: 'head' } })
+  })
+  await expect(page.locator('.header-actions').getByRole('button', { name: 'Activity', exact: true })).toBeVisible()
+  for (const width of [320, 360, 390, 760, 920, 1024, 1101, 1279, 1280, 1440]) {
+    await page.setViewportSize({ width, height: 900 })
+    const overlap = await modes(page).evaluate(nav => {
+      const bounds = nav.getBoundingClientRect()
+      return [...document.querySelectorAll('.experience-header button')].some(button => {
+        const rect = button.getBoundingClientRect()
+        return rect.width > 0 && rect.height > 0 && rect.left < bounds.right && rect.right > bounds.left
+          && rect.top < bounds.bottom && rect.bottom > bounds.top
+      })
+    })
+    expect(overlap, `View navigation overlaps header at ${width}px`).toBe(false)
+    await page.getByRole('button', { name: 'Enter full screen', exact: true }).click()
+    await page.getByRole('button', { name: 'Exit full screen', exact: true }).click()
+  }
+})
+
+test('full screen hides when unsupported or prohibited', async ({ page }) => {
+  await page.addInitScript(() => { Object.defineProperty(document, 'fullscreenEnabled', { value: false }) })
+  await landing(page)
+  await expect(page.locator('.header-fullscreen')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'More options', exact: true })).toBeVisible()
+})
+
+test('PWA fullscreen launch hides an unusable toggle while standalone permits it', async ({ page }) => {
+  await page.addInitScript(() => {
+    const match = window.matchMedia.bind(window)
+    const display = match('(display-mode: fullscreen)')
+    Object.defineProperty(display, 'matches', { value: true, configurable: true })
+    const standalone = match('(display-mode: standalone)')
+    Object.defineProperty(standalone, 'matches', { get: () => !display.matches })
+    window.matchMedia = query => query === '(display-mode: fullscreen)' ? display
+      : query === '(display-mode: standalone)' ? standalone : match(query)
+  })
+  await landing(page)
+  await expect(page.locator('.header-fullscreen')).toHaveCount(0)
+  await page.evaluate(() => {
+    const display = matchMedia('(display-mode: fullscreen)')
+    Object.defineProperty(display, 'matches', { value: false })
+    display.dispatchEvent(new Event('change'))
+  })
+  await page.getByRole('button', { name: 'Enter full screen', exact: true }).click()
+  await page.getByRole('button', { name: 'Exit full screen', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Enter full screen', exact: true })).toBeEnabled()
+})
+
 test('movement warnings are combined and remain eligible while an error takes priority', async ({ page }, info) => {
   const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
   await page.goto(dev)

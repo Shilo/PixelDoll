@@ -40,6 +40,7 @@
   function key(e:KeyboardEvent) {
     if(e.target!==host || ui.sheet || e.ctrlKey || e.metaKey || e.altKey || e.isComposing) return
     const k=e.key.toLowerCase()
+    if(k==='escape'&&document.fullscreenElement)return
     if(MOVEMENT_KEYS.has(k)) {e.preventDefault();if(e.repeat&&!keys.has(k))return;keys.add(k)
       previewFacing()
     } else if(!e.repeat && ['1','2','3'].includes(k)) {e.preventDefault();setMode((['preview','topdown','side'] as const)[Number(k)-1])}

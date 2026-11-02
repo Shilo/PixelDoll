@@ -41,6 +41,8 @@ export { default as ExternalLink } from '@lucide/svelte/icons/external-link';
 export { default as PersonStanding } from '@lucide/svelte/icons/person-standing';
 export { default as House } from '@lucide/svelte/icons/house';
 export { default as Ellipsis } from '@lucide/svelte/icons/ellipsis';
+export { default as Maximize } from '@lucide/svelte/icons/maximize';
+export { default as Minimize } from '@lucide/svelte/icons/minimize';
 export { default as CircleAlert } from '@lucide/svelte/icons/circle-alert';
 export { default as UserRound } from '@lucide/svelte/icons/user-round';
 export { default as Grid2x2 } from '@lucide/svelte/icons/grid-2x2';

@@ -60,6 +60,8 @@
   })
 
   function back(e:KeyboardEvent) {
+    // Let the browser use Escape to leave fullscreen without also leaving the character.
+    if(e.key==='Escape'&&document.fullscreenElement)return
     if(e.repeat||!['Escape','Backspace'].includes(e.key)||ui.sheet||e.defaultPrevented||e.ctrlKey||e.metaKey||e.altKey)return
     if((e.target as HTMLElement).closest('input,textarea,select,[contenteditable]'))return
     const popover=document.querySelector<HTMLElement>('[popover]:popover-open')

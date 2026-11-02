@@ -19,6 +19,51 @@ Apply [simplicity-first design](../usability-principles.md) to changes in these 
 
 Export reports invalid saved preferences and offers an explicit reset of only those preferences, preserving characters and outfits. An unrelated character with invalid animation names is omitted from the global name catalog with an identifying warning; it does not prevent exporting the current character. Invalid current-character data remains blocking. Loading or unavailable settings never display default values as though they were saved choices.
 
+## Full screen
+
+The shared header offers a quiet Lucide expand/contract button immediately before More on Characters,
+Preview, Top-down and Side-scroller. This is a global presentation action, so a stable header position
+keeps entry discoverable and exit one tap away on touch devices. Putting it inside More would reduce
+header density but add a second interaction to both entry and exit. It uses the existing Bronze button
+recipe and a minimum 44px width, with an accessible action name and native title. From 761px through
+1279px, view tabs stay in the character details flow so they cannot overlap Full screen, running
+Activity or the character name on shorter displays. Native modal sheets
+retain their existing Close/Cancel controls; the header follows the same modal accessibility rules as More.
+
+Entry is optional and starts only from activation. Nothing is saved or automatically restored. The
+standard Fullscreen API targets `document.documentElement`, keeping the scene, dialogs, popovers and
+notifications together. Browser `fullscreenchange` events determine the icon/action, including browser-owned
+exits. Pending requests cannot overlap, and failures show an error notification with a recovery suggestion.
+Escape remains browser-owned; app navigation does not also handle Escape while API fullscreen is active.
+No keyboard/pointer lock, orientation lock, custom shortcut, dependency or CSS imitation of fullscreen is needed.
+
+Research and PWA handoff (2026-11-02):
+
+- Browser/PWA chrome varies by platform. An in-app control supplies a consistent location; desktop
+  [Window Controls Overlay](https://developer.mozilla.org/en-US/docs/Web/API/Window_Controls_Overlay_API)
+  exposes title-bar space only for installed desktop PWAs and would add a separate layout contract.
+  It does not solve browser tabs or mobile access, so it is unnecessary here.
+- The [Fullscreen API](https://developer.mozilla.org/en-US/docs/Web/API/Fullscreen_API) and
+  [requestFullscreen](https://developer.mozilla.org/en-US/docs/Web/API/Element/requestFullscreen) require
+  support/permission and transient user activation. Feature detection hides the button where unavailable
+  or prohibited. Requesting `navigationUI: 'hide'` expresses the immersive preference; the browser controls
+  the resulting UI. No vendor-prefixed compatibility layer is added.
+- The [Fullscreen standard](https://fullscreen.spec.whatwg.org/) reserves an exit mechanism for the user.
+  Its state/events are authoritative; window/screen dimensions are not used to guess fullscreen.
+- Prefer manifest `display: standalone` when PWA support is added, retaining this optional game-style
+  toggle. [Manifest fullscreen is independent of API fullscreen](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/display):
+  the app can already occupy the screen with `fullscreenElement === null`. `exitFullscreen()` cannot
+  turn that launch mode into a window. Hide the control whenever
+  [`(display-mode: fullscreen)`](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/At-rules/@media/display-mode)
+  matches without an API fullscreen element, including browser-owned fullscreen. Watch both display-mode
+  changes and API events. Standalone/window-controls-overlay launches retain the toggle when supported.
+- Platform support remains uneven. [WebKit's Safari 16.4 notes](https://webkit.org/blog/13966/webkit-features-in-safari-16-4/)
+  introduced unprefixed element fullscreen on macOS and iPadOS;
+  [MDN's compatibility data](https://github.com/mdn/browser-compat-data/blob/main/api/Element.json)
+  still identifies the iPhone limitation. A home-screen standalone app removes browser navigation UI
+  without requiring this API. Real iPhone/iPad/Android and installed-PWA behavior needs device validation
+  during PWA delivery; browser automation covers actual Chromium API transitions and simulated launch modes.
+
 ## Ownership
 
 `@shilo/bronze-ui` 0.2.2 remains the owner of semantic colors, light/dark surfaces, component states, borders, focus, shadows, radii, scrollbars and transparent scrollbar tracks. No GlassKit and no new theme dependency. UI design contract: [Design Contract to Preserve](../../.claude/handoffs/2026-10-23-production-parity-ui-ux-continuation.md#design-contract-to-preserve).
