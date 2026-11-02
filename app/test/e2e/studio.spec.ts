@@ -637,7 +637,7 @@ test('canceling Connect preserves generation drafts and discards the pending act
   await item.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a silver sword')
   await item.getByRole('radio', { name: 'azure', exact: true }).click()
   await expect(item.getByRole('button', { name: /^Make/ })).toContainText(/Est\. \d+ gens/)
-  await expect(item.getByText('PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.', { exact: true })).toBeVisible()
+  await expect(item.getByText('Consistency checks run automatically. If issues are detected, you choose whether to keep the item or request a paid retry. No quality retries or repairs run without your request. PixelLab may bill dollars and queue time varies.', { exact: true })).toBeVisible()
   await item.getByRole('button', { name: /^Make/ }).click()
   await page.getByRole('dialog', { name: 'Connect PixelLab' }).getByRole('button', { name: 'Cancel', exact: true }).click()
   await newItem(page, 'Head')
@@ -756,11 +756,11 @@ test('free item color matching is offline, scoped, persistent and preserves save
   expect(after).toMatchObject({ selected: fixture.itemId, anim: 'walk', dir: 'west' })
   expect(after.audit).toHaveLength(1)
   expect(after.audit[0]).toMatchObject({ version: 'neutral-owned-v1', anim: 'walk', dir: 'west' })
-  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
+  await expect(pane.locator('.badge.accepted')).toHaveText('Accepted')
   await reloadStudio(page); await expect(page.locator('.world-actors').first()).toBeVisible()
   await page.evaluate(async id => { const p = '/src/studio/state.svelte.ts', s = await import(p); s.ui.anim = 'walk'; s.ui.dir = 'west'; s.pick(id) }, fixture.itemId)
   await selectedItemDetails(page)
-  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
+  await expect(pane.locator('.badge.accepted')).toHaveText('Accepted')
   await expect(pane.getByRole('radio', { name: 'azure', exact: true }).first()).toHaveAttribute('aria-checked', 'true')
   await expect(pane.getByRole('button', { name: /^Match item colors.*Free$/ })).toHaveCount(0)
   await pane.getByRole('button', { name: 'Done', exact: true }).click()
@@ -963,7 +963,7 @@ test('draft review can inspect every generated move and only its available views
   })
   const review = page.locator('.gen')
   await expect(review.getByRole('button', { name: /^Try again/ })).toContainText('Est.')
-  await expect(review.getByText('PixelLab may bill some calls in dollars. Retries and fallbacks cost extra; queue time varies.', { exact: true })).toBeVisible()
+  await expect(review.getByText('Try again redraws the whole item for all current moves and directions at the displayed estimate. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.', { exact: true })).toBeVisible()
   await expect(review.getByRole('combobox', { name: 'Preview move', exact: true })).toHaveValue('walk')
   await expect(review.locator('.review-grid figure')).toHaveCount(4)
   const before = await review.locator('canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL())
@@ -1009,7 +1009,7 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
   await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
   await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
   await expect(page.locator('.world-actors').first()).toBeVisible()
-  type Studio = { ui: { playing: boolean; anim: string; dir: string }; doc: { id: string; items: Record<string, string | null>; drafts: Record<string, string> }; store: { project: any; results: Record<string, unknown> }; gens: any[]; loadGens: () => Promise<void> }
+  type Studio = { REQUEST_TEXT: number; ui: { playing: boolean; anim: string; dir: string }; doc: { id: string; items: Record<string, string | null>; drafts: Record<string, string> }; store: { project: any; results: Record<string, unknown> }; gens: any[]; loadGens: () => Promise<void> }
   await page.evaluate(async () => {
     const s = (window as unknown as { __studio: Studio }).__studio
     await s.loadGens()
@@ -1017,7 +1017,7 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
     // a generating helm whose south walk landed; east (west mirrors it) and north are still on their way
     const p = s.store.project, hat = p.manifest.items.find((i: { id: string }) => i.id === 'hat_wizard'), keys = (dir: string) => Array.from({ length: 8 }, (_, i) => `walk/${dir}/${i}`)
     const item = { ...structuredClone(hat), id: 'loading_helm', name: 'Loading helm', status: 'draft', materials: [], coverage: keys('south'), pending: [...keys('east'), ...keys('north')] }
-    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: 'loading_helm', name: 'Loading helm', slot: 'head', prompt: 'a helm', key: 'green', anims: ['walk'], dirs: ['south', 'east', 'north'] }, calls: [], keySwitched: false, log: [] }, input: { name: 'Loading helm', slot: 'head', prompt: 'a helm' }, phase: 'running', status: 'Adding the other moves', requestText: 2 })
+    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: 'loading_helm', name: 'Loading helm', slot: 'head', prompt: 'a helm', key: 'green', anims: ['walk'], dirs: ['south', 'east', 'north'] }, calls: [], keySwitched: false, log: [] }, input: { name: 'Loading helm', slot: 'head', prompt: 'a helm' }, phase: 'running', status: 'Adding the other moves', requestText: s.REQUEST_TEXT })
     s.store.results = { ...s.store.results, loading_helm: { cells: [], qa: null, g1: new Map(), preview: { manifest: { ...p.manifest, items: [...p.manifest.items, item] }, images: p.images } } }
   })
   // run a function against the dev-only studio state (serialized like page.evaluate's own functions)
@@ -1173,7 +1173,9 @@ test('mixed malformed draft calls cannot claim Clean when surviving frame checks
   await page.evaluate(() => {
     const s = (window as unknown as { __studio: { ui: { selected: string }; store: { results: Record<string, any> } } }).__studio
     const id = s.ui.selected.slice(4), r = s.store.results[id]
-    s.store.results = { ...s.store.results, [id]: { ...r, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % gray smudges in a colorful design']]) } }
+    const count = r.preview.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').cells
+    const cells = ['south', 'east'].flatMap(dir => Array.from({ length: count }, (_, i) => ({ key: `walk/${dir}/${i}` })))
+    s.store.results = { ...s.store.results, [id]: { ...r, cells, g1: new Map([[1, 'D1 keyframe rest/east/0: 25 % gray smudges in a colorful design']]) } }
   })
   await expect(review.locator('.badge.look')).toHaveText('Needs a look')
   await expect(review.getByText('The design has gray smudges', { exact: true })).toBeVisible()
@@ -1495,7 +1497,7 @@ test('accepted held-item review reasons survive actual reload without claiming a
   await expect(page.locator('.world-actors').first()).toBeVisible()
   await pickItem(page, name)
   const pane = await selectedItemDetails(page)
-  await expect(pane.locator('.badge.look')).toHaveText('Needs a look')
+  await expect(pane.locator('.badge.accepted')).toHaveText('Accepted')
   await expect(pane.getByText('The grip side is unclear; check the intended hand (idle, west)', { exact: true })).toBeVisible()
   await expect(pane.getByText('Handedness could not be confirmed; inspect the intended hand (idle, north)', { exact: true })).toBeVisible()
   await expect(pane.getByText('The grip could not be confirmed; inspect the item at the hand', { exact: true })).toBeVisible()
@@ -1694,6 +1696,70 @@ test('partial missing gear and explicit item repair stay on the current move and
 })
 
 
+test('unsafe imported equipment prices its frozen route and unsupported held offers stay usable', async ({ page, context }, info) => {
+  const posts: string[] = [], errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await context.route('https://api.pixellab.ai/**', route => { posts.push(route.request().method()); return route.abort(); });
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1'); });
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!);
+  const fixture = await targetedRepairFixture(page);
+  await page.evaluate(async id => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path), dbPath = '/src/lib/store/db.ts', db = await import(dbPath);
+    const rec = await db.get('projects', s.doc.id), m = rec.manifest, item = m.items.find((i: { id: string }) => i.id === id);
+    item.slot = 'torso_inner';
+    const points = m.rig.rest.south.keypoints.map((p: { label: string }) => {
+      const side = p.label.startsWith('LEFT') ? -1 : p.label.startsWith('RIGHT') ? 1 : 0;
+      const joint = p.label.replace(/^(LEFT|RIGHT) /, '');
+      const [spread, y] = ({ NOSE: [0, .2], NECK: [0, .35], SHOULDER: [.15, .35], ELBOW: [.2, .5], ARM: [.22, .65], HIP: [.1, .62], KNEE: [.11, .77], LEG: [.12, .93], EYE: [.06, .17], EAR: [.12, .19] } as Record<string, number[]>)[joint];
+      return { label: p.label, x: .5 + side * spread, y };
+    });
+    const bad = points.map((p: { label: string; x: number }) => /SHOULDER|HIP/.test(p.label) ? { ...p, x: 1 - p.x } : p.label === 'LEFT EAR' ? { ...p, x: .62 } : p);
+    m.rig.rest.south.keypoints = points;
+    const walk = m.rig.animations.find((a: { id: string }) => a.id === 'walk');
+    walk.sources.south = { route: 'import', keypoints: Array.from({ length: walk.cells }, (_, i) => i === 1 ? bad : points) };
+    for (const layer of item.layers) delete layer.cells.walk.south;
+    await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id);
+    s.ui.anim = 'walk'; s.ui.dir = 'south'; s.ui.all = false; s.wear(id); s.pick(id); s.ui.group = 'Body';
+  }, fixture.itemId);
+  await inspectStage(page);
+  await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toContainText('Est. 10 gens');
+  await selectedItemDetails(page);
+  await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('Est. 10 gens');
+  await page.evaluate(async id => {
+    const path = '/src/studio/state.svelte.ts', s = await import(path), dbPath = '/src/lib/store/db.ts', db = await import(dbPath);
+    const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((i: { id: string }) => i.id === id);
+    item.slot = 'main_hand'; await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id); s.wear(id); s.pick(id);
+  }, fixture.itemId);
+  await expect(page.getByRole('button', { name: /^Make for Walk/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /^Make for Walk/ })).toContainText('Unavailable');
+  await expect(page.locator('.notice').filter({ hasText: 'suspicious estimated joints' }).first()).toBeVisible();
+  await page.getByRole('dialog', { name: 'Item', exact: true }).getByRole('button', { name: 'Done', exact: true }).click();
+  await inspectStage(page);
+  await expect(page.locator('.stage-note').getByRole('button', { name: /^Make it/ })).toBeDisabled();
+  expect(posts).toEqual([]); expect(errors).toEqual([]);
+});
+
+test('deferred item repair refuses changed artwork and price after Connect', async ({ page, context }, info) => {
+  const posts: string[] = [];
+  await context.route('https://api.pixellab.ai/**', async route => {
+    if (route.request().method() === 'GET' && new URL(route.request().url()).pathname.endsWith('/balance')) await route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 42, total: 100 }, credits: { usd: 1 } } });
+    else { posts.push(route.request().method()); await route.abort(); }
+  });
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1'); });
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!);
+  const fixture = await targetedRepairFixture(page);
+  await page.evaluate(async id => { const path = '/src/studio/state.svelte.ts', s = await import(path); s.ui.anim = 'walk'; s.ui.dir = 'west'; s.pick(id); }, fixture.itemId);
+  await selectedItemDetails(page);
+  const repair = page.getByRole('button', { name: /^Try new item frames/ });
+  await expect(repair).toContainText('Est. 10 gens'); await repair.click();
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab' });
+  await oversizedItemFixture(page, fixture.itemId);
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-delayed-item-key');
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Repair item frames', exact: true })).toContainText('review its current estimate');
+  expect(posts).toEqual([]);
+});
+
 test('reviewed joint-check recovery reuses cached body identity, discloses charges and persists consent before work', async ({ page, context }, info) => {
   const posts: string[] = []
   await context.route('https://api.pixellab.ai/**', async r => {
@@ -1726,7 +1792,7 @@ test('reviewed joint-check recovery reuses cached body identity, discloses charg
     await db.put('jobs', lost.id, lost)
     const secondClean = clips.largestComponent(norm.normalize(secondImage, 64, 64, 128, 64).img).img
     const pendingReq = routes.routes.estimateSkeleton(routes.png(await create.b64(secondClean)))
-    await db.put('jobs', 'offline-joint-pending', { ...lost, id: 'offline-joint-pending', state: 'queued', attempts: 0, ...await q.requestIdentity(pendingReq) })
+    await db.put('jobs', 'offline-joint-pending', { ...lost, id: 'offline-joint-pending', state: 'queued', playerRequested: true, attempts: 0, ...await q.requestIdentity(pendingReq) })
     await db.put('projects', 'studio-move', { id: 'studio-move', projectId: s.doc.id, spec, status: 'failed', error: 'Joint-check outcome unknown' })
     return { spec, projectId: s.doc.id }
   })
@@ -1911,6 +1977,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
   expect(consent.bodyPaletteRepair.id).toMatch(/^[a-f0-9-]{36}$/)
   expect(consent.measurementRecovery).toBeUndefined()
   await sheet.getByRole('button', { name: 'Try again', exact: true }).click()
+  await expect.poll(() => page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.spec?.seed })).not.toBe(original.spec.seed)
   const fresh = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.spec })
   expect(fresh.seed).not.toBe(original.spec.seed)
   expect(fresh.bodyPaletteRepair).toBeUndefined(); expect(fresh.measurementRecovery).toBeUndefined()
@@ -1940,6 +2007,11 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
   expect(expected).toBeGreaterThan(15)
   await expect(retry).toBeEnabled()
   await expect(retry).toHaveText(`Try again Est. ${expected} gens`)
+  await panel.locator('.actions .api-action').getByRole('button', { name: 'Inspect API calls', exact: true }).click()
+  const retryPeek = page.getByRole('dialog', { name: 'API calls', exact: true })
+  await expect(retryPeek.getByText('Dress standing views', { exact: false })).toBeVisible()
+  await expect(retryPeek.getByText('Dress frozen frames', { exact: false })).toHaveCount(0)
+  await retryPeek.getByRole('button', { name: 'Close API calls', exact: true }).click()
   await page.evaluate(async () => {
     const p = '/src/studio/state.svelte.ts', s = await import(p)
     const g = s.gens.find((g: { draft: { spec: { id: string } } }) => 'gen:' + g.draft.spec.id === s.ui.selected)

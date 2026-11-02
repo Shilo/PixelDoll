@@ -17,22 +17,22 @@ test('accepted appearance exceptions survive frame replacement, all-QA invalidat
   const warnings = ['D1 keyframe rest/south/0: gray smudges', 'G2 keyframe rest/south/0: changed pixels']
   item.designWarnings = [...warnings]
   item.qa = framePass()
-  expect(healthOf(p.manifest, item)).toBe('look')
+  expect(healthOf(p.manifest, item)).toBe('accepted')
   item.qa = mergeQa(item, framePass(), {})
   expect(item.qa.status).toBe('pass') // No fake clip failure is required to retain the appearance exception.
   expect(item.designWarnings).toEqual(warnings)
-  expect(healthOf(p.manifest, item)).toBe('look')
+  expect(healthOf(p.manifest, item)).toBe('accepted')
   const moves = p.manifest.rig.animations.map((a) => a.id)
   for (const move of moves) invalidateMoveItems(p.manifest, move)
   expect(item.qa).toBeUndefined()
   expect(item.designWarnings).toEqual(warnings)
-  expect(healthOf(p.manifest, item)).toBe('look')
+  expect(healthOf(p.manifest, item)).toBe('accepted')
   const out = await exportFiles(p, { engines: ['generic'], baked: false })
   expect(out.errors).toEqual([])
   const restored = (await readCharacterZip(await zip(out.entries))).project
   const saved = restored.manifest.items.find((it) => it.id === item.id)!
   expect(saved.designWarnings).toEqual(warnings)
-  expect(healthOf(restored.manifest, saved)).toBe('look')
+  expect(healthOf(restored.manifest, saved)).toBe('accepted')
   delete saved.designWarnings
   expect(healthOf(restored.manifest, saved)).toBe('demo')
 }, 20_000)

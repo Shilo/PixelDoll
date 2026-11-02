@@ -89,13 +89,16 @@ test('atlas filenames cannot collide when item and move identifiers contain unde
   expect(atlasName('a', 'main', 'main_walk')).not.toBe(atlasName('a_main', 'main', 'walk'));
 });
 
-test('generated Phaser loader preserves nonuniform repeated-frame timing and avoids unsupported rows', async () => {
+test.each([{ durations: [80, 180, 100] }, { durations: [100, 100, 100] }, { durations: [30, 100, 180] }])('generated Phaser loader preserves $durations repeated-frame timing and avoids unsupported rows', async ({ durations }) => {
   const m = fixture(), api = runtime(), h = sceneHarness(); browserHarness(m);
+  m.rig.animations[0].frames.forEach((frame, i) => { frame.ms = durations[i]; });
   const loaded = await api.loadPaperdoll(h.scene, 'assets/hero');
   expect(h.animations.size).toBe(1);
   const animation = [...h.animations.values()][0];
   expect(animation.repeat).toBe(-1);
-  expect(animation.frames.map((f: any) => 1000 / animation.frameRate + f.duration)).toEqual([80, 180, 100]);
+  expect(animation.duration).toBe(durations.reduce((total, ms) => total + ms, 0));
+  // Tagged Phaser 3.80.1, 3.90.0 and 4.1.0 use a nonzero per-frame duration instead of their base interval.
+  expect(animation.frames.map((f: any) => f.duration || animation.duration / animation.frames.length)).toEqual(durations);
   expect(animation.frames.map((f: any) => f.frame)).toEqual(['walk_south_1', 'walk_south_0', 'walk_south_1']);
   expect(h.scene.load.queued[0].url).toBe('https://game.test/assets/hero/sources/body.png');
   expect(await api.loadPaperdoll(h.scene, 'assets/hero/')).toBe(loaded);

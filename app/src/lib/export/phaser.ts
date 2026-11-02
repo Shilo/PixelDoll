@@ -80,10 +80,9 @@ export async function loadPaperdoll(scene, base) {
     for (const a of m.rig.animations) for (const d of available(m, a)) {
       const key = animKey(m, a.id, d.id);
       if (!scene.anims.exists(key)) {
-        // Phaser adds frame.duration to its base interval: subtract it for exact timing.
-        const interval = Math.min(...a.frames.map((f) => f.ms));
-        scene.anims.create({ key, repeat: a.loop ? -1 : 0, frameRate: 1000 / interval,
-          frames: a.frames.map((f) => ({ key: texKey(m, m.rig.baseItem, body.id, a.id), frame: a.id + '_' + d.id + '_' + f.cell, duration: f.ms - interval })),
+        // Supported Phaser releases use a nonzero frame duration instead of the base interval.
+        scene.anims.create({ key, repeat: a.loop ? -1 : 0, duration: a.frames.reduce((total, frame) => total + frame.ms, 0),
+          frames: a.frames.map((f) => ({ key: texKey(m, m.rig.baseItem, body.id, a.id), frame: a.id + '_' + d.id + '_' + f.cell, duration: f.ms })),
         });
       }
     }

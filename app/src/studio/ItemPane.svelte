@@ -2,12 +2,12 @@
   import { coverageGaps, moveDirs } from '../lib/dress/dress.ts'
   import { hiddenSlots, equipped } from '../lib/compose/compose.ts'
   import { SLOTS } from '../lib/items/items.ts'
-  import { itemPaletteRepairPlan, poseGens, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
-  import { missingItemMoves, moveEstimate } from './create.ts'
+  import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
+  import { missingItemMoves, itemMoveOffer } from './create.ts'
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
-  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, pendingMoves, moving, settingUp, matchItemPalette, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
+  import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, pendingMoves, moving, settingUp, matchItemPalette, acceptItemIssues, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
   let { id }: { id: string } = $props()
@@ -34,11 +34,11 @@
   const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir)
   const repairSpec = $derived(it && !it.design && anim && it.route === 'skeleton-pose' && it.key && it.dressed?.[sourceDir] && anim.sources?.[sourceDir]?.keypoints?.length === anim.cells
     ? { id: anim.id, frames: anim.cells, items: [it.id], dirs: [sourceDir], itemMethod: 'grid' as const, itemsOnly: true as const, seed: 0 } : null)
-  const repairCost = $derived(m && repairSpec ? moveEstimate(m, repairSpec).gens : 0)
+  const repairOffer = $derived(m && repairSpec ? itemMoveOffer(m, [repairSpec]) : null)
   const repairBusy = $derived(!!moving.spec && !moving.done || !!settingUp.spec && !settingUp.done)
   function repairFrames() {
-    if (!repairSpec) return
-    const projectId = doc.id, spec = { ...$state.snapshot(repairSpec), seed: 1 + Math.floor(Math.random() * 1_000_000) }
+    if (!repairOffer?.specs[0]) return
+    const projectId = doc.id, spec = { ...$state.snapshot(repairOffer.specs[0]), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
   }
   // moves the character gained after this item was made (Default-first: idle and walk), offered with their price unless a
@@ -48,10 +48,11 @@
     const pending = pendingMoves(doc.id, it.id).map((s) => s.id)
     return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id))
   })
-  const missingCost = $derived(missingMoves.reduce((n, s) => n + poseGens(1, s.frames, s.dirs?.length ?? 0), 0))
+  const missingOffer = $derived(m ? itemMoveOffer(m, missingMoves) : null)
   const missingNames = $derived(missingMoves.map((s) => s.id[0].toUpperCase() + s.id.slice(1).replace(/-/g, ' ')).join(' + '))
   function makeMissing() {
-    const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingMoves.map((s) => ({ ...$state.snapshot(s), seed }))
+    if (!missingOffer?.specs.length) return
+    const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingOffer.specs.map((s) => ({ ...$state.snapshot(s), seed }))
     withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move' }, true) // pose calls: a plan that cannot run them opens Connect
   }
   let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
@@ -88,6 +89,8 @@
     const r: string[] = []
     if (q.missingLowerFrames) r.push('G11 lower-garment coverage')
     if (q.footwearReviewFrames) r.push('G12 footwear coverage')
+    if (q.waistReviewFrames) r.push('G13 waist-band consistency')
+    if (q.facingReviewFrames) r.push('G14 torso consistency')
     if (q.unmeasured) return r.map(plainReason)
     if (q.minKeyKept < 0.97) r.push('G2')
     if (q.maxKeyOutside > 0.02) r.push('G3')
@@ -108,6 +111,16 @@
   })
   let confirmRemove = $state(false)
   let onlyDir = $state(false)
+  let acceptingIssues = $state(false)
+  let acceptanceError = $state('')
+  async function acceptIssues() {
+    if (!it || acceptingIssues) return
+    const projectId = doc.id, itemId = it.id, reviewed = $state.snapshot(it)
+    acceptingIssues = true; acceptanceError = ''
+    try { await acceptItemIssues(projectId, itemId, reviewed) }
+    catch (error) { if (doc.id === projectId && it?.id === itemId) acceptanceError = error instanceof Error ? error.message : String(error) }
+    finally { acceptingIssues = false }
+  }
 </script>
 
 {#if m && it && view.project}
@@ -154,13 +167,24 @@
         <ul class="reasons small">{#each designReasons as reason (reason)}<li><TriangleAlert size={12} />{reason}</li>{/each}</ul>
       </div>
     {/if}
-    {#if health === 'look' && reasons.length}
+    {#if (health === 'look' || health === 'accepted') && reasons.length}
       <ul class="reasons small">{#each reasons as r (r)}<li><TriangleAlert size={12} />{r}</li>{/each}</ul>
+    {/if}
+    {#if !isDemo() && health === 'look' && it.qa && (it.qa.status === 'warn' || it.qa.status === 'fail') && !gaps.length}
+      <div class="field">
+        <p class="notice warn small">Checks found issues. No paid retry was started. You can request another attempt or accept this item as it is.</p>
+        <button class="bu-action btn" data-variant="outline" disabled={acceptingIssues || repairBusy} onclick={acceptIssues}>Accept as is</button>
+        <p class="faint small">Accepts the current artwork without spending credits. The detected issues remain in its details.</p>
+        {#if acceptanceError}<p class="notice bad small" role="alert">{acceptanceError}</p>{/if}
+      </div>
+    {:else if health === 'accepted'}
+      <p class="muted small">You accepted this artwork with its recorded quality notes.</p>
     {/if}
     {#if moveGaps.length}<p class="notice warn small"><TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left out there.</p>{/if}
     {#if missingMoves.length}
       <div class="field">
-        <button class="bu-action btn" data-variant="outline" onclick={makeMissing}>Make for {missingNames} <span class="cost">Est. {Math.ceil(missingCost)} gens</span></button>
+        <button class="bu-action btn" data-variant="outline" disabled={missingOffer?.gens == null} onclick={makeMissing}>Make for {missingNames} <span class="cost">{missingOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(missingOffer.gens)} gens`}</span></button>
+        {#if missingOffer?.error}<p class="notice warn small" role="status">{missingOffer.error}</p>{/if}
         <p class="faint small">Poses this item onto moves added after it was made. The body stays as it is. PixelLab may bill dollars; queue time varies.</p>
       </div>
     {/if}
@@ -168,7 +192,8 @@
 
     {#if !isDemo() && repairSpec}
       <div class="field">
-        <button class="bu-action btn" data-variant="outline" disabled={repairBusy} onclick={repairFrames}>Try new item frames <span class="cost">Est. {Math.ceil(repairCost)} gens</span></button>
+        <button class="bu-action btn" data-variant="outline" disabled={repairBusy || repairOffer?.gens == null} onclick={repairFrames}>Try new item frames <span class="cost">{repairOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(repairOffer.gens)} gens`}</span></button>
+        {#if repairOffer?.error}<p class="notice warn small" role="status">{repairOffer.error}</p>{/if}
         <p class="faint small">Only {moveName} facing {sourceDir.replaceAll('-', ' ')} is redrawn on the frozen body.{#if sourceDir !== ui.dir} Its mirrored views update too.{/if} Other views, moves and the saved design stay fixed. Hard failures keep the previous frames. PixelLab may bill dollars; queue time varies.</p>
       </div>
     {/if}

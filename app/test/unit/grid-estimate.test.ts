@@ -29,15 +29,15 @@ test('invalid frame/reference/dimension counts cannot produce a misleading finit
  for(const [cell,frames,refs,cols] of [[{w:64,h:64},0,1,4],[{w:64,h:64},8,-1,4],[{w:64,h:64},8,1.5,4],[{w:NaN,h:64},8,1,4],[{w:64,h:64},8,1,0]] as const)expect(()=>gridEstimate(cell,frames,refs,cols)).toThrow()
 })
 
-test('move estimate prices each actual item canvas and its own dressed reference count',()=>{
+test('move estimate prices each actual item canvas with only its matching direction reference',()=>{
  const dirs=['south','east','north','west'],dressed=Object.fromEntries(dirs.map(d=>[d,'sha256:reference']))
  const m={rig:{cell:{w:64,h:64},directions:dirs.map(id=>({id}))},items:[{id:'small',layers:[{}],dressed},{id:'sword',layers:[{cell:{w:96,h:96}}],dressed}]} as unknown as Manifest
- expect(moveEstimate(m,{frames:8,items:['sword'],dirs:['north'],itemMethod:'grid'})).toMatchObject({body:0,items:15,gens:15})
- expect(moveEstimate(m,{frames:8,items:['small','sword'],dirs:['north','south'],itemMethod:'grid'}).items).toBe(50)
- m.items[1].dressed!['north-east']='sha256:extra';expect(moveEstimate(m,{frames:8,items:['sword'],dirs:['north'],itemMethod:'grid'}).items).toBe(25)
+ expect(moveEstimate(m,{id:'walk',frames:8,items:['sword'],dirs:['north'],itemMethod:'grid'})).toMatchObject({body:0,items:15,gens:15})
+ expect(moveEstimate(m,{id:'walk',frames:8,items:['small','sword'],dirs:['north','south'],itemMethod:'grid'}).items).toBe(50)
+ m.items[1].dressed!['north-east']='sha256:extra';expect(moveEstimate(m,{id:'walk',frames:8,items:['sword'],dirs:['north'],itemMethod:'grid'}).items).toBe(15)
 })
 
-test('fallback plan costs include all unique dressed references and keep normal pose/edit estimates unchanged',()=>{
+test('fallback plan costs include one matching reference and keep normal pose/edit estimates unchanged',()=>{
  const plan=[{kind:'dress' as const,cells:['rest/south/0','rest/east/0','rest/north/0','rest/west/0']},{kind:'grid' as const,cells:Array.from({length:8},(_,i)=>`slash/north/${i}`)}]
  expect(planGens(plan)).toBe(20);expect(planGens(plan,{w:96,h:96})).toBe(25)
  expect(planGens([{kind:'pose',cells:Array(8).fill('slash/north/0')},{kind:'edit',cells:['idle/south/0']}])).toBe(13)

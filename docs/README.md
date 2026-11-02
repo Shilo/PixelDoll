@@ -67,6 +67,8 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | R5 [paperdoll_tools_survey.md](research/tools/paperdoll_tools_survey.md) | Paperdoll and character-creator tools: data models and UX to copy. |
 | R5 [fralonra_paperdoll_review.md](research/tools/fralonra/fralonra_paperdoll_review.md), [lpc_generator_review.md](research/tools/lpc/lpc_generator_review.md) | Code reviews of fralonra/paperdoll and the Universal LPC generator. |
 | [bare-skin-base-wording-2026-10-25.md](research/bare-skin-base-wording-2026-10-25.md) | Wording for a fully bare base body that passes PixelLab's filter: every clause tried, garments per sex and seed, the ablation, the shipped prompt. |
+| [tool-review-brief-2026-10-28.md](research/tool-review-brief-2026-10-28.md) | Brief for the next review: AutoSprite Wardrobe, a reference-consistency workflow, PixelSprite FX, Fantasy Character Generator and the ComfyUI pipeline, with method and owner steps. |
+| [paperdoll-repos-review-2026-10-27.md](research/paperdoll-repos-review-2026-10-27.md) | ComfyUI 2D pipeline and Ultima paperdoll drawer reviewed against PixelDoll: ten verified PixelDoll flaws, features worth adding, what not to adopt. |
 | [lexingel-paperdoll-findings-round5-2026-10-25.md](research/lexingel-paperdoll-findings-round5-2026-10-25.md) | Lexingel's UO-style research, attack pipelines and Godot render route vs ours; round 5 tests: bare bases, small accessories, text-move facing. |
 | [paperdoll-py-asset-review-2026-10-24.md](research/paperdoll-py-asset-review-2026-10-24.md) | External diff-extractor + state pipeline compared with ours: offline benchmark, what to adopt, bugs found. |
 | [generation-quality-campaign-2026-10-25.md](research/generation-quality-campaign-2026-10-25.md) | Paid A/B campaign (909 gens, 2 bodies, blind judging): third chroma key, concept items via transfer-outfit-v2, rejected prompt variants. |
@@ -123,6 +125,9 @@ Screenshots for all reports: [`testing/img/` at 1f95029](https://github.com/Shil
 | Doc | What |
 |---|---|
 | [Professional product audit](testing/professional-audit-2026-10-22.md) | Independent pipeline/data/Studio reviews, adversarial team challenges, fixes and fresh browser/live validation. |
+| [Integration and crash recovery](testing/integration-and-crash-2026-10-28.md) | Coordinated main integration, abrupt browser termination, durable Export choices and submission recovery. |
+| [Phaser playback](testing/phaser-playback-2026-10-28.md) | Native runtime verification of exported frame timing, looping, play once and layer synchronization. |
+| [Unity playback](testing/unity-playback-2026-10-28.md) | Installed Editor activation prerequisite, offline C# compilation and remaining native checks. |
 | [Test performance](testing/test-performance.md) | Why unit and e2e runs are fast (parallel files, 16 one-worker CI shards), budgets and warning signs, anti-patterns that made them slow, rules for new tests. |
 | [Toolchain standardization](testing/toolchain-standardization-2026-10-22.md) | Exact runtime/dependencies, Vitest and Playwright migration, production byte parity and validation. |
 | [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |

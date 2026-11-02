@@ -40,6 +40,7 @@ export interface JobRec {
   label: string;
   tag?: string;
   activityScope?: string;
+  playerRequested?: true; // current generation plan or explicit retry; old queued extras must not acquire consent on resume
   method: Req['method'];
   endpoint: string;
   params: unknown; // request body; images replaced by {$blob: sha256}; never the key
@@ -412,6 +413,10 @@ export class Queue {
     if (!mine) {
       const dup = r.state === 'queued' && [...this.recs.values()].find((x) => x.requestHash === r.requestHash && (live(x) || (x.state === 'done' && (seededOf(x) || x.endpoint === '/estimate-skeleton'))));
       this.recs.set(r.id, r);
+      if (this.checkGenerationConsent(r)) {
+        void this.save(r).catch((e) => console.error('queue', e));
+        return true;
+      }
       if (dup) {
         this.strengthenPlan(dup, r);
         Object.assign(r, { state: 'canceled', error: `duplicate of ${dup.id} (sent from two tabs)`, finishedAt: this.deps.now() });
@@ -430,9 +435,24 @@ export class Queue {
     void this.save(mine).catch((e) => console.error('queue', e));
     return true;
   }
+  /** Submitted jobs only poll. Unsent work from the former automatic-retry policy needs a fresh player request. */
+  private checkGenerationConsent(r: JobRec): boolean {
+    if ((r.state === 'queued' || r.state === 'submitting') && r.jobs.length) {
+      r.state = 'running';
+      r.waitingForPlan = undefined;
+      r.waitingForCapacity = false;
+      return true;
+    }
+    if (r.state !== 'queued' || r.method !== 'POST' || !['m3', 'studio-move', 'studio-rig'].includes(r.tag ?? '') || r.playerRequested === true) return false;
+    Object.assign(r, { state: 'failed', requestStarted: false, finishedAt: this.deps.now(), waitingForPlan: undefined, waitingForCapacity: false,
+      error: 'This queued generation needs renewed approval. Review the item or move and request a new attempt. No API request was made.' });
+    this.submitScopes.delete(r.id);
+    return true;
+  }
   async load() {
     for (const r of await this.deps.all()) {
       if (upgraded(r)) await this.deps.put(r.id, r);
+      if (this.checkGenerationConsent(r)) await this.deps.put(r.id, r);
       // Crashed between "submitting" and saving the job id: the server may have it. Never auto-resubmit.
       if (r.state === 'submitting') {
         r.state = r.requestStarted === false ? 'failed' : 'lost';
@@ -601,7 +621,7 @@ export class Queue {
   // Identical request (same endpoint + params + input images, explicit seed) reuses the stored record instead of paying again.
   // Paid requests are resume-safe by default; a new seed expresses an intentional re-roll. meta.cache also reuses
   // unseeded done GET records (deterministic routes such as GET /characters).
-  async enqueue(req: Req, meta: { label?: string; tag?: string; activityScope?: string; minimumTier?: number; cache?: boolean; resumeSafe?: boolean; signal?: AbortSignal; attempt?: number; estimateRetry?: EstimateRetryIntent } = {}): Promise<JobRec> {
+  async enqueue(req: Req, meta: { label?: string; tag?: string; activityScope?: string; playerRequested?: true; minimumTier?: number; cache?: boolean; resumeSafe?: boolean; signal?: AbortSignal; attempt?: number; estimateRetry?: EstimateRetryIntent } = {}): Promise<JobRec> {
     const connection = this.connection;
     const assertConnected = () => {
       meta.signal?.throwIfAborted(); // orchestration cancellation stops publication, never aborts a paid HTTP request
@@ -618,6 +638,7 @@ export class Queue {
     // Historical duplicates can exist from older versions. Prefer useful newer work before considering an old failure.
     const active = matches.find(live);
     if (active) {
+      if (this.checkGenerationConsent(active)) { await this.save(active); return active; }
       if (active.state === 'queued' && (meta.minimumTier ?? 0) > (active.minimumTier ?? 0)) { active.minimumTier = meta.minimumTier; await this.save(active); }
       if (active.state !== 'running') this.observeScope(active.id, meta.signal, meta.attempt);
       return active;
@@ -645,6 +666,7 @@ export class Queue {
       ...(meta.estimateRetry ? { estimateRecovery: { id: meta.estimateRetry.id, ...(retryOf ? { retryOf } : {}) } } : {}),
       label: meta.label ?? req.path,
       tag: meta.tag,
+      ...(meta.playerRequested === true ? { playerRequested: true as const } : {}),
       activityScope: meta.activityScope,
       minimumTier: meta.minimumTier,
       method: req.method,
@@ -769,6 +791,7 @@ export class Queue {
     const connection = this.connection;
     const disconnected = () => this.disconnected || this.connectedOnce && (!this.connection || this.connection !== connection || connection?.signal.aborted);
     if (disconnected()) return { ops: [] };
+    if (this.role !== 'follower') for (const r of this.recs.values()) if (this.checkGenerationConsent(r)) await this.save(r);
     const now = this.deps.now();
     if (!(await this.network(now)) || disconnected()) return { ops: [] };
     if (this.role === 'follower') return { ops: [] }; // the leader tab submits and polls
@@ -829,6 +852,7 @@ export class Queue {
   }
 
   private async submit(r: JobRec, probe: boolean) {
+    if (this.checkGenerationConsent(r)) { await this.save(r); return; }
     const connection = this.connection;
     const credentialRevision = this.keyRevision;
     const key = this.key;

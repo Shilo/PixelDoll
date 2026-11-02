@@ -53,57 +53,61 @@ async function fixture(modes: Mode[], directions: ('south' | 'west')[] = ['west'
 }
 const selected = (item:Item) => item.provenance.map(p=>p.jobId)
 
-// Border contact is a review note, not proof of clipping; equal hard-failure counts keep the first candidate.
-test.each([{modes:['damaged','worse'], winner:0},{modes:['damaged','damaged'],winner:0},{modes:['damaged','clean'],winner:1},{modes:['worse','damaged'],winner:0}] as const)('keeps strictly better complete cells with matching provenance, preserving first on tie: %o', async ({modes,winner}) => {
-  const f = await fixture([...modes]), q = await f.run(), saved = f.saved()
-  expect(f.seen).toHaveLength(2); expect(f.save).toHaveBeenCalledOnce()
-  expect(selected(saved)).toEqual([`job-west-${winner}`])
-  expect(Object.values(saved.qa!.cells).every(c=>saved.provenance[c.provenance!].jobId===`job-west-${winner}`)).toBe(true)
-  expect(q.qa.rerolls).toBe(1); expect(saved.qa!.rerolls).toBe(8)
+// A second mode is an unrequested paid alternative. It must never execute, even if it would improve the artwork.
+test.each([['damaged','worse'],['damaged','damaged'],['damaged','clean'],['worse','damaged']] as const)('keeps the first checked pixels and matching provenance without invoking hypothetical alternative %s/%s', async (first,second) => {
+  const f = await fixture([first,second]), original = structuredClone(f.item), q = await f.run(), saved = f.saved()
+  expect(f.seen).toHaveLength(1); expect(f.save).toHaveBeenCalledOnce(); expect(f.counts.get('west')).toBe(1)
+  expect(selected(saved)).toEqual(['job-west-0'])
+  expect(Object.values(saved.qa!.cells).every(c=>saved.provenance[c.provenance!].jobId==='job-west-0')).toBe(true)
+  expect(q.qa.rerolls).toBe(0); expect(saved.qa!.rerolls).toBe(7)
   const images = f.save.mock.calls.at(-1)![2]
   const contains = (green:number) => [...images.values()].some(im=>{for(let p=0;p<im.data.length;p+=4)if(im.data[p]===210&&im.data[p+1]===green&&im.data[p+2]===40&&im.data[p+3])return true;return false})
-  expect(contains(40+winner*5)).toBe(true); expect(contains(40+(1-winner)*5)).toBe(false)
-  if(modes[winner]==='clean') expect(q.qa.status).toBe('pass'); else expect(q.qa.status).toBe('fail')
+  expect(contains(40)).toBe(true); expect(contains(45)).toBe(false)
+  expect(q.qa.status).toBe('fail'); expect(f.item).toEqual(original)
 })
 
-test.each(['count','geometry'] as const)('malformed later %s cannot displace the first complete candidate or reset retry history', async malformed => {
-  const f=await fixture(['damaged',malformed]); const q=await f.run()
-  expect(selected(f.saved())).toEqual(['job-west-0']); expect(q.qa.rerolls).toBe(1)
+test.each(['count','geometry','lost','canceled','abort'] as const)('a hypothetical later %s cannot launch or displace the first flagged result', async later => {
+  const f=await fixture(['damaged',later]), q=await f.run()
+  expect(selected(f.saved())).toEqual(['job-west-0']); expect(q.qa.rerolls).toBe(0)
+  expect(q.qa.status).toBe('fail'); expect(f.seen).toHaveLength(1); expect(f.counts.get('west')).toBe(1)
 })
 
-test.each(['count','geometry'] as const)('malformed first %s is never promoted and the complete second candidate may win', async malformed => {
-  const f=await fixture([malformed,'clean']); await f.run()
-  expect(selected(f.saved())).toEqual(['job-west-1']); expect(f.saved().qa!.rerolls).toBe(8)
+test.each(['count','geometry'] as const)('malformed first %s stops after one request without trying an available clean alternative', async malformed => {
+  const f=await fixture([malformed,'clean']), original=structuredClone(f.item)
+  await expect(f.run()).rejects.toThrow(/missing|malformed|frame size/i)
+  expect(f.save).not.toHaveBeenCalled(); expect(f.seen).toHaveLength(1); expect(f.counts.get('west')).toBe(1)
+  expect(f.item).toEqual(original)
 })
 
-test('two malformed responses publish no partial direction',async()=>{
-  const f=await fixture(['count','geometry']); await expect(f.run()).rejects.toThrow('missing or malformed frames twice'); expect(f.save).not.toHaveBeenCalled()
+test.each(['lost','canceled'] as const)('a first %s paid outcome cannot be resent or published', async state => {
+  const f=await fixture([state,'clean']), original=structuredClone(f.item)
+  await expect(f.run()).rejects.toThrow(state)
+  expect(f.save).not.toHaveBeenCalled(); expect(f.seen).toHaveLength(1); expect(f.counts.get('west')).toBe(1)
+  expect(f.item).toEqual(original)
 })
 
-test.each(['lost','canceled'] as const)('a later %s outcome still stops publication instead of silently falling back',async state=>{
-  const f=await fixture(['damaged',state]); await expect(f.run()).rejects.toThrow(state); expect(f.save).not.toHaveBeenCalled(); expect(f.seen).toHaveLength(2)
+test('one planned batch per direction preserves first source records and does not increment retry history',async()=>{
+  const f=await fixture(['damaged','clean'],['south','west']),q=await f.run()
+  expect(f.seen).toHaveLength(2); expect(selected(f.saved()).sort()).toEqual(['job-south-0','job-west-0'])
+  expect(f.counts.get('south')).toBe(1); expect(f.counts.get('west')).toBe(1)
+  expect(q.qa.rerolls).toBe(0); expect(f.saved().qa!.rerolls).toBe(7)
+  expect(Object.entries(f.saved().qa!.cells).every(([key,c])=>f.saved().provenance[c.provenance!].jobId==='job-'+key.split('/')[1]+'-0')).toBe(true)
 })
 
-test('retry history counts actual additional calls across directions rather than selected attempt indices',async()=>{
-  const f=await fixture(['damaged','worse'],['south','west']),q=await f.run()
-  expect(f.seen).toHaveLength(4); expect(selected(f.saved()).sort()).toEqual(['job-south-0','job-west-0'])
-  expect(q.qa.rerolls).toBe(2); expect(f.saved().qa!.rerolls).toBe(9)
-})
-
-test('clean first attempt does not spend a needless retry or increment history',async()=>{
+test('a clean first attempt makes one request and preserves historical retry accounting',async()=>{
   const f=await fixture(['clean']);const q=await f.run()
   expect(f.seen).toHaveLength(1);expect(q.qa.rerolls).toBe(0);expect(f.saved().qa!.rerolls).toBe(7)
+  expect(q.qa.status).toBe('pass'); expect(selected(f.saved())).toEqual(['job-west-0'])
 })
 
-
-test('AbortError during an optional retry propagates without publishing the earlier candidate',async()=>{
-  const f=await fixture(['damaged','abort']);await expect(f.run()).rejects.toMatchObject({name:'AbortError'})
-  expect(f.save).not.toHaveBeenCalled();expect(f.counts.get('west')).toBe(2)
+test('a first AbortError propagates once without saving or starting an alternate',async()=>{
+  const f=await fixture(['abort','clean']);await expect(f.run()).rejects.toMatchObject({name:'AbortError'})
+  expect(f.save).not.toHaveBeenCalled();expect(f.counts.get('west')).toBe(1);expect(f.seen).toHaveLength(0)
 })
 
-
-test('grid fallback counts its attempted call even when tied and the first raw pixels remain selected',async()=>{
-  const f=await fixture(['damaged','worse','damaged'],['west'],false),q=await f.run()
-  expect(f.seen).toHaveLength(3);expect(selected(f.saved())).toEqual(['job-west-0'])
-  expect(q.qa.rerolls).toBe(2);expect(f.saved().qa!.rerolls).toBe(9)
+test('eligible worn equipment does not request a grid fallback after the first failed pose',async()=>{
+  const f=await fixture(['damaged','clean','clean'],['west'],false),q=await f.run()
+  expect(f.seen).toHaveLength(1);expect(f.seen[0].endpoint).toBe('/animate-with-skeleton-v3')
+  expect(selected(f.saved())).toEqual(['job-west-0']);expect(q.qa.status).toBe('fail')
+  expect(q.qa.rerolls).toBe(0);expect(f.saved().qa!.rerolls).toBe(7)
 })

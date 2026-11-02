@@ -39,7 +39,7 @@
   let skip = $state<string[]>(draft?.skip ?? [])
   const chosen = $derived(items.filter((i) => !skip.includes(i.id)).map((i) => i.id))
   const sharedChosen = $derived(sharedItems.filter((i) => !skip.includes(i.id)).map((i) => i.id))
-  const est = $derived(m && id && targetDirs.length ? moveEstimate(m, { action: text.trim() ? undefined : action, frames, items: chosen, dirs: targetDirs, replace: replacing }) : null)
+  const est = $derived(m && id && targetDirs.length ? moveEstimate(m, { id, action: text.trim() ? undefined : action, frames, items: chosen, dirs: targetDirs, replace: replacing }) : null)
   const dirs = $derived(targetDirs.length)
   const mine = $derived(!!moving.spec && moving.projectId === doc.id)
   // "Queue another move" shows the form over this character's running move; a new move then waits its turn

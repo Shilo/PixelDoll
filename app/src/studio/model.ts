@@ -126,17 +126,21 @@ export function itemNameFrom(desc: string): string {
   return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
 }
 
-export type Health = 'clean' | 'look' | 'stale' | 'demo';
+export type Health = 'clean' | 'accepted' | 'look' | 'stale' | 'demo';
 export function healthOf(m: Manifest, it: Item): Health {
   if (it.baseHash !== m.rig.baseHash) return 'stale';
-  if (it.designWarnings?.length) return 'look';
+  if (it.qa?.status === 'fail' || it.qa?.status === 'warn') return 'look';
+  if (it.designWarnings?.length || it.qa?.status === 'accepted') return 'accepted';
   if (!it.qa) return 'demo';
   return it.qa.status === 'pass' ? 'clean' : 'look';
 }
-export const HEALTH_LABEL: Record<Health, string> = { clean: 'Clean', look: 'Needs a look', stale: 'Made for another body', demo: 'Demo' };
+export const HEALTH_LABEL: Record<Health, string> = { clean: 'Clean', accepted: 'Accepted', look: 'Needs a look', stale: 'Made for another body', demo: 'Demo' };
 
 /** QA gate messages in plain words (D1 §5.5). */
 export function plainReason(s: string): string {
+  if (s.startsWith('D2 ')) return 'The requested waist band differs between standing views';
+  if (s.startsWith('G13 ')) return 'The waist band differs from the standing design; inspect the clothing';
+  if (s.startsWith('G14 ')) return 'Some frames resemble the opposite view; inspect the torso';
   if (s.startsWith('G11 ')) return 'Some lower clothing is missing compared with the standing design';
   if (s.startsWith('G12 ')) return 'Footwear differs from the standing design; inspect the feet';
   if (s.startsWith('G2') || s.startsWith('G3')) return 'Some body pixels were changed by the model';

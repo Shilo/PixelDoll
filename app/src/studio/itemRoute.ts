@@ -1,6 +1,6 @@
 // The item-generation route the New item sheet talks to. The Studio only sees this interface (routes keep changing as
 // spikes land); swap `itemRoute` to change the backend. Today: B4's runner (lib/items/run.ts): chroma mannequin, dressed
-// keyframe posed with skeleton-v3 per clip (or anchor-cell edit-animation-v2 without joints), extraction, QA gates, re-rolls.
+// keyframe posed with skeleton-v3 per clip (or anchor-cell edit-animation-v2 without joints), extraction and QA gates.
 import { pickKey } from '../lib/image/chroma.ts';
 import { acceptItem, defaultMethod, gensOf, newDraft, runItem, type Draft, type ItemResult, type RigCtx, type RunHooks } from '../lib/items/run.ts';
 import { itemRoute as libRoute, padOf, planGens, planItem, type ItemSpec } from '../lib/items/items.ts';
@@ -13,7 +13,7 @@ export interface ItemRoute {
   plan(rig: Rig, ctx: RigCtx, input: NewItemInput): { calls: number; cells: number; gens: number; minutes: number; minimumTier: number; cell?: number };
   /** New persisted job description (not started). */
   draft(ctx: RigCtx, input: NewItemInput, taken: string[]): Draft;
-  /** Generate + QA (+ automatic re-rolls). Resumable from the ledger with the same draft. */
+  /** Generate each planned batch once and run QA. Resumable from the ledger without quality retries. */
   run(d: Draft, ctx: RigCtx, hooks: RunHooks): Promise<ItemResult | null>;
   /** Write the accepted item into the project record. */
   accept(d: Draft, ctx: RigCtx, res?: ItemResult): Promise<Item>;

@@ -20,7 +20,6 @@ import { normalizeItemPalette } from './palette.ts';
 import { chromaLayer } from '../image/chroma.ts';
 import { cellImg } from '../compose/compose.ts';
 
-export const FIT_PROFILES = [{slot:'head',view:'low top-down',template:'mannequin',cell:64,experimental:true}] as const;
 const now=()=>new Date().toISOString();
 const seed=()=>crypto.getRandomValues(new Uint32Array(1))[0]&0x7fffffff;
 const active=new Map<string,Promise<FitDraft>>();

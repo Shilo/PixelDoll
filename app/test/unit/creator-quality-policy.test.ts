@@ -102,12 +102,12 @@ test('actual Add move keeps detached parts and observation differences without a
   expect(state.rawCount).toBe(1)
 })
 
-test.each(['wrong-count', 'empty'])('actual Add move retains one bounded retry for structurally invalid %s art', async first => {
+test.each(['wrong-count', 'empty'])('actual Add move stops after one structurally invalid %s result without paying for a retry', async first => {
   state.first = first
-  await add()
-  expect(state.rawCount).toBe(2)
-  expect(state.requests.filter(r => r.path === '/estimate-skeleton')).toHaveLength(4)
-  expect(state.projects.get('rig-quality')!.manifest.rig.animations.some(a => a.id === 'jump')).toBe(true)
+  await expect(add()).rejects.toThrow('No paid retry was started')
+  expect(state.rawCount).toBe(1)
+  expect(state.requests.filter(r => r.path === '/estimate-skeleton')).toHaveLength(0)
+  expect(state.projects.get('rig-quality')!.manifest.rig.animations.some(a => a.id === 'jump')).toBe(false)
 })
 
 test('actual Add move stops on invalid observation without redrawing or saving an incomplete rig', async () => {

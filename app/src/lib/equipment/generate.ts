@@ -178,7 +178,7 @@ export async function evaluatePoseFit(design: EquipmentDesign, target: Project, 
   }
   if (new Set(cells.map(c=>c.key)).size !== selected.size || cells.length !== selected.size || cells.some(c=>!selected.has(c.key))) throw new Error('Fitted animation coverage is incomplete or duplicated.');
   postProcess(rig,slotOf(spec.slot),cells,keys);
-  const qa = withH4(itemQa(rig,slotOf(spec.slot),spec.key,cells,0,GATES.keyOutsidePosed,0,hiddenViews(kfCells,keys)),slotOf(spec.slot),cells,keys,rig,referenceBodies(rig,target.images));
+  const qa = withH4(itemQa(rig,slotOf(spec.slot),spec.key,cells,0,GATES.keyOutsidePosed,0,hiddenViews(kfCells,keys)),slotOf(spec.slot),cells,keys,rig,referenceBodies(rig,target.images),spec.prompt);
   for(const [clip,summary]of Object.entries(qa.qa.clips??{})) {
     const count=rig.animations.find(a=>a.id===clip.split('/')[0])!.cells;
     if(cells.filter(c=>c.key.startsWith(clip+'/')).length<count){if(summary.status==='pass')summary.status='warn';if(qa.qa.status==='pass')qa.qa.status='warn';qa.warnings.push(`${clip}: only newly fitted cells were checked. Earlier frames retain their existing checks.`);}

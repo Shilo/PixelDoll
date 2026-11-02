@@ -13,6 +13,7 @@ const post = (path: string, body: unknown): Req => ({ method: 'POST', path, body
 const get = (path: string): Req => ({ method: 'GET', path });
 
 export const png = (base64: string): B64Image => ({ type: 'base64', base64, format: 'png' });
+export const EDIT_MIN_FRAMES = 2; // edit-animation-v2 schema: 2–16 input frames.
 
 // ---- requests ----
 export interface CreateCharacterV3 {

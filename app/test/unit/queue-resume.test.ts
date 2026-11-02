@@ -381,12 +381,15 @@ test('synchronous requests publish their HTTP start while pending and retain the
 
 test('submission-start notification occurs after HTTP invocation even when a subscriber disconnects', async () => {
   let posts = 0, finished!: (response: { background_job_id: string }) => void, sent!: () => void
+  const polls: string[] = []
   const entered = new Promise<void>((resolve) => { sent = resolve })
   const records = new Map<string, JobRec>()
   const deps: Partial<Deps> = { locks: null, all: async () => [...records.values()].map(r => structuredClone(r)), online: () => true,
     put: async (id, r) => { records.set(id, structuredClone(r)) },
-    api: async <T>(_key: string, _method: string, path: string): Promise<T> => {
-      if (path === '/balance') return accountBalance as T; posts++; sent(); return await new Promise<T>((resolve) => { finished = resolve as typeof finished }) },
+    api: async <T>(_key: string, method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T;
+      if (method === 'GET') { polls.push(path); return { id: 'already-sent-job', status: 'processing', created_at: '' } as T }
+      posts++; sent(); return await new Promise<T>((resolve) => { finished = resolve as typeof finished }) },
   }
   const q = new Queue(deps)
   await q.connect(); q.setKey('synthetic-key')
@@ -404,6 +407,38 @@ test('submission-start notification occurs after HTTP invocation even when a sub
   await resumed.load()
   expect((await resumed.enqueue(request)).id).toBe(record.id)
   expect(resumed.snapshot().jobs[0]).toMatchObject({ state: 'running', jobs: [{ id: 'already-sent-job' }] })
+  resumed.setKey('synthetic-key')
+  await resumed.tick()
+  expect(polls).toEqual(['/background-jobs/already-sent-job'])
+  expect(records.get(record.id)).toMatchObject({ state: 'running', jobs: [{ id: 'already-sent-job', status: 'processing' }] })
   expect(posts).toBe(1)
   un(); q.disconnect()
+})
+
+test('an interrupted HTTP submission without a durable receipt stays lost across repeated queue restarts', async () => {
+  const records = new Map<string, JobRec>()
+  let posts = 0, sent!: () => void
+  const entered = new Promise<void>(resolve => { sent = resolve })
+  const deps: Partial<Deps> = { locks: null, online: () => true,
+    all: async () => [...records.values()].map(r => structuredClone(r)),
+    put: async (id, record) => { records.set(id, structuredClone(record)) },
+    api: async <T>(_key: string, method: string, path: string): Promise<T> => {
+      if (path === '/balance') return accountBalance as T;
+      expect(method).toBe('POST'); posts++; sent()
+      return new Promise<T>(() => {}) // The crashed renderer never receives the server's acceptance or rejection.
+    },
+  }
+  const original = new Queue(deps); original.setKey('synthetic-key')
+  const record = await original.enqueue(request)
+  void original.tick()
+  await entered
+  expect(records.get(record.id)).toMatchObject({ state: 'submitting', requestStarted: true, jobs: [] })
+  for (let restart = 0; restart < 2; restart++) {
+    const resumed = new Queue(deps); resumed.setKey('synthetic-key'); await resumed.load()
+    expect((await resumed.enqueue(request)).id).toBe(record.id)
+    await resumed.tick()
+    expect(records.get(record.id)).toMatchObject({ state: 'lost', jobs: [] })
+    expect(records.get(record.id)?.error).toContain('Not resubmitted')
+    expect(posts).toBe(1)
+  }
 })

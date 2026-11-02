@@ -235,7 +235,7 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string): Promi
   const empty = await cellHash(makeImg(64, 64));
   for (const a of animations) for (const d of directions) for (let i = 0; i < a.cells; i++) hashes[`${a.id}/${d}/${i}`] = cells[a.id][d]?.[i] ?? empty;
   rig.baseHash = await baseHashOf(rig, hashes);
-  const manifest: Manifest = { format: 'pixeldoll/1', app: 'PixelDoll 0.1.0', name, rig, materials: [], slots: [{ id: 'body', z: 10, class: 'base', required: true }], items: [{ id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'generate', materials: [], prompt, baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance: [] }], presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }] };
+  const manifest: Manifest = { format: CURRENT_FORMAT, app: 'PixelDoll 0.1.0', name, rig, materials: [], slots: [{ id: 'body', z: 10, class: 'base', required: true }], items: [{ id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'generate', materials: [], prompt, baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance: [] }], presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }] };
   return { project: { manifest, images }, extra: {}, states, stateId, warnings: ['Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.', ...(semi ? ['Partially transparent edges were converted to pixel-art transparency.'] : [])] };
 }
 
