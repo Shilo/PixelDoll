@@ -106,3 +106,12 @@ The source-only/body-only guards, frame/pivot/hash bindings, eight-slot exports,
 [Closeout review archive](artifacts/2026-11-02-animation-closeout-review.zip) contains the actual east foot-review JSON, current UI screenshots, source/body negative controls, unchanged eight-frame axe replay and a before/after cadence illustration. The illustration uses the production playback helper with half-strength movement and retained sprite frames. Its floor speed is a labeled 2D illustration, not a measured calibration of the app's 95 world units/second or its perspective camera.
 
 The earlier [importable body pack](artifacts/2026-11-02-eight-direction-starter.pixeldoll.zip) stays unchanged. No raw generation, body image or asset was erased to manufacture an acceptance result. No credential, `.env`, browser profile or authentication output is in either archive.
+
+
+## Final remote result and cleanup
+
+Implementation commit `7806be10e73e905b5dae3e30e27ee99af6edec1c` was pushed to `origin/codex/eight-direction-presets`. [CI run 41476761164](https://github.com/Shilo/PixelDoll/actions/runs/41476761164) passed the build and all sixteen browser shards on the final code, including the final source/body/clipping guards. Deployment was skipped for the non-main branch. The earlier full-local and final-targeted test timing distinctions above remain accurate; remote CI supplies the full final-code browser pass.
+
+The temporary ordinary localhost 5201 server was stopped after verifying its process identity. Existing 5199/5200 servers were preserved. The isolated profile retains the agent-key opt-out. Main and unrelated main-checkout edits were not changed, and the body-pack ZIP remains identical.
+
+Independent code/evidence challenge found no further concrete material blocker in this bounded delta. The reviewer did not independently rerun the test commands; executed checks and the old-axe replay are separately recorded above. No further broad research or paid body retry is supported by the remaining evidence gaps.
