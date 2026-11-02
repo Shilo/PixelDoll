@@ -45,11 +45,18 @@ deployed by Pages. Both entry points refuse to initialize the app when framed, m
 this client guard is not a replacement for response-header protection. A future static hosting/CDN change can deliver
 headers without adding an application backend.
 
-User-deferred on 2026-10-23: persisted PixelDoll queue credential ownership is an optional account-switch edge case,
-not a release blocker or scheduled implementation. Reloading after a saved key changed may attach the existing ledger
-to that key. Revisit only if requested; future scope includes enqueue/dedup/recovery/polling, preserving accepted job IDs
-and keeping unowned saved work separate. Open tabs already avoid automatic account switching; durable queue-account
-isolation is not implemented. A deferred card on the [board](https://github.com/users/Shilo/projects/7) keeps optional response-header hosting work for a future hosting review.
+User-deferred on 2026-10-23 and explicitly reaffirmed on 2026-11-02: persisted PixelDoll queue credential ownership stays
+in Later, outside the current preview scope and not a release blocker. The owner considers account switching uncommon
+and prefers avoiding additional queue complexity; no usage data establishes its frequency. Waiting work can use a
+replacement token after an explicit manual switch or reload and could charge that token's account. Two offline,
+mock-transport cases reproduced this; no provider request or real charge was made. This risk is accepted for now,
+not fixed or claimed impossible. Already-submitted work must never be resent as a remedy.
+
+Revisit on an owner request, relevant user reports or planned account-switching support. Future scope includes
+enqueue/dedup/recovery/polling, preserving accepted job IDs and keeping unowned saved work separate. Open tabs already
+avoid automatically adopting another saved account; durable queue-account isolation is not implemented. The existing
+Later card "Persisted queue credential ownership" on the [board](https://github.com/users/Shilo/projects/7) tracks this.
+A separate deferred card keeps optional response-header hosting work for a future hosting review.
 
 Encryption is deferred (tracked on the [board](https://github.com/users/Shilo/projects/7)): a fixed bundled key or an automatically available saved decryption key
 does not solve same-origin token theft, while a separate passphrase adds unwanted friction. Reassess only when there

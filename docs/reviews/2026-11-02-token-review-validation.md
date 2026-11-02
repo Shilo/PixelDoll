@@ -91,3 +91,14 @@ fix or paid test is indicated by the reviewed evidence. The documented boundarie
 The independent reviewer also checked the final committed application diffs and confirmed they match the approved
 fixes, with no incidental token-policy drift or remaining concrete blocker. That final check did not repeat the
 coordinator's whole-suite/browser/live runs.
+
+## Owner decision on the separate queue-account limitation
+
+On November 2, the owner explicitly reaffirmed deferral of queue credential ownership. A follow-up offline assessment
+using the actual queue reproduced two cases: waiting work submitted with a replacement credential after an explicit
+manual token switch, and after restoring saved work with a replacement token. No provider calls or charges occurred.
+The potential wrong-account charge is an accepted preview limitation, rather than a resolved defect or a measured
+high-frequency problem. The owner prefers keeping current code simple for the expected uncommon use case. The existing
+Later card remains deferred; no queue isolation, account-switching feature or application code was added. Revisit on
+owner request, relevant user reports or planned account-switching support. See the current decision in
+[the shared credential contract](../shared-token-security.md).
