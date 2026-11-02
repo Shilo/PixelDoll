@@ -1,7 +1,7 @@
 <script lang="ts">
   import {labQueue,reconcileResearchJobs} from './run.ts';
   import {importPilot,verifyPilot,pilotInstructions,pilotCustom,refreshPilot,exportPilot,readPilot} from './pilot.ts';
-  import {readResearchBudget,researchBudgetUsage,recordResearchGate,RESEARCH_STAGE_CAPS,type ResearchStage} from './research-budget.ts';
+  import {readResearchBudget,researchBudgetUsage,recordResearchGate,RESEARCH_STAGE_CAPS,RESEARCH_PILOT_CAP,CLEAN_GRIP_ALLOWANCE,CLEAN_GRIP_BATCH_CAP,type ResearchStage} from './research-budget.ts';
   import type {MotionFixture} from './model.ts';
   import WeaponAwareProbe from './WeaponAwareProbe.svelte';
   import {parseManagedEquipment,submitManagedEquipment,exportManagedEquipment,readManagedEquipment,type ManagedEquipmentProbe} from './managed-equipment.ts';
@@ -27,8 +27,8 @@
 </script>
 <section class="bu-dialog-surface research" aria-label="Controlled workflow research pilot">
   <h2>Controlled workflow research pilot</h2>
-  <p>998 generations settled before this phase. Additional allowance: 1,000. Initial staged pilot: 200 maximum. Historical ledgers stay intact.</p>
-  <p>{usage.billedUnits} new units reported; {usage.reservedUnits}/200 conservatively reserved. Body {usage.stageUnits.body}/{RESEARCH_STAGE_CAPS.body}, equipment {usage.stageUnits.equipment}/{RESEARCH_STAGE_CAPS.equipment}, replication {usage.stageUnits.replication}/{RESEARCH_STAGE_CAPS.replication}.</p>
+  <p>998 generations settled before this workflow phase. Historical allowance: 1,000. New clean-grip allowance: {CLEAN_GRIP_ALLOWANCE}; current bounded batch: {CLEAN_GRIP_BATCH_CAP} maximum. Historical receipts and failed gates stay intact.</p>
+  <p>{usage.billedUnits} new units reported; {usage.reservedUnits}/{RESEARCH_PILOT_CAP} conservatively reserved. Body {usage.stageUnits.body}/{RESEARCH_STAGE_CAPS.body}, equipment {usage.stageUnits.equipment}/{RESEARCH_STAGE_CAPS.equipment}, replication {usage.stageUnits.replication}/{RESEARCH_STAGE_CAPS.replication}.</p>
   <p>Exact adult reference import, south/east motion comparison. West is supplied as its recorded mirrored derivative. Imported pixels must match before animation. Mask and grip authoring are internal research tools.</p>
   <div class="bu-actions">
     <button class="bu-btn" disabled={!connected||busy||!!pilotState} onclick={()=>action('import')}>Import exact benchmark views (reserve 1 gen)</button>

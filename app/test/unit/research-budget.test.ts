@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { RESEARCH_BUDGET_KEY, RESEARCH_STAGE_CAPS, RESEARCH_PILOT_CAP, RESEARCH_PHASE_CAP, readResearchBudget, researchBudgetUsage, reserveResearchCall, recordResearchOutcome, recordResearchGate } from '../../src/ui/motion-lab/research-budget.ts';
+import { RESEARCH_BUDGET_KEY, RESEARCH_STAGE_CAPS, RESEARCH_PILOT_CAP, RESEARCH_PHASE_CAP, CLEAN_GRIP_ALLOWANCE, CLEAN_GRIP_BATCH_CAP, CLEAN_GRIP_PRIOR_HELD, readResearchBudget, researchBudgetUsage, reserveResearchCall, recordResearchOutcome, recordResearchGate } from '../../src/ui/motion-lab/research-budget.ts';
 
 function storage() {
   const values = new Map<string, string>([['pixeldoll.motionLab.2026-10-28', 'historical reservations'], ['pixeldoll.motionLab.custom-v3.2026-11-01', 'historical custom receipt']]);
@@ -38,36 +38,41 @@ test('fractional reservations fill exact caps without floating-point drift and n
   expect(f.values.get('pixeldoll.motionLab.custom-v3.2026-11-01')).toBe('historical custom receipt');
 });
 
-test('explicit reviewed gates unlock stages, enforce the 200-unit pilot, and invalidate stale downstream approvals', async () => {
+test('explicit reviewed gates unlock stages, enforce the aggregate pilot, and invalidate stale downstream approvals', async () => {
   storage();
   await expect(reserveResearchCall(call('equipment', 10, 'equipment'))).rejects.toThrow('body qualification');
   await expect(recordResearchGate('body', { passed: true, notes: '', evidence: [] })).rejects.toThrow('explicit evidence');
   await recordResearchGate('body', gate());
-  await reserveResearchCall(call('body', 25));
-  await reserveResearchCall(call('equipment', 175, 'equipment'));
+  await reserveResearchCall(call('body', 21));
+  await reserveResearchCall(call('equipment', 250, 'equipment'));
   await expect(reserveResearchCall(call('replication', 1, 'replication'))).rejects.toThrow('equipment qualification');
   await recordResearchGate('equipment', gate());
-  expect(researchBudgetUsage()).toMatchObject({ reservedUnits: 200, pilotRemaining: 0, phaseRemaining: 800 });
+  expect(researchBudgetUsage()).toMatchObject({ reservedUnits: 271, pilotRemaining: 0, phaseRemaining: 729 });
   await expect(reserveResearchCall(call('extra', 0.1, 'replication'))).rejects.toThrow('pilot or phase');
   await recordResearchGate('body', gate(false));
   expect(readResearchBudget().gates.equipment).toBeUndefined();
   await expect(reserveResearchCall(call('closed', 1, 'equipment'))).rejects.toThrow('body qualification');
 });
 
-test('the revised equipment allocation preserves the total pilot and phase limits without clearing failed qualification', async () => {
+test('the newly approved 75-unit batch preserves historical holds and failed qualification inside the 500-unit ceiling', async () => {
   storage();
-  expect(RESEARCH_STAGE_CAPS).toEqual({ body: 25, equipment: 175, replication: 0 });
-  expect(Object.values(RESEARCH_STAGE_CAPS).reduce<number>((n, cap) => n + cap, 0)).toBe(200);
-  expect(RESEARCH_PILOT_CAP).toBe(200); expect(RESEARCH_PHASE_CAP).toBe(1000);
+  expect(RESEARCH_STAGE_CAPS).toEqual({ body: 25, equipment: 250, replication: 0 });
+  expect(CLEAN_GRIP_ALLOWANCE).toBe(500);expect(CLEAN_GRIP_BATCH_CAP).toBe(75);expect(CLEAN_GRIP_PRIOR_HELD).toBe(196);
+  expect(Object.values(RESEARCH_STAGE_CAPS).reduce<number>((n, cap) => n + cap, 0)).toBe(275);
+  expect(RESEARCH_PILOT_CAP).toBe(271); expect(RESEARCH_PHASE_CAP).toBe(1000);
   await recordResearchGate('body', gate()); await recordResearchGate('equipment', gate(false));
   const failed = structuredClone(readResearchBudget().gates.equipment);
   await reserveResearchCall(call('body-evidence', 21));
   await reserveResearchCall(call('bounded-equipment-evidence', 175, 'equipment'));
-  expect(researchBudgetUsage()).toMatchObject({ reservedUnits: 196, pilotRemaining: 4, phaseRemaining: 804 });
-  await expect(reserveResearchCall(call('equipment-overflow', 0.1, 'equipment'))).rejects.toThrow('stage allocation');
+  const historical=structuredClone(readResearchBudget().calls);
+  expect(researchBudgetUsage()).toMatchObject({ reservedUnits: 196, pilotRemaining: 75, phaseRemaining: 804 });
+  for(let i=0;i<3;i++)await reserveResearchCall(call('clean-control-'+i,25,'equipment'));
+  expect(readResearchBudget().calls.slice(0,2)).toEqual(historical);
+  expect(researchBudgetUsage()).toMatchObject({reservedUnits:271,pilotRemaining:0,stageUnits:{equipment:250}});
+  await expect(reserveResearchCall(call('equipment-overflow', 0.1, 'equipment'))).rejects.toThrow('pilot or phase');
   await expect(reserveResearchCall(call('still-unqualified-replication', 1, 'replication'))).rejects.toThrow('equipment qualification');
   expect(readResearchBudget().gates.equipment).toEqual(failed);
-  expect(readResearchBudget().calls.map(row => row.id)).toEqual(['body-evidence', 'bounded-equipment-evidence']);
+  expect(readResearchBudget().calls.map(row => row.id)).toEqual(['body-evidence', 'bounded-equipment-evidence','clean-control-0','clean-control-1','clean-control-2']);
 });
 
 test('a zero replication allocation cannot spend even with reviewed body and equipment gates and unused pilot funds',async()=>{
@@ -75,7 +80,7 @@ test('a zero replication allocation cannot spend even with reviewed body and equ
   await reserveResearchCall(call('equipment-call',25,'equipment'));const before=structuredClone(readResearchBudget());
   await expect(reserveResearchCall(call('no-replication',.1,'replication'))).rejects.toThrow('stage allocation');
   await expect(reserveResearchCall(call('invalid-zero',0,'replication'))).rejects.toThrow('Generation units');
-  expect(readResearchBudget()).toEqual(before);expect(researchBudgetUsage().pilotRemaining).toBe(175);
+  expect(readResearchBudget()).toEqual(before);expect(researchBudgetUsage().pilotRemaining).toBe(246);
 });
 
 test('unknown and failed outcomes retain reservations; discovered job IDs resume without granting another send', async () => {

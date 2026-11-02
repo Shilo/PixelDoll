@@ -1,9 +1,11 @@
 // Development-only accounting for the owner's second research allowance. Historical ledgers stay separate.
 export const RESEARCH_PHASE = 'workflow-reconciliation-v1';
 export const RESEARCH_BUDGET_KEY = 'pixeldoll.motionLab.researchBudget.2026-11-01';
-export const RESEARCH_PRIOR_UNITS = 998, RESEARCH_TOTAL_CAP = 2000, RESEARCH_PHASE_CAP = 1000, RESEARCH_PILOT_CAP = 200;
-// One calibrated two-frame repair replaces premature replication. Total pilot stays 200.
-export const RESEARCH_STAGE_CAPS = { body: 25, equipment: 175, replication: 0 } as const;
+export const RESEARCH_PRIOR_UNITS = 998, RESEARCH_TOTAL_CAP = 2000, RESEARCH_PHASE_CAP = 1000;
+export const CLEAN_GRIP_ALLOWANCE = 500, CLEAN_GRIP_BATCH_CAP = 75, CLEAN_GRIP_PRIOR_HELD = 196;
+export const RESEARCH_PILOT_CAP = CLEAN_GRIP_PRIOR_HELD + CLEAN_GRIP_BATCH_CAP;
+// New owner-approved bounded batch preserves every historical hold. Aggregate cap excludes the old unused four body units.
+export const RESEARCH_STAGE_CAPS = { body: 25, equipment: 175 + CLEAN_GRIP_BATCH_CAP, replication: 0 } as const;
 export type ResearchStage = keyof typeof RESEARCH_STAGE_CAPS;
 export type ResearchStatus = 'reserved' | 'accepted' | 'completed' | 'failed' | 'unknown';
 export interface ResearchCall { id: string; label: string; stage: ResearchStage; units: number; status: ResearchStatus; at: string; jobIds?: string[]; billedUnits?: number; note?: string }

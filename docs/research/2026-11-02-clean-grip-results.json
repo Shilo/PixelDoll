@@ -1,0 +1,501 @@
+{
+  "version": 1,
+  "jobId": "6ad0a9f8-1665-4740-b9bb-aa646cb18af1",
+  "requestHash": "a271a57fcf6c1f21fb6d000ff076b1a15f506012b5cb08f161eb20ced850448c",
+  "gens": 15,
+  "approvedControlProfile": "frame4-contact-alternative",
+  "inputGridSha256": "2b3205dc59ea3b71a826086bfeb0fba350693a37753da9031473e6babe05195b",
+  "maskGridSha256": "4a2993de873660e0689067450b54cb04f307ee957ef0197fedae9e25391522bf",
+  "sourceAssetSha256": "a89607348dea69e000cd98abd0ddc401987d89d0fe6b015afb15d5c29db7393a",
+  "sourceCompletionSwap": {
+    "jobId": "43f75ed0-adc1-483c-ac76-afb0ebf06a6f",
+    "requestHash": "fedb1752fa6880bcade232551a0c3e1074aa7bf11aa1a102fefb2736157d0224",
+    "resultSha256": "090ffeb35391d48e3b41291fc229fc768a20c93b48a70f58ac82d8c96325303a",
+    "sourcePacketCanonicalHash": "8fb5ba7f0464f71ebb622d704490d4b223eea09bdc43d1c2ee24ddda310ba9ce",
+    "evidenceSha256": "e31cd1ac533e55273cfa071f1b5a17547c0db9915d714f81e3d2222161cab674"
+  },
+  "sourceCalibrationSha256": "eea742e7f7e7699cbc5f83942d6f639bfb84a0ca5d4215e531ab40ec593c23d6",
+  "evidenceSha256": "ba45c56a0c8de69757f32f3f6a335992c850a4e3e8f27564bb139c5b433a69df",
+  "resultSha256": "5c61d8651a45ed46b4d9e4bb3ca8ec694f1677cdbe994653bce9727d1c20e819",
+  "packetCanonicalHash": "516a48a77fea477e0c3bc7d39ba35bfad8d6ca78a9e169dfa70314ca60daba0c",
+  "sourceBodyRecipeCanonicalHash": "4458544f88245b1a96db2c1781f857a2f306271014009574bf0ac11de5fb8fd8",
+  "protectedPixels": 82426,
+  "protectedRgbaChanges": 0,
+  "references": [
+    {
+      "index": 5,
+      "gridCell": 2,
+      "rgbaChanges": 0,
+      "sourceJobId": "43f75ed0-adc1-483c-ac76-afb0ebf06a6f",
+      "sourceResultSha256": "090ffeb35391d48e3b41291fc229fc768a20c93b48a70f58ac82d8c96325303a"
+    },
+    {
+      "index": 6,
+      "gridCell": 3,
+      "rgbaChanges": 0,
+      "sourceJobId": "ae4b858b-96a9-45dc-b412-7ca2f62b5200",
+      "sourceResultSha256": "500468fcc84f4cc5f0dbc266480d677bea3da559aa895785bca81bff02edc146"
+    }
+  ],
+  "frames": [
+    {
+      "frame": 3,
+      "frozenGreenSha256": "ea97e7f08d4f564e48f87d051a445686e9e6ff8646d7f9b7c0b9a215d621bf3c",
+      "frozenSkinSha256": "dccc5c6dee133dfb234062c5742c55d5bb7aacf303d2d3cb4f38e7bae18d44d6",
+      "bodyRgbaChanges": 0,
+      "bodyAlphaChanges": 0,
+      "whitePixels": 261,
+      "generatedOpaquePixels": 21,
+      "keyColoredGeneratedPixels": 0,
+      "keyGenerated": [],
+      "undersaturatedGreenCandidates": [],
+      "candidateOutsideHeld": 0,
+      "candidateOnBody": 0,
+      "desired": {
+        "pixels": 156,
+        "strictWoodPixels": 71,
+        "neutralHeadPixels": 85,
+        "neutralOtherComponents": [],
+        "components": [
+          156
+        ],
+        "headCenter": {
+          "x": 113.26470588235294,
+          "y": 61.94705882352941
+        },
+        "woodAxisDegrees": -43.336943882956746,
+        "woodAxisRadians": -0.7563723585096113,
+        "bounds": {
+          "xMin": 95,
+          "xMax": 119,
+          "yMin": 54,
+          "yMax": 72
+        },
+        "colors": [
+          5712138,
+          4934218,
+          4276543,
+          5658198,
+          13224393,
+          11171404,
+          7948577,
+          6250334,
+          9605521,
+          8684676,
+          10395293,
+          8158332,
+          10250312,
+          7039594,
+          11562043,
+          7697524,
+          11958605,
+          8671018,
+          7487777,
+          13882580,
+          15987699,
+          9393459,
+          10445108,
+          16777215,
+          15790320,
+          7026711,
+          8341546
+        ]
+      },
+      "actual": {
+        "pixels": 21,
+        "strictWoodPixels": 21,
+        "neutralHeadPixels": 0,
+        "neutralOtherComponents": [],
+        "components": [
+          21
+        ],
+        "headCenter": null,
+        "woodAxisDegrees": -53.214989641744324,
+        "woodAxisRadians": -0.9287767806631161,
+        "bounds": {
+          "xMin": 94,
+          "xMax": 99,
+          "yMin": 64,
+          "yMax": 71
+        },
+        "colors": [
+          5122581,
+          7487777,
+          7948577,
+          6568479,
+          10445108,
+          9919543,
+          11562043,
+          9732729
+        ]
+      },
+      "comparison": {
+        "maskIoU": 0.05357142857142857,
+        "extraPixelsVsDesired": 12,
+        "missingPixelsVsDesired": 147,
+        "headAreaRatio": 0,
+        "headCentroidDistance": null,
+        "undirectedAxisDifferenceDegrees": 10.414040898940172,
+        "directedAxisDifferenceDegrees": 10.41404089894013,
+        "sourceAssetPaletteDistance": 5.190476190476191,
+        "sourcePaletteAbsentColors": [
+          {
+            "rgb": [
+              78,
+              42,
+              21
+            ],
+            "pixels": 7
+          },
+          {
+            "rgb": [
+              100,
+              58,
+              31
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              151,
+              92,
+              55
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              148,
+              130,
+              121
+            ],
+            "pixels": 1
+          }
+        ],
+        "nearestVisibleWoodToAuthoredHandProxy": 1,
+        "handProxyDefinition": "Frozen-body opaque pixels within8px of source observed grip; not measured wrist or finger segmentation."
+      },
+      "sharedVariant": {
+        "posed": false,
+        "stencil": "Raw nonkey within reviewed whiteD; all original body excluded",
+        "pixels": 21,
+        "omittedRawPixels": [],
+        "addedPixels": [],
+        "commonRgbChanges": 0
+      },
+      "qualified": false
+    },
+    {
+      "frame": 4,
+      "frozenGreenSha256": "21ca4c93fee959d1614a175a1c05fb7c818943236a0b6e8947c56a0c7bab523b",
+      "frozenSkinSha256": "adfc044e682285d419216427c459030804b2b0a4013981554156c552766aed8f",
+      "bodyRgbaChanges": 0,
+      "bodyAlphaChanges": 0,
+      "whitePixels": 257,
+      "generatedOpaquePixels": 189,
+      "keyColoredGeneratedPixels": 0,
+      "keyGenerated": [],
+      "undersaturatedGreenCandidates": [],
+      "candidateOutsideHeld": 0,
+      "candidateOnBody": 0,
+      "desired": {
+        "pixels": 153,
+        "strictWoodPixels": 68,
+        "neutralHeadPixels": 85,
+        "neutralOtherComponents": [],
+        "components": [
+          153
+        ],
+        "headCenter": {
+          "x": 112.73529411764706,
+          "y": 78.67647058823529
+        },
+        "woodAxisDegrees": -21.784305534105975,
+        "woodAxisRadians": -0.3802078568305711,
+        "bounds": {
+          "xMin": 93,
+          "xMax": 118,
+          "yMin": 71,
+          "yMax": 84
+        },
+        "colors": [
+          4934218,
+          5712138,
+          5658198,
+          4276543,
+          10395293,
+          6250334,
+          13224393,
+          8158332,
+          7948577,
+          10250312,
+          8684676,
+          11958605,
+          11562043,
+          9605521,
+          8671018,
+          7487777,
+          7039594,
+          10445108,
+          7697524,
+          7026711,
+          11171404,
+          9393459,
+          8341546,
+          13882580,
+          15987699,
+          12237241,
+          15790320,
+          16777215
+        ]
+      },
+      "actual": {
+        "pixels": 189,
+        "strictWoodPixels": 90,
+        "neutralHeadPixels": 97,
+        "neutralOtherComponents": [],
+        "components": [
+          189
+        ],
+        "headCenter": {
+          "x": 114.02577319587628,
+          "y": 77.37628865979381
+        },
+        "woodAxisDegrees": -23.797389274264273,
+        "woodAxisRadians": -0.4153427962146954,
+        "bounds": {
+          "xMin": 92,
+          "xMax": 119,
+          "yMin": 70,
+          "yMax": 85
+        },
+        "colors": [
+          4276543,
+          8158332,
+          9605521,
+          4934218,
+          5658198,
+          8684676,
+          13882580,
+          5587255,
+          10395293,
+          9732729,
+          9009003,
+          3487028,
+          6250334,
+          14475240,
+          12237241,
+          7039594,
+          7428431,
+          8671018,
+          10445108,
+          4996918,
+          11184809,
+          5913902,
+          8081463,
+          9393459,
+          7030574,
+          7697524,
+          9919543,
+          7487777,
+          5122581,
+          4401947,
+          6573119,
+          11562043,
+          4860189,
+          5656662,
+          10250312,
+          7948577,
+          5582112,
+          8341546,
+          6568479,
+          13224393
+        ]
+      },
+      "comparison": {
+        "maskIoU": 0.6601941747572816,
+        "extraPixelsVsDesired": 53,
+        "missingPixelsVsDesired": 17,
+        "headAreaRatio": 1.1411764705882352,
+        "headCentroidDistance": 1.8318868137505506,
+        "undirectedAxisDifferenceDegrees": 1.4803991923176907,
+        "directedAxisDifferenceDegrees": 1.480399192317691,
+        "sourceAssetPaletteDistance": 4.402116402116402,
+        "sourcePaletteAbsentColors": [
+          {
+            "rgb": [
+              85,
+              65,
+              55
+            ],
+            "pixels": 2
+          },
+          {
+            "rgb": [
+              148,
+              130,
+              121
+            ],
+            "pixels": 3
+          },
+          {
+            "rgb": [
+              137,
+              119,
+              107
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              53,
+              53,
+              52
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              220,
+              223,
+              232
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              113,
+              89,
+              79
+            ],
+            "pixels": 2
+          },
+          {
+            "rgb": [
+              76,
+              63,
+              54
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              170,
+              170,
+              169
+            ],
+            "pixels": 2
+          },
+          {
+            "rgb": [
+              90,
+              61,
+              46
+            ],
+            "pixels": 6
+          },
+          {
+            "rgb": [
+              123,
+              80,
+              55
+            ],
+            "pixels": 2
+          },
+          {
+            "rgb": [
+              107,
+              71,
+              46
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              151,
+              92,
+              55
+            ],
+            "pixels": 15
+          },
+          {
+            "rgb": [
+              78,
+              42,
+              21
+            ],
+            "pixels": 14
+          },
+          {
+            "rgb": [
+              67,
+              43,
+              27
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              100,
+              76,
+              63
+            ],
+            "pixels": 4
+          },
+          {
+            "rgb": [
+              74,
+              41,
+              29
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              86,
+              80,
+              86
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              85,
+              45,
+              32
+            ],
+            "pixels": 1
+          },
+          {
+            "rgb": [
+              100,
+              58,
+              31
+            ],
+            "pixels": 2
+          }
+        ],
+        "nearestVisibleWoodToAuthoredHandProxy": 1,
+        "handProxyDefinition": "Frozen-body opaque pixels within8px of source observed grip; not measured wrist or finger segmentation."
+      },
+      "sharedVariant": {
+        "posed": false,
+        "stencil": "Raw nonkey within reviewed whiteD; all original body excluded",
+        "pixels": 189,
+        "omittedRawPixels": [],
+        "addedPixels": [],
+        "commonRgbChanges": 0
+      },
+      "qualified": false
+    }
+  ],
+  "qualified": false,
+  "notes": [
+    "One approved clean-source test. The model input was exact bare B-star-v2, with no old sword or placeholder item.",
+    "Raw provider output is retained. Candidate layers contain only output nonkey pixels inside exactD; they are not automatically semantic weapon truth. Any key/undersaturated-green additions remain explicit.",
+    "Fixed-body skin composites never adopt generated anatomy, recolor the weapon, align output, or crop geometry into a pass. Body identity in composites is by construction; raw preservation is measured separately.",
+    "The desired unscaled visible item is an explicit2D authoring control, not physical perspective or hidden-anatomy ground truth. No universal IoU/area/angle/grip threshold is applied.",
+    "Separate shared extraction is posed:false research comparison, not the full production posed:true postProcess path or an actual rig-wrist validation. Every lost/changed pixel remains listed.",
+    "Art review must judge readable grip, complete recognizable head/handle, one consistent design, fragmentation, silhouette, contact and intended pose before any further clip experiment."
+  ]
+}

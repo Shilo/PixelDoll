@@ -125,7 +125,7 @@
       <button class="bu-btn" data-variant="primary" disabled={!fit||busy||!connected||!!mirroredFrom||campaign.reserved+poseCallGens(doc.times.length+(doc.buffer?1:0))>LAB_CAP} onclick={generate}>Generate candidate ({poseCallGens(doc.times.length+(doc.buffer?1:0))} gens)</button>
       {#if mirroredFrom}<p>This view is a pixel mirror of {mirroredFrom}. Derive it from frozen {mirroredFrom} outputs without another generation. Mirroring also flips visible handedness.</p>{/if}
       <button class="bu-btn" onclick={async()=>{try{download('pixeldoll-motion-evidence.json',await exportEvidence());}catch(e){error=(e as Error).message;}}}>Export all evidence</button>
-      <p>First research campaign settled at 998/1000 generations. New phase raw-motion jobs have used {campaign.phaseReported} reported generations. The controlled pilot below separately tracks all new calls against the additional allowance and its staged 200-unit limit.</p>
+      <p>First research campaign settled at 998/1000 generations. New phase raw-motion jobs have used {campaign.phaseReported} reported generations. The controlled pilot below separately tracks all new calls against the additional allowance and its current staged limit.</p>
       <p>{campaign.reserved}/{LAB_CAP} generations conservatively reserved in this phase. Reservations retain historical estimates and increase for higher reported charges; they can exceed actual spending. Further paid requests are blocked at this limit. Unknown outcomes are never automatically resent.</p>
       <p>{campaign.phaseWithoutJob} current-phase reservations have no queued job; {campaign.withoutJob} across the full history remain in the evidence for inspection.</p>
     </section>

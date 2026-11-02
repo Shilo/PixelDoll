@@ -133,7 +133,7 @@ for(const altered of [false,true])test(altered?'controlled pilot blocks changed 
     if(url.pathname.startsWith('/v2/background-jobs/'))return route.fulfill({json:{id:url.pathname.split('/').at(-1),status:'completed',usage:{type:'generations',generations:3}}});
     if(url.pathname==='/mcp'){const r=req.postDataJSON();if(r.method==='notifications/initialized')return route.fulfill({status:202,body:''});let result:unknown={};if(r.method==='initialize')result={protocolVersion:'2025-03-26'};else if(r.method==='tools/list')result={tools:[{name:'animate_character',inputSchema:{properties:Object.fromEntries(['character_id','mode','animation_name','action_description','directions','frame_count','move','poses'].map(k=>[k,{}]))}}]};else{if(r.params.arguments.move)customCalls++;result={content:[{type:'text',text:r.params.arguments.move?`south: job ${southJob}\neast: job ${eastJob}`:'Synthetic free instructions'}],isError:false};}return route.fulfill({json:{jsonrpc:'2.0',id:r.id,result}});}return route.abort();
   });
-  await page.goto('/motion-lab.html');await expect(page.getByRole('status')).toContainText('Offline lab ready');await page.evaluate(async()=>{const p='/src/ui/motion-lab/run.ts';(await import(p)).labQueue.setKey('synthetic-controlled-key')});const pilot=page.getByRole('region',{name:'Controlled workflow research pilot',exact:true}),render=pilot.getByRole('button',{name:'Render controlled custom south and east (reserve 8 gens)',exact:true});await expect(render).toBeDisabled();await pilot.getByRole('button',{name:'Import exact benchmark views (reserve 1 gen)',exact:true}).click();await expect(pilot).toContainText('Import: done');expect(Object.keys(submitted.direction_images).sort()).toEqual(['east','north','west']);await pilot.getByRole('button',{name:'Verify imported reference pixels (free)',exact:true}).click();if(altered){await expect(pilot.getByRole('alert')).toContainText('Imported reference pixels changed');await expect(render).toBeDisabled();expect(imports).toBe(1);expect(customCalls).toBe(0);return;}await expect(pilot).toContainText('exact-reference check: passed');await pilot.getByRole('button',{name:'Read controlled authoring instructions (free)',exact:true}).click();await expect(render).toBeEnabled();await render.click();await expect(render).toBeDisabled();await pilot.getByRole('button',{name:'Refresh pilot receipts and costs',exact:true}).click();await expect(pilot).toContainText('6.25 new units reported; 9/200 conservatively reserved.');
+  await page.goto('/motion-lab.html');await expect(page.getByRole('status')).toContainText('Offline lab ready');await page.evaluate(async()=>{const p='/src/ui/motion-lab/run.ts';(await import(p)).labQueue.setKey('synthetic-controlled-key')});const pilot=page.getByRole('region',{name:'Controlled workflow research pilot',exact:true}),render=pilot.getByRole('button',{name:'Render controlled custom south and east (reserve 8 gens)',exact:true});await expect(render).toBeDisabled();await pilot.getByRole('button',{name:'Import exact benchmark views (reserve 1 gen)',exact:true}).click();await expect(pilot).toContainText('Import: done');expect(Object.keys(submitted.direction_images).sort()).toEqual(['east','north','west']);await pilot.getByRole('button',{name:'Verify imported reference pixels (free)',exact:true}).click();if(altered){await expect(pilot.getByRole('alert')).toContainText('Imported reference pixels changed');await expect(render).toBeDisabled();expect(imports).toBe(1);expect(customCalls).toBe(0);return;}await expect(pilot).toContainText('exact-reference check: passed');await pilot.getByRole('button',{name:'Read controlled authoring instructions (free)',exact:true}).click();await expect(render).toBeEnabled();await render.click();await expect(render).toBeDisabled();await pilot.getByRole('button',{name:'Refresh pilot receipts and costs',exact:true}).click();await expect(pilot).toContainText('6.25 new units reported; 9/271 conservatively reserved.');
   const downloading=page.waitForEvent('download');await pilot.getByRole('button',{name:'Export controlled pilot evidence',exact:true}).click();const exported=await readFile((await(await downloading).path())!,'utf8');expect(exported).not.toContain('synthetic-controlled-key');expect(JSON.parse(exported).pilot.verification.every((v:{changedPixels:number})=>v.changedPixels===0)).toBe(true);await page.reload();await expect(page.getByRole('region',{name:'Controlled workflow research pilot',exact:true}).getByRole('button',{name:'Render controlled custom south and east (reserve 8 gens)',exact:true})).toBeDisabled();expect(imports).toBe(1);expect(customCalls).toBe(1);
 });
 
@@ -186,3 +186,33 @@ test('copying a demo publishes its images atomically against concurrent garbage 
   })
   expect(result.current).toBe(result.id); expect(result.name).toBe('Adventurer copy'); expect(result.images).toBeGreaterThan(0)
 })
+
+test('Motion Lab research grids retain raw inspection without motion review controls or paid requests',async({page})=>{
+  const paid:string[]=[],errors:string[]=[];
+  await page.addInitScript(()=>localStorage.setItem('pixeldoll.agentKey','off'));
+  await page.route('https://*.pixellab.ai/**',route=>{if(route.request().method()==='POST')paid.push(route.request().url());return route.abort()});
+  page.on('pageerror',error=>errors.push(error.message));
+  await page.goto('/motion-lab.html');await expect(page.getByRole('status')).toContainText('Offline lab ready');
+  await page.evaluate(async()=>{
+    const dbPath='/src/lib/store/db.ts',pngPath='/src/lib/image/png.ts',codecPath='/src/lib/image/pngraw.ts',labPath='/src/ui/motion-lab/run.ts';
+    const db=await import(dbPath),png=await import(pngPath),codec=await import(codecPath),lab=await import(labPath),grid=png.makeImg(288,288);
+    for(let y=48;y<96;y++)for(let x=48;x<64;x++)grid.data.set([0,150,0,255],(y*grid.w+x)*4);
+    const sha=await db.putBlob(await codec.encodePngBytes(grid)),now=Date.now();
+    await db.put('jobs','research-grid-fixture',{id:'research-grid-fixture',label:'Fixed research grid fixture',tag:lab.LAB_TAG,method:'POST',endpoint:'/inpaint-v3',params:{},inputs:[],requestHash:'offline-research-grid',state:'done',attempts:1,nextAt:0,createdAt:now,finishedAt:now,jobs:[{id:'offline-grid-result',status:'completed',done:true,results:[{label:'0',sha}]}],gens:15,usd:0});
+  });
+  await page.reload();
+  const card=page.getByRole('article').filter({has:page.getByRole('heading',{name:'Fixed research grid fixture',exact:true})});
+  await expect(card.getByRole('img',{name:'Raw generated frame 1',exact:true})).toBeVisible();
+  await card.getByRole('button',{name:'Inspect raw frame 1',exact:true}).click();
+  await expect(card.getByRole('button',{name:'Inspect raw frame 1',exact:true})).toHaveAttribute('aria-pressed','true');
+  await expect(card.getByText("This research grid has no authored motion document. Use the selected experiment's evidence export for offline assessment.",{exact:true})).toBeVisible();
+  for(const name of ['Play candidate','Save review','Export reviewed clip','Author held item','Measure rendered soles'])await expect(card.getByRole('button',{name,exact:true})).toHaveCount(0);
+  await expect(card.getByRole('checkbox',{name:'Use selected frame'})).toHaveCount(0);
+  await expect(card.getByRole('spinbutton',{name:'Selected frame duration, ms',exact:true})).toHaveCount(0);
+  await expect(card.getByRole('spinbutton',{name:'Final local hold, ms',exact:true})).toHaveCount(0);
+  await expect(card.getByRole('combobox',{name:'Review status',exact:true})).toHaveCount(0);
+  await expect(card.getByRole('textbox')).toHaveCount(0);
+  await expect(card.getByRole('alert')).toHaveCount(0);
+  expect(await page.evaluate(()=>localStorage.getItem('pixeldoll.motionLab.2026-10-28'))).toBeNull();
+  expect(paid).toEqual([]);expect(errors).toEqual([]);
+});
