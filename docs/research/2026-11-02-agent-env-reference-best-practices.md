@@ -67,4 +67,25 @@ edits are excluded.
 - Both ignored local settings now use the explicit reference. Unrelated dotenv entries were preserved. No live token
   was printed, committed or placed in test artifacts. No paid generations were used.
 
-Post-push authentication results and implementation commit references will be recorded after the bounded live checks.
+## Post-push authentication results
+
+Implementation commits: PixelDoll `18259c4f5f181401a70b143f299f0e66ade53489`; Backpack
+`67817b19d11268a707406b81d4664968ef320f65`. Both were pushed to their own `origin/main` before real authentication checks.
+
+Fresh localhost agent servers inherited the current Windows User environment value. Both served their agent entry with
+HTTP 200, showed the Agent mode badge, connected automatically and retained no credential in local/session storage.
+PixelDoll GET `/v2/balance` returned 200. Each of Backpack's seven asset-family first-page GETs returned 200. No generation
+request was sent, and no screenshots, headers, response bodies, account inventory or browser profiles were retained.
+
+Test-harness corrections are part of the evidence: the first run closed before its proxied network responses settled,
+so its two initiated GETs have unconfirmed outcomes. The final native-browser run observed all eight required 200s.
+Its initial aggregate assertion incorrectly required zero blocked API requests, despite deliberately blocking every
+extra read and picture. It blocked one additional PixelDoll request, three additional Backpack API requests and 48
+Backpack picture requests. Offline qualification of the recorded status/state booleans confirmed authentication in
+both apps; the request-count assertion was corrected for this stated scope without further live calls. Picture display,
+detail loading and pagination were intentionally not qualified by this bounded sign-in check. Total real GET attempts
+were capped at ten across both harness runs, including the two with unconfirmed responses. Zero paid generations.
+
+The local files contain the reference rather than a copied token. Future Windows-variable changes require restarting
+the terminal/editor and agent server so the new value is inherited. Renaming the Windows variable requires only changing
+the name inside `${...}` in each ignored local entry. Ordinary users' pasted and remembered tokens keep their existing flow.
