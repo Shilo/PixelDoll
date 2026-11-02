@@ -6,8 +6,9 @@ Both projects must behave the same way.
 
 Reference implementation: https://github.com/Shilo/PixelDoll (Svelte 5 + Vite 8 + TypeScript, client-only, GitHub Pages).
 
-PixelDoll's explicit Windows environment reference was independently reviewed and tested with synthetic credentials;
-see the [implementation review](../reviews/2026-11-02-agent-env-reference-review.md).
+For the current explicit-reference syntax and rationale, see the
+[best-practice review](../research/2026-11-02-agent-env-reference-best-practices.md). The
+[earlier implementation review](../reviews/2026-11-02-agent-env-reference-review.md) describes the superseded bare-name convention.
 
 ## 1. The goal
 
@@ -24,10 +25,10 @@ development**, generating images without a human pasting the token into the runn
 
 1. **One variable name in both projects:** `PIXELLAB_API_KEY_AGENT_DEV` (service → credential → surface → environment).
    Rename older app configuration entries (`PIXELLAB_API_KEY`, `VITE_*`, etc.), including `.env.example` if any.
-   `PIXELLAB_SECRET` is supported only as the explicit server environment reference below, not as a second app configuration entry.
+   The referenced server variable can have any valid environment-variable name; it is not another app configuration entry.
 2. **The agent entry lives only in the repo-root `.env`**, which is git-ignored. Its value is either the literal key or the
    exact reference below. Credentials are never committed, stored in CI secrets, or placed in a `.env.*` file that a bundler loads automatically.
-   Alternatively, use `PIXELLAB_API_KEY_AGENT_DEV=PIXELLAB_SECRET` to reference the Windows user or system environment variable inherited by the agent dev server. This exact reference is resolved server-side, per request; a missing or blank variable returns no key. Literal keys still work. Restart the terminal or editor and the server after changing Windows environment variables. This is an explicit app convention, not general dotenv expansion.
+   Use `PIXELLAB_API_KEY_AGENT_DEV=${PIXELLAB_SECRET}` to reference the Windows variable inherited by the agent server, or substitute another valid name inside `${...}`. Only a whole-value reference is expanded. A malformed reference or missing/blank target returns a setup error (HTTP 503), never its name as a token. Any non-reference value remains a literal token; no old/new token-format guessing is used. Node's parser handles whitespace, comments and optional quotes. This is a limited server-side reference convention, not general interpolation, recursive expansion, default expressions or shell evaluation. Restart the terminal/editor and server after changing Windows environment variables.
 3. **A separate agent-only dev command** (`npm run dev:agent`) is the *only* path that reads it. The normal `npm run dev` must
    behave exactly like production regarding the token: no endpoint, no button, no auto-fill.
 4. **Read server-side, per request.** The dev server reads `.env` itself and serves the token only to same-origin loopback
@@ -95,11 +96,15 @@ function agentKey(): Plugin {
     configureServer(server) {
       server.middlewares.use('/__dev/pixellab-key', (req, res) => {
         if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
-        let key = ''
-        try { key = resolveAgentKey(readFileSync(new URL('../.env', import.meta.url), 'utf8'), process.env) } catch {}
         res.setHeader('cache-control', 'no-store')
-        res.statusCode = key ? 200 : 404
-        res.end(key)
+        try {
+          const key = resolveAgentKey(readFileSync(new URL('../.env', import.meta.url), 'utf8'), process.env)
+          res.statusCode = key ? 200 : 404
+          res.end(key)
+        } catch (error) {
+          res.statusCode = (error as NodeJS.ErrnoException).code === 'ENOENT' ? 404 : 503
+          res.end(res.statusCode === 404 ? '' : 'Agent token setup error: check the reference syntax and inherited environment variable.')
+        }
       })
     },
   }
@@ -152,7 +157,7 @@ forwards).
 
 ### Node scripts (spikes, outside the app bundle)
 `node --env-file=../../.env script.mjs` reads `process.env.PIXELLAB_API_KEY_AGENT_DEV`. These are agent research scripts. They
-are never bundled or deployed. Node's `--env-file` does not resolve the app's `PIXELLAB_SECRET` reference; those scripts must resolve it explicitly before use.
+are never bundled or deployed. Node's `--env-file` parses rather than expands references; those scripts must call the server-only resolver explicitly if they use this convention. Do not inject secrets through Vite to make research scripts work.
 
 ### `.gitignore`
 ```gitignore

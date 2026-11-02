@@ -52,11 +52,15 @@ function agentKey(): Plugin {
     configureServer(server) {
       server.middlewares.use('/__dev/pixellab-key', (req, res) => {
         if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
-        let key = ''
-        try { key = resolveAgentKey(readFileSync(new URL('../.env', import.meta.url), 'utf8'), process.env) } catch {}
         res.setHeader('cache-control', 'no-store')
-        res.statusCode = key ? 200 : 404
-        res.end(key)
+        try {
+          const key = resolveAgentKey(readFileSync(new URL('../.env', import.meta.url), 'utf8'), process.env)
+          res.statusCode = key ? 200 : 404
+          res.end(key)
+        } catch (error) {
+          res.statusCode = (error as NodeJS.ErrnoException).code === 'ENOENT' ? 404 : 503
+          res.end(res.statusCode === 404 ? '' : 'Agent token setup error: check the reference syntax and inherited environment variable.')
+        }
       })
     },
   }

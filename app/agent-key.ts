@@ -1,10 +1,16 @@
 import type { IncomingHttpHeaders } from 'node:http'
+import { parseEnv } from 'node:util'
 
 /** Resolve the agent-only .env entry without loading secrets into Vite's environment. */
 export function resolveAgentKey(source: string, env: NodeJS.ProcessEnv): string {
-  const value = source.match(/^PIXELLAB_API_KEY_AGENT_DEV=(.*)$/m)?.[1]?.trim() ?? ''
-  // ponytail: only this explicit Windows environment reference is supported, not general dotenv expansion.
-  return value === 'PIXELLAB_SECRET' ? env.PIXELLAB_SECRET?.trim() ?? '' : value
+  const value = parseEnv(source).PIXELLAB_API_KEY_AGENT_DEV?.trim() ?? ''
+  if (!value.startsWith('${')) return value
+  // ponytail: one whole-value reference only, not interpolation, recursion, defaults or shell evaluation.
+  const reference = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/.exec(value)
+  if (!reference) throw new Error('Agent token reference must use ${VARIABLE_NAME}.')
+  const key = Object.hasOwn(env, reference[1]) ? env[reference[1]]?.trim() : undefined
+  if (!key) throw new Error('The referenced agent token environment variable is missing or blank.')
+  return key
 }
 
 // Request guard for the dev server's /__dev endpoints (vite.config.ts): same-origin requests from this machine only.
