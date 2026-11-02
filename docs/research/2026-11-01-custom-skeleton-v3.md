@@ -4,6 +4,8 @@ Checked November 1, 2026. Documentation and code inspection only: no account gen
 
 ## Decision
 
+Custom Skeleton v3 is documented for the API. The uncertainty concerns parity with the richer pose-authoring controls documented for MCP, not whether any custom V3 API workflow exists.
+
 Yes, this is worth one bounded comparison before more work on our mocap conversion. The current documentation describes a managed custom Skeleton v3 workflow that this branch has not tested. It may improve pose authoring and agreement across directions, but has not demonstrated better rendered grip, occlusion or foot contact on our sprites.
 
 ## Three different workflows
@@ -54,3 +56,19 @@ No PixelLab MCP tools are connected in this session, so the free instruction cal
 The previous total remains 992 of the approved 1,000 generations. Only eight remain. The MCP guide describes 2-4 generations per direction; verify a two-direction ceiling before submission and allow no unexpected setup/import charges. No paid comparison was performed in this check.
 
 Tracking: the existing motion-quality card remains the matching scope. Its reference update could not be synchronized because the saved GitHub credential lacks project-read permission. No login, scope expansion or uncertain board mutation was attempted. File documentation proceeded under the user's existing research authorization.
+
+## Continued implementation and live preflight
+
+The user's continuation authorizes the bounded comparison within the original 1,000-generation allowance. Preparation now includes a development-only, read-only MCP inspection panel in Motion Lab. It can initialize a direct browser MCP session, inspect the relevant tool schemas, search existing benchmark characters and read one character. It cannot call an animation or creation tool. No new dependency, account connection or backend was added. Plugin discovery returned no PixelLab connector, so this is an inspection adapter using the existing agent connection, not a claim that a host MCP integration was installed.
+
+The client accepts JSON and SSE replies with matching request IDs, keeps the bearer credential and MCP session header in memory, redacts a reflected credential, exports only inspected results and makes no automatic retry. Repeated inspection is a user action; generation is not exposed through this panel. Actual browser CORS and deployed MCP schemas remain unverified until authentication works.
+
+The live localhost agent session reached PixelLab's free `GET /balance` check and received HTTP 401 with an invalid-token response. No live MCP tool call, character-specific instruction request or animation submission followed. This is a credential blocker, not evidence that custom V3 is unavailable. The original research total remains **992 generations**, with **zero new paid requests** in this continuation.
+
+This also exposed a readiness defect: the lab published its credential to the queue before validating it, allowing a rejected connection to appear usable. It now publishes the credential only after a successful balance response. The rejected live session was verified to leave the MCP inspection button disabled.
+
+The credential-free local preflight record is `spikes/api/out/motion-custom-v3-2026-11-01/preflight.json` in the ignored evidence directory. The implementation and research remain on `codex/motion-lab`; no production integration or new animation-quality pass is claimed.
+
+Verification: strict checking passes with zero errors/warnings; all 110 unit files pass, with 1,033 passed tests and one existing skip; all eight tests in `selftests.spec.ts` pass. The new unit and browser checks use synthetic credentials and mocked MCP replies to verify request matching, read-only tool calls, session privacy and credential-free exports. They do not claim live MCP or animation quality validation. Production build and dist guard pass. The full production end-to-end suite was not run for these isolated development-lab changes.
+
+The next required input is a valid `PIXELLAB_API_KEY_AGENT_DEV` in this worktree's ignored `.env`, updated locally by the owner. No credential was printed, copied into code, saved in evidence or requested in chat. After the owner confirms readiness, retry the free balance/schema checks, retrieve the custom authoring instructions, and only then determine whether the two-direction paid comparison fits the remaining eight generations. Board synchronization is still pending because project access remains unavailable; no board mutation was made.

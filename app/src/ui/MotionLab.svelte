@@ -9,6 +9,7 @@
   import { connectLab, exportEvidence, generateCandidate, labQueue, readLedger,phaseReserved, LAB_CAP,LAB_PHASE } from './motion-lab/run.ts';
   import { drawOverlay, drawPuppet, drawRig3 } from './motion-lab/preview.ts';
   import Candidate from './motion-lab/Candidate.svelte';
+  import McpProbe from './motion-lab/McpProbe.svelte';
   import { EQUIPMENT,dressEquipment,poseEquipment,repairEquipmentProbe,type EquipmentName } from './motion-lab/equipment.ts';
   import type { DirectionName } from '../lib/rig/rig.ts';
   import { CALIBRATION_KEY,calibrationOf,calibratedDocument,readCalibrations,type CalibrationProfile } from './motion-lab/calibration.ts';
@@ -138,6 +139,7 @@
       <button class="bu-btn" disabled={!connected||busy||!equipmentBody||!equipmentDress||campaign.reserved+25>LAB_CAP} onclick={gridProbe}>Probe frozen attack frames 7 and 8 (reserve 25 gens)</button>
       <p class="bu-muted">Uses production chroma dressing and posing builders. Dressing reserves 10-25 gens by canvas; posing reserves 2-4 by frame count. Reuse a design only with the identical standing image and view. Raw results require extraction and alignment review before use.</p>
     </section>
+    <McpProbe {connected} {download}/>
     <section aria-label="Generated candidates" class="bu-stack">
       <label class="bu-field">Inspect candidate<select class="bu-input" bind:value={candidateId}><option value="">Most recent candidate</option>{#each $labQueue.jobs as job}<option value={job.id}>{job.label} · {job.state} · {job.gens} gens</option>{/each}</select></label>
       <p>{$labQueue.counts.done} completed · {$labQueue.counts.running} running · {$labQueue.counts.pending} queued · {$labQueue.counts.failed} failed</p>

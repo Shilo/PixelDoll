@@ -60,8 +60,8 @@ export async function connectLab():Promise<Balance|null>{
   if(!import.meta.env.DEV||import.meta.env.MODE!=='agent'||window.top!==window||off)return null;
   const response=await fetch('/__dev/pixellab-key',{cache:'no-store'});
   if(!response.ok)throw new Error(`Agent access is unavailable (${response.status}). Offline editing still works.`);
-  const key=await response.text();labQueue.setKey(key);
-  const balance=await api<Balance>(key,'GET','/balance');labQueue.setBalance(balance,key);return balance;
+  const key=await response.text();
+  const balance=await api<Balance>(key,'GET','/balance');labQueue.setKey(key);labQueue.setBalance(balance,key);return balance;
 }
 export async function generateCandidate(document:MotionDocument,seed:number):Promise<string>{
   if(document.fixture.directions.find(d=>d.id===document.direction)?.mirrorOf)throw new Error('This view derives from mirrored frozen source frames. Generate and review its source direction instead.');
