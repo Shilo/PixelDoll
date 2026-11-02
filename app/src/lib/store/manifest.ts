@@ -104,7 +104,7 @@ export interface QaSummary {
   facingReviewFrames?: number; // observable upper-torso matches to the opposite standing view
   rawKeyReviewFrames?: number; // held frames with exact new key-colored pixels before registration; informational, never changes status
   grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
-  strayPx?: number; // removed by the largest-component filter (posed cells)
+  strayPx?: number; // extraction/cleanup removals, including permission clipping; not a semantic artifact count
   status: 'pass' | 'warn' | 'fail' | 'accepted';
 }
 /** Gates G1–G14 and H4 (architecture §3.3). */

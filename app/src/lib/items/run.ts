@@ -324,7 +324,7 @@ async function img(sha: string) {
   if (!im) { im = binaryAlpha(await decodePng((await db.getBlob(sha))!)); decoded.set(sha, im); }
   return im;
 }
-/** Recover the exact submitted edit permission, never a mask rebuilt from today's design or joints. */
+/** Decode this submitted request's mask bytes or its saved record; do not reconstruct permissions during extraction. */
 async function inpaintStencils(body: unknown, count: number, w: number, h: number, record?: JobRec): Promise<{ cells: Uint8Array[]; hash: string }> {
   type Sized = { image?: { type?: string; base64?: string; $blob?: string }; size?: { width: number; height: number } };
   const params = body as { inpainting_image?: Sized; mask_image?: Sized } | null;
@@ -357,7 +357,8 @@ function extractOnce(d: Draft, sig: string, run: () => CellOut): CellOut {
   if (!m) extracted.set(d, (m = new Map()));
   let c = m.get(sig);
   if (!c) m.set(sig, (c = run()));
-  return { ...c, layer: { ...c.layer, data: new Uint8ClampedArray(c.layer.data) }, mask: new Uint8Array(c.mask) };
+  return { ...c, layer: { ...c.layer, data: new Uint8ClampedArray(c.layer.data) }, mask: new Uint8Array(c.mask),
+    ...(c.stencil ? { stencil: new Uint8Array(c.stencil) } : {}), ...(c.cut ? { cut: new Uint8Array(c.cut) } : {}) };
 }
 export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);

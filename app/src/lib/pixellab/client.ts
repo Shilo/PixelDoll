@@ -35,7 +35,7 @@ export function classify(status: number, body?: unknown): ErrorKind {
   return 'other';
 }
 
-/** No connection at all (fetch never got an answer, not a timeout): the queue pauses instead of trying the next job (B15). */
+/** A network interruption pauses the queue; a timeout or caller abort does not imply the browser is offline. */
 export const isNetwork = (e: unknown) => e instanceof ApiError && e.status === 0 && !!(e.body as { network?: boolean } | undefined)?.network;
 
 /** A documented concurrency/rate-limit rejection can be retried. Other server failures do not prove a paid request was unsent.
@@ -61,6 +61,14 @@ export function errorText(body: unknown): string {
   return (typeof d === 'string' ? d : JSON.stringify(d) ?? '').slice(0, 400);
 }
 
+function transportError(error: unknown, responseStatus?: number): ApiError {
+  const name = (error as Error)?.name, message = (error as Error)?.message ?? String(error);
+  // Unread bytes can hide accepted job IDs, even after rejection-looking headers. Status 0 prevents a paid resend.
+  return new ApiError(0, 'retry', `${responseStatus === undefined ? 'network error' : 'response body error'}: ${message}`, {
+    network: name !== 'TimeoutError' && name !== 'AbortError', ...(responseStatus === undefined ? {} : { responseStatus }),
+  });
+}
+
 export async function api<T>(key: string, method: string, path: string, body?: unknown, signal?: AbortSignal, context?: ActivityContext): Promise<T> {
   if (!key) throw new ApiError(401, 'auth', 'no API key set');
   const activityId = beginActivityCall(method, API_BASE + path, body, context);
@@ -77,13 +85,11 @@ export async function api<T>(key: string, method: string, path: string, body?: u
     });
   } catch (e) {
     finishActivityCall(activityId, null, false);
-    // B15: `network` = no connection (offline banner, queue pauses); a timeout or abort is not one
-    const name = (e as Error)?.name;
-    throw new ApiError(0, 'retry', `network error: ${(e as Error).message}`, { network: name !== 'TimeoutError' && name !== 'AbortError' });
+    throw transportError(e);
   }
   let text: string;
   try { text = await r.text(); }
-  catch (e) { finishActivityCall(activityId, r.status, false); throw e; }
+  catch (e) { finishActivityCall(activityId, r.status, false); throw transportError(e, r.status); }
   let json: unknown;
   try { json = text ? JSON.parse(text) : null; } catch { json = text.slice(0, 500); }
   finishActivityCall(activityId, r.status, r.ok, json);

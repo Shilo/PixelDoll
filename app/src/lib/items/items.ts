@@ -314,7 +314,7 @@ export interface CellOut {
   pinholes: number; // enclosed empty regions <= 2 px
   shifted: boolean; // still misregistered after re-registration (S4: shifted frames must be 0)
   offset: [number, number]; // posed cells: 1-px re-registration applied to the PixelLab output (skeleton-v3 is not exact)
-  stray: number; // px removed by the largest-component filter
+  stray: number; // pixels removed by extraction, heuristic cleanup and permission clipping, not a semantic artifact count
   chroma?: Key; // the key the cell was extracted with (absent for the diff route)
   clipY?: number; // posed clip: item px at rows >= clipY are joined to the item above the band; postProcess keeps them only where the dressed keyframe has them
   posed: boolean;
@@ -659,6 +659,7 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
   const { base, route, band } = o, { w, h } = base;
   const rawKeyOutside = o.held && route !== 'none' ? newKeyPixels(base, o.out, route) : undefined;
   // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
+  // A submitted stencil fixes raw coordinates: shifting could cross protected pixels. A shifted redraw still fails G10 below.
   const reg = o.posed && o.stencil===undefined ? bestShift(base, o.out) : ([0, 0] as [number, number]);
   const out = reg[0] || reg[1] ? translate(o.out, -reg[0], -reg[1]) : o.out;
   let r: { layer: Img; mask: Uint8Array; stray?: number } = route === 'none' ? diffLayer(base, out, band, o.useCc) : chromaLayer(out, route, base);

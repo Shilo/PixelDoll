@@ -1,7 +1,51 @@
 import { accountBalance } from './account-fixture.ts'
-import { expect, test } from 'vitest'
-import { ApiError, classify, errorText } from '../../src/lib/pixellab/client.ts'
+import { afterEach, expect, test, vi } from 'vitest'
+import { api, ApiError, classify, errorText } from '../../src/lib/pixellab/client.ts'
 import { Queue, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
+
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
+
+function incompleteResponse(status: number) {
+  const response = new Response('{}', { status })
+  vi.spyOn(response, 'text').mockRejectedValue(new TypeError('synthetic response body connection terminated'))
+  const transport = vi.fn().mockResolvedValueOnce(response).mockResolvedValue(new Response('{}', { status: 200 }))
+  vi.stubGlobal('fetch', transport)
+  const records = new Map<string, JobRec>()
+  let now = 1000
+  const deps: Partial<Deps> = {
+    locks: null, online: () => true, now: () => now,
+    put: async (id, r) => { records.set(id, structuredClone(r)) }, get: async id => records.get(id),
+    all: async () => [...records.values()].map(r => structuredClone(r)),
+    api: async <T>(key: string, method: string, path: string, body?: unknown, signal?: AbortSignal) =>
+      path === '/balance' ? accountBalance as T : api<T>(key, method, path, body, signal),
+  }
+  return { make: () => { const q = new Queue(deps); q.setKey('synthetic-key'); return q }, advance: () => { now += 60000 }, transport }
+}
+
+test.each([200, 429, 500])('an unread paid HTTP%i response stays unknown without a second submission after resume or reload', async status => {
+  const f = incompleteResponse(status), q = f.make()
+  const request = { method: 'POST' as const, path: '/inpaint-v3', body: { seed: 881 } }, meta = { tag: 'm3', playerRequested: true as const }
+  const record = await q.enqueue(request, meta)
+  await q.tick()
+  expect(record.state).toBe('lost')
+  expect(record.requestStarted).toBe(true)
+  expect(record.error).toMatch(/may have run and been charged.*not resent/)
+  q.resume(); f.advance(); await q.tick()
+  const reloaded = f.make(); await reloaded.load()
+  expect((await reloaded.enqueue(request, meta)).id).toBe(record.id)
+  f.advance(); await reloaded.tick()
+  expect(f.transport).toHaveBeenCalledTimes(1)
+})
+
+test('an unread free GET response retries without creating any paid request', async () => {
+  const f = incompleteResponse(200), q = f.make()
+  const record = await q.enqueue({ method: 'GET', path: '/characters/synthetic' })
+  await q.tick(); expect(record.state).toBe('queued')
+  f.advance(); await q.tick()
+  expect(record.state).toBe('done')
+  expect(f.transport).toHaveBeenCalledTimes(2)
+  expect(f.transport.mock.calls.every(([, options]) => options.method === 'GET')).toBe(true)
+})
 
 function fixture(status: number, body?: unknown, endpoint = '/characters/animations', method: 'POST' | 'GET' = 'POST') {
   const records = new Map<string, JobRec>()

@@ -160,6 +160,50 @@ test('restored inpaint uses its saved mask, retains allowed foreground, and cann
   expect(ledger.enqueues).toBe(0); // reload evaluates retained artwork without sending anything
 });
 
+test('mutating returned extraction arrays cannot change the next evaluation of the same draft', async () => {
+  const f = await retainedMaskedGrid(), first = await evaluateItem(f.draft, f.ctx);
+  const expected = first.cells.map(cell => ({ layer: cell.layer.data.slice(), mask: cell.mask.slice(), stencil: cell.stencil!.slice() }));
+  for (const cell of first.cells) { cell.layer.data.fill(0); cell.mask.fill(0); cell.stencil!.fill(1); }
+  const next = await evaluateItem(f.draft, f.ctx);
+  expect(next.g1.size).toBe(0); expect(next.cells).toHaveLength(2);
+  for (const [i, cell] of next.cells.entries()) {
+    expect(cell.layer.data).toEqual(expected[i].layer); expect(cell.mask).toEqual(expected[i].mask); expect(cell.stencil).toEqual(expected[i].stencil);
+    expect(cell.stencil).not.toBe(first.cells[i].stencil);
+  }
+  expect(ledger.enqueues).toBe(0);
+});
+
+test('a changed valid saved mask invalidates cached extraction for the same draft and output record', async () => {
+  const f = await retainedMaskedGrid(), first = await evaluateItem(f.draft, f.ctx);
+  expect(first.cells[0].area).toBeGreaterThan(0); expect(first.cells[1].area).toBeGreaterThan(0);
+  const mask = await decodePngBytes(new Uint8Array(await ledger.blobs.get(f.maskHash)!.arrayBuffer()));
+  for (let y = 0; y < 64; y++) for (let x = 0; x < 64; x++) mask.data.set([0, 0, 0, 255], (y * mask.w + x) * 4);
+  const hash = await f.put(mask), params = f.record.params as { mask_image: { image: { $blob: string } } };
+  params.mask_image.image.$blob = hash; f.record.inputs = [hash]; f.publish();
+  const next = await evaluateItem(f.draft, f.ctx);
+  expect(next.g1.size).toBe(0); expect(next.cells).toHaveLength(2);
+  expect(next.cells[0].key).toBe(first.cells[0].key); expect(next.cells[0].area).toBe(0);
+  expect(next.cells[0].stencil!.every(v => v === 0)).toBe(true); expect(next.cells[0].layer.data.every(v => v === 0)).toBe(true);
+  expect(next.cells[1].stencil).toEqual(f.bits); expect(next.cells[1].mask).toEqual(first.cells[1].mask);
+  expect(next.cells[1].layer.data).toEqual(first.cells[1].layer.data); expect(ledger.enqueues).toBe(0);
+});
+
+test('returned body cuts cannot mutate cached keyframe or posed cuts on reevaluation', async () => {
+  const f = await singleStandingFixture(), rig = f.ctx.rec.manifest.rig;
+  f.draft.spec.slot = 'head';
+  const output = toChroma(f.ctx.project.images.get(rig.rest!.south!.image)!, 'green');
+  paint(output, 14, 3, 4, 4, [130, 130, 140]);
+  for (let y = 4; y < 7; y++) output.data.fill(0, (y * 32 + 13) * 4, (y * 32 + 14) * 4);
+  ledger.output = async () => [output, output];
+  const first = (await runItem(f.draft, f.ctx))!;
+  expect(first.g1.size).toBe(0); expect(first.cells).toHaveLength(1);
+  const cut = first.cells[0].cut!, expected = cut.slice();
+  expect(cut.some(Boolean)).toBe(true); cut.fill(1);
+  const next = await evaluateItem(f.draft, f.ctx);
+  expect(next.cells[0].cut).toEqual(expected); expect(next.cells[0].cut).not.toBe(cut);
+  expect(ledger.enqueues).toBe(1);
+});
+
 test.each(['identity', 'input', 'missing', 'hash', 'declared'] as const)('unavailable or changed saved inpaint mask %s is a visible structural failure', async mode => {
   const f = await retainedMaskedGrid();
   const params = f.record.params as { mask_image: { image: { $blob?: string }; size: { width: number } } };

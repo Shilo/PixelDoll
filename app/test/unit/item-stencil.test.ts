@@ -1,7 +1,7 @@
 import {expect,test} from 'vitest';
 import {makeImg,type Img} from '../../src/lib/image/png.ts';
 import {toChroma} from '../../src/lib/image/chroma.ts';
-import {extractCell,postProcess,slotOf} from '../../src/lib/items/items.ts';
+import {extractCell,itemQa,postProcess,slotOf} from '../../src/lib/items/items.ts';
 import {LABELS} from '../../src/lib/rig/poses.ts';
 import type {Rig} from '../../src/lib/rig/rig.ts';
 
@@ -34,12 +34,15 @@ test('the optional stencil removes protected low-green and finger pixels while r
   expect(c.out).toBe(f.out);expect(c.rawKeyOutside).toEqual(legacy.rawKeyOutside);expect(c.keyKept).toBe(legacy.keyKept);expect(c.keyOutside).toBe(legacy.keyOutside);
 });
 
-test('a stencil keeps the raw output coordinates fixed even when legacy extraction applies a one-pixel registration',()=>{
+test('a one-pixel body redraw registers without a stencil but remains a hard G10 failure with exact stencil coordinates',()=>{
   const f=fixture(),shifted=makeImg(64,64);
   for(let y=0;y<64;y++)for(let x=0;x<63;x++)shifted.data.set(f.out.data.subarray((y*64+x)*4,(y*64+x+1)*4),(y*64+x+1)*4);
   const legacy=extractCell({...f.options,out:shifted}),c=extractCell({...f.options,out:shifted,stencil:new Uint8Array(4096).fill(1)});
   expect(legacy.offset).toEqual([-1,-0]);expect(c.offset.every(v=>v===0)).toBe(true);expect(c.out).toBe(shifted);expect(c.out.data).toEqual(shifted.data);expect(c.shifted).toBe(true);
   expect(c.rawKeyOutside).toEqual(legacy.rawKeyOutside);
+  const legacyQa=itemQa(rig,slotOf('main_hand'),'green',[legacy],0),boundedQa=itemQa(rig,slotOf('main_hand'),'green',[c],0);
+  expect(legacy.shifted).toBe(false);expect([...legacyQa.failCalls.values()].flat().some(reason=>reason.startsWith('G10 '))).toBe(false);
+  expect(boundedQa.failCalls.get(0)).toContain('G10 slash/south/0: misregistered (fits the base better 1 px off)');expect(boundedQa.qa.status).toBe('fail');
 });
 
 test.each(['short','nonbinary','wrong-type'] as const)('invalid %s stencils fail clearly without modifying image inputs',mode=>{

@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest'
-import { api } from '../../src/lib/pixellab/client.ts'
+import { api, ApiError, isNetwork } from '../../src/lib/pixellab/client.ts'
 
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals() })
 
@@ -18,4 +18,16 @@ for (const [method, path, timeout] of [
   expect(timer).toHaveBeenCalledExactlyOnceWith(timeout)
   expect(fetchMock).toHaveBeenCalledTimes(1)
   expect(fetchMock.mock.calls[0][1].signal).toBe(signal)
+})
+
+test.each(['TypeError', 'AbortError', 'TimeoutError'])('a %s while reading response bytes preserves transport uncertainty, not the header rejection status', async name => {
+  const response = new Response('{}', { status: 429 })
+  vi.spyOn(response, 'text').mockRejectedValue(Object.assign(new Error('synthetic incomplete response'), { name }))
+  const fetchMock = vi.fn().mockResolvedValue(response)
+  vi.stubGlobal('fetch', fetchMock)
+  const error = await api('synthetic-test-key', 'POST', '/inpaint-v3').catch(error => error)
+  expect(error).toBeInstanceOf(ApiError)
+  expect(error).toMatchObject({ status: 0, kind: 'retry', body: { responseStatus: 429 } })
+  expect(isNetwork(error)).toBe(name === 'TypeError')
+  expect(fetchMock).toHaveBeenCalledTimes(1)
 })
