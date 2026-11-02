@@ -12,10 +12,11 @@ import { labQueue, LAB_TAG } from './run.ts';
 
 export const STARTER_KEY = 'pixeldoll.starterPack.2026-11-02';
 const SOURCE_PREFIX = 'starter-source-';
-// Bounded allocation within the owner's remaining 485 units, not a new allowance or permission for old campaigns.
+// Local motion cap. The owner's separate allowance ledgers are reconciled manually, not enforced by this counter.
 export const STARTER_CAP = 150;
 export interface StarterPilotReview { binding: string; animationGroupId: string; frames: { direction: DirectionName; index: number; hash: string }[]; notes: string }
-export interface StarterCall { id: string; plan: StarterPlan; directions: DirectionName[]; units: number; recordId?: string; pilotReview?: StarterPilotReview; error?: string }
+export interface StarterCall { id: string; plan: StarterPlan; directions: DirectionName[]; units: number; recordId?: string; pilotReview?: StarterPilotReview; error?: string; resolvedNotSentAt?: string }
+export interface StarterSelection { projectId: string; binding: string }
 export interface StarterSession { version: 1; projectId: string; sourceSnapshotId?: string; plans: Partial<Record<StarterPresetId, StarterPlan>>; calls: StarterCall[] }
 export const emptyStarter = (): StarterSession => ({ version: 1, projectId: '', plans: {}, calls: [] });
 export function readStarter(): StarterSession {
@@ -94,7 +95,7 @@ export async function prepareStarter(projectId: string): Promise<StarterSession>
     const same = (['idle','walk','slash'] as const).every(id=>plans[id]!.binding===state.plans[id]?.binding);
     if (!same && state.calls.length) {
       const jobs = await starterJobs(state);
-      if (state.calls.some(c=>!c.recordId||jobs.get(c.recordId)?.state!=='done')) throw new Error('A reserved or uncertain starter attempt remains. Preserve and resolve its evidence before preparing different artwork; preparation cannot create a paid retry.');
+      if (state.calls.some(c=>!c.resolvedNotSentAt&&(!c.recordId||jobs.get(c.recordId)?.state!=='done'))) throw new Error('A reserved or uncertain starter attempt remains. Preserve and resolve its evidence before preparing different artwork; preparation cannot create a paid retry.');
     }
     state.projectId = projectId;
     state.plans = plans;
@@ -105,7 +106,7 @@ export async function prepareStarter(projectId: string): Promise<StarterSession>
 }
 export async function starterJobs(state: StarterSession): Promise<Map<string, JobRec>> {
   const jobs = new Map<string, JobRec>();
-  for (const row of state.calls) if (row.recordId) {
+  for (const row of state.calls) if (row.recordId && !row.resolvedNotSentAt) {
     const job = await db.get<JobRec>('jobs', row.recordId);
     if (!job) throw new Error('A reserved starter job is missing. It cannot be safely resent.');
     jobs.set(row.recordId, job);
@@ -114,6 +115,7 @@ export async function starterJobs(state: StarterSession): Promise<Map<string, Jo
 }
 export function starterHeld(state: StarterSession, jobs: Map<string, JobRec>): number {
   return state.calls.reduce((sum, call) => {
+    if (call.resolvedNotSentAt) return sum;
     const job=call.recordId?jobs.get(call.recordId):undefined, billed=job?.gens??0;
     if(!Number.isFinite(call.units)||call.units<=0||!Number.isFinite(billed)||billed<0||(job&&(!Number.isFinite(job.usd)||job.usd<0)))throw new Error('Starter billing is invalid or unverified. No further paid work can be safely priced.');
     const total=sum+Math.max(call.units,billed);if(!Number.isFinite(total))throw new Error('Starter billing exceeds the supported numeric range.');return total;
@@ -121,7 +123,7 @@ export function starterHeld(state: StarterSession, jobs: Map<string, JobRec>): n
 }
 function history(state: StarterSession, plan: StarterPlan, jobs: Map<string, JobRec>): StarterReceipt[] {
   const receipts: StarterReceipt[] = [];
-  for (const call of state.calls.filter(c => c.plan.binding === plan.binding)) {
+  for (const call of state.calls.filter(c => c.plan.binding === plan.binding && !c.resolvedNotSentAt)) {
     const job = call.recordId && jobs.get(call.recordId);
     if (!job || job.state !== 'done') throw new Error('Review the reserved or unfinished starter call. It will not be automatically resent or replaced.');
     receipts.push(validateStarterReceipt(plan, call.directions, job.response, receipts));
@@ -145,11 +147,12 @@ export async function verifyStarterSource(plan: StarterPlan, key: string): Promi
   }
 }
 /** One explicit priced click. Pilot first; further directions require a reviewed completed receipt of the same group. */
-export async function submitStarter(preset: StarterPresetId, directions: DirectionName[], pilotReview?: StarterPilotReview): Promise<StarterSession> {
+export async function submitStarter(preset: StarterPresetId, directions: DirectionName[], expected: StarterSelection, pilotReview?: StarterPilotReview): Promise<StarterSession> {
   return locked(async () => {
     if (!labQueue.key) throw new Error('Connect the local agent server before purchasing starter motion.');
     const state = readStarter(), plan = state.plans[preset];
     if (!plan) throw new Error('Prepare an exact native source first.');
+    if (!expected || state.projectId !== expected.projectId || plan.binding !== expected.binding) throw new Error('The prepared source changed in another tab. Refresh and review the displayed source before purchasing motion.');
     const { rec, project } = await loadProject(state.projectId);
     if (!rec.character || createStarterPlan(rec.character.id, rec.manifest.rig, preset, plan.directions, plan.seed).binding !== plan.binding) throw new Error('The source changed since preparation. No motion was submitted.');
     for(const reference of plan.source.rest){const image=project.images.get(reference.image);if(!image||await cellHash(image)!==reference.image)throw new Error('Stored standing pixels differ from their source binding. No motion was submitted.');}
@@ -168,7 +171,8 @@ export async function submitStarter(preset: StarterPresetId, directions: Directi
     state.calls.push(call);
     save(state); // A missing response or even a missing local job ID retains the hold and blocks replay.
     try {
-      const job = await labQueue.enqueue(request, { label: `Starter ${preset} · ${directions.join(', ')}`, tag: LAB_TAG, playerRequested: true, resumeSafe: true });
+      const resolved = state.calls.some(c=>c.plan.binding===plan.binding&&c.resolvedNotSentAt);
+      const job = await labQueue.enqueue(request, { label: `Starter ${preset} · ${directions.join(', ')}`, tag: LAB_TAG, playerRequested: true, resumeSafe: !resolved });
       call.recordId = job.id;
       save(state);
     } catch (error) {
@@ -179,12 +183,27 @@ export async function submitStarter(preset: StarterPresetId, directions: Directi
     return state;
   });
 }
+/** Terminal durable evidence only. Absence of a local job is not proof that a request was never sent. */
+export function starterCallWasNotSent(call: StarterCall, job?: JobRec): boolean {
+  return !call.resolvedNotSentAt && !!job && job.id===call.recordId && job.tag===LAB_TAG && job.endpoint==='/characters/animations' && ['failed','canceled'].includes(job.state) && job.requestStarted===false && job.submittedAt===undefined && job.jobs.length===0 && job.gens===0 && job.usd===0 && job.response===undefined;
+}
+/** Explicit local recovery. Retain the call and job; the next separately priced click is the only way to submit again. */
+export async function resolveStarterNotSent(callId: string, expected: StarterSelection): Promise<StarterSession> {
+  return locked(async()=>{
+    const state=readStarter(),index=state.calls.findIndex(c=>c.id===callId),call=state.calls[index];
+    if(!call||state.projectId!==expected.projectId||call.plan.binding!==expected.binding)throw new Error('The selected starter attempt changed. Refresh before resolving it.');
+    const jobs=await starterJobs(state),job=call.recordId?jobs.get(call.recordId):undefined;
+    const receipts=history({...state,calls:state.calls.slice(0,index)},call.plan,jobs),request=starterRequest(call.plan,call.directions,receipts);
+    if(!starterCallWasNotSent(call,job)||stableStringify(job!.params)!==stableStringify(request.body))throw new Error('This attempt is not proven unsent. Keep its hold and inspect the existing receipt; no retry was authorized.');
+    call.resolvedNotSentAt=new Date().toISOString();save(state);return state;
+  });
+}
 /** Exact receipt/job/index mapping. No PNG is regenerated, aligned or recolored here. */
 export async function starterFrames(state: StarterSession, preset: StarterPresetId, jobs: Map<string, JobRec>, complete = true) {
   const plan = state.plans[preset];
   if (!plan) throw new Error('The starter plan is missing.');
   const receipts = history(state, plan, jobs), entries: StarterNativeFrame[] = [];
-  for (const call of state.calls.filter(c => c.plan.binding === plan.binding)) {
+  for (const call of state.calls.filter(c => c.plan.binding === plan.binding && !c.resolvedNotSentAt)) {
     const record = jobs.get(call.recordId!)!, receipt = receipts.find(r => r.jobs.some(j => j.jobId === record.jobs[0]?.id));
     if (!receipt) throw new Error('The saved starter receipt does not match its jobs.');
     for (const target of receipt.jobs) {

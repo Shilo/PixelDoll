@@ -21,9 +21,23 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   the shared balance or resend them. Fitting records both generations and USD, including rejected attempts and explicit
   retries. See the [shared-equipment ledger](testing/shared-equipment-2026-10-22.md).
 - **API drift.** Template list, prices and Pro/Pro Flash behavior change; the OpenAPI snapshot in `research/pixellab/`
-  is from 2026-10-20.
+  is from 2026-10-20. The [November 2 contract capture](research/pixellab/2026-11-02-managed-custom-v3-contract.json)
+  supersedes its managed custom `/characters/animations` description; see the folder's [contract note](research/pixellab/README.md).
 
 ## Generation and quality
+
+- **Thin held-item fragments can be lost inside an allowed mask.** Conservative outline and held-component cleanup can
+  remove valid rear handle or pommel pixels. Mask containment limits where pixels may survive; it is not a semantic
+  weapon matte. Proposed restoration Rules A/B remain deferred because they restore known body-rim false positives.
+  See the [joint reassessment](reviews/2026-11-02-joint-review-reassessment.md).
+- **Experimental art still needs visual acceptance.** The east axe retains its complete head and geometric body contact,
+  but raised fists merge with the skull, some hip grips are ambiguous, and body/lighting changes can pop. The starter
+  attack may read as a punch and crouch rather than a chop; walk faces vary between frames. Rejected breathing idle also
+  shows reported belly inflation and mouth artifacts. These still-image observations do not justify repainting frozen
+  bodies or promoting an equipped preset. See the [complete-session review and disposition](reviews/2026-11-02-complete-session-counter-review.md).
+- **Research spending has separate ledgers.** The starter enforces its local 150-unit motion counter. Remaining user
+  allowances and older campaigns are reconciled manually; that counter is not a cross-campaign account cap. Estimates
+  do not limit provider billing. A missing job record is not proof of non-submission and cannot release an uncertain hold.
 
 - **The eight-direction starter pack is experimental and body-only.** One humanoid style and camera were tested.
   Standing idle reuses the frozen reference; generated breathing added unwanted effects and was rejected. Walk and the

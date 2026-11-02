@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { errorText, isPolicy } from './client.ts';
+import { errorText, isPolicy, paidRequestRejected } from './client.ts';
 
 export interface ActivityContext {
   label?: string; queueId?: string; queueTag?: string; activityScope?: string; background?: boolean;
@@ -121,13 +121,13 @@ function reconcile(callId: string) {
   });
 }
 /** Response metadata only: job ownership and reported usage; never retain arbitrary response contents. */
-export function finishActivityCall(id: string, status: number | null, ok: boolean, response?: unknown) {
+export function finishActivityCall(id: string, status: number | null, ok: boolean, response?: unknown, responseRead = true) {
   const call = calls.find((item) => item.id === id);
   if (!call) return;
   const data = response && typeof response === 'object' ? response as Record<string, unknown> : {};
   const ids = Array.isArray(data.background_job_ids) ? data.background_job_ids.filter((value): value is string => typeof value === 'string') : typeof data.background_job_id === 'string' ? [data.background_job_id] : [];
   const usage = usageOf(data.usage);
-  const refused = call.method === 'POST' && !ok && status !== null && [401, 402, 423, 429, 503, 529].includes(status);
+  const refused = call.method === 'POST' && !ok && paidRequestRejected(call.endpoint.split('?')[0], status, response, responseRead);
   update(id, {
     finishedAt: Date.now(), status, state: ok ? 'completed' : 'failed',
     ...(call.method === 'POST' ? { usagePending: ids.length > 0, ...(usage ? { cost: usage, costSource: 'reported' as const } : refused ? { cost: { generations: 0, usd: 0 }, costSource: 'free' as const } : {}) } : {}),

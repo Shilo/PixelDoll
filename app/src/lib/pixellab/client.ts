@@ -42,6 +42,30 @@ export const isNetwork = (e: unknown) => e instanceof ApiError && e.status === 0
  * Known route-specific no-job refusals are checked separately in queue.submit; free GET requests still retry transient errors. */
 export const rejected = (status: number) => status === 429;
 
+const NO_ANIMATION_JOBS = /^Failed to start any animation jobs[.!]?$/i;
+/** An accepted job identifier contradicts a retryable status, including when wrapped in last_response. */
+export const hasJobEvidence = (value: unknown): boolean => {
+  for (let body = value; body && typeof body === 'object'; body = (body as Record<string, unknown>).last_response) {
+    const b = body as Record<string, unknown>;
+    if (b.background_job_id != null && b.background_job_id !== '') return true;
+    if (b.background_job_ids != null && (!Array.isArray(b.background_job_ids) || b.background_job_ids.length)) return true;
+  }
+  return false;
+};
+/** B15 observed a simple root refusal on this route; any additional payload makes the paid outcome uncertain. */
+export const noAnimationJobsStarted = (endpoint: string, error: ApiError): boolean => {
+  if (endpoint !== '/characters/animations' || error.status !== 500) return false;
+  if (typeof error.body === 'string') return NO_ANIMATION_JOBS.test(error.body.trim());
+  if (!error.body || typeof error.body !== 'object' || Array.isArray(error.body)) return false;
+  const messages = Object.entries(error.body);
+  return messages.length > 0 && messages.every(([key, message]) => (key === 'detail' || key === 'error') && typeof message === 'string' && NO_ANIMATION_JOBS.test(message.trim()));
+};
+
+/** Shared paid-outcome contract: headers or job evidence alone never prove an uncharged refusal. */
+export function paidRequestRejected(endpoint: string, status: number | null, body: unknown, responseRead = true): boolean {
+  return responseRead && !hasJobEvidence(body) && (status === 401 || status === 402 || status === 429 || noAnimationJobsStarted(endpoint, new ApiError(status ?? 0, 'retry', '', body)));
+}
+
 /** Retry-After is a lower bound; accept both seconds and an HTTP date when CORS exposes it. */
 export function retryAfter(value: string | null, now = Date.now()): number | undefined {
   if (!value?.trim()) return undefined;
@@ -89,7 +113,7 @@ export async function api<T>(key: string, method: string, path: string, body?: u
   }
   let text: string;
   try { text = await r.text(); }
-  catch (e) { finishActivityCall(activityId, r.status, false); throw transportError(e, r.status); }
+  catch (e) { finishActivityCall(activityId, r.status, false, undefined, false); throw transportError(e, r.status); }
   let json: unknown;
   try { json = text ? JSON.parse(text) : null; } catch { json = text.slice(0, 500); }
   finishActivityCall(activityId, r.status, r.ok, json);

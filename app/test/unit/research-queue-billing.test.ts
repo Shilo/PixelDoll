@@ -2,7 +2,7 @@ import {afterEach,expect,test,vi} from 'vitest';
 import {readFileSync} from 'node:fs';
 import type {JobRec,SubJob} from '../../src/lib/pixellab/queue.ts';
 const snapshot=vi.hoisted(()=>({jobs:[] as JobRec[],enqueue:vi.fn()}));
-vi.mock('../../src/lib/pixellab/queue.ts',async original=>{const {live}=await original<typeof import('../../src/lib/pixellab/queue.ts')>();return{live,Queue:class{key='synthetic-test-key';subscribe(read:(value:typeof snapshot)=>void){read(snapshot);return()=>{};}enqueue(...args:unknown[]){return snapshot.enqueue(...args);}},requestIdentity:vi.fn(async()=>({requestHash:'synthetic'}))};});
+vi.mock('../../src/lib/pixellab/queue.ts',async original=>{const {live,MOTION_LAB_TAG}=await original<typeof import('../../src/lib/pixellab/queue.ts')>();return{live,MOTION_LAB_TAG,Queue:class{key='synthetic-test-key';subscribe(read:(value:typeof snapshot)=>void){read(snapshot);return()=>{};}enqueue(...args:unknown[]){return snapshot.enqueue(...args);}},requestIdentity:vi.fn(async()=>({requestHash:'synthetic'}))};});
 import {reconcileResearchJobs,existingLabRequest,enqueueLab,readLedger} from '../../src/ui/motion-lab/run.ts';
 import {readResearchBudget,reserveResearchCall,recordResearchOutcome,researchBudgetUsage} from '../../src/ui/motion-lab/research-budget.ts';
 import {runCustomTest} from '../../src/ui/motion-lab/custom-test.ts';

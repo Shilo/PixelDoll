@@ -1,4 +1,4 @@
-import { Queue, requestIdentity, live, type JobRec } from '../../lib/pixellab/queue.ts';
+import { Queue, requestIdentity, live, MOTION_LAB_TAG, type JobRec } from '../../lib/pixellab/queue.ts';
 import { api } from '../../lib/pixellab/client.ts';
 import { rawClip, poseCallGens } from '../../lib/rig/clips.ts';
 import { encodePngBytes } from '../../lib/image/pngraw.ts';
@@ -13,9 +13,9 @@ import type { MotionPoint } from '../../lib/rig/motion.ts';
 import {get} from 'svelte/store';
 import {RESEARCH_PHASE,RESEARCH_PHASE_CAP,readResearchBudget,reserveResearchCall,recordResearchOutcome,type ResearchStage} from './research-budget.ts';
 import {summarizeResearchBilling} from './research-billing.ts';
-export const LAB_TAG='motion-lab-2026-10-28',LAB_PHASE=RESEARCH_PHASE,LAB_CAP=RESEARCH_PHASE_CAP;
+export const LAB_TAG=MOTION_LAB_TAG,LAB_PHASE=RESEARCH_PHASE,LAB_CAP=RESEARCH_PHASE_CAP;
 // Isolated records/channel prevent this lab from resuming unrelated Studio work on the same origin.
-export const labQueue=new Queue({all:async()=>(await db.all<JobRec>('jobs')).filter(r=>r.tag===LAB_TAG),channel:LAB_TAG});
+export const labQueue=new Queue({recordTag:LAB_TAG,channel:LAB_TAG,lockName:LAB_TAG});
 if(import.meta.hot)import.meta.hot.dispose(()=>labQueue.disconnect());
 export type DocumentRecord=Omit<MotionDocument,'fixture'|'clip'>&{fixture:Pick<MotionDocument['fixture'],'id'|'name'|'cell'>&Partial<Pick<MotionDocument['fixture'],'pivot'|'camera'|'directions'|'depthReference'|'depthSource'>>;clip:Pick<MotionDocument['clip'],'id'|'name'|'source'|'duration'|'loop'|'nominalSpeed'|'events'|'action'>};
 export interface EquipmentContext {kind:'equipment-dress'|'equipment-pose'|'equipment-grid';name:string;slot:string;prompt:string;key:'green'|'magenta'|'blue'|'azure';pad:number;referenceSha:string;bodyId:string;bodyIds:string[];references:Partial<Record<MotionDocument['direction'],{sha:string;index:number}>>;dressId?:string;rotated?:boolean;indices?:number[]}

@@ -43,10 +43,18 @@ export function measureNativeContacts(value: NativeContactDraft) {
   const groups = new Map<string, NativeContactMark[]>();
   for (const mark of draft.marks) { const key = stableStringify([mark.track, mark.stance]); groups.set(key, [...groups.get(key) ?? [], mark]); }
   const stances = [...groups.values()].map(marks => {
+    const ordered=[...marks].sort((a,b)=>a.frame-b.frame),sampleTimes=new Map(ordered.map(m=>[m.frame,times[m.frame]]));
+    let ambiguousSeam=false;
+    // A contiguous named stance can cross the loop boundary. Multiple gaps need separate labels, not inferred timing.
+    if(draft.binding.loop&&ordered.length<times.length&&ordered[0]?.frame===0&&ordered.at(-1)?.frame===times.length-1){
+      const cuts=ordered.filter((m,i)=>i>0&&m.frame>ordered[i-1].frame+1);
+      ambiguousSeam=cuts.length!==1;
+      if(!ambiguousSeam)for(const mark of ordered)if(mark.frame<cuts[0].frame)sampleTimes.set(mark.frame,times[mark.frame]+time);
+    }
     const consistent = new Set(marks.map(m => m.landmark)).size === 1, enough = new Set(marks.map(m => m.frame)).size >= 2;
-    const reason = !knownSpeed ? 'Both 2D speed components are unset or incomplete.' : !consistent ? 'Mixed heel/toe landmarks.' : !enough ? 'At least two distinct marked frames are required.' : null;
+    const reason = !knownSpeed ? 'Both 2D speed components are unset or incomplete.' : !consistent ? 'Mixed heel/toe landmarks.' : !enough ? 'At least two distinct marked frames are required.' : ambiguousSeam ? 'Disjoint looping stance. Use separate stance labels for separate support intervals.' : null;
     let span = 0;
-    if (!reason) for (const a of marks) for (const b of marks) span = Math.max(span, Math.hypot(a.x - b.x + draft.speed.x! * (times[a.frame] - times[b.frame]), a.y - b.y + draft.speed.y! * (times[a.frame] - times[b.frame])));
+    if (!reason) for (const a of marks) for (const b of marks) span = Math.max(span, Math.hypot(a.x - b.x + draft.speed.x! * (sampleTimes.get(a.frame)! - sampleTimes.get(b.frame)!), a.y - b.y + draft.speed.y! * (sampleTimes.get(a.frame)! - sampleTimes.get(b.frame)!)));
     return { track: marks[0].track, stance: marks[0].stance, samples: marks.length, landmark: consistent ? marks[0].landmark : null, boundarySpanPx: reason ? null : span, reason };
   });
   const intervalHolds = knownSpeed ? draft.binding.durations.map((ms, frame) => ({ frame, displacementPx: Math.hypot(draft.speed.x!, draft.speed.y!) * ms / 1000 })) : [];

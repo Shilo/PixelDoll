@@ -36,6 +36,7 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Current review handoffs and research
 
+- [Complete-session review validation and fixes](reviews/2026-11-02-complete-session-counter-review.md): reproduced queue ownership, billing uncertainty, paid-probe grip, cross-tab source and unsent recovery defects; loop-contact correction, challenged palm evidence, full offline checks and retained Claude review/evidence.
 - [Complete animation session Claude handoff](handoff/2026-11-02-complete-session-claude-review.md): full research and implementation transfer through deployed main, earlier reciprocal review, failed artwork, eight-direction starter, final safeguards, cost/test accounting and exact review questions. The [evidence manifest](handoff/2026-11-02-complete-session-evidence.json) hashes retained evidence and records all 53 commits in the integrated review window.
 - [Claude redesign and Bronze UI review handoff](../.claude/handoffs/2026-10-23-161739-claude-redesign-and-bronze-ui-review.md): independent visual, interaction, accessibility and shared-theme audit brief.
 - [Pre-Bronze/current comparison provenance](design/2026-10-22-redesign/round-6-prototype/pre-bronze-comparison.md): the correct historical baseline for reviewing the redesign.

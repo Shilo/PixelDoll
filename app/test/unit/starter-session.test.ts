@@ -9,14 +9,18 @@ import type { StoredProject } from '../../src/lib/store/project.ts';
 import type { JobRec } from '../../src/lib/pixellab/queue.ts';
 import type { Req } from '../../src/lib/pixellab/routes.ts';
 import type { StarterPlan, StarterPresetId } from '../../src/lib/rig/starter-presets.ts';
+import { starterRequest } from '../../src/lib/rig/starter-presets.ts';
 
 const mocks = vi.hoisted(() => ({ loadProject: vi.fn(), api: vi.fn(), enqueue: vi.fn(), get: vi.fn(), getBlob: vi.fn(), putCharacter: vi.fn() }));
 vi.mock('../../src/lib/store/project.ts', () => ({ loadProject: mocks.loadProject }));
 vi.mock('../../src/lib/store/db.ts', () => ({ get: mocks.get, getBlob: mocks.getBlob, putCharacter: mocks.putCharacter }));
 vi.mock('../../src/lib/pixellab/client.ts', () => ({ api: mocks.api }));
 vi.mock('../../src/ui/motion-lab/run.ts', () => ({ LAB_TAG: 'unit-starter', labQueue: { key: 'synthetic-unit-fixture', enqueue: mocks.enqueue } }));
-import { describeStarterPilot, loadStarterSource, prepareStarter, readStarter, starterFrames, starterHeld, starterJobs, submitStarter, STARTER_CAP, STARTER_KEY, type StarterSession } from '../../src/ui/motion-lab/starter-pack.ts';
+import { describeStarterPilot, loadStarterSource, prepareStarter, readStarter, starterFrames, starterHeld, starterJobs, submitStarter as submitBoundStarter, resolveStarterNotSent, starterCallWasNotSent, STARTER_CAP, STARTER_KEY, type StarterSession } from '../../src/ui/motion-lab/starter-pack.ts';
 
+function submitStarter(preset: StarterPresetId, directions: DirectionName[], review?: Parameters<typeof submitBoundStarter>[3]) {
+  const displayed=readStarter();return submitBoundStarter(preset,directions,{projectId:displayed.projectId,binding:displayed.plans[preset]!.binding},review);
+}
 const PILOT: DirectionName[] = ['south', 'east'];
 const MORE = DIRECTIONS.filter(d => !PILOT.includes(d));
 let storage: Map<string, string>, records: Map<string, JobRec>, blobs: Map<string, Blob>;
@@ -29,6 +33,13 @@ function job(id: string, overrides: Partial<JobRec> = {}): JobRec {
 }
 function persist(session: StarterSession) { storage.set(STARTER_KEY, JSON.stringify(session)); }
 function bindings(session: StarterSession) { return Object.fromEntries(Object.entries(session.plans).map(([id, p]) => [id, p.binding])); }
+async function unsentPilot(overrides:Partial<JobRec>={}) {
+  const state=await prepareStarter(source.rec.id),plan=state.plans.walk!,request=starterRequest(plan,PILOT);
+  const call={id:'unsent-call',plan,directions:[...PILOT],units:8,recordId:'unsent-job'};
+  state.calls.push(call);persist(state);
+  const record=job('unsent-job',{tag:'unit-starter',state:'failed',requestStarted:false,params:request.body,...overrides});records.set(record.id,record);
+  return {state,call,record,expected:{projectId:state.projectId,binding:plan.binding}};
+}
 const serverCharacter = () => ({ id: 'unit-character', template_id: 'mannequin', view: 'low top-down',
   rotation_urls: Object.fromEntries(DIRECTIONS.map(d => [d, `https://backblaze.pixellab.ai/unit/${d}.png`])) });
 
@@ -75,6 +86,33 @@ beforeEach(async () => {
   }));
 });
 afterEach(() => { vi.unstubAllGlobals(); });
+
+test('explicit resolution releases only a proven unsent hold, preserves evidence, and never submits automatically',async()=>{
+  const {call,record,expected}=await unsentPilot();
+  expect(starterCallWasNotSent(call,record)).toBe(true);
+  const state=await resolveStarterNotSent(call.id,expected);
+  expect(state.calls[0].resolvedNotSentAt).toBeTruthy();expect(records.get(record.id)).toEqual(record);
+  expect(starterHeld(state,await starterJobs(state))).toBe(0);expect(mocks.enqueue).not.toHaveBeenCalled();expect(mocks.api).not.toHaveBeenCalled();
+  await submitBoundStarter('walk',PILOT,expected);
+  expect(mocks.enqueue).toHaveBeenCalledTimes(1);expect(mocks.enqueue.mock.calls[0][1].resumeSafe).toBe(false);
+  expect(readStarter().calls).toHaveLength(2);expect(starterHeld(readStarter(),await starterJobs(readStarter()))).toBe(8);
+});
+
+test.each([
+  {state:'lost' as const},{state:'queued' as const},{requestStarted:true},{requestStarted:undefined},{submittedAt:0},
+  {jobs:[{id:'accepted',status:'submitted',done:false,results:[]}]},{gens:1},{usd:1},{response:{background_job_id:'accepted'}},
+  {params:{character_id:'different-source'}},
+])('unsent resolution refuses uncertain, active, billed or mismatched evidence: %j',async overrides=>{
+  const {call,expected}=await unsentPilot(overrides);
+  await expect(resolveStarterNotSent(call.id,expected)).rejects.toThrow('not proven unsent');
+  expect(readStarter().calls[0].resolvedNotSentAt).toBeUndefined();expect(mocks.enqueue).not.toHaveBeenCalled();
+});
+
+test('a missing job record never becomes proof of non-submission',async()=>{
+  const {call,expected}=await unsentPilot();records.delete(call.recordId);
+  await expect(resolveStarterNotSent(call.id,expected)).rejects.toThrow('reserved starter job is missing');
+  expect(readStarter().calls[0].resolvedNotSentAt).toBeUndefined();expect(mocks.enqueue).not.toHaveBeenCalled();
+});
 
 async function completedPilot(session: StarterSession, preset: StarterPresetId): Promise<StarterPlan> {
   const plan = session.plans[preset]!, localId = `local-${preset}`;
@@ -266,4 +304,29 @@ test('a missing bound pilot review and corrupted local source both block paid wo
   source.project.images.get(hash)!.data[0] = 255;
   await expect(submitStarter('walk', PILOT)).rejects.toThrow('Stored standing pixels differ');
   expect(mocks.enqueue).not.toHaveBeenCalled(); expect(mocks.api).not.toHaveBeenCalled();
+});
+
+test('a stale tab cannot purchase another tab’s prepared source', async () => {
+  const other = structuredClone(source.rec), otherImages = new Map<Sha256, Img>(), otherRest: NonNullable<Rig['rest']> = {}, otherBytes = new Map<DirectionName, Uint8Array>();
+  for (const [i, direction] of DIRECTIONS.entries()) {
+    const image = makeImg(32, 32); image.data.set([10 + i, 200, 30, 255], (12 * 32 + 15) * 4);
+    const hash = await cellHash(image); otherImages.set(hash, image); otherBytes.set(direction, await encodePngBytes(image));
+    otherRest[direction] = { image: hash, keypoints: LABELS.map(label => ({ label, x: .5, y: .5 })) };
+  }
+  other.id = 'rig-other-unit'; other.character = { id: 'other-character', looks: 'Second source' }; other.manifest.rig.rest = otherRest;
+  const otherProject = { rec: other, project: { manifest: other.manifest, images: otherImages } };
+  const base = mocks.loadProject.getMockImplementation()!;
+  mocks.loadProject.mockImplementation(async (id: string) => id === other.id ? otherProject : base(id));
+  mocks.api.mockImplementation(async (_key: string, _method: string, path: string) => path.endsWith('other-character')
+    ? { ...serverCharacter(), id: 'other-character', rotation_urls: Object.fromEntries(DIRECTIONS.map(d => [d, `https://backblaze.pixellab.ai/other/${d}.png`])) } : serverCharacter());
+  vi.stubGlobal('fetch', vi.fn(async (address: string | URL | Request) => {
+    const url = new URL(String(address)), d = url.pathname.split('/').at(-1)!.replace('.png', '') as DirectionName;
+    const bytes = (url.pathname.includes('/other/') ? otherBytes : standing).get(d)!;
+    return new Response(new Blob([bytes as Uint8Array<ArrayBuffer>]), { status: 200 });
+  }));
+  const tab1 = await prepareStarter(source.rec.id);       // tab 1 shows source A; `prepared` = selected === session.projectId
+  await prepareStarter(other.id);                         // tab 2 prepares source B (allowed: no calls yet)
+  await expect(submitBoundStarter('walk', PILOT, {projectId:tab1.projectId,binding:tab1.plans.walk!.binding})).rejects.toThrow('changed in another tab');                     // tab 1 clicks "Generate south + east" with its stale session
+  expect(tab1.projectId).toBe(source.rec.id);
+  expect(mocks.enqueue).not.toHaveBeenCalled(); expect(mocks.api).not.toHaveBeenCalled(); expect(readStarter().calls).toEqual([]);
 });

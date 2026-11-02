@@ -1,6 +1,33 @@
 import { openStudio } from './immersive-helpers.ts';
 import { expect, test } from '@playwright/test';
 
+for(const labFirst of [true,false])test(`Studio and Motion Lab lead only their own queues with real browser locks, Lab first: ${labFirst}`,async({context,page})=>{
+  const network:string[]=[],errors:string[]=[];
+  await context.addInitScript(()=>localStorage.setItem('pixeldoll.agentKey','off'));
+  await context.route('https://api.pixellab.ai/**',route=>{network.push(route.request().url());return route.abort();});
+  await context.route('**/queue-review-empty',route=>route.fulfill({contentType:'text/html',body:'<!doctype html><title>Offline queue ownership</title>'}));
+  const other=await context.newPage();
+  for(const tab of [page,other]){tab.on('pageerror',e=>errors.push(e.message));await tab.goto('/queue-review-empty');}
+  const first=labFirst?page:other,second=labFirst?other:page;
+  const launch=async(tab:typeof page,lab:boolean)=>tab.evaluate(async lab=>{
+    const queuePath='/src/lib/pixellab/queue.ts',{Queue,MOTION_LAB_TAG}=await import(queuePath);
+    const queue=new Queue({...(lab?{recordTag:MOTION_LAB_TAG,lockName:MOTION_LAB_TAG,channel:MOTION_LAB_TAG}:{}),
+      api:async<T>(_key:string,method:string,path:string):Promise<T>=>path==='/balance'?{subscription:{status:'active',plan:'Tier 3',generations:1000,total:1000},credits:{usd:0}} as T:method==='POST'?{usage:{type:'generations',generations:0}} as T:{} as T});
+    queue.setKey('synthetic-offline-key');await queue.connect();
+    const record=await queue.enqueue({method:'POST',path:'/inpaint-v3',body:{seed:lab?1:2}},{tag:lab?MOTION_LAB_TAG:'studio-review',playerRequested:true});await queue.tick();
+    (window as unknown as {reviewQueue:InstanceType<typeof Queue>}).reviewQueue=queue;
+    return {role:queue.role,id:record.id};
+  },lab);
+  const a=await launch(first,labFirst),b=await launch(second,!labFirst);
+  expect(a.role).toBe('leader');expect(b.role).toBe('leader');
+  for(const [tab,lab] of [[first,labFirst],[second,!labFirst]] as const){
+    const owned=await tab.evaluate(async()=>{const queue=(window as unknown as {reviewQueue:{load():Promise<void>;snapshot():{jobs:{id:string;tag?:string;state:string}[]};disconnect():void}}).reviewQueue;await queue.load();const records=queue.snapshot().jobs;queue.disconnect();return records;});
+    expect(owned.some(r=>r.id===(lab?(labFirst?a.id:b.id):(labFirst?b.id:a.id))&&r.state==='done')).toBe(true);
+    expect(owned.some(r=>r.tag===(lab?'studio-review':'motion-lab-2026-10-28'))).toBe(false);
+  }
+  expect(network).toEqual([]);expect(errors).toEqual([]);
+});
+
 test('account capacity, two-tab leadership, busy waiting and recovery work through Studio', async ({ page, context }) => {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(e.message));

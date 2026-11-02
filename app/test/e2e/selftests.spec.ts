@@ -294,6 +294,24 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
   await starter.getByRole('combobox', { name: 'Studio source', exact: true }).selectOption('rig-starter-native-eight');
   await starter.getByRole('button', { name: 'Prepare native source', exact: true }).click();
   await expect(starter.getByRole('status')).toContainText('Preparation is free. Existing paid calls and reservations are retained.');
+  const freePreparation=await page.evaluate(()=>localStorage.getItem('pixeldoll.starterPack.2026-11-02')!);
+  await page.evaluate(async()=>{
+    const dbPath='/src/lib/store/db.ts',starterPath='/src/ui/motion-lab/starter-pack.ts',contractsPath='/src/lib/rig/starter-presets.ts',runPath='/src/ui/motion-lab/run.ts';
+    const db=await import(dbPath),starter=await import(starterPath),{starterRequest}=await import(contractsPath),{LAB_TAG}=await import(runPath);
+    const state=starter.readStarter(),plan=state.plans.walk,request=starterRequest(plan,['south','east']),id='unsent-starter-ui';
+    await db.put('jobs',id,{id,label:'Synthetic unsent starter',tag:LAB_TAG,method:'POST',endpoint:request.path,params:request.body,inputs:[],requestHash:'synthetic-unsent',state:'failed',attempts:0,requestStarted:false,nextAt:0,createdAt:Date.now(),jobs:[],gens:0,usd:0});
+    state.calls.push({id,recordId:id,plan,directions:['south','east'],units:8});localStorage.setItem(starter.STARTER_KEY,JSON.stringify(state));
+  });
+  await starter.getByRole('button',{name:'Refresh saved results',exact:true}).click();
+  await starter.getByRole('button',{name:'Resolve unsent walk attempt · Free',exact:true}).click();
+  await expect(starter.getByRole('status')).toContainText('No request was sent');
+  const unsentProof=await page.evaluate(async()=>{
+    const dbPath='/src/lib/store/db.ts',starterPath='/src/ui/motion-lab/starter-pack.ts',db=await import(dbPath),starter=await import(starterPath),state=starter.readStarter();
+    return{resolved:!!state.calls[0].resolvedNotSentAt,held:starter.starterHeld(state,await starter.starterJobs(state)),record:await db.get('jobs','unsent-starter-ui')};
+  });
+  expect(unsentProof).toMatchObject({resolved:true,held:0,record:{state:'failed',requestStarted:false,jobs:[]}});
+  // Reset the separate complete-pack fixture to free preparation. The unsent receipt itself remains retained.
+  await page.evaluate(value=>localStorage.setItem('pixeldoll.starterPack.2026-11-02',value),freePreparation);
   await expect(starter.getByRole('button', { name: 'Generate south + east · Est. 8 gens', exact: true })).toBeDisabled();
   const pinned = await page.evaluate(async () => {
     const starterPath = '/src/ui/motion-lab/starter-pack.ts', projectPath = '/src/lib/store/project.ts', dbPath = '/src/lib/store/db.ts';
@@ -375,12 +393,20 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
     const db = await import(dbPath), starter = await import(starterPath), projects = await import(projectPath), state = starter.readStarter();
     // The negative mirror fixture shares the same blobs, so remove it too before testing real pin reachability.
     await db.deleteCharacter(state.projectId); await db.deleteCharacter('rig-starter-mirrored-eight');
+    const queuePath='/src/lib/pixellab/queue.ts',{Queue}=await import(queuePath),studio=new Queue({locks:null,channel:'starter-cleanup-proof'});
+    const labRecords=await db.all('jobs'),old=Date.now()-8*86_400_000;
+    for(const record of labRecords)await db.put('jobs',record.id,{...record,createdAt:old,finishedAt:old});
+    const sample=labRecords[0];await db.put('jobs','old-studio',{...sample,id:'old-studio',tag:'studio-cleanup-proof',createdAt:old,finishedAt:old});
+    await studio.load();const startupRemoved=await studio.clearFinished((r:{createdAt:number;finishedAt?:number})=>(r.finishedAt??r.createdAt)>Date.now()-7*86_400_000);
+    await db.put('jobs','finished-studio',{...sample,id:'finished-studio',tag:'studio-cleanup-proof'});
+    await studio.load();const explicitRemoved=await studio.clearFinished(()=>false);studio.disconnect();
     const orphan = await db.putBlob(new Uint8Array([21, 22, 23])), removed = await db.gcBlobs(), retained = await starter.loadStarterSource(state);
+    const jobs=await starter.starterJobs(state);for(const preset of ['idle','walk','slash'])await starter.starterFrames(state,preset,jobs);
     localStorage.removeItem('pixeldoll.studio.project'); // The directly seeded fixture is no longer a Studio destination.
     return { originalExists: !!await db.get('projects', state.projectId), pinExists: !!await db.get('projects', state.sourceSnapshotId), images: retained.project.images.size,
-      pinListed: (await projects.listProjects()).some((p: { id: string }) => p.id === state.sourceSnapshotId), removed, orphanExists: !!await db.getBlob(orphan) };
+      pinListed: (await projects.listProjects()).some((p: { id: string }) => p.id === state.sourceSnapshotId), removed, orphanExists: !!await db.getBlob(orphan),startupRemoved,explicitRemoved,labJobsRetained:jobs.size };
   });
-  expect(retained).toMatchObject({ originalExists: false, pinExists: true, images: 8, pinListed: false, orphanExists: false }); expect(retained.removed).toBeGreaterThan(0);
+  expect(retained).toMatchObject({ originalExists: false, pinExists: true, images: 8, pinListed: false, orphanExists: false,startupRemoved:1,explicitRemoved:1,labJobsRetained:6 }); expect(retained.removed).toBeGreaterThan(0);
   await page.reload(); await expect(starter.getByRole('combobox', { name: 'Studio source', exact: true })).toHaveValue('rig-starter-native-eight');
   await expect(starter.getByRole('button', { name: 'Prepare native source', exact: true })).toBeDisabled();
   await expect(starter.getByRole('button', { name: 'Generate south + east · Est. 8 gens', exact: true })).toBeDisabled();

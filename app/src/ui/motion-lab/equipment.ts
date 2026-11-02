@@ -4,7 +4,7 @@ import { toChroma,pickKey } from '../../lib/image/chroma.ts';
 import { decodePngBytes,encodePngBytes } from '../../lib/image/pngraw.ts';
 import { bytesToBase64,makeImg } from '../../lib/image/png.ts';
 import {routes,png} from '../../lib/pixellab/routes.ts';
-import {validateAttachment} from './attachment.ts';
+import {validateAttachment,attachmentPalmIsOpaque,ATTACHMENT_PALM_ERROR} from './attachment.ts';
 import { poseCallGens } from '../../lib/rig/clips.ts';
 import type { Keypoint } from '../../lib/rig/rig.ts';
 import * as db from '../../lib/store/db.ts';
@@ -51,7 +51,7 @@ export async function repairEquipmentProbe(bodyId:string,dressId:string,seed:num
   const results=body.job.jobs.flatMap(j=>j.results),text=localStorage.getItem('pixeldoll.motionAttachment.'+bodyId);if(!text)throw new Error('Import and save an authored attachment on this exact body first. The probe needs measured grip positions.');
   const track=validateAttachment(JSON.parse(text),{jobId:bodyId,hashes:results.map(r=>r.sha),cell:{w:body.image.w,h:body.image.h},pivot:doc.fixture.pivot!,direction:doc.direction,padding:40}),indices=[6,7],pad=context.pad,cell={w:body.image.w+2*pad,h:body.image.h+2*pad},images=[],masks=[];
   const imageOf=async(sha:string)=>{const blob=await db.getBlob(sha);if(!blob)throw new Error('Probe input artwork is missing.');return decodePngBytes(new Uint8Array(await blob.arrayBuffer()))};
-  for(const i of indices){if(!results[i]||!track.frames[i])throw new Error('Probe frames are missing.');images.push(padImg(toChroma(await imageOf(results[i].sha),context.key),pad));const grip=track.frames[i].grip;if(!grip)throw new Error('Mark the visible palm on each probe frame before planning a held-item repair mask.');const x=grip.x-track.body.padding+pad,y=grip.y-track.body.padding+pad,mask=new Uint8Array(cell.w*cell.h);for(let py=0;py<cell.h;py++)for(let px=0;px<cell.w;px++)if(Math.hypot(px+0.5-x,py+0.5-y)<=34)mask[py*cell.w+px]=1;masks.push(mask);}
+  for(const i of indices){if(!results[i]||!track.frames[i])throw new Error('Probe frames are missing.');const frozen=await imageOf(results[i].sha);const grip=track.frames[i].grip;if(!grip)throw new Error('Mark the visible palm on each probe frame before planning a held-item repair mask.');if(!attachmentPalmIsOpaque(track.frames[i],padImg(frozen,track.body.padding)))throw new Error(ATTACHMENT_PALM_ERROR);images.push(padImg(toChroma(frozen,context.key),pad));const x=grip.x-track.body.padding+pad,y=grip.y-track.body.padding+pad,mask=new Uint8Array(cell.w*cell.h);for(let py=0;py<cell.h;py++)for(let px=0;px<cell.w;px++)if(Math.hypot(px+0.5-x,py+0.5-y)<=34)mask[py*cell.w+px]=1;masks.push(mask);}
   const outputs=dress.jobs.flatMap(j=>j.results),dirs=['east','south'] as const;for(const dir of dirs){const reference=context.references[dir];if(!reference||!outputs[reference.index])throw new Error('Probe requires east and south dressed reference art.');images.push(await imageOf(outputs[reference.index].sha));masks.push(null);}
   const estimate=gridEstimate(cell,indices.length,dirs.length),grid=packGrid(images,masks),sized=async(image:ReturnType<typeof makeImg>)=>({image:png(bytesToBase64(await encodePngBytes(image))),size:{width:image.w,height:image.h}});
   const request=routes.inpaintV3({description:gridPrompt({item:context.prompt,slot:context.slot,key:context.key,anim:'overhead arm strike',dir:doc.direction,n:indices.length,refs:[...dirs],cell}),inpainting_image:await sized(grid.image),mask_image:await sized(grid.mask),no_background:true,seed});

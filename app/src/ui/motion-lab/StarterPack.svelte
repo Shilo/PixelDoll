@@ -5,7 +5,7 @@
   import { STARTER_PRESETS, type StarterPresetId } from '../../lib/rig/starter-presets.ts';
   import { projectEntries } from '../../lib/store/import.ts';
   import { zip } from '../../lib/store/zip.ts';
-  import { emptyStarter, readStarter, prepareStarter, submitStarter, starterJobs, starterHeld, starterFrames, loadStarterSource, describeStarterPilot, STARTER_CAP, type StarterPilotReview } from './starter-pack.ts';
+  import { emptyStarter, readStarter, prepareStarter, submitStarter, starterJobs, starterHeld, starterFrames, loadStarterSource, describeStarterPilot, resolveStarterNotSent, starterCallWasNotSent, STARTER_CAP, type StarterPilotReview } from './starter-pack.ts';
   import { buildStarterProject, placeStarterImage, type StarterLayout, type StarterProjectClip } from './starter-project.ts';
   import { starterRequest } from '../../lib/rig/starter-presets.ts';
   import {sha256,stableStringify} from '../../lib/image/hash.ts';
@@ -38,9 +38,14 @@
     if(stillIdle)throw new Error('Still idle uses the standing artwork and needs no generation.');
     const dirs = extend ? DIRECTIONS.filter(d => !['south','east'].includes(d)) : ['south','east'] as DirectionName[];
     const notes=layout?`Reviewed shared native source-frame map ${JSON.stringify(layout.sourceFrames[preset])}. ${review}`:review;
-    session = await submitStarter(preset, dirs, extend&&inspectedPilot?{...$state.snapshot(inspectedPilot),notes}:undefined);
+    session = await submitStarter(preset, dirs, {projectId:session.projectId,binding:session.plans[preset]!.binding}, extend&&inspectedPilot?{...$state.snapshot(inspectedPilot),notes}:undefined);
     status = 'Paid call reserved once. Refresh its saved results; no automatic retry or next action is started.';
     await refresh();
+  }
+  async function resolveUnsent(id:string){
+    const call=session.calls.find(c=>c.id===id);if(!call)throw new Error('Refresh the saved attempt first.');
+    session=await resolveStarterNotSent(id,{projectId:session.projectId,binding:call.plan.binding});
+    await refresh();status='The proven unsent attempt is retained in the journal and its hold is released. No request was sent. Generating again requires a separate priced click.';
   }
   function propose(nextSource: NonNullable<typeof source>, nextClips: StarterProjectClip[]) {
     source=nextSource; clips=nextClips;authoring=undefined;
@@ -64,7 +69,7 @@
   async function loadPack() {
     if(!prepared)throw new Error('Select the prepared source before loading its pack.');
     await refresh();
-    const current=$state.snapshot(session),idleCalls=current.calls.filter(c=>c.plan.binding===current.plans.idle?.binding);
+    const current=$state.snapshot(session),idleCalls=current.calls.filter(c=>c.plan.binding===current.plans.idle?.binding&&!c.resolvedNotSentAt);
     const retainedIdle=idleCalls.length>0&&idleCalls.every(c=>!!c.recordId&&jobs.get(c.recordId)?.state==='done')&&DIRECTIONS.every(d=>idleCalls.some(c=>c.directions.includes(d)));
     const wanted=ids.filter(id=>id!=='idle'||idleSource==='generated');
     const result=await Promise.all(wanted.map(id=>starterFrames(current,id,jobs)));
@@ -120,6 +125,9 @@
 </script>
 
 <section class="starter bu-stack" aria-label="Eight-direction starter pack">
+  {#each session.calls.filter(c=>starterCallWasNotSent(c,c.recordId?jobs.get(c.recordId):undefined)) as call}
+    <div class="bu-actions"><span>{call.plan.preset}: failed before sending.</span><button class="bu-btn" disabled={busy} onclick={()=>action(()=>resolveUnsent(call.id))}>Resolve unsent {call.plan.preset} attempt · Free</button></div>
+  {/each}
   <h2>Eight-direction starter pack</h2>
   <p>Experimental body pack: free still idle, walk and one right-handed overhead attack. Walk and attack each share one Skeleton V3 motion across views. No 2D pose rerender, mirrored views or automatic paid retries.</p>
   {#if error||renderError||usage.error}<p class="bu-error" role="alert">{[error,renderError,usage.error].filter(Boolean).join(' ')}</p>{/if}

@@ -1,0 +1,80 @@
+{
+  "reviewedBaseline": "05274fe08f8f53c12fdb75e04eec9c8d55b64480",
+  "branch": "codex/claude-review-fixes",
+  "paidRequests": 0,
+  "generationUnits": 0,
+  "findings": {
+    "C1": "fixed",
+    "A1": "fixed",
+    "A2": "fixed",
+    "B1": "fixed",
+    "F2": "fixed",
+    "F3": "fixed for positively proven unsent records; missing records remain unknown",
+    "B2": "fixed",
+    "H1": "hypothesis; no palette change",
+    "oldPalmTargets": "retained and reproduced, correcting review claim"
+  },
+  "checks": {
+    "strict": "passed, zero errors/warnings",
+    "unit": {
+      "passed": 1537,
+      "skipped": 1,
+      "files": 134
+    },
+    "fullBrowser": {
+      "passed": 171,
+      "durationMinutes": 2.9
+    },
+    "finalRecoveryBrowser": {
+      "passed": 1,
+      "durationSeconds": 14.8
+    },
+    "build": "passed",
+    "distributionGuard": "passed",
+    "oldNewPalmHiddenPixels": [
+      [
+        0,
+        27
+      ],
+      [
+        1,
+        21
+      ]
+    ],
+    "originalArtifactsUnchanged": [
+      {
+        "path": "docs/research/artifacts/2026-11-02-animation-closeout-review.zip",
+        "sha256": "e8d53cc001c2caa26d03b881f7b5a128db01cb8f1d98c946771d22a65bd6151e"
+      },
+      {
+        "path": "docs/research/artifacts/2026-11-02-east-axe-engine.zip",
+        "sha256": "686665e374f2d3b5ba2a5ec312725926244d5ce9a5206ac49b049d64c9dadd47"
+      },
+      {
+        "path": "docs/research/artifacts/2026-11-02-east-axe-studio.zip",
+        "sha256": "5b65af499bad05c081482d03a2c60d2b817371d2a2fd2b9b2d1c56b5cde6dbbe"
+      },
+      {
+        "path": "docs/research/artifacts/2026-11-02-eight-direction-starter-review.zip",
+        "sha256": "0bcd590f65b6e5343b3e60ca6aeb77b539e903af81a5983fba5ad6836839d298"
+      },
+      {
+        "path": "docs/research/artifacts/2026-11-02-eight-direction-starter.pixeldoll.zip",
+        "sha256": "7adb8a87fea7af4dd52b52d9fb2b363b6c43f6ea583700642ba99954dff93c29"
+      },
+      {
+        "path": "docs/research/artifacts/2026-11-02-gripped-axe-east.zip",
+        "sha256": "2b753653143df05b8b2a08d9e940c19230d2fa405e87f679b964522e416b27f3"
+      }
+    ],
+    "evidenceArchive": {
+      "path": "docs/research/artifacts/2026-11-02-complete-session-claude-evidence.zip",
+      "bytes": 2165008,
+      "entries": 77,
+      "sha256": "3b96de6dd0acfa436681c9ea27ab93bd639c6a8fb0b3e9d74ae9bec948b48c19",
+      "verifiedEntries": 76
+    }
+  },
+  "art": "unchanged, experimental and unqualified",
+  "ci": "not run or claimed by local verification"
+}

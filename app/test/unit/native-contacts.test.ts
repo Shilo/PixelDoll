@@ -85,3 +85,17 @@ test('only opaque, in-bounds native pixel marks are accepted and malformed draft
   await expect(validateNativeContacts({ ...draft, marks: [draft.marks[0], draft.marks[0]] }, binding, images)).rejects.toThrow('only one landmark');
   expect(() => createNativeContactDraft({ ...binding, durations: [100] })).toThrow('positive playback durations');
 });
+
+test('looping stance that crosses the loop seam: span uses absolute playback start time without wrap', () => {
+  const h = `sha256:${'a'.repeat(64)}`
+  const draft = createNativeContactDraft({ id: 'x', hashes: Array(8).fill(h), cell: { w: 128, h: 128 }, direction: 'east', durations: Array(8).fill(100), loop: true })
+  draft.speed = { x: 22.5, y: 0 }
+  // A world-planted foot: frame 7 at x=60, next cycle frame 0 is 2.25 px further back (rounded to 58).
+  draft.marks = [{ frame: 6, track: 'A', landmark: 'heel', stance: 'seam', x: 62, y: 90 }, { frame: 7, track: 'A', landmark: 'heel', stance: 'seam', x: 60, y: 90 }, { frame: 0, track: 'A', landmark: 'heel', stance: 'seam', x: 58, y: 90 }]
+  const span = measureNativeContacts(draft).stances[0].boundarySpanPx!
+  expect(span).toBeCloseTo(0.5)
+  const linear={...draft,binding:{...draft.binding,loop:false}};
+  expect(measureNativeContacts(linear).stances[0].boundarySpanPx).toBeCloseTo(17.75);
+  draft.marks.push({frame:3,track:'A',landmark:'heel',stance:'seam',x:50,y:90});
+  expect(measureNativeContacts(draft).stances[0]).toMatchObject({boundarySpanPx:null,reason:'Disjoint looping stance. Use separate stance labels for separate support intervals.'});
+})

@@ -8,7 +8,7 @@
 // Only a leader marks orphaned `submitting` records lost, so another live tab's in-flight jobs are never touched.
 // Credentials stay in the connected tab. BroadcastChannel is origin-wide (including sibling Pages sites), so it carries
 // only ledger notifications and a credential-free forget signal; keys are never broadcast or accepted from messages.
-import { api as realApi, ApiError, errorText, isNetwork, isPolicy, rejected } from './client.ts';
+import { api as realApi, ApiError, errorText, isNetwork, isPolicy, hasJobEvidence, noAnimationJobsStarted, paidRequestRejected } from './client.ts';
 import { jobIdsOf, jobImages, type Balance, type Job, type Req, type SubmitResponse, type Usage } from './routes.ts';
 import { planCapacity, requestedSlots } from './capacity.ts';
 import { PLAN_JOB_LIMITS, planRestriction, requestTier } from './plans.ts';
@@ -91,30 +91,15 @@ export interface Deps {
   now: () => number;
   locks: Pick<LockManager, 'request'> | null; // Web Locks (null = single tab)
   channel: string; // cross-tab BroadcastChannel; self-tests use their own so they never signal the live app's tabs
+  lockName: string;
+  recordTag?: string; // a separate queue owns only this tag; Studio excludes the research queue
   online: () => boolean; // navigator.onLine
 }
 
 const POLL_MS = 5000, SYNC_MS = 1500, ASK_MS = 500, FULL_SYNC_MS = 30_000, MAX_TRIES = 10, MAX_PX = 2048, LOCK = 'pixeldoll-queue';
+export const MOTION_LAB_TAG = 'motion-lab-2026-10-28';
 const LOST_AFTER_MS = 120_000;
 const PROBE_MS = 15_000;
-const NO_ANIMATION_JOBS = /^Failed to start any animation jobs[.!]?$/i;
-/** An accepted job identifier contradicts a retryable status, including when wrapped in last_response. */
-const hasJobEvidence = (value: unknown): boolean => {
-  for (let body = value; body && typeof body === 'object'; body = (body as Record<string, unknown>).last_response) {
-    const b = body as Record<string, unknown>;
-    if (b.background_job_id != null && b.background_job_id !== '') return true;
-    if (b.background_job_ids != null && (!Array.isArray(b.background_job_ids) || b.background_job_ids.length)) return true;
-  }
-  return false;
-};
-/** B15 observed a simple root refusal on this route; any additional payload makes the paid outcome uncertain. */
-const noAnimationJobsStarted = (endpoint: string, error: ApiError): boolean => {
-  if (endpoint !== '/characters/animations' || error.status !== 500) return false;
-  if (typeof error.body === 'string') return NO_ANIMATION_JOBS.test(error.body.trim());
-  if (!error.body || typeof error.body !== 'object' || Array.isArray(error.body)) return false;
-  const messages = Object.entries(error.body);
-  return messages.length > 0 && messages.every(([key, message]) => (key === 'detail' || key === 'error') && typeof message === 'string' && NO_ANIMATION_JOBS.test(message.trim()));
-};
 
 export const live = (r?: JobRec) => !!r && (r.state === 'queued' || r.state === 'submitting' || r.state === 'running');
 const seededOf = (r: JobRec) => typeof (r.params as { seed?: unknown } | null)?.seed === 'number';
@@ -255,10 +240,16 @@ export class Queue {
       now: Date.now,
       locks: globalThis.navigator?.locks ?? null,
       channel: LOCK,
+      lockName: LOCK,
       online: () => globalThis.navigator?.onLine ?? true,
       ...deps,
     };
+    const { all, get } = this.deps;
+    const owns = (r: JobRec) => this.ownsRecord(r);
+    this.deps.all = async () => (await all()).filter(owns);
+    this.deps.get = async id => { const r = await get(id); return r && owns(r) ? r : undefined; };
   }
+  private ownsRecord(r: Pick<JobRec,'tag'>) { return this.deps.recordTag === undefined ? r.tag !== MOTION_LAB_TAG : r.tag === this.deps.recordTag; }
 
   // ---- store contract (Svelte `$queue`) ----
   subscribe(fn: (s: QueueSnapshot) => void) {
@@ -335,7 +326,7 @@ export class Queue {
     let got: boolean;
     try {
       got = await new Promise<boolean>((res, reject) => {
-        void locks.request(LOCK, { ifAvailable: true }, (lock) => {
+        void locks.request(this.deps.lockName, { ifAvailable: true }, (lock) => {
           res(!!lock && !signal.aborted);
           return lock && !signal.aborted ? hold() : undefined;
         }).catch(reject);
@@ -347,7 +338,7 @@ export class Queue {
     this.chan?.postMessage({ capacitySync: true } satisfies Msg);
     this.follower = every(this.chan ? FULL_SYNC_MS : SYNC_MS, () => void this.sync());
     this.emit();
-    void locks.request(LOCK, { signal }, async () => {
+    void locks.request(this.deps.lockName, { signal }, async () => {
       if (signal.aborted) return;
       await this.lead(connection);
       if (!signal.aborted) return hold();
@@ -628,6 +619,7 @@ export class Queue {
       if (this.connectedOnce && (!this.connection || this.connection !== connection)) throw new Error('Queue disconnected. Reload PixelDoll before starting more work.');
     };
     assertConnected();
+    if (!this.ownsRecord({tag:meta.tag})) throw new Error('This request belongs to a different queue. Open its own workflow before submitting.');
     if (meta.estimateRetry && (req.method !== 'POST' || req.path !== '/estimate-skeleton' || !meta.estimateRetry.id || !Array.isArray(meta.estimateRetry.recordIds))) throw new Error('Explicit measurement recovery is only available for reviewed joint checks.');
     const { params, inputs, requestHash } = await requestIdentity(req, this.deps.putBlob);
     assertConnected(); // obsolete async flows cannot publish another request during disconnect/HMR navigation
@@ -687,6 +679,7 @@ export class Queue {
       // The transaction re-reads all matching rows: a stale follower cannot overwrite a progressed retry or pay twice.
       let inserted = false;
       const claimed = await this.deps.claimEstimate(rec, records => {
+        records=records.filter(r=>this.ownsRecord(r));
         assertConnected(); // scope/session changes before the transaction inserts must leave no queued orphan
         const current = records.filter(r => r.requestHash === requestHash).reverse().sort((a,b) => b.createdAt-a.createdAt);
         const useful = current.find(live) ?? current.find(r => r.state === 'done');
@@ -928,7 +921,7 @@ export class Queue {
         r.response = strip(err.body); // retain the known identifiers for manual review without resubmitting
         r.error = `PixelLab returned job evidence with an error (${err.message}). The request may have run and been charged; not resent.`;
         r.finishedAt = this.deps.now();
-      } else if (err.kind === 'retry' && (r.method !== 'POST' || rejected(err.status) || noAnimationJobsStarted(r.endpoint, err))) {
+      } else if (err.kind === 'retry' && (r.method !== 'POST' || paidRequestRejected(r.endpoint, err.status, err.body))) {
         r.state = 'queued';
         if (currentCredential && key === this.key && (err.status === 429 || noAnimationJobsStarted(r.endpoint, err))) {
           const now = this.deps.now();
@@ -940,7 +933,7 @@ export class Queue {
           r.waitingForCapacity = true;
           r.nextAt = this.capacityRetryAt;
         } else r.nextAt = this.deps.now() + Math.max(backoff(r.attempts), err.retryAfterMs ?? 0);
-      } else if (err.kind === 'retry') { // R6 P1-3: the paid job may exist; resending could pay twice
+      } else if (err.kind === 'retry' || (!(e instanceof ApiError) && r.method === 'POST' && r.requestStarted && r.submittedAt !== undefined)) { // post-send bookkeeping can also hide an accepted paid request
         r.state = 'lost';
         r.error = `no clear answer from PixelLab (${err.message}). The job may have run and been charged (check pixellab.ai); not resent.`;
         r.finishedAt = this.deps.now();
