@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "date": "2026-11-02",
+  "branch": "codex/motion-lab",
+  "reviewedProductCommit": "0acd88ab",
+  "externalReviewSha256": "4d613458d43121610f2891c4048cbd18f729e12f98dfb59cc80a0f40aa091186",
+  "report": "docs/reviews/2026-11-02-joint-counter-review-and-fixes.md",
+  "implemented": [
+    "Unread response bodies preserve paid uncertainty and never use unread rejection headers as resend approval.",
+    "Copy optional extraction-cache stencil and cut arrays.",
+    "Maintain valid-mask cache invalidation and exact-coordinate hard-G10 regressions.",
+    "Clarify mask provenance and cleanup-removal diagnostics without changing schemas or thresholds."
+  ],
+  "deferred": [
+    "Thin-fragment RulesA/B with known semantic false positives.",
+    "Universal15percent adjacent-frame limits.",
+    "Production MCP or preset-default replacement.",
+    "Further paid experiment or automatic replication."
+  ],
+  "verification": {
+    "node": "24.22.1",
+    "npm": "11.19.1",
+    "transportRedCases": 7,
+    "cacheRedCases": 2,
+    "strict": "zero errors and warnings",
+    "unitFiles": 126,
+    "unitPassed": 1413,
+    "unitSkippedPreexisting": 1,
+    "firstFullBrowser": {
+      "passed": 146,
+      "failed": 20,
+      "reason": "Coordinator edits triggered dev-server hot updates; preserved invalidated run.",
+      "directory": "app/test-results-joint-review-fixes"
+    },
+    "freshFullBrowser": {
+      "passed": 166,
+      "failed": 0,
+      "minutes": 3.7,
+      "directory": "app/test-results-joint-review-stable"
+    },
+    "build": "passed",
+    "distGuard": "passed",
+    "testAssertionsWeakened": false
+  },
+  "research": {
+    "mixedGenerationJobs": [
+      733,
+      736
+    ],
+    "finalAllEightBodyRecipe": "4458544f88245b1a96db2c1781f857a2f306271014009574bf0ac11de5fb8fd8",
+    "finalRecompositionErrors": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "whiteSample": [
+      4,
+      82,
+      78
+    ],
+    "whiteSampleRemovedByPosedWristProxy": true,
+    "actualProductionWristsKnown": false,
+    "calibrationRearProjectionDeltaPx": 11.369711037071117,
+    "reviewConventionRearProjectionDeltaPx": 10.989980539135967,
+    "physicalSlipProven": false,
+    "seamCausationProven": false,
+    "presetQualified": false
+  },
+  "budget": {
+    "newPaidCalls": 0,
+    "newGenerations": 0,
+    "additionalPhaseActual": 153.25,
+    "additionalPhaseHeld": 196,
+    "additionalAllowance": 1000
+  },
+  "externalRebuttal": "Four focused questions in report; further owner-relayed response remains pending.",
+  "board": "Synchronization pending missing project access; no board mutation.",
+  "implementationCommit": "0865c0b6"
+}

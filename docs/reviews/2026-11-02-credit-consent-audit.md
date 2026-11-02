@@ -1,5 +1,7 @@
 # Generation consent audit and bounded finish plan
 
+**Subsequent correction completed:** the [joint review and fixes](2026-11-02-joint-counter-review-and-fixes.md) implements the partial-response uncertainty classification fix, with paid no-resend and free-GET recovery regressions. The initial audit and pending statements below retain their chronological scope; they are not the current implementation status.
+
 November 2, 2026, branch `codex/motion-lab`, product baseline `0acd88ab`, review-handoff commit `592e3dfe`. The owner reaffirmed that extra paid quality regenerations require user permission and asked for a timely finish rather than indefinite experimentation.
 
 ## Finding

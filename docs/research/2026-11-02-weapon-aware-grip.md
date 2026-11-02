@@ -1,5 +1,7 @@
 # Weapon-aware grip continuation
 
+**Joint-review addendum:** see the [counter-review and fixes](../reviews/2026-11-02-joint-counter-review-and-fixes.md). The eight-frame research assembly mixes jobs733/736, but every final composite uses the same B-starV2 family. Independent recomposition confirms zero differences in all eight. Generation-time bodies differ in some733 frames; this does not establish seam causation. A retained frame4 white sample and conditional `posed:true` cleanup losses are newly documented. Earlier extraction comparisons used `posed:false` and did not exercise complete production held post-processing with measured wrists. No preset is promoted, historical PNGs are unchanged, and no new generation was purchased.
+
 **Finding:** deliberately authoring the gripping hand before freezing the body improves the sampled composites. Production inpaint extraction now enforces its submitted mask, preventing protected pixels from leaking into equipment after extraction and repair. However, the final guided repair fixed weapon direction while damaging its head. No new animation preset is qualified or enabled in Studio. Stop broad rerolls; use reviewed body/action/grip families and explicit weapon design controls. The remaining allowance stays authorized and unspent.
 
 ## Scope and authorization

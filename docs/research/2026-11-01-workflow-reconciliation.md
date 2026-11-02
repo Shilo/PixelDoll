@@ -1,5 +1,7 @@
 # Workflow reconciliation and second generation allowance
 
+**November 2 correction:** the [joint counter-review](../reviews/2026-11-02-joint-counter-review-and-fixes.md) withdraws the blanket same-body-input objection for x28/D. Its source code builds input and final composition from the same body-frame loader, corroborated by retained logs; encoded lengths do not establish exact historical bytes. Actual output changes, skin in weapon layers, palette changes and the older registration/measurement defects remain the supported preservation concerns. The historical checkpoint below is retained.
+
 **Follow-up:** the [November 2 weapon-aware continuation](2026-11-02-weapon-aware-grip.md) records the newly authored hand, disarm and hatchet evidence, extraction fix and later costs. The figures and failed gate below remain the November 1 checkpoint.
 
 **Current conclusion:** custom V3 produces a better body/action candidate than these mocap controls, but the first frozen-body sword test fails a required grip. New spending is 43.25 of the additional 1,000 units. Expansion stopped at the failed gate. Keep the body route experimental and fix the hand/equipment contract before broad preset or Studio integration. [Compact results and receipts](2026-11-01-workflow-reconciliation-results.json).

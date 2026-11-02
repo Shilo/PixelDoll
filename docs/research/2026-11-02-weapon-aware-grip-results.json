@@ -339,5 +339,57 @@
     "Raw receipts and images stay locally ignored; source hashes and reproducible scripts are versioned.",
     "Board reconciliation pending missing GitHub project scope; no access expansion attempted."
   ],
-  "nextDecision": "No further paid requests scheduled. Retain production mask fix and audited experimental assets; do not release preset. A clean bare-body prop-guide source is an untested future hypothesis, followed by full-clip hidden-grip, contact, timing and repeatability qualification."
+  "nextDecision": "No further paid requests scheduled. Retain production mask fix and audited experimental assets; do not release preset. A clean bare-body prop-guide source is an untested future hypothesis, followed by full-clip hidden-grip, contact, timing and repeatability qualification.",
+  "jointReviewAddendum": {
+    "report": "docs/reviews/2026-11-02-joint-counter-review-and-fixes.md",
+    "mixedGenerationJobs": [
+      733,
+      736
+    ],
+    "allFinalCompositesUseSameBodyRecipe": true,
+    "finalRecompositionErrorsByFrame": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "declaredGenerationBodyDifferencesByFrame": [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      18,
+      0
+    ],
+    "researchExtractionPosed": false,
+    "actualProductionWristAvailable": false,
+    "authoredWristProxyPostprocessRemovalsForFrames0_2_5_7": [
+      18,
+      18,
+      0,
+      16
+    ],
+    "researchWhiteSample": {
+      "frame": 4,
+      "x": 82,
+      "y": 78,
+      "rgba": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "posedProxyPostprocessRemovesIt": true
+    },
+    "physicalGripSlidingProven": false,
+    "jobSeamCausationProven": false,
+    "newPaidUnits": 0,
+    "qualified": false
+  }
 }
