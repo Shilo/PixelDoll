@@ -1,5 +1,12 @@
 import type { IncomingHttpHeaders } from 'node:http'
 
+/** Resolve the agent-only .env entry without loading secrets into Vite's environment. */
+export function resolveAgentKey(source: string, env: NodeJS.ProcessEnv): string {
+  const value = source.match(/^PIXELLAB_API_KEY_AGENT_DEV=(.*)$/m)?.[1]?.trim() ?? ''
+  // ponytail: only this explicit Windows environment reference is supported, not general dotenv expansion.
+  return value === 'PIXELLAB_SECRET' ? env.PIXELLAB_SECRET?.trim() ?? '' : value
+}
+
 // Request guard for the dev server's /__dev endpoints (vite.config.ts): same-origin requests from this machine only.
 // Loopback socket, Host = localhost, Sec-Fetch-Site = same-origin, and no proxy headers (HTTP-aware proxies and tunnels add
 // them). A raw TCP forward (ssh -L/-R, socat) looks exactly like a local request, so the real rule is in AGENTS.md: never

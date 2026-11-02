@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, normalizePath, type Plugin } from 'vite'
-import { localSameOrigin } from './agent-key.ts'
+import { localSameOrigin, resolveAgentKey } from './agent-key.ts'
 import { appVersion } from './version.ts'
 
 // Dev-only fixtures (s1, s4rig, s5): served at /fixtures/<name>/... by the dev server, never copied into dist.
@@ -53,7 +53,7 @@ function agentKey(): Plugin {
       server.middlewares.use('/__dev/pixellab-key', (req, res) => {
         if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
         let key = ''
-        try { key = readFileSync(new URL('../.env', import.meta.url), 'utf8').match(/^PIXELLAB_API_KEY_AGENT_DEV=(.*)$/m)?.[1]?.trim() ?? '' } catch {}
+        try { key = resolveAgentKey(readFileSync(new URL('../.env', import.meta.url), 'utf8'), process.env) } catch {}
         res.setHeader('cache-control', 'no-store')
         res.statusCode = key ? 200 : 404
         res.end(key)

@@ -6,6 +6,9 @@ Both projects must behave the same way.
 
 Reference implementation: https://github.com/Shilo/PixelDoll (Svelte 5 + Vite 8 + TypeScript, client-only, GitHub Pages).
 
+PixelDoll's explicit Windows environment reference was independently reviewed and tested with synthetic credentials;
+see the [implementation review](../reviews/2026-11-02-agent-env-reference-review.md).
+
 ## 1. The goal
 
 The PixelLab token in `.env` exists **only so AI agents (Claude, Codex, others) can test the app automatically in
@@ -20,9 +23,11 @@ development**, generating images without a human pasting the token into the runn
 ## 2. The contract (must-haves)
 
 1. **One variable name in both projects:** `PIXELLAB_API_KEY_AGENT_DEV` (service → credential → surface → environment).
-   Rename any older name (`PIXELLAB_API_KEY`, `PIXELLAB_SECRET`, `VITE_*`, etc.) everywhere, including `.env.example` if any.
-2. **It lives only in the repo-root `.env`**, which is git-ignored. It is never committed, never in CI secrets, and never in a
-   `.env.*` file that a bundler loads automatically.
+   Rename older app configuration entries (`PIXELLAB_API_KEY`, `VITE_*`, etc.), including `.env.example` if any.
+   `PIXELLAB_SECRET` is supported only as the explicit server environment reference below, not as a second app configuration entry.
+2. **The agent entry lives only in the repo-root `.env`**, which is git-ignored. Its value is either the literal key or the
+   exact reference below. Credentials are never committed, stored in CI secrets, or placed in a `.env.*` file that a bundler loads automatically.
+   Alternatively, use `PIXELLAB_API_KEY_AGENT_DEV=PIXELLAB_SECRET` to reference the Windows user or system environment variable inherited by the agent dev server. This exact reference is resolved server-side, per request; a missing or blank variable returns no key. Literal keys still work. Restart the terminal or editor and the server after changing Windows environment variables. This is an explicit app convention, not general dotenv expansion.
 3. **A separate agent-only dev command** (`npm run dev:agent`) is the *only* path that reads it. The normal `npm run dev` must
    behave exactly like production regarding the token: no endpoint, no button, no auto-fill.
 4. **Read server-side, per request.** The dev server reads `.env` itself and serves the token only to same-origin loopback
@@ -80,7 +85,7 @@ never expose the agent server beyond localhost (no `--host`, tunnels or port for
 
 ### `app/vite.config.ts` (abridged; full file in the repo)
 ```ts
-import { localSameOrigin } from './agent-key.ts'
+import { localSameOrigin, resolveAgentKey } from './agent-key.ts'
 
 // AI-agent automation only: serves PIXELLAB_API_KEY_AGENT_DEV from ../.env at /__dev/pixellab-key.
 // Not registered at all for `npm run dev` or any build. Read server-side per request, never through Vite's env.
@@ -91,7 +96,7 @@ function agentKey(): Plugin {
       server.middlewares.use('/__dev/pixellab-key', (req, res) => {
         if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
         let key = ''
-        try { key = readFileSync(new URL('../.env', import.meta.url), 'utf8').match(/^PIXELLAB_API_KEY_AGENT_DEV=(.*)$/m)?.[1]?.trim() ?? '' } catch {}
+        try { key = resolveAgentKey(readFileSync(new URL('../.env', import.meta.url), 'utf8'), process.env) } catch {}
         res.setHeader('cache-control', 'no-store')
         res.statusCode = key ? 200 : 404
         res.end(key)
@@ -147,7 +152,7 @@ forwards).
 
 ### Node scripts (spikes, outside the app bundle)
 `node --env-file=../../.env script.mjs` reads `process.env.PIXELLAB_API_KEY_AGENT_DEV`. These are agent research scripts. They
-are never bundled or deployed.
+are never bundled or deployed. Node's `--env-file` does not resolve the app's `PIXELLAB_SECRET` reference; those scripts must resolve it explicitly before use.
 
 ### `.gitignore`
 ```gitignore
