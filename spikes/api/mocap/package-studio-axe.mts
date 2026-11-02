@@ -59,3 +59,17 @@ const colorAudit=expected.map((original,i)=>{
   return{frame:i,changedBlueValues:actual.data.reduce((n,v,q)=>n+Number(v!==original.data[q]),0)};
 });
 fs.writeFileSync(path.join(out,'studio-color-audit.json'),JSON.stringify({scope:'Existing B15 shirt/shorts tagging, not new artwork. Red, green, alpha and blue bits 1-7 stay exact.',frames:colorAudit},null,2));
+// Inspect complete visible support and authored transitions without pretending to recover hidden feet or physics.
+const authoring=JSON.parse(new TextDecoder().decode(read('authoring.json')));
+const support=bodyFrames.map((body,frame)=>{
+  let bottom=-1;for(let y=0;y<body.h;y++)for(let x=0;x<body.w;x++)if(body.data[(y*body.w+x)*4+3])bottom=Math.max(bottom,y);
+  if(bottom<0)throw new Error('Empty frozen body cannot establish visible support.');
+  const xs=Array.from({length:body.w},(_,x)=>x).filter(x=>body.data[(bottom*body.w+x)*4+3]>0);
+  return{frame,y:bottom,xs,centroidX:xs.reduce((n,x)=>n+x+.5,0)/xs.length};
+});
+if(support.some(s=>s.y!==106||JSON.stringify(s.xs)!==JSON.stringify([72,73,74,75,76])))throw new Error('Reviewed visible support edge changed. Reinspect this candidate.');
+const transitions=authoring.frames.map((from:any,i:number)=>{
+  const next=(i+1)%8,to=authoring.frames[next],angle=((to.angle-from.angle)%360+540)%360-180;
+  return{from:i,to:next,previewLoopOnly:i===7,heldMs:animations[1].frames[i].ms,gripDisplacementPx:Math.hypot(to.grip.x-from.grip.x,to.grip.y-from.grip.y),shortestAxisChangeDegrees:angle};
+});
+fs.writeFileSync(path.join(out,'clip-continuity-audit.json'),JSON.stringify({qualified:false,interpolated:false,support,transitions,scope:'One fixed-root east clip. Complete bottom silhouette edge stays fixed. Ankle/heel shape and hidden-foot anatomy are not inferred. Distances and shortest axis changes describe discrete authored samples; they are not physical velocities or universal quality thresholds.'},null,2));

@@ -38,7 +38,7 @@ test('offline Motion Lab edits and roundtrips motions without requesting generat
   await page.screenshot({path:testInfo.outputPath('motion-lab.png'),fullPage:true});expect(paid).toEqual([]);expect(errors).toEqual([]);
 });
 
-test('Motion Lab preserves candidate review, buffer exclusion and authored hold in credential-free exports',async({page})=>{
+test('Motion Lab preserves candidate review, buffer exclusion and authored hold in credential-free exports',async({page},testInfo)=>{
   await page.clock.install();
   const paid:string[]=[];await page.addInitScript(()=>localStorage.setItem('pixeldoll.agentKey','off'));await page.route('https://*.pixellab.ai/**',route=>{paid.push(route.request().method());return route.abort()});
   await page.goto('/motion-lab.html');await expect(page.getByRole('status')).toContainText('Offline lab ready');
@@ -73,7 +73,19 @@ test('Motion Lab preserves candidate review, buffer exclusion and authored hold 
   const sourceCanvas=editor.getByLabel('Attachment source artwork',{exact:true}),sourceBox=(await sourceCanvas.boundingBox())!;
   await sourceCanvas.click({position:{x:sourceBox.width*(32.25/128),y:sourceBox.height*(32.25/128)}});await expect(editor.getByRole('spinbutton',{name:'Source grip x',exact:true})).toHaveValue('32.5');await expect(editor.getByRole('spinbutton',{name:'Source grip y',exact:true})).toHaveValue('32.5');
   await editor.getByRole('combobox',{name:'Source point',exact:true}).selectOption('axis');await sourceCanvas.click({position:{x:sourceBox.width*(96.25/128),y:sourceBox.height*(32.25/128)}});await expect(editor.getByRole('spinbutton',{name:'Source axis x',exact:true})).toHaveValue('96.5');await editor.getByRole('checkbox',{name:'Show grip guides',exact:true}).uncheck();
+  const previewCanvas=editor.getByLabel('Attachment grip and occlusion editor',{exact:true});
+  const opaquePreview=()=>previewCanvas.evaluate((element:HTMLCanvasElement)=>element.getContext('2d')!.getImageData(0,0,element.width,element.height).data.some((v,i)=>i%4===3&&v>0));
+  await expect.poll(opaquePreview).toBe(true);
+  await editor.getByRole('spinbutton',{name:'Source grip x',exact:true}).fill('-1');
+  await expect(editor.getByRole('alert')).toContainText('grip inside');
+  await expect.poll(opaquePreview,{message:'A failed render must clear the previous good frame'}).toBe(false);
+  await editor.screenshot({path:testInfo.outputPath('failed-preview-cleared.png')});
+  await editor.getByRole('spinbutton',{name:'Source grip x',exact:true}).fill('32.5');
+  await expect.poll(opaquePreview).toBe(true);await expect(editor.getByRole('alert')).toHaveCount(0);
   await editor.getByLabel('Authored frame PNG',{exact:true}).setInputFiles({name:'wrong-canvas.png',mimeType:'image/png',buffer:Buffer.from(output.reference.png,'base64')});await expect(editor.getByRole('alert')).toContainText('Export the native frame first');
+  await editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true}).fill('40');
+  await expect.poll(opaquePreview).toBe(true);await expect(editor.getByRole('alert')).toContainText('Export the native frame first');
+  await editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true}).fill('35');
   const authored=await page.evaluate(async({w,h})=>{const imagePath='/src/lib/image/png.ts',codecPath='/src/lib/image/pngraw.ts',image=await import(imagePath),codec=await import(codecPath),native=image.makeImg(w,h);native.data.set([120,120,120,255],(3*w+4)*4);native.data.set([90,60,30,255],(4*w+4)*4);return image.bytesToBase64(await codec.encodePngBytes(native));},{w:attachment.body.cell.w+2*attachment.body.padding,h:attachment.body.cell.h+2*attachment.body.padding});
   await editor.getByLabel('Authored frame PNG',{exact:true}).setInputFiles({name:'native-item.png',mimeType:'image/png',buffer:Buffer.from(authored,'base64')});await expect(editor.getByRole('status')).toContainText('Loaded native item art for frame 1');await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toBeDisabled();
   await expect.poll(()=>editor.getByLabel('Attachment grip and occlusion editor',{exact:true}).evaluate((element:HTMLCanvasElement)=>Array.from(element.getContext('2d')!.getImageData(4,3,1,1).data))).toEqual([120,120,120,255]);

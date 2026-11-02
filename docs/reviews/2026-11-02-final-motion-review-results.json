@@ -1,0 +1,169 @@
+{
+  "qualified": false,
+  "interpolated": false,
+  "support": [
+    {
+      "frame": 0,
+      "y": 106,
+      "xs": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "centroidX": 74.5
+    },
+    {
+      "frame": 1,
+      "y": 106,
+      "xs": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "centroidX": 74.5
+    },
+    {
+      "frame": 2,
+      "y": 106,
+      "xs": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "centroidX": 74.5
+    },
+    {
+      "frame": 3,
+      "y": 106,
+      "xs": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "centroidX": 74.5
+    },
+    {
+      "frame": 4,
+      "y": 106,
+      "xs": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "centroidX": 74.5
+    },
+    {
+      "frame": 5,
+      "y": 106,
+      "xs": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "centroidX": 74.5
+    },
+    {
+      "frame": 6,
+      "y": 106,
+      "xs": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "centroidX": 74.5
+    },
+    {
+      "frame": 7,
+      "y": 106,
+      "xs": [
+        72,
+        73,
+        74,
+        75,
+        76
+      ],
+      "centroidX": 74.5
+    }
+  ],
+  "transitions": [
+    {
+      "from": 0,
+      "to": 1,
+      "previewLoopOnly": false,
+      "heldMs": 120,
+      "gripDisplacementPx": 42.42640687119285,
+      "shortestAxisChangeDegrees": 179.67852621431462
+    },
+    {
+      "from": 1,
+      "to": 2,
+      "previewLoopOnly": false,
+      "heldMs": 120,
+      "gripDisplacementPx": 0,
+      "shortestAxisChangeDegrees": -1.7607446009254772
+    },
+    {
+      "from": 2,
+      "to": 3,
+      "previewLoopOnly": false,
+      "heldMs": 80,
+      "gripDisplacementPx": 40.22437072223754,
+      "shortestAxisChangeDegrees": 113.15303961178273
+    },
+    {
+      "from": 3,
+      "to": 4,
+      "previewLoopOnly": false,
+      "heldMs": 80,
+      "gripDisplacementPx": 9.219544457292889,
+      "shortestAxisChangeDegrees": 20.483958660857525
+    },
+    {
+      "from": 4,
+      "to": 5,
+      "previewLoopOnly": false,
+      "heldMs": 80,
+      "gripDisplacementPx": 5.099019513592785,
+      "shortestAxisChangeDegrees": 49.546849896396
+    },
+    {
+      "from": 5,
+      "to": 6,
+      "previewLoopOnly": false,
+      "heldMs": 120,
+      "gripDisplacementPx": 18.110770276274835,
+      "shortestAxisChangeDegrees": 2.393592219487573
+    },
+    {
+      "from": 6,
+      "to": 7,
+      "previewLoopOnly": false,
+      "heldMs": 100,
+      "gripDisplacementPx": 2.23606797749979,
+      "shortestAxisChangeDegrees": -4.498816211928101
+    },
+    {
+      "from": 7,
+      "to": 0,
+      "previewLoopOnly": true,
+      "heldMs": 220,
+      "gripDisplacementPx": 0,
+      "shortestAxisChangeDegrees": 1.0035942100150805
+    }
+  ],
+  "scope": "One fixed-root east clip. Complete bottom silhouette edge stays fixed. Ankle/heel shape and hidden-foot anatomy are not inferred. Distances and shortest axis changes describe discrete authored samples; they are not physical velocities or universal quality thresholds."
+}
