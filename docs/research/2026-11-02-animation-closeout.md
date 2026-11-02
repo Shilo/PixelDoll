@@ -129,5 +129,11 @@ automatic regeneration or additional spending.
 
 The application code matches tested commit `7806be10e73e905b5dae3e30e27ee99af6edec1c`; subsequent integration edits are
 documentation only. Main's unrelated token-handling working changes are excluded from the merge commit and preserved.
-Integration will use a fast-forward and normal push, with main CI/Pages verification before branch cleanup. Board
-synchronization remains pending because project scopes are unavailable.
+Integration used a fast-forward and normal push. Main commit `1f83fcfb4c0037fcfd4891f77b0e11ceee850895` passed
+[CI and Pages run 41481991458](https://github.com/Shilo/PixelDoll/actions/runs/41481991458): the build, all sixteen browser
+shards and deployment succeeded. The fully merged `codex/eight-direction-presets` branch was then deleted locally and on
+origin. This worktree was detached at merged main so its retained reports remain available without keeping another branch.
+
+The five unrelated main-checkout files were verified byte-for-byte unchanged by the merge and were not staged. The final
+integration record is documentation only; application code remains identical to the successfully deployed commit. No
+additional generation units were spent. Board synchronization remains pending because project scopes are unavailable.
