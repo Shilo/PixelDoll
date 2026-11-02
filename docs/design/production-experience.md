@@ -4,6 +4,8 @@ Implemented on `feat/game-experience-rework`, 2026-10-23. This is the production
 
 ## Experience and preserved workflows
 
+Apply [simplicity-first design](../usability-principles.md) to changes in these workflows: keep common tasks direct, reveal necessary secondary options in context, and preserve costs, errors, accessibility and recovery. The guide defines interaction principles; this document retains the workflow and theme ownership contracts.
+
 - **Characters:** full-screen world, actual locally saved characters and bundled demo, south-view thumbnails, selection by click, focused WASD/arrows or wheel. A second click on the selected character customizes it. No invented demo identities or simulated saved characters.
 - **Create:** the complete production CharacterForm in a full-screen scene-backed surface. Name, linked Appearance/Prompt, help, API preview/copy, Enhance/Undo, body/frame, camera, original direction/mirror controls, seed, validation, costs, results and recovery retain their real behavior.
 - **Customize:** a single persistent shell with Preview, Top-down and Side-scroller; identity/prompt left and all equipment controls right on desktop. Mobile uses an expandable bottom area. View tabs remain intrinsic width.

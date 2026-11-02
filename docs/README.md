@@ -12,6 +12,8 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Character creator redesign and production integration
 
+**Simplicity-first design:** read the short [Usability principles](usability-principles.md) when changing features, settings, navigation or copy. It defines strong defaults, contextual progressive disclosure and safeguards; linked research is optional.
+
 **Current accepted direction: [Obsidian / Porcelain Bronze](design/2026-10-22-redesign/round-4-discussion/current-design.md).** Source-verified creator workflow; exact unlit sprites; Preview/Top-down/Side-scroller; continuous movement with animation/direction fallbacks; contextual toasts; one-line prompt expansion; and a dynamic mobile joystick. This record supersedes incompatible earlier proposals. [Full desktop/mobile image mockups](design/2026-10-22-redesign/round-5-mockups/image-index.md) are complete: 32 screens and four overview boards. The [isolated playable proof](design/2026-10-22-redesign/round-6-prototype/README.md) now tests screen switching, continuous movement, camera following, equipment, touch and reflections. The [production experience](design/production-experience.md) now integrates this direction with the real Studio workflows on the feature branch. [Direct mockup/live comparisons](design/2026-10-22-redesign/round-6-prototype/comparisons.md) document the readability refinement, south-facing list thumbnails and simplified Light/Dark action.
 
 [Dynamic animation resolver](design/2026-10-22-redesign/round-4-discussion/animation-resolver.md): velocity-based state, nearest-direction mathematics, intended-versus-available coverage, fallback/notification rules, equipment synchronization and acceptance scenarios.
