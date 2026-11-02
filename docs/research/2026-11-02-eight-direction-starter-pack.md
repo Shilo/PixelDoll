@@ -141,3 +141,10 @@ The body ZIP SHA-256 is `7adb8a87fea7af4dd52b52d9fb2b363b6c43f6ea583700642ba9995
 The motion ledger conservatively holds 96 units against its 150-unit allocation; actual motion billing is 72. Including source creation, this campaign spent 74.25. The latest 500-unit allowance previously had 15 spent, giving 89.25 used and 410.75 remaining. Older campaign ledgers remain separate. No further generations are planned for this batch.
 
 The bounded implementation and static/frame review are complete. Broad professional/universal animation qualification is not claimed. The source, tool, raw failures, usable body candidate and remaining acceptance checks are all retained; production defaults were not promoted based on tests or raster counts alone. Board synchronization remains pending because project scopes are unavailable.
+
+
+## Remote verification and cleanup
+
+Implementation commit `39e782bdc00b4f5352f7550758f58d44fe233a81` was pushed to `origin/codex/eight-direction-presets`, and the remote ref matched. [CI run 41469234815](https://github.com/Shilo/PixelDoll/actions/runs/41469234815) passed the build and all sixteen browser shards; deployment was correctly skipped for this non-main branch. This is full remote browser verification of the new implementation, separate from the earlier main deployment.
+
+Main still matches origin at `9073b7d4d0bc845cfd5c9ed30317a20a609db162`. The old local `codex/motion-lab` branch is absent. The temporary localhost 5201 agent server was stopped after verifying its exact Vite process. Existing 5199/5200 servers and unrelated main-checkout edits were preserved. The isolated test profile remains opted out of the agent key; no browser profile or credential is in either committed artifact.
