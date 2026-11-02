@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "prepared": "2026-11-02",
+  "productCommit": "0acd88ab",
+  "branch": "codex/motion-lab",
+  "handoff": "docs/handoff/2026-11-02-claude-paperdoll-quality-review.md",
+  "handoffSha256": "be7bfcdaac551c8a02724f51e0ec9f5aae73ace7a8f02f94342c73e8b2c83e44",
+  "handoffWords": 7623,
+  "archiveRelativePath": "spikes/api/out/claude-review-handoff-2026-11-02/PixelDoll-Claude-quality-review-2026-11-02.zip",
+  "archiveSha256": "b2e65145fc081afb7a80e51f735cf096089620c58a912f344e57ec3e39d80a21",
+  "archiveBytes": 5716256,
+  "sourceFiles": 1261,
+  "uncompressedSourceBytes": 12375888,
+  "verification": "All 1261 source files read back from ZIP and verified against embedded SHA-256 manifest; archive paths checked; current handoff matches packaged copy.",
+  "exclusions": [
+    "environment files",
+    "credentials",
+    "private Claude transcripts",
+    "complete raw provider/session exports",
+    "node_modules",
+    "Git metadata"
+  ],
+  "reviewMode": "One transfer and one detailed review returned through owner; Codex counter-review and accepted in-scope fixes follow receipt.",
+  "generationsUsedForHandoff": 0,
+  "checks": "Documentation/artifact-only change. No new app check/unit/browser runs; prior product results are recorded as historical.",
+  "tracking": "Existing animation research scope; board synchronization pending missing project access."
+}
