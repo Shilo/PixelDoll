@@ -195,6 +195,13 @@ export function southStill(a: PresentationAvailability): Presentation {
 }
 
 export interface PlaybackClock { key: string; elapsedMs: number; duration: number; cell: number }
+/** Match a live walking gait to ground travel. Fallback breathing and other actions retain their own timing. */
+export function livePlaybackDelta(presentation: Presentation, velocity: Vector, deltaMs: number): number {
+  const dt = Number.isFinite(deltaMs) ? Math.max(0, deltaMs) : 0;
+  if (presentation.kind !== 'animation' || !presentation.moving || presentation.requestedClip !== 'walk' || presentation.clip !== 'walk') return dt;
+  const strength = Math.hypot(velocity.x, velocity.y);
+  return Number.isFinite(strength) ? dt * Math.min(1, strength) : 0;
+}
 /** Facing changes carry normalized phase. Genuine clip/source changes start once at frame zero. */
 export function advancePlayback(presentation: Presentation, previous: PlaybackClock | null | undefined, deltaMs: number): PlaybackClock {
   const sequence = presentation.kind === 'animation' ? presentation.sequence : undefined;

@@ -1,7 +1,8 @@
 import { describe, expect, test } from 'vitest';
 import { makeImg } from '../../src/lib/image/png.ts';
 import type { DirectionName, Item, Layer, Manifest, Project, Sha256 } from '../../src/lib/store/manifest.ts';
-import { advancePlayback, buildPresentation, renderPresentation, resolveLive, resolvePreview, southStill } from '../../src/studio/experience/presentation.ts';
+import { advancePlayback, buildPresentation, livePlaybackDelta, renderPresentation, resolveLive, resolvePreview, southStill } from '../../src/studio/experience/presentation.ts';
+import { integrateMovement, keyboardVector, pointerVector } from '../../src/studio/experience/movement.ts';
 
 const bodyHash: Sha256 = 'sha256:body', gearHash: Sha256 = 'sha256:gear';
 function fixture(directions: DirectionName[] = ['south', 'east', 'north', 'west'], clips = ['walk', 'idle']): Project {
@@ -124,6 +125,52 @@ describe('production body presentation', () => {
     expect(advancePlayback(south, advancePlayback(south, null, 0), 9999)).toMatchObject({ elapsedMs: 99, cell: 0 });
     const live = resolveLive(a, { velocity: moving });
     expect(advancePlayback(live, advancePlayback(live, null, 0), 9999)).toMatchObject({ elapsedMs: 99, cell: 0 });
+  });
+
+  test('half-strength analog movement advances both ground travel and walking gait by half without changing full keyboard speed', () => {
+    const a = buildPresentation(fixture());
+    const sample = (velocity: { x: number; y: number }) => {
+      const p = resolveLive(a, { velocity }); let clock = advancePlayback(p, null, 0), position = { x: 0, y: 0 }, camera = { x: 0, y: 0 };
+      for (let i = 0; i < 4; i++) {
+        ({ position, camera } = integrateMovement(position, camera, velocity, .05, 100));
+        clock = advancePlayback(p, clock, livePlaybackDelta(p, velocity, 50));
+      }
+      return { distance: Math.hypot(position.x, position.y), clock };
+    };
+    const full = sample(pointerVector(40, 0, 40)), half = sample(pointerVector(20, 0, 40));
+    expect(full.distance).toBe(20); expect(full.clock).toMatchObject({ elapsedMs: 200, cell: 1 });
+    expect(half.distance).toBe(10); expect(half.clock).toMatchObject({ elapsedMs: 100, cell: 1 });
+    for (const keys of [['d'], ['w', 'd']]) {
+      const keyboard = sample(keyboardVector(new Set(keys)));
+      expect(keyboard.distance).toBeCloseTo(full.distance); expect(keyboard.clock.elapsedMs).toBeCloseTo(full.clock.elapsedMs);
+    }
+  });
+
+  test('analog changes carry walking phase while stop, resume, preview and nonlocomotion fallbacks keep their timing contracts', () => {
+    const a = buildPresentation(fixture()), full = { x: 1, y: 0 }, half = { x: .5, y: 0 };
+    const walk = resolveLive(a, { velocity: full });
+    let clock = advancePlayback(walk, advancePlayback(walk, null, 0), livePlaybackDelta(walk, full, 50));
+    const slower = resolveLive(a, { velocity: half, previous: walk });
+    clock = advancePlayback(slower, clock, livePlaybackDelta(slower, half, 50)); expect(clock.elapsedMs).toBe(75);
+    const facing = resolveLive(a, { velocity: { x: 0, y: .5 }, previous: slower });
+    clock = advancePlayback(facing, clock, livePlaybackDelta(facing, { x: 0, y: .5 }, 50)); expect(clock.elapsedMs).toBe(100);
+    const idle = resolveLive(a, { velocity: { x: 0, y: 0 }, previous: facing });
+    clock = advancePlayback(idle, clock, livePlaybackDelta(idle, { x: 0, y: 0 }, 50)); expect(clock.elapsedMs).toBe(0);
+    clock = advancePlayback(idle, clock, livePlaybackDelta(idle, { x: 0, y: 0 }, 50)); expect(clock.elapsedMs).toBe(50);
+    clock = advancePlayback(walk, clock, livePlaybackDelta(walk, full, 50)); expect(clock.elapsedMs).toBe(0);
+    const fallback = resolveLive(buildPresentation(fixture(['east'], ['idle'])), { velocity: half });
+    expect(fallback).toMatchObject({ moving: true, clip: 'idle' }); expect(livePlaybackDelta(fallback, half, 50)).toBe(50);
+    expect(livePlaybackDelta(resolvePreview(a, { clip: 'walk', direction: 'east' }), half, 50)).toBe(50);
+    const attack = resolvePreview(buildPresentation(fixture(['east'], ['slash'])), { clip: 'slash', direction: 'east' });
+    expect(livePlaybackDelta(attack, half, 50)).toBe(50);
+  });
+
+  test('walking cadence clamps excessive strength and cannot advance on invalid input or invalid elapsed time', () => {
+    const walk = resolveLive(buildPresentation(fixture()), { velocity: { x: 1, y: 0 } });
+    expect(livePlaybackDelta(walk, { x: 2, y: 2 }, 50)).toBe(50);
+    expect(livePlaybackDelta(walk, { x: 0, y: 0 }, 50)).toBe(0);
+    for (const velocity of [{ x: NaN, y: 1 }, { x: Infinity, y: 0 }]) expect(livePlaybackDelta(walk, velocity, 50)).toBe(0);
+    for (const dt of [-10, NaN, Infinity]) expect(livePlaybackDelta(walk, { x: .5, y: 0 }, dt)).toBe(0);
   });
 
   test('pending loading suppresses missing coverage diagnostics', () => {

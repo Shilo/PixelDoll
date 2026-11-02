@@ -6,7 +6,7 @@
   import { MOTION, REFLECTION, WORLDS } from './config.ts'
   import { LoaderCircle } from '../icons.ts'
   import { paintedFrame, actorScale } from './bounds.ts'
-  import { buildPresentation, resolvePreview, resolveLive, renderPresentation, advancePlayback, type Presentation } from './presentation.ts'
+  import { buildPresentation, resolvePreview, resolveLive, renderPresentation, advancePlayback, livePlaybackDelta, type Presentation } from './presentation.ts'
   import { keyboardVector, pointerVector, nearestDirection, integrateMovement, MOVEMENT_KEYS, type Vector } from './movement.ts'
   let host: HTMLDivElement, canvas: HTMLCanvasElement, floor: HTMLCanvasElement, sky: HTMLCanvasElement
   let note = $state(''), loadingNote = $state(''), rendererWarning = $state('')
@@ -116,7 +116,7 @@
       if(a){
         const p=live?resolveLive(a,{velocity,previous,defaultDirection:experience.mode==='side'?nearestDirection(a.directions,{x:1,y:0},ui.dir)??undefined:ui.dir}):resolvePreview(a,{clip:ui.anim,direction:ui.dir})
         experience.presentation=p.kind
-        if(live)clock=advancePlayback(p,clock,dt)
+        if(live)clock=advancePlayback(p,clock,livePlaybackDelta(p,velocity,dt))
         const cell=live?clock?.cell:p.kind==='animation'?view.cell:p.cell
         const nextKey=JSON.stringify([p.kind,p.clip,p.direction,cell,view.items,doc.rev])
         if(lastProject!==a||nextKey!==renderKey){imageCache=renderPresentation(a,view.items,p,cell);renderKey=nextKey;lastProject=a

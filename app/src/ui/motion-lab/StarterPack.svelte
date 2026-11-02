@@ -1,18 +1,23 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, type ComponentProps } from 'svelte';
   import { listProjects, loadProject, type StoredProject } from '../../lib/store/project.ts';
-  import { DIRECTIONS, defaultMs, type DirectionName } from '../../lib/rig/rig.ts';
+  import { DIRECTIONS, defaultMs, cellHash, type DirectionName } from '../../lib/rig/rig.ts';
   import { STARTER_PRESETS, type StarterPresetId } from '../../lib/rig/starter-presets.ts';
   import { projectEntries } from '../../lib/store/import.ts';
   import { zip } from '../../lib/store/zip.ts';
   import { emptyStarter, readStarter, prepareStarter, submitStarter, starterJobs, starterHeld, starterFrames, loadStarterSource, describeStarterPilot, STARTER_CAP, type StarterPilotReview } from './starter-pack.ts';
   import { buildStarterProject, placeStarterImage, type StarterLayout, type StarterProjectClip } from './starter-project.ts';
   import { starterRequest } from '../../lib/rig/starter-presets.ts';
+  import {sha256,stableStringify} from '../../lib/image/hash.ts';
+  import AttachmentEditor from './AttachmentEditor.svelte';
+  import NativeContactEditor from './NativeContactEditor.svelte';
+  import type {NativeContactBinding} from './native-contacts.ts';
   let { connected }: { connected: boolean } = $props();
   let projects = $state<StoredProject[]>([]), selected = $state(''), session = $state(emptyStarter()), jobs = $state.raw<Awaited<ReturnType<typeof starterJobs>>>(new Map());
   let busy = $state(false), error = $state(''), renderError = $state(''), status = $state(''), preset = $state<StarterPresetId>('slash'), direction = $state<DirectionName>('south'), frame = $state(0), playing = $state(false);
   let review = $state(''), layout = $state<StarterLayout>(), source = $state.raw<Awaited<ReturnType<typeof loadProject>>>(), clips = $state.raw<StarterProjectClip[]>([]);
   let idleSource = $state<StarterLayout['idleSource']>('standing');
+  let authoring=$state.raw<{attachment:ComponentProps<typeof AttachmentEditor>;contacts:NativeContactBinding;stamp:string}>();
   let inspectedPilot = $state<Omit<StarterPilotReview,'notes'>>();
   let bodyCanvas = $state<HTMLCanvasElement>(), restCanvas = $state<HTMLCanvasElement>();
   const ids = Object.keys(STARTER_PRESETS) as StarterPresetId[];
@@ -25,7 +30,7 @@
   async function refresh() { session = readStarter(); jobs = await starterJobs(session); projects = await listProjects(); }
   async function action(fn: () => Promise<void>) { if (busy) return; busy = true; error = ''; try { await fn(); } catch (e) { error = e instanceof Error ? e.message : String(e); } finally { busy = false; } }
   async function prepare() {
-    session = await prepareStarter(selected); layout = undefined; clips = []; source = undefined; review=''; inspectedPilot=undefined; renderError=''; idleSource='standing';
+    session = await prepareStarter(selected); layout = undefined; clips = []; source = undefined; review=''; inspectedPilot=undefined; renderError=''; idleSource='standing';authoring=undefined;
     status = 'Prepared eight exact native views. Preparation is free. Existing paid calls and reservations are retained.';
   }
   async function submit(extend: boolean) {
@@ -38,7 +43,7 @@
     await refresh();
   }
   function propose(nextSource: NonNullable<typeof source>, nextClips: StarterProjectClip[]) {
-    source=nextSource; clips=nextClips;
+    source=nextSource; clips=nextClips;authoring=undefined;
     const rig=source.project.manifest.rig,w=Math.max(rig.cell.w,rig.cell.h,...nextClips.flatMap(c=>c.entries.flatMap(e=>[e.image.w,e.image.h])));
     const maps=layout?$state.snapshot(layout.sourceFrames):sourceMaps();
     if(idleSource==='standing')maps.idle=[];
@@ -75,19 +80,34 @@
   }
   const clip = $derived(clips.find(c=>c.plan.preset===preset));
   const frames = $derived(stillIdle&&source?Array.from({length:STARTER_PRESETS.idle.frames},(_,index)=>({direction,index,image:source!.project.images.get(source!.project.manifest.rig.rest![direction]!.image)!})):clip?.entries.filter(e=>e.direction===direction).sort((a,b)=>a.index-b.index)??[]);
+  function placedSlot(slot:number){
+    if(!source||!layout)throw new Error('Load the native source and reviewed placement first.');
+    const sample=stillIdle?slot:layout.sourceFrames[preset][slot];
+    if(!Number.isSafeInteger(sample)||!frames[sample])throw new Error('Choose a valid native source sample for this playback slot.');
+    return placeStarterImage(frames[sample].image,layout.cell,stillIdle?layout.restOffset:layout.offsets[preset][direction]!);
+  }
+  function authoringStamp(){return stableStringify({source:session.plans[preset]?.binding,preset,direction,idleSource,cell:layout?.cell,standing:layout?.restOffset,offset:layout?.offsets[preset][direction],map:layout?.sourceFrames[preset]});}
+  async function openAuthoring(){
+    if(!source||!layout||!frames.length)throw new Error('Load the selected view before authoring its palms or feet.');
+    playing=false;const stamp=authoringStamp(),images=frames.map((_,i)=>placedSlot(i)),hashes=await Promise.all(images.map(cellHash));
+    const pivot={x:source.project.manifest.rig.pivot.x+layout.restOffset.x,y:source.project.manifest.rig.pivot.y+layout.restOffset.y};
+    const durations=images.map(()=>defaultMs(preset)),id=`starter-${await sha256(stableStringify({stamp,hashes,pivot,durations}))}`;
+    if(stamp!==authoringStamp())throw new Error('The view or layout changed while preparing authoring. Open the exact view again.');
+    authoring={stamp,contacts:{id,hashes,cell:{...layout.cell},direction,durations,loop:STARTER_PRESETS[preset].loop},attachment:{jobId:id,hashes,images,keypoints:images.map(()=>[]),durations,included:images.map(()=>true),loop:STARTER_PRESETS[preset].loop,pivot,direction}};
+    status='Opened exact placed playback slots. Palms and speed start unmeasured; these free editors never invent joint locations or certify hidden hands.';
+  }
+  $effect(()=>{if(authoring&&authoring.stamp!==authoringStamp())authoring=undefined;});
   $effect(()=>{ if (!layout || !source || !bodyCanvas || !restCanvas || !frames[frame]) return;
     renderError='';
     try {
-      const sample=stillIdle?frame:layout.sourceFrames[preset][frame];
-      if(!Number.isSafeInteger(sample)||!frames[sample])throw new Error('Choose a valid native source sample for this playback slot.');
-      const native=frames[sample].image,rig=source.project.manifest.rig,rest=source.project.images.get(rig.rest![direction]!.image)!;
-      const show=(canvas:HTMLCanvasElement,image:typeof native)=>{canvas.width=image.w;canvas.height=image.h;canvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(image.data),image.w,image.h),0,0)};
+      const rig=source.project.manifest.rig,rest=source.project.images.get(rig.rest![direction]!.image)!;
+      const show=(canvas:HTMLCanvasElement,image:typeof rest)=>{canvas.width=image.w;canvas.height=image.h;canvas.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(image.data),image.w,image.h),0,0)};
       show(restCanvas,placeStarterImage(rest,layout.cell,layout.restOffset));
-      show(bodyCanvas,placeStarterImage(native,layout.cell,stillIdle?layout.restOffset:layout.offsets[preset][direction]!));
+      show(bodyCanvas,placedSlot(frame));
     } catch(e) {bodyCanvas.getContext('2d')!.clearRect(0,0,bodyCanvas.width,bodyCanvas.height);restCanvas.getContext('2d')!.clearRect(0,0,restCanvas.width,restCanvas.height);renderError=e instanceof Error?e.message:String(e);playing=false;}
   });
   $effect(()=>{if(!playing||!frames.length)return;const timer=setTimeout(()=>{if(!STARTER_PRESETS[preset].loop&&frame===frames.length-1){playing=false;return;}frame=(frame+1)%frames.length},defaultMs(preset));return()=>clearTimeout(timer)});
-  function changed(){if(layout)layout.reviewed=false;playing=false;error='';}
+  function changed(){if(layout)layout.reviewed=false;playing=false;error='';authoring=undefined;}
   function changeIdleSource(){if(layout){layout.idleSource=idleSource;layout.sourceFrames.idle=idleSource==='standing'?[]:Array.from({length:STARTER_PRESETS.idle.frames},(_,i)=>i);}changed();frame=0;review='';inspectedPilot=undefined;}
   async function exportPack() {
     if(!source||!layout)throw new Error('Load the complete pack and review its layout first.');
@@ -125,6 +145,12 @@
     <label>Layout review notes<textarea class="bu-input" bind:value={layout.notes}></textarea></label>
     <label><input type="checkbox" bind:checked={layout.reviewed}>I reviewed whole-view alignment and the common pivot. This does not certify anatomy or weapon quality.</label>
     <button class="bu-btn" disabled={busy||!layout.reviewed||!layout.notes.trim()||!complete} onclick={()=>action(exportPack)}>Export experimental Studio pack · Free</button>
+    <div class="bu-actions"><button class="bu-btn" disabled={busy||!frames.length||!!renderError} onclick={()=>action(openAuthoring)}>Open hand and foot review · Free</button>{#if authoring}<button class="bu-btn" onclick={()=>authoring=undefined}>Close hand and foot review</button>{/if}</div>
+    {#if authoring}{#key authoring.contacts.id}
+      <p>This review uses the selected view's exact placed playback slots, including authored holds. Save drafts before changing the view or layout. Attachment exports contain those playback slots; they are research layers and are not silently merged into the pack's deduplicated body cells. A directional source or native frame artwork is required where rotation cannot show the correct weapon perspective.</p>
+      <NativeContactEditor binding={authoring.contacts} images={authoring.attachment.images} index={frame} pause={()=>playing=false}/>
+      <AttachmentEditor {...authoring.attachment}/>
+    {/key}{/if}
   {/if}
 </section>
 <style>.starter{padding:16px}.starter textarea{min-height:72px}.starter pre{overflow:auto;max-width:100%}.views{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.views figure{margin:0}.views canvas{width:100%;image-rendering:pixelated}.starter input[type=number]{width:100px}@media(max-width:560px){.views{grid-template-columns:1fr}}</style>

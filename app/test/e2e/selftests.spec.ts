@@ -1,5 +1,5 @@
 import { openStudio } from './immersive-helpers.ts'
-import { expect, test } from '@playwright/test'
+import { expect, test, type Locator } from '@playwright/test'
 import { browserSelfTests } from '../../src/lib/selftests.ts'
 import { readFile } from 'node:fs/promises'
 import {unzip} from '../../src/lib/store/zip.ts'
@@ -73,8 +73,10 @@ test('Motion Lab preserves candidate review, buffer exclusion and authored hold 
   await editor.getByRole('button',{name:'Save attachment draft',exact:true}).click();await expect(editor.getByRole('status')).toContainText('saved locally');
   const attachmentDownload=page.waitForEvent('download');await editor.getByRole('button',{name:'Save attachment document',exact:true}).click();const attachment=JSON.parse(await readFile((await(await attachmentDownload).path())!,'utf8'));
   expect(attachment.body.hashes).toHaveLength(4);expect(attachment.frames[0].angle).toBe(35);expect(attachment.body.jobId).toBe('motion-review-fixture');expect(attachment.body.padding).toBeGreaterThan(0);
+  const fixtureBody=await decodePngBytes(Buffer.from(output.reference.png,'base64')),hint=output.frames[0].keypoints.find((k:{label:string})=>k.label==='RIGHT ARM'),hand={x:Math.floor(hint.x*fixtureBody.w),y:Math.floor(hint.y*fixtureBody.h)};
+  expect(fixtureBody.data[(hand.y*fixtureBody.w+hand.x)*4+3]).toBe(255);
   const sourceCanvas=editor.getByLabel('Attachment source artwork',{exact:true}),sourceBox=(await sourceCanvas.boundingBox())!;
-  await sourceCanvas.click({position:{x:sourceBox.width*(32.25/128),y:sourceBox.height*(32.25/128)}});await expect(editor.getByRole('spinbutton',{name:'Source grip x',exact:true})).toHaveValue('32.5');await expect(editor.getByRole('spinbutton',{name:'Source grip y',exact:true})).toHaveValue('32.5');
+  await sourceCanvas.click({position:{x:sourceBox.width*((hand.x+.5)/128),y:sourceBox.height*((hand.y+.5)/128)}});await expect(editor.getByRole('spinbutton',{name:'Source grip x',exact:true})).toHaveValue(String(hand.x+.5));await expect(editor.getByRole('spinbutton',{name:'Source grip y',exact:true})).toHaveValue(String(hand.y+.5));
   await editor.getByRole('combobox',{name:'Source point',exact:true}).selectOption('axis');await sourceCanvas.click({position:{x:sourceBox.width*(96.25/128),y:sourceBox.height*(32.25/128)}});await expect(editor.getByRole('spinbutton',{name:'Source axis x',exact:true})).toHaveValue('96.5');await editor.getByRole('checkbox',{name:'Show grip guides',exact:true}).uncheck();
   const previewCanvas=editor.getByLabel('Attachment grip and occlusion editor',{exact:true});
   const opaquePreview=()=>previewCanvas.evaluate((element:HTMLCanvasElement)=>element.getContext('2d')!.getImageData(0,0,element.width,element.height).data.some((v,i)=>i%4===3&&v>0));
@@ -82,9 +84,18 @@ test('Motion Lab preserves candidate review, buffer exclusion and authored hold 
   await editor.getByRole('spinbutton',{name:'Source grip x',exact:true}).fill('-1');
   await expect(editor.getByRole('alert')).toContainText('grip inside');
   await expect.poll(opaquePreview,{message:'A failed render must clear the previous good frame'}).toBe(false);
+  await expect.poll(()=>sourceCanvas.evaluate((canvas:HTMLCanvasElement)=>canvas.getContext('2d')!.getImageData(0,0,canvas.width,canvas.height).data.some((v,i)=>i%4===3&&v>0))).toBe(true);
   await editor.screenshot({path:testInfo.outputPath('failed-preview-cleared.png')});
-  await editor.getByRole('spinbutton',{name:'Source grip x',exact:true}).fill('32.5');
+  await editor.getByRole('combobox',{name:'Source point',exact:true}).selectOption('grip');await sourceCanvas.click({position:{x:sourceBox.width*((hand.x+.5)/128),y:sourceBox.height*((hand.y+.5)/128)}});
   await expect.poll(opaquePreview).toBe(true);await expect(editor.getByRole('alert')).toHaveCount(0);
+  // This transport fixture deliberately reuses one standing PNG for every death pose.
+  // Its moving wrist hints are not valid contacts on that unchanged bitmap.
+  for(let i=0;i<4;i++){
+    await editor.getByRole('button',{name:`Author attachment frame ${i+1}`,exact:true}).click();
+    const box=(await previewCanvas.boundingBox())!,nativeSize=fixtureBody.w+2*attachment.body.padding;
+    await previewCanvas.click({position:{x:(hand.x+attachment.body.padding+.5)*box.width/nativeSize,y:(hand.y+attachment.body.padding+.5)*box.height/nativeSize}});
+  }
+  await editor.getByRole('button',{name:'Author attachment frame 1',exact:true}).click();
   await editor.getByLabel('Authored frame PNG',{exact:true}).setInputFiles({name:'wrong-canvas.png',mimeType:'image/png',buffer:Buffer.from(output.reference.png,'base64')});await expect(editor.getByRole('alert')).toContainText('Export the native frame first');
   await editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true}).fill('40');
   await expect.poll(opaquePreview).toBe(true);await expect(editor.getByRole('alert')).toContainText('Export the native frame first');
@@ -95,7 +106,7 @@ test('Motion Lab preserves candidate review, buffer exclusion and authored hold 
   await editor.getByRole('button',{name:'Save attachment draft',exact:true}).click();await expect(editor.getByRole('status')).toContainText('saved locally');
   await page.reload();await candidate.getByRole('button',{name:'Author held item',exact:true}).click();await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toHaveValue('35');await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toBeDisabled();
   const nativeDownload=page.waitForEvent('download');await editor.getByRole('button',{name:'Export authored attachment',exact:true}).click();const entries=await unzip(new Uint8Array(await readFile((await(await nativeDownload).path())!))),entry=(name:string)=>entries.get(name)!,manifest=JSON.parse(new TextDecoder().decode(entry('manifest.json'))),saved=JSON.parse(new TextDecoder().decode(entry('authoring.json')));
-  expect(saved.frames[0].authoredPng).toBe(authored);expect(saved.frames[1].authoredPng).toBeUndefined();expect(saved.asset.png).toBe(output.reference.png);expect(saved.asset.grip).toEqual({x:32.5,y:32.5});expect(saved.asset.axis).toEqual({x:96.5,y:32.5});expect(manifest.qualified).toBe(false);expect(manifest.frames[0].source).toBe('authored-frame');expect(manifest.frames[0].authoredFrameSha256).toMatch(/^[a-f0-9]{64}$/);expect(manifest.frames[1].source).toBe('rigid-source');
+  expect(saved.frames[0].authoredPng).toBe(authored);expect(saved.frames[1].authoredPng).toBeUndefined();expect(saved.asset.png).toBe(output.reference.png);expect(saved.asset.grip).toEqual({x:hand.x+.5,y:hand.y+.5});expect(saved.asset.axis).toEqual({x:96.5,y:32.5});expect(manifest.qualified).toBe(false);expect(manifest.frames[0].source).toBe('authored-frame');expect(manifest.frames[0].authoredFrameSha256).toMatch(/^[a-f0-9]{64}$/);expect(manifest.frames[1].source).toBe('rigid-source');
   const nativeImage=await decodePngBytes(Buffer.from(authored,'base64')),exportedImage=await decodePngBytes(entry('layers/0.png'));expect(exportedImage).toEqual(nativeImage);
   const frozen=await decodePngBytes(entry('body/0.png')),original=await decodePngBytes(Buffer.from(output.reference.png,'base64')),p=attachment.body.padding;for(let y=0;y<original.h;y++)expect(frozen.data.slice(((y+p)*frozen.w+p)*4,((y+p)*frozen.w+p+original.w)*4)).toEqual(original.data.slice(y*original.w*4,(y+1)*original.w*4));
   await editor.getByRole('button',{name:'Author attachment frame 2',exact:true}).click();await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toBeEnabled();await editor.getByRole('button',{name:'Author attachment frame 1',exact:true}).click();await editor.getByRole('button',{name:'Use source placement for this frame',exact:true}).click();await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toBeEnabled();expect(paid).toEqual([]);
@@ -408,6 +419,140 @@ test('native eight-direction starter pack reviews exact frames, exports evidence
     const offset = direction === 'north' ? 4 : 0;
     await expect(sourceSample).toHaveValue('7'); await expect.poll(() => pixel(10 + offset, 20 + offset)).toEqual([102, 20 + d, 37, 255]);
   }
+  // The managed native frames have no 2D joint hints. Authoring must start unmeasured,
+  // bind the placed playback slots, and never substitute a guessed hand or root speed.
+  await starter.getByRole('combobox', { name: 'Native view', exact: true }).selectOption('north');
+  const openAuthoring = starter.getByRole('button', { name: 'Open hand and foot review · Free', exact: true });
+  await openAuthoring.click();
+  const attachmentEditor = starter.getByRole('region', { name: 'Authored held item', exact: true });
+  const footEditor = starter.getByRole('region', { name: 'Native 2D foot review', exact: true });
+  await expect(footEditor.getByRole('spinbutton', { name: 'Native travel X, px/s', exact: true })).toHaveValue('');
+  await expect(footEditor.getByRole('spinbutton', { name: 'Native travel Y, px/s', exact: true })).toHaveValue('');
+  const clickPixel = async (canvas: Locator, x: number, y: number) => {
+    const dimensions = await canvas.evaluate((element: HTMLCanvasElement) => ({ w: element.width, h: element.height })), box = (await canvas.boundingBox())!;
+    await canvas.click({ position: { x: (x + .5) * box.width / dimensions.w, y: (y + .5) * box.height / dimensions.h } });
+  };
+  const attachmentPng = await page.evaluate(async () => {
+    const imagePath = '/src/lib/image/png.ts', codecPath = '/src/lib/image/pngraw.ts', image = await import(imagePath), codec = await import(codecPath), source = image.makeImg(3, 3);
+    source.data.set([180, 180, 180, 255], 4); source.data.set([100, 60, 30, 255], 16);
+    return image.bytesToBase64(await codec.encodePngBytes(source));
+  });
+  await attachmentEditor.getByLabel('Attachment PNG', { exact: true }).setInputFiles({ name: 'synthetic-directional-axe.png', mimeType: 'image/png', buffer: Buffer.from(attachmentPng, 'base64') });
+  await expect(attachmentEditor.getByRole('status')).toContainText('No frame joints were supplied');
+  const attachmentCanvas = attachmentEditor.getByLabel('Attachment grip and occlusion editor', { exact: true });
+  const attachmentExport = attachmentEditor.getByRole('button', { name: 'Export authored attachment', exact: true });
+  await expect(attachmentExport).toBeDisabled();
+  await expect(attachmentEditor.getByRole('spinbutton', { name: 'Target grip X, px', exact: true })).toHaveCount(0);
+  await expect.poll(() => attachmentCanvas.evaluate((canvas: HTMLCanvasElement) => {
+    const data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+    return { w: canvas.width, h: canvas.height, opaque: data.filter((v, i) => i % 4 === 3 && v > 0).length, palm: [...canvas.getContext('2d')!.getImageData(38, 48, 1, 1).data] };
+  })).toEqual({ w: 96, h: 96, opaque: 2, palm: [102, 24, 37, 255] });
+  await clickPixel(attachmentCanvas, 2, 2);
+  await expect(attachmentEditor.getByRole('alert')).toContainText('Choose an opaque visible palm pixel');
+  await expect(attachmentEditor.getByRole('spinbutton', { name: 'Target grip X, px', exact: true })).toHaveCount(0);
+  await attachmentEditor.getByRole('button', { name: 'Save attachment draft', exact: true }).click();
+  await expect(attachmentEditor.getByRole('status')).toContainText('saved locally');
+  const unmarkedDraft = await page.evaluate(() => JSON.parse(localStorage.getItem(Object.keys(localStorage).find(k => k.startsWith('pixeldoll.motionAttachment.'))!)!));
+  expect(unmarkedDraft.frames).toHaveLength(8);
+  for (const frame of unmarkedDraft.frames) expect(frame).not.toHaveProperty('grip');
+  const sourceCanvas = attachmentEditor.getByLabel('Attachment source artwork', { exact: true });
+  await clickPixel(sourceCanvas, 1, 1);
+  await attachmentEditor.getByRole('combobox', { name: 'Source point', exact: true }).selectOption('axis');
+  await clickPixel(sourceCanvas, 1, 0); await attachmentEditor.getByRole('checkbox', { name: 'Show grip guides', exact: true }).uncheck();
+  await attachmentEditor.getByRole('spinbutton', { name: 'Occlusion brush, px', exact: true }).fill('1');
+  for (let index = 0; index < 8; index++) {
+    await attachmentEditor.getByRole('button', { name: `Author attachment frame ${index + 1}`, exact: true }).click();
+    await attachmentEditor.getByRole('combobox', { name: 'Canvas action', exact: true }).selectOption('grip');
+    await clickPixel(attachmentCanvas, 38, 48);
+    await expect(attachmentEditor.getByRole('spinbutton', { name: 'Target grip X, px', exact: true })).toHaveValue('38.5');
+    await expect(attachmentEditor.getByRole('spinbutton', { name: 'Target grip Y, px', exact: true })).toHaveValue('48.5');
+    if (index < 7) await expect(attachmentExport).toBeDisabled();
+    await attachmentEditor.getByRole('combobox', { name: 'Canvas action', exact: true }).selectOption('paint');
+    await clickPixel(attachmentCanvas, 38, 48);
+  }
+  await expect(attachmentExport).toBeEnabled();
+  await attachmentEditor.getByRole('button', { name: 'Author attachment frame 2', exact: true }).click();
+  await attachmentEditor.getByRole('checkbox', { name: 'Show grip guides', exact: true }).check();
+  await attachmentEditor.getByRole('spinbutton', { name: 'Target grip X, px', exact: true }).fill('2.5');
+  await expect(attachmentEditor.getByRole('alert')).toContainText('opaque visible palm');
+  await expect(attachmentEditor.getByRole('spinbutton', { name: 'Target grip X, px', exact: true })).toBeEnabled();
+  const bareAttachmentBody = () => attachmentCanvas.evaluate((canvas: HTMLCanvasElement) => {
+    const context = canvas.getContext('2d')!, data = context.getImageData(0, 0, canvas.width, canvas.height).data;
+    return { opaque: data.filter((v, i) => i % 4 === 3 && v > 0).length, palm: [...context.getImageData(38, 48, 1, 1).data] };
+  });
+  await expect.poll(bareAttachmentBody).toEqual({ opaque: 2, palm: [102, 24, 31, 255] });
+  await attachmentExport.click(); await expect(attachmentEditor.getByRole('alert')).toContainText('opaque visible palm');
+  await attachmentEditor.getByRole('combobox', { name: 'Canvas action', exact: true }).selectOption('grip');
+  await clickPixel(attachmentCanvas, 38, 48); await expect(attachmentEditor.getByRole('alert')).toHaveCount(0);
+  await attachmentEditor.getByRole('checkbox', { name: 'Show grip guides', exact: true }).uncheck();
+  await attachmentEditor.getByRole('textbox', { name: 'Attachment review notes', exact: true }).fill('Synthetic eight-slot transport check only. Not qualified weapon artwork.');
+  const attachmentDownload = page.waitForEvent('download'); await attachmentExport.click();
+  const attachmentFiles = await unzip(new Uint8Array(await readFile((await(await attachmentDownload).path())!)));
+  const attachmentManifest = JSON.parse(new TextDecoder().decode(attachmentFiles.get('manifest.json')!));
+  const attachmentDocument = JSON.parse(new TextDecoder().decode(attachmentFiles.get('authoring.json')!));
+  expect(attachmentManifest).toMatchObject({ qualified: false, direction: 'north', loop: false, cell: { w: 96, h: 96 }, pivot: { x: 48, y: 60 } });
+  expect(attachmentManifest.frames).toHaveLength(8); expect(attachmentDocument.body.hashes).toHaveLength(8);
+  expect([...attachmentFiles.keys()].filter(name => /^(body|layers)\//.test(name))).toHaveLength(16);
+  for (const [slot, sourceIndex] of sharedSources.entries()) {
+    const expectedHash = expected.find(row => row.preset === 'slash' && row.direction === 'north' && row.index === sourceIndex)!.outputHash;
+    expect(attachmentManifest.frames[slot]).toMatchObject({ index: slot, bodySha: expectedHash, ms: 100, included: true, source: 'rigid-source', hiddenPixels: 1 });
+    expect(attachmentDocument.body.hashes[slot]).toBe(expectedHash); expect(attachmentDocument.frames[slot].grip).toEqual({ x: 38.5, y: 48.5 });
+    const body = await decodePngBytes(attachmentFiles.get(`body/${slot}.png`)!);
+    expect([body.w, body.h]).toEqual([96, 96]);
+    const unpadded = { w: 48, h: 48, data: new Uint8ClampedArray(48 * 48 * 4) };
+    for (let y = 0; y < 48; y++) unpadded.data.set(body.data.subarray(((y + 24) * 96 + 24) * 4, ((y + 24) * 96 + 72) * 4), y * 48 * 4);
+    expect(await cellHash(unpadded)).toBe(expectedHash);
+    const layer = await decodePngBytes(attachmentFiles.get(`layers/${slot}.png`)!);
+    expect([...layer.data.subarray((48 * 96 + 38) * 4, (48 * 96 + 38) * 4 + 4)]).toEqual([0, 0, 0, 0]);
+    expect(layer.data.filter((v, i) => i % 4 === 3 && v > 0)).toHaveLength(1);
+  }
+  const clippedDocument = structuredClone(attachmentDocument);
+  clippedDocument.asset.png = await page.evaluate(async () => {
+    const imagePath = '/src/lib/image/png.ts', codecPath = '/src/lib/image/pngraw.ts', image = await import(imagePath), codec = await import(codecPath), source = image.makeImg(256, 3);
+    source.data.set([180, 180, 180, 255], 4); source.data.set([100, 60, 30, 255], (256 + 1) * 4); source.data.set([180, 180, 180, 255], (256 + 255) * 4);
+    return image.bytesToBase64(await codec.encodePngBytes(source));
+  });
+  await attachmentEditor.getByLabel('Import attachment document', { exact: true }).setInputFiles({ name: 'clipped-source.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(clippedDocument)) });
+  await expect(attachmentEditor.getByText(/1 source pixels clip outside the canvas\./)).toBeVisible();
+  await attachmentExport.click(); await expect(attachmentEditor.getByRole('alert')).toContainText('clips source artwork');
+  await attachmentEditor.getByRole('button', { name: 'Save attachment draft', exact: true }).click();
+  await expect(attachmentEditor.getByRole('status')).toContainText('saved locally');
+  const clippedDraft = await page.evaluate(id => JSON.parse(localStorage.getItem('pixeldoll.motionAttachment.' + id)!), attachmentDocument.body.jobId);
+  expect(clippedDraft.asset.png).toBe(clippedDocument.asset.png);
+  expect(clippedDraft.frames[0].grip).toEqual({ x: 38.5, y: 48.5 });
+  const offBodyDocument = structuredClone(attachmentDocument); offBodyDocument.frames[0].grip = { x: 2.5, y: 48.5 };
+  await attachmentEditor.getByRole('checkbox', { name: 'Show grip guides', exact: true }).check();
+  await attachmentEditor.getByLabel('Import attachment document', { exact: true }).setInputFiles({ name: 'off-body-contact.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(offBodyDocument)) });
+  await expect(attachmentEditor.getByRole('alert')).toContainText('opaque visible palm');
+  await expect.poll(bareAttachmentBody).toEqual({ opaque: 2, palm: [102, 24, 37, 255] });
+  await attachmentEditor.getByRole('combobox', { name: 'Canvas action', exact: true }).selectOption('grip');
+  await clickPixel(attachmentCanvas, 38, 48); await expect(attachmentEditor.getByRole('alert')).toHaveCount(0);
+  const footCanvas = footEditor.getByLabel('Mark native visible foot', { exact: true });
+  await expect(footEditor.getByRole('button', { name: 'Save native foot draft', exact: true })).toBeEnabled();
+  await clickPixel(footCanvas, 2, 2); await expect(footEditor.getByRole('alert')).toContainText('Choose an opaque pixel');
+  await clickPixel(footCanvas, 14, 24);
+  await footEditor.getByRole('textbox', { name: 'Native foot review notes', exact: true }).fill('One synthetic visible mark. Travel speed intentionally unknown.');
+  const footDownload = page.waitForEvent('download'); await footEditor.getByRole('button', { name: 'Export native foot review', exact: true }).click();
+  const footReview = JSON.parse(await readFile((await(await footDownload).path())!, 'utf8'));
+  expect(footReview).toMatchObject({ qualified: false, speed: { x: null, y: null }, marks: [{ frame: 0, track: 'A', landmark: 'heel', stance: 'stance-1', x: 14, y: 24 }], measurements: { qualified: false, partial: true, intervalHolds: [] } });
+  expect(footReview.binding.hashes).toEqual(attachmentDocument.body.hashes); expect(footReview.binding.durations).toEqual(Array(8).fill(100));
+  expect(footReview.measurements.stances[0].boundarySpanPx).toBeNull();
+  const rejectStaleAttachment = async () => {
+    await expect(attachmentEditor).toHaveCount(0); await openAuthoring.click();
+    await expect(attachmentEditor.getByLabel('Attachment source artwork', { exact: true })).toHaveCount(0);
+    await attachmentEditor.getByLabel('Import attachment document', { exact: true }).setInputFiles({ name: 'stale-attachment.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(attachmentDocument)) });
+    await expect(attachmentEditor.getByRole('alert')).toContainText('does not match these exact frozen frames');
+    await expect(attachmentEditor.getByLabel('Attachment source artwork', { exact: true })).toHaveCount(0);
+  };
+  await sourceSample.selectOption('0'); await rejectStaleAttachment();
+  await sourceSample.selectOption('7');
+  const authoredMotionX = starter.getByRole('spinbutton', { name: 'Motion X', exact: true });
+  await authoredMotionX.fill('5'); await authoredMotionX.press('Tab'); await rejectStaleAttachment();
+  await starter.getByRole('combobox', { name: 'Native view', exact: true }).selectOption('east'); await rejectStaleAttachment();
+  await starter.getByRole('button', { name: 'Close hand and foot review', exact: true }).click();
+  await starter.getByRole('combobox', { name: 'Native view', exact: true }).selectOption('north');
+  await authoredMotionX.fill('4'); await authoredMotionX.press('Tab');
+  await starter.getByRole('combobox', { name: 'Native view', exact: true }).selectOption('south-west');
   const reviewed = starter.getByRole('checkbox', { name: 'I reviewed whole-view alignment and the common pivot. This does not certify anatomy or weapon quality.', exact: true });
   const exportButton = starter.getByRole('button', { name: 'Export experimental Studio pack · Free', exact: true });
   await starter.getByRole('textbox', { name: 'Layout review notes', exact: true }).fill('Synthetic eight-view alignment reviewed. This test does not certify art quality.');
