@@ -70,4 +70,24 @@ dedicated in-app setup screen. Optional origin-wide plaintext remembered credent
 credential-ownership work remain existing project decisions. The reviewer inspected concurrent PWA work only for agent
 gating and credential caching interactions; that work's unrelated features and uncommitted edits were not included.
 
-Post-push real authentication results will be appended before closing the review card.
+## Post-push real authentication
+
+Reviewed application fixes were pushed to PixelDoll `7daefa38` and Backpack `cc25fad` on their respective `origin/main`
+branches. Fresh localhost-only agent servers then inherited the current Windows User environment value. No real dotenv
+file was rewritten. The final native-browser live harness passed in both apps on its first run in this follow-up:
+
+- PixelDoll: local agent endpoint 200, Agent mode badge, automatic connection and GET `/v2/balance` 200.
+- Backpack: local agent endpoint 200, Agent mode badge, automatic connection and all seven first-page asset-family GETs
+  200. No pagination or details were allowed.
+- Both: no credential in local/session storage, no credential output or artifact, and zero paid generations. Browser
+  contexts were closed and only the two task-owned localhost test servers were stopped.
+
+Exactly eight real GETs were authorized by the live harness. Its guards intentionally blocked one extra PixelDoll API
+request, three extra Backpack API requests and 60 picture requests, so gallery picture rendering is outside this live
+authentication result. No screenshot, trace, HAR, response body, token header or browser profile was retained. Fake-token
+and failure-path cases remained offline. This closes the follow-up card `PVTI_lAHOAAg2ds4Boo7NzhFfe0E`; no further token
+fix or paid test is indicated by the reviewed evidence. The documented boundaries above remain in force.
+
+The independent reviewer also checked the final committed application diffs and confirmed they match the approved
+fixes, with no incidental token-policy drift or remaining concrete blocker. That final check did not repeat the
+coordinator's whole-suite/browser/live runs.
