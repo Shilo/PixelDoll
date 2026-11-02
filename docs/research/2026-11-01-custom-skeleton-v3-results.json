@@ -1,0 +1,581 @@
+{
+  "version": 1,
+  "date": "2026-11-01",
+  "branch": "codex/motion-lab",
+  "professionalQualification": false,
+  "campaign": {
+    "authorized": 1000,
+    "remaining": 2,
+    "newReservationRetained": 8,
+    "newBilled": 6,
+    "totalBilled": 998,
+    "previous": 992
+  },
+  "request": {
+    "character_id": "f69d3f89-043e-4e04-b904-dd97871c5d06",
+    "mode": "skeleton-v3",
+    "animation_name": "Motion Lab planted overhead comparison 2026-11-01",
+    "action_description": "overhead strike with closed right fist",
+    "directions": [
+      "south",
+      "east"
+    ],
+    "frame_count": 8,
+    "move": {
+      "name": "chop",
+      "energy": 0.8
+    },
+    "poses": [
+      {
+        "frame": 1,
+        "right_foot": [
+          0,
+          0,
+          0
+        ],
+        "left_foot": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frame": 2,
+        "right_foot": [
+          0,
+          0,
+          0
+        ],
+        "left_foot": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frame": 3,
+        "right_foot": [
+          0,
+          0,
+          0
+        ],
+        "left_foot": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frame": 4,
+        "right_foot": [
+          0,
+          0,
+          0
+        ],
+        "left_foot": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frame": 5,
+        "right_foot": [
+          0,
+          0,
+          0
+        ],
+        "left_foot": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frame": 6,
+        "right_foot": [
+          0,
+          0,
+          0
+        ],
+        "left_foot": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frame": 7,
+        "right_foot": [
+          0,
+          0,
+          0
+        ],
+        "left_foot": [
+          0,
+          0,
+          0
+        ]
+      },
+      {
+        "frame": 8,
+        "right_foot": [
+          0,
+          0,
+          0
+        ],
+        "left_foot": [
+          0,
+          0,
+          0
+        ]
+      }
+    ]
+  },
+  "group": "8ab6d6e1-3e3c-46a1-bd99-ca6182c84b7f",
+  "billing": [
+    {
+      "id": "5a19b0b3-b34f-4e08-ae53-63ff51301263",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 3
+      },
+      "lastResponseStatus": null
+    },
+    {
+      "id": "7f43322a-2e84-410d-ab7c-a3a579aa7c4f",
+      "status": "completed",
+      "usage": {
+        "type": "generations",
+        "generations": 3
+      },
+      "lastResponseStatus": null
+    }
+  ],
+  "reference": {
+    "managed": {
+      "cell": [
+        64,
+        64
+      ],
+      "x": 17,
+      "y": 2,
+      "w": 27,
+      "h": 60,
+      "opaque": 963,
+      "trimmedSha256": "857fe9a51ab04aa54a1d475158f16a094a44c1366eb1a9c6d3119144ee6b814e"
+    },
+    "baseline": {
+      "cell": [
+        80,
+        80
+      ],
+      "x": 23,
+      "y": 13,
+      "w": 31,
+      "h": 62,
+      "opaque": 1009,
+      "trimmedSha256": "3b3cf00d617ccdf7a320ba62f63f86c52ce1ce876dc6436b35927a6ac781a97c"
+    },
+    "sameOpaquePixelsAfterTranslation": false,
+    "note": "If false, this is a related-character workflow comparison, not a controlled pixel-identical A/B."
+  },
+  "directions": [
+    {
+      "direction": "south",
+      "frames": [
+        {
+          "file": "0.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 27,
+            "y": 17,
+            "w": 39,
+            "h": 61,
+            "opaque": 975,
+            "trimmedSha256": "985a48e05fa10575f152d3ecb217366a08b340cad2e9d697ae802102f64e9635"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "1.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 28,
+            "y": 17,
+            "w": 39,
+            "h": 61,
+            "opaque": 991,
+            "trimmedSha256": "bf5134971520b751c17df3a563c390fec3eaeffbd380119dcfb017265ff62afe"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "2.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 30,
+            "y": 17,
+            "w": 38,
+            "h": 61,
+            "opaque": 985,
+            "trimmedSha256": "fe0015635946885a8a48d3f821cc5fe23b415254ae3b03586726d2e77470a04e"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "3.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 31,
+            "y": 22,
+            "w": 36,
+            "h": 56,
+            "opaque": 855,
+            "trimmedSha256": "0b1e89667e1f4ed775e4e98fea4a21d203cab725618eaa8e86603a355ad741b8"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "4.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 36,
+            "y": 29,
+            "w": 31,
+            "h": 49,
+            "opaque": 778,
+            "trimmedSha256": "e1fb9b21974cac6bbc2936484e758986e10976bfdcf27ff0f634dd435f0b1286"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "5.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 36,
+            "y": 29,
+            "w": 31,
+            "h": 49,
+            "opaque": 782,
+            "trimmedSha256": "0d9fd620c2146e21addb2080b108ebd152f17c6fd0610f6b999dafcde6bcbeb5"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "6.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 34,
+            "y": 20,
+            "w": 27,
+            "h": 58,
+            "opaque": 934,
+            "trimmedSha256": "0ed4527baa5434c290ab4dd4a236a6b391ece6c8e499d215d42a5647bb22cc7a"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "7.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 34,
+            "y": 18,
+            "w": 27,
+            "h": 60,
+            "opaque": 964,
+            "trimmedSha256": "aceb81fdaaecda96e6a32ca6ccb52ba614d3bce1d5ac5f80d0903128f3f911e8"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        }
+      ],
+      "bottomTwoRowsOutline": {
+        "samples": [
+          {
+            "left": 37,
+            "right": 56,
+            "bottom": 77
+          },
+          {
+            "left": 37,
+            "right": 56,
+            "bottom": 77
+          },
+          {
+            "left": 37,
+            "right": 56,
+            "bottom": 77
+          },
+          {
+            "left": 38,
+            "right": 56,
+            "bottom": 77
+          },
+          {
+            "left": 38,
+            "right": 56,
+            "bottom": 77
+          },
+          {
+            "left": 38,
+            "right": 56,
+            "bottom": 77
+          },
+          {
+            "left": 38,
+            "right": 56,
+            "bottom": 77
+          },
+          {
+            "left": 37,
+            "right": 56,
+            "bottom": 77
+          }
+        ],
+        "ranges": {
+          "left": 1,
+          "right": 0,
+          "bottom": 0
+        },
+        "note": "Silhouette proxy only. Changes can come from foot shape or pose, not just sliding; does not certify planted soles."
+      },
+      "soleQualification": "Requires visible heel/toe marks, not the silhouette bottom or ankle proxy.",
+      "equippedGrip": "Untested: no weapon in reference."
+    },
+    {
+      "direction": "east",
+      "frames": [
+        {
+          "file": "0.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 38,
+            "y": 19,
+            "w": 17,
+            "h": 59,
+            "opaque": 556,
+            "trimmedSha256": "618a61e86c868e081d2dba648607e91a8f34dc02bbaa26a004b4c536873e0088"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "1.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 33,
+            "y": 19,
+            "w": 22,
+            "h": 59,
+            "opaque": 604,
+            "trimmedSha256": "fc0b73ea288b60f90da8481d03c36ebb3dbe81f8b76c63a4ace5eb91659e9475"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "2.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 35,
+            "y": 19,
+            "w": 20,
+            "h": 59,
+            "opaque": 584,
+            "trimmedSha256": "88320343fb5463689b9c842528b04f43a1f1885692ae4a6b16660d15b2e6a5ef"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "3.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 43,
+            "y": 23,
+            "w": 32,
+            "h": 56,
+            "opaque": 624,
+            "trimmedSha256": "af82dc394425e4aa6af25424135f522e9b1f8533bf41cb94a2dd6522acb6b1af"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "4.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 43,
+            "y": 25,
+            "w": 27,
+            "h": 54,
+            "opaque": 675,
+            "trimmedSha256": "c74d8d5227378beac7608364f663df0c817a781922290f8e7d7dceb896fe4119"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "5.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 43,
+            "y": 25,
+            "w": 27,
+            "h": 54,
+            "opaque": 670,
+            "trimmedSha256": "8162dfbc425656b55d0604416252fd1e4280b84259af69283c17bfc32dea8fa5"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "6.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 43,
+            "y": 20,
+            "w": 13,
+            "h": 59,
+            "opaque": 531,
+            "trimmedSha256": "9d7d902e757d888e74df871403a4c4b6354f0239f6c0101a51744cf145d5f414"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        },
+        {
+          "file": "7.png",
+          "cell": [
+            96,
+            96
+          ],
+          "bounds": {
+            "x": 42,
+            "y": 19,
+            "w": 13,
+            "h": 59,
+            "opaque": 530,
+            "trimmedSha256": "72a99ff90ba341d8b8bbc751f7cdf87b47bd57ce034b5d0e81f33b50e6d03587"
+          },
+          "borderPixels": 0,
+          "detachedPixels": 0
+        }
+      ],
+      "bottomTwoRowsOutline": {
+        "samples": [
+          {
+            "left": 44,
+            "right": 54,
+            "bottom": 77
+          },
+          {
+            "left": 44,
+            "right": 54,
+            "bottom": 77
+          },
+          {
+            "left": 44,
+            "right": 54,
+            "bottom": 77
+          },
+          {
+            "left": 46,
+            "right": 53,
+            "bottom": 78
+          },
+          {
+            "left": 46,
+            "right": 52,
+            "bottom": 78
+          },
+          {
+            "left": 46,
+            "right": 52,
+            "bottom": 78
+          },
+          {
+            "left": 47,
+            "right": 53,
+            "bottom": 78
+          },
+          {
+            "left": 44,
+            "right": 54,
+            "bottom": 77
+          }
+        ],
+        "ranges": {
+          "left": 3,
+          "right": 2,
+          "bottom": 1
+        },
+        "note": "Silhouette proxy only. Changes can come from foot shape or pose, not just sliding; does not certify planted soles."
+      },
+      "soleQualification": "Requires visible heel/toe marks, not the silhouette bottom or ankle proxy.",
+      "equippedGrip": "Untested: no weapon in reference."
+    }
+  ],
+  "limitations": [
+    "Related but nonidentical reference artwork; not a controlled A/B.",
+    "Bare-body motion only; equipped grip and occlusion untested.",
+    "Foot-outline extrema are not anatomical sole tracking.",
+    "Downloaded export has no explicit pivot, durations or expanded skeleton track.",
+    "Managed output is 96x96 from a 64px source.",
+    "West, diagonals, other bodies and repeatability remain unqualified."
+  ],
+  "recommendation": "Keep custom V3 experimental. Use curated frozen body clips with authored weapon anchors, occlusion masks and visible sole review."
+}

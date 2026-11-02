@@ -108,12 +108,12 @@ test('Motion Lab stores visible sole marks and reports only sampled projected di
   await page.reload();await page.getByRole('button',{name:'Measure rendered soles',exact:true}).click();await expect(editor.getByRole('textbox',{name:'Sole review notes',exact:true})).toHaveValue('Synthetic UI fixture, not a rendered quality claim.');expect(paid).toEqual([]);
 });
 
-test('Motion Lab inspects MCP through read-only requests and exports no credential or session',async({page})=>{
+test('Motion Lab inspects MCP, guards one comparison and exports no credential or session',async({page})=>{
   await page.addInitScript(()=>localStorage.setItem('pixeldoll.agentKey','off'));const requests:{method:string;params?:{name?:string}}[]=[];
   await page.route('https://*.pixellab.ai/**',async route=>{
     if(!route.request().url().endsWith('/mcp'))return route.abort();const r=route.request().postDataJSON();requests.push(r);
     if(r.method==='notifications/initialized')return route.fulfill({status:202,body:''});
-    const result=r.method==='initialize'?{protocolVersion:'2025-03-26'}:r.method==='tools/list'?{tools:[{name:'animate_character',inputSchema:{properties:{poses:{}}}},{name:'list_characters',inputSchema:{}},{name:'delete_character',inputSchema:{}}]}:{content:[{type:'text',text:'Synthetic benchmark character'}]};
+    const result=r.method==='initialize'?{protocolVersion:'2025-03-26'}:r.method==='tools/list'?{tools:[{name:'animate_character',inputSchema:{properties:Object.fromEntries(['character_id','mode','animation_name','action_description','directions','frame_count','move','poses'].map(k=>[k,{}]))}},{name:'list_characters',inputSchema:{}},{name:'delete_character',inputSchema:{}}]}:{content:[{type:'text',text:'Synthetic benchmark character'}]};
     return route.fulfill({contentType:'text/event-stream',headers:{'mcp-session-id':'synthetic-private-session','access-control-expose-headers':'mcp-session-id'},body:`event: message\ndata: ${JSON.stringify({jsonrpc:'2.0',id:r.id,result})}\n\n`});
   });
   await page.goto('/motion-lab.html');await expect(page.getByRole('status')).toContainText('Offline lab ready');const probe=page.getByRole('region',{name:'Custom Skeleton v3 inspection',exact:true});await expect(probe.getByRole('button',{name:'Inspect custom V3 MCP schema (free)',exact:true})).toBeDisabled();
@@ -121,6 +121,7 @@ test('Motion Lab inspects MCP through read-only requests and exports no credenti
   await probe.getByRole('button',{name:'Inspect custom V3 MCP schema (free)',exact:true}).click();await expect(probe.locator('pre')).toContainText('animate_character');await expect(probe.locator('pre')).not.toContainText('delete_character');
   await probe.getByRole('button',{name:'Find benchmark characters (free)',exact:true}).click();await expect(probe.locator('pre')).toContainText('Synthetic benchmark character');
   const downloading=page.waitForEvent('download');await probe.getByRole('button',{name:'Export custom V3 inspection',exact:true}).click();const text=await readFile((await(await downloading).path())!,'utf8'),output=JSON.parse(text);expect(output.events).toHaveLength(2);expect(output.paidRequests).toBe(0);expect(text).not.toContain('synthetic-mcp-test-key');expect(text).not.toContain('synthetic-private-session');expect(requests.filter(r=>r.method==='tools/call').map(r=>r.params?.name)).toEqual(['list_characters']);
+  await probe.getByRole('textbox',{name:'Managed character ID',exact:true}).fill('f69d3f89-043e-4e04-b904-dd97871c5d06');const comparison=probe.getByRole('button',{name:'Run planted overhead comparison, south and east (reserve 8 gens)',exact:true});await expect(comparison).toBeDisabled();await probe.getByRole('button',{name:'Read custom V3 authoring instructions (free)',exact:true}).click();await expect(comparison).toBeEnabled();await comparison.click();await expect(comparison).toBeDisabled();await expect(probe).toContainText('Custom comparison: receipt; 8 generations reserved.');await page.reload();await expect(page.getByRole('region',{name:'Custom Skeleton v3 inspection',exact:true}).getByRole('button',{name:'Run planted overhead comparison, south and east (reserve 8 gens)',exact:true})).toBeDisabled();expect(requests.filter(r=>r.params?.name==='animate_character')).toHaveLength(2);
 });
 
 test('browser PNG and IndexedDB self-tests preserve every registered check', async ({ page }) => {
