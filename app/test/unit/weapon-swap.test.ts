@@ -11,8 +11,9 @@ vi.mock('../../src/lib/store/db.ts',()=>({get:async(_store:string,id:string)=>co
 vi.mock('../../src/ui/motion-lab/fixed-inpaint.ts',()=>({dispatchFixedInpaint:(...args:unknown[])=>controls.dispatch(...args),readFixedInpaint:(key:string)=>JSON.parse(controls.receipts.get(key)??'null'),exportFixedInpaint:(key:string)=>controls.export(key)}));
 import {DISARM_PACKET_SHA256,COMPLETION_DISARM_PACKET_SHA256} from '../../src/ui/motion-lab/weapon-aware.ts';
 import {SWAP_KEY,SWAP_PACKET_SHA256,COMPLETION_SWAP_KEY,COMPLETION_SWAP_PACKET_SHA256,BODY_STAR_RECIPE_SHA256,readSwap,readCompletionSwap,exportCompletionSwap,parseSwapPacket,submitSwap,type SwapPacket} from '../../src/ui/motion-lab/weapon-swap.ts';
+import {AXIS_REPAIR_KEY,AXIS_REPAIR_PACKET_SHA256,AXIS_CALIBRATION_SHA256,readAxisRepair,exportAxisRepair} from '../../src/ui/motion-lab/weapon-axis-repair.ts';
 
-type Prior={probe:{callId:string;jobId:string;packet:{canonicalHash:string;gridSha256:string;frames:{index:number;weaponMask:string;bodyMask:string;unknownMask:string;grip:{x:number;y:number}}[]}};job:{id:string;state:string;inputs:string[]};images:{sha:string;png:string}[]};
+type Prior={probe:{callId:string;jobId:string;packet:{canonicalHash:string;gridSha256:string;indices:number[];frames:{index:number;weaponMask:string;bodyMask:string;unknownMask:string;grip:{x:number;y:number}}[]}};job:{id:string;state:string;inputs:string[]};images:{sha:string;png:string}[]};
 afterEach(()=>{controls.approved='';controls.approvedHash='';controls.sourceApproved='';controls.sourceApprovedHash='';controls.recipeApproved='';controls.recipeApprovedHash='';controls.prior=undefined;controls.jobs.clear();controls.blobs.clear();controls.receipts.clear();controls.exportDisarm.mockClear();controls.exportCompletionDisarm.mockClear();controls.dispatch.mockReset();controls.export.mockReset();});
 function put(grid:Img,cell:Img,index:number,cols=2){for(let y=0;y<144;y++)grid.data.set(cell.data.subarray(y*144*4,(y+1)*144*4),((Math.floor(index/cols)*144+y)*grid.w+(index%cols)*144)*4);}
 function black(){const image=makeImg(144,144);for(let p=0;p<144*144;p++)image.data[p*4+3]=255;return image;}
@@ -37,7 +38,7 @@ async function fixture(){
   }
   const inputBytes=await encodePngBytes(input),bareBytes=await encodePngBytes(bare),maskBytes=await encodePngBytes(mask);
   const packet:SwapPacket={version:1,kind:'weapon-aware-swap',cell:144,cols:2,indices:[1,3,4,6],frames,sourceDisarmJobId:'synthetic-disarm-receipt',sourceDisarmResultSha:await sha256(bareBytes),sourceDisarmCallId:'synthetic-disarm-call',sourceArmedPacketCanonicalHash:DISARM_PACKET_SHA256,gridSha256:await sha256(inputBytes),maskSha256:await sha256(maskBytes),canonicalHash:SWAP_PACKET_SHA256,request:{description:'One synthetic hatchet swap.',seed:733,no_background:true,inpainting_image:{image:{type:'base64',base64:bytesToBase64(inputBytes)},size:{width:288,height:288}},mask_image:{image:{type:'base64',base64:bytesToBase64(maskBytes)},size:{width:288,height:288}}}};
-  const prior:Prior={probe:{callId:packet.sourceDisarmCallId,jobId:packet.sourceDisarmJobId,packet:{canonicalHash:DISARM_PACKET_SHA256,gridSha256:packet.gridSha256,frames:frames.map(f=>({index:f.index,weaponMask:f.weaponMask,bodyMask:f.bodyMask,unknownMask:f.unknownMask,grip:{...f.grip}}))}},job:{id:packet.sourceDisarmJobId,state:'done',inputs:[packet.gridSha256]},images:[{sha:packet.sourceDisarmResultSha,png:bytesToBase64(bareBytes)}]};controls.prior=prior;
+  const prior:Prior={probe:{callId:packet.sourceDisarmCallId,jobId:packet.sourceDisarmJobId,packet:{canonicalHash:DISARM_PACKET_SHA256,gridSha256:packet.gridSha256,indices:[1,3,4,6],frames:frames.map(f=>({index:f.index,weaponMask:f.weaponMask,bodyMask:f.bodyMask,unknownMask:f.unknownMask,grip:{...f.grip}}))}},job:{id:packet.sourceDisarmJobId,state:'done',inputs:[packet.gridSha256]},images:[{sha:packet.sourceDisarmResultSha,png:bytesToBase64(bareBytes)}]};controls.prior=prior;
   controls.dispatch.mockResolvedValue({version:1,packet,callId:'synthetic-swap-call',jobId:'synthetic-swap-receipt'});
   const review=()=>{controls.approved=stableStringify({...packet,canonicalHash:undefined});controls.approvedHash=SWAP_PACKET_SHA256;};review();
   const reviewSource=()=>{controls.sourceApproved=stableStringify({...prior.probe.packet,canonicalHash:undefined});controls.sourceApprovedHash=DISARM_PACKET_SHA256;};reviewSource();
@@ -49,6 +50,7 @@ const noDispatch=()=>expect(controls.dispatch).not.toHaveBeenCalled();
 async function completionFixture(){
   const f=await fixture(),{packet,prior,sources,bodies,masks}=f,indices=[0,2,5,7],grid=makeImg(432,288),mask=makeImg(432,288),originalGrid=makeImg(432,288),designGrid=makeImg(288,288),originals:Img[]=[],recipeFrames:NonNullable<SwapPacket['bodyRecipe']>['frames']=[];
   packet.indices=indices;packet.cols=3;packet.request.seed=736;packet.canonicalHash=COMPLETION_SWAP_PACKET_SHA256;packet.sourceArmedPacketCanonicalHash=COMPLETION_DISARM_PACKET_SHA256;
+  prior.probe.packet.indices=[...indices];
   prior.probe.packet.canonicalHash=COMPLETION_DISARM_PACKET_SHA256;
   bodies[0].data.set([0,160,0,255],(85*144+88)*4);put(f.bare,bodies[0],0);
   const bareBytes=await encodePngBytes(f.bare);packet.sourceDisarmResultSha=await sha256(bareBytes);prior.images=[{sha:packet.sourceDisarmResultSha,png:bytesToBase64(bareBytes)}];
@@ -85,6 +87,38 @@ async function completionFixture(){
   async function commitMask(i=0){packet.frames[i].editMask=await base64(masks[i].edit);put(mask,masks[i].edit,i,3);const bytes=await encodePngBytes(mask);packet.maskSha256=await sha256(bytes);packet.request.mask_image.image.base64=bytesToBase64(bytes);review();}
   async function commitGrid(){const bytes=await encodePngBytes(grid);packet.gridSha256=await sha256(bytes);packet.request.inpainting_image.image.base64=bytesToBase64(bytes);review();}
   return{...f,packet,prior,grid,mask,originals,originalGrid,originalHash,armedJob,designJob,designHash,recipeFrames,review,reviewSource,reviewRecipe,commitMask,commitGrid};
+}
+
+async function axisFixture(){
+  const f=await completionFixture(),{packet,prior}=f,positions=[1,2],grid=makeImg(288,288),mask=makeImg(288,288),frames=positions.map((p,i)=>({...structuredClone(packet.frames[p]),index:i+3})),guides:Uint8Array[]=[];
+  packet.indices=[3,4];packet.cols=2;packet.frames=frames;packet.profile='east-axis-repair-body-star-v2-3-4';packet.request.seed=737;packet.canonicalHash=AXIS_REPAIR_PACKET_SHA256;packet.sourceArmedPacketCanonicalHash=DISARM_PACKET_SHA256;packet.sourceCalibrationSha256=AXIS_CALIBRATION_SHA256;
+  prior.probe.packet.canonicalHash=DISARM_PACKET_SHA256;prior.probe.packet.indices=[1,3,4,6];prior.probe.packet.frames.forEach((frame,i)=>frame.index=prior.probe.packet.indices[i]);
+  (prior.probe.packet as unknown as {request:InpaintV3}).request.seed=732;
+  const masks=positions.map(p=>({...f.masks[p],edit:black()})),sources=positions.map(p=>f.sources[p]);
+  // Frozen85-point reference-head pattern, independent of the target permission being tested.
+  const coordinates=[[111,91],[112,92],[113,93],[114,94],[114,95],[114,96],[113,97],[113,98],[113,99],[112,100],[112,101],[112,102],[111,102],[110,102],[109,101],[108,101],[107,100],[106,100],[105,99],[106,98],[107,98],[108,98],[109,99],[110,99],[111,98],[111,97],[111,96],[112,95],[111,94],[110,94],[109,95],[109,96],[108,96],[107,96],[106,96],[105,96],[104,97],[103,97],[103,96],[104,96],[108,95],[109,94],[110,93],[111,95],[110,95],[110,96],[110,97],[110,98],[109,98],[109,97],[108,97],[107,97],[106,97],[105,97],[105,98],[104,98],[108,99],[107,99],[106,99],[110,100],[109,100],[108,100],[110,101],[111,101],[111,100],[111,99],[112,99],[112,98],[112,97],[112,96],[113,96],[113,95],[115,93],[115,92],[113,94],[112,94],[114,93],[114,92],[112,93],[111,93],[113,92],[113,91],[111,92],[110,92],[112,91]].map(([x,y])=>({x,y}));
+  const headMask=black(),referenceImage=structuredClone(f.sources[2]);for(const{x,y}of coordinates){set(headMask,x,y);referenceImage.data.set([132,132,132,255],(y*144+x)*4);}
+  const headMaskBytes=await encodePngBytes(headMask);
+  packet.authoringControl={headGuide:{kind:'reference-projected-rectangle',referenceIndex:5,referenceDesignSourceIndex:0,referenceSourceCell:2,referenceResultSha256:'pending-synthetic-reference',referenceGrip:{x:93,y:82},referenceAxisRadians:.47525070861863555,sourceAlong:{min:15.297639756007088,max:27.392349808939958,length:12.09471005293287},sourceAcross:{min:-1.6321315316709268,max:10.946084644736459,length:12.578216176407386},alongTranslation:-5.466679472960603,coreAlong:{min:9.830960283046485,max:21.925670335979355},coreAcross:{min:-1.6321315316709268,max:10.946084644736459},rasterMargin:1,sourceHeadMaskPng:bytesToBase64(headMaskBytes),sourceHeadMaskSha256:await sha256(headMaskBytes),sourceHeadCoordinates:coordinates,sourceHeadPixelCount:85}};
+  for(const[i,frame]of frames.entries()){
+    const angle=[40.126509991802564,29.164058074145856][i],a=angle*Math.PI/180,ux=Math.cos(a),uy=Math.sin(a),headCenterReach=15.87831530951292,headCenterAcross=4.656976556532766,guide=black(),bits=new Uint8Array(144*144);
+    frame.geometry={sourceBladeAxisDegrees:angle,sourceBladeAxisRadians:a,distalReach:21.925670335979355,headCenterReach,headCenterAcross,headAlongMin:9.830960283046485,headAlongMax:21.925670335979355,headAcrossMin:-1.6321315316709268,headAcrossMax:10.946084644736459,headRasterMargin:1,shaftHalfWidth:2.5,pommelReach:-8,headCenter:{x:frame.grip.x+ux*headCenterReach-uy*headCenterAcross,y:frame.grip.y+uy*headCenterReach+ux*headCenterAcross},maximumGripRadius:40,heldWindow:{x:16,y:16,w:112,h:112},grip:{...frame.grip}};
+    for(let p=0;p<bits.length;p++){
+      const x=p%144,y=Math.floor(p/144),dx=x+.5-frame.grip.x,dy=y+.5-frame.grip.y,t=dx*ux+dy*uy,v=-dx*uy+dy*ux,inGuide=x>=16&&x<128&&y>=16&&y<128&&((t>=-8&&t<=21.925670335979355&&Math.abs(v)<=2.5)||(t>=8.830960283046485&&t<=22.925670335979355&&v>=-2.6321315316709268&&v<=11.946084644736459));
+      if(inGuide){set(guide,x,y);bits[p]=1;}if(masks[i].weapon.data[p*4]||(!sources[i].data[p*4+3]&&inGuide))set(masks[i].edit,x,y);
+    }
+    const guideBytes=await encodePngBytes(guide);frame.guidePermissionMask=bytesToBase64(guideBytes);frame.guidePermissionMaskSha256=await sha256(guideBytes);frame.editMask=await base64(masks[i].edit);guides.push(bits);put(grid,sources[i],i);put(mask,masks[i].edit,i);
+    const r=structuredClone(f.recipeFrames[positions[i]]);r.index=frame.index;r.sourcePacketCanonicalHash=DISARM_PACKET_SHA256;packet.bodyRecipe!.frames[frame.index]=r;
+  }
+  const completionGrid=structuredClone(f.grid);put(completionGrid,referenceImage,2,3);
+  const completionResultBytes=await encodePngBytes(completionGrid),completionHash=await sha256(completionResultBytes),newDesign={id:'synthetic-736-design',state:'done',requestHash:'d'.repeat(64),jobs:[{results:[{sha:completionHash}]}]};controls.jobs.set(newDesign.id,newDesign);controls.blobs.set(completionHash,new Blob([completionResultBytes as Uint8Array<ArrayBuffer>]));packet.authoringControl.headGuide.referenceResultSha256=completionHash;
+  packet.designSources=[{jobId:newDesign.id,requestHash:newDesign.requestHash,resultSha256:completionHash,sourcePacketCanonicalHash:COMPLETION_SWAP_PACKET_SHA256},packet.designSource!];packet.designSource=undefined;
+  packet.references=[];for(const[i,sourceCell]of [2,3].entries()){const image=i===0?referenceImage:f.sources[sourceCell],bytes=await encodePngBytes(image);packet.references.push({index:[5,6][i],sourceCell,gridCell:i+2,designSourceIndex:i,png:bytesToBase64(bytes),sha256:await sha256(bytes),rgbaSha256:await sha256(new Uint8Array(image.data)),width:144,height:144});put(grid,image,i+2);put(mask,black(),i+2);}
+  const gridBytes=await encodePngBytes(grid),maskBytes=await encodePngBytes(mask);packet.gridSha256=await sha256(gridBytes);packet.maskSha256=await sha256(maskBytes);packet.request.inpainting_image={image:{type:'base64',base64:bytesToBase64(gridBytes)},size:{width:288,height:288}};packet.request.mask_image={image:{type:'base64',base64:bytesToBase64(maskBytes)},size:{width:288,height:288}};
+  const review=()=>{controls.approved=stableStringify({...packet,canonicalHash:undefined});controls.approvedHash=AXIS_REPAIR_PACKET_SHA256;};
+  const reviewSource=()=>{controls.sourceApproved=stableStringify({...prior.probe.packet,canonicalHash:undefined});controls.sourceApprovedHash=DISARM_PACKET_SHA256;};f.reviewRecipe();reviewSource();review();
+  async function commitMask(i=0){packet.frames[i].editMask=await base64(masks[i].edit);put(mask,masks[i].edit,i);const bytes=await encodePngBytes(mask);packet.maskSha256=await sha256(bytes);packet.request.mask_image.image.base64=bytesToBase64(bytes);review();}
+  return{...f,packet,prior,grid,mask,masks,sources,guides,newDesign,review,reviewSource,commitMask};
 }
 
 test('the exact reviewed disarm source dispatches one bounded swap, including foreground W over frame6 bare anatomy',async()=>{
@@ -232,4 +266,53 @@ test('736 rejects changed source K even if the actual ancestor PNG and its decla
 test('the736 recipe cannot substitute its embedded original-body PNG for the actual734 original input',async()=>{
   const{packet,recipeFrames,review,reviewRecipe}=await completionFixture(),bytes=await encodePngBytes(makeImg(144,144));recipeFrames[0].originalPng=bytesToBase64(bytes);recipeFrames[0].originalSha256=await sha256(bytes);reviewRecipe();review();
   await expect(submitSwap(packet)).rejects.toThrow('recipe differs from actual source pixels');noDispatch();
+});
+
+test('737 binds only targets3/4 to original732 source cells1/2 and the unchanged authored family',async()=>{
+  const{packet,prior}=await axisFixture(),before=structuredClone(packet);expect(prior.probe.packet.indices).toEqual([1,3,4,6]);
+  await submitSwap(packet);expect(controls.dispatch).toHaveBeenCalledExactlyOnceWith({key:AXIS_REPAIR_KEY,label:'Calibrated two-frame hatchet axis repair',units:25},packet,packet.request);
+  expect(controls.exportDisarm).toHaveBeenCalledOnce();expect(controls.exportCompletionDisarm).not.toHaveBeenCalled();expect(packet).toEqual(before);
+});
+
+test.each(['seed','indices','pin','wrong-source'] as const)('737 rejects %s cross-profile confusion before any dispatch',async mode=>{
+  const{packet,prior}=await axisFixture();if(mode==='seed')packet.request.seed=736;if(mode==='indices')packet.indices=[5,6];if(mode==='pin')packet.canonicalHash=COMPLETION_SWAP_PACKET_SHA256;if(mode==='wrong-source')prior.probe.packet.canonicalHash=COMPLETION_DISARM_PACKET_SHA256;
+  await expect(submitSwap(packet)).rejects.toThrow(mode==='seed'?'four-frame':mode==='indices'?'two-frame':mode==='pin'?'differs from the reviewed source-bound':'exact reviewed completed disarm');noDispatch();
+});
+
+test.each(['calibration','distal-as-center','axis','permission-hash','permission-pixels'] as const)('737 rejects %s changes rather than silently widening or redirecting the drawing control',async mode=>{
+  const{packet,review}=await axisFixture(),frame=packet.frames[0];if(mode==='calibration')packet.sourceCalibrationSha256='a'.repeat(64);if(mode==='distal-as-center')frame.geometry!.headCenterReach=frame.geometry!.distalReach;
+  if(mode==='axis'){frame.geometry!.sourceBladeAxisDegrees++;frame.geometry!.sourceBladeAxisRadians=frame.geometry!.sourceBladeAxisDegrees*Math.PI/180;}
+  if(mode==='permission-hash')frame.guidePermissionMaskSha256='a'.repeat(64);if(mode==='permission-pixels'){const bytes=await encodePngBytes(black());frame.guidePermissionMask=bytesToBase64(bytes);frame.guidePermissionMaskSha256=await sha256(bytes);}review();
+  await expect(submitSwap(packet)).rejects.toThrow(mode==='axis'?'head center or source axis':mode==='permission-pixels'?'permission differs':mode==='distal-as-center'?'empirical head size':'calibration or guide contract');noDispatch();
+});
+
+test.each(['shrink','chirality','duplicate-sample','missing-head-permission'] as const)('737 rejects empirical head %s instead of fitting a smaller or mirrored design',async mode=>{
+  const{packet,review,masks,commitMask}=await axisFixture(),frame=packet.frames[0],h=packet.authoringControl!.headGuide;
+  if(mode==='shrink')frame.geometry!.headAlongMin++;
+  if(mode==='chirality')frame.geometry!.headAcrossMin=-frame.geometry!.headAcrossMax;
+  if(mode==='duplicate-sample')h.sourceHeadCoordinates[1]={...h.sourceHeadCoordinates[0]};
+  if(mode==='missing-head-permission'){
+    const g=frame.geometry!,c=h.sourceHeadCoordinates[0],rx=Math.cos(h.referenceAxisRadians),ry=Math.sin(h.referenceAxisRadians),dx=c.x+.5-h.referenceGrip.x,dy=c.y+.5-h.referenceGrip.y,t=dx*rx+dy*ry+h.alongTranslation,v=-dx*ry+dy*rx,ux=Math.cos(g.sourceBladeAxisRadians),uy=Math.sin(g.sourceBladeAxisRadians),x=Math.floor(frame.grip.x+ux*t-uy*v),y=Math.floor(frame.grip.y+uy*t+ux*v);
+    masks[0].edit.data.set([0,0,0,255],(y*144+x)*4);await commitMask();
+  }
+  review();await expect(submitSwap(packet)).rejects.toThrow(mode==='duplicate-sample'?'reference-head coordinates':mode==='missing-head-permission'?'clips a reviewed empirical head':'empirical head size');noDispatch();
+});
+
+test('737 cannot expose otherwise nearby transparent pixels outside the narrow guide',async()=>{
+  const{packet,masks,sources,guides,commitMask}=await axisFixture(),g=packet.frames[0].grip;
+  const p=guides[0].findIndex((v,p)=>!v&&!sources[0].data[p*4+3]&&p%144>=16&&p%144<128&&Math.floor(p/144)>=16&&Math.floor(p/144)<128&&Math.hypot(p%144+.5-g.x,Math.floor(p/144)+.5-g.y)<40);
+  expect(p).toBeGreaterThanOrEqual(0);set(masks[0].edit,p%144,Math.floor(p/144));await commitMask();
+  await expect(submitSwap(packet)).rejects.toThrow('held-window and weapon envelope');noDispatch();
+});
+
+test.each(['source-index','crop','pending','reference-edit'] as const)('737 protects separately attributed mixed design references against %s errors',async mode=>{
+  const{packet,newDesign,mask,review}=await axisFixture();if(mode==='source-index')packet.references![0].designSourceIndex=1;if(mode==='crop')packet.references![0].sourceCell=0;if(mode==='pending')newDesign.state='running';if(mode==='reference-edit'){set(mask,10,154);const bytes=await encodePngBytes(mask);packet.maskSha256=await sha256(bytes);packet.request.mask_image.image.base64=bytesToBase64(bytes);}review();
+  await expect(submitSwap(packet)).rejects.toThrow(mode==='source-index'||mode==='crop'?'two reviewed actual hatchet':mode==='pending'?'completed hatchet design receipt':'reference cells must remain protected');noDispatch();
+});
+
+test('the737 receipt and free export never overwrite the prior failed or unqualified swap profiles',async()=>{
+  const{packet}=await axisFixture(),old='original733 receipt bytes',completion='completion736 receipt bytes';controls.receipts.set(SWAP_KEY,old);controls.receipts.set(COMPLETION_SWAP_KEY,completion);
+  controls.dispatch.mockImplementation(async(profile:{key:string},p:SwapPacket)=>{if(controls.receipts.has(profile.key))throw new Error('Retained one-shot.');const row={version:1,packet:p,callId:'axis-call',jobId:'axis-job'};controls.receipts.set(profile.key,JSON.stringify(row));return row;});
+  await submitSwap(packet);expect(readAxisRepair()?.jobId).toBe('axis-job');await expect(submitSwap(packet)).rejects.toThrow('Retained one-shot');await exportAxisRepair();expect(controls.export).toHaveBeenCalledExactlyOnceWith(AXIS_REPAIR_KEY);
+  expect(controls.receipts.get(SWAP_KEY)).toBe(old);expect(controls.receipts.get(COMPLETION_SWAP_KEY)).toBe(completion);
 });

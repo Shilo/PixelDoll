@@ -2,8 +2,8 @@
 export const RESEARCH_PHASE = 'workflow-reconciliation-v1';
 export const RESEARCH_BUDGET_KEY = 'pixeldoll.motionLab.researchBudget.2026-11-01';
 export const RESEARCH_PRIOR_UNITS = 998, RESEARCH_TOTAL_CAP = 2000, RESEARCH_PHASE_CAP = 1000, RESEARCH_PILOT_CAP = 200;
-// Finish the first eight-frame grip family before spending on repeat/transfer controls. Total pilot stays 200.
-export const RESEARCH_STAGE_CAPS = { body: 25, equipment: 150, replication: 25 } as const;
+// One calibrated two-frame repair replaces premature replication. Total pilot stays 200.
+export const RESEARCH_STAGE_CAPS = { body: 25, equipment: 175, replication: 0 } as const;
 export type ResearchStage = keyof typeof RESEARCH_STAGE_CAPS;
 export type ResearchStatus = 'reserved' | 'accepted' | 'completed' | 'failed' | 'unknown';
 export interface ResearchCall { id: string; label: string; stage: ResearchStage; units: number; status: ResearchStatus; at: string; jobIds?: string[]; billedUnits?: number; note?: string }
@@ -59,9 +59,9 @@ export async function reserveResearchCall(input: Pick<ResearchCall, 'id' | 'labe
     }
     checkGate(ledger, input.stage);
     const used = researchBudgetUsage(ledger), total = ticks(used.reservedUnits, true);
-    if (stages.some(stage => ticks(used.stageUnits[stage], true) > ticks(RESEARCH_STAGE_CAPS[stage]))) throw new Error('A billed stage exceeded its allocation. Further research spending is blocked.');
+    if (stages.some(stage => ticks(used.stageUnits[stage], true) > ticks(RESEARCH_STAGE_CAPS[stage], true))) throw new Error('A billed stage exceeded its allocation. Further research spending is blocked.');
     if (total + amount > ticks(RESEARCH_PILOT_CAP) || total + amount > ticks(RESEARCH_PHASE_CAP) || ticks(RESEARCH_PRIOR_UNITS) + total + amount > ticks(RESEARCH_TOTAL_CAP)) throw new Error('The approved research pilot or phase allowance is exhausted.');
-    if (ticks(used.stageUnits[input.stage], true) + amount > ticks(RESEARCH_STAGE_CAPS[input.stage])) throw new Error('The research stage allocation is exhausted.');
+    if (ticks(used.stageUnits[input.stage], true) + amount > ticks(RESEARCH_STAGE_CAPS[input.stage], true)) throw new Error('The research stage allocation is exhausted.');
     const record: ResearchCall = { ...input, units: amount / 1_000_000, status: 'reserved', at: new Date().toISOString() };
     ledger.calls.push(record); return { created: true, record };
   });

@@ -71,9 +71,9 @@ test('old and new stage spending share the same conservative holds and higher la
   await fixture();await reserveResearchCall({id:'prior-body',label:'Prior body evidence',stage:'body',units:21});await reserveResearchCall({id:'prior-equipment',label:'Prior equipment evidence',stage:'equipment',units:25});
   await recordResearchOutcome('prior-body',{status:'completed',billedUnits:18.25});await recordResearchOutcome('prior-equipment',{status:'completed',billedUnits:25});
   await dispatchFixedInpaint(profile,packet,input);expect(researchBudgetUsage()).toMatchObject({reservedUnits:71,billedUnits:43.25,stageUnits:{body:21,equipment:50,replication:0},pilotRemaining:129});
-  await recordResearchOutcome('prior-equipment',{status:'completed',billedUnits:126});
+  await recordResearchOutcome('prior-equipment',{status:'completed',billedUnits:151});
   controls.hash='synthetic-different-payload';
-  await expect(dispatchFixedInpaint({...profile,key:'synthetic-new-profile'},packet,input)).rejects.toThrow('billed stage exceeded');expect(controls.enqueue).toHaveBeenCalledTimes(1);expect(researchBudgetUsage()).toMatchObject({reservedUnits:172,stageUnits:{equipment:151}});
+  await expect(dispatchFixedInpaint({...profile,key:'synthetic-new-profile'},packet,input)).rejects.toThrow('billed stage exceeded');expect(controls.enqueue).toHaveBeenCalledTimes(1);expect(researchBudgetUsage()).toMatchObject({reservedUnits:197,stageUnits:{equipment:176}});
 });
 
 test('failure to persist the one-shot receipt keeps the reservation and prevents any paid submission or later resend',async()=>{
