@@ -468,6 +468,25 @@ function workIdle() {
 }
 queue.canYield = workIdle;
 
+/** Reload is always explicit. An idle queue alone says nothing about unsaved forms or local writes. */
+export function updateBlocked(): string {
+  if (!studioReady || doc.loading) return 'Wait for your character and saved work to finish loading.';
+  if (ui.sheet || ui.sheetBusy) return 'Finish and close the open panel before updating.';
+  if (document.querySelector('[data-update-draft]')) return 'Save or cancel your outfit name before updating.';
+  if (!workIdle() || ui.waitingForTab) return 'Finish or dismiss pending generation work in Activity before updating.';
+  return '';
+}
+export async function prepareForUpdate(): Promise<void> {
+  const reason = updateBlocked();
+  if (reason) throw new Error(reason);
+  // Retry a previously failed outfit save, rather than trusting flushSave(), which reports errors in a toast.
+  if (edits !== savedEdits && !pendingSave) save();
+  await flushSave();
+  if (edits !== savedEdits) throw new Error('Your outfit could not be saved. Resolve the storage error before updating.');
+  const changed = updateBlocked();
+  if (changed) throw new Error(changed);
+}
+
 export async function removeProject(): Promise<void> {
   await refreshFits(); // Persisted drafts may have changed in another tab since the menu opened.
   const reason = deletionBlocked();
@@ -637,6 +656,7 @@ const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state
 // the leader's tab closes.
 const runningGens = new Set<string>();
 let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, takeOverRunning = false, resumedHere = false, itemStarting = 0, mirrored = '', mirrorAt = 0;
+let studioReady = false;
 // A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
 const readGens = async () => uniqueBy((await db.get<{ gens: Gen[] }>('projects', GENS_KEY))?.gens ?? [], (g) => g.draft.spec.id);
 /** The ONLY way the list is replaced: one entry per draft id (already-persisted duplicates heal on the next save). Synchronous,
@@ -709,6 +729,7 @@ async function takeOver() {
 }
 /** Studio's startup resumes are done; as the leader, a click waiting from before can now run. */
 export function startupResumed() {
+  studioReady = true;
   if (queue.role !== 'follower') resumedHere = true;
   runWaiting();
 }

@@ -19,6 +19,7 @@
   import { WifiOff } from './icons.ts'
   import { PREVIEW_NOTICE } from './previewNotice.ts'
   import Toast from './Toast.svelte'
+  import PwaRuntime from './PwaRuntime.svelte'
 
   // On-demand parts, out of the startup bundle (GenCard renders in PhonePanel).
   const parts = {
@@ -137,8 +138,9 @@
 <svelte:window onkeydown={onkey} onpopstate={onpop} ononline={() => (online = true)} onoffline={() => (online = false)} />
 
 <div class="studio-app" onclickcapture={rememberActivation}>
+  <PwaRuntime />
   <Experience />
-  {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You’re offline — generation paused; everything else works</div>{/if}
+  {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You’re offline. Local dressing and export work; PixelLab needs a connection.</div>{/if}
   {#if !ui.sheet}<Toast />{/if}
 
   {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><Lazy load={parts.notes} sheet={false} /></div></Sheet>{/if}

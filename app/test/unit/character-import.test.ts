@@ -212,6 +212,7 @@ test('library import uses GET only and never sends a key to the public ZIP', asy
     expect(fetch.mock.calls[1][0]).toContain(`/zip?states=${id}`)
     expect(fetch.mock.calls[1][1].headers).toBeUndefined()
     expect(fetch.mock.calls[1][1].credentials).toBe('omit')
+    expect(fetch.mock.calls[1][1].cache).toBe('no-store')
   } finally { vi.unstubAllGlobals() }
 })
 

@@ -4,10 +4,17 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.pixellab.ai; connect-src 'self' https://api.pixellab.ai https://backblaze.pixellab.ai https://supabase.pixellab.ai https://cdn.pixellab.ai; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'"
+      content="default-src 'self'; script-src 'self'; worker-src 'self'; manifest-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data: https://*.pixellab.ai; connect-src 'self' https://api.pixellab.ai https://backblaze.pixellab.ai https://supabase.pixellab.ai https://cdn.pixellab.ai; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'"
     />
     <meta name="referrer" content="no-referrer" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/pwa/favicon-32.png" />
+    <link rel="icon" type="image/x-icon" href="./icons/pwa/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/pwa/apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <meta name="theme-color" content="#121214" />
+    <meta name="apple-mobile-web-app-title" content="PixelDoll" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PixelDoll</title>
     <meta name="description" content="Dress up your 2D game characters with pixel-perfect paper dolling. Generate swappable, frame-aligned equipment layers with PixelLab AI and export them to any game engine." />

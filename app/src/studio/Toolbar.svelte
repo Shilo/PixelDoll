@@ -8,6 +8,7 @@
   import ApiPeek from './ApiPeek.svelte'
   import FullscreenButton from './FullscreenButton.svelte'
   import { queue } from '../lib/pixellab/queue.ts'
+  import { pwa, installApp, requestUpdate } from '../lib/pwa.ts'
   import { fmtNum } from './model.ts'
   import { ui, doc, store, creating, settingUp, gens, openProject, undo, redo, toggleTheme, isDemo } from './state.svelte.ts'
   import { Github, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Share2, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
@@ -51,6 +52,8 @@
   {#if experience.screen==='studio'}<button class="row bu-action mobile-redo" data-variant="quiet" disabled={!redoLabel} onclick={() => { document.getElementById('experience-options')?.hidePopover(); redo() }}><Redo2 size={18}/><span class="row-name">{redoLabel?'Redo '+redoLabel:'Redo'}</span></button>{/if}
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='activity' }}><Activity size={18}/><span class="row-name">Activity</span>{#if $queue.role==='follower'}<span class="small">Other tab</span>{/if}</button>
   <ApiPeek scope="all" all menu />
+  {#if import.meta.env.PROD && !$pwa.installed}<button class="row bu-action" data-variant="quiet" disabled={$pwa.installing} onclick={() => { void installApp() }}><Download size={18}/><span class="row-name">Install PixelDoll</span></button>{/if}
+  {#if $pwa.available}<button class="row bu-action" data-variant="quiet" disabled={!$pwa.ready} onclick={requestUpdate}><Download size={18}/><span class="row-name">Update to v{$pwa.available.version}</span></button>{/if}
   <hr />
   <button class="row bu-action" data-variant="quiet" onclick={() => { document.getElementById('experience-options')?.hidePopover(); ui.sheet='connect' }}><KeyRound size={18}/><span class="row-name">{app.key ? app.keyRejected ? 'Key not accepted' : 'PixelLab account' : 'Connect PixelLab'}</span></button>
   <button class="row bu-action" data-variant="quiet" onclick={() => { toggleTheme(); document.getElementById('experience-options')?.hidePopover() }}>{#if ui.theme==='dark'}<Sun size={18}/>{:else}<Moon size={18}/>{/if}<span class="row-name">{ui.theme==='dark'?'Light mode':'Dark mode'}</span></button>

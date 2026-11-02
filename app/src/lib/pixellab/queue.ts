@@ -229,7 +229,7 @@ export class Queue {
         const id = beginActivityCall('GET', url, undefined, context, 'download');
         let status: number | null = null;
         try {
-          const r = await fetch(url); // storage CDN: no auth header, ever
+          const r = await fetch(url, { credentials: 'omit', cache: 'no-store' }); // storage CDN: no auth header, ever
           status = r.status;
           if (!r.ok) throw new Error(`GET ${url} -> ${r.status}`);
           const bytes = new Uint8Array(await r.arrayBuffer());

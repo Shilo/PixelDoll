@@ -4,6 +4,8 @@
   import { ui, doc, activateToast, dismissToast, pauseToast, resumeToast } from './state.svelte.ts'
   import { experience } from './experience/state.svelte.ts'
   import { restoreTrigger } from './experience/focus.ts'
+  import { pwa } from '../lib/pwa.ts'
+  import PwaNotice from './PwaNotice.svelte'
 
   let host = $state<HTMLDivElement>()
   let focusFrom: HTMLElement | null = null
@@ -45,10 +47,15 @@
   onDestroy(() => { resumeToast('pointer'); resumeToast('focus') })
 </script>
 
-{#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}
+{#if $pwa.available || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
   <div class="toast" bind:this={host} role="presentation" onpointerenter={() => pauseToast('pointer')} onpointerleave={() => resumeToast('pointer')}
     onfocusin={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) focusFrom = e.relatedTarget as HTMLElement | null; pauseToast('focus') }}
     onfocusout={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) resumeToast('focus') }}>
-    <Notice class="bu-toast" title={ui.toastTitle || undefined} tone={ui.toastTone} live onactivate={activate} ondismiss={dismiss}>{ui.toast}</Notice>
+    {#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}<Notice class="bu-toast" title={ui.toastTitle || undefined} tone={ui.toastTone} live onactivate={activate} ondismiss={dismiss}>{ui.toast}</Notice>{/if}
+    <PwaNotice />
   </div>
 {/if}
+
+<style>
+  .toast { display:grid; gap:8px; }
+</style>

@@ -292,6 +292,18 @@ for why there are dedicated exports for these engines and when more would be use
   buttons) · 0 all directions · , and . step one frame.
 - **Offline?** The offline banner pauses new submissions and polling until the connection returns. Requests already sent
   to PixelLab may finish and charge while you are offline. Known jobs can resume; unknown paid outcomes stop for review
-  rather than being sent again. Dressing up, recoloring, outfits and export work with locally saved artwork while the
-  app is open. Offline reload/install support is not implemented yet.
+  rather than being sent again. Once the app files are downloaded and you relaunch, saved characters, the demo,
+  dressing, recoloring, outfits, device import and export also work after an offline reload. PixelLab generation,
+  account information, its library and remote artwork need a connection. Imported characters are local snapshots.
+- **Install:** open **More options > Install PixelDoll**. Use the browser's native prompt when offered. On iPhone or
+  iPad, use Safari's **Share > Add to Home Screen** and enable **Open as Web App** if offered. The install help reports
+  whether offline files are ready; relaunch once while connected before relying on offline access.
+- **Updates:** a persistent **Update to v…** notice appears when a deployed version is available. Click it when ready;
+  only this tab reloads. Finish and close panels, save or cancel an outfit name, and finish or dismiss pending generation
+  work first. Saved characters and outfits stay; the view and undo history reset. A session-only PixelLab connection
+  needs reconnecting. Failed saves or incomplete downloads prevent the reload. Updates are checked automatically while
+  the app is visible and when it reconnects or returns to the foreground. Closed, suspended or offline apps check on
+  return; a pushed commit must finish deployment before it can be detected.
+  If a download keeps failing while connected, finish your work, then close every PixelDoll window and reopen.
+  More device storage may be needed; clearing PixelDoll site data also deletes its local characters.
 - PixelLab may decline some descriptions. Try different words.

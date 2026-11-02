@@ -1,0 +1,193 @@
+import { get, writable } from 'svelte/store'
+
+export interface Release { build: string; version: string; commit: string }
+interface InstallPrompt extends Event {
+  prompt(): Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+export const pwa = writable({ available: null as Release | null, ready: false, offlineReady: false, error: '', installable: false, installed: false, installing: false })
+let registration: ServiceWorkerRegistration | undefined
+let latest: Release | null = null
+let prompt: InstallPrompt | undefined
+let updateAction: (() => void) | undefined
+let installHelp: (() => void) | undefined
+let checking: Promise<void> | undefined
+let checkAgain = false
+let stopped = true
+let base: URL
+let registerWorker: (() => Promise<void>) | undefined
+
+export function readRelease(value: unknown): Release {
+  const r = value as Partial<Release> | null
+  if (!r || typeof r.build !== 'string' || !/^[a-zA-Z0-9-]{8,80}$/.test(r.build)
+    || typeof r.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(r.version)
+    || typeof r.commit !== 'string' || !/^[a-f0-9]{7,40}$/.test(r.commit)) throw new Error('The update description is invalid.')
+  return { build: r.build, version: r.version, commit: r.commit }
+}
+
+export function workerMessage(worker: ServiceWorker, type: string, build?: string): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const channel = new MessageChannel()
+    const done = (error?: Error, value?: Record<string, unknown>) => {
+      clearTimeout(timer); channel.port1.close()
+      if (error) reject(error); else resolve(value!)
+    }
+    const timer = setTimeout(() => done(new Error('The update did not respond. Try again.')), 15_000)
+    channel.port1.onmessage = ({ data }: MessageEvent<unknown>) => {
+      if (!data || typeof data !== 'object') return done(new Error('The update response is invalid.'))
+      const reply = data as Record<string, unknown>
+      done(typeof reply.error === 'string' ? new Error(reply.error) : undefined, reply)
+    }
+    try { worker.postMessage({ type, build, clientBuild: __APP_BUILD__ }, [channel.port2]) } catch (e) { done(e as Error) }
+  })
+}
+
+async function inspectWorker() {
+  if (!registration || stopped) return
+  const worker = registration.waiting ?? registration.active
+  if (!worker) return
+  const release = readRelease(await workerMessage(worker, 'GET_RELEASE'))
+  if (stopped) return
+  if (release.build !== __APP_BUILD__ && release.build !== latest?.build) return
+  try {
+    const check = await workerMessage(worker, 'VERIFY', release.build)
+    if (check.ready !== true) throw new Error('The downloaded app is incomplete.')
+    if (release.build === __APP_BUILD__) pwa.update(s => ({ ...s, offlineReady: true }))
+  } catch (e) {
+    pwa.update(s => ({ ...s, ...(release.build === __APP_BUILD__ ? { offlineReady: false } : { ready: false }), error: (e as Error).message }))
+    throw e
+  }
+  if (latest && release.build === latest.build && release.build !== __APP_BUILD__) {
+    pwa.update(s => ({ ...s, available: release, ready: true, error: '' }))
+  }
+}
+
+function bounded<T>(promise: Promise<T>, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>
+  return Promise.race([promise, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(message)), 15_000) })])
+    .finally(() => clearTimeout(timer))
+}
+
+/** A bounded foreground poll plus wake/reconnect events. Never gates discovery on successful staging. */
+export function checkForUpdate(): Promise<void> {
+  if (stopped) return Promise.resolve()
+  if (checking) { checkAgain = true; return checking }
+  checking = (async () => {
+    do {
+      checkAgain = false
+      const failures: string[] = []
+      // Discover first: stalled browser operations and cache/quota failures cannot hide newer deployments.
+      try {
+        const discovery = new URL('release.json', base)
+        discovery.searchParams.set('check', String(Date.now()))
+        const response = await fetch(discovery, { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(12_000) })
+        if (!response.ok) throw new Error(`Update check failed (${response.status}).`)
+        latest = readRelease(await response.json())
+        if (stopped) return
+        const available = latest.build === __APP_BUILD__ ? null : latest
+        pwa.update(s => ({ ...s, available, ready: available?.build === s.available?.build && s.ready, error: '' }))
+      } catch (e) { failures.push((e as Error).message) }
+      try { if (!registration && registerWorker) await bounded(registerWorker(), 'Offline setup did not respond.') }
+      catch (e) { failures.push(`Offline setup failed: ${(e as Error).message}`) }
+      // Offline startup still verifies cached files even when metadata discovery failed.
+      try { await inspectWorker() }
+      catch (e) { failures.push((e as Error).message) }
+      try { if (registration) await bounded(registration.update(), 'The browser update check did not respond.') }
+      catch (e) { failures.push((e as Error).message) }
+      try { await inspectWorker() }
+      catch (e) { failures.push((e as Error).message) }
+      if (!stopped && failures.length) pwa.update(s => ({ ...s, error: `${[...new Set(failures)].join(' ')} Checks resume automatically when connected.` }))
+    } while (checkAgain && !stopped)
+  })().finally(() => { checking = undefined })
+  return checking
+}
+
+export function setPwaActions(update: () => void, help: () => void) {
+  updateAction = update; installHelp = help
+  return () => { updateAction = undefined; installHelp = undefined }
+}
+export function requestUpdate() { updateAction?.() }
+export async function installApp() {
+  if (!prompt) { installHelp?.(); return }
+  const event = prompt; prompt = undefined
+  pwa.update(s => ({ ...s, installable: false, installing: true }))
+  try { await event.prompt(); await event.userChoice }
+  catch (e) { pwa.update(s => ({ ...s, error: `Installation could not open: ${(e as Error).message}` })); installHelp?.() }
+  finally { pwa.update(s => ({ ...s, installing: false })) }
+}
+
+export function startPwa() {
+  if (!import.meta.env.PROD || !('serviceWorker' in navigator) || !window.isSecureContext) return () => {}
+  stopped = false
+  base = new URL(import.meta.env.BASE_URL, document.baseURI)
+  const display = matchMedia('(display-mode: standalone)')
+  const syncInstalled = () => pwa.update(s => ({ ...s, installed: display.matches || (navigator as Navigator & { standalone?: boolean }).standalone === true }))
+  const beforeInstall = (event: Event) => { event.preventDefault(); prompt = event as InstallPrompt; pwa.update(s => ({ ...s, installable: true })) }
+  const installed = () => { prompt = undefined; pwa.update(s => ({ ...s, installed: true, installable: false })) }
+  const wake = () => { if (document.visibilityState === 'visible') void checkForUpdate() }
+  const onController = () => { void inspectWorker().catch(e => pwa.update(s => ({ ...s, error: (e as Error).message }))) }
+  const watch = () => {
+    const worker = registration?.installing
+    worker?.addEventListener('statechange', () => {
+      if (worker.state === 'installed' || worker.state === 'activated') onController()
+      if (worker.state === 'redundant') pwa.update(s => ({ ...s, error: 'The update could not be saved. Your current work is unchanged. Retrying automatically. If this continues while connected, finish your work, then close every PixelDoll window and reopen. More device storage may be needed.' }))
+    })
+  }
+  syncInstalled()
+  addEventListener('beforeinstallprompt', beforeInstall); addEventListener('appinstalled', installed)
+  addEventListener('focus', wake); addEventListener('online', wake); addEventListener('pageshow', wake)
+  document.addEventListener('visibilitychange', wake); display.addEventListener('change', syncInstalled)
+  navigator.serviceWorker.addEventListener('controllerchange', onController)
+  registerWorker = async () => {
+    const script = new URL('sw.js', base)
+    const existing = await navigator.serviceWorker.getRegistration(base.href)
+    const owned = existing?.scope === base.href && [existing.active, existing.waiting, existing.installing].some(worker => worker?.scriptURL === script.href)
+    const r = owned ? existing! : await navigator.serviceWorker.register(script, { scope: base.pathname, updateViaCache: 'none' })
+    if (stopped) return
+    registration = r; r.addEventListener('updatefound', watch); watch()
+  }
+  void checkForUpdate()
+  const interval = setInterval(wake, 60_000)
+  return () => {
+    stopped = true; registerWorker = undefined; clearInterval(interval)
+    registration?.removeEventListener('updatefound', watch)
+    removeEventListener('beforeinstallprompt', beforeInstall); removeEventListener('appinstalled', installed)
+    removeEventListener('focus', wake); removeEventListener('online', wake); removeEventListener('pageshow', wake)
+    document.removeEventListener('visibilitychange', wake); display.removeEventListener('change', syncInstalled)
+    navigator.serviceWorker.removeEventListener('controllerchange', onController)
+  }
+}
+
+/** Only called after the Studio guard and durable-save check, with the requesting page made inert. */
+export async function applyUpdate(prepare: () => Promise<void>) {
+  const target = get(pwa).available
+  if (!target || !registration) throw new Error('No update is ready yet.')
+  await prepare()
+  // A new deployment or another tab may have replaced the worker since this notice appeared.
+  await checkForUpdate()
+  if (get(pwa).available?.build !== target.build || !get(pwa).ready) throw new Error('The available update changed or is still downloading. Review the current version and try again.')
+  const worker = registration.waiting ?? registration.active
+  if (!worker || readRelease(await workerMessage(worker, 'GET_RELEASE')).build !== target.build) throw new Error('The update changed. Try again.')
+  const verified = await workerMessage(worker, 'VERIFY', target.build)
+  if (verified.ready !== true) throw new Error('The update is incomplete. Reconnect and try again.')
+  await prepare()
+  if (worker === registration.waiting) {
+    await workerMessage(worker, 'ACTIVATE', target.build)
+    if (worker.state !== 'activated') await new Promise<void>((resolve, reject) => {
+      const changed = () => {
+        if (worker.state === 'activated' || worker.state === 'redundant') {
+          clearTimeout(timer); worker.removeEventListener('statechange', changed)
+          if (worker.state === 'activated') resolve(); else reject(new Error('The update was replaced. Try again.'))
+        }
+      }
+      const timer = setTimeout(() => { worker.removeEventListener('statechange', changed); reject(new Error('The update could not activate. Try again.')) }, 15_000)
+      worker.addEventListener('statechange', changed); changed()
+    })
+  }
+  const controller = navigator.serviceWorker.controller
+  // First-time/uncontrolled tabs use the active worker on their next navigation.
+  const active = controller ?? registration.active
+  if (!active || readRelease(await workerMessage(active, 'GET_RELEASE')).build !== target.build) throw new Error('Another version activated. Review the update and try again.')
+  await prepare()
+  location.reload()
+}

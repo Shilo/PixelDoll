@@ -89,7 +89,8 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   Contract: `docs/handoff/agent-dev-token-handling.md`.
 - D12 (2026-10-21, user): Public GitHub repo under MIT; Pages at https://shilo.github.io/PixelDoll/ (custom domain
   recommended).
-- D13 (2026-10-22, user): PWA deferred — retain the plan below, not implemented. Final origin remains undecided.
+- D13 (2026-10-22, user): PWA was deferred. Superseded by the November 2 request and implementation below;
+  the production origin is https://pixeldoll.app/.
 - D14 (2026-10-22, user): Evidence media (spike output, test screenshots, design mockups) is untracked and lives at commit
   1f95029 (formerly tag v0.1.0); the repo tracks only what helps development. Dev-only fixtures live in `app/dev-fixtures/`.
 - D15 (2026-10-22, user): Do not perform physical-phone testing. Browser-emulated mobile checks remain useful.
@@ -145,25 +146,73 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   animation workflow and every PixelLab request body are unchanged. See
   [review §17](docs/research/generation-pipeline-review-2026-10-25.md).
 
-## PWA (deferred, D13)
+## PWA (2026-11-02, supersedes D13)
 
-Installable, offline-capable Studio. Tracked as a deferred card on the [board](https://github.com/users/Shilo/projects/7).
+The production build is installable and supports local work offline. Development and agent servers never register a
+service worker. The implementation uses the platform APIs without another dependency.
 
-- **Manifest** (`app/public/manifest.webmanifest`, relative href): name/short_name "PixelDoll", `start_url` "./#/",
-  `scope` "./", `display` "standalone", theme/background = dark `--bg`, icons 192 + 512 + 512 maskable + SVG.
-- **Service worker** (hand-written `sw.js` or `vite-plugin-pwa` generateSW, whichever is smaller): precache the shell,
-  hashed assets, ticker worker, icons and the demo fixture. Never cache PixelLab API or image hosts, never see the key.
-  IndexedDB stays the source of truth.
-- **Updates:** new SW waits; "New version available — Reload" posts `SKIP_WAITING` only on user accept; delete old caches
-  on activate.
-- **Offline:** shell from cache; existing offline banner + queue pause unchanged.
-- **Install:** `beforeinstallprompt` → quiet "Install app" menu item; iOS hint in the user guide; `apple-touch-icon` and
-  `theme-color` (light/dark).
-- **Scope / origin:** `./sw.js` → scope `/PixelDoll/` on Pages, `/` on a custom domain. A SW scope is not a security
-  boundary; choose the final origin before shipping (moving origin loses installs and local data).
-- **CSP:** add `worker-src 'self'` and `manifest-src 'self'`.
-- **Tests:** Lighthouse installability, offline reload, update flow, install on Chrome desktop / Android / iOS, sub-path
-  scope, CI guard that the precache list has no `__dev`, `.env` or PixelLab API entries.
+- **User task and placement:** Install PixelDoll is in More options. Browsers offering a native install prompt use it;
+  other browsers receive manual instructions, including Safari Add to Home Screen. Prompt acceptance is not treated
+  as proof of installation. The manifest derives its [stable identity](https://developer.chrome.com/docs/capabilities/pwa-manifest-id) from its relative start URL, keeping subpath
+  installs distinct; an explicit `id: './'` resolves against the origin and would collide with sibling apps.
+  Relative scope and branded SVG, 192/512 PNG,
+  opaque maskable and Apple touch icons are included, alongside PNG/ICO favicons.
+- **Offline release:** `app/pwa-build.ts` inventories every shipped file after bundling, including all lazy chunks,
+  ticker worker, worlds, export icons and demo artwork. `app/pwa-worker.js` stages a separate cache, bypasses HTTP caches
+  and verifies every file's SHA-256 before installation. Each build gets a distinct identity even when rebuilt from
+  the same commit. Public artwork URLs carry that identity; hashed Vite asset names are already immutable.
+- **Update default:** every update requires an explicit click. The current app cannot preserve forms, prepared ZIPs,
+  undo history, preview state or a session-only connection through reload. Automatically judging some views safe would
+  spread restoration requirements through unrelated features. A persistent versioned notice and More options action
+  remain available even when an ordinary toast is replaced. Saved outfits are flushed and checked; an open panel,
+  inline outfit draft, unfinished startup, character load or pending paid workflow blocks application. A native modal
+  prevents new interactions while verification and activation run. Only the requesting tab reloads. The notice
+  discloses view/undo reset and session-only reconnection.
+- **Discovery:** startup, foreground focus/visibility, page restoration and reconnect check the deployed `release.json`;
+  a visible app also checks every 60 seconds. Metadata uses a cache-busting query and `cache: 'no-store'`; worker checks
+  use `updateViaCache: 'none'`. Discovery keeps retrying after network or staging failures. A commit becomes visible
+  after CI deploys its build and the hosting CDN exposes it, not when the commit is pushed. Offline, suspended and
+  closed apps cannot learn about a deployment until they reconnect or resume. No manual check setting is needed.
+- **Multi-tab safety:** activating a worker can change older tabs' controller, even without `clients.claim()`.
+  Old exact-version assets remain available to those tabs, including after worker termination. Updates never reload
+  another tab. Durable, credential-free client leases protect live and frozen windows. Activation retains the current
+  and previous active releases plus every live or pending recovered-navigation build; unknown clients defer cleanup.
+  Scope-specific Web Locks serialize ownership changes and cleanup. An unacknowledged or unidentified recovery pin
+  remains protected, and browsers without Web Locks retain caches conservatively. Quota failures stop staging rather
+  than deleting needed files. Superseded waiting releases can accumulate until activation if the user keeps ignoring
+  updates. Discovery still reports the latest version; after finishing work, closing every app window permits natural
+  activation and cleanup before reopening. This favors preserving live dependencies over install-time pruning races.
+  Cleanup is scoped to PixelDoll's own caches and never touches projects, credentials or other apps.
+  Shared IndexedDB contracts must still be considered before a future breaking release; retaining old code does not
+  make arbitrary data-schema changes safe.
+- **Online-only data:** PixelLab API responses, balances, remote libraries, previews and result/ZIP downloads are never
+  put in service-worker caches. Their reads bypass browser HTTP caches and omit cookies on remote artwork downloads.
+  Refreshing the library reloads previews even when their URLs are unchanged. Imported characters remain local snapshots;
+  remote edits do not silently replace them. No background sync or automatic paid-request replay is introduced.
+- **Storage boundaries:** IndexedDB remains authoritative for saved characters, cell PNG blobs, outfits, designs, fits,
+  drafts and the existing job ledger. Existing localStorage preferences, recovery snapshots and optional remembered
+  credentials retain their current contracts. Credentials are never sent in worker messages or written into app caches.
+  Component form state and undo history stay in memory. Local imports, recolors and generated exports use local bytes.
+- **Scope and recovery:** relative URLs support both the production root and GitHub Pages subpaths. Scope is not an
+  origin security boundary; moving origins still loses access to prior local data and installs. Partial/mixed deployments,
+  failed verification or quota errors preserve the previous app. Missing current files can be repaired only with verified
+  bytes; old missing artwork must never silently borrow a newer release's pixels. Browser storage eviction can still
+  remove local data, so exporting backups remains necessary.
+
+The reference Toadoku implementation was reviewed adversarially. Complete-release verification, explicit activation and
+old-tab safety apply here; its state restoration and long retry backoff do not. The
+[service-worker lifecycle](https://web.dev/articles/service-worker-lifecycle) and
+[update guidance](https://web.dev/learn/pwa/update) explain why unconditional activation and cache deletion are unsafe.
+
+Validation (2026-11-02): Node 24.22.1/npm 11.19.1; type checking, 1,579 unit tests (one existing skip), all 190 browser
+tests, production build/dist guard and theme ownership passed. The full suite includes fullscreen and the new busy-modal
+keyboard regression, which reproduced before its capture guard was added. Two preview tests were corrected to inspect
+the Fetch API cache policy instead of synthesized HTTP headers and to decode a valid PNG instead of a corrupt fixture.
+Native Chromium manifest and installability checks returned no errors; subpath identity, start URL and scope were verified.
+Codex browser checks independently confirmed a blocked form retains its text, explicit versioned update/reload, fullscreen
+entry/exit, and server-unavailable launch, recolor and prepared export. No PixelLab credits were spent. Physical devices
+and OS-installed app windows were not tested, consistent with D15. Frequent ignored updates can retain superseded waiting
+caches until activation; no unsafe install-time pruning or unconditional reload was introduced.
 
 ## Professional audit follow-up: independent directions
 

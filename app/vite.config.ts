@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 import { defineConfig, normalizePath, type Plugin } from 'vite'
 import { localSameOrigin, resolveAgentKey } from './agent-key.ts'
 import { appVersion } from './version.ts'
+import { randomUUID } from 'node:crypto'
+import { pwaBuild } from './pwa-build.ts'
 
 // Dev-only fixtures (s1, s4rig, s5): served at /fixtures/<name>/... by the dev server, never copied into dist.
 const DEV_FIXTURES = fileURLToPath(new URL('./dev-fixtures', import.meta.url))
@@ -85,12 +87,13 @@ function startupChunk() {
 export default defineConfig(({ command, mode }) => {
   if (command === 'build' && mode === 'agent') throw new Error('mode "agent" is dev-server only; never build with it')
   const { version, commit } = appVersion(fileURLToPath(new URL('.', import.meta.url)))
+  const build = randomUUID()
   return {
     // The dev server may run uncommitted changes, so it never claims a released version.
-    define: { __APP_VERSION__: JSON.stringify(command === 'serve' ? `${version}-dev` : version), __APP_COMMIT__: JSON.stringify(commit) },
+    define: { __APP_VERSION__: JSON.stringify(command === 'serve' ? `${version}-dev` : version), __APP_COMMIT__: JSON.stringify(commit), __APP_BUILD__: JSON.stringify(build) },
     base: './', // ponytail: relative base so GitHub Pages subpath just works
     envDir: false, // never load .env files: nothing reaches import.meta.env, in any mode
-    plugins: [svelte(), devTools(), command === 'serve' && mode === 'agent' && agentKey()],
+    plugins: [svelte(), devTools(), command === 'serve' && mode === 'agent' && agentKey(), command === 'build' && pwaBuild({ build, version, commit })],
     // Vite ignores only test-results/. Each agent's own TEST_OUTPUT_DIR (test-results-*, as in .gitignore) streams trace
     // files all run long; watched, they saturate the dev server's CPU and later dev-server specs time out.
     server: { watch: { ignored: ['**/test-results*/**'] } },

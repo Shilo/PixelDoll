@@ -27,7 +27,7 @@ export async function downloadCharacter(id: string, signal?: AbortSignal, contex
   const activityId = beginActivityCall('GET', url, undefined, { label: 'Import character', background: false, ...context }, 'download');
   let status: number | null = null;
   try {
-    const response = await fetch(url, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout, credentials: 'omit' });
+    const response = await fetch(url, { signal: signal ? AbortSignal.any([signal, timeout]) : timeout, credentials: 'omit', cache: 'no-store' });
     status = response.status;
     if (!response.ok) throw new Error(response.status === 423 ? 'PixelLab is still generating this character. Try importing again when it finishes.' : response.status === 404 ? 'PixelLab could not find this character.' : `PixelLab export failed (${response.status}). Try again later.`);
     if (Number(response.headers.get('content-length')) > MAX_ZIP_BYTES) throw new Error('This character ZIP exceeds the 64 MB import limit.');

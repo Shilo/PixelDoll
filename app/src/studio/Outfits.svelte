@@ -22,7 +22,7 @@
       <button class="bu-action btn icon plain add" data-variant="quiet" aria-label="Save current look" title="Save current look" onclick={() => (naming = !naming)}><Plus size={16} /></button>
     </div>
     {#if naming}
-      <form class="inline-form" onsubmit={(e) => { e.preventDefault(); saveOutfit() }}>
+      <form class="inline-form" data-update-draft onsubmit={(e) => { e.preventDefault(); saveOutfit() }}>
         <!-- svelte-ignore a11y_autofocus -->
         <input class="bu-input input" bind:value={outfitName} placeholder="Outfit name" aria-label="Outfit name" autofocus />
         <button class="bu-action btn sm primary" data-variant="primary" type="submit">Save</button>

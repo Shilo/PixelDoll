@@ -8,6 +8,7 @@ import type { Manifest, Material, Preset, Project, ZOverride } from '../store/ma
 import { supportedFormat } from '../store/manifest.ts';
 import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
+import { assetUrl } from '../assets.ts';
 
 export interface Outfit { items: Preset['items']; variants: Preset['variants'] }
 export interface DressState { materials: Material[]; presets: Preset[]; zOverrides: Record<string, ZOverride[]>; hides: Record<string, string[] | null>; current?: Outfit; itemIds?: string[] }
@@ -33,7 +34,9 @@ export async function openSource(id: string, signal?: AbortSignal): Promise<{ pr
     const name = id.slice(8);
     const project = await loadFixture(async (p) => {
       signal?.throwIfAborted();
-      const bytes = new Uint8Array(await (await fetch(`./fixtures/${name}/${p}`, { signal })).arrayBuffer());
+      const response = await fetch(assetUrl(`fixtures/${name}/${p}`), { signal });
+      if (!response.ok) throw new Error(`The bundled character could not load (${response.status}). Reconnect and reload to try again.`);
+      const bytes = new Uint8Array(await response.arrayBuffer());
       signal?.throwIfAborted();
       return bytes;
     });

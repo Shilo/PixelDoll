@@ -21,7 +21,7 @@
   let states = $state.raw<{ id: string; name: string }[]>([]), stateId = $state('')
   let bytes: Uint8Array | null = null
   let name = $state(''), id = $state(''), error = $state(''), busy = $state(false), saving = $state(false), loading = $state(false)
-  let characters = $state.raw<LibraryCharacter[]>([]), total = $state(0), offset = $state(0), listed = $state(false)
+  let characters = $state.raw<LibraryCharacter[]>([]), total = $state(0), offset = $state(0), listed = $state(false), previewRevision = $state(0)
   let alive = true
   const reads = new AbortController()
   const peekScope = crypto.randomUUID()
@@ -44,7 +44,7 @@
     try {
       const page = await listCharacters(app.key, next, reads.signal, { activityScope: listScope(next) })
       if (!alive) return
-      characters = page.characters; total = page.total; offset = next
+      characters = page.characters; total = page.total; offset = next; previewRevision++
     } catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) loading = false }
   }
@@ -123,7 +123,7 @@
           <div class="character-library" aria-label="PixelLab characters">
             {#each characters as ch (ch.id)}
               <div class="api-action library-entry"><ApiPeek scope={`library-character-${ch.id}`} label={`Preview ${ch.name || 'character'}`} plan={characterZipPlan(ch.id)} activityScope={zipScope(ch.id)} /><button class="library-character" disabled={busy} onclick={() => fromPixelLab(ch.id)}>
-                {#if ch.preview_url}{#key ch.preview_url}<ApiPreview src={ch.preview_url} activityScope={listScope(offset)} />{/key}{/if}
+                {#if ch.preview_url}{#key `${previewRevision}:${ch.preview_url}`}<ApiPreview src={ch.preview_url} activityScope={listScope(offset)} />{/key}{/if}
                 <span><b>{ch.name || 'Untitled character'}</b><span class="faint small">{ch.directions} {ch.directions === 1 ? 'direction' : 'directions'} · {ch.animation_count} {ch.animation_count === 1 ? 'move' : 'moves'}</span></span>
               </button></div>
             {/each}

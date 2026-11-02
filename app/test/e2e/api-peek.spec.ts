@@ -1,5 +1,6 @@
 import { openStudio } from './immersive-helpers.ts'
 import { expect, test, type Page } from '@playwright/test'
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts'
 
 const peek = (page: Page) => page.locator('[popover][aria-label="API calls"]:popover-open')
 
@@ -336,20 +337,41 @@ test('mirrored saved requests show their payload and updated charge without send
   expect(requests).toEqual([])
 })
 
-test('refreshing a library character replaces its preview URL and records both downloads', async ({ page, context }, info) => {
+for (const sameUrl of [false, true]) test(`refreshing a library character downloads fresh previews with ${sameUrl ? 'the same' : 'a changed'} URL`, async ({ page, context }, info) => {
   let version = 0
+  let failPreview = false
   const downloads: string[] = []
   const uuid = '5352683c-54aa-4617-b303-e942e472c66d'
-  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==', 'base64')
+  const png = Buffer.from(await encodePngBytes({ w: 1, h: 1, data: new Uint8ClampedArray([255, 0, 0, 255]) }))
+  await context.addInitScript(() => {
+    const requests: { cache: RequestCache; credentials: RequestCredentials }[] = []
+    Object.defineProperty(window, '__previewFetchOptions', { value: requests })
+    const fetch = window.fetch
+    window.fetch = (input, options) => {
+      const href = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      const url = new URL(href, document.baseURI)
+      if (url.hostname === 'api.pixellab.ai' && url.pathname.startsWith('/preview-')) {
+        const request = new Request(input, options)
+        requests.push({ cache: request.cache, credentials: request.credentials })
+      }
+      return fetch.call(window, input, options)
+    }
+  })
+  await context.addCookies([{ name: 'preview-cookie', value: 'must-not-send', domain: 'api.pixellab.ai', path: '/', secure: true, sameSite: 'None' }])
   await context.route('https://api.pixellab.ai/**', async (route) => {
     const path = new URL(route.request().url()).pathname
     expect(route.request().method()).toBe('GET')
     if (path === '/v2/balance') await route.fulfill({ json: { subscription: { generations: 100, total: 100 }, credits: { usd: 0 } } })
-    else if (path === '/v2/characters') await route.fulfill({ json: { total: 1, characters: [{ id: uuid, name: 'Refresh fixture', directions: 4, animation_count: 1, preview_url: `https://api.pixellab.ai/preview-${++version}.png` }] } })
+    else if (path === '/v2/characters') {
+      version++
+      await route.fulfill({ json: { total: 1, characters: [{ id: uuid, name: 'Refresh fixture', directions: 4, animation_count: 1, preview_url: `https://api.pixellab.ai/preview-${sameUrl ? 1 : version}.png` }] } })
+    }
     else if (/^\/preview-[12]\.png$/.test(path)) {
       expect(route.request().headers().authorization).toBeUndefined()
+      expect(route.request().headers().cookie).toBeUndefined()
       downloads.push(path)
-      await route.fulfill({ contentType: 'image/png', body: png })
+      if (failPreview) await route.fulfill({ status: 503, body: 'Preview unavailable' })
+      else await route.fulfill({ contentType: 'image/png', body: png })
     } else { await route.abort(); throw new Error(`Unexpected fixture request ${path}`) }
   })
   await openStudio(page, info.config.projects.find(project => project.name === 'browser-selftests')!.use.baseURL!)
@@ -361,14 +383,37 @@ test('refreshing a library character replaces its preview URL and records both d
     ui.importSource = 'pixellab'; ui.sheet = 'import'
   })
   const image = page.locator('.library-character img')
-  await expect(image).toHaveAttribute('src', 'https://api.pixellab.ai/preview-1.png')
+  await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth)).toBe(1)
+  await expect(image).toHaveAttribute('src', /^blob:/)
+  const firstSource = await image.getAttribute('src')
   await page.getByRole('button', { name: 'Refresh', exact: true }).click()
-  await expect(image).toHaveAttribute('src', 'https://api.pixellab.ai/preview-2.png')
-  await expect.poll(() => downloads).toEqual(['/preview-1.png', '/preview-2.png'])
+  await expect.poll(() => downloads).toEqual(['/preview-1.png', sameUrl ? '/preview-1.png' : '/preview-2.png'])
+  await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth)).toBe(1)
+  await expect(image).toHaveAttribute('src', /^blob:/)
+  expect(await image.getAttribute('src')).not.toBe(firstSource)
+  expect(await page.evaluate(async (url) => { try { await fetch(url!); return true } catch { return false } }, firstSource)).toBe(false)
   const refreshPeek = page.getByRole('button', { name: 'Refresh', exact: true }).locator('..').getByRole('button', { name: 'Inspect API calls', exact: true })
   await refreshPeek.click()
   await peek(page).getByRole('button', { name: 'Show background calls', exact: true }).click()
   await expect(peek(page).locator('.peek-call > summary').filter({ hasText: 'preview-' })).toHaveCount(2)
+  await page.keyboard.press('Escape')
+  if (sameUrl) {
+    failPreview = true
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+    await expect(page.getByText('Preview unavailable. Refresh to retry.', { exact: true })).toBeVisible()
+    await expect(image).toBeHidden()
+    failPreview = false
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+    await expect(image).toBeVisible()
+    await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth)).toBe(1)
+    await expect(page.getByText('Preview unavailable. Refresh to retry.', { exact: true })).toHaveCount(0)
+  }
+  const lastSource = await image.getAttribute('src')
+  // Routing disables Chromium's HTTP cache and may omit synthesized cache headers. Check the actual Fetch API contract.
+  expect(await page.evaluate(() => (window as unknown as { __previewFetchOptions: { cache: RequestCache; credentials: RequestCredentials }[] }).__previewFetchOptions))
+    .toEqual(Array.from({ length: sameUrl ? 4 : 2 }, () => ({ cache: 'no-store', credentials: 'omit' })))
+  await page.getByRole('dialog', { name: 'Import character', exact: true }).getByRole('button', { name: 'Cancel', exact: true }).click()
+  expect(await page.evaluate(async (url) => { try { await fetch(url!); return true } catch { return false } }, lastSource)).toBe(false)
 })
 
 test('attached phone peeks stay above their sheet and dismiss without losing the draft', async ({ page, context }) => {

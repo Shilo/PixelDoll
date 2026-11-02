@@ -1,4 +1,5 @@
 // Approved round-six scene art controls. UI appearance remains owned by Bronze.
+import { assetUrl } from '../../lib/assets.ts'
 export type WorldTheme = 'dark' | 'light'
 export type WorldMode = 'preview' | 'topdown' | 'side'
 type RGB = readonly [number, number, number]
@@ -6,8 +7,7 @@ type Sample = readonly [number, number, number, number]
 
 // Custom-property URLs otherwise resolve relative to the bundled CSS in /assets/.
 // Resolve once against the page, retaining Vite's relative GitHub Pages base.
-const pageBase = typeof document === 'undefined' ? 'http://localhost/' : document.baseURI
-const asset = (name: string) => new URL(`${import.meta.env.BASE_URL}worlds/${name}-stage.png`, pageBase).href
+const asset = (name: string) => assetUrl(`worlds/${name}-stage.png`)
 export const BACKGROUNDS = { dark: asset('obsidian'), light: asset('porcelain') } as const
 const backgrounds = (url: string) => ({ selection: url, creation: url, preview: url, topdown: url, side: url })
 

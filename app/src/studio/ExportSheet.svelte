@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { assetUrl } from '../lib/assets.ts'
   // Export (M5): one engine at a time; the zip is built when the sheet opens so the button can name its size.
   import Sheet from './Sheet.svelte'
   import { tick, untrack } from 'svelte'
@@ -241,7 +242,7 @@
         <div class="export-targets">
           {#each group.targets as e (e.id)}
             <label class="export-target">
-              <span class="target-icon" aria-hidden="true" style:mask-image={`url("${import.meta.env.BASE_URL}icons/exports/${e.id}.svg")`}></span>
+              <span class="target-icon" aria-hidden="true" style:mask-image={`url("${assetUrl(`icons/exports/${e.id}.svg`)}")`}></span>
               <span class="target-label"><span class="engine-name">{e.name}</span><span class="engine-sub">{e.sub}</span></span>
               <input type="radio" name="export-format" value={e.id} checked={engine === e.id} disabled={!ready} onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })} aria-label={e.name} aria-describedby={engine === e.id ? 'export-description' : undefined} />
             </label>
