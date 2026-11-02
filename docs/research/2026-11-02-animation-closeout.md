@@ -82,7 +82,7 @@ The verified software defects can be completed and tested. The original aspirati
 
 The new pack has no weapon layers. Hidden or foreshortened palms require appropriate directional/frame artwork or an explicitly authored rig; rotating the single east axe cannot supply missing perspective. The editors preserve that uncertainty and block missing targets. No evidence shows another body-generation request would resolve the missing directional weapon art or an engine's stride-speed contract.
 
-The stopping point is the corrected live cadence, usable native authoring connection, exact export evidence and regression coverage. Body-only acceptance is separate from equipped-art acceptance. Passing software tests does not establish that the new generator should become the production default. This work remains on the requested branch.
+The stopping point is the corrected live cadence, usable native authoring connection, exact export evidence and regression coverage. Body-only acceptance is separate from equipped-art acceptance. Passing software tests does not establish that the new generator should become the production default. Implementation remained on the requested branch until the owner's subsequent integration authorization recorded below.
 
 ## Tracking and spending
 
@@ -115,3 +115,19 @@ Implementation commit `7806be10e73e905b5dae3e30e27ee99af6edec1c` was pushed to `
 The temporary ordinary localhost 5201 server was stopped after verifying its process identity. Existing 5199/5200 servers were preserved. The isolated profile retains the agent-key opt-out. Main and unrelated main-checkout edits were not changed, and the body-pack ZIP remains identical.
 
 Independent code/evidence challenge found no further concrete material blocker in this bounded delta. The reviewer did not independently rerun the test commands; executed checks and the old-axe replay are separately recorded above. No further broad research or paid body retry is supported by the remaining evidence gaps.
+
+## Integration decision
+
+The owner subsequently authorized the recommended next step autonomously: document the concerns, merge the tested fixes
+to main, push origin and delete the merged branch. The recommendation is to integrate the verified engineering work and
+stop broad research. The experimental pack is not promoted to a default or reclassified as a qualified equipped preset.
+
+The standing concerns are now recorded in [known issues](../known-issues.md): one-body/camera coverage, unqualified hidden
+hands and directional weapon art, geometric guards versus anatomical acceptance, and sampled versus held-frame foot
+travel. Further art work should target a specific failing body/view with acceptance evidence; this merge authorizes no
+automatic regeneration or additional spending.
+
+The application code matches tested commit `7806be10e73e905b5dae3e30e27ee99af6edec1c`; subsequent integration edits are
+documentation only. Main's unrelated token-handling working changes are excluded from the merge commit and preserved.
+Integration will use a fast-forward and normal push, with main CI/Pages verification before branch cleanup. Board
+synchronization remains pending because project scopes are unavailable.

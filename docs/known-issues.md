@@ -25,6 +25,22 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Generation and quality
 
+- **The eight-direction starter pack is experimental and body-only.** One humanoid style and camera were tested.
+  Standing idle reuses the frozen reference; generated breathing added unwanted effects and was rejected. Walk and the
+  curated attack retain native artwork, but other proportions, cameras and body shapes are unqualified. The pack contains
+  no weapon layers and does not replace Studio's default generation route. See the
+  [starter evidence](research/2026-11-02-eight-direction-starter-pack.md).
+- **Matching walk cadence does not prove planted feet.** Live walking now follows analog movement strength, fixing the
+  half-speed movement/full-speed gait mismatch. Absolute stride speed still depends on sprite scale, projection and the
+  destination game. The reviewed east sample had a 0.75 px boundary residual at an explicitly chosen native speed, while
+  each held frame still represented 2.25 px of travel. Hidden or ambiguous feet remain unmeasured; neither result is a
+  universal contact threshold. See the [closeout and measurements](research/2026-11-02-animation-closeout.md).
+- **Held-item guards validate geometry, not anatomy or perspective.** Unmarked/off-body targets, transparent rigid-source
+  anchors and known source clipping are blocked. These checks cannot identify fingers, supply hidden-hand positions,
+  create missing directional weapon artwork or detect an axe head already absent from its source PNG. Native frame art
+  and source/view-specific visual review remain necessary before equipped attacks become default presets. The single
+  authored east axe is not evidence that weapons work correctly in all eight views.
+
 - **Experimental motion retargeting is not universally qualified.** The dev-only Motion Lab now covers all 54 available native body/action/view profiles and supports authored contacts, measured soles and explicit weapon grips/masks. Equipped attacks and rendered foot planting still fail in some cases. A two-frame frozen-body grid repair is promising; full-clip quality, independent west/diagonal artwork and repeatability remain unqualified. Two older experimental walk reviews are retained. See the [targeted results and limitations](research/2026-10-28-motion-targeted-authoring.md).
   The [controlled November 1 comparison](research/2026-11-01-workflow-reconciliation.md) favors managed custom V3 body motion, but its equipment test adds a new hand and fails after weapon extraction. Exact protected pixels do not establish correct grip; neither route is a qualified Studio replacement.
   The [November 2 weapon-aware experiment](research/2026-11-02-weapon-aware-grip.md) deliberately authors the gripping hand and reuses known original body pixels elsewhere. Production inpaint extraction now enforces the exact submitted mask, including through cleanup and body cuts. Inside-mask anatomy, hidden grips, other views and transfer to other bodies still require review; the new custom-body workflow remains experimental.
