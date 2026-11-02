@@ -3,7 +3,7 @@ import './app.css'
 import App from './App.svelte'
 import { queue } from './lib/pixellab/queue.ts'
 import { askPersist } from './lib/store/db.ts'
-import { app, setKey } from './lib/app.svelte.ts'
+import { app, getKeyRevision, setKey } from './lib/app.svelte.ts'
 
 askPersist()
 const target = document.getElementById('app')!
@@ -28,8 +28,14 @@ if (import.meta.env.DEV) (window as unknown as { __queue: unknown }).__queue = q
 // set localStorage 'pixeldoll.agentKey' = 'off' first. Never when framed: another page could embed and clickjack the app.
 if (import.meta.env.DEV && import.meta.env.MODE === 'agent' && window.top === window && !app.key) {
   let off = false
-  try { off = localStorage.getItem('pixeldoll.agentKey') === 'off' } catch {}
-  if (!off) fetch('/__dev/pixellab-key', { cache: 'no-store' }).then(async (r) => { if (r.ok) setKey(await r.text(), false) }).catch(() => {})
+  try { off = localStorage.getItem('pixeldoll.agentKey') === 'off' } catch { /* Optional storage can be unavailable; the agent key stays memory-only. */ }
+  const revision = getKeyRevision()
+  if (!off) fetch('/__dev/pixellab-key', { cache: 'no-store' }).then(async (r) => {
+    if (!r.ok) return
+    const key = await r.text()
+    // A delayed agent response must not replace a manual connection or undo Forget, even while still keyless.
+    if (key && revision === getKeyRevision() && !app.key) setKey(key, false)
+  }).catch(() => {})
 }
 
 export default mount(App, { target })

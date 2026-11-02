@@ -51,8 +51,8 @@ function agentKey(): Plugin {
     name: 'pixeldoll-agent-key',
     configureServer(server) {
       server.middlewares.use('/__dev/pixellab-key', (req, res) => {
-        if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
         res.setHeader('cache-control', 'no-store')
+        if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
         try {
           const key = resolveAgentKey(readFileSync(new URL('../.env', import.meta.url), 'utf8'), process.env)
           res.statusCode = key ? 200 : 404

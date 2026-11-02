@@ -89,3 +89,12 @@ were capped at ten across both harness runs, including the two with unconfirmed 
 The local files contain the reference rather than a copied token. Future Windows-variable changes require restarting
 the terminal/editor and agent server so the new value is inherited. Renaming the Windows variable requires only changing
 the name inside `${...}` in each ignored local entry. Ordinary users' pasted and remembered tokens keep their existing flow.
+
+## Independent follow-up
+
+The owner requested an adversarial review of the combined older/newer token changes and matching behavior in both apps.
+The [independent review](../reviews/2026-11-02-token-integration-challenge.md) found two agent-startup defects, reproduced
+them offline and independently approved the bounded fixes. The [coordinator's validation](../reviews/2026-11-02-token-review-validation.md)
+records the final checks, fake-token transport/rejection matrix, cross-tab race checks and remaining explicit limits.
+`PIXELLAB_SECRET` remains a dist-guard leak marker by owner decision. It does not restrict environment-reference names;
+the generic resolver marker protects against accidentally bundling resolution code regardless of the chosen name.

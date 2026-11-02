@@ -8,6 +8,7 @@ import { SAVED_KEY, readSavedKey, watchSharedAuth } from './shared-auth.ts';
 const clearSavedKey = () => { try { localStorage.removeItem(SAVED_KEY); } catch {} };
 
 let keyRevision = 0;
+export const getKeyRevision = () => keyRevision;
 const stored = readSavedKey();
 export const app = $state({
   key: stored,

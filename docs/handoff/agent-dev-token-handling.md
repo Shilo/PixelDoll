@@ -44,6 +44,9 @@ development**, generating images without a human pasting the token into the runn
    file, or a source map (file or inline `sourceMappingURL`). CI runs `npm run build`, so it runs the guard too.
 9. **Visible agent indicator.** In agent mode the app shows an "Agent mode" badge, so a human never mistakes it for the
    normal app.
+   Automatic delivery must also preserve a newer manual connection or Forget: snapshot the credential revision before
+   requesting the agent key and compare again after the full response body resolves. Check keylessness as well. An
+   unavailable optional storage lookup does not suppress a memory-only agent connection; an explicit off switch does.
 10. **Keyless automation stays keyless.** Test scripts that must not spend credits set a kill switch
     (`localStorage['pixeldoll.agentKey'] = 'off'`) before the app loads, even on the agent server.
 11. **Human token UX (production and normal dev):** the token is kept per tab by default (in memory or sessionStorage).

@@ -28,3 +28,7 @@ test('missing entries never acquire a key, and references never load sibling dot
   expect(() => resolveAgentKey('CUSTOM_TOKEN=synthetic-token\nPIXELLAB_API_KEY_AGENT_DEV=${CUSTOM_TOKEN}', {})).toThrow('missing or blank');
   expect(() => resolveAgentKey('PIXELLAB_API_KEY_AGENT_DEV=${constructor}', {})).toThrow('missing or blank');
 });
+
+test.each(['0123456789abcdef0123456789abcdef', 'pixl_0123456789abcdef0123456789abcdef', 'CUSTOM_TOKEN', 'prefix${CUSTOM_TOKEN}'])('unquoted opaque literals are preserved, including a colliding environment name: %s', token => {
+  expect(resolveAgentKey('PIXELLAB_API_KEY_AGENT_DEV='+token, { CUSTOM_TOKEN: 'different-synthetic-token' })).toBe(token);
+});
