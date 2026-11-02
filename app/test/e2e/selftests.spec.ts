@@ -2,6 +2,8 @@ import { openStudio } from './immersive-helpers.ts'
 import { expect, test } from '@playwright/test'
 import { browserSelfTests } from '../../src/lib/selftests.ts'
 import { readFile } from 'node:fs/promises'
+import {unzip} from '../../src/lib/store/zip.ts'
+import {decodePngBytes} from '../../src/lib/image/pngraw.ts'
 
 test('offline Motion Lab edits and roundtrips motions without requesting generations',async({page},testInfo)=>{
   const paid:string[]=[],errors:string[]=[];
@@ -68,7 +70,17 @@ test('Motion Lab preserves candidate review, buffer exclusion and authored hold 
   await editor.getByRole('button',{name:'Save attachment draft',exact:true}).click();await expect(editor.getByRole('status')).toContainText('saved locally');
   const attachmentDownload=page.waitForEvent('download');await editor.getByRole('button',{name:'Save attachment document',exact:true}).click();const attachment=JSON.parse(await readFile((await(await attachmentDownload).path())!,'utf8'));
   expect(attachment.body.hashes).toHaveLength(4);expect(attachment.frames[0].angle).toBe(35);expect(attachment.body.jobId).toBe('motion-review-fixture');expect(attachment.body.padding).toBeGreaterThan(0);
-  await page.reload();await candidate.getByRole('button',{name:'Author held item',exact:true}).click();await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toHaveValue('35');expect(paid).toEqual([]);
+  await editor.getByLabel('Authored frame PNG',{exact:true}).setInputFiles({name:'wrong-canvas.png',mimeType:'image/png',buffer:Buffer.from(output.reference.png,'base64')});await expect(editor.getByRole('alert')).toContainText('Export the native frame first');
+  const authored=await page.evaluate(async({w,h})=>{const imagePath='/src/lib/image/png.ts',codecPath='/src/lib/image/pngraw.ts',image=await import(imagePath),codec=await import(codecPath),native=image.makeImg(w,h);native.data.set([120,120,120,255],(3*w+4)*4);native.data.set([90,60,30,255],(4*w+4)*4);return image.bytesToBase64(await codec.encodePngBytes(native));},{w:attachment.body.cell.w+2*attachment.body.padding,h:attachment.body.cell.h+2*attachment.body.padding});
+  await editor.getByLabel('Authored frame PNG',{exact:true}).setInputFiles({name:'native-item.png',mimeType:'image/png',buffer:Buffer.from(authored,'base64')});await expect(editor.getByRole('status')).toContainText('Loaded native item art for frame 1');await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toBeDisabled();
+  await expect.poll(()=>editor.getByLabel('Attachment grip and occlusion editor',{exact:true}).evaluate((element:HTMLCanvasElement)=>Array.from(element.getContext('2d')!.getImageData(4,3,1,1).data))).toEqual([120,120,120,255]);
+  await editor.getByRole('button',{name:'Save attachment draft',exact:true}).click();await expect(editor.getByRole('status')).toContainText('saved locally');
+  await page.reload();await candidate.getByRole('button',{name:'Author held item',exact:true}).click();await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toHaveValue('35');await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toBeDisabled();
+  const nativeDownload=page.waitForEvent('download');await editor.getByRole('button',{name:'Export authored attachment',exact:true}).click();const entries=await unzip(new Uint8Array(await readFile((await(await nativeDownload).path())!))),entry=(name:string)=>entries.get(name)!,manifest=JSON.parse(new TextDecoder().decode(entry('manifest.json'))),saved=JSON.parse(new TextDecoder().decode(entry('authoring.json')));
+  expect(saved.frames[0].authoredPng).toBe(authored);expect(saved.frames[1].authoredPng).toBeUndefined();expect(manifest.qualified).toBe(false);expect(manifest.frames[0].source).toBe('authored-frame');expect(manifest.frames[0].authoredFrameSha256).toMatch(/^[a-f0-9]{64}$/);expect(manifest.frames[1].source).toBe('rigid-source');
+  const nativeImage=await decodePngBytes(Buffer.from(authored,'base64')),exportedImage=await decodePngBytes(entry('layers/0.png'));expect(exportedImage).toEqual(nativeImage);
+  const frozen=await decodePngBytes(entry('body/0.png')),original=await decodePngBytes(Buffer.from(output.reference.png,'base64')),p=attachment.body.padding;for(let y=0;y<original.h;y++)expect(frozen.data.slice(((y+p)*frozen.w+p)*4,((y+p)*frozen.w+p+original.w)*4)).toEqual(original.data.slice(y*original.w*4,(y+1)*original.w*4));
+  await editor.getByRole('button',{name:'Author attachment frame 2',exact:true}).click();await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toBeEnabled();await editor.getByRole('button',{name:'Author attachment frame 1',exact:true}).click();await editor.getByRole('button',{name:'Use source placement for this frame',exact:true}).click();await expect(editor.getByRole('spinbutton',{name:'Blade angle, degrees',exact:true})).toBeEnabled();expect(paid).toEqual([]);
 });
 
 test('Motion Lab blocks mirrors, unresolved reservations and an exhausted budget before paid transport',async({page})=>{

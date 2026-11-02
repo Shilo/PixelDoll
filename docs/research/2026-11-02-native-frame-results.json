@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "paidRequests": 0,
+  "paidUnits": 0,
+  "sourcePacketCanonicalHash": "516a48a77fea477e0c3bc7d39ba35bfad8d6ca78a9e169dfa70314ca60daba0c",
+  "sourceReceiptSha256": "ba45c56a0c8de69757f32f3f6a335992c850a4e3e8f27564bb139c5b433a69df",
+  "failedResultSha256": "5c61d8651a45ed46b4d9e4bb3ca8ec694f1677cdbe994653bce9727d1c20e819",
+  "bodyRecipeCanonicalHash": "4458544f88245b1a96db2c1781f857a2f306271014009574bf0ac11de5fb8fd8",
+  "sourceAssetSha256": "a89607348dea69e000cd98abd0ddc401987d89d0fe6b015afb15d5c29db7393a",
+  "frames": [
+    {
+      "sourceFrame": 3,
+      "bodySha256": "dccc5c6dee133dfb234062c5742c55d5bb7aacf303d2d3cb4f38e7bae18d44d6",
+      "layerRgbaSha256": "6e399eb306dc84188ca32c8f9bc0b2f16def309aa54bb72a7ee1430917066ea3",
+      "expectedLayerRgbaSha256": "6e399eb306dc84188ca32c8f9bc0b2f16def309aa54bb72a7ee1430917066ea3",
+      "bodyCompositePixelChanges": 0,
+      "source": "authored-frame",
+      "itemPixels": 156,
+      "neutralPixels": 85,
+      "hiddenPixels": 0,
+      "clippedSourcePixels": 0,
+      "qualified": false
+    },
+    {
+      "sourceFrame": 4,
+      "bodySha256": "adfc044e682285d419216427c459030804b2b0a4013981554156c552766aed8f",
+      "layerRgbaSha256": "7b961cedd8a8be347982398d4c4a22242e3972d3e09cee629b89f8b943fd959e",
+      "expectedLayerRgbaSha256": "7b961cedd8a8be347982398d4c4a22242e3972d3e09cee629b89f8b943fd959e",
+      "bodyCompositePixelChanges": 0,
+      "source": "authored-frame",
+      "itemPixels": 153,
+      "neutralPixels": 85,
+      "hiddenPixels": 1,
+      "clippedSourcePixels": 0,
+      "qualified": false
+    }
+  ],
+  "qualified": false,
+  "limits": [
+    "Only two authored poses, no complete animation or independent repeat",
+    "Unchanged bodies still carry their original anatomy/contact limitations",
+    "Source design is existing154-pixel art with previously declared omissions, transformed in the approved offline control",
+    "Frame-specific native art can correct perspective, but this example uses the prior explicitly authored rotation guide",
+    "Neutral-pixel count describes this known art, not a general axe-head classifier"
+  ]
+}
