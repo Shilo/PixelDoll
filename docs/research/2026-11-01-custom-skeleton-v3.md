@@ -8,6 +8,31 @@ Custom Skeleton v3 works through live browser MCP, including procedural moves an
 
 The bounded comparison is complete. It is useful for authoring recognizable shared body motion, but does not yet solve professional equipped animation. Keep it experimental and prioritize curated frozen clips, explicit weapon anchors/occlusion and visible sole review. Campaign spending is now **998/1,000**. Historical checkpoints and the complete experiment follow below.
 
+## Can PixelDoll use this, and what actually changed?
+
+It is inaccurate to conclude that custom V3 is unavailable programmatically or unusable by this application. MCP is a programmatic interface over HTTP. Our development browser client successfully authenticated, retrieved instructions, submitted custom motion and read its results directly from PixelLab. That experiment did not require an AI chat host, an installed PixelLab connector or a backend. A production client could technically use the same protocol; this is an implementation possibility, not an integration or support guarantee.
+
+The narrower REST limitation remains: a fresh public-schema check still describes managed custom Skeleton v3 but does not declare `poses`, `move` or `scale` on `CreateCharacterAnimationRequest`, whose `additionalProperties` is false. We have not verified equivalent explicit authoring through REST. Do not equate a missing REST field with the absence of all API access. Using MCP in production would add a protocol alongside the application's current REST v2 integration and needs an explicit, tested integration contract. There is no technical requirement to wait for REST parity before doing offline authoring experiments.
+
+What this research branch delivers:
+
+| Area | Implemented here | Effect on the normal Studio |
+| --- | --- | --- |
+| Motion conversion | Coherent target rig solving, camera/body calibration, stance anchors and contact diagnostics | Experimental library code is consumed by Motion Lab, not Studio |
+| Authoring/review | Saved calibration, source controls, per-frame weapon grip/angle/occlusion and visible-sole tools | Available on the development-only lab page |
+| Managed custom V3 | Free instruction/schema inspection, bounded live comparison and settled billing inspection | Not connected to normal character creation or dressing |
+| Evidence | Curated candidate catalogs, before/after playback, retained raw frames, quality limits and cost audit | Research assets are not automatically approved production presets |
+
+Therefore, real code and tooling improvements were implemented, but **no user-facing Studio animation-quality improvement has shipped from this research**. The branch has not been merged or deployed as part of this work. A source import audit confirms that the new `motion.ts` and `planting.ts` runtime consumers are the experimental lab and each other, not the production Studio. Do not describe the conversion fixes as already improving every character created in PixelDoll.
+
+The next useful sequence is:
+
+1. Review and finish one small preset set for a supported body family, using identical frozen reference artwork. Qualify an actual equipped attack, visible grip/occlusion and tracked sole landmarks across its intended views. Existing body-only results and pixel gates are insufficient.
+2. Establish a stable frame/pivot/rig contract for each approved clip. The managed output's 96 px canvas and missing exported rig/timing information must be addressed before matching equipment to it.
+3. Bring only the approved preset/attachment workflow into Studio, with a clear review path and compatible layer export. This would be the user-facing application improvement; it is still outstanding. Do not switch the default generator to managed custom V3 on the strength of this experiment.
+
+No further generations were used for this clarification. Two remain in the original allowance, below the verified cost of another eight-frame direction. Future paid qualification beyond that allowance needs a new budget; offline review of existing evidence can continue. The matching research card's documentation sync remains pending because GitHub project access is unavailable.
+
 ## Three different workflows
 
 | Workflow | Meaning | Current project usage |
