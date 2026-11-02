@@ -295,9 +295,11 @@ for why there are dedicated exports for these engines and when more would be use
   rather than being sent again. Once the app files are downloaded and you relaunch, saved characters, the demo,
   dressing, recoloring, outfits, device import and export also work after an offline reload. PixelLab generation,
   account information, its library and remote artwork need a connection. Imported characters are local snapshots.
-- **Install:** open **More options > Install PixelDoll**. Use the browser's native prompt when offered. On iPhone or
-  iPad, use Safari's **Share > Add to Home Screen** and enable **Open as Web App** if offered. The install help reports
-  whether offline files are ready; relaunch once while connected before relying on offline access.
+- **Install:** when **More options > Install PixelDoll** appears, it opens your browser's install prompt directly.
+  Otherwise, **Installation help** explains the available browser commands and reports offline-file readiness.
+  On iPhone or iPad, use Safari's **Share > Add to Home Screen** and enable **Open as Web App** if offered; Safari on
+  Mac offers **Add to Dock**. Install promotion hides once installation is confirmed or PixelDoll launches as an
+  installed app. A used or dismissed prompt stays unavailable until the browser offers another one.
 - **Updates:** a persistent **Update to v…** notice appears when a deployed version is available. Click it when ready;
   only this tab reloads. Finish and close panels, save or cancel an outfit name, and finish or dismiss pending generation
   work first. Saved characters and outfits stay; the view and undo history reset. A session-only PixelLab connection

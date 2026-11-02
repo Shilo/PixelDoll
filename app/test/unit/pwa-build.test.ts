@@ -92,6 +92,14 @@ function worker(cacheData = new Map<string, Map<string, Response>>(), workerRele
 }
 
 describe('PWA release construction', () => {
+  it('injects the build-versioned classic install capture before modules execute', () => {
+    const html = '<html><head><script type="module" src="./assets/main-hash.js"></script></head><body></body></html>'
+    const result = revisionHtml(html, release.build)
+    expect(result).toContain('<script src="./install.js?pd-build=build-b"></script>\n</head>')
+    expect(result).toContain('<script type="module" src="./assets/main-hash.js"></script>')
+    expect(result.indexOf('install.js')).toBeLessThan(result.indexOf('</head>'))
+  })
+
   it('versions mutable public URLs while preserving hashed chunk identity and unrelated HTML', () => {
     const html = '<script src="./appearance.js"></script><script src="./assets/main-abc.js"></script><link href="./manifest.webmanifest"><link href="https://example.test/favicon.svg"><a href="#x">x</a>'
     expect(revisionHtml(html, release.build)).toBe('<script src="./appearance.js?pd-build=build-b"></script><script src="./assets/main-abc.js"></script><link href="./manifest.webmanifest?pd-build=build-b"><link href="https://example.test/favicon.svg"><a href="#x">x</a>')

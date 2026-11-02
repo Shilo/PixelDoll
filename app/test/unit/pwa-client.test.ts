@@ -1,4 +1,6 @@
 import { get } from 'svelte/store'
+import { readFileSync } from 'node:fs'
+import { runInNewContext } from 'node:vm'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const current = { build: '00000000-0000-4000-8000-000000000001', version: '0.4.11', commit: 'abc1234' }
@@ -58,12 +60,16 @@ async function setup() {
   const getRegistration = vi.fn(async (): Promise<typeof registration | undefined> => registration)
   const register = vi.fn(async () => registration)
   const fetch = vi.fn(async () => new Response(JSON.stringify(published), { headers: { 'content-type': 'application/json' } }))
-  vi.stubGlobal('window', { isSecureContext: true })
+  const matchMedia = () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
+  const window = { isSecureContext: true, top: undefined as unknown, addEventListener, removeEventListener, matchMedia, navigator: { standalone: false } }
+  window.top = window
+  runInNewContext(readFileSync(new URL('../../public/install.js', import.meta.url), 'utf8'), { window })
+  vi.stubGlobal('window', window)
   vi.stubGlobal('document', { baseURI: scope, visibilityState: 'visible', addEventListener, removeEventListener })
   vi.stubGlobal('navigator', { serviceWorker: { getRegistration, register, controller: active, addEventListener, removeEventListener } })
   vi.stubGlobal('addEventListener', addEventListener)
   vi.stubGlobal('removeEventListener', removeEventListener)
-  vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }))
+  vi.stubGlobal('matchMedia', matchMedia)
   vi.stubGlobal('MessageChannel', Channel)
   vi.stubGlobal('location', { reload })
   vi.stubGlobal('fetch', fetch)

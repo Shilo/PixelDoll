@@ -14,6 +14,7 @@ export function revisionPath(path: string, build: string) {
 export function revisionHtml(html: string, build: string) {
   return html.replace(/\b(src|href)=(['"])((?:\.\/)?(?:appearance\.js|favicon\.(?:svg|ico)|manifest\.webmanifest|icons\/pwa\/[^'"?#]+))\2/g,
     (_, attribute: string, quote: string, path: string) => `${attribute}=${quote}${revisionPath(path, build)}${quote}`)
+    .replace('</head>', `<script src="./${revisionPath('install.js', build)}"></script>\n</head>`)
 }
 
 /** Runs after public files and every lazy chunk have been written, so the offline release is a complete closure. */

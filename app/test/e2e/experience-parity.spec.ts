@@ -498,7 +498,9 @@ test('saved light appearance applies before the application module initializes',
   let blocked = 0
   await context.route('**/*', async (route) => {
     const request = route.request()
-    if (request.resourceType() === 'script' && !new URL(request.url()).pathname.endsWith('/appearance.js')) {
+    const path = new URL(request.url()).pathname
+    // Let synchronous head helpers finish parsing the page; hold the application modules.
+    if (request.resourceType() === 'script' && !path.endsWith('/appearance.js') && !path.endsWith('/install.js')) {
       blocked++
       await held
     }

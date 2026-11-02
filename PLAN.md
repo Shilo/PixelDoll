@@ -151,12 +151,25 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
 The production build is installable and supports local work offline. Development and agent servers never register a
 service worker. The implementation uses the platform APIs without another dependency.
 
-- **User task and placement:** Install PixelDoll is in More options. Browsers offering a native install prompt use it;
-  other browsers receive manual instructions, including Safari Add to Home Screen. Prompt acceptance is not treated
+- **User task and placement:** More options shows Install PixelDoll only with an actionable native browser offer;
+  its click opens the native prompt directly. Otherwise the entry is explicitly named Installation help. Guidance
+  must not masquerade as an install action. Help gains a real install button if a native offer arrives while open;
+  Safari's manual paths remain available, including Add to Home Screen and Add to Dock. Prompt acceptance is not treated
   as proof of installation. The manifest derives its [stable identity](https://developer.chrome.com/docs/capabilities/pwa-manifest-id) from its relative start URL, keeping subpath
   installs distinct; an explicit `id: './'` resolves against the origin and would collide with sibling apps.
   Relative scope and branded SVG, 192/512 PNG,
   opaque maskable and Apple touch icons are included, alongside PNG/ICO favicons.
+- **Install lifecycle correction (2026-11-02):** the initial always-visible Install label opened instructions when no
+  offer had been captured, a misleading original delivery. Comparing Backpack's `InstallPwaButton.svelte` favored
+  its capability gate, while retaining explicit manual help for browsers without an offered prompt. A build-only,
+  frame-guarded classic `install.js` captures offers before deferred modules or IndexedDB startup. It holds only
+  the browser event and installation observations, never credentials. A single source orders fresh browser offers,
+  confirmed installation and positive standalone transitions; browser/fullscreen transitions alone cannot infer
+  uninstallation. Native offers are consumed before awaiting the prompt; duplicate clicks and failures are handled.
+  A new offer can restore installation after uninstalling in the same document. Neither missing offers nor accepted
+  prompts prove installation, and no permanent localStorage installed flag is added. Native availability depends on
+  the browser and window; help reports that uncertainty instead of claiming the app cannot be installed. See
+  [the browser prompt contract](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/How_to/Trigger_install_prompt).
 - **Offline release:** `app/pwa-build.ts` inventories every shipped file after bundling, including all lazy chunks,
   ticker worker, worlds, export icons and demo artwork. `app/pwa-worker.js` stages a separate cache, bypasses HTTP caches
   and verifies every file's SHA-256 before installation. Each build gets a distinct identity even when rebuilt from
@@ -217,6 +230,14 @@ Codex browser checks independently confirmed a blocked form retains its text, ex
 entry/exit, and server-unavailable launch, recolor and prepared export. No PixelLab credits were spent. Physical devices
 and OS-installed app windows were not tested, consistent with D15. Frequent ignored updates can retain superseded waiting
 caches until activation; no unsafe install-time pruning or unconditional reload was introduced.
+
+Install follow-up validation (2026-11-02): type checking, all 1,610 unit tests (one existing skip), all 32
+focused PWA/experience browser tests and the full 192-test browser suite passed, along with the production build,
+dist guard and theme ownership check. New cases cover pre-module and late offers, single-use prompts,
+duplicate clicks, prompt failures, accepted versus completed installation, reinstall offers and standalone evidence.
+A fresh full Chromium profile received a trusted native offer on pixeldoll.app and the actual menu click invoked
+the real prompt method; no OS installation was accepted. The Codex browser independently reproduced the original
+misleading guidance and exercised the saved character, fullscreen and prepared export without PixelLab requests.
 
 ## Professional audit follow-up: independent directions
 

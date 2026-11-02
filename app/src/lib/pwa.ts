@@ -5,10 +5,16 @@ interface InstallPrompt extends Event {
   prompt(): Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
-export const pwa = writable({ available: null as Release | null, ready: false, offlineReady: false, error: '', installable: false, installed: false, installing: false })
+interface InstallCapture {
+  readonly prompt: InstallPrompt | undefined
+  readonly installed: boolean | undefined
+  take(): InstallPrompt | undefined
+  subscribe(listener: () => void): () => void
+}
+declare global { interface Window { __pixeldollInstall?: InstallCapture } }
+export const pwa = writable({ available: null as Release | null, ready: false, offlineReady: false, error: '', installable: false, installed: false, installing: false, installError: '' })
 let registration: ServiceWorkerRegistration | undefined
 let latest: Release | null = null
-let prompt: InstallPrompt | undefined
 let updateAction: (() => void) | undefined
 let installHelp: (() => void) | undefined
 let checking: Promise<void> | undefined
@@ -107,12 +113,15 @@ export function setPwaActions(update: () => void, help: () => void) {
   return () => { updateAction = undefined; installHelp = undefined }
 }
 export function requestUpdate() { updateAction?.() }
+export function requestInstallHelp() { installHelp?.() }
 export async function installApp() {
-  if (!prompt) { installHelp?.(); return }
-  const event = prompt; prompt = undefined
-  pwa.update(s => ({ ...s, installable: false, installing: true }))
-  try { await event.prompt(); await event.userChoice }
-  catch (e) { pwa.update(s => ({ ...s, error: `Installation could not open: ${(e as Error).message}` })); installHelp?.() }
+  const state = get(pwa)
+  if (state.installed || state.installing) return false
+  const event = window.__pixeldollInstall?.take()
+  if (!event) { requestInstallHelp(); return false }
+  pwa.update(s => ({ ...s, installable: false, installing: true, installError: '' }))
+  try { await event.prompt(); await event.userChoice; return true }
+  catch (e) { pwa.update(s => ({ ...s, installError: `Installation could not open: ${(e as Error).message}` })); requestInstallHelp(); return false }
   finally { pwa.update(s => ({ ...s, installing: false })) }
 }
 
@@ -120,10 +129,12 @@ export function startPwa() {
   if (!import.meta.env.PROD || !('serviceWorker' in navigator) || !window.isSecureContext) return () => {}
   stopped = false
   base = new URL(import.meta.env.BASE_URL, document.baseURI)
-  const display = matchMedia('(display-mode: standalone)')
-  const syncInstalled = () => pwa.update(s => ({ ...s, installed: display.matches || (navigator as Navigator & { standalone?: boolean }).standalone === true }))
-  const beforeInstall = (event: Event) => { event.preventDefault(); prompt = event as InstallPrompt; pwa.update(s => ({ ...s, installable: true })) }
-  const installed = () => { prompt = undefined; pwa.update(s => ({ ...s, installed: true, installable: false })) }
+  const capture = window.__pixeldollInstall
+  const syncInstalled = () => pwa.update(s => {
+    const installed = capture?.installed === true
+    const installable = !installed && !!capture?.prompt
+    return { ...s, installed, installable, ...((installed || installable) ? { installError: '' } : {}) }
+  })
   const wake = () => { if (document.visibilityState === 'visible') void checkForUpdate() }
   const onController = () => { void inspectWorker().catch(e => pwa.update(s => ({ ...s, error: (e as Error).message }))) }
   const watch = () => {
@@ -134,9 +145,10 @@ export function startPwa() {
     })
   }
   syncInstalled()
-  addEventListener('beforeinstallprompt', beforeInstall); addEventListener('appinstalled', installed)
+  const stopInstall = capture?.subscribe(syncInstalled)
+  if (!capture) pwa.update(s => ({ ...s, installError: 'The install controls could not load. Reconnect and reload to try again.' }))
   addEventListener('focus', wake); addEventListener('online', wake); addEventListener('pageshow', wake)
-  document.addEventListener('visibilitychange', wake); display.addEventListener('change', syncInstalled)
+  document.addEventListener('visibilitychange', wake)
   navigator.serviceWorker.addEventListener('controllerchange', onController)
   registerWorker = async () => {
     const script = new URL('sw.js', base)
@@ -151,9 +163,9 @@ export function startPwa() {
   return () => {
     stopped = true; registerWorker = undefined; clearInterval(interval)
     registration?.removeEventListener('updatefound', watch)
-    removeEventListener('beforeinstallprompt', beforeInstall); removeEventListener('appinstalled', installed)
+    stopInstall?.()
     removeEventListener('focus', wake); removeEventListener('online', wake); removeEventListener('pageshow', wake)
-    document.removeEventListener('visibilitychange', wake); display.removeEventListener('change', syncInstalled)
+    document.removeEventListener('visibilitychange', wake)
     navigator.serviceWorker.removeEventListener('controllerchange', onController)
   }
 }
