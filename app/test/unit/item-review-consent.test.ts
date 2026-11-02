@@ -37,6 +37,17 @@ test('explicit acceptance acknowledges checks while preserving all artwork and w
   expect(state.saved!.provenance).toEqual(reviewed.provenance); expect(reviewed.qa!.status).toBe('warn');
 });
 
+test('held raw-pixel observations survive explicit acceptance and serialized storage without paid work', async () => {
+  const current=state.record!.manifest.items[0];current.slot='main_hand';
+  current.qa!.rawKeyReviewFrames=1;current.qa!.clips!['walk/south'].rawKeyReviewFrames=1;
+  current.qa!.cells['walk/south/0']={route:'posed',area:4,rawKeyOutside:{pixels:2,bounds:{x:43,y:25,w:2,h:1},space:'raw-output-cell',nearestWristPx:2}};
+  const reviewed=structuredClone(current);await acceptItemReview('character',current.id,reviewed);
+  const loaded=JSON.parse(JSON.stringify(state.saved)) as Item;
+  expect(loaded.qa).toMatchObject({status:'accepted',rawKeyReviewFrames:1,clips:{'walk/south':{status:'accepted',rawKeyReviewFrames:1}}});
+  expect(loaded.qa!.cells['walk/south/0']).toEqual(reviewed.qa!.cells['walk/south/0']);
+  expect(state.enqueue).not.toHaveBeenCalled();expect(state.imageWrites).toBe(0);expect(loaded.layers).toEqual(reviewed.layers);
+});
+
 test.each(['item', 'body', 'missing'] as const)('a stale %s cannot be accepted from an older review', async change => {
   const reviewed = structuredClone(state.record!.manifest.items[0]);
   if (change === 'item') state.record!.manifest.items[0].qa!.maxPaletteDist++;

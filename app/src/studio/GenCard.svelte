@@ -127,6 +127,7 @@
         <dt>Moves</dt><dd>{g.draft.spec.anims.join(', ')} × {g.draft.spec.dirs.join(', ')}</dd>
         <dt>Calls</dt><dd>{g.draft.calls.map((c, i) => `${i + 1}: ${c.cells.length} cells${c.rerolls ? `, ${c.rerolls} re-rolls` : ''}`).join(' · ')}</dd>
         <dt>Spent</dt><dd>{+spent.toFixed(2)} gens{spentUsd ? ` + $${spentUsd.toFixed(3)}` : ''}</dd>
+        {#if res?.qa?.qa.rawKeyReviewFrames}<dt>Raw body differences</dt><dd>{res.qa.qa.rawKeyReviewFrames} frames have new body-colored pixels before alignment. Ordinary redraw shifts can cause this; quality status is unchanged.</dd>{/if}
         {#if g.error}<dt>Error</dt><dd>{g.error}</dd>{/if}
       </dl>
       {#if g.draft.log.length}<p class="faint small">{g.draft.log.join(' · ')}</p>{/if}

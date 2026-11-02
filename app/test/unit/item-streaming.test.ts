@@ -8,7 +8,7 @@ import { toChroma } from '../../src/lib/image/chroma.ts'
 import { LABELS } from '../../src/lib/rig/poses.ts'
 import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts'
 import * as db from '../../src/lib/store/db.ts'
-import { itemQa, slotOf, type CellOut } from '../../src/lib/items/items.ts'
+import { itemQa, padImg, slotOf, type CellOut } from '../../src/lib/items/items.ts'
 import { rerollCall, runItem, type Draft, type ItemResult, type RigCtx } from '../../src/lib/items/run.ts'
 import { plainReason } from '../../src/studio/model.ts'
 import type { Manifest } from '../../src/lib/store/manifest.ts'
@@ -126,6 +126,24 @@ test.each([null, 'Needs PixelLab Tier 2 or higher. No request sent.'])('cached f
   expect(d.calls.map(c => c.recId)).toEqual(['cached0', 'cached1', 'cached2', 'cached3'])
   expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
   expect(queue.planBlocks).not.toHaveBeenCalled(); expect(queue.enqueue).not.toHaveBeenCalled()
+})
+
+test('raw held-body additions in existing receipts remain informational without submitting another request', async () => {
+  const { ctx, d, dressed } = await fixture(), added = structuredClone(dressed)
+  d.spec.slot = 'main_hand'
+  added.data.set([0, 180, 0, 255], (5 * 16 + 11) * 4)
+  for (const [k, c] of d.calls.entries()) {
+    const id = 'held-cached' + k, out = padImg(c.kind === 'pose' ? added : dressed, 16)
+    q.recs.set(id, { id, state: 'queued', jobs: [] } as unknown as JobRec)
+    c.recId = id; await land(id, c.kind === 'pose' ? Array(4).fill(out) : [out, out])
+  }
+  const result = await runItem(d, ctx)
+  expect(result!.qa!.qa.rawKeyReviewFrames).toBe(8)
+  expect(result!.qa!.warnings.some(w => w.startsWith('Grip review'))).toBe(false)
+  expect([...result!.qa!.failCalls.values()].flat().some(w => w.startsWith('Grip review'))).toBe(false)
+  expect(result!.qa!.softCalls.size).toBe(0)
+  expect(d.calls.every(c => !c.rerolls && !c.old.length)).toBe(true)
+  expect(queue.enqueue).not.toHaveBeenCalled(); expect(queue.planBlocks).not.toHaveBeenCalled()
 })
 
 test('a held item pasted on near-rest frames says so in review, without changing its pixels', () => {

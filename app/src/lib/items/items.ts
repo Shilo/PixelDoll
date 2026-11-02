@@ -2,7 +2,7 @@ import { centroid, maskOf, simAligned } from '../image/similarity.ts';
 export { simAligned } from '../image/similarity.ts';
 // Item lab core (architecture §3.1–3.4, §4): slot ladder, call packing, prompts, per-cell extraction, gates G1–G8, fg/bg split,
 // manifest Item. Pure over Img; the UI (ui/M3.svelte) only runs calls through the queue and persists.
-import { chromaLayer, chromaPrompt, components, fillHoles, KEY_NAME, keyKept, keyOutside, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
+import { chromaLayer, chromaPrompt, components, fillHoles, KEY_NAME, keyKept, keyOutside, newKeyPixels, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
 import { diffLayer, type Rect } from '../image/diff.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { over } from '../compose/compose.ts';
@@ -306,6 +306,7 @@ export interface CellOut {
   keyLost?: number; // body px no longer key (G2 counts them too: a nearly covered body has few px left)
   erased?: number;
   keyOutside?: number;
+  rawKeyOutside?: ReturnType<typeof newKeyPixels>; // held-item observation before registration; mask stays in memory only
   outBand: number; // layer px outside the slot band (info)
   baseBand: number; // base opaque px inside the slot band (how much the covered body region itself changes per frame)
   specks: number; // components <= 2 px
@@ -646,6 +647,7 @@ function translate(im: Img, dx: number, dy: number): Img {
 
 export function extractCell(o: { key: string; call: number; base: Img; out: Img; route: Route; band: Rect; useCc?: boolean; posed?: boolean; clip?: boolean; held?: boolean; pad?: number; cut?: { maxY: number; allow?: Uint8Array } }): CellOut {
   const { base, route, band } = o, { w, h } = base;
+  const rawKeyOutside = o.held && route !== 'none' ? newKeyPixels(base, o.out, route) : undefined;
   // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
   const reg = o.posed ? bestShift(base, o.out) : ([0, 0] as [number, number]);
   const out = reg[0] || reg[1] ? translate(o.out, -reg[0], -reg[1]) : o.out;
@@ -676,6 +678,7 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
   const tol = o.posed ? posedTol(w, h, o.pad) : 0, kk = route === 'none' ? null : keyKept(base, out, route, skip, undefined, tol);
   return {
     key: o.key, call: o.call, base, input: inputCell(base, route), out, layer: r.layer, mask: r.mask, area: sum(r.mask), outBand, baseBand,
+    ...(rawKeyOutside ? { rawKeyOutside } : {}),
     ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, qm, tol) } : {}),
     ...cleanliness(qm, w, h), ...(route !== 'none' ? { chroma: route } : {}), shifted: bestShift(base, out).some(Boolean), offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
     ...(clipY != null ? { clipY } : {}), ...(cut ? { cut } : {}),
@@ -837,6 +840,14 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
   for (const [clip, cs] of byClip) {
     const [a, d] = clip.split('/'), areas = cs.map((c) => c.area), med = median(areas);
     const rawR = handTrack('hand_r', a, d), rawL = handTrack('hand_l', a, d);
+    if (slot.class === 'held') {
+      const observed = cs.filter(c => c.rawKeyOutside);
+      for (const c of observed) {
+        const raw = c.rawKeyOutside!, point = (slot.anchor === 'hand_l' ? rawL : slot.anchor === 'hand_r' ? rawR : undefined)?.[+c.key.split('/')[2]];
+        cellsQa[c.key as CellKey].rawKeyOutside = { pixels: raw.pixels, bounds: { ...raw.bounds }, space: 'raw-output-cell',
+          ...(point ? { nearestWristPx: nearest(raw.mask, c.base.w, point) } : {}) };
+      }
+    }
     const usable = (track: ReturnType<typeof handTrack>) => cs.every((c) => !!track?.[+c.key.split('/')[2]]) ? track as [number, number][] : undefined;
     const hr = usable(rawR), hl = usable(rawL);
     const cvOf = (v: number[]) => { const m = v.reduce((s, x) => s + x, 0) / v.length; return m ? Math.sqrt(v.reduce((s, x) => s + (x - m) ** 2, 0) / v.length) / m : 0; };
@@ -943,6 +954,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     qa: {
       minKeyKept: +minKept.toFixed(3), maxKeyOutside: +maxOut.toFixed(4), minAreaRatio, maxAreaCV, maxPaletteDist: Math.max(0, ...paletteDist), clipPx, handedness,
       shiftedFrames: cells.filter((c) => c.shifted).length, strayPx: cells.reduce((s, c) => s + c.stray, 0), ...(slot.class === 'held' ? { grip } : {}), rerolls, status, cells: cellsQa,
+      ...(slot.class === 'held' && cells.some(c => c.rawKeyOutside) ? { rawKeyReviewFrames: cells.filter(c => c.rawKeyOutside).length } : {}),
     },
     clips, failCalls: fail, softCalls, warnings, paletteDist, splitExact,
   };

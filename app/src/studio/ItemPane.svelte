@@ -242,6 +242,7 @@
           {#if it.extractor}<dt>Extractor</dt><dd>{it.extractor}{it.key ? ` · ${it.key} key` : ''}</dd>{/if}
           {#if it.qa}
             <dt>QA</dt><dd>{it.qa.status}</dd>
+            {#if it.qa.rawKeyReviewFrames}<dt>Raw body differences</dt><dd>{it.qa.rawKeyReviewFrames} frames have new body-colored pixels before alignment. Ordinary redraw shifts can cause this; quality status is unchanged.</dd>{/if}
             {#if it.qa.legacy}<dt>Older checks</dt><dd>{it.qa.legacy.summary ? 'Older move checks are incomplete; totals may include replaced frames.' : 'Checks are incomplete for older moves.'}</dd>{/if}
             {#if it.qa.unmeasured}
               <dt>Measurements</dt><dd>Reused cells were not measured by PixelLab. Aggregate checks are unavailable for this item.</dd>

@@ -184,13 +184,14 @@ export interface Provenance {
 /** Gates of architecture §4.5; worst value over all cells/clips of the item. */
 export interface ItemQa {
   minKeyKept: number;                     // >= 0.97
-  maxKeyOutside: number;                  // <= 0.03 skeleton-pose, <= 0.05 otherwise
+  maxKeyOutside: number;                  // observed outside-body share; evaluation config supplies route-specific tolerance
   shiftedFrames: number;                  // frames whose best integer shift != 0; must be 0
   minAreaRatio: number;                   // cell area / clip median, >= 0.5
   maxAreaCV: number;                      // per clip, <= 0.15
   maxPaletteDist: number;                 // worst clip/call segment vs evaluation's design palette, <= 15
   clipPx: number;                         // legacy name: border-contact count for review, not pixels proven cropped
   grip?: { R: number; L: number; amb: number; none: number }; // held items (gripSide counts)
+  rawKeyReviewFrames?: number;            // held frames with new body-key pixels before registration; review observation
   anchorSpread?: number;                  // head items, px, <= 3 front/back
   strayPx: number;                        // removed by the largest-component filter (logged)
   rerolls: number;
@@ -208,6 +209,8 @@ export interface CellQa {
   provenance?: number;                    // index into item.provenance (source call)
   area: number;                           // layer px
   keyKept?: number;
+  rawKeyOutside?: { pixels: number; bounds: { x: number; y: number; w: number; h: number };
+    space: 'raw-output-cell'; nearestWristPx?: number }; // original padded output coordinates; no alignment/tolerance
   offset?: [number, number];              // posed cells: 1 px re-registration applied to the PixelLab output
   repaired?: boolean;                     // B9 held: item lost on a near-rest pose frame, dressed keyframe pasted at the wrist move
   snappedPct: number;                     // 0..100 of layer px within the item's ramps

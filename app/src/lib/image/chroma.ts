@@ -255,6 +255,18 @@ export function keyOutside(B: Img, C: Img, key: Key, kT = KT, mask?: Uint8Array,
   }
   return n ? o / n : 0;
 }
+/** Exact raw additions to the key-colored silhouette. No registration, item filtering or pose tolerance. */
+export function newKeyPixels(B: Img, C: Img, key: Key) {
+  if (B.w !== C.w || B.h !== C.h) throw new Error('Raw key comparison requires matching cell dimensions.');
+  const mask = new Uint8Array(B.w * B.h);
+  let pixels = 0, x0 = B.w, y0 = B.h, x1 = -1, y1 = -1;
+  for (let p = 0; p < mask.length; p++) if (!B.data[p * 4 + 3] && isKey(C, p, key, KT)) {
+    mask[p] = 1; pixels++;
+    const x = p % B.w, y = (p / B.w) | 0;
+    x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+  }
+  return pixels ? { mask, pixels, bounds: { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 } } : undefined;
+}
 /** Any px within Chebyshev distance r of (x, y) satisfying f. Posed cells (skeleton-v3) redraw the mannequin ~1 px wider. */
 function near(w: number, h: number, x: number, y: number, r: number, f: (q: number) => boolean) {
   for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) { const X = x + dx, Y = y + dy; if (X >= 0 && Y >= 0 && X < w && Y < h && f(Y * w + X)) return true; }

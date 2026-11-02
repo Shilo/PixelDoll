@@ -102,6 +102,7 @@ export interface QaSummary {
   footwearReviewFrames?: number; // distinct frames whose observed foot coverage needs review; one frame counts once even if both feet differ
   waistReviewFrames?: number; // visible waist-band omissions relative to a dressed reference that clearly has the requested detail
   facingReviewFrames?: number; // observable upper-torso matches to the opposite standing view
+  rawKeyReviewFrames?: number; // held frames with exact new key-colored pixels before registration; informational, never changes status
   grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
   strayPx?: number; // removed by the largest-component filter (posed cells)
   status: 'pass' | 'warn' | 'fail' | 'accepted';
@@ -118,6 +119,7 @@ export interface CellQa {
   provenance?: number;
   area: number;
   keyKept?: number;
+  rawKeyOutside?: { pixels: number; bounds: { x: number; y: number; w: number; h: number }; space: 'raw-output-cell'; nearestWristPx?: number }; // raw padded layer canvas; no pose tolerance
   offset?: [number, number];
   repaired?: boolean; // held (S5): item lost by the pose, dressed keyframe pasted at the wrist move
   snappedPct?: number; // no palette snap yet

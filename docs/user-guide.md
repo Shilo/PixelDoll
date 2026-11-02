@@ -184,6 +184,10 @@ move and direction, including frame edges and the grip of held items.
 Then choose **Keep it**, **Try again** (starts another paid attempt, in gens or dollars) or **Discard**. These stay
 available on any draft that has not saved itself.
 
+Held-item **Details** also report raw body differences before alignment. Ordinary redraw shifts can cause them, so
+this information does not change automatic saving or start another paid attempt. When inspecting a suspicious grip,
+compare the weapon on the original body: removing the model's temporary body colors can leave the weapon detached.
+
 ## Dress up
 
 - Tap an item in the wardrobe to wear it. One item per slot: wearing a new hat takes the old one off. Tap **None** to empty
