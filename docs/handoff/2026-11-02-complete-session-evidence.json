@@ -1,0 +1,2953 @@
+{
+  "preparedOn": "2026-11-02",
+  "reviewBaseline": "3bbc61eebef42f0f123a87e886dfb8c54065055f",
+  "finalImplementationCommit": "7806be10e73e905b5dae3e30e27ee99af6edec1c",
+  "historyStartExclusive": "7c49772cefbb5924ec0c7cc6b48153cc17b58c60",
+  "historyStartReason": "Parent of d8e175ed, the preserved initial animation diagnosis and implementation baseline. The window also includes coordinated integration work, not all sole authorship by this investigator.",
+  "hashPolicy": "Hashes are exact Git blob bytes at reviewBaseline, independent of checkout CRLF conversion. Artifact ZIPs are binary-identical. This manifest excludes its own hash, the new handoff and index edits to avoid self-reference. No environment files, credentials, profiles or private transcripts are included.",
+  "scopeWarning": "The history window records all integrated modifications and concurrent contributions, not blanket authorship or claims that every adjacent feature was part of animation research. Inspect per-commit diffs.",
+  "evidence": [
+    {
+      "path": "docs/handoff/2026-11-02-claude-paperdoll-quality-review-bundle.json",
+      "bytes": 1373,
+      "gitBlob": "533b5c7d63ac34d304b132550859bfd5e0317a34",
+      "sha256": "b8106201a9d88b8787f05864f70d15a04d77f10ab1959ed2a467626a851ed328"
+    },
+    {
+      "path": "docs/handoff/2026-11-02-claude-paperdoll-quality-review.md",
+      "bytes": 58630,
+      "gitBlob": "cc2bc3a8adebc3bf5e23ba0660e97ac1906f300b",
+      "sha256": "be7bfcdaac551c8a02724f51e0ec9f5aae73ace7a8f02f94342c73e8b2c83e44"
+    },
+    {
+      "path": "docs/research/2026-10-27-animation-diagnosis.md",
+      "bytes": 30027,
+      "gitBlob": "b9e7ee50fe980287a0856c24703d5d6957dc0fda",
+      "sha256": "84c67e5e0244a14146909efe16855fab9c6421bebcc04c7e1e423349dddcd9e7"
+    },
+    {
+      "path": "docs/research/2026-10-27-animation-rigging-sources.md",
+      "bytes": 22918,
+      "gitBlob": "549f301b81f2a11f819c08cb8d130b1f65d0b605",
+      "sha256": "0dd7bf113ff5e91b8e73ead076d986548cafd1f25e1de9d00d73a34ac9abb33c"
+    },
+    {
+      "path": "docs/research/2026-10-27-animation-test-summary.json",
+      "bytes": 16560,
+      "gitBlob": "8b48914947e26ee284fd29497e0d9b87af5cecdd",
+      "sha256": "3377343138fc86b77597b4fa87013a7b4110fdf24c3b060327e3ce7b9ec19bdb"
+    },
+    {
+      "path": "docs/research/2026-10-28-kaykit-comparison.json",
+      "bytes": 48420,
+      "gitBlob": "94669167eb97dd9490d03bb277c2a1aaba280139",
+      "sha256": "7fb0b1006b29f4690e765d6118f79f1f3acb60c433dd9be2891cbbf7da0d3630"
+    },
+    {
+      "path": "docs/research/2026-10-28-motion-followup-results.json",
+      "bytes": 18840,
+      "gitBlob": "30830216114b70b4d3d1717871a3cb591452d9e4",
+      "sha256": "34f4413ee55a4e1f770d10b4fa44a876f207df69dbbc37cd96c8a5e744598ad7"
+    },
+    {
+      "path": "docs/research/2026-10-28-motion-followup.md",
+      "bytes": 11932,
+      "gitBlob": "e111e8f1361bbfae12500e51749fc5301169bd1b",
+      "sha256": "51986ed7bbad64dcf35751c502ea07a324dd22109c02009500699227dc8532b1"
+    },
+    {
+      "path": "docs/research/2026-10-28-motion-lab-implementation.md",
+      "bytes": 21193,
+      "gitBlob": "053e36de3eba452ae64fc288e2de2ea485f6d51f",
+      "sha256": "711546527b3e0244c1dad6d1f4787d26149d8f1c0bc4f8b5abde9ba4ba95cce3"
+    },
+    {
+      "path": "docs/research/2026-10-28-motion-lab-results.json",
+      "bytes": 257783,
+      "gitBlob": "3a3dfbbec016ceb45ff44f3a7daae1948b7fd753",
+      "sha256": "d3e48b94a16738d8ba52d1526b89951ec66ae0f648c918866ae3f87e59b5b077"
+    },
+    {
+      "path": "docs/research/2026-10-28-motion-preset-catalog.json",
+      "bytes": 86456,
+      "gitBlob": "47f1c06d6e0f730a9310da9678ba2af657304eaf",
+      "sha256": "4b871d059bc1c438b32b70c2dea0ad3781cc67495bd4fb1185a8609dced875fd"
+    },
+    {
+      "path": "docs/research/2026-10-28-motion-targeted-authoring.md",
+      "bytes": 21970,
+      "gitBlob": "df2d7dac4d2ae731762ef14e87f3d23ab16500d2",
+      "sha256": "2921f62d3a4f48ae9e9d99fcf454e2b2c9db7e9e2dcb93e6c683a3aed40efb27"
+    },
+    {
+      "path": "docs/research/2026-10-28-motion-targeted-catalog.json",
+      "bytes": 159875,
+      "gitBlob": "efc4645943898efcbf98ac938c76ed3de8d4fdf8",
+      "sha256": "90f81eaaf678afbc51eaa56fb32aa4638494072586c91aa93351977c20481481"
+    },
+    {
+      "path": "docs/research/2026-10-28-motion-targeted-results.json",
+      "bytes": 212754,
+      "gitBlob": "4d504333a7d06f7bc301117ff9ec28fd07fbe322",
+      "sha256": "33e2d1395fd3b499f6e585720e06bd73e1acdac1cd7ae7309f98cfc5f9f0b5ea"
+    },
+    {
+      "path": "docs/research/2026-11-01-custom-skeleton-v3-results.json",
+      "bytes": 13154,
+      "gitBlob": "2466fd7a9698f80d5ea111a5a44b1489847aff52",
+      "sha256": "8c9289dc3b189cb0fdc07069d7801a517d450549ba3f034d691a9c7e10e29213"
+    },
+    {
+      "path": "docs/research/2026-11-01-custom-skeleton-v3.md",
+      "bytes": 22902,
+      "gitBlob": "431b4818c186d004dd5b6df14a560554db987f73",
+      "sha256": "4b1cb247fda5fc627d314e9509046c526b17c66de0014cebe8d8765ac3319b4a"
+    },
+    {
+      "path": "docs/research/2026-11-01-workflow-reconciliation-results.json",
+      "bytes": 12975,
+      "gitBlob": "ddb25b9bdb01d9238ea35afb748f891d498718eb",
+      "sha256": "b008bf1c1c6f0bf78c17e5d621a4e12274ad26a26a5e16bd1c2d69b9f93f015f"
+    },
+    {
+      "path": "docs/research/2026-11-01-workflow-reconciliation.md",
+      "bytes": 35582,
+      "gitBlob": "26f5dacbc59cd30a620ea63381f914988f1261c4",
+      "sha256": "00d5960203d399383a231acfe7d05b9877188ac0e45bf28df8b59af7395545b7"
+    },
+    {
+      "path": "docs/research/2026-11-02-animation-closeout.md",
+      "bytes": 16345,
+      "gitBlob": "3e3d8aec6f31904830aeab95c678fba5987dd93c",
+      "sha256": "5a06e975d812c2efc290a2b0afd7c594afa443f0e0cb207c2541273b058d1c0d"
+    },
+    {
+      "path": "docs/research/2026-11-02-clean-grip-qualification.md",
+      "bytes": 16477,
+      "gitBlob": "23737f81eee8175d4ba2bba180ec1a0f4174035e",
+      "sha256": "83770e00011b00f81c28480189b835eb3b99364cf8793efc4393129f1fd597c3"
+    },
+    {
+      "path": "docs/research/2026-11-02-clean-grip-results.json",
+      "bytes": 13308,
+      "gitBlob": "3068b149177eb5e72b67968c3749015b1effb3d7",
+      "sha256": "098a4e2f958843e894dafd733788a3f5533d904b61dd58479af090034a10edfa"
+    },
+    {
+      "path": "docs/research/2026-11-02-eight-direction-starter-pack.md",
+      "bytes": 26673,
+      "gitBlob": "a1658b4efb99cb5b3c5b23b0d9e20d8963310005",
+      "sha256": "efeac59931d1997c47947a672cd269e81129eef320b95c8a3a8173dbcfcfc795"
+    },
+    {
+      "path": "docs/research/2026-11-02-native-frame-authoring.md",
+      "bytes": 8237,
+      "gitBlob": "a0e25c7c58b7334b163e64a2f32a48c24ad59a73",
+      "sha256": "5204785fc254e1afae36cdf31e54c435219ef8955110257f9df90473db61cbbb"
+    },
+    {
+      "path": "docs/research/2026-11-02-native-frame-results.json",
+      "bytes": 2130,
+      "gitBlob": "460f6ecdcc4968d9fe6ba74591be0ed2c10d08b9",
+      "sha256": "2a53c310d96a6d64d88adcb602cae1583278cc79159b740878fac6b7373916a7"
+    },
+    {
+      "path": "docs/research/2026-11-02-palm-grip-correction.md",
+      "bytes": 8402,
+      "gitBlob": "2510995fa671e94c885f8032f411be56fb69de2f",
+      "sha256": "f0cf08724c45b0b855e7dada1c065490bf16a7aba4c6781b779a4143f1397f09"
+    },
+    {
+      "path": "docs/research/2026-11-02-palm-grip-results.json",
+      "bytes": 8963,
+      "gitBlob": "86cd0416a1f3d99eb548f227b4af4af1445a722d",
+      "sha256": "00386c6e2b07b17d3a84430f4836c2a605afdeb54ce7b7e94b9830e25e7c5506"
+    },
+    {
+      "path": "docs/research/2026-11-02-studio-axe-integration.md",
+      "bytes": 9942,
+      "gitBlob": "0647974ff5535c590d93f134364d9855a6f0bad3",
+      "sha256": "5c44ac5908445878e23b8c1db03d13f817def028d6c4c5f8cba6e8d8fb797e28"
+    },
+    {
+      "path": "docs/research/2026-11-02-studio-axe-results.json",
+      "bytes": 6143,
+      "gitBlob": "1e9e99c12c03140ea1cee0e007c37df6d2bedf35",
+      "sha256": "cf0fecadef8a033ff7584bee1fe2c6ccb350c0740f6bfd5441b79b2d19408be3"
+    },
+    {
+      "path": "docs/research/2026-11-02-weapon-aware-grip-results.json",
+      "bytes": 11748,
+      "gitBlob": "db2c96d9c60f8366f477f75eab790f11be641261",
+      "sha256": "8925f00721a3a8b32b601e2968c128ea99e5a08701849740a5385ce4520d1455"
+    },
+    {
+      "path": "docs/research/2026-11-02-weapon-aware-grip.md",
+      "bytes": 40107,
+      "gitBlob": "e2c4a7c0376491b0e3da9fb3b15267c6031d18b8",
+      "sha256": "5e6268878a669755780677f5245f8d04b4e52defa686a899ec8ab9f5c6fa5f5f"
+    },
+    {
+      "path": "docs/research/artifacts/2026-11-02-animation-closeout-review.zip",
+      "bytes": 339372,
+      "gitBlob": "f908c2bd70a722d2801c5994976f30dea0207b83",
+      "sha256": "e8d53cc001c2caa26d03b881f7b5a128db01cb8f1d98c946771d22a65bd6151e"
+    },
+    {
+      "path": "docs/research/artifacts/2026-11-02-east-axe-engine.zip",
+      "bytes": 86973,
+      "gitBlob": "e362ee4c53b0ac88b57f97db50e1dcf8e641a30e",
+      "sha256": "686665e374f2d3b5ba2a5ec312725926244d5ce9a5206ac49b049d64c9dadd47"
+    },
+    {
+      "path": "docs/research/artifacts/2026-11-02-east-axe-studio.zip",
+      "bytes": 20243,
+      "gitBlob": "36b94caa54652c4c832bbddf994d8fc771aa615c",
+      "sha256": "5b65af499bad05c081482d03a2c60d2b817371d2a2fd2b9b2d1c56b5cde6dbbe"
+    },
+    {
+      "path": "docs/research/artifacts/2026-11-02-eight-direction-starter-review.zip",
+      "bytes": 1372455,
+      "gitBlob": "da3c77d29646ee1c1d1d72799b6ce83672b67aca",
+      "sha256": "0bcd590f65b6e5343b3e60ca6aeb77b539e903af81a5983fba5ad6836839d298"
+    },
+    {
+      "path": "docs/research/artifacts/2026-11-02-eight-direction-starter.pixeldoll.zip",
+      "bytes": 417238,
+      "gitBlob": "e4bee4ff6a5e9afdd520ccd354987e7b554dcc35",
+      "sha256": "7adb8a87fea7af4dd52b52d9fb2b363b6c43f6ea583700642ba99954dff93c29"
+    },
+    {
+      "path": "docs/research/artifacts/2026-11-02-gripped-axe-east.zip",
+      "bytes": 46829,
+      "gitBlob": "82b4574998b25082861240da33c5a0b77749bb55",
+      "sha256": "2b753653143df05b8b2a08d9e940c19230d2fa405e87f679b964522e416b27f3"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-clean-grip-desired-actual.png",
+      "bytes": 17038,
+      "gitBlob": "fb37da67ada6653e457a5d9a49f0add39f622fc9",
+      "sha256": "70ac72f1137415cc3de83c6a1cdfa8c5a1bfcc12582771e4f8db0b15ac3d00be"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-clean-grip-input.png",
+      "bytes": 5073,
+      "gitBlob": "8dbaebd88d7e59f9c5602ed690abbc7810c2bf92",
+      "sha256": "2b3205dc59ea3b71a826086bfeb0fba350693a37753da9031473e6babe05195b"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-clean-grip-mask.png",
+      "bytes": 1336,
+      "gitBlob": "c7f9b1995383d59825589f44b6b23308f6f71ac5",
+      "sha256": "4a2993de873660e0689067450b54cb04f307ee957ef0197fedae9e25391522bf"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-clean-grip-raw-result.png",
+      "bytes": 9108,
+      "gitBlob": "cfb1766c5afbc7519bf7408127ee2abeb10970bd",
+      "sha256": "5c61d8651a45ed46b4d9e4bb3ca8ec694f1677cdbe994653bce9727d1c20e819"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-historical-visual-correction.png",
+      "bytes": 111496,
+      "gitBlob": "d7fd81052bf244fab567e7fffe6ed6e58a9cc049",
+      "sha256": "c3d91599046f76aa7b7822cb57d5d86acc287ad024dcfe5894993a2c0a63322a"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-joint-review-posed-proxy.png",
+      "bytes": 79560,
+      "gitBlob": "625cbab3a90d14ae5d1ee6b5b03a41b713b06a85",
+      "sha256": "db05ea049ab9c08c8603f977f878c22994d3b91f8639fd127b366c32e769f0c0"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-native-frame-before-after.png",
+      "bytes": 21214,
+      "gitBlob": "f59befe6b2275b81812e2dda164e2d331d3f28fe",
+      "sha256": "89e2e8477c54c5b95a5b61f02c5bd7d917713ebbf6ae5107f8475dc5ab224e0a"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-palm-grip-before-after.png",
+      "bytes": 24133,
+      "gitBlob": "8806e07e596e423b9daa4f83b973559d871c5f4b",
+      "sha256": "9b0088feed38b9ebeb9c93db030feed69950fded82067bf9cc8e3ec0ad786653"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-palm-grip-full-clip.png",
+      "bytes": 39236,
+      "gitBlob": "028a2c600ebd75ef9a0deefeaa62c4a6c9910dc8",
+      "sha256": "8cfb7124de8a81d2142e410caf2d4e5791598d3693cdb0f713eca0dc65cef5ca"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-weapon-aware-leg-before-after.png",
+      "bytes": 79661,
+      "gitBlob": "6171113f73fad6095bf8a76464898cb8d46486cd",
+      "sha256": "2174ee0e303d2a3ae1c1d7a38fa998bb370da71bdbc5e3a1872784bdce89e767"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-weapon-axis-before-after.gif",
+      "bytes": 103581,
+      "gitBlob": "977b33ef985bd7227c6104e71ab8256977a9384d",
+      "sha256": "37d14679eaf03435a7e545dc1a2d34a6abd3a0d9092fc5d0ae706398e8a93412"
+    },
+    {
+      "path": "docs/research/figures/2026-11-02-weapon-qualification-proof.png",
+      "bytes": 100744,
+      "gitBlob": "f71c068aa469395008dba24b6ee09d5e2c72fd81",
+      "sha256": "2e68b2eaff8a65b36a7d9350a7c1bc121035061a3e2d1a8e0cea5b73c5ea3379"
+    },
+    {
+      "path": "docs/research/pixellab/2026-11-02-managed-custom-v3-contract.json",
+      "bytes": 6861,
+      "gitBlob": "b89b944a3e62c316789dcee0c26a611fe5e7235f",
+      "sha256": "d787300bd9962574419e5313d95e68b365db12efda7dbfcaefd692f4a6625505"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-claude-paperdoll-quality-review-response.md",
+      "bytes": 30012,
+      "gitBlob": "70ef4107b362dba5c81196d6dbae8ed4ac1fe0e3",
+      "sha256": "4d613458d43121610f2891c4048cbd18f729e12f98dfb59cc80a0f40aa091186"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-credit-consent-audit.md",
+      "bytes": 9701,
+      "gitBlob": "76690d32cc1dba14d094e64022584f8939ad1e51",
+      "sha256": "ed31c3022687efadeccd838843dd81e80a0b27a7c64a97bc93b0686085cf6ae2"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-final-motion-review-results.json",
+      "bytes": 3150,
+      "gitBlob": "29c9ca56664a5ff0c9a37bf3c23e7cc9ca54ad4d",
+      "sha256": "e4fa58e8bf842c2a46b8b65115a23ce0fe5f296dc953f6036a8f90a19834b10c"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-final-motion-review.md",
+      "bytes": 10124,
+      "gitBlob": "1af91e4a36332f6e841d6739511189abe2cb427b",
+      "sha256": "fc7b449e9e4294475c863d93b0549058015cbc7a75c1e1cf1583f5770252d592"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-final-review-closure.md",
+      "bytes": 7920,
+      "gitBlob": "bcea975f4815423e6c95380fa095d563fab8c51f",
+      "sha256": "34433f95eb56ed8490285bbd05f943a651b5520edd15527e2880d98f42989981"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-independent-paperdoll-quality-review.md",
+      "bytes": 39313,
+      "gitBlob": "bc7b2df6aedf8214888b36deeabc3222635c7bc7",
+      "sha256": "528287d4ef63b39aa639e2b3c0e8a03ca72f74317ccc211485c49f97459a7d05"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-joint-counter-review-and-fixes.md",
+      "bytes": 16372,
+      "gitBlob": "54f57184d557c6465b9614d087bf1326a7c38fab",
+      "sha256": "3876d239ad44649d340e8b87ddaa9399570f3c96c53eb868f1ea8ca1408e7179"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-joint-review-reassessment.md",
+      "bytes": 20937,
+      "gitBlob": "58d5439c1c45ec137590e95f53f9a924fda2544c",
+      "sha256": "da6708a056fdfb03613c30ecb488dd7b7c1626cc1056e8751062d6edb9727a3c"
+    },
+    {
+      "path": "docs/reviews/2026-11-02-joint-review-results.json",
+      "bytes": 3349,
+      "gitBlob": "85f65c82cac131c61e0fd00007ed19765cfa7bb1",
+      "sha256": "f24675b1e1b9c0c544098222ea8c22247b7559d67b6b05b9d18a5321359a5c08"
+    }
+  ],
+  "context": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 11771,
+      "gitBlob": "a21111836815d9b29ee07d38ab285fd75d65eed6",
+      "sha256": "e8a98a3ec2be32bdfbb41d290450ac82ce88fb00f0a3320374f38e7b56862412"
+    },
+    {
+      "path": "PLAN.md",
+      "bytes": 23430,
+      "gitBlob": "40024c6507f60e046316f06d6076dde65a7a85b2",
+      "sha256": "7d99f687cdcbd0f90973fc0f38660751d5807f9be54abb671530fdf65c55261c"
+    },
+    {
+      "path": "docs/README.md",
+      "bytes": 25011,
+      "gitBlob": "f1081c0301db3e4f35c9710963796c27c5e29d8d",
+      "sha256": "73b0597a72671cbc6b910c70b15b40063406fdaa3427f3837ab6a2dacbe5381c"
+    },
+    {
+      "path": "docs/known-issues.md",
+      "bytes": 12014,
+      "gitBlob": "a8aba7020df2c5e26de74dbf4cc9f8a841baec30",
+      "sha256": "a4d71e0d51b3340fe65dc8966d753646fcffe7a306f15a79a6bb745003176776"
+    },
+    {
+      "path": "docs/design/skeleton-pose-lab.md",
+      "bytes": 13584,
+      "gitBlob": "d58bf2701e97a45a755b49e513ff1b96471fcb60",
+      "sha256": "934d8e2be05ed7de5680c4324e8f26576dc3197f40d740a2a450499299d5ec57"
+    },
+    {
+      "path": "docs/research/pixellab/pixellab-openapi-v2.json",
+      "bytes": 497216,
+      "gitBlob": "62de83f94b90e5221f3716028fed1e2551edbd39",
+      "sha256": "a459992f91f2fdf8e653f730e0a5436157de6a50b66d561fd35dd897d1c04eb6"
+    },
+    {
+      "path": "docs/research/pixellab/pixellab_current_capabilities_2026-10.md",
+      "bytes": 26950,
+      "gitBlob": "55b566f8bce41ee172d796c69305efc7e4fc3d69",
+      "sha256": "844f67fb525fd13e0208a811138fb7cf345ea05af02378160ed8d4f2ba627656"
+    },
+    {
+      "path": "docs/research/tool-review-brief-2026-10-28.md",
+      "bytes": 11652,
+      "gitBlob": "a556702f96d44630dfd57eb67ccaa91454530b93",
+      "sha256": "37fc084ee0f68b36dd4cf68613c6743c7baf9d5d697b84457955cd8b4d6f7010"
+    },
+    {
+      "path": "docs/research/paperdoll-repos-review-2026-10-27.md",
+      "bytes": 13629,
+      "gitBlob": "62355044658e3d34f9f56ab11cbe65a719f1ccd1",
+      "sha256": "4c72ddaf07d164001774b649f950fea242406afb483fdba93a80eabaff3569b3"
+    },
+    {
+      "path": "docs/testing/test-performance.md",
+      "bytes": 20593,
+      "gitBlob": "ead3be09d0fb5e0be22028a9457ec1bbed04e739",
+      "sha256": "310c2d195c23b282a74dec389f05b70e1523f8a97528b0a6191de096381269ca"
+    },
+    {
+      "path": "docs/shared-token-security.md",
+      "bytes": 5132,
+      "gitBlob": "0364b405230437421acd6976c0e671d212b1a476",
+      "sha256": "dbfb63498ed51179769ef0bee99335fb9897cc7df694bf15851bd0c0d00999b6"
+    },
+    {
+      "path": "docs/testing/phaser-playback-2026-10-28.md",
+      "bytes": 7251,
+      "gitBlob": "51573ffb68d8ee126a755e5d5cafe192f012cae6",
+      "sha256": "b8eec671e01ca28214c5de35ab1c49e4547614541b081960c37ccf340f288676"
+    },
+    {
+      "path": "docs/testing/unity-playback-2026-10-28.md",
+      "bytes": 8247,
+      "gitBlob": "204b89f6923bfcf24f9562c1b383781f30d4ed8a",
+      "sha256": "d81ba143294d3c8f344f3b9183d75a0edadf4ad5a18ce172aae4386da8fe8bc5"
+    },
+    {
+      "path": "docs/testing/integration-and-crash-2026-10-28.md",
+      "bytes": 9862,
+      "gitBlob": "1185b1bcbeaeb80df58c6922662ba78a02731b7a",
+      "sha256": "e2f2ba673b5293c8f19c54fa57326bc45b6f89a5645c048d3abfb50dcef810c1"
+    }
+  ],
+  "changedSourceSnapshots": [
+    {
+      "path": "app/dev-fixtures/motion-lab/KAYKIT-LICENSE.txt",
+      "bytes": 1484,
+      "gitBlob": "32355dd25f18a4b733a8701e24811edfca8608fe",
+      "sha256": "58d934b4c18a1369df20e94e8537eecf46717374406baeb8bfb24ec0aa71b672"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/LICENSE.txt",
+      "bytes": 523,
+      "gitBlob": "43cf8d1c2253acecdef0f2a42817ff0b150ab5bd",
+      "sha256": "30235762e8870ff794928567d5ecca4ac4694fe3ad758bf8a1c037c61670672e"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/kaykit-attack.json",
+      "bytes": 118072,
+      "gitBlob": "13f1006c325d5cf1adf982129226aeb16161b947",
+      "sha256": "d12910e07d76b6438e22486e732821c3fdd2482da11569441a5c3f27f08083cc"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/kaykit-death.json",
+      "bytes": 90601,
+      "gitBlob": "73b8011fd99b74051e68eb4056e4a162e6d10430",
+      "sha256": "b4b97365cd9d89ffd122f695fcfdfa5f33454456f0aa24b1a593ee7f9bc51877"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/kaykit-hurt.json",
+      "bytes": 79792,
+      "gitBlob": "43d466c1e9eb0ac1263b51e330f86df59bb7e608",
+      "sha256": "7426a8ec3415628239611d0b21b50add92826362c5a444630c93af5276567ba7"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/kaykit-idle.json",
+      "bytes": 118528,
+      "gitBlob": "97b3bb7da91a5ed0a433442686728ad41317a373",
+      "sha256": "c1beee4fe7c3cbe1a068ff40c82faebe0e306ae7226bd247afca7180eaabd214"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/kaykit-run.json",
+      "bytes": 90540,
+      "gitBlob": "86b3e03c37d21392ca1a0c25a9d5c18a8f3e9b9c",
+      "sha256": "5b5f8838071885ecb0ae012c4cd2f7ded3eeb832b7f84c334e4d5651957436c3"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/kaykit-walk.json",
+      "bytes": 116834,
+      "gitBlob": "3e1beb43afec98849b52197a57d04108ee08e553",
+      "sha256": "b6a9e26756301a916bf52b3ebc7409f5fd41f8baf90cf704a042ec5348e24795"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/library.json",
+      "bytes": 904776,
+      "gitBlob": "76fcf7d4e7bda9172af00f90e8c3c0f57ed770f7",
+      "sha256": "c1d7427fa722ba14b0ff6bb858e38cc3d76904778caddf183c548fb88149a5ff"
+    },
+    {
+      "path": "app/motion-lab.html",
+      "bytes": 298,
+      "gitBlob": "57c61997de13c727324ce36d2d43058bf048d3e3",
+      "sha256": "ff3933d17b58c49db935fafc6d7d1efa6555cfb54a9db8a01815f40e142f468a"
+    },
+    {
+      "path": "app/playwright.config.ts",
+      "bytes": 2268,
+      "gitBlob": "3d3bbf24ae916dc7358f2a9f384da85a9b0a5dca",
+      "sha256": "2d215d5403ff68c90df533ee57443faf735267c55dc513b586893ca008d734f2"
+    },
+    {
+      "path": "app/scripts/unity-review/EditorReview.cs",
+      "bytes": 11215,
+      "gitBlob": "fed9a94bde253baa4704a20fbc61ad572f6ba36e",
+      "sha256": "86f829a5a5fb837f11eafc3b52742ecd1e7635706042c8a00a0730278051c85c"
+    },
+    {
+      "path": "app/scripts/unity-review/NativePlayback.cs",
+      "bytes": 10242,
+      "gitBlob": "f54aa61a0a05cde4fb87d5d0e8b4ba5cc4c5f786",
+      "sha256": "d8cdf785cbebe36a6d137a6bbd2848bd10d05aa79cf343a04775c0c2307d1ad8"
+    },
+    {
+      "path": "app/scripts/unity-review/NativePlayer.cs",
+      "bytes": 1197,
+      "gitBlob": "16952231ee49212469136a1f188692a804a032c8",
+      "sha256": "ba5abdeee21e0b7b4768aaa1be3e2f019edb4723171c520841aea695104dd935"
+    },
+    {
+      "path": "app/scripts/verify-phaser-export.mjs",
+      "bytes": 16017,
+      "gitBlob": "d393c64003a5319eeaa546298cc63eb9b6d830b4",
+      "sha256": "4151dad6b571ea1f35fb00df0ba69e3fb4d1fc70ac366b831a89a3d9a6116a43"
+    },
+    {
+      "path": "app/scripts/verify-unity-export.mjs",
+      "bytes": 10361,
+      "gitBlob": "6b2f4912a58686d959e62fab42d3680692f88209",
+      "sha256": "094e32e1c36975e1a043457cbbd0e4b6412c825f1b836be3ea137d73eaae11a5"
+    },
+    {
+      "path": "app/src/lib/compose/compose.ts",
+      "bytes": 21772,
+      "gitBlob": "34630f6c935ddaae072a567d5031d0383f6927dc",
+      "sha256": "058de83b61e49dc05a451486d34a753b70545723a333ffb4f48d052557b920e6"
+    },
+    {
+      "path": "app/src/lib/equipment/fit.ts",
+      "bytes": 34408,
+      "gitBlob": "067006f051af17067bd2066130f2f4f2b79af0e8",
+      "sha256": "362921b3e1916e91d9df68de45b6f1640ae0bda2235c5359c504aff3750ebb5a"
+    },
+    {
+      "path": "app/src/lib/equipment/generate.ts",
+      "bytes": 22693,
+      "gitBlob": "7b248e40ccea6468078271d924e3ccdff8337581",
+      "sha256": "417e1bd1a240bd55dcbb79c79c2cb926900f6fda1e633a1184c4fba3850c19f6"
+    },
+    {
+      "path": "app/src/lib/export/phaser.ts",
+      "bytes": 14417,
+      "gitBlob": "a36164e2203bf87915cd5614a26e7731ffcbbd06",
+      "sha256": "4a34c2c45ba0e36a1c2b162c93271f1b51a07ab4d5216525606a73150569a437"
+    },
+    {
+      "path": "app/src/lib/export/unity.ts",
+      "bytes": 29654,
+      "gitBlob": "08da2b020ccd10a5d2a194c6baa80b7106f8cbc8",
+      "sha256": "157b10257ba7f92830a0581098c6841dc94d4c875f09f82a09e23160adb869cd"
+    },
+    {
+      "path": "app/src/lib/image/chroma.ts",
+      "bytes": 21572,
+      "gitBlob": "da8cf131814fa81ab05a45b3624dd4b3328375a1",
+      "sha256": "5be93cef20975ee37941e46c51e7b3e094e5a1542edaf1d3dee64f025b9268ca"
+    },
+    {
+      "path": "app/src/lib/image/hard-mask.ts",
+      "bytes": 555,
+      "gitBlob": "e9e32b1b13023658b78c2e2aa51c0d573bc1e3ee",
+      "sha256": "c0d3de121387f19ae2f03c125974e41104cf3701e0ba8cfb42fbdde5614075a0"
+    },
+    {
+      "path": "app/src/lib/image/similarity.ts",
+      "bytes": 1848,
+      "gitBlob": "6b33eec338c0cc98047071cc436861d21b479974",
+      "sha256": "5382724e18d0c8ab004431f35c1e89b524d97f259aa4f4ea3df174668341aac7"
+    },
+    {
+      "path": "app/src/lib/items/design-consistency.ts",
+      "bytes": 6417,
+      "gitBlob": "fe7ba926d65b383ff13fee1c1aa9ed6f1c855113",
+      "sha256": "0d3deff3428efd5b287ff55f18a2f8836c46f5fee01f8cf9fae298a7e96e4291"
+    },
+    {
+      "path": "app/src/lib/items/items.ts",
+      "bytes": 103116,
+      "gitBlob": "312c289ed3170bd86cfb1f482be945075c51f336",
+      "sha256": "c8816f84b570ae570257140ac6aaeeac6ea551d636c15d1f6ee367bf9f5e49c3"
+    },
+    {
+      "path": "app/src/lib/items/qa-summary.ts",
+      "bytes": 4035,
+      "gitBlob": "5046b718513b84a25c7b4a9672a24e325fbddc0c",
+      "sha256": "cc2148504309285faea2e5bccd9f69337fd8b04b31a221fd40eb7dde1bc933b2"
+    },
+    {
+      "path": "app/src/lib/items/run.ts",
+      "bytes": 61759,
+      "gitBlob": "a2137bb46e275fbc6665869a171294edac31d253",
+      "sha256": "627968b5ee0afffa669911c319fe2d0447206ba1a7e434a15e4aa7ccb9bb1c50"
+    },
+    {
+      "path": "app/src/lib/items/torso-consistency.ts",
+      "bytes": 4339,
+      "gitBlob": "81d67986c7c3c681a82b78bb1b53d740521cfbd9",
+      "sha256": "0b369e103401adf7e35515278fb166fe892aac98b0db2e54374100eecd1bea6a"
+    },
+    {
+      "path": "app/src/lib/pixellab/client.ts",
+      "bytes": 6110,
+      "gitBlob": "6eb71d26ba7c47a8f499a42a37ca5bdb35903c6b",
+      "sha256": "df102dc301fd6ca4717895849bc5fbb2d759e86621ac291349b0869354082dcf"
+    },
+    {
+      "path": "app/src/lib/pixellab/queue.ts",
+      "bytes": 84507,
+      "gitBlob": "42aad80ccdc82495a63bd6a8107fd223340932c8",
+      "sha256": "1f97ad64d5f3173860a2f0583a17701be2e63a7dce668f7f941d561c31b02190"
+    },
+    {
+      "path": "app/src/lib/pixellab/routes.ts",
+      "bytes": 9027,
+      "gitBlob": "97f9ad70cf6d19d7e7e6838396cdbb559ac216cc",
+      "sha256": "d1cc12471fd03688f0e43f31b5cc1cbbd66df09fd5d2b7fc0c4ba0346e5f39fc"
+    },
+    {
+      "path": "app/src/lib/rig/motion.ts",
+      "bytes": 15688,
+      "gitBlob": "c4fcd70a410aa69be2cfaa168aea6bb269239645",
+      "sha256": "1eb24d02d248dc132fa3cb6b33ec5a9474b9aa44ee7b433596509defd6c3f244"
+    },
+    {
+      "path": "app/src/lib/rig/planting.ts",
+      "bytes": 4769,
+      "gitBlob": "903b3493c533313ab511ea242a50b2e2f529670c",
+      "sha256": "3db53d0057a93f65fe369cf029ad414f8ccd2f6946fd8de78d5d430330fbceaa"
+    },
+    {
+      "path": "app/src/lib/rig/starter-presets.ts",
+      "bytes": 12266,
+      "gitBlob": "678407c8df43a72e4b2670a6509d5248fc31692f",
+      "sha256": "4e314ae1d62d1918ceb7fe0248f5385e4e08491fe34e6a60284bed149f132981"
+    },
+    {
+      "path": "app/src/lib/store/import.ts",
+      "bytes": 19026,
+      "gitBlob": "ea3d8ce396b9abcaba2a22ab3ba759526a133191",
+      "sha256": "52697ecdc6b2920651d93c3a7c6254fa1ccc8b0ce5d58c4e38b6afa914b472f3"
+    },
+    {
+      "path": "app/src/lib/store/manifest.ts",
+      "bytes": 8220,
+      "gitBlob": "bf2722ac84a97f417b9ecfa0f08300f12b49c279",
+      "sha256": "c31972034ea58ae2d8acd4ed2ea93439dc18ad520c70a98d6fac0154a4d9dce0"
+    },
+    {
+      "path": "app/src/studio/GenCard.svelte",
+      "bytes": 10265,
+      "gitBlob": "17bdf94edc4dbb7aa0680c5b9d0519c56ca180df",
+      "sha256": "93d64d2ba315d95e1904723c74fa04ff560685a5f4f468af3a2e825b86bd358c"
+    },
+    {
+      "path": "app/src/studio/ItemPane.svelte",
+      "bytes": 19178,
+      "gitBlob": "3bcac0b3e8d92874ea83e7af6d3465188f274e2e",
+      "sha256": "0defca4c72452f4637ccf3f9a2bdace08afb3da0442712ad3382fcc97e842aef"
+    },
+    {
+      "path": "app/src/studio/MoveSheet.svelte",
+      "bytes": 18871,
+      "gitBlob": "6ac8533ac9cfab44a22ff944ac1b890c3b297865",
+      "sha256": "b6aeb422ad700cf770c042bac13138477d30a2619b97f8c1acacb2c03d8c675d"
+    },
+    {
+      "path": "app/src/studio/NewItemSheet.svelte",
+      "bytes": 8747,
+      "gitBlob": "0c14f3782277740df7262b7500620a2e65c70763",
+      "sha256": "e00bd3a73a94eb32f9a02e5f4c8ccb36efa817d94546a5d84397ed90307b6a5b"
+    },
+    {
+      "path": "app/src/studio/Stage.svelte",
+      "bytes": 8640,
+      "gitBlob": "0ac075aab2b561ff1888c6a11efb4b97a9675f19",
+      "sha256": "fcf5cf585580acd287f88ad0414ac208ac248dbf53b37973896a597944da7a64"
+    },
+    {
+      "path": "app/src/studio/StageNote.svelte",
+      "bytes": 4186,
+      "gitBlob": "2d90bd3249df70f3de9288c573dbc4c0ef6fd4b7",
+      "sha256": "56fb081b731216e9dbe3b4813902e044f6ddcf4f16ec48ab14311289990b8fec"
+    },
+    {
+      "path": "app/src/studio/Studio.svelte",
+      "bytes": 9789,
+      "gitBlob": "9676a3458bc11a4091f9313710dfb3942f163336",
+      "sha256": "5573d7f8586c513479822b1153afccc54d35dabbc201f5c873eaa840f4f7cb3d"
+    },
+    {
+      "path": "app/src/studio/apiPlans.ts",
+      "bytes": 16748,
+      "gitBlob": "4816fe26bed6b73a97f33262c226cad7064144c4",
+      "sha256": "d83ced380089e55f9692b7d278c52454c16170f78bba077d98342b442e6c5598"
+    },
+    {
+      "path": "app/src/studio/create.ts",
+      "bytes": 70720,
+      "gitBlob": "a017e5ab477b739d26ee2103e9e4d8b5364f50c2",
+      "sha256": "e8e788399288d17451e0f3fea12da0e4a292871e93abe24d94c91f5448b53cf4"
+    },
+    {
+      "path": "app/src/studio/experience/WorldStage.svelte",
+      "bytes": 14544,
+      "gitBlob": "0bbc9fe4f0a7cc27edbaf4500c0a7a15c481da2a",
+      "sha256": "dce815f78a52f3d9eaaca93f1a505a19b631833940002bbb871564f7517f8370"
+    },
+    {
+      "path": "app/src/studio/experience/presentation.ts",
+      "bytes": 18325,
+      "gitBlob": "7db7b54c76b92561db29ba727aaa6cfc4991f549",
+      "sha256": "ce0789db8b4b4df16ac260ea29b62c45bc233e1d2133ec0d3ed428cabd896a82"
+    },
+    {
+      "path": "app/src/studio/itemRoute.ts",
+      "bytes": 3320,
+      "gitBlob": "8c44fb2cf7ea031a038f2cd322ad8d8ed6672d5f",
+      "sha256": "b4af4f86b63522714ab781807d24d7d4639397c64611bd6195e3495d75dfd68e"
+    },
+    {
+      "path": "app/src/studio/model.ts",
+      "bytes": 15438,
+      "gitBlob": "4512fa3c04ace11fd778024cd28bf02fa8d6d4ae",
+      "sha256": "47656fe1e347318c33f646549aad99f4ad07c4328e1e295213084412f242da7d"
+    },
+    {
+      "path": "app/src/studio/state.svelte.ts",
+      "bytes": 73262,
+      "gitBlob": "23a7916711ef8d7a77a8ba32428b8f1d6abfd2a9",
+      "sha256": "b7dc05d7cc7ee445d0ac271a41536f3c59750f6383f13d9e431bbf6a332e8e33"
+    },
+    {
+      "path": "app/src/ui/M3.svelte",
+      "bytes": 19035,
+      "gitBlob": "0fefd481d1f0d76d8a92be13abcb28ea0c2cb301",
+      "sha256": "921f7c8bc7fe5ab88b69c756f1023452031574b8d81ab85bd1a4c335fcda115b"
+    },
+    {
+      "path": "app/src/ui/MotionLab.svelte",
+      "bytes": 31197,
+      "gitBlob": "29236fa21a5a6a0d9affdeb68cfc91f8e2588c07",
+      "sha256": "393646a8eed4f30a8cd12aa0af35b4bc4ba0c658f92877ebc05b2a344c639565"
+    },
+    {
+      "path": "app/src/ui/motion-lab/AttachmentEditor.svelte",
+      "bytes": 17605,
+      "gitBlob": "3b58cbd8a85386ab703dbebf4ee2f54d9efe6849",
+      "sha256": "a90d03b87bde720111401781c4da117c0e1d5267f3e5fb6bdd06a4a79554a495"
+    },
+    {
+      "path": "app/src/ui/motion-lab/Candidate.svelte",
+      "bytes": 8043,
+      "gitBlob": "c6990918bc4a4704fb826f0d9b45bd006785397e",
+      "sha256": "45e2e25351339049ace1381a1394f50509b9b44f3f0eca50eeaabdbafec8812d"
+    },
+    {
+      "path": "app/src/ui/motion-lab/McpProbe.svelte",
+      "bytes": 4244,
+      "gitBlob": "867dfea5ecae26a0fb42bb45167c6f2d8cf4fd67",
+      "sha256": "96714d5f9db677df55fc7e42045de4614468c42104f4509628baea7461f0cfcd"
+    },
+    {
+      "path": "app/src/ui/motion-lab/NativeContactEditor.svelte",
+      "bytes": 8557,
+      "gitBlob": "f4fce8fe41fc06c7531f8be4acbdcf55a9966193",
+      "sha256": "d0567fac2bc69ebb2841c9dd0a263c643515634a391b8e539095602b31cbdd4c"
+    },
+    {
+      "path": "app/src/ui/motion-lab/ResearchPilot.svelte",
+      "bytes": 7765,
+      "gitBlob": "9de7e67088e2962abeb38cd7d91afafc49fde125",
+      "sha256": "ed078fd393bbfce34b6a8e1515b7b4c266ca3f7f356c61df7ac886365c9f8dbe"
+    },
+    {
+      "path": "app/src/ui/motion-lab/SoleEditor.svelte",
+      "bytes": 5407,
+      "gitBlob": "28e75f9566a06de03de22b013da33eb50f8bd066",
+      "sha256": "321f073d5b3f3bf64b0b088418e79e131fbf68269cc1b60149e61d0f50bb0021"
+    },
+    {
+      "path": "app/src/ui/motion-lab/StarterPack.svelte",
+      "bytes": 20277,
+      "gitBlob": "e57645c92bcd71189b990662431941772e51712e",
+      "sha256": "ac194e42938a34de09305e9eb8025303b070ddb10d6d5e321ecc0ee0d609dc2c"
+    },
+    {
+      "path": "app/src/ui/motion-lab/WeaponAwareProbe.svelte",
+      "bytes": 7645,
+      "gitBlob": "652e2b416ea573749a9ce6892db4535b12413793",
+      "sha256": "b24b8f5fc3d012e7bf16cd737af5f4fe4cd42c43abd867574334b9afabde4f83"
+    },
+    {
+      "path": "app/src/ui/motion-lab/attachment.ts",
+      "bytes": 6588,
+      "gitBlob": "6db8e0489ef636da27d8fb9fdbf88cea6437aea6",
+      "sha256": "960ab0e2b843e131360332924c118a06427517247ec59f645b8ec2f4d680e687"
+    },
+    {
+      "path": "app/src/ui/motion-lab/calibration.ts",
+      "bytes": 2497,
+      "gitBlob": "6089d7bb870dfb536505b13465a9f5db4df64a53",
+      "sha256": "81b98942708f3e6d260f75aa0c32c6a32fde32fba6085a601958f9062c12ff6d"
+    },
+    {
+      "path": "app/src/ui/motion-lab/clean-grip.ts",
+      "bytes": 10506,
+      "gitBlob": "ec375530b5ce541e8dc9c13898334946a57a4b04",
+      "sha256": "e49c37f2eae1308a4f9db2c0141c64d684925280b004303b4eccd7cdafae744f"
+    },
+    {
+      "path": "app/src/ui/motion-lab/custom-test.ts",
+      "bytes": 4454,
+      "gitBlob": "11da2844de25faf5d696b99e32f525213a423b9d",
+      "sha256": "fb8f70af0d8901a19e5ec0e19b740316fb1a4f923c3a5c33ed11a4076242b79c"
+    },
+    {
+      "path": "app/src/ui/motion-lab/diagnostics.ts",
+      "bytes": 5134,
+      "gitBlob": "e344f9342fa3397ed77df23280464ac3031aa77c",
+      "sha256": "c254c8c9153d309a27b4ed9d5c94011b3dafe16d71694ca3b35f6441c017dd82"
+    },
+    {
+      "path": "app/src/ui/motion-lab/equipment.ts",
+      "bytes": 8049,
+      "gitBlob": "ca3c5883c080f3e5e41ab29f4b612427d3d39122",
+      "sha256": "9ae99ffc2e27dc30b19920374bf9d8c0317ec3916b919b753ad117f8360a1d5c"
+    },
+    {
+      "path": "app/src/ui/motion-lab/fixed-inpaint.ts",
+      "bytes": 3990,
+      "gitBlob": "e4e1454990010fe5f4d643c00496c28afdfc07c8",
+      "sha256": "8e7aba3db0e879db77e0ed36fdef5707cff57f098506bbfbbc9e0b283d78e767"
+    },
+    {
+      "path": "app/src/ui/motion-lab/main.ts",
+      "bytes": 286,
+      "gitBlob": "a432f07a886b40571e64cb9ff5dc72c8e1567961",
+      "sha256": "486818b0b181d5ab26889f6102e5990e19e169e3e01d1f7967febd1920b2927e"
+    },
+    {
+      "path": "app/src/ui/motion-lab/managed-equipment.ts",
+      "bytes": 6407,
+      "gitBlob": "403f398e89d6dc5a0c856886d0a34896b25003ae",
+      "sha256": "58cfcc392a5a887ced8f2aba87eedc9b7e639cb02c12212a9ab4e7ff5b64f1f2"
+    },
+    {
+      "path": "app/src/ui/motion-lab/mcp.ts",
+      "bytes": 5167,
+      "gitBlob": "60f29e8a04f721cf6d0eea0a798e95697c835863",
+      "sha256": "21db4002ffff62959608c9aabe40de6ddc929e97f5476357b2bd909afab52b7d"
+    },
+    {
+      "path": "app/src/ui/motion-lab/model.ts",
+      "bytes": 12443,
+      "gitBlob": "073b4675feeae5fc5430692238e374cf358c192d",
+      "sha256": "9092c84efa494d54365a28de62bae35e98999ea7795724d95b306ac297a22e4b"
+    },
+    {
+      "path": "app/src/ui/motion-lab/native-contacts.ts",
+      "bytes": 7202,
+      "gitBlob": "9081596ef6c28890a15bcd426cfe532e0c2d01ac",
+      "sha256": "45ca6773a8e77811955303659588b1bf87bff4b686c38a5115f9554431f5be1a"
+    },
+    {
+      "path": "app/src/ui/motion-lab/pilot.ts",
+      "bytes": 9562,
+      "gitBlob": "02ac5114f4c3ac017686247247d559520dc6068f",
+      "sha256": "1606ccfbbdeaf5dd4e413aa0bfc4fec773ed2d9cf50db0526c40b953849aa066"
+    },
+    {
+      "path": "app/src/ui/motion-lab/preview.ts",
+      "bytes": 4613,
+      "gitBlob": "38282df7820b213c1297268ca5b064c51d7e3890",
+      "sha256": "ef18660c855a9505f998070074224789d30804f696329345c7a5b695d55dd366"
+    },
+    {
+      "path": "app/src/ui/motion-lab/research-billing.ts",
+      "bytes": 2093,
+      "gitBlob": "b532bbc9458277f633e819dbd4d4eab995e67768",
+      "sha256": "b1542fae90797903765fd8ad2e0d22fa1a86ca6b703a98bfdd6e2623ed474855"
+    },
+    {
+      "path": "app/src/ui/motion-lab/research-budget.ts",
+      "bytes": 8577,
+      "gitBlob": "54f91282bf0b91c381008747c50f8f8263eb1137",
+      "sha256": "ad48f02de63ccbac327c8300a103f889ac69f0ce3c992afb03ec02b735c1911d"
+    },
+    {
+      "path": "app/src/ui/motion-lab/run.ts",
+      "bytes": 15596,
+      "gitBlob": "977830f0e2901ec74bac3c3e41749466e03b5de7",
+      "sha256": "293699065e7357e548096420440848ca52c922eb65321429845965979326a476"
+    },
+    {
+      "path": "app/src/ui/motion-lab/soles.ts",
+      "bytes": 3047,
+      "gitBlob": "d7fdb84ebab026ffa157c2e74af4a2476b98ef53",
+      "sha256": "12d00e7619fdc05e54acdda40b1b4aa4e6115706db0695cee616029a2b509906"
+    },
+    {
+      "path": "app/src/ui/motion-lab/starter-pack.ts",
+      "bytes": 16272,
+      "gitBlob": "4e302b9464eee37f58466515cd5ba06ffc1506da",
+      "sha256": "2152f4e28851296ed8aca61aa098fce7c6f8130530ef7e72ae5dc3a3b479501d"
+    },
+    {
+      "path": "app/src/ui/motion-lab/starter-project.ts",
+      "bytes": 16908,
+      "gitBlob": "532f7d22fa1ff1b6dff3ee331049b9e1f10cb513",
+      "sha256": "a19c718a0af0c9d53a751b566ec2c5f37ab5b1c2abc67fe0621f735aba9b9ef9"
+    },
+    {
+      "path": "app/src/ui/motion-lab/weapon-aware.ts",
+      "bytes": 9425,
+      "gitBlob": "56d58fed400589c56143f42c99a1e48464b0171d",
+      "sha256": "fe3c9bebdd7e4cfbf48dd105141f342be26593b776716b3a21cc2515af64226e"
+    },
+    {
+      "path": "app/src/ui/motion-lab/weapon-axis-repair.ts",
+      "bytes": 6528,
+      "gitBlob": "d5783ea35ae6a775e29d1cf891c8736747954a94",
+      "sha256": "3f108e00780d48c59b8784960bf37db897f362ef9c5cd3c485041d477b1fb719"
+    },
+    {
+      "path": "app/src/ui/motion-lab/weapon-swap.ts",
+      "bytes": 18438,
+      "gitBlob": "ab8e2f2956c4ccfaee76a1d92fcb7ddfc68c545d",
+      "sha256": "57c81d5f09806da96d4f0bc1ae804fc5401d890d48a7d402c224f67b01be4a47"
+    },
+    {
+      "path": "app/test/e2e/characters.spec.ts",
+      "bytes": 44415,
+      "gitBlob": "f6cbb3e904cba5e0c2cf84e706fdb9894115447a",
+      "sha256": "c63b1e18ea2a82f5a7b5f556df3ea7ac55778806ee8c9ee8fbffd5fdf9c2a00a"
+    },
+    {
+      "path": "app/test/e2e/crash-recovery.spec.ts",
+      "bytes": 5489,
+      "gitBlob": "b542659c3ac50053aa8300d54f0e8db47315be55",
+      "sha256": "95644b45b8b9be42ef17892eed3b94330872e03439cb0c4a8e9ad2d28f22b8f2"
+    },
+    {
+      "path": "app/test/e2e/export-picker.spec.ts",
+      "bytes": 99675,
+      "gitBlob": "15244095d011ddf6951df34f0ed7871d6bc2af62",
+      "sha256": "9bd579f8c8edf7969a6ae360bd6dfc55517a36529ae02072a26b1a32dcf9c6e8"
+    },
+    {
+      "path": "app/test/e2e/renderer-crash.spec.ts",
+      "bytes": 1829,
+      "gitBlob": "2eef94110d61bfa0a8f17ef4426c620a0f7b06f4",
+      "sha256": "f7eb3d73fe03b9708df6f1eedeca7b2933d5cd7d20b0f6a0162a3a66196fbbbf"
+    },
+    {
+      "path": "app/test/e2e/retained-equipment.ts",
+      "bytes": 3191,
+      "gitBlob": "89b7e57b94423cbaf033445791b351f4f66cac05",
+      "sha256": "f2e3bd10655e37754903661c23699a8f4b04b4dd18ddc81ea57923b476e15bca"
+    },
+    {
+      "path": "app/test/e2e/selftests.spec.ts",
+      "bytes": 77412,
+      "gitBlob": "628d295d2f023fc1a6e05aaff878665ec8fb420b",
+      "sha256": "dbe39092100d3472b9824ae4bc1386c6d2d3aa35b4cf5ce16611c45019be4f0f"
+    },
+    {
+      "path": "app/test/e2e/shared-equipment.spec.ts",
+      "bytes": 19443,
+      "gitBlob": "81f000c6e25b154646cbba83c0d4d24a43bc1e22",
+      "sha256": "0ac6759dad3b07a11f1876d68257e2afe40c7fd460ebb4e7284f355ef10634e3"
+    },
+    {
+      "path": "app/test/e2e/studio.spec.ts",
+      "bytes": 158134,
+      "gitBlob": "d149eab298b750fdd24d90f74a9582346513df5e",
+      "sha256": "71eecf4bcc99589bd78bfefe189a8ff0ca850f1c8a99ccc9483d791ab1eb1369"
+    },
+    {
+      "path": "app/test/unit/api-plans.test.ts",
+      "bytes": 9991,
+      "gitBlob": "5a0599e88de7c53aca0ff619f6a0b68631b957e1",
+      "sha256": "f19ec3e32d9d785c9568f0dbd75d16676718af6b1b18a7c90f1142bc4aacfb3e"
+    },
+    {
+      "path": "app/test/unit/appearance-warnings.test.ts",
+      "bytes": 3097,
+      "gitBlob": "4260a026b8b9be84822630fced9ec247455a17c6",
+      "sha256": "0558dcea700b6a983c94a11cee504a96d15069cb1bf809e993673ad1298f4869"
+    },
+    {
+      "path": "app/test/unit/authored-attachment.test.ts",
+      "bytes": 10393,
+      "gitBlob": "b76007f4ce954d3acdc70ce83452cf39496159f4",
+      "sha256": "60d9d134e0dbbf7d5df3d19c878aafdb40619df1617c9e437a5cfd526fa8c115"
+    },
+    {
+      "path": "app/test/unit/automatic-recovery.test.ts",
+      "bytes": 43846,
+      "gitBlob": "67d9130479f9a2587d7095c6ee6fe4bbbe463e59",
+      "sha256": "5500eceeefd39f0055d5ac5bb3aaa6665069911916b8f275005c56e588c54ff2"
+    },
+    {
+      "path": "app/test/unit/character-import.test.ts",
+      "bytes": 18838,
+      "gitBlob": "a0d30cc4d2ef9ff169f72cc1c9944795f9d6260f",
+      "sha256": "1cde39ac4b53c74c8fd15f9e9675c896fcdd9e55eda2e11b6492bce9379c2e54"
+    },
+    {
+      "path": "app/test/unit/clean-grip.test.ts",
+      "bytes": 13070,
+      "gitBlob": "a5cfc8e713e14430f098a23c561d4600215d7584",
+      "sha256": "18caec96e5fd43ac65a4183a02de76f97ee17a81a156502025fd8f345b457dac"
+    },
+    {
+      "path": "app/test/unit/client-timeout.test.ts",
+      "bytes": 1769,
+      "gitBlob": "8050eb22873ffe265e390d40cbd5a079c0efb499",
+      "sha256": "b1aca84849738b0e5019549d1a02abaf79121c577facff11210fddc91f725b07"
+    },
+    {
+      "path": "app/test/unit/creator-quality-policy.test.ts",
+      "bytes": 6796,
+      "gitBlob": "e6f388adcd62c298ce9185bc9c50fb56fd1b7461",
+      "sha256": "c8f1fab2a7aeb1dca5ba5030670e6a9d2e509c008b4ee0772932275bd2cdb716"
+    },
+    {
+      "path": "app/test/unit/design-consistency.test.ts",
+      "bytes": 5441,
+      "gitBlob": "e6213a42719615f94f75c1036c52e1b29124b65c",
+      "sha256": "69df3d5878372a9751d70d4302a206a3f7e1c8e11a5bfe7f82c54941b33b5412"
+    },
+    {
+      "path": "app/test/unit/design-gray.test.ts",
+      "bytes": 2184,
+      "gitBlob": "57b67fecb6997f84fdbc031f2f2c170406d8e3f6",
+      "sha256": "3214f48c285ecc6c573e5730f6dd29eed8969fc1cfa52e35990ecf91abd7a16a"
+    },
+    {
+      "path": "app/test/unit/experience-presentation.test.ts",
+      "bytes": 18622,
+      "gitBlob": "5c8bdb4a746554382256da5f9fbf5603666a0b66",
+      "sha256": "fdb2e315bcb135673981fd94a3477976fb971413eb02a79b31becf710bddc765"
+    },
+    {
+      "path": "app/test/unit/export-phaser.test.ts",
+      "bytes": 10627,
+      "gitBlob": "59f4c26b2ee9cd046d898d257d014e3ebd5649ed",
+      "sha256": "c6a679de5b2b95abb650d3d076780a17905e28e437c935f37c808668a9cec237"
+    },
+    {
+      "path": "app/test/unit/fixed-inpaint.test.ts",
+      "bytes": 10935,
+      "gitBlob": "92d1b2003ac4a32160108beeba90bd411127b576",
+      "sha256": "83cbaa47b4939ecc4563530ad1ed4a9387405216e11be1c005080f25aa09c441"
+    },
+    {
+      "path": "app/test/unit/garment-coverage.test.ts",
+      "bytes": 10034,
+      "gitBlob": "72e3b3a042776482c91e04b98a4d03a823efd186",
+      "sha256": "7fc08cd1e2d83d4e1e05e01adbb205b0c1eae167ba2a155fccd20f4d50a43422"
+    },
+    {
+      "path": "app/test/unit/grid-estimate.test.ts",
+      "bytes": 3320,
+      "gitBlob": "256219f718095da7050ddd001b6f09cf9ea4dd20",
+      "sha256": "9e746335626266a6c629cf8f4bcc440bd046b17c511d49b9011851aa77815168"
+    },
+    {
+      "path": "app/test/unit/grid-repair.test.ts",
+      "bytes": 9643,
+      "gitBlob": "4027765ce3955043188cce512be97da03fbe7a00",
+      "sha256": "f1ac66cdb70320e7f4a229ee394075d18d32c10a659a5570a4e4f4754cc0603d"
+    },
+    {
+      "path": "app/test/unit/held-raw-key-review.test.ts",
+      "bytes": 8177,
+      "gitBlob": "d6346bf4bbc2ecea7abb00292d3f8566e76f2521",
+      "sha256": "236d039bf6940cb838d470e53108f740f172afaa663fba864b163789fcfb03b8"
+    },
+    {
+      "path": "app/test/unit/item-acceptance.test.ts",
+      "bytes": 9749,
+      "gitBlob": "fd880ee751f5c29e94ea67c86bdbd5f0a54519c4",
+      "sha256": "4df47c18010fd172938d58ca4121a9288afa0540086eb0bbbc886d6f6671a7bb"
+    },
+    {
+      "path": "app/test/unit/item-review-consent.test.ts",
+      "bytes": 5083,
+      "gitBlob": "fa77cb7fe1142be72f9e18d848420558d22d12bc",
+      "sha256": "8a31efdb7058dc4f58277df8147f88f593b7b47f12debc133a5b2d9cdab9eff3"
+    },
+    {
+      "path": "app/test/unit/item-stencil.test.ts",
+      "bytes": 7458,
+      "gitBlob": "c4126073c982f7f77fbade5ee5dde4ed2d9665f4",
+      "sha256": "bb0de86ab1272e2184c9d4acdb221642e9966bb06fd365ed75ed8ce20a1de560"
+    },
+    {
+      "path": "app/test/unit/item-streaming.test.ts",
+      "bytes": 15743,
+      "gitBlob": "39e6fb0be56ed31086c3b38e39c3e742049355bd",
+      "sha256": "4a21cddd6ff080a2385baa6a9639036d6aa362511717b6f224ff477002f506bc"
+    },
+    {
+      "path": "app/test/unit/key-switch.test.ts",
+      "bytes": 2970,
+      "gitBlob": "ca772eba53c6792ea666e30ab887f2a9aec7699a",
+      "sha256": "603652b0e14846d6d24e7fb73984b39dc8eab8893a26323e91f7f0b3cc16fdd2"
+    },
+    {
+      "path": "app/test/unit/managed-equipment.test.ts",
+      "bytes": 15604,
+      "gitBlob": "8c70f78e9da43907d026b17a3610d3772699c308",
+      "sha256": "8b15a6b71834a1934ba79db53b84cf63ab7b7ab8025aca43ab0acd71803c6448"
+    },
+    {
+      "path": "app/test/unit/motion-lab.test.ts",
+      "bytes": 5980,
+      "gitBlob": "3f8621a19ca5e605c60756ec9d0300d525ef3d6c",
+      "sha256": "e65660868799ad907319080619bcb8c095e9f3d5ce5cc60c6ef2684c47abefeb"
+    },
+    {
+      "path": "app/test/unit/motion-mcp.test.ts",
+      "bytes": 4373,
+      "gitBlob": "a03558d546281b086a51263230372e6b133f6ea5",
+      "sha256": "ee0007e7e98667a047d8ccb8d866a83c7d2554f0ba4405a32501cc784007deb2"
+    },
+    {
+      "path": "app/test/unit/motion-tools.test.ts",
+      "bytes": 3709,
+      "gitBlob": "013c82fc2dea8703598df902141f9515f4b86db3",
+      "sha256": "fd7cc0963dcb2c59c19a0bcb0146fd151cd5f298cf0aa1236dcf761bcbece14c"
+    },
+    {
+      "path": "app/test/unit/motion.test.ts",
+      "bytes": 7202,
+      "gitBlob": "a0083b4dadccafaea0ef36326502004183776fcb",
+      "sha256": "3b0a964130fb31ff2e73646f7adc4a6c05c02718b3a961cde32708076e43cfe8"
+    },
+    {
+      "path": "app/test/unit/native-contacts.test.ts",
+      "bytes": 7207,
+      "gitBlob": "87f04df182fe87942738d534973defbcb11eaf8a",
+      "sha256": "7313a34ae94bb0388cff05326fa9a19549816c0028b2f9b1c1fbdf4369370b95"
+    },
+    {
+      "path": "app/test/unit/paid-retry.test.ts",
+      "bytes": 9131,
+      "gitBlob": "b327834c92539d0df12de276a005122c33da3d8a",
+      "sha256": "00a9809b53d7063051419c8e8f3a74930a03945b35794846da665740a1cdb654"
+    },
+    {
+      "path": "app/test/unit/planting.test.ts",
+      "bytes": 3380,
+      "gitBlob": "e5697ecaddf4015083869cf8911400505b37dae8",
+      "sha256": "b699cca9cc9a08d9f3d73ee292a1e7ed3cfcc0da14a8569c32a65c60e5941683"
+    },
+    {
+      "path": "app/test/unit/pose-item-selection.test.ts",
+      "bytes": 9608,
+      "gitBlob": "f48ee45a6b6d27ee20b5b942342c7eeea60e1dcf",
+      "sha256": "e78ac82d9a6546f0bcb46a6e5ee61ecea4f6e5276378d63f863147dc7faba1c0"
+    },
+    {
+      "path": "app/test/unit/pose-review.test.ts",
+      "bytes": 8689,
+      "gitBlob": "43e92d8469f0d2a727e58a5e66550e62195296dc",
+      "sha256": "414ab05ab6ce2d59290b24390d4c0449457c7e97a974a58d22c7abb91ac1c945"
+    },
+    {
+      "path": "app/test/unit/queue-generation-consent.test.ts",
+      "bytes": 7504,
+      "gitBlob": "ef65cb276b2cc03492923d377fc6573dc581432e",
+      "sha256": "6b077d458094ae64c8f63d91c29be440218ae2ac87c36cf9acde34b9a45c9100"
+    },
+    {
+      "path": "app/test/unit/queue-resume.test.ts",
+      "bytes": 22636,
+      "gitBlob": "e1e7e9a6316342a357f4353e17dde578c6083bd2",
+      "sha256": "1280f66ad7977d59b6ed214e196e51cb8897519d83c6de7b1f6c79802a3bbe78"
+    },
+    {
+      "path": "app/test/unit/research-billing.test.ts",
+      "bytes": 3617,
+      "gitBlob": "9527435f889c477d8d339135d7b051a0d24cdb3a",
+      "sha256": "57a62d0bd17c792f50ef83a09dc37e7e8c62c2c0b4feb054a4b58f766f3bec2a"
+    },
+    {
+      "path": "app/test/unit/research-budget.test.ts",
+      "bytes": 8981,
+      "gitBlob": "bafc083a5f0900bb3133cec8a7b05551fe015ad1",
+      "sha256": "24625fc45ce9d8eeb351b2db01682ef8978c644c5276da8cdac9f19e3b55ee88"
+    },
+    {
+      "path": "app/test/unit/research-queue-billing.test.ts",
+      "bytes": 9090,
+      "gitBlob": "32db232af75b61e5d229e1a69cc1314bf2e7b6b5",
+      "sha256": "66b88586c546ac0df0a15941b059025939cabb16822fc988a0ed98f8013d7fe1"
+    },
+    {
+      "path": "app/test/unit/soles.test.ts",
+      "bytes": 1272,
+      "gitBlob": "e6109bc20adf4ebbb574ac05304bf48199d19b3d",
+      "sha256": "8dd2a8c14958b4a270a74d1ab4f3df2a19dcc26e459b800362fe2973917bb589"
+    },
+    {
+      "path": "app/test/unit/starter-presets.test.ts",
+      "bytes": 12018,
+      "gitBlob": "3d90b1155d6c600573174747dd62c1ee9e104a02",
+      "sha256": "10a67676eccb723a1366bc090d5ac1adc0a7b87a967ea22354f110f5b595410a"
+    },
+    {
+      "path": "app/test/unit/starter-project.test.ts",
+      "bytes": 24003,
+      "gitBlob": "81086e42bebd365e81411b4083555e76ecdbba28",
+      "sha256": "288fb35bc28f53ef07b6531536466d5780ac3d08c586e135e24499ac40826ea1"
+    },
+    {
+      "path": "app/test/unit/starter-session.test.ts",
+      "bytes": 20827,
+      "gitBlob": "389d7e5ded4b39f6f1964cb248a93f1015d6bb2e",
+      "sha256": "a26933753017e22a7e32a78068563ed72be320b605769be8366f20ec279e5066"
+    },
+    {
+      "path": "app/test/unit/studio-flow-state.test.ts",
+      "bytes": 86286,
+      "gitBlob": "2e5a09d42b301d362c5e7779cd9b77bc43a8f194",
+      "sha256": "b8910831f0e965e531ce86e1627f88db162efd8571a5dff5546cdba620924e78"
+    },
+    {
+      "path": "app/test/unit/targeted-move.test.ts",
+      "bytes": 12282,
+      "gitBlob": "970a7337563258a8539d8818bf80cc564f7a1732",
+      "sha256": "f6e921f0b9fe1a8c038d44a1ee84a625f72a4dad95a1b345d98f9c11b3a2622c"
+    },
+    {
+      "path": "app/test/unit/torso-consistency.test.ts",
+      "bytes": 3724,
+      "gitBlob": "4d03accdafc2ee41e2f3783dada39ace024e9eb8",
+      "sha256": "88e31b73911aeedb2433208889cb19adc6f69ccd470fea6828dfaed29a7f02fb"
+    },
+    {
+      "path": "app/test/unit/tuck-variants.test.ts",
+      "bytes": 3190,
+      "gitBlob": "e3988157a66fb77aa60e336abb5f214e72bfb2c9",
+      "sha256": "4f5be7db3e5bd6189e264b8ccf1a675d8a267ef79e5e1214cd3bd23cb6af8185"
+    },
+    {
+      "path": "app/test/unit/unity-export.test.ts",
+      "bytes": 7748,
+      "gitBlob": "148e58f39853c70678402b1cf8d22260d57a296b",
+      "sha256": "8a30b211d5069740b5fdecde36d81fae97f84839c9260dad62e8e6a5435942fb"
+    },
+    {
+      "path": "app/test/unit/weapon-aware.test.ts",
+      "bytes": 18984,
+      "gitBlob": "362b9139b104f976b87a3514964e0251b971c372",
+      "sha256": "8d03d19cfb68f3da00450d08a5fa33ec9c0834327829df8ac22e05fab2cc2624"
+    },
+    {
+      "path": "app/test/unit/weapon-swap.test.ts",
+      "bytes": 43021,
+      "gitBlob": "24f45da0fdafec07b8f050efef34a9b1718992fa",
+      "sha256": "37272c19a468d0cfe578c5940bd2c473b5a0dc818f96c186a4e7e106b722026c"
+    },
+    {
+      "path": "spikes/api/mocap/analyze-motion-lab.mts",
+      "bytes": 4404,
+      "gitBlob": "2df22a9c9ddd1e0ec99ce17c17cdda7058171000",
+      "sha256": "0fef3f643b806016b7c7d1185f3dc69d1330361e52ba88279ab1ff22ff03f3f9"
+    },
+    {
+      "path": "spikes/api/mocap/annotate-armed-controls.mts",
+      "bytes": 9023,
+      "gitBlob": "84f97c64fc0f4def82c7820b464fd586c64496dd",
+      "sha256": "2fb2bc4cc67b00d8981050425785ca6a38c65e36d509f2a573fa7bf784748130"
+    },
+    {
+      "path": "spikes/api/mocap/annotate-completion-armed.mts",
+      "bytes": 9598,
+      "gitBlob": "7f99866a709f11c9ec2e8c03f9a2b4487dcb2fda",
+      "sha256": "f5b88af09e8a28e82e1177eb83bc433043fe8892b4fd4026ae51ea12e82a973b"
+    },
+    {
+      "path": "spikes/api/mocap/annotate-managed-armed.mts",
+      "bytes": 9669,
+      "gitBlob": "7b1b6fc9f97c08dd16f58ba748a3a56508237808",
+      "sha256": "7bc133fd9e18c0ffa54be65d3bb9a799f0ec214a1549f4b19150caf61c9d8638"
+    },
+    {
+      "path": "spikes/api/mocap/audit-armed-completion.mts",
+      "bytes": 11881,
+      "gitBlob": "92aaaab0c920c07a97d5462317548d6bd504c21d",
+      "sha256": "bfaa5510af980ce9c511dfc44ef19b57236c2a1cc4e04293427808a5c2e8c090"
+    },
+    {
+      "path": "spikes/api/mocap/audit-armed-split.mts",
+      "bytes": 2175,
+      "gitBlob": "9b77f5797d72e316d1172b4cbbb5817efc6f41a3",
+      "sha256": "621e14649aab881852b641c7193c837cfbab4a742c8a8b1950aefc82c9588955"
+    },
+    {
+      "path": "spikes/api/mocap/audit-body-family.mts",
+      "bytes": 13533,
+      "gitBlob": "02f043e6caf740ee39708ae9624fb69407b10d62",
+      "sha256": "cf2ec1d0111e151eae28d935270e38e426476fdddf230fc8346bca8344c4125f"
+    },
+    {
+      "path": "spikes/api/mocap/audit-continuity.mts",
+      "bytes": 1313,
+      "gitBlob": "27de0fa70cdc78466baae73865dc057ee284c2b6",
+      "sha256": "232431cd5e379ab760b5827f38046f9022a36be4a5d7b00371ab3afe189d9869"
+    },
+    {
+      "path": "spikes/api/mocap/audit-corrected.mts",
+      "bytes": 1927,
+      "gitBlob": "13b8c95aeaadc0495305fad8c4c32682b9833eef",
+      "sha256": "d72c2a766b3f2d8dedc964d1d8c97748da9d8e98917e804979e2d04c3e632fcd"
+    },
+    {
+      "path": "spikes/api/mocap/audit-disarm-reference.mts",
+      "bytes": 7793,
+      "gitBlob": "af7c0e5d1ce542cc43a2b04436d42b58217894a6",
+      "sha256": "1449a02fb4451b5c49babeeab1c0d5671ecce6bca5fef37c0a43fcab5d3a30d4"
+    },
+    {
+      "path": "spikes/api/mocap/audit-native-depth.mts",
+      "bytes": 11832,
+      "gitBlob": "b8d2786772b87ece1cb7d8181bd947b76c406e1c",
+      "sha256": "4102efccf2d7432f9c6c9cbfbf811be1fbdacfe23898668ef8366eeb168c8dac"
+    },
+    {
+      "path": "spikes/api/mocap/audit-review-seams.mts",
+      "bytes": 17925,
+      "gitBlob": "315c7b57f4441d97a311b1ab42b94e610b640a52",
+      "sha256": "444f31e9eec9e096f10de8e69e13ab16faf060de3b0f139dd6c18e2b515a730c"
+    },
+    {
+      "path": "spikes/api/mocap/author-body-family-v2.mts",
+      "bytes": 7341,
+      "gitBlob": "023207b4b7a1c70d44729ff5ae0d7f2540ca9b5c",
+      "sha256": "77d056c38c0353eba2646e0f3b810e6ab990ed6cbb31a7ccbac1f4ecf46e13d8"
+    },
+    {
+      "path": "spikes/api/mocap/author-body-family.mts",
+      "bytes": 8389,
+      "gitBlob": "7d4cafee8416a7672aeb9a6773916f9b70d5e025",
+      "sha256": "b3bb481e21261548151182bef8fbd9230d69ad3c33c3ea7172993d880fcf12e2"
+    },
+    {
+      "path": "spikes/api/mocap/author-contacts.mts",
+      "bytes": 3308,
+      "gitBlob": "ee67e92b20bfb2df97f688c7afdf057164ad0d2f",
+      "sha256": "07f42d40e63fdfdeb2a6d8668e9e2df8a3ca60552dfb9d4a6c3fa48403f7f3c9"
+    },
+    {
+      "path": "spikes/api/mocap/author-gripped-axe.mts",
+      "bytes": 10965,
+      "gitBlob": "ccd8dad339960523a64d5340856b17a81bf5e1d1",
+      "sha256": "472f10c22d8eed73decb64a44f86460769242ef6b1f3e283f3e4a26f6f9927f6"
+    },
+    {
+      "path": "spikes/api/mocap/author-native-weapon-control.mts",
+      "bytes": 6538,
+      "gitBlob": "7a9b9b111428124d9e1cb5cbc326e32919e5515f",
+      "sha256": "b7ec39057a12978de3de4aa5c8e5b0a3f4bf8dcf294771b378dd3b32954b913d"
+    },
+    {
+      "path": "spikes/api/mocap/author-weapons.mts",
+      "bytes": 6167,
+      "gitBlob": "cef18b9447119673da3fdab6cfe3687465de3b50",
+      "sha256": "41a1c85bdbdb46844fbe72b746e314b00097ce0640424b359f40e330352674a9"
+    },
+    {
+      "path": "spikes/api/mocap/bake-motion-lab.mts",
+      "bytes": 4258,
+      "gitBlob": "8a86d77c2a33a149e39269ddd3589d13d450d5b8",
+      "sha256": "c1352bf535a5568271540042af67777e2868c320a3b55276c32b87c68efdd35f"
+    },
+    {
+      "path": "spikes/api/mocap/calibrate-weapon-family.mts",
+      "bytes": 18919,
+      "gitBlob": "700eb631a3d57d6c01f74fdd36b162771d12897c",
+      "sha256": "fba5cb0c31a458f2b679961754508690898229063ee48e2a105f7dd6dc6d6b64"
+    },
+    {
+      "path": "spikes/api/mocap/catalog-motion-presets.mts",
+      "bytes": 3612,
+      "gitBlob": "f8a053a2c10a82ef5a386dc7809164961da2eef6",
+      "sha256": "eab904e654207295dc64214471dd946ae08c93ecf8cd7f70e5f8098b695556ae"
+    },
+    {
+      "path": "spikes/api/mocap/catalog-targeted.mts",
+      "bytes": 4117,
+      "gitBlob": "c01540180f0b09c0a79201177769b5c11f3a142d",
+      "sha256": "6e488c88933ba7fa100396716b7a18455de8c833f3b95a468c56cb79c9677d47"
+    },
+    {
+      "path": "spikes/api/mocap/compare-corrected.mts",
+      "bytes": 2424,
+      "gitBlob": "07d5d32ef7b2c8fd510175ddb8afb4f8e1b2254c",
+      "sha256": "c98dff95a660c1fa73c9291697223393aad36d981f07ee12dcdfda7e36d0a33f"
+    },
+    {
+      "path": "spikes/api/mocap/compare-kaykit.mts",
+      "bytes": 7816,
+      "gitBlob": "0df00a7a7f5059cf79ac320015d23174c388f790",
+      "sha256": "eb5738572f3c290d6f680609c8d8cdf169e786e460d6ad8b2755ab242851ad46"
+    },
+    {
+      "path": "spikes/api/mocap/evaluate-clean-grip.mts",
+      "bytes": 14044,
+      "gitBlob": "df638cf13944366086ac4d24246ae219170ff8aa",
+      "sha256": "9eeff3295b0de80c62f2f1020ba2d87aca807685f266bd4506f89530c9395f2c"
+    },
+    {
+      "path": "spikes/api/mocap/evaluate-disarm-control.mts",
+      "bytes": 13564,
+      "gitBlob": "037097783c96d4dc92aff0548bb644d8ade5e7c9",
+      "sha256": "8ca63df414320a63725a4a9934cdb05b3e70f3edb45e19d632509cd15900fac5"
+    },
+    {
+      "path": "spikes/api/mocap/evaluate-grid-probe.mts",
+      "bytes": 3369,
+      "gitBlob": "108d9efea302f69475e9fc0235f088a94583bc3e",
+      "sha256": "a85e30beff5a3afa5600902f6f7b583fa5203699aa2314522d53d07ec7fb0fd0"
+    },
+    {
+      "path": "spikes/api/mocap/evaluate-managed-disarm.mts",
+      "bytes": 19385,
+      "gitBlob": "a1e4c9be6ee5e81ee3289887950678fa0f081234",
+      "sha256": "58bf270a16ae13a597f2604aba45b0fd3aa8091b1d607d711a184305dc384d22"
+    },
+    {
+      "path": "spikes/api/mocap/evaluate-managed-equipment.mts",
+      "bytes": 13820,
+      "gitBlob": "8fb82b768a9ddf7614faa5728a0c53520f1acbd6",
+      "sha256": "af0505af3722e68a4ac56ce6c7fdbad6f05176c3b053beb0b8d9b7fbecb82559"
+    },
+    {
+      "path": "spikes/api/mocap/evaluate-motion-equipment.mts",
+      "bytes": 8801,
+      "gitBlob": "1ced4425dd39e99c271051638395e1a88489800f",
+      "sha256": "2eb1306d39e90ceb26c6db62b91f83734f8ea94784713e83e908e235d337fef7"
+    },
+    {
+      "path": "spikes/api/mocap/evaluate-weapon-axis-repair.mts",
+      "bytes": 15054,
+      "gitBlob": "5825698fe7d97ffc85df07cf9b6443fdafa1c875",
+      "sha256": "6a580ee80cad4ec33e9efe86df11136f6470c5aacc44a3b070f08780d0cdfb33"
+    },
+    {
+      "path": "spikes/api/mocap/evaluate-weapon-swap.mts",
+      "bytes": 30040,
+      "gitBlob": "098a21f924d7d04f1450f956b062c4b90be869b8",
+      "sha256": "a97ef2648accd30ff295c18abb35514928a0498328fc35c8138f561d447900a2"
+    },
+    {
+      "path": "spikes/api/mocap/inspect-references.mts",
+      "bytes": 957,
+      "gitBlob": "d9349c08912d8cbf7dc84a3734c2d0f112b47eab",
+      "sha256": "b2edf85707b820a116e235496d00eee32201c3d32e0c75b299be79112040f670"
+    },
+    {
+      "path": "spikes/api/mocap/measure-rendered-soles.mts",
+      "bytes": 3665,
+      "gitBlob": "1b9f112df3733b9e2b1ede9fb03d361c2aab4518",
+      "sha256": "e8beb0ff3aa9f100bc587f6ed5e0ba20249c1d2157e2ff54f6b27eb48935d397"
+    },
+    {
+      "path": "spikes/api/mocap/mocap.mts",
+      "bytes": 22496,
+      "gitBlob": "0badbe68eefc02f90a238e1563b3f70caffea144",
+      "sha256": "8ea6653f57e4258ba7813aff9b46a6f1fc0c54da40bef09de8d2c59ed0576566"
+    },
+    {
+      "path": "spikes/api/mocap/package-motion-review.mts",
+      "bytes": 7066,
+      "gitBlob": "82ea81ffda296fa55a13517ab900ccbf2fa21dcb",
+      "sha256": "631e686dc0572b8afd4c35194eea973ddaa917e5f74888c5bb93bb8f9f5850e4"
+    },
+    {
+      "path": "spikes/api/mocap/package-studio-axe.mts",
+      "bytes": 10321,
+      "gitBlob": "40e977fe6bb53eb3ff6fc859ab05194bca52cea8",
+      "sha256": "e3e8b278b7dbd458465e5a3f8a4ec1626161e6a0735b80db1f9656b1a7d6a052"
+    },
+    {
+      "path": "spikes/api/mocap/package-targeted.mts",
+      "bytes": 10152,
+      "gitBlob": "5852b456f74cf8806e2ba243b4f38608950c2dbf",
+      "sha256": "459e542991cd57d3da2eff015bab83ba175d6357c6f06807e2165d15f8baafbd"
+    },
+    {
+      "path": "spikes/api/mocap/package-weapon-aware-review.mts",
+      "bytes": 9655,
+      "gitBlob": "6636f3a581fc1c46e0ac0250d7207bd3cb8c8a28",
+      "sha256": "183601ff6ebc81884476b845df9d2d8c4cfdc70064b33e3f6b2acb44e452098b"
+    },
+    {
+      "path": "spikes/api/mocap/prepare-armed-completion.mts",
+      "bytes": 8987,
+      "gitBlob": "c720df377c1e4b55cfdca0cd72dc96065f5fe634",
+      "sha256": "25d72e028d6561ebbfb3e6e73a9068151d2d61ac1b18f9b4e7dca34b0278db4b"
+    },
+    {
+      "path": "spikes/api/mocap/prepare-clean-grip.mts",
+      "bytes": 20147,
+      "gitBlob": "47c68a9bf0e6204f2635d6612099aa08ca2b0038",
+      "sha256": "c1ac29cd2414d4d7d6ed9fdfe2c8a3bffc29c598ed7312c673d1f6b581de37ec"
+    },
+    {
+      "path": "spikes/api/mocap/prepare-controlled-pilot.mts",
+      "bytes": 3466,
+      "gitBlob": "99b9dc84de06965a74afd2163a64f0f5e7a9161d",
+      "sha256": "e1cd9f6272d83fe4beda52838c78c0e7b588751cb930ac3970951e0d2f4f0434"
+    },
+    {
+      "path": "spikes/api/mocap/prepare-managed-equipment.mts",
+      "bytes": 10910,
+      "gitBlob": "14094324d85feb73701b603a0df6ce6f49cfc620",
+      "sha256": "9d51a1285aaf7313078857795fb12762cfce39135ffd757679feea3437d2543f"
+    },
+    {
+      "path": "spikes/api/mocap/prepare-weapon-axis-repair.mts",
+      "bytes": 19831,
+      "gitBlob": "3de7889a0e49976517c5fccf9b5496d9c6eb31fc",
+      "sha256": "8be6d2390cc2ad47c2294d73ebd5b34dc233e457d88dd85dbff62a7d2e4559ff"
+    },
+    {
+      "path": "spikes/api/mocap/prepare-weapon-swap.mts",
+      "bytes": 18947,
+      "gitBlob": "ab842eb333dfb0affc5ac9673d9a55bd2fabed0e",
+      "sha256": "78686b6d5b63b3e052530803dc0ff5d214fda1753a01dd55448111ad0f81162f"
+    },
+    {
+      "path": "spikes/api/mocap/qualify-custom-v3.mts",
+      "bytes": 6444,
+      "gitBlob": "0d601b8ce6c5d0731e6444a276500bfb9a4d1757",
+      "sha256": "8dd5766083649b2b6d381ae680fec18ae3fd3b40fd5b3f15d906293e5f2d5d60"
+    },
+    {
+      "path": "spikes/api/mocap/qualify-targeted.mts",
+      "bytes": 5168,
+      "gitBlob": "bda269477f8d79cec9002b5ab87dbada76f5b485",
+      "sha256": "5e169237a8b0b79d1b917fac20c96ae089efc6957f0067809b061691e0647bfa"
+    },
+    {
+      "path": "spikes/api/mocap/qualify-workflow-body.mts",
+      "bytes": 6743,
+      "gitBlob": "0a541c8d52f2f5621c5c5ba9fc0f86cdd7c9c7af",
+      "sha256": "b20b58a32e8f8a2c3472e9eb1a6d9983019551e25bf820c7a5c202469fe3894a"
+    }
+  ],
+  "netChangesComparedWithHistoryStart": [
+    "M\t.github/workflows/pages.yml",
+    "M\tPLAN.md",
+    "A\tapp/dev-fixtures/motion-lab/KAYKIT-LICENSE.txt",
+    "A\tapp/dev-fixtures/motion-lab/LICENSE.txt",
+    "A\tapp/dev-fixtures/motion-lab/kaykit-attack.json",
+    "A\tapp/dev-fixtures/motion-lab/kaykit-death.json",
+    "A\tapp/dev-fixtures/motion-lab/kaykit-hurt.json",
+    "A\tapp/dev-fixtures/motion-lab/kaykit-idle.json",
+    "A\tapp/dev-fixtures/motion-lab/kaykit-run.json",
+    "A\tapp/dev-fixtures/motion-lab/kaykit-walk.json",
+    "A\tapp/dev-fixtures/motion-lab/library.json",
+    "A\tapp/motion-lab.html",
+    "M\tapp/playwright.config.ts",
+    "A\tapp/scripts/unity-review/EditorReview.cs",
+    "A\tapp/scripts/unity-review/NativePlayback.cs",
+    "A\tapp/scripts/unity-review/NativePlayer.cs",
+    "M\tapp/scripts/verify-phaser-export.mjs",
+    "A\tapp/scripts/verify-unity-export.mjs",
+    "M\tapp/src/lib/compose/compose.ts",
+    "M\tapp/src/lib/equipment/fit.ts",
+    "M\tapp/src/lib/equipment/generate.ts",
+    "M\tapp/src/lib/export/phaser.ts",
+    "M\tapp/src/lib/export/unity.ts",
+    "M\tapp/src/lib/image/chroma.ts",
+    "A\tapp/src/lib/image/hard-mask.ts",
+    "A\tapp/src/lib/image/similarity.ts",
+    "A\tapp/src/lib/items/design-consistency.ts",
+    "M\tapp/src/lib/items/items.ts",
+    "M\tapp/src/lib/items/qa-summary.ts",
+    "M\tapp/src/lib/items/run.ts",
+    "A\tapp/src/lib/items/torso-consistency.ts",
+    "M\tapp/src/lib/pixellab/client.ts",
+    "M\tapp/src/lib/pixellab/queue.ts",
+    "M\tapp/src/lib/pixellab/routes.ts",
+    "A\tapp/src/lib/rig/motion.ts",
+    "A\tapp/src/lib/rig/planting.ts",
+    "A\tapp/src/lib/rig/starter-presets.ts",
+    "M\tapp/src/lib/store/import.ts",
+    "M\tapp/src/lib/store/manifest.ts",
+    "M\tapp/src/studio/GenCard.svelte",
+    "M\tapp/src/studio/ItemPane.svelte",
+    "M\tapp/src/studio/MoveSheet.svelte",
+    "M\tapp/src/studio/NewItemSheet.svelte",
+    "M\tapp/src/studio/Stage.svelte",
+    "M\tapp/src/studio/StageNote.svelte",
+    "M\tapp/src/studio/Studio.svelte",
+    "M\tapp/src/studio/apiPlans.ts",
+    "M\tapp/src/studio/create.ts",
+    "M\tapp/src/studio/experience/WorldStage.svelte",
+    "M\tapp/src/studio/experience/presentation.ts",
+    "M\tapp/src/studio/itemRoute.ts",
+    "M\tapp/src/studio/model.ts",
+    "M\tapp/src/studio/state.svelte.ts",
+    "M\tapp/src/ui/M3.svelte",
+    "A\tapp/src/ui/MotionLab.svelte",
+    "A\tapp/src/ui/motion-lab/AttachmentEditor.svelte",
+    "A\tapp/src/ui/motion-lab/Candidate.svelte",
+    "A\tapp/src/ui/motion-lab/McpProbe.svelte",
+    "A\tapp/src/ui/motion-lab/NativeContactEditor.svelte",
+    "A\tapp/src/ui/motion-lab/ResearchPilot.svelte",
+    "A\tapp/src/ui/motion-lab/SoleEditor.svelte",
+    "A\tapp/src/ui/motion-lab/StarterPack.svelte",
+    "A\tapp/src/ui/motion-lab/WeaponAwareProbe.svelte",
+    "A\tapp/src/ui/motion-lab/attachment.ts",
+    "A\tapp/src/ui/motion-lab/calibration.ts",
+    "A\tapp/src/ui/motion-lab/clean-grip.ts",
+    "A\tapp/src/ui/motion-lab/custom-test.ts",
+    "A\tapp/src/ui/motion-lab/diagnostics.ts",
+    "A\tapp/src/ui/motion-lab/equipment.ts",
+    "A\tapp/src/ui/motion-lab/fixed-inpaint.ts",
+    "A\tapp/src/ui/motion-lab/main.ts",
+    "A\tapp/src/ui/motion-lab/managed-equipment.ts",
+    "A\tapp/src/ui/motion-lab/mcp.ts",
+    "A\tapp/src/ui/motion-lab/model.ts",
+    "A\tapp/src/ui/motion-lab/native-contacts.ts",
+    "A\tapp/src/ui/motion-lab/pilot.ts",
+    "A\tapp/src/ui/motion-lab/preview.ts",
+    "A\tapp/src/ui/motion-lab/research-billing.ts",
+    "A\tapp/src/ui/motion-lab/research-budget.ts",
+    "A\tapp/src/ui/motion-lab/run.ts",
+    "A\tapp/src/ui/motion-lab/soles.ts",
+    "A\tapp/src/ui/motion-lab/starter-pack.ts",
+    "A\tapp/src/ui/motion-lab/starter-project.ts",
+    "A\tapp/src/ui/motion-lab/weapon-aware.ts",
+    "A\tapp/src/ui/motion-lab/weapon-axis-repair.ts",
+    "A\tapp/src/ui/motion-lab/weapon-swap.ts",
+    "M\tapp/test/e2e/characters.spec.ts",
+    "A\tapp/test/e2e/crash-recovery.spec.ts",
+    "M\tapp/test/e2e/export-picker.spec.ts",
+    "A\tapp/test/e2e/renderer-crash.spec.ts",
+    "A\tapp/test/e2e/retained-equipment.ts",
+    "M\tapp/test/e2e/selftests.spec.ts",
+    "M\tapp/test/e2e/shared-equipment.spec.ts",
+    "M\tapp/test/e2e/studio.spec.ts",
+    "M\tapp/test/unit/api-plans.test.ts",
+    "M\tapp/test/unit/appearance-warnings.test.ts",
+    "A\tapp/test/unit/authored-attachment.test.ts",
+    "A\tapp/test/unit/automatic-recovery.test.ts",
+    "M\tapp/test/unit/character-import.test.ts",
+    "A\tapp/test/unit/clean-grip.test.ts",
+    "M\tapp/test/unit/client-timeout.test.ts",
+    "M\tapp/test/unit/creator-quality-policy.test.ts",
+    "A\tapp/test/unit/design-consistency.test.ts",
+    "A\tapp/test/unit/design-gray.test.ts",
+    "M\tapp/test/unit/experience-presentation.test.ts",
+    "M\tapp/test/unit/export-phaser.test.ts",
+    "A\tapp/test/unit/fixed-inpaint.test.ts",
+    "M\tapp/test/unit/garment-coverage.test.ts",
+    "M\tapp/test/unit/grid-estimate.test.ts",
+    "M\tapp/test/unit/grid-repair.test.ts",
+    "A\tapp/test/unit/held-raw-key-review.test.ts",
+    "M\tapp/test/unit/item-acceptance.test.ts",
+    "A\tapp/test/unit/item-review-consent.test.ts",
+    "A\tapp/test/unit/item-stencil.test.ts",
+    "M\tapp/test/unit/item-streaming.test.ts",
+    "M\tapp/test/unit/key-switch.test.ts",
+    "A\tapp/test/unit/managed-equipment.test.ts",
+    "A\tapp/test/unit/motion-lab.test.ts",
+    "A\tapp/test/unit/motion-mcp.test.ts",
+    "A\tapp/test/unit/motion-tools.test.ts",
+    "A\tapp/test/unit/motion.test.ts",
+    "A\tapp/test/unit/native-contacts.test.ts",
+    "M\tapp/test/unit/paid-retry.test.ts",
+    "A\tapp/test/unit/planting.test.ts",
+    "M\tapp/test/unit/pose-item-selection.test.ts",
+    "M\tapp/test/unit/pose-review.test.ts",
+    "A\tapp/test/unit/queue-generation-consent.test.ts",
+    "M\tapp/test/unit/queue-resume.test.ts",
+    "A\tapp/test/unit/research-billing.test.ts",
+    "A\tapp/test/unit/research-budget.test.ts",
+    "A\tapp/test/unit/research-queue-billing.test.ts",
+    "A\tapp/test/unit/soles.test.ts",
+    "A\tapp/test/unit/starter-presets.test.ts",
+    "A\tapp/test/unit/starter-project.test.ts",
+    "A\tapp/test/unit/starter-session.test.ts",
+    "M\tapp/test/unit/studio-flow-state.test.ts",
+    "M\tapp/test/unit/targeted-move.test.ts",
+    "A\tapp/test/unit/torso-consistency.test.ts",
+    "A\tapp/test/unit/tuck-variants.test.ts",
+    "M\tapp/test/unit/unity-export.test.ts",
+    "A\tapp/test/unit/weapon-aware.test.ts",
+    "A\tapp/test/unit/weapon-swap.test.ts",
+    "M\tdocs/README.md",
+    "M\tdocs/design/skeleton-pose-lab.md",
+    "A\tdocs/handoff/2026-11-02-claude-paperdoll-quality-review-bundle.json",
+    "A\tdocs/handoff/2026-11-02-claude-paperdoll-quality-review.md",
+    "M\tdocs/known-issues.md",
+    "M\tdocs/manifest-spec.md",
+    "A\tdocs/research/2026-10-27-animation-diagnosis.md",
+    "A\tdocs/research/2026-10-27-animation-rigging-sources.md",
+    "A\tdocs/research/2026-10-27-animation-test-summary.json",
+    "A\tdocs/research/2026-10-28-kaykit-comparison.json",
+    "A\tdocs/research/2026-10-28-motion-followup-results.json",
+    "A\tdocs/research/2026-10-28-motion-followup.md",
+    "A\tdocs/research/2026-10-28-motion-lab-implementation.md",
+    "A\tdocs/research/2026-10-28-motion-lab-results.json",
+    "A\tdocs/research/2026-10-28-motion-preset-catalog.json",
+    "A\tdocs/research/2026-10-28-motion-targeted-authoring.md",
+    "A\tdocs/research/2026-10-28-motion-targeted-catalog.json",
+    "A\tdocs/research/2026-10-28-motion-targeted-results.json",
+    "A\tdocs/research/2026-11-01-custom-skeleton-v3-results.json",
+    "A\tdocs/research/2026-11-01-custom-skeleton-v3.md",
+    "A\tdocs/research/2026-11-01-workflow-reconciliation-results.json",
+    "A\tdocs/research/2026-11-01-workflow-reconciliation.md",
+    "A\tdocs/research/2026-11-02-animation-closeout.md",
+    "A\tdocs/research/2026-11-02-clean-grip-qualification.md",
+    "A\tdocs/research/2026-11-02-clean-grip-results.json",
+    "A\tdocs/research/2026-11-02-eight-direction-starter-pack.md",
+    "A\tdocs/research/2026-11-02-native-frame-authoring.md",
+    "A\tdocs/research/2026-11-02-native-frame-results.json",
+    "A\tdocs/research/2026-11-02-palm-grip-correction.md",
+    "A\tdocs/research/2026-11-02-palm-grip-results.json",
+    "A\tdocs/research/2026-11-02-studio-axe-integration.md",
+    "A\tdocs/research/2026-11-02-studio-axe-results.json",
+    "A\tdocs/research/2026-11-02-weapon-aware-grip-results.json",
+    "A\tdocs/research/2026-11-02-weapon-aware-grip.md",
+    "A\tdocs/research/artifacts/2026-11-02-animation-closeout-review.zip",
+    "A\tdocs/research/artifacts/2026-11-02-east-axe-engine.zip",
+    "A\tdocs/research/artifacts/2026-11-02-east-axe-studio.zip",
+    "A\tdocs/research/artifacts/2026-11-02-eight-direction-starter-review.zip",
+    "A\tdocs/research/artifacts/2026-11-02-eight-direction-starter.pixeldoll.zip",
+    "A\tdocs/research/artifacts/2026-11-02-gripped-axe-east.zip",
+    "A\tdocs/research/figures/2026-11-02-clean-grip-desired-actual.png",
+    "A\tdocs/research/figures/2026-11-02-clean-grip-input.png",
+    "A\tdocs/research/figures/2026-11-02-clean-grip-mask.png",
+    "A\tdocs/research/figures/2026-11-02-clean-grip-raw-result.png",
+    "A\tdocs/research/figures/2026-11-02-historical-visual-correction.png",
+    "A\tdocs/research/figures/2026-11-02-joint-review-posed-proxy.png",
+    "A\tdocs/research/figures/2026-11-02-native-frame-before-after.png",
+    "A\tdocs/research/figures/2026-11-02-palm-grip-before-after.png",
+    "A\tdocs/research/figures/2026-11-02-palm-grip-full-clip.png",
+    "A\tdocs/research/figures/2026-11-02-weapon-aware-leg-before-after.png",
+    "A\tdocs/research/figures/2026-11-02-weapon-axis-before-after.gif",
+    "A\tdocs/research/figures/2026-11-02-weapon-qualification-proof.png",
+    "M\tdocs/research/generation-pipeline-review-2026-10-25.md",
+    "A\tdocs/research/paperdoll-repos-review-2026-10-27.md",
+    "A\tdocs/research/pixellab/2026-11-02-managed-custom-v3-contract.json",
+    "M\tdocs/research/pixellab/pixellab_current_capabilities_2026-10.md",
+    "A\tdocs/research/tool-review-brief-2026-10-28.md",
+    "M\tdocs/research/visuals/how-items-are-drawn.html",
+    "A\tdocs/reviews/2026-11-02-claude-paperdoll-quality-review-response.md",
+    "A\tdocs/reviews/2026-11-02-credit-consent-audit.md",
+    "A\tdocs/reviews/2026-11-02-final-motion-review-results.json",
+    "A\tdocs/reviews/2026-11-02-final-motion-review.md",
+    "A\tdocs/reviews/2026-11-02-final-review-closure.md",
+    "A\tdocs/reviews/2026-11-02-independent-paperdoll-quality-review.md",
+    "A\tdocs/reviews/2026-11-02-joint-counter-review-and-fixes.md",
+    "A\tdocs/reviews/2026-11-02-joint-review-reassessment.md",
+    "A\tdocs/reviews/2026-11-02-joint-review-results.json",
+    "A\tdocs/testing/integration-and-crash-2026-10-28.md",
+    "A\tdocs/testing/phaser-playback-2026-10-28.md",
+    "M\tdocs/testing/test-performance.md",
+    "A\tdocs/testing/unity-playback-2026-10-28.md",
+    "M\tdocs/user-guide.md",
+    "A\tspikes/api/animation-research-2026-10-27/README.md",
+    "A\tspikes/api/animation-research-2026-10-27/analyze.mts",
+    "A\tspikes/api/animation-research-2026-10-27/browser.html",
+    "A\tspikes/api/animation-research-2026-10-27/prepare.mts",
+    "A\tspikes/api/animation-research-2026-10-27/preview.mts",
+    "A\tspikes/api/animation-research-2026-10-27/retarget-audit.mts",
+    "A\tspikes/api/animation-research-2026-10-27/serve.mjs",
+    "A\tspikes/api/mocap/analyze-motion-lab.mts",
+    "A\tspikes/api/mocap/annotate-armed-controls.mts",
+    "A\tspikes/api/mocap/annotate-completion-armed.mts",
+    "A\tspikes/api/mocap/annotate-managed-armed.mts",
+    "A\tspikes/api/mocap/audit-armed-completion.mts",
+    "A\tspikes/api/mocap/audit-armed-split.mts",
+    "A\tspikes/api/mocap/audit-body-family.mts",
+    "A\tspikes/api/mocap/audit-continuity.mts",
+    "A\tspikes/api/mocap/audit-corrected.mts",
+    "A\tspikes/api/mocap/audit-disarm-reference.mts",
+    "A\tspikes/api/mocap/audit-native-depth.mts",
+    "A\tspikes/api/mocap/audit-review-seams.mts",
+    "A\tspikes/api/mocap/author-body-family-v2.mts",
+    "A\tspikes/api/mocap/author-body-family.mts",
+    "A\tspikes/api/mocap/author-contacts.mts",
+    "A\tspikes/api/mocap/author-gripped-axe.mts",
+    "A\tspikes/api/mocap/author-native-weapon-control.mts",
+    "A\tspikes/api/mocap/author-weapons.mts",
+    "A\tspikes/api/mocap/bake-motion-lab.mts",
+    "A\tspikes/api/mocap/calibrate-weapon-family.mts",
+    "A\tspikes/api/mocap/catalog-motion-presets.mts",
+    "A\tspikes/api/mocap/catalog-targeted.mts",
+    "A\tspikes/api/mocap/compare-corrected.mts",
+    "A\tspikes/api/mocap/compare-kaykit.mts",
+    "A\tspikes/api/mocap/evaluate-clean-grip.mts",
+    "A\tspikes/api/mocap/evaluate-disarm-control.mts",
+    "A\tspikes/api/mocap/evaluate-grid-probe.mts",
+    "A\tspikes/api/mocap/evaluate-managed-disarm.mts",
+    "A\tspikes/api/mocap/evaluate-managed-equipment.mts",
+    "A\tspikes/api/mocap/evaluate-motion-equipment.mts",
+    "A\tspikes/api/mocap/evaluate-weapon-axis-repair.mts",
+    "A\tspikes/api/mocap/evaluate-weapon-swap.mts",
+    "A\tspikes/api/mocap/inspect-references.mts",
+    "A\tspikes/api/mocap/measure-rendered-soles.mts",
+    "M\tspikes/api/mocap/mocap.mts",
+    "A\tspikes/api/mocap/package-motion-review.mts",
+    "A\tspikes/api/mocap/package-studio-axe.mts",
+    "A\tspikes/api/mocap/package-targeted.mts",
+    "A\tspikes/api/mocap/package-weapon-aware-review.mts",
+    "A\tspikes/api/mocap/prepare-armed-completion.mts",
+    "A\tspikes/api/mocap/prepare-clean-grip.mts",
+    "A\tspikes/api/mocap/prepare-controlled-pilot.mts",
+    "A\tspikes/api/mocap/prepare-managed-equipment.mts",
+    "A\tspikes/api/mocap/prepare-weapon-axis-repair.mts",
+    "A\tspikes/api/mocap/prepare-weapon-swap.mts",
+    "A\tspikes/api/mocap/qualify-custom-v3.mts",
+    "A\tspikes/api/mocap/qualify-targeted.mts",
+    "A\tspikes/api/mocap/qualify-workflow-body.mts"
+  ],
+  "commits": [
+    {
+      "commit": "a554e2d19759dd34e9dc4bc5efe052ec81ece8cd",
+      "parents": [
+        "b79b8d63c0457a20aeb4523aa65d247b4b991d1c"
+      ],
+      "subject": "docs(research): review two paper-doll repositories against PixelDoll",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "A\tdocs/research/paperdoll-repos-review-2026-10-27.md"
+      ]
+    },
+    {
+      "commit": "1c12e883a27dfc3ad0f15abd9c2ffeca86437714",
+      "parents": [
+        "a554e2d19759dd34e9dc4bc5efe052ec81ece8cd"
+      ],
+      "subject": "fix: save imports in the current format and skip unused tucked-hair copies",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/compose/compose.ts",
+        "M\tapp/src/lib/equipment/fit.ts",
+        "M\tapp/src/lib/store/import.ts",
+        "M\tapp/test/unit/character-import.test.ts",
+        "A\tapp/test/unit/tuck-variants.test.ts",
+        "M\tdocs/research/paperdoll-repos-review-2026-10-27.md"
+      ]
+    },
+    {
+      "commit": "43101089b212edc7d59d053f5d557ac46ed7e669",
+      "parents": [
+        "86befb7d486c2d79117f86c007638e9d832a1942",
+        "1c12e883a27dfc3ad0f15abd9c2ffeca86437714"
+      ],
+      "subject": "chore: integrate origin updates with reviewed recovery fixes",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/compose/compose.ts",
+        "M\tapp/src/lib/equipment/fit.ts",
+        "M\tapp/src/lib/store/import.ts",
+        "M\tapp/test/unit/character-import.test.ts",
+        "A\tapp/test/unit/tuck-variants.test.ts",
+        "M\tdocs/README.md",
+        "A\tdocs/research/paperdoll-repos-review-2026-10-27.md"
+      ]
+    },
+    {
+      "commit": "d8e175ed40ed41d6ce4c4cfcdd09357470ccd13e",
+      "parents": [
+        "7c49772cefbb5924ec0c7cc6b48153cc17b58c60"
+      ],
+      "subject": "docs: preserve motion diagnosis and implementation baseline",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "A\tdocs/research/2026-10-27-animation-diagnosis.md",
+        "A\tdocs/research/2026-10-27-animation-rigging-sources.md",
+        "A\tdocs/research/2026-10-27-animation-test-summary.json",
+        "A\tdocs/research/2026-10-28-motion-lab-implementation.md",
+        "M\tdocs/research/generation-pipeline-review-2026-10-25.md",
+        "A\tspikes/api/animation-research-2026-10-27/README.md",
+        "A\tspikes/api/animation-research-2026-10-27/analyze.mts",
+        "A\tspikes/api/animation-research-2026-10-27/browser.html",
+        "A\tspikes/api/animation-research-2026-10-27/prepare.mts",
+        "A\tspikes/api/animation-research-2026-10-27/retarget-audit.mts",
+        "A\tspikes/api/animation-research-2026-10-27/serve.mjs"
+      ]
+    },
+    {
+      "commit": "4ae2caa8c417ff831bff6e076705ae751b69cd6e",
+      "parents": [
+        "7c49772cefbb5924ec0c7cc6b48153cc17b58c60"
+      ],
+      "subject": "docs: record skeleton motion diagnosis and live tests",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "A\tdocs/research/2026-10-27-animation-diagnosis.md",
+        "A\tdocs/research/2026-10-27-animation-rigging-sources.md",
+        "A\tdocs/research/2026-10-27-animation-test-summary.json",
+        "M\tdocs/research/generation-pipeline-review-2026-10-25.md",
+        "A\tspikes/api/animation-research-2026-10-27/README.md",
+        "A\tspikes/api/animation-research-2026-10-27/analyze.mts",
+        "A\tspikes/api/animation-research-2026-10-27/browser.html",
+        "A\tspikes/api/animation-research-2026-10-27/prepare.mts",
+        "A\tspikes/api/animation-research-2026-10-27/retarget-audit.mts",
+        "A\tspikes/api/animation-research-2026-10-27/serve.mjs"
+      ]
+    },
+    {
+      "commit": "417e4e77b2707c3dbeeb0a225639dd428a49669b",
+      "parents": [
+        "4ae2caa8c417ff831bff6e076705ae751b69cd6e",
+        "43101089b212edc7d59d053f5d557ac46ed7e669"
+      ],
+      "subject": "chore: integrate coordinated local work with origin",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/compose/compose.ts",
+        "M\tapp/src/lib/equipment/fit.ts",
+        "M\tapp/src/lib/store/import.ts",
+        "M\tapp/test/unit/character-import.test.ts",
+        "A\tapp/test/unit/tuck-variants.test.ts",
+        "M\tdocs/README.md",
+        "A\tdocs/research/paperdoll-repos-review-2026-10-27.md"
+      ]
+    },
+    {
+      "commit": "2e21f28e19a47d1ccc5e1e4f3e705e4243cdb124",
+      "parents": [
+        "417e4e77b2707c3dbeeb0a225639dd428a49669b"
+      ],
+      "subject": "fix: preserve Phaser export animation timing",
+      "changesComparedWithFirstParent": [
+        "M\tapp/scripts/verify-phaser-export.mjs",
+        "M\tapp/src/lib/export/phaser.ts",
+        "M\tapp/test/e2e/export-picker.spec.ts",
+        "M\tapp/test/unit/export-phaser.test.ts",
+        "A\tdocs/testing/phaser-playback-2026-10-28.md"
+      ]
+    },
+    {
+      "commit": "9446b2cde217b5b10c9759d31db4ebf6315746ca",
+      "parents": [
+        "d8e175ed40ed41d6ce4c4cfcdd09357470ccd13e"
+      ],
+      "subject": "feat: add offline motion lab and coherent skeleton retargeting",
+      "changesComparedWithFirstParent": [
+        "A\tapp/dev-fixtures/motion-lab/LICENSE.txt",
+        "A\tapp/dev-fixtures/motion-lab/library.json",
+        "A\tapp/motion-lab.html",
+        "A\tapp/src/lib/rig/motion.ts",
+        "A\tapp/src/ui/MotionLab.svelte",
+        "A\tapp/src/ui/motion-lab/Candidate.svelte",
+        "A\tapp/src/ui/motion-lab/main.ts",
+        "A\tapp/src/ui/motion-lab/model.ts",
+        "A\tapp/src/ui/motion-lab/preview.ts",
+        "A\tapp/src/ui/motion-lab/run.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "A\tapp/test/unit/motion-lab.test.ts",
+        "A\tapp/test/unit/motion.test.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "M\tdocs/research/2026-10-28-motion-lab-implementation.md",
+        "M\tspikes/api/animation-research-2026-10-27/serve.mjs",
+        "A\tspikes/api/mocap/analyze-motion-lab.mts",
+        "A\tspikes/api/mocap/audit-corrected.mts",
+        "A\tspikes/api/mocap/bake-motion-lab.mts",
+        "A\tspikes/api/mocap/compare-corrected.mts",
+        "M\tspikes/api/mocap/mocap.mts"
+      ]
+    },
+    {
+      "commit": "6c3a47fcc683d4b07d8907b24de679ca53bf04c2",
+      "parents": [
+        "2e21f28e19a47d1ccc5e1e4f3e705e4243cdb124"
+      ],
+      "subject": "fix: preserve Unity export timing and replay completed clips",
+      "changesComparedWithFirstParent": [
+        "A\tapp/scripts/unity-review/EditorReview.cs",
+        "A\tapp/scripts/unity-review/NativePlayback.cs",
+        "A\tapp/scripts/unity-review/NativePlayer.cs",
+        "A\tapp/scripts/verify-unity-export.mjs",
+        "M\tapp/src/lib/export/unity.ts",
+        "M\tapp/test/unit/unity-export.test.ts",
+        "A\tdocs/testing/unity-playback-2026-10-28.md"
+      ]
+    },
+    {
+      "commit": "a8feda8524fa87da3c812819ffd1e3774e945610",
+      "parents": [
+        "7c49772cefbb5924ec0c7cc6b48153cc17b58c60"
+      ],
+      "subject": "feat: recover equipment consistency before manual review",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/equipment/generate.ts",
+        "A\tapp/src/lib/image/similarity.ts",
+        "A\tapp/src/lib/items/design-consistency.ts",
+        "M\tapp/src/lib/items/items.ts",
+        "M\tapp/src/lib/items/qa-summary.ts",
+        "M\tapp/src/lib/items/run.ts",
+        "A\tapp/src/lib/items/torso-consistency.ts",
+        "M\tapp/src/lib/pixellab/routes.ts",
+        "M\tapp/src/lib/store/manifest.ts",
+        "M\tapp/src/studio/GenCard.svelte",
+        "M\tapp/src/studio/ItemPane.svelte",
+        "M\tapp/src/studio/MoveSheet.svelte",
+        "M\tapp/src/studio/NewItemSheet.svelte",
+        "M\tapp/src/studio/apiPlans.ts",
+        "M\tapp/src/studio/create.ts",
+        "M\tapp/src/studio/model.ts",
+        "M\tapp/test/e2e/characters.spec.ts",
+        "M\tapp/test/e2e/studio.spec.ts",
+        "A\tapp/test/unit/automatic-recovery.test.ts",
+        "A\tapp/test/unit/design-consistency.test.ts",
+        "M\tapp/test/unit/garment-coverage.test.ts",
+        "M\tapp/test/unit/grid-estimate.test.ts",
+        "M\tapp/test/unit/item-acceptance.test.ts",
+        "M\tapp/test/unit/item-streaming.test.ts",
+        "M\tapp/test/unit/pose-review.test.ts",
+        "M\tapp/test/unit/targeted-move.test.ts",
+        "A\tapp/test/unit/torso-consistency.test.ts"
+      ]
+    },
+    {
+      "commit": "909db658ce53c384e87416af936d2cb0d217c073",
+      "parents": [
+        "6c3a47fcc683d4b07d8907b24de679ca53bf04c2"
+      ],
+      "subject": "test: verify durable exports and recovery after native crashes",
+      "changesComparedWithFirstParent": [
+        "M\t.github/workflows/pages.yml",
+        "M\tapp/playwright.config.ts",
+        "A\tapp/test/e2e/crash-recovery.spec.ts",
+        "A\tapp/test/e2e/renderer-crash.spec.ts",
+        "A\tapp/test/e2e/retained-equipment.ts",
+        "M\tapp/test/e2e/shared-equipment.spec.ts",
+        "M\tapp/test/unit/queue-resume.test.ts",
+        "M\tdocs/README.md",
+        "A\tdocs/testing/integration-and-crash-2026-10-28.md",
+        "M\tdocs/testing/test-performance.md"
+      ]
+    },
+    {
+      "commit": "36fd903083fb79f92d2947bcc65f29920c0a21dd",
+      "parents": [
+        "9446b2cde217b5b10c9759d31db4ebf6315746ca"
+      ],
+      "subject": "fix: stabilize retargeted motion and qualify preset candidates",
+      "changesComparedWithFirstParent": [
+        "M\tapp/dev-fixtures/motion-lab/library.json",
+        "M\tapp/src/lib/rig/motion.ts",
+        "M\tapp/src/ui/MotionLab.svelte",
+        "M\tapp/src/ui/motion-lab/Candidate.svelte",
+        "A\tapp/src/ui/motion-lab/equipment.ts",
+        "M\tapp/src/ui/motion-lab/model.ts",
+        "M\tapp/src/ui/motion-lab/run.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "M\tapp/test/unit/motion-lab.test.ts",
+        "M\tapp/test/unit/motion.test.ts",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "M\tdocs/research/2026-10-28-motion-lab-implementation.md",
+        "A\tdocs/research/2026-10-28-motion-lab-results.json",
+        "M\tspikes/api/animation-research-2026-10-27/analyze.mts",
+        "A\tspikes/api/animation-research-2026-10-27/preview.mts",
+        "M\tspikes/api/mocap/analyze-motion-lab.mts",
+        "A\tspikes/api/mocap/audit-continuity.mts",
+        "M\tspikes/api/mocap/bake-motion-lab.mts",
+        "A\tspikes/api/mocap/evaluate-motion-equipment.mts",
+        "A\tspikes/api/mocap/inspect-references.mts",
+        "A\tspikes/api/mocap/package-motion-review.mts"
+      ]
+    },
+    {
+      "commit": "a8751b03c2ef620ca5847d7d4966750eb19fb7f9",
+      "parents": [
+        "a8feda8524fa87da3c812819ffd1e3774e945610",
+        "909db658ce53c384e87416af936d2cb0d217c073"
+      ],
+      "subject": "chore: integrate released main with automatic consistency",
+      "changesComparedWithFirstParent": [
+        "M\t.github/workflows/pages.yml",
+        "M\tapp/playwright.config.ts",
+        "A\tapp/scripts/unity-review/EditorReview.cs",
+        "A\tapp/scripts/unity-review/NativePlayback.cs",
+        "A\tapp/scripts/unity-review/NativePlayer.cs",
+        "M\tapp/scripts/verify-phaser-export.mjs",
+        "A\tapp/scripts/verify-unity-export.mjs",
+        "M\tapp/src/lib/compose/compose.ts",
+        "M\tapp/src/lib/equipment/fit.ts",
+        "M\tapp/src/lib/export/phaser.ts",
+        "M\tapp/src/lib/export/unity.ts",
+        "M\tapp/src/lib/store/import.ts",
+        "A\tapp/test/e2e/crash-recovery.spec.ts",
+        "M\tapp/test/e2e/export-picker.spec.ts",
+        "A\tapp/test/e2e/renderer-crash.spec.ts",
+        "A\tapp/test/e2e/retained-equipment.ts",
+        "M\tapp/test/e2e/shared-equipment.spec.ts",
+        "M\tapp/test/unit/character-import.test.ts",
+        "M\tapp/test/unit/export-phaser.test.ts",
+        "M\tapp/test/unit/queue-resume.test.ts",
+        "A\tapp/test/unit/tuck-variants.test.ts",
+        "M\tapp/test/unit/unity-export.test.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "A\tdocs/research/2026-10-27-animation-diagnosis.md",
+        "A\tdocs/research/2026-10-27-animation-rigging-sources.md",
+        "A\tdocs/research/2026-10-27-animation-test-summary.json",
+        "M\tdocs/research/generation-pipeline-review-2026-10-25.md",
+        "A\tdocs/research/paperdoll-repos-review-2026-10-27.md",
+        "A\tdocs/testing/integration-and-crash-2026-10-28.md",
+        "A\tdocs/testing/phaser-playback-2026-10-28.md",
+        "M\tdocs/testing/test-performance.md",
+        "A\tdocs/testing/unity-playback-2026-10-28.md",
+        "A\tspikes/api/animation-research-2026-10-27/README.md",
+        "A\tspikes/api/animation-research-2026-10-27/analyze.mts",
+        "A\tspikes/api/animation-research-2026-10-27/browser.html",
+        "A\tspikes/api/animation-research-2026-10-27/prepare.mts",
+        "A\tspikes/api/animation-research-2026-10-27/retarget-audit.mts",
+        "A\tspikes/api/animation-research-2026-10-27/serve.mjs"
+      ]
+    },
+    {
+      "commit": "12d463dcfb977329d0909c99c5047a9ef13d8dfe",
+      "parents": [
+        "a8751b03c2ef620ca5847d7d4966750eb19fb7f9"
+      ],
+      "subject": "fix: avoid false smudge retries for tiny facial features",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/items/items.ts",
+        "M\tapp/src/lib/items/run.ts",
+        "M\tapp/test/unit/automatic-recovery.test.ts",
+        "A\tapp/test/unit/design-gray.test.ts"
+      ]
+    },
+    {
+      "commit": "59a20dac9046b6bc0c0eb1726c048e2901d6ad13",
+      "parents": [
+        "36fd903083fb79f92d2947bcc65f29920c0a21dd"
+      ],
+      "subject": "feat: persist motion calibration and add independent source controls",
+      "changesComparedWithFirstParent": [
+        "A\tapp/dev-fixtures/motion-lab/KAYKIT-LICENSE.txt",
+        "A\tapp/dev-fixtures/motion-lab/kaykit-attack.json",
+        "A\tapp/dev-fixtures/motion-lab/kaykit-death.json",
+        "A\tapp/dev-fixtures/motion-lab/kaykit-hurt.json",
+        "A\tapp/dev-fixtures/motion-lab/kaykit-idle.json",
+        "A\tapp/dev-fixtures/motion-lab/kaykit-run.json",
+        "A\tapp/dev-fixtures/motion-lab/kaykit-walk.json",
+        "M\tapp/src/lib/rig/motion.ts",
+        "M\tapp/src/ui/MotionLab.svelte",
+        "M\tapp/src/ui/motion-lab/Candidate.svelte",
+        "A\tapp/src/ui/motion-lab/attachment.ts",
+        "A\tapp/src/ui/motion-lab/calibration.ts",
+        "A\tapp/src/ui/motion-lab/diagnostics.ts",
+        "M\tapp/src/ui/motion-lab/equipment.ts",
+        "M\tapp/src/ui/motion-lab/model.ts",
+        "M\tapp/src/ui/motion-lab/run.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "M\tapp/test/unit/motion-lab.test.ts",
+        "A\tapp/test/unit/motion-tools.test.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "M\tdocs/known-issues.md",
+        "M\tdocs/research/2026-10-27-animation-diagnosis.md",
+        "M\tdocs/research/2026-10-27-animation-rigging-sources.md",
+        "A\tdocs/research/2026-10-28-kaykit-comparison.json",
+        "A\tdocs/research/2026-10-28-motion-followup-results.json",
+        "A\tdocs/research/2026-10-28-motion-followup.md",
+        "M\tdocs/research/2026-10-28-motion-lab-implementation.md",
+        "M\tdocs/research/2026-10-28-motion-lab-results.json",
+        "A\tdocs/research/2026-10-28-motion-preset-catalog.json",
+        "A\tspikes/api/mocap/catalog-motion-presets.mts",
+        "A\tspikes/api/mocap/compare-kaykit.mts",
+        "M\tspikes/api/mocap/evaluate-motion-equipment.mts",
+        "M\tspikes/api/mocap/package-motion-review.mts"
+      ]
+    },
+    {
+      "commit": "0b7ede7bed2d2f6293e5637dfe05bd8e078413ca",
+      "parents": [
+        "12d463dcfb977329d0909c99c5047a9ef13d8dfe"
+      ],
+      "subject": "fix: require player consent for quality retries",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/items/items.ts",
+        "M\tapp/src/lib/items/run.ts",
+        "M\tapp/src/lib/pixellab/queue.ts",
+        "M\tapp/src/studio/GenCard.svelte",
+        "M\tapp/src/studio/ItemPane.svelte",
+        "M\tapp/src/studio/NewItemSheet.svelte",
+        "M\tapp/src/studio/apiPlans.ts",
+        "M\tapp/src/studio/create.ts",
+        "M\tapp/src/studio/itemRoute.ts",
+        "M\tapp/src/studio/model.ts",
+        "M\tapp/src/studio/state.svelte.ts",
+        "M\tapp/src/ui/M3.svelte",
+        "M\tapp/test/e2e/characters.spec.ts",
+        "M\tapp/test/e2e/studio.spec.ts",
+        "M\tapp/test/unit/api-plans.test.ts",
+        "M\tapp/test/unit/appearance-warnings.test.ts",
+        "M\tapp/test/unit/automatic-recovery.test.ts",
+        "M\tapp/test/unit/creator-quality-policy.test.ts",
+        "M\tapp/test/unit/item-acceptance.test.ts",
+        "A\tapp/test/unit/item-review-consent.test.ts",
+        "M\tapp/test/unit/item-streaming.test.ts",
+        "M\tapp/test/unit/key-switch.test.ts",
+        "M\tapp/test/unit/pose-item-selection.test.ts",
+        "M\tapp/test/unit/pose-review.test.ts",
+        "A\tapp/test/unit/queue-generation-consent.test.ts",
+        "M\tapp/test/unit/studio-flow-state.test.ts"
+      ]
+    },
+    {
+      "commit": "276a93679e52968532ac79841ca20ef16f3d86b4",
+      "parents": [
+        "0b7ede7bed2d2f6293e5637dfe05bd8e078413ca"
+      ],
+      "subject": "docs(research): brief the external sprite tool review",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "A\tdocs/research/tool-review-brief-2026-10-28.md"
+      ]
+    },
+    {
+      "commit": "ad307887ef0fbfbc362fb2b72687c57019fa6130",
+      "parents": [
+        "276a93679e52968532ac79841ca20ef16f3d86b4"
+      ],
+      "subject": "docs(research): add the Skeleton Tool and Ultima drawer to the tool review brief",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/research/tool-review-brief-2026-10-28.md"
+      ]
+    },
+    {
+      "commit": "8d50d1e8e17c7138efaf24f05c31215e48ca5383",
+      "parents": [
+        "59a20dac9046b6bc0c0eb1726c048e2901d6ad13"
+      ],
+      "subject": "feat: add targeted motion authoring and qualification",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/rig/motion.ts",
+        "A\tapp/src/lib/rig/planting.ts",
+        "M\tapp/src/ui/MotionLab.svelte",
+        "A\tapp/src/ui/motion-lab/AttachmentEditor.svelte",
+        "M\tapp/src/ui/motion-lab/Candidate.svelte",
+        "A\tapp/src/ui/motion-lab/SoleEditor.svelte",
+        "M\tapp/src/ui/motion-lab/attachment.ts",
+        "M\tapp/src/ui/motion-lab/diagnostics.ts",
+        "M\tapp/src/ui/motion-lab/equipment.ts",
+        "M\tapp/src/ui/motion-lab/model.ts",
+        "M\tapp/src/ui/motion-lab/run.ts",
+        "A\tapp/src/ui/motion-lab/soles.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "A\tapp/test/unit/authored-attachment.test.ts",
+        "A\tapp/test/unit/planting.test.ts",
+        "A\tapp/test/unit/soles.test.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "M\tdocs/known-issues.md",
+        "A\tdocs/research/2026-10-28-motion-targeted-authoring.md",
+        "A\tdocs/research/2026-10-28-motion-targeted-catalog.json",
+        "A\tdocs/research/2026-10-28-motion-targeted-results.json",
+        "A\tspikes/api/mocap/author-contacts.mts",
+        "A\tspikes/api/mocap/author-weapons.mts",
+        "A\tspikes/api/mocap/catalog-targeted.mts",
+        "A\tspikes/api/mocap/evaluate-grid-probe.mts",
+        "M\tspikes/api/mocap/evaluate-motion-equipment.mts",
+        "A\tspikes/api/mocap/measure-rendered-soles.mts",
+        "A\tspikes/api/mocap/package-targeted.mts",
+        "A\tspikes/api/mocap/qualify-targeted.mts"
+      ]
+    },
+    {
+      "commit": "d4c5785f00b288505275a90a7a0f6d91047f30a8",
+      "parents": [
+        "ad307887ef0fbfbc362fb2b72687c57019fa6130"
+      ],
+      "subject": "fix(studio): bind equipment retries to reviewed scope and cost",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/items/items.ts",
+        "M\tapp/src/studio/GenCard.svelte",
+        "M\tapp/src/studio/ItemPane.svelte",
+        "M\tapp/src/studio/StageNote.svelte",
+        "M\tapp/src/studio/create.ts",
+        "M\tapp/src/studio/state.svelte.ts",
+        "M\tapp/test/e2e/studio.spec.ts",
+        "M\tapp/test/unit/garment-coverage.test.ts",
+        "M\tapp/test/unit/pose-review.test.ts",
+        "M\tapp/test/unit/studio-flow-state.test.ts",
+        "M\tapp/test/unit/targeted-move.test.ts"
+      ]
+    },
+    {
+      "commit": "45dec36185481a765fb8e4088f7f60d78ecde38b",
+      "parents": [
+        "8d50d1e8e17c7138efaf24f05c31215e48ca5383"
+      ],
+      "subject": "docs: assess managed custom skeleton v3 workflow",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "M\tdocs/research/2026-10-28-motion-targeted-authoring.md",
+        "A\tdocs/research/2026-11-01-custom-skeleton-v3.md"
+      ]
+    },
+    {
+      "commit": "48c2969360792e62fcdcf49280fc64ec04fd2793",
+      "parents": [
+        "45dec36185481a765fb8e4088f7f60d78ecde38b"
+      ],
+      "subject": "feat: add read-only custom skeleton inspection",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/ui/MotionLab.svelte",
+        "A\tapp/src/ui/motion-lab/McpProbe.svelte",
+        "A\tapp/src/ui/motion-lab/mcp.ts",
+        "M\tapp/src/ui/motion-lab/run.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "A\tapp/test/unit/motion-mcp.test.ts",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "M\tdocs/research/2026-11-01-custom-skeleton-v3.md"
+      ]
+    },
+    {
+      "commit": "ae6681bdb545ddcf57f96263533048506c22441e",
+      "parents": [
+        "48c2969360792e62fcdcf49280fc64ec04fd2793"
+      ],
+      "subject": "feat: qualify managed custom skeleton v3 motion",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/ui/MotionLab.svelte",
+        "M\tapp/src/ui/motion-lab/McpProbe.svelte",
+        "A\tapp/src/ui/motion-lab/custom-test.ts",
+        "M\tapp/src/ui/motion-lab/mcp.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "M\tapp/test/unit/motion-mcp.test.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "A\tdocs/research/2026-11-01-custom-skeleton-v3-results.json",
+        "M\tdocs/research/2026-11-01-custom-skeleton-v3.md",
+        "A\tspikes/api/mocap/qualify-custom-v3.mts"
+      ]
+    },
+    {
+      "commit": "1a756fea776adb993e9e617a1b1cc86ec1f2a55c",
+      "parents": [
+        "ae6681bdb545ddcf57f96263533048506c22441e"
+      ],
+      "subject": "docs: clarify custom v3 app readiness and remaining work",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/research/2026-11-01-custom-skeleton-v3.md"
+      ]
+    },
+    {
+      "commit": "362ca73b37375ff9b238ad5435b8f54cda09809e",
+      "parents": [
+        "1a756fea776adb993e9e617a1b1cc86ec1f2a55c"
+      ],
+      "subject": "docs: reconcile workflow research and authorize second pilot",
+      "changesComparedWithFirstParent": [
+        "A\tdocs/research/2026-11-01-workflow-reconciliation.md"
+      ]
+    },
+    {
+      "commit": "9b8074398f94daeb9a479b03158d7b2e196029e4",
+      "parents": [
+        "362ca73b37375ff9b238ad5435b8f54cda09809e",
+        "d4c5785f00b288505275a90a7a0f6d91047f30a8"
+      ],
+      "subject": "chore: sync committed application workflow fixes",
+      "changesComparedWithFirstParent": [
+        "M\t.github/workflows/pages.yml",
+        "M\tapp/playwright.config.ts",
+        "A\tapp/scripts/unity-review/EditorReview.cs",
+        "A\tapp/scripts/unity-review/NativePlayback.cs",
+        "A\tapp/scripts/unity-review/NativePlayer.cs",
+        "M\tapp/scripts/verify-phaser-export.mjs",
+        "A\tapp/scripts/verify-unity-export.mjs",
+        "M\tapp/src/lib/compose/compose.ts",
+        "M\tapp/src/lib/equipment/fit.ts",
+        "M\tapp/src/lib/equipment/generate.ts",
+        "M\tapp/src/lib/export/phaser.ts",
+        "M\tapp/src/lib/export/unity.ts",
+        "A\tapp/src/lib/image/similarity.ts",
+        "A\tapp/src/lib/items/design-consistency.ts",
+        "M\tapp/src/lib/items/items.ts",
+        "M\tapp/src/lib/items/qa-summary.ts",
+        "M\tapp/src/lib/items/run.ts",
+        "A\tapp/src/lib/items/torso-consistency.ts",
+        "M\tapp/src/lib/pixellab/queue.ts",
+        "M\tapp/src/lib/pixellab/routes.ts",
+        "M\tapp/src/lib/store/import.ts",
+        "M\tapp/src/lib/store/manifest.ts",
+        "M\tapp/src/studio/GenCard.svelte",
+        "M\tapp/src/studio/ItemPane.svelte",
+        "M\tapp/src/studio/MoveSheet.svelte",
+        "M\tapp/src/studio/NewItemSheet.svelte",
+        "M\tapp/src/studio/StageNote.svelte",
+        "M\tapp/src/studio/apiPlans.ts",
+        "M\tapp/src/studio/create.ts",
+        "M\tapp/src/studio/itemRoute.ts",
+        "M\tapp/src/studio/model.ts",
+        "M\tapp/src/studio/state.svelte.ts",
+        "M\tapp/src/ui/M3.svelte",
+        "M\tapp/test/e2e/characters.spec.ts",
+        "A\tapp/test/e2e/crash-recovery.spec.ts",
+        "M\tapp/test/e2e/export-picker.spec.ts",
+        "A\tapp/test/e2e/renderer-crash.spec.ts",
+        "A\tapp/test/e2e/retained-equipment.ts",
+        "M\tapp/test/e2e/shared-equipment.spec.ts",
+        "M\tapp/test/e2e/studio.spec.ts",
+        "M\tapp/test/unit/api-plans.test.ts",
+        "M\tapp/test/unit/appearance-warnings.test.ts",
+        "A\tapp/test/unit/automatic-recovery.test.ts",
+        "M\tapp/test/unit/character-import.test.ts",
+        "M\tapp/test/unit/creator-quality-policy.test.ts",
+        "A\tapp/test/unit/design-consistency.test.ts",
+        "A\tapp/test/unit/design-gray.test.ts",
+        "M\tapp/test/unit/export-phaser.test.ts",
+        "M\tapp/test/unit/garment-coverage.test.ts",
+        "M\tapp/test/unit/grid-estimate.test.ts",
+        "M\tapp/test/unit/item-acceptance.test.ts",
+        "A\tapp/test/unit/item-review-consent.test.ts",
+        "M\tapp/test/unit/item-streaming.test.ts",
+        "M\tapp/test/unit/key-switch.test.ts",
+        "M\tapp/test/unit/pose-item-selection.test.ts",
+        "M\tapp/test/unit/pose-review.test.ts",
+        "A\tapp/test/unit/queue-generation-consent.test.ts",
+        "M\tapp/test/unit/queue-resume.test.ts",
+        "M\tapp/test/unit/studio-flow-state.test.ts",
+        "M\tapp/test/unit/targeted-move.test.ts",
+        "A\tapp/test/unit/torso-consistency.test.ts",
+        "A\tapp/test/unit/tuck-variants.test.ts",
+        "M\tapp/test/unit/unity-export.test.ts",
+        "M\tdocs/README.md",
+        "A\tdocs/research/paperdoll-repos-review-2026-10-27.md",
+        "A\tdocs/research/tool-review-brief-2026-10-28.md",
+        "A\tdocs/testing/integration-and-crash-2026-10-28.md",
+        "A\tdocs/testing/phaser-playback-2026-10-28.md",
+        "M\tdocs/testing/test-performance.md",
+        "A\tdocs/testing/unity-playback-2026-10-28.md"
+      ]
+    },
+    {
+      "commit": "d7b95556aea855218d9a7783a1265d38c80620d8",
+      "parents": [
+        "9b8074398f94daeb9a479b03158d7b2e196029e4"
+      ],
+      "subject": "feat: retain raw held-item body difference diagnostics",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/image/chroma.ts",
+        "M\tapp/src/lib/items/items.ts",
+        "M\tapp/src/lib/items/qa-summary.ts",
+        "M\tapp/src/lib/store/manifest.ts",
+        "M\tapp/src/studio/GenCard.svelte",
+        "M\tapp/src/studio/ItemPane.svelte",
+        "A\tapp/test/unit/held-raw-key-review.test.ts",
+        "M\tapp/test/unit/item-review-consent.test.ts",
+        "M\tapp/test/unit/item-streaming.test.ts",
+        "M\tdocs/manifest-spec.md",
+        "M\tdocs/user-guide.md"
+      ]
+    },
+    {
+      "commit": "4f3cd796abb580a938b0de265f94c6e21398d4e4",
+      "parents": [
+        "d7b95556aea855218d9a7783a1265d38c80620d8"
+      ],
+      "subject": "feat: add controlled motion workflow qualification pilot",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/rig/motion.ts",
+        "M\tapp/src/ui/MotionLab.svelte",
+        "A\tapp/src/ui/motion-lab/ResearchPilot.svelte",
+        "M\tapp/src/ui/motion-lab/custom-test.ts",
+        "A\tapp/src/ui/motion-lab/managed-equipment.ts",
+        "M\tapp/src/ui/motion-lab/mcp.ts",
+        "M\tapp/src/ui/motion-lab/model.ts",
+        "A\tapp/src/ui/motion-lab/pilot.ts",
+        "A\tapp/src/ui/motion-lab/research-billing.ts",
+        "A\tapp/src/ui/motion-lab/research-budget.ts",
+        "M\tapp/src/ui/motion-lab/run.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "A\tapp/test/unit/managed-equipment.test.ts",
+        "M\tapp/test/unit/motion-lab.test.ts",
+        "M\tapp/test/unit/motion.test.ts",
+        "A\tapp/test/unit/research-billing.test.ts",
+        "A\tapp/test/unit/research-budget.test.ts",
+        "A\tapp/test/unit/research-queue-billing.test.ts",
+        "A\tspikes/api/mocap/audit-armed-split.mts",
+        "A\tspikes/api/mocap/audit-native-depth.mts",
+        "A\tspikes/api/mocap/evaluate-managed-equipment.mts",
+        "A\tspikes/api/mocap/prepare-controlled-pilot.mts",
+        "A\tspikes/api/mocap/prepare-managed-equipment.mts",
+        "A\tspikes/api/mocap/qualify-workflow-body.mts"
+      ]
+    },
+    {
+      "commit": "5d9b58e5fdc3ecfaaceba00e85d9d15456c52dd2",
+      "parents": [
+        "4f3cd796abb580a938b0de265f94c6e21398d4e4"
+      ],
+      "subject": "docs: record reconciled motion findings and failed grip evidence",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "M\tdocs/known-issues.md",
+        "M\tdocs/research/2026-10-28-motion-targeted-authoring.md",
+        "M\tdocs/research/2026-11-01-custom-skeleton-v3.md",
+        "A\tdocs/research/2026-11-01-workflow-reconciliation-results.json",
+        "M\tdocs/research/2026-11-01-workflow-reconciliation.md"
+      ]
+    },
+    {
+      "commit": "edfe773534a3407d1b3dd247b0ed49032ebe0f68",
+      "parents": [
+        "5d9b58e5fdc3ecfaaceba00e85d9d15456c52dd2"
+      ],
+      "subject": "fix(items): bound authored equipment extraction to reviewed stencils",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/items/items.ts",
+        "A\tapp/test/unit/item-stencil.test.ts"
+      ]
+    },
+    {
+      "commit": "b8466af8817327cfb5971540bf41413b3a48e47d",
+      "parents": [
+        "edfe773534a3407d1b3dd247b0ed49032ebe0f68"
+      ],
+      "subject": "feat(motion-lab): guard weapon-aware source and swap diagnostics",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/ui/motion-lab/ResearchPilot.svelte",
+        "A\tapp/src/ui/motion-lab/WeaponAwareProbe.svelte",
+        "A\tapp/src/ui/motion-lab/fixed-inpaint.ts",
+        "M\tapp/src/ui/motion-lab/managed-equipment.ts",
+        "M\tapp/src/ui/motion-lab/research-budget.ts",
+        "A\tapp/src/ui/motion-lab/weapon-aware.ts",
+        "A\tapp/src/ui/motion-lab/weapon-swap.ts",
+        "A\tapp/test/unit/fixed-inpaint.test.ts",
+        "M\tapp/test/unit/managed-equipment.test.ts",
+        "M\tapp/test/unit/research-budget.test.ts",
+        "A\tapp/test/unit/weapon-aware.test.ts",
+        "A\tapp/test/unit/weapon-swap.test.ts"
+      ]
+    },
+    {
+      "commit": "5f7b89008196a339fa5800ff43b7d2f9cf8f475b",
+      "parents": [
+        "b8466af8817327cfb5971540bf41413b3a48e47d"
+      ],
+      "subject": "feat(motion-lab): verify corrected disarm sources against original pixels",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/ui/motion-lab/WeaponAwareProbe.svelte",
+        "M\tapp/src/ui/motion-lab/weapon-aware.ts",
+        "M\tapp/test/unit/weapon-aware.test.ts"
+      ]
+    },
+    {
+      "commit": "4f05059868cac1894426dafe6042cccbe9f77b94",
+      "parents": [
+        "5f7b89008196a339fa5800ff43b7d2f9cf8f475b"
+      ],
+      "subject": "fix(items): enforce submitted inpaint masks through extraction and repair",
+      "changesComparedWithFirstParent": [
+        "A\tapp/src/lib/image/hard-mask.ts",
+        "M\tapp/src/lib/items/run.ts",
+        "M\tapp/src/ui/motion-lab/weapon-aware.ts",
+        "M\tapp/test/unit/automatic-recovery.test.ts",
+        "M\tapp/test/unit/grid-repair.test.ts"
+      ]
+    },
+    {
+      "commit": "f0fee83f43628ebdc76e258f399d11409fb2b8d8",
+      "parents": [
+        "4f05059868cac1894426dafe6042cccbe9f77b94"
+      ],
+      "subject": "feat(motion-lab): validate authored bodies and actual weapon references",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/ui/motion-lab/WeaponAwareProbe.svelte",
+        "M\tapp/src/ui/motion-lab/weapon-swap.ts",
+        "M\tapp/test/unit/weapon-swap.test.ts"
+      ]
+    },
+    {
+      "commit": "d5ad5d3f5c72a68c125905136a6764258af64e20",
+      "parents": [
+        "f0fee83f43628ebdc76e258f399d11409fb2b8d8"
+      ],
+      "subject": "feat(motion-lab): qualify fixed weapon-axis authoring controls",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/ui/motion-lab/WeaponAwareProbe.svelte",
+        "M\tapp/src/ui/motion-lab/research-budget.ts",
+        "A\tapp/src/ui/motion-lab/weapon-axis-repair.ts",
+        "M\tapp/src/ui/motion-lab/weapon-swap.ts",
+        "M\tapp/test/unit/fixed-inpaint.test.ts",
+        "M\tapp/test/unit/research-budget.test.ts",
+        "M\tapp/test/unit/weapon-swap.test.ts"
+      ]
+    },
+    {
+      "commit": "0acd88ab32ee3861638b690cc5946d077b091f98",
+      "parents": [
+        "d5ad5d3f5c72a68c125905136a6764258af64e20"
+      ],
+      "subject": "docs(research): record weapon-aware qualification and reproducible probes",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tdocs/README.md",
+        "M\tdocs/known-issues.md",
+        "M\tdocs/research/2026-11-01-workflow-reconciliation.md",
+        "A\tdocs/research/2026-11-02-weapon-aware-grip-results.json",
+        "A\tdocs/research/2026-11-02-weapon-aware-grip.md",
+        "A\tdocs/research/figures/2026-11-02-weapon-aware-leg-before-after.png",
+        "A\tdocs/research/figures/2026-11-02-weapon-axis-before-after.gif",
+        "A\tdocs/research/figures/2026-11-02-weapon-qualification-proof.png",
+        "A\tspikes/api/mocap/annotate-armed-controls.mts",
+        "A\tspikes/api/mocap/annotate-completion-armed.mts",
+        "A\tspikes/api/mocap/annotate-managed-armed.mts",
+        "A\tspikes/api/mocap/audit-armed-completion.mts",
+        "A\tspikes/api/mocap/audit-body-family.mts",
+        "A\tspikes/api/mocap/audit-disarm-reference.mts",
+        "A\tspikes/api/mocap/author-body-family-v2.mts",
+        "A\tspikes/api/mocap/author-body-family.mts",
+        "A\tspikes/api/mocap/calibrate-weapon-family.mts",
+        "A\tspikes/api/mocap/evaluate-disarm-control.mts",
+        "A\tspikes/api/mocap/evaluate-managed-disarm.mts",
+        "A\tspikes/api/mocap/evaluate-weapon-axis-repair.mts",
+        "A\tspikes/api/mocap/evaluate-weapon-swap.mts",
+        "A\tspikes/api/mocap/package-weapon-aware-review.mts",
+        "A\tspikes/api/mocap/prepare-armed-completion.mts",
+        "A\tspikes/api/mocap/prepare-weapon-axis-repair.mts",
+        "A\tspikes/api/mocap/prepare-weapon-swap.mts"
+      ]
+    },
+    {
+      "commit": "592e3dfe5afcc3a0ea499afa46f6c396f715a9e0",
+      "parents": [
+        "0acd88ab32ee3861638b690cc5946d077b091f98"
+      ],
+      "subject": "docs(handoff): prepare one-time Claude paperdoll quality challenge",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "A\tdocs/handoff/2026-11-02-claude-paperdoll-quality-review-bundle.json",
+        "A\tdocs/handoff/2026-11-02-claude-paperdoll-quality-review.md"
+      ]
+    },
+    {
+      "commit": "14daf45f568b56b3454eaaadb79a7e0d93b2dd65",
+      "parents": [
+        "592e3dfe5afcc3a0ea499afa46f6c396f715a9e0"
+      ],
+      "subject": "docs: verify generation consent and bound motion follow-up",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "A\tdocs/reviews/2026-11-02-credit-consent-audit.md"
+      ]
+    },
+    {
+      "commit": "6631fb1cfea4918c8c96a146bc6d49283f9b0982",
+      "parents": [
+        "14daf45f568b56b3454eaaadb79a7e0d93b2dd65"
+      ],
+      "subject": "docs(review): record independent paperdoll challenge and joint review process",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "M\tdocs/reviews/2026-11-02-credit-consent-audit.md",
+        "A\tdocs/reviews/2026-11-02-independent-paperdoll-quality-review.md"
+      ]
+    },
+    {
+      "commit": "0865c0b66dd7ea1f1fe5d5c02f0d46759e4dae60",
+      "parents": [
+        "6631fb1cfea4918c8c96a146bc6d49283f9b0982"
+      ],
+      "subject": "fix: preserve paid transport uncertainty and isolate extraction caches",
+      "changesComparedWithFirstParent": [
+        "M\tapp/src/lib/items/items.ts",
+        "M\tapp/src/lib/items/run.ts",
+        "M\tapp/src/lib/pixellab/client.ts",
+        "M\tapp/src/lib/store/manifest.ts",
+        "M\tapp/test/unit/automatic-recovery.test.ts",
+        "M\tapp/test/unit/client-timeout.test.ts",
+        "M\tapp/test/unit/item-stencil.test.ts",
+        "M\tapp/test/unit/paid-retry.test.ts"
+      ]
+    },
+    {
+      "commit": "458d14e6afcdd41bda571d0f7e85b4f18cb379f4",
+      "parents": [
+        "0865c0b66dd7ea1f1fe5d5c02f0d46759e4dae60"
+      ],
+      "subject": "docs(review): reconcile Claude findings and record verified fixes",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/README.md",
+        "M\tdocs/research/2026-11-01-workflow-reconciliation.md",
+        "M\tdocs/research/2026-11-02-weapon-aware-grip-results.json",
+        "M\tdocs/research/2026-11-02-weapon-aware-grip.md",
+        "A\tdocs/research/figures/2026-11-02-historical-visual-correction.png",
+        "A\tdocs/research/figures/2026-11-02-joint-review-posed-proxy.png",
+        "M\tdocs/research/generation-pipeline-review-2026-10-25.md",
+        "M\tdocs/research/visuals/how-items-are-drawn.html",
+        "A\tdocs/reviews/2026-11-02-claude-paperdoll-quality-review-response.md",
+        "M\tdocs/reviews/2026-11-02-credit-consent-audit.md",
+        "A\tdocs/reviews/2026-11-02-joint-counter-review-and-fixes.md",
+        "A\tdocs/reviews/2026-11-02-joint-review-reassessment.md",
+        "A\tdocs/reviews/2026-11-02-joint-review-results.json",
+        "A\tspikes/api/mocap/audit-review-seams.mts"
+      ]
+    },
+    {
+      "commit": "38af7c8e252f044033192c2dbb6e9136783a7a68",
+      "parents": [
+        "458d14e6afcdd41bda571d0f7e85b4f18cb379f4"
+      ],
+      "subject": "docs(review): close agreed fixes and record final Claude response",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tdocs/README.md",
+        "A\tdocs/reviews/2026-11-02-final-review-closure.md",
+        "M\tdocs/reviews/2026-11-02-joint-counter-review-and-fixes.md",
+        "M\tdocs/reviews/2026-11-02-joint-review-results.json"
+      ]
+    },
+    {
+      "commit": "9a33cba3f22ff62031faad6409a35a7549ff903b",
+      "parents": [
+        "38af7c8e252f044033192c2dbb6e9136783a7a68"
+      ],
+      "subject": "fix(motion-lab): gate clean-grip qualification and research grid controls",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tapp/src/ui/MotionLab.svelte",
+        "M\tapp/src/ui/motion-lab/Candidate.svelte",
+        "M\tapp/src/ui/motion-lab/ResearchPilot.svelte",
+        "M\tapp/src/ui/motion-lab/WeaponAwareProbe.svelte",
+        "A\tapp/src/ui/motion-lab/clean-grip.ts",
+        "M\tapp/src/ui/motion-lab/research-budget.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "A\tapp/test/unit/clean-grip.test.ts",
+        "M\tapp/test/unit/fixed-inpaint.test.ts",
+        "M\tapp/test/unit/research-budget.test.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/known-issues.md",
+        "A\tdocs/research/2026-11-02-clean-grip-qualification.md",
+        "A\tdocs/research/2026-11-02-clean-grip-results.json",
+        "A\tdocs/research/figures/2026-11-02-clean-grip-desired-actual.png",
+        "A\tdocs/research/figures/2026-11-02-clean-grip-input.png",
+        "A\tdocs/research/figures/2026-11-02-clean-grip-mask.png",
+        "A\tdocs/research/figures/2026-11-02-clean-grip-raw-result.png",
+        "A\tspikes/api/mocap/evaluate-clean-grip.mts",
+        "A\tspikes/api/mocap/prepare-clean-grip.mts"
+      ]
+    },
+    {
+      "commit": "a09e31fcb0b35f17d3b29f3183f35c32b9d70487",
+      "parents": [
+        "9a33cba3f22ff62031faad6409a35a7549ff903b"
+      ],
+      "subject": "feat(motion-lab): author native weapon frames without generation",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tapp/src/ui/motion-lab/AttachmentEditor.svelte",
+        "M\tapp/src/ui/motion-lab/attachment.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "M\tapp/test/unit/authored-attachment.test.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "A\tdocs/research/2026-11-02-native-frame-authoring.md",
+        "A\tdocs/research/2026-11-02-native-frame-results.json",
+        "A\tdocs/research/figures/2026-11-02-native-frame-before-after.png",
+        "A\tspikes/api/mocap/author-native-weapon-control.mts"
+      ]
+    },
+    {
+      "commit": "f39b28c4630dcc04261ab2a3f033dfb43f55c35b",
+      "parents": [
+        "a09e31fcb0b35f17d3b29f3183f35c32b9d70487"
+      ],
+      "subject": "fix(motion-lab): center axe grips through the palm",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tapp/src/ui/motion-lab/AttachmentEditor.svelte",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/design/skeleton-pose-lab.md",
+        "M\tdocs/research/2026-11-02-native-frame-authoring.md",
+        "A\tdocs/research/2026-11-02-palm-grip-correction.md",
+        "A\tdocs/research/2026-11-02-palm-grip-results.json",
+        "A\tdocs/research/artifacts/2026-11-02-gripped-axe-east.zip",
+        "A\tdocs/research/figures/2026-11-02-palm-grip-before-after.png",
+        "A\tdocs/research/figures/2026-11-02-palm-grip-full-clip.png",
+        "A\tspikes/api/mocap/author-gripped-axe.mts"
+      ]
+    },
+    {
+      "commit": "00c2a57362bb55c1626363bfca43a49343018a20",
+      "parents": [
+        "f39b28c4630dcc04261ab2a3f033dfb43f55c35b"
+      ],
+      "subject": "feat(studio): add visible frame stepping and native clip validation",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tapp/src/studio/Stage.svelte",
+        "M\tapp/src/studio/Studio.svelte",
+        "M\tapp/src/studio/experience/WorldStage.svelte",
+        "M\tapp/src/studio/state.svelte.ts",
+        "M\tapp/test/e2e/characters.spec.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/known-issues.md",
+        "A\tdocs/research/2026-11-02-studio-axe-integration.md",
+        "A\tdocs/research/2026-11-02-studio-axe-results.json",
+        "A\tdocs/research/artifacts/2026-11-02-east-axe-engine.zip",
+        "A\tdocs/research/artifacts/2026-11-02-east-axe-studio.zip",
+        "M\tdocs/user-guide.md",
+        "A\tspikes/api/mocap/package-studio-axe.mts"
+      ]
+    },
+    {
+      "commit": "9073b7d4d0bc845cfd5c9ed30317a20a609db162",
+      "parents": [
+        "00c2a57362bb55c1626363bfca43a49343018a20"
+      ],
+      "subject": "fix(motion-lab): clear stale previews after rendering errors",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tapp/src/ui/motion-lab/AttachmentEditor.svelte",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/research/2026-11-02-studio-axe-integration.md",
+        "A\tdocs/reviews/2026-11-02-final-motion-review-results.json",
+        "A\tdocs/reviews/2026-11-02-final-motion-review.md",
+        "M\tspikes/api/mocap/package-studio-axe.mts"
+      ]
+    },
+    {
+      "commit": "39e782bdc00b4f5352f7550758f58d44fe233a81",
+      "parents": [
+        "9073b7d4d0bc845cfd5c9ed30317a20a609db162"
+      ],
+      "subject": "feat(motion-lab): add native eight-direction starter authoring",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tapp/src/lib/pixellab/routes.ts",
+        "A\tapp/src/lib/rig/starter-presets.ts",
+        "M\tapp/src/ui/MotionLab.svelte",
+        "A\tapp/src/ui/motion-lab/StarterPack.svelte",
+        "A\tapp/src/ui/motion-lab/starter-pack.ts",
+        "A\tapp/src/ui/motion-lab/starter-project.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "A\tapp/test/unit/starter-presets.test.ts",
+        "A\tapp/test/unit/starter-project.test.ts",
+        "A\tapp/test/unit/starter-session.test.ts",
+        "M\tdocs/README.md",
+        "M\tdocs/research/2026-11-01-custom-skeleton-v3.md",
+        "A\tdocs/research/2026-11-02-eight-direction-starter-pack.md",
+        "A\tdocs/research/artifacts/2026-11-02-eight-direction-starter-review.zip",
+        "A\tdocs/research/artifacts/2026-11-02-eight-direction-starter.pixeldoll.zip",
+        "A\tdocs/research/pixellab/2026-11-02-managed-custom-v3-contract.json",
+        "M\tdocs/research/pixellab/pixellab_current_capabilities_2026-10.md"
+      ]
+    },
+    {
+      "commit": "82d9561c31f5f8c0f5290d693b96580076be1627",
+      "parents": [
+        "39e782bdc00b4f5352f7550758f58d44fe233a81"
+      ],
+      "subject": "docs(motion-lab): record starter qualification and full CI results",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/research/2026-11-02-eight-direction-starter-pack.md",
+        "M\tdocs/research/artifacts/2026-11-02-eight-direction-starter-review.zip"
+      ]
+    },
+    {
+      "commit": "7806be10e73e905b5dae3e30e27ee99af6edec1c",
+      "parents": [
+        "82d9561c31f5f8c0f5290d693b96580076be1627"
+      ],
+      "subject": "fix(animation): align walk cadence and validate native attachments",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tapp/src/studio/experience/WorldStage.svelte",
+        "M\tapp/src/studio/experience/presentation.ts",
+        "M\tapp/src/ui/motion-lab/AttachmentEditor.svelte",
+        "A\tapp/src/ui/motion-lab/NativeContactEditor.svelte",
+        "M\tapp/src/ui/motion-lab/StarterPack.svelte",
+        "M\tapp/src/ui/motion-lab/attachment.ts",
+        "M\tapp/src/ui/motion-lab/equipment.ts",
+        "A\tapp/src/ui/motion-lab/native-contacts.ts",
+        "M\tapp/test/e2e/selftests.spec.ts",
+        "M\tapp/test/unit/authored-attachment.test.ts",
+        "M\tapp/test/unit/experience-presentation.test.ts",
+        "A\tapp/test/unit/native-contacts.test.ts",
+        "M\tdocs/README.md",
+        "A\tdocs/research/2026-11-02-animation-closeout.md",
+        "M\tdocs/research/2026-11-02-eight-direction-starter-pack.md",
+        "A\tdocs/research/artifacts/2026-11-02-animation-closeout-review.zip"
+      ]
+    },
+    {
+      "commit": "08bfbc251bdc75a55d78fc2dfbe83e86571c5b97",
+      "parents": [
+        "7806be10e73e905b5dae3e30e27ee99af6edec1c"
+      ],
+      "subject": "docs(animation): record final CI and qualification boundaries",
+      "changesComparedWithFirstParent": [
+        "M\tdocs/research/2026-11-02-animation-closeout.md",
+        "M\tdocs/research/artifacts/2026-11-02-animation-closeout-review.zip"
+      ]
+    },
+    {
+      "commit": "1f83fcfb4c0037fcfd4891f77b0e11ceee850895",
+      "parents": [
+        "08bfbc251bdc75a55d78fc2dfbe83e86571c5b97"
+      ],
+      "subject": "docs(animation): record integration decision and remaining concerns",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tdocs/known-issues.md",
+        "M\tdocs/research/2026-11-02-animation-closeout.md"
+      ]
+    },
+    {
+      "commit": "3bbc61eebef42f0f123a87e886dfb8c54065055f",
+      "parents": [
+        "1f83fcfb4c0037fcfd4891f77b0e11ceee850895"
+      ],
+      "subject": "docs(animation): record main deployment and branch cleanup",
+      "changesComparedWithFirstParent": [
+        "M\tPLAN.md",
+        "M\tdocs/research/2026-11-02-animation-closeout.md"
+      ]
+    }
+  ]
+}
