@@ -287,6 +287,14 @@ class View {
 }
 export const view = new View();
 
+/** Inspect playlist entries, including repeats, without letting playback advance under the reviewer. */
+export function stepPreviewFrame(direction: -1 | 1): void {
+  const count = view.anim?.frames.length ?? 0;
+  if (!count) return;
+  ui.playing = false;
+  ui.frame = ((ui.frame % count) + count + direction) % count;
+}
+
 export async function refreshProjects() {
   const listed = await listProjects().catch((e: unknown) => { console.error('projects', e); toast(`Could not read your saved characters: ${(e as Error).message}`, { tone: 'danger' }); return null; }), own = (listed ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
   store.projects = [{ id: DEMO, name: 'Adventurer (demo)', demo: true, dev: false, savedAt: '' }, ...own.map((p) => ({ id: p.id, name: p.manifest.name, demo: false, dev: originOf(p) === 'dev', savedAt: p.savedAt }))];

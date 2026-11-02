@@ -1,0 +1,282 @@
+{
+  "studio-color-audit": {
+    "scope": "Existing B15 shirt/shorts tagging, not new artwork. Red, green, alpha and blue bits 1-7 stay exact.",
+    "frames": [
+      {
+        "frame": 0,
+        "changedBlueValues": 29
+      },
+      {
+        "frame": 1,
+        "changedBlueValues": 39
+      },
+      {
+        "frame": 2,
+        "changedBlueValues": 28
+      },
+      {
+        "frame": 3,
+        "changedBlueValues": 34
+      },
+      {
+        "frame": 4,
+        "changedBlueValues": 26
+      },
+      {
+        "frame": 5,
+        "changedBlueValues": 45
+      },
+      {
+        "frame": 6,
+        "changedBlueValues": 28
+      },
+      {
+        "frame": 7,
+        "changedBlueValues": 8
+      }
+    ]
+  },
+  "integration-audit": {
+    "version": 1,
+    "paidRequests": 0,
+    "sourceArchiveSha256": "2b753653143df05b8b2a08d9e940c19230d2fa405e87f679b964522e416b27f3",
+    "editableZipSha256": "5b65af499bad05c081482d03a2c60d2b817371d2a2fd2b9b2d1c56b5cde6dbbe",
+    "engineZipSha256": "686665e374f2d3b5ba2a5ec312725926244d5ce9a5206ac49b049d64c9dadd47",
+    "supportedDirections": [
+      "east"
+    ],
+    "moves": [
+      {
+        "id": "default",
+        "cells": 1,
+        "loop": true,
+        "frames": [
+          {
+            "cell": 0,
+            "ms": 150
+          }
+        ]
+      },
+      {
+        "id": "axe-attack",
+        "cells": 8,
+        "loop": false,
+        "frames": [
+          {
+            "cell": 0,
+            "ms": 120
+          },
+          {
+            "cell": 1,
+            "ms": 120
+          },
+          {
+            "cell": 2,
+            "ms": 80
+          },
+          {
+            "cell": 3,
+            "ms": 80
+          },
+          {
+            "cell": 4,
+            "ms": 80
+          },
+          {
+            "cell": 5,
+            "ms": 120
+          },
+          {
+            "cell": 6,
+            "ms": 100
+          },
+          {
+            "cell": 7,
+            "ms": 220
+          }
+        ]
+      }
+    ],
+    "rigPivot": {
+      "x": 72,
+      "y": 107
+    },
+    "nativeCell": {
+      "w": 144,
+      "h": 144
+    },
+    "armedExactFrames": 8,
+    "unequippedExactFrames": 8,
+    "editableRoundtripExactFrames": 8,
+    "engineEditableRoundtripExactFrames": 8,
+    "qa": "warn; unmeasured=true; no quality acceptance inferred from item publication status",
+    "qualified": false,
+    "engineWarnings": [],
+    "notes": [
+      "Uses existing local PixelDoll project import, with no new importer or API.",
+      "An explicit Default pose is provided; the attack is nonlooping in engine metadata.",
+      "Only east artwork exists in this project. No automatic mirroring, other-view artwork or rig measurements are invented.",
+      "Both items are published local records so they can be worn, but QA stays warn/unmeasured and names/prompts explicitly say experimental."
+    ]
+  },
+  "both-feet-review": {
+    "sourceArchiveSha256": "2b753653143df05b8b2a08d9e940c19230d2fa405e87f679b964522e416b27f3",
+    "frames": [
+      {
+        "frame": 0,
+        "front": {
+          "x": 76.5,
+          "y": 106.5,
+          "status": "visible"
+        },
+        "rear": {
+          "x": 77.5,
+          "y": 100.5,
+          "status": "visible"
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "frame": 1,
+        "front": {
+          "x": 76.5,
+          "y": 106.5,
+          "status": "visible"
+        },
+        "rear": {
+          "x": 77.5,
+          "y": 100.5,
+          "status": "visible"
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "frame": 2,
+        "front": {
+          "x": 76.5,
+          "y": 106.5,
+          "status": "visible"
+        },
+        "rear": {
+          "x": 77.5,
+          "y": 100.5,
+          "status": "visible"
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "frame": 3,
+        "front": {
+          "x": 76.5,
+          "y": 106.5,
+          "status": "visible"
+        },
+        "rear": {
+          "x": 77.5,
+          "y": 100.5,
+          "status": "visible"
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "frame": 4,
+        "front": {
+          "x": 76.5,
+          "y": 106.5,
+          "status": "visible"
+        },
+        "rear": {
+          "status": "ambiguous-merged-feet"
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "frame": 5,
+        "front": {
+          "x": 76.5,
+          "y": 106.5,
+          "status": "visible"
+        },
+        "rear": {
+          "status": "ambiguous-merged-feet"
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "frame": 6,
+        "front": {
+          "x": 76.5,
+          "y": 106.5,
+          "status": "visible"
+        },
+        "rear": {
+          "x": 77.5,
+          "y": 100.5,
+          "status": "visible"
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        }
+      },
+      {
+        "frame": 7,
+        "front": {
+          "x": 76.5,
+          "y": 106.5,
+          "status": "visible"
+        },
+        "rear": {
+          "x": 77.5,
+          "y": 100.5,
+          "status": "visible"
+        },
+        "root": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    ],
+    "front": {
+      "visibleFrames": 8,
+      "screenSpanPx": 0,
+      "complete": true
+    },
+    "rear": {
+      "visibleFrames": 6,
+      "observedScreenSpanPx": 0,
+      "complete": false,
+      "unmeasuredFrames": [
+        4,
+        5
+      ]
+    },
+    "qualified": false,
+    "scope": "Manual visible pixel landmarks on one stationary east attack. Front foot is stable; rear-foot contact is not certified during the merged crouch poses. No new body pixels, inferred hidden landmarks or engine walking speed."
+  },
+  "live-studio-export-audit": {
+    "actualBrowserDownload": "experimental-east-axe-review-godot.pixeldoll.zip",
+    "exactNormalizedFrames": 8,
+    "qa": "warn/unmeasured",
+    "attackLoop": false,
+    "paidRequests": 0
+  }
+}

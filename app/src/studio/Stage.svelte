@@ -2,9 +2,9 @@
   import { bakedFrame, composeCell } from '../lib/compose/compose.ts'
   import type { DirectionName } from '../lib/store/manifest.ts'
   import Sprite from './Sprite.svelte'
-  import { ui, doc, store, view } from './state.svelte.ts'
+  import { ui, doc, store, view, stepPreviewFrame } from './state.svelte.ts'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ChevronDown, Grid2x2, Image, Minus, Pause, Play, Plus } from './icons.ts'
+  import { ChevronDown, ChevronLeft, ChevronRight, Grid2x2, Image, Minus, Pause, Play, Plus } from './icons.ts'
 
   let box: HTMLElement
   let bar = $state<HTMLElement>()
@@ -83,6 +83,9 @@
       <button class="bu-action btn icon plain" data-variant="quiet" aria-label={ui.playing ? 'Pause' : 'Play'} title="Play / pause (Space)" onclick={() => (ui.playing = !ui.playing)}>
         {#if ui.playing}<Pause size={16} />{:else}<Play size={16} />{/if}
       </button>
+      <button class="bu-action btn icon plain" data-variant="quiet" aria-label="Previous frame" title="Previous frame (,)" disabled={(view.anim?.frames.length ?? 0) < 2} onclick={() => stepPreviewFrame(-1)}><ChevronLeft size={16} /></button>
+      <span class="small muted">Frame {view.anim ? ui.frame % view.anim.frames.length + 1 : 0} of {view.anim?.frames.length ?? 0}</span>
+      <button class="bu-action btn icon plain" data-variant="quiet" aria-label="Next frame" title="Next frame (.)" disabled={(view.anim?.frames.length ?? 0) < 2} onclick={() => stepPreviewFrame(1)}><ChevronRight size={16} /></button>
       <label class="select-wrap">
         <span class="sr">Move</span>
         <select class="bu-select select" bind:value={ui.anim} onchange={() => (ui.frame = 0)}>

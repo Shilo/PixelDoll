@@ -73,6 +73,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   every dress call passed, as before, so a late key switch never wastes poses.
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
+- **The authored east axe is an experimental import.** Its full clip can now be opened and inspected in Studio, but only one body/view is supported and rear-foot contact is unknown in two merged poses. The source PNGs and Studio's garment-tagged images have distinct pixel identities. See the [Studio integration evidence](research/2026-11-02-studio-axe-integration.md); it is not a universal preset.
 
 ## Exports
 

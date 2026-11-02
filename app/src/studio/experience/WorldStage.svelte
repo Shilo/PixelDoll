@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, untrack } from 'svelte'
-  import { ui, doc, view, toast } from '../state.svelte.ts'
+  import { ui, doc, view, toast, stepPreviewFrame } from '../state.svelte.ts'
   import { experience, characters, setMode } from './state.svelte.ts'
   import type { Ground, RenderOptions } from './ground.ts'
   import { MOTION, REFLECTION, WORLDS } from './config.ts'
@@ -49,7 +49,7 @@
       if(popover)popover.hidePopover();else if(prompt)prompt.open=false;else characters()
     }
     else if(!e.repeat && k===' ' && experience.mode==='preview') {e.preventDefault();ui.playing=!ui.playing}
-    else if((k===','||k==='.')&&experience.mode==='preview'){e.preventDefault();ui.playing=false;ui.frame+=k==='.'?1:(view.anim?.frames.length??1)-1}
+    else if((k===','||k==='.')&&experience.mode==='preview'){e.preventDefault();stepPreviewFrame(k==='.'?1:-1)}
   }
   function down(e:PointerEvent) {if(e.button!==0||ui.sheet)return;host.focus({preventScroll:true});if(experience.mode==='preview'||stick)return;host.setPointerCapture(e.pointerId);stick={id:e.pointerId,x:e.clientX,y:e.clientY,dx:0,dy:0}}
   function drag(e:PointerEvent){if(stick?.id===e.pointerId)stick={...stick,dx:e.clientX-stick.x,dy:e.clientY-stick.y}}

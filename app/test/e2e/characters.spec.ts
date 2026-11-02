@@ -2,12 +2,71 @@ import { openStudio, reloadStudio, equipmentMode, equipmentGroup, newItem, selec
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { makeImg } from '../../src/lib/image/png.ts'
-import { encodePngBytes } from '../../src/lib/image/pngraw.ts'
-import { zip } from '../../src/lib/store/zip.ts'
+import { encodePngBytes, decodePngBytes } from '../../src/lib/image/pngraw.ts'
+import { zip, unzip } from '../../src/lib/store/zip.ts'
 import { LABELS } from '../../src/lib/rig/poses.ts'
 import type { StoredProject } from '../../src/lib/store/project.ts'
+import { readCharacterZip } from '../../src/lib/store/import.ts'
+import { splitBase } from '../../src/lib/dress/regions.ts'
+import { composeCell } from '../../src/lib/compose/compose.ts'
 
 const ID = 'f6a0bdc5-354e-4682-8df3-55fc3d118737'
+
+test('experimental native attack imports with warnings and exact frame stepping without paid requests', async ({ page, context }) => {
+  const requests:string[]=[],errors:string[]=[]
+  await context.route('https://*.pixellab.ai/**',route=>{requests.push(route.request().method());return route.abort()})
+  page.on('pageerror',error=>errors.push(error.message))
+  const bytes=await readFile(new URL('../../../docs/research/artifacts/2026-11-02-east-axe-studio.zip',import.meta.url)),native=await unzip(await readFile(new URL('../../../docs/research/artifacts/2026-11-02-gripped-axe-east.zip',import.meta.url)))
+  const source=await Promise.all(Array.from({length:8},(_,i)=>decodePngBytes(native.get(`preview/${i}.png`)!)))
+  const normalized=(await readCharacterZip(bytes)).project
+  await splitBase(normalized) // Studio's documented shirt/shorts blue-bit tagging, not an image tolerance.
+  const expected=source.map((original,i)=>{
+    const rendered=composeCell(normalized,{body:'base',main_hand:'axe'},'axe-attack','east',i)!
+    expect(rendered.data.length).toBe(original.data.length)
+    expect(rendered.data.findIndex((v,q)=>q%4===2?(v&~1)!==(original.data[q]&~1):v!==original.data[q]),'Only the declared blue region bit may change').toBe(-1)
+    return rendered
+  })
+  await openStudio(page,'/')
+  await page.locator('.project-btn').click();await page.getByRole('menuitem',{name:'Import character…',exact:true}).click()
+  await page.getByLabel('Character ZIP',{exact:true}).setInputFiles({name:'experimental-east-axe.zip',mimeType:'application/zip',buffer:bytes})
+  await expect(page.getByRole('img',{name:'Character import preview',exact:true})).toBeVisible()
+  await page.getByRole('checkbox',{name:'Set up the pose rig next (recommended)',exact:true}).uncheck()
+  await page.getByRole('button',{name:'Import character',exact:true}).click()
+  await expect(page.getByRole('heading',{name:'EXPERIMENTAL east axe review',exact:true})).toBeVisible()
+  await equipmentGroup(page,'Hands');await expect(page.locator('.equipment-scroll')).toContainText('Needs a look')
+  const pause=page.getByRole('button',{name:'Pause',exact:true});if(await pause.count())await pause.click()
+  await page.getByRole('combobox',{name:'Move',exact:true}).selectOption('axe-attack')
+  await page.getByRole('button',{name:'Inspect',exact:true}).click()
+  const inspect=page.getByRole('dialog',{name:'Inspect character',exact:true}),next=inspect.getByRole('button',{name:'Next frame',exact:true}),previous=inspect.getByRole('button',{name:'Previous frame',exact:true})
+  const pixels=()=>inspect.getByRole('img').locator('canvas').evaluate((canvas:HTMLCanvasElement)=>{const factor=canvas.width/144,raw=canvas.getContext('2d')!.getImageData(0,0,canvas.width,canvas.height).data,out:number[]=[];for(let y=0;y<144;y++)for(let x=0;x<144;x++){const q=(Math.floor((y+.5)*factor)*canvas.width+Math.floor((x+.5)*factor))*4;out.push(...raw.subarray(q,q+4))}return out})
+  for(let i=0;i<8;i++){
+    await expect(inspect.getByText(`Frame ${i+1} of 8`,{exact:true})).toBeVisible()
+    await expect.poll(async()=>{const actual=await pixels(),q=actual.findIndex((v,j)=>v!==expected[i].data[j]);return q<0?null:{index:q,x:Math.floor(q/4)%144,y:Math.floor(q/4/144),actual:actual.slice(q-q%4,q-q%4+4),expected:Array.from(expected[i].data.slice(q-q%4,q-q%4+4))}}, {message:`Studio frame ${i+1} must match every native RGBA pixel`}).toBeNull()
+    await next.click()
+  }
+  await expect(inspect.getByText('Frame 1 of 8',{exact:true})).toBeVisible();await previous.click();await expect(inspect.getByText('Frame 8 of 8',{exact:true})).toBeVisible()
+  await page.keyboard.press('.');await expect(inspect.getByText('Frame 1 of 8',{exact:true})).toBeVisible()
+  await expect(inspect.getByRole('button',{name:'Play',exact:true})).toBeVisible()
+  await inspect.getByRole('combobox',{name:'Move',exact:true}).selectOption('default')
+  await expect(next).toBeDisabled();await expect(previous).toBeDisabled();await expect(inspect.getByText('Frame 1 of 1',{exact:true})).toBeVisible()
+  for(const size of [{width:390,height:844},{width:844,height:390}]){await page.setViewportSize(size);await expect(next).toBeInViewport();await expect(previous).toBeInViewport();await expect(inspect.getByText('Frame 1 of 1',{exact:true})).toBeInViewport()}
+  await inspect.getByRole('button',{name:'Done',exact:true}).click();await page.setViewportSize({width:1280,height:720})
+  await page.locator('.equipment-scroll').getByRole('button',{name:'None',exact:true}).click()
+  await expect(page.locator('.equipment-scroll').getByRole('button',{name:'None',exact:true})).toHaveAttribute('aria-pressed','true')
+  await page.locator('.equipment-scroll').getByRole('button',{name:'Experimental palm-gripped axe',exact:true}).click()
+  await page.getByRole('button',{name:'Export',exact:true}).click()
+  await page.getByRole('button',{name:'Settings',exact:true}).click()
+  await page.getByRole('checkbox',{name:'Axe attack',exact:true}).check()
+  await page.getByRole('button',{name:'Back',exact:true}).click()
+  const downloading=page.waitForEvent('download');await page.getByRole('button',{name:/Download ZIP/}).click()
+  const exported=await unzip(await readFile((await(await downloading).path())!)),project=JSON.parse(new TextDecoder().decode(exported.get('project.json')!))
+  expect(project.manifest.items.every((item:{qa:{status:string;unmeasured:boolean}})=>item.qa.status==='warn'&&item.qa.unmeasured===true)).toBe(true)
+  const attack=project.manifest.rig.animations.find((a:{id:string})=>a.id==='axe-attack');expect(attack.loop).toBe(false);expect(attack.frames.map((f:{ms:number})=>f.ms)).toEqual([120,120,80,80,80,120,100,220])
+  const engineManifest=JSON.parse(new TextDecoder().decode(exported.get('manifest.json')!));expect(engineManifest.rig.animations.find((a:{id:string})=>a.id==='axe-attack').loop).toBe(false)
+  const roundtrip=(await readCharacterZip(await zip([...exported].map(([name,data])=>({name,data}))))).project
+  for(let i=0;i<8;i++)expect(composeCell(roundtrip,{body:'base',main_hand:'axe'},'axe-attack','east',i)?.data).toEqual(expected[i].data)
+  expect(project.manifest.rig.directions).toEqual([{id:'east'}]);expect(requests).toEqual([]);expect(errors).toEqual([])
+})
 test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
   await context.route('https://*.pixellab.ai/**', route => route.abort()) // stay offline by default; a test's own route overrides this

@@ -14,7 +14,7 @@
   import RenameSheet from './RenameSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, toast, resumeCreate, resumeMove, resumeSetup, resumeFitStages, startupResumed, prefetchFlows, clearPendingConnection, cancelWaitingForTab, undo, redo } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, toast, resumeCreate, resumeMove, resumeSetup, resumeFitStages, startupResumed, prefetchFlows, clearPendingConnection, cancelWaitingForTab, undo, redo, stepPreviewFrame } from './state.svelte.ts'
   import { lazy } from '../lib/lazy.ts'
   import { WifiOff } from './icons.ts'
   import { PREVIEW_NOTICE } from './previewNotice.ts'
@@ -123,7 +123,7 @@
     if (mod || e.altKey || !m) return
     if (ui.sheet!=='inspect') return
     if (e.key === ' ' && !t.closest('button, a')) { e.preventDefault(); ui.playing = !ui.playing }
-    else if (e.key === ',' || e.key === '.') { ui.playing = false; ui.frame += e.key === '.' ? 1 : (view.anim?.frames.length ?? 1) - 1 }
+    else if (e.key === ',' || e.key === '.') { e.preventDefault(); stepPreviewFrame(e.key === '.' ? 1 : -1) }
     else if (e.key === '0') ui.all = !ui.all
     else if (/^[1-8]$/.test(e.key) && m.rig.directions[+e.key - 1] && moveDirs(m, ui.anim).includes(m.rig.directions[+e.key - 1].id)) { ui.dir = m.rig.directions[+e.key - 1].id; ui.all = false }
   }
