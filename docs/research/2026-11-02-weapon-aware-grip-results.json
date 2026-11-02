@@ -1,0 +1,343 @@
+{
+  "version": 1,
+  "branch": "codex/motion-lab",
+  "status": "research-only; full equipped clip not qualified",
+  "budgetCheckpoint": {
+    "originalActual": 998,
+    "additionalAllowance": 1000,
+    "newActual": 153.25,
+    "newConservativeHeld": 196,
+    "newActualRemaining": 846.75,
+    "combinedActual": 1151.25,
+    "pilotCap": 200,
+    "stageCaps": {
+      "body": 25,
+      "equipment": 175,
+      "replication": 0
+    },
+    "stageHeld": {
+      "body": 21,
+      "equipment": 175,
+      "replication": 0
+    },
+    "equipmentGlobalGate": "failed; historical receipt preserved",
+    "unknownNewCalls": 0,
+    "completedAdditionalCalls": 13,
+    "conservativeRemaining": 804
+  },
+  "completedCalls": [
+    {
+      "kind": "four-pose disarm",
+      "seed": 732,
+      "indices": [
+        1,
+        3,
+        4,
+        6
+      ],
+      "jobId": "bfa261ad-c040-440e-9b37-af1ba7df2a96",
+      "packetCanonicalSha256": "834ba23d967c560dc61fd0d11dc17c2fa826c7f662e69b642f75f70447d4d341",
+      "requestHash": "75f6cbc541279489dba7f1fb6f1c09e9cfe50580a432de675e8ab3760782b6ab",
+      "resultSha256": "fdb39ef7aed956d2a7946985ccc841fb6137c3b6a7577ea4bce5d54f108bb1c0",
+      "actualUnits": 15,
+      "heldUnits": 25,
+      "protectedBlackPixels": 82163,
+      "changedProtectedPixels": 0,
+      "strictPureWeaponReconstructionErrors": [
+        2,
+        4,
+        4,
+        2
+      ],
+      "knownBodyPixelsInConfirmedWeapon": 0,
+      "verdict": "new hand visibly improves grip; twelve uncertain rim pixels prevent strict source reconstruction qualification"
+    },
+    {
+      "kind": "same frozen-body hatchet",
+      "seed": 733,
+      "indices": [
+        1,
+        3,
+        4,
+        6
+      ],
+      "jobId": "ae4b858b-96a9-45dc-b412-7ca2f62b5200",
+      "packetCanonicalSha256": "287f215152db5ea978fd4319b1c3025344a9046a6c28b665f7e44402d261a56b",
+      "requestHash": "f6a2c9570f0b063cba5473d1242259475531c77213c12881f95f9d7fdc8fc180",
+      "resultSha256": "500468fcc84f4cc5f0dbc266480d677bea3da559aa895785bca81bff02edc146",
+      "actualUnits": 15,
+      "heldUnits": 25,
+      "protectedBlackPixels": 65310,
+      "changedProtectedPixels": 0,
+      "unboundedExtractionProtectedLeaks": 9,
+      "conservativeStencilProtectedLeaks": 0,
+      "conservativeLayerAreas": [
+        142,
+        136,
+        136,
+        137
+      ],
+      "foregroundLegPixelsPreserved": 20,
+      "verdict": "visible grips improved; frame3 action continuity and frame6 hidden fingers remain unqualified"
+    },
+    {
+      "kind": "missing armed east poses",
+      "seed": 734,
+      "indices": [
+        0,
+        2,
+        5,
+        7
+      ],
+      "jobId": "b3ae338e-eef2-48ad-b563-a392e8c01348",
+      "packetCanonicalSha256": "2b468a4513c58953fcb1688e9988d4a1de618cba1c2bc4a80397358d5191f52e",
+      "requestHash": "8dd493b172750963e58da7928b3f910ac11c3db05ed2fcdd3d8adce9b1e23e2e",
+      "resultSha256": "70ce15e8288abfad0186b9dab24b7e6103ed34e93e96875a5ce11eb2311adb20",
+      "actualUnits": 25,
+      "heldUnits": 25,
+      "changedProtectedPixels": 0,
+      "addedKeyBodyPixels": [
+        28,
+        20,
+        113,
+        2
+      ],
+      "frame5AddedRearLegRegionPixels": 114,
+      "verdict": "raw full sequence rejected: invented rear leg/foot despite exact protected original feet"
+    },
+    {
+      "kind": "corrected missing-pose disarm",
+      "seed": 735,
+      "indices": [
+        0,
+        2,
+        5,
+        7
+      ],
+      "jobId": "564bfc22-d220-4811-bd8b-d6e48f886e76",
+      "packetCanonicalSha256": "d7bb854ba6c6eb013e2541e6b3bc830ed50741f16aa7760cd41fdf26f8d5fbcd",
+      "resultSha256": "838f1262ce1b2c0bf6d94ef9d446ca3265c8fba459985379c28f874aef01c529",
+      "actualUnits": 15,
+      "heldUnits": 25,
+      "protectedBlackPixels": 82093,
+      "changedProtectedPixels": 0,
+      "strictPureWeaponReconstructionErrors": [
+        3,
+        1,
+        2,
+        4
+      ],
+      "baseAlphaExcess": 0,
+      "verdict": "raw bare-body acceptance rejected: green posterior stubs where pommel was; zero non-key pixels is not anatomical proof"
+    },
+    {
+      "kind": "reference-bound authored-body hatchet completion",
+      "seed": 736,
+      "indices": [
+        0,
+        2,
+        5,
+        7
+      ],
+      "jobId": "43f75ed0-adc1-483c-ac76-afb0ebf06a6f",
+      "packetCanonicalSha256": "8fb5ba7f0464f71ebb622d704490d4b223eea09bdc43d1c2ee24ddda310ba9ce",
+      "requestHash": "fedb1752fa6880bcade232551a0c3e1074aa7bf11aa1a102fefb2736157d0224",
+      "resultSha256": "090ffeb35391d48e3b41291fc229fc768a20c93b48a70f58ac82d8c96325303a",
+      "actualUnits": 25,
+      "heldUnits": 25,
+      "protectedBlackPixels": 107254,
+      "changedProtectedPixels": 0,
+      "changedDesignReferencePixels": 0,
+      "newKeyOutsideFrozenBody": [
+        12,
+        0,
+        4,
+        1
+      ],
+      "frame5NewRearLegRegionOpaquePixels": 0,
+      "lostPlausibleBrownPommelPixels": 2,
+      "outlineLossMechanism": "dropKeyOutline, not minimum component size",
+      "verdict": "full eight-frame research candidate; raw and conservative alternatives retained; professional motion not qualified"
+    },
+    {
+      "kind": "guided two-frame weapon-axis repair",
+      "seed": 737,
+      "indices": [
+        3,
+        4
+      ],
+      "jobId": "6c4d5c1d-efa4-4028-b03b-9082a439b902",
+      "packetCanonicalSha256": "dc4a43c87bc995d99390d7b3b3c8779e2c39997a4d6ea757c2122dbf0353f160",
+      "requestHash": "d10ff8c51f21304d25a2c2f158c3300996e6e6ed97d6b8dbf17ee98ed490a6df",
+      "resultSha256": "7080e41c41df8cc6d9e52672e98341bfe893435b37356165c68115483bae684c",
+      "actualUnits": 15,
+      "heldUnits": 25,
+      "protectedBlackPixels": 82267,
+      "changedProtectedPixels": 0,
+      "changedDesignReferencePixels": 0,
+      "axisErrorDegrees": [
+        1.74,
+        2.19
+      ],
+      "priorAxisErrorDegrees": [
+        82.93,
+        51.48
+      ],
+      "largestNeutralHeadPixels": [
+        24,
+        54
+      ],
+      "referenceNeutralHeadPixels": 85,
+      "rawPixelsOutsideDesiredGuide": [
+        41,
+        42
+      ],
+      "headCentroidErrorPx": [
+        11.56,
+        5.07
+      ],
+      "guideFitsEveryReferenceHeadPoint": true,
+      "qualified": false,
+      "verdict": "Reject both replacement assets: direction improved but head fragmentation, size, placement and design continuity failed. No guide cropping or baseline overwrite."
+    }
+  ],
+  "applicationChanges": {
+    "sharedExtractor": "optional copied binary stencil bounds layer and body cut before/after repair; fixed raw coordinates",
+    "productionInpaintMaskEnforced": true,
+    "inpaintCallers": "exact local/submitted or saved hash-attributed masks; missing/corrupt masks block extraction; cache includes mask identity",
+    "studioBodyMotionDefaultChanged": false,
+    "lab": "fixed source/pixel/hash validation, independent one-shot receipts, budget reservations and credential-free exports",
+    "productionPresetReleased": false
+  },
+  "completionSourceDerivative": {
+    "rawSourceStillFailed": true,
+    "approvedCorrectionCounts": [
+      27,
+      1,
+      114,
+      2
+    ],
+    "originalOpaquePixelsOverwritten": 0,
+    "retainedNewRaisedFistPixels": 20,
+    "retainedWeaponHandlePixelsChanged": 0,
+    "limitedDisarmPacketCanonicalSha256": "d7bb854ba6c6eb013e2541e6b3bc830ed50741f16aa7760cd41fdf26f8d5fbcd",
+    "confidentWeaponCounts": [
+      218,
+      200,
+      205,
+      218
+    ],
+    "protectedKeySourceCounts": [
+      571,
+      680,
+      702,
+      549
+    ],
+    "uncertainRimCounts": [
+      3,
+      1,
+      2,
+      4
+    ],
+    "sourceAnatomyCertified": false,
+    "notes": "Two retained key-color contour samples are explicit source adoption; color protection does not establish anatomical truth."
+  },
+  "authoredCoordinateContract": {
+    "providerPivotVerified": false,
+    "sourceCanvas": 144,
+    "bodyCrop": {
+      "x": 32,
+      "y": 32,
+      "size": 80,
+      "pivot": {
+        "x": 40,
+        "y": 75
+      }
+    },
+    "heldCrop": {
+      "x": 16,
+      "y": 16,
+      "size": 112,
+      "pivot": {
+        "x": 56,
+        "y": 91
+      }
+    },
+    "sharedSourcePivot": {
+      "x": 72,
+      "y": 107
+    },
+    "actualBarePixelsClipped": 0,
+    "confirmedSwordPixelsClipped": 0,
+    "semanticQualityPass": false
+  },
+  "authoredBodyRecipe": {
+    "rejectedV1CanonicalSha256": "b02d34dd62fad46236ffdcf75bbfffa103fe655b11ab9d795b3dd3d483d2405a",
+    "v1Limit": "preserved eighteen unwanted posterior source-key pixels in frame6",
+    "v2CanonicalSha256": "4458544f88245b1a96db2c1781f857a2f306271014009574bf0ac11de5fb8fd8",
+    "sourceFrame6CorrectionPixels": 18,
+    "actualToV2BodyChangesByFrame": [
+      17,
+      0,
+      0,
+      0,
+      1,
+      0,
+      18,
+      14
+    ],
+    "originalFootPixelsChanged": 0,
+    "retainedNewRaisedFistPixels": 20,
+    "unreviewedSourceKeyAdditionsOutsideOriginalAndHand": 0,
+    "explicitContourAdoptionsOutsideHand": [
+      {
+        "frame": 0,
+        "x": 65,
+        "y": 82
+      }
+    ],
+    "knownBodyPixelsInWeaponResidual": 0,
+    "fullResidualReconstructionErrors": 0,
+    "strictPureWeaponReconstructionErrorsByFrame": [
+      3,
+      2,
+      1,
+      4,
+      4,
+      2,
+      2,
+      4
+    ],
+    "globalEquipmentGatePassed": false,
+    "providerResultsOverwritten": false
+  },
+  "verificationCheckpoint": {
+    "strict": "zero errors and warnings",
+    "unitFiles": 126,
+    "unitPassed": 1403,
+    "unitSkippedPreexisting": 1,
+    "browserFullRun": {
+      "passed": 165,
+      "failed": 1,
+      "failure": "startup dependency request net::ERR_NO_BUFFER_SPACE"
+    },
+    "browserFailureRerun": {
+      "passed": 1,
+      "assertionsChanged": false
+    },
+    "priorBeforeProductionMaskFullBrowserPassed": 166,
+    "productionBuild": "passed",
+    "distGuard": "passed",
+    "finalTargetedBrowserPassed": 10
+  },
+  "limits": [
+    "Unknown pixels are not silently assigned to anatomy or equipment.",
+    "New bare hand pixels are authored guesses, not recovered original skin.",
+    "Original skeleton joints are not certified as aligned to the newly authored hand.",
+    "Inspection playback timing is not provider timing.",
+    "No arbitrary body, all-direction, repeatability or production quality guarantee.",
+    "Raw receipts and images stay locally ignored; source hashes and reproducible scripts are versioned.",
+    "Board reconciliation pending missing GitHub project scope; no access expansion attempted."
+  ],
+  "nextDecision": "No further paid requests scheduled. Retain production mask fix and audited experimental assets; do not release preset. A clean bare-body prop-guide source is an untested future hypothesis, followed by full-clip hidden-grip, contact, timing and repeatability qualification."
+}

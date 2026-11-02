@@ -187,3 +187,9 @@ frames, imported and visually inspected in Studio. This separate artifact does n
 The primary 96 px right-hand idle sword was manually accepted with its west-profile grip warning retained. Reload, keyless
 ZIP reimport and actual Godot/Phaser/Aseprite runtimes passed. Targeted Slash repair corrected the side body poses and all four weapon views. All body gates and manual review of 32 sword frames pass; automated item warnings remain visible. Independent pixels alone do not prove anatomical or generated-art correctness. Follow the parent audit report
 for the final live acceptance results.
+
+## Motion quality research checkpoint
+
+Production inpaint-grid extraction and repair now enforce the exact submitted edit mask through layer cleanup and body cuts. This prevents protected pixels from leaking into equipment without adding user work or generations. Raw skeleton posing remains unchanged.
+
+The separate weapon-aware custom-V3 experiment authors the grip once, reuses known original body pixels elsewhere and evaluates a frozen frame-based family. Its source corrections, rejected anatomy, full-frame results, export calibration and spending are in the [weapon-aware research report](docs/research/2026-11-02-weapon-aware-grip.md). It is not an approved universal rigging or Studio body-motion replacement; remaining views, body proportions and repeatability require qualification.
