@@ -64,6 +64,19 @@ test('notifications support optional titles, keyboard dismissal and visible erro
   await expect(dialog).toHaveCount(0)
 })
 
+test('the startup preview notice expires after eight seconds', async ({ page }, info) => {
+  const dev = info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!
+  const time = new Date('2026-11-02T12:00:00Z')
+  await page.clock.install({ time }); await page.clock.pauseAt(time)
+  await page.goto(dev)
+  const preview = page.getByRole('status').filter({ hasText: /Preview · v/ })
+  await expect(preview).toBeVisible()
+  await page.clock.fastForward(7999)
+  await expect(preview).toBeVisible()
+  await page.clock.fastForward(1)
+  await expect(preview).toHaveCount(0)
+})
+
 for (const [width, height] of [[1440, 900], [390, 844], [844, 390]]) test.describe(`toast activation ${width}x${height}`, () => {
   test.use({ viewport: { width, height }, hasTouch: width < 1000, isMobile: width < 1000 })
   test('body dismisses or runs its primary action, while close only dismisses', async ({ page }, info) => {

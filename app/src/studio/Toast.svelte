@@ -4,11 +4,19 @@
   import { ui, doc, activateToast, dismissToast, pauseToast, resumeToast } from './state.svelte.ts'
   import { experience } from './experience/state.svelte.ts'
   import { restoreTrigger } from './experience/focus.ts'
-  import { pwa } from '../lib/pwa.ts'
+  import { updateNotice } from './updateNotice.svelte.ts'
   import PwaNotice from './PwaNotice.svelte'
 
   let host = $state<HTMLDivElement>()
   let focusFrom: HTMLElement | null = null
+  let hovered = $state(false), focused = $state(false), hidden = $state(document.hidden)
+  function restoreNoticeFocus() { if (host?.contains(document.activeElement)) restoreTrigger(focusFrom) }
+  $effect(() => {
+    // A dismissed host can disappear before pointerleave/focusout. New notices must not inherit that pause.
+    hovered = !!host?.matches(':hover'); focused = !!host?.contains(document.activeElement)
+    if (!hovered) resumeToast('pointer')
+    if (!focused) resumeToast('focus')
+  })
   function dismiss() {
     const focused = host?.contains(document.activeElement)
     dismissToast()
@@ -47,12 +55,13 @@
   onDestroy(() => { resumeToast('pointer'); resumeToast('focus') })
 </script>
 
-{#if $pwa.available || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
-  <div class="toast" bind:this={host} role="presentation" onpointerenter={() => pauseToast('pointer')} onpointerleave={() => resumeToast('pointer')}
-    onfocusin={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) focusFrom = e.relatedTarget as HTMLElement | null; pauseToast('focus') }}
-    onfocusout={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) resumeToast('focus') }}>
+<svelte:document onvisibilitychange={() => hidden = document.hidden} />
+{#if updateNotice.visible || (ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet))}
+  <div class="toast" bind:this={host} role="presentation" onpointerenter={() => { hovered = true; pauseToast('pointer') }} onpointerleave={() => { hovered = false; resumeToast('pointer') }}
+    onfocusin={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) focusFrom = e.relatedTarget as HTMLElement | null; focused = true; pauseToast('focus') }}
+    onfocusout={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) { focused = false; resumeToast('focus') } }}>
     {#if ui.toast && (ui.toastTone === 'danger' || !ui.sheet || ui.toastSheet === ui.sheet)}<Notice class="bu-toast" title={ui.toastTitle || undefined} tone={ui.toastTone} live onactivate={activate} ondismiss={dismiss}>{ui.toast}</Notice>{/if}
-    <PwaNotice />
+    <PwaNotice paused={hovered || focused || hidden} ondismiss={restoreNoticeFocus} />
   </div>
 {/if}
 

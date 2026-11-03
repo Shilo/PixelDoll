@@ -300,7 +300,8 @@ for why there are dedicated exports for these engines and when more would be use
   On iPhone or iPad, use Safari's **Share > Add to Home Screen** and enable **Open as Web App** if offered; Safari on
   Mac offers **Add to Dock**. Install promotion hides once installation is confirmed or PixelDoll launches as an
   installed app. A used or dismissed prompt stays unavailable until the browser offers another one.
-- **Updates:** a persistent **Update to v…** notice appears when a deployed version is available. Click it when ready;
+- **Updates:** an **Update to v…** notice appears for 15 seconds when a deployed version is available. Hovering or
+  keyboard focus keeps it open; it remains available from **More options** after the notice closes. Click when ready;
   only this tab reloads. Finish and close panels, save or cancel an outfit name, and finish or dismiss pending generation
   work first. Saved characters and outfits stay; the view and undo history reset. A session-only PixelLab connection
   needs reconnecting. Failed saves or incomplete downloads prevent the reload. Updates are checked automatically while

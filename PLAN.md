@@ -176,7 +176,7 @@ service worker. The implementation uses the platform APIs without another depend
   the same commit. Public artwork URLs carry that identity; hashed Vite asset names are already immutable.
 - **Update default:** every update requires an explicit click. The current app cannot preserve forms, prepared ZIPs,
   undo history, preview state or a session-only connection through reload. Automatically judging some views safe would
-  spread restoration requirements through unrelated features. A persistent versioned notice and More options action
+  spread restoration requirements through unrelated features. A timed versioned notice and More options action
   remain available even when an ordinary toast is replaced. Saved outfits are flushed and checked; an open panel,
   inline outfit draft, unfinished startup, character load or pending paid workflow blocks application. A native modal
   prevents new interactions while verification and activation run. Only the requesting tab reloads. The notice
@@ -238,6 +238,15 @@ duplicate clicks, prompt failures, accepted versus completed installation, reins
 A fresh full Chromium profile received a trusted native offer on pixeldoll.app and the actual menu click invoked
 the real prompt method; no OS installation was accepted. The Codex browser independently reproduced the original
 misleading guidance and exercised the saved character, fullscreen and prepared export without PixelLab requests.
+
+Notification timing (2026-11-02): the preview warning uses the existing eight-second warning duration. Update
+notices use 15 seconds because their action and reload consequences need more reading time. They are dismissible;
+hover and keyboard focus keep them open, and background tabs do not spend the update reading window. Readiness
+starts a fresh window after downloading; periodic metadata refreshes do not extend it. Expiry and dismissal survive
+opening or closing sheets. More options retains the versioned update action, so expiry never creates a deadline
+for updating. New releases get a new notice. This follows [W3C's temporary-notification guidance](https://www.w3.org/WAI/WCAG22/Understanding/timing-adjustable.html):
+the information and action must remain accessible after transient feedback disappears. The durations are product
+judgments, not prescribed accessibility thresholds. Unresolved errors keep their existing persistence rules.
 
 ## Professional audit follow-up: independent directions
 
