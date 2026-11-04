@@ -36,7 +36,7 @@ async function setup() {
   vi.stubEnv('PROD', true)
   vi.stubEnv('BASE_URL', './')
   vi.stubGlobal('__APP_BUILD__', current.build)
-  let published: Release = next, downloaded: Release = next
+  let published: Release = next
   const listeners = new Map<string, Set<EventListener>>()
   const addEventListener = (type: string, listener: EventListener) => {
     if (!listeners.has(type)) listeners.set(type, new Set())
@@ -47,26 +47,26 @@ async function setup() {
   const messageHolds = new Map<string, Promise<void>>()
   const messages: string[] = []
   let activate = () => {}
-  const worker = (release: () => Release) => ({
+  const worker = (release: Release) => ({
     scriptURL: scope + 'sw.js',
     state: 'activated',
     postMessage: (message: { type: string; build?: string }, ports: Port[]) => {
       messages.push(message.type)
-      const value = release()
+      const value = release
       if (message.type === 'ACTIVATE') activate()
       const send = () => ports[0]!.postMessage(message.type === 'GET_RELEASE' ? value : { ...value, ready: message.build === value.build })
-      const held = messageHolds.get(message.type)
+      const held = messageHolds.get(value.build + ':' + message.type) ?? messageHolds.get(message.type)
       if (held) void held.then(send)
       else send()
     },
     addEventListener: vi.fn(), removeEventListener: vi.fn(),
   })
-  const active = worker(() => current)
-  const waiting = worker(() => downloaded)
+  const active = worker(current)
+  const waiting = worker(next)
   const update = vi.fn(async () => {})
-  const registration = { scope, active, waiting, installing: null, update, addEventListener: vi.fn(), removeEventListener: vi.fn() }
+  const registration = { scope, active, waiting: waiting as typeof waiting | null, installing: null, update, addEventListener: vi.fn(), removeEventListener: vi.fn() }
   const serviceWorker = { getRegistration: vi.fn(async (): Promise<typeof registration | undefined> => registration), register: vi.fn(async () => registration), controller: active, addEventListener, removeEventListener }
-  activate = () => { registration.active = waiting; serviceWorker.controller = waiting }
+  activate = () => { if (registration.waiting) { registration.active = registration.waiting; serviceWorker.controller = registration.waiting } }
   const { getRegistration, register } = serviceWorker
   const fetch = vi.fn(async () => new Response(JSON.stringify(published), { headers: { 'content-type': 'application/json' } }))
   const matchMedia = () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
@@ -85,10 +85,10 @@ async function setup() {
   const client = await import('../../src/lib/pwa.ts')
   return {
     client, fetch, getRegistration, register, registration, update, reload, messages,
-    holdMessage: (type: string, held: Promise<void>) => { messageHolds.set(type, held) },
+    holdMessage: (type: string, held: Promise<void>, build?: string) => { messageHolds.set(build ? build + ':' + type : type, held) },
     publish: (release: Release) => { published = release },
-    stage: (release: Release) => { downloaded = release },
-    wake: (type: 'focus' | 'online') => { for (const listener of listeners.get(type) ?? []) listener(new Event(type)) },
+    stage: (release: Release) => { registration.waiting = worker(release) },
+    wake: (type: 'focus' | 'online' | 'controllerchange') => { for (const listener of listeners.get(type) ?? []) listener(new Event(type)) },
     start: () => { stop = client.startPwa() },
   }
 }
@@ -98,6 +98,73 @@ const settle = () => vi.advanceTimersByTimeAsync(0)
 const never = () => new Promise<never>(() => {})
 
 describe('PWA deployment discovery remains independent of browser worker stalls', () => {
+  it.each(['GET_RELEASE', 'VERIFY'])('ignores a replaced worker’s late successful %s before metadata catches up', async type => {
+    const app = await setup()
+    let release!: () => void
+    app.holdMessage(type, new Promise<void>(resolve => { release = resolve }), next.build)
+    app.start(); await settle()
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: false })
+    // Installation can expose C before the metadata CDN catches up. B is no longer the candidate to apply.
+    app.stage(later)
+    release(); await settle()
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: false, error: '' })
+    expect(app.reload).not.toHaveBeenCalled()
+  })
+
+  it.each(['GET_RELEASE', 'VERIFY'])('ignores a superseded worker’s delayed %s failure after the newer update is ready', async type => {
+    const app = await setup()
+    app.start(); await settle()
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true })
+    app.holdMessage(type, never(), next.build)
+    // Worker lifecycle events inspect independently of the coalesced metadata checks.
+    app.wake('controllerchange'); await settle()
+    app.publish(later); app.stage(later)
+    app.wake('focus'); await settle()
+    expect(get(app.client.pwa)).toMatchObject({ available: later, ready: true, error: '' })
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(get(app.client.pwa)).toMatchObject({ available: later, ready: true, error: '' })
+    expect(app.reload).not.toHaveBeenCalled()
+  })
+
+  it('still reports a verification failure for the available update and recovers on the next check', async () => {
+    const app = await setup()
+    app.start(); await settle()
+    let release!: () => void
+    app.holdMessage('VERIFY', new Promise<void>(resolve => { release = resolve }), next.build)
+    app.wake('controllerchange'); await settle()
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: false })
+    expect(get(app.client.pwa).error).toContain('The update did not respond.')
+    release(); app.wake('online'); await settle()
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true, error: '' })
+  })
+
+  it('still reports missing current-app offline files even when a newer update has become ready', async () => {
+    const app = await setup()
+    app.registration.waiting = null
+    app.start(); await settle()
+    expect(get(app.client.pwa).offlineReady).toBe(true)
+    app.holdMessage('VERIFY', never(), current.build)
+    app.wake('controllerchange'); await settle()
+    app.publish(later); app.stage(later)
+    app.wake('focus'); await settle()
+    expect(get(app.client.pwa)).toMatchObject({ available: later, ready: true, offlineReady: true })
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(get(app.client.pwa)).toMatchObject({ available: later, ready: true, offlineReady: false })
+    expect(get(app.client.pwa).error).toContain('The update did not respond.')
+  })
+
+  it.each(['GET_RELEASE', 'VERIFY'])('does not publish a delayed %s failure after the PWA runtime stops', async type => {
+    const app = await setup()
+    app.start(); await settle()
+    app.holdMessage(type, never(), next.build)
+    app.wake('controllerchange'); await settle()
+    const before = get(app.client.pwa)
+    stop?.(); stop = undefined
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(get(app.client.pwa)).toEqual(before)
+  })
+
   it.each(['getRegistration', 'register'] as const)('shows a deployment immediately and discovers the next one after a stalled %s times out', async operation => {
     const app = await setup()
     if (operation === 'getRegistration') app.getRegistration.mockImplementation(never)
