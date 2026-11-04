@@ -21,9 +21,11 @@ The expanded 212-case run initially passed 211 cases and exposed an existing Exp
 
 Final local checks passed type checking and 1,692 unit tests, with one existing skip. The final focused CI-shaped run passed all three cases: manual acceptance, automatic acceptance, and the corrected keyboard flow, with one worker and zero retries. The full run's 211 other cases are retained in `.runtime.tmp/share-release-final-e2e.log`; the focused result is in `.runtime.tmp/share-release-focused.log`.
 
-## Local stress limitation
+## Original local stress limitation
 
-Eight-worker Windows stress was not clean. Initial cohorts stalled during fixture setup/import/save-copy before acceptance; one later cohort completed 12 of 20 cases after eight initial timeouts. A trace attributed about 98 seconds to the fixture's initial evaluation. Leaner two-frame fixtures and a compact viewport did not establish a clean eight-worker result. These failures are not represented as passing reruns or evidence of a diagnosed native cause.
+The original eight-worker Windows stress was not clean. The [November 4 follow-up](windows-cold-start-2026-11-04.md) qualified 90/90 cases in three fresh isolated cohorts with the original browser and tracing settings. It records the diagnostic failures and demonstrated interference from a concurrent suite, without relabeling those earlier failures as passes.
+
+Initial cohorts stalled during fixture setup/import/save-copy before acceptance; one later cohort completed 12 of 20 cases after eight initial timeouts. A trace attributed about 98 seconds to the fixture's initial evaluation. Leaner two-frame fixtures and a compact viewport did not establish a clean eight-worker result. These failures are not represented as passing reruns or evidence of a diagnosed native cause.
 
 Evidence remains in `app/test-results-share-handoff-stress/`, `app/test-results-share-handoff-stress-lean/`, and `app/test-results-share-handoff-compact-stress/`. No test timeout, recovery bound, or assertion was relaxed. The failed cohorts were stopped; ordinary four-worker suite and CI single-worker results are reported separately. This stress limit is not proof of a production acceptance defect, and no zero-edge-case guarantee is claimed.
 
