@@ -78,6 +78,123 @@ test('the rotations are the Default move; a ZIP animation named default steps as
   expect(m.rig.animations.map((a) => [a.id, a.cells])).toEqual([['default', 1], ['default-copy', 2]])
 })
 
+test('PixelLab imports explicitly chosen sibling animations without inventing moves from static states', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[1].character.name = 'Armored state'
+  meta.states[1].frames.animations = { walking: meta.states[0].frames.animations.walking, Right_Punch: meta.states[0].frames.animations.walking }
+  meta.states.push({ character: { id: 'static', name: 'Hair variant' }, frames: { rotations: meta.states[0].frames.rotations, animations: {} } })
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const bytes = await zip(entries), selected = await readCharacterZip(bytes), all = await readCharacterZip(bytes, undefined, 'all')
+  expect(selected.project.manifest.rig.animations.map(a => a.id)).toEqual(['default', 'walking'])
+  expect(all.states?.map(s => [s.name, s.animations])).toEqual([['Test adventurer', 1], ['Armored state', 2], ['Hair variant', 0]])
+  expect(all.project.manifest.rig.animations.map(a => a.id)).toEqual(['default', 'walking', 'armored-state-walking', 'right_punch'])
+  expect((await readCharacterZip(bytes, id, ['second'])).project.manifest).toEqual(all.project.manifest)
+  const base = all.project.manifest.items[0].layers[0]
+  expect(base.cells!.walking.south).toEqual(base.cells!['armored-state-walking'].south)
+  expect(all.project.manifest.rig.directions.map(d => d.id)).toEqual(['south', 'east', 'west'])
+  const second = await readCharacterZip(bytes, 'second', 'all')
+  expect(second.project.manifest.rig.animations.map(a => a.id)).toEqual(['default', 'walking', 'right_punch', 'test-adventurer-walking'])
+  expect(second.project.manifest.rig.animations.some(a => a.id === 'walking-copy')).toBe(false)
+  await expect(readCharacterZip(bytes, id, ['missing'])).rejects.toThrow('selected move states')
+})
+
+test('PixelLab keeps unequal direction lengths as separate sparse moves without padding or dropping frames', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[0].frames.animations.walking.east = [meta.states[0].frames.animations.walking.south[0]]
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const imported = await readCharacterZip(await zip(entries)), { manifest } = imported.project
+  expect(manifest.rig.animations.map(a => [a.id, a.cells])).toEqual([['default', 1], ['walking-south', 2], ['walking-east', 1]])
+  expect(manifest.rig.animations[1].frames).toEqual([{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }])
+  expect(manifest.items[0].layers[0].cells!['walking-south'].east).toBeUndefined()
+  expect(manifest.items[0].layers[0].cells!['walking-east'].south).toBeUndefined()
+  expect(imported.warnings).toContain('“walking” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.')
+})
+
+test.each([80, 92, 96, 128, 160, 256])('PixelLab preserves every source pixel at %i px instead of forcing a 64 px frame', async size => {
+  const original = makeImg(size, size)
+  original.data.set([255, 30, 40, 255], 0)
+  original.data.set([40, 255, 30, 255], original.data.length - 4)
+  const bytes = await zip([{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: `Size ${size}` })) }, { name: 'rotations/south.png', data: await encodePngBytes(original) }])
+  const imported = await readCharacterZip(bytes), { manifest } = imported.project
+  expect(manifest.rig.cell).toEqual({ w: size, h: size })
+  expectPixels(cellImg(imported.project, manifest.items[0].layers[0], 'default', 'south', 0), original)
+})
+
+test('PixelLab uses a common canvas for padded animation frames without clipping their bottom pixels', async () => {
+  const rotation = sprite(80), animation = makeImg(64, 64)
+  animation.data.set([255, 20, 30, 255], (63 * 64 + 32) * 4)
+  const bytes = await zip([
+    { name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Padded' })) },
+    { name: 'rotations/south.png', data: await encodePngBytes(rotation) },
+    { name: 'animations/step/south/frame_0.png', data: await encodePngBytes(animation) },
+  ])
+  const imported = await readCharacterZip(bytes), { manifest } = imported.project
+  expectPixels(cellImg(imported.project, manifest.items[0].layers[0], 'step', 'south', 0), animation)
+  const standing = cellImg(imported.project, manifest.items[0].layers[0], 'default', 'south', 0)!
+  expect([...standing.data.slice(((15 + 8) * 64 + 20 + 8) * 4, ((15 + 8) * 64 + 20 + 8) * 4 + 4)]).toEqual([80, 90, 60, 255])
+})
+
+test.each([[48, 68, 10], [64, 96, 16]])('PixelLab aligns a %i px standing canvas and %i px padded animation around one source origin', async (size, paddedSize, offset) => {
+  const standing = makeImg(size, size), animation = makeImg(paddedSize, paddedSize)
+  standing.data.set([90, 120, 180, 255], (20 * size + 10) * 4)
+  animation.data.set([90, 120, 180, 255], ((20 + offset) * paddedSize + 10 + offset) * 4)
+  const imported = await readCharacterZip(await zip([
+    { name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Common origin' })) },
+    { name: 'rotations/south.png', data: await encodePngBytes(standing) },
+    { name: 'animations/step/south/frame_0.png', data: await encodePngBytes(animation) },
+  ]))
+  const layer = imported.project.manifest.items[0].layers[0]
+  expect(imported.project.manifest.rig.cell).toEqual({ w: paddedSize, h: paddedSize })
+  expectPixels(cellImg(imported.project, layer, 'default', 'south', 0), animation)
+  expectPixels(cellImg(imported.project, layer, 'step', 'south', 0), animation)
+  expect(imported.project.manifest.rig.pivot).toEqual({ x: paddedSize / 2, y: 21 + offset })
+})
+
+test('PixelLab bounds repeated logical references before decoding their image data', async () => {
+  const png = await encodePngBytes(makeImg(1, 1)), view = new DataView(png.buffer)
+  view.setUint32(16, 256); view.setUint32(20, 256)
+  const directions = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west']
+  const rotations = Object.fromEntries(directions.map(dir => [dir, 'repeated.png']))
+  const clip = Object.fromEntries(directions.map(dir => [dir, Array.from({ length: 120 }, () => 'repeated.png')]))
+  const metadata = { states: [{ character: { id, name: 'Repeated' }, frames: { rotations, animations: { one: clip, two: clip } } }] }
+  await expect(readCharacterZip(await zip([{ name: 'metadata.json', data: enc.encode(JSON.stringify(metadata)) }, { name: 'repeated.png', data: png }]))).rejects.toThrow('including repeated frame references')
+})
+
+test('PixelLab rejects oversized animation metadata and duplicate frame indices', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data)), clip = meta.states[0].frames.animations.walking
+  meta.states[0].frames.animations = Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`move-${i}`, clip]))
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  await expect(readCharacterZip(await zip(entries))).rejects.toThrow('too many moves')
+  const png = await encodePngBytes(sprite(80))
+  await expect(readCharacterZip(await zip([
+    { name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Duplicate indices' })) },
+    { name: 'rotations/south.png', data: png },
+    { name: 'animations/walk/south/frame_0.png', data: png },
+    { name: 'animations/walk/south/frame_00.png', data: png },
+  ]))).rejects.toThrow('missing animation frames')
+})
+
+test('PixelLab malformed metadata and incompatible sibling states retain useful chooser errors', async () => {
+  for (const metadata of [null, { states: 'invalid' }, { states: [null] }, { states: [{ character: {} }] }]) {
+    await expect(readCharacterZip(await zip([{ name: 'metadata.json', data: enc.encode(JSON.stringify(metadata)) }]))).rejects.toThrow(/metadata|state list/)
+  }
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[1].character.view = 'side'
+  meta.states[0].character.view = 'low top-down'
+  meta.states[1].frames.animations = meta.states[0].frames.animations
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const bytes = await zip(entries)
+  await expect(readCharacterZip(bytes, id, 'all')).rejects.toMatchObject({ stateId: id, states: [{ id, name: 'Test adventurer', animations: 1 }, { id: 'second', name: 'Second state', animations: 1 }], message: expect.stringContaining('different character size or camera view') })
+  expect((await readCharacterZip(bytes)).project.manifest.rig.animations).toHaveLength(2)
+})
+
+test('PixelLab preserves distinct animation labels that collide after normalization or contain path separators', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data)), clip = meta.states[0].frames.animations.walking
+  meta.states[0].frames.animations = { '__Walk__': clip, Walk: clip, 'A/B': clip, 'A B': clip }
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  expect((await readCharacterZip(await zip(entries))).project.manifest.rig.animations.map(a => a.id)).toEqual(['default', 'walk', 'walk-copy', 'a-b', 'a-b-copy'])
+})
+
 test('PixelLab animations default to looping regardless of their names', async () => {
   const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
   const clip = meta.states[0].frames.animations.walking
@@ -91,7 +208,7 @@ test('PixelLab animations default to looping regardless of their names', async (
 test('PixelLab legacy root exports import; opaque cropping is refused', async () => {
   const entries = [{ name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Legacy' })) }, { name: 'rotations/south.png', data: await encodePngBytes(sprite(100)) }]
   expect((await readCharacterZip(await zip(entries))).project.manifest.name).toBe('Legacy')
-  const huge = makeImg(80, 80); huge.data.set([255, 0, 0, 255], 0)
+  const huge = makeImg(272, 272); huge.data.set([255, 0, 0, 255], 0)
   entries[1].data = await encodePngBytes(huge)
   await expect(readCharacterZip(await zip(entries))).rejects.toThrow('visible pixels')
 })
@@ -134,7 +251,7 @@ test('sparse imported clips can be dressed without planning missing base frames'
 
 test('state choices survive an incompatible first PixelLab state', async () => {
   const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
-  const big = makeImg(80, 80); big.data.set([1, 2, 3, 255], 0)
+  const big = makeImg(272, 272); big.data.set([1, 2, 3, 255], 0)
   entries.push({ name: 'oversize.png', data: await encodePngBytes(big) })
   meta.states[0].frames.rotations = { south: 'oversize.png' }
   entries[0].data = enc.encode(JSON.stringify(meta))

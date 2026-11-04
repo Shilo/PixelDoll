@@ -11,9 +11,10 @@ import type { StoredProject } from './project.ts';
 import { unzip, type ZipEntry } from './zip.ts';
 import * as db from './db.ts';
 
-export interface ImportedCharacter { project: Project; extra: Pick<StoredProject, 'character' | 'skeletons' | 'rigQa'>; warnings: string[]; states?: { id: string; name: string }[]; stateId?: string }
+export interface CharacterImportState { id: string; name: string; animations: number }
+export interface ImportedCharacter { project: Project; extra: Pick<StoredProject, 'character' | 'skeletons' | 'rigQa'>; warnings: string[]; states?: CharacterImportState[]; stateId?: string }
 export class CharacterImportError extends Error {
-  constructor(message: string, public states: { id: string; name: string }[] = [], public stateId?: string) { super(message); }
+  constructor(message: string, public states: CharacterImportState[] = [], public stateId?: string) { super(message); }
 }
 const text = new TextDecoder();
 const hashPattern = /^sha256:[0-9a-f]{64}$/;
@@ -57,7 +58,7 @@ export async function projectEntries(p: Project, extra: ImportedCharacter['extra
   return entries;
 }
 
-export async function readCharacterZip(bytes: Uint8Array, stateId?: string): Promise<ImportedCharacter> {
+export async function readCharacterZip(bytes: Uint8Array, stateId?: string, additionalStateIds: readonly string[] | 'all' = []): Promise<ImportedCharacter> {
   let files = await unzip(bytes);
   // Downloads often wrap the character in one enclosing folder.
   if (!['project.json', 'manifest.json', 'metadata.json'].some((p) => files.has(p))) {
@@ -75,11 +76,7 @@ export async function readCharacterZip(bytes: Uint8Array, stateId?: string): Pro
   }
   if (files.has('project.json')) result = await editable(files);
   else if (files.has('manifest.json')) result = await sheets(files);
-  else if (files.has('metadata.json')) {
-    const meta = json(files, 'metadata.json') as { states?: { character: { id: string; name: string } }[] };
-    try { result = await pixelLab(files, stateId); }
-    catch (e) { throw new CharacterImportError((e as Error).message, meta.states?.map((s) => ({ id: s.character.id, name: s.character.name })), stateId ?? meta.states?.[0]?.character.id); }
-  }
+  else if (files.has('metadata.json')) result = await pixelLab(files, stateId, additionalStateIds);
   else throw new Error('This ZIP needs PixelLab metadata.json or a PixelDoll project.json/manifest.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.');
   const errors = validate(result.project);
   if (errors.length) throw new Error(`The character is not compatible: ${errors.slice(0, 3).join('; ')}`);
@@ -170,75 +167,131 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
   return { project: { manifest: m, images }, extra: {}, warnings: ['This older export restores layers, moves, colors and outfits. Set up its pose rig to add new moves. Existing equipment keeps its original frames.', ...(removedDesignLinks ? ['Original saved-design reference images were not included, so unavailable reusable-design links were removed. Existing equipment frames and colors are preserved.'] : [])] };
 }
 
-async function pixelLab(files: Map<string, Uint8Array>, stateId?: string): Promise<ImportedCharacter> {
-  interface Character { id?: string; name?: string; prompt?: string; view?: Manifest['rig']['view']; template_id?: string }
-  interface State { character: Character & { id: string; name: string }; frames: { rotations: Record<string, string>; animations: Record<string, Record<string, string[]>> } }
-  let meta = json(files, 'metadata.json') as Character & { character?: Character; states?: State[] };
-  const states = meta.states?.map((s) => ({ id: s.character.id, name: s.character.name }));
-  if (meta.states) {
-    const selected = stateId ? meta.states.find((s) => s.character.id === stateId) : meta.states[0];
-    if (!selected?.frames?.rotations) throw new Error('This PixelLab export does not include the selected character state.');
-    const mapped = new Map<string, Uint8Array>();
-    for (const [dir, path] of Object.entries(selected.frames.rotations)) mapped.set(`rotations/${dir}.png`, required(files, path));
-    for (const [anim, dirs] of Object.entries(selected.frames.animations ?? {})) for (const [dir, frames] of Object.entries(dirs)) frames.forEach((path, i) => mapped.set(`animations/${anim}/${dir}/frame_${i}.png`, required(files, path)));
-    stateId = selected.character.id;
-    meta = { character: selected.character };
-    files = mapped;
-  }
-  const name = meta.name ?? meta.character?.name ?? 'Imported character', prompt = meta.prompt ?? meta.character?.prompt ?? name;
-  const rotations = [...files.keys()].flatMap((p) => { const match = /^rotations\/([a-z-]+)\.png$/.exec(p); return match && DIRECTIONS.includes(match[1] as DirectionName) ? [{ dir: match[1] as DirectionName, path: p }] : []; });
-  if (!rotations.length) throw new Error('This PixelLab ZIP has no supported rotation images. Export a single character with rotations/ and animations/ folders.');
-  const directions = DIRECTIONS.filter((d) => rotations.some((r) => r.dir === d));
-  const source = new Map<string, Map<DirectionName, { index: number; path: string }[]>>();
-  for (const p of files.keys()) {
-    const m = /^animations\/([^/]+)\/([a-z-]+)\/frame_(\d+)\.png$/.exec(p);
-    if (!m) continue;
-    const dir = m[2] as DirectionName;
-    if (!directions.includes(dir)) throw new Error(`The ${dir} animation has no matching rotation.`);
-    const dirs = source.get(m[1]) ?? new Map(); source.set(m[1], dirs);
-    dirs.set(dir, [...(dirs.get(dir) ?? []), { index: +m[3], path: p }]);
-  }
-  const images = new Map<string, Img>(), cells: NonNullable<Manifest['items'][number]['layers'][number]['cells']> = {};
-  let semi = 0;
-  const first = await image(required(files, rotations[0].path)), char = Math.min(first.w, 64);
-  const put = async (path: string) => {
-    const im = await image(required(files, path)), n = normalize(im, 64, 64, 128, char);
-    if (n.cutPx) throw new Error(`${path} would lose ${n.cutPx} visible pixels in a 64 px cell. Import a smaller character; artwork is never rescaled.`);
-    if (!hasPixels(n.img)) throw new Error(`${path} is an empty frame.`);
-    semi += n.semiAlpha;
-    const h = await cellHash(n.img); images.set(h, n.img); return h;
-  };
-  // The rotations are the Default move (its id is reserved: a supplied animation of that name takes a -copy suffix below).
-  const restId = DEFAULT_MOVE;
-  cells[restId] = {};
-  for (const r of rotations) cells[restId][r.dir] = [await put(r.path)];
-  const animations: Manifest['rig']['animations'] = [{ id: restId, cells: 1, loop: true, frames: playlist(1, 150) }];
-  for (const [rawId, dirs] of source) {
-    let id = rawId.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '') || 'move';
-    while (animations.some((a) => a.id === id)) id += '-copy';
-    const counts = [...dirs.values()].map((frames) => frames.length), n = counts[0];
-    if (!n || n > 120 || counts.some((c) => c !== n)) throw new Error(`${rawId} has inconsistent frame counts between directions.`);
-    cells[id] = {};
-    for (const [dir, frames] of dirs) {
-      frames.sort((a, b) => a.index - b.index);
-      if (frames.some((f, i) => f.index !== frames[0].index + i)) throw new Error(`${rawId}/${dir} is missing animation frames.`);
-      cells[id][dir] = [];
-      for (const frame of frames) cells[id][dir]!.push(await put(frame.path));
-    }
-    animations.push({ id, cells: n, loop: true, frames: playlist(n, 100) });
-  }
-  const rest = images.get(cells[restId][directions[0]]![0]!)!;
-  const view = meta.view ?? meta.character?.view ?? 'low top-down', template = meta.template_id ?? meta.character?.template_id ?? 'mannequin';
-  if (!['low top-down', 'high top-down', 'side'].includes(view)) throw new Error('The character has an unsupported camera view.');
-  const rig: Manifest['rig'] = { cell: { w: 64, h: 64 }, pivot: pivotOf(rest), directions: directions.map((id) => ({ id })), animations, baseItem: 'base', baseHash: 'sha256:' as Sha256, view, template };
-  const hashes: Record<string, Sha256> = {};
-  const empty = await cellHash(makeImg(64, 64));
-  for (const a of animations) for (const d of directions) for (let i = 0; i < a.cells; i++) hashes[`${a.id}/${d}/${i}`] = cells[a.id][d]?.[i] ?? empty;
-  rig.baseHash = await baseHashOf(rig, hashes);
-  const manifest: Manifest = { format: CURRENT_FORMAT, app: 'PixelDoll 0.1.0', name, rig, materials: [], slots: [{ id: 'body', z: 10, class: 'base', required: true }], items: [{ id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'generate', materials: [], prompt, baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance: [] }], presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }] };
-  return { project: { manifest, images }, extra: {}, states, stateId, warnings: ['Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.', ...(semi ? ['Partially transparent edges were converted to pixel-art transparency.'] : [])] };
-}
+interface PixelLabCharacter { id?: string; name?: string; prompt?: string; view?: Manifest['rig']['view']; template_id?: string; size?: { width: number; height: number } }
+interface PixelLabState { character: PixelLabCharacter & { id: string; name: string }; frames?: { rotations?: unknown; animations?: unknown } }
+interface PixelLabMove { name: string; state?: string; sibling: boolean; dirs: Map<DirectionName, { index: number; path: string }[]> }
+const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
+async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additionalStateIds: readonly string[] | 'all' = []): Promise<ImportedCharacter> {
+  const metadata = json(files, 'metadata.json');
+  if (!object(metadata)) throw new Error('The PixelLab metadata must describe a character.');
+  let meta = metadata as PixelLabCharacter & { character?: PixelLabCharacter; states?: PixelLabState[] };
+  let states: CharacterImportState[] | undefined;
+  const rotations: { dir: DirectionName; path: string }[] = [], source: PixelLabMove[] = [];
+  const warnings: string[] = [];
+  try {
+    if (meta.states !== undefined) {
+      if (!Array.isArray(meta.states) || !meta.states.length || meta.states.length > 100 || meta.states.some(s => !object(s) || !object(s.character) || typeof s.character.id !== 'string' || !s.character.id || typeof s.character.name !== 'string')) throw new Error('The PixelLab export has an invalid character state list.');
+      if (new Set(meta.states.map(s => s.character.id)).size !== meta.states.length) throw new Error('The PixelLab export has duplicate character state IDs.');
+      states = meta.states.map(s => ({ id: s.character.id, name: s.character.name, animations: object(s.frames?.animations) ? Object.keys(s.frames.animations).length : 0 }));
+      const selected = stateId ? meta.states.find(s => s.character.id === stateId) : meta.states[0];
+      if (!selected) throw new Error('This PixelLab export does not include the selected character state.');
+      stateId = selected.character.id;
+      if (!object(selected.frames?.rotations)) throw new Error('This PixelLab export does not include the selected character state rotations.');
+      for (const [dir, path] of Object.entries(selected.frames.rotations)) {
+        if (!DIRECTIONS.includes(dir as DirectionName) || typeof path !== 'string') throw new Error('The selected character state has an invalid rotation path or direction.');
+        rotations.push({ dir: dir as DirectionName, path });
+      }
+      const requested = additionalStateIds === 'all' ? states.filter(s => s.animations).map(s => s.id) : additionalStateIds;
+      for (const id of requested) if (!meta.states.some(s => s.character.id === id)) throw new Error('This PixelLab export does not include one of the selected move states.');
+      const included = [selected, ...meta.states.filter(s => s !== selected && requested.includes(s.character.id))];
+      for (const state of included) {
+        const sibling = state !== selected, character = state.character, own = selected.character;
+        if (sibling && (character.view && own.view && character.view !== own.view || character.size && own.size && (character.size.width !== own.size.width || character.size.height !== own.size.height))) throw new Error(`Moves from “${character.name}” use a different character size or camera view. Uncheck that state to continue.`);
+        if (state.frames?.animations === undefined) continue;
+        if (!object(state.frames.animations)) throw new Error(`The “${character.name}” state has an invalid animation list.`);
+        for (const [name, directions] of Object.entries(state.frames.animations)) {
+          if (!object(directions) || !Object.keys(directions).length) throw new Error(`The ${name} move has no animation directions.`);
+          const dirs: PixelLabMove['dirs'] = new Map();
+          for (const [dir, frames] of Object.entries(directions)) {
+            if (!DIRECTIONS.includes(dir as DirectionName) || !rotations.some(r => r.dir === dir)) throw new Error(`The ${name}/${dir} animation has no matching standing view in the selected state.`);
+            if (!Array.isArray(frames) || !frames.length || frames.length > 120 || frames.some(path => typeof path !== 'string')) throw new Error(`The ${name}/${dir} animation must contain 1–120 frame paths.`);
+            dirs.set(dir as DirectionName, frames.map((path, index) => ({ index, path })));
+          }
+          source.push({ name, state: character.name, sibling, dirs });
+          if (source.length > 99) throw new Error('This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).');
+        }
+      }
+      meta = { character: selected.character };
+    } else {
+      for (const path of files.keys()) {
+        const rotation = /^rotations\/([a-z-]+)\.png$/.exec(path);
+        if (rotation && DIRECTIONS.includes(rotation[1] as DirectionName)) rotations.push({ dir: rotation[1] as DirectionName, path });
+        const animation = /^animations\/([^/]+)\/([a-z-]+)\/frame_(\d+)\.png$/.exec(path);
+        if (!animation) continue;
+        const [, name, dir, index] = animation;
+        if (!DIRECTIONS.includes(dir as DirectionName)) throw new Error(`The ${name} animation has an unsupported direction: ${dir}.`);
+        let move = source.find(s => s.name === name);
+        if (!move) { move = { name, sibling: false, dirs: new Map() }; source.push(move); }
+        move.dirs.set(dir as DirectionName, [...(move.dirs.get(dir as DirectionName) ?? []), { index: +index, path }]);
+      }
+    }
+    if (!rotations.length) throw new Error('This PixelLab ZIP has no supported rotation images. Export a single character with rotations/ and animations/ folders.');
+    const directions = DIRECTIONS.filter(d => rotations.some(r => r.dir === d));
+    const groups = source.flatMap(move => {
+      const counts = new Set([...move.dirs.values()].map(frames => frames.length));
+      for (const [dir, frames] of move.dirs) {
+        if (!directions.includes(dir)) throw new Error(`The ${dir} animation has no matching rotation.`);
+        if (!frames.length || frames.length > 120) throw new Error(`${move.name}/${dir} must contain 1–120 frames.`);
+        frames.sort((a, b) => a.index - b.index);
+        if (frames.some((f, i) => f.index !== frames[0].index + i)) throw new Error(`${move.name}/${dir} is missing animation frames.`);
+      }
+      if (counts.size > 1) warnings.push(`“${move.name}” has different frame counts by direction. Its directions were imported as separate moves to keep every original frame and direction length.`);
+      return [...counts].map(count => {
+        const dirs = new Map([...move.dirs].filter(([, frames]) => frames.length === count));
+        return { ...move, dirs, name: counts.size > 1 ? `${move.name}-${[...dirs.keys()].join('-')}` : move.name, count };
+      });
+    });
+    if (groups.length > 99) throw new Error('This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).');
+    const paths = [...rotations.map(r => r.path), ...groups.flatMap(move => [...move.dirs.values()].flatMap(frames => frames.map(f => f.path)))];
+    const dimensions = paths.map(path => {
+      const size = pngSize(required(files, path));
+      if (!size || size.w < 1 || size.h < 1 || size.w > 8192 || size.h > 8192 || size.w * size.h > 8_388_608) throw new Error(`${path} is not a PNG or exceeds the import size limit.`);
+      return Math.max(size.w, size.h);
+    });
+    // A common canvas preserves the source origin across padded frames. Small exports retain the existing floor margin.
+    const char = Math.min(256, dimensions.reduce((max, size) => Math.max(max, size), 0)), frame = Math.max(64, char);
+    if (paths.length * frame * frame > 64 * 1024 * 1024) throw new Error('This character contains too many image pixels, including repeated frame references. Select fewer states or export fewer moves.');
+    const images = new Map<string, Img>(), cells: NonNullable<Manifest['items'][number]['layers'][number]['cells']> = {};
+    let semi = 0;
+    const put = async (path: string) => {
+      const im = await image(required(files, path)), n = normalize(im, frame, frame, 128, char);
+      if (n.cutPx) throw new Error(`${path} would lose ${n.cutPx} visible pixels in a ${frame} px cell. Import a smaller character; artwork is never rescaled.`);
+      if (!hasPixels(n.img)) throw new Error(`${path} is an empty frame.`);
+      semi += n.semiAlpha;
+      const h = await cellHash(n.img); images.set(h, n.img); return h;
+    };
+    const name = meta.name ?? meta.character?.name ?? 'Imported character', prompt = meta.prompt ?? meta.character?.prompt ?? name;
+    const restId = DEFAULT_MOVE;
+    cells[restId] = {};
+    for (const r of rotations) cells[restId][r.dir] = [await put(r.path)];
+    const animations: Manifest['rig']['animations'] = [{ id: restId, cells: 1, loop: true, frames: playlist(1, 150) }];
+    const slug = (value: string) => value.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^[^a-z0-9]+|[-_]+$/g, '') || 'move';
+    for (const move of groups) {
+      let id = slug(move.name);
+      if (move.sibling && animations.some(a => a.id === id)) id = `${slug(move.state ?? 'state')}-${id}`;
+      while (animations.some(a => a.id === id)) id += '-copy';
+      cells[id] = {};
+      for (const [dir, frames] of move.dirs) {
+        cells[id][dir] = [];
+        for (const source of frames) cells[id][dir]!.push(await put(source.path));
+      }
+      animations.push({ id, cells: move.count, loop: true, frames: playlist(move.count, 100) });
+    }
+    const rest = images.get(cells[restId][directions[0]]![0]!)!;
+    const view = meta.view ?? meta.character?.view ?? 'low top-down', template = meta.template_id ?? meta.character?.template_id ?? 'mannequin';
+    if (!['low top-down', 'high top-down', 'side'].includes(view)) throw new Error('The character has an unsupported camera view.');
+    const rig: Manifest['rig'] = { cell: { w: frame, h: frame }, pivot: pivotOf(rest), directions: directions.map(id => ({ id })), animations, baseItem: 'base', baseHash: 'sha256:' as Sha256, view, template };
+    const hashes: Record<string, Sha256> = {};
+    const empty = await cellHash(makeImg(frame, frame));
+    for (const a of animations) for (const d of directions) for (let i = 0; i < a.cells; i++) hashes[`${a.id}/${d}/${i}`] = cells[a.id][d]?.[i] ?? empty;
+    rig.baseHash = await baseHashOf(rig, hashes);
+    const manifest: Manifest = { format: CURRENT_FORMAT, app: 'PixelDoll 0.1.0', name, rig, materials: [], slots: [{ id: 'body', z: 10, class: 'base', required: true }], items: [{ id: 'base', name: 'Base body', slot: 'body', status: 'accepted', mirror: 'generate', materials: [], prompt, baseHash: rig.baseHash, layers: [{ id: 'main', role: 'fg', z: 10, cells }], provenance: [] }], presets: [{ id: 'default', name: 'Base', items: { body: 'base' }, variants: {} }] };
+    return { project: { manifest, images }, extra: {}, states, stateId, warnings: ['Imported artwork is the fixed base: existing clothes and hair cannot be removed. Set up its pose rig to use skeleton-posed equipment and add new moves.', ...warnings, ...(semi ? ['Partially transparent edges were converted to pixel-art transparency.'] : [])] };
+  } catch (error) {
+    throw new CharacterImportError((error as Error).message, states, stateId ?? states?.[0]?.id);
+  }
+}
 export async function saveImportedCharacter(imported: ImportedCharacter, name: string): Promise<string> {
   if (!name.trim() || name.trim().length > 60) throw new Error('Enter a character name of 1–60 characters.');
   const manifest = structuredClone(imported.project.manifest);
