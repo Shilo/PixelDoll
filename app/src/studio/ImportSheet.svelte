@@ -13,7 +13,7 @@
   import { rigReady } from '../lib/rig/setup.ts'
   import { ui, dismissWelcome, refreshProjects, openProject, toast, withKey } from './state.svelte.ts'
   import { customize } from './experience/state.svelte.ts'
-  import { Download, KeyRound, TriangleAlert } from './icons.ts'
+  import { Download, FileArchive, KeyRound, TriangleAlert } from './icons.ts'
 
   let prepared = $state.raw<ImportedCharacter | null>(null)
   let setupNext = $state(true)
@@ -23,6 +23,8 @@
   let name = $state(''), id = $state(''), error = $state(''), busy = $state(false), saving = $state(false), loading = $state(false)
   let characters = $state.raw<LibraryCharacter[]>([]), total = $state(0), offset = $state(0), listed = $state(false), previewRevision = $state(0)
   let alive = true
+  let fileInput = $state<HTMLInputElement>()
+  let dragging = $state(false), dragDepth = 0
   const reads = new AbortController()
   const peekScope = crypto.randomUUID()
   const listScope = (page: number) => `${peekScope}:library:${page}`
@@ -37,7 +39,7 @@
     return composeCell(p, m.presets[0]?.items ?? { body: m.rig.baseItem }, m.rig.animations[0].id, dir, 0)
   })
   $effect(() => { if (ui.importSource === 'pixellab' && app.key && !listed) { listed = true; void load(0) } })
-  function reset() { prepared = null; bytes = null; error = ''; name = ''; states = []; stateId = '' }
+  function reset() { prepared = null; bytes = null; error = ''; name = ''; states = []; stateId = ''; dragging = false; dragDepth = 0 }
   function close() { if (!saving) { reads.abort(); ui.sheet = null } }
   async function load(next: number) {
     loading = true; error = ''
@@ -60,15 +62,55 @@
       throw e
     }
   }
-  async function fileChanged(e: Event) {
-    const file = (e.target as HTMLInputElement).files?.[0]
-    if (!file) return
+  async function importFiles(files: readonly File[]) {
+    if (busy || !files.length) return
     reset(); busy = true
-    try { if (file.size > MAX_ZIP_BYTES) throw new Error('Choose a ZIP smaller than 64 MB.'); await prepare(new Uint8Array(await file.arrayBuffer())) }
+    try {
+      if (files.length !== 1) throw new Error('Choose one character ZIP at a time.')
+      const file = files[0]
+      if (!/\.zip$/i.test(file.name)) throw new Error('Choose a ZIP file exported from PixelLab or PixelDoll.')
+      if (file.size > MAX_ZIP_BYTES) throw new Error('Choose a ZIP smaller than 64 MB.')
+      const data = new Uint8Array(await file.arrayBuffer())
+      if (alive) await prepare(data)
+    }
     catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) busy = false }
   }
+  function fileChanged(e: Event) {
+    const input = e.currentTarget as HTMLInputElement, files = Array.from(input.files ?? [])
+    input.value = '' // Choosing the same file after an error or reset must fire change again.
+    void importFiles(files)
+  }
+  function hasFiles(e: DragEvent) { return e.dataTransfer?.types.includes('Files') ?? false }
+  function preventFileNavigation(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'none'
+  }
+  function dragEntered(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault(); e.stopPropagation()
+    dragDepth++; dragging = !busy
+  }
+  function dragLeft(e: DragEvent) {
+    if (!hasFiles(e)) return
+    dragDepth = Math.max(0, dragDepth - 1); dragging = dragDepth > 0 && !busy
+  }
+  function dragOver(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault(); e.stopPropagation()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = busy ? 'none' : 'copy'
+  }
+  function dropped(e: DragEvent) {
+    if (!hasFiles(e)) return
+    e.preventDefault(); e.stopPropagation()
+    dragging = false; dragDepth = 0
+    const files = Array.from(e.dataTransfer?.files ?? [])
+    if (!busy && !files.length) error = 'Choose a ZIP file, not a folder.'
+    else void importFiles(files)
+  }
   async function fromPixelLab(value: string) {
+    if (busy) return
     reset(); busy = true
     try { const selected = characterId(value); await prepare(await downloadCharacter(selected, reads.signal, { activityScope: zipScope(selected) }), selected) }
     catch (e) { if (alive) error = (e as Error).message }
@@ -98,6 +140,8 @@
   }
 </script>
 
+<svelte:window ondragover={preventFileNavigation} ondrop={preventFileNavigation} />
+
 <Sheet title="Import character" onclose={close} cancelDisabled={saving}>
   <div class="api-action"><ApiPeek scope="library-open" label="Browse PixelLab characters" plan={libraryPlan()} activityScope={listScope(0)} /><div class="seg full" style="flex:1" role="tablist" aria-label="Import source">
     <button role="tab" aria-selected={ui.importSource === 'device'} tabindex={ui.importSource === 'device' ? 0 : -1} disabled={busy} onclick={() => { ui.importSource = 'device'; reset() }}>From this device</button>
@@ -108,9 +152,15 @@
   {/if}
   {#if !prepared}
     {#if ui.importSource === 'device'}
-      <p class="muted">Open a PixelLab character ZIP or a PixelDoll export ZIP. Your files stay on this device.</p>
-      <label class="field"><span class="label">Character ZIP</span><input class="bu-input input" type="file" accept=".zip,application/zip" disabled={busy} onchange={fileChanged} /></label>
-      <p class="faint small">Up to 64 MB. In PixelLab’s character creator, export a ZIP with individual frames. Enclosing folders are supported. Other spritesheet layouts and PNG-only ZIPs are not supported.</p>
+      <section class="bu-dialog-surface import-drop" aria-label="Character ZIP drop area" aria-busy={busy} ondragenter={dragEntered} ondragleave={dragLeft} ondragover={dragOver} ondrop={dropped}>
+        <FileArchive size={32} />
+        <strong aria-live="polite">{busy ? 'Reading your ZIP…' : dragging ? 'Release ZIP to preview' : 'Drop a character ZIP here'}</strong>
+        <span class="muted small">PixelLab character or PixelDoll export · up to 64 MB</span>
+        <button class="bu-action btn" data-variant="outline" disabled={busy} onclick={() => fileInput?.click()}>Choose ZIP</button>
+        <input hidden type="file" accept=".zip,application/zip" aria-label="Character ZIP" bind:this={fileInput} disabled={busy} onchange={fileChanged} />
+      </section>
+      <p class="muted small">Your files stay on this device. Preview your character before importing.</p>
+      <p class="faint small">In PixelLab’s character creator, export a ZIP with individual frames. Enclosing folders are supported. Other spritesheet layouts and PNG-only ZIPs are not supported.</p>
     {:else}
       <p class="muted">Browse your account’s available characters, 20 per page, or paste a character link. Importing uses no generations.</p>
       {#if !app.key || app.keyRejected}
@@ -165,5 +215,5 @@
   .library-character :global(img) { width: 48px; height: 48px; object-fit: contain; image-rendering: pixelated; }
   .library-character > span { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
   .import-preview { display: grid; justify-items: center; gap: 8px; padding: 12px; border-radius: var(--r-ctl); background: var(--bg-hover); }
-  input[type=file] { max-width: 100%; }
+  .import-drop { display: grid; justify-items: center; gap: 12px; padding: 28px 16px; text-align: center; }
 </style>

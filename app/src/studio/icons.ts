@@ -6,6 +6,7 @@ export { default as Redo2 } from '@lucide/svelte/icons/redo-2';
 export { default as Play } from '@lucide/svelte/icons/play';
 export { default as Pause } from '@lucide/svelte/icons/pause';
 export { default as Download } from '@lucide/svelte/icons/download';
+export { default as FileArchive } from '@lucide/svelte/icons/file-archive';
 export { default as Share2 } from '@lucide/svelte/icons/share-2';
 export { default as Compass } from '@lucide/svelte/icons/compass';
 export { default as Clapperboard } from '@lucide/svelte/icons/clapperboard';

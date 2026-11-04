@@ -72,6 +72,116 @@ test.beforeEach(async ({ context }) => {
   await context.route('https://*.pixellab.ai/**', route => route.abort()) // stay offline by default; a test's own route overrides this
 })
 
+test('device import previews a dropped ZIP and offers a keyboard-accessible file picker', async ({ page, context }) => {
+  const requests: string[] = []
+  await context.route('https://*.pixellab.ai/**', route => { requests.push(route.request().method()); return route.abort() })
+  const image = makeImg(48, 48); image.data.set([180, 100, 80, 255], (30 * 48 + 24) * 4)
+  const bytes = await zip([{ name: 'metadata.json', data: new TextEncoder().encode(JSON.stringify({ name: 'Drop preview' })) }, { name: 'rotations/south.png', data: await encodePngBytes(image) }])
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true }), drop = dialog.getByRole('region', { name: 'Character ZIP drop area', exact: true })
+  const transfer = await page.evaluateHandle(bytes => {
+    const data = new DataTransfer(); data.items.add(new File([new Uint8Array(bytes)], 'character.ZIP', { type: 'application/zip' })); return data
+  }, Array.from(bytes))
+  await drop.dispatchEvent('dragenter', { dataTransfer: transfer })
+  await expect(drop).toContainText('Release ZIP to preview')
+  // Crossing the button inside the drop surface must not reset its active state.
+  await drop.getByRole('button', { name: 'Choose ZIP', exact: true }).dispatchEvent('dragenter', { dataTransfer: transfer })
+  await drop.getByRole('button', { name: 'Choose ZIP', exact: true }).dispatchEvent('dragleave', { dataTransfer: transfer })
+  await expect(drop).toContainText('Release ZIP to preview')
+  await drop.dispatchEvent('dragleave', { dataTransfer: transfer })
+  await expect(drop).toContainText('Drop a character ZIP here')
+  await drop.dispatchEvent('dragover', { dataTransfer: transfer })
+  await drop.dispatchEvent('drop', { dataTransfer: transfer })
+  await expect(dialog.getByRole('img', { name: 'Character import preview', exact: true })).toBeVisible()
+  await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue('Drop preview')
+  await dialog.getByRole('button', { name: 'Choose another character', exact: true }).click()
+  const choosing = page.waitForEvent('filechooser')
+  await dialog.getByRole('button', { name: 'Choose ZIP', exact: true }).focus()
+  await page.keyboard.press('Enter')
+  await (await choosing).setFiles({ name: 'character.ZIP', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue('Drop preview')
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled()
+  await transfer.dispose()
+  expect(requests).toEqual([])
+})
+
+test('device import validates dropped files and picker files before previewing', async ({ page }) => {
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true }), drop = dialog.getByRole('region', { name: 'Character ZIP drop area', exact: true })
+  for (const [files, message] of [
+    [[{ name: 'first.zip' }, { name: 'second.zip' }], 'Choose one character ZIP at a time.'],
+    [[{ name: 'sprite.png' }], 'Choose a ZIP file exported from PixelLab or PixelDoll.'],
+    [[{ name: 'large.zip', size: 64 * 1024 * 1024 + 1 }], 'Choose a ZIP smaller than 64 MB.'],
+  ] as const) {
+    const transfer = await page.evaluateHandle(files => {
+      const data = new DataTransfer()
+      for (const entry of files) {
+        const file = new File(['invalid'], entry.name, { type: 'application/zip' })
+        if ('size' in entry) Object.defineProperty(file, 'size', { value: entry.size })
+        data.items.add(file)
+      }
+      return data
+    }, files)
+    await drop.dispatchEvent('drop', { dataTransfer: transfer })
+    await expect(dialog.getByRole('alert')).toHaveText(message)
+    await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled()
+    await expect(dialog.getByRole('button', { name: 'Choose ZIP', exact: true })).toBeEnabled()
+    await transfer.dispose()
+  }
+  const picker = dialog.getByLabel('Character ZIP', { exact: true })
+  await picker.setInputFiles({ name: 'sprite.png', mimeType: 'image/png', buffer: Buffer.from('invalid') })
+  await expect(dialog.getByRole('alert')).toHaveText('Choose a ZIP file exported from PixelLab or PixelDoll.')
+  const file = { name: 'broken.zip', mimeType: 'application/zip', buffer: Buffer.from('invalid') }
+  await picker.setInputFiles(file)
+  await expect(dialog.getByRole('alert')).not.toHaveText('Choose a ZIP file exported from PixelLab or PixelDoll.')
+  await expect(picker).toHaveValue('')
+  await picker.setInputFiles(file)
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled()
+})
+
+test('device import ignores extra drops while reading and cancels without a late preview', async ({ page, context }) => {
+  await context.addInitScript(() => {
+    const read = File.prototype.arrayBuffer
+    File.prototype.arrayBuffer = async function () {
+      if (this.name === 'held.zip') await new Promise<void>(resolve => { (window as unknown as { releaseImportRead: () => void }).releaseImportRead = resolve })
+      return read.call(this)
+    }
+  })
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true }), drop = dialog.getByRole('region', { name: 'Character ZIP drop area', exact: true })
+  const transfer = await page.evaluateHandle(() => {
+    const data = new DataTransfer(); data.items.add(new File(['invalid'], 'held.zip', { type: 'application/zip' })); return data
+  })
+  // Outside the drop surface, files cannot navigate the page or start an import.
+  await expect(drop).toBeVisible()
+  expect(await page.evaluate(data => document.body.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true })), transfer)).toBe(false)
+  await expect(drop).toContainText('Drop a character ZIP here')
+  await drop.dispatchEvent('drop', { dataTransfer: transfer })
+  await expect(drop).toContainText('Reading your ZIP…')
+  const second = await page.evaluateHandle(() => {
+    const data = new DataTransfer(); data.items.add(new File(['invalid'], 'extra.png', { type: 'image/png' })); return data
+  })
+  await drop.dispatchEvent('drop', { dataTransfer: second })
+  await expect(drop).toContainText('Reading your ZIP…')
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await dialog.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(dialog).toHaveCount(0)
+  await page.evaluate(() => (window as unknown as { releaseImportRead: () => void }).releaseImportRead())
+  expect(await page.evaluate(data => document.body.dispatchEvent(new DragEvent('drop', { dataTransfer: data, bubbles: true, cancelable: true })), transfer)).toBe(true)
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  await expect(drop).toContainText('Drop a character ZIP here')
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await transfer.dispose(); await second.dispose()
+})
+
 test('import can be canceled before choosing a file and reopened', async ({ page }, info) => {
   await openStudio(page, info.config.projects.find((p) => p.name === 'browser-selftests')!.use.baseURL!)
   for (const close of ['Cancel', 'Escape']) {
