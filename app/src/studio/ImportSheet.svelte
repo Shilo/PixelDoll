@@ -16,6 +16,7 @@
   import { ChevronLeft, ChevronRight, Download, FileArchive, KeyRound, TriangleAlert } from './icons.ts'
 
   let prepared = $state.raw<ImportedCharacter | null>(null)
+  let previewValid = $state(false), nameInitialized = false
   let setupNext = $state(true)
   const needsSetup = $derived(!!prepared && !rigReady({ manifest: prepared.project.manifest, ...prepared.extra }))
   let states = $state.raw<CharacterImportState[]>([]), stateId = $state(''), moveStates = $state.raw<string[]>([])
@@ -39,7 +40,7 @@
     return composeCell(p, m.presets[0]?.items ?? { body: m.rig.baseItem }, m.rig.animations[0].id, dir, 0)
   })
   $effect(() => { if (ui.importSource === 'pixellab' && app.key && !listed) { listed = true; void load(0) } })
-  function reset() { prepared = null; bytes = null; error = ''; name = ''; states = []; stateId = ''; moveStates = []; dragging = false; dragDepth = 0 }
+  function reset() { prepared = null; previewValid = false; nameInitialized = false; bytes = null; error = ''; name = ''; states = []; stateId = ''; moveStates = []; dragging = false; dragDepth = 0 }
   function close() { if (!saving) { reads.abort(); ui.sheet = null } }
   async function load(next: number) {
     loading = true; libraryError = ''
@@ -50,23 +51,24 @@
     } catch (e) { if (alive) libraryError = (e as Error).message }
     finally { if (alive) loading = false }
   }
-  function choices(available: CharacterImportState[], selected: string | undefined, additional: readonly string[] | 'all') {
+  function choices(available: CharacterImportState[], selected: string | undefined, selection: readonly string[] | 'all' | undefined) {
     states = available; stateId = selected ?? available[0]?.id ?? ''
-    moveStates = [...new Set([stateId, ...(additional === 'all' ? available.filter(s => s.animations !== 0).map(s => s.id) : additional)])]
+    moveStates = [...new Set(selection === 'all' ? available.filter(s => s.animations !== 0).map(s => s.id) : selection ?? (stateId ? [stateId] : []))]
   }
   function stateLabel(state: CharacterImportState) {
     const label = state.name || 'Untitled state'
     return states.filter(s => (s.name || 'Untitled state') === label).length > 1 ? `${label} (${states.indexOf(state) + 1})` : label
   }
-  async function prepare(data: Uint8Array, selected?: string, additional: readonly string[] | 'all' = []) {
-    bytes = data
+  async function prepare(data: Uint8Array, selected?: string, selection?: readonly string[] | 'all') {
+    bytes = data; previewValid = false
     try {
-      const result = await readCharacterZip(data, selected, additional)
+      const result = await readCharacterZip(data, selected, selection)
       if (!alive) return
-      choices(result.states ?? [], result.stateId, additional)
-      prepared = result; name = result.project.manifest.name.slice(0, 60)
+      choices(result.states ?? [], result.stateId, selection)
+      prepared = result; previewValid = true
+      if (!nameInitialized) { name = result.project.manifest.name.slice(0, 60); nameInitialized = true }
     } catch (e) {
-      if (alive && e instanceof CharacterImportError) choices(e.states, e.stateId ?? selected, additional)
+      if (alive && e instanceof CharacterImportError) choices(e.states, e.stateId ?? selected, selection)
       throw e
     }
   }
@@ -129,22 +131,22 @@
     const data = bytes
     const selected = moveStates.filter(id => states.some(s => s.id === id && s.animations !== 0))
     stateId = value
-    prepared = null; error = ''; busy = true
-    try { await prepare(data, value, selected.filter(id => id !== value)) }
+    error = ''; busy = true
+    try { await prepare(data, value, selected) }
     catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) busy = false }
   }
   async function changeMoves(id: string, include: boolean) {
     if (!bytes || busy) return
-    const data = bytes, previousName = name
+    const data = bytes
     moveStates = include ? [...moveStates, id] : moveStates.filter(value => value !== id)
-    prepared = null; error = ''; busy = true
-    try { await prepare(data, stateId, moveStates.filter(value => value !== stateId)); if (alive && previousName) name = previousName }
+    error = ''; busy = true
+    try { await prepare(data, stateId, moveStates) }
     catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) busy = false }
   }
   async function save() {
-    if (!prepared || busy) return
+    if (!prepared || !previewValid || busy) return
     busy = true; saving = true; error = ''
     try {
       const projectId = await saveImportedCharacter(prepared, name)
@@ -160,21 +162,25 @@
 
 <svelte:window ondragover={preventFileNavigation} ondrop={preventFileNavigation} />
 
-<Sheet title="Import character" onclose={close} cancelDisabled={saving} className={ui.importSource === 'pixellab' && !prepared && app.key && !app.keyRejected ? 'import-sheet import-browse' : 'import-sheet'}>
+<Sheet title="Import character" onclose={close} cancelDisabled={saving} className={prepared ? 'import-sheet import-review' : ui.importSource === 'pixellab' && app.key && !app.keyRejected ? 'import-sheet import-browse' : 'import-sheet'}>
   <div class="api-action"><ApiPeek scope="library-open" label="Browse PixelLab characters" plan={libraryPlan()} activityScope={listScope(0)} /><div class="seg full" style="flex:1" role="tablist" aria-label="Import source">
     <button role="tab" aria-selected={ui.importSource === 'device'} tabindex={ui.importSource === 'device' ? 0 : -1} disabled={busy} onclick={() => { ui.importSource = 'device'; reset() }}>From this device</button>
     <button role="tab" aria-selected={ui.importSource === 'pixellab'} aria-busy={loading} tabindex={ui.importSource === 'pixellab' ? 0 : -1} disabled={busy} onclick={() => { ui.importSource = 'pixellab'; reset() }}>From PixelLab</button>
   </div></div>
   {#if states.length > 1}
-    <label class="field"><span class="label">Standing pose</span><select class="bu-input input" value={stateId} disabled={busy} onchange={(e) => changeState(e.currentTarget.value)}>{#each states as state (state.id)}<option value={state.id}>{stateLabel(state)}</option>{/each}</select></label>
-    {#if states.some(state => state.animations !== 0)}
-      <section class="state-moves" role="group" aria-labelledby="import-moves-title"><h3 class="label" id="import-moves-title">Moves to import</h3>
-        <p class="faint small">Moves keep the appearance of their source state. Uncheck any versions you do not want.</p>
-        {#each states.filter(state => state.animations !== 0) as state (state.id)}
-          <label class="check"><input type="checkbox" checked={state.id === stateId || moveStates.includes(state.id)} disabled={busy || state.id === stateId} onchange={e => changeMoves(state.id, e.currentTarget.checked)} /><span>{stateLabel(state)} · {state.animations === null ? 'unreadable moves' : `${state.animations} ${state.animations === 1 ? 'move' : 'moves'}`}{state.id === stateId ? ' (included with standing pose)' : ''}</span></label>
-        {/each}
-      </section>
-    {/if}
+    <div class="field">
+      <label class="label" for="import-standing-state">Standing pose state</label>
+      <select class="bu-input input" id="import-standing-state" aria-describedby="import-standing-help" value={stateId} disabled={busy} onchange={(e) => changeState(e.currentTarget.value)}>{#each states as state (state.id)}<option value={state.id}>{stateLabel(state)}</option>{/each}</select>
+      <p class="faint small" id="import-standing-help">Uses this state’s static directional views.</p>
+    </div>
+  {/if}
+  {#if states.some(state => state.animations !== 0)}
+    <section class="state-moves" role="group" aria-labelledby="import-moves-title"><h3 class="label" id="import-moves-title">Moves to import</h3>
+      <p class="faint small">Moves keep the appearance of their source state. Uncheck any versions you do not want.</p>
+      {#each states.filter(state => state.animations !== 0) as state (state.id)}
+        <label class="check"><input type="checkbox" checked={moveStates.includes(state.id)} disabled={busy} onchange={e => changeMoves(state.id, e.currentTarget.checked)} /><span>{stateLabel(state)} · {state.animations === null ? 'unreadable moves' : `${state.animations} ${state.animations === 1 ? 'move' : 'moves'}`}</span></label>
+      {/each}
+    </section>
   {/if}
   {#if !prepared}
     {#if ui.importSource === 'device'}
@@ -215,26 +221,28 @@
       </form>
     {/if}
   {:else}
-    <div class="import-preview">
+    <div class="import-preview" aria-busy={busy && !saving}>
       {#if preview}<Sprite img={preview} k={Math.max(1, Math.min(3, Math.floor(256 * ui.dpr / Math.max(preview.w, preview.h))))} label="Character import preview" />{/if}
-      <p class="muted">{prepared.project.manifest.rig.directions.length} directions · {prepared.project.manifest.rig.animations.length} {prepared.project.manifest.rig.animations.length === 1 ? 'move' : 'moves'} · {prepared.project.manifest.items.filter((i) => i.slot !== 'body').length} separate {prepared.project.manifest.items.filter((i) => i.slot !== 'body').length === 1 ? 'item' : 'items'}</p>
+      {#if !previewValid && !busy}<p class="muted small">Showing the last preview. Update your selections to continue.</p>
+      {:else}<p class="muted">{prepared.project.manifest.rig.directions.length} directions · {prepared.project.manifest.rig.animations.length} {prepared.project.manifest.rig.animations.length === 1 ? 'move' : 'moves'} · {prepared.project.manifest.items.filter((i) => i.slot !== 'body').length} separate {prepared.project.manifest.items.filter((i) => i.slot !== 'body').length === 1 ? 'item' : 'items'}</p>{/if}
     </div>
+    {#if busy && !saving}<p class="muted" role="status">Updating preview…</p>{/if}
     <label class="field"><span class="label">Character name</span><input class="bu-input input" type="text" bind:value={name} maxlength="60" disabled={busy} /></label>
     {#each prepared.warnings as warning (warning)}<p class="notice warn small"><TriangleAlert size={16} /><span>{warning}</span></p>{/each}
     {#if needsSetup}<label class="check"><input type="checkbox" bind:checked={setupNext} disabled={busy} />Set up the pose rig next (recommended)</label><p class="faint small">Import is free. Rig setup shows its PixelLab generation cost before you start.</p>{/if}
     <button class="bu-action btn plain" data-variant="quiet" disabled={busy} onclick={reset}>Choose another character</button>
   {/if}
-  {#if busy}<p class="muted" role="status">{saving ? 'Saving your local copy…' : 'Preparing your character…'}</p>{/if}
+  {#if busy && (!prepared || saving)}<p class="muted" role="status">{saving ? 'Saving your local copy…' : 'Preparing your character…'}</p>{/if}
   {#if error}<p class="notice bad small" role="alert"><TriangleAlert size={16} /><span>{error}</span></p>{/if}
   {#snippet footer()}
     <span class="foot-note import-note">Free · saves a new local copy</span>
-    <button class="bu-action btn primary" data-variant="primary" disabled={!prepared || busy || !name.trim()} onclick={save}><Download size={16} />{busy ? 'Working…' : 'Import character'}</button>
+    <button class="bu-action btn primary" data-variant="primary" disabled={!prepared || !previewValid || busy || !name.trim()} onclick={save}><Download size={16} />{busy ? 'Working…' : 'Import character'}</button>
   {/snippet}
 </Sheet>
 
 <style>
-  :global(dialog.sheet.import-browse.center) { height: calc(100dvh - 48px); }
-  :global(dialog.sheet.import-browse.bottom) { height: calc(100dvh - 32px); }
+  :global(dialog.sheet:is(.import-browse, .import-review).center) { height: calc(100dvh - 48px); }
+  :global(dialog.sheet:is(.import-browse, .import-review).bottom) { height: calc(100dvh - 32px); }
   :global(.import-browse > .sheet-body) { min-height: 0; }
   :global(.import-browse > .sheet-body > *) { flex-shrink: 0; }
   :global(.import-sheet > .sheet-foot) { justify-content: space-between; }

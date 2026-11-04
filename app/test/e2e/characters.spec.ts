@@ -12,14 +12,14 @@ import { composeCell } from '../../src/lib/compose/compose.ts'
 
 const ID = 'f6a0bdc5-354e-4682-8df3-55fc3d118737'
 
-async function multiStateImportZip(incompatible = false, unreadable = false) {
+async function multiStateImportZip(incompatible = false, unreadable = false, single = false) {
   const image = makeImg(48, 48); image.data.set([180, 100, 80, 255], (30 * 48 + 24) * 4)
   return zip([
     { name: 'metadata.json', data: new TextEncoder().encode(JSON.stringify({ states: [
       { character: { id: ID, name: 'Base appearance', view: 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: { walk: { south: ['sprite.png'] } } } },
       { character: { id: 'punch-state', name: 'Punch appearance', view: incompatible ? 'side' : 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: unreadable ? null : { right_punch: { south: ['sprite.png'] } } } },
       { character: { id: 'still-state', name: 'Still appearance', view: 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: {} } },
-    ] })) },
+    ].slice(0, single ? 1 : undefined) })) },
     { name: 'sprite.png', data: await encodePngBytes(image) },
   ])
 }
@@ -204,18 +204,19 @@ test('device import includes sibling moves and preserves explicit selections whe
   await expect(dialog.locator('.import-preview')).toContainText('3 moves')
   const moves = dialog.getByRole('group', { name: 'Moves to import', exact: true }), base = moves.getByRole('checkbox', { name: /^Base appearance/ }), punch = moves.getByRole('checkbox', { name: /^Punch appearance/ })
   await expect(moves).toContainText('Moves keep the appearance of their source state.')
-  await expect(base).toBeChecked(); await expect(base).toBeDisabled(); await expect(punch).toBeChecked()
+  await expect(base).toBeChecked(); await expect(base).toBeEnabled(); await expect(punch).toBeChecked()
   await dialog.getByLabel('Character name', { exact: true }).fill('Keep my character name')
   await punch.uncheck()
   await expect(dialog.locator('.import-preview')).toContainText('2 moves')
   await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue('Keep my character name')
   await punch.check()
   await expect(dialog.locator('.import-preview')).toContainText('3 moves')
-  await dialog.getByRole('combobox', { name: 'Standing pose', exact: true }).selectOption('punch-state')
-  await expect(base).toBeEnabled(); await expect(base).toBeChecked(); await expect(punch).toBeDisabled()
+  await dialog.getByRole('combobox', { name: 'Standing pose state', exact: true }).selectOption('punch-state')
+  await expect(base).toBeEnabled(); await expect(base).toBeChecked(); await expect(punch).toBeEnabled()
+  await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue('Keep my character name')
   await base.uncheck()
   await expect(dialog.locator('.import-preview')).toContainText('2 moves')
-  await dialog.getByRole('combobox', { name: 'Standing pose', exact: true }).selectOption('still-state')
+  await dialog.getByRole('combobox', { name: 'Standing pose state', exact: true }).selectOption('still-state')
   await expect(base).not.toBeChecked(); await expect(punch).toBeChecked(); await expect(punch).toBeEnabled()
   await expect(dialog.locator('.import-preview')).toContainText('2 moves')
   await dialog.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true }).uncheck()
@@ -223,6 +224,92 @@ test('device import includes sibling moves and preserves explicit selections whe
   await expect(page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')).toHaveText(['Default', 'Right punch'])
   await reloadStudio(page)
   await expect(page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')).toHaveText(['Default', 'Right punch'])
+})
+
+test('standing state updates retain the preview, optional moves, edited names and dialog geometry', async ({ page }) => {
+  const bytes = await multiStateImportZip()
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true }), name = dialog.getByLabel('Character name', { exact: true })
+  await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'multi-state.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await expect(dialog.locator('.import-preview')).toContainText('3 moves')
+  await name.fill('') // An intentionally cleared name must not be overwritten during updates.
+  await page.evaluate(() => {
+    const control = window as unknown as { holdImportDigest: boolean; releaseImportDigest: () => void }
+    const digest = crypto.subtle.digest.bind(crypto.subtle)
+    crypto.subtle.digest = async (...args: Parameters<SubtleCrypto['digest']>) => {
+      if (control.holdImportDigest) {
+        control.holdImportDigest = false
+        await new Promise<void>(resolve => { control.releaseImportDigest = resolve })
+      }
+      return digest(...args)
+    }
+  })
+  for (const [index, size] of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }].entries()) {
+    await page.setViewportSize(size)
+    const bounds = await dialog.boundingBox()
+    await page.evaluate(() => { (window as unknown as { holdImportDigest: boolean }).holdImportDigest = true })
+    await dialog.getByRole('combobox', { name: 'Standing pose state', exact: true }).selectOption(index % 2 ? ID : 'punch-state')
+    try {
+      await expect(dialog.getByRole('status')).toContainText('Updating preview')
+      await expect(dialog.getByRole('img', { name: 'Character import preview' })).toBeVisible()
+      await expect(dialog.getByRole('region', { name: 'Character ZIP drop area' })).toHaveCount(0)
+      await expect(dialog.locator('.sheet-foot').getByRole('button')).toBeDisabled()
+      expect(await dialog.boundingBox()).toEqual(bounds)
+    } finally { await page.evaluate(() => (window as unknown as { releaseImportDigest: () => void }).releaseImportDigest()) }
+    await expect(dialog.getByRole('status')).toHaveCount(0)
+    expect(await dialog.boundingBox()).toEqual(bounds)
+    await expect(name).toHaveValue('')
+  }
+  for (const checkbox of await dialog.getByRole('group', { name: 'Moves to import' }).getByRole('checkbox').all()) await checkbox.uncheck()
+  await expect(dialog.locator('.import-preview')).toContainText('1 move')
+  await name.fill('Static rotations only')
+  await dialog.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true }).uncheck()
+  await dialog.getByRole('button', { name: 'Import character', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')).toHaveText(['Default'])
+})
+
+test('failed standing state updates retain the old preview but block saving until recovery', async ({ page }) => {
+  const bytes = await multiStateImportZip(true)
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true })
+  await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'incompatible.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await expect(dialog.getByRole('alert')).toBeVisible()
+  await dialog.getByRole('checkbox', { name: /^Punch appearance/ }).uncheck()
+  await expect(dialog.locator('.import-preview')).toContainText('2 moves')
+  await dialog.getByLabel('Character name', { exact: true }).fill('Preserved through failure')
+  const bounds = await dialog.boundingBox()
+  const state = dialog.getByRole('combobox', { name: 'Standing pose state', exact: true })
+  await state.selectOption('punch-state')
+  await expect(dialog.getByRole('alert')).toContainText('different character size or camera view')
+  await expect(dialog.getByRole('img', { name: 'Character import preview' })).toBeVisible()
+  await expect(dialog.getByRole('region', { name: 'Character ZIP drop area' })).toHaveCount(0)
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled()
+  expect(await dialog.boundingBox()).toEqual(bounds)
+  await state.selectOption(ID)
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue('Preserved through failure')
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled()
+})
+
+test('a single-state import can exclude its own animation and retain static Default views', async ({ page }) => {
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true })
+  await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'single-state.zip', mimeType: 'application/zip', buffer: Buffer.from(await multiStateImportZip(false, false, true)) })
+  await expect(dialog.locator('.import-preview')).toContainText('2 moves')
+  await expect(dialog.getByRole('combobox', { name: 'Standing pose state', exact: true })).toHaveCount(0)
+  const move = dialog.getByRole('group', { name: 'Moves to import' }).getByRole('checkbox')
+  await expect(move).toBeEnabled()
+  await move.uncheck()
+  await expect(dialog.locator('.import-preview')).toContainText('1 move')
+  await expect(dialog.getByRole('img', { name: 'Character import preview' })).toBeVisible()
+  await expect(move).not.toBeChecked()
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled()
 })
 
 test('an incompatible sibling move can be unchecked after the initial import error', async ({ page }) => {
