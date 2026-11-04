@@ -53,6 +53,11 @@ export interface Rig {
 /** The one-frame move of the standing views that characters are created and imported with (UI "Default"). Not `rest`, which
  * names the item pipeline's pseudo cells (items.ts restKey); the reserved id a user's move can never take. */
 export const DEFAULT_MOVE = 'default';
+/** Stored standing provenance remains valid when local garment-region encoding changes only the base's color hashes. */
+export function matchesStanding(rig: Rig, anim: RigAnimation, dir: DirectionName, image: Sha256 | null | undefined): boolean {
+  const rest = rig.rest?.[dir]?.image, source = anim.sources?.[dir];
+  return anim.cells === 1 && !!image && !!rest && (image === rest || source?.motion === 'imported-rest' && source.reference === rest);
+}
 export const cellKey = (anim: string, dir: DirectionName, cell: number) => `${anim}/${dir}/${cell}`;
 export const defaultMs = (anim: string) => (anim.includes('idle') ? 150 : 100);
 export const playlist = (cells: number, ms: number) => Array.from({ length: cells }, (_, cell) => ({ cell, ms }));

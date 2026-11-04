@@ -1,7 +1,7 @@
 // Dress-up model (architecture §4, §6): per-item materials, variant resolution with linkTo, recolored project view,
 // random outfits, coverage and layer outlines. Pure over Project; the M4 UI and the baked export share recolor().
 import type { Img } from '../image/png.ts';
-import type { DirectionName, Hex, Item, Layer, Manifest, Material, Preset, Project } from '../store/manifest.ts';
+import type { CellKey, DirectionName, Hex, Item, Layer, Manifest, Material, Preset, Project } from '../store/manifest.ts';
 import { applyIndex, autoRamps, colorCounts, deriveRamps, fromHex, hueName, indexImg, lab, tintRamp, toHex, variantRamp } from './palette.ts';
 import { isGarment, isShorts } from './regions.ts';
 
@@ -174,7 +174,21 @@ export function randomOutfit(m: Manifest, rnd = Math.random): Pick<Preset, 'item
 /** The item has pixels in (anim, dir); a mirrored direction without its own cells follows its source. */
 export function hasCells(m: Manifest, it: Item | undefined, anim: string, dir: DirectionName): boolean {
   const src = m.rig.directions.find((d) => d.id === dir)?.mirrorOf;
-  return !!it?.layers.some((l) => (l.cells?.[anim]?.[dir] ?? (src ? l.cells?.[anim]?.[src] : undefined))?.some(Boolean));
+  if (!it) return false;
+  const rows = it.layers.map(l => l.cells?.[anim]?.[dir] ?? (src ? l.cells?.[anim]?.[src] : undefined));
+  if (it.id === m.rig.baseItem) return rows.some(row => row?.some(Boolean));
+  const count = m.rig.animations.find(a => a.id === anim)?.cells;
+  // Authored transparent equipment frames are valid (for example, glasses seen from behind). Preview coverage
+  // distinguishes them from null placeholders whose generation has not completed.
+  return rows.some(row => row?.some(Boolean)) || !!count && !!rows.length && rows.every(row => row?.length === count) && !!it.coverage && Array.from({ length: count }, (_, i) => i).every(i => it.coverage!.includes(`${anim}/${dir}/${i}` as CellKey) || !!src && it.coverage!.includes(`${anim}/${src}/${i}` as CellKey));
+}
+
+/** Complete generated coverage, including explicitly authored transparency but excluding pending placeholders. */
+export function hasCompleteCells(m: Manifest, it: Item, anim: string, dir: DirectionName): boolean {
+  const count = m.rig.animations.find(a => a.id === anim)?.cells, src = m.rig.directions.find(d => d.id === dir)?.mirrorOf;
+  if (!count || !it.layers.length || !it.layers.every(l => (l.cells?.[anim]?.[dir] ?? (src ? l.cells?.[anim]?.[src] : undefined))?.length === count)) return false;
+  if (!it.coverage) return hasCells(m, it, anim, dir);
+  return Array.from({ length: count }, (_, i) => i).every(i => it.coverage!.includes(`${anim}/${dir}/${i}` as CellKey) || !!src && it.coverage!.includes(`${anim}/${src}/${i}` as CellKey));
 }
 
 /** "anim/dir" pairs where the base has cells but the item has none (mirrored directions follow their source). */

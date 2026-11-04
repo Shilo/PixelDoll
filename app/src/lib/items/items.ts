@@ -148,8 +148,14 @@ export const callAnim = (cells: string[]) => { const n = new Map<string, number>
 /** Moves of one cell list in order, with frame counts. */
 export const callParts = (cells: string[]) => cells.reduce<{ anim: string; n: number }[]>((p, k) => { const a = k.split('/')[0]; if (p.at(-1)?.anim === a) p.at(-1)!.n++; else p.push({ anim: a, n: 1 }); return p; }, []);
 /** Can the skel route run? Needs the v1.3 rest views and the stored keypoint sequence of every chosen clip-direction. */
-export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>) =>
-  spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints)) && spec.anims.every((a) => (spec.clipDirs?.[a] ?? spec.dirs).every((d) => !!clipKeypoints(rig, a, d)));
+export const canPose = (rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'standing'>) =>
+  spec.dirs.every((d) => hasAll(rig.rest?.[d]?.keypoints)) && spec.anims.every((a) => (spec.clipDirs?.[a] ?? spec.dirs).every((d) => reusesStanding(rig, spec, a, d) || !!clipKeypoints(rig, a, d)));
+
+/** A verified standing scope can reuse its dressed output even when imported source metadata is absent. */
+export const reusesStanding = (rig: Rig, spec: Pick<ItemSpec, 'standing'>, anim: string, dir: DirectionName) => {
+  const clip = rig.animations.find(a => a.id === anim);
+  return clip?.cells === 1 && (!!spec.standing || clip.sources?.[dir]?.motion === 'imported-rest');
+};
 
 /** M4/T3: a held item's bg (blade outside the body) sits above the cape's bg (z 4) in S/E/W, else the cape hides the hilt and
  * blade (T3 Ranger: 220 sword px hidden over walk S); from behind (north) the cape stays over it (bg z as built). */
@@ -178,11 +184,11 @@ export const SLOTS: Slot[] = [
 export const slotOf = (id: string) => SLOTS.find((s) => s.id === id)!;
 
 export type Route = Key | 'none'; // 'none' = diff fallback on the real base
-export interface ItemSpec { id: string; name: string; slot: string; prompt: string; key: Route; anims: string[]; dirs: DirectionName[]; clipDirs?: Record<string, DirectionName[]>; method?: Method }
+export interface ItemSpec { id: string; name: string; slot: string; prompt: string; key: Route; anims: string[]; dirs: DirectionName[]; clipDirs?: Record<string, DirectionName[]>; method?: Method; standing?: string }
 
 /** Calls of an item. skel: [dress the rest cells (chunked to the frame cap), pose clip × dir ...]; anchor: packed edit calls (planCalls). */
-export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
-  if (spec.method !== 'skel' || spec.key === 'none') return planCalls(rig, spec).map((cells) => ({ kind: 'edit', cells }));
+export function planItem(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'method' | 'key' | 'standing'> & { slot?: string }): { kind: CallKind; cells: string[] }[] {
+  if (spec.method !== 'skel' || spec.key === 'none') return planCalls(rig, spec.standing ? { ...spec, anims: [spec.standing] } : spec).map((cells) => ({ kind: 'edit', cells }));
   // B16: a 96 px held dress takes ≤ 4 frames, an 8-direction rig has 5 rest views -> later chunks carry chunk 1's dressed cell 0
   const cap = editFrameCap(Math.max(rig.cell.w, rig.cell.h) + 2 * (spec.slot ? padOf(spec.slot, spec.method, rig.cell) : 0));
   return [
@@ -202,7 +208,7 @@ export function frozenGrid(rig: Rig, spec: { slot?: string; key?: Route }, cells
  * fit 15 frames: 12 frames cost 3 gens like 8, and both parts passed QA in all 6 chibi clip-directions (round 4 arm I). Held
  * items and other moves keep one move per call (not measured).
  */
-function posePlan(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'> & { slot?: string }): { kind: 'pose'; cells: string[] }[] {
+function posePlan(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs' | 'standing'> & { slot?: string }): { kind: 'pose'; cells: string[] }[] {
   const calls: { kind: 'pose'; cells: string[] }[] = [], packable = !spec.slot || slotOf(spec.slot)?.class !== 'held';
   const anims = rig.animations.filter((x) => spec.anims.includes(x.id)).map((x) => x.id);
   for (const d of [...new Set(anims.flatMap((a) => spec.clipDirs?.[a] ?? spec.dirs))]) {
@@ -210,7 +216,7 @@ function posePlan(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'> 
     for (const a of anims) {
       if (!(spec.clipDirs?.[a] ?? spec.dirs).includes(d)) continue;
       const clip = rig.animations.find((x) => x.id === a)!;
-      if (clip.cells === 1 && clip.sources?.[d]?.motion === 'imported-rest') continue; // reuse the dressed standing reference
+      if (reusesStanding(rig, spec, a, d)) continue;
       const cells = Array.from({ length: clip.cells }, (_, i) => cellKey(a, d, i));
       if (packable && /^(idle|walk)$/.test(a) && clip.cells <= 15) {
         if (shared && shared.length + cells.length <= 15) { shared.push(...cells); continue; }
@@ -234,7 +240,7 @@ export function planGens(p: { kind: CallKind; cells: string[] }[], gridCell = { 
 }
 
 /** Clips (anim × generated dir) packed whole into calls: design call ≤ cap cells, later calls ≤ cap − 1 + 1 anchor cell. */
-export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>): string[][] {
+export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'clipDirs'>, reserveAnchor = false): string[][] {
   const max = editFrameCap(Math.max(rig.cell.w, rig.cell.h));
   const clips = spec.anims.flatMap((a) => (spec.clipDirs?.[a] ?? spec.dirs).flatMap((d) => {
     const n = rig.animations.find((x) => x.id === a)?.cells ?? 0;
@@ -243,10 +249,20 @@ export function planCalls(rig: Rig, spec: Pick<ItemSpec, 'anims' | 'dirs' | 'cli
   clips.sort((x, y) => y.n - x.n); // stable: walk S, E, N before idle
   const bins: { cap: number; clips: typeof clips }[] = [];
   for (const c of clips) {
-    const bin = bins.find((b) => b.cap - b.clips.reduce((s, x) => s + x.n, 0) >= c.n) ?? (bins.push({ cap: bins.length ? max - 1 : max, clips: [] }), bins.at(-1)!);
+    const bin = bins.find((b) => b.cap - b.clips.reduce((s, x) => s + x.n, 0) >= c.n) ?? (bins.push({ cap: reserveAnchor || bins.length ? max - 1 : max, clips: [] }), bins.at(-1)!);
     bin.clips.push(c);
   }
   return bins.map((b) => b.clips.flatMap((c) => Array.from({ length: c.n }, (_, i) => cellKey(c.a, c.d, c.start + i))));
+}
+
+/** Frozen-frame extension also works without joints, including two-view and sparse imported characters. */
+export function planAnchoredMove(rig: Rig, item: Pick<Item, 'standing' | 'dressed'>, anim: string, dirs: DirectionName[]) {
+  if (!item.standing || !rig.animations.some(a => a.id === item.standing && a.cells === 1) || !rig.animations.some(a => a.id === anim)) throw new Error('This item needs a saved standing design and an existing move.');
+  return dirs.flatMap(dir => {
+    const image = item.dressed?.[dir];
+    if (!image) throw new Error(`No saved standing design for ${dir}.`);
+    return planCalls(rig, { anims: [anim], dirs: [dir] }, true).map(cells => ({ kind: 'edit' as const, cells, reference: { image, cell: cellKey(item.standing!, dir, 0) as CellKey } }));
+  });
 }
 
 const facing = (d: string) => `facing ${d}${d === 'south' ? ' (front view)' : d === 'north' ? ' (back view)' : d.includes('-') ? ` (${d.startsWith('south') ? 'front' : 'back'} three-quarter view)` : ' (side view)'}`;
@@ -1149,9 +1165,10 @@ export async function buildItem(o: {
     id: spec.id, name: spec.name, slot: spec.slot, status: 'accepted', mirror: rig.directions.some((d) => d.mirrorOf) ? 'flip' : 'generate', materials: [], prompt: spec.prompt, layers,
     baseHash: rig.baseHash, route: o.route === 'none' ? 'diff' : spec.method === 'skel' ? 'skeleton-pose' : 'ea2-anchor',
     extractor: o.route === 'none' ? 'diff' : 'chroma', ...(o.route !== 'none' ? { key: o.route } : {}),
+    ...(spec.standing ? { standing: spec.standing } : {}),
     ...(o.anchorCell && spec.method !== 'skel' ? { anchorCell: o.anchorCell as CellKey } : {}), provenance: o.provenance, qa: o.qa,
     ...(Object.keys(baseCut).length ? { baseCut } : {}),
-    ...(o.pending ? { coverage: covered, ...(o.pending.length ? { pending: o.pending } : {}) } : {}),
+    coverage: covered, ...(o.pending?.length ? { pending: o.pending } : {}),
   };
   if (o.dressed) {
     item.dressed = {};

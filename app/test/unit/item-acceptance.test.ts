@@ -93,33 +93,41 @@ test('accepted keyframe design reasons are retained individually without rewriti
 })
 
 
-test('dressed imported-rest cells survive a design-art warning and retain their real coverage', async () => {
+test.each(['imported-rest', 'verified-standing', 'unrigged-standing'])('dressed %s cells survive a design-art warning and retain their real coverage and references', async mode => {
   const { draft, ctx } = fixture()
   const base = makeImg(8, 8)
   for (let y = 2; y < 7; y++) for (let x = 2; x < 6; x++) base.data.set([180, 140, 120, 255], (y * 8 + x) * 4)
   const hash = await cellHash(base), localRig = structuredClone(rig)
   const pose = LABELS.map((label) => ({ label, x: 0.5, y: label === 'NECK' ? 0.5 : 0.25 }))
-  localRig.rest = { south: { image: hash, keypoints: pose } }
-  localRig.animations[0].sources = { south: { route: 'import', reference: hash, keypoints: [pose], motion: 'imported-rest', provenance: [] } }
+  if (mode !== 'unrigged-standing') localRig.rest = { south: { image: hash, keypoints: pose } }
+  if (mode === 'imported-rest') localRig.animations[0].sources = { south: { route: 'import', reference: hash, keypoints: [pose], motion: 'imported-rest', provenance: [] } }
+  localRig.animations.push({ ...structuredClone(localRig.animations[0]), id: 'still-alias' })
   const manifest: Manifest = { format: 'pixeldoll/1', app: 'test', name: 'test', rig: localRig, materials: [], slots: [slotOf('body')], presets: [], items: [{ id: 'base', name: 'Body', slot: 'body', status: 'accepted', mirror: 'generate', materials: [], prompt: '', baseHash: hash, provenance: [], layers: [{ id: 'main', role: 'fg', z: 10, cells: { idle: { south: [hash] } } }] }] }
   ctx.rec.manifest = manifest
+  manifest.items[0].layers[0].cells!['still-alias'] = { south: [hash] }
   ctx.project = { manifest, images: new Map([[hash, base]]) }
-  draft.spec.method = 'skel'
+  draft.spec.method = mode === 'unrigged-standing' ? 'anchor' : 'skel'
+  if (mode !== 'imported-rest') draft.spec.standing = 'idle'
+  draft.spec.anims.push('still-alias')
   draft.spec.prompt = 'crimson helmet'
-  draft.calls[0].kind = 'dress'
-  draft.calls[0].cells = ['rest/south/0']
+  draft.calls[0].kind = mode === 'unrigged-standing' ? 'edit' : 'dress'
+  draft.calls[0].cells = [mode === 'unrigged-standing' ? 'idle/south/0' : 'rest/south/0']
   const composite = toChroma(base, 'green')
   for (let y = 0; y < 3; y++) for (let x = 2; x < 6; x++) composite.data.set(y === 0 ? [95, 90, 85, 255] : [220, 20, 30, 255], (y * 8 + x) * 4)
   ledger.records[0].jobs = [{ id: 'job', status: 'completed', done: true, results: ['0', '1'].map(label => ({ label, sha: 'design-warning-fixture' })) }]
   const blob = new Blob([(await encodePngBytes(composite)) as Uint8Array<ArrayBuffer>], { type: 'image/png' })
   vi.spyOn(db, 'getBlob').mockResolvedValue(blob)
   const result = await evaluateItem(draft, ctx)
-  expect(result.g1.get(0)).toContain('D1 keyframe')
+  if (mode !== 'unrigged-standing') expect(result.g1.get(0)).toContain('D1 keyframe')
   expect(hasStructuralFailure(result)).toBe(false)
-  expect(result.cells.map((c) => c.key)).toEqual(['idle/south/0'])
+  expect(result.cells.map((c) => c.key)).toEqual(['idle/south/0', 'still-alias/south/0'])
   expect(result.cells[0].area).toBeGreaterThan(0)
   const saved = await acceptItem(draft, ctx, result)
-  expect(saved.item.designWarnings?.some((why) => why.startsWith('D1'))).toBe(true)
+  if (mode !== 'unrigged-standing') expect(saved.item.designWarnings?.some((why) => why.startsWith('D1'))).toBe(true)
+  expect(saved.item.dressed?.south).toBe(await cellHash(composite))
+  if (mode !== 'imported-rest') expect(saved.item.standing).toBe('idle')
+  expect(saved.item.layers[0].cells!['still-alias']).toEqual(saved.item.layers[0].cells!.idle)
+  expect(draft.calls).toHaveLength(1) // both aliases reuse the one bought standing output
   expect(saveItem).toHaveBeenCalledOnce()
 })
 

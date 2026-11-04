@@ -12,6 +12,7 @@ import { itemRoute, padOf, planItem } from '../../src/lib/items/items.ts'
 import { baseCell, defaultMethod } from '../../src/lib/items/run.ts'
 import { coverage } from '../../src/studio/itemRoute.ts'
 import { Queue, type JobRec } from '../../src/lib/pixellab/queue.ts'
+import { posable } from '../../src/lib/items/run.ts'
 
 const pose = (dx = 0): Keypoint[] => LABELS.map((label, i) => ({ label, x: (25 + dx + i % 4) / 64, y: (12 + Math.floor(i / 4) * 8) / 64 }))
 async function source() {
@@ -25,6 +26,24 @@ async function source() {
     ...Array.from({ length: 2 }, (_, i) => ({ name: `animations/blink/south/frame_${i}.png`, data: png })),
   ]))).project
 }
+
+test('standing items bought before setup reuse their dressed references only for the exact registered standing body', async () => {
+  const project = await source(), m = project.manifest, base = m.items[0], plan = await setupPlan(project)
+  const dressed = Object.fromEntries(m.rig.directions.map(d => [d.id, base.layers[0].cells!.default![d.id]![0]!]))
+  const item = { ...structuredClone(base), id: 'bought-hat', slot: 'head', route: 'ea2-anchor' as const, key: 'green' as const, standing: 'default', dressed }
+  m.items.push(item)
+  const result = await attachImportedRig(project, plan, new Map([...plan.frames].map(([h]) => [h, pose()])), [])
+  expect(result.manifest.items[1].route).toBe('skeleton-pose')
+  expect(result.manifest.items[1].dressed).toEqual(dressed)
+  expect(posable(result.manifest).map(i => i.id)).toEqual(['bought-hat'])
+  expect(item.route).toBe('ea2-anchor') // the source is immutable
+  item.standing = 'walk' // an animated clip is never promoted, even if its first frame happens to match
+  const wrong = await attachImportedRig(project, plan, new Map([...plan.frames].map(([h]) => [h, pose()])), [])
+  expect(wrong.manifest.items[1].route).toBe('ea2-anchor')
+  item.standing = 'default'; item.dressed = { south: dressed.south }
+  const incomplete = await attachImportedRig(project, plan, new Map([...plan.frames].map(([h]) => [h, pose()])), [])
+  expect(incomplete.manifest.items[1].route).toBe('ea2-anchor')
+})
 
 test('setup attaches measured poses, anchors, independent QA and provenance without repainting pixels', async () => {
   const project = await source(), original = structuredClone(project.manifest)

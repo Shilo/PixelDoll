@@ -2,6 +2,7 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { MoveSpec, Progress } from '../../src/studio/create.ts'
 import { readFileSync } from 'node:fs'
+import { equipmentFixture } from './equipment-fixture.ts'
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), move: vi.fn(), moveReview: vi.fn(), moveItems: vi.fn(), setup: vi.fn(), recovery: vi.fn(), palette: vi.fn(), match: vi.fn(), load: vi.fn(), source: vi.fn(), fits: vi.fn(), put: vi.fn(), get: vi.fn(), del: vi.fn(), update: vi.fn(), clear: vi.fn(), subscribe: vi.fn(), handoff: vi.fn(), all: vi.fn() }))
 vi.mock('../../src/studio/create.ts', () => ({ createCharacter: mocks.create, addMove: mocks.move, reviewItemMove: mocks.moveReview, moveItems: mocks.moveItems, reviewMoveRecovery: async (...args: unknown[]) => ({ recovery: await mocks.recovery(...args) }), bodyPaletteRepairPlan: mocks.palette, saveCopy: vi.fn() }))
@@ -444,6 +445,10 @@ test('merged move flow keeps durable guards while publishing separately reviewed
 
 test('concurrent item starts claim distinct draft ids while the item pipeline loads', async () => {
   const manifest = JSON.parse(readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8'))
+  // Initial creation now needs a genuine still instead of spending on the fixture's animations.
+  manifest.rig.animations.unshift({ id: 'default', cells: 1, frames: [{ cell: 0, ms: 100 }], loop: true })
+  const base = manifest.items.find((i: { id: string }) => i.id === manifest.rig.baseItem)
+  base.layers[0].cells = { default: Object.fromEntries(manifest.rig.directions.filter((d: { mirrorOf?: string }) => !d.mirrorOf).map((d: { id: string }) => [d.id, ['sha256:standing-fixture']])) }
   mocks.load.mockResolvedValue({ rec: { id: 'project', manifest } })
   const s = await import('../../src/studio/state.svelte.ts')
   const input = { name: 'Hat', slot: 'head', prompt: 'a hat' }
@@ -457,6 +462,24 @@ test('concurrent item starts claim distinct draft ids while the item pipeline lo
 })
 
 const fixtureManifest = () => JSON.parse(readFileSync(new URL('../../public/fixtures/s2/fixture.json', import.meta.url), 'utf8'))
+
+test.each(['same character', 'another character', 'another selection'])('standing preview after draft persistence respects %s', async target => {
+  const project = await equipmentFixture(), held = pending<void>(), storing = pending<void>()
+  mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: project.manifest }, project })
+  let first = true
+  mocks.put.mockImplementation(async (_store, key) => {
+    if (key === 'studio-drafts' && first) { first = false; storing.resolve(); await held.promise }
+  })
+  const s = await import('../../src/studio/state.svelte.ts')
+  s.doc.id = 'project'; s.ui.anim = 'walk'
+  const starting = s.startItem({ name: 'Hat', slot: 'head', prompt: 'a hat' })
+  await storing.promise
+  if (target === 'another character') s.doc.id = 'other-project'
+  if (target === 'another selection') s.ui.selected = 'another-item'
+  held.resolve(); await starting
+  expect(s.ui.anim).toBe(target === 'same character' ? 'rest' : 'walk')
+  await vi.waitFor(() => expect(s.gens[0].phase).toBe('failed'))
+})
 const draftsSaved = () => mocks.put.mock.calls.filter(([, key]) => key === 'studio-drafts')
 
 test('saving an outfit never replaces another one, including a default name after a deletion and the reserved current id', async () => {

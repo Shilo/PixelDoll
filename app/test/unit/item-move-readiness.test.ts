@@ -1,0 +1,41 @@
+import { beforeEach, expect, test, vi } from 'vitest'
+import { equipmentFixture } from './equipment-fixture.ts'
+import type { RigCtx } from '../../src/lib/items/run.ts'
+import { LABELS } from '../../src/lib/rig/poses.ts'
+import { addMove, itemMoveOffer, type MoveSpec } from '../../src/studio/create.ts'
+
+const state = vi.hoisted(() => ({ ctx: null as RigCtx | null, pose: vi.fn() }))
+vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), loadProject: async () => state.ctx! }))
+vi.mock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), poseItemClip: (...args: unknown[]) => state.pose(...args) }))
+vi.mock('../../src/lib/dress/regions.ts', async original => ({ ...await original<typeof import('../../src/lib/dress/regions.ts')>(), splitBase: async () => ({ dirty: false }) }))
+
+beforeEach(() => state.pose.mockReset().mockResolvedValue(undefined))
+async function fixture() {
+  const project = await equipmentFixture(), m = project.manifest, reference = m.items[0].layers[0].cells!.rest!.south![0]!
+  const points = LABELS.map(label => ({ label, x: .5, y: .5 }))
+  m.rig.rest = { south: { image: reference, keypoints: points } }
+  m.rig.animations[0].sources = { south: { route: 'import', reference, keypoints: [points], motion: 'imported-rest', provenance: [] } }
+  for (const id of ['valid_custom', 'unrelated_missing_joints']) {
+    m.rig.animations.push({ id, cells: 8, loop: true, frames: Array.from({ length: 8 }, (_, cell) => ({ cell, ms: 100 })), ...(id === 'valid_custom' ? { sources: { south: { route: 'import' as const, reference, keypoints: Array(8).fill(points), provenance: [] } } } : {}) })
+    m.items[0].layers[0].cells![id] = { south: Array(8).fill(reference) }
+  }
+  Object.assign(m.items[1], { route: 'skeleton-pose', key: 'green', dressed: { south: reference } })
+  state.ctx = { rec: { id: 'rig-scoped-readiness', savedAt: '', manifest: m }, project }
+  return { manifest: m, spec: { id: 'valid_custom', frames: 8, items: ['hat'], dirs: ['south'], itemsOnly: true, seed: 43 } satisfies MoveSpec }
+}
+
+test('a priced existing item move executes without joints on unrelated moves or a managed character ID', async () => {
+  const { manifest, spec } = await fixture(), offer = itemMoveOffer(manifest, [spec])
+  expect(offer.gens).toBe(3)
+  await expect(addMove('rig-scoped-readiness', offer.specs[0])).resolves.toEqual({ fitIds: [], warnings: [] })
+  expect(state.pose).toHaveBeenCalledOnce()
+  expect(state.pose.mock.calls[0][2]).toBe('valid_custom')
+})
+
+test('invalid joints on the selected move stop before generation', async () => {
+  const { manifest, spec } = await fixture()
+  manifest.rig.animations[1].sources!.south!.keypoints![0] = []
+  expect(itemMoveOffer(manifest, [spec])).toMatchObject({ gens: null, specs: [] })
+  await expect(addMove('rig-scoped-readiness', spec)).rejects.toThrow(/joints/)
+  expect(state.pose).not.toHaveBeenCalled()
+})

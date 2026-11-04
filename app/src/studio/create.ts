@@ -21,8 +21,8 @@ import { ACTIONS, LABELS, authoredPoses, fromApi, hasAll, toApi } from '../lib/r
 import { rigReady } from '../lib/rig/setup.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, bodyComponents, clipQa, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
-import { gridEstimate } from '../lib/items/items.ts';
-import { posable, poseGens, itemPoseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
+import { canPose, gridEstimate, planAnchoredMove, planGens } from '../lib/items/items.ts';
+import { posable, anchorable, animateAnchoredItem, poseGens, itemPoseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
 import { coverage } from './itemRoute.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
@@ -32,8 +32,9 @@ import { skeletonInput, unpadSkeleton } from '../lib/rig/estimate.ts';
 import { planDirections } from '../lib/rig/mirror.ts';
 import { prepareExtensionFit } from '../lib/equipment/index.ts';
 import { splitBase } from '../lib/dress/regions.ts';
-import { deriveMaterials } from '../lib/dress/dress.ts';
+import { deriveMaterials, hasCompleteCells } from '../lib/dress/dress.ts';
 import { saveSplit } from '../lib/dress/project.ts';
+import { cellImg } from '../lib/compose/compose.ts';
 
 export type DirectionPolicy = 'independent' | 'mirrored';
 /** New forms send an exact prompt, frame, camera and explicit direction plan. Old saved in-flight specs retain their
@@ -412,7 +413,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
 /** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid'; itemReview?: { gens: number; artwork: string }; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; checkHashes: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; checkHashes: string[]; rigVersion: string } }
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid' | 'anchor'; itemReview?: { gens: number; artwork: string }; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; checkHashes: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; checkHashes: string[]; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
 function approvedCheckHashes(value: unknown): Set<string> {
   const invalid = () => new Error('The reviewed joint-check hashes are invalid. Review the body frames and cost again.');
@@ -621,22 +622,21 @@ async function inspectMeasurementRecovery(context: RecoveryContext, spec: MoveSp
  * keeps the body clip and poses only these directions, the same request "Make it" sends). Only directions the body has frames
  * and stored keypoints for count (the Default move's standing views are never posed). The user starts them from a priced offer; nothing is queued automatically (credits are real money). */
 export function missingItemMoves(m: Manifest, itemId: string, seed = 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
-  const item = posable(m).find((i) => i.id === itemId && !i.design);
+  const item = [...posable(m), ...anchorable(m)].find((i) => i.id === itemId && !i.design);
   if (!item) return [];
   const { clipDirs } = coverage({ rec: { manifest: m } } as RigCtx);
-  const posableDir = (a: RigAnimation, d: DirectionName) => a.sources?.[d]?.motion !== 'imported-rest' && a.sources?.[d]?.keypoints?.length === a.cells;
+  const anchored = item.route === 'ea2-anchor';
+  const posableDir = (a: RigAnimation, d: DirectionName) => a.sources?.[d]?.motion !== 'imported-rest' && (anchored ? !!item.dressed?.[d] : a.sources?.[d]?.keypoints?.length === a.cells);
   return m.rig.animations
-    .map((a) => ({ a, dirs: (clipDirs?.[a.id] ?? []).filter((d) => posableDir(a, d) && !item.layers.every((l) => l.cells?.[a.id]?.[d]?.length === a.cells)) }))
+    .map((a) => ({ a, dirs: (clipDirs?.[a.id] ?? []).filter((d) => posableDir(a, d) && !hasCompleteCells(m, item, a.id, d)) }))
     .filter(({ dirs }) => dirs.length)
-    .map(({ a, dirs }) => ({ id: a.id, frames: a.cells, items: [item.id], dirs, itemsOnly: true, seed }));
+    .map(({ a, dirs }) => ({ id: a.id, frames: a.cells, items: [item.id], dirs, itemsOnly: true, seed, ...(anchored ? { itemMethod: 'anchor' as const } : {}) }));
 }
-/** Every posable item and accepted shared design of a character, as "Add a move" offers them. */
-export const moveItems = (m: Manifest) => ({ items: posable(m).filter((i) => !i.design).map((i) => i.id), sharedItems: m.items.filter((i) => i.design && i.status === 'accepted').map((i) => i.id) });
 /** The moves creation made before Default-first (authored idle, managed walk), for a one-tap "Add idle + walk". Same request
- * shapes as creation made them (no poseStyle), with the items the character has when the user taps (and is quoted for). */
+ * shapes as creation made them (no poseStyle). Equipment is always a separately priced choice afterward. */
 export function baseMoveSpecs(m: Manifest, seed = 1 + Math.floor(Math.random() * 1_000_000)): MoveSpec[] {
   const have = new Set(m.rig.animations.map((a) => a.id));
-  return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({ id: a.name, action: a.name, frames: a.frames, ...moveItems(m), seed }));
+  return BASE_ANIMS.filter((a) => !have.has(a.name)).map((a) => ({ id: a.name, action: a.name, frames: a.frames, items: [], sharedItems: [], seed }));
 }
 
 /** Frames of a move: the authored table's length, or the text frame count. */
@@ -646,7 +646,7 @@ export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) 
   return s.action === 'walk' ? 8 : s.action && ACTIONS[s.action] && r && dir ? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length : s.frames;
 };
 export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace' | 'itemsOnly'>) {
-  const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = s.itemMethod === 'grid' && !s.replace ? 0 : dirs * (poseCallGens(n) + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
+  const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = (s.itemsOnly || s.itemMethod === 'grid') && !s.replace ? 0 : dirs * (poseCallGens(n) + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
   const directItems = s.items.filter(id => !m.items.find(item => item.id === id)?.design);
   const items = s.itemMethod === 'grid' ? directItems.reduce((sum, id) => {
     const item = m.items.find(i => i.id === id);
@@ -655,8 +655,8 @@ export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'f
     return sum + gridEstimate(cell, n, 1).gens * dirs;
   }, 0) : directItems.reduce((sum, id) => {
     const item = m.items.find(i => i.id === id)!;
-    const targets = moveDirections(m, s.dirs).filter(d => !s.itemsOnly || s.replace || !item.layers.every(l => l.cells?.[s.id]?.[d]?.length === n));
-    return sum + itemPoseGens(m.rig, item, s.id, n, targets);
+    const targets = moveDirections(m, s.dirs).filter(d => !s.itemsOnly || s.replace || !hasCompleteCells(m, item, s.id, d));
+    return sum + (s.itemMethod === 'anchor' ? planGens(planAnchoredMove(m.rig, item, s.id, targets), m.rig.cell) : itemPoseGens(m.rig, item, s.id, n, targets));
   }, 0);
   return { gens: body + items, body, items, frames: n, minutes: 4 + directItems.length * 3 };
 
@@ -666,6 +666,7 @@ export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'f
 export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
   if (!spec.itemsOnly) throw new Error('Only existing item frames can use this review.');
   const dirs = moveDirections(m, spec.dirs);
+  if (spec.itemMethod !== 'anchor' && !canPose(m.rig, { anims: [spec.id], dirs })) throw new Error('This move has missing or invalid stored joints. Set up its poses before generating equipment. No generation was requested.');
   const rows = <T>(value: Partial<Record<DirectionName, T>> | undefined) => {
     const entries = dirs.filter(dir => value?.[dir] !== undefined).map(dir => [dir, value![dir]]);
     return entries.length ? Object.fromEntries(entries) : undefined;
@@ -706,8 +707,12 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
     }
   };
   assertReview(rec.manifest);
-  if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
   const dirs = moveDirections(rec.manifest, spec.dirs), existing = rec.manifest.rig.animations.find(a => a.id === spec.id);
+  if (spec.itemMethod === 'anchor') {
+    if (!spec.itemsOnly || !existing || spec.replace || spec.measurementRecovery || spec.bodyPaletteRepair || spec.sharedItems?.length || !spec.items.length || spec.items.some(id => !anchorable(rec.manifest).some(i => i.id === id))) throw new Error('Anchored equipment generation requires an existing move and its saved standing items. No generation was requested.');
+  } else if (spec.itemsOnly && existing && !spec.replace && !spec.measurementRecovery && !spec.bodyPaletteRepair) {
+    if (!canPose(rec.manifest.rig, { anims: [spec.id], dirs }) || spec.items.some(id => !posable(rec.manifest).some(item => item.id === id && dirs.every(d => !!item.dressed?.[d])))) throw new Error('This move or item has missing stored joints or standing references. Set up its poses before generating equipment. No generation was requested.');
+  } else if (!isV13(rec)) throw new Error('Set up this character’s pose rig before adding moves.');
   if (spec.itemMethod === 'grid' && !existing) throw new Error('Choose an existing move before repairing its equipment.');
   if (reservedMove(spec.id) && (spec.replace || !existing)) throw new Error(reservedMove(spec.id));
   if (!existing && dirs.length !== genDirs(rec.manifest).length) throw new Error('A new move needs every independently drawn direction.');
@@ -734,7 +739,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
     const target = { ...spec, items: [id], dirs: targetDirs };
     if (reviewItemMove(m, target).itemReview!.artwork !== reviewItemMove(fresh.rec.manifest, target).itemReview!.artwork) throw new Error('The item frames changed before generation. Reopen the item to review them again.');
   };
-  const plans = spec.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it && !it.design ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !it.layers.every(l => l.cells?.[spec.id]?.[d]?.length === frames)) }] : []; });
+  const plans = spec.items.flatMap(id => { const it = fresh.rec.manifest.items.find(i => i.id === id); return it && !it.design ? [{ id, dirs: dirs.filter(d => spec.itemMethod === 'grid' || !hasCompleteCells(fresh.rec.manifest, it, spec.id, d)) }] : []; });
   const itemTotal = plans.reduce((n, p) => n + p.dirs.length, 0); let posed = 0;
   onProgress({ step: 'items', done: 0, total: itemTotal, recIds: [] });
   const tick = () => onProgress({ step: 'items', done: Math.min(itemTotal, ++posed), total: itemTotal, recIds: [] });
@@ -743,7 +748,8 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find(i => i.id === plan.id);
     if (!it || it.design) throw new Error('This item changed or was removed while the move was being prepared.');
     assertArtwork(ctx.rec.manifest, plan.id, plan.dirs);
-    if (spec.itemMethod === 'grid') for (const d of plan.dirs) {
+    if (spec.itemMethod === 'anchor') await animateAnchoredItem(ctx, it, spec.id, plan.dirs, spec.seed, tick);
+    else if (spec.itemMethod === 'grid') for (const d of plan.dirs) {
       const current = await loadProject(projectId), item = current.rec.manifest.items.find(i => i.id === plan.id);
       if (!item || item.design) throw new Error('This item changed or was removed while the move was being prepared.');
       assertArtwork(current.rec.manifest, plan.id, [d]);
@@ -864,13 +870,38 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
 }
 
 /** Copy a loaded (fixture) project into IndexedDB as an editable rig project, so items can be generated for it. */
-export async function saveCopy(p: { manifest: Manifest; images: Map<string, Img> }, name: string): Promise<string> {
+export async function saveCopy(p: { manifest: Manifest; images: Map<string, Img> }, name: string, standingSource?: string): Promise<string> {
   const m: Manifest = structuredClone(p.manifest);
   m.name = name;
   const id = `rig-${m.rig.baseHash.slice(7, 19)}`;
   if (await db.get('projects', id)) return id;
+  const images = new Map(p.images);
+  // The bundled demo explicitly supplies its standing source; imported characters never guess a move by name.
+  if (standingSource && !m.rig.animations.some(a => a.id === DEFAULT_MOVE)) {
+    const source = m.rig.animations.find(a => a.id === standingSource);
+    if (!source) throw new Error('The demo standing reference is missing.');
+    for (const item of m.items) for (const layer of item.layers) {
+      (layer.cells ??= {})[DEFAULT_MOVE] = {};
+      for (const dir of m.rig.directions) {
+        const image = cellImg(p, layer, standingSource, dir.id, 0);
+        if (!image && item.id === m.rig.baseItem) throw new Error(`The demo has no standing body facing ${dir.id}.`);
+        const hash = image ? await cellHash(image) : null;
+        layer.cells[DEFAULT_MOVE][dir.id] = [hash];
+        if (image && hash) images.set(hash, image);
+      }
+    }
+    m.rig.animations.unshift({ id: DEFAULT_MOVE, cells: 1, loop: true, frames: playlist(1, 100) });
+    const hashes: Record<string, Sha256> = {}, base = m.items.find(i => i.id === m.rig.baseItem)!;
+    for (const key of cellKeys(m.rig)) {
+      const [anim, dir, frame] = key.split('/'), image = cellImg({ manifest: m, images }, base.layers[0], anim, dir as DirectionName, +frame);
+      if (image) hashes[key] = await cellHash(image);
+    }
+    const oldHash = m.rig.baseHash;
+    m.rig.baseHash = await baseHashOf(m.rig, hashes);
+    for (const item of m.items) if (item.baseHash === oldHash) item.baseHash = m.rig.baseHash;
+  }
   const blobs = new Map<string, Blob>();
-  for (const [h, im] of p.images) blobs.set(h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
+  for (const [h, im] of images) blobs.set(h.slice(7), new Blob([(await encodePngBytes(im)) as Uint8Array<ArrayBuffer>], { type: 'image/png' }));
   await db.updateCharacter<StoredProject>(id, blobs, current => current ?? { id, savedAt: new Date().toISOString(), manifest: m, skeletons: {}, rigQa: { warnings: [], pivotFrom: '', tracks: [] }, origin: 'studio' });
   return id;
 }

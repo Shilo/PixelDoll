@@ -36,9 +36,9 @@
   let selectedDirs = $state<DirectionName[]>(draft?.dirs ?? untrack(() => [...availableDirs]))
   const targetDirs = $derived(replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs)
   const frames = $derived(m?.rig.animations.find((a) => a.id === id)?.cells ?? 8)
-  let skip = $state<string[]>(draft?.skip ?? [])
-  const chosen = $derived(items.filter((i) => !skip.includes(i.id)).map((i) => i.id))
-  const sharedChosen = $derived(sharedItems.filter((i) => !skip.includes(i.id)).map((i) => i.id))
+  let included = $state<string[]>(draft?.items ?? [])
+  const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id))
+  const sharedChosen = $derived(sharedItems.filter((i) => included.includes(i.id)).map((i) => i.id))
   const est = $derived(m && id && targetDirs.length ? moveEstimate(m, { id, action: text.trim() ? undefined : action, frames, items: chosen, dirs: targetDirs, replace: replacing }) : null)
   const dirs = $derived(targetDirs.length)
   const mine = $derived(!!moving.spec && moving.projectId === doc.id)
@@ -99,7 +99,7 @@
   function go() {
     const projectId = doc.id
     const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1' as const, seed: 1 + Math.floor(Math.random() * 1_000_000), ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) }
-    formDrafts.move = { projectId, action, text, skip: $state.snapshot(skip), dirs: [...selectedDirs], poseStyle: 'visible-side-v1' }
+    formDrafts.move = { projectId, action, text, items: $state.snapshot(included), dirs: [...selectedDirs], poseStyle: 'visible-side-v1' }
     withKey(() => { formDrafts.move = undefined; adding = false; void queueMoves(projectId, [spec]); ui.sheet = 'move' }, true)
   }
   function chooseAction(next: string) {
@@ -115,7 +115,7 @@
     <button class="bu-action btn primary" data-variant="primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
   {:else if progress && moving.error}
     <button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}>Start over</button>
-    <span class="api-action"><ApiPeek scope="move-retry" label="Generate move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : []} /><button class="bu-action btn" data-variant="outline" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' }, true)}>{recovery || colorRepair ? 'Generate new frames' : 'Try again'}</button></span>
+    <span class="api-action"><ApiPeek scope="move-retry" label="Generate move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : []} /><button class="bu-action btn" data-variant="outline" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' }, moving.spec?.itemMethod !== 'anchor')}>{recovery || colorRepair ? 'Generate new frames' : 'Try again'}</button></span>
     {#if recovery}<button class="bu-action btn primary" data-variant="primary" onclick={retryChecks}>{recovery.checks ? 'Retry joint checks' : 'Reuse cached frames'}</button>{/if}
     {#if colorRepair}<button class="bu-action btn primary" data-variant="primary" onclick={matchColors}>Match body colors</button>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
   {:else if progress}
@@ -186,16 +186,16 @@
         <div class="field">
           <span class="label">Animate these items too</span>
           {#each items as it (it.id)}
-            <label class="check"><input type="checkbox" checked={!skip.includes(it.id)} onchange={(e) => (skip = e.currentTarget.checked ? skip.filter((x) => x !== it.id) : [...skip, it.id])} />{it.name}
+            <label class="check"><input type="checkbox" checked={included.includes(it.id)} onchange={(e) => (included = e.currentTarget.checked ? [...included, it.id] : included.filter((x) => x !== it.id))} />{it.name}
               <span class="faint small">{poseGens(1, est?.frames ?? 8, dirs)} gens</span></label>
           {/each}
-          <p class="faint small">Items you leave out stay hidden in this move until they are made again.</p>
+          <p class="faint small">Items are left out by default to keep the initial cost down. Generate them for this move later from each item’s details.</p>
         </div>
       {/if}
       {#if sharedItems.length}
         <div class="field">
           <span class="label">Prepare shared equipment reviews</span>
-          {#each sharedItems as it (it.id)}<label class="check"><input type="checkbox" checked={!skip.includes(it.id)} onchange={(e) => (skip = e.currentTarget.checked ? skip.filter((x) => x !== it.id) : [...skip, it.id])} />{it.name}<span class="faint small">No charge now</span></label>{/each}
+          {#each sharedItems as it (it.id)}<label class="check"><input type="checkbox" checked={included.includes(it.id)} onchange={(e) => (included = e.currentTarget.checked ? [...included, it.id] : included.filter((x) => x !== it.id))} />{it.name}<span class="faint small">No charge now</span></label>{/each}
           <p class="faint small">After the body move is ready, review each fitted copy in Activity. Its animation price is shown before you start. Existing item frames stay unchanged until you keep the reviewed result.</p>
         </div>
       {/if}

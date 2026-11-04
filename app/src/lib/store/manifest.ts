@@ -68,6 +68,8 @@ export interface Item {
   extractor?: 'chroma' | 'diff'; // deprecated (v1.2), still written for older readers
   key?: 'green' | 'magenta' | 'blue' | 'azure';
   dressed?: Partial<Record<DirectionName, Sha256>>; // skeleton-pose: dressed chroma keyframes
+  /** Standing clip bound to retained dressed references, including items made before rig setup. */
+  standing?: string;
   /** Base px this item hides per cell (ear tips under a hood), as sorted y * rig.cell.w + x indices; generated directions only
    *  (a mirrored direction flips its source). Studio clears them from the base while the item is worn; exports bake "<base>~<item>". */
   baseCut?: Record<string, Partial<Record<DirectionName, (number[] | null)[]>>>;

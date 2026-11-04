@@ -89,6 +89,7 @@
     {#if rec && !rigReady(rec)}<p class="notice small"><TriangleAlert size={16} /><span>Set up this character to use skeleton-posed equipment, oversize weapons and new moves.</span><button class="bu-action btn small" data-variant="outline" onclick={() => (ui.sheet = 'setup')}>Set up character</button></p>{/if}
     {#if planned.error}<p class="notice warn small" role="alert"><TriangleAlert size={16} /><span>This character’s frames cannot use the item generator: {planned.error}</span></p>{/if}
     <div class="form">
+      <p class="muted small">Make the standing design first. Generate this item for individual moves from its details after you like the result.</p>
       <div class="field">
         <span class="label" id="where">Where does it go?</span>
         <div class="chips" role="radiogroup" aria-labelledby="where">

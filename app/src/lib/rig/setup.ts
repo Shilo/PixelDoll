@@ -1,6 +1,6 @@
 // Turn frozen imported artwork into the same rig contract used by creation, without repainting its existing layers.
 import { cellImg } from '../compose/compose.ts';
-import { DIRECTIONS, cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from './rig.ts';
+import { DIRECTIONS, cellHash, cellKey, matchesStanding, type DirectionName, type Keypoint, type Rig, type Sha256 } from './rig.ts';
 import { HEADROOM_MIN, anchorTracks, type Built } from './freeze.ts';
 import { clipQa } from './clips.ts';
 import { fixedFacingLocomotion, importedPoseIssues } from './pose-review.ts';
@@ -18,6 +18,7 @@ export function rigReady(rec?: Pick<StoredProject, 'manifest' | 'character'> | n
   const base = rec.manifest.items.find((i) => i.id === r.baseItem)?.layers[0];
   return !!base && r.directions.every((d) => d.mirrorOf || hasAll(r.rest?.[d.id]?.keypoints)) && r.animations.every((a) => r.directions.every((d) => {
     if (d.mirrorOf || !base.cells?.[a.id]?.[d.id]?.some(Boolean)) return true;
+    if (matchesStanding(r, a, d.id, base.cells?.[a.id]?.[d.id]?.[0])) return true;
     const poses = a.sources?.[d.id]?.keypoints;
     return poses?.length === a.cells && poses.every(hasAll);
   }));
@@ -100,6 +101,12 @@ export async function attachImportedRig(p: Project, plan: SetupPlan, measured: M
   for (const d of rig.directions.filter((d) => d.mirrorOf)) for (const a of rig.animations) for (let i = 0; i < a.cells; i++) {
     const src = skeletons[cellKey(a.id, d.mirrorOf!, i)];
     if (src) skeletons[cellKey(a.id, d.id, i)] = flipSkeleton(src, rig.cell.w);
+  }
+  // Standing-only edits made before setup already paid for their chroma references. Promote only an exact
+  // standing binding; selecting another reference must never pose an item from the wrong body image.
+  for (const item of manifest.items) if (item.route === 'ea2-anchor' && item.standing && item.key && item.dressed && item.baseHash === rig.baseHash) {
+    const clip = rig.animations.find(a => a.id === item.standing);
+    if (clip?.cells === 1 && rig.directions.filter(d => !d.mirrorOf).every(d => item.dressed?.[d.id] && matchesStanding(rig, clip, d.id, base.layers[0].cells?.[clip.id]?.[d.id]?.[0]))) item.route = 'skeleton-pose';
   }
   const tracks = anchorTracks(built, byHash);
   rig.anchors = tracks.anchors;

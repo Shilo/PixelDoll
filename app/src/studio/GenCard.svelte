@@ -117,7 +117,7 @@
   {/if}
 
   {#if g.phase !== 'running' && retryEstimateError}<p class="notice bad small"><CircleAlert size={14} />{retryEstimateError}</p>{/if}
-  {#if g.phase !== 'running'}<p class="faint small">Try again redraws the whole item for all current moves and directions at the displayed estimate. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.</p>{/if}
+  {#if g.phase !== 'running'}<p class="faint small">Try again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.</p>{/if}
   <details class="disclosure">
     <summary><ChevronRight size={14} />Details</summary>
     <div>

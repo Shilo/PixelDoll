@@ -5,15 +5,16 @@ import { basePrompt } from './model.ts'
 import { ACTIONS } from '../lib/rig/poses.ts'
 import { actionOf, poseBatches, poseCallGens } from '../lib/rig/clips.ts'
 import { pickKey } from '../lib/image/chroma.ts'
-import { gridEstimate, frozenGrid, planItem, itemPrompt, planGens, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
+import { gridEstimate, frozenGrid, planItem, planAnchoredMove, itemPrompt, planGens, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
 import { defaultMethod, type Draft, type RigCtx } from '../lib/items/run.ts'
-import { coverage, type NewItemInput } from './itemRoute.ts'
+import { standingCoverage, type NewItemInput } from './itemRoute.ts'
 import type { StoredProject } from '../lib/store/project.ts'
 import type { SetupPlan } from '../lib/rig/setup.ts'
 import type { FitDraft, FitPlan } from '../lib/equipment/types.ts'
 import type { JobRec } from '../lib/pixellab/queue.ts'
 import { characterId } from '../lib/pixellab/library.ts'
 import type { Manifest } from '../lib/store/manifest.ts'
+import { hasCompleteCells } from '../lib/dress/dress.ts'
 
 export interface PeekCall {
   method: Req['method']; path: string; body?: unknown; label?: string; background?: boolean; generations?: number; note?: string
@@ -63,7 +64,7 @@ function itemCalls(spec: Pick<ItemSpec, 'prompt' | 'key' | 'slot' | 'method'>, c
 export function itemPlan(ctx: RigCtx | null, input: NewItemInput): PeekCall[] {
   if (!ctx) return []
   try {
-    const spec = { prompt: input.prompt, slot: input.slot, key: pickKey(input.prompt), ...coverage(ctx) }
+    const spec = { prompt: input.prompt, slot: input.slot, key: pickKey(input.prompt), ...standingCoverage(ctx) }
     const method = defaultMethod(ctx, spec)
     const calls = planItem(ctx.rec.manifest.rig, { ...spec, method })
     return [...itemCalls({ ...spec, method }, calls, ctx.rec.manifest.rig.cell), ...lifecycle()]
@@ -91,7 +92,12 @@ export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | nu
     }
   }
   for (const item of m.items.filter(item => spec.items.includes(item.id) && !item.design)) {
-    for (const direction of generatedDirections.filter(d => item.dressed?.[d] && (spec.replace || spec.itemMethod === 'grid' || !item.layers.every(layer => layer.cells?.[spec.id]?.[d]?.length === frames)))) {
+    const missingDirs = generatedDirections.filter(d => item.dressed?.[d] && (spec.replace || spec.itemMethod === 'grid' || !hasCompleteCells(m, item, spec.id, d)))
+    if (spec.itemMethod === 'anchor') {
+      for (const call of planAnchoredMove(m.rig, item, spec.id, missingDirs)) calls.push({ method: 'POST', path: '/edit-animation-v2', label: `${item.name} · ${call.cells.join(', ')}`, generations: planGens([call], m.rig.cell), note: `Edits only frozen equipment frames, with the saved standing design as the first reference frame. Its returned reference is discarded. Coverage: ${call.cells.join(', ')}. No body or skeleton requests. Each planned batch runs once; paid retries need another request.` })
+      continue
+    }
+    for (const direction of missingDirs) {
       if (spec.itemMethod === 'grid') {
         calls.push({ method: 'POST', path: '/inpaint-v3', label: `${item.name} ${direction} · repair equipment`, generations: gridEstimate(item.layers[0]?.cell ?? m.rig.cell, frames, 1).gens, note: 'Edits only selected equipment frames with one protected matching-direction reference. The body remains unchanged; results are retained only when quality improves.' })
       } else for (const batch of poseBatches(frames)) {

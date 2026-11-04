@@ -4,6 +4,8 @@
   import { SLOTS } from '../lib/items/items.ts'
   import { itemPaletteRepairPlan, type ItemPaletteRepairPlan } from '../lib/items/run.ts'
   import { missingItemMoves, itemMoveOffer } from './create.ts'
+  import { movePlan } from './apiPlans.ts'
+  import ApiPeek from './ApiPeek.svelte'
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
   import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
@@ -41,19 +43,20 @@
     const projectId = doc.id, spec = { ...$state.snapshot(repairOffer.specs[0]), seed: 1 + Math.floor(Math.random() * 1_000_000) }
     withKey(() => { void startMove(projectId, spec); ui.sheet = 'move' })
   }
-  // moves the character gained after this item was made (Default-first: idle and walk), offered with their price unless a
-  // running or queued move already poses this item onto them
+  // The character's actual missing moves, regardless of their names or when they were imported.
   const missingMoves = $derived.by(() => {
     if (!m || !it || isDemo()) return []
     const pending = pendingMoves(doc.id, it.id).map((s) => s.id)
     return missingItemMoves(m, it.id, 0).filter((s) => !pending.includes(s.id))
   })
-  const missingOffer = $derived(m ? itemMoveOffer(m, missingMoves) : null)
-  const missingNames = $derived(missingMoves.map((s) => s.id[0].toUpperCase() + s.id.slice(1).replace(/-/g, ' ')).join(' + '))
+  let chosenMove = $state('')
+  const missingMove = $derived(missingMoves.find(s => s.id === chosenMove) ?? missingMoves.find(s => s.id === ui.anim) ?? missingMoves[0])
+  const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove]) : null)
+  const missingName = $derived(missingMove ? missingMove.id[0].toUpperCase() + missingMove.id.slice(1).replace(/-/g, ' ') : '')
   function makeMissing() {
     if (!missingOffer?.specs.length) return
     const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingOffer.specs.map((s) => ({ ...$state.snapshot(s), seed }))
-    withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move' }, true) // pose calls: a plan that cannot run them opens Connect
+    withKey(() => { void queueMoves(projectId, specs); ui.sheet = 'move' }, specs.some(s => s.itemMethod !== 'anchor'))
   }
   let colorPlan = $state<ItemPaletteRepairPlan | null>(null)
   let colorBusy = $state(false)
@@ -183,9 +186,10 @@
     {#if moveGaps.length}<p class="notice warn small"><TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left out there.</p>{/if}
     {#if missingMoves.length}
       <div class="field">
-        <button class="bu-action btn" data-variant="outline" disabled={missingOffer?.gens == null} onclick={makeMissing}>Make for {missingNames} <span class="cost">{missingOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(missingOffer.gens)} gens`}</span></button>
+        {#if missingMoves.length > 1}<label class="field"><span class="label small">Generate item for move</span><select class="bu-input input" value={missingMove?.id} onchange={e => (chosenMove = e.currentTarget.value)}>{#each missingMoves as move (move.id)}<option value={move.id}>{move.id[0].toUpperCase() + move.id.slice(1).replace(/-/g, ' ')}</option>{/each}</select></label>{/if}
+        <span class="api-action"><ApiPeek scope="item-missing-move" label="Make {it.name} for {missingName}" plan={m && missingOffer?.specs[0] ? movePlan({ manifest: m }, missingOffer.specs[0]) : []} /><button class="bu-action btn" data-variant="outline" disabled={missingOffer?.gens == null} onclick={makeMissing}>Make for {missingName} <span class="cost">{missingOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(missingOffer.gens)} gens`}</span></button></span>
         {#if missingOffer?.error}<p class="notice warn small" role="status">{missingOffer.error}</p>{/if}
-        <p class="faint small">Poses this item onto moves added after it was made. The body stays as it is. PixelLab may bill dollars; queue time varies.</p>
+        <p class="faint small">Generates only this item’s missing views for the chosen move, reusing its standing design. The body stays as it is. PixelLab may bill dollars; queue time varies.</p>
       </div>
     {/if}
     {#if health === 'stale'}<p class="notice warn small"><TriangleAlert size={14} />Made for another body. It may not line up.</p>{/if}

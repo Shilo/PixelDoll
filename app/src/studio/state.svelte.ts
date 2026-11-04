@@ -612,7 +612,7 @@ export async function removeItem(itemId: string) {
 /** The demo is a bundled fixture; items are generated into an editable copy in IndexedDB. */
 export async function copyDemo(): Promise<string> {
   const project = store.project!; // the open character when asked, not after the pipeline loads
-  const id = await (await createFlow()).saveCopy(project, 'Adventurer copy');
+  const id = await (await createFlow()).saveCopy(project, 'Adventurer copy', 'walk');
   await refreshProjects();
   await openProject(id);
   return id;
@@ -764,6 +764,7 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
   ui.group = groupOf(input.slot).id;
   try { await saveGens(); }
   catch (error) { const nextIndex = gens.indexOf(g); if (nextIndex >= 0) { if (replaced) gens.splice(nextIndex, 1, replaced); else gens.splice(nextIndex, 1); } ui.selected = selected; throw error; }
+  if (g.draft.spec.standing && viewing(projectId) && ui.selected === `gen:${g.draft.spec.id}`) { ui.anim = g.draft.spec.standing; ui.frame = 0; }
   if (replaced && doc.drafts[replaced.draft.spec.slot] === replaced.draft.spec.id) delete doc.drafts[replaced.draft.spec.slot];
   void runGen(g, ctx);
 }

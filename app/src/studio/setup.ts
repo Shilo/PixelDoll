@@ -57,6 +57,10 @@ export async function setupCharacter(spec: SetupSpec, progress: (p: Progress) =>
     retainPlaybackChoices(result.manifest.rig, current.manifest.rig);
     current.manifest.rig = result.manifest.rig;
     current.manifest.items.find((i) => i.id === current.manifest.rig.baseItem)!.provenance = result.manifest.items.find((i) => i.id === result.manifest.rig.baseItem)!.provenance;
+    for (const item of current.manifest.items) {
+      const prepared = result.manifest.items.find(i => i.id === item.id);
+      if (prepared?.route === 'skeleton-pose' && item.route === 'ea2-anchor' && item.standing === prepared.standing && JSON.stringify(item.dressed) === JSON.stringify(prepared.dressed)) item.route = prepared.route;
+    }
     current.character = { id, looks: spec.looks.trim() };
     current.skeletons = result.skeletons;
     current.rigQa = result.rigQa;

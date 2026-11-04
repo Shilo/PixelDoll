@@ -976,7 +976,7 @@ test('draft review can inspect every generated move and only its available views
   })
   const review = page.locator('.gen')
   await expect(review.getByRole('button', { name: /^Try again/ })).toContainText('Est.')
-  await expect(review.getByText('Try again redraws the whole item for all current moves and directions at the displayed estimate. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.', { exact: true })).toBeVisible()
+  await expect(review.getByText('Try again redraws the standing design in the character’s directions at the displayed estimate. Generate other moves separately after you like it. Further quality retries or repairs require another request. PixelLab may bill some calls in dollars; queue time varies.', { exact: true })).toBeVisible()
   await expect(review.getByRole('combobox', { name: 'Preview move', exact: true })).toHaveValue('walk')
   await expect(review.locator('.review-grid figure')).toHaveCount(4)
   const before = await review.locator('canvas').first().evaluate((c) => (c as HTMLCanvasElement).toDataURL())
@@ -1435,14 +1435,14 @@ test('new item progress, previews and completion survive reload without submitti
     const dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
     await s.copyDemo()
     const ctx = await project.loadProject(s.doc.id), m = ctx.rec.manifest
-    // Two frozen frames keep the real item pipeline small and use the edit route without a skeleton.
+    // A standing frame keeps the real pipeline small; the API duplicates it to meet the two-frame edit minimum.
     const walk = m.rig.animations.find((a: { id: string }) => a.id === 'walk')
-    m.rig.animations = [{ ...walk, cells: 2, frames: walk.frames.slice(0, 2) }]
+    m.rig.animations = [{ ...walk, id: 'custom-standing', cells: 1, frames: walk.frames.slice(0, 1) }]
     m.rig.directions = m.rig.directions.filter((d: { id: string }) => d.id === 'south')
     delete m.rig.rest
     m.items = m.items.filter((item: { id: string }) => item.id === m.rig.baseItem)
     const base = m.items[0].layers[0]
-    base.cells = { walk: { south: base.cells.walk.south.slice(0, 2) } }
+    base.cells = { 'custom-standing': { south: base.cells.walk.south.slice(0, 1) } }
     await db.put('projects', ctx.rec.id, ctx.rec)
     await s.openProject(ctx.rec.id)
     await s.startItem({ name: 'Progress fixture', slot: 'hair', prompt: 'short hair' })
@@ -1674,6 +1674,10 @@ async function targetedRepairFixture(page: Page) {
         a.sources ??= {}; a.sources[dir] = { route: 'skeleton-v3', keypoints: Array.from({ length: a.cells }, () => points) }
       }
     }
+    // Imported characters always include a standing clip. Keep this fixture valid for standing-first item creation.
+    base.layers[0].cells.default = Object.fromEntries(Object.entries(m.rig.rest).map(([dir, rest]) => [dir, [(rest as { image: string }).image]]))
+    m.rig.animations = m.rig.animations.filter((a: { id: string }) => a.id !== 'default')
+    m.rig.animations.unshift({ id: 'default', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }], sources: Object.fromEntries(Object.entries(m.rig.rest).map(([dir, rest]) => [dir, { route: 'import', reference: (rest as { image: string }).image, keypoints: [(rest as { keypoints: unknown }).keypoints], motion: 'imported-rest', provenance: [] }])) })
     const sword = m.items.find((it: { slot: string }) => it.slot === 'main_hand')
     sword.route = 'skeleton-pose'; sword.key = 'green'; sword.dressed = Object.fromEntries(Object.entries(m.rig.rest).map(([d, r]) => [d, (r as { image: string }).image]))
     rec.character = { id: 'offline-repair-fixture', looks: 'Stored offline fixture' }
@@ -1720,7 +1724,8 @@ test('targeted move replacement scopes views, estimates and retained drafts befo
   await expect(sheet.getByRole('checkbox', { name: 'West', exact: true })).toBeChecked()
   await expect(sheet.getByRole('checkbox', { name: 'South', exact: true })).not.toBeChecked()
   await expect(sheet.getByRole('checkbox', { name: 'North', exact: true })).not.toBeChecked()
-  await expect(sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toBeChecked()
+  await expect(sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).not.toBeChecked()
+  await sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) }).check()
   await expect(sheet.getByRole('button', { name: /^Replace Walk views/ })).toContainText('Est. 22 gens')
   await sheet.getByRole('checkbox', { name: 'East', exact: true }).uncheck()
   await sheet.getByRole('checkbox', { name: 'West', exact: true }).uncheck()
@@ -2083,6 +2088,71 @@ test('bounded body color correction discloses changed checks and equipment cost 
 })
 
 
+test('standing-first items quote only standing and offer actual custom moves one at a time', async ({ page, context }, info) => {
+  const posts: string[] = []
+  await context.route('https://api.pixellab.ai/**', async r => {
+    if (r.request().method() === 'GET' && new URL(r.request().url()).pathname.endsWith('/balance')) await r.fulfill({ json: { subscription: { type: 'generations', status: 'active', plan: 'Tier 3', generations: 1000, total: 1000 }, credits: { usd: 0 } } })
+    else { posts.push(r.request().method()); await r.abort() }
+  })
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await targetedRepairFixture(page)
+  await page.evaluate(async id => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', s = await import(statePath), db = await import(dbPath)
+    const rec = await db.get('projects', s.doc.id), m = rec.manifest, item = m.items.find((i: { id: string }) => i.id === id)
+    for (const a of m.rig.animations) if (a.id !== 'default') {
+      const before = a.id, after = 'custom_' + before.replaceAll('-', '_'); a.id = after
+      for (const it of m.items) for (const layer of it.layers) if (layer.cells?.[before]) { layer.cells[after] = layer.cells[before]; delete layer.cells[before] }
+    }
+    for (const layer of item.layers) layer.cells = { default: layer.cells.default }
+    item.standing = 'default'
+    await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id); s.pick(id)
+  }, fixture.itemId)
+  await newItem(page, 'Hands')
+  const newSheet = page.getByRole('dialog', { name: 'New item', exact: true })
+  await newSheet.getByRole('textbox', { name: 'What is it?', exact: true }).fill('a steel sword')
+  await expect(newSheet).toContainText('Make the standing design first')
+  await newSheet.getByRole('button', { name: 'Inspect API calls', exact: true }).click()
+  const peek = page.getByRole('dialog', { name: 'API calls', exact: true })
+  await expect(peek.getByText('Dress standing views', { exact: false })).toBeVisible()
+  await expect(peek.getByText('Pose equipment', { exact: false })).toHaveCount(0)
+  await peek.getByRole('button', { name: 'Close API calls', exact: true }).click()
+  await newSheet.getByRole('button', { name: 'Cancel', exact: true }).click()
+  const pane = await selectedItemDetails(page)
+  const moves = pane.getByRole('combobox', { name: 'Generate item for move', exact: true })
+  await expect(moves.locator('option')).toHaveText(['Custom_walk', 'Custom_cross_punch'])
+  await moves.selectOption('custom_walk')
+  await expect(pane.getByRole('button', { name: /^Make for Custom_walk/ })).toContainText('Est. 12 gens')
+  await pane.getByRole('button', { name: /^Make for Custom_walk/ }).click()
+  const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
+  await connect.getByLabel('API key', { exact: true }).fill('synthetic-progressive-key')
+  await page.evaluate(() => {
+    const put = IDBObjectStore.prototype.put
+    IDBObjectStore.prototype.put = function(value, key) { if (key === 'studio-move' && value.status === 'running') throw new Error('Progressive scope captured before spending'); return put.call(this, value, key) }
+  })
+  await connect.getByRole('button', { name: 'Connect', exact: true }).click()
+  await expect(page.getByRole('dialog', { name: 'Add a move', exact: true })).toContainText('Progressive scope captured before spending')
+  const scope = await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts'; return (await import(path)).moving.spec })
+  expect(scope).toMatchObject({ id: 'custom_walk', items: [fixture.itemId], itemsOnly: true })
+  expect(scope.dirs).toEqual(['south', 'east', 'north', 'west'])
+  expect(posts).toEqual([])
+})
+
+test('new body moves leave equipment unchecked and preserve an explicit selection through canceled Connect', async ({ page, context }, info) => {
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const fixture = await targetedRepairFixture(page)
+  await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts'; (await import(path)).ui.sheet = 'move' })
+  const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true })
+  await expect(sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).not.toBeChecked()
+  await expect(sheet.getByRole('checkbox', { checked: true })).toHaveCount(0)
+  await sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) }).check()
+  await sheet.getByRole('button', { name: /^Add Idle/ }).click()
+  await page.getByRole('dialog', { name: 'Connect PixelLab', exact: true }).getByRole('button', { name: 'Cancel', exact: true }).click()
+  await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts'; (await import(path)).ui.sheet = 'move' })
+  await expect(sheet.getByRole('checkbox', { name: new RegExp(fixture.itemName) })).toBeChecked()
+})
+
 test('draft retry prices a fresh item plan rather than historical grid fallbacks and stops when pricing is unavailable', async ({ page, context }, info) => {
   const requests: string[] = []
   await context.route('https://api.pixellab.ai/**', r => { requests.push(r.request().method()); return r.abort() })
@@ -2102,7 +2172,7 @@ test('draft retry prices a fresh item plan rather than historical grid fallbacks
   })
   await equipmentGroup(page, 'Hands')
   const panel = page.locator('.gen'), retry = panel.getByRole('button', { name: /^Try again/ })
-  expect(expected).toBeGreaterThan(15)
+  expect(expected).toBe(10) // only four padded standing references; walking frames are a separate purchase now
   await expect(retry).toBeEnabled()
   await expect(retry).toHaveText(`Try again Est. ${expected} gens`)
   await panel.locator('.actions .api-action').getByRole('button', { name: 'Inspect API calls', exact: true }).click()

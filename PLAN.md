@@ -146,6 +146,26 @@ body/gear safety contracts and reviewer agreement are linked from the plan; exis
   animation workflow and every PixelLab request body are unchanged. See
   [review §17](docs/research/generation-pipeline-review-2026-10-25.md).
 
+## Progressive equipment generation (2026-11-03)
+
+New item purchases cover only a complete standing pose, regardless of the character's existing moves. Saved rest pixels
+or standing provenance identify that pose; Idle and Walk names are not required. Verified one-frame aliases share the
+same paid result. Characters without an identifiable standing source stop before spending instead of buying animation
+frames. Review the standing design first, then use the item's details to choose one of the character's actual missing
+moves and its price. A selector keeps this usable with many imported or custom moves, and each quote is independent.
+
+Skeleton-equipped items reuse their saved dressed references and stored body poses. Items bought before setup retain
+the same chroma references: exact standing bindings can become skeleton-equipped during setup, while anchored editing
+also extends them directly onto existing frozen frames, including two-view imports that cannot use full rig setup.
+Every anchored batch reserves its reference slot and uses deterministic request seeds so resume never starts new paid
+attempts. New body moves and the quick Idle + Walk action exclude equipment by default; explicit item checkboxes remain
+available. Standing-only edit workflows do not require the later skeleton tool's tier. Quality warnings, missing-frame
+notices, reviewed-artwork checks and explicit retry consent still apply.
+
+This default lets users reject a design or skip unwanted moves before buying equipment animation. Completing every
+move can cost the same or more than the former combined initial plan, which could batch some short clips. No automatic
+animation, quality retry, or substitute static item is introduced.
+
 ## PWA (2026-11-02, supersedes D13)
 
 The production build is installable and supports local work offline. Development and agent servers never register a
