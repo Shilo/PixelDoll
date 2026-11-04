@@ -335,13 +335,26 @@ export async function openProject(id: string, keep?: { wear?: string; quiet?: bo
     if (!m.rig.directions.some((d) => d.id === ui.dir)) ui.dir = m.rig.directions[0].id;
     if (!quiet) ui.frame = 0;
     store.project = r.project;
+    // Another acceptance can supersede its reload. Retire worn drafts only when their saved items are published.
+    let acceptedWear = false;
+    for (const g of [...gens]) {
+      if (!g.draft.acceptedAt) continue;
+      const item = g.draft.rigId === id ? m.items.find(i => i.id === g.draft.spec.id) : undefined;
+      if (g.draft.rigId === id && !item) continue;
+      if (item && doc.drafts[item.slot] === item.id) {
+        doc.items[item.slot] = item.id;
+        delete doc.drafts[item.slot];
+        acceptedWear = true;
+      }
+      drop(g);
+    }
     if (!quiet) ui.selected = keep?.wear ?? m.items.find((i) => i.id !== m.rig.baseItem && doc.items[i.slot] === i.id)?.id ?? '';
     if (ui.selected && !quiet) ui.group = groupOf(m.items.find((i) => i.id === ui.selected)!.slot).id;
     lsSet(K.last, id);
     doc.rev++;
     savedEdits = edits; // nothing is pending (flushed above): what was just loaded is saved, so only later edits count
     // Keep it equips the accepted item while opening, or an outfit left unsaved by an unload; persist it now.
-    if (keep?.wear || unsaved) { save(); await flushSave(); }
+    if (keep?.wear || unsaved || acceptedWear) { save(); await flushSave(); }
   } catch (e) {
     if (request !== openRequest) return;
     doc.error = (e as Error).message;
@@ -647,7 +660,8 @@ const halted = (r: { status?: string; requestText?: number }) => r.status === 'f
 export interface Gen { draft: Draft; input: NewItemInput; phase: 'running' | 'review' | 'failed'; status: string; error?: string; requestText?: number }
 export const gens = $state<Gen[]>([]);
 const GENS_KEY = 'studio-drafts'; // projects store, no `manifest` -> ignored by project listings
-const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state.snapshot(gens) });
+// A saved draft stays visible until the accepted project is published, but must not resume after a reload.
+const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state.snapshot(gens).filter(g => !g.draft.acceptedAt) });
 
 // One runner per draft: a second runItem on the same draft (e.g. the Studio remounting and loading the drafts again)
 // re-rolls calls twice and pays twice (seen live). Drafts load once per page.
@@ -886,13 +900,13 @@ export async function acceptGen(g: Gen, auto = false): Promise<boolean> {
     const ctx = await loadProject(g.draft.rigId);
     const item = await (await itemFlow()).accept(g.draft, ctx, store.results[id] ?? undefined);
     const worn = doc.drafts[item.slot] === id;
-    drop(g);
     await saveGens();
     // a draft saving itself never cancels the open of another character the user just started
     if (auto ? viewing(g.draft.rigId) : doc.id === g.draft.rigId) {
       if (ui.selected === `gen:${id}`) ui.selected = item.id;
       await openProject(doc.id, auto ? { quiet: true, ...(worn ? { wear: item.id } : {}) } : { wear: item.id });
     }
+    if (doc.id !== g.draft.rigId) drop(g);
     toast(auto ? `${item.name} saved` : `${item.name} added`);
     return true;
   } finally {

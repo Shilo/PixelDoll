@@ -901,7 +901,8 @@ test('Preview, Top-down and Side-scroller always loop with global Play once both
   }
 })
 
-test('Share uses the worn review draft over the saved outfit for previews, PNG, GIF and native sharing', async ({ page, context }, info) => {
+for (const auto of [false, true]) test(`Share uses the worn review draft through ${auto ? 'automatic' : 'manual'} acceptance for previews, PNG, GIF and native sharing`, async ({ page, context }, info) => {
+  await page.setViewportSize({ width: 800, height: 600 })
   const requests: string[] = []
   await context.route('https://*.pixellab.ai/**', route => { requests.push(route.request().url()); return route.abort() })
   await context.grantPermissions(['clipboard-read', 'clipboard-write'])
@@ -914,24 +915,45 @@ test('Share uses the worn review draft over the saved outfit for previews, PNG, 
   })
   await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
   await page.evaluate(async () => {
-    const statePath = '/src/studio/state.svelte.ts', imagePath = '/src/lib/image/png.ts', rigPath = '/src/lib/rig/rig.ts'
-    const s = await import(statePath), { makeImg } = await import(imagePath), { cellHash } = await import(rigPath)
+    const statePath = '/src/studio/state.svelte.ts', imagePath = '/src/lib/image/png.ts', rigPath = '/src/lib/rig/rig.ts', createPath = '/src/studio/create.ts', itemsPath = '/src/lib/items/items.ts'
+    const s = await import(statePath), { makeImg } = await import(imagePath), { cellHash, baseHashOf } = await import(rigPath), { saveCopy } = await import(createPath), { itemQa } = await import(itemsPath)
     await s.loadGens()
+    const sourceProject = s.store.project, manifest = structuredClone(sourceProject.manifest)
+    // Keep the real persistence/acceptance flow, with only the two frames and slot this test exercises.
+    manifest.items = manifest.items.filter((item: { id: string }) => [manifest.rig.baseItem, 'hat_wizard'].includes(item.id))
+    manifest.slots = manifest.slots.filter((slot: { id: string }) => ['body', 'head'].includes(slot.id))
+    manifest.materials = manifest.materials.filter((material: { owner: string }) => manifest.items.some((item: { id: string }) => item.id === material.owner))
+    manifest.presets = []; manifest.rig.directions = [{ id: 'south' }]; delete manifest.rig.rest; delete manifest.rig.anchors
+    manifest.rig.animations = [{ id: 'walk', cells: 2, loop: true, frames: [{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }] }]
+    const used = new Set<string>(), bodyHashes: Record<string, string> = {}
+    for (const item of manifest.items) for (const layer of item.layers) {
+      layer.cells = { walk: { south: layer.cells.walk.south.slice(0, 2) } }
+      layer.cells.walk.south.forEach((hash: string, index: number) => { used.add(hash); if (item.id === manifest.rig.baseItem) bodyHashes[`walk/south/${index}`] = hash })
+    }
+    manifest.rig.baseHash = await baseHashOf(manifest.rig, bodyHashes)
+    for (const item of manifest.items) item.baseHash = manifest.rig.baseHash
+    const projectId = await saveCopy({ manifest, images: new Map([...sourceProject.images].filter(([hash]) => used.has(hash))) }, 'Share acceptance test')
+    await s.refreshProjects(); await s.openProject(projectId)
     s.ui.playing = false; s.ui.anim = 'walk'; s.ui.dir = 'south'
     const p = s.store.project, source = p.manifest.items.find((item: { id: string }) => item.id === 'hat_wizard')
     const hat = structuredClone(source)
     hat.id = 'share_review_hat'; hat.name = 'Share review hat'; hat.status = 'draft'; hat.materials = []; delete hat.coverage
     // Two unmistakable pixel markers, distinct from both the body and the saved hat.
-    const images = new Map(p.images), hashes = []
-    for (const color of [[13, 231, 117, 255], [219, 31, 191, 255]]) {
+    const images = new Map(p.images), hashes = [], cells = []
+    for (let index = 0; index < p.manifest.rig.animations.find((a: { id: string }) => a.id === 'walk').cells; index++) {
+      const color = index % 2 ? [219, 31, 191, 255] : [13, 231, 117, 255]
       const image = makeImg(p.manifest.rig.cell.w, p.manifest.rig.cell.h)
       for (let y = 1; y < 5; y++) for (let x = 1; x < 5; x++) image.data.set(color, (y * image.w + x) * 4)
       const hash = await cellHash(image); images.set(hash, image); hashes.push(hash)
+      const mask = Uint8Array.from({ length: image.w * image.h }, (_, pixel) => image.data[pixel * 4 + 3] ? 1 : 0)
+      cells.push({ key: `walk/south/${index}`, call: 0, base: image, input: image, out: image, layer: image, mask, area: 16, outBand: 0, baseBand: 0, specks: 0, pinholes: 0, shifted: false, offset: [0, 0], stray: 0, posed: false })
     }
     hat.layers = [{ id: 'main', role: 'fg', z: 100, cells: { walk: { south: hashes } } }]
     s.store.project = { ...p, manifest: { ...p.manifest, rig: { ...p.manifest.rig, animations: p.manifest.rig.animations.map((a: { id: string }) => a.id === 'walk' ? { ...a, cells: 2, frames: [{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }] } : a) } } }
-    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: hat.id, name: hat.name, slot: 'head', prompt: 'a hat', key: 'green', anims: ['walk'], dirs: ['south'] }, calls: [], keySwitched: false, log: [] }, input: { name: hat.name, slot: 'head', prompt: 'a hat' }, phase: 'review', status: 'Review' })
-    s.store.results = { ...s.store.results, [hat.id]: { cells: [], qa: null, g1: new Map(), preview: { manifest: { ...s.store.project.manifest, items: [...p.manifest.items, hat] }, images } } }
+    const jobId = 'share-review-completed', queue = (window as any).__queue
+    queue.recs.set(jobId, { id: jobId, label: 'Cached review artwork', method: 'POST', endpoint: '/edit-animation-v2', params: {}, inputs: [], requestHash: jobId, state: 'done', attempts: 1, nextAt: 0, createdAt: 1, jobs: [], gens: 0, usd: 0 }); queue.emit()
+    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: hat.id, name: hat.name, slot: 'head', prompt: 'a hat', key: 'none', method: 'anchor', anims: ['walk'], dirs: ['south'] }, calls: [{ kind: 'grid', cells: cells.map(cell => cell.key), seed: 1, recId: jobId, old: [], rerolls: 0 }], log: [] }, input: { name: hat.name, slot: 'head', prompt: 'a hat' }, phase: 'review', status: 'Review' })
+    s.store.results = { ...s.store.results, [hat.id]: { cells, qa: itemQa(p.manifest.rig, 'head', 'none', cells, 0), g1: new Map(), preview: { manifest: { ...s.store.project.manifest, items: [...p.manifest.items, hat] }, images } } }
     s.doc.items = { ...s.doc.items, head: source.id }; s.wearDraft(hat.id); s.doc.rev++
   })
   await page.getByRole('button', { name: 'Share character' }).click()
@@ -946,13 +968,51 @@ test('Share uses the worn review draft over the saved outfit for previews, PNG, 
     return readFile((await file.path())!)
   }
   for (const stage of ['review', 'accepted'] as const) {
-    if (stage === 'accepted') await page.evaluate(async () => {
-      const path = '/src/studio/state.svelte.ts', s = await import(path), id = 'share_review_hat'
-      const preview = s.store.results[id].preview, item = preview.manifest.items.find((i: { id: string }) => i.id === id)
-      // Publish the accepted result in place, retaining the same pixels and selected slot.
-      s.store.project = { ...s.store.project, manifest: { ...s.store.project.manifest, items: [...s.store.project.manifest.items, { ...item, status: 'accepted' }] }, images: preview.images }
-      s.doc.items = { ...s.doc.items, head: id }; s.doc.drafts = {}; s.gens.splice(s.gens.findIndex((g: { draft: { spec: { id: string } } }) => g.draft.spec.id === id), 1); s.doc.rev++
-    })
+    if (stage === 'accepted') {
+      await page.evaluate(async auto => {
+        const path = '/src/studio/state.svelte.ts', s = await import(path), host = window as any
+        host.shareAccept = { held: false, done: false, error: '' }
+        const put = IDBObjectStore.prototype.put
+        IDBObjectStore.prototype.put = function(value, key) {
+          const request = put.call(this, value, key)
+          if (this.name === 'projects' && key === 'studio-drafts') {
+            IDBObjectStore.prototype.put = put
+            const transaction = this.transaction
+            Object.defineProperty(transaction, 'oncomplete', { set(callback: (this: IDBTransaction, event: Event) => void) {
+              transaction.addEventListener('complete', event => {
+                host.shareAccept.held = true
+                host.shareAccept.release = () => callback.call(transaction, event)
+              }, { once: true })
+            } })
+          }
+          return request
+        }
+        void s.acceptGen(s.gens.find((g: { draft: { spec: { id: string } } }) => g.draft.spec.id === 'share_review_hat'), auto)
+          .then(() => { host.shareAccept.done = true }).catch((error: Error) => { host.shareAccept.error = error.message })
+      }, auto)
+      await expect.poll(() => page.evaluate(() => ({ held: (window as any).shareAccept.held, error: (window as any).shareAccept.error }))).toEqual({ held: true, error: '' })
+      // Force fresh encoding during the real persisted-draft/reload handoff, not just the two steady states.
+      await popover.getByRole('switch').uncheck()
+      const handoff = await decodePngBytes(await download('PNG'))
+      expect(handoff.data.some((v, i) => i % 4 === 0 && v === 13 && handoff.data[i + 1] === 231 && handoff.data[i + 2] === 117), 'acceptance handoff retains worn artwork').toBe(true)
+      expect(await page.evaluate(async () => {
+        const path = '/src/lib/store/db.ts', db = await import(path)
+        return (await db.get('projects', 'studio-drafts')).gens.map((g: { draft: { spec: { id: string } } }) => g.draft.spec.id)
+      })).not.toContain('share_review_hat')
+      await holdProjectTransaction(page, 'readonly', 'character')
+      await page.evaluate(() => (window as any).shareAccept.release())
+      await expect.poll(() => page.evaluate(() => (window as unknown as { exportTransaction: { ready: boolean } }).exportTransaction.ready)).toBe(true)
+      if (auto) {
+        const reloading = await decodePngBytes(await download('PNG'))
+        expect(reloading.data.some((v, i) => i % 4 === 0 && v === 13 && reloading.data[i + 1] === 231 && reloading.data[i + 2] === 117), 'quiet reload retains worn artwork').toBe(true)
+      } else {
+        await expect(popover.getByRole('button', { name: 'Copy PNG', exact: true })).toBeDisabled()
+        await expect(popover.getByRole('status')).toHaveText('Character artwork is still loading')
+      }
+      await releaseProjectTransaction(page)
+      await expect.poll(() => page.evaluate(() => ({ done: (window as any).shareAccept.done, error: (window as any).shareAccept.error }))).toEqual({ done: true, error: '' })
+      await popover.getByRole('switch').check()
+    }
     await expect.poll(hasMarker, stage).toBe(true)
     const gif = await download('GIF')
     const colors = await page.evaluate(async bytes => {
