@@ -41,7 +41,7 @@ async function documentEnvironment(options: { type?: Navigation; navigation?: bo
     elapse: (milliseconds: number) => { now += milliseconds; vi.advanceTimersByTime(milliseconds) },
     block: () => { blocked = true },
     focus: (value: boolean) => { focused = value },
-    event: (type: string, properties: Record<string, unknown> = {}) => { for (const listener of [...listeners.get(type) ?? []]) listener({ type, ...properties } as unknown as Event) },
+    event: (type: string, properties: Record<string, unknown> = {}) => { for (const listener of [...listeners.get(type) ?? []]) listener({ type, target: window, ...properties } as unknown as Event) },
   }
 }
 
@@ -104,6 +104,21 @@ describe('nonblocking startup reload opportunity', () => {
     app.observe(); app.open(); app.event(type)
     app.open()
     expect(app.policy.claimStartupUpdate()).toBe(false)
+  })
+
+  it('ignores captured child blur from programmatic focus but permanently cancels on window blur', async () => {
+    const app = await documentEnvironment()
+    app.observe(); app.open()
+    app.event('blur', { target: new Field(), isTrusted: true })
+    expect(app.policy.claimStartupUpdate()).toBe(true)
+    app.event('blur', { target: {}, isTrusted: true })
+    expect(() => app.policy.assertStartupUpdate()).not.toThrow()
+
+    app.event('blur', { isTrusted: true })
+    app.focus(true); app.open()
+    expect(() => app.policy.assertStartupUpdate()).toThrow(app.policy.StartupUpdateCancelled)
+    expect(() => app.policy.markStartupUpdateReload()).toThrow(app.policy.StartupUpdateCancelled)
+    expect(app.sessionStorage.setItem).not.toHaveBeenCalled()
   })
 
   it('cancels a hidden or BFCache-restored document without reopening on foreground return', async () => {

@@ -20,20 +20,24 @@ export function observeStartupUpdate() {
   } catch { eligible = false } // Optional session storage cannot make startup or manual updates fail.
   let timer: ReturnType<typeof setTimeout> | undefined
   const intent = (event: Event) => { if (event.isTrusted) cancel() }
+  // Capture also receives element blur during the app's own focus changes. Only leaving the window closes this opportunity.
+  const blur = (event: Event) => { if (event.target === window) cancel() }
   const visibility = () => { if (document.visibilityState !== 'visible') cancel() }
   const restored = (event: PageTransitionEvent) => { if (event.persisted) cancel() }
   const inputs = ['pointerdown', 'click', 'keydown', 'beforeinput', 'input', 'compositionstart', 'paste', 'drop', 'wheel', 'touchstart']
-  const exits = ['blur', 'pagehide', 'popstate', 'hashchange', 'storage']
+  const exits = ['pagehide', 'popstate', 'hashchange', 'storage']
   cancel = () => {
     eligible = false; clearTimeout(timer)
     for (const type of inputs) window.removeEventListener(type, intent, true)
     for (const type of exits) window.removeEventListener(type, cancel, true)
+    window.removeEventListener('blur', blur, true)
     document.removeEventListener('visibilitychange', visibility)
     window.removeEventListener('pageshow', restored)
   }
   if (!eligible) return cancel
   for (const type of inputs) window.addEventListener(type, intent, { capture: true, passive: true })
   for (const type of exits) window.addEventListener(type, cancel, true)
+  window.addEventListener('blur', blur, true)
   document.addEventListener('visibilitychange', visibility)
   window.addEventListener('pageshow', restored)
   // The deadline starts when the app appears, not while modules and existing storage initialize.

@@ -34,7 +34,17 @@ async function workerBuild(page: Page, slot: 'active' | 'waiting') {
 }
 
 async function loadedBuild(page: Page, release: TestRelease) {
-  await expect(page.locator('script[type="module"]').first()).toHaveAttribute('src', new RegExp(release.release.build))
+  try {
+    await expect(page.locator('script[type="module"]').first()).toHaveAttribute('src', new RegExp(release.release.build))
+  } catch (error) {
+    // Preserve the failed assertion and capture only lifecycle metadata, never fields, storage, or credentials.
+    const diagnostic = await page.evaluate(() => ({
+      events: (window as unknown as { startupTestEvents?: unknown[] }).startupTestEvents,
+      focused: document.hasFocus(), visible: document.visibilityState, activeTag: document.activeElement?.tagName,
+    }))
+    await test.info().attach('startup-lifecycle', { body: JSON.stringify(diagnostic), contentType: 'application/json' })
+    throw error
+  }
 }
 
 async function cachedApp(page: Page, url: string, release: TestRelease) {
@@ -76,6 +86,14 @@ async function pauseDownloadClock(page: Page) {
   await page.clock.install({ time: new Date('2026-11-03T12:00:00Z') })
   await page.clock.pauseAt(new Date('2026-11-03T12:00:01Z'))
   await page.addInitScript(() => {
+    const events: unknown[] = []
+    Object.assign(window, { startupTestEvents: events })
+    for (const type of ['focus', 'blur', 'visibilitychange', 'pageshow', 'pagehide', 'popstate', 'hashchange', 'storage', 'pointerdown', 'click', 'keydown', 'beforeinput', 'input', 'compositionstart', 'paste', 'drop', 'wheel', 'touchstart']) {
+      addEventListener(type, event => {
+        if (events.length < 128) events.push({ type, trusted: event.isTrusted, targetIsWindow: event.target === window,
+          targetTag: event.target instanceof Element ? event.target.tagName : '', focused: document.hasFocus(), visible: document.visibilityState, at: event.timeStamp })
+      }, { capture: true, passive: true })
+    }
     // Playwright's clock replaces performance.getEntriesByType with an empty list. This fixture knows it is
     // opening a fresh foreground navigation; restore that evidence without weakening the production guard.
     const original = performance.getEntriesByType.bind(performance)
@@ -94,10 +112,10 @@ async function expectControlledNavigation(page: Page) {
   expect(await page.evaluate(() => (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type)).toBe('navigate')
 }
 
-test('a fresh foreground launch within the opportunity applies a prepared release and every changed asset while the existing tab keeps its work', async ({ page, context }) => {
+test('a fresh launch survives programmatic focus changes and updates every changed asset while the existing tab keeps its work', async ({ page, context }) => {
   const a = await testRelease('startup-fast-a', '11.0.1'), b = await changedRelease('startup-fast-b', '11.0.2')
   const server = await pwaServer(a)
-  let fresh: Page | undefined
+  let fresh: Page | undefined, held: ReturnType<typeof server.hold> | undefined
   try {
     await cachedApp(page, server.url, a)
     await page.getByRole('button', { name: 'New character', exact: true }).click()
@@ -107,10 +125,25 @@ test('a fresh foreground launch within the opportunity applies a prepared releas
     await stage(page, server, b)
     for (const path of changedPublic) expect(createHash('sha256').update(a.files.get(path)!).digest('hex')).not.toBe(createHash('sha256').update(b.files.get(path)!).digest('hex'))
 
+    held = server.hold('release.json')
     fresh = await context.newPage(); await fresh.bringToFront()
     await pauseDownloadClock(fresh)
     await fresh.goto(server.url)
     await expectControlledNavigation(fresh)
+    await expect(fresh.locator('.customize-action')).toBeVisible()
+    await held.requested
+    const focusTransfer = await fresh.evaluate(() => {
+      const previous = document.activeElement, button = document.createElement('button')
+      let trustedElementBlur = false
+      button.addEventListener('blur', event => { trustedElementBlur = event.isTrusted && event.target === button })
+      document.body.append(button); button.focus()
+      if (previous instanceof HTMLElement) previous.focus()
+      button.blur()
+      button.remove()
+      return { trustedElementBlur, focused: document.hasFocus() }
+    })
+    expect(focusTransfer).toEqual({ trustedElementBlur: true, focused: true })
+    held.release()
     await loadedBuild(fresh, b)
     await fresh.clock.resume()
     await expect(fresh.locator('.customize-action')).toBeVisible()
@@ -125,7 +158,7 @@ test('a fresh foreground launch within the opportunity applies a prepared releas
     await fresh.reload()
     await expect(fresh.locator('.customize-action')).toBeVisible()
     await loadedBuild(fresh, b)
-  } finally { await context.setOffline(false); await fresh?.close(); await server.close() }
+  } finally { held?.release(); await context.setOffline(false); await fresh?.close(); await server.close() }
 })
 
 test('the first fresh launch discovers and applies a fast new deployment that no older tab has staged', async ({ page, context }) => {
