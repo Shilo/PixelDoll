@@ -1,4 +1,5 @@
 import { openStudio, reloadStudio, equipmentMode, equipmentGroup, newItem, selectedItemDetails, pickItem } from './immersive-helpers.ts'
+import './setup-concurrency.ts'
 import { test, expect } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { makeImg } from '../../src/lib/image/png.ts'
