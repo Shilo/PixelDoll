@@ -915,10 +915,97 @@ test('a worn draft overlays the outfit but never reaches autosave, undo or saved
   expect(s.doc.drafts).toEqual({})
 })
 
+describe('accepted draft publication', () => {
+  afterEach(() => vi.doUnmock('../../src/studio/itemRoute.ts'))
+
+  async function setup() {
+    const project = await equipmentFixture()
+    const { SLOTS } = await import('../../src/lib/items/items.ts')
+    project.manifest.items[0].regions = 'shirt-shorts'
+    const saved = structuredClone(project), projectId = 'fixture:acceptance'
+    const accept = vi.fn(async (draft: import('../../src/lib/items/run.ts').Draft) => {
+      const item = { ...structuredClone(project.manifest.items[1]), id: draft.spec.id, name: draft.spec.name, slot: draft.spec.slot, materials: [] }
+      saved.manifest.items = [...saved.manifest.items.filter(i => i.id !== item.id), item]
+      if (!saved.manifest.slots.some(slot => slot.id === item.slot)) saved.manifest.slots.push(structuredClone(SLOTS.find(slot => slot.id === item.slot)!))
+      draft.acceptedAt = new Date().toISOString() // the real storage boundary marks this only after saveItem commits
+      return item
+    })
+    vi.doMock('../../src/studio/itemRoute.ts', async original => {
+      const actual = await original<typeof import('../../src/studio/itemRoute.ts')>()
+      return { ...actual, itemRoute: { ...actual.itemRoute, accept } }
+    })
+    mocks.load.mockResolvedValue({ rec: { id: projectId, manifest: saved.manifest }, project: saved })
+    mocks.source.mockImplementation(async () => ({ project: structuredClone(saved) }))
+    const s = await import('../../src/studio/state.svelte.ts')
+    s.store.project = project; s.doc.id = projectId; s.doc.items = { body: 'base', head: 'hat' }
+    s.ui.anim = 'rest'; s.ui.dir = 'south'
+    const drafts = [['new_hat', 'head'], ['new_cape', 'back']].map(([id, slot]) => {
+      const g = draftGen(id, projectId, 'review') as unknown as GenOf<typeof s>
+      g.draft.spec.slot = slot; g.draft.spec.anims = ['rest']; g.input.slot = slot
+      const item = { ...structuredClone(project.manifest.items[1]), id, slot, status: 'draft' as const }
+      s.store.results[id] = { cells: [], qa: null, g1: new Map(), preview: { ...project, manifest: { ...project.manifest, items: [...project.manifest.items, item] } } }
+      s.gens.push(g); s.wearDraft(id)
+      return g
+    })
+    return { s, project, saved, drafts, accept }
+  }
+
+  test.each([false, true])('superseded acceptance retains both worn drafts until their saved project is published (auto=%s)', async auto => {
+    const { s, project, saved, drafts, accept } = await setup()
+    const firstRead = pending<{ project: typeof project }>(), secondRead = pending<{ project: typeof project }>()
+    mocks.source.mockReset().mockReturnValueOnce(firstRead.promise).mockReturnValueOnce(secondRead.promise)
+    const first = s.acceptGen(drafts[0], auto)
+    await vi.waitFor(() => expect(mocks.source).toHaveBeenCalledTimes(1))
+    const firstSnapshot = structuredClone(saved)
+    const second = s.acceptGen(drafts[1], auto)
+    await vi.waitFor(() => expect(mocks.source).toHaveBeenCalledTimes(2))
+    firstRead.resolve({ project: firstSnapshot })
+    expect(await first).toBe(true)
+    expect(s.store.project).toBe(project)
+    expect(s.gens.map(g => g.draft.spec.id)).toEqual(['new_hat', 'new_cape'])
+    expect(s.doc.drafts).toEqual({ head: 'new_hat', back: 'new_cape' })
+    for (const g of drafts) expect(s.store.results[g.draft.spec.id]?.preview?.manifest.items.some(i => i.id === g.draft.spec.id)).toBe(true)
+    secondRead.resolve({ project: structuredClone(saved) })
+    expect(await second).toBe(true)
+    expect(s.doc.items).toMatchObject({ head: 'new_hat', back: 'new_cape' })
+    expect(s.doc.drafts).toEqual({})
+    expect(s.gens).toHaveLength(0)
+    expect(accept).toHaveBeenCalledTimes(2)
+    expect(s.doc.error).toBe('')
+    expect(mocks.put.mock.calls.filter(([, key]) => key === 'dress-fixture:acceptance').at(-1)![2].current.items).toMatchObject({ head: 'new_hat', back: 'new_cape' })
+    expect(draftsSaved().map(([, , snapshot]) => snapshot.gens.map((g: GenOf<typeof s>) => g.draft.spec.id))).toEqual([['new_cape'], []])
+  })
+
+  test('failed draft-ledger persistence keeps the saved draft visible and later snapshots exclude it', async () => {
+    const { s, project, saved, drafts, accept } = await setup()
+    mocks.put.mockImplementationOnce(async () => { throw new Error('Draft ledger unavailable') })
+    await expect(s.acceptGen(drafts[0], true)).rejects.toThrow('Draft ledger unavailable')
+    expect(drafts[0].draft.acceptedAt).toBeTypeOf('string')
+    expect(saved.manifest.items.some(i => i.id === 'new_hat')).toBe(true)
+    expect(s.store.project).toBe(project)
+    expect(s.gens).toEqual(drafts)
+    expect(s.doc.drafts.head).toBe('new_hat')
+    expect(s.store.results.new_hat?.preview?.manifest.items.some(i => i.id === 'new_hat')).toBe(true)
+    expect(mocks.source).not.toHaveBeenCalled()
+    // An independent draft action must not repersist the accepted one while its preview remains in memory.
+    expect(await s.discardGen(drafts[1])).toBe(true)
+    expect(draftsSaved().at(-1)![2].gens).toEqual([])
+    expect(s.gens).toEqual([drafts[0]])
+    expect(await s.acceptGen(drafts[0], true)).toBe(true)
+    expect(s.gens).toHaveLength(0)
+    expect(s.doc.items.head).toBe('new_hat')
+    expect(saved.manifest.items.filter(i => i.id === 'new_hat')).toHaveLength(1)
+    expect(accept).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('optional review', () => {
   const clean = { cells: [{}], qa: { qa: { status: 'pass' }, failCalls: new Map(), softCalls: new Map(), warnings: [] as string[] }, g1: new Map(), preview: null }
   function routeMock(result: (d: unknown, ctx: unknown, h: { result?: (r: unknown) => void }) => Promise<unknown>, price = () => 10) {
-    const accept = vi.fn(async (d: { spec: { id: string } }) => ({ id: d.spec.id, name: 'New helm', slot: 'head' }))
+    const accept = vi.fn(async (d: { spec: { id: string }; acceptedAt?: string }) => {
+      d.acceptedAt = new Date().toISOString()
+      return { id: d.spec.id, name: 'New helm', slot: 'head' }
+    })
     vi.doMock('../../src/studio/itemRoute.ts', () => ({ itemRoute: { plan: () => ({ gens: price(), calls: 1, cells: 1, minutes: 1, minimumTier: 0 }), draft: (ctx: { rec: { id: string } }, input: { name: string; slot: string }, taken: string[]) => ({ spec: { id: `helm${taken.length}`, name: input.name, slot: input.slot, prompt: 'a new helm', key: 'green', anims: [], dirs: [] }, rigId: ctx.rec.id, calls: [], keySwitched: false, log: [] }), run: result, accept } }))
     vi.doMock('../../src/lib/dress/regions.ts', () => ({ splitBase: async () => ({ dirty: false }) }))
     vi.doMock('../../src/lib/dress/dress.ts', async (original) => ({ ...await original<typeof import('../../src/lib/dress/dress.ts')>(), deriveMaterials: () => {} }))
