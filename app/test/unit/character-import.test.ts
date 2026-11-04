@@ -54,7 +54,7 @@ test('PNG import rejects inflated data that exceeds its declared image dimension
 test('current PixelLab multi-state ZIP preserves independent directions and sparse animation', async () => {
   const bytes = await zip(await pixelLabFiles())
   const imported = await readCharacterZip(bytes, id), { manifest: m, images } = imported.project
-  expect(m.name).toBe('Test adventurer')
+  expect(m.name).toBe('Imported character') // State labels are not a group name, and this fixture has no shared prompt.
   expect(m.format).toBe(CURRENT_FORMAT) // pixeldoll/1 recolor skips item colors the body uses
   expect(imported.states).toHaveLength(2)
   expect(m.rig.directions.map((d) => [d.id, d.mirrorOf])).toEqual([['south', undefined], ['east', undefined], ['west', undefined]])
@@ -88,7 +88,7 @@ test('PixelLab imports explicitly chosen sibling animations without inventing mo
   expect(selected.project.manifest.rig.animations.map(a => a.id)).toEqual(['default', 'walking'])
   expect(all.states?.map(s => [s.name, s.animations])).toEqual([['Test adventurer', 1], ['Armored state', 2], ['Hair variant', 0]])
   expect(all.project.manifest.rig.animations.map(a => a.id)).toEqual(['default', 'walking', 'armored-state-walking', 'right_punch'])
-  expect((await readCharacterZip(bytes, id, ['second'])).project.manifest).toEqual(all.project.manifest)
+  expect((await readCharacterZip(bytes, id, [id, 'second'])).project.manifest).toEqual(all.project.manifest)
   const base = all.project.manifest.items[0].layers[0]
   expect(base.cells!.walking.south).toEqual(base.cells!['armored-state-walking'].south)
   expect(all.project.manifest.rig.directions.map(d => d.id)).toEqual(['south', 'east', 'west'])
@@ -96,6 +96,77 @@ test('PixelLab imports explicitly chosen sibling animations without inventing mo
   expect(second.project.manifest.rig.animations.map(a => a.id)).toEqual(['default', 'walking', 'right_punch', 'test-adventurer-walking'])
   expect(second.project.manifest.rig.animations.some(a => a.id === 'walking-copy')).toBe(false)
   await expect(readCharacterZip(bytes, id, ['missing'])).rejects.toThrow('selected move states')
+})
+
+test('PixelLab standing rotations and chosen animation states are independent, including Default alone', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[1].frames.rotations = { south: 'Second/rotations/south.png' }
+  meta.states[1].frames.animations = { attack: meta.states[0].frames.animations.walking }
+  entries.push({ name: 'Second/rotations/south.png', data: await encodePngBytes(sprite(180)) })
+  entries.find(entry => entry.name.endsWith('frame_000.png'))!.data = await encodePngBytes(sprite(222))
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const bytes = await zip(entries)
+  for (const [base, moves, expected] of [
+    [id, undefined, ['default', 'walking']],
+    [id, [], ['default']],
+    [id, ['second'], ['default', 'attack']],
+    [id, [id], ['default', 'walking']],
+    [id, 'all', ['default', 'walking', 'attack']],
+    ['second', [], ['default']],
+    ['second', [id], ['default', 'walking']],
+  ] as const) {
+    const imported = await readCharacterZip(bytes, base, moves), { manifest } = imported.project
+    expect(manifest.rig.animations.map(animation => animation.id)).toEqual(expected)
+    const layer = manifest.items[0].layers[0]
+    const standing = cellImg(imported.project, layer, 'default', 'south', 0)!
+    expect(standing.data[(27 * 64 + 28) * 4]).toBe(base === id ? 100 : 180)
+    expect(manifest.rig.animations[0].cells).toBe(1)
+    const animated = manifest.rig.animations[1]
+    if (animated) expect(cellImg(imported.project, layer, animated.id, 'south', 0)!.data[(27 * 64 + 28) * 4]).toBe(222)
+  }
+})
+
+test('PixelLab can exclude unreadable selected animations while still validating the standing artwork', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states = meta.states.slice(0, 1)
+  meta.states[0].frames.animations = null
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const bytes = await zip(entries)
+  await expect(readCharacterZip(bytes, id)).rejects.toThrow('Uncheck that state’s moves')
+  const standing = await readCharacterZip(bytes, id, [])
+  expect(standing.project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default'])
+  expect(standing.states?.[0].animations).toBeNull()
+  meta.states[0].frames.rotations.south = 'Missing.png'
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  await expect(readCharacterZip(await zip(entries), id, [])).rejects.toThrow('Missing file: Missing.png')
+})
+
+test('PixelLab explicit character names and shared appearance descriptions stay independent of the standing state', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  const prompt = '  A slim athletic human\nwith a completely bald head, charcoal shorts, and a confident relaxed appearance.  '
+  for (const state of meta.states) state.character.prompt = prompt
+  const name = prompt.replace(/\s+/g, ' ').trim().slice(0, 60).trim()
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const bytes = await zip(entries)
+  for (const selected of [id, 'second']) {
+    const manifest = (await readCharacterZip(bytes, selected, [])).project.manifest
+    expect(manifest.name).toBe(name)
+    expect(manifest.name).not.toBe(meta.states.find((state: { character: { id: string } }) => state.character.id === selected).character.name)
+    expect(manifest.items[0].prompt).toBe(prompt)
+  }
+  meta.name = 'Actual character title'
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  expect((await readCharacterZip(await zip(entries), 'second', [])).project.manifest.name).toBe('Actual character title')
+  delete meta.name; meta.character = { name: 'Another explicit title' }
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  expect((await readCharacterZip(await zip(entries), id, [])).project.manifest.name).toBe('Another explicit title')
+})
+
+test.each([undefined, '', 'A different appearance', {}])('PixelLab uses a generic name when appearance prompts are not shared unambiguously: %j', async prompt => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[1].character.prompt = prompt
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  expect((await readCharacterZip(await zip(entries), id, [])).project.manifest.name).toBe('Imported character')
 })
 
 test('PixelLab keeps unequal direction lengths as separate sparse moves without padding or dropping frames', async () => {
@@ -281,7 +352,7 @@ test.each([null, [], 'bad', 17])('PixelLab marks malformed sibling animation met
     stateId: id, states: [{ id, name: 'Test adventurer', animations: 1 }, { id: 'second', name: 'Second state', animations: null }],
     message: expect.stringContaining('Uncheck that state’s moves to continue'),
   })
-  expect((await readCharacterZip(bytes, id, [])).project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
+  expect((await readCharacterZip(bytes, id, [id])).project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
 })
 
 test.each([
@@ -328,7 +399,7 @@ test('PixelLab validates selected metadata and included sibling geometry while l
   entries[0].data = enc.encode(JSON.stringify(meta))
   const bytes = await zip(entries)
   await expect(readCharacterZip(bytes, id, 'all')).rejects.toThrow('invalid size or camera metadata')
-  expect((await readCharacterZip(bytes, id, [])).project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
+  expect((await readCharacterZip(bytes, id, [id])).project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
 })
 
 test.each(['missing-map', 'empty-map', 'extra-frame', 'extra-frame-without-suffix'] as const)('PixelLab refuses animation PNGs its selected state cannot account for: %s', async layout => {
@@ -351,7 +422,7 @@ test.each(['Idle/Variant', 'animations/Variant'])('PixelLab keeps an unreadable 
   entries.push({ name: `${folder}/rotations/south.png`, data: entries[1].data }, { name: `${folder}/animations/extra/south/frame_0.png`, data: entries[1].data })
   entries[0].data = enc.encode(JSON.stringify(meta))
   const bytes = await zip(entries)
-  const selected = await readCharacterZip(bytes, id, [])
+  const selected = await readCharacterZip(bytes, id, [id])
   expect(selected.project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
   expect(selected.states?.find(state => state.id === 'second')?.animations).toBeNull()
   await expect(readCharacterZip(bytes, id, 'all')).rejects.toThrow('Uncheck that state’s moves to continue')
@@ -360,7 +431,9 @@ test.each(['Idle/Variant', 'animations/Variant'])('PixelLab keeps an unreadable 
 test('PixelLab rejects orphan or ambiguously owned animation PNGs without guessing their state', async () => {
   const entries = await pixelLabFiles()
   for (const path of ['Unknown/animations/walk/south/frame_0.png', 'Idle/animations/walking/south/frame_002.png']) {
-    await expect(readCharacterZip(await zip([...entries, { name: path, data: entries[1].data }]))).rejects.toThrow('animation file without an unambiguous state layout')
+    const bytes = await zip([...entries, { name: path, data: entries[1].data }])
+    await expect(readCharacterZip(bytes)).rejects.toThrow('animation file without an unambiguous state layout')
+    expect((await readCharacterZip(bytes, id, [])).project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default'])
   }
 })
 
@@ -490,7 +563,9 @@ test('state choices survive an incompatible first PixelLab state', async () => {
   const bytes = await zip(entries)
   await expect(readCharacterZip(bytes)).rejects.toBeInstanceOf(CharacterImportError)
   await readCharacterZip(bytes).catch((e: CharacterImportError) => expect(e.states).toHaveLength(2))
-  expect((await readCharacterZip(bytes, 'second')).project.manifest.name).toBe('Second state')
+  const second = await readCharacterZip(bytes, 'second')
+  expect(second.project.manifest.name).toBe('Imported character')
+  expect(second.stateId).toBe('second')
 })
 
 test('PixelDoll export restores editable original cells, outfits, rest rig and dressed views', async () => {

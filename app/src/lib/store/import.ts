@@ -58,7 +58,7 @@ export async function projectEntries(p: Project, extra: ImportedCharacter['extra
   return entries;
 }
 
-export async function readCharacterZip(bytes: Uint8Array, stateId?: string, additionalStateIds: readonly string[] | 'all' = []): Promise<ImportedCharacter> {
+export async function readCharacterZip(bytes: Uint8Array, stateId?: string, animationStateIds?: readonly string[] | 'all'): Promise<ImportedCharacter> {
   let files = await unzip(bytes);
   // Downloads often wrap the character in one enclosing folder.
   if (!['project.json', 'manifest.json', 'metadata.json'].some((p) => files.has(p))) {
@@ -76,7 +76,7 @@ export async function readCharacterZip(bytes: Uint8Array, stateId?: string, addi
   }
   if (files.has('project.json')) result = await editable(files);
   else if (files.has('manifest.json')) result = await sheets(files);
-  else if (files.has('metadata.json')) result = await pixelLab(files, stateId, additionalStateIds);
+  else if (files.has('metadata.json')) result = await pixelLab(files, stateId, animationStateIds);
   else throw new Error('This ZIP needs PixelLab metadata.json or a PixelDoll project.json/manifest.json. Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout; they are not supported yet.');
   const errors = validate(result.project);
   if (errors.length) throw new Error(`The character is not compatible: ${errors.slice(0, 3).join('; ')}`);
@@ -181,12 +181,13 @@ function pixelLabInfo(character: PixelLabCharacter) {
   pixelLabGeometry(character);
 }
 
-async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additionalStateIds: readonly string[] | 'all' = []): Promise<ImportedCharacter> {
+async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, animationStateIds?: readonly string[] | 'all'): Promise<ImportedCharacter> {
   const metadata = json(files, 'metadata.json');
   if (!object(metadata)) throw new Error('The PixelLab metadata must describe a character.');
   let meta = metadata as PixelLabCharacter & { character?: PixelLabCharacter; states?: PixelLabState[] };
   let states: CharacterImportState[] | undefined;
   const rotations: { dir: DirectionName; path: string }[] = [], source: PixelLabMove[] = [];
+  let projectName: string | undefined;
   const warnings: string[] = [];
   try {
     if (meta.states !== undefined) {
@@ -244,18 +245,23 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additi
       stateId = selected.character.id;
       try { pixelLabInfo(selected.character); }
       catch (failure) { throw new Error(`${(failure as Error).message} Choose another standing pose or export its ZIP again.`); }
+      const groupName = meta.name ?? meta.character?.name;
+      pixelLabInfo({ name: groupName });
+      const prompt = meta.states[0].character.prompt;
+      const sharedPrompt = typeof prompt === 'string' && prompt.trim() && meta.states.every(state => typeof state.character.prompt === 'string' && state.character.prompt.trim() === prompt.trim()) ? prompt : undefined;
+      projectName = (groupName?.trim() || sharedPrompt || 'Imported character').replace(/\s+/g, ' ').trim().slice(0, 60).trim();
       if (!object(selected.frames?.rotations)) throw new Error('This PixelLab export does not include the selected character state rotations.');
       for (const [dir, path] of Object.entries(selected.frames.rotations)) {
         if (!DIRECTIONS.includes(dir as DirectionName) || typeof path !== 'string') throw new Error('The selected character state has an invalid rotation path or direction.');
         rotations.push({ dir: dir as DirectionName, path });
       }
-      const requested = additionalStateIds === 'all' ? states.filter(s => s.animations !== 0).map(s => s.id) : additionalStateIds;
+      const requested = animationStateIds === undefined ? [selected.character.id] : animationStateIds === 'all' ? states.filter(s => s.animations !== 0).map(s => s.id) : animationStateIds;
       for (const id of requested) if (!meta.states.some(s => s.character.id === id)) throw new Error('This PixelLab export does not include one of the selected move states.');
-      const included = [selected, ...meta.states.filter(s => s !== selected && requested.includes(s.character.id))];
+      const included = [selected, ...meta.states.filter(s => s !== selected)].filter(state => requested.includes(state.character.id));
       for (const state of included) {
         const sibling = state !== selected, character = state.character, own = selected.character;
         const entry = parsed.find(entry => entry.state === state)!;
-        if (entry.error) throw new Error(`${entry.error} ${sibling ? 'Uncheck that state’s moves to continue, or export its ZIP again.' : 'Choose another standing pose or export its ZIP again.'}`);
+        if (entry.error) throw new Error(`${entry.error} Uncheck that state’s moves to continue, or export its ZIP again.`);
         if (sibling && !entry.moves.length) continue;
         if (sibling) {
           try { pixelLabGeometry(character); }
@@ -272,7 +278,7 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additi
           if (source.length > 99) throw new Error('This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).');
         }
       }
-      if (orphan) throw new Error(`This ZIP contains an animation file without an unambiguous state layout: ${orphan}. Export a new character ZIP with individual frames.`);
+      if (orphan && (animationStateIds === undefined || animationStateIds === 'all' || animationStateIds.length)) throw new Error(`This ZIP contains an animation file without an unambiguous state layout: ${orphan}. Export a new character ZIP with individual frames.`);
       meta = { character: selected.character };
     } else {
       pixelLabInfo({ name: meta.name ?? meta.character?.name, prompt: meta.prompt ?? meta.character?.prompt, template_id: meta.template_id ?? meta.character?.template_id, view: meta.view ?? meta.character?.view, size: meta.size ?? meta.character?.size });
@@ -329,7 +335,7 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additi
       semi += n.semiAlpha;
       const h = await cellHash(n.img); images.set(h, n.img); importedPaths.set(path, h); return h;
     };
-    const name = meta.name ?? meta.character?.name ?? 'Imported character', prompt = meta.prompt ?? meta.character?.prompt ?? name;
+    const name = projectName ?? meta.name ?? meta.character?.name ?? 'Imported character', prompt = meta.prompt ?? meta.character?.prompt ?? name;
     const restId = DEFAULT_MOVE;
     cells[restId] = {};
     for (const r of rotations) cells[restId][r.dir] = [await put(r.path)];
