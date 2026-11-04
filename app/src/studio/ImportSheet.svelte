@@ -8,7 +8,7 @@
   import { app } from '../lib/app.svelte.ts'
   import { composeCell } from '../lib/compose/compose.ts'
   import { characterId, downloadCharacter, listCharacters, type LibraryCharacter } from '../lib/pixellab/library.ts'
-  import { CharacterImportError, readCharacterZip, saveImportedCharacter, type ImportedCharacter } from '../lib/store/import.ts'
+  import { CharacterImportError, readCharacterZip, saveImportedCharacter, type CharacterImportState, type ImportedCharacter } from '../lib/store/import.ts'
   import { MAX_ZIP_BYTES } from '../lib/store/zip.ts'
   import { rigReady } from '../lib/rig/setup.ts'
   import { ui, dismissWelcome, refreshProjects, openProject, toast, withKey } from './state.svelte.ts'
@@ -18,10 +18,10 @@
   let prepared = $state.raw<ImportedCharacter | null>(null)
   let setupNext = $state(true)
   const needsSetup = $derived(!!prepared && !rigReady({ manifest: prepared.project.manifest, ...prepared.extra }))
-  let states = $state.raw<{ id: string; name: string }[]>([]), stateId = $state('')
+  let states = $state.raw<CharacterImportState[]>([]), stateId = $state(''), moveStates = $state.raw<string[]>([])
   let bytes: Uint8Array | null = null
   let name = $state(''), id = $state(''), error = $state(''), busy = $state(false), saving = $state(false), loading = $state(false)
-  let characters = $state.raw<LibraryCharacter[]>([]), total = $state(0), offset = $state(0), listed = $state(false), previewRevision = $state(0)
+  let characters = $state.raw<LibraryCharacter[]>([]), total = $state(0), offset = $state(0), listed = $state(false), previewRevision = $state(0), libraryError = $state('')
   let alive = true
   let fileInput = $state<HTMLInputElement>()
   let dragging = $state(false), dragDepth = 0
@@ -39,26 +39,34 @@
     return composeCell(p, m.presets[0]?.items ?? { body: m.rig.baseItem }, m.rig.animations[0].id, dir, 0)
   })
   $effect(() => { if (ui.importSource === 'pixellab' && app.key && !listed) { listed = true; void load(0) } })
-  function reset() { prepared = null; bytes = null; error = ''; name = ''; states = []; stateId = ''; dragging = false; dragDepth = 0 }
+  function reset() { prepared = null; bytes = null; error = ''; name = ''; states = []; stateId = ''; moveStates = []; dragging = false; dragDepth = 0 }
   function close() { if (!saving) { reads.abort(); ui.sheet = null } }
   async function load(next: number) {
-    loading = true; error = ''
+    loading = true; libraryError = ''
     try {
       const page = await listCharacters(app.key, next, reads.signal, { activityScope: listScope(next) })
       if (!alive) return
       characters = page.characters; total = page.total; offset = next; previewRevision++
-    } catch (e) { if (alive) error = (e as Error).message }
+    } catch (e) { if (alive) libraryError = (e as Error).message }
     finally { if (alive) loading = false }
   }
-  async function prepare(data: Uint8Array, stateId?: string) {
+  function choices(available: CharacterImportState[], selected: string | undefined, additional: readonly string[] | 'all') {
+    states = available; stateId = selected ?? available[0]?.id ?? ''
+    moveStates = [...new Set([stateId, ...(additional === 'all' ? available.filter(s => s.animations).map(s => s.id) : additional)])]
+  }
+  function stateLabel(state: CharacterImportState) {
+    const label = state.name || 'Untitled state'
+    return states.filter(s => (s.name || 'Untitled state') === label).length > 1 ? `${label} (${states.indexOf(state) + 1})` : label
+  }
+  async function prepare(data: Uint8Array, selected?: string, additional: readonly string[] | 'all' = []) {
     bytes = data
     try {
-      const result = await readCharacterZip(data, stateId)
+      const result = await readCharacterZip(data, selected, additional)
       if (!alive) return
-      states = result.states ?? []
+      choices(result.states ?? [], result.stateId, additional)
       prepared = result; name = result.project.manifest.name.slice(0, 60)
     } catch (e) {
-      if (alive && e instanceof CharacterImportError) states = e.states
+      if (alive && e instanceof CharacterImportError) choices(e.states, e.stateId ?? selected, additional)
       throw e
     }
   }
@@ -71,7 +79,7 @@
       if (!/\.zip$/i.test(file.name)) throw new Error('Choose a ZIP file exported from PixelLab or PixelDoll.')
       if (file.size > MAX_ZIP_BYTES) throw new Error('Choose a ZIP smaller than 64 MB.')
       const data = new Uint8Array(await file.arrayBuffer())
-      if (alive) await prepare(data)
+      if (alive) await prepare(data, undefined, 'all')
     }
     catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) busy = false }
@@ -117,11 +125,21 @@
     finally { if (alive) busy = false }
   }
   async function changeState(value: string) {
-    if (!bytes) return
+    if (!bytes || busy) return
     const data = bytes
+    const selected = moveStates.filter(id => states.some(s => s.id === id && s.animations))
     stateId = value
     prepared = null; error = ''; busy = true
-    try { await prepare(data, value) }
+    try { await prepare(data, value, selected.filter(id => id !== value)) }
+    catch (e) { if (alive) error = (e as Error).message }
+    finally { if (alive) busy = false }
+  }
+  async function changeMoves(id: string, include: boolean) {
+    if (!bytes || busy) return
+    const data = bytes, previousName = name
+    moveStates = include ? [...moveStates, id] : moveStates.filter(value => value !== id)
+    prepared = null; error = ''; busy = true
+    try { await prepare(data, stateId, moveStates.filter(value => value !== stateId)); if (alive && previousName) name = previousName }
     catch (e) { if (alive) error = (e as Error).message }
     finally { if (alive) busy = false }
   }
@@ -145,10 +163,18 @@
 <Sheet title="Import character" onclose={close} cancelDisabled={saving}>
   <div class="api-action"><ApiPeek scope="library-open" label="Browse PixelLab characters" plan={libraryPlan()} activityScope={listScope(0)} /><div class="seg full" style="flex:1" role="tablist" aria-label="Import source">
     <button role="tab" aria-selected={ui.importSource === 'device'} tabindex={ui.importSource === 'device' ? 0 : -1} disabled={busy} onclick={() => { ui.importSource = 'device'; reset() }}>From this device</button>
-    <button role="tab" aria-selected={ui.importSource === 'pixellab'} tabindex={ui.importSource === 'pixellab' ? 0 : -1} disabled={busy} onclick={() => { ui.importSource = 'pixellab'; reset() }}>From PixelLab</button>
+    <button role="tab" aria-selected={ui.importSource === 'pixellab'} aria-busy={loading} tabindex={ui.importSource === 'pixellab' ? 0 : -1} disabled={busy} onclick={() => { ui.importSource = 'pixellab'; reset() }}>From PixelLab</button>
   </div></div>
   {#if states.length > 1}
-    <label class="field"><span class="label">Character state</span><select class="bu-input input" value={stateId || prepared?.stateId || states[0].id} disabled={busy} onchange={(e) => changeState(e.currentTarget.value)}>{#each states as state (state.id)}<option value={state.id}>{state.name}</option>{/each}</select></label>
+    <label class="field"><span class="label">Standing pose</span><select class="bu-input input" value={stateId} disabled={busy} onchange={(e) => changeState(e.currentTarget.value)}>{#each states as state (state.id)}<option value={state.id}>{stateLabel(state)}</option>{/each}</select></label>
+    {#if states.some(state => state.animations)}
+      <section class="state-moves" role="group" aria-labelledby="import-moves-title"><h3 class="label" id="import-moves-title">Moves to import</h3>
+        <p class="faint small">Moves keep the appearance of their source state. Uncheck any versions you do not want.</p>
+        {#each states.filter(state => state.animations) as state (state.id)}
+          <label class="check"><input type="checkbox" checked={state.id === stateId || moveStates.includes(state.id)} disabled={busy || state.id === stateId} onchange={e => changeMoves(state.id, e.currentTarget.checked)} /><span>{stateLabel(state)} · {state.animations} {state.animations === 1 ? 'move' : 'moves'}{state.id === stateId ? ' (included with standing pose)' : ''}</span></label>
+        {/each}
+      </section>
+    {/if}
   {/if}
   {#if !prepared}
     {#if ui.importSource === 'device'}
@@ -163,13 +189,14 @@
       <p class="faint small">In PixelLab’s character creator, export a ZIP with individual frames. Enclosing folders are supported. Other spritesheet layouts and PNG-only ZIPs are not supported.</p>
     {:else}
       <p class="muted">Browse your account’s available characters, 20 per page, or paste a character link. Importing uses no generations.</p>
+      {#if libraryError}<p class="notice bad small" role="alert"><TriangleAlert size={16} /><span>{libraryError}</span></p>{/if}
       {#if !app.key || app.keyRejected}
         <button class="bu-action btn" data-variant="outline" disabled={busy} onclick={() => withKey(() => { ui.importSource = 'pixellab'; ui.sheet = 'import' }, false)}><KeyRound size={16} />Connect PixelLab to browse your characters</button>
       {:else}
         <div class="library-head"><span class="label">Your PixelLab characters</span><span class="api-action"><ApiPeek scope="library-refresh" label="Refresh character library" plan={libraryPlan(offset)} activityScope={listScope(offset)} /><button class="bu-action btn plain small" data-variant="quiet" disabled={busy || loading} onclick={() => load(offset)}>Refresh</button></span></div>
         {#if loading}<p class="muted" role="status">Loading characters…</p>
-        {:else if !characters.length}<p class="faint">No characters found on this PixelLab account.</p>
-        {:else}
+        {:else if !characters.length && !libraryError}<p class="faint">No characters found on this PixelLab account.</p>
+        {:else if characters.length}
           <div class="character-library" aria-label="PixelLab characters">
             {#each characters as ch (ch.id)}
               <div class="api-action library-entry"><ApiPeek scope={`library-character-${ch.id}`} label={`Preview ${ch.name || 'character'}`} plan={characterZipPlan(ch.id)} activityScope={zipScope(ch.id)} /><button class="library-character" disabled={busy} onclick={() => fromPixelLab(ch.id)}>
@@ -216,4 +243,8 @@
   .library-character > span { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
   .import-preview { display: grid; justify-items: center; gap: 8px; padding: 12px; border-radius: var(--r-ctl); background: var(--bg-hover); }
   .import-drop { display: grid; justify-items: center; gap: 12px; padding: 28px 16px; text-align: center; }
+  .state-moves { display: grid; gap: 10px; min-width: 0; }
+  .state-moves h3 { margin: 0; }
+  .state-moves .check { align-items: flex-start; }
+  .state-moves .check span { min-width: 0; overflow-wrap: anywhere; }
 </style>

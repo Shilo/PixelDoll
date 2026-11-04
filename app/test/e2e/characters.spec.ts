@@ -12,6 +12,18 @@ import { composeCell } from '../../src/lib/compose/compose.ts'
 
 const ID = 'f6a0bdc5-354e-4682-8df3-55fc3d118737'
 
+async function multiStateImportZip(incompatible = false) {
+  const image = makeImg(48, 48); image.data.set([180, 100, 80, 255], (30 * 48 + 24) * 4)
+  return zip([
+    { name: 'metadata.json', data: new TextEncoder().encode(JSON.stringify({ states: [
+      { character: { id: ID, name: 'Base appearance', view: 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: { walk: { south: ['sprite.png'] } } } },
+      { character: { id: 'punch-state', name: 'Punch appearance', view: incompatible ? 'side' : 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: { right_punch: { south: ['sprite.png'] } } } },
+      { character: { id: 'still-state', name: 'Still appearance', view: 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: {} } },
+    ] })) },
+    { name: 'sprite.png', data: await encodePngBytes(image) },
+  ])
+}
+
 test('experimental native attack imports with warnings and exact frame stepping without paid requests', async ({ page, context }) => {
   const requests:string[]=[],errors:string[]=[]
   await context.route('https://*.pixellab.ai/**',route=>{requests.push(route.request().method());return route.abort()})
@@ -180,6 +192,105 @@ test('device import ignores extra drops while reading and cancels without a late
   await expect(drop).toContainText('Drop a character ZIP here')
   await expect(dialog.getByRole('alert')).toHaveCount(0)
   await transfer.dispose(); await second.dispose()
+})
+
+test('device import includes sibling moves and preserves explicit selections when changing standing poses', async ({ page }) => {
+  const bytes = await multiStateImportZip()
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true })
+  await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'multi-state.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await expect(dialog.locator('.import-preview')).toContainText('3 moves')
+  const moves = dialog.getByRole('group', { name: 'Moves to import', exact: true }), base = moves.getByRole('checkbox', { name: /^Base appearance/ }), punch = moves.getByRole('checkbox', { name: /^Punch appearance/ })
+  await expect(moves).toContainText('Moves keep the appearance of their source state.')
+  await expect(base).toBeChecked(); await expect(base).toBeDisabled(); await expect(punch).toBeChecked()
+  await dialog.getByLabel('Character name', { exact: true }).fill('Keep my character name')
+  await punch.uncheck()
+  await expect(dialog.locator('.import-preview')).toContainText('2 moves')
+  await expect(dialog.getByLabel('Character name', { exact: true })).toHaveValue('Keep my character name')
+  await punch.check()
+  await expect(dialog.locator('.import-preview')).toContainText('3 moves')
+  await dialog.getByRole('combobox', { name: 'Standing pose', exact: true }).selectOption('punch-state')
+  await expect(base).toBeEnabled(); await expect(base).toBeChecked(); await expect(punch).toBeDisabled()
+  await base.uncheck()
+  await expect(dialog.locator('.import-preview')).toContainText('2 moves')
+  await dialog.getByRole('combobox', { name: 'Standing pose', exact: true }).selectOption('still-state')
+  await expect(base).not.toBeChecked(); await expect(punch).toBeChecked(); await expect(punch).toBeEnabled()
+  await expect(dialog.locator('.import-preview')).toContainText('2 moves')
+  await dialog.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true }).uncheck()
+  await dialog.getByRole('button', { name: 'Import character', exact: true }).click()
+  await expect(page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')).toHaveText(['Default', 'Right punch'])
+  await reloadStudio(page)
+  await expect(page.getByRole('combobox', { name: 'Move', exact: true }).locator('option')).toHaveText(['Default', 'Right punch'])
+})
+
+test('an incompatible sibling move can be unchecked after the initial import error', async ({ page }) => {
+  const bytes = await multiStateImportZip(true)
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true })
+  await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'incompatible-state.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await expect(dialog.getByRole('alert')).toContainText('Uncheck that state to continue')
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled()
+  await dialog.getByRole('checkbox', { name: /^Punch appearance/ }).uncheck()
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await expect(dialog.locator('.import-preview')).toContainText('2 moves')
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled()
+})
+
+test('PixelLab link import initially selects only the requested state and offers sibling moves', async ({ page, context }) => {
+  const bytes = await multiStateImportZip(), requests: string[] = []
+  await context.route('https://api.pixellab.ai/**', route => {
+    requests.push(route.request().method())
+    return route.fulfill({ contentType: 'application/zip', body: Buffer.from(bytes) })
+  })
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true })
+  await dialog.getByRole('tab', { name: 'From PixelLab', exact: true }).click()
+  await dialog.getByLabel('Character ID or PixelLab link', { exact: true }).fill(ID)
+  await dialog.getByRole('button', { name: 'Preview character', exact: true }).click()
+  await expect(dialog.locator('.import-preview')).toContainText('2 moves')
+  const punch = dialog.getByRole('checkbox', { name: /^Punch appearance/ })
+  await expect(punch).not.toBeChecked()
+  await punch.check()
+  await expect(dialog.locator('.import-preview')).toContainText('3 moves')
+  expect(requests).toEqual(['GET'])
+})
+
+test('a late library error stays in PixelLab browsing after a device ZIP preview is prepared', async ({ page, context }) => {
+  await context.addInitScript(() => { localStorage.setItem('pixellabApiKey', 'test-only-not-a-real-key') })
+  let release!: () => void, loaded!: () => void
+  const held = new Promise<void>(resolve => { release = resolve }), requested = new Promise<void>(resolve => { loaded = resolve })
+  await context.route('https://api.pixellab.ai/**', async route => {
+    const path = new URL(route.request().url()).pathname
+    if (path.endsWith('/balance')) return route.fulfill({ json: { credits: { type: 'usd', usd: 0 }, subscription: { type: 'generations', status: 'active', generations: 100, total: 100 } } })
+    if (path.endsWith('/characters')) { loaded(); await held; return route.fulfill({ status: 503, body: 'Library temporarily unavailable' }) }
+    return route.abort()
+  })
+  const bytes = await multiStateImportZip()
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true })
+  await dialog.getByRole('tab', { name: 'From PixelLab', exact: true }).click()
+  await requested
+  try {
+    await dialog.getByRole('tab', { name: 'From this device', exact: true }).click()
+    await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'local.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+    await expect(dialog.locator('.import-preview')).toContainText('3 moves')
+  } finally { release() }
+  await expect(dialog.getByRole('tab', { name: 'From PixelLab', exact: true })).toHaveAttribute('aria-busy', 'false')
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await expect(dialog.locator('.import-preview')).toContainText('3 moves')
+  await dialog.getByRole('tab', { name: 'From PixelLab', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toContainText('503')
+  await expect(dialog).not.toContainText('No characters found')
+  await dialog.getByRole('tab', { name: 'From this device', exact: true }).click()
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
 })
 
 test('import can be canceled before choosing a file and reopened', async ({ page }, info) => {
