@@ -12,12 +12,12 @@ import { composeCell } from '../../src/lib/compose/compose.ts'
 
 const ID = 'f6a0bdc5-354e-4682-8df3-55fc3d118737'
 
-async function multiStateImportZip(incompatible = false) {
+async function multiStateImportZip(incompatible = false, unreadable = false) {
   const image = makeImg(48, 48); image.data.set([180, 100, 80, 255], (30 * 48 + 24) * 4)
   return zip([
     { name: 'metadata.json', data: new TextEncoder().encode(JSON.stringify({ states: [
       { character: { id: ID, name: 'Base appearance', view: 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: { walk: { south: ['sprite.png'] } } } },
-      { character: { id: 'punch-state', name: 'Punch appearance', view: incompatible ? 'side' : 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: { right_punch: { south: ['sprite.png'] } } } },
+      { character: { id: 'punch-state', name: 'Punch appearance', view: incompatible ? 'side' : 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: unreadable ? null : { right_punch: { south: ['sprite.png'] } } } },
       { character: { id: 'still-state', name: 'Still appearance', view: 'low top-down' }, frames: { rotations: { south: 'sprite.png' }, animations: {} } },
     ] })) },
     { name: 'sprite.png', data: await encodePngBytes(image) },
@@ -240,6 +240,24 @@ test('an incompatible sibling move can be unchecked after the initial import err
   await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled()
 })
 
+test('unreadable sibling move metadata stays visible and can be excluded from the import', async ({ page }) => {
+  const bytes = await multiStateImportZip(false, true)
+  await openStudio(page, '/')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true })
+  await dialog.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'unreadable-state.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await expect(dialog.getByRole('alert')).toContainText('invalid animation list')
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeDisabled()
+  const unreadable = dialog.getByRole('checkbox', { name: 'Punch appearance · unreadable moves', exact: true })
+  await expect(unreadable).toBeChecked()
+  await unreadable.uncheck()
+  await expect(dialog.getByRole('alert')).toHaveCount(0)
+  await expect(dialog.locator('.import-preview')).toContainText('2 moves')
+  await expect(unreadable).not.toBeChecked()
+  await expect(dialog.getByRole('button', { name: 'Import character', exact: true })).toBeEnabled()
+})
+
 test('PixelLab link import initially selects only the requested state and offers sibling moves', async ({ page, context }) => {
   const bytes = await multiStateImportZip(), requests: string[] = []
   await context.route('https://api.pixellab.ai/**', route => {
@@ -251,7 +269,7 @@ test('PixelLab link import initially selects only the requested state and offers
   await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
   const dialog = page.getByRole('dialog', { name: 'Import character', exact: true })
   await dialog.getByRole('tab', { name: 'From PixelLab', exact: true }).click()
-  await dialog.getByLabel('Character ID or PixelLab link', { exact: true }).fill(ID)
+  await dialog.getByLabel('Direct import (connection optional)', { exact: true }).fill(ID)
   await dialog.getByRole('button', { name: 'Preview character', exact: true }).click()
   await expect(dialog.locator('.import-preview')).toContainText('2 moves')
   const punch = dialog.getByRole('checkbox', { name: /^Punch appearance/ })
@@ -462,7 +480,7 @@ test('canceling a downloading import closes it and cannot reopen a late preview'
   await page.locator('.project-btn').click()
   await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
   await page.getByRole('tab', { name: 'From PixelLab', exact: true }).click()
-  await page.getByLabel('Character ID or PixelLab link', { exact: true }).fill(ID)
+  await page.getByLabel('Direct import (connection optional)', { exact: true }).fill(ID)
   await page.getByRole('button', { name: 'Preview character', exact: true }).click()
   try {
     await expect(page.getByRole('dialog').getByRole('status')).toContainText('Preparing your character')
@@ -531,12 +549,17 @@ test('PixelLab library connection, pagination and direct import use only free re
   for (let y = 12; y < 43; y++) for (let x = 18; x < 30; x++) im.data.set([180, 120, 80, 255], (y * 48 + x) * 4)
   const data = await zip([{ name: 'metadata.json', data: new TextEncoder().encode(JSON.stringify({ name: 'Library hero' })) }, { name: 'rotations/south.png', data: await encodePngBytes(im) }])
   const calls: string[] = []
+  let releaseNext!: () => void, requestedNext!: () => void, holdNext = true
+  const nextPage = new Promise<void>(resolve => { releaseNext = resolve }), nextRequested = new Promise<void>(resolve => { requestedNext = resolve })
   await context.route('https://api.pixellab.ai/**', async (route) => {
     const req = route.request(), url = new URL(req.url())
     calls.push(`${req.method()} ${url.pathname}${url.search}`)
     if (req.method() !== 'GET') return route.abort()
     if (url.pathname.endsWith('/balance')) return route.fulfill({ json: { credits: { type: 'usd', usd: 0 }, subscription: { type: 'generations', status: 'active', generations: 100, total: 100 } } })
-    if (url.pathname === '/v2/characters') return route.fulfill({ json: { total: 21, characters: url.searchParams.get('offset') === '20' ? [{ id: ID, name: 'Page two hero', directions: 1, animation_count: 0 }] : Array.from({ length: 20 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`, name: i ? `Library hero ${i + 1}` : 'Library hero', directions: 1, animation_count: 0 })) } })
+    if (url.pathname === '/v2/characters') {
+      if (url.searchParams.get('offset') === '20' && holdNext) { holdNext = false; requestedNext(); await nextPage }
+      return route.fulfill({ json: { total: 21, characters: url.searchParams.get('offset') === '20' ? [{ id: ID, name: 'Page two hero', directions: 1, animation_count: 0 }] : Array.from({ length: 20 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i + 1).padStart(12, '0')}`, name: i === 1 ? 'Library hero with a long red beard, silver helmet, embroidered plate armor and a broad double-bladed axe held across the body, standing with both feet visible and a readable silhouette' : i ? `Library hero ${i + 1}` : 'Library hero', directions: 1, animation_count: 0 })) } })
+    }
     if (url.pathname.endsWith('/zip')) { expect(req.headers().authorization).toBeUndefined(); return route.fulfill({ contentType: 'application/zip', body: Buffer.from(data) }) }
     return route.abort()
   })
@@ -549,15 +572,67 @@ test('PixelLab library connection, pagination and direct import use only free re
   await page.getByRole('dialog').getByRole('button', { name: 'Connect', exact: true }).click()
   await expect(page.getByRole('button', { name: /Library hero 1 direction ·/ })).toBeVisible()
   await expect(page.locator('.character-library .library-character')).toHaveCount(20)
+  const dialog = page.getByRole('dialog', { name: 'Import character', exact: true }), library = dialog.locator('.character-library')
+  const direct = dialog.getByRole('textbox', { name: 'Direct import (connection optional)', exact: true }), preview = dialog.getByRole('button', { name: 'Preview character', exact: true })
+  await expect(dialog).not.toContainText('Browse your account’s available characters')
+  await expect(dialog).not.toContainText('An ID or shared creator link works')
+  await expect(preview).toHaveText('Preview')
+  await expect(direct).toHaveAttribute('placeholder', 'Paste a character ID or creator link')
+  for (const size of [{ width: 1440, height: 900, tall: true, note: true }, { width: 605, height: 882, tall: true, note: false }, { width: 390, height: 844, tall: true, note: false }, { width: 320, height: 568, tall: false, note: false }, { width: 844, height: 390, tall: false, note: false }]) {
+    await page.setViewportSize(size)
+    await direct.scrollIntoViewIfNeeded()
+    await expect(direct).toBeInViewport()
+    await expect(preview).toBeInViewport()
+    await expect(dialog.getByRole('button', { name: 'Next page', exact: true })).toBeInViewport()
+    const geometry = await dialog.evaluate(node => {
+      const field = node.querySelector<HTMLInputElement>('#import-character-id')!.getBoundingClientRect(), button = node.querySelector<HTMLButtonElement>('[aria-label="Preview character"]')!.getBoundingClientRect(), list = node.querySelector('.character-library')!.getBoundingClientRect(), modal = node.getBoundingClientRect()
+      return { field: { left: field.left, right: field.right, top: field.top, bottom: field.bottom, width: field.width }, button: { left: button.left, top: button.top, bottom: button.bottom }, listHeight: list.height, modal: { left: modal.left, right: modal.right, top: modal.top, bottom: modal.bottom } }
+    })
+    expect(geometry.field.right).toBeLessThanOrEqual(geometry.button.left)
+    expect(geometry.field.width).toBeGreaterThanOrEqual(80)
+    expect(geometry.field.top).toBeLessThan(geometry.button.bottom)
+    expect(geometry.button.top).toBeLessThan(geometry.field.bottom)
+    expect(geometry.modal.left).toBeGreaterThanOrEqual(0)
+    expect(geometry.modal.right).toBeLessThanOrEqual(size.width)
+    expect(geometry.modal.top).toBeGreaterThanOrEqual(0)
+    expect(geometry.modal.bottom).toBeLessThanOrEqual(size.height)
+    if (size.tall) expect(geometry.listHeight).toBeGreaterThan(260)
+    const note = dialog.getByText('Free · saves a new local copy', { exact: true })
+    if (size.note) await expect(note).toBeVisible()
+    else await expect(note).toBeHidden()
+  }
+  await page.setViewportSize({ width: 605, height: 882 })
+  const positions = () => dialog.evaluate(node => [node, ...['.character-library', '.direct-import', '[aria-label="Previous page"]', '[aria-label="Next page"]', '.sheet-foot'].map(selector => node.querySelector(selector)!)].map(element => { const box = element.getBoundingClientRect(); return { x: box.x, y: box.y, width: box.width, height: box.height } }))
+  const firstPagePositions = await positions()
+  const stable = async () => {
+    const current = await positions()
+    for (const [index, box] of current.entries()) for (const key of ['x', 'y', 'width', 'height'] as const) expect(box[key]).toBeCloseTo(firstPagePositions[index][key], 0)
+  }
   await expect(page.getByText('1–20 of 21', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Previous', exact: true })).toBeDisabled()
-  await page.getByRole('button', { name: 'Next', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Previous page', exact: true })).toBeDisabled()
+  await expect(dialog.getByRole('button', { name: 'Next page', exact: true })).toHaveText('')
+  await page.getByRole('button', { name: 'Next page', exact: true }).click()
+  await nextRequested
+  try {
+    await expect(library).toHaveAttribute('aria-busy', 'true')
+    await expect(library.getByRole('status')).toHaveText('Loading characters…')
+    await expect(library.locator('.library-character').first()).toBeDisabled()
+    await stable()
+  } finally { releaseNext() }
   await expect(page.getByRole('button', { name: /Page two hero/ })).toBeVisible()
   await expect(page.getByText('21–21 of 21', { exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeDisabled()
-  await page.getByRole('button', { name: 'Previous', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Next page', exact: true })).toBeDisabled()
+  await stable()
+  await page.getByRole('button', { name: 'Previous page', exact: true }).click()
   await expect(page.getByText('1–20 of 21', { exact: true })).toBeVisible()
-  await page.getByRole('button', { name: 'Next', exact: true }).click()
+  await stable()
+  await page.getByRole('button', { name: 'Next page', exact: true }).click()
+  await page.getByRole('button', { name: /Page two hero/ }).click()
+  await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible()
+  await dialog.getByRole('button', { name: 'Choose another character', exact: true }).click()
+  await dialog.locator('.library-entry').getByRole('button', { name: 'Inspect API calls', exact: true }).click()
+  await expect(page.locator('.peek-call')).toContainText(`/characters/${ID}/zip`)
+  await page.keyboard.press('Escape')
   await page.getByRole('button', { name: /Page two hero/ }).click()
   await expect(page.getByRole('img', { name: 'Character import preview' })).toBeVisible()
   await page.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)' }).uncheck()

@@ -2,9 +2,9 @@
   import { onMount } from 'svelte'
   import { beginActivityCall, finishActivityCall } from '../lib/pixellab/activity.ts'
   let { src, activityScope }: { src: string; activityScope?: string } = $props()
-  let img: HTMLImageElement
+  let frame: HTMLSpanElement
   let source = $state<string | undefined>()
-  let failed = $state(false)
+  let failed = $state(false), loaded = $state(false)
   let call = ''
   let status: number | null = null
   function finish(ok: boolean) {
@@ -37,7 +37,7 @@
         observer.disconnect()
       }
     })
-    observer.observe(img)
+    observer.observe(frame)
     return () => {
       observer.disconnect()
       reads.abort()
@@ -47,10 +47,14 @@
   })
 </script>
 
-<img bind:this={img} src={source} alt="" referrerpolicy="no-referrer" hidden={failed} onload={() => finish(true)} onerror={() => finish(false)} />
-{#if failed}<span class="preview-error faint small" role="status">Preview unavailable. Refresh to retry.</span>{/if}
+<span bind:this={frame} class="preview-frame" class:failed aria-busy={!loaded && !failed}>
+  {#if source && !failed}<img src={source} width="48" height="48" alt="" referrerpolicy="no-referrer" hidden={!loaded} onload={() => { loaded = true; finish(true) }} onerror={() => finish(false)} />{/if}
+  {#if failed}<span class="preview-error faint small" role="status">Preview unavailable. Refresh to retry.</span>{/if}
+</span>
 
 <style>
+  .preview-frame { display: inline-grid; align-items: center; width: 48px; height: 48px; flex: none; }
+  .preview-frame.failed { height: auto; min-height: 48px; }
   img { width:48px; height:48px; object-fit:contain; image-rendering:pixelated; flex:none; }
   .preview-error { width: 48px; flex: none; overflow-wrap: anywhere; }
 </style>

@@ -339,7 +339,9 @@ test('mirrored saved requests show their payload and updated charge without send
 
 for (const sameUrl of [false, true]) test(`refreshing a library character downloads fresh previews with ${sameUrl ? 'the same' : 'a changed'} URL`, async ({ page, context }, info) => {
   let version = 0
-  let failPreview = false
+  let failPreview: false | 'http' | 'image' = false
+  let releasePreview!: () => void, requestedPreview!: () => void
+  const heldPreview = new Promise<void>(resolve => { releasePreview = resolve }), previewRequested = new Promise<void>(resolve => { requestedPreview = resolve })
   const downloads: string[] = []
   const uuid = '5352683c-54aa-4617-b303-e942e472c66d'
   const png = Buffer.from(await encodePngBytes({ w: 1, h: 1, data: new Uint8ClampedArray([255, 0, 0, 255]) }))
@@ -370,8 +372,9 @@ for (const sameUrl of [false, true]) test(`refreshing a library character downlo
       expect(route.request().headers().authorization).toBeUndefined()
       expect(route.request().headers().cookie).toBeUndefined()
       downloads.push(path)
-      if (failPreview) await route.fulfill({ status: 503, body: 'Preview unavailable' })
-      else await route.fulfill({ contentType: 'image/png', body: png })
+      if (downloads.length === 1) { requestedPreview(); await heldPreview }
+      if (failPreview === 'http') await route.fulfill({ status: 503, body: 'Preview unavailable' })
+      else await route.fulfill({ contentType: 'image/png', body: failPreview === 'image' ? Buffer.from('not a PNG') : png })
     } else { await route.abort(); throw new Error(`Unexpected fixture request ${path}`) }
   })
   await openStudio(page, info.config.projects.find(project => project.name === 'browser-selftests')!.use.baseURL!)
@@ -383,7 +386,14 @@ for (const sameUrl of [false, true]) test(`refreshing a library character downlo
     ui.importSource = 'pixellab'; ui.sheet = 'import'
   })
   const image = page.locator('.library-character img')
+  await previewRequested
+  try {
+    await expect(image).toBeHidden()
+    expect(await page.locator('.preview-frame').evaluate(node => { const box = node.getBoundingClientRect(); return { width: box.width, height: box.height } })).toEqual({ width: 48, height: 48 })
+  } finally { releasePreview() }
   await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth)).toBe(1)
+  await expect(image).toBeVisible()
+  expect(await page.locator('.preview-frame').evaluate(node => { const box = node.getBoundingClientRect(); return { width: box.width, height: box.height } })).toEqual({ width: 48, height: 48 })
   await expect(image).toHaveAttribute('src', /^blob:/)
   const firstSource = await image.getAttribute('src')
   await page.getByRole('button', { name: 'Refresh', exact: true }).click()
@@ -398,7 +408,7 @@ for (const sameUrl of [false, true]) test(`refreshing a library character downlo
   await expect(peek(page).locator('.peek-call > summary').filter({ hasText: 'preview-' })).toHaveCount(2)
   await page.keyboard.press('Escape')
   if (sameUrl) {
-    failPreview = true
+    failPreview = 'http'
     await page.getByRole('button', { name: 'Refresh', exact: true }).click()
     await expect(page.getByText('Preview unavailable. Refresh to retry.', { exact: true })).toBeVisible()
     await expect(image).toBeHidden()
@@ -407,11 +417,19 @@ for (const sameUrl of [false, true]) test(`refreshing a library character downlo
     await expect(image).toBeVisible()
     await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth)).toBe(1)
     await expect(page.getByText('Preview unavailable. Refresh to retry.', { exact: true })).toHaveCount(0)
+    failPreview = 'image'
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+    await expect(page.getByText('Preview unavailable. Refresh to retry.', { exact: true })).toBeVisible()
+    await expect(image).toBeHidden()
+    failPreview = false
+    await page.getByRole('button', { name: 'Refresh', exact: true }).click()
+    await expect(image).toBeVisible()
+    await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth)).toBe(1)
   }
   const lastSource = await image.getAttribute('src')
   // Routing disables Chromium's HTTP cache and may omit synthesized cache headers. Check the actual Fetch API contract.
   expect(await page.evaluate(() => (window as unknown as { __previewFetchOptions: { cache: RequestCache; credentials: RequestCredentials }[] }).__previewFetchOptions))
-    .toEqual(Array.from({ length: sameUrl ? 4 : 2 }, () => ({ cache: 'no-store', credentials: 'omit' })))
+    .toEqual(Array.from({ length: sameUrl ? 6 : 2 }, () => ({ cache: 'no-store', credentials: 'omit' })))
   await page.getByRole('dialog', { name: 'Import character', exact: true }).getByRole('button', { name: 'Cancel', exact: true }).click()
   expect(await page.evaluate(async (url) => { try { await fetch(url!); return true } catch { return false } }, lastSource)).toBe(false)
 })
