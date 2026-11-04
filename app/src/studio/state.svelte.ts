@@ -755,7 +755,8 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
     toast('The attempt price changed. Review the current estimate before generating.', { tone: 'warning' }); return;
   }
   const taken = gens.map((g) => g.draft.spec.id); // read and claimed with no await between: concurrent starts get distinct ids
-  const g: Gen = { draft: route.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT };
+  // The runner and the list must share a proxy so mutations persist and identity checks recognize this draft.
+  const g = $state<Gen>({ draft: route.draft(ctx, input, taken), input, phase: 'running', status: 'Starting', requestText: REQUEST_TEXT });
   const index = replaced ? gens.indexOf(replaced) : -1;
   if (replaced) gens.splice(index, 1, g); else gens.push(g);
   const selected = ui.selected;

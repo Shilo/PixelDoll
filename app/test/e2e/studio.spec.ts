@@ -1403,6 +1403,91 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
 })
 
 
+test('new item progress, previews and completion survive reload without submitting completed jobs again', async ({ page, context }, info) => {
+  let completed = false
+  const posts: string[] = [], errors: string[] = []
+  let images: { type: string; base64: string }[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  await context.route('https://api.pixellab.ai/**', async route => {
+    const request = route.request(), path = new URL(request.url()).pathname
+    if (path === '/v2/balance') return route.fulfill({ json: { subscription: { type: 'generations', status: 'active', generations: 100, total: 100 }, credits: { type: 'usd', usd: 0 } } })
+    if (request.method() === 'POST') {
+      posts.push(path)
+      if (path === '/v2/edit-animation-v2') {
+        images = request.postDataJSON().frames.map((frame: { image: { base64: string } }) => ({ type: 'base64', base64: frame.image.base64 }))
+        return route.fulfill({ status: 202, json: { background_job_id: 'offline-item-progress' } })
+      }
+    }
+    if (path === '/v2/background-jobs/offline-item-progress') return route.fulfill({ json: {
+      id: 'offline-item-progress', status: completed ? 'completed' : 'processing', created_at: '',
+      usage: { type: 'generations', generations: 1 }, last_response: completed ? { images } : { progress: 0.5 },
+    } })
+    return route.abort()
+  })
+  await page.addInitScript(() => {
+    localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1')
+    localStorage.setItem('pixellabApiKey', 'synthetic-item-progress-key')
+  })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  const id = await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', s = await import(statePath)
+    const projectPath = '/src/lib/store/project.ts', project = await import(projectPath)
+    const dbPath = '/src/lib/store/db.ts', db = await import(dbPath)
+    await s.copyDemo()
+    const ctx = await project.loadProject(s.doc.id), m = ctx.rec.manifest
+    // Two frozen frames keep the real item pipeline small and use the edit route without a skeleton.
+    const walk = m.rig.animations.find((a: { id: string }) => a.id === 'walk')
+    m.rig.animations = [{ ...walk, cells: 2, frames: walk.frames.slice(0, 2) }]
+    m.rig.directions = m.rig.directions.filter((d: { id: string }) => d.id === 'south')
+    delete m.rig.rest
+    m.items = m.items.filter((item: { id: string }) => item.id === m.rig.baseItem)
+    const base = m.items[0].layers[0]
+    base.cells = { walk: { south: base.cells.walk.south.slice(0, 2) } }
+    await db.put('projects', ctx.rec.id, ctx.rec)
+    await s.openProject(ctx.rec.id)
+    await s.startItem({ name: 'Progress fixture', slot: 'hair', prompt: 'short hair' })
+    s.ui.inspTab = 'item'
+    return s.gens[0].draft.spec.id
+  })
+  await equipmentGroup(page, 'Hair')
+  const gen = page.locator('.gen')
+  await expect(gen).toContainText('Designing')
+  await expect(gen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '50')
+  const saved = () => page.evaluate(async () => {
+    const p = '/src/lib/store/db.ts', db = await import(p)
+    return (await db.get('projects', 'studio-drafts')).gens[0]
+  })
+  const pending = await saved()
+  expect(pending.draft.calls).toHaveLength(1)
+  expect(pending.draft.calls[0].recId).toBeTruthy()
+  await reloadStudio(page)
+  await expect.poll(saved).toMatchObject({ phase: 'running', draft: { calls: [{ recId: pending.draft.calls[0].recId }] } })
+  completed = true
+  await expect.poll(saved).toMatchObject({ phase: 'review' })
+  await page.evaluate(async id => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p)
+    s.ui.selected = 'gen:' + id; s.ui.inspTab = 'item'
+  }, id)
+  await equipmentGroup(page, 'Hair')
+  await expect(gen).toContainText('Needs a look') // Returning the unchanged mannequin deliberately fails item QA.
+  await expect(gen.getByRole('progressbar')).toHaveCount(0)
+  await expect.poll(() => page.evaluate(async id => {
+    const p = '/src/studio/state.svelte.ts', s = await import(p)
+    return !!s.store.results[id]?.preview
+  }, id)).toBe(true)
+  // Reproduce an older stuck draft whose runner never persisted its job reference.
+  await page.evaluate(async () => {
+    const p = '/src/lib/store/db.ts', db = await import(p)
+    const record = await db.get('projects', 'studio-drafts'), g = record.gens[0]
+    g.phase = 'running'; g.status = 'Starting'; delete g.draft.calls[0].recId
+    await db.put('projects', 'studio-drafts', record)
+  })
+  await reloadStudio(page)
+  await expect.poll(saved).toMatchObject({ phase: 'review', draft: { calls: [{ recId: pending.draft.calls[0].recId }] } })
+  expect(posts).toEqual(['/v2/edit-animation-v2'])
+  expect(errors).toEqual([])
+})
+
 test('reload restores failed create, move and setup for review without paid submissions', async ({ page, context }, info) => {
   const posts: string[] = []
   await context.route('https://api.pixellab.ai/**', async (route) => {
