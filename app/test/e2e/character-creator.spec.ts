@@ -419,8 +419,20 @@ test.describe('touch tablet', () => {
   })
 })
 
-for (const viewport of [{ width: 320, height: 568 }, { width: 350, height: 800 }, { width: 360, height: 800 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 900, height: 900 }, { width: 1440, height: 900 }]) test(`creator fits ${viewport.width}×${viewport.height} without clipped controls`, async ({ page }) => {
+for (const viewport of [{ width: 320, height: 568 }, { width: 350, height: 800 }, { width: 360, height: 800 }, { width: 390, height: 844 }, { width: 600, height: 900 }, { width: 760, height: 900 }, { width: 844, height: 390 }, { width: 768, height: 1024 }, { width: 900, height: 900 }, { width: 1440, height: 900 }]) test(`creator fits ${viewport.width}×${viewport.height} without clipped controls`, async ({ page }) => {
   await page.setViewportSize(viewport); const sheet = await open(page)
+  const layout = await sheet.locator('.creator-grid').evaluate(element => {
+    const style = getComputedStyle(element), width = element.getBoundingClientRect().width
+    const appearance = element.querySelector('.appearance')!, appearanceWidth = appearance.getBoundingClientRect().width
+    return {
+      stacked: style.display === 'flex' && style.flexDirection === 'column', width, appearanceWidth,
+      sections: [...element.querySelectorAll(':scope > .appearance, :scope > .geometry, :scope > .facing')].map(section => section.getBoundingClientRect().width),
+      controls: [...appearance.querySelectorAll('textarea, select')].map(control => control.getBoundingClientRect().width),
+    }
+  })
+  // A contained flex item can collapse without overflowing. Stacked editors must use the available width.
+  if (layout.stacked) for (const width of layout.sections) expect(width).toBeCloseTo(layout.width, 0)
+  for (const width of layout.controls) expect(width).toBeCloseTo(layout.appearanceWidth, 0)
   await sheet.getByRole('textbox', { name: 'Details', exact: true }).fill('A friendly dwarf')
   const horizontal = await sheet.evaluate(element => ({ client: element.clientWidth, scroll: element.scrollWidth }))
   expect(horizontal.scroll).toBeLessThanOrEqual(horizontal.client)
@@ -459,6 +471,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 350, height: 800 }
   const appearanceGap = await sheet.getByRole('textbox', { name: 'Details', exact: true }).evaluate(el => el.getBoundingClientRect().top - el.closest('.appearance')!.querySelector('.editor-toolbar')!.getBoundingClientRect().bottom)
   const appearanceActions = await sheet.locator('.prompt-actions').evaluate(el => [...el.querySelectorAll(':scope > button')].map(child => { const r = child.getBoundingClientRect(); return { x: r.x, w: r.width } }))
   await sheet.getByRole('tab', { name: 'Prompt', exact: true }).click()
+  expect((await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).boundingBox())!.width).toBeCloseTo(layout.appearanceWidth, 0)
   const promptGap = await sheet.getByRole('textbox', { name: 'Exact prompt', exact: true }).evaluate(el => el.getBoundingClientRect().top - el.closest('.appearance')!.querySelector('.editor-toolbar')!.getBoundingClientRect().bottom)
   expect(promptGap).toBe(appearanceGap)
   const promptActions = await sheet.locator('.prompt-actions').evaluate(el => [...el.querySelectorAll(':scope > button')].map(child => { const r = child.getBoundingClientRect(); return { x: r.x, w: r.width } }))

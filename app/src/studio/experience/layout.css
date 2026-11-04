@@ -260,7 +260,7 @@
   .character-name-field { width:100%; }
   .studio-app .character-sheet .sheet-body { padding:4px 20px 16px; }
   .studio-app .character-sheet .sheet-foot { padding:12px 20px max(16px,env(safe-area-inset-bottom)); }
-  .studio-app .character-sheet .creator-grid { display:flex;flex-direction:column;gap:24px; }
+  .studio-app .character-sheet .creator-grid { display:flex;flex-direction:column;align-items:stretch;gap:24px; }
   .studio-app .character-sheet .appearance { order:0; }
   .studio-app .character-sheet .geometry { order:1; }
   .studio-app .character-sheet .creator-guide { order:2; }
