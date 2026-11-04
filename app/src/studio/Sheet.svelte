@@ -5,6 +5,7 @@
   import { WORLDS } from './experience/config.ts'
   import { ui } from './state.svelte.ts'
   import Toast from './Toast.svelte'
+  import { backdropDismiss } from './backdropDismiss.ts'
   let { title, children, footer, heading, leading, trailing, onclose, cancel = 'Cancel', cancelDisabled = false, wide = false, className = '' }: {
     title: string; children: Snippet; footer?: Snippet; heading?: Snippet; leading?: Snippet; trailing?: Snippet; onclose: () => void; cancel?: string; cancelDisabled?: boolean; wide?: boolean; className?: string
   } = $props()
@@ -30,7 +31,7 @@
 </script>
 
 <dialog style:--creator-world="url('{WORLDS[ui.theme].backgrounds.creation}')" bind:this={dlg} class="sheet {kind} {className}" class:wide aria-labelledby="sheet-title" onclose={() => { if (!unmounting && !cancelDisabled) onclose() }} oncancel={(e) => { e.preventDefault(); if (!cancelDisabled) onclose() }}
-  onclick={(e) => { if (e.target === dlg && !cancelDisabled) onclose() }}>
+  use:backdropDismiss={() => { if (!cancelDisabled) onclose() }}>
   {#if kind === 'bottom'}<div class="grabber" aria-hidden="true"></div>{/if}
   <header class="sheet-head">
     {#if leading}{@render leading()}{:else if cancelTrailing}<span></span>{:else}<button class="bu-action btn plain link" data-variant="quiet" disabled={cancelDisabled} onclick={onclose}>{cancel}</button>{/if}
