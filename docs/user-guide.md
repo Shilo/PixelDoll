@@ -120,7 +120,7 @@ The library lives in this browser's storage, with no account sync. Download desi
 
 Press **Import** on the Characters screen or choose the character menu → **Import character…**. Importing is free and saves a new copy on this device.
 
-- **From this device:** choose a PixelLab character ZIP (individual rotation and animation frames) or a PixelDoll export ZIP, up to 64 MB. If a PixelLab archive has several states, choose the one to import. Preview it, give it a name, then press **Import character**.
+- **From this device:** drop a PixelLab character ZIP (individual rotation and animation frames) or a PixelDoll export ZIP into the import window, or press **Choose ZIP**, up to 64 MB. Preview it, give it a name, then press **Import character**.
 - **From PixelLab:** connect your account to browse the characters returned by its library API, 20 per page. Use **Next** and **Previous** to reach the full account list; this is not a public catalog of everybody's characters. You can also paste a character ID or creator link without connecting. Select a character, review its preview, then import. This reads existing artwork; it does not generate or change anything in PixelLab.
 
 Supported ZIP layouts:
@@ -132,11 +132,15 @@ Supported ZIP layouts:
 | Current PixelDoll export | Editable `project.json` and original `cells/` images, alongside any engine files. This is PixelDoll's documented open format. |
 | Older PixelDoll engine export | PixelDoll `manifest.json` and its referenced spritesheets. An arbitrary game-engine ZIP without that manifest is not supported. |
 
-These layouts may sit inside enclosing folders. Several candidate enclosing character folders are refused rather than guessed; PixelLab's multiple states within one metadata file have a state chooser. Arbitrary PNG folders, unrelated JSON formats, standalone spritesheets and custom frame naming without compatible metadata are not supported. They would need an explicit frame-layout mapper so directions, pivots and animation order cannot be guessed incorrectly.
+These layouts may sit inside enclosing folders. Several candidate enclosing character folders are refused rather than guessed. For PixelLab's multiple states within one metadata file, choose the **Standing pose**. Local ZIPs initially include moves from every animated state; **Moves to import** lets you exclude versions you do not want. Moves keep their source state's appearance, including any clothes or hair. States containing only standing artwork add no invented animations. PixelLab link/library imports initially include only the requested state's moves, with the same optional state choices when the archive contains more.
+
+Arbitrary PNG folders, unrelated JSON formats, standalone spritesheets and custom frame naming without compatible metadata are not supported. They would need an explicit frame-layout mapper so directions, pivots and animation order cannot be guessed incorrectly.
 
 **Cancel** closes the import before saving, including while a ZIP downloads or is being prepared. Pending reads are aborted where possible; late results cannot open a preview. Once **Import character** starts saving the local copy, Cancel is visibly disabled until that save finishes.
 
-Artwork keeps its original pixels and directions. Existing clothes and hair in a PixelLab character are part of its base and cannot be removed as separate items. Frames that would crop visible pixels in PixelDoll’s 64 px cell are refused. Standalone PNGs are not supported because they do not describe the direction and animation layout.
+Artwork keeps its original pixels and directions on a shared square canvas, at least 64 px and up to 256 px. Larger transparent padding can be cropped only when no visible pixels are lost; artwork is never rescaled. Existing clothes and hair in a PixelLab character are part of its base and cannot be removed as separate items. Standalone PNGs are not supported because they do not describe the direction and animation layout.
+
+If a move has different frame counts by direction, those direction groups appear as separate moves so no frames are dropped or repeated. Missing directions stay unavailable. PixelLab ZIPs do not provide playback speed, so imported animation frames default to 100 ms. Move names display spaces instead of underscores or hyphens; distinct moves remain separate even when their readable names match.
 
 Leave **Set up the pose rig next** checked to prepare imported artwork for the same equipment and move pipeline used by created characters. You can also choose character menu → **Set up character…** later. Review the existing appearance and standing reference, then check the estimated price before starting. Setup finds joints on every unique body frame (0.1 gen each) and connects the supplied standing views to your current PixelLab account (0.25 gen). It keeps existing pixels, layers, colors and outfits intact. Saved standing views stay fixed to preserve existing equipment alignment.
 
