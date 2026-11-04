@@ -4,6 +4,7 @@ import { attachImportedRig, setupPlan } from '../lib/rig/setup.ts';
 import { DIRECTIONS, cellHash, retainPlaybackChoices, type Keypoint } from '../lib/rig/rig.ts';
 import { skeletonInput } from '../lib/rig/estimate.ts';
 import { png, routes } from '../lib/pixellab/routes.ts';
+import { PLAN_JOB_LIMITS } from '../lib/pixellab/plans.ts';
 import { loadProject, type StoredProject } from '../lib/store/project.ts';
 import type { Provenance } from '../lib/store/manifest.ts';
 import { encodePngBytes } from '../lib/image/pngraw.ts';
@@ -21,17 +22,31 @@ export async function setupCharacter(spec: SetupSpec, progress: (p: Progress) =>
   if (rec.manifest.rig.baseHash !== spec.baseHash) throw new Error('The body changed since setup started. Start setup again for the current frames.');
   if (!spec.looks.trim()) throw new Error('Describe the character’s existing appearance first.');
   const plan = await setupPlan(project, spec.restAnim), measured = new Map<string, Keypoint[]>(), provenance: Provenance[] = [];
+  if (!plan.frames.size) throw new Error('No body frames are available for rig setup. Existing artwork is unchanged.');
   let done = 0;
   progress({ step: 'joints', done, total: plan.frames.size, recIds: [] });
-  // Sequential estimates keep the UI responsive and fail before registering a character if a frame cannot be rigged.
-  for (const [hash, im] of plan.frames) {
-    const k = await joints(im, true, undefined, spec.activityScope);
-    if (!k) throw new Error('PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.');
-    measured.set(hash, k);
-    const request = routes.estimateSkeleton(png(await b64(skeletonInput(im).image)));
-    provenance.push(provOf(await run(request, 'Finding joints', 'm2-skel', true, true, undefined, spec.activityScope)));
-    progress({ step: 'joints', done: ++done, total: plan.frames.size, recIds: [] });
-  }
+  const frames = [...plan.frames], observations: Provenance[] = new Array(frames.length);
+  let next = 0, failure: { error: unknown } | undefined;
+  // Bound prepared work by the largest supported plan; the shared queue applies the actual account and busy-account limits.
+  // On failure, admitted checks can still finish and be cached. Drain them without creating canceled records that block resume.
+  await Promise.allSettled(Array.from({ length: Math.min(frames.length, Math.max(...Object.values(PLAN_JOB_LIMITS))) }, async () => {
+    while (!failure && next < frames.length) {
+      const index = next++, [hash, im] = frames[index];
+      try {
+        const k = await joints(im, true, undefined, spec.activityScope);
+        if (!k) throw new Error('PixelLab could not find all 18 valid joints on a body frame. Existing artwork is unchanged; reconnect or choose a clearer standing reference and resume.');
+        if (failure) return;
+        const request = routes.estimateSkeleton(png(await b64(skeletonInput(im).image)));
+        if (failure) return;
+        observations[index] = provOf(await run(request, 'Finding joints', 'm2-skel', true, true, undefined, spec.activityScope));
+        if (failure) return;
+        measured.set(hash, k);
+        progress({ step: 'joints', done: ++done, total: plan.frames.size, recIds: [] });
+      } catch (error) { failure ??= { error }; throw error; }
+    }
+  }));
+  if (failure) throw failure.error;
+  provenance.push(...observations);
   progress({ step: 'register', done: 0, total: 1, recIds: [] });
   const directions = plan.registrationDirections === 8 ? DIRECTIONS : ['south', 'east', 'north', 'west'] as const;
   const direction_images = Object.fromEntries(await Promise.all(directions.filter(d => d !== 'south').map(async d => [d, png(await b64(plan.rest[d]!))])));
