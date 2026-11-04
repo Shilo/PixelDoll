@@ -71,8 +71,8 @@ async function waitPastOpportunity(page: Page) {
 }
 
 async function pauseDownloadClock(page: Page) {
-  // These cases verify unstaged-download/navigation behavior independently of shared-worker CPU speed.
-  // Prepared-release coverage and the late-arrival cases retain the product's real two-second deadline.
+  // Positive cases verify update/navigation behavior independently of shared-worker CPU speed.
+  // Real-time expiry and late activation have separate cases; a slow machine legitimately keeps the old page open.
   await page.clock.install({ time: new Date('2026-11-03T12:00:00Z') })
   await page.clock.pauseAt(new Date('2026-11-03T12:00:01Z'))
   await page.addInitScript(() => {
@@ -94,7 +94,7 @@ async function expectControlledNavigation(page: Page) {
   expect(await page.evaluate(() => (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type)).toBe('navigate')
 }
 
-test('a fresh foreground launch applies a prepared release and every changed asset while the existing tab keeps its work', async ({ page, context }) => {
+test('a fresh foreground launch within the opportunity applies a prepared release and every changed asset while the existing tab keeps its work', async ({ page, context }) => {
   const a = await testRelease('startup-fast-a', '11.0.1'), b = await changedRelease('startup-fast-b', '11.0.2')
   const server = await pwaServer(a)
   let fresh: Page | undefined
@@ -108,8 +108,11 @@ test('a fresh foreground launch applies a prepared release and every changed ass
     for (const path of changedPublic) expect(createHash('sha256').update(a.files.get(path)!).digest('hex')).not.toBe(createHash('sha256').update(b.files.get(path)!).digest('hex'))
 
     fresh = await context.newPage(); await fresh.bringToFront()
+    await pauseDownloadClock(fresh)
     await fresh.goto(server.url)
+    await expectControlledNavigation(fresh)
     await loadedBuild(fresh, b)
+    await fresh.clock.resume()
     await expect(fresh.locator('.customize-action')).toBeVisible()
     await expect(fresh.locator('html')).toHaveAttribute('data-startup-artwork-release', 'B')
     await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
