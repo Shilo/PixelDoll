@@ -51,9 +51,13 @@ async function cachedApp(page: Page, url: string, release: TestRelease) {
   await page.bringToFront()
   await page.goto(url)
   await expect(page.locator('.customize-action')).toBeVisible({ timeout: 20_000 })
+  // Finish the owner's character load before opening another document. Its last-project write would otherwise
+  // correctly cancel the fresh document's startup update through the cross-tab storage guard.
+  await expect(page.locator('.customize-action')).toBeEnabled({ timeout: 20_000 })
   await expect.poll(() => workerBuild(page, 'active')).toBe(release.release.build)
   await page.reload()
   await expect(page.locator('.customize-action')).toBeVisible()
+  await expect(page.locator('.customize-action')).toBeEnabled({ timeout: 20_000 })
   await loadedBuild(page, release)
   // This owner represents an already-used tab. Only the separately opened document may update itself automatically.
   await page.keyboard.press('Shift')
@@ -244,6 +248,31 @@ test('trusted interaction during the startup opportunity preserves an unfinished
     await loadedBuild(fresh, a)
     await expect(name).toHaveValue('Typed before the update was ready')
     await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+  } finally { held?.release(); await fresh?.close(); await server.close() }
+})
+
+test('a real storage change from another tab cancels a ready startup update while the opportunity clock is paused', async ({ page, context }) => {
+  const a = await testRelease('startup-storage-a', '11.8.1'), b = await changedRelease('startup-storage-b', '11.8.2'), server = await pwaServer(a)
+  let held: ReturnType<typeof server.hold> | undefined, fresh: Page | undefined
+  try {
+    await cachedApp(page, server.url, a)
+    await stage(page, server, b)
+    held = server.hold('release.json')
+    fresh = await context.newPage(); await fresh.bringToFront()
+    await pauseDownloadClock(fresh)
+    await fresh.goto(server.url)
+    await expectControlledNavigation(fresh)
+    await expect(fresh.locator('.customize-action')).toBeVisible()
+    await expect(fresh.locator('.customize-action')).toBeEnabled({ timeout: 20_000 })
+    await held.requested
+    await page.evaluate(() => localStorage.setItem('pixeldoll.startup-storage-test', 'changed'))
+    await expect.poll(() => fresh!.evaluate(() => (window as unknown as { startupTestEvents: { type: string; trusted: boolean; targetIsWindow: boolean }[] }).startupTestEvents
+      .some(event => event.type === 'storage' && event.trusted && event.targetIsWindow))).toBe(true)
+    held.release()
+    await expect(fresh.getByRole('button', { name: /^Update to v11\.8\.2/ }).first()).toBeEnabled({ timeout: 20_000 })
+    await loadedBuild(fresh, a)
+    await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+    await expect.poll(() => workerBuild(fresh!, 'waiting')).toBe(b.release.build)
   } finally { held?.release(); await fresh?.close(); await server.close() }
 })
 
