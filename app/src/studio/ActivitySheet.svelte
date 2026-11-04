@@ -64,10 +64,11 @@
     {#if !running.length && !queued.length}<p class="muted">Nothing generating.</p>{/if}
     {#if running.length}
       <section class="act-group"><span class="sec-title">Generating</span>
+        {#if running.some((r) => r.state === 'submitting')}<p class="faint small" id="activity-submitting-stop">Stop is unavailable until PixelLab responds.</p>{/if}
         <ul>{#each running as r (r.id)}
           {@const waiting = !r.jobs.some((s) => !!s.id)}
           <li><span class="ring" class:spin={waiting} style:--p={pct(r)} aria-hidden="true"></span><span class="act-main"><span class="api-action"><b>{nice(r)}</b><ApiPeek scope={`job-running-${r.id}`} label={nice(r)} plan={[]} queueIds={[r.id]} /></span><span class="muted small">{waiting ? 'Waiting for PixelLab' : `${pct(r)}%`}{r.jobs[0]?.queuePosition ? ` · #${r.jobs[0].queuePosition} in line` : ''}</span></span>
-            <span class="act-meta num">{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><span class="api-action"><ApiPeek scope={`job-stop-${r.id}`} label={`Stop ${nice(r)}`} plan={cancelPlan(r)} /><button class="bu-action btn link small" data-variant="quiet" onclick={() => queue.cancel(r.id)}>Stop</button></span></span></li>
+            <span class="act-meta num">{r.submittedAt ? mins(now - r.submittedAt) : ''}<br /><span class="api-action"><ApiPeek scope={`job-stop-${r.id}`} label={`Stop ${nice(r)}`} plan={cancelPlan(r)} /><button class="bu-action btn link small" data-variant="quiet" disabled={r.state === 'submitting'} aria-describedby={r.state === 'submitting' ? 'activity-submitting-stop' : undefined} onclick={() => queue.cancel(r.id)}>Stop</button></span></span></li>
         {/each}</ul>
       </section>
     {/if}

@@ -106,6 +106,23 @@ for (const tier of [3, 1] as const) test(`rig setup fills Tier ${tier} capacity,
     await connect.getByRole('button', { name: 'Connect', exact: true }).click()
     await expect.poll(() => pending.size).toBe(limit)
     expect(estimates).toBe(limit); expect(registrations).toBe(0)
+    await setup.locator('.sheet-head').getByRole('button', { name: 'Hide', exact: true }).click()
+    await page.getByRole('button', { name: 'Activity', exact: true }).click()
+    const activity = page.getByRole('dialog', { name: 'Activity', exact: true }), stops = activity.getByRole('button', { name: 'Stop', exact: true })
+    await expect(stops).toHaveCount(limit)
+    await expect(activity.locator('#activity-submitting-stop')).toHaveText('Stop is unavailable until PixelLab responds.')
+    await expect(activity.locator('#activity-submitting-stop')).toBeVisible()
+    expect(await stops.evaluateAll(buttons => buttons.every(button => (button as HTMLButtonElement).disabled && button.getAttribute('aria-describedby') === 'activity-submitting-stop'))).toBe(true)
+    await expect(stops.first()).toHaveAccessibleDescription('Stop is unavailable until PixelLab responds.')
+    if (tier === 1) {
+      const cancels = activity.getByRole('button', { name: 'Cancel', exact: true })
+      await expect.poll(() => cancels.count()).toBeGreaterThan(0)
+      expect(await cancels.evaluateAll(buttons => buttons.every(button => !(button as HTMLButtonElement).disabled))).toBe(true)
+    }
+    await activity.getByRole('button', { name: 'Done', exact: true }).click()
+    await page.locator('.project-btn').click()
+    await page.getByRole('menuitem', { name: 'Set up character…', exact: true }).click()
+    await expect(setup.locator('.steps-list li.now')).toContainText('0/41')
     await page.evaluate(() => {
       const values: number[] = [], read = () => {
         const step = document.querySelector('.steps-list li.now')

@@ -1379,16 +1379,22 @@ test('Activity distinguishes unknown progress and credits while item guidance ke
   await expect(gen).not.toContainText('picks up where it left off')
   await page.getByRole('button', { name: 'Activity', exact: true }).click()
   const activity = page.getByRole('dialog', { name: 'Activity', exact: true })
+  await expect(activity.locator('#activity-submitting-stop')).toHaveText('Stop is unavailable until PixelLab responds.')
+  await expect(activity.locator('#activity-submitting-stop')).toBeVisible()
   for (const label of ['Finding joints fixture', 'Submitting fixture']) {
     const row = activity.locator('.act-group li').filter({ has: page.getByText(label, { exact: true }) })
     await expect(row.locator('.act-main .small')).toHaveText('Waiting for PixelLab')
     await expect(row.locator('.ring')).toHaveClass(/spin/)
     await expect(row.getByRole('button', { name: 'Stop', exact: true })).toBeVisible()
+    await expect(row.getByRole('button', { name: 'Stop', exact: true })).toBeDisabled()
+    await expect(row.getByRole('button', { name: 'Stop', exact: true })).toHaveAttribute('aria-describedby', 'activity-submitting-stop')
+    await expect(row.getByRole('button', { name: 'Stop', exact: true })).toHaveAccessibleDescription('Stop is unavailable until PixelLab responds.')
     await expect(row.locator('.act-meta')).toContainText(/\d+:\d{2}/)
   }
   const known = activity.locator('.act-group li').filter({ has: page.getByText('Reported progress fixture', { exact: true }) })
   await expect(known.locator('.act-main .small')).toHaveText('37% · #4 in line')
   await expect(known.locator('.ring')).not.toHaveClass(/spin/)
+  await expect(known.getByRole('button', { name: 'Stop', exact: true })).toBeEnabled()
   await page.evaluate(() => {
     const q = (window as unknown as { __queue: { paused: string | null; emit: () => void } }).__queue
     q.paused = 'credits'; q.emit()
