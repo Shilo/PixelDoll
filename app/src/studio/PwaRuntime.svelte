@@ -3,6 +3,8 @@
   import { pwa, startPwa, setPwaActions, applyUpdate, installApp } from '../lib/pwa.ts'
   import { prepareForUpdate, updateBlocked } from './state.svelte.ts'
   import { restoreTrigger } from './experience/focus.ts'
+  import { app } from '../lib/app.svelte.ts'
+  import { openStartupUpdateWindow, claimStartupUpdate, assertStartupUpdate, markStartupUpdateReload, StartupUpdateCancelled } from '../lib/startup-update.ts'
 
   let dialog: HTMLDialogElement
   let mode = $state<'update' | 'install' | null>(null)
@@ -32,7 +34,20 @@
   }
   async function install() { if (await installApp() && mode === 'install') close() }
   $effect(() => { if (mode === 'install' && $pwa.installed) close() })
+  function validateAutomatic() {
+    assertStartupUpdate()
+    if (mode || (app.key && !app.remembered) || updateBlocked()) throw new StartupUpdateCancelled()
+  }
+  $effect(() => {
+    if (!import.meta.env.PROD || !$pwa.available || !$pwa.ready || mode || (app.key && !app.remembered) || updateBlocked()) return
+    if (!claimStartupUpdate()) return
+    void applyUpdate(prepareForUpdate, { validate: validateAutomatic, beforeReload: () => { validateAutomatic(); markStartupUpdateReload() } })
+      .catch(error => {
+        if (!(error instanceof StartupUpdateCancelled)) pwa.update(s => ({ ...s, error: `Automatic update paused: ${(error as Error).message}` }))
+      })
+  })
   onMount(() => {
+    if (import.meta.env.PROD) openStartupUpdateWindow()
     const stop = startPwa()
     const off = setPwaActions(() => { void show('update') }, () => { void show('install') })
     // With Close disabled, native Tab can focus BODY outside the modal. Shield global Studio shortcuts there too.

@@ -11,7 +11,7 @@ const TYPES: Record<string, string> = { html: 'text/html', js: 'application/java
 export interface TestRelease { release: PwaRelease; files: Map<string, Buffer>; inventory: { path: string; hash: string }[] }
 
 /** Real production bytes with independent chunk URLs and release identities, without rebuilding the app per test. */
-export async function testRelease(label: string, version: string): Promise<TestRelease> {
+export async function testRelease(label: string, version: string, transform?: (files: Map<string, Buffer>) => void): Promise<TestRelease> {
   const original = JSON.parse(await readFile(new URL('release.json', DIST), 'utf8')) as PwaRelease
   const release = { ...original, build: `pwa-test-${label}-${randomUUID()}`, version }
   const source = new Map<string, Buffer>()
@@ -38,6 +38,7 @@ export async function testRelease(label: string, version: string): Promise<TestR
     const target = path.startsWith('assets/') ? 'assets/' + renamed.get(path.slice('assets/'.length))! : path
     files.set(target, content)
   }
+  transform?.(files)
   const inventory = [...files].map(([path, bytes]) => ({ path: revisionPath(path, release.build), hash: createHash('sha256').update(bytes).digest('hex') }))
   const worker = await readFile(new URL('../../pwa-worker.js', import.meta.url), 'utf8')
   files.set('sw.js', Buffer.from(`const RELEASE = ${JSON.stringify(release)};\nconst FILES = ${JSON.stringify(inventory)};\n${worker}`))
@@ -51,6 +52,7 @@ export async function pwaServer(initial: TestRelease) {
   const scope = `/pwa-test-${randomUUID()}/`
   const requests: string[] = []
   const failures = new Set<string>()
+  const holds = new Map<string, { noteRequest(): void; wait: Promise<void>; release(): void }>()
   let dynamic = 0
   const server = createServer((request, response: ServerResponse) => {
     const url = new URL(request.url ?? '/', 'http://localhost')
@@ -58,19 +60,35 @@ export async function pwaServer(initial: TestRelease) {
     response.setHeader('cache-control', 'no-store')
     if (!url.pathname.startsWith(scope)) { response.writeHead(404).end(); return }
     const path = decodeURIComponent(url.pathname.slice(scope.length)) || 'index.html'
-    if (path === 'dynamic.json') { response.setHeader('content-type', 'application/json'); response.end(JSON.stringify({ value: ++dynamic })); return }
-    if (failures.has(path)) { response.writeHead(503).end('Deployment is incomplete'); return }
     const bytes = current.files.get(path)
-    if (!bytes) { response.writeHead(404).end('Missing release file'); return }
-    response.setHeader('content-type', TYPES[path.split('.').at(-1)!] ?? 'application/octet-stream')
-    response.end(bytes)
+    const send = () => {
+      if (response.destroyed) return
+      if (path === 'dynamic.json') { response.setHeader('content-type', 'application/json'); response.end(JSON.stringify({ value: ++dynamic })); return }
+      if (failures.has(path)) { response.writeHead(503).end('Deployment is incomplete'); return }
+      if (!bytes) { response.writeHead(404).end('Missing release file'); return }
+      response.setHeader('content-type', TYPES[path.split('.').at(-1)!] ?? 'application/octet-stream')
+      response.end(bytes)
+    }
+    const held = holds.get(path)
+    if (held) { held.noteRequest(); void held.wait.then(send) }
+    else send()
   })
   await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, '127.0.0.1', resolve) })
   const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
   return {
     url: origin + scope, scope, requests, failures,
     deploy(release: TestRelease) { current = release },
+    hold(path: string) {
+      if (holds.has(path)) throw new Error(`PWA fixture already holds ${path}`)
+      let noteRequest!: () => void, resume!: () => void
+      const requested = new Promise<void>(resolve => { noteRequest = resolve })
+      const wait = new Promise<void>(resolve => { resume = resolve })
+      const release = () => { holds.delete(path); resume() }
+      holds.set(path, { noteRequest, wait, release })
+      return { requested, release }
+    },
     close: () => new Promise<void>((resolve, reject) => {
+      for (const held of holds.values()) held.release()
       const timer = setTimeout(() => reject(new Error('PWA test server did not close')), 5_000)
       server.close(error => { clearTimeout(timer); if (error) reject(error); else resolve() })
       server.closeAllConnections()

@@ -170,21 +170,32 @@ export function startPwa() {
   }
 }
 
-/** Only called after the Studio guard and durable-save check, with the requesting page made inert. */
-export async function applyUpdate(prepare: () => Promise<void>) {
+/** Both paths verify the same release. Automatic updates additionally recheck their short-lived eligibility. */
+export async function applyUpdate(prepare: () => Promise<void>, automatic?: { validate: () => void; beforeReload: () => void }) {
   const target = get(pwa).available
   if (!target || !registration) throw new Error('No update is ready yet.')
+  const validate = () => {
+    automatic?.validate()
+    if (get(pwa).available?.build !== target.build || !get(pwa).ready) throw new Error('The available update changed or is still downloading. Review the current version and try again.')
+  }
+  validate()
   await prepare()
-  // A new deployment or another tab may have replaced the worker since this notice appeared.
-  await checkForUpdate()
-  if (get(pwa).available?.build !== target.build || !get(pwa).ready) throw new Error('The available update changed or is still downloading. Review the current version and try again.')
+  validate()
+  // Startup discovery just verified this target. Do not enqueue another entire discovery/staging pass while it
+  // finishes; that can consume the automatic opportunity. Explicit updates refresh an older notice first.
+  if (!automatic) await checkForUpdate()
+  validate()
   const worker = registration.waiting ?? registration.active
   if (!worker || readRelease(await workerMessage(worker, 'GET_RELEASE')).build !== target.build) throw new Error('The update changed. Try again.')
+  validate()
   const verified = await workerMessage(worker, 'VERIFY', target.build)
+  validate()
   if (verified.ready !== true) throw new Error('The update is incomplete. Reconnect and try again.')
   await prepare()
+  validate()
   if (worker === registration.waiting) {
     await workerMessage(worker, 'ACTIVATE', target.build)
+    validate()
     if (worker.state !== 'activated') await new Promise<void>((resolve, reject) => {
       const changed = () => {
         if (worker.state === 'activated' || worker.state === 'redundant') {
@@ -195,11 +206,15 @@ export async function applyUpdate(prepare: () => Promise<void>) {
       const timer = setTimeout(() => { worker.removeEventListener('statechange', changed); reject(new Error('The update could not activate. Try again.')) }, 15_000)
       worker.addEventListener('statechange', changed); changed()
     })
+    validate()
   }
   const controller = navigator.serviceWorker.controller
   // First-time/uncontrolled tabs use the active worker on their next navigation.
   const active = controller ?? registration.active
   if (!active || readRelease(await workerMessage(active, 'GET_RELEASE')).build !== target.build) throw new Error('Another version activated. Review the update and try again.')
+  validate()
   await prepare()
+  validate()
+  automatic?.beforeReload()
   location.reload()
 }

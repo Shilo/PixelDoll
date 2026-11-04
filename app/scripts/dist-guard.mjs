@@ -7,6 +7,7 @@ import { basename, join } from 'node:path';
 
 const MARKERS = ['resolveAgentKey', 'PIXELLAB_SECRET', '__dev', 'pixellab-key', 'PIXELLAB_API_KEY_AGENT_DEV', 'PIXELLAB_TOKEN_AGENT_DEV', 'PIXELLAB_API_KEY', 'API_KEY_OVERRIDE', 'DEV_API_KEY', 'devkey', 'pixeldoll.agentKey', 'agent-badge', 'sourceMappingURL'];
 const bad = [];
+let startupPolicies = 0;
 for (const rel of readdirSync('dist', { recursive: true })) {
   const file = join('dist', rel);
   if (!statSync(file).isFile()) continue;
@@ -16,8 +17,16 @@ for (const rel of readdirSync('dist', { recursive: true })) {
   else {
     const text = readFileSync(file, 'latin1');
     if (MARKERS.some((m) => text.includes(m))) bad.push(`${file}: dev or agent-key marker`);
+    if (name.startsWith('startup-update-') && name.endsWith('.js')) {
+      if (text.includes('pixeldoll.startupUpdate:')) startupPolicies++;
+      const imports = [...text.matchAll(/\b(?:from|import)\s*["'`]([^"'`]+)["'`]/g)].map(match => match[1]);
+      // This code must run before bootstrap, never pull in credentials, storage, or the mounted app.
+      if (imports.some(path => !path.startsWith('./startup-update-')) || /\bimport\s*\(/.test(text)
+        || text.includes('pixellabApiKey') || text.includes('indexedDB')) bad.push(`${file}: startup observation is not isolated`);
+    }
   }
 }
+if (startupPolicies !== 1) bad.push('dist/assets: missing or duplicated isolated startup policy');
 if (bad.length) {
   console.error(`dist guard: ${bad.length} problem(s) in dist/\n${bad.join('\n')}`);
   process.exit(1);

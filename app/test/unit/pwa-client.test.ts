@@ -44,12 +44,20 @@ async function setup() {
   }
   const removeEventListener = (type: string, listener: EventListener) => { listeners.get(type)?.delete(listener) }
   const reload = vi.fn()
+  const messageHolds = new Map<string, Promise<void>>()
+  const messages: string[] = []
+  let activate = () => {}
   const worker = (release: () => Release) => ({
     scriptURL: scope + 'sw.js',
     state: 'activated',
     postMessage: (message: { type: string; build?: string }, ports: Port[]) => {
+      messages.push(message.type)
       const value = release()
-      ports[0]!.postMessage(message.type === 'GET_RELEASE' ? value : { ...value, ready: message.build === value.build })
+      if (message.type === 'ACTIVATE') activate()
+      const send = () => ports[0]!.postMessage(message.type === 'GET_RELEASE' ? value : { ...value, ready: message.build === value.build })
+      const held = messageHolds.get(message.type)
+      if (held) void held.then(send)
+      else send()
     },
     addEventListener: vi.fn(), removeEventListener: vi.fn(),
   })
@@ -57,16 +65,17 @@ async function setup() {
   const waiting = worker(() => downloaded)
   const update = vi.fn(async () => {})
   const registration = { scope, active, waiting, installing: null, update, addEventListener: vi.fn(), removeEventListener: vi.fn() }
-  const getRegistration = vi.fn(async (): Promise<typeof registration | undefined> => registration)
-  const register = vi.fn(async () => registration)
+  const serviceWorker = { getRegistration: vi.fn(async (): Promise<typeof registration | undefined> => registration), register: vi.fn(async () => registration), controller: active, addEventListener, removeEventListener }
+  activate = () => { registration.active = waiting; serviceWorker.controller = waiting }
+  const { getRegistration, register } = serviceWorker
   const fetch = vi.fn(async () => new Response(JSON.stringify(published), { headers: { 'content-type': 'application/json' } }))
   const matchMedia = () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
   const window = { isSecureContext: true, top: undefined as unknown, addEventListener, removeEventListener, matchMedia, navigator: { standalone: false } }
   window.top = window
   runInNewContext(readFileSync(new URL('../../public/install.js', import.meta.url), 'utf8'), { window })
   vi.stubGlobal('window', window)
-  vi.stubGlobal('document', { baseURI: scope, visibilityState: 'visible', addEventListener, removeEventListener })
-  vi.stubGlobal('navigator', { serviceWorker: { getRegistration, register, controller: active, addEventListener, removeEventListener } })
+  vi.stubGlobal('document', { baseURI: scope, visibilityState: 'visible', hasFocus: () => true, wasDiscarded: false, prerendering: false, querySelector: () => null, querySelectorAll: () => [], addEventListener, removeEventListener })
+  vi.stubGlobal('navigator', { serviceWorker })
   vi.stubGlobal('addEventListener', addEventListener)
   vi.stubGlobal('removeEventListener', removeEventListener)
   vi.stubGlobal('matchMedia', matchMedia)
@@ -75,7 +84,8 @@ async function setup() {
   vi.stubGlobal('fetch', fetch)
   const client = await import('../../src/lib/pwa.ts')
   return {
-    client, fetch, getRegistration, register, registration, update, reload,
+    client, fetch, getRegistration, register, registration, update, reload, messages,
+    holdMessage: (type: string, held: Promise<void>) => { messageHolds.set(type, held) },
     publish: (release: Release) => { published = release },
     stage: (release: Release) => { downloaded = release },
     wake: (type: 'focus' | 'online') => { for (const listener of listeners.get(type) ?? []) listener(new Event(type)) },
@@ -153,5 +163,101 @@ describe('PWA deployment discovery remains independent of browser worker stalls'
     expect(get(app.client.pwa).ready).toBe(true)
     expect(get(app.client.pwa).error).toBe('')
     expect(app.reload).not.toHaveBeenCalled()
+  })
+})
+
+describe('automatic startup updates revalidate asynchronous work', () => {
+  async function readyStartup(configure?: (app: Awaited<ReturnType<typeof setup>>) => void) {
+    const app = await setup()
+    configure?.(app)
+    app.start(); await settle()
+    vi.stubGlobal('performance', { now: () => Date.now(), getEntriesByType: () => [{ type: 'navigate' }] })
+    const marker = new Map<string, string>()
+    vi.stubGlobal('sessionStorage', { getItem: (key: string) => marker.get(key) ?? null, setItem: (key: string, value: string) => marker.set(key, value), removeItem: (key: string) => marker.delete(key) })
+    const policy = await import('../../src/lib/startup-update.ts')
+    const stop = policy.observeStartupUpdate()
+    policy.openStartupUpdateWindow()
+    expect(policy.claimStartupUpdate()).toBe(true)
+    const beforeReload = vi.fn(policy.markStartupUpdateReload)
+    const automatic = { validate: policy.assertStartupUpdate, beforeReload }
+    return { ...app, policy, stop, marker, automatic, beforeReload }
+  }
+
+  it('uses the verified fast path and records loop protection only immediately before reload', async () => {
+    const app = await readyStartup()
+    try {
+      await app.client.applyUpdate(async () => {}, app.automatic)
+      expect(app.messages).toContain('ACTIVATE')
+      expect(app.beforeReload).toHaveBeenCalledOnce()
+      expect([...app.marker.values()]).toEqual(['1'])
+      expect(app.reload).toHaveBeenCalledOnce()
+    } finally { app.stop() }
+  })
+
+  it('applies an already-ready automatic target while the background browser update check remains stalled', async () => {
+    const app = await readyStartup(app => { app.update.mockImplementationOnce(never) })
+    try {
+      expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true })
+      expect(app.fetch).toHaveBeenCalledOnce()
+      expect(app.update).toHaveBeenCalledOnce()
+      const priorMessages = app.messages.length
+      await app.client.applyUpdate(async () => {}, app.automatic)
+      expect(app.fetch).toHaveBeenCalledOnce()
+      expect(app.update).toHaveBeenCalledOnce()
+      expect(app.messages.slice(priorMessages)).toEqual(expect.arrayContaining(['VERIFY', 'ACTIVATE']))
+      expect(app.beforeReload).toHaveBeenCalledOnce()
+      expect(app.reload).toHaveBeenCalledOnce()
+      expect([...app.marker.values()]).toEqual(['1'])
+    } finally { app.stop() }
+  })
+
+  it('refreshes an explicit update and refuses an obsolete notice when a newer deployment is discovered', async () => {
+    const app = await readyStartup()
+    try {
+      app.publish(later)
+      await expect(app.client.applyUpdate(async () => {})).rejects.toThrow('The available update changed')
+      expect(app.fetch).toHaveBeenCalledTimes(2)
+      expect(app.update).toHaveBeenCalledTimes(2)
+      expect(get(app.client.pwa).available).toEqual(later)
+      expect(app.messages).not.toContain('ACTIVATE')
+      expect(app.reload).not.toHaveBeenCalled()
+    } finally { app.stop() }
+  })
+
+  it.each(['VERIFY', 'ACTIVATE'])('keeps the running document when its deadline expires while %s is pending', async type => {
+    const app = await readyStartup()
+    let release!: () => void
+    app.holdMessage(type, new Promise<void>(resolve => { release = resolve }))
+    try {
+      const result = app.client.applyUpdate(async () => {}, app.automatic).then(() => null, error => error)
+      await settle()
+      expect(app.messages).toContain(type)
+      await vi.advanceTimersByTimeAsync(2_001)
+      release(); await settle()
+      expect(await result).toBeInstanceOf(app.policy.StartupUpdateCancelled)
+      expect(app.beforeReload).not.toHaveBeenCalled()
+      expect(app.marker.size).toBe(0)
+      expect(app.reload).not.toHaveBeenCalled()
+      if (type === 'VERIFY') expect(app.messages).not.toContain('ACTIVATE')
+      expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true })
+    } finally { app.stop() }
+  })
+
+  it('rechecks the final asynchronous save and preserves manual recovery after automatic eligibility ends', async () => {
+    const app = await readyStartup()
+    let release!: () => void, preparing = 0
+    const finalSave = new Promise<void>(resolve => { release = resolve })
+    try {
+      const result = app.client.applyUpdate(async () => { if (++preparing === 3) await finalSave }, app.automatic).then(() => null, error => error)
+      await settle()
+      expect(preparing).toBe(3)
+      await vi.advanceTimersByTimeAsync(2_001)
+      release(); await settle()
+      expect(await result).toBeInstanceOf(app.policy.StartupUpdateCancelled)
+      expect(app.reload).not.toHaveBeenCalled()
+      expect(app.beforeReload).not.toHaveBeenCalled()
+      await app.client.applyUpdate(async () => {})
+      expect(app.reload).toHaveBeenCalledOnce()
+    } finally { app.stop() }
   })
 })

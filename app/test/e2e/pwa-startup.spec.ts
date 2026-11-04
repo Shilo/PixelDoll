@@ -1,0 +1,275 @@
+import { createHash } from 'node:crypto'
+import { expect, test, type Page } from '@playwright/test'
+import { pwaServer, testRelease, type TestRelease } from './pwa-test-server.ts'
+
+const changedPublic = ['appearance.js', 'icons/exports/godot.svg', 'fixtures/s2/layers/head/helmet_steel/main/walk.png', 'worlds/obsidian-stage.png']
+
+function changedRelease(label: string, version: string) {
+  return testRelease(label, version, files => {
+    files.set('appearance.js', Buffer.concat([files.get('appearance.js')!, Buffer.from('\ndocument.documentElement.dataset.startupArtworkRelease = "B";\n')]))
+    files.set('icons/exports/godot.svg', Buffer.from(files.get('icons/exports/godot.svg')!.toString().replaceAll('currentColor', '#ff65a3')))
+    files.set('fixtures/s2/layers/head/helmet_steel/main/walk.png', files.get('fixtures/s2/layers/head/hat_wizard/main/walk.png')!)
+    files.set('worlds/obsidian-stage.png', files.get('worlds/porcelain-stage.png')!)
+    const css = [...files.keys()].find(path => path.startsWith('assets/') && path.endsWith('.css'))!
+    files.set(css, Buffer.concat([files.get(css)!, Buffer.from('\n.pwa-byte-refresh-test { --release: "B"; }\n')]))
+  })
+}
+
+test.beforeEach(async ({ context }) => {
+  await context.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') })
+  await context.route('https://*.pixellab.ai/**', route => route.abort())
+})
+
+async function workerBuild(page: Page, slot: 'active' | 'waiting') {
+  return page.evaluate(async slot => {
+    const worker = (await navigator.serviceWorker.getRegistration())?.[slot]
+    if (!worker) return null
+    return await new Promise<string | null>(resolve => {
+      const channel = new MessageChannel()
+      const timer = setTimeout(() => { channel.port1.close(); resolve(null) }, 3_000)
+      channel.port1.onmessage = ({ data }) => { clearTimeout(timer); channel.port1.close(); resolve(data.build) }
+      worker.postMessage({ type: 'GET_RELEASE' }, [channel.port2])
+    })
+  }, slot)
+}
+
+async function loadedBuild(page: Page, release: TestRelease) {
+  await expect(page.locator('script[type="module"]').first()).toHaveAttribute('src', new RegExp(release.release.build))
+}
+
+async function cachedApp(page: Page, url: string, release: TestRelease) {
+  await page.bringToFront()
+  await page.goto(url)
+  await expect(page.locator('.customize-action')).toBeVisible({ timeout: 20_000 })
+  await expect.poll(() => workerBuild(page, 'active')).toBe(release.release.build)
+  await page.reload()
+  await expect(page.locator('.customize-action')).toBeVisible()
+  await loadedBuild(page, release)
+  // This owner represents an already-used tab. Only the separately opened document may update itself automatically.
+  await page.keyboard.press('Shift')
+}
+
+async function stage(owner: Page, server: Awaited<ReturnType<typeof pwaServer>>, release: TestRelease) {
+  server.deploy(release)
+  await owner.evaluate(() => dispatchEvent(new Event('online')))
+  await expect.poll(() => workerBuild(owner, 'waiting'), { timeout: 20_000 }).toBe(release.release.build)
+}
+
+async function verifyFiles(page: Page, release: TestRelease, inventory = release.inventory) {
+  const actual = await page.evaluate(async ({ base, inventory }) => await Promise.all(inventory.map(async file => {
+    const response = await fetch(new URL(file.path, base))
+    if (!response.ok) return `${file.path}: HTTP ${response.status}`
+    return [...new Uint8Array(await crypto.subtle.digest('SHA-256', await response.arrayBuffer()))].map(byte => byte.toString(16).padStart(2, '0')).join('')
+  })), { base: page.url(), inventory })
+  expect(actual).toEqual(inventory.map(file => file.hash))
+}
+
+async function waitPastOpportunity(page: Page) {
+  // Measure from a visible app, after its mount, rather than guessing when startup code or storage finished.
+  const started = await page.evaluate(() => performance.now())
+  await page.waitForFunction(started => performance.now() - started >= 2_100, started)
+}
+
+async function pauseDownloadClock(page: Page) {
+  // These cases verify unstaged-download/navigation behavior independently of shared-worker CPU speed.
+  // Prepared-release coverage and the late-arrival cases retain the product's real two-second deadline.
+  await page.clock.install({ time: new Date('2026-11-03T12:00:00Z') })
+  await page.clock.pauseAt(new Date('2026-11-03T12:00:01Z'))
+  await page.addInitScript(() => {
+    // Playwright's clock replaces performance.getEntriesByType with an empty list. This fixture knows it is
+    // opening a fresh foreground navigation; restore that evidence without weakening the production guard.
+    const original = performance.getEntriesByType.bind(performance)
+    Object.defineProperty(performance, 'getEntriesByType', {
+      configurable: true,
+      value: (type: string) => type === 'navigation'
+        ? [{ name: location.href, entryType: 'navigation', type: 'navigate', startTime: 0, duration: 0, toJSON: () => ({ type: 'navigate' }) }]
+        : original(type),
+    })
+    Object.assign(window, { startupTestNavigationCaptured: performance.getEntriesByType('navigation').length === 1 })
+  })
+}
+
+async function expectControlledNavigation(page: Page) {
+  expect(await page.evaluate(() => (window as unknown as { startupTestNavigationCaptured: boolean }).startupTestNavigationCaptured)).toBe(true)
+  expect(await page.evaluate(() => (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type)).toBe('navigate')
+}
+
+test('a fresh foreground launch applies a prepared release and every changed asset while the existing tab keeps its work', async ({ page, context }) => {
+  const a = await testRelease('startup-fast-a', '11.0.1'), b = await changedRelease('startup-fast-b', '11.0.2')
+  const server = await pwaServer(a)
+  let fresh: Page | undefined
+  try {
+    await cachedApp(page, server.url, a)
+    await page.getByRole('button', { name: 'New character', exact: true }).click()
+    const draft = page.getByRole('dialog', { name: 'New character', exact: true }).getByRole('textbox', { name: 'Name', exact: true })
+    await draft.fill('Keep the original tab and this draft')
+    await page.evaluate(() => { document.documentElement.dataset.startupDocument = 'existing-A' })
+    await stage(page, server, b)
+    for (const path of changedPublic) expect(createHash('sha256').update(a.files.get(path)!).digest('hex')).not.toBe(createHash('sha256').update(b.files.get(path)!).digest('hex'))
+
+    fresh = await context.newPage(); await fresh.bringToFront()
+    await fresh.goto(server.url)
+    await loadedBuild(fresh, b)
+    await expect(fresh.locator('.customize-action')).toBeVisible()
+    await expect(fresh.locator('html')).toHaveAttribute('data-startup-artwork-release', 'B')
+    await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+    await loadedBuild(page, a)
+    await expect(page.locator('html')).toHaveAttribute('data-startup-document', 'existing-A')
+    await expect(draft).toHaveValue('Keep the original tab and this draft')
+    await context.setOffline(true)
+    await verifyFiles(fresh, b) // Includes code, CSS, icons, both worlds and every demo file, not just a build label.
+    await verifyFiles(page, a)
+    await fresh.reload()
+    await expect(fresh.locator('.customize-action')).toBeVisible()
+    await loadedBuild(fresh, b)
+  } finally { await context.setOffline(false); await fresh?.close(); await server.close() }
+})
+
+test('the first fresh launch discovers and applies a fast new deployment that no older tab has staged', async ({ page, context }) => {
+  const a = await testRelease('startup-first-a', '11.6.1'), b = await changedRelease('startup-first-b', '11.6.2'), server = await pwaServer(a)
+  let fresh: Page | undefined
+  try {
+    await cachedApp(page, server.url, a)
+    await page.evaluate(() => { document.documentElement.dataset.startupDocument = 'owner-before-deployment' })
+    server.deploy(b) // No update request, discovery event, or prepared waiting worker before this navigation.
+    fresh = await context.newPage(); await fresh.bringToFront()
+    await pauseDownloadClock(fresh)
+    await fresh.goto(server.url)
+    await expectControlledNavigation(fresh)
+    await loadedBuild(fresh, b)
+    await fresh.clock.resume()
+    await expect(fresh.locator('.customize-action')).toBeVisible()
+    await expect(fresh.locator('html')).toHaveAttribute('data-startup-artwork-release', 'B')
+    await loadedBuild(page, a)
+    await expect(page.locator('html')).toHaveAttribute('data-startup-document', 'owner-before-deployment')
+    await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+  } finally { await fresh?.close(); await server.close() }
+})
+
+test('reopening the sole cached window discovers a deployment without another tab preparing it', async ({ page, context }) => {
+  const a = await testRelease('startup-sole-a', '11.7.1'), b = await changedRelease('startup-sole-b', '11.7.2'), server = await pwaServer(a)
+  let fresh: Page | undefined
+  try {
+    await cachedApp(page, server.url, a)
+    await page.close()
+    expect(context.pages()).toHaveLength(0)
+    server.deploy(b)
+    fresh = await context.newPage(); await fresh.bringToFront()
+    await pauseDownloadClock(fresh)
+    await fresh.goto(server.url)
+    await expectControlledNavigation(fresh)
+    await loadedBuild(fresh, b)
+    await fresh.clock.resume()
+    await expect(fresh.locator('.customize-action')).toBeVisible()
+    await expect(fresh.locator('html')).toHaveAttribute('data-startup-artwork-release', 'B')
+    await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+  } finally { await fresh?.close(); await server.close() }
+})
+
+test('late staging never holds startup and leaves a versioned manual update that refreshes changed bytes offline', async ({ page, context }) => {
+  const a = await testRelease('startup-late-a', '11.1.1'), b = await changedRelease('startup-late-b', '11.1.2'), server = await pwaServer(a)
+  let held: ReturnType<typeof server.hold> | undefined
+  try {
+    await cachedApp(page, server.url, a)
+    held = server.hold('appearance.js'); server.deploy(b)
+    await page.reload()
+    await expect(page.locator('.customize-action')).toBeVisible()
+    await held.requested
+    await loadedBuild(page, a)
+    await expect(page.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+    await waitPastOpportunity(page)
+    held.release()
+    const update = page.getByRole('button', { name: /^Update to v11\.1\.2/ }).first()
+    await expect(update).toBeEnabled({ timeout: 20_000 })
+    await loadedBuild(page, a)
+    await update.click()
+    await loadedBuild(page, b)
+    await expect(page.locator('html')).toHaveAttribute('data-startup-artwork-release', 'B')
+    await context.setOffline(true)
+    await verifyFiles(page, b)
+  } finally { held?.release(); await context.setOffline(false); await server.close() }
+})
+
+test('trusted interaction during the startup opportunity preserves an unfinished form when the update becomes ready', async ({ page, context }) => {
+  const a = await testRelease('startup-intent-a', '11.2.1'), b = await changedRelease('startup-intent-b', '11.2.2'), server = await pwaServer(a)
+  let held: ReturnType<typeof server.hold> | undefined, fresh: Page | undefined
+  try {
+    await cachedApp(page, server.url, a)
+    await stage(page, server, b)
+    held = server.hold('release.json')
+    fresh = await context.newPage(); await fresh.bringToFront(); await fresh.goto(server.url)
+    await expect(fresh.locator('.customize-action')).toBeVisible()
+    await held.requested
+    await fresh.getByRole('button', { name: 'New character', exact: true }).click()
+    const name = fresh.getByRole('dialog', { name: 'New character', exact: true }).getByRole('textbox', { name: 'Name', exact: true })
+    await name.fill('Typed before the update was ready')
+    held.release()
+    await expect(fresh.getByRole('button', { name: /^Update to v11\.2\.2/ }).first()).toBeEnabled({ timeout: 20_000 })
+    await loadedBuild(fresh, a)
+    await expect(name).toHaveValue('Typed before the update was ready')
+    await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+  } finally { held?.release(); await fresh?.close(); await server.close() }
+})
+
+test('an offline cached launch is interactive without waiting for an update check', async ({ page, context }) => {
+  const a = await testRelease('startup-offline', '11.3.1'), server = await pwaServer(a)
+  try {
+    await cachedApp(page, server.url, a)
+    await context.setOffline(true)
+    await page.reload()
+    await expect(page.locator('.customize-action')).toBeVisible()
+    await page.getByRole('button', { name: 'New character', exact: true }).click()
+    const name = page.getByRole('dialog', { name: 'New character', exact: true }).getByRole('textbox', { name: 'Name', exact: true })
+    await name.fill('Offline input remains usable')
+    await expect(name).toHaveValue('Offline input remains usable')
+    await loadedBuild(page, a)
+    await expect(page.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+  } finally { await context.setOffline(false); await server.close() }
+})
+
+test('an incomplete release cannot trigger a startup reload', async ({ page }) => {
+  const a = await testRelease('startup-partial-a', '11.4.1'), b = await changedRelease('startup-partial-b', '11.4.2'), server = await pwaServer(a)
+  try {
+    await cachedApp(page, server.url, a)
+    server.failures.add('appearance.js'); server.deploy(b)
+    await page.reload()
+    await expect(page.locator('.customize-action')).toBeVisible()
+    await expect.poll(() => server.requests.some(path => path.includes('appearance.js?pd-build=' + b.release.build))).toBe(true)
+    await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.installing?.state ?? 'none')).toBe('none')
+    await loadedBuild(page, a)
+    await page.getByRole('button', { name: 'More options', exact: true }).click()
+    await expect(page.locator('#experience-options').getByRole('button', { name: 'Update to v11.4.2', exact: true })).toBeDisabled()
+    await expect(page.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+  } finally { await server.close() }
+})
+
+test('activation completing after the startup deadline leaves the current document open', async ({ page, context }) => {
+  const a = await testRelease('startup-activate-a', '11.5.1'), b = await changedRelease('startup-activate-b', '11.5.2'), server = await pwaServer(a)
+  let fresh: Page | undefined
+  try {
+    await cachedApp(page, server.url, a); await stage(page, server, b)
+    fresh = await context.newPage()
+    await fresh.addInitScript(() => {
+      const original = ServiceWorker.prototype.postMessage
+      ServiceWorker.prototype.postMessage = function(message: unknown, transfer?: Transferable[] | StructuredSerializeOptions) {
+        const ports = Array.isArray(transfer) ? transfer : transfer?.transfer
+        const recipient = ports?.[0]
+        if ((message as { type?: string })?.type !== 'ACTIVATE' || !(recipient instanceof MessagePort)) return original.call(this, message, { transfer: ports })
+        const channel = new MessageChannel()
+        channel.port1.onmessage = ({ data }) => {
+          document.documentElement.dataset.startupActivationHeld = 'yes'
+          Object.assign(window, { releaseStartupActivation: () => { recipient.postMessage(data); channel.port1.close() } })
+        }
+        original.call(this, message, { transfer: [channel.port2] })
+      }
+    })
+    await fresh.bringToFront(); await fresh.goto(server.url)
+    await expect(fresh.locator('html')).toHaveAttribute('data-startup-activation-held', 'yes')
+    await waitPastOpportunity(fresh)
+    await fresh.evaluate(() => { (window as unknown as { releaseStartupActivation: () => void }).releaseStartupActivation() })
+    await expect.poll(() => workerBuild(fresh!, 'active')).toBe(b.release.build)
+    await loadedBuild(fresh, a)
+    await expect(fresh.getByRole('button', { name: /^Update to v11\.5\.2/ }).first()).toBeEnabled()
+    await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
+  } finally { await fresh?.close(); await server.close() }
+})

@@ -35,6 +35,8 @@ async function expectLoadedBuild(page: Page, release: TestRelease) {
 }
 
 async function discover(page: Page, release: TestRelease) {
+  // These cases exercise updates after the user starts using the app. Fresh-load automation has its own suite.
+  await page.keyboard.press('Shift')
   // Wake the production automatic checker rather than importing a test-only API or sleeping for its interval.
   await page.bringToFront()
   await page.evaluate(() => window.dispatchEvent(new Event('online')))
@@ -110,7 +112,7 @@ test('installed shell includes valid icons and works offline after a cold naviga
 
 function locationOrigin(url: string) { return new URL(url).origin }
 
-test('updates require an explicit click, preserve the old tab and its release files, and discover a subsequent release', async ({ page, context }) => {
+test('updates in an already-used tab require an explicit click, preserve its release files, and discover a subsequent release', async ({ page, context }) => {
   const a = await testRelease('a', '8.1.1'), b = await testRelease('b', '8.1.2'), c = await testRelease('c', '8.1.3')
   const server = await pwaServer(a)
   let other: Page | undefined

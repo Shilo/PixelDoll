@@ -468,7 +468,7 @@ function workIdle() {
 }
 queue.canYield = workIdle;
 
-/** Reload is always explicit. An idle queue alone says nothing about unsaved forms or local writes. */
+/** An idle queue alone says nothing about unsaved forms or local writes. */
 export function updateBlocked(): string {
   if (!studioReady || doc.loading) return 'Wait for your character and saved work to finish loading.';
   if (ui.sheet || ui.sheetBusy) return 'Finish and close the open panel before updating.';
@@ -656,7 +656,7 @@ const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state
 // the leader's tab closes.
 const runningGens = new Set<string>();
 let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, takeOverRunning = false, resumedHere = false, itemStarting = 0, mirrored = '', mirrorAt = 0;
-let studioReady = false;
+let studioReady = $state(false);
 // A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
 const readGens = async () => uniqueBy((await db.get<{ gens: Gen[] }>('projects', GENS_KEY))?.gens ?? [], (g) => g.draft.spec.id);
 /** The ONLY way the list is replaced: one entry per draft id (already-persisted duplicates heal on the next save). Synchronous,

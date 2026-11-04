@@ -72,6 +72,7 @@ function agentKey(): Plugin {
 // off Rolldown's chunk merging, so modules the startup shares with lazy sheets would otherwise become extra startup requests.
 // The preload helper keeps its own chunk: main.ts imports it, and importing the startup chunk would run it inside frames.
 const BOOTSTRAP = normalizePath(fileURLToPath(new URL('./src/bootstrap.ts', import.meta.url)))
+const STARTUP_UPDATE = normalizePath(fileURLToPath(new URL('./src/lib/startup-update.ts', import.meta.url)))
 function startupChunk() {
   let startup: Set<string> | undefined
   return (id: string, ctx: { getModuleInfo(id: string): { importedIds: readonly string[] } | null }) => {
@@ -97,6 +98,7 @@ export default defineConfig(({ command, mode }) => {
     // Vite ignores only test-results/. Each agent's own TEST_OUTPUT_DIR (test-results-*, as in .gitignore) streams trace
     // files all run long; watched, they saturate the dev server's CPU and later dev-server specs time out.
     server: { watch: { ignored: ['**/test-results*/**'] } },
-    build: { rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 }, { name: startupChunk(), debugName: 'startup' }] } } } },
+    // Early observation must not import the chunk that mounts Studio or connects its generation queue.
+    build: { rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'startup-update', test: id => id === STARTUP_UPDATE, priority: 2 }, { name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 }, { name: startupChunk(), debugName: 'startup' }] } } } },
   }
 })

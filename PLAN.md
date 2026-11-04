@@ -174,11 +174,22 @@ service worker. The implementation uses the platform APIs without another depend
   ticker worker, worlds, export icons and demo artwork. `app/pwa-worker.js` stages a separate cache, bypasses HTTP caches
   and verifies every file's SHA-256 before installation. Each build gets a distinct identity even when rebuilt from
   the same commit. Public artwork URLs carry that identity; hashed Vite asset names are already immutable.
-- **Update default:** every update requires an explicit click. The current app cannot preserve forms, prepared ZIPs,
-  undo history, preview state or a session-only connection through reload. Automatically judging some views safe would
-  spread restoration requirements through unrelated features. A timed versioned notice and More options action
+- **Update default (2026-11-03):** startup gets one nonblocking two-second automatic-reload opportunity, measured
+  from the first Studio mount. Checks, staging and verification run while the app works normally, including offline.
+  The opportunity ends on trusted input, loss of focus/visibility, navigation, restoration or cross-tab storage changes.
+  Native restored/autofilled form values and session-only connections also prevent automatic reload. Existing Studio
+  save and generation guards apply; there is no UI-state snapshot or restoration layer. The initial capture runs in
+  main before bootstrap in an isolated build chunk, and startup completion is reactive so a quickly ready update can
+  apply on that first opening. Both monotonic and wall clocks enforce the cutoff across system sleep. The distribution
+  guard rejects startup chunks that import the app or credential/storage code.
+  Complete release verification and target agreement remain mandatory, with eligibility checked after asynchronous
+  steps and immediately before activation and reload. A late completion leaves the page open, even if its worker has
+  activated. A scoped, credential-free session marker prevents automatic reload chains; unavailable marker storage
+  falls back to manual updating. Already open or resumed windows and all late/unsafe updates require an explicit click.
+  The app cannot preserve forms, prepared ZIPs, undo history, preview state or a session-only connection through reload.
+  A timed versioned notice and More options action
   remain available even when an ordinary toast is replaced. Saved outfits are flushed and checked; an open panel,
-  inline outfit draft, unfinished startup, character load or pending paid workflow blocks application. A native modal
+  inline outfit draft, unfinished startup, character load or pending paid workflow blocks application. For manual updates, a native modal
   prevents new interactions while verification and activation run. Only the requesting tab reloads. The notice
   discloses view/undo reset and session-only reconnection.
 - **Discovery:** startup, foreground focus/visibility, page restoration and reconnect check the deployed `release.json`;
