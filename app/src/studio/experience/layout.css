@@ -74,7 +74,9 @@
 .equipment-scroll .slot-chip svg { width:27px; height:27px; }
 .equipment-scroll .tiles { grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .equipment-scroll .tile { position:relative; padding:12px 6px; min-height:148px; height:auto; display:flex; flex-direction:column; gap:10px; }
-.equipment-scroll .tile-art { height:90px; }
+.equipment-scroll .tile-art { position:relative; height:90px; min-width:0; min-height:0; flex:none; }
+.tile-progress { position:absolute; inset:0; display:grid; place-items:center; pointer-events:none; }
+.tile-progress.overlay { inset:auto 0 0 auto; }
 .equipment-scroll .tile-name { font-size:16px; line-height:1.4; white-space:normal; }
 .equipment-heading { display:flex; align-items:center; gap:10px; }
 .equipment-heading h2 { font-size:19px; font-weight:600; margin:0; flex:1; }

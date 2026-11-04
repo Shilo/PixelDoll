@@ -26,7 +26,7 @@ import { GATES, GRID_COLS, planAnchoredMove, reusesStanding, anchored, planGens,
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; frozen?: true; reference?: { image: Sha256; cell: CellKey } }
 export interface Draft { spec: ItemSpec; rigId: string; calls: CallState[]; log: string[]; acceptedAt?: string }
-export interface ItemResult { cells: CellOut[]; qa: QaResult | null; g1: Map<number, string>; preview: Project | null }
+export interface ItemResult { cells: CellOut[]; qa: QaResult | null; g1: Map<number, string>; preview: Project | null; thumbnail?: Img }
 /** G1 is structural; this legacy map also carries ordinary keyframe-art warnings. */
 const structuralReason = (why: string) => /(?:^|;\s*)G1\b/.test(why);
 export const hasStructuralFailure = (r: Pick<ItemResult, 'g1'>) => [...r.g1.values()].some(structuralReason);
@@ -443,7 +443,9 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   const kOut = d.spec.method === 'skel' ? GATES.keyOutsidePosed : GATES.keyOutside;
   const qa = cells.length ? withH4(itemQa(rig, slot, route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut, pad, hidden), slot, cells, keys, rig, referenceBodies(rig, ctx.project.images), d.spec.prompt) : null;
   if (qa && hiddenWarnings.length) { qa.warnings.push(...hiddenWarnings); if (qa.qa.status === 'pass') qa.qa.status = 'warn'; }
-  return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa, pending) : null };
+  // Dressed item pixels can land before any target animation cell exists. Expose them without waiting for pose coverage.
+  const thumbnail = (kfCells.find(c => c.area && c.key.split('/')[1] === 'south') ?? kfCells.find(c => c.area))?.layer;
+  return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa, pending) : null, ...(thumbnail ? { thumbnail } : {}) };
 }
 /** itemQa + the H4 keyframe-consistency gate (posed cells only). */
 export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig: Rig, bodies?: Partial<Record<DirectionName, Img>>, prompt = ''): QaResult {

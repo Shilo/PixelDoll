@@ -10,7 +10,7 @@ import { cellHash, type DirectionName } from '../../src/lib/rig/rig.ts'
 import * as db from '../../src/lib/store/db.ts'
 import { itemQa, padImg, slotOf, type CellOut } from '../../src/lib/items/items.ts'
 import { rerollCall, runItem, type Draft, type ItemResult, type RigCtx } from '../../src/lib/items/run.ts'
-import { plainReason } from '../../src/studio/model.ts'
+import { crop, plainReason, thumbCell } from '../../src/studio/model.ts'
 import type { Manifest } from '../../src/lib/store/manifest.ts'
 
 // A fake ledger: enqueue records requests in order, the test lands them one at a time.
@@ -66,6 +66,50 @@ async function fixture() {
   return { ctx, d, dressed }
 }
 
+test('extracted standing artwork supplies a thumbnail before any target animation preview exists', async () => {
+  const { ctx, d, dressed } = await fixture(), results: ItemResult[] = []
+  const run = runItem(d, ctx, { result: r => results.push(r) })
+  await vi.waitFor(() => expect(q.order).toHaveLength(1))
+  await land(q.order[0].id, [dressed, dressed])
+  await vi.waitFor(() => expect(results.some(r => r.thumbnail)).toBe(true))
+  const result = results.find(r => r.thumbnail)!
+  expect(result.preview).toBeNull()
+  expect(result.cells).toEqual([])
+  const thumbnail = crop(result.thumbnail!)!
+  expect([thumbnail.w, thumbnail.h]).toEqual([6, 3])
+  expect(thumbnail.data.filter((_, i) => i % 4 === 3).every(alpha => alpha === 255)).toBe(true)
+  await vi.waitFor(() => expect(q.order).toHaveLength(2))
+  expect(q.order.every(o => o.path === '/edit-animation-v2')).toBe(true)
+  await land(q.order[1].id, [dressed, dressed])
+  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/animate-with-skeleton-v3')).toHaveLength(2))
+  for (const pose of q.order.filter(o => o.path === '/animate-with-skeleton-v3')) await land(pose.id, Array(4).fill(dressed))
+  await run
+})
+
+test('a completed standing view supplies an item-only thumbnail while other directions are still generating', async () => {
+  const { ctx, d, dressed } = await fixture(), results: ItemResult[] = []
+  const rig = ctx.rec.manifest.rig, base = ctx.rec.manifest.items[0].layers[0]
+  rig.animations.unshift({ id: 'standing', cells: 1, loop: true, frames: [{ cell: 0, ms: 100 }], sources: Object.fromEntries(rig.directions.map(({ id }) => [id, { route: 'import', reference: rig.rest![id]!.image, motion: 'imported-rest', provenance: [] }])) })
+  base.cells!.standing = Object.fromEntries(rig.directions.map(({ id }) => [id, [rig.rest![id]!.image]]))
+  d.spec.anims.unshift('standing')
+  const run = runItem(d, ctx, { result: r => results.push(r) })
+  await vi.waitFor(() => expect(q.order).toHaveLength(1))
+  await land(q.order[0].id, [dressed, dressed])
+  await vi.waitFor(() => expect(results.some(r => r.preview)).toBe(true))
+  const preview = results.find(r => r.preview)!.preview!, item = preview.manifest.items.find(i => i.id === 'armor')!
+  expect(item.coverage).toContain('standing/south/0')
+  expect(item.pending).toContain('standing/east/0')
+  const thumbnail = crop(thumbCell(preview, item)!)!
+  expect([thumbnail.w, thumbnail.h]).toEqual([6, 3])
+  expect(thumbnail.data.filter((_, i) => i % 4 === 3).every(alpha => alpha === 255)).toBe(true)
+  await vi.waitFor(() => expect(q.order).toHaveLength(2))
+  expect(q.order.every(o => o.path === '/edit-animation-v2')).toBe(true)
+  await land(q.order[1].id, [dressed, dressed])
+  await vi.waitFor(() => expect(q.order.filter(o => o.path === '/animate-with-skeleton-v3')).toHaveLength(2))
+  for (const pose of q.order.filter(o => o.path === '/animate-with-skeleton-v3')) await land(pose.id, Array(4).fill(dressed))
+  await run
+})
+
 test('planned direction poses stream landed cells while the remaining original coverage stays pending', async () => {
   const { ctx, d, dressed } = await fixture(), results: ItemResult[] = []
   const run = runItem(d, ctx, { result: (r) => results.push(r) })
@@ -87,6 +131,11 @@ test('planned direction poses stream landed cells while the remaining original c
   expect(streamed.coverage).toEqual(['walk/south/0', 'walk/south/1', 'walk/south/2', 'walk/south/3'])
   expect(streamed.pending).toEqual(['walk/east/0', 'walk/east/1', 'walk/east/2', 'walk/east/3'])
   expect(streamed.layers[0].cells!.walk.east).toEqual([null, null, null, null])
+  const partial = results.find(r => r.preview)!.preview!
+  const thumbnail = crop(thumbCell(partial, streamed)!)!
+  expect(thumbnail.w).toBeGreaterThan(0)
+  expect(thumbnail.h).toBeGreaterThan(0)
+  expect(thumbnail.data.some((v, i) => i % 4 === 3 && v > 0)).toBe(true)
   await land(call('/animate-with-skeleton-v3', 'east')!.id, Array(4).fill(dressed))
   const res = await run
   expect(d.log.at(-1)).toMatch(/passed the checks/)

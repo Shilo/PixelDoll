@@ -3,6 +3,7 @@ import { expect, test, type Page } from '@playwright/test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { unzip, zip } from '../../src/lib/store/zip.ts'
+import './studio-thumbnails.ts'
 
 test.beforeEach(async ({ context }) => {
   await context.route('https://*.pixellab.ai/**', route => route.abort()) // stay offline by default; a test's own route overrides this

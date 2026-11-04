@@ -1,12 +1,11 @@
 <script lang="ts">
-  // Item thumbnail: opaque crop of the item's first non-empty cell, integer-scaled to fit `size` CSS px.
+  // Static item-only art. Crop once per source change; CSS fits the native pixels without resize observers or playback work.
   import type { Item, Project } from '../lib/store/manifest.ts'
-  import { crop, thumbCell } from './model.ts'
-  import { ui } from './state.svelte.ts'
+  import { crop, groupOf, thumbCell } from './model.ts'
   import Sprite from './Sprite.svelte'
-  let { project, item, size }: { project: Project; item: Item; size: number } = $props()
+  import GroupIcon from './GroupIcon.svelte'
+  let { project, item }: { project: Project; item: Item } = $props()
   const im = $derived.by(() => { const c = thumbCell(project, item); return c && crop(c) })
-  const k = $derived(im ? Math.max(1, Math.floor((size * ui.dpr) / Math.max(im.w, im.h))) : 1)
 </script>
 
-{#if im}<Sprite img={im} {k} w={im.w} h={im.h} limit={size} label={item.name} />{/if}
+{#if im}<Sprite img={im} k={1} w={im.w} h={im.h} fitToBox label={item.name} />{:else}<GroupIcon group={groupOf(item.slot).id} size={24} />{/if}

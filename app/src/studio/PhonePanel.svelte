@@ -1,17 +1,18 @@
 <script lang="ts">
   // Shared customization content for the desktop rail and mobile sheet.
   import { popoverFocus } from './experience/focus.ts'
-  import { GROUPS, HEALTH_LABEL, healthOf } from './model.ts'
+  import { crop, GROUPS, HEALTH_LABEL, healthOf } from './model.ts'
   import { ui, doc, store, view, gens, wear, wearDraft, clearSlots, genOf, genProgress, openNewItem, randomize, isDemo } from './state.svelte.ts'
   import { queue } from '../lib/pixellab/queue.ts'
   import Thumb from './Thumb.svelte'
+  import Sprite from './Sprite.svelte'
   import GroupIcon from './GroupIcon.svelte'
   import PopoverArrow from './PopoverArrow.svelte'
   import Colors from './Colors.svelte'
   import Moves from './Moves.svelte'
   import Lazy from './Lazy.svelte'
   import Outfits from './Outfits.svelte'
-  import { Bookmark, Ellipsis, Info, Plus, Shuffle, X, Check } from './icons.ts'
+  import { Bookmark, CircleAlert, Ellipsis, Info, Plus, Shuffle, X, Check } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
   let more=$state<HTMLElement>()
@@ -22,7 +23,6 @@
   const pending = $derived(gens.filter((x) => x.draft.rigId === doc.id && g.slots.includes(x.input.slot)))
   const sel = $derived(items.find((i) => i.id === ui.selected) ?? items.find((i) => doc.items[i.slot] === i.id))
   const gen = $derived(genOf(ui.selected))
-  const tileK = $derived(ui.size === 'compact' ? 56 : 80)
   const categoryName = $derived(g.id === 'Head' ? 'Headwear' : g.id === 'Hands' ? 'Held items' : g.id)
   // T2: keep the selected slot chip in view (Body was half under the Random button on a 375 px phone)
   let chips = $state<HTMLElement>()
@@ -51,16 +51,26 @@
         <div class="tiles" role="group" aria-label="{g.id === 'Hands' ? 'Held' : g.id} items">
           {#each items as it (it.id)}
             <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === it.id} aria-pressed={doc.items[it.slot] === it.id && !doc.drafts[it.slot]} onclick={() => wear(it.id)}>
-              <span class="tile-art" aria-hidden="true"><Thumb project={view.project} item={it} size={tileK} /></span><span class="tile-name">{it.name}</span>
+              <span class="tile-art" aria-hidden="true"><Thumb project={view.project} item={it} /></span><span class="tile-name">{it.name}</span>
               {#if doc.items[it.slot] === it.id && !doc.drafts[it.slot]}<span class="equipped-check" aria-hidden="true"><Check size={16}/></span>{/if}
             </button>
           {/each}
           {#each pending as x (x.draft.spec.id)}
             {@const p = genProgress(x, $queue.jobs)}
             {@const on = doc.drafts[x.draft.spec.slot] === x.draft.spec.id}
+            {@const preview = store.results[x.draft.spec.id]?.preview}
+            {@const previewItem = preview?.manifest.items.find(it => it.id === x.draft.spec.id)}
+            {@const firstFrame = store.results[x.draft.spec.id]?.thumbnail}
+            {@const thumbnail = firstFrame ? crop(firstFrame) : null}
             <!-- a draft tile wears the draft like a saved item (display only, while it loads or awaits review) -->
             <button data-variant="tile" class="bu-action tile" class:sel={ui.selected === `gen:${x.draft.spec.id}`} aria-label="{x.input.name}, {p.label}" aria-pressed={on} onclick={() => (x.phase === 'failed' ? (ui.selected = `gen:${x.draft.spec.id}`) : wearDraft(x.draft.spec.id))}>
-              <span class="tile-art none"><span class="ring" class:spin={x.phase === 'running' && !p.pct} style:--p={p.pct}></span></span><span class="tile-name">{p.short}</span>
+              <span class="tile-art" aria-hidden="true">
+                {#if thumbnail}<Sprite img={thumbnail} k={1} w={thumbnail.w} h={thumbnail.h} fitToBox label={x.input.name} />
+                {:else if preview && previewItem}<Thumb project={preview} item={previewItem} />
+                {:else if x.phase === 'failed'}<CircleAlert size={24} />
+                {:else if x.phase !== 'running'}<GroupIcon group={g.id} size={24} />{/if}
+                {#if x.phase === 'running'}<span class="tile-progress" class:overlay={!!previewItem || !!thumbnail}><span class="ring" class:spin={!p.pct} style:--p={p.pct}></span></span>{/if}
+              </span><span class="tile-name">{p.short}</span>
               {#if on}<span class="equipped-check" aria-hidden="true"><Check size={16}/></span>{/if}
             </button>
           {/each}

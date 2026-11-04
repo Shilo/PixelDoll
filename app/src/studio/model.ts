@@ -47,14 +47,19 @@ export function itemCell(p: Project, it: Item, anim: string, dir: DirectionName,
   return out;
 }
 
-/** First cell (anim, dir) where the item has pixels; for thumbnails. */
+/** Stable item-only thumbnail, independent of playback. Prefer south and use another landed frame when needed. */
 export function thumbCell(p: Project, it: Item): Img | null {
+  if (!it.layers.length) return null;
   const m = p.manifest;
+  const dirs = [...m.rig.directions].sort((a, b) => Number(b.id === 'south') - Number(a.id === 'south'));
   for (const a of m.rig.animations)
-    for (const d of m.rig.directions) {
-      const im = itemCell(p, it, a.id, d.id, 0);
-      if (im.data.some((v, i) => i % 4 === 3 && v)) return im;
-    }
+    for (const d of dirs)
+      for (const f of a.frames) {
+        // Sparse drafts can contain many pending cells. Skip absent references before allocating a composed frame.
+        if (!it.layers.some(l => (l.cells?.[a.id]?.[d.id] ?? l.cells?.[a.id]?.[d.mirrorOf ?? d.id])?.[f.cell])) continue;
+        const im = itemCell(p, it, a.id, d.id, f.cell);
+        if (im.data.some((v, i) => i % 4 === 3 && v)) return im;
+      }
   return null;
 }
 
