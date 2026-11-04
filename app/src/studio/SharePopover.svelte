@@ -29,15 +29,15 @@
     void doc.rev
     return open && view.project ? buildPresentation(view.project, { loading: doc.loading }) : null
   })
-  const canAnimate = $derived(availability ? canAnimateShare(availability, doc.items, move, direction) : false)
+  const canAnimate = $derived(availability ? canAnimateShare(availability, view.items, move, direction) : false)
   const animate = $derived(wantedAnimate && canAnimate)
   const planned = $derived.by(() => {
     if (!availability) return { media: null, error: '' }
-    try { return { media: buildShareMedia(availability, doc.items, move, direction, animate), error: '' } }
+    try { return { media: buildShareMedia(availability, view.items, move, direction, animate), error: '' } }
     catch (error) { return { media: null, error: (error as Error).message } }
   })
   const directionOptions = $derived.by(() => (availability?.directions ?? []).map(id => {
-    return { id, disabled: !canShareDirection(availability!, doc.items, move, id) && id !== direction }
+    return { id, disabled: !canShareDirection(availability!, view.items, move, id) && id !== direction }
   }))
   const previewFrames = $derived(planned.media ? sharePreviewFrames(planned.media) : [])
   const image = $derived(previewFrames[index % previewFrames.length] ?? null)

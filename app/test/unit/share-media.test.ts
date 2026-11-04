@@ -129,6 +129,23 @@ describe('share media', () => {
     expect(() => buildShareMedia(a, { head: 'hat' }, 'walk', 'south', true)).toThrow(/hat missing walk \/ South artwork/)
   })
 
+  test('loading worn artwork cannot silently produce a bare character, but completed draft views can be shared', () => {
+    const project = fixture(), hat = project.manifest.items[1]
+    hat.status = 'draft'
+    hat.pending = ['walk/east/0', 'walk/east/1']
+    delete hat.layers[0].cells!.walk.east
+    const a = buildPresentation(project), worn = { head: hat.id }
+    expect(canShareDirection(a, worn, 'walk', 'east')).toBe(false)
+    expect(canAnimateShare(a, worn, 'walk', 'east')).toBe(false)
+    for (const animate of [false, true]) {
+      expect(() => buildShareMedia(a, worn, 'walk', 'east', animate)).toThrow(/hat loading/)
+      const media = buildShareMedia(a, worn, 'walk', 'south', animate)
+      expect([...media.frames[0].image.data]).toEqual([40, 0, 0, 255, 90, 0, 0, 255])
+      const all = buildShareMedia(a, worn, 'walk', ALL_DIRECTIONS, animate)
+      expect(all.omitted).toEqual([{ move: 'walk', direction: 'east', reason: 'hat loading — East' }])
+    }
+  })
+
   test('one-frame moves cannot advertise GIF animation even with many directions', () => {
     const project = fixture()
     project.manifest.rig.animations[1].frames = [{ cell: 0, ms: 100 }]

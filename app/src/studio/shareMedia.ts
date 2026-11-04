@@ -50,6 +50,7 @@ function rendered(a: PresentationAvailability, items: Preset['items'], move: str
   if (!sequence) throw new Error(`${move} facing ${directionLabel(direction)} has no complete artwork`)
   const presentation: Presentation = { kind: 'animation', moving: false, requestedClip: move, intendedDirection: direction, direction, clip: move, cell, sequence, issue: null, issueKey: null, loading: false }
   const result = renderPresentation(a, items, presentation, cell)
+  if (result.loading) throw new Error(result.loading)
   if (result.hiddenItems.length) throw new Error(`${result.hiddenItems.map(item => item.name).join(', ')} missing ${move} / ${directionLabel(direction)} artwork`)
   if (!result.image) throw new Error(`${move} facing ${directionLabel(direction)} cannot be rendered`)
   return result.image

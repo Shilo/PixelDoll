@@ -901,6 +901,104 @@ test('Preview, Top-down and Side-scroller always loop with global Play once both
   }
 })
 
+test('Share uses the worn review draft over the saved outfit for previews, PNG, GIF and native sharing', async ({ page, context }, info) => {
+  const requests: string[] = []
+  await context.route('https://*.pixellab.ai/**', route => { requests.push(route.request().url()); return route.abort() })
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await page.addInitScript(() => {
+    localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1')
+    Object.defineProperty(Navigator.prototype, 'canShare', { configurable: true, value: () => true })
+    Object.defineProperty(Navigator.prototype, 'share', { configurable: true, value: async (data: ShareData) => {
+      ;(window as unknown as { sharedFile: number[] }).sharedFile = [...new Uint8Array(await data.files![0].arrayBuffer())]
+    } })
+  })
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!)
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', imagePath = '/src/lib/image/png.ts', rigPath = '/src/lib/rig/rig.ts'
+    const s = await import(statePath), { makeImg } = await import(imagePath), { cellHash } = await import(rigPath)
+    await s.loadGens()
+    s.ui.playing = false; s.ui.anim = 'walk'; s.ui.dir = 'south'
+    const p = s.store.project, source = p.manifest.items.find((item: { id: string }) => item.id === 'hat_wizard')
+    const hat = structuredClone(source)
+    hat.id = 'share_review_hat'; hat.name = 'Share review hat'; hat.status = 'draft'; hat.materials = []; delete hat.coverage
+    // Two unmistakable pixel markers, distinct from both the body and the saved hat.
+    const images = new Map(p.images), hashes = []
+    for (const color of [[13, 231, 117, 255], [219, 31, 191, 255]]) {
+      const image = makeImg(p.manifest.rig.cell.w, p.manifest.rig.cell.h)
+      for (let y = 1; y < 5; y++) for (let x = 1; x < 5; x++) image.data.set(color, (y * image.w + x) * 4)
+      const hash = await cellHash(image); images.set(hash, image); hashes.push(hash)
+    }
+    hat.layers = [{ id: 'main', role: 'fg', z: 100, cells: { walk: { south: hashes } } }]
+    s.store.project = { ...p, manifest: { ...p.manifest, rig: { ...p.manifest.rig, animations: p.manifest.rig.animations.map((a: { id: string }) => a.id === 'walk' ? { ...a, cells: 2, frames: [{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }] } : a) } } }
+    s.gens.push({ draft: { rigId: s.doc.id, spec: { id: hat.id, name: hat.name, slot: 'head', prompt: 'a hat', key: 'green', anims: ['walk'], dirs: ['south'] }, calls: [], keySwitched: false, log: [] }, input: { name: hat.name, slot: 'head', prompt: 'a hat' }, phase: 'review', status: 'Review' })
+    s.store.results = { ...s.store.results, [hat.id]: { cells: [], qa: null, g1: new Map(), preview: { manifest: { ...s.store.project.manifest, items: [...p.manifest.items, hat] }, images } } }
+    s.doc.items = { ...s.doc.items, head: source.id }; s.wearDraft(hat.id); s.doc.rev++
+  })
+  await page.getByRole('button', { name: 'Share character' }).click()
+  const popover = page.getByRole('dialog', { name: 'Share character preview' })
+  const hasMarker = () => popover.locator('.share-preview canvas').evaluate(element => {
+    const canvas = element as HTMLCanvasElement, data = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
+    return data.some((v, i) => i % 4 === 0 && ((v === 13 && data[i + 1] === 231 && data[i + 2] === 117) || (v === 219 && data[i + 1] === 31 && data[i + 2] === 191)))
+  })
+  const download = async (format: 'PNG' | 'GIF') => {
+    await expect(popover.getByRole('button', { name: `Download ${format}`, exact: true })).toBeEnabled()
+    const [file] = await Promise.all([page.waitForEvent('download'), popover.getByRole('button', { name: `Download ${format}`, exact: true }).click()])
+    return readFile((await file.path())!)
+  }
+  for (const stage of ['review', 'accepted'] as const) {
+    if (stage === 'accepted') await page.evaluate(async () => {
+      const path = '/src/studio/state.svelte.ts', s = await import(path), id = 'share_review_hat'
+      const preview = s.store.results[id].preview, item = preview.manifest.items.find((i: { id: string }) => i.id === id)
+      // Publish the accepted result in place, retaining the same pixels and selected slot.
+      s.store.project = { ...s.store.project, manifest: { ...s.store.project.manifest, items: [...s.store.project.manifest.items, { ...item, status: 'accepted' }] }, images: preview.images }
+      s.doc.items = { ...s.doc.items, head: id }; s.doc.drafts = {}; s.gens.splice(s.gens.findIndex((g: { draft: { spec: { id: string } } }) => g.draft.spec.id === id), 1); s.doc.rev++
+    })
+    await expect.poll(hasMarker, stage).toBe(true)
+    const gif = await download('GIF')
+    const colors = await page.evaluate(async bytes => {
+      const decoder = new (window as any).ImageDecoder({ data: new Uint8Array(bytes), type: 'image/gif' })
+      await decoder.tracks.ready
+      const colors = []
+      for (let frameIndex = 0; frameIndex < 2; frameIndex++) {
+        const { image } = await decoder.decode({ frameIndex }), canvas = new OffscreenCanvas(image.displayWidth, image.displayHeight)
+        const ctx = canvas.getContext('2d')!; ctx.drawImage(image, 0, 0)
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+        colors.push(data.some((v, i) => i % 4 === 0 && (frameIndex === 0 ? v === 13 && data[i + 1] === 231 && data[i + 2] === 117 : v === 219 && data[i + 1] === 31 && data[i + 2] === 191)))
+        image.close()
+      }
+      decoder.close(); return colors
+    }, [...gif])
+    expect(colors, stage).toEqual([true, true])
+    await popover.getByRole('button', { name: 'Share to…' }).click()
+    await expect.poll(async () => Buffer.from(await page.evaluate(() => (window as unknown as { sharedFile?: number[] }).sharedFile ?? [])).equals(gif), stage).toBe(true)
+    await popover.getByRole('switch').uncheck()
+    const png = await download('PNG'), decoded = await decodePngBytes(png)
+    expect(decoded.data.some((v, i) => i % 4 === 0 && v === 13 && decoded.data[i + 1] === 231 && decoded.data[i + 2] === 117), stage).toBe(true)
+    await popover.getByRole('button', { name: 'Copy PNG', exact: true }).click()
+    await expect(popover.getByRole('status')).toHaveText('PNG copied')
+    expect(await page.evaluate(async () => {
+      const items = await navigator.clipboard.read(), blob = await items.find(item => item.types.includes('image/png'))!.getType('image/png')
+      const image = await createImageBitmap(blob), canvas = new OffscreenCanvas(image.width, image.height), ctx = canvas.getContext('2d')!
+      ctx.drawImage(image, 0, 0); image.close()
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+      return data.some((v, i) => i % 4 === 0 && v === 13 && data[i + 1] === 231 && data[i + 2] === 117)
+    }), stage).toBe(true)
+    await popover.getByRole('button', { name: 'Share to…' }).click()
+    await expect.poll(async () => Buffer.from(await page.evaluate(() => (window as unknown as { sharedFile?: number[] }).sharedFile ?? [])).equals(png), stage).toBe(true)
+    await popover.getByRole('switch').check()
+    if (stage === 'review') {
+      await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts', s = await import(path); s.wearDraft('share_review_hat') })
+      await expect.poll(hasMarker).toBe(false)
+      await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts', s = await import(path); s.wearDraft('share_review_hat') })
+      await expect.poll(hasMarker).toBe(true)
+    }
+  }
+  // Live take-off updates Share without reopening it.
+  await page.evaluate(async () => { const path = '/src/studio/state.svelte.ts', s = await import(path); s.doc.items = { ...s.doc.items, head: null } })
+  await expect.poll(hasMarker).toBe(false)
+  expect(requests).toEqual([])
+})
+
 test('Share preview and downloaded GIF loop continuously for a one-shot move', async ({ page, context }, testInfo) => {
   await context.route('https://api.pixellab.ai/**', route => route.abort())
   await context.addInitScript(() => {
