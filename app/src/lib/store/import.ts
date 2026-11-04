@@ -11,7 +11,7 @@ import type { StoredProject } from './project.ts';
 import { unzip, type ZipEntry } from './zip.ts';
 import * as db from './db.ts';
 
-export interface CharacterImportState { id: string; name: string; animations: number }
+export interface CharacterImportState { id: string; name: string; animations: number | null }
 export interface ImportedCharacter { project: Project; extra: Pick<StoredProject, 'character' | 'skeletons' | 'rigQa'>; warnings: string[]; states?: CharacterImportState[]; stateId?: string }
 export class CharacterImportError extends Error {
   constructor(message: string, public states: CharacterImportState[] = [], public stateId?: string) { super(message); }
@@ -69,7 +69,7 @@ export async function readCharacterZip(bytes: Uint8Array, stateId?: string, addi
   }
   let result: ImportedCharacter;
   let decodedPixels = 0;
-  for (const [path, bytes] of files) if (path.toLowerCase().endsWith('.png')) {
+  for (const bytes of files.values()) {
     const size = pngSize(bytes);
     if (size) decodedPixels += size.w * size.h;
     if (decodedPixels > 64 * 1024 * 1024) throw new Error('This archive contains too many image pixels. Export a smaller character or fewer moves.');
@@ -168,9 +168,18 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
 }
 
 interface PixelLabCharacter { id?: string; name?: string; prompt?: string; view?: Manifest['rig']['view']; template_id?: string; size?: { width: number; height: number } }
-interface PixelLabState { character: PixelLabCharacter & { id: string; name: string }; frames?: { rotations?: unknown; animations?: unknown } }
+interface PixelLabState { character: PixelLabCharacter & { id: string; name: string }; folder?: string; frames?: { rotations?: unknown; animations?: unknown } }
 interface PixelLabMove { name: string; state?: string; sibling: boolean; dirs: Map<DirectionName, { index: number; path: string }[]> }
 const object = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+function pixelLabGeometry(character: PixelLabCharacter) {
+  if (character.view != null && !['low top-down', 'high top-down', 'side'].includes(character.view)) throw new Error('The character has an unsupported camera view.');
+  const size = character.size;
+  if (size != null && (!object(size) || !Number.isInteger(size.width) || !Number.isInteger(size.height) || size.width < 1 || size.height < 1)) throw new Error('The character size must contain positive whole-pixel width and height.');
+}
+function pixelLabInfo(character: PixelLabCharacter) {
+  for (const field of ['name', 'prompt', 'template_id'] as const) if (character[field] != null && typeof character[field] !== 'string') throw new Error(`The character ${field.replace('_id', '')} must be text.`);
+  pixelLabGeometry(character);
+}
 
 async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additionalStateIds: readonly string[] | 'all' = []): Promise<ImportedCharacter> {
   const metadata = json(files, 'metadata.json');
@@ -183,43 +192,100 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additi
     if (meta.states !== undefined) {
       if (!Array.isArray(meta.states) || !meta.states.length || meta.states.length > 100 || meta.states.some(s => !object(s) || !object(s.character) || typeof s.character.id !== 'string' || !s.character.id || typeof s.character.name !== 'string')) throw new Error('The PixelLab export has an invalid character state list.');
       if (new Set(meta.states.map(s => s.character.id)).size !== meta.states.length) throw new Error('The PixelLab export has duplicate character state IDs.');
-      states = meta.states.map(s => ({ id: s.character.id, name: s.character.name, animations: object(s.frames?.animations) ? Object.keys(s.frames.animations).length : 0 }));
+      const declared = new Set<string>(), owners = new Map<string, Set<string>>();
+      const parsed = meta.states.map(state => {
+        const moves: { name: string; dirs: Record<string, string[]> }[] = [];
+        let error: string | undefined;
+        const own = (prefix: string) => {
+          const ids = owners.get(prefix) ?? new Set<string>();
+          ids.add(state.character.id); owners.set(prefix, ids);
+        };
+        if (typeof state.folder === 'string') { const folder = state.folder.replace(/\/$/, ''); own(`${folder ? `${folder}/` : ''}animations/`); }
+        if (object(state.frames?.rotations)) for (const path of Object.values(state.frames.rotations)) if (typeof path === 'string') {
+          declared.add(path);
+          const root = /^(.*\/)?rotations\/[^/]+$/i.exec(path);
+          if (root) own(`${root[1] ?? ''}animations/`);
+        }
+        // Keep every declared reference in the inventory, including valid paths in an unreadable sibling.
+        if (object(state.frames?.animations)) for (const dirs of Object.values(state.frames.animations)) if (object(dirs)) for (const frames of Object.values(dirs)) if (Array.isArray(frames)) for (const path of frames) if (typeof path === 'string') declared.add(path);
+        try {
+          if (!object(state.frames)) throw new Error(`The “${state.character.name}” state has an invalid frame layout.`);
+          if (state.frames.animations !== undefined) {
+            if (!object(state.frames.animations)) throw new Error(`The “${state.character.name}” state has an invalid animation list.`);
+            for (const [name, dirs] of Object.entries(state.frames.animations)) {
+              if (!object(dirs) || !Object.keys(dirs).length) throw new Error(`The ${name} move has no animation directions.`);
+              for (const [dir, frames] of Object.entries(dirs)) {
+                if (!DIRECTIONS.includes(dir as DirectionName)) throw new Error(`The ${name}/${dir} animation has an unsupported direction.`);
+                if (!Array.isArray(frames) || !frames.length || frames.length > 120 || frames.some(path => typeof path !== 'string')) throw new Error(`The ${name}/${dir} animation must contain 1–120 frame paths.`);
+              }
+              moves.push({ name, dirs: dirs as Record<string, string[]> });
+            }
+          }
+        } catch (failure) { error = (failure as Error).message; } // An unreadable sibling can still be excluded while retaining the valid state.
+        return { state, moves, error };
+      });
+      let orphan: string | undefined;
+      for (const [path, bytes] of files) {
+        if (declared.has(path) || !/\.png$/i.test(path) && !pngSize(bytes)) continue;
+        const namespace = /(^|\/)animations\//i.exec(path);
+        if (!namespace) continue;
+        let ids: Set<string> | undefined, longest = 0;
+        for (const [prefix, candidate] of owners) {
+          const root = prefix.slice(0, -'animations/'.length);
+          if (prefix.length > longest && path.startsWith(root) && /^animations\//i.test(path.slice(root.length))) { ids = candidate; longest = prefix.length; }
+        }
+        if (!ids || ids.size !== 1) { orphan ??= path; continue; }
+        const owner = parsed.find(entry => ids.has(entry.state.character.id))!;
+        owner.error ??= `The “${owner.state.character.name}” state contains an animation file missing from its metadata: ${path}.`;
+      }
+      states = parsed.map(({ state, moves, error }) => ({ id: state.character.id, name: state.character.name, animations: error ? null : moves.length }));
       const selected = stateId ? meta.states.find(s => s.character.id === stateId) : meta.states[0];
       if (!selected) throw new Error('This PixelLab export does not include the selected character state.');
       stateId = selected.character.id;
+      try { pixelLabInfo(selected.character); }
+      catch (failure) { throw new Error(`${(failure as Error).message} Choose another standing pose or export its ZIP again.`); }
       if (!object(selected.frames?.rotations)) throw new Error('This PixelLab export does not include the selected character state rotations.');
       for (const [dir, path] of Object.entries(selected.frames.rotations)) {
         if (!DIRECTIONS.includes(dir as DirectionName) || typeof path !== 'string') throw new Error('The selected character state has an invalid rotation path or direction.');
         rotations.push({ dir: dir as DirectionName, path });
       }
-      const requested = additionalStateIds === 'all' ? states.filter(s => s.animations).map(s => s.id) : additionalStateIds;
+      const requested = additionalStateIds === 'all' ? states.filter(s => s.animations !== 0).map(s => s.id) : additionalStateIds;
       for (const id of requested) if (!meta.states.some(s => s.character.id === id)) throw new Error('This PixelLab export does not include one of the selected move states.');
       const included = [selected, ...meta.states.filter(s => s !== selected && requested.includes(s.character.id))];
       for (const state of included) {
         const sibling = state !== selected, character = state.character, own = selected.character;
+        const entry = parsed.find(entry => entry.state === state)!;
+        if (entry.error) throw new Error(`${entry.error} ${sibling ? 'Uncheck that state’s moves to continue, or export its ZIP again.' : 'Choose another standing pose or export its ZIP again.'}`);
+        if (sibling && !entry.moves.length) continue;
+        if (sibling) {
+          try { pixelLabGeometry(character); }
+          catch (failure) { throw new Error(`Moves from “${character.name}” have invalid size or camera metadata: ${(failure as Error).message} Uncheck that state’s moves to continue.`); }
+        }
         if (sibling && (character.view && own.view && character.view !== own.view || character.size && own.size && (character.size.width !== own.size.width || character.size.height !== own.size.height))) throw new Error(`Moves from “${character.name}” use a different character size or camera view. Uncheck that state to continue.`);
-        if (state.frames?.animations === undefined) continue;
-        if (!object(state.frames.animations)) throw new Error(`The “${character.name}” state has an invalid animation list.`);
-        for (const [name, directions] of Object.entries(state.frames.animations)) {
-          if (!object(directions) || !Object.keys(directions).length) throw new Error(`The ${name} move has no animation directions.`);
+        for (const { name, dirs: directions } of entry.moves) {
           const dirs: PixelLabMove['dirs'] = new Map();
           for (const [dir, frames] of Object.entries(directions)) {
-            if (!DIRECTIONS.includes(dir as DirectionName) || !rotations.some(r => r.dir === dir)) throw new Error(`The ${name}/${dir} animation has no matching standing view in the selected state.`);
-            if (!Array.isArray(frames) || !frames.length || frames.length > 120 || frames.some(path => typeof path !== 'string')) throw new Error(`The ${name}/${dir} animation must contain 1–120 frame paths.`);
+            if (!rotations.some(r => r.dir === dir)) throw new Error(`The ${name}/${dir} animation has no matching standing view in the selected state.`);
             dirs.set(dir as DirectionName, frames.map((path, index) => ({ index, path })));
           }
           source.push({ name, state: character.name, sibling, dirs });
           if (source.length > 99) throw new Error('This character contains too many moves. Select fewer states or export fewer animations (up to 99 plus Default).');
         }
       }
+      if (orphan) throw new Error(`This ZIP contains an animation file without an unambiguous state layout: ${orphan}. Export a new character ZIP with individual frames.`);
       meta = { character: selected.character };
     } else {
-      for (const path of files.keys()) {
+      pixelLabInfo({ name: meta.name ?? meta.character?.name, prompt: meta.prompt ?? meta.character?.prompt, template_id: meta.template_id ?? meta.character?.template_id, view: meta.view ?? meta.character?.view, size: meta.size ?? meta.character?.size });
+      for (const [path, bytes] of files) {
+        const png = /\.png$/i.test(path) || !!pngSize(bytes);
         const rotation = /^rotations\/([a-z-]+)\.png$/.exec(path);
         if (rotation && DIRECTIONS.includes(rotation[1] as DirectionName)) rotations.push({ dir: rotation[1] as DirectionName, path });
+        else if (png && /^rotations\//i.test(path)) throw new Error(`Unsupported rotation image path: ${path}. Export a character ZIP with named direction PNGs.`);
         const animation = /^animations\/([^/]+)\/([a-z-]+)\/frame_(\d+)\.png$/.exec(path);
+        if (!animation && png && /^animations\//i.test(path)) throw new Error(`Unsupported animation frame path: ${path}. Export a character ZIP with individual numbered frames.`);
         if (!animation) continue;
         const [, name, dir, index] = animation;
+        if (!Number.isSafeInteger(+index)) throw new Error(`${path} has an invalid animation frame number.`);
         if (!DIRECTIONS.includes(dir as DirectionName)) throw new Error(`The ${name} animation has an unsupported direction: ${dir}.`);
         let move = source.find(s => s.name === name);
         if (!move) { move = { name, sibling: false, dirs: new Map() }; source.push(move); }
@@ -252,14 +318,16 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additi
     // A common canvas preserves the source origin across padded frames. Small exports retain the existing floor margin.
     const char = Math.min(256, dimensions.reduce((max, size) => Math.max(max, size), 0)), frame = Math.max(64, char);
     if (paths.length * frame * frame > 64 * 1024 * 1024) throw new Error('This character contains too many image pixels, including repeated frame references. Select fewer states or export fewer moves.');
-    const images = new Map<string, Img>(), cells: NonNullable<Manifest['items'][number]['layers'][number]['cells']> = {};
+    const images = new Map<string, Img>(), importedPaths = new Map<string, Sha256>(), cells: NonNullable<Manifest['items'][number]['layers'][number]['cells']> = {};
     let semi = 0;
     const put = async (path: string) => {
+      const cached = importedPaths.get(path);
+      if (cached) return cached;
       const im = await image(required(files, path)), n = normalize(im, frame, frame, 128, char);
       if (n.cutPx) throw new Error(`${path} would lose ${n.cutPx} visible pixels in a ${frame} px cell. Import a smaller character; artwork is never rescaled.`);
       if (!hasPixels(n.img)) throw new Error(`${path} is an empty frame.`);
       semi += n.semiAlpha;
-      const h = await cellHash(n.img); images.set(h, n.img); return h;
+      const h = await cellHash(n.img); images.set(h, n.img); importedPaths.set(path, h); return h;
     };
     const name = meta.name ?? meta.character?.name ?? 'Imported character', prompt = meta.prompt ?? meta.character?.prompt ?? name;
     const restId = DEFAULT_MOVE;
@@ -280,7 +348,6 @@ async function pixelLab(files: Map<string, Uint8Array>, stateId?: string, additi
     }
     const rest = images.get(cells[restId][directions[0]]![0]!)!;
     const view = meta.view ?? meta.character?.view ?? 'low top-down', template = meta.template_id ?? meta.character?.template_id ?? 'mannequin';
-    if (!['low top-down', 'high top-down', 'side'].includes(view)) throw new Error('The character has an unsupported camera view.');
     const rig: Manifest['rig'] = { cell: { w: frame, h: frame }, pivot: pivotOf(rest), directions: directions.map(id => ({ id })), animations, baseItem: 'base', baseHash: 'sha256:' as Sha256, view, template };
     const hashes: Record<string, Sha256> = {};
     const empty = await cellHash(makeImg(frame, frame));

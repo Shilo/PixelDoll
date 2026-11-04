@@ -120,6 +120,56 @@ test.each([80, 92, 96, 128, 160, 256])('PixelLab preserves every source pixel at
   expectPixels(cellImg(imported.project, manifest.items[0].layers[0], 'default', 'south', 0), original)
 })
 
+test.each([[32, 32], [33, 33], [48, 63], [63, 48], [64, 65], [65, 64], [96, 80], [127, 128], [128, 127], [255, 256], [256, 255]])('PixelLab centers odd and rectangular %i×%i source canvases without resampling', async (width, height) => {
+  const image = makeImg(width, height)
+  image.data.set([150, 70, 20, 255], 0)
+  image.data.set([20, 70, 150, 255], image.data.length - 4)
+  const imported = await readCharacterZip(await zip([
+    { name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Rectangular frame' })) },
+    { name: 'rotations/south.png', data: await encodePngBytes(image) },
+  ]))
+  const size = Math.max(64, width, height), canvas = Math.max(width, height)
+  const x = Math.floor((size - width) / 2), y = Math.max(0, size - canvas - 4) + Math.floor((canvas - height) / 2)
+  const result = cellImg(imported.project, imported.project.manifest.items[0].layers[0], 'default', 'south', 0)!
+  expect([result.w, result.h]).toEqual([size, size])
+  expect([...result.data.slice((y * size + x) * 4, (y * size + x) * 4 + 4)]).toEqual([150, 70, 20, 255])
+  const last = ((y + height - 1) * size + x + width - 1) * 4
+  expect([...result.data.slice(last, last + 4)]).toEqual([20, 70, 150, 255])
+  expect(result.data.filter((value, index) => index % 4 === 3 && value)).toHaveLength(2)
+})
+
+test('PixelLab applies its disclosed alpha threshold and refuses wholly empty animation frames', async () => {
+  const image = makeImg(64, 64)
+  image.data.set([70, 80, 90, 127], 0)
+  image.data.set([80, 90, 100, 128], 4)
+  image.data.set([90, 100, 110, 200], 8)
+  const entries = [
+    { name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Alpha policy' })) },
+    { name: 'rotations/south.png', data: await encodePngBytes(image) },
+  ]
+  const imported = await readCharacterZip(await zip(entries)), layer = imported.project.manifest.items[0].layers[0]
+  expect([...cellImg(imported.project, layer, 'default', 'south', 0)!.data.slice(0, 12)]).toEqual([0, 0, 0, 0, 80, 90, 100, 255, 90, 100, 110, 255])
+  expect(imported.warnings).toContain('Partially transparent edges were converted to pixel-art transparency.')
+  entries.push({ name: 'animations/disappear/south/frame_0.png', data: await encodePngBytes(makeImg(64, 64)) })
+  await expect(readCharacterZip(await zip(entries))).rejects.toThrow('animations/disappear/south/frame_0.png is an empty frame')
+})
+
+test.each([null, [], 17, 'bad', {}])('PixelLab refuses malformed selected direction frame lists with a clear error: %j', async frames => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[0].frames.animations.walking.south = frames
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  await expect(readCharacterZip(await zip(entries))).rejects.toThrow('walking/south animation must contain 1–120 frame paths')
+})
+
+test('PixelLab reports missing referenced images and directions before accepting a partial character', async () => {
+  const entries = await pixelLabFiles()
+  await expect(readCharacterZip(await zip(entries.filter(entry => !entry.name.endsWith('frame_001.png'))))).rejects.toThrow('Missing file: Idle/animations/walking/south/frame_001.png')
+  const meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[0].frames.animations.walking.north = meta.states[0].frames.animations.walking.south
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  await expect(readCharacterZip(await zip(entries))).rejects.toThrow('walking/north animation has no matching standing view')
+})
+
 test('PixelLab uses a common canvas for padded animation frames without clipping their bottom pixels', async () => {
   const rotation = sprite(80), animation = makeImg(64, 64)
   animation.data.set([255, 20, 30, 255], (63 * 64 + 32) * 4)
@@ -160,6 +210,18 @@ test('PixelLab bounds repeated logical references before decoding their image da
   await expect(readCharacterZip(await zip([{ name: 'metadata.json', data: enc.encode(JSON.stringify(metadata)) }, { name: 'repeated.png', data: png }]))).rejects.toThrow('including repeated frame references')
 })
 
+test('PixelLab bounds unique PNG source pixels by content even when metadata paths have no PNG suffix', async () => {
+  const header = await encodePngBytes(makeImg(1, 1)), view = new DataView(header.buffer)
+  view.setUint32(16, 4096); view.setUint32(20, 2048)
+  const paths = Array.from({ length: 9 }, (_, index) => `Artwork/source-${index}.bin`)
+  const metadata = { states: [{ character: { id, name: 'Content limit' }, frames: { rotations: { south: 'base.png' }, animations: { move: { south: paths } } } }] }
+  await expect(readCharacterZip(await zip([
+    { name: 'metadata.json', data: enc.encode(JSON.stringify(metadata)) },
+    { name: 'base.png', data: await encodePngBytes(sprite(80)) },
+    ...paths.map(name => ({ name, data: header })),
+  ]))).rejects.toThrow('archive contains too many image pixels')
+})
+
 test('PixelLab rejects oversized animation metadata and duplicate frame indices', async () => {
   const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data)), clip = meta.states[0].frames.animations.walking
   meta.states[0].frames.animations = Object.fromEntries(Array.from({ length: 100 }, (_, i) => [`move-${i}`, clip]))
@@ -174,6 +236,28 @@ test('PixelLab rejects oversized animation metadata and duplicate frame indices'
   ]))).rejects.toThrow('missing animation frames')
 })
 
+test.each(['9007199254740992', '9007199254740993', '9'.repeat(400)])('PixelLab refuses unsafe legacy frame indices instead of changing order: %s', async index => {
+  const png = await encodePngBytes(sprite(80))
+  await expect(readCharacterZip(await zip([
+    { name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Unsafe frame number' })) },
+    { name: 'rotations/south.png', data: png },
+    { name: `animations/walk/south/frame_${index}.png`, data: png },
+  ]))).rejects.toThrow('invalid animation frame number')
+})
+
+test('PixelLab decodes a repeated source path once while retaining every repeated animation cell', async () => {
+  const imageModule = await import('../../src/lib/image/png.ts'), decode = vi.spyOn(imageModule, 'decodePng')
+  try {
+    const path = 'shared.png', png = await encodePngBytes(sprite(80))
+    const metadata = { states: [{ character: { id, name: 'Repeated source' }, frames: { rotations: { south: path }, animations: { hold: { south: [path, path, path] } } } }] }
+    const imported = await readCharacterZip(await zip([{ name: 'metadata.json', data: enc.encode(JSON.stringify(metadata)) }, { name: path, data: png }]))
+    expect(decode).toHaveBeenCalledOnce()
+    const cells = imported.project.manifest.items[0].layers[0].cells!
+    expect(cells.hold.south).toEqual([cells.default.south![0], cells.default.south![0], cells.default.south![0]])
+    expect(imported.project.manifest.rig.animations.find(a => a.id === 'hold')!.frames).toEqual([{ cell: 0, ms: 100 }, { cell: 1, ms: 100 }, { cell: 2, ms: 100 }])
+  } finally { decode.mockRestore() }
+})
+
 test('PixelLab malformed metadata and incompatible sibling states retain useful chooser errors', async () => {
   for (const metadata of [null, { states: 'invalid' }, { states: [null] }, { states: [{ character: {} }] }]) {
     await expect(readCharacterZip(await zip([{ name: 'metadata.json', data: enc.encode(JSON.stringify(metadata)) }]))).rejects.toThrow(/metadata|state list/)
@@ -186,6 +270,127 @@ test('PixelLab malformed metadata and incompatible sibling states retain useful 
   const bytes = await zip(entries)
   await expect(readCharacterZip(bytes, id, 'all')).rejects.toMatchObject({ stateId: id, states: [{ id, name: 'Test adventurer', animations: 1 }, { id: 'second', name: 'Second state', animations: 1 }], message: expect.stringContaining('different character size or camera view') })
   expect((await readCharacterZip(bytes)).project.manifest.rig.animations).toHaveLength(2)
+})
+
+test.each([null, [], 'bad', 17])('PixelLab marks malformed sibling animation metadata unreadable and permits excluding it: %j', async animations => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[1].frames.animations = animations
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const bytes = await zip(entries)
+  await expect(readCharacterZip(bytes, id, 'all')).rejects.toMatchObject({
+    stateId: id, states: [{ id, name: 'Test adventurer', animations: 1 }, { id: 'second', name: 'Second state', animations: null }],
+    message: expect.stringContaining('Uncheck that state’s moves to continue'),
+  })
+  expect((await readCharacterZip(bytes, id, [])).project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
+})
+
+test.each([
+  [{ name: 123 }, 'character name must be text'],
+  [{ character: { name: 123 } }, 'character name must be text'],
+  [{ name: 'Test', prompt: {} }, 'character prompt must be text'],
+  [{ name: 'Test', template_id: {} }, 'character template must be text'],
+  [{ name: 'Test', view: {} }, 'unsupported camera view'],
+  [{ name: 'Test', size: { width: '48', height: 48 } }, 'size must contain positive whole-pixel'],
+  [{ name: 'Test', size: { width: 48, height: 1.5 } }, 'size must contain positive whole-pixel'],
+])('PixelLab refuses malformed consumed character information before it reaches the UI: %j', async (metadata, message) => {
+  await expect(readCharacterZip(await zip([
+    { name: 'metadata.json', data: enc.encode(JSON.stringify(metadata)) },
+    { name: 'rotations/south.png', data: await encodePngBytes(sprite(80)) },
+  ]))).rejects.toThrow(message)
+})
+
+test('PixelLab preserves optional null fallbacks and ignores metadata fields overridden by the actual character', async () => {
+  const entries = [
+    { name: 'metadata.json', data: enc.encode(JSON.stringify({ name: null, prompt: null, template_id: null, view: null, size: null })) },
+    { name: 'rotations/south.png', data: await encodePngBytes(sprite(80)) },
+  ]
+  const fallback = (await readCharacterZip(await zip(entries))).project.manifest
+  expect(fallback.name).toBe('Imported character')
+  expect(fallback.rig.view).toBe('low top-down')
+  expect(fallback.rig.template).toBe('mannequin')
+  entries[0].data = enc.encode(JSON.stringify({ name: 'Actual name', prompt: 'Actual prompt', character: { name: 123, prompt: {} } }))
+  const overridden = (await readCharacterZip(await zip(entries))).project.manifest
+  expect(overridden.name).toBe('Actual name')
+  expect(overridden.items[0].prompt).toBe('Actual prompt')
+})
+
+test('PixelLab validates selected metadata and included sibling geometry while leaving unused sibling prompts alone', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[0].character.prompt = {}
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  await expect(readCharacterZip(await zip(entries))).rejects.toMatchObject({ stateId: id, states: expect.any(Array), message: expect.stringContaining('character prompt must be text') })
+  meta.states[0].character.prompt = 'Valid base'
+  meta.states[1].character.prompt = {}; meta.states[1].character.template_id = {}
+  meta.states[1].frames.animations = { attack: meta.states[0].frames.animations.walking }
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  expect((await readCharacterZip(await zip(entries), id, 'all')).project.manifest.items[0].prompt).toBe('Valid base')
+  meta.states[1].character.size = { width: '48', height: 48 }
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const bytes = await zip(entries)
+  await expect(readCharacterZip(bytes, id, 'all')).rejects.toThrow('invalid size or camera metadata')
+  expect((await readCharacterZip(bytes, id, [])).project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
+})
+
+test.each(['missing-map', 'empty-map', 'extra-frame', 'extra-frame-without-suffix'] as const)('PixelLab refuses animation PNGs its selected state cannot account for: %s', async layout => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states = meta.states.slice(0, 1)
+  if (layout === 'missing-map') delete meta.states[0].frames.animations
+  else if (layout === 'empty-map') meta.states[0].frames.animations = {}
+  else entries.push({ name: `Idle/animations/walking/south/frame_002${layout === 'extra-frame' ? '.png' : ''}`, data: entries[1].data })
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  await expect(readCharacterZip(await zip(entries), id, 'all')).rejects.toMatchObject({
+    stateId: id, states: [{ id, name: 'Test adventurer', animations: null }],
+    message: expect.stringContaining('animation file missing from its metadata'),
+  })
+})
+
+test.each(['Idle/Variant', 'animations/Variant'])('PixelLab keeps an unreadable nested %s state separate from an included valid state', async folder => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  meta.states[1].folder = folder
+  meta.states[1].frames.rotations = { south: `${folder}/rotations/south.png` }
+  entries.push({ name: `${folder}/rotations/south.png`, data: entries[1].data }, { name: `${folder}/animations/extra/south/frame_0.png`, data: entries[1].data })
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  const bytes = await zip(entries)
+  const selected = await readCharacterZip(bytes, id, [])
+  expect(selected.project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
+  expect(selected.states?.find(state => state.id === 'second')?.animations).toBeNull()
+  await expect(readCharacterZip(bytes, id, 'all')).rejects.toThrow('Uncheck that state’s moves to continue')
+})
+
+test('PixelLab rejects orphan or ambiguously owned animation PNGs without guessing their state', async () => {
+  const entries = await pixelLabFiles()
+  for (const path of ['Unknown/animations/walk/south/frame_0.png', 'Idle/animations/walking/south/frame_002.png']) {
+    await expect(readCharacterZip(await zip([...entries, { name: path, data: entries[1].data }]))).rejects.toThrow('animation file without an unambiguous state layout')
+  }
+})
+
+test('PixelLab metadata references remain authoritative inside animation-named folders and ordinary artwork extras stay harmless', async () => {
+  const entries = await pixelLabFiles(), meta = JSON.parse(new TextDecoder().decode(entries[0].data))
+  const old = meta.states[0].frames.animations.walking.south[0], path = 'Artwork/animations/explicit custom.PNG'
+  meta.states[0].frames.animations.walking.south[0] = path
+  entries.find(entry => entry.name === old)!.name = path
+  entries[0].data = enc.encode(JSON.stringify(meta))
+  entries.push({ name: 'preview.png', data: entries[1].data }, { name: 'Artwork/myanimations/icon.png', data: entries[1].data })
+  const imported = await readCharacterZip(await zip(entries))
+  expect(imported.project.manifest.rig.animations.map(animation => animation.id)).toEqual(['default', 'walking'])
+  expect(imported.project.manifest.items[0].layers[0].cells!.walking.south).toHaveLength(2)
+})
+
+test.each([
+  ['animations/walk/south/FRAME_0.PNG', 'Unsupported animation frame path'],
+  ['animations/walk/south/frame_last.png', 'Unsupported animation frame path'],
+  ['animations/walk/south/frame_0-final.png', 'Unsupported animation frame path'],
+  ['animations/walk/south/frame_1', 'Unsupported animation frame path'],
+  ['rotations/EAST.PNG', 'Unsupported rotation image path'],
+  ['rotations/diagonal.png', 'Unsupported rotation image path'],
+])('PixelLab refuses unconsumed legacy PNG data instead of importing a partial character: %s', async (path, message) => {
+  const png = await encodePngBytes(sprite(80))
+  await expect(readCharacterZip(await zip([
+    { name: 'metadata.json', data: enc.encode(JSON.stringify({ name: 'Partial character' })) },
+    { name: 'rotations/south.png', data: png },
+    { name: 'animations/walk/south/frame_0.png', data: png },
+    { name: path, data: png },
+  ]))).rejects.toThrow(`${message}: ${path}`)
 })
 
 test('PixelLab preserves distinct animation labels that collide after normalization or contain path separators', async () => {
@@ -231,6 +436,33 @@ test('ambiguous character folders and PNG-only ZIPs explain their unsupported la
   const entries = await pixelLabFiles()
   await expect(readCharacterZip(await zip(['one', 'two'].flatMap(root => entries.map(e => ({ ...e, name: `${root}/${e.name}` })))))).rejects.toThrow('multiple character folders')
   await expect(readCharacterZip(await zip(entries.filter(e => e.name !== 'metadata.json')))).rejects.toThrow('direction and frame layout')
+})
+
+test('PixelLab packed spritesheet ZIPs explain the missing frame layout instead of guessing one', async () => {
+  await expect(readCharacterZip(await zip([
+    { name: 'Character.png', data: await encodePngBytes(sprite(80)) },
+    { name: 'Character.json', data: enc.encode(JSON.stringify({ cell_size: 48, rows: [{ animation: 'walk', direction: 'south' }] })) },
+  ]))).rejects.toThrow('Arbitrary PNG folders and spritesheet ZIPs need a direction and frame layout')
+})
+
+test.each(['../bad', '/absolute', 'C:/bad', 'dir\\bad', 'dir/./bad', 'dir/../bad'])('ZIP paths cannot escape their character root: %s', async name => {
+  await expect(unzip(await zip([{ name, data: enc.encode('invalid path') }]))).rejects.toThrow('unsafe file path')
+})
+
+test.each(['encrypted', 'compression', 'expanded', 'split'] as const)('ZIP guard rejects %s headers before reading file data', async invalid => {
+  const bytes = await zip([{ name: 'a', data: enc.encode('bounded payload') }]), view = new DataView(bytes.buffer)
+  const end = bytes.length - 22, central = view.getUint32(end + 16, true)
+  if (invalid === 'encrypted') view.setUint16(central + 8, view.getUint16(central + 8, true) | 1, true)
+  else if (invalid === 'compression') view.setUint16(central + 10, 99, true)
+  else if (invalid === 'expanded') view.setUint32(central + 24, 64 * 1024 * 1024 + 1, true)
+  else view.setUint16(end + 4, 1, true)
+  await expect(unzip(bytes)).rejects.toThrow(invalid === 'split' ? 'Split, ZIP64 or oversized archives' : 'too large, encrypted, or uses unsupported compression')
+})
+
+test('ZIP guard limits entry count and rejects an empty file with clear errors', async () => {
+  const entries = Array.from({ length: 5001 }, (_, index) => ({ name: `file-${index}`, data: new Uint8Array() }))
+  await expect(unzip(await zip(entries))).rejects.toThrow('Split, ZIP64 or oversized archives')
+  await expect(unzip(new Uint8Array())).rejects.toThrow('not a supported ZIP archive')
 })
 
 test('sparse imported clips can be dressed without planning missing base frames', async () => {
