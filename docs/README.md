@@ -152,6 +152,7 @@ Screenshots for all reports: [`testing/img/` at 1f95029](https://github.com/Shil
 | [Replaceable item QA summaries](testing/qa-summaries-2026-10-22.md) | Move/direction aggregation, historical-check limits, offline browser/ZIP tests, adversarial review and CI runner pin. |
 | [Character import compatibility](testing/character-import-compatibility-2026-10-22.md) | Actual PixelLab raw/default ZIPs, format boundaries, pagination, Cancel regression and shared-equipment planning. |
 | [Character ZIP import audit (2026-11-04)](testing/character-import-2026-11-04.md) | Eight owner-supplied exports, all 39 states, multi-state moves, larger canvases, drag-and-drop and responsive move labels. |
+| [Imported setup concurrency (2026-11-04)](testing/setup-concurrency-2026-11-04.md) | Bounded joint checks through the account queue, failure draining, cached resume and offline 411-frame validation. |
 | [Shared equipment verification](testing/shared-equipment-2026-10-22.md) | Library/copy lifecycle, paid rest and animation reviews, independent palettes, new moves, adversarial fixes and real exported artifacts. |
 | [M1](testing/M1_report.md) | Key + job queue: resume after reload, IndexedDB ledger. |
 | [M2](testing/M2_report.md) | Rig freeze: normalize, pivot, mirror, anchors, `baseHash`. Built for template frames, later updated by B7. |
