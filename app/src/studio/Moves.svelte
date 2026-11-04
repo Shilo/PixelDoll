@@ -5,8 +5,10 @@
   import { ui, doc, store, view, isDemo, moving } from './state.svelte.ts'
   import Lazy from './Lazy.svelte'
   import { ChevronRight, Plus } from './icons.ts'
+  import { moveLabel } from './model.ts'
   const m = $derived(store.project?.manifest)
-  const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
+  const moveIds = $derived(m?.rig.animations.map(a => a.id) ?? [])
+  const nice = (id: string) => moveLabel(id, moveIds)
   const k = $derived(Math.max(1, Math.floor(ui.dpr)))
   const mine = $derived(!!moving.spec && moving.projectId === doc.id && !moving.done)
   const queued = $derived(moving.queued.filter((q) => q.projectId === doc.id))
@@ -41,7 +43,7 @@
         <dl class="kv">
           {#each m.rig.animations as a (a.id)}
             {@const src = Object.values(a.sources ?? {})[0]}
-            <dt>{a.id}</dt><dd>{a.frames.map((f) => `${f.cell}:${f.ms}ms`).join(' ')}{src ? ` · ${src.route}, ${src.motion}` : a.source?.mode ? ` · ${a.source.mode}` : ''}</dd>
+            <dt>{nice(a.id)}</dt><dd>{a.frames.map((f) => `${f.cell}:${f.ms}ms`).join(' ')}{src ? ` · ${src.route}, ${src.motion}` : a.source?.mode ? ` · ${a.source.mode}` : ''}</dd>
           {/each}
           <dt>Cell</dt><dd>{m.rig.cell.w}×{m.rig.cell.h}, pivot {m.rig.pivot.x},{m.rig.pivot.y}</dd>
           <dt>Directions</dt><dd>{m.rig.directions.map((d) => d.id + (d.mirrorOf ? ` (mirror of ${d.mirrorOf})` : '')).join(', ')}</dd>

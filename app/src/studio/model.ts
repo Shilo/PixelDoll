@@ -116,6 +116,16 @@ export const looksOf = (desc: string, clothes: string | null = BASE_CLOTHES) =>
   `${desc.trim().replace(/[.\s]+$/, '')}, ${clothes == null ? '' : `bald, ${clothes}, barefoot, `}empty hands, no weapon`;
 
 export const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
+/** Readable move names keep their stored IDs; colliding labels expose the IDs so every move remains selectable. */
+export function moveLabel(id: string, ids: readonly string[] = []): string {
+  const readable = (value: string) => {
+    const text = value.replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    return text ? text[0].toUpperCase() + text.slice(1) : '';
+  };
+  const label = readable(id);
+  // Valid animation IDs contain only lowercase letters, digits, underscores and hyphens, never parentheses.
+  return ids.some(other => other !== id && readable(other) === label) ? `${label} (${id})` : label;
+}
 /** The noun of the description's first phrase: "a sturdy young dwarf with a friendly face" -> "Dwarf". */
 // ponytail: last word before with/who/in/wearing/comma; a rename field is the real fix.
 export function nameFrom(desc: string): string {

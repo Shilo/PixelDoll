@@ -3,20 +3,21 @@
   import { missingAt, moveDirs } from '../lib/dress/dress.ts'
   import type { DirectionName, Item } from '../lib/store/manifest.ts'
   import { itemMoveOffer, missingItemMoves } from './create.ts'
-  import { groupOf } from './model.ts'
+  import { groupOf, moveLabel } from './model.ts'
   import { ui, doc, store, isDemo, moving, queueMoves, withKey, openNewItem, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { TriangleAlert } from './icons.ts'
   import { default as ApiPeek } from './ApiPeek.svelte'
   import { movePlan } from './apiPlans.ts'
 
   const m = $derived(store.project?.manifest)
+  const moveIds = $derived(m?.rig.animations.map(a => a.id) ?? [])
   const anim = $derived(m?.rig.animations.find((a) => a.id === ui.anim))
   const views = $derived(m && anim ? ui.all ? moveDirs(m, anim.id) : [ui.dir] : [])
   const missing = $derived.by(() => {
     if (!m || !anim) return []
     return [...new Set(views.flatMap((d) => missingAt(m, doc.items, anim.id, d)))]
   })
-  const move = $derived(anim ? anim.id[0].toUpperCase() + anim.id.slice(1).replace(/-/g, ' ') : '')
+  const move = $derived(anim ? moveLabel(anim.id, moveIds) : '')
   // A partial replacement may leave other directions intact; only missing views need paid posing.
   function missingDirs(item: Item): DirectionName[] {
     if (!m || !anim) return []

@@ -5,6 +5,7 @@
   import { doc, store, ui, view } from './state.svelte.ts'
   import { buildPresentation } from './experience/presentation.ts'
   import { directionLabel } from './experience/movement.ts'
+  import { moveLabel } from './model.ts'
   import { popoverFocus } from './experience/focus.ts'
   import { ALL_DIRECTIONS, ALL_MOVES, SHARE_SCALES, buildShareMedia, canAnimateShare, canShareDirection, encodeShareMedia, encodeSharePng, shareDimensions, sharePreviewFrames } from './shareMedia.ts'
   import { Clapperboard, Compass, Copy, Download, LoaderCircle, PersonStanding, Scaling, Share2, ChevronDown } from './icons.ts'
@@ -23,6 +24,7 @@
   let feedback = $state('')
   let viewportWidth = $state(innerWidth)
   let viewportHeight = $state(innerHeight)
+  const moveIds = $derived(store.project?.manifest.rig.animations.map(a => a.id) ?? [])
   let serial = 0
   let rememberedId = ''
   const availability = $derived.by(() => {
@@ -169,7 +171,7 @@
     <label class="share-picker">
       <PersonStanding size={16} aria-hidden="true" />
       <select class="bu-select" aria-label="Move" bind:value={move} onchange={() => index = 0}>
-        {#each store.project?.manifest.rig.animations ?? [] as animation (animation.id)}<option value={animation.id}>{animation.id[0].toUpperCase() + animation.id.slice(1).replaceAll('-', ' ')}</option>{/each}
+        {#each store.project?.manifest.rig.animations ?? [] as animation (animation.id)}<option value={animation.id}>{moveLabel(animation.id, moveIds)}</option>{/each}
         <option value={ALL_MOVES}>All moves</option>
       </select>
       <ChevronDown size={14} aria-hidden="true" />

@@ -1,6 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 import { readFile } from 'node:fs/promises'
 import { equipmentGroup } from './immersive-helpers.ts'
+import { zip } from '../../src/lib/store/zip.ts'
+import { makeImg } from '../../src/lib/image/png.ts'
+import { encodePngBytes } from '../../src/lib/image/pngraw.ts'
 
 test.beforeEach(async ({ context }) => {
   await context.addInitScript(() => { try { localStorage.setItem('pixeldoll.agentKey', 'off') } catch { /* Opaque initial pages have no storage. */ } })
@@ -356,6 +359,84 @@ test('Moves preserves paused Preview and Side-scroller enters using an authored 
   await modes(page).getByRole('button', { name: 'Preview', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Face north', exact: true })).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeVisible()
+})
+
+test('imported move names remain readable, distinct and contained in Preview and Inspect at every screen size', async ({ page }) => {
+  const directions = ['south', 'south-east', 'east', 'north-east', 'north', 'north-west', 'west', 'south-west']
+  const longId = 'the_character_reacts_to_sudden_impact_by_bracing_their_entire_body_against_an_incoming_heavy_attack'
+  const longLabel = 'The character reacts to sudden impact by bracing their entire body against an incoming heavy attack'
+  const image = makeImg(64, 64)
+  image.data.set([180, 100, 60, 255], (48 * 64 + 32) * 4)
+  const png = await encodePngBytes(image)
+  const bytes = await zip([
+    { name: 'metadata.json', data: new TextEncoder().encode(JSON.stringify({ name: 'Imported move labels' })) },
+    ...directions.map(dir => ({ name: `rotations/${dir}.png`, data: png })),
+    ...['right_punch', 'right-punch', longId].flatMap(id => directions.map(dir => ({ name: `animations/${id}/${dir}/frame_0.png`, data: png }))),
+  ])
+  await landing(page); await page.keyboard.press('Enter')
+  await page.locator('.project-btn').click()
+  await page.getByRole('menuitem', { name: 'Import character…', exact: true }).click()
+  const importing = page.getByRole('dialog', { name: 'Import character', exact: true })
+  await importing.getByLabel('Character ZIP', { exact: true }).setInputFiles({ name: 'move-labels.zip', mimeType: 'application/zip', buffer: Buffer.from(bytes) })
+  await expect(importing.getByRole('img', { name: 'Character import preview', exact: true })).toBeVisible()
+  await importing.getByRole('checkbox', { name: 'Set up the pose rig next (recommended)', exact: true }).uncheck()
+  await importing.getByRole('button', { name: 'Import character', exact: true }).click()
+  const move = page.getByRole('combobox', { name: 'Move', exact: true })
+  await expect(move.locator('option')).toHaveText(['Default', 'Right punch (right_punch)', 'Right punch (right-punch)', longLabel])
+  await move.selectOption('right_punch'); await expect(move).toHaveValue('right_punch')
+  await move.selectOption('right-punch'); await expect(move).toHaveValue('right-punch')
+  await move.selectOption(longId)
+  await expect(move).toHaveAttribute('title', longLabel)
+  const sizes = [{ width: 1440, height: 900 }, { width: 900, height: 820 }, { width: 390, height: 844 }, { width: 360, height: 640 }, { width: 844, height: 390 }]
+  for (const size of sizes) {
+    await page.setViewportSize(size)
+    const bar = page.getByRole('toolbar', { name: 'Preview controls', exact: true })
+    await expect(move).toBeInViewport()
+    await expect(bar.getByRole('button', { name: 'Inspect', exact: true })).toBeInViewport()
+    const geometry = await bar.evaluate(node => {
+      const children = [...node.children].filter(element => element.getBoundingClientRect().width > 0)
+      const rects = children.map(element => element.getBoundingClientRect())
+      const overlaps = rects.some((a, i) => rects.slice(i + 1).some(b => Math.min(a.right, b.right) - Math.max(a.left, b.left) > 1 && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 1))
+      const select = node.querySelector('select')!, style = getComputedStyle(select), bounds = node.getBoundingClientRect()
+      return { overlaps, clipped: style.overflowX === 'hidden', left: bounds.left, right: bounds.right }
+    })
+    expect(geometry.overlaps, `${size.width}×${size.height}`).toBe(false)
+    expect(geometry.clipped).toBe(true)
+    expect(geometry.left).toBeGreaterThanOrEqual(0)
+    expect(geometry.right).toBeLessThanOrEqual(size.width)
+    if (size.width === 390) {
+      await move.click()
+      const option = move.locator('option').last()
+      await expect(option).toBeVisible()
+      const bounds = await option.boundingBox()
+      expect(bounds!.x).toBeGreaterThanOrEqual(0)
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(size.width)
+      await page.keyboard.press('Escape')
+    }
+    await bar.getByRole('button', { name: 'Face north', exact: true }).click()
+    await expect(world(page)).toHaveAttribute('data-facing', 'north')
+  }
+  await page.getByRole('button', { name: 'Inspect', exact: true }).click()
+  const inspect = page.getByRole('dialog', { name: 'Inspect character', exact: true })
+  const inspectMove = inspect.getByRole('combobox', { name: 'Move', exact: true })
+  await expect(inspectMove).toHaveValue(longId)
+  await expect(inspectMove.locator('option')).toHaveText(['Default', 'Right punch (right_punch)', 'Right punch (right-punch)', longLabel])
+  await expect(inspectMove).toHaveAttribute('title', longLabel)
+  for (const size of sizes) {
+    await page.setViewportSize(size)
+    await expect(inspectMove).toBeInViewport()
+    await expect(inspect.getByRole('button', { name: 'Next frame', exact: true })).toBeInViewport()
+    expect(await inspectMove.evaluate(node => getComputedStyle(node).overflowX)).toBe('hidden')
+    if (size.width === 390) {
+      await inspectMove.click()
+      const option = inspectMove.locator('option').last()
+      await expect(option).toBeVisible()
+      const bounds = await option.boundingBox()
+      expect(bounds!.x).toBeGreaterThanOrEqual(0)
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(size.width)
+      await page.keyboard.press('Escape')
+    }
+  }
 })
 
 test('resizing stops held live input without teleporting, while a view change resets position', async ({ page }) => {

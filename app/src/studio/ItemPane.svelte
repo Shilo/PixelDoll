@@ -8,12 +8,13 @@
   import ApiPeek from './ApiPeek.svelte'
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
-  import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason } from './model.ts'
+  import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason, moveLabel } from './model.ts'
   import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, pendingMoves, moving, settingUp, matchItemPalette, acceptItemIssues, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
   let { id }: { id: string } = $props()
   const m = $derived(store.project?.manifest)
+  const moveIds = $derived(m?.rig.animations.map(a => a.id) ?? [])
   const it = $derived(m?.items.find((i) => i.id === id))
   const ladder = $derived(SLOTS.find((s) => s.id === it?.slot)?.zOverrides ?? [])
   const on = $derived(!!it && doc.items[it.slot] === it.id && !doc.drafts[it.slot])
@@ -32,7 +33,7 @@
   const gaps = $derived(m && it ? coverageGaps(m, it) : [])
   // B10: views of the shown move this item has no frames for (it would vanish there)
   const moveGaps = $derived(gaps.filter((g) => g.startsWith(`${ui.anim}/`)).map((g) => g.split('/')[1]))
-  const moveName = $derived(ui.anim ? ui.anim[0].toUpperCase() + ui.anim.slice(1).replace(/-/g, ' ') : '')
+  const moveName = $derived(moveLabel(ui.anim, moveIds))
   const sourceDir = $derived(m?.rig.directions.find((d) => d.id === ui.dir)?.mirrorOf ?? ui.dir)
   const repairSpec = $derived(it && !it.design && anim && it.route === 'skeleton-pose' && it.key && it.dressed?.[sourceDir] && anim.sources?.[sourceDir]?.keypoints?.length === anim.cells
     ? { id: anim.id, frames: anim.cells, items: [it.id], dirs: [sourceDir], itemMethod: 'grid' as const, itemsOnly: true as const, seed: 0 } : null)
@@ -52,7 +53,7 @@
   let chosenMove = $state('')
   const missingMove = $derived(missingMoves.find(s => s.id === chosenMove) ?? missingMoves.find(s => s.id === ui.anim) ?? missingMoves[0])
   const missingOffer = $derived(m && missingMove ? itemMoveOffer(m, [missingMove]) : null)
-  const missingName = $derived(missingMove ? missingMove.id[0].toUpperCase() + missingMove.id.slice(1).replace(/-/g, ' ') : '')
+  const missingName = $derived(missingMove ? moveLabel(missingMove.id, moveIds) : '')
   function makeMissing() {
     if (!missingOffer?.specs.length) return
     const projectId = doc.id, seed = 1 + Math.floor(Math.random() * 1_000_000), specs = missingOffer.specs.map((s) => ({ ...$state.snapshot(s), seed }))
@@ -186,7 +187,7 @@
     {#if moveGaps.length}<p class="notice warn small"><TriangleAlert size={14} />Not made for {moveName} facing {moveGaps.join(', ')} yet: it is left out there.</p>{/if}
     {#if missingMoves.length}
       <div class="field">
-        {#if missingMoves.length > 1}<label class="field"><span class="label small">Generate item for move</span><select class="bu-input input" value={missingMove?.id} onchange={e => (chosenMove = e.currentTarget.value)}>{#each missingMoves as move (move.id)}<option value={move.id}>{move.id[0].toUpperCase() + move.id.slice(1).replace(/-/g, ' ')}</option>{/each}</select></label>{/if}
+        {#if missingMoves.length > 1}<label class="field"><span class="label small">Generate item for move</span><select class="bu-input input" value={missingMove?.id} onchange={e => (chosenMove = e.currentTarget.value)}>{#each missingMoves as move (move.id)}<option value={move.id}>{moveLabel(move.id, moveIds)}</option>{/each}</select></label>{/if}
         <span class="api-action"><ApiPeek scope="item-missing-move" label="Make {it.name} for {missingName}" plan={m && missingOffer?.specs[0] ? movePlan({ manifest: m }, missingOffer.specs[0]) : []} /><button class="bu-action btn" data-variant="outline" disabled={missingOffer?.gens == null} onclick={makeMissing}>Make for {missingName} <span class="cost">{missingOffer?.gens == null ? 'Unavailable' : `Est. ${Math.ceil(missingOffer.gens)} gens`}</span></button></span>
         {#if missingOffer?.error}<p class="notice warn small" role="status">{missingOffer.error}</p>{/if}
         <p class="faint small">Generates only this item’s missing views for the chosen move, reusing its standing design. The body stays as it is. PixelLab may bill dollars; queue time varies.</p>

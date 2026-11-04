@@ -57,7 +57,10 @@
 .experience-playback { position:absolute; z-index:3; top:83.3%; bottom:auto; left:0; right:calc(var(--rail) + var(--edge)); display:flex; justify-content:center; }
 .playback-bar { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:12px; padding:4px 12px; border-radius:var(--bu-radius-control); max-width:100%; min-height:54px; }
 .playback-bar .bu-action { display:flex; gap:6px; align-items:center; justify-content:center; min-width:40px; height:44px; padding:6px; font-size:18px; }
-.playback-bar select { height:44px; max-width:180px; padding:0 8px; font-size:20px; }
+.playback-move { display:flex; min-width:0; max-width:100%; }
+.playback-bar select { height:44px; min-width:0; max-width:180px; padding:0 8px; font-size:20px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.playback-bar select::picker(select) { max-width:calc(100vw - 24px); }
+.playback-bar option { white-space:normal; overflow-wrap:anywhere; }
 .facing-buttons { display:flex; flex-wrap:wrap; justify-content:center; }
 .equipment-rail { top:18%; bottom:24px; gap:20px; }
 .equipment-modes { display:flex; justify-content:space-between; gap:12px; }
@@ -88,6 +91,7 @@
 .equipment-scroll .rows { padding:0; gap:8px; }
 .equipment-scroll .rows .row { min-height:44px; padding:8px 12px; }
 .equipment-scroll .move-list { gap:8px; }
+.equipment-scroll .move-text { min-width:0; overflow-wrap:anywhere; }
 .equipment-none,.equipment-create,.equipment-saved { display:flex; justify-content:center; align-items:center; gap:8px; min-height:46px; width:100%; font-size:16px; }
 .equipment-none { grid-column:1/-1; }
 .equipped-check { position:absolute; top:8px; right:8px; color:var(--bu-accent); }

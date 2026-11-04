@@ -2,7 +2,7 @@
   import type { Project } from '../lib/store/manifest.ts'
   import { bakedFrame, composeCell } from '../lib/compose/compose.ts'
   import { moveDirs, coverageGaps } from '../lib/dress/dress.ts'
-  import { itemCell } from './model.ts'
+  import { itemCell, moveLabel } from './model.ts'
   import Sprite from './Sprite.svelte'
   import { ui } from './state.svelte.ts'
 
@@ -13,6 +13,7 @@
   let move = $state('')
   let zoom = $state(ui.size === 'compact' || ui.size === 'landscape' ? 2 : 3)
   const animations = $derived(project.manifest.rig.animations)
+  const moveIds = $derived(animations.map(a => a.id))
   const clip = $derived(animations.find((a) => a.id === move) ?? animations[0])
   const frame = $derived(bakedFrame(project.manifest))
   const gaps = $derived(item ? coverageGaps(project.manifest, item) : [])
@@ -28,7 +29,7 @@
 {#if item && clip}
   <div class="design-preview">
     <div class="field-row">
-      <label class="field small"><span class="label">Move</span><select class="bu-input input" value={clip.id} onchange={(e) => (move = e.currentTarget.value)}>{#each animations as a (a.id)}<option value={a.id}>{a.id.replace(/-/g, ' ')}</option>{/each}</select></label>
+      <label class="field small"><span class="label">Move</span><select class="bu-input input" value={clip.id} onchange={(e) => (move = e.currentTarget.value)}>{#each animations as a (a.id)}<option value={a.id}>{moveLabel(a.id, moveIds)}</option>{/each}</select></label>
       <label class="field small"><span class="label">Review zoom</span><select class="bu-input input" bind:value={zoom}><option value={2}>2×</option><option value={3}>3×</option><option value={4}>4×</option></select></label>
       <label class="check small"><input type="checkbox" bind:checked={alone} />Item only</label>
     </div>

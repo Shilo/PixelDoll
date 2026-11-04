@@ -11,7 +11,9 @@
   import { SETUP_STEPS } from './setup.ts'
   import { ui, doc, store, settingUp, moving, creating, startSetup, setupBusy, dismissSetup, withKey } from './state.svelte.ts'
   import { Check, TriangleAlert } from './icons.ts'
+  import { moveLabel } from './model.ts'
   const m = $derived(store.project?.manifest)
+  const moveIds = $derived(m?.rig.animations.map(a => a.id) ?? [])
   let rec = $state.raw<StoredProject | null>(null), plan = $state.raw<SetupPlan | null>(null)
   const draft = formDrafts.setup?.projectId === doc.id ? formDrafts.setup : undefined
   let error = $state(''), looks = $state(draft?.looks ?? store.project?.manifest.items.find((i) => i.slot === 'body')?.prompt ?? ''), restAnim = $state(draft?.restAnim ?? '')
@@ -50,7 +52,7 @@
     <p class="muted">Find joints on the frozen body frames, check alignment and colors, and connect the standing views to your PixelLab account. Your existing artwork, equipment and outfits stay aligned.</p>
     <p class="faint small">Pose registration uses a humanoid rig with {m?.rig.view ? `the saved ${m.rig.view} camera` : 'a low top-down camera because no camera was saved'}. Check that this view matches the artwork before starting setup.</p>
     {#if preview}<div class="setup-preview"><Sprite img={preview} k={3} limit={192} label="Standing reference for rig setup" /></div>{/if}
-    {#if m}<label class="field"><span class="label">Standing reference</span><select class="bu-input input" bind:value={restAnim} disabled={plan?.fixedRest}><option value="">Choose automatically</option>{#each m.rig.animations as a (a.id)}<option value={a.id}>{a.id}</option>{/each}</select><span class="faint small">{plan?.fixedRest ? 'Saved standing views are retained so existing equipment keyframes stay aligned.' : 'Use a clear standing pose with every direction. The first frame is the reference.'}</span></label>{/if}
+    {#if m}<label class="field"><span class="label">Standing reference</span><select class="bu-input input" bind:value={restAnim} disabled={plan?.fixedRest}><option value="">Choose automatically</option>{#each m.rig.animations as a (a.id)}<option value={a.id}>{moveLabel(a.id, moveIds)}</option>{/each}</select><span class="faint small">{plan?.fixedRest ? 'Saved standing views are retained so existing equipment keyframes stay aligned.' : 'Use a clear standing pose with every direction. The first frame is the reference.'}</span></label>{/if}
     <label class="field"><span class="label">Existing appearance</span><textarea class="bu-input input" rows="3" maxlength="2000" bind:value={looks} placeholder="Describe the body, hair, colors and clothes already in this artwork"></textarea><span class="faint small">This guides new moves. Include existing hair and clothes; setup cannot separate them from the base.</span></label>
     {#if plan}<p class="faint small">{plan.frames.size} unique body frames · {plan.gens} gens estimated. Includes a 0.25-gen account connection. Matching saved measurements are reused.</p>{/if}
     {#each plan?.warnings ?? [] as warning (warning)}<p class="notice warn small"><TriangleAlert size={14} /><span>{warning}</span></p>{/each}

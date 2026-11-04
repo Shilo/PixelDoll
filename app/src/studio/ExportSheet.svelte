@@ -11,6 +11,7 @@
   import { exportAnimationCatalog, applyExportSettings, InvalidExportSettings, readExportSettings, resetInvalidExportSettings, saveExportSetting, subscribeExportSettings, type ExportSettingChange, type ExportSettings } from '../lib/store/export-settings.ts'
   import type { Engine, Manifest, Preset } from '../lib/store/manifest.ts'
   import { ui, doc, store, toast, isDemo } from './state.svelte.ts'
+  import { moveLabel } from './model.ts'
   import { ChevronLeft, ChevronRight, Download, Settings2, TriangleAlert, X } from './icons.ts'
 
   type Target = { id: Engine; name: string; sub: string; detail: string }
@@ -48,7 +49,8 @@
   let result = $state.raw<{ zip: Uint8Array | null; files: string[]; warnings: string[]; errors: string[]; rigIssues: string[] } | null>(null)
   let busy = $state(false)
   const m = $derived(store.project?.manifest)
-  const nice = (id: string) => id[0].toUpperCase() + id.slice(1).replace(/-/g, ' ')
+  const moveIds = $derived(m?.rig.animations.map(a => a.id) ?? [])
+  const nice = (id: string) => moveLabel(id, moveIds)
   const baked = $derived(preferences?.dressedCharacterSheets ?? true)
   const catalog = $derived(preferences && ready ? exportAnimationCatalog(m, savedProjects.filter(p => p.id !== doc.id).map(p => p.manifest), preferences) : { names: [], warnings: [] })
   const names = $derived(catalog.names)
@@ -61,8 +63,7 @@
   const PLAY_ONCE = 'Play animation once'
   const DRESSED_SHEETS = 'Include dressed character sheets'
   function animationLabel(id: string): string {
-    const display = nice(id).replace(/\s+/g, ' ')
-    return names.some(other => other !== id && nice(other).replace(/\s+/g, ' ') === display) ? `${display} (${id})` : display
+    return moveLabel(id, names)
   }
   $effect(() => {
     const openedId = doc.id

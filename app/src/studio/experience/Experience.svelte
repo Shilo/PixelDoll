@@ -9,12 +9,14 @@
   import { WORLDS,REFLECTION } from './config.ts'
   import { ChevronDown,ChevronLeft,ChevronRight,Play,Pause,Grid2x2,Copy } from '../icons.ts'
   import { directionInfo } from './movement.ts'
+  import { moveLabel } from '../model.ts'
   let search=$state('')
   let copyMessage=$state('')
   async function copyPrompt(){try{await navigator.clipboard.writeText(prompt);copyMessage='Copied'}catch{copyMessage='Select the prompt to copy it'}}
   let selection=$state<HTMLDivElement>()
   let viewportWidth=$state(1280),viewportHeight=$state(720)
   const m=$derived(store.project?.manifest)
+  const moveIds=$derived(m?.rig.animations.map(a=>a.id)??[])
   const name=$derived(store.projects.find(p=>p.id===doc.id)?.name.replace(/ \(demo\)$/,'')??m?.name??'Character')
   const prompt=$derived(m?.items.find(it=>it.id===m.rig.baseItem)?.prompt??'')
   const list=$derived(store.projects.filter(p=>!p.dev&&p.name.toLowerCase().includes(search.toLowerCase())))
@@ -114,7 +116,7 @@
     {#if experience.mode==='preview'&&m}
       <div class="experience-playback"><div class="playback-bar bu-floating" role="toolbar" aria-label="Preview controls">
         <button class="bu-action" data-variant="quiet" aria-label={ui.playing?'Pause':'Play'} onclick={()=>ui.playing=!ui.playing}>{#if ui.playing}<Pause size={18}/>{:else}<Play size={18}/>{/if}</button>
-        <label><span class="sr">Move</span><select class="bu-select" data-variant="quiet" bind:value={ui.anim} onchange={()=>ui.frame=0}>{#each m.rig.animations as a}<option value={a.id}>{a.id[0].toUpperCase()+a.id.slice(1).replaceAll('-',' ')}</option>{/each}</select></label>
+        <label class="playback-move"><span class="sr">Move</span><select class="bu-select" data-variant="quiet" title={moveLabel(ui.anim,moveIds)} bind:value={ui.anim} onchange={()=>ui.frame=0}>{#each m.rig.animations as a}<option value={a.id}>{moveLabel(a.id,moveIds)}</option>{/each}</select></label>
         {#if experience.presentation!=='animation'}<span class="small muted">{experience.presentation==='unavailable'?'Unavailable':'Still'}</span>{/if}
         <div class="facing-buttons" role="group" aria-label="Direction">{#each m.rig.directions as d}<button class="bu-action" data-variant="direction" aria-pressed={ui.dir===d.id} aria-label="Face {d.id}" onclick={()=>ui.dir=d.id}>{directionInfo(d.id)?.short??d.id}</button>{/each}</div>
         <button class="bu-action" data-variant="quiet" onclick={()=>ui.sheet='inspect'}><Grid2x2 size={16}/><span>Inspect</span></button>

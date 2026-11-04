@@ -7,7 +7,7 @@
   import { loadProject } from '../lib/store/project.ts'
   import { itemRoute } from './itemRoute.ts'
   import Sprite from './Sprite.svelte'
-  import { groupOf, plainReason } from './model.ts'
+  import { groupOf, plainReason, moveLabel } from './model.ts'
   import { ui, doc, store, genProgress, acceptGen, discardGen, retryGen, wearDraft, type Gen } from './state.svelte.ts'
   import { CircleAlert, CircleCheck, ChevronRight, LoaderCircle, TriangleAlert } from './icons.ts'
   import { app } from '../lib/app.svelte.ts'
@@ -21,6 +21,7 @@
   const res = $derived(store.results[g.draft.spec.id])
   const prev = $derived(res?.preview)
   const anims = $derived(prev?.manifest.rig.animations.filter((a) => g.draft.spec.anims.includes(a.id)) ?? [])
+  const moveIds = $derived(anims.map(a => a.id))
   const anim = $derived(anims.find((a) => a.id === ui.anim) ?? anims[0])
   const dirs = $derived(prev && anim ? prev.manifest.rig.directions.filter((d) => (g.draft.spec.clipDirs?.[anim.id] ?? g.draft.spec.dirs).includes(d.mirrorOf ?? d.id)) : [])
   const k = $derived(Math.max(1, Math.floor(ui.dpr)))
@@ -80,7 +81,7 @@
   {/if}
 
   {#if prev && anim}
-    <label class="field"><span class="label small">Preview move</span><select class="bu-input input" value={anim.id} onchange={(e) => { ui.anim = e.currentTarget.value; ui.frame = 0 }}>{#each anims as a (a.id)}<option value={a.id}>{a.id[0].toUpperCase() + a.id.slice(1).replace(/-/g, ' ')}</option>{/each}</select></label>
+    <label class="field"><span class="label small">Preview move</span><select class="bu-input input" value={anim.id} onchange={(e) => { ui.anim = e.currentTarget.value; ui.frame = 0 }}>{#each anims as a (a.id)}<option value={a.id}>{moveLabel(a.id, moveIds)}</option>{/each}</select></label>
     <div class="review-grid" aria-label="Preview in every direction">
       {#each dirs as d (d.id)}
         <figure>

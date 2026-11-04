@@ -2123,10 +2123,10 @@ test('standing-first items quote only standing and offer actual custom moves one
   await newSheet.getByRole('button', { name: 'Cancel', exact: true }).click()
   const pane = await selectedItemDetails(page)
   const moves = pane.getByRole('combobox', { name: 'Generate item for move', exact: true })
-  await expect(moves.locator('option')).toHaveText(['Custom_walk', 'Custom_cross_punch'])
+  await expect(moves.locator('option')).toHaveText(['Custom walk', 'Custom cross punch'])
   await moves.selectOption('custom_walk')
-  await expect(pane.getByRole('button', { name: /^Make for Custom_walk/ })).toContainText('Est. 12 gens')
-  await pane.getByRole('button', { name: /^Make for Custom_walk/ }).click()
+  await expect(pane.getByRole('button', { name: /^Make for Custom walk/ })).toContainText('Est. 12 gens')
+  await pane.getByRole('button', { name: /^Make for Custom walk/ }).click()
   const connect = page.getByRole('dialog', { name: 'Connect PixelLab', exact: true })
   await connect.getByLabel('API key', { exact: true }).fill('synthetic-progressive-key')
   await page.evaluate(() => {

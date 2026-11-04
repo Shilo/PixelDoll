@@ -4,6 +4,7 @@
   import Sprite from './Sprite.svelte'
   import { ui, doc, store, view, stepPreviewFrame } from './state.svelte.ts'
   import { moveDirs } from '../lib/dress/dress.ts'
+  import { moveLabel } from './model.ts'
   import { ChevronDown, ChevronLeft, ChevronRight, Grid2x2, Image, Minus, Pause, Play, Plus } from './icons.ts'
 
   let box: HTMLElement
@@ -23,6 +24,7 @@
   })
 
   const m = $derived(store.project?.manifest)
+  const moveIds = $derived(m?.rig.animations.map(a => a.id) ?? [])
   // oversize layers (96 px held items) show whole: the stage uses the union frame of every layer around the pivot
   const frame = $derived(m ? bakedFrame(m) : undefined)
   const cellW = $derived(frame?.w ?? 64)
@@ -50,7 +52,7 @@
 
   const wearing = $derived(m ? m.items.filter((it) => it.id !== m.rig.baseItem && doc.items[it.slot] === it.id).map((it) => it.name) : [])
   const name = (d: DirectionName) => d[0].toUpperCase() + d.slice(1)
-  const label = (d: DirectionName) => `${store.projects.find((p) => p.id === doc.id)?.name.replace(/ \(demo\)$/, '') ?? m?.name ?? 'Character'}, ${ui.anim.replace(/-/g, ' ')}, facing ${d}${wearing.length ? `, wearing ${wearing.join(', ')}` : ''}`
+  const label = (d: DirectionName) => `${store.projects.find((p) => p.id === doc.id)?.name.replace(/ \(demo\)$/, '') ?? m?.name ?? 'Character'}, ${moveLabel(ui.anim, moveIds)}, facing ${d}${wearing.length ? `, wearing ${wearing.join(', ')}` : ''}`
   const cellImg = (d: DirectionName) => (view.project && view.anim ? composeCell(view.project, view.items, ui.anim, d, view.cell, frame) : null)
 </script>
 
@@ -86,10 +88,10 @@
       <button class="bu-action btn icon plain" data-variant="quiet" aria-label="Previous frame" title="Previous frame (,)" disabled={(view.anim?.frames.length ?? 0) < 2} onclick={() => stepPreviewFrame(-1)}><ChevronLeft size={16} /></button>
       <span class="small muted">Frame {view.anim ? ui.frame % view.anim.frames.length + 1 : 0} of {view.anim?.frames.length ?? 0}</span>
       <button class="bu-action btn icon plain" data-variant="quiet" aria-label="Next frame" title="Next frame (.)" disabled={(view.anim?.frames.length ?? 0) < 2} onclick={() => stepPreviewFrame(1)}><ChevronRight size={16} /></button>
-      <label class="select-wrap">
+      <label class="select-wrap move-select">
         <span class="sr">Move</span>
-        <select class="bu-select select" bind:value={ui.anim} onchange={() => (ui.frame = 0)}>
-          {#each m.rig.animations as a (a.id)}<option value={a.id}>{a.id[0].toUpperCase() + a.id.slice(1).replace(/-/g, ' ')}</option>{/each}
+        <select class="bu-select select" title={moveLabel(ui.anim, moveIds)} bind:value={ui.anim} onchange={() => (ui.frame = 0)}>
+          {#each m.rig.animations as a (a.id)}<option value={a.id}>{moveLabel(a.id, moveIds)}</option>{/each}
         </select>
         <ChevronDown size={12} />
       </label>
@@ -127,6 +129,10 @@
 <style>
   .canvas-bar { width:max-content; flex-wrap:wrap; justify-content:center; }
   .canvas-bar > :global(*) { flex-shrink:0; }
+  .canvas-bar .move-select { min-width:0; max-width:100%; }
+  .canvas-bar .move-select select { max-width:180px; overflow:hidden; white-space:nowrap; }
+  .canvas-bar .move-select select::picker(select) { max-width:calc(100vw - 24px); }
+  .canvas-bar .move-select option { white-space:normal; overflow-wrap:anywhere; }
   .canvas-bar [aria-label="All directions"] { display:inline-flex; }
   .canvas-bar .select.dir-select { min-width:100px; max-width:124px; }
 </style>

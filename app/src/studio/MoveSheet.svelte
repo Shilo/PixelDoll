@@ -14,7 +14,8 @@
   import { AUTHORED } from '../lib/rig/poses.ts'
   import { MOVE_STEPS, isV13, reservedMove, reviewMoveRecovery, moveEstimate, type BodyPaletteRepairPlan, type MeasurementRecoveryPlan } from './create.ts'
   import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, openProject, pendingMoves, withKey } from './state.svelte.ts'
-  import { bodyQualityNote } from './model.ts'
+  import { bodyQualityNote, moveLabel } from './model.ts'
+  import { directionLabel } from './experience/movement.ts'
   import { Check, ChevronRight, CircleAlert } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
@@ -51,7 +52,7 @@
   // another character's failed move holds every new move; only its own sheet can try it again or start over
   const holder = $derived(!mine && moving.spec && moving.error ? store.projects.find((p) => p.id === moving.projectId)?.name ?? 'that character' : '')
   const stepIx = $derived(MOVE_STEPS.findIndex((s) => s.id === moving.progress?.step))
-  const nice = (s: string) => s[0].toUpperCase() + s.slice(1).replace(/-/g, ' ')
+  const nice = (s: string) => moveLabel(s, options)
   let recovery = $state<MeasurementRecoveryPlan | null>(null)
   let recoveryError = $state('')
   let recoveryChecking = $state(false)
@@ -132,7 +133,7 @@
   {#if holder}<p class="notice small"><CircleAlert size={14} /><span>{nice(moving.spec!.id)} failed on {holder}, so new moves wait. Open it to try again or start over.</span><button class="bu-action btn sm" data-variant="outline" onclick={() => void openProject(moving.projectId)}>Open {holder}</button></p>{/if}
   {#if progress}
     <div class="form">
-      <p style="font-weight:600">{nice(moving.spec!.id)}{moving.spec?.dirs ? ` · ${moving.spec.dirs.map(nice).join(', ')}` : ''}<ApiPeek scope="move-progress" label="Current move generation" plan={moving.spec ? movePlan(rec, moving.spec) : []} activityScope={moving.spec?.activityScope} /></p>
+      <p style="font-weight:600">{nice(moving.spec!.id)}{moving.spec?.dirs ? ` · ${moving.spec.dirs.map(directionLabel).join(', ')}` : ''}<ApiPeek scope="move-progress" label="Current move generation" plan={moving.spec ? movePlan(rec, moving.spec) : []} activityScope={moving.spec?.activityScope} /></p>
       {#if moving.spec?.itemMethod === 'grid'}<p class="muted small">Only the selected item frames are redrawn; the body stays fixed. Results that fail hard checks keep the previous item frames.</p>{/if}
       <ol class="steps-list">
         {#each MOVE_STEPS as s, i (s.id)}
@@ -151,7 +152,7 @@
         <p class="notice warn small">Reuse the completed body frames and joint results.{' '}{#if recovery.checks}Retry {recovery.checks} unfinished joint {recovery.checks === 1 ? 'check' : 'checks'} · estimated {recovery.gens.toFixed(1)} gens or ${recovery.usd.toFixed(3)}. Unknown checks may already have charged; retrying can charge again. PixelLab billing and queue time vary.{:else}No new body or joint requests are made.{/if}{#if recoveryItemGens}{' '}Selected equipment poses follow after the body passes · estimated {Math.ceil(recoveryItemGens)} additional gens, with retries and dollar billing possible.{/if}</p>
       {/if}
       {#if colorRepair}
-        <p class="notice warn small">Match {colorRepair.changedPixels} nearby color {colorRepair.changedPixels === 1 ? 'pixel' : 'pixels'} to the standing palette across {colorRepair.changedFrames} cached {colorRepair.directions.map(nice).join(', ')} {colorRepair.changedFrames === 1 ? 'frame' : 'frames'}. The body shape stays fixed; other colors are left alone. Recheck {colorRepair.checks} changed frames · estimated {colorRepair.gens.toFixed(1)} gens or ${colorRepair.usd.toFixed(3)}.{#if colorRepair.itemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(colorRepair.itemGens)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails.</p>
+        <p class="notice warn small">Match {colorRepair.changedPixels} nearby color {colorRepair.changedPixels === 1 ? 'pixel' : 'pixels'} to the standing palette across {colorRepair.changedFrames} cached {colorRepair.directions.map(directionLabel).join(', ')} {colorRepair.changedFrames === 1 ? 'frame' : 'frames'}. The body shape stays fixed; other colors are left alone. Recheck {colorRepair.checks} changed frames · estimated {colorRepair.gens.toFixed(1)} gens or ${colorRepair.usd.toFixed(3)}.{#if colorRepair.itemGens} Selected equipment poses follow after the body passes · estimated {Math.ceil(colorRepair.itemGens)} additional gens.{/if} PixelLab may bill dollars; quality retries cost extra and queue time varies. Existing body views are kept if a check still fails.</p>
       {/if}
       {#if recoveryError}<p class="notice bad small"><CircleAlert size={14} />{recoveryError}</p>{/if}
       {#if moving.done && moving.fitIds.length}<p class="notice small"><Check size={14} /><span>The body move is ready. {moving.fitIds.length} shared equipment {moving.fitIds.length === 1 ? 'copy needs' : 'copies need'} a separately priced animation review.</span><button class="bu-action btn sm" data-variant="outline" onclick={() => (ui.sheet = 'activity')}>Review equipment fits</button></p>{/if}
@@ -173,7 +174,7 @@
       {#if replacing}
         <div class="field">
           <span class="label">Views to replace</span>
-          {#each availableDirs as dir (dir)}<label class="check"><input type="checkbox" checked={selectedDirs.includes(dir)} onchange={(e) => (selectedDirs = e.currentTarget.checked ? [...selectedDirs, dir] : selectedDirs.filter((d) => d !== dir))} />{nice(dir)}</label>{/each}
+          {#each availableDirs as dir (dir)}<label class="check"><input type="checkbox" checked={selectedDirs.includes(dir)} onchange={(e) => (selectedDirs = e.currentTarget.checked ? [...selectedDirs, dir] : selectedDirs.filter((d) => d !== dir))} />{directionLabel(dir)}</label>{/each}
           <p class="notice warn small">Only selected body views are replaced. Equipment checked below is re-posed for those views; other equipment stays hidden there until remade. Other views and moves stay fixed.{#if m?.rig.directions.some((d) => d.mirrorOf)} Mirrored views follow their source.{/if}</p>
         </div>
       {:else}<p class="faint small">Choose an existing move to replace selected views.</p>{/if}
