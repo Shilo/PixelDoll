@@ -50,16 +50,25 @@ export function workerMessage(worker: ServiceWorker, type: string, build?: strin
 
 async function inspectWorker() {
   if (!registration || stopped) return
-  const worker = registration.waiting ?? registration.active
+  const preferred = () => registration?.waiting ?? registration?.active
+  const worker = preferred()
   if (!worker) return
-  const release = readRelease(await workerMessage(worker, 'GET_RELEASE'))
-  if (stopped) return
-  if (release.build !== __APP_BUILD__ && release.build !== latest?.build) return
+  let release: Release
+  try { release = readRelease(await workerMessage(worker, 'GET_RELEASE')) }
+  catch (error) {
+    // A replaced worker can stop responding while a newer worker has already passed verification.
+    if (stopped || worker !== preferred()) return
+    throw error
+  }
+  const relevant = () => !stopped && (release.build === __APP_BUILD__ || (release.build === latest?.build && worker === preferred()))
+  if (!relevant()) return
   try {
     const check = await workerMessage(worker, 'VERIFY', release.build)
+    if (!relevant()) return
     if (check.ready !== true) throw new Error('The downloaded app is incomplete.')
     if (release.build === __APP_BUILD__) pwa.update(s => ({ ...s, offlineReady: true }))
   } catch (e) {
+    if (!relevant()) return
     pwa.update(s => ({ ...s, ...(release.build === __APP_BUILD__ ? { offlineReady: false } : { ready: false }), error: (e as Error).message }))
     throw e
   }
