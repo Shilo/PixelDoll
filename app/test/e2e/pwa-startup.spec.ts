@@ -397,6 +397,8 @@ for (const startsOffline of [true, false]) {
       held?.release()
       const update = page.getByRole('button', { name: /^Update to v11\.10\.2/ }).first()
       await expect(update).toBeEnabled({ timeout: 20_000 })
+      // A manual click would itself cancel an automatic attempt, so observe readiness before interacting.
+      await expect(page.waitForEvent('framenavigated', { predicate: frame => frame === page.mainFrame(), timeout: 2_000 })).rejects.toThrow(/Timeout/)
       await loadedBuild(page, a)
       await update.click()
       await loadedBuild(page, b)
