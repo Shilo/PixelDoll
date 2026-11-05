@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type BrowserContext, type Page } from '@playwright/test'
 import { STARTUP_AUTO_UPDATE_MS } from '../../src/lib/startup-update.ts'
 import { pwaServer, testRelease, type TestRelease } from './pwa-test-server.ts'
 
@@ -34,9 +34,9 @@ async function workerBuild(page: Page, slot: 'active' | 'waiting') {
   }, slot)
 }
 
-async function loadedBuild(page: Page, release: TestRelease) {
+async function loadedBuild(page: Page, release: TestRelease, timeout?: number) {
   try {
-    await expect(page.locator('script[type="module"]').first()).toHaveAttribute('src', new RegExp(release.release.build))
+    await expect(page.locator('script[type="module"]').first()).toHaveAttribute('src', new RegExp(release.release.build), { timeout })
   } catch (error) {
     // Preserve the failed assertion and capture only lifecycle metadata, never fields, storage, or credentials.
     const diagnostic = await page.evaluate(() => ({
@@ -93,7 +93,7 @@ async function pauseDownloadClock(page: Page) {
   await page.addInitScript(() => {
     const events: unknown[] = []
     Object.assign(window, { startupTestEvents: events })
-    for (const type of ['focus', 'blur', 'visibilitychange', 'pageshow', 'pagehide', 'popstate', 'hashchange', 'storage', 'pointerdown', 'click', 'keydown', 'beforeinput', 'input', 'compositionstart', 'paste', 'drop', 'wheel', 'touchstart']) {
+    for (const type of ['focus', 'blur', 'visibilitychange', 'pageshow', 'pagehide', 'popstate', 'hashchange', 'storage', 'offline', 'online', 'pointerdown', 'click', 'keydown', 'beforeinput', 'input', 'compositionstart', 'paste', 'drop', 'wheel', 'touchstart']) {
       addEventListener(type, event => {
         if (events.length < 128) events.push({ type, trusted: event.isTrusted, targetIsWindow: event.target === window,
           targetTag: event.target instanceof Element ? event.target.tagName : '', focused: document.hasFocus(), visible: document.visibilityState, at: event.timeStamp })
@@ -273,7 +273,7 @@ test('a download that takes more than two seconds still auto-updates on the firs
     await page.waitForFunction(start => performance.now() - start >= 3_000, visibleAt)
     expect(navigations).toEqual([server.url])
     held.release()
-    await loadedBuild(page, b)
+    await loadedBuild(page, b, STARTUP_AUTO_UPDATE_MS)
     expect(navigations).toEqual([server.url, server.url])
     await context.setOffline(true)
     await verifyFiles(page, b)
@@ -371,6 +371,39 @@ test('an offline cached launch is interactive without waiting for an update chec
   } finally { await context.setOffline(false); await server.close() }
 })
 
+for (const startsOffline of [true, false]) {
+  test(`reconnecting inside the startup window leaves the update manual (launch offline: ${startsOffline})`, async ({ page, context }) => {
+    const a = await testRelease('startup-reconnect-a', '11.10.1'), b = await changedRelease('startup-reconnect-b', '11.10.2'), server = await pwaServer(a)
+    let held: ReturnType<typeof server.hold> | undefined
+    try {
+      await cachedApp(page, server.url, a)
+      await stage(page, server, b)
+      await pauseDownloadClock(page)
+      if (startsOffline) await context.setOffline(true)
+      else held = server.hold('release.json')
+      await page.reload()
+      await expectControlledNavigation(page)
+      await expect(page.locator('.customize-action')).toBeEnabled()
+      await loadedBuild(page, a)
+      if (!startsOffline) {
+        await held!.requested
+        await context.setOffline(true)
+        await expect.poll(() => page.evaluate(() => (window as unknown as { startupTestEvents: { type: string; trusted: boolean }[] }).startupTestEvents
+          .some(event => event.type === 'offline' && event.trusted))).toBe(true)
+      }
+      expect(await page.evaluate(() => navigator.onLine)).toBe(false)
+      await page.clock.fastForward(4_000)
+      await context.setOffline(false)
+      held?.release()
+      const update = page.getByRole('button', { name: /^Update to v11\.10\.2/ }).first()
+      await expect(update).toBeEnabled({ timeout: 20_000 })
+      await loadedBuild(page, a)
+      await update.click()
+      await loadedBuild(page, b)
+    } finally { held?.release(); await context.setOffline(false); await server.close() }
+  })
+}
+
 test('an incomplete release cannot trigger a startup reload', async ({ page }) => {
   const a = await testRelease('startup-partial-a', '11.4.1'), b = await changedRelease('startup-partial-b', '11.4.2'), server = await pwaServer(a)
   try {
@@ -387,7 +420,7 @@ test('an incomplete release cannot trigger a startup reload', async ({ page }) =
   } finally { await server.close() }
 })
 
-test('activation completing after the startup deadline leaves the current document open', async ({ page, context }) => {
+async function checkActivationCancellation(page: Page, context: BrowserContext, cancelByInput: boolean) {
   const a = await testRelease('startup-activate-a', '11.5.1'), b = await changedRelease('startup-activate-b', '11.5.2'), server = await pwaServer(a)
   let fresh: Page | undefined
   try {
@@ -410,11 +443,22 @@ test('activation completing after the startup deadline leaves the current docume
     })
     await fresh.bringToFront(); await fresh.goto(server.url)
     await expect(fresh.locator('html')).toHaveAttribute('data-startup-activation-held', 'yes')
-    await waitPastOpportunity(fresh)
+    if (cancelByInput) {
+      await fresh.clock.fastForward(4_000)
+      await fresh.keyboard.press('Shift') // Trusted input alone must cancel, even when no form is open.
+    } else await waitPastOpportunity(fresh)
+    const reloaded = fresh.waitForEvent('framenavigated', { predicate: frame => frame === fresh?.mainFrame(), timeout: 2_000 })
     await fresh.evaluate(() => { (window as unknown as { releaseStartupActivation: () => void }).releaseStartupActivation() })
+    await expect(reloaded).rejects.toThrow(/Timeout/)
     await expect.poll(() => workerBuild(fresh!, 'active')).toBe(b.release.build)
     await loadedBuild(fresh, a)
     await expect(fresh.getByRole('button', { name: /^Update to v11\.5\.2/ }).first()).toBeEnabled()
     await expect(fresh.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toHaveCount(0)
   } finally { await fresh?.close(); await server.close() }
-})
+}
+
+for (const cancelByInput of [false, true]) {
+  test(`activation completing after ${cancelByInput ? 'trusted input' : 'the startup deadline'} leaves the current document open`, async ({ page, context }) => {
+    await checkActivationCancellation(page, context, cancelByInput)
+  })
+}
