@@ -104,13 +104,15 @@ export function checkForUpdate(): Promise<void> {
       } catch (e) { failures.push((e as Error).message) }
       try { if (!registration && registerWorker) await bounded(registerWorker(), 'Offline setup did not respond.') }
       catch (e) { failures.push(`Offline setup failed: ${(e as Error).message}`) }
-      // Offline startup still verifies cached files even when metadata discovery failed.
-      try { await inspectWorker() }
-      catch (e) { failures.push((e as Error).message) }
-      try { if (registration) await bounded(registration.update(), 'The browser update check did not respond.') }
-      catch (e) { failures.push((e as Error).message) }
-      try { await inspectWorker() }
-      catch (e) { failures.push((e as Error).message) }
+      const inspect = () => inspectWorker().catch(e => { failures.push((e as Error).message) })
+      // The old cache may need a slow repair. Its health check must not delay staging or verifying the new release.
+      const update = async () => {
+        if (!registration) return
+        try { await bounded(registration.update(), 'The browser update check did not respond.') }
+        catch (e) { failures.push((e as Error).message) }
+        await inspect()
+      }
+      await Promise.all([inspect(), update()])
       if (!stopped && failures.length) pwa.update(s => ({ ...s, error: `${[...new Set(failures)].join(' ')} Checks resume automatically when connected.` }))
     } while (checkAgain && !stopped)
   })().finally(() => { checking = undefined })

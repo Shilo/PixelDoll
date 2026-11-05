@@ -210,6 +210,21 @@ describe('PWA deployment discovery remains independent of browser worker stalls'
     expect(app.reload).not.toHaveBeenCalled()
   })
 
+  it('stages and verifies the new release while verification of the current cache stalls', async () => {
+    const app = await setup()
+    app.registration.waiting = null
+    app.holdMessage('VERIFY', never(), current.build)
+    let finishUpdate!: () => void
+    app.update.mockImplementationOnce(() => new Promise<void>(resolve => { finishUpdate = resolve }))
+    app.start(); await settle()
+    expect(app.messages).toContain('VERIFY')
+    expect(app.update).toHaveBeenCalledOnce()
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: false })
+
+    app.stage(next); finishUpdate(); await settle()
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true })
+  })
+
   it('recovers registration after an initial failure without losing the version notice or automatically reloading', async () => {
     const app = await setup()
     app.getRegistration.mockResolvedValue(undefined)

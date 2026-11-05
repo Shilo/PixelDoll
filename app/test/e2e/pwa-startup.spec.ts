@@ -206,6 +206,56 @@ test('reopening the sole cached window discovers a deployment without another ta
   } finally { await fresh?.close(); await server.close() }
 })
 
+test('saved failed generation does not block either startup or manual updates when Activity is idle', async ({ page }) => {
+  const a = await testRelease('startup-halted-a', '11.8.1'), b = await testRelease('startup-halted-b', '11.8.2'), c = await testRelease('startup-halted-c', '11.8.3')
+  const server = await pwaServer(a)
+  let held: ReturnType<typeof server.hold> | undefined
+  try {
+    await cachedApp(page, server.url, a)
+    const failed = { id: 'studio-create', spec: { name: 'Saved failed character', description: 'Body', seed: 9, size: 48, dirs: 4 }, status: 'failed', error: 'Fixture failure' }
+    await page.evaluate(record => new Promise<void>((resolve, reject) => {
+      const open = indexedDB.open('pixeldoll')
+      open.onerror = () => reject(open.error)
+      open.onsuccess = () => {
+        const db = open.result, tx = db.transaction('projects', 'readwrite')
+        tx.objectStore('projects').put(record, record.id)
+        tx.oncomplete = () => { db.close(); resolve() }
+        tx.onerror = () => { db.close(); reject(tx.error) }
+      }
+    }), failed)
+    await stage(page, server, b)
+    held = server.hold('release.json')
+    await pauseDownloadClock(page)
+    await page.reload()
+    await held.requested
+    await loadedBuild(page, a)
+    held.release()
+    await loadedBuild(page, b)
+    await page.clock.resume()
+    await page.getByRole('button', { name: 'More options', exact: true }).click()
+    await page.locator('#experience-options').getByRole('button', { name: /^Activity/ }).click()
+    const activity = page.getByRole('dialog', { name: 'Activity', exact: true })
+    await expect(activity).toContainText('Nothing generating.')
+    await activity.getByRole('button', { name: 'Done', exact: true }).click()
+
+    await stage(page, server, c)
+    const update = page.getByRole('button', { name: /^Update to v11\.8\.3/ }).first()
+    await expect(update).toBeEnabled()
+    await update.click()
+    await loadedBuild(page, c)
+    const restored = await page.evaluate(id => new Promise<unknown>((resolve, reject) => {
+      const open = indexedDB.open('pixeldoll')
+      open.onerror = () => reject(open.error)
+      open.onsuccess = () => {
+        const db = open.result, request = db.transaction('projects').objectStore('projects').get(id)
+        request.onsuccess = () => { db.close(); resolve(request.result) }
+        request.onerror = () => { db.close(); reject(request.error) }
+      }
+    }), failed.id)
+    expect(restored).toEqual(failed)
+  } finally { held?.release(); await server.close() }
+})
+
 test('late staging never holds startup and leaves a versioned manual update that refreshes changed bytes offline', async ({ page, context }) => {
   const a = await testRelease('startup-late-a', '11.1.1'), b = await changedRelease('startup-late-b', '11.1.2'), server = await pwaServer(a)
   let held: ReturnType<typeof server.hold> | undefined

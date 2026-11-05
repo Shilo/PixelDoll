@@ -470,14 +470,18 @@ export function deletionBlocked(): string {
   if (!queue.idle() || gens.some((g) => g.phase === 'running') || settling.size || (creating.spec && !creating.projectId) || (moving.spec && !moving.done) || (settingUp.spec && !settingUp.done)) return 'Finish or dismiss pending generation work before deleting a character.';
   return '';
 }
-/** Nothing in this tab is generating, between steps of a flow, holding the queue (a failed create or move holds it),
- *  taking over, or waiting in Connect to spend, so another tab may take over the jobs. */
-function workIdle() {
-  return queue.idle() && !gens.some((g) => g.phase === 'running') && !settling.size && !(creating.spec && !creating.projectId)
-    && !(moving.spec && !moving.done) && !moving.queued.length && !(settingUp.spec && !settingUp.done)
+function generationSettled() {
+  return !gens.some((g) => g.phase === 'running') && !settling.size
     && !createRunning && !moveRunning && !setupRunning && !takeOverRunning && !afterConnect
     && !itemStarting && !runningGens.size
     && !equipment.preparing.length && !equipment.running.length && !equipment.fits.some((f) => f.stage.endsWith('running'));
+}
+const heldCreate = () => creating.spec && !creating.projectId;
+const heldMove = () => moving.spec && !moving.done;
+const heldSetup = () => settingUp.spec && !settingUp.done;
+/** Failed flows hold queue leadership so a waiting action in another tab cannot replace them. */
+function workIdle() {
+  return queue.idle() && generationSettled() && !heldCreate() && !heldMove() && !moving.queued.length && !heldSetup();
 }
 queue.canYield = workIdle;
 
@@ -486,8 +490,32 @@ export function updateBlocked(): string {
   if (!studioReady || doc.loading) return 'Wait for your character and saved work to finish loading.';
   if (ui.sheet || ui.sheetBusy) return 'Finish and close the open panel before updating.';
   if (document.querySelector('[data-update-draft]')) return 'Save or cancel your outfit name before updating.';
-  if (!workIdle() || ui.waitingForTab) return 'Finish or dismiss pending generation work in Activity before updating.';
+  if (!queue.idle() || ui.waitingForTab) return 'Finish or dismiss pending generation work in Activity before updating.';
+  if (!generationSettled() || (heldCreate() && !creating.error) || (heldMove() && !moving.error)
+    || (moving.queued.length && !heldMove()) || (heldSetup() && !settingUp.error)) return 'Wait for PixelDoll to finish processing your generation work, then try updating again.';
   return '';
+}
+
+/** A halted flow can survive a reload only if the current failure and any queued moves actually reached storage. */
+async function verifyHaltedFlows() {
+  const snapshots = () => [
+    { key: CREATE_KEY, held: heldCreate(), flow: creating, fallback: STOPPED },
+    { key: MOVE_KEY, held: heldMove(), flow: moving, fallback: STOPPED },
+    { key: SETUP_KEY, held: heldSetup(), flow: settingUp, fallback: SETUP_STOPPED },
+  ].filter(({ held }) => held).map(({ key, flow, fallback }) => ({
+    key, fallback, value: stableStringify({ spec: flow.spec, progress: flow.progress, error: flow.error,
+      ...(key === MOVE_KEY ? { projectId: moving.projectId, queued: moving.queued } : {}) }),
+  }));
+  const before = snapshots();
+  if (!before.length) return;
+  const verified = await Promise.all(before.map(async ({ key, value, fallback }) => {
+    const record = await db.get<FlowDraft<unknown> & { projectId?: string; queued?: QueuedMove[] }>('projects', key);
+    return record?.spec && halted(record) && value === stableStringify({ spec: record.spec, progress: record.progress ?? null, error: record.error || fallback,
+      ...(key === MOVE_KEY ? { projectId: record.projectId, queued: record.queued ?? [] } : {}) });
+  })).catch(() => [false]);
+  if (!verified.every(Boolean) || stableStringify(before) !== stableStringify(snapshots())) {
+    throw new Error('PixelDoll could not confirm that your interrupted generation work was saved. Review it in the character, Moves, or Setup panel before updating.');
+  }
 }
 export async function prepareForUpdate(): Promise<void> {
   const reason = updateBlocked();
@@ -496,6 +524,7 @@ export async function prepareForUpdate(): Promise<void> {
   if (edits !== savedEdits && !pendingSave) save();
   await flushSave();
   if (edits !== savedEdits) throw new Error('Your outfit could not be saved. Resolve the storage error before updating.');
+  await verifyHaltedFlows();
   const changed = updateBlocked();
   if (changed) throw new Error(changed);
 }
@@ -656,6 +685,7 @@ export function pick(id: string) {
 // resend paid calls, so it waits for review instead of resuming by itself.
 export const REQUEST_TEXT = 3;
 const STOPPED = 'Generation stopped. Review Activity before trying again.';
+const SETUP_STOPPED = 'Setup stopped. Review Activity before trying again.';
 const halted = (r: { status?: string; requestText?: number }) => r.status === 'failed' || r.requestText !== REQUEST_TEXT;
 export interface Gen { draft: Draft; input: NewItemInput; phase: 'running' | 'review' | 'failed'; status: string; error?: string; requestText?: number }
 export const gens = $state<Gen[]>([]);
@@ -1249,7 +1279,7 @@ export async function resumeSetup() {
   setupResumed = true;
   const rec = await db.get<FlowDraft<SetupSpec>>('projects', SETUP_KEY).catch(() => undefined);
   if (!rec?.spec || (settingUp.spec && !settingUp.done)) return;
-  if (halted(rec)) Object.assign(settingUp, { spec: rec.spec, progress: rec.progress ?? null, error: rec.error || 'Setup stopped. Review Activity before trying again.', done: false, warnings: [] });
+  if (halted(rec)) Object.assign(settingUp, { spec: rec.spec, progress: rec.progress ?? null, error: rec.error || SETUP_STOPPED, done: false, warnings: [] });
   else void startSetup(rec.spec);
 }
 export async function dismissSetup() {

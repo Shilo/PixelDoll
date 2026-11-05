@@ -23,6 +23,7 @@ function stubGlobals() {
   vi.stubGlobal('$derived', Object.assign(identity, { by: () => undefined }))
   vi.stubGlobal('innerWidth', 1440); vi.stubGlobal('innerHeight', 900); vi.stubGlobal('devicePixelRatio', 1)
   vi.stubGlobal('matchMedia', () => ({ matches: false }))
+  vi.stubGlobal('document', { querySelector: () => null })
 }
 // Build the module graph once outside any test's timeout; each test's fresh import after resetModules is then fast.
 beforeAll(async () => { stubGlobals(); await import('../../src/studio/state.svelte.ts'); vi.unstubAllGlobals() })
@@ -118,8 +119,12 @@ for (const kind of ['create', 'move', 'setup'] as const) {
     vi.resetModules()
     const restored = await import('../../src/studio/state.svelte.ts')
     await resume(restored)
+    restored.doc.loading = false; restored.startupResumed()
     expect(mocks[kind]).not.toHaveBeenCalled()
     expect(stateOf(restored)).toMatchObject({ spec: failed.spec, error: 'Known terminal failure', progress: null })
+    const { queue } = await import('../../src/lib/pixellab/queue.ts')
+    expect(queue.canYield()).toBe(false)
+    await expect(restored.prepareForUpdate()).resolves.toBeUndefined()
     const retry = pending<string>()
     mocks[kind].mockReturnValueOnce(retry.promise)
     const running = start(restored, { ...failed.spec, seed: 2 })
@@ -147,6 +152,8 @@ for (const kind of ['create', 'move', 'setup'] as const) {
     await resume(s)
     expect(mocks[kind]).not.toHaveBeenCalled()
     expect(stateOf(s).error).toMatch(/stopped\. Review Activity before trying again\./)
+    s.doc.loading = false; s.startupResumed()
+    await expect(s.prepareForUpdate()).resolves.toBeUndefined()
   })
 
   test.each(['Original failure', ''])(`${kind} reports failed-marker storage errors, freezes late progress, and releases its guard (%s)`, async (message) => {
@@ -162,6 +169,8 @@ for (const kind of ['create', 'move', 'setup'] as const) {
     saved.reject(new Error('Storage unavailable')); await running
     expect(stateOf(s).error).toContain(message)
     expect(stateOf(s).error).toContain('Dismiss this operation before reloading')
+    s.doc.loading = false; s.startupResumed()
+    await expect(s.prepareForUpdate()).rejects.toThrow('could not confirm')
     mocks.put.mockResolvedValue(undefined); mocks[kind].mockRejectedValue(new Error('Retry entered'))
     await start(s)
     expect(mocks[kind]).toHaveBeenCalledTimes(2)
@@ -597,6 +606,28 @@ describe('move queue', () => {
     await restored.dismissMove()
     expect(restored.moving.queued).toEqual([])
     expect(records.has('studio-move')).toBe(false)
+  })
+
+  test('updating preserves a halted move and its stored queue, but waits for an unsaved change', async () => {
+    const records = storage()
+    const id = 'studio-move'
+    records.set(id, { id, spec: idle, projectId: 'project', status: 'failed', error: 'Idle failed', queued: [{ projectId: 'project', spec: walk }] })
+    const s = await import('../../src/studio/state.svelte.ts')
+    await s.resumeMove()
+    s.doc.loading = false; s.startupResumed()
+    await expect(s.prepareForUpdate()).resolves.toBeUndefined()
+
+    const read = pending<unknown>(), write = pending<void>()
+    const saved = structuredClone(records.get(id))
+    mocks.get.mockReturnValueOnce(read.promise)
+    mocks.put.mockReturnValueOnce(write.promise)
+    const update = s.prepareForUpdate()
+    await vi.waitFor(() => expect(mocks.get).toHaveBeenCalledTimes(3))
+    const adding = s.queueMoves('project', [{ ...walk, id: 'run' }])
+    read.resolve(saved)
+    await expect(update).rejects.toThrow('could not confirm')
+    write.resolve(); await adding
+    expect(mocks.move).not.toHaveBeenCalled()
   })
 
   test('a move queued while the last one finishes is started, not left waiting', async () => {
