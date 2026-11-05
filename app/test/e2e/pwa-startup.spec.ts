@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { expect, test, type Page } from '@playwright/test'
+import { STARTUP_AUTO_UPDATE_MS } from '../../src/lib/startup-update.ts'
 import { pwaServer, testRelease, type TestRelease } from './pwa-test-server.ts'
 
 const changedPublic = ['appearance.js', 'icons/exports/godot.svg', 'fixtures/s2/layers/head/helmet_steel/main/walk.png', 'worlds/obsidian-stage.png']
@@ -79,9 +80,9 @@ async function verifyFiles(page: Page, release: TestRelease, inventory = release
 }
 
 async function waitPastOpportunity(page: Page) {
-  // Measure from a visible app, after its mount, rather than guessing when startup code or storage finished.
-  const started = await page.evaluate(() => performance.now())
-  await page.waitForFunction(started => performance.now() - started >= 2_100, started)
+  // Expire the wall-clock guard without expiring the toast or the pending worker RPC's own timer.
+  const now = await page.evaluate(() => Date.now())
+  await page.clock.setSystemTime(now + STARTUP_AUTO_UPDATE_MS + 1)
 }
 
 async function pauseDownloadClock(page: Page) {
@@ -256,12 +257,36 @@ test('saved failed generation does not block either startup or manual updates wh
   } finally { held?.release(); await server.close() }
 })
 
+test('a download that takes more than two seconds still auto-updates on the first opening', async ({ page, context }) => {
+  const a = await testRelease('startup-slow-a', '11.9.1'), b = await changedRelease('startup-slow-b', '11.9.2'), server = await pwaServer(a)
+  let held: ReturnType<typeof server.hold> | undefined
+  try {
+    await cachedApp(page, server.url, a)
+    held = server.hold('appearance.js'); server.deploy(b)
+    const navigations: string[] = []
+    page.on('framenavigated', frame => { if (frame === page.mainFrame()) navigations.push(frame.url()) })
+    await page.reload()
+    await held.requested
+    await expect(page.locator('.customize-action')).toBeEnabled()
+    await loadedBuild(page, a)
+    const visibleAt = await page.evaluate(() => performance.now())
+    await page.waitForFunction(start => performance.now() - start >= 3_000, visibleAt)
+    expect(navigations).toEqual([server.url])
+    held.release()
+    await loadedBuild(page, b)
+    expect(navigations).toEqual([server.url, server.url])
+    await context.setOffline(true)
+    await verifyFiles(page, b)
+  } finally { held?.release(); await context.setOffline(false); await server.close() }
+})
+
 test('late staging never holds startup and leaves a versioned manual update that refreshes changed bytes offline', async ({ page, context }) => {
   const a = await testRelease('startup-late-a', '11.1.1'), b = await changedRelease('startup-late-b', '11.1.2'), server = await pwaServer(a)
   let held: ReturnType<typeof server.hold> | undefined
   try {
     await cachedApp(page, server.url, a)
     held = server.hold('appearance.js'); server.deploy(b)
+    await pauseDownloadClock(page)
     await page.reload()
     await expect(page.locator('.customize-action')).toBeVisible()
     await held.requested
@@ -274,6 +299,7 @@ test('late staging never holds startup and leaves a versioned manual update that
     await loadedBuild(page, a)
     await update.click()
     await loadedBuild(page, b)
+    await page.clock.resume()
     await expect(page.locator('html')).toHaveAttribute('data-startup-artwork-release', 'B')
     await context.setOffline(true)
     await verifyFiles(page, b)
@@ -287,9 +313,12 @@ test('trusted interaction during the startup opportunity preserves an unfinished
     await cachedApp(page, server.url, a)
     await stage(page, server, b)
     held = server.hold('release.json')
-    fresh = await context.newPage(); await fresh.bringToFront(); await fresh.goto(server.url)
+    fresh = await context.newPage(); await fresh.bringToFront()
+    await pauseDownloadClock(fresh)
+    await fresh.goto(server.url)
     await expect(fresh.locator('.customize-action')).toBeVisible()
     await held.requested
+    await fresh.clock.fastForward(4_000)
     await fresh.getByRole('button', { name: 'New character', exact: true }).click()
     const name = fresh.getByRole('dialog', { name: 'New character', exact: true }).getByRole('textbox', { name: 'Name', exact: true })
     await name.fill('Typed before the update was ready')
@@ -364,6 +393,7 @@ test('activation completing after the startup deadline leaves the current docume
   try {
     await cachedApp(page, server.url, a); await stage(page, server, b)
     fresh = await context.newPage()
+    await pauseDownloadClock(fresh)
     await fresh.addInitScript(() => {
       const original = ServiceWorker.prototype.postMessage
       ServiceWorker.prototype.postMessage = function(message: unknown, transfer?: Transferable[] | StructuredSerializeOptions) {

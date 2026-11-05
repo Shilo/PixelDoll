@@ -75,7 +75,7 @@ async function setup() {
   runInNewContext(readFileSync(new URL('../../public/install.js', import.meta.url), 'utf8'), { window })
   vi.stubGlobal('window', window)
   vi.stubGlobal('document', { baseURI: scope, visibilityState: 'visible', hasFocus: () => true, wasDiscarded: false, prerendering: false, querySelector: () => null, querySelectorAll: () => [], addEventListener, removeEventListener })
-  vi.stubGlobal('navigator', { serviceWorker })
+  vi.stubGlobal('navigator', { serviceWorker, onLine: true })
   vi.stubGlobal('addEventListener', addEventListener)
   vi.stubGlobal('removeEventListener', removeEventListener)
   vi.stubGlobal('matchMedia', matchMedia)
@@ -311,10 +311,12 @@ describe('automatic startup updates revalidate asynchronous work', () => {
     let release!: () => void
     app.holdMessage(type, new Promise<void>(resolve => { release = resolve }))
     try {
+      const downloadTime = 4_000
+      await vi.advanceTimersByTimeAsync(downloadTime)
       const result = app.client.applyUpdate(async () => {}, app.automatic).then(() => null, error => error)
       await settle()
       expect(app.messages).toContain(type)
-      await vi.advanceTimersByTimeAsync(2_001)
+      await vi.advanceTimersByTimeAsync(app.policy.STARTUP_AUTO_UPDATE_MS - downloadTime + 1)
       release(); await settle()
       expect(await result).toBeInstanceOf(app.policy.StartupUpdateCancelled)
       expect(app.beforeReload).not.toHaveBeenCalled()
@@ -333,7 +335,7 @@ describe('automatic startup updates revalidate asynchronous work', () => {
       const result = app.client.applyUpdate(async () => { if (++preparing === 3) await finalSave }, app.automatic).then(() => null, error => error)
       await settle()
       expect(preparing).toBe(3)
-      await vi.advanceTimersByTimeAsync(2_001)
+      await vi.advanceTimersByTimeAsync(app.policy.STARTUP_AUTO_UPDATE_MS + 1)
       release(); await settle()
       expect(await result).toBeInstanceOf(app.policy.StartupUpdateCancelled)
       expect(app.reload).not.toHaveBeenCalled()

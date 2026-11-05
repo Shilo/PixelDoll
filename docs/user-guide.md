@@ -316,9 +316,9 @@ for why there are dedicated exports for these engines and when more would be use
   On iPhone or iPad, use Safari's **Share > Add to Home Screen** and enable **Open as Web App** if offered; Safari on
   Mac offers **Add to Dock**. Install promotion hides once installation is confirmed or PixelDoll launches as an
   installed app. A used or dismissed prompt stays unavailable until the browser offers another one.
-- **Updates:** on a fresh opening, a complete update can reload automatically within the first two seconds after the
-  app appears. The app remains usable while checking; starting to use it cancels automatic reloading. Offline, slow,
-  incomplete or busy updates keep the current app open. Other updates show an **Update to v…** notice for 15 seconds. Hovering or
+- **Updates:** when you open PixelDoll online, it can reload automatically if an update is ready within 15 seconds of
+  the app appearing. You can use the app immediately. Starting to use it, switching away, or going offline ends automatic
+  reloading for that launch. Updates that need your approval show an **Update to v…** notice for 15 seconds. Hovering or
   keyboard focus keeps it open; it remains available from **More options** after the notice closes. Click when ready;
   only this tab reloads. Finish and close panels, save or cancel an outfit name, and finish or dismiss pending generation
   work first. Saved characters and outfits stay; the view and undo history reset. A session-only PixelLab connection

@@ -1,5 +1,5 @@
 /** The app stays interactive. This is an opportunity to reload, never a startup wait. */
-export const STARTUP_AUTO_UPDATE_MS = 2000
+export const STARTUP_AUTO_UPDATE_MS = 15_000
 export class StartupUpdateCancelled extends Error {
   constructor() { super('The startup update window closed. Update when you are ready.') }
 }
@@ -12,7 +12,7 @@ export function observeStartupUpdate() {
   const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined
   const lifecycle = document as Document & { wasDiscarded?: boolean; prerendering?: boolean }
   eligible = !!navigation && ['navigate', 'reload'].includes(navigation.type) && !lifecycle.wasDiscarded
-    && !lifecycle.prerendering && document.visibilityState === 'visible' && document.hasFocus()
+    && !lifecycle.prerendering && navigator.onLine && document.visibilityState === 'visible' && document.hasFocus()
   marker = `pixeldoll.startupUpdate:${new URL(import.meta.env.BASE_URL, document.baseURI).href}`
   try {
     // Suppress the document reached by our own reload, even if a deployment race served a different target.
@@ -25,7 +25,7 @@ export function observeStartupUpdate() {
   const visibility = () => { if (document.visibilityState !== 'visible') cancel() }
   const restored = (event: PageTransitionEvent) => { if (event.persisted) cancel() }
   const inputs = ['pointerdown', 'click', 'keydown', 'beforeinput', 'input', 'compositionstart', 'paste', 'drop', 'wheel', 'touchstart']
-  const exits = ['pagehide', 'popstate', 'hashchange', 'storage']
+  const exits = ['pagehide', 'popstate', 'hashchange', 'storage', 'offline']
   cancel = () => {
     eligible = false; clearTimeout(timer)
     for (const type of inputs) window.removeEventListener(type, intent, true)
@@ -52,7 +52,7 @@ export function openStartupUpdateWindow() {
   if (eligible) armDeadline()
 }
 export function assertStartupUpdate() {
-  if (!eligible || !opened || performance.now() >= deadline || Date.now() >= wallDeadline || document.visibilityState !== 'visible' || !document.hasFocus()
+  if (!eligible || !opened || performance.now() >= deadline || Date.now() >= wallDeadline || !navigator.onLine || document.visibilityState !== 'visible' || !document.hasFocus()
     || document.querySelector('dialog[open], [popover]:popover-open, input:focus, textarea:focus, select:focus, [contenteditable="true"]:focus')
     // Native history restoration/autofill need not dispatch input. Do not erase a restored search or form.
     || [...document.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>('input:not([type="hidden"]), textarea')]
