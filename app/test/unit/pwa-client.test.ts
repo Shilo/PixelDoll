@@ -71,10 +71,11 @@ async function setup() {
   const fetch = vi.fn(async () => new Response(JSON.stringify(published), { headers: { 'content-type': 'application/json' } }))
   const matchMedia = () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() })
   const window = { isSecureContext: true, top: undefined as unknown, addEventListener, removeEventListener, matchMedia, navigator: { standalone: false } }
+  const document = { baseURI: scope, visibilityState: 'visible', hasFocus: () => true, wasDiscarded: false, prerendering: false, querySelector: () => null, querySelectorAll: () => [], addEventListener, removeEventListener }
   window.top = window
   runInNewContext(readFileSync(new URL('../../public/install.js', import.meta.url), 'utf8'), { window })
   vi.stubGlobal('window', window)
-  vi.stubGlobal('document', { baseURI: scope, visibilityState: 'visible', hasFocus: () => true, wasDiscarded: false, prerendering: false, querySelector: () => null, querySelectorAll: () => [], addEventListener, removeEventListener })
+  vi.stubGlobal('document', document)
   vi.stubGlobal('navigator', { serviceWorker, onLine: true })
   vi.stubGlobal('addEventListener', addEventListener)
   vi.stubGlobal('removeEventListener', removeEventListener)
@@ -88,7 +89,8 @@ async function setup() {
     holdMessage: (type: string, held: Promise<void>, build?: string) => { messageHolds.set(build ? build + ':' + type : type, held) },
     publish: (release: Release) => { published = release },
     stage: (release: Release) => { registration.waiting = worker(release) },
-    wake: (type: 'focus' | 'online' | 'controllerchange') => { for (const listener of listeners.get(type) ?? []) listener(new Event(type)) },
+    visibility: (value: 'visible' | 'hidden') => { document.visibilityState = value },
+    wake: (type: 'focus' | 'online' | 'controllerchange' | 'pageshow' | 'visibilitychange') => { for (const listener of listeners.get(type) ?? []) listener(new Event(type)) },
     start: () => { stop = client.startPwa() },
   }
 }
@@ -96,6 +98,54 @@ async function setup() {
 /** Flush browser-message and fetch/json promises without advancing the bounded waits. */
 const settle = () => vi.advanceTimersByTimeAsync(0)
 const never = () => new Promise<never>(() => {})
+
+describe('PWA update schedule', () => {
+  const hour = 3_600_000
+
+  it('checks immediately on launch, then discovers a deployment at one hour without reloading', async () => {
+    const app = await setup()
+    app.publish(current); app.registration.waiting = null
+    app.start(); await settle()
+    expect(app.fetch).toHaveBeenCalledOnce()
+    app.publish(next); app.stage(next)
+    await vi.advanceTimersByTimeAsync(hour - 1)
+    expect(app.fetch).toHaveBeenCalledOnce()
+    expect(get(app.client.pwa).available).toBeNull()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(app.fetch).toHaveBeenCalledTimes(2)
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true })
+    expect(app.reload).not.toHaveBeenCalled()
+  })
+
+  it.each(['focus', 'visibilitychange', 'pageshow', 'online'] as const)('checks immediately on %s between hourly checks', async event => {
+    const app = await setup()
+    app.publish(current); app.registration.waiting = null
+    app.start(); await settle()
+    await vi.advanceTimersByTimeAsync(30_000)
+    app.publish(next); app.stage(next)
+    app.wake(event); await settle()
+    expect(app.fetch).toHaveBeenCalledTimes(2)
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true })
+  })
+
+  it('skips hidden ticks and wake events, checks on return, and stops checking when shut down', async () => {
+    const app = await setup()
+    app.start(); await settle()
+    app.visibility('hidden')
+    app.wake('visibilitychange'); app.wake('online')
+    await vi.advanceTimersByTimeAsync(2 * hour)
+    expect(app.fetch).toHaveBeenCalledOnce()
+    app.visibility('visible')
+    app.wake('visibilitychange'); await settle()
+    expect(app.fetch).toHaveBeenCalledTimes(2)
+    await vi.advanceTimersByTimeAsync(hour)
+    expect(app.fetch).toHaveBeenCalledTimes(3)
+    stop?.(); stop = undefined
+    app.wake('focus'); app.wake('online')
+    await vi.advanceTimersByTimeAsync(hour)
+    expect(app.fetch).toHaveBeenCalledTimes(3)
+  })
+})
 
 describe('PWA deployment discovery remains independent of browser worker stalls', () => {
   it.each(['GET_RELEASE', 'VERIFY'])('ignores a replaced worker’s late successful %s before metadata catches up', async type => {

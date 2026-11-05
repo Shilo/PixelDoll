@@ -170,7 +170,7 @@ export function startPwa() {
     registration = r; r.addEventListener('updatefound', watch); watch()
   }
   void checkForUpdate()
-  const interval = setInterval(wake, 60_000)
+  const interval = setInterval(wake, 60 * 60_000)
   return () => {
     stopped = true; registerWorker = undefined; clearInterval(interval)
     registration?.removeEventListener('updatefound', watch)

@@ -322,9 +322,9 @@ for why there are dedicated exports for these engines and when more would be use
   keyboard focus keeps it open; it remains available from **More options** after the notice closes. Click when ready;
   only this tab reloads. Finish and close panels, save or cancel an outfit name, and finish or dismiss pending generation
   work first. Saved characters and outfits stay; the view and undo history reset. A session-only PixelLab connection
-  needs reconnecting. Failed saves or incomplete downloads prevent the reload. Updates are checked automatically while
-  the app is visible and when it reconnects or returns to the foreground. Closed, suspended or offline apps check on
-  return; a pushed commit must finish deployment before it can be detected.
+  needs reconnecting. Failed saves or incomplete downloads prevent the reload. PixelDoll checks for updates when it
+  opens, returns to the foreground, or reconnects, and once an hour while visible. A pushed commit must finish
+  deployment before it can be detected.
   If a download keeps failing while connected, finish your work, then close every PixelDoll window and reopen.
   More device storage may be needed; clearing PixelDoll site data also deletes its local characters.
 - PixelLab may decline some descriptions. Try different words.
