@@ -250,7 +250,10 @@ self.addEventListener('fetch', event => {
   const request = event.request, url = new URL(request.url);
   if (request.method !== 'GET' || !request.url.startsWith(SCOPE)) return;
   const path = url.pathname.slice(new URL(SCOPE).pathname.length);
-  if (request.mode === 'navigate' && (path === '' || path === 'index.html')) {
+  // This retired page can still exist under a revisioned URL in an older release cache.
+  if (path === 'update.html') {
+    event.respondWith(fetch(request, { cache: 'no-store' }));
+  } else if (request.mode === 'navigate' && (path === '' || path === 'index.html')) {
     event.respondWith((async () => {
       try { return await currentResponse(CURRENT_FILES.get(INDEX)); }
       catch {

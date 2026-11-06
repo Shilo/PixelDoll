@@ -72,6 +72,53 @@ async function discover(page: Page, release: TestRelease) {
   return action
 }
 
+test('startup shows workspace status during a stalled ledger read and replaces it when Studio opens', async ({ page }) => {
+  const release = await testRelease('startup-ledger', '9.8.1'), server = await pwaServer(release)
+  try {
+    await page.addInitScript(() => {
+      const original = IDBObjectStore.prototype.getAll
+      IDBObjectStore.prototype.getAll = function(query, count) {
+        const result = original.call(this, query, count)
+        if (this.name === 'jobs') {
+          IDBObjectStore.prototype.getAll = original
+          const transaction = this.transaction
+          Object.defineProperty(transaction, 'oncomplete', { set: (complete: (event: Event) => void) => {
+            transaction.addEventListener('complete', event => {
+              document.documentElement.dataset.ledgerRead = 'paused'
+              addEventListener('resume-ledger-read', () => complete.call(transaction, event), { once: true })
+            })
+          } })
+        }
+        return result
+      }
+    })
+    await page.goto(server.url)
+    await expect(page.locator('html')).toHaveAttribute('data-ledger-read', 'paused')
+    const startup = page.locator('#startup-message')
+    await expect(startup.getByRole('status')).toHaveText('Opening your workspace…')
+    await page.evaluate(() => dispatchEvent(new Event('resume-ledger-read')))
+    await expect(page.locator('.customize-action')).toBeVisible()
+    await expect(startup).toHaveCount(0)
+  } finally { await server.close() }
+})
+
+test('a revisioned retired update page cannot load from a retained release cache', async ({ page }) => {
+  const release = await testRelease('retired-update', '9.8.2'), server = await pwaServer(release)
+  try {
+    await openInstalled(page, server.url, release)
+    const retired = new URL('update.html?pd-build=old-recovery-release', server.url).href
+    await page.evaluate(async ({ scope, retired }) => {
+      const cache = await caches.open(`pixeldoll-static:${scope}:old-recovery-release`)
+      await cache.put(retired, new Response('Retired recovery screen', { headers: { 'content-type': 'text/html' } }))
+    }, { scope: server.url, retired })
+    const status = await page.evaluate(async url => (await fetch(url)).status, retired)
+    expect(status).toBe(404)
+    const response = await page.goto(retired)
+    expect(response?.status()).toBe(404)
+    await expect(page.getByText('Retired recovery screen')).toHaveCount(0)
+  } finally { await server.close() }
+})
+
 test('installed shell includes valid icons and works offline after a cold navigation, including lazy export', async ({ page, context }) => {
   const release = await testRelease('offline', '8.0.1'), server = await pwaServer(release)
   try {

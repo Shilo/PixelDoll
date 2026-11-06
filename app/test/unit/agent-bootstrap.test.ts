@@ -26,7 +26,7 @@ beforeEach(() => {
   vi.stubEnv('MODE', 'agent')
   const frame = {}; Object.assign(frame, { top: frame })
   vi.stubGlobal('window', frame)
-  vi.stubGlobal('document', { getElementById: () => ({}) })
+  vi.stubGlobal('document', { getElementById: (id: string) => id === 'app' ? {} : null })
   vi.stubGlobal('addEventListener', vi.fn())
   vi.stubGlobal('removeEventListener', vi.fn())
   vi.stubGlobal('localStorage', { getItem: () => null })

@@ -29,7 +29,8 @@ const hmrReloading = import.meta.hot?.data.flowReloading === true;
 // The paid pipelines load on first use, outside the startup bundle (lib/lazy.ts).
 const createFlow = () => lazy(() => import('./create.ts'));
 const itemFlow = async () => (await lazy(() => import('./itemRoute.ts'))).itemRoute;
-const itemRun = () => lazy(() => import('../lib/items/run.ts'));
+const itemRun = () => lazy(() => import('../lib/items/run.ts').then(({ acceptItemReview, evaluateItem, isClean, matchItemColors }) =>
+  ({ acceptItemReview, evaluateItem, isClean, matchItemColors })));
 const fitFlow = () => lazy(() => import('../lib/equipment/fit.ts'));
 const setupFlow = () => lazy(() => import('./setup.ts'));
 /** After startup: fetch the pipelines so a later action still works offline or after a deploy replaced their files.

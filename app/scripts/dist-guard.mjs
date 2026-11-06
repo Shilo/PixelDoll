@@ -6,6 +6,7 @@ import { basename, join } from 'node:path';
 // Historical names are leak indicators, not a list of permitted environment references. resolveAgentKey covers any name.
 
 const MARKERS = ['resolveAgentKey', 'PIXELLAB_SECRET', '__dev', 'pixellab-key', 'PIXELLAB_API_KEY_AGENT_DEV', 'PIXELLAB_TOKEN_AGENT_DEV', 'PIXELLAB_API_KEY', 'API_KEY_OVERRIDE', 'DEV_API_KEY', 'devkey', 'pixeldoll.agentKey', 'agent-badge', 'sourceMappingURL', '#/selftest', 'Developer pages', 'Verifying the PixelDoll update'];
+const DEV_UI = ['Developer rigs', '8-dir held dress: every direction dressed once'];
 const bad = [];
 let startupPolicies = 0;
 for (const rel of readdirSync('dist', { recursive: true })) {
@@ -18,6 +19,7 @@ for (const rel of readdirSync('dist', { recursive: true })) {
   else {
     const text = readFileSync(file, 'latin1');
     if (MARKERS.some((m) => text.includes(m))) bad.push(`${file}: dev or agent-key marker`);
+    if (DEV_UI.some((m) => text.includes(m))) bad.push(`${file}: developer UI or self-test`);
     if (name.startsWith('startup-update-') && name.endsWith('.js')) {
       if (text.includes('pixeldoll.startupUpdate:')) startupPolicies++;
       const imports = [...text.matchAll(/\b(?:from|import)\s*["'`]([^"'`]+)["'`]/g)].map(match => match[1]);

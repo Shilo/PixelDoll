@@ -25,7 +25,12 @@
     <script src="%BASE_URL%appearance.js"></script>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <main id="startup-message" style="max-width:32rem;margin:15vh auto;padding:0 1rem;font:1rem/1.5 system-ui,sans-serif">
+        <h1 style="font-size:1.4em">PixelDoll</h1>
+        <p role="status">Opening your workspace…</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

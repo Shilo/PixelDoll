@@ -14,7 +14,7 @@
   import { Github, Check, ChevronLeft, ExternalLink, ChevronRight, Download, Share2, Ellipsis, KeyRound, Plus, Redo2, Sun, Moon, Undo2, House, Activity, Pencil, Trash, PersonStanding } from './icons.ts'
 
   const m = $derived(store.project?.manifest)
-  const devRigs = $derived(store.projects.filter((p) => p.dev))
+  const devRigs = $derived(import.meta.env.DEV ? store.projects.filter((p) => p.dev) : [])
   const active = $derived($queue.counts.running + $queue.counts.pending)
   const busy = $derived(active > 0 || gens.some((g) => g.phase === 'running') || (!!creating.spec && !creating.projectId && !creating.error) || (!!settingUp.spec && !settingUp.done && !settingUp.error))
   const undoLabel = $derived(doc.undo.at(-1)?.label)
@@ -89,7 +89,7 @@
   <button class="row" role="menuitem" aria-label="Character selection" onclick={() => { close(); characters() }}><House size={16} /><span class="row-name">Character selection</span></button>
   {#if import.meta.env.DEV}<a class="row" role="menuitem" aria-label="Developer pages" href="#/dev" onclick={close} style="text-decoration:none"><Ellipsis size={16} /><span class="row-name">Developer pages (M1–M5)</span></a>{/if}
   <!-- T2: rigs frozen on the M2 dev pages stay out of the main list; reachable here for developers only -->
-  {#if devRigs.length}
+  {#if import.meta.env.DEV && devRigs.length}
     <details class="dev-rigs">
       <summary class="row"><ChevronRight size={16} /><span class="row-name">Developer rigs</span><span class="faint small num">{devRigs.length}</span></summary>
       {#each devRigs as p (p.id)}{@render proj(p)}{/each}

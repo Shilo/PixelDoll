@@ -394,13 +394,15 @@ test('studio demo: dressing, storage, export and responsive controls', async ({ 
     db.close()
   }, put)
   await idb({ id: 'rig-e2edevrig00', savedAt: '', manifest: { format: 'pixeldoll/1', name: 'E2E dev rig' }, rigQa: { pivotFrom: 'idle/south/0' } })
+  await page.reload()
   await page.locator('.project-btn').click()
-  await page.locator('#project-menu summary', { hasText: 'Developer rigs' }).waitFor()
-  assert.equal(await page.locator('#project-menu > .menu-surface > .row', { hasText: 'E2E dev rig' }).count(), 0)
-  assert.equal(await page.locator('#project-menu .dev-rigs .row', { hasText: 'E2E dev rig' }).isVisible(), false)
+  const projectMenu = page.locator('#project-menu')
+  await expect(projectMenu).toBeVisible()
+  await expect(projectMenu.getByText('Developer rigs', { exact: true })).toHaveCount(0)
+  await expect(projectMenu.getByText('E2E dev rig', { exact: true })).toHaveCount(0)
   await page.keyboard.press('Escape')
   await idb(null)
-  step('dev rigs (no Studio origin) sit in a closed "Developer rigs" group, not in the character list')
+  step('production hides developer rigs and their disclosure')
 
   // ---- B10: other sizes (fresh contexts: own storage) ----
   async function at(viewport: { width: number; height: number }, fn: (page: Page) => Promise<void>) {

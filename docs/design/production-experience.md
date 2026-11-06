@@ -71,7 +71,7 @@ Research and PWA handoff (2026-11-02):
 
 `app/src/studio/experience/theme.css` imports package tokens/components without reset and aliases existing production workflow variables. `layout.css` owns composition, responsive constraints, reading-gradient placement and component sizing. Native controls receive Bronze recipes rather than a second palette. Shared-theme defects must be fixed and released in the Bronze repository; workflow geometry and scene artwork stay here.
 
-`config.ts` owns per-state background URLs, floor projection art values and code-only reflection settings. Both source backgrounds are copied unchanged from the approved reference, with hashes recorded in `app/public/worlds/README.md`. Shared URLs reuse browser/cache resources. Top-down and side-scroller use different projections of the same world material; no unrelated pillars or new scene theme.
+`config.ts` owns per-state background URLs, floor projection art values and code-only reflection settings. Both source backgrounds are copied unchanged from the approved reference, with hashes recorded in [Production world artwork](world-artwork.md). Shared URLs reuse browser/cache resources. Top-down and side-scroller use different projections of the same world material; no unrelated pillars or new scene theme.
 
 `WorldStage.svelte` owns canvas/input coordination. `movement.ts` and `presentation.ts` resolve vectors, facing, body/equipment coverage and animation timing independently of UI. Production compositor, pivots, oversize layers, recoloring and saved variants remain authoritative. No world lighting, tint or filtering is applied to actor pixels. Reflection is a separate optional copy. Resize, blur, modal entry and view/character changes release input safely.
 
