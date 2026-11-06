@@ -2,7 +2,7 @@ import { centroid, maskOf, simAligned } from '../image/similarity.ts';
 export { simAligned } from '../image/similarity.ts';
 // Item lab core (architecture §3.1–3.4, §4): slot ladder, call packing, prompts, per-cell extraction, gates G1–G8, fg/bg split,
 // manifest Item. Pure over Img; the UI (ui/M3.svelte) only runs calls through the queue and persists.
-import { chromaLayer, chromaPrompt, components, fillHoles, KEY_NAME, keyKept, keyOutside, newKeyPixels, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
+import { chromaLayer, chromaMask, chromaPrompt, components, fillHoles, KEY_NAME, keyKept, keyOutside, newKeyPixels, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
 import { diffLayer, type Rect } from '../image/diff.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { over } from '../compose/compose.ts';
@@ -660,14 +660,18 @@ export function dropOffBody(cells: CellOut[]): number {
   return removed;
 }
 
-/** Best 1-px shift (dx, dy) of C against B by silhouette IoU; [0, 0] unless a shift beats no shift by > 0.02. */
-function bestShift(B: Img, C: Img): [number, number] {
+/** Best 1-px shift (dx, dy) by visible body IoU. Equipment can hide the body or extend its silhouette. */
+function bestShift(B: Img, C: Img, route: Route): [number, number] {
   const { w, h } = B;
+  const unknown = route === 'none' ? undefined : chromaMask(C, route);
+  if (unknown && !unknown.some((v, p) => !v && C.data[p * 4 + 3] >= 128)) return [0, 0];
   const iou = (dx: number, dy: number) => {
     let i = 0, u = 0;
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
-        const c = C.data[(y * w + x) * 4 + 3] >= 128, X = x - dx, Y = y - dy, b = X >= 0 && Y >= 0 && X < w && Y < h && B.data[(Y * w + X) * 4 + 3] > 0;
+        const p = y * w + x;
+        if (unknown?.[p]) continue;
+        const c = C.data[p * 4 + 3] >= 128, X = x - dx, Y = y - dy, b = X >= 0 && Y >= 0 && X < w && Y < h && B.data[(Y * w + X) * 4 + 3] > 0;
         if (c && b) i++;
         if (c || b) u++;
       }
@@ -693,8 +697,10 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
   const rawKeyOutside = o.held && route !== 'none' ? newKeyPixels(base, o.out, route) : undefined;
   // posed frames are another skeleton-v3 sample of the same keypoints: re-register a systematic 1 px offset (M3: walk/south/7)
   // A submitted stencil fixes raw coordinates: shifting could cross protected pixels. A shifted redraw still fails G10 below.
-  const reg = o.posed && o.stencil===undefined ? bestShift(base, o.out) : ([0, 0] as [number, number]);
+  const rawShift = bestShift(base, o.out, route);
+  const reg = o.posed && o.stencil === undefined ? rawShift : ([0, 0] as [number, number]);
   const out = reg[0] || reg[1] ? translate(o.out, -reg[0], -reg[1]) : o.out;
+  const shifted = (out === o.out ? rawShift : bestShift(base, out, route)).some(Boolean);
   let r: { layer: Img; mask: Uint8Array; stray?: number } = route === 'none' ? diffLayer(base, out, band, o.useCc) : chromaLayer(out, route, base);
   let clipY: number | undefined;
   if (o.posed && o.clip) { // head items live above the neck: detached px below the band are smears/props the pose invented (B7 live)
@@ -725,7 +731,7 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
     ...(o.stencil!==undefined?{stencil:o.stencil}:{}),
     ...(rawKeyOutside ? { rawKeyOutside } : {}),
     ...(kk && route !== 'none' ? { keyKept: kk.kept, keyLost: kk.lost, erased: kk.erased, keyOutside: keyOutside(base, out, route, undefined, qm, tol) } : {}),
-    ...cleanliness(qm, w, h), ...(route !== 'none' ? { chroma: route } : {}), shifted: bestShift(base, out).some(Boolean), offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
+    ...cleanliness(qm, w, h), ...(route !== 'none' ? { chroma: route } : {}), shifted, offset: [-reg[0], -reg[1]], stray: r.stray ?? 0, posed: !!o.posed,
     ...(clipY != null ? { clipY } : {}), ...(cut ? { cut } : {}),
   };
   clipToStencil(cell);if(cell.stencil)cell.stencil=new Uint8Array(cell.stencil);

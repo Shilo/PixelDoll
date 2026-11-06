@@ -45,6 +45,27 @@ test('a one-pixel body redraw registers without a stencil but remains a hard G10
   expect(boundedQa.failCalls.get(0)).toContain('G10 slash/south/0: misregistered (fits the base better 1 px off)');expect(boundedQa.qa.status).toBe('fail');
 });
 
+test.each(['standing', 'posed', 'stenciled'] as const)('an asymmetric item does not misregister a %s keyed mannequin', mode => {
+  const base = makeImg(64, 64);
+  for (let y = 20; y < 40; y++) for (let x = 24; x < 34; x++) paint(base, x, y);
+  const out = toChroma(base, 'green');
+  const stencil = new Uint8Array(64 * 64);
+  // Local erasure and equipment overhang favor a right shift in whole-alpha IoU.
+  // The remaining eight rows still give evidence for the true position of both body edges.
+  for (let y = 20; y < 32; y++) {
+    out.data.fill(0, (y * 64 + 24) * 4, (y * 64 + 25) * 4);
+    for (let x = 32; x < 36; x++) {
+      paint(out, x, y, [120, 70, 40, 255]);
+      stencil[y * 64 + x] = 1;
+    }
+  }
+  const c = extractCell({ key: 'slash/south/0', call: 0, base, out, route: 'green', band: { x: 0, y: 0, w: 64, h: 64 },
+    posed: mode === 'posed', ...(mode === 'stenciled' ? { stencil } : {}) });
+  expect(c.out).toBe(out);
+  expect(c.shifted).toBe(false);
+  expect(c.mask[30 * 64 + 35]).toBe(1);
+});
+
 test.each(['short','nonbinary','wrong-type'] as const)('invalid %s stencils fail clearly without modifying image inputs',mode=>{
   const f=fixture(),before=f.out.data.slice();
   const stencil=mode==='short'?new Uint8Array(2):mode==='nonbinary'?new Uint8Array(4096).fill(255):new Array(4096).fill(1) as unknown as Uint8Array;
