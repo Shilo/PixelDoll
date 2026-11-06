@@ -14,7 +14,7 @@
   import RenameSheet from './RenameSheet.svelte'
   import DeleteSheet from './DeleteSheet.svelte'
   import { moveDirs } from '../lib/dress/dress.ts'
-  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, toast, resumeCreate, resumeMove, resumeSetup, resumeFitStages, startupResumed, prefetchFlows, clearPendingConnection, cancelWaitingForTab, undo, redo, stepPreviewFrame } from './state.svelte.ts'
+  import { ui, doc, store, view, gens, creating, settingUp, initUi, refreshProjects, refreshFits, openProject, lastProject, loadGens, toast, resumeCreate, resumeMove, resumeSetup, resumeFitStages, startupResumed, startupFailed, prefetchFlows, clearPendingConnection, cancelWaitingForTab, undo, redo, stepPreviewFrame } from './state.svelte.ts'
   import { lazy } from '../lib/lazy.ts'
   import { WifiOff } from './icons.ts'
   import { PREVIEW_NOTICE } from './previewNotice.ts'
@@ -50,7 +50,7 @@
       // Once startup is done, fetch the on-demand code so it keeps working if the connection drops or a deploy replaces its
       // files. Production only: the dev server would transform every module on each page load. lazy() logs failures.
       if (import.meta.env.PROD) void Promise.allSettled([...Object.values(parts).map((load) => lazy<unknown>(load)), prefetchFlows()])
-    })()
+    })().catch(startupFailed)
     return () => { off(); delete document.documentElement.dataset.app }
   })
 

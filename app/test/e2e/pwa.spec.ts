@@ -372,6 +372,122 @@ test('an unfinished outfit name and failed storage block reload; a saved outfit 
   } finally { await server.close() }
 })
 
+for (const loading of ['stalled', 'failed'] as const) {
+  test(`both update controls recover from ${loading} saved-work loading and preserve the saved outfit`, async ({ page }) => {
+    const a = await testRelease('recovery-stalled-a', '9.3.1'), b = await testRelease('recovery-stalled-b', '9.3.2'), server = await pwaServer(a)
+    try {
+      await openInstalled(page, server.url, a)
+      await enterStudio(page)
+      await equipmentMode(page, 'Outfits')
+      await page.getByRole('button', { name: 'Save current look', exact: true }).click()
+      await page.getByRole('textbox', { name: 'Outfit name', exact: true }).fill('Saved before the loading stall')
+      await page.locator('.inline-form').getByRole('button', { name: 'Save', exact: true }).click()
+      await expect(page.getByRole('button', { name: /^Saved before the loading stall/ })).toBeVisible()
+      await page.addInitScript(loading => {
+        const original = IDBObjectStore.prototype.getAll
+        let projectReads = 0
+        IDBObjectStore.prototype.getAll = function(query, count) {
+          if (this.name === 'projects' && loading === 'failed' && ++projectReads > 1) {
+            throw new DOMException('Saved work read failed', 'UnknownError')
+          }
+          const result = original.call(this, query, count)
+          if (this.name === 'projects' && loading === 'stalled') Object.defineProperty(this.transaction, 'oncomplete', { set: () => {
+            document.documentElement.dataset.stalledRead = 'yes'
+          } })
+          return result
+        }
+      }, loading)
+      await page.reload()
+      const reason = loading === 'stalled' ? 'Wait for your character and saved work to finish loading.' : 'PixelDoll could not finish loading your saved work.'
+      if (loading === 'stalled') await expect(page.locator('html')).toHaveAttribute('data-stalled-read', 'yes')
+      else await expect(page.getByText(reason, { exact: false }).first()).toBeVisible()
+      server.deploy(b)
+      await (await discover(page, b)).click()
+      const paused = page.getByRole('dialog', { name: 'Update paused', exact: true })
+      await expect(paused.getByRole('alert')).toHaveText(reason)
+      await paused.getByRole('button', { name: 'Close', exact: true }).click()
+      await page.getByRole('button', { name: 'More options', exact: true }).click()
+      await page.locator('#experience-options').getByRole('button', { name: 'Update to v9.3.2', exact: true }).click()
+      await expect(paused.getByRole('alert')).toHaveText(reason)
+      const popup = page.waitForEvent('popup')
+      await paused.getByRole('link', { name: 'Open update recovery' }).click()
+      const recovery = await popup
+      await recovery.getByRole('button', { name: 'Update now' }).click()
+      await expect(recovery).toHaveURL(server.url)
+      await expectLoadedBuild(recovery, b)
+      await enterStudio(recovery)
+      await equipmentMode(recovery, 'Outfits')
+      await expect(recovery.getByRole('button', { name: /^Saved before the loading stall/ })).toBeVisible()
+      await expectLoadedBuild(page, a)
+      await expect(paused).toBeVisible()
+    } finally { await server.close() }
+  })
+}
+
+test('the direct recovery URL works with an older app, refuses an incomplete release, and retries safely', async ({ page, context }) => {
+  const a = await testRelease('recovery-legacy-a', '9.4.1', files => { files.delete('update.html') })
+  const b = await testRelease('recovery-legacy-b', '9.4.2'), server = await pwaServer(a)
+  try {
+    await openInstalled(page, server.url, a)
+    await page.getByRole('button', { name: 'New character', exact: true }).click()
+    const draft = page.getByRole('dialog', { name: 'New character', exact: true }).getByRole('textbox', { name: 'Name', exact: true })
+    await draft.fill('Keep this in the old tab')
+    server.failures.add('appearance.js'); server.deploy(b)
+    const recovery = await context.newPage()
+    await recovery.goto(new URL('update.html', server.url).href)
+    const update = recovery.getByRole('button', { name: 'Update now' })
+    await update.click()
+    await expect(recovery.getByRole('status')).toContainText('try again', { timeout: 20_000 })
+    await expect(update).toBeEnabled()
+    await expectLoadedBuild(page, a)
+    await expect(draft).toHaveValue('Keep this in the old tab')
+    server.failures.delete('appearance.js')
+    await update.click()
+    await expect(recovery).toHaveURL(server.url)
+    await expectLoadedBuild(recovery, b)
+    await expect.poll(() => controllerBuild(recovery)).toBe(b.release.build)
+    await expectLoadedBuild(page, a)
+    await expect(draft).toHaveValue('Keep this in the old tab')
+    await context.setOffline(true)
+    await recovery.reload()
+    await expectLoadedBuild(recovery, b)
+  } finally { await context.setOffline(false); await server.close() }
+})
+
+test('direct recovery can install a release in a browser without a worker', async ({ page }) => {
+  const release = await testRelease('recovery-fresh', '9.5.1'), server = await pwaServer(release)
+  try {
+    await page.goto(new URL('update.html', server.url).href)
+    await page.getByRole('button', { name: 'Update now' }).click()
+    await expect(page).toHaveURL(server.url)
+    await expectLoadedBuild(page, release)
+    await expect(page.locator('.customize-action')).toBeVisible()
+    await expect.poll(() => controllerBuild(page)).toBe(release.release.build)
+  } finally { await server.close() }
+})
+
+test('direct recovery replaces an old worker that cannot answer update status requests', async ({ page, context }) => {
+  const a = await testRelease('recovery-unresponsive-a', '9.6.1'), b = await testRelease('recovery-unresponsive-b', '9.6.2')
+  const oldWorker = a.files.get('sw.js')!.toString()
+  const unsupported = oldWorker.replace("if (message?.type === 'GET_RELEASE') port.postMessage(RELEASE);", "if (message?.type === 'GET_RELEASE') throw new Error('Update status is unavailable');")
+  expect(unsupported).not.toBe(oldWorker)
+  a.files.set('sw.js', Buffer.from(unsupported))
+  const server = await pwaServer(a)
+  try {
+    await page.goto(server.url)
+    await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.active?.state)).toBe('activated')
+    await page.reload()
+    await expectLoadedBuild(page, a)
+    server.deploy(b)
+    const recovery = await context.newPage()
+    await recovery.goto(new URL('update.html', server.url).href)
+    await recovery.getByRole('button', { name: 'Update now' }).click()
+    await expect(recovery).toHaveURL(server.url)
+    await expectLoadedBuild(recovery, b)
+    await expectLoadedBuild(page, a)
+  } finally { await server.close() }
+})
+
 test('install help traps studio shortcuts and leaves the current view unchanged', async ({ page }) => {
   const release = await testRelease('keyboard', '8.6.1'), server = await pwaServer(release)
   try {

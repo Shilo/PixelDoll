@@ -325,6 +325,9 @@ for why there are dedicated exports for these engines and when more would be use
   needs reconnecting. Failed saves or incomplete downloads prevent the reload. PixelDoll checks for updates when it
   opens, returns to the foreground, or reconnects, and once an hour while visible. A pushed commit must finish
   deployment before it can be detected.
+  If **Update paused** persists, choose **Open update recovery** and then **Update now**. Older versions can open
+  [the recovery page](https://pixeldoll.app/update.html) directly in another tab. It opens the verified release there and
+  leaves the original tab and saved data available.
   If a download keeps failing while connected, finish your work, then close every PixelDoll window and reopen.
   More device storage may be needed; clearing PixelDoll site data also deletes its local characters.
 - PixelLab may decline some descriptions. Try different words.

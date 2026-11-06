@@ -1,6 +1,6 @@
 import { get, writable } from 'svelte/store'
 
-export interface Release { build: string; version: string; commit: string }
+import { bounded, fetchRelease, readRelease, waitForWorker, workerMessage, type Release } from './pwa-release.ts'
 interface InstallPrompt extends Event {
   prompt(): Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
@@ -22,31 +22,6 @@ let checkAgain = false
 let stopped = true
 let base: URL
 let registerWorker: (() => Promise<void>) | undefined
-
-export function readRelease(value: unknown): Release {
-  const r = value as Partial<Release> | null
-  if (!r || typeof r.build !== 'string' || !/^[a-zA-Z0-9-]{8,80}$/.test(r.build)
-    || typeof r.version !== 'string' || !/^\d+\.\d+\.\d+$/.test(r.version)
-    || typeof r.commit !== 'string' || !/^[a-f0-9]{7,40}$/.test(r.commit)) throw new Error('The update description is invalid.')
-  return { build: r.build, version: r.version, commit: r.commit }
-}
-
-export function workerMessage(worker: ServiceWorker, type: string, build?: string): Promise<Record<string, unknown>> {
-  return new Promise((resolve, reject) => {
-    const channel = new MessageChannel()
-    const done = (error?: Error, value?: Record<string, unknown>) => {
-      clearTimeout(timer); channel.port1.close()
-      if (error) reject(error); else resolve(value!)
-    }
-    const timer = setTimeout(() => done(new Error('The update did not respond. Try again.')), 15_000)
-    channel.port1.onmessage = ({ data }: MessageEvent<unknown>) => {
-      if (!data || typeof data !== 'object') return done(new Error('The update response is invalid.'))
-      const reply = data as Record<string, unknown>
-      done(typeof reply.error === 'string' ? new Error(reply.error) : undefined, reply)
-    }
-    try { worker.postMessage({ type, build, clientBuild: __APP_BUILD__ }, [channel.port2]) } catch (e) { done(e as Error) }
-  })
-}
 
 async function inspectWorker() {
   if (!registration || stopped) return
@@ -77,12 +52,6 @@ async function inspectWorker() {
   }
 }
 
-function bounded<T>(promise: Promise<T>, message: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout>
-  return Promise.race([promise, new Promise<never>((_, reject) => { timer = setTimeout(() => reject(new Error(message)), 15_000) })])
-    .finally(() => clearTimeout(timer))
-}
-
 /** A bounded foreground poll plus wake/reconnect events. Never gates discovery on successful staging. */
 export function checkForUpdate(): Promise<void> {
   if (stopped) return Promise.resolve()
@@ -93,11 +62,7 @@ export function checkForUpdate(): Promise<void> {
       const failures: string[] = []
       // Discover first: stalled browser operations and cache/quota failures cannot hide newer deployments.
       try {
-        const discovery = new URL('release.json', base)
-        discovery.searchParams.set('check', String(Date.now()))
-        const response = await fetch(discovery, { cache: 'no-store', credentials: 'omit', redirect: 'error', signal: AbortSignal.timeout(12_000) })
-        if (!response.ok) throw new Error(`Update check failed (${response.status}).`)
-        latest = readRelease(await response.json())
+        latest = await fetchRelease(base)
         if (stopped) return
         const available = latest.build === __APP_BUILD__ ? null : latest
         pwa.update(s => ({ ...s, available, ready: available?.build === s.available?.build && s.ready, error: '' }))
@@ -207,16 +172,7 @@ export async function applyUpdate(prepare: () => Promise<void>, automatic?: { va
   if (worker === registration.waiting) {
     await workerMessage(worker, 'ACTIVATE', target.build)
     validate()
-    if (worker.state !== 'activated') await new Promise<void>((resolve, reject) => {
-      const changed = () => {
-        if (worker.state === 'activated' || worker.state === 'redundant') {
-          clearTimeout(timer); worker.removeEventListener('statechange', changed)
-          if (worker.state === 'activated') resolve(); else reject(new Error('The update was replaced. Try again.'))
-        }
-      }
-      const timer = setTimeout(() => { worker.removeEventListener('statechange', changed); reject(new Error('The update could not activate. Try again.')) }, 15_000)
-      worker.addEventListener('statechange', changed); changed()
-    })
+    await waitForWorker(worker, () => worker.state === 'activated', 'The update could not activate. Try again.')
     validate()
   }
   const controller = navigator.serviceWorker.controller

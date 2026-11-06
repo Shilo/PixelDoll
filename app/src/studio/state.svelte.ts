@@ -487,7 +487,8 @@ queue.canYield = workIdle;
 
 /** An idle queue alone says nothing about unsaved forms or local writes. */
 export function updateBlocked(): string {
-  if (!studioReady || doc.loading) return 'Wait for your character and saved work to finish loading.';
+  if (studioStartup === 'failed') return 'PixelDoll could not finish loading your saved work.';
+  if (studioStartup === 'loading' || doc.loading) return 'Wait for your character and saved work to finish loading.';
   if (ui.sheet || ui.sheetBusy) return 'Finish and close the open panel before updating.';
   if (document.querySelector('[data-update-draft]')) return 'Save or cancel your outfit name before updating.';
   if (!queue.idle() || ui.waitingForTab) return 'Finish or dismiss pending generation work in Activity before updating.';
@@ -700,7 +701,7 @@ const saveGens = () => db.put('projects', GENS_KEY, { id: GENS_KEY, gens: $state
 // the leader's tab closes.
 const runningGens = new Set<string>();
 let loading: Promise<void> | null = null, gensReady = false, driving = false, takingOver = false, takeOverRunning = false, resumedHere = false, itemStarting = 0, mirrored = '', mirrorAt = 0;
-let studioReady = $state(false);
+let studioStartup = $state<'loading' | 'ready' | 'failed'>('loading');
 // A failed read rejects: an empty list would let the next save overwrite the stored drafts and cleanUp prune their records.
 const readGens = async () => uniqueBy((await db.get<{ gens: Gen[] }>('projects', GENS_KEY))?.gens ?? [], (g) => g.draft.spec.id);
 /** The ONLY way the list is replaced: one entry per draft id (already-persisted duplicates heal on the next save). Synchronous,
@@ -773,9 +774,15 @@ async function takeOver() {
 }
 /** Studio's startup resumes are done; as the leader, a click waiting from before can now run. */
 export function startupResumed() {
-  studioReady = true;
+  studioStartup = 'ready';
   if (queue.role !== 'follower') resumedHere = true;
   runWaiting();
+}
+
+export function startupFailed(error: unknown) {
+  studioStartup = 'failed';
+  console.error('studio startup', error);
+  toast('PixelDoll could not finish loading your saved work. Reload or use update recovery if a new version is available.', { tone: 'danger' });
 }
 
 interface ItemAttemptConsent { projectId: string; gens: number; rig?: string; replaces?: { id: string; reviewed: string } }

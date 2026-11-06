@@ -83,7 +83,10 @@
       <p>Saved characters, dressing, recoloring, device import, and export work offline after the app files finish downloading. PixelLab generation, account information, and its library need a connection.</p>
       <p role="status">{$pwa.offlineReady ? 'App files are ready for offline launches.' : 'Offline files are not ready yet. Keep PixelDoll open while connected.'}</p>
       {#if $pwa.error}<p role="status">{$pwa.error}</p>{/if}
-    {:else if error}<p role="alert">{error}</p><p>Your work is still open. Use the update notice when you are ready.</p>
+    {:else if error}
+      <p role="alert">{error}</p>
+      <p>If you’re stuck, open the latest version in another tab. This tab and your saved data stay in place.</p>
+      <a class="bu-action" data-variant="outline" href={new URL('update.html', new URL(import.meta.env.BASE_URL, document.baseURI)).href} target="_blank" rel="noopener">Open update recovery</a>
     {:else}<p role="status">Saving your outfit and verifying the complete update. Keep this tab open.</p>{/if}
   </div>
   {/if}

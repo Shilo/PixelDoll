@@ -213,7 +213,7 @@ service worker. The implementation uses the platform APIs without another depend
   prevents new interactions while verification and activation run. Only the requesting tab reloads. The notice
   discloses view/undo reset and session-only reconnection.
 - **Discovery:** startup, foreground focus/visibility, page restoration and reconnect check the deployed `release.json`;
-  a visible app also checks every 60 seconds. Metadata uses a cache-busting query and `cache: 'no-store'`; worker checks
+  a visible app also checks every hour. Metadata uses a cache-busting query and `cache: 'no-store'`; worker checks
   use `updateViaCache: 'none'`. Discovery keeps retrying after network or staging failures. A commit becomes visible
   after CI deploys its build and the hosting CDN exposes it, not when the commit is pushed. Offline, suspended and
   closed apps cannot learn about a deployment until they reconnect or resume. No manual check setting is needed.
@@ -242,6 +242,9 @@ service worker. The implementation uses the platform APIs without another depend
   failed verification or quota errors preserve the previous app. Missing current files can be repaired only with verified
   bytes; old missing artwork must never silently borrow a newer release's pixels. Browser storage eviction can still
   remove local data, so exporting backups remains necessary.
+  If saved work never finishes loading, the paused update dialog links to `update.html` in a separate tab. That page
+  runs without Studio and opens the verified release while the original tab keeps its in-memory work. Older versions
+  can open the same recovery URL directly.
 
 The reference Toadoku implementation was reviewed adversarially. Complete-release verification, explicit activation and
 old-tab safety apply here; its state restoration and long retry backoff do not. The

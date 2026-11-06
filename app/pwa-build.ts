@@ -49,7 +49,7 @@ export function pwaBuild(release: PwaRelease): Plugin {
     apply: 'build',
     enforce: 'post',
     configResolved: config => { outDir = resolve(config.root, config.build.outDir) },
-    transformIndexHtml: { order: 'post', handler: html => revisionHtml(html, release.build) },
+    transformIndexHtml: { order: 'post', handler: (html, context) => context.path.endsWith('/update.html') ? html : revisionHtml(html, release.build) },
     writeBundle: () => { emitPwa(outDir, release) },
   }
 }
