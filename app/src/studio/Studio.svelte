@@ -140,7 +140,7 @@
 <div class="studio-app" onclickcapture={rememberActivation}>
   <PwaRuntime />
   <Experience />
-  {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You’re offline. Local dressing and export work; PixelLab needs a connection.</div>{/if}
+  {#if offline}<div class="offline-banner" role="status"><WifiOff size={14} aria-hidden="true" />You’re offline. Edit and export locally.</div>{/if}
   {#if !ui.sheet}<Toast />{/if}
 
   {#if ui.sheet === 'inspect'}<Sheet title="Inspect character" cancel="Done" className="inspection-sheet" wide onclose={()=>ui.sheet=null}><div class="inspection-stage"><Stage/><Lazy load={parts.notes} sheet={false} /></div></Sheet>{/if}

@@ -173,6 +173,46 @@ test('installed shell includes valid icons and works offline after a cold naviga
   } finally { await context.setOffline(false); await server.close() }
 })
 
+test('the offline status stays compact and leaves the character and controls visible', async ({ page, context }) => {
+  const release = await testRelease('offline-banner', '8.0.2'), server = await pwaServer(release)
+  const banner = page.getByRole('status').filter({ hasText: 'You’re offline.' })
+  const checkLayout = async (obstacles: string) => {
+    const layout = await banner.evaluate((status, obstacles) => {
+      const box = status.getBoundingClientRect()
+      const overlaps = [...document.querySelectorAll(obstacles)].filter(element => {
+        const other = element.getBoundingClientRect()
+        return other.width > 0 && other.height > 0 && box.left < other.right && box.right > other.left
+          && box.top < other.bottom && box.bottom > other.top
+      })
+      return {
+        height: box.height,
+        inside: box.top >= 0 && box.left >= 0 && box.right <= innerWidth && box.bottom <= innerHeight,
+        pointerEvents: getComputedStyle(status).pointerEvents,
+        overlaps: overlaps.map(element => element.className),
+      }
+    }, obstacles)
+    expect(layout.height).toBeLessThan(64)
+    expect(layout, JSON.stringify(page.viewportSize())).toMatchObject({ inside: true, pointerEvents: 'none', overlaps: [] })
+  }
+  try {
+    await openInstalled(page, server.url, release)
+    await expect(page.locator('.cast-character.chosen .sprite').first()).toBeVisible()
+    await expect(banner).toHaveCount(0)
+    await context.setOffline(true)
+    await expect(banner).toHaveText('You’re offline. Edit and export locally.')
+    for (const [width, height] of [[1440, 900], [1280, 600], [844, 390], [390, 844], [320, 568]]) {
+      await page.setViewportSize({ width, height })
+      await checkLayout('.cast-character.chosen,.selected-caption button,.selected-caption span,.customize-action,.toast')
+    }
+    await page.setViewportSize({ width: 390, height: 844 })
+    await enterStudio(page)
+    await checkLayout('.equipment-rail,.experience-playback,.toast')
+    await context.setOffline(false)
+    await expect(banner).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Export', exact: true })).toBeVisible()
+  } finally { await context.setOffline(false); await server.close() }
+})
+
 function locationOrigin(url: string) { return new URL(url).origin }
 
 test('updates in an already-used tab require an explicit click, preserve its release files, and discover a subsequent release', async ({ page, context }) => {

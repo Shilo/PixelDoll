@@ -118,7 +118,7 @@
 .world-stick { position:fixed; width:92px;height:92px; margin:-46px; border:1px solid var(--bu-border); background:var(--bu-gesture-track); border-radius:50%; pointer-events:none; z-index:3; display:grid;place-items:center; }
 .world-stick span { width:24px;height:24px;border-radius:50%;background:var(--bu-gesture-thumb);border:1px solid var(--bu-accent); }
 .experience-error { position:absolute; bottom:16px; left:var(--edge); z-index:6; color:var(--bu-danger); }
-.studio-app .offline-banner { position:fixed; z-index:30; bottom:20px; left:50%; transform:translateX(-50%); max-width:calc(100vw - 32px); }
+.studio-app .offline-banner { z-index:30; top:auto; bottom:max(20px,env(safe-area-inset-bottom)); width:max-content; }
 .toast { position:fixed; z-index:40; top:max(env(safe-area-inset-top),var(--toast-top,88px)); left:50%; transform:translateX(-50%); width:max-content; max-width:min(480px,calc(100vw - 32px)); max-height:var(--toast-height,45dvh); overflow:auto; }
 .toast>.bu-toast { position:relative; inset:auto; transform:none; width:100%; max-width:none; margin:0; }
 /* The existing real creator becomes a full-screen work surface, retaining every
@@ -201,7 +201,13 @@
 @media (min-width:761px) and (max-width:1279px) and (min-height:541px) {
   .view-modes { position:static;margin-top:22px;gap:24px;transform:none; }
 }
+@media (min-width:761px) and (min-height:541px) and (max-height:700px) {
+  .studio-app:has(.experience.selection) .offline-banner { left:auto; right:20px; transform:none; }
+}
 @media (max-width:760px) and (min-height:541px) {
+  .studio-app .offline-banner { top:max(190px,env(safe-area-inset-top)); bottom:auto; }
+  /* Characters keeps the status above Customize and below the character navigation. */
+  .studio-app:has(.experience.selection) .offline-banner { top:auto; bottom:max(82px,env(safe-area-inset-bottom)); padding-block:4px; }
   .experience { --edge:20px; --rail:0px; }
   .experience-header { inset:12px var(--edge) auto; gap:8px; }
   .experience-header .bu-action { min-height:44px; padding:8px; gap:5px; }
@@ -283,6 +289,7 @@
   .mobile-undo,.mobile-redo { display:flex!important; }
 }
 @media (max-height:540px) and (min-width:600px) {
+  .studio-app .offline-banner { top:max(54px,env(safe-area-inset-top)); bottom:auto; }
   .experience { --edge:16px; --rail:300px; }
   .experience-header { top:8px; }
   .scene-identity { top:65px; } .scene-identity h1 { font-size:25px; } .scene-identity p { margin-bottom:4px; }
