@@ -592,9 +592,11 @@ test('saved light appearance applies before the application module initializes',
     await expect.poll(() => blocked).toBeGreaterThan(0)
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
     expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe('light')
-    await expect(page.locator('#app')).toBeEmpty()
+    await expect(page.locator('#startup-message').getByRole('status')).toHaveText('Opening your workspace…')
+    await expect(page.getByRole('heading', { name: 'Characters', exact: true })).toHaveCount(0)
   } finally { release() }
   await expect(page.getByRole('heading', { name: 'Characters', exact: true })).toBeVisible()
+  await expect(page.locator('#startup-message')).toHaveCount(0)
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
 })
 
