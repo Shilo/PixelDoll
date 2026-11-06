@@ -954,34 +954,48 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       if (hand === '?' && none !== cs.length) warnings.push(`G8 ${clip}: grip side is unclear (${r} right / ${l} left frames); check that the item stays in the intended hand`);
     }
     // G9 (held): a rigid object keeps its shape frame to frame (S2/M3: a sword flipped from vertical to horizontal mid-walk)
-    const ord = [...cs].sort((x, y) => +x.key.split('/')[2] - +y.key.split('/')[2]);
-    const minIoU = Math.min(1, ...ord.map((c, i) => alignedIoU(c.mask, ord[(i + 1) % ord.length].mask, w)));
+    const animation = rig.animations.find((move) => move.id === a);
+    const byCell = new Map(cs.map((c) => [+c.key.split('/')[2], c]));
+    const frames = animation?.frames?.length ? animation.frames.map((frame) => frame.cell) : Array.from({ length: animation?.cells ?? 0 }, (_, i) => i);
+    let minIoU = 1;
+    const observe = (c: CellOut, next: CellOut) => {
+      const iou = alignedIoU(c.mask, next.mask, w);
+      minIoU = Math.min(minIoU, iou);
+      return iou;
+    };
+    // Export can loop a move without changing its artwork. Keep that seam in the observation,
+    // separate from the hard fit check between the move's authored frames.
+    const first = byCell.get(frames[0]), last = byCell.get(frames[frames.length - 1]);
+    if (animation?.loop && first && last && first !== last) observe(last, first);
     // B9: a held blade legitimately turns with the swinging arm (walk E: blade 29° -> 74° while the forearm goes 68° -> 92°),
     // which drops the IoU to 0.2 on every seed. With posed keypoints, G9 checks the blade angle RELATIVE to the forearm
     // instead (a flip changes it, a swing does not). Near-round shields have no reliable axis: compare those
     // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
-    if (slot.class === 'held' && !isAction(clip)) {
-      let turn = 0, shapeIoU = 1, occluded = false;
-      for (const [i, c] of ord.entries()) {
-        const n = ord[(i + 1) % ord.length], j = +c.key.split('/')[2], k = +n.key.split('/')[2];
-        // Preserve the posed route's minimum sample size: tiny masks have too few pixels
-        // for a reliable axis, but can still rotate correctly with the hand.
-        if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) continue;
-        const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
-        const angle = fore && x != null && y != null ? angleDiff(x - fore[j], y - fore[k]) : null;
-        const iou = angle == null ? alignedIoU(c.mask, n.mask, w) : 1;
-        if ((angle != null && angle > GATES.heldTurn) || iou < GATES.heldIoU) {
-          const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);
-          if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) { occluded = true; continue; }
-        }
-        if (angle != null) turn = Math.max(turn, angle);
-        else shapeIoU = Math.min(shapeIoU, iou);
+    const checkShape = slot.class === 'held' && !isAction(clip);
+    let turn = 0, shapeIoU = 1, occluded = false;
+    for (let i = 1; i < frames.length; i++) {
+      const j = frames[i - 1], k = frames[i], c = byCell.get(j), n = byCell.get(k);
+      // Missing candidates cannot establish a transition, and a repeated cell holds the same image.
+      if (!c || !n || c === n) continue;
+      const overlap = observe(c, n);
+      if (!checkShape) continue;
+      // Preserve the posed route's minimum sample size: tiny masks have too few pixels
+      // for a reliable axis, but can still rotate correctly with the hand.
+      if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) continue;
+      const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
+      const angle = fore && x != null && y != null ? angleDiff(x - fore[j], y - fore[k]) : null;
+      const iou = angle == null ? overlap : 1;
+      if ((angle != null && angle > GATES.heldTurn) || iou < GATES.heldIoU) {
+        const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);
+        if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) { occluded = true; continue; }
       }
-      if (occluded && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
-      if (turn > GATES.heldTurn) flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
-      if (shapeIoU < GATES.heldIoU) flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
+      if (angle != null) turn = Math.max(turn, angle);
+      else shapeIoU = Math.min(shapeIoU, iou);
     }
+    if (occluded && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
+    if (turn > GATES.heldTurn) flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
+    if (shapeIoU < GATES.heldIoU) flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
     clips.push({ clip, call: cs[0].call, median: med, cv: +cv.toFixed(3), baseCv: +baseCv.toFixed(3), minIoU: +minIoU.toFixed(2), minRatio: +minRatio.toFixed(2), hand, spread: +spread.toFixed(1) });
   }
   // G8: every clip holds the item in the same hand (majority over clips; the slot anchor names the expected one)
