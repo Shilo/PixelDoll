@@ -683,9 +683,9 @@ export function pick(id: string) {
 }
 
 // ---------- item generations ----------
-// Bump when PixelLab request wording changes. Work saved with other wording no longer matches its ledger records and would
+// Bump when PixelLab request inputs change. Work saved with different inputs no longer matches its ledger records and would
 // resend paid calls, so it waits for review instead of resuming by itself.
-export const REQUEST_TEXT = 3;
+export const REQUEST_TEXT = 4;
 const STOPPED = 'Generation stopped. Review Activity before trying again.';
 const SETUP_STOPPED = 'Setup stopped. Review Activity before trying again.';
 const halted = (r: { status?: string; requestText?: number }) => r.status === 'failed' || r.requestText !== REQUEST_TEXT;

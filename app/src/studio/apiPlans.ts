@@ -5,7 +5,7 @@ import { basePrompt } from './model.ts'
 import { ACTIONS } from '../lib/rig/poses.ts'
 import { actionOf, poseBatches, poseCallGens } from '../lib/rig/clips.ts'
 import { pickKey } from '../lib/image/chroma.ts'
-import { gridEstimate, frozenGrid, planItem, planAnchoredMove, itemPrompt, planGens, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
+import { gridEstimate, repairGridLayout, frozenGrid, planItem, planAnchoredMove, itemPrompt, planGens, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
 import { defaultMethod, type Draft, type RigCtx } from '../lib/items/run.ts'
 import { standingCoverage, type NewItemInput } from './itemRoute.ts'
 import type { StoredProject } from '../lib/store/project.ts'
@@ -99,12 +99,12 @@ export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | nu
     }
     for (const direction of missingDirs) {
       if (spec.itemMethod === 'grid') {
-        calls.push({ method: 'POST', path: '/inpaint-v3', label: `${item.name} ${direction} · repair equipment`, generations: gridEstimate(item.layers[0]?.cell ?? m.rig.cell, frames, 1).gens, note: 'Edits only selected equipment frames with one protected matching-direction reference. The body remains unchanged; results are retained only when quality improves.' })
+        calls.push({ method: 'POST', path: '/inpaint-v3', label: `${item.name} ${direction} · repair equipment`, generations: repairGridLayout(item.layers[0]?.cell ?? m.rig.cell, frames, 1).gens, note: 'Edits only selected equipment frames with one protected matching-direction reference. The body remains unchanged; results are retained only when quality improves.' })
       } else for (const batch of poseBatches(frames)) {
         const cells = Array.from({ length: batch.count }, (_, i) => `${spec.id}/${direction}/${batch.start + i}`)
         const grid = frozenGrid(m.rig, item, cells)
         calls.push({ method: 'POST', path: grid ? '/inpaint-v3' : '/animate-with-skeleton-v3', label: `${item.name} ${direction} · frames ${batch.start + 1}–${batch.start + batch.count}`,
-          generations: grid ? gridEstimate(item.layers[0]?.cell ?? m.rig.cell, batch.count, 1).gens : planGens([{ kind: 'pose', cells }]),
+          generations: grid ? repairGridLayout(item.layers[0]?.cell ?? m.rig.cell, batch.count, 1).gens : planGens([{ kind: 'pose', cells }]),
           note: grid ? 'Dresses the frozen body frames instead of following suspicious imported joints. Protected standing references and garment masks preserve the design. One attempt per planned batch; any paid retry requires your action.' : 'Sends this item’s dressed reference, stored base rest keypoints and selected move poses, appearance, action, direction and seed. One attempt per planned batch; any paid retry or repair requires your action.' })
       }
     }

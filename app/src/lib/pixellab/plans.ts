@@ -10,6 +10,8 @@ export const PLAN_JOB_LIMITS = {
   unknown: 3,
 } as const;
 
+export const INPAINT_TIER_ONE_SIDE = 256;
+
 /** Local tier 0 means Free/Trial; it is not an API enum. Unknown/enterprise stays unknown. */
 export function accountTier(balance: Balance | null): number | null {
   const subscription = balance?.subscription;
@@ -36,7 +38,7 @@ export function requestTier(req: Pick<Req, 'method'> & { endpoint: string; param
   if (['/characters/animations', '/animate-character'].includes(req.endpoint) && ['skeleton-v3', 'pixminimax'].includes(body?.mode ?? '')) minimum = Math.max(minimum, 1);
   if (req.endpoint === '/inpaint-v3') {
     const size = body?.inpainting_image?.size;
-    minimum = Math.max(minimum, (size?.width ?? 0) > 256 || (size?.height ?? 0) > 256 ? 2 : 1);
+    minimum = Math.max(minimum, Math.max(size?.width ?? 0, size?.height ?? 0) > INPAINT_TIER_ONE_SIDE ? 2 : 1);
   }
   return minimum;
 }

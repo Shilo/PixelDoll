@@ -13,6 +13,7 @@ import { backView, fromApi, hasAll } from '../rig/poses.ts';
 import { actionOf, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
+import { INPAINT_TIER_ONE_SIDE } from '../pixellab/plans.ts';
 import { clipOf, summaryOf } from './qa-summary.ts';
 import { missingLowerGarment } from './garment-coverage.ts';
 import { footwearWarnings } from './footwear-review.ts';
@@ -70,6 +71,22 @@ export function gridEstimate(cell: { w: number; h: number }, cells: number, refs
   const area = w * h;
   return { w, h, gens: area <= 256 * 256 ? 10 : area <= 341 * 341 ? 15 : 25 };
 }
+
+/** Keep the qualified layout unless repacking lets the entire repair run on Tier 1. */
+export function repairGridLayout(cell: { w: number; h: number }, cells: number, refs: number) {
+  const fixed = gridEstimate(cell, cells, refs);
+  let layout = { ...fixed, cols: GRID_COLS };
+  if (Math.max(fixed.w, fixed.h) <= INPAINT_TIER_ONE_SIDE) return layout;
+  for (let cols = 1; cols * cell.w <= INPAINT_TIER_ONE_SIDE; cols++) {
+    const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h;
+    if (w < 32 || h < 32 || h > INPAINT_TIER_ONE_SIDE) continue;
+    if (layout.cols === GRID_COLS || w * h < layout.w * layout.h ||
+      (w * h === layout.w * layout.h && Math.abs(w - h) < Math.abs(layout.w - layout.h))) {
+      layout = { ...gridEstimate(cell, cells, refs, cols), cols };
+    }
+  }
+  return layout;
+}
 /** Pack cells into one grid (row-major, `cols` wide) plus its mask: white = generate (the cell's mask px), black = keep. */
 export function packGrid(cells: Img[], masks: (Uint8Array | null)[], cols = GRID_COLS): { image: Img; mask: Img } {
   const { w, h } = cells[0], rows = Math.ceil(cells.length / cols), image = makeImg(cols * w, rows * h), mask = makeImg(cols * w, rows * h);
@@ -93,8 +110,8 @@ export function cutGrid(g: Img, n: number, w: number, h: number, cols = GRID_COL
 /** Mask of a slot band (full width) for one cell. */
 export const bandMask = (r: Rect, w: number, h: number) => { const m = new Uint8Array(w * h); for (let y = Math.max(0, r.y); y < Math.min(h, r.y + r.h); y++) m.fill(1, y * w, y * w + w); return m; };
 /** S5 H3 wording: what the grid is, which cells are the reference design, one design everywhere; back items hang behind the arms. */
-export function gridPrompt(o: { item: string; slot: string; key: Key; anim: string; dir: DirectionName; n: number; refs: DirectionName[]; cell: { w: number; h: number }; parts?: { anim: string; n: number }[] }): string {
-  const cols = GRID_COLS, rows = Math.ceil((o.n + o.refs.length) / cols), color = KEY_NAME[o.key];
+export function gridPrompt(o: { item: string; slot: string; key: Key; anim: string; dir: DirectionName; n: number; refs: DirectionName[]; cell: { w: number; h: number }; cols?: number; parts?: { anim: string; n: number }[] }): string {
+  const cols = o.cols ?? GRID_COLS, rows = Math.ceil((o.n + o.refs.length) / cols), color = KEY_NAME[o.key];
   const held = slotOf(o.slot).class === 'held';
   const instruction = held ? `Add the identical ${o.item} to the character's ${handOf(o.slot)} hand in every animation frame, gripped in the fist and following its arm pose; ${oneHeld(o.slot)}; no effects. ` : `Draw the identical ${o.item} on every animation frame, following each frame's pose${o.slot === 'back' ? '; it hangs from the shoulders down the back and never wraps around or follows the arms' : ''}; empty hands, no weapon, no effects. `;
   return `This image is a sprite sheet: a ${cols}x${rows} grid of ${o.cell.w}x${o.cell.h} px frames of the same pixel art character, a solid ${color} mannequin. ` +

@@ -160,6 +160,16 @@ test('restored inpaint uses its saved mask, retains allowed foreground, and cann
   expect(ledger.enqueues).toBe(0); // reload evaluates retained artwork without sending anything
 });
 
+test.each([0, 2])('a restored repair with %i output images requires review without making another request', async (count) => {
+  const f = await retainedMaskedGrid(), job = f.record.jobs[0], output = job.results![0];
+  job.results = Array.from({ length: count }, (_, index) => ({ ...output, label: String(index) }));
+  f.publish();
+  const result = await evaluateItem(f.draft, f.ctx);
+  expect(result.g1.get(0)).toBe('G1 expected exactly one repair grid');
+  expect(result.cells).toHaveLength(0);
+  expect(ledger.enqueues).toBe(0);
+});
+
 test('mutating returned extraction arrays cannot change the next evaluation of the same draft', async () => {
   const f = await retainedMaskedGrid(), first = await evaluateItem(f.draft, f.ctx);
   const expected = first.cells.map(cell => ({ layer: cell.layer.data.slice(), mask: cell.mask.slice(), stencil: cell.stencil!.slice() }));

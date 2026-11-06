@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest'
-import { gridEstimate, packGrid, planGens } from '../../src/lib/items/items.ts'
+import { gridEstimate, packGrid, planGens, repairGridLayout } from '../../src/lib/items/items.ts'
+import { requestTier } from '../../src/lib/pixellab/plans.ts'
 import { makeImg } from '../../src/lib/image/png.ts'
 import { moveEstimate } from '../../src/studio/create.ts'
 import type { Manifest } from '../../src/lib/store/manifest.ts'
@@ -28,6 +29,19 @@ test('protected references and padded unused cells can increase the quoted tier'
 test('invalid frame/reference/dimension counts cannot produce a misleading finite estimate',()=>{
  for(const [cell,frames,refs,cols] of [[{w:64,h:64},0,1,4],[{w:64,h:64},8,-1,4],[{w:64,h:64},8,1.5,4],[{w:NaN,h:64},8,1,4],[{w:64,h:64},8,1,0]] as const)expect(()=>gridEstimate(cell,frames,refs,cols)).toThrow()
 })
+
+test('repair packing changes only when it fits a previously Tier 2 request within Tier 1', () => {
+ const regular = { w: 80, h: 80 };
+ const compact = repairGridLayout(regular, 8, 1);
+ expect(compact).toEqual({ w: 240, h: 240, gens: 10, cols: 3 });
+ const tier = ({ w, h }: { w: number; h: number }) => requestTier({ method: 'POST', endpoint: '/inpaint-v3', params: { inpainting_image: { size: { width: w, height: h } } } });
+ expect(tier(gridEstimate(regular, 8, 1))).toBe(2);
+ expect(tier(compact)).toBe(1);
+ expect(repairGridLayout(regular, 9, 1)).toEqual({ w: 320, h: 240, gens: 15, cols: 4 });
+ expect(repairGridLayout({ w: 64, h: 64 }, 8, 1)).toEqual({ w: 256, h: 192, gens: 10, cols: 4 });
+ expect(repairGridLayout({ w: 128, h: 128 }, 3, 1)).toEqual({ w: 256, h: 256, gens: 10, cols: 2 });
+ expect(() => repairGridLayout({ w: 160, h: 160 }, 8, 1)).toThrow('512');
+});
 
 test('move estimate prices each actual item canvas with only its matching direction reference',()=>{
  const dirs=['south','east','north','west'],dressed=Object.fromEntries(dirs.map(d=>[d,'sha256:reference']))

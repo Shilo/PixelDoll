@@ -21,7 +21,7 @@ import { chromaLayer, type Key } from '../image/chroma.ts';
 import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { designConsistency, expectsWaistBand, type StandingDesignView } from './design-consistency.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { GATES, GRID_COLS, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, bandMask, cutGrid, g2Fails, designGraySmudges, grayShare, gridPrompt, packGrid, bandOf, buildItem, gridFits, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { GATES, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, designGraySmudges, grayShare, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; frozen?: true; reference?: { image: Sha256; cell: CellKey } }
@@ -145,13 +145,15 @@ function standingViews(d: Draft, ctx: RigCtx, refs: { dir: DirectionName; im: Im
 // ---------- calls ----------
 /** B14 grid request (S4 inv3 / S5 H3): the clip-direction's chroma cells masked to the slot band, then the dressed keyframes
  *  (kept, black mask) as the reference design. Rig cell only (held items keep their oversize S5 route). */
-async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>, cells: string[], refs: { dir: DirectionName; im: Img }[], seed: number, pad = 0): Promise<Req> {
+async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>, cells: string[], refs: { dir: DirectionName; im: Img }[], seed: number, pad = 0, compact = false): Promise<Req> {
   const { rig } = ctx.rec.manifest, w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, [anim, dir] = cells[0].split('/') as [string, DirectionName];
   if (cells.some(k => k.split('/')[1] !== dir)) throw new Error('Repair one independently drawn direction at a time.');
   // Keep other views for QA; mixing front and back references can confuse the image editor.
   refs = refs.filter(r => r.dir === dir);
   if (refs.length !== 1) throw new Error(`${dir}: repair needs exactly one matching dressed reference`);
-  gridEstimate({ w, h }, cells.length, refs.length); // same packed geometry used by the displayed estimate
+  const cell = { w, h };
+  const layout = compact ? repairGridLayout(cell, cells.length, refs.length) : gridEstimate(cell, cells.length, refs.length);
+  const cols = layout.w / w;
   if (refs.some(r => r.im.w !== w || r.im.h !== h)) throw new Error('Equipment reference dimensions do not match its repair canvas.');
   const held = slotOf(spec.slot).class === 'held';
   const designs = new Map(refs.map(r => [r.dir, chromaLayer(r.im, spec.key as Key, padImg(baseCell(ctx, restKey(r.dir), true), pad)).layer]));
@@ -169,10 +171,10 @@ async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'ke
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (Math.hypot(x + 0.5 - point.x - pad, y + 0.5 - point.y - pad) <= 34) mask[y * w + x] = 1;
     return mask;
   });
-  const g = packGrid([...cells.map((k) => inputCell(padImg(baseCell(ctx, k), pad), spec.key)), ...refs.map((r) => r.im)], [...masks, ...refs.map(() => null)]);
+  const g = packGrid([...cells.map((k) => inputCell(padImg(baseCell(ctx, k), pad), spec.key)), ...refs.map((r) => r.im)], [...masks, ...refs.map(() => null)], cols);
   const b64 = async (im: Img) => png(bytesToBase64(await encodePngBytes(im)));
   return routes.inpaintV3({
-    description: gridPrompt({ item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim, dir, n: cells.length, refs: refs.map((r) => r.dir), cell: { w, h }, parts: callParts(cells) }),
+    description: gridPrompt({ item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim, dir, n: cells.length, refs: refs.map((r) => r.dir), cell, cols, parts: callParts(cells) }),
     inpainting_image: { image: await b64(g.image), size: { width: g.image.w, height: g.image.h } }, mask_image: { image: await b64(g.mask), size: { width: g.mask.w, height: g.mask.h } }, no_background: true, seed,
   });
 }
@@ -327,11 +329,12 @@ async function img(sha: string) {
   return im;
 }
 /** Decode this submitted request's mask bytes or its saved record; do not reconstruct permissions during extraction. */
-async function inpaintStencils(body: unknown, count: number, w: number, h: number, record?: JobRec): Promise<{ cells: Uint8Array[]; hash: string }> {
+async function inpaintStencils(body: unknown, count: number, w: number, h: number, record?: JobRec) {
   type Sized = { image?: { type?: string; base64?: string; $blob?: string }; size?: { width: number; height: number } };
   const params = body as { inpainting_image?: Sized; mask_image?: Sized } | null;
   const input = params?.inpainting_image?.size, mask = params?.mask_image;
-  if (!input || !mask?.size || input.width !== GRID_COLS * w || !Number.isInteger(input.height) || input.height % h || input.height < Math.ceil((count + 1) / GRID_COLS) * h || mask.size.width !== input.width || mask.size.height !== input.height) {
+  const cols = (input?.width ?? 0) / w;
+  if (!input || !mask?.size || !Number.isInteger(cols) || cols < 1 || input.height !== Math.ceil((count + 1) / cols) * h || mask.size.width !== input.width || mask.size.height !== input.height) {
     throw new Error('The submitted inpaint mask does not match its frame layout.');
   }
   let bytes: Uint8Array;
@@ -349,7 +352,7 @@ async function inpaintStencils(body: unknown, count: number, w: number, h: numbe
   const image = await decodePngBytes(bytes);
   if (image.w !== input.width || image.h !== input.height) throw new Error('The submitted inpaint mask PNG has the wrong canvas.');
   // Only target cells are extracted. References and unused tail cells are not equipment permissions.
-  return { cells: cutGrid(image, count, w, h).map(hardMaskBits), hash: await sha256(bytes) };
+  return { cells: cutGrid(image, count, w, h, cols).map(hardMaskBits), hash: await sha256(bytes), cols, size: input };
 }
 /** Extraction is the costly part of an evaluation, and streaming evaluates after every landed call: each landed output is
  *  extracted once per signature and copied before postProcess changes it. Kept per draft, so it goes with the draft. */
@@ -375,12 +378,14 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
     const r = recOf(c.recId);
     if (r?.state !== 'done') { pending.push(...(c.kind === 'dress' ? c.cells.flatMap((x) => restCells(dirOf(x))) : (c.cells as CellKey[]))); continue; }
     if (c.kind === 'grid') { // B14: cut the cells out of the returned grid
-      const g = await img(outputsOf(r)[0].sha), size = (r.params as { inpainting_image?: { size?: { width: number; height: number } } })?.inpainting_image?.size;
-      if (!size || g.w !== size.width || g.h !== size.height || size.width !== GRID_COLS * W || size.height % H || size.height < Math.ceil((c.cells.length + 1) / GRID_COLS) * H) { g1.set(k, 'G1 repair grid does not match its submitted frame layout'); continue; }
-      const cut = cutGrid(g, c.cells.length, W, H);
+      const outputs = outputsOf(r);
+      if (outputs.length !== 1) { g1.set(k, 'G1 expected exactly one repair grid'); continue; }
       let masks: Awaited<ReturnType<typeof inpaintStencils>>;
       try { masks = await inpaintStencils(r.params, c.cells.length, W, H, r); }
       catch (error) { g1.set(k, `G1 ${(error as Error).message}`); continue; }
+      const g = await img(outputs[0].sha);
+      if (g.w !== masks.size.width || g.h !== masks.size.height) { g1.set(k, 'G1 repair grid does not match its submitted frame layout'); continue; }
+      const cut = cutGrid(g, c.cells.length, W, H, masks.cols);
       c.cells.forEach((key, i) => outs.push({ k, key, out: cut[i], posed: true, rec: r.id, stencil: masks.cells[i], stencilHash: masks.hash }));
       continue;
     }
@@ -548,7 +553,7 @@ export function itemPoseGens(rig: Rig, item: Item, anim: string, frames: number,
   const cell = item.layers[0]?.cell ?? rig.cell;
   return dirs.reduce((sum, dir) => sum + poseBatches(frames).reduce((n, batch) => {
     const cells = Array.from({ length: batch.count }, (_, i) => `${anim}/${dir}/${batch.start + i}`);
-    return n + (frozenGrid(rig, item, cells) ? gridEstimate(cell, cells.length, 1).gens : poseGensFor(cells.length));
+    return n + (frozenGrid(rig, item, cells) ? repairGridLayout(cell, cells.length, 1).gens : poseGensFor(cells.length));
   }, 0), 0);
 }
 const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
@@ -656,7 +661,7 @@ export async function gridRepairRequest(ctx: RigCtx, item: Item, anim: string, d
   const pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   if (!Number.isInteger(pad) || pad < 0 || item.layers.some(l => (l.cell?.w ?? rig.cell.w) !== rig.cell.w + 2 * pad || (l.cell?.h ?? rig.cell.h) !== rig.cell.h + 2 * pad)) throw new Error('Equipment layers use incompatible repair dimensions.');
   const refs = await Promise.all((Object.entries(item.dressed) as [DirectionName, string][]).map(async ([d, h]) => ({ dir: d, im: await img(h.slice(7)) })));
-  return gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key }, cells, refs, seed, pad);
+  return gridReq(ctx, { slot: item.slot, prompt: item.prompt, key: item.key }, cells, refs, seed, pad, true);
 }
 /** One clip-direction edited on its own canvas; body frames remain frozen and reference cells are protected. A grid the account's
  *  plan cannot run (> 256 px needs Tier 2) is never enqueued, since the queue would hold it forever: `blocked` says why. */
@@ -671,9 +676,9 @@ async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: Directio
   const r = terminal(rec) ? rec : await settled(rec.id);
   if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
   if (outputsOf(r).length !== 1) throw new Error('PixelLab returned a malformed repair grid. Existing artwork was kept.');
-  const g = await img(outputsOf(r)[0].sha), size = (req.body as { inpainting_image: { size: { width: number; height: number } } }).inpainting_image.size;
+  const g = await img(outputsOf(r)[0].sha), size = stencils.size;
   if (g.w !== size.width || g.h !== size.height) throw new Error(`${item.name} ${anim} ${dir}: PixelLab returned a grid with the wrong frame layout`);
-  const cut = cutGrid(g, n, w, h);
+  const cut = cutGrid(g, n, w, h, stencils.cols);
   const out = cells.map((c, i) => extractCell({ key: c, call, base: padImg(baseCell(ctx, c), pad), out: cut[i], route: item.key!, band: bandOf(item.slot, pad ? undefined : skelOf(ctx, c), h), posed: true, clip: slot.band, held: slot.class === 'held', pad, cut: cutFor(ctx, item.slot, c, true, cuts), stencil: stencils.cells[i] }));
   postProcess(rig, slot, out, keys, pad);
   return { cells: out, prov: toProv(r, { cells, seed, rerolls: 0, old: [] }) };
