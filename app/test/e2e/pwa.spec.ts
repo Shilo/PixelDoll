@@ -747,7 +747,8 @@ test('an install offer captured before the module app starts remains available f
     const navigation = page.goto(server.url, { waitUntil: 'domcontentloaded' })
     await moduleRequested
     await expect.poll(() => page.evaluate(() => !!window.__pixeldollInstall)).toBe(true)
-    await expect(page.locator('#app')).toBeEmpty()
+    await expect(page.locator('#startup-message').getByRole('status')).toHaveText('Opening your workspace…')
+    await expect(page.locator('.customize-action')).toHaveCount(0)
     const captured = await page.evaluate(() => {
       const event = new Event('beforeinstallprompt', { cancelable: true })
       Object.assign(event, { prompt: async () => { document.documentElement.dataset.pwaEarlyPrompt = 'shown' }, userChoice: Promise.resolve({ outcome: 'dismissed' }) })
@@ -758,6 +759,7 @@ test('an install offer captured before the module app starts remains available f
     releaseModules()
     await navigation
     await expect(page.locator('.customize-action')).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator('#startup-message')).toHaveCount(0)
     await page.getByRole('button', { name: 'More options', exact: true }).click()
     const menu = page.locator('#experience-options')
     await expect(menu.getByRole('button', { name: 'Installation help', exact: true })).toHaveCount(0)
