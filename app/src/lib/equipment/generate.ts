@@ -11,7 +11,7 @@ import { withH4 } from '../items/run.ts';
 import { referenceBodies } from '../items/garment-coverage.ts';
 import { png, type Req } from '../pixellab/routes.ts';
 import type { JobRec } from '../pixellab/queue.ts';
-import { borderPx, paddedPoses, poseBatches } from '../rig/clips.ts';
+import { borderPx, paddedPoses, poseBatches, poseCallGens } from '../rig/clips.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { assertImportedPoses } from '../rig/pose-review.ts';
 import { HEADROOM_MIN } from '../rig/freeze.ts';
@@ -109,7 +109,7 @@ export async function poseFitRequests(design: EquipmentDesign, target: Project, 
     if(!indices.length)continue;
     for (const batch of poseBatches(indices.length)) {
       const part=indices.slice(batch.start,batch.start+batch.count);
-      calls.push({ req: itemRoute.pose({ keyframePngB64: await b64(first), rest: reference.keypoints, poses: part.map(i=>poses[i]), item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim: a.id, dir, seed: seed + calls.length, cell: rig.cell, view: rig.view }), cells: part.map(i=>cellKey(a.id,dir,i)), limit: batch.count <= 3 ? 2 : batch.count <= 8 ? 3 : 4 });
+      calls.push({ req: itemRoute.pose({ keyframePngB64: await b64(first), rest: reference.keypoints, poses: part.map(i=>poses[i]), item: spec.prompt, slot: spec.slot, key: spec.key as Key, anim: a.id, dir, seed: seed + calls.length, cell: rig.cell, view: rig.view }), cells: part.map(i=>cellKey(a.id,dir,i)), limit: poseCallGens(batch.count) });
     }
   }
   return calls;

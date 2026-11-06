@@ -4,6 +4,7 @@ import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { toChroma } from '../../src/lib/image/chroma.ts';
 import { over } from '../../src/lib/compose/compose.ts';
 import { LABELS } from '../../src/lib/rig/poses.ts';
+import { poseGensFor } from '../../src/lib/rig/clips.ts';
 import { cellHash, cellKey, baseHashOf, type DirectionName, type Keypoint } from '../../src/lib/rig/rig.ts';
 import type { CellKey } from '../../src/lib/store/manifest.ts';
 import type { Project, Item } from '../../src/lib/store/manifest.ts';
@@ -110,6 +111,16 @@ test('reference transfer preserves target inputs; posing uses real target joints
   const blink=calls.find(c=>c.cells[0]==='blink/south/0')!.req.body as {first_frame_keypoints:Keypoint[];keypoints:Keypoint[][]};
   expect(blink.first_frame_keypoints).toEqual(target.manifest.rig.rest!.south!.keypoints);expect(blink.keypoints).toHaveLength(3);
   expect(calls.every(c=>(c.req.body as {keypoints:unknown[]}).keypoints.length>=3&&(c.req.body as {keypoints:unknown[]}).keypoints.length<=15)).toBe(true);
+});
+test.each([9, 12, 16])('fitting requests reserve the quoted generations for %i frames', async frameCount => {
+  const source = await project(5, true), target = await project(7), design = await createDesign(source, 'helmet');
+  const rig = target.manifest.rig;
+  const approved = Object.fromEntries(dirs.map(dir => [dir, toChroma(target.images.get(rig.rest![dir]!.image)!, 'green')]));
+  const selected = Array.from({ length: frameCount }, (_, frame) => `long/south/${frame}`);
+  const calls = await poseFitRequests(design, target, approved, 100, selected);
+
+  expect(calls.flatMap(call => call.cells)).toEqual(selected);
+  expect(calls.reduce((gens, call) => gens + call.limit, 0)).toBe(poseGensFor(frameCount));
 });
 test('rest review uses actual API pixels, rejects malformed output, and flags altered bodies',async()=>{
   const source=await project(5,true), target=await project(7), design=await createDesign(source,'helmet');
