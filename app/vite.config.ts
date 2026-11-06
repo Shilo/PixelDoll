@@ -73,7 +73,6 @@ function agentKey(): Plugin {
 // The preload helper keeps its own chunk: main.ts imports it, and importing the startup chunk would run it inside frames.
 const BOOTSTRAP = normalizePath(fileURLToPath(new URL('./src/bootstrap.ts', import.meta.url)))
 const STARTUP_UPDATE = normalizePath(fileURLToPath(new URL('./src/lib/startup-update.ts', import.meta.url)))
-const PWA_RELEASE = normalizePath(fileURLToPath(new URL('./src/lib/pwa-release.ts', import.meta.url)))
 function startupChunk() {
   let startup: Set<string> | undefined
   return (id: string, ctx: { getModuleInfo(id: string): { importedIds: readonly string[] } | null }) => {
@@ -100,14 +99,6 @@ export default defineConfig(({ command, mode }) => {
     // files all run long; watched, they saturate the dev server's CPU and later dev-server specs time out.
     server: { watch: { ignored: ['**/test-results*/**'] } },
     // Early observation must not import the chunk that mounts Studio or connects its generation queue.
-    build: { rolldownOptions: {
-      input: ['index.html', 'update.html'].map(path => fileURLToPath(new URL(path, import.meta.url))),
-      output: { codeSplitting: { groups: [
-        { name: 'startup-update', test: id => id === STARTUP_UPDATE, priority: 2 },
-        { name: 'pwa-release', test: id => id === PWA_RELEASE, priority: 2 },
-        { name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 },
-        { name: startupChunk(), debugName: 'startup' },
-      ] } },
-    } },
+    build: { rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'startup-update', test: id => id === STARTUP_UPDATE, priority: 2 }, { name: 'preload-helper', test: /vite\/preload-helper/, priority: 1 }, { name: startupChunk(), debugName: 'startup' }] } } } },
   }
 })

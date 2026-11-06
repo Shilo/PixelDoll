@@ -242,9 +242,9 @@ service worker. The implementation uses the platform APIs without another depend
   failed verification or quota errors preserve the previous app. Missing current files can be repaired only with verified
   bytes; old missing artwork must never silently borrow a newer release's pixels. Browser storage eviction can still
   remove local data, so exporting backups remains necessary.
-  If saved work never finishes loading, the paused update dialog links to `update.html` in a separate tab. That page
-  runs without Studio and opens the verified release while the original tab keeps its in-memory work. Older versions
-  can open the same recovery URL directly.
+  If saved work never finishes loading, **Update now** in the paused dialog activates a verified release and opens
+  it in another tab. Only this path bypasses the Studio reload guard, so the original tab keeps its in-memory work.
+  Already-loaded older builds can let a ready update activate by closing all PixelDoll tabs and installed windows.
 
 The reference Toadoku implementation was reviewed adversarially. Complete-release verification, explicit activation and
 old-tab safety apply here; its state restoration and long retry backoff do not. The

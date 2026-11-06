@@ -32,6 +32,27 @@
     if (busy) return
     dialog.close(); mode = null; restoreTrigger(from)
   }
+  async function updateInNewTab() {
+    if (busy || !$pwa.ready) return
+    // Open within the click so the browser allows it. The existing Studio stays alive throughout activation.
+    const tab = window.open('about:blank', '_blank')
+    if (!tab) { error = 'Allow pop-ups for PixelDoll to open the update in a new tab.'; return }
+    busy = true
+    error = ''
+    try {
+      tab.opener = null
+      tab.document.title = 'Updating PixelDoll'
+      if (tab.document.body) tab.document.body.textContent = 'Verifying the PixelDoll update…'
+      await applyUpdate(undefined, undefined, tab)
+      busy = false
+      close()
+    } catch (e) {
+      try { if (!tab.closed && tab.location.href === 'about:blank') tab.close() }
+      catch { /* The user navigated the tab to a different origin. */ }
+      error = (e as Error).message
+      busy = false
+    }
+  }
   async function install() { if (await installApp() && mode === 'install') close() }
   $effect(() => { if (mode === 'install' && $pwa.installed) close() })
   function validateAutomatic() {
@@ -85,9 +106,9 @@
       {#if $pwa.error}<p role="status">{$pwa.error}</p>{/if}
     {:else if error}
       <p role="alert">{error}</p>
-      <p>If you’re stuck, open the latest version in another tab. This tab and your saved data stay in place.</p>
-      <a class="bu-action" data-variant="outline" href={new URL('update.html', new URL(import.meta.env.BASE_URL, document.baseURI)).href} target="_blank" rel="noopener">Open update recovery</a>
-    {:else}<p role="status">Saving your outfit and verifying the complete update. Keep this tab open.</p>{/if}
+      <p>Update now opens the verified version in a new tab and keeps your work open here.</p>
+      <button type="button" class="bu-action" data-variant="primary" disabled={!$pwa.ready} onclick={updateInNewTab}>Update now</button>
+    {:else}<p role="status">Preparing the update. Keep this tab open.</p>{/if}
   </div>
   {/if}
 </dialog>
