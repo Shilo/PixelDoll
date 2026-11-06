@@ -5,7 +5,7 @@ export { simAligned } from '../image/similarity.ts';
 import { chromaLayer, chromaMask, chromaPrompt, components, fillHoles, KEY_NAME, keyKept, keyOutside, newKeyPixels, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
 import { diffLayer, type Rect } from '../image/diff.ts';
 import { makeImg, type Img } from '../image/png.ts';
-import { over } from '../compose/compose.ts';
+import { cutBase, over } from '../compose/compose.ts';
 import { splitFgBg } from '../compose/split.ts';
 import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
@@ -746,10 +746,13 @@ export function extractCell(o: { key: string; call: number; base: Img; out: Img;
   return cell;
 }
 
-/** Layer drawn over the real base (what the game shows). */
-export function recompose(c: Pick<CellOut, 'base' | 'layer'>): Img {
+const cutIndices = (cut: Uint8Array) => [...cut.keys()].filter((p) => cut[p]);
+const visibleBase = (c: Pick<CellOut, 'base' | 'cut'>) => c.cut ? cutBase(c.base, [cutIndices(c.cut)]) : c.base;
+
+/** Draw a single equipment layer over the same cut body used by Studio. */
+export function recompose(c: Pick<CellOut, 'base' | 'layer' | 'cut'>): Img {
   const o = makeImg(c.base.w, c.base.h);
-  over(o, c.base);
+  over(o, visibleBase(c));
   over(o, c.layer);
   return o;
 }
@@ -882,8 +885,9 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     if (border) warnings.push(`G7 ${c.key}: ${border} pixels touch the cell border; review framing`);
     clipPx += border;
     if (slot.bgZ != null) {
-      const { fg, bg } = splitFgBg(c.layer, c.base), a = makeImg(w, h), b = recompose(c);
-      over(a, bg); over(a, c.base); over(a, fg);
+      const base = visibleBase(c);
+      const { fg, bg } = splitFgBg(c.layer, c.base), a = makeImg(w, h), b = recompose({ base, layer: c.layer });
+      over(a, bg); over(a, base); over(a, fg);
       if (a.data.some((v, i) => v !== b.data[i])) splitExact = false;
     }
   }
@@ -1224,7 +1228,7 @@ export async function buildItem(o: {
         if (c) covered.push(cellKey(a, d, i) as CellKey);
         const parts = !c ? [null, null] : slot.bgZ != null ? (({ fg, bg }) => [fg, bg])(splitFgBg(c.layer, c.base)) : [c.layer];
         for (const [j, l] of layers.entries()) ((l.cells![a]![d] ??= Array(n).fill(null)) as (Sha256 | null)[])[i] = parts[j] ? await put(parts[j]!) : null;
-        if (c?.cut) ((baseCut[a] ??= {})[d] ??= Array(n).fill(null))[i] = [...c.cut.keys()].filter((p) => c.cut![p]);
+        if (c?.cut) ((baseCut[a] ??= {})[d] ??= Array(n).fill(null))[i] = cutIndices(c.cut);
       }
   }
   const item: Item = {

@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import { report, runBench } from '../../scripts/bench.ts'
 import { keyScore, KT } from '../../src/lib/image/chroma.ts'
+import { recompose } from '../../src/lib/items/items.ts'
 
 // The item-pipeline benchmark (scripts/bench.ts) on the frozen real-output corpus. A change to extraction, cleanup or QA that
 // moves any number must regenerate docs/testing/bench.md (`npm run bench -- --write`) so the change is reviewed, and the defects
@@ -16,6 +17,25 @@ test('docs/testing/bench.md matches the current pipeline', async () => {
 
 test('every clip meets its documented verdict', () => {
   expect(results.flatMap((r) => r.misses.map((m) => `${r.id} ${m}`))).toEqual([])
+})
+
+test('equipment contact sheets hide recorded body cuts without changing other pixels', () => {
+  let checked = 0
+  for (const cell of byId('b-greathelm').cells) {
+    const { base, layer, cut } = cell
+    if (!cut?.some(Boolean)) continue
+    const uncut = recompose({ base, layer })
+    const expected = uncut.data.slice()
+    for (let p = 0; p < cut.length; p++) {
+      if (!cut[p]) continue
+      const i = p * 4
+      expect(base.data[i + 3]).toBe(255)
+      expected.set(layer.data.subarray(i, i + 4), i)
+      checked++
+    }
+    expect(recompose(cell).data).toEqual(expected)
+  }
+  expect(checked).toBeGreaterThan(0)
 })
 
 test('fixed defects stay fixed', () => {
