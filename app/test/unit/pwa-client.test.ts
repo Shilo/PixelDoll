@@ -382,10 +382,11 @@ describe('automatic startup updates revalidate asynchronous work', () => {
     let release!: () => void, preparing = 0
     const finalSave = new Promise<void>(resolve => { release = resolve })
     try {
+      await vi.advanceTimersByTimeAsync(4_000)
       const result = app.client.applyUpdate(async () => { if (++preparing === 3) await finalSave }, app.automatic).then(() => null, error => error)
       await settle()
       expect(preparing).toBe(3)
-      await vi.advanceTimersByTimeAsync(app.policy.STARTUP_AUTO_UPDATE_MS + 1)
+      await vi.advanceTimersByTimeAsync(app.policy.STARTUP_AUTO_UPDATE_MS - 4_000 + 1)
       release(); await settle()
       expect(await result).toBeInstanceOf(app.policy.StartupUpdateCancelled)
       expect(app.reload).not.toHaveBeenCalled()
@@ -393,5 +394,28 @@ describe('automatic startup updates revalidate asynchronous work', () => {
       await app.client.applyUpdate(async () => {})
       expect(app.reload).toHaveBeenCalledOnce()
     } finally { app.stop() }
+  })
+})
+
+describe('manual update save deadlines', () => {
+  it.each([1, 2, 3])('releases the update when save check %s stalls without reloading after a late save', async stalledCheck => {
+    const app = await setup()
+    app.start()
+    await settle()
+    let finishSave!: () => void
+    const pending = new Promise<void>(resolve => { finishSave = resolve })
+    let checks = 0
+    const result = app.client.applyUpdate(async () => {
+      if (++checks === stalledCheck) await pending
+    }).catch(error => error)
+    await settle()
+    expect(checks).toBe(stalledCheck)
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(await result).toEqual(new Error('Saving your work took too long. Open the update in a new tab to keep your work open.'))
+    expect(get(app.client.pwa)).toMatchObject({ available: next, ready: true })
+    finishSave()
+    await settle()
+    expect(app.reload).not.toHaveBeenCalled()
+    if (stalledCheck < 3) expect(app.messages).not.toContain('ACTIVATE')
   })
 })

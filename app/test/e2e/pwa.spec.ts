@@ -372,6 +372,46 @@ test('an unfinished outfit name and failed storage block reload; a saved outfit 
   } finally { await server.close() }
 })
 
+test('a stalled outfit save releases the update dialog and leaves the old Studio open', async ({ page }) => {
+  const a = await testRelease('save-stall-a', '9.6.1'), b = await testRelease('save-stall-b', '9.6.2'), server = await pwaServer(a)
+  try {
+    await openInstalled(page, server.url, a)
+    await enterStudio(page)
+    await equipmentMode(page, 'Outfits')
+    await page.getByRole('button', { name: 'Save current look', exact: true }).click()
+    await page.getByRole('textbox', { name: 'Outfit name', exact: true }).fill('Keep this outfit open')
+    // The database still commits, but Studio never receives the transaction-completion notification.
+    await page.evaluate(() => {
+      const original = IDBObjectStore.prototype.put
+      IDBObjectStore.prototype.put = function(value, key) {
+        if (this.name === 'projects' && typeof key === 'string' && key.startsWith('dress-fixture:')) {
+          this.transaction.addEventListener('complete', () => { document.documentElement.dataset.stalledSave = 'yes' })
+          Object.defineProperty(this.transaction, 'oncomplete', { set: () => {} })
+        }
+        return key === undefined ? original.call(this, value) : original.call(this, value, key)
+      }
+    })
+    await page.locator('.inline-form').getByRole('button', { name: 'Save', exact: true }).click()
+    await expect(page.locator('html')).toHaveAttribute('data-stalled-save', 'yes')
+    server.deploy(b)
+    const update = await discover(page, b)
+    await page.clock.install()
+    await update.click()
+    await expect(page.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toBeVisible()
+    await page.clock.fastForward(16_000)
+    const paused = page.getByRole('dialog', { name: 'Update paused', exact: true })
+    await expect(paused.getByRole('alert')).toContainText('Saving your work took too long.')
+    await expect(paused.getByRole('button', { name: 'Close', exact: true })).toBeEnabled()
+    const popup = page.waitForEvent('popup')
+    await paused.getByRole('button', { name: 'Update now', exact: true }).click()
+    const updated = await popup
+    await expectLoadedBuild(updated, b)
+    await expectLoadedBuild(page, a)
+    await expect(page.getByRole('button', { name: /^Keep this outfit open/ })).toBeVisible()
+    await expect(paused).toBeHidden()
+  } finally { await server.close() }
+})
+
 for (const loading of ['stalled', 'failed'] as const) {
   test(`both update controls recover from ${loading} saved-work loading and preserve the saved outfit`, async ({ page }) => {
     const a = await testRelease('recovery-stalled-a', '9.3.1'), b = await testRelease('recovery-stalled-b', '9.3.2'), server = await pwaServer(a)
@@ -468,6 +508,43 @@ test('Update now handles a blocked popup and preserves the draft when verificati
     await updated.reload()
     await expectLoadedBuild(updated, b)
   } finally { await context.setOffline(false); await server.close() }
+})
+
+test('a closed or repurposed update tab leaves the original draft and allows retry', async ({ page }) => {
+  const a = await testRelease('modal-destination-a', '9.7.1'), b = await testRelease('modal-destination-b', '9.7.2'), server = await pwaServer(a)
+  try {
+    await openInstalled(page, server.url, a)
+    await page.getByRole('button', { name: 'New character', exact: true }).click()
+    const draft = page.getByRole('dialog', { name: 'New character', exact: true }).getByRole('textbox', { name: 'Name', exact: true })
+    await draft.fill('Keep editing here')
+    server.deploy(b)
+    await (await discover(page, b)).click()
+    const paused = page.getByRole('dialog', { name: 'Update paused', exact: true })
+    const button = paused.getByRole('button', { name: 'Update now', exact: true })
+    for (const navigate of [false, true]) {
+      const held = server.hold('release.json')
+      const popup = page.waitForEvent('popup')
+      await button.click()
+      const updated = await popup
+      await held.requested
+      const replacement = 'data:text/html,Repurposed'
+      if (navigate) await updated.goto(replacement)
+      else await updated.close()
+      held.release()
+      await expect(paused.getByRole('alert')).toContainText('The update tab is no longer available.')
+      if (navigate) {
+        await expect(updated).toHaveURL(replacement)
+        await updated.close()
+      }
+      await expectLoadedBuild(page, a)
+    }
+    const popup = page.waitForEvent('popup')
+    await button.click()
+    await expectLoadedBuild(await popup, b)
+    await expectLoadedBuild(page, a)
+    await expect(draft).toHaveValue('Keep editing here')
+    await expect(paused).toBeHidden()
+  } finally { await server.close() }
 })
 
 test('a cached app can adopt a waiting update by closing all app tabs without clearing saved data', async ({ page, context }) => {

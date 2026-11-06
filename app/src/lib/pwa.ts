@@ -216,8 +216,10 @@ export async function applyUpdate(
     automatic?.validate()
     if (get(pwa).available?.build !== target.build || !get(pwa).ready) throw new Error('The available update changed or is still downloading. Review the current version and try again.')
   }
+  // An unresponsive save must leave the current tab open and let the user try the separate-tab update.
+  const prepareToReload = () => prepare && bounded(prepare(), 'Saving your work took too long. Open the update in a new tab to keep your work open.')
   validate()
-  await prepare?.()
+  await prepareToReload()
   validate()
   // Startup discovery just verified this target. Do not enqueue another entire discovery/staging pass while it
   // finishes; that can consume the automatic opportunity. Explicit updates refresh an older notice first.
@@ -229,7 +231,7 @@ export async function applyUpdate(
   const verified = await workerMessage(worker, 'VERIFY', target.build)
   validate()
   if (verified.ready !== true) throw new Error('The update is incomplete. Reconnect and try again.')
-  await prepare?.()
+  await prepareToReload()
   validate()
   if (worker === registration.waiting) {
     await workerMessage(worker, 'ACTIVATE', target.build)
@@ -242,10 +244,13 @@ export async function applyUpdate(
   const active = controller ?? registration.active
   if (!active || readRelease(await workerMessage(active, 'GET_RELEASE')).build !== target.build) throw new Error('Another version activated. Review the update and try again.')
   validate()
-  await prepare?.()
+  await prepareToReload()
   validate()
   if (openIn) {
-    if (openIn.closed || openIn.location.href !== 'about:blank') throw new Error('The update tab is no longer available. Try again.')
+    let unused = false
+    try { unused = !openIn.closed && openIn.location.href === 'about:blank' }
+    catch { /* Reading the location throws if the user navigated to another origin. */ }
+    if (!unused) throw new Error('The update tab is no longer available. Try again.')
     openIn.location.replace(base.href)
     return
   }
