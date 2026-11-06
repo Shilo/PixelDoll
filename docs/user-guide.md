@@ -326,7 +326,8 @@ for why there are dedicated exports for these engines and when more would be use
   opens, returns to the foreground, or reconnects, and once an hour while visible. A pushed commit must finish
   deployment before it can be detected.
   If **Update paused** persists, choose **Update now** in the dialog. It opens the verified release in a new tab and
-  keeps your work open in the original tab. On older versions, once the update says **Available**, finish any work,
+  keeps your work open in the original tab. If the browser needs another click, choose **Open updated app**.
+  On older versions, once the update says **Available**, finish any work,
   close every PixelDoll tab and installed window, then reopen PixelDoll in the same browser profile.
   If an immediate reopen still shows the old version, quit and reopen the browser.
   If a download keeps failing while connected, finish your work, then close every PixelDoll window and reopen.

@@ -5,7 +5,7 @@ import { basename, join } from 'node:path';
 
 // Historical names are leak indicators, not a list of permitted environment references. resolveAgentKey covers any name.
 
-const MARKERS = ['resolveAgentKey', 'PIXELLAB_SECRET', '__dev', 'pixellab-key', 'PIXELLAB_API_KEY_AGENT_DEV', 'PIXELLAB_TOKEN_AGENT_DEV', 'PIXELLAB_API_KEY', 'API_KEY_OVERRIDE', 'DEV_API_KEY', 'devkey', 'pixeldoll.agentKey', 'agent-badge', 'sourceMappingURL'];
+const MARKERS = ['resolveAgentKey', 'PIXELLAB_SECRET', '__dev', 'pixellab-key', 'PIXELLAB_API_KEY_AGENT_DEV', 'PIXELLAB_TOKEN_AGENT_DEV', 'PIXELLAB_API_KEY', 'API_KEY_OVERRIDE', 'DEV_API_KEY', 'devkey', 'pixeldoll.agentKey', 'agent-badge', 'sourceMappingURL', '#/selftest', 'Developer pages', 'Verifying the PixelDoll update'];
 const bad = [];
 let startupPolicies = 0;
 for (const rel of readdirSync('dist', { recursive: true })) {
@@ -14,6 +14,7 @@ for (const rel of readdirSync('dist', { recursive: true })) {
   const name = basename(file);
   if (name.startsWith('.env')) bad.push(`${file}: .env file`);
   else if (name.endsWith('.map')) bad.push(`${file}: source map`);
+  else if (name === 'update.html') bad.push(`${file}: retired update page`);
   else {
     const text = readFileSync(file, 'latin1');
     if (MARKERS.some((m) => text.includes(m))) bad.push(`${file}: dev or agent-key marker`);

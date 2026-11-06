@@ -8,8 +8,9 @@
     ? { '/m1': () => import('./ui/M1.svelte'), '/m2': () => import('./ui/M2.svelte'), '/m3': () => import('./ui/M3.svelte'), '/m4': () => import('./ui/M4.svelte'), '/m5': () => import('./ui/M5.svelte'), '/selftest': () => import('./ui/SelfTest.svelte'), home: () => import('./ui/Home.svelte'), bar: () => import('./ui/TopBar.svelte') }
     : {}
   const current = () => location.hash.replace(/^#/, '') || '/'
-  let route = $state(current())
+  let route = $state(import.meta.env.DEV ? current() : '/')
   $effect(() => {
+    if (!import.meta.env.DEV) return
     const on = () => (route = current())
     addEventListener('hashchange', on)
     return () => removeEventListener('hashchange', on)

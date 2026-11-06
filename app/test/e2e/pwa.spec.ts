@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page, type Locator } from '@playwright/test'
 import { enterStudio, equipmentMode } from './immersive-helpers.ts'
 import { pwaServer, testRelease, type TestRelease } from './pwa-test-server.ts'
 
@@ -32,6 +32,21 @@ async function openInstalled(page: Page, url: string, release: TestRelease) {
 
 async function expectLoadedBuild(page: Page, release: TestRelease) {
   await expect(page.locator('script[type="module"]').first()).toHaveAttribute('src', new RegExp(release.release.build))
+}
+
+async function openUpdatedApp(page: Page, button: Locator) {
+  const context = page.context()
+  const existing = context.pages()
+  const newTab = () => context.pages().find(tab => !existing.includes(tab))
+  const link = page.getByRole('link', { name: 'Open updated app', exact: true })
+  await button.click()
+  await expect.poll(async () => !!newTab() || await link.isVisible(), { timeout: 30_000 }).toBe(true)
+  if (await link.isVisible()) {
+    const opened = context.waitForEvent('page')
+    await link.click()
+    return opened
+  }
+  return newTab()!
 }
 
 async function discover(page: Page, release: TestRelease) {
@@ -92,6 +107,7 @@ test('installed shell includes valid icons and works offline after a cold naviga
     await expect.poll(() => page.evaluate(() => !!document.fullscreenElement)).toBe(false)
     await page.addInitScript(() => localStorage.setItem('pixeldoll.theme', 'light'))
     await context.setOffline(true)
+    await page.evaluate(() => { location.hash = '/selftest' })
     await page.reload()
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
     expect(await page.evaluate(() => document.documentElement.style.colorScheme)).toBe('light')
@@ -402,9 +418,7 @@ test('a stalled outfit save releases the update dialog and leaves the old Studio
     const paused = page.getByRole('dialog', { name: 'Update paused', exact: true })
     await expect(paused.getByRole('alert')).toContainText('Saving your work took too long.')
     await expect(paused.getByRole('button', { name: 'Close', exact: true })).toBeEnabled()
-    const popup = page.waitForEvent('popup')
-    await paused.getByRole('button', { name: 'Update now', exact: true }).click()
-    const updated = await popup
+    const updated = await openUpdatedApp(page, paused.getByRole('button', { name: 'Update now', exact: true }))
     await expectLoadedBuild(updated, b)
     await expectLoadedBuild(page, a)
     await expect(page.getByRole('button', { name: /^Keep this outfit open/ })).toBeVisible()
@@ -449,9 +463,7 @@ for (const loading of ['stalled', 'failed'] as const) {
       await page.getByRole('button', { name: 'More options', exact: true }).click()
       await page.locator('#experience-options').getByRole('button', { name: 'Update to v9.3.2', exact: true }).click()
       await expect(paused.getByRole('alert')).toHaveText(reason)
-      const popup = page.waitForEvent('popup')
-      await paused.getByRole('button', { name: 'Update now', exact: true }).click()
-      const recovery = await popup
+      const recovery = await openUpdatedApp(page, paused.getByRole('button', { name: 'Update now', exact: true }))
       await expect(recovery).toHaveURL(server.url, { timeout: 30_000 })
       await expectLoadedBuild(recovery, b)
       await enterStudio(recovery)
@@ -463,7 +475,7 @@ for (const loading of ['stalled', 'failed'] as const) {
   })
 }
 
-test('Update now handles a blocked popup and preserves the draft when verification fails and on retry', async ({ page, context }) => {
+test('Update now preserves the draft when verification fails and opens the verified app after retry', async ({ page, context }) => {
   const a = await testRelease('modal-retry-a', '9.4.1'), b = await testRelease('modal-retry-b', '9.4.2'), server = await pwaServer(a)
   try {
     await openInstalled(page, server.url, a)
@@ -474,14 +486,6 @@ test('Update now handles a blocked popup and preserves the draft when verificati
     await (await discover(page, b)).click()
     const paused = page.getByRole('dialog', { name: 'Update paused', exact: true })
     const button = paused.getByRole('button', { name: 'Update now', exact: true })
-    await page.evaluate(() => {
-      const original = window.open
-      window.open = () => { window.open = original; return null }
-    })
-    await button.click()
-    await expect(paused.getByRole('alert')).toContainText('Allow pop-ups')
-    await expectLoadedBuild(page, a)
-
     const asset = b.inventory.find(file => file.path.startsWith('appearance.js?'))!.path
     server.failures.add('appearance.js')
     await page.evaluate(async ({ build, url }) => {
@@ -497,9 +501,7 @@ test('Update now handles a blocked popup and preserves the draft when verificati
     server.failures.delete('appearance.js')
     await page.evaluate(() => window.dispatchEvent(new Event('online')))
     await expect(button).toBeEnabled({ timeout: 20_000 })
-    const popup = page.waitForEvent('popup')
-    await button.click()
-    const updated = await popup
+    const updated = await openUpdatedApp(page, button)
     await expect(updated).toHaveURL(server.url, { timeout: 30_000 })
     await expectLoadedBuild(updated, b)
     await expectLoadedBuild(page, a)
@@ -510,7 +512,7 @@ test('Update now handles a blocked popup and preserves the draft when verificati
   } finally { await context.setOffline(false); await server.close() }
 })
 
-test('a closed or repurposed update tab leaves the original draft and allows retry', async ({ page }) => {
+test('slow or blocked updates stay in Studio and offer a direct link to the verified app', async ({ page, context }) => {
   const a = await testRelease('modal-destination-a', '9.7.1'), b = await testRelease('modal-destination-b', '9.7.2'), server = await pwaServer(a)
   try {
     await openInstalled(page, server.url, a)
@@ -521,29 +523,32 @@ test('a closed or repurposed update tab leaves the original draft and allows ret
     await (await discover(page, b)).click()
     const paused = page.getByRole('dialog', { name: 'Update paused', exact: true })
     const button = paused.getByRole('button', { name: 'Update now', exact: true })
-    for (const navigate of [false, true]) {
-      const held = server.hold('release.json')
-      const popup = page.waitForEvent('popup')
-      await button.click()
-      const updated = await popup
-      await held.requested
-      const replacement = 'data:text/html,Repurposed'
-      if (navigate) await updated.goto(replacement)
-      else await updated.close()
-      held.release()
-      await expect(paused.getByRole('alert')).toContainText('The update tab is no longer available.')
-      if (navigate) {
-        await expect(updated).toHaveURL(replacement)
-        await updated.close()
+    await page.evaluate(() => {
+      window.open = url => {
+        document.documentElement.dataset.openedUrl = String(url)
+        return null
       }
-      await expectLoadedBuild(page, a)
-    }
-    const popup = page.waitForEvent('popup')
+    })
+    const held = server.hold('release.json')
     await button.click()
-    await expectLoadedBuild(await popup, b)
+    try {
+      await held.requested
+      await expect(page.getByRole('dialog', { name: 'Updating PixelDoll', exact: true })).toContainText('Preparing the update')
+      await expect(page.locator('html')).not.toHaveAttribute('data-opened-url', /./)
+      expect(context.pages()).toEqual([page])
+    } finally { held.release() }
+    const ready = page.getByRole('dialog', { name: 'Update ready', exact: true })
+    const link = ready.getByRole('link', { name: 'Open updated app', exact: true })
+    await expect(link).toBeFocused()
+    await expect(link).toHaveAttribute('href', server.url)
+    const popup = context.waitForEvent('page')
+    await link.click()
+    const updated = await popup
+    await expectLoadedBuild(updated, b)
+    expect(await updated.evaluate(() => window.opener)).toBeNull()
     await expectLoadedBuild(page, a)
     await expect(draft).toHaveValue('Keep editing here')
-    await expect(paused).toBeHidden()
+    await expect(ready).toBeHidden()
   } finally { await server.close() }
 })
 

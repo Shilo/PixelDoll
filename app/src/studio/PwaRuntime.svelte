@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte'
-  import { pwa, startPwa, setPwaActions, applyUpdate, installApp } from '../lib/pwa.ts'
+  import { pwa, startPwa, setPwaActions, applyUpdate, prepareUpdateInNewTab, installApp } from '../lib/pwa.ts'
   import { prepareForUpdate, updateBlocked } from './state.svelte.ts'
   import { restoreTrigger } from './experience/focus.ts'
   import { app } from '../lib/app.svelte.ts'
@@ -9,13 +9,14 @@
   let dialog: HTMLDialogElement
   let mode = $state<'update' | 'install' | null>(null)
   let busy = $state(false), error = $state('')
+  let updateUrl = $state(''), updateLink = $state<HTMLAnchorElement>()
   let from: HTMLElement | null = null
   const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   async function show(next: 'update' | 'install') {
     if (busy || mode) return
     from = document.activeElement instanceof HTMLElement ? document.activeElement : null
     document.querySelectorAll<HTMLElement>('[popover]:popover-open').forEach(el => el.hidePopover())
-    error = ''; mode = next
+    error = ''; updateUrl = ''; mode = next
     await tick()
     if (mode !== next || (next === 'install' && $pwa.installed)) return
     dialog.showModal()
@@ -34,21 +35,22 @@
   }
   async function updateInNewTab() {
     if (busy || !$pwa.ready) return
-    // Open within the click so the browser allows it. The existing Studio stays alive throughout activation.
-    const tab = window.open('about:blank', '_blank')
-    if (!tab) { error = 'Allow pop-ups for PixelDoll to open the update in a new tab.'; return }
     busy = true
     error = ''
     try {
-      tab.opener = null
-      tab.document.title = 'Updating PixelDoll'
-      if (tab.document.body) tab.document.body.textContent = 'Verifying the PixelDoll update…'
-      await applyUpdate(undefined, undefined, tab)
+      const url = await prepareUpdateInNewTab()
+      // Some browsers expire the click permission while preparing the release. Offer a direct link in that case.
+      const tab = navigator.userActivation?.isActive === false ? null : window.open(url, '_blank')
       busy = false
-      close()
+      if (tab) {
+        tab.opener = null
+        close()
+      } else {
+        updateUrl = url
+        await tick()
+        updateLink?.focus()
+      }
     } catch (e) {
-      try { if (!tab.closed && tab.location.href === 'about:blank') tab.close() }
-      catch { /* The user navigated the tab to a different origin. */ }
       error = (e as Error).message
       busy = false
     }
@@ -89,7 +91,7 @@
 
 <dialog bind:this={dialog} class="sheet center pwa-dialog" aria-labelledby="pwa-dialog-title" aria-describedby="pwa-dialog-description" onkeydown={e => e.stopPropagation()} onwheel={e => e.stopPropagation()} oncancel={e => { e.preventDefault(); close() }}>
   {#if mode}
-  <header class="sheet-head"><span></span><h2 id="pwa-dialog-title" class="sheet-title">{mode === 'install' ? 'Installation help' : busy ? 'Updating PixelDoll' : 'Update paused'}</h2><button class="bu-action" data-variant="quiet" disabled={busy} onclick={close}>Close</button></header>
+  <header class="sheet-head"><span></span><h2 id="pwa-dialog-title" class="sheet-title">{mode === 'install' ? 'Installation help' : busy ? 'Updating PixelDoll' : updateUrl ? 'Update ready' : 'Update paused'}</h2><button class="bu-action" data-variant="quiet" disabled={busy} onclick={close}>Close</button></header>
   <div class="sheet-body" id="pwa-dialog-description">
     {#if mode === 'install'}
       {#if $pwa.installError}<p role="alert">{$pwa.installError}</p>{/if}
@@ -104,6 +106,9 @@
       <p>Saved characters, dressing, recoloring, device import, and export work offline after the app files finish downloading. PixelLab generation, account information, and its library need a connection.</p>
       <p role="status">{$pwa.offlineReady ? 'App files are ready for offline launches.' : 'Offline files are not ready yet. Keep PixelDoll open while connected.'}</p>
       {#if $pwa.error}<p role="status">{$pwa.error}</p>{/if}
+    {:else if updateUrl}
+      <p role="status">Open the updated app in a new tab to keep your work open here.</p>
+      <a bind:this={updateLink} class="bu-action" data-variant="primary" href={updateUrl} target="_blank" rel="noopener" onclick={close}>Open updated app</a>
     {:else if error}
       <p role="alert">{error}</p>
       <p>Update now opens the verified version in a new tab and keeps your work open here.</p>

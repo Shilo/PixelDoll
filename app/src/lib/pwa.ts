@@ -203,13 +203,27 @@ export function startPwa() {
   }
 }
 
-/** Every path verifies the release. Only a separate tab can skip preparing Studio for a reload. */
-export async function applyUpdate(
-  prepare: (() => Promise<void>) | undefined,
-  automatic?: { validate: () => void; beforeReload: () => void },
-  openIn?: Window,
+interface StartupUpdate {
+  validate: () => void
+  beforeReload: () => void
+}
+
+export async function applyUpdate(prepare: () => Promise<void>, automatic?: StartupUpdate) {
+  await activateUpdate(prepare, automatic)
+  automatic?.beforeReload()
+  location.reload()
+}
+
+/** The existing Studio stays open. Verify the active worker that will serve the next navigation. */
+export async function prepareUpdateInNewTab() {
+  await activateUpdate()
+  return base.href
+}
+
+async function activateUpdate(
+  prepare?: () => Promise<void>,
+  automatic?: StartupUpdate,
 ) {
-  if (!prepare && !openIn) throw new Error('PixelDoll must save your work before reloading this tab.')
   const target = get(pwa).available
   if (!target || !registration) throw new Error('No update is ready yet.')
   const validate = () => {
@@ -239,21 +253,11 @@ export async function applyUpdate(
     await waitForWorker(worker, () => worker.state === 'activated', 'The update could not activate. Try again.')
     validate()
   }
-  const controller = openIn ? null : navigator.serviceWorker.controller
+  const controller = prepare ? navigator.serviceWorker.controller : null
   // First-time/uncontrolled tabs use the active worker on their next navigation.
   const active = controller ?? registration.active
   if (!active || readRelease(await workerMessage(active, 'GET_RELEASE')).build !== target.build) throw new Error('Another version activated. Review the update and try again.')
   validate()
   await prepareToReload()
   validate()
-  if (openIn) {
-    let unused = false
-    try { unused = !openIn.closed && openIn.location.href === 'about:blank' }
-    catch { /* Reading the location throws if the user navigated to another origin. */ }
-    if (!unused) throw new Error('The update tab is no longer available. Try again.')
-    openIn.location.replace(base.href)
-    return
-  }
-  automatic?.beforeReload()
-  location.reload()
 }
