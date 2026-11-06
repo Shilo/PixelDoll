@@ -413,7 +413,7 @@ export async function createCharacter(spec: CreateSpec, onProgress: (p: Progress
 // ---------- add a move ----------
 /** `replace`: re-render an existing clip (B9: the Ranger's managed idle -> authored idle) and re-pose `items` onto it. */
 /** itemsOnly: the caller poses items onto a move the body already has (Make it, item frame repair); finishing changes no move. */
-export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid' | 'anchor'; itemReview?: { gens: number; artwork: string }; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; checkHashes: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; checkHashes: string[]; rigVersion: string } }
+export interface MoveSpec { id: string; action?: string; text?: string; frames: number; items: string[]; sharedItems?: string[]; itemsOnly?: true; seed: number; replace?: boolean; activityScope?: string; dirs?: DirectionName[]; itemMethod?: 'grid' | 'anchor'; reuseItemFrames?: true; itemReview?: { gens: number; artwork: string }; poseStyle?: 'visible-side-v1'; measurementRecovery?: { id: string; recordIds: string[]; checkHashes: string[]; rigVersion: string }; bodyPaletteRepair?: { id: string; version: 'near-rest-v1'; checkHashes: string[]; rigVersion: string } }
 const recoverySpecHash = (spec: MoveSpec) => sha256(stableStringify({ ...spec, measurementRecovery: undefined, activityScope: undefined }));
 function approvedCheckHashes(value: unknown): Set<string> {
   const invalid = () => new Error('The reviewed joint-check hashes are invalid. Review the body frames and cost again.');
@@ -708,6 +708,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   };
   assertReview(rec.manifest);
   const dirs = moveDirections(rec.manifest, spec.dirs), existing = rec.manifest.rig.animations.find(a => a.id === spec.id);
+  if (spec.reuseItemFrames && spec.itemMethod !== 'anchor') throw new Error('Saved equipment recovery requires an anchored item move. No generation was requested.');
   if (spec.itemMethod === 'anchor') {
     if (!spec.itemsOnly || !existing || spec.replace || spec.measurementRecovery || spec.bodyPaletteRepair || spec.sharedItems?.length || !spec.items.length || spec.items.some(id => !anchorable(rec.manifest).some(i => i.id === id))) throw new Error('Anchored equipment generation requires an existing move and its saved standing items. No generation was requested.');
   } else if (spec.itemsOnly && existing && !spec.replace && !spec.measurementRecovery && !spec.bodyPaletteRepair) {
@@ -748,7 +749,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find(i => i.id === plan.id);
     if (!it || it.design) throw new Error('This item changed or was removed while the move was being prepared.');
     assertArtwork(ctx.rec.manifest, plan.id, plan.dirs);
-    if (spec.itemMethod === 'anchor') await animateAnchoredItem(ctx, it, spec.id, plan.dirs, spec.seed, tick);
+    if (spec.itemMethod === 'anchor') await animateAnchoredItem(ctx, it, spec.id, plan.dirs, spec.seed, tick, { savedOnly: spec.reuseItemFrames, activityScope: spec.activityScope });
     else if (spec.itemMethod === 'grid') for (const d of plan.dirs) {
       const current = await loadProject(projectId), item = current.rec.manifest.items.find(i => i.id === plan.id);
       if (!item || item.design) throw new Error('This item changed or was removed while the move was being prepared.');

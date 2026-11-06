@@ -1,7 +1,7 @@
 // Item runner (architecture §3): drafts -> calls through the queue -> extraction + QA from the ledger -> player review or accept.
 // UI-free; ui/M3.svelte and the Studio use this. A Draft is mutated in place (pass a Svelte $state proxy to get reactivity)
 // and persisted through the `persist` hook. Everything is re-derived from the job ledger, so reloads resume.
-import { queue, type JobRec } from '../pixellab/queue.ts';
+import { queue, requestIdentity, type JobRec } from '../pixellab/queue.ts';
 import { base64ToBytes, binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { cellHash, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
@@ -25,7 +25,7 @@ import { GATES, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gri
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; frozen?: true; reference?: { image: Sha256; cell: CellKey } }
-export interface Draft { spec: ItemSpec; rigId: string; calls: CallState[]; log: string[]; acceptedAt?: string }
+export interface Draft { spec: ItemSpec; rigId: string; calls: CallState[]; log: string[]; acceptedAt?: string; activityScope?: string }
 export interface ItemResult { cells: CellOut[]; qa: QaResult | null; g1: Map<number, string>; preview: Project | null; thumbnail?: Img }
 /** G1 is structural; this legacy map also carries ordinary keyframe-art warnings. */
 const structuralReason = (why: string) => /(?:^|;\s*)G1\b/.test(why);
@@ -189,11 +189,8 @@ function drop(c: CallState) {
   c.recId = undefined;
   drops.set(c, (drops.get(c) ?? 0) + 1);
 }
-/** Submit call k; returns the record id. A call dropped while its request was built keeps that paid record in `old`: it was
- *  made from the previous design or key, so it is counted but never used. */
-async function submit(d: Draft, k: number, ctx: RigCtx): Promise<string> {
-  const c = d.calls[k], dropped = drops.get(c), route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method, rig.cell);
-  const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${callParts(c.cells).map((p) => p.anim).join(' + ')}/${c.cells[0].split('/')[1]}` : ''})`;
+async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
+  const c = d.calls[k], route = d.spec.key, { rig } = ctx.rec.manifest, pad = padOf(d.spec.slot, d.spec.method, rig.cell);
   let req;
   if (c.kind === 'grid') { // B14: the clip-direction as one inpaint-v3 grid, the dress call's keyframes as reference cells
     req = await gridReq(ctx, d.spec, c.cells, await dressedRefs(d), c.seed);
@@ -218,7 +215,15 @@ async function submit(d: Draft, k: number, ctx: RigCtx): Promise<string> {
     // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
     req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined)), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
-  const id = (await queue.enqueue(req, { label, tag: 'm3', playerRequested: true, minimumTier: d.calls.some(c => c.kind === 'pose' || c.kind === 'grid') ? 1 : 0 })).id;
+  return req;
+}
+
+/** A dropped call keeps its paid record in `old` so its previous design or key never lands in the current draft. */
+async function submit(d: Draft, k: number, ctx: RigCtx): Promise<string> {
+  const c = d.calls[k], dropped = drops.get(c), route = d.spec.key;
+  const label = `M3 ${d.spec.id} call ${k + 1}/${d.calls.length} (${route}${c.kind === 'pose' ? `, pose ${callParts(c.cells).map((p) => p.anim).join(' + ')}/${c.cells[0].split('/')[1]}` : ''})`;
+  const req = await callRequest(d, k, ctx);
+  const id = (await queue.enqueue(req, { label, tag: d.activityScope ? 'studio-move' : 'm3', activityScope: d.activityScope, playerRequested: true, minimumTier: d.calls.some(c => c.kind === 'pose' || c.kind === 'grid') ? 1 : 0 })).id;
   if (drops.get(c) === dropped) c.recId = id; else c.old.push(id);
   return id;
 }
@@ -533,15 +538,21 @@ export const posable = (m: Manifest) => m.items.filter((i) => i.slot !== 'body' 
 export const anchorable = (m: Manifest) => m.items.filter(i => i.slot !== 'body' && i.route === 'ea2-anchor' && i.standing && i.key && i.dressed && i.baseHash === m.rig.baseHash);
 
 /** Reuse the bought standing design on selected frozen frames, without requiring a skeleton or redrawing the body. */
-export async function animateAnchoredItem(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], seed: number, onCall: () => void = () => {}) {
+export async function animateAnchoredItem(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], seed: number, onCall: () => void = () => {}, options: { savedOnly?: boolean; activityScope?: string } = {}) {
   const rig = ctx.rec.manifest.rig;
   const calls = planAnchoredMove(rig, item, anim, dirs);
   if (!calls.length) throw new Error('Choose missing item frames before generating.');
   for (const call of calls) for (const im of [ctx.project.images.get(call.reference.image), ...call.cells.map(key => baseCell(ctx, key))]) {
     if (!im || im.w !== rig.cell.w || im.h !== rig.cell.h) throw new Error('The saved standing design and move frames must use the same frame size. No generation was requested.');
   }
-  const draft: Draft = { rigId: ctx.rec.id, spec: { id: item.id, name: item.name, prompt: item.prompt, slot: item.slot, key: item.key!, method: 'anchor', anims: [anim], dirs }, calls: calls.map((call, i) => ({ ...call, seed: seedOf(`${item.id}/${anim}/${call.cells.join(',')}/${seed}/${i}`), old: [], rerolls: 0 })), log: [] };
-  const result = await runItem(draft, ctx);
+  const draft: Draft = { rigId: ctx.rec.id, activityScope: options.activityScope, spec: { id: item.id, name: item.name, prompt: item.prompt, slot: item.slot, key: item.key!, method: 'anchor', anims: [anim], dirs }, calls: calls.map((call, i) => ({ ...call, seed: seedOf(`${item.id}/${anim}/${call.cells.join(',')}/${seed}/${i}`), old: [], rerolls: 0 })), log: [] };
+  if (options.savedOnly) await Promise.all(draft.calls.map(async (call, k) => {
+    const { requestHash } = await requestIdentity(await callRequest(draft, k, ctx));
+    const saved = jobs.find(r => r.requestHash === requestHash && r.state === 'done');
+    if (!saved) throw new Error('Completed frames matching the current body and equipment are unavailable. No generation was requested.');
+    call.recId = saved.id;
+  }));
+  const result = options.savedOnly ? await evaluateItem(draft, ctx) : await runItem(draft, ctx);
   if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(draft, rig, result)) throw new Error(draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.');
   await mergeClip(ctx, item, anim, dirs, result.cells, draft.calls.map(c => toProv(recOf(c.recId)!, c)), result.qa);
   dirs.forEach(onCall);
@@ -605,9 +616,14 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   return q;
 }
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
+export const ITEM_MOVE_SAVE_CONFLICT = 'This character or item changed while the repair was generating. Existing artwork was kept. Reopen it before trying again.';
+function clipArtwork({ materials: _materials, hides: _hides, ...artwork }: Item) {
+  return stableStringify(artwork);
+}
+
 export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
   const { rig } = ctx.rec.manifest, key = item.key!;
-  const version = rigArtworkVersion(rig, ctx.rec.character), originalItem = stableStringify(item);
+  const version = rigArtworkVersion(rig, ctx.rec.character), originalItem = clipArtwork(item);
   const count = rig.animations.find((a) => a.id === anim)?.cells;
   const expected = new Set(dirs.flatMap((d) => Array.from({ length: count ?? 0 }, (_, i) => `${anim}/${d}/${i}`)));
   if (!count || !expected.size || cells.length !== expected.size || new Set(cells.map((c) => c.key)).size !== expected.size || cells.some((c) => !expected.has(c.key))
@@ -633,7 +649,12 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
   out.provenance = [...out.provenance, ...prov];
   out.qa = mergeQa(item, q.qa, qaCells);
   await saveItem(ctx.rec.id, out, built.images, SLOTS, current => {
-    if (rigArtworkVersion(current.manifest.rig, current.character) !== version || stableStringify(current.manifest.items.find(i => i.id === item.id)) !== originalItem) throw new Error('This character or item changed while the repair was generating. Existing artwork was kept. Reopen it before trying again.');
+    const currentItem = current.manifest.items.find(i => i.id === item.id);
+    if (!currentItem || rigArtworkVersion(current.manifest.rig, current.character) !== version || clipArtwork(currentItem) !== originalItem) throw new Error(ITEM_MOVE_SAVE_CONFLICT);
+    // Outfit autosave owns these fields, including when it runs while a paid edit is pending.
+    out.materials = currentItem.materials;
+    if (currentItem.hides === undefined) delete out.hides;
+    else out.hides = currentItem.hides;
   });
 }
 /** Free acknowledgment of the exact artwork and warnings the player reviewed, never a new generation. */

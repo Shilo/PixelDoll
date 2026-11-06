@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { equipmentFixture } from './equipment-fixture.ts'
-import { animateAnchoredItem, type RigCtx } from '../../src/lib/items/run.ts'
+import { animateAnchoredItem, ITEM_MOVE_SAVE_CONFLICT, type RigCtx } from '../../src/lib/items/run.ts'
 import { planAnchoredMove } from '../../src/lib/items/items.ts'
 import { missingItemMoves, itemMoveOffer } from '../../src/studio/create.ts'
 import { movePlan } from '../../src/studio/apiPlans.ts'
@@ -10,12 +10,12 @@ import { encodePngBytes, decodePngBytes } from '../../src/lib/image/pngraw.ts'
 import { toChroma } from '../../src/lib/image/chroma.ts'
 import * as db from '../../src/lib/store/db.ts'
 import { saveItem } from '../../src/lib/store/project.ts'
-import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts'
+import { queue, requestIdentity, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import { sha256 } from '../../src/lib/image/hash.ts'
 import type { Req } from '../../src/lib/pixellab/routes.ts'
 
 const ledger = vi.hoisted(() => ({ records: [] as JobRec[], listeners: new Set<(s: { jobs: JobRec[] }) => void>(), blobs: new Map<string, Blob>(), failAt: -1, billed: 0, transparent: false }))
-vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: {
+vi.mock('../../src/lib/pixellab/queue.ts', async original => ({ ...await original<typeof import('../../src/lib/pixellab/queue.ts')>(), queue: {
   subscribe: (cb: (s: { jobs: JobRec[] }) => void) => { ledger.listeners.add(cb); cb({ jobs: ledger.records }); return () => ledger.listeners.delete(cb) },
   enqueue: vi.fn(), planBlocks: () => null,
 } }))
@@ -40,7 +40,7 @@ async function fixture(frames = 18): Promise<RigCtx> {
   vi.spyOn(db, 'getBlob').mockImplementation(async h => ledger.blobs.get(h))
   vi.mocked(queue.enqueue).mockReset().mockImplementation(async (req: Req) => {
     expect(req.path).toBe('/edit-animation-v2')
-    const id = await sha256(JSON.stringify(req)), old = ledger.records.find(r => r.id === id)
+    const { requestHash: id } = await requestIdentity(req), old = ledger.records.find(r => r.id === id)
     if (old) return old
     const params = req.body as { frames: { image: { base64: string } }[] }
     const outputs = []
@@ -104,6 +104,28 @@ test('anchored extension validates standing reference dimensions and presence be
   expect(queue.enqueue).not.toHaveBeenCalled()
   delete item.dressed!.east
   expect(() => planAnchoredMove(ctx.rec.manifest.rig, item, 'custom_18', ['east'])).toThrow('No saved standing design')
+})
+
+test('recovery publishes the same completed requests without enqueuing or changing their seed', async () => {
+  const ctx = await fixture(), item = ctx.rec.manifest.items[1], stored = structuredClone(ctx.rec)
+  const save = vi.mocked(saveItem)
+  stored.manifest.items[1].prompt = 'different artwork'
+  save.mockImplementationOnce(async (_id, _item, _images, _ladder, guard) => guard!(stored))
+  await expect(animateAnchoredItem(ctx, item, 'custom_18', ['east'], 99)).rejects.toThrow(ITEM_MOVE_SAVE_CONFLICT)
+  expect(ledger.billed).toBe(2)
+
+  const enqueue = vi.mocked(queue.enqueue)
+  enqueue.mockClear()
+  await expect(animateAnchoredItem(ctx, item, 'custom_18', ['east'], 100, undefined, { savedOnly: true })).rejects.toThrow('No generation was requested')
+  expect(save).toHaveBeenCalledOnce()
+
+  stored.manifest.items[1] = { ...item, materials: ['saved-dye'], hides: ['hair'] }
+  save.mockImplementationOnce(async (_id, _item, _images, _ladder, guard) => guard!(stored))
+  await animateAnchoredItem(ctx, item, 'custom_18', ['east'], 99, undefined, { savedOnly: true })
+  expect(enqueue).not.toHaveBeenCalled()
+  expect(ledger.billed).toBe(2)
+  expect(save.mock.calls[1][1]).toMatchObject({ materials: ['saved-dye'], hides: ['hair'] })
+  expect(save.mock.calls[1][1].provenance.map(p => p.requestHash)).toEqual(ledger.records.map(r => `sha256:${r.requestHash}`))
 })
 
 test('saved transparent generated views retain explicit coverage and are never offered for purchase again', async () => {

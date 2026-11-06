@@ -74,7 +74,7 @@ export const draftPlan = (draft: Draft): PeekCall[] => [...itemCalls(draft.spec,
 export const draftQueueIds = (draft: Draft): string[] => draft.calls.flatMap(call => [...(call.recId ? [call.recId] : []), ...call.old])
 
 export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | null, spec: Omit<MoveSpec, 'seed'> & { seed?: number }): PeekCall[] {
-  if (!rec) return []
+  if (!rec || spec.reuseItemFrames) return []
   const m = rec.manifest, bodyNeeded = spec.itemMethod !== 'grid' && (spec.replace || !m.rig.animations.some(a => a.id === spec.id)), calls: PeekCall[] = [], frames = moveFrames(m, spec)
   const generatedDirections = moveDirections(m, spec.dirs)
   if (bodyNeeded) {
