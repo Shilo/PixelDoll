@@ -309,6 +309,8 @@
   .studio-app .character-sheet .sheet-head>.btn { top:8px;right:20px; }
 }
 @media (max-width:760px) and (min-height:541px) and (max-height:700px) {
+  /* This layout leaves room below the title, where the device count is hidden. */
+  .studio-app:has(.experience.selection) .offline-banner { top:max(106px,env(safe-area-inset-top)); bottom:auto; }
   .scene-identity { top:68px; }
   .scene-identity>p { display:none; }
   .scene-identity h1 { font-size:26px; }

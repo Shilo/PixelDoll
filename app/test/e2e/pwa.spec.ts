@@ -200,9 +200,10 @@ test('the offline status stays compact and leaves the character and controls vis
     await expect(banner).toHaveCount(0)
     await context.setOffline(true)
     await expect(banner).toHaveText('You’re offline. Edit and export locally.')
-    for (const [width, height] of [[1440, 900], [1280, 600], [844, 390], [390, 844], [320, 568]]) {
+    for (const [width, height] of [[1440, 900], [1280, 600], [844, 390], [390, 844], [320, 568], [320, 541]]) {
       await page.setViewportSize({ width, height })
-      await checkLayout('.cast-character.chosen,.selected-caption button,.selected-caption span,.customize-action,.toast')
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
+      await checkLayout('.cast-character.chosen,.selected-caption button,.selected-caption span,.customize-action,.scene-identity h1,.cast-library input,.toast')
     }
     await page.setViewportSize({ width: 390, height: 844 })
     await enterStudio(page)
