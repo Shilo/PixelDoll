@@ -12,7 +12,7 @@
   import { queue } from '../lib/pixellab/queue.ts'
   import { ITEM_MOVE_SAVE_CONFLICT, posable, poseGens } from '../lib/items/run.ts'
   import { AUTHORED } from '../lib/rig/poses.ts'
-  import { MOVE_STEPS, isV13, reservedMove, reviewMoveRecovery, moveEstimate, type BodyPaletteRepairPlan, type MeasurementRecoveryPlan } from './create.ts'
+  import { MOVE_STEPS, bodyMoveIssue, isAuthoredAction, isV13, reservedMove, reviewMoveRecovery, moveEstimate, type BodyPaletteRepairPlan, type MeasurementRecoveryPlan } from './create.ts'
   import { ui, doc, store, isDemo, moving, settingUp, startMove, queueMoves, matchMoveBodyColors, retryMoveMeasurements, dismissMove, openProject, pendingMoves, withKey } from './state.svelte.ts'
   import { bodyQualityNote, moveLabel } from './model.ts'
   import { directionLabel } from './experience/movement.ts'
@@ -29,7 +29,8 @@
   let action = $state(draft?.action ?? untrack(() => options.find((a) => !have.has(a))) ?? '')
   let text = $state(draft?.text ?? '')
   const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 24)
-  const id = $derived(text.trim() ? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) : action)
+  const describingReplacement = $derived(have.has(action) && action !== 'walk' && !isAuthoredAction(action))
+  const id = $derived(!describingReplacement && text.trim() ? slug(text.split(/[,.]/)[0].split(/\s+/).slice(0, 2).join(' ')) : action)
   const items = $derived(m ? posable(m).filter((item) => !item.design) : [])
   const sharedItems = $derived(m?.items.filter((item) => item.design && item.status === 'accepted') ?? [])
   const replacing = $derived(have.has(id) && !reservedMove(id))
@@ -37,10 +38,12 @@
   let selectedDirs = $state<DirectionName[]>(draft?.dirs ?? untrack(() => [...availableDirs]))
   const targetDirs = $derived(replacing ? availableDirs.filter((d) => selectedDirs.includes(d)) : availableDirs)
   const frames = $derived(m?.rig.animations.find((a) => a.id === id)?.cells ?? 8)
+  const motion = $derived({ id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, replace: replacing })
+  const motionIssue = $derived(m && id ? bodyMoveIssue(m, motion) : '')
   let included = $state<string[]>(draft?.items ?? [])
   const chosen = $derived(items.filter((i) => included.includes(i.id)).map((i) => i.id))
   const sharedChosen = $derived(sharedItems.filter((i) => included.includes(i.id)).map((i) => i.id))
-  const est = $derived(m && id && targetDirs.length ? moveEstimate(m, { id, action: text.trim() ? undefined : action, frames, items: chosen, dirs: targetDirs, replace: replacing }) : null)
+  const est = $derived(m && id && targetDirs.length && !motionIssue ? moveEstimate(m, { ...motion, items: chosen, dirs: targetDirs }) : null)
   const dirs = $derived(targetDirs.length)
   const mine = $derived(!!moving.spec && moving.projectId === doc.id)
   // "Queue another move" shows the form over this character's running move; a new move then waits its turn
@@ -102,7 +105,8 @@
 
   function go() {
     const projectId = doc.id
-    const spec = { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1' as const, seed: 1 + Math.floor(Math.random() * 1_000_000), ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) }
+    if (motionIssue) return
+    const spec = { ...motion, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1' as const, seed: 1 + Math.floor(Math.random() * 1_000_000), ...(replacing ? { dirs: [...targetDirs] } : {}) }
     formDrafts.move = { projectId, action, text, items: $state.snapshot(included), dirs: [...selectedDirs], poseStyle: 'visible-side-v1' }
     withKey(() => { formDrafts.move = undefined; adding = false; void queueMoves(projectId, [spec]); ui.sheet = 'move' }, true)
   }
@@ -129,7 +133,7 @@
     <button class="bu-action btn" data-variant="outline" onclick={() => (ui.sheet = null)}>Hide</button>
   {:else if ok}
     <span class="foot-note">{est ? `About ${est.minutes} min · body ${Math.ceil(est.body)}${est.items ? ` + items ${est.items}` : ''} gens` : ''}</span>
-    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { id, action: text.trim() ? undefined : action, text: text.trim() || undefined, frames, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { replace: true, dirs: [...targetDirs] } : {}) })} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!id || !!reservedMove(id) || !targetDirs.length || pendingIds.includes(id) || (!!settingUp.spec && !settingUp.done)} onclick={go}>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
+    <span class="api-action"><ApiPeek scope="move-add" label="Add or replace move" plan={movePlan(rec, { ...motion, items: chosen, sharedItems: sharedChosen, poseStyle: 'visible-side-v1', ...(replacing ? { dirs: [...targetDirs] } : {}) })} /><button class="bu-action btn primary lg" data-variant="primary" disabled={!id || !!reservedMove(id) || !!motionIssue || !targetDirs.length || pendingIds.includes(id) || (!!settingUp.spec && !settingUp.done)} onclick={go}>{busy ? 'Queue' : replacing ? 'Replace' : 'Add'} {id ? nice(id) : 'move'}{replacing ? ' views' : ''} <span class="cost">Est. {est ? Math.ceil(est.gens) : '–'} gens</span></button></span>
   {/if}
 {/snippet}
 
@@ -172,7 +176,7 @@
         <span class="label" id="act">Move</span>
         <div class="chips" role="radiogroup" aria-labelledby="act">
           {#each options as a (a)}
-            <button class="chip" role="radio" aria-checked={!text.trim() && action === a} tabindex={(text.trim() ? options[0] === a : action === a) ? 0 : -1} onclick={() => chooseAction(a)}>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a) ? ' · added' : ''}</button>
+            <button class="chip" role="radio" aria-checked={(!text.trim() || describingReplacement) && action === a} tabindex={(text.trim() && !describingReplacement ? options[0] === a : action === a) ? 0 : -1} onclick={() => chooseAction(a)}>{#if have.has(a)}<Check size={12} />{/if}{nice(a)}{have.has(a) ? ' · added' : ''}</button>
           {/each}
         </div>
       </div>
@@ -184,10 +188,10 @@
         </div>
       {:else}<p class="faint small">Choose an existing move to replace selected views.</p>{/if}
       <label class="field">
-        <span class="label">Or describe it <span class="faint">(optional)</span></span>
+        <span class="label">{describingReplacement ? 'Describe the replacement' : 'Or describe it'} {#if !describingReplacement}<span class="faint">(optional)</span>{/if}</span>
         <input class="bu-input input" bind:value={text} placeholder="e.g. jumping in place" maxlength="120" />
       </label>
-      {#if reservedMove(id)}<p class="notice warn small"><CircleAlert size={14} />{reservedMove(id)}</p>{:else if pendingIds.includes(id)}<p class="notice small"><CircleAlert size={14} />{nice(id)} is already queued.</p>{:else if busy}<p class="faint small">It waits for the move in progress, then runs by itself.</p>{/if}
+      {#if reservedMove(id)}<p class="notice warn small"><CircleAlert size={14} />{reservedMove(id)}</p>{:else if motionIssue}<p class="notice warn small"><CircleAlert size={14} />{motionIssue}</p>{:else if pendingIds.includes(id)}<p class="notice small"><CircleAlert size={14} />{nice(id)} is already queued.</p>{:else if busy}<p class="faint small">It waits for the move in progress, then runs by itself.</p>{/if}
       {#if items.length}
         <div class="field">
           <span class="label">Animate these items too</span>

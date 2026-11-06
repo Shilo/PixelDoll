@@ -1,8 +1,7 @@
 // Offline explanations only. These never encode images, submit work or invent dependent payloads.
 import { routes, BASE_ANIMS, baseAnimation, type Req } from '../lib/pixellab/routes.ts'
-import { type CreateSpec, type MoveSpec, creationLooks, moveDirections, moveFrames } from './create.ts'
+import { type CreateSpec, type MoveSpec, bodyMoveIssue, creationLooks, isAuthoredAction, moveDirections, moveFrames } from './create.ts'
 import { basePrompt } from './model.ts'
-import { ACTIONS } from '../lib/rig/poses.ts'
 import { actionOf, poseBatches, poseCallGens } from '../lib/rig/clips.ts'
 import { pickKey } from '../lib/image/chroma.ts'
 import { gridEstimate, repairGridLayout, frozenGrid, planItem, planAnchoredMove, itemPrompt, planGens, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
@@ -78,16 +77,18 @@ export function movePlan(rec: Pick<StoredProject, 'manifest' | 'character'> | nu
   const m = rec.manifest, bodyNeeded = spec.itemMethod !== 'grid' && (spec.replace || !m.rig.animations.some(a => a.id === spec.id)), calls: PeekCall[] = [], frames = moveFrames(m, spec)
   const generatedDirections = moveDirections(m, spec.dirs)
   if (bodyNeeded) {
+    if (bodyMoveIssue(m, spec)) return []
+    const authored = isAuthoredAction(spec.action)
     for (const direction of generatedDirections) {
-      if (!spec.action || !ACTIONS[spec.action]) {
+      if (!authored) {
         const b = spec.action === 'walk' ? baseAnimation('skeleton-v3', rec.character?.id ?? '', BASE_ANIMS.find(a => a.name === 'walk')!, [direction], spec.seed)
-          : { character_id: rec.character?.id ?? '', mode: 'pixminimax' as const, action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`, frame_count: frames, keep_first_frame: false, animation_name: spec.id, directions: [direction], ...(spec.seed === undefined ? {} : { seed: spec.seed }) }
+          : { character_id: rec.character?.id ?? '', mode: 'pixminimax' as const, action_description: `${spec.text?.trim()}, unarmed, no weapon, no props, no other people, no effects`, frame_count: frames, keep_first_frame: false, animation_name: spec.id, directions: [direction], ...(spec.seed === undefined ? {} : { seed: spec.seed }) }
         calls.push({ ...routes.animateCharacter(b), label: `Create motion · ${direction}`, generations: spec.action === 'walk' ? 3 : 1, note: spec.seed === undefined ? `Known fields only. ${selectedSeed}` : undefined })
         for (let frame = 0; frame < frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${spec.id} ${direction} · motion frame ${frame + 1}`, generations: 0.1, note: 'Sends the generated motion frame as image (base64 PNG), unless already measured.' })
       }
       calls.push({ method: 'POST', path: '/animate-with-skeleton-v3', label: `${spec.id} ${direction} · render body`, generations: poseCallGens(frames),
         body: { description: rec.character?.looks, action: actionOf(spec.id) + (spec.poseStyle === 'visible-side-v1' ? ', empty hands, no weapon, no props, no effects' : ''), direction, view: m.rig.view ?? 'low top-down', ...(spec.seed === undefined ? {} : { seed: spec.seed + 101 }), no_background: true },
-        note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${spec.action && ACTIONS[spec.action] ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.` })
+        note: `Known fields only. Adds standing first_frame, first_frame_keypoints and ${authored ? 'locally authored' : 'generated motion'} keypoints. One render is submitted. Empty or malformed output stops for review without another paid attempt.` })
       for (let frame = 0; frame < frames; frame++) calls.push({ method: 'POST', path: '/estimate-skeleton', label: `${spec.id} ${direction} · check frame ${frame + 1}`, generations: 0.1, note: 'Sends the rendered body frame as image (base64 PNG), unless already measured.' })
     }
   }

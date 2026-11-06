@@ -5,7 +5,7 @@ import type { Req } from '../../src/lib/pixellab/routes.ts'
 
 const state = vi.hoisted(() => ({
   projects: new Map<string, StoredProject>(), blobs: new Map<string, Blob>(), requests: [] as Req[],
-  estimate: [] as Keypoint[], motionHash: '', motionFrames: 3,
+  estimate: [] as Keypoint[], motionHash: '', motionFrames: 4,
 }))
 vi.mock('../../src/lib/store/db.ts', () => ({
   get: async (_store: string, id: string) => structuredClone(state.projects.get(id)),
@@ -53,7 +53,7 @@ const points = (y: number): Keypoint[] => LABELS.map(label => ({ label, x: 0.5, 
 
 beforeEach(async () => {
   vi.stubGlobal('fetch', vi.fn(() => { throw new Error('Network is forbidden in offline alignment tests') }))
-  state.projects.clear(); state.blobs.clear(); state.requests = []; state.estimate = points(0.5); state.motionFrames = 3
+  state.projects.clear(); state.blobs.clear(); state.requests = []; state.estimate = points(0.5); state.motionFrames = 4
   const project = bodyOnly(await equipmentFixture()), m = project.manifest, rig = m.rig
   const image = makeImg(64, 64)
   for (let y = 12; y < 55; y++) for (let x = 25; x < 35; x++) image.data.set([180, 120, 90, 255], (y * 64 + x) * 4)
@@ -77,8 +77,9 @@ type RawBody = { first_frame_keypoints: Keypoint[]; keypoints: Keypoint[][] }
 const raw = () => state.requests.find(request => request.path === '/animate-with-skeleton-v3')!.body as RawBody
 
 test.each(['walk', undefined])('actual Add move shifts %s managed motion once into local coordinates', async action => {
-  state.motionFrames = action === 'walk' ? 8 : 3
-  await expect(addMove('rig-aligned', { id: 'new', action, text: 'a small dance', frames: 3, items: [], seed: 1 }))
+  // PixMiniMax accepts groups of four, while the managed walk uses its fixed eight-frame sequence.
+  state.motionFrames = action === 'walk' ? 8 : 4
+  await expect(addMove('rig-aligned', { id: 'new', action, text: 'a small dance', frames: state.motionFrames, items: [], seed: 1 }))
     .rejects.toThrow('Captured aligned raw request')
   const managed = state.requests.find(request => request.path === '/characters/animations')!.body as { character_id: string; mode: string }
   expect(managed.character_id).toBe('original-server-registration')
@@ -105,8 +106,8 @@ test('actual setup re-registration discards old server-motion offsets before fut
   await setupCharacter({ projectId: record.id, baseHash: record.manifest.rig.baseHash, restAnim: 'rest', looks: 'A local aligned humanoid', seed: 1 }, () => {})
   expect(state.projects.get(record.id)!.character).toEqual({ id: 'new-local-registration', looks: 'A local aligned humanoid' })
   state.requests = []
-  await expect(addMove(record.id, { id: 'dance', text: 'a small dance', frames: 3, items: [], seed: 2 }))
+  await expect(addMove(record.id, { id: 'dance', text: 'a small dance', frames: state.motionFrames, items: [], seed: 2 }))
     .rejects.toThrow('Captured aligned raw request')
   expect((state.requests.find(request => request.path === '/characters/animations')!.body as { character_id: string }).character_id).toBe('new-local-registration')
-  expect(raw().keypoints).toEqual(Array.from({ length: 3 }, () => points(0.5625)))
+  expect(raw().keypoints).toEqual(Array.from({ length: state.motionFrames }, () => points(0.5625)))
 })

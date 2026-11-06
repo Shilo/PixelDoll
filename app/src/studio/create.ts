@@ -261,11 +261,13 @@ async function paletteCandidate(anim: string, dir: DirectionName, rest: Img, fra
 }
 
 /** Managed motion source on the rest character -> frames on the 64 cell -> estimated keypoint sequence. */
-async function motion(req: Req, dir: Direction, label: string, tick: () => void, signal?: AbortSignal, activityScope?: string, size = CELL): Promise<Keypoint[][]> {
+async function motion(req: Req, dir: Direction, label: string, tick: () => void, expected: number, signal?: AbortSignal, activityScope?: string, size = CELL): Promise<Keypoint[][]> {
   const r = await run(req, label, 'studio-rig', false, true, signal, activityScope);
   tick();
   const got = (r.response as SubmitResponse | undefined)?.directions;
   if (got && !got.includes(dir)) throw new Error(`${label}: PixelLab dropped the direction (busy). Try again.`); // S4 truncation
+  const returned = r.jobs.reduce((count, job) => count + job.results.length, 0);
+  if (returned !== expected) throw new Error(`${label}: PixelLab returned ${returned} motion frames for ${expected} requested. No joint checks or body render were requested for this view.`);
   const frames = (await imagesOf(r)).map((o) => {
     const normalized = normalize(o.img, size, size, 128, size);
     if (normalized.cutPx) throw new Error(`${label}: motion exceeds the ${size} px frame. Increase Frame or reduce Body size before creating again.`);
@@ -274,7 +276,6 @@ async function motion(req: Req, dir: Direction, label: string, tick: () => void,
   if (frames.some(f => !opaqueBox(f))) throw new Error(`${label}: PixelLab returned an empty motion frame`);
   const kps = await Promise.all(frames.map(async (f) => { const k = await joints(f, true, signal, activityScope); tick(); return k; }));
   if (kps.some((k) => !k)) throw new Error(`${label}: joints not found on every frame`);
-  if (kps.length < 3 || kps.length > 15) throw new Error(`${label}: ${kps.length} frames (skeleton-v3 takes 3-15)`);
   return kps as Keypoint[][];
 }
 
@@ -640,13 +641,21 @@ export function baseMoveSpecs(m: Manifest, seed = 1 + Math.floor(Math.random() *
 }
 
 /** Frames of a move: the authored table's length, or the text frame count. */
+export const isAuthoredAction = (action?: string): action is string => !!action && Object.hasOwn(ACTIONS, action);
 export const moveFrames = (m: Manifest, s: Pick<MoveSpec, 'action' | 'frames'>) => {
   const dir = m.rig.directions.find(d => !d.mirrorOf && m.rig.rest?.[d.id])?.id;
   const r = dir && m.rig.rest?.[dir];
-  return s.action === 'walk' ? 8 : s.action && ACTIONS[s.action] && r && dir ? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length : s.frames;
+  return s.action === 'walk' ? 8 : isAuthoredAction(s.action) && r && dir ? authoredPoses(s.action, fromApi(r.keypoints, m.rig.cell), dir, m.rig.cell.w).length : s.frames;
 };
+/** The described motion must fit both PixMiniMax and the single raw Skeleton v3 render. */
+export function bodyMoveIssue(m: Manifest, s: Pick<MoveSpec, 'action' | 'text' | 'frames'>): string {
+  if (s.action === 'walk' || isAuthoredAction(s.action)) return '';
+  const frames = moveFrames(m, s);
+  if (![4, 8, 12].includes(frames)) return `Described moves can be generated with 4, 8 or 12 frames. This move has ${frames}.`;
+  return s.text?.trim() ? '' : 'Describe this move before generating it.';
+}
 export function moveEstimate(m: Manifest, s: Pick<MoveSpec, 'id' | 'action' | 'frames' | 'items' | 'dirs' | 'itemMethod' | 'replace' | 'itemsOnly'>) {
-  const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = (s.itemsOnly || s.itemMethod === 'grid') && !s.replace ? 0 : dirs * (poseCallGens(n) + n * EST + (s.action === 'walk' ? 3 + n * EST : s.action ? 0 : 1 + n * EST));
+  const n = moveFrames(m, s), dirs = moveDirections(m, s.dirs).length, body = (s.itemsOnly || s.itemMethod === 'grid') && !s.replace ? 0 : dirs * (poseCallGens(n) + n * EST + (s.action === 'walk' ? 3 + n * EST : isAuthoredAction(s.action) ? 0 : 1 + n * EST));
   const directItems = s.items.filter(id => !m.items.find(item => item.id === id)?.design);
   const items = s.itemMethod === 'grid' ? directItems.reduce((sum, id) => {
     const item = m.items.find(i => i.id === id);
@@ -779,13 +788,16 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
 
 async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Progress) => void, recovery?: MeasurementRecoveryPlan) {
   const { rec, project } = await loadProject(projectId), m = rec.manifest, rig = m.rig;
+  const issue = bodyMoveIssue(m, spec);
+  if (issue) throw new Error(`${issue} No generation was requested.`);
   const version = moveRigVersion(rec);
   if (recovery && recovery.rigVersion !== version) throw new Error('This character changed since these joint checks were reviewed.');
   const intent = spec.measurementRecovery ?? spec.bodyPaletteRepair;
   const receiptSpecHash = intent ? await recoverySpecHash(spec) : undefined;
   const dirs = moveDirections(m, spec.dirs) as Direction[], affected = affectedMoveDirections(rig, dirs), n = moveFrames(m, spec), name = m.name;
   const motionOffsets = managedMotionOffsets(rec.character, rig.cell.h);
-  const total = dirs.length * (1 + n + (spec.action && ACTIONS[spec.action] ? 0 : 1 + n));
+  const authored = isAuthoredAction(spec.action) ? spec.action : undefined;
+  const total = dirs.length * (1 + n + (authored ? 0 : 1 + n));
   let done = 0;
   const tick = () => onProgress({ step: 'animate', done: Math.min(total, ++done), total, recIds: [] });
   onProgress({ step: 'animate', done: 0, total, recIds: [] });
@@ -794,13 +806,13 @@ async function addBodyClip(projectId: string, spec: MoveSpec, onProgress: (p: Pr
     const checkedTick = () => { signal.throwIfAborted(); tick(); };
     const restKps = rig.rest![d]!.keypoints, restImg = project.images.get(rig.rest![d]!.image)!;
     let keypoints: Keypoint[][];
-    if (spec.action && ACTIONS[spec.action]) keypoints = authoredPoses(spec.action, fromApi(restKps, rig.cell), d, rig.cell.w, spec.poseStyle).map((p) => toApi(p, rig.cell));
+    if (authored) keypoints = authoredPoses(authored, fromApi(restKps, rig.cell), d, rig.cell.w, spec.poseStyle).map((p) => toApi(p, rig.cell));
     else {
-      const req = routes.animateCharacter(spec.action === 'walk' ? baseAnimation('skeleton-v3', rec.character!.id, BASE_ANIMS.find((a) => a.name === 'walk')!, [d], spec.seed) : { character_id: rec.character!.id, mode: 'pixminimax', action_description: `${spec.text}, unarmed, no weapon, no props, no other people, no effects`, frame_count: n, keep_first_frame: false, animation_name: spec.id, directions: [d], seed: spec.seed });
-      keypoints = shiftMotionPoses(await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, checkedTick, signal, spec.activityScope, rig.cell.w), motionOffsets[d] ?? 0, rig.cell.h);
+      const req = routes.animateCharacter(spec.action === 'walk' ? baseAnimation('skeleton-v3', rec.character!.id, BASE_ANIMS.find((a) => a.name === 'walk')!, [d], spec.seed) : { character_id: rec.character!.id, mode: 'pixminimax', action_description: `${spec.text?.trim()}, unarmed, no weapon, no props, no other people, no effects`, frame_count: n, keep_first_frame: false, animation_name: spec.id, directions: [d], seed: spec.seed });
+      keypoints = shiftMotionPoses(await motion(req, d, `${name} · ${spec.id} ${d} (motion)`, checkedTick, n, signal, spec.activityScope, rig.cell.w), motionOffsets[d] ?? 0, rig.cell.h);
       extra[k] = [(await queue.enqueue(req, { signal })) as JobRec];
     }
-    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, authored: !!(spec.action && ACTIONS[spec.action]), looks: rec.character!.looks, seed: spec.seed + 101, name, tick: checkedTick, view: rig.view, signal, activityScope: spec.activityScope, unarmed: spec.poseStyle === 'visible-side-v1', paletteRepair: !!spec.bodyPaletteRepair }) };
+    return { d, keypoints, out: await renderClip({ anim: spec.id, dir: d, rest: restImg, restKps, keypoints, authored: !!authored, looks: rec.character!.looks, seed: spec.seed + 101, name, tick: checkedTick, view: rig.view, signal, activityScope: spec.activityScope, unarmed: spec.poseStyle === 'visible-side-v1', paletteRepair: !!spec.bodyPaletteRepair }) };
   }), spec.seed, recovery && { intent: spec.measurementRecovery ?? { id: spec.bodyPaletteRepair!.id, recordIds: [] }, rawHashes: new Set(recovery.rawHashes), checkHashes: new Set(recovery.checkHashes), tail: Promise.resolve() });
 
   onProgress({ step: 'save', done: 0, total: 1, recIds: [] });

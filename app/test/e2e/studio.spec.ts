@@ -1739,6 +1739,36 @@ test('failed anchored moves offer cache-only recovery without an API key or a ne
   expect(posts).toEqual([]);
 });
 
+test('a custom move replacement keeps its name and requires a supported frame count and description', async ({ page }, info) => {
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') });
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!);
+  await targetedRepairFixture(page);
+  await page.evaluate(async () => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', s = await import(statePath), db = await import(dbPath);
+    const rec = await db.get('projects', s.doc.id), m = rec.manifest;
+    m.rig.animations.find((a: { id: string }) => a.id === 'walk').id = 'quiet-step';
+    for (const item of m.items) for (const layer of item.layers) if (layer.cells?.walk) {
+      layer.cells['quiet-step'] = layer.cells.walk;
+      delete layer.cells.walk;
+    }
+    await db.put('projects', s.doc.id, rec);
+    await s.openProject(s.doc.id);
+  });
+  await equipmentMode(page, 'Moves');
+  await page.getByRole('button', { name: 'Add a move', exact: true }).click();
+  const sheet = page.getByRole('dialog', { name: 'Replace move views', exact: true });
+  await page.getByRole('radio', { name: 'Cross punch · added', exact: true }).click();
+  await expect(sheet).toContainText('Described moves can be generated with 4, 8 or 12 frames. This move has 6.');
+  await expect(sheet.getByRole('button', { name: /^Replace Cross punch views/ })).toBeDisabled();
+  await sheet.getByRole('radio', { name: 'Quiet step · added', exact: true }).click();
+  const replace = sheet.getByRole('button', { name: /^Replace Quiet step views/ });
+  await expect(replace).toBeDisabled();
+  await expect(sheet).toContainText('Describe this move before generating it.');
+  await sheet.getByRole('textbox', { name: 'Describe the replacement', exact: true }).fill('Step sideways and shift weight to the leading foot');
+  await expect(replace).toBeEnabled();
+  await expect(replace).toContainText('Est. 23 gens');
+});
+
 async function oversizedItemFixture(page: Page, itemId: string) {
   await page.evaluate(async id => {
     const sPath = '/src/studio/state.svelte.ts', s = await import(sPath), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)

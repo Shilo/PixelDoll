@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest'
 import { addMove, moveDirections, moveEstimate, reviewItemMove } from '../../src/studio/create.ts'
+import { movePlan } from '../../src/studio/apiPlans.ts'
 import { queue, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import * as db from '../../src/lib/store/db.ts'
 import * as projects from '../../src/lib/store/project.ts'
@@ -57,6 +58,25 @@ test('regeneration keeps explicit play-once preferences, including choices chang
 test('failed genuine measurements cannot publish a targeted replacement or invalidate prior equipment',async()=>{const f=await fixture(true);await expect(f.run()).rejects.toThrow('still fails body-pose');expect(f.put).not.toHaveBeenCalled();expect(f.update).not.toHaveBeenCalled();expect(f.saved()).toEqual(f.original)})
 test('invalid subset, new partial move and changed partial frame count are rejected before spending',async()=>{for(const change of [{dirs:[]},{dirs:['east','east']},{dirs:['bad']},{id:'cast',dirs:['east']},{action:'slash'}]){const f=await fixture();await expect(f.run(change)).rejects.toThrow();expect(f.enqueue).not.toHaveBeenCalled();vi.restoreAllMocks()}})
 test('selected direction costs distinguish body replacement from frozen-frame equipment repair',async()=>{const f=await fixture(),m=f.original.manifest;expect(moveDirections(m,['west','east'])).toEqual(['east','west']);expect(moveEstimate(m,{id:'idle',action:'idle',frames:4,items:['hat'],dirs:['east','west']}).gens).toBeCloseTo(12.8);expect(moveEstimate(m,{id:'idle',action:'idle',frames:4,items:['hat'],dirs:['west'],itemMethod:'grid'})).toMatchObject({body:0,items:10,gens:10})})
+
+test('unrecognized move names and incompatible described frame counts fail before PixelLab', async () => {
+ const f = await fixture();
+ await expect(f.run({ action: 'quiet-step' })).rejects.toThrow('Describe this move before generating it');
+ await expect(f.run({ id: 'new-motion', action: undefined, text: 'A quick step', frames: 16, dirs: undefined, replace: false })).rejects.toThrow('This move has 16');
+ expect(f.enqueue).not.toHaveBeenCalled();
+ expect(movePlan(f.original, { id: 'idle', action: 'quiet-step', frames: 4, items: [], dirs: ['east'], replace: true })).toEqual([]);
+});
+
+test('a valid custom description includes motion costs and wrong provider cardinality stops before joint checks', async () => {
+ const f = await fixture(), spec = { id: 'idle', action: 'quiet-step', text: ' Step softly ', frames: 4, items: [], dirs: ['east' as const], replace: true };
+ const plan = movePlan(f.original, spec);
+ expect(plan.reduce((sum, call) => sum + (call.generations ?? 0), 0)).toBeCloseTo(moveEstimate(f.original.manifest, spec).gens);
+ f.enqueue.mockResolvedValueOnce({ state: 'done', jobs: [{ results: [] }] } as unknown as JobRec);
+ await expect(f.run(spec)).rejects.toThrow('PixelLab returned 0 motion frames for 4 requested');
+ expect(f.enqueue).toHaveBeenCalledOnce();
+ expect(f.enqueue.mock.calls[0][0]).toMatchObject({ path: '/characters/animations', body: { mode: 'pixminimax', action_description: 'Step softly, unarmed, no weapon, no props, no other people, no effects', frame_count: 4 } });
+ expect(f.put).not.toHaveBeenCalled();
+});
 
 test('item review binds artwork and cost while unrelated queued clips and playback choices can change', async () => {
  const f = await fixture(), m = f.original.manifest;
