@@ -44,7 +44,7 @@ function check(angles: number[], timeline: number[], loop = false, missing: numb
   };
   const cells = angles.map((angle, index) => heldCell(index, angle)).filter((_, index) => !missing.includes(index));
   const result = itemQa(rig, slotOf('off_hand'), 'green', cells, 0);
-  return { failures: [...result.failCalls.values()].flat(), minIoU: result.clips[0].minIoU };
+  return { failures: [...result.failCalls.values()].flat(), minIoU: result.clips[0].minIoU, qa: result.qa, warnings: result.warnings };
 }
 
 test('a large turn from the last pose to the first is a loop observation only', () => {
@@ -53,6 +53,9 @@ test('a large turn from the last pose to the first is a loop observation only', 
   expect(once.failures).toEqual([]);
   expect(loop.failures).toEqual([]);
   expect(loop.minIoU).toBeLessThan(once.minIoU);
+  expect(once.qa).not.toHaveProperty('heldLoopReviewClips');
+  expect(loop.qa).toMatchObject({ status: 'warn', heldLoopReviewClips: 1, clips: { 'walk/south': { heldLoopReviewClips: 1 } } });
+  expect(loop.warnings).toContain('G9 walk/south: the held item changes shape or angle when the move loops');
 });
 
 test('held QA follows reordered and repeated cells without comparing an unused cell', () => {

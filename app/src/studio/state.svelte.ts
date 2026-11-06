@@ -1130,10 +1130,14 @@ export const pendingMoves = (projectId: string, itemId?: string): MoveSpec[] =>
     .filter((s) => !itemId || s.items.includes(itemId));
 export async function startMove(projectId: string, spec: MoveSpec) {
   if (hmrReloading) return;
+  if (spec.reuseItemFrames && queue.role === 'follower') {
+    toast('Use saved frames in the tab that is managing your PixelDoll jobs.', { tone: 'warning' });
+    return;
+  }
   if (moveRunning) { toast('Another move is still being added, so this one did not start. Try again when it finishes.', { tone: 'warning' }); return; }
   spec = withActivityScope($state.snapshot(spec), 'move'); // queued specs are reactive proxies, which storage cannot clone
   moveRunning = true;
-  const revision = ++moveRevision, current = () => revision === moveRevision && moveRunning;
+  const revision = ++moveRevision, current = () => revision === moveRevision && moveRunning && (!spec.reuseItemFrames || queue.role !== 'follower');
   const moveName = spec.id[0].toUpperCase() + spec.id.slice(1).replace(/-/g, ' ');
   let failed = false;
   Object.assign(moving, { spec, projectId, progress: null, error: '', done: false, fitIds: [], warnings: [] });

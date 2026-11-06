@@ -5,13 +5,14 @@ import { queue, requestIdentity, type JobRec } from '../pixellab/queue.ts';
 import { base64ToBytes, binaryAlpha, bytesToBase64, decodePng, type Img } from '../image/png.ts';
 import { sha256, stableStringify } from '../image/hash.ts';
 import { cellHash, rigArtworkVersion, type Sha256 } from '../rig/rig.ts';
-import { itemPaletteMatcher, ITEM_PALETTE_POLICY, validPaletteRepairs } from '../dress/item-palette.ts';
-import { hasCells } from '../dress/dress.ts';
+import { itemPaletteMatcher, ITEM_PALETTE_POLICY, standingDyeMatcher, validPaletteRepairs } from '../dress/item-palette.ts';
+import { colorCounts, fromHex } from '../dress/palette.ts';
+import { deriveMaterials, hasCells } from '../dress/dress.ts';
 import { decodePngBytes, encodePngBytes } from '../image/pngraw.ts';
 import { hardMaskBits } from '../image/hard-mask.ts';
 import * as db from '../store/db.ts';
 import { loadProject, saveItem, type StoredProject } from '../store/project.ts';
-import type { CellKey, Item, Manifest, Project, Provenance, Slot } from '../store/manifest.ts';
+import type { CellKey, Item, Manifest, Material, Project, Provenance, Slot } from '../store/manifest.ts';
 import { dropCut } from '../compose/compose.ts';
 import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
@@ -248,7 +249,7 @@ export function rerollCall(d: Draft, k: number, why: string) {
 }
 export const failsOf = (res: ItemResult, k: number) => [...(res.g1.has(k) ? [res.g1.get(k)!] : []), ...(res.qa?.failCalls.get(k) ?? [])];
 
-export interface RunHooks { status?: (s: string) => void; persist?: () => Promise<unknown>; result?: (r: ItemResult) => void }
+export interface RunHooks { status?: (s: string) => void; persist?: () => Promise<unknown>; result?: (r: ItemResult) => void; standingPalettes?: ReadonlyMap<DirectionName, number[]> }
 
 /** Every check passed with nothing to look at: such a draft saves itself (round 10: review is optional). */
 export const isClean = (r: ItemResult) => r.qa?.qa.status === 'pass' && !r.g1.size && !r.qa.failCalls.size && !r.qa.warnings.length;
@@ -263,7 +264,7 @@ export async function runItem(d: Draft, ctx: RigCtx, h: RunHooks = {}): Promise<
   // One evaluation at a time, so an older result never replaces a newer one. Each caller handles its own evaluation's error;
   // the chain itself only orders them.
   let chain: Promise<unknown> = Promise.resolve();
-  const evalItem = () => { const r = chain.then(async () => { const x = await evaluateItem(d, ctx); h.result?.(x); return x; }); chain = r.then(() => {}, () => {}); return r; };
+  const evalItem = () => { const r = chain.then(async () => { const x = await evaluateItem(d, ctx, h.standingPalettes); h.result?.(x); return x; }); chain = r.then(() => {}, () => {}); return r; };
   // Streaming preview: landings during an evaluation coalesce into one more (throttle without timers).
   let streaming = false, again = false;
   const landed = () => {
@@ -370,7 +371,7 @@ function extractOnce(d: Draft, sig: string, run: () => CellOut): CellOut {
   return { ...c, layer: { ...c.layer, data: new Uint8ClampedArray(c.layer.data) }, mask: new Uint8Array(c.mask),
     ...(c.stencil ? { stencil: new Uint8Array(c.stencil) } : {}), ...(c.cut ? { cut: new Uint8Array(c.cut) } : {}) };
 }
-export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
+export async function evaluateItem(d: Draft, ctx: RigCtx, standingPalettes?: ReadonlyMap<DirectionName, number[]>): Promise<ItemResult> {
   if (d.rigId !== ctx.rec.id) throw new Error(`${d.spec.id} belongs to ${d.rigId}, not ${ctx.rec.id}`);
   type Out = { k: number; key: string; out: Img; posed: boolean; rec: string; stencil?: Uint8Array; stencilHash?: string };
   const { rig } = ctx.rec.manifest, route = d.spec.key, g1 = new Map<number, string>(), outs: Out[] = [], dressOuts: Out[] = [];
@@ -451,7 +452,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx): Promise<ItemResult> {
   }
   postProcess(rig, slot, cells, keys, pad);
   const kOut = d.spec.method === 'skel' ? GATES.keyOutsidePosed : GATES.keyOutside;
-  const qa = cells.length ? withH4(itemQa(rig, slot, route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut, pad, hidden), slot, cells, keys, rig, referenceBodies(rig, ctx.project.images), d.spec.prompt) : null;
+  const qa = cells.length ? withH4(itemQa(rig, slot, route, cells, d.calls.reduce((s, c) => s + c.old.length, 0), kOut, pad, hidden, standingPalettes), slot, cells, keys, rig, referenceBodies(rig, ctx.project.images), d.spec.prompt) : null;
   if (qa && hiddenWarnings.length) { qa.warnings.push(...hiddenWarnings); if (qa.qa.status === 'pass') qa.qa.status = 'warn'; }
   // Dressed item pixels can land before any target animation cell exists. Expose them without waiting for pose coverage.
   const thumbnail = (kfCells.find(c => c.area && c.key.split('/')[1] === 'south') ?? kfCells.find(c => c.area))?.layer;
@@ -538,23 +539,46 @@ export const posable = (m: Manifest) => m.items.filter((i) => i.slot !== 'body' 
 export const anchorable = (m: Manifest) => m.items.filter(i => i.slot !== 'body' && i.route === 'ea2-anchor' && i.standing && i.key && i.dressed && i.baseHash === m.rig.baseHash);
 
 /** Reuse the bought standing design on selected frozen frames, without requiring a skeleton or redrawing the body. */
-export async function animateAnchoredItem(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], seed: number, onCall: () => void = () => {}, options: { savedOnly?: boolean; activityScope?: string } = {}) {
+export async function animateAnchoredItem(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], seed: number, onCall: () => void = () => {}, options: { savedOnly?: boolean; plannedDirs?: DirectionName[]; activityScope?: string } = {}) {
   const rig = ctx.rec.manifest.rig;
-  const calls = planAnchoredMove(rig, item, anim, dirs);
+  const calls = planAnchoredMove(rig, item, anim, options.plannedDirs ?? dirs)
+    .map((call, i) => ({ ...call, seed: seedOf(`${item.id}/${anim}/${call.cells.join(',')}/${seed}/${i}`), old: [], rerolls: 0 }))
+    .filter(call => dirs.includes(call.reference.cell.split('/')[1] as DirectionName));
   if (!calls.length) throw new Error('Choose missing item frames before generating.');
   for (const call of calls) for (const im of [ctx.project.images.get(call.reference.image), ...call.cells.map(key => baseCell(ctx, key))]) {
     if (!im || im.w !== rig.cell.w || im.h !== rig.cell.h) throw new Error('The saved standing design and move frames must use the same frame size. No generation was requested.');
   }
-  const draft: Draft = { rigId: ctx.rec.id, activityScope: options.activityScope, spec: { id: item.id, name: item.name, prompt: item.prompt, slot: item.slot, key: item.key!, method: 'anchor', anims: [anim], dirs }, calls: calls.map((call, i) => ({ ...call, seed: seedOf(`${item.id}/${anim}/${call.cells.join(',')}/${seed}/${i}`), old: [], rerolls: 0 })), log: [] };
+  const draft: Draft = { rigId: ctx.rec.id, activityScope: options.activityScope, spec: { id: item.id, name: item.name, prompt: item.prompt, slot: item.slot, key: item.key!, method: 'anchor', anims: [anim], dirs }, calls, log: [] };
   if (options.savedOnly) await Promise.all(draft.calls.map(async (call, k) => {
     const { requestHash } = await requestIdentity(await callRequest(draft, k, ctx));
-    const saved = jobs.find(r => r.requestHash === requestHash && r.state === 'done');
+    const saved = jobs.findLast(r => r.requestHash === requestHash && r.state === 'done');
     if (!saved) throw new Error('Completed frames matching the current body and equipment are unavailable. No generation was requested.');
     call.recId = saved.id;
   }));
-  const result = options.savedOnly ? await evaluateItem(draft, ctx) : await runItem(draft, ctx);
+  const standingPalettes = new Map(dirs.map(dir => {
+    const standing = item.layers.flatMap(layer => {
+      const hash = layer.cells?.[item.standing!]?.[dir]?.[0], image = hash && ctx.project.images.get(hash);
+      return image ? [image] : [];
+    });
+    const counts = colorCounts(standing);
+    // A dense palette does not provide discrete shade witnesses and can be expensive to compare per frame.
+    return [dir, counts.size <= 256 ? [...counts.keys()] : []];
+  }));
+  const result = options.savedOnly ? await evaluateItem(draft, ctx, standingPalettes) : await runItem(draft, ctx, { standingPalettes });
   if (!result?.qa || hasStructuralFailure(result) || incompleteCoverage(draft, rig, result)) throw new Error(draft.log.at(-1) ?? 'Equipment frames could not finish. Existing artwork was kept.');
-  await mergeClip(ctx, item, anim, dirs, result.cells, draft.calls.map(c => toProv(recOf(c.recId)!, c)), result.qa);
+  let materials = ctx.rec.manifest.materials.filter(m => m.owner === item.id && item.materials.includes(m.id));
+  const needsMaterials = !item.materials.length;
+  if (needsMaterials) {
+    // A standing item can be animated directly from its details before the player ever equips it.
+    const standing = { ...item, layers: item.layers.map(l => ({ ...l, cells: { [item.standing!]: l.cells?.[item.standing!] ?? {} } })) };
+    const reference = { ...ctx.project, manifest: { ...ctx.rec.manifest } };
+    deriveMaterials(reference, [standing]);
+    materials = reference.manifest.materials.filter(m => m.owner === item.id);
+  }
+  const owned = new Set(materials.flatMap(m => m.ramp.map(fromHex)));
+  const matchers = new Map([...standingPalettes].map(([dir, colors]) => [dir, standingDyeMatcher(new Set(colors), owned)]));
+  const cells = result.cells.map(c => ({ ...c, layer: matchers.get(c.key.split('/')[1] as DirectionName)!(c.layer) }));
+  await mergeClip(ctx, item, anim, dirs, cells, draft.calls.map(c => toProv(recOf(c.recId)!, c)), result.qa, 0, needsMaterials ? materials : undefined);
   dirs.forEach(onCall);
 }
 /** Gens for posing `n` items onto a clip of `cells` frames in `dirs` directions. */
@@ -621,7 +645,7 @@ function clipArtwork({ materials: _materials, hides: _hides, ...artwork }: Item)
   return stableStringify(artwork);
 }
 
-export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0) {
+export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: DirectionName[], cells: CellOut[], prov: Provenance[], q: QaResult, pad = 0, standingMaterials?: Material[]) {
   const { rig } = ctx.rec.manifest, key = item.key!;
   const version = rigArtworkVersion(rig, ctx.rec.character), originalItem = clipArtwork(item);
   const count = rig.animations.find((a) => a.id === anim)?.cells;
@@ -653,6 +677,10 @@ export async function mergeClip(ctx: RigCtx, item: Item, anim: string, dirs: Dir
     if (!currentItem || rigArtworkVersion(current.manifest.rig, current.character) !== version || clipArtwork(currentItem) !== originalItem) throw new Error(ITEM_MOVE_SAVE_CONFLICT);
     // Outfit autosave owns these fields, including when it runs while a paid edit is pending.
     out.materials = currentItem.materials;
+    if (!out.materials.length && standingMaterials?.length) {
+      current.manifest.materials = [...current.manifest.materials.filter(m => m.owner !== item.id), ...standingMaterials];
+      out.materials = standingMaterials.map(m => m.id);
+    }
     if (currentItem.hides === undefined) delete out.hides;
     else out.hides = currentItem.hides;
   });

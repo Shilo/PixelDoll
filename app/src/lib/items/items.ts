@@ -664,7 +664,15 @@ export function dropOffBody(cells: CellOut[]): number {
 function bestShift(B: Img, C: Img, route: Route): [number, number] {
   const { w, h } = B;
   const unknown = route === 'none' ? undefined : chromaMask(C, route);
-  if (unknown && !unknown.some((v, p) => !v && C.data[p * 4 + 3] >= 128)) return [0, 0];
+  if (unknown) {
+    let witness = 0, body = 0;
+    for (let p = 0; p < unknown.length; p++) {
+      if (B.data[p * 4 + 3]) body++;
+      if (!unknown[p] && C.data[p * 4 + 3] >= 128) witness++;
+    }
+    // An almost entirely covered mannequin offers too little evidence to move every equipment pixel.
+    if (witness < Math.max(8, Math.ceil(body * 0.1))) return [0, 0];
+  }
   const iou = (dx: number, dy: number) => {
     let i = 0, u = 0;
     for (let y = 0; y < h; y++)
@@ -832,10 +840,11 @@ function heldVisibility(a: CellOut, b: CellOut, wa: [number, number], wb: [numbe
 
 /** Retain replaceable summaries against the same design palette as the complete evaluation.
  * `pad`: oversize layers are gated on their own canvas; hand positions move by the pad. */
-export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax = GATES.keyOutside, pad = 0, hidden = new Set<string>()): QaResult {
-  const ref = designColors(cells), q = evaluateQa(rig, slot, route, cells, rerolls, keyOutsideMax, pad, ref, hidden);
+export function itemQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax = GATES.keyOutside, pad = 0, hidden = new Set<string>(), standingPalettes?: ReadonlyMap<DirectionName, number[]>): QaResult {
+  const ref = standingPalettes ? [] : designColors(cells);
+  const q = evaluateQa(rig, slot, route, cells, rerolls, keyOutsideMax, pad, ref, hidden, standingPalettes);
   q.qa.clips = Object.fromEntries(q.clips.map(({ clip, hand }) => {
-    const part = evaluateQa(rig, slot, route, cells.filter((c) => clipOf(c.key) === clip), 0, keyOutsideMax, pad, ref, hidden);
+    const part = evaluateQa(rig, slot, route, cells.filter((c) => clipOf(c.key) === clip), 0, keyOutsideMax, pad, ref, hidden, standingPalettes);
     const summary = summaryOf(part.qa);
     for (const warning of part.warnings) if (!q.warnings.includes(warning)) {
       const message = warning.startsWith('G6 call ') ? `G6 ${clip}: palette distance ${summary.maxPaletteDist} to the design call` : `${clip}: ${warning}`;
@@ -852,7 +861,7 @@ const designColors = (cells: CellOut[]) => {
   const first = Math.min(...cells.map((c) => c.call));
   return [...new Set(cells.filter((c) => c.call === first).flatMap((c) => colors(c.layer)))];
 };
-function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax: number, pad: number, ref: number[], hidden: Set<string>): QaResult {
+function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], rerolls: number, keyOutsideMax: number, pad: number, ref: number[], hidden: Set<string>, standingPalettes?: ReadonlyMap<DirectionName, number[]>): QaResult {
   const w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, fail = new Map<number, string[]>(), warnings: string[] = [];
   const flag = (call: number, why: string) => (fail.get(call) ?? (fail.set(call, []), fail.get(call)!)).push(why);
   const cellsQa: Record<CellKey, CellQa> = {};
@@ -882,6 +891,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
 
   // per clip: presence, stability, placement, handedness
   const clips: ClipQa[] = [];
+  let heldLoopReviewClips = 0;
   const byClip = new Map<string, CellOut[]>(), grip = { R: 0, L: 0, amb: 0, none: 0 };
   for (const c of cells) { const k = c.key.split('/').slice(0, 2).join('/'); (byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c); }
   // wrists: the clip's requested keypoints (what the item was posed with, S5 gripSide), else the tracked hand anchors
@@ -963,10 +973,6 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       minIoU = Math.min(minIoU, iou);
       return iou;
     };
-    // Export can loop a move without changing its artwork. Keep that seam in the observation,
-    // separate from the hard fit check between the move's authored frames.
-    const first = byCell.get(frames[0]), last = byCell.get(frames[frames.length - 1]);
-    if (animation?.loop && first && last && first !== last) observe(last, first);
     // B9: a held blade legitimately turns with the swinging arm (walk E: blade 29° -> 74° while the forearm goes 68° -> 92°),
     // which drops the IoU to 0.2 on every seed. With posed keypoints, G9 checks the blade angle RELATIVE to the forearm
     // instead (a flip changes it, a swing does not). Near-round shields have no reliable axis: compare those
@@ -974,25 +980,33 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
     const checkShape = slot.class === 'held' && !isAction(clip);
     let turn = 0, shapeIoU = 1, occluded = false;
-    for (let i = 1; i < frames.length; i++) {
-      const j = frames[i - 1], k = frames[i], c = byCell.get(j), n = byCell.get(k);
+    const checkTransition = (j: number, k: number, seam = false) => {
+      const c = byCell.get(j), n = byCell.get(k);
       // Missing candidates cannot establish a transition, and a repeated cell holds the same image.
-      if (!c || !n || c === n) continue;
+      if (!c || !n || c === n) return;
       const overlap = observe(c, n);
-      if (!checkShape) continue;
+      if (!checkShape) return;
       // Preserve the posed route's minimum sample size: tiny masks have too few pixels
       // for a reliable axis, but can still rotate correctly with the hand.
-      if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) continue;
+      if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) return;
       const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
       const angle = fore && x != null && y != null ? angleDiff(x - fore[j], y - fore[k]) : null;
       const iou = angle == null ? overlap : 1;
       if ((angle != null && angle > GATES.heldTurn) || iou < GATES.heldIoU) {
         const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);
-        if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) { occluded = true; continue; }
+        if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) { occluded = true; return; }
+        if (seam && turn <= GATES.heldTurn && shapeIoU >= GATES.heldIoU) {
+          heldLoopReviewClips++;
+          warnings.push(`G9 ${clip}: the held item changes shape or angle when the move loops`);
+        }
       }
+      if (seam) return;
       if (angle != null) turn = Math.max(turn, angle);
       else shapeIoU = Math.min(shapeIoU, iou);
-    }
+    };
+    for (let i = 1; i < frames.length; i++) checkTransition(frames[i - 1], frames[i]);
+    // The playback seam is useful to inspect but never a hard failure of the interior animation.
+    if (animation?.loop && frames.length > 1) checkTransition(frames.at(-1)!, frames[0], true);
     if (occluded && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
     if (turn > GATES.heldTurn) flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
     if (shapeIoU < GATES.heldIoU) flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
@@ -1008,12 +1022,26 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     if (slot.anchor && slot.anchor.endsWith(major === 'r' ? 'l' : 'r')) warnings.push(`held in the ${major === 'r' ? 'right' : 'left'} hand; slot ${slot.id} expects ${slot.anchor}`);
   }
 
-  // G6 design lock: palette distance of each later call to the design call (call 0)
+  // Anchored edits have a known palette for each direction. One off-color frame should not be diluted by a clean batch.
   const calls = [...new Set(cells.map((c) => c.call))].sort((a, b) => a - b);
-  const paletteDist = Array.from({ length: Math.max(...calls) + 1 }, (_, k) => +paletteDistance(ref, cells.filter((c) => c.call === k).map((c) => c.layer)).toFixed(1));
-  // soft gate: the UI re-rolls a drifting call while it has re-rolls left, then keeps it with a warning
   const softCalls = new Map<number, string[]>();
-  paletteDist.forEach((pd, k) => { if (pd > GATES.paletteDist) { warnings.push(`G6 call ${k + 1}: palette distance ${pd} to the design call`); softCalls.set(k, [`G6 palette distance ${pd}`]); } });
+  const paletteDist = Array.from({ length: Math.max(...calls) + 1 }, (_, k) => {
+    const batch = cells.filter(c => c.call === k);
+    if (!standingPalettes) {
+      const distance = +paletteDistance(ref, batch.map(c => c.layer)).toFixed(1);
+      if (distance > GATES.paletteDist) {
+        warnings.push(`G6 call ${k + 1}: palette distance ${distance} to the design call`);
+        softCalls.set(k, [`G6 palette distance ${distance}`]);
+      }
+      return distance;
+    }
+    return Math.max(0, ...batch.map(c => {
+      const design = standingPalettes.get(c.key.split('/')[1] as DirectionName);
+      const distance = +(design?.length ? paletteDistance(design, [c.layer]) : 0).toFixed(1);
+      if (distance > GATES.paletteDist) warnings.push(`G6 ${c.key}: palette distance ${distance} to its standing design`);
+      return distance;
+    }));
+  });
 
   const minAreaRatio = Math.min(1, ...clips.map((c) => c.minRatio)), maxAreaCV = Math.max(0, ...clips.map((c) => c.cv));
   const status: ItemQa['status'] = fail.size ? 'fail' : warnings.length || route === 'none' ? 'warn' : 'pass';
@@ -1022,6 +1050,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       minKeyKept: +minKept.toFixed(3), maxKeyOutside: +maxOut.toFixed(4), minAreaRatio, maxAreaCV, maxPaletteDist: Math.max(0, ...paletteDist), clipPx, handedness,
       shiftedFrames: cells.filter((c) => c.shifted).length, strayPx: cells.reduce((s, c) => s + c.stray, 0), ...(slot.class === 'held' ? { grip } : {}), rerolls, status, cells: cellsQa,
       ...(slot.class === 'held' && cells.some(c => c.rawKeyOutside) ? { rawKeyReviewFrames: cells.filter(c => c.rawKeyOutside).length } : {}),
+      ...(heldLoopReviewClips ? { heldLoopReviewClips } : {}),
     },
     clips, failCalls: fail, softCalls, warnings, paletteDist, splitExact,
   };

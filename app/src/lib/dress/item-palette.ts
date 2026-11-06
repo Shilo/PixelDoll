@@ -4,6 +4,37 @@ import type { Item, Material } from '../store/manifest.ts';
 import { fromHex, lab, OUTLINE_C, OUTLINE_L } from './palette.ts';
 
 export const ITEM_PALETTE_POLICY = 'neutral-owned-v1' as const;
+const channels = (c: number) => [c >> 16, (c >> 8) & 255, c & 255];
+
+/** Keep a generated move dyeable where a same-facing standing color is a close and unique match. */
+export function standingDyeMatcher(standing: ReadonlySet<number>, owned: ReadonlySet<number>) {
+  const palette = [...standing].map(color => ({ color, rgb: channels(color) }));
+  const matches = new Map<number, number | undefined>();
+  return (image: Img): Img => {
+    let data: Img['data'] | undefined;
+    for (let i = 0; i < image.data.length; i += 4) {
+      if (!image.data[i + 3]) continue;
+      const color = image.data[i] * 65536 + image.data[i + 1] * 256 + image.data[i + 2];
+      if (standing.has(color) || owned.has(color)) continue;
+      if (!matches.has(color)) {
+        const src = channels(color);
+        const ranked = palette.map(entry => {
+          const deltas = entry.rgb.map((channel, j) => Math.abs(channel - src[j]));
+          return { color: entry.color, max: Math.max(...deltas), distance: Math.hypot(...deltas) };
+        }).sort((a, b) => a.distance - b.distance);
+        const [best, next] = ranked;
+        // Include unowned standing shades in the comparison so an outline cannot acquire a dye ramp by proximity alone.
+        matches.set(color, best && owned.has(best.color) && best.max <= 12 && (!next || next.distance - best.distance >= 3) ? best.color : undefined);
+      }
+      const match = matches.get(color);
+      if (match === undefined) continue;
+      data ??= image.data.slice();
+      data.set(channels(match), i);
+    }
+    return data ? { ...image, data } : image;
+  };
+}
+
 const neutral = (c: number) => {
   const [L, a, b] = lab(c), r = c >> 16, g = (c >> 8) & 255, blue = c & 255;
   // A small warm allowance includes off-white steel. Muted green/brown guards are excluded.
@@ -19,7 +50,7 @@ export function itemPaletteMatcher(item: Pick<Item, 'id' | 'materials'>, materia
     if (cache.has(c)) return cache.get(c);
     let result: number | null | undefined;
     if (!claimed.has(c) && neutral(c)) {
-      const channels = (v: number) => [v >> 16, (v >> 8) & 255, v & 255], src = channels(c);
+      const src = channels(c);
       const sorted = ramp.map(v => ({ v, ds: channels(v).map((x, i) => Math.abs(x - src[i])) }))
         .map(v => ({ ...v, d: v.ds.reduce((s, x) => s + x * x, 0) })).sort((a, b) => a.d - b.d);
       result = Math.max(...sorted[0].ds) <= 24 && (sorted.length === 1 || sorted[0].d !== sorted[1].d) ? sorted[0].v : null;

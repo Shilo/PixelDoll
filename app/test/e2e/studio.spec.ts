@@ -1705,6 +1705,40 @@ async function targetedRepairFixture(page: Page) {
   })
 }
 
+test('failed anchored moves offer cache-only recovery without an API key or a new request', async ({ page, context }, info) => {
+  const posts: string[] = [];
+  await context.route('https://api.pixellab.ai/**', async route => {
+    if (route.request().method() === 'POST') posts.push(route.request().url());
+    await route.abort();
+  });
+  await page.addInitScript(() => { localStorage.setItem('pixeldoll.agentKey', 'off'); localStorage.setItem('pixeldoll.welcomed', '1') });
+  await openStudio(page, info.config.projects.find(p => p.name === 'browser-selftests')!.use.baseURL!);
+  const { itemId } = await targetedRepairFixture(page);
+  await page.evaluate(async itemId => {
+    const statePath = '/src/studio/state.svelte.ts', dbPath = '/src/lib/store/db.ts', runPath = '/src/lib/items/run.ts';
+    const s = await import(statePath), db = await import(dbPath), run = await import(runPath);
+    const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((it: { id: string }) => it.id === itemId);
+    item.route = 'ea2-anchor'; item.standing = 'default';
+    for (const layer of item.layers) delete layer.cells.walk;
+    item.coverage = [];
+    await db.put('projects', s.doc.id, rec);
+    await db.put('projects', 'studio-move', {
+      id: 'studio-move', projectId: s.doc.id, status: 'failed', error: run.ITEM_MOVE_SAVE_CONFLICT, requestText: s.REQUEST_TEXT,
+      progress: { step: 'items', done: 0, total: 1, recIds: [] },
+      spec: { id: 'walk', items: [itemId], dirs: ['east'], frames: 8, seed: 90, itemsOnly: true, itemMethod: 'anchor' },
+    });
+  }, itemId);
+  await reloadStudio(page);
+  await equipmentMode(page, 'Moves');
+  await page.getByRole('button', { name: 'Walk Failed: tap for details' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Add a move', exact: true });
+  await expect(sheet.getByRole('button', { name: /^Generate new frames/ })).toContainText('Est. 10 gens');
+  await sheet.getByRole('button', { name: 'Use saved frames', exact: true }).click();
+  await expect(sheet).toContainText('Completed frames matching the current body and equipment are unavailable. No generation was requested.');
+  await expect(page.getByRole('dialog', { name: 'Connect PixelLab' })).toHaveCount(0);
+  expect(posts).toEqual([]);
+});
+
 async function oversizedItemFixture(page: Page, itemId: string) {
   await page.evaluate(async id => {
     const sPath = '/src/studio/state.svelte.ts', s = await import(sPath), dbPath = '/src/lib/store/db.ts', db = await import(dbPath)

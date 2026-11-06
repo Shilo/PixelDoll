@@ -674,7 +674,7 @@ export function reviewItemMove(m: Manifest, spec: MoveSpec): MoveSpec {
   const items = [m.rig.baseItem, ...spec.items].map(id => {
     const item = m.items.find(i => i.id === id);
     if (!item) throw new Error('The selected equipment is no longer available.');
-    return { ...item, qa: undefined, provenance: undefined, designWarnings: undefined,
+    return { ...item, qa: undefined, provenance: undefined, designWarnings: undefined, materials: undefined, hides: undefined,
       coverage: item.coverage?.filter(key => key.startsWith(`${spec.id}/`) && dirs.includes(key.split('/')[1] as DirectionName)),
       baseCut: rows(item.baseCut?.[spec.id]), paletteRepairs: item.paletteRepairs?.filter(p => p.anim === spec.id && dirs.includes(p.dir)),
       layers: item.layers.map(layer => ({ ...layer, cells: rows(layer.cells?.[spec.id]), sheets: layer.sheets?.[spec.id], sourceSheets: layer.sourceSheets?.[spec.id] })) };
@@ -749,7 +749,7 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
     const ctx = await loadProject(projectId), it = ctx.rec.manifest.items.find(i => i.id === plan.id);
     if (!it || it.design) throw new Error('This item changed or was removed while the move was being prepared.');
     assertArtwork(ctx.rec.manifest, plan.id, plan.dirs);
-    if (spec.itemMethod === 'anchor') await animateAnchoredItem(ctx, it, spec.id, plan.dirs, spec.seed, tick, { savedOnly: spec.reuseItemFrames, activityScope: spec.activityScope });
+    if (spec.itemMethod === 'anchor') await animateAnchoredItem(ctx, it, spec.id, plan.dirs, spec.seed, tick, { savedOnly: spec.reuseItemFrames, plannedDirs: spec.reuseItemFrames ? dirs : undefined, activityScope: spec.activityScope });
     else if (spec.itemMethod === 'grid') for (const d of plan.dirs) {
       const current = await loadProject(projectId), item = current.rec.manifest.items.find(i => i.id === plan.id);
       if (!item || item.design) throw new Error('This item changed or was removed while the move was being prepared.');

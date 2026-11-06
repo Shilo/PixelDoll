@@ -14,13 +14,13 @@ import { queue, requestIdentity, type JobRec } from '../../src/lib/pixellab/queu
 import { sha256 } from '../../src/lib/image/hash.ts'
 import type { Req } from '../../src/lib/pixellab/routes.ts'
 
-const ledger = vi.hoisted(() => ({ records: [] as JobRec[], listeners: new Set<(s: { jobs: JobRec[] }) => void>(), blobs: new Map<string, Blob>(), failAt: -1, billed: 0, transparent: false }))
+const ledger = vi.hoisted(() => ({ records: [] as JobRec[], listeners: new Set<(s: { jobs: JobRec[] }) => void>(), blobs: new Map<string, Blob>(), failAt: -1, billed: 0, transparent: false, colors: [] as number[][] }))
 vi.mock('../../src/lib/pixellab/queue.ts', async original => ({ ...await original<typeof import('../../src/lib/pixellab/queue.ts')>(), queue: {
   subscribe: (cb: (s: { jobs: JobRec[] }) => void) => { ledger.listeners.add(cb); cb({ jobs: ledger.records }); return () => ledger.listeners.delete(cb) },
   enqueue: vi.fn(), planBlocks: () => null,
 } }))
 vi.mock('../../src/lib/store/project.ts', async original => ({ ...await original<typeof import('../../src/lib/store/project.ts')>(), saveItem: vi.fn(async () => {}) }))
-beforeEach(() => { ledger.records.splice(0); ledger.blobs.clear(); ledger.failAt = -1; ledger.billed = 0; ledger.transparent = false; vi.mocked(saveItem).mockClear() })
+beforeEach(() => { ledger.records.splice(0); ledger.blobs.clear(); ledger.failAt = -1; ledger.billed = 0; ledger.transparent = false; ledger.colors = []; vi.mocked(saveItem).mockClear() })
 afterEach(() => vi.restoreAllMocks())
 
 async function fixture(frames = 18): Promise<RigCtx> {
@@ -47,6 +47,8 @@ async function fixture(frames = 18): Promise<RigCtx> {
     for (const [i, frame] of params.frames.entries()) {
       const image = await decodePngBytes(Uint8Array.from(atob(frame.image.base64), ch => ch.charCodeAt(0)))
       if (!ledger.transparent || i === 0) image.data.set([180, 20, 30, 255], (18 * 64 + 20) * 4)
+      const paint = i > 0 && ledger.colors[i - 1];
+      if (paint) for (let x = 20; x < 24; x++) image.data.set(paint, (18 * 64 + x) * 4)
       const bytes = await encodePngBytes(image), hash = await sha256(bytes)
       ledger.blobs.set(hash, new Blob([bytes as Uint8Array<ArrayBuffer>]))
       outputs.push({ label: String(i), sha: hash })
@@ -128,6 +130,19 @@ test('recovery publishes the same completed requests without enqueuing or changi
   expect(save.mock.calls[1][1].provenance.map(p => p.requestHash)).toEqual(ledger.records.map(r => `sha256:${r.requestHash}`))
 })
 
+test('recovery can publish the remaining view with its original paid seed', async () => {
+  const ctx = await fixture(3), item = ctx.rec.manifest.items[1];
+  ctx.rec.manifest.items[0].layers[0].cells!.custom_18!.west = [...ctx.rec.manifest.items[0].layers[0].cells!.custom_18!.east!];
+  await animateAnchoredItem(ctx, item, 'custom_18', ['east', 'west'], 71);
+  const enqueue = vi.mocked(queue.enqueue);
+  enqueue.mockClear();
+  await animateAnchoredItem(ctx, item, 'custom_18', ['west'], 71, undefined, { savedOnly: true, plannedDirs: ['east', 'west'] });
+  expect(enqueue).not.toHaveBeenCalled();
+  const saved = vi.mocked(saveItem).mock.calls.at(-1)![1];
+  expect(saved.provenance).toHaveLength(1);
+  expect(saved.provenance[0].requestHash).toBe(`sha256:${ledger.records[1].requestHash}`);
+});
+
 test('saved transparent generated views retain explicit coverage and are never offered for purchase again', async () => {
   const ctx = await fixture(2), item = ctx.rec.manifest.items[1]
   ledger.transparent = true
@@ -138,4 +153,28 @@ test('saved transparent generated views retain explicit coverage and are never o
   expect(saved.coverage).toContain('custom_18/east/1')
   ctx.rec.manifest.items[1] = saved
   expect(missingItemMoves(ctx.rec.manifest, saved.id)).toEqual([])
+})
+
+test.each([false, true])('matches close generated dyes and flags a distant frame when the standing dyes are unsaved: %s', async unsaved => {
+  const ctx = await fixture(8), item = ctx.rec.manifest.items[1]
+  const approved = [...ctx.project.images.values()][1], standing = await cellHash(approved)
+  item.layers[0].cells!.stand_any_name!.east = [standing]
+  if (unsaved) {
+    item.materials = []
+    ctx.rec.manifest.materials = ctx.rec.manifest.materials.filter(m => m.owner !== item.id)
+  }
+  const stored = structuredClone(ctx.rec)
+  vi.mocked(saveItem).mockImplementationOnce(async (_id, _item, _images, _ladder, guard) => guard!(stored))
+  ledger.colors = Array.from({ length: 8 }, (_, i) => i === 3 ? [220, 220, 220, 255] : [113, 122, 125, 255])
+
+  await animateAnchoredItem(ctx, item, 'custom_18', ['east'], 77)
+  const [, saved, images] = vi.mocked(saveItem).mock.calls[0], frames = saved.layers[0].cells!.custom_18!.east!
+  const at = (18 * 64 + 20) * 4
+  expect(images.get(frames[0]!)!.data.slice(at, at + 4)).toEqual(new Uint8ClampedArray([120, 120, 120, 255]))
+  expect(images.get(frames[3]!)!.data.slice(at, at + 4)).toEqual(new Uint8ClampedArray([220, 220, 220, 255]))
+  expect(saved.qa?.clips?.['custom_18/east']).toMatchObject({ status: 'warn', maxPaletteDist: 100 })
+  expect(stored.manifest.materials.find(m => m.owner === saved.id)?.ramp).toEqual(['#787878'])
+  expect(saved.materials).toEqual(stored.manifest.materials.filter(m => m.owner === saved.id).map(m => m.id))
+  const raw = await decodePngBytes(new Uint8Array(await ledger.blobs.get(ledger.records[0].jobs[0].results[1].sha)!.arrayBuffer()))
+  expect(raw.data.slice(at, at + 4)).toEqual(new Uint8ClampedArray([113, 122, 125, 255]))
 })

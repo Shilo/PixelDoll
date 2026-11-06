@@ -95,6 +95,7 @@
     if (q.footwearReviewFrames) r.push('G12 footwear coverage')
     if (q.waistReviewFrames) r.push('G13 waist-band consistency')
     if (q.facingReviewFrames) r.push('G14 torso consistency')
+    if (q.heldLoopReviewClips) r.push('The held item changes shape or angle when a move loops')
     if (q.unmeasured) return r.map(plainReason)
     if (q.minKeyKept < 0.97) r.push('G2')
     if (q.maxKeyOutside > 0.02) r.push('G3')

@@ -68,6 +68,9 @@ test('item review binds artwork and cost while unrelated queued clips and playba
  item.provenance.push({ endpoint: 'synthetic', params: {}, seed: 1, requestHash: 'sha256:test', createdAt: '', produced: ['walk/south/0'] });
  m.rig.animations[0].loop = false;
  expect(reviewItemMove(m, spec).itemReview).toEqual(reviewed);
+ item.materials = ['display-only-dye'];
+ item.hides = ['back'];
+ expect(reviewItemMove(m, spec).itemReview).toEqual(reviewed);
  item.layers[0].cells!.idle!.south![0] = 'sha256:changed';
  expect(reviewItemMove(m, spec).itemReview!.artwork).not.toBe(reviewed.artwork);
  item.layers[0].cell = { w: 96, h: 96 };

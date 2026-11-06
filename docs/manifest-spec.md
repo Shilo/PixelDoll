@@ -192,6 +192,7 @@ export interface ItemQa {
   clipPx: number;                         // legacy name: border-contact count for review, not pixels proven cropped
   grip?: { R: number; L: number; amb: number; none: number }; // held items (gripSide counts)
   rawKeyReviewFrames?: number;            // held frames with new body-key pixels before registration; review observation
+  heldLoopReviewClips?: number;            // held clips with a shape or angle change at the playback seam
   anchorSpread?: number;                  // head items, px, <= 3 front/back
   strayPx: number;                        // removed by the largest-component filter (logged)
   rerolls: number;

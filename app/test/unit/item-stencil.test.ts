@@ -66,6 +66,20 @@ test.each(['standing', 'posed', 'stenciled'] as const)('an asymmetric item does 
   expect(c.mask[30 * 64 + 35]).toBe(1);
 });
 
+test('a stray key pixel cannot translate equipment over a fully covered mannequin', () => {
+  const base = makeImg(32, 32), out = makeImg(32, 32);
+  for (let y = 10; y < 14; y++) for (let x = 10; x < 14; x++) {
+    paint(base, x, y);
+    paint(out, x, y, [170, 40, 20, 255]);
+  }
+  paint(out, 14, 11, [0, 180, 0, 255]);
+  const c = extractCell({ key: 'slash/south/0', call: 0, base, out, route: 'green', band: { x: 0, y: 0, w: 32, h: 32 }, posed: true });
+  expect(c.out).toBe(out);
+  expect(c.shifted).toBe(false);
+  expect(c.mask[11 * 32 + 9]).toBe(0);
+  expect(c.mask[11 * 32 + 13]).toBe(1);
+});
+
 test.each(['short','nonbinary','wrong-type'] as const)('invalid %s stencils fail clearly without modifying image inputs',mode=>{
   const f=fixture(),before=f.out.data.slice();
   const stencil=mode==='short'?new Uint8Array(2):mode==='nonbinary'?new Uint8Array(4096).fill(255):new Array(4096).fill(1) as unknown as Uint8Array;

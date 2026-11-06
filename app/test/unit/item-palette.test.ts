@@ -1,5 +1,5 @@
 import { afterEach, expect, test, vi } from 'vitest';
-import { itemPaletteMatcher } from '../../src/lib/dress/item-palette.ts';
+import { itemPaletteMatcher, standingDyeMatcher } from '../../src/lib/dress/item-palette.ts';
 import { itemPaletteRepairPlan, matchItemColors, type RigCtx } from '../../src/lib/items/run.ts';
 import * as store from '../../src/lib/store/project.ts';
 import { queue } from '../../src/lib/pixellab/queue.ts';
@@ -14,6 +14,17 @@ const material = (cols: Hex[] = ramp, id = 'metal'): Material => ({ id, label:'M
 const owner = {id:'sword',materials:['metal']};
 function pixels(cols: string[]) { const im=makeImg(cols.length,1);cols.forEach((h,i)=>{const c=fromHex(h);im.data.set([c>>16,(c>>8)&255,c&255,255],4*i)});return im; }
 const colors = (im: Img) => Array.from({length:im.w*im.h},(_,i)=>[...im.data.slice(i*4,i*4+3)]);
+test('standing dye matching changes only close unambiguous owned RGB without touching transparency', () => {
+ const set = (values: string[]) => new Set(values.map(fromHex));
+ const match = standingDyeMatcher(set(['#5c2633', '#411723', '#1c090d', '#280812', '#d6ab63']), set(['#5c2633', '#411723', '#280812', '#d6ab63', '#793845']));
+ const source = pixels(['#552833', '#3d1a24', '#230a0e', '#200f0f', '#c88f74', '#793845', '#552833']);
+ source.data[3] = 180;
+ source.data[27] = 0;
+ const before = source.data.slice(), out = match(source);
+ expect(colors(out)).toEqual(colors(pixels(['#5c2633', '#411723', '#230a0e', '#200f0f', '#c88f74', '#793845', '#552833'])));
+ expect(out.data.filter((_, i) => i % 4 === 3)).toEqual(before.filter((_, i) => i % 4 === 3));
+ expect(source.data).toEqual(before);
+});
 test('matches only the eleven known eligible steel colors while preserving warm guard, outline and already owned RGB',()=>{
  const source=pixels(['#4b525c','#2e3c46','#394753','#dfe3e5','#b8c1c9','#9da6b1','#717882','#6c757d','#ffffff','#bec1c4','#626063','#352f17','#555a49','#665a51','#000000','#433f1f']);
  const mats=[material(),{...material(['#433f1f'],'wood'),owner:'sword'}],before=source.data.slice();

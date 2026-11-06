@@ -48,6 +48,8 @@
   const progress = $derived(mine && !adding)
   const busy = $derived(!!moving.spec && !moving.done)
   const savedItemFrames = $derived(moving.spec?.itemMethod === 'anchor' && moving.spec.itemsOnly && !moving.spec.itemReview && moving.error.startsWith(ITEM_MOVE_SAVE_CONFLICT))
+  const retryPlan = $derived(moving.error && moving.spec ? movePlan(rec, { ...moving.spec, reuseItemFrames: undefined, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : [])
+  const retryGens = $derived(Math.ceil(retryPlan.reduce((sum, call) => sum + (call.generations ?? 0), 0)))
   const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id))
   const ownQueued = $derived(moving.queued.filter((q) => q.projectId === moving.projectId))
   // another character's failed move holds every new move; only its own sheet can try it again or start over
@@ -117,7 +119,7 @@
     <button class="bu-action btn primary" data-variant="primary" onclick={() => { void dismissMove(); ui.sheet = null }}>Done</button>
   {:else if progress && moving.error}
     <button class="bu-action btn plain" data-variant="quiet" onclick={dismissMove}>Start over</button>
-    <span class="api-action"><ApiPeek scope="move-retry" label="Generate move again" plan={moving.spec ? movePlan(rec, { ...moving.spec, reuseItemFrames: undefined, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : []} /><button class="bu-action btn" data-variant="outline" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), reuseItemFrames: undefined, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' }, moving.spec?.itemMethod !== 'anchor')}>{recovery || colorRepair || savedItemFrames || moving.spec?.reuseItemFrames ? 'Generate new frames' : 'Try again'}</button></span>
+    <span class="api-action"><ApiPeek scope="move-retry" label="Generate move again" plan={retryPlan} /><button class="bu-action btn" data-variant="outline" onclick={() => moving.spec && withKey(() => { void startMove(moving.projectId, { ...$state.snapshot(moving.spec!), reuseItemFrames: undefined, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: 1 + Math.floor(Math.random() * 1_000_000) }); ui.sheet = 'move' }, moving.spec?.itemMethod !== 'anchor')}>{recovery || colorRepair || savedItemFrames || moving.spec?.reuseItemFrames ? 'Generate new frames' : 'Try again'}{#if (savedItemFrames || moving.spec?.reuseItemFrames) && retryGens} <span class="cost">Est. {retryGens} gens</span>{/if}</button></span>
     {#if savedItemFrames}<button class="bu-action btn primary" data-variant="primary" onclick={() => moving.spec && void startMove(moving.projectId, { ...$state.snapshot(moving.spec), reuseItemFrames: true })}>Use saved frames</button>{/if}
     {#if recovery}<button class="bu-action btn primary" data-variant="primary" onclick={retryChecks}>{recovery.checks ? 'Retry joint checks' : 'Reuse cached frames'}</button>{/if}
     {#if colorRepair}<button class="bu-action btn primary" data-variant="primary" onclick={matchColors}>Match body colors</button>{/if}<!-- new seed re-rolls body + item poses (R6 P2-7) -->
@@ -147,7 +149,7 @@
         {/each}
       </ol>
       {#if moving.error}<p class="notice bad small"><CircleAlert size={14} />{moving.error}</p>{/if}
-      {#if savedItemFrames}<p class="muted small">Use saved frames to check for completed artwork that matches this move and equipment. PixelLab will not be called.</p>{/if}
+      {#if savedItemFrames}<p class="muted small">Use saved frames to check for completed artwork that matches this move and equipment. Recovering these frames makes no PixelLab request.</p>{/if}
       {#if recoveryChecking}<p class="muted small" role="status">Checking cached frames…</p>{/if}
       {#if recoveryUnavailable}<p class="notice small">{recoveryUnavailable}</p>{/if}
       {#if ownQueued.length}<p class="muted small">Queued next: {ownQueued.map((q) => nice(q.spec.id)).join(', ')}{moving.error ? '. Try again continues with them; Start over drops them.' : ''}</p>{/if}
