@@ -61,3 +61,51 @@ The 11 superseded comparison cells have 6,082 / 6,082 raw protected RGBA differe
 | Shared-profile edit or inpaint | Same extracted item, and standing plus target mannequins keyed with one body profile | Same inputs except the ramp mapping | Whether stable luminance helps without reducing pose readability. Compare with a rebuilt **per-cell** condition first to isolate the profile effect from reconstruction. |
 
 Start with a rigid head item, a long cape, and a padded asymmetric held item. Include facing changes, a checked body cut, a hidden limb, an intentionally overhanging part, and a negative control with key-colored clothing. Use paired results on the exact native grid. Count protected-region errors, visible retained design and motif pixels, new off-key body fragments, grid/pivot drift, and significant frame-to-frame shifts. Inspect both the isolated item and recomposed sprite. Keep body and item appearance checks independent. Record actual costs and the endpoint/seed with every candidate, including failures. Repeat across bodies and seeds before changing the default. Keep any request hash and saved-frame recovery policy consistent with the derived conditioning version.
+
+## Leave-one-frame-out repair stencils on frozen renders
+
+I withheld each animated cell in four public benchmark cases. These are the 80 px tunic, cloak, and greathelm, plus the 64 px cape with walk and slash moves. The 168 held-out cells use the production benchmark's post-processed item alpha and body cuts as a proxy for wanted output. The cape includes the existing failing north slash. I retained that direction as a stress case and report failures on passing directions separately. This test measures how much of an existing result the stencil would permit. It cannot tell which pixels belong to the intended design, how the provider responds to a smaller mask, or whether the provider paints any permitted body and background. [Frozen cases and verdicts](../testing/bench.md) · [Benchmark reader](../../app/scripts/bench.ts)
+
+- **Band** uses the same `bandOf → garmentBand → bandMask` path as production, with the direction's standing design extracted from its stored composite by `chromaLayer`. The 80 px rig has measured target joints. The 64 px fixture stores requested joints only, so its band and projected stencil use those as a proxy. In production, an absent observed skeleton can also leave the band broader. [Grid mask construction](../../app/src/lib/items/run.ts#L149) · [Garment extent](../../app/src/lib/items/garment-coverage.ts#L22)
+- **Neighbors** union the binary masks immediately before and after the held-out index from the same clip and direction. At an endpoint only one neighbor contributes, even for looping moves. **Joint neighbors** project each mask independently before the union. The head stencil translates by the mean eye and ear displacement. The cloak and cape use the neck and shoulder center and the hip center. The tunic also uses knee and foot centers. For each source row, interpolate the two surrounding anchor displacements and round the result to whole pixels, with constant displacement beyond the outer anchors. Both arms dilate by two pixels in a square neighborhood and intersect the broad band. This deliberately limits new edit permission to coordinates already inside the band.
+- **Truncated edge** removes the rightmost four occupied columns of the target item. Dilate the surviving target mask by two pixels and compare it alone and in union with either neighbor stencil. The complete-loss run supplies no target item or cuts to the stencil. Report the portion of the omitted alpha or body cut that the stencil makes editable. Body and background exposure count permitted pixels outside the proxy item alpha, separated by original body alpha. Some permitted body pixels are legitimate cut candidates and are scored separately.
+
+### Complete loss
+
+| Case | Arm | Item pixels retained | Worst frame retained | Extra body / background px per frame |
+| --- | --- | ---: | ---: | ---: |
+| 80 px tunic, 40 frames | Band | 14,803 / 14,803 | 100% | 194.5 / 2,147.4 |
+| | Neighbors | 14,788 / 14,803 | 345 / 352 | 115.0 / 144.4 |
+| | Joint neighbors | 14,783 / 14,803 | 345 / 352 | 115.6 / 144.4 |
+| 80 px cloak, 40 frames | Band | 29,415 / 29,415 | 100% | 407.6 / 4,479.0 |
+| | Neighbors | 29,234 / 29,415 | 509 / 559 | 190.8 / 360.1 |
+| | Joint neighbors | 29,226 / 29,415 | 509 / 559 | 191.7 / 357.1 |
+| 80 px greathelm, 40 frames | Band | 12,560 / 12,560 | 100% | 105.0 / 2,757.0 |
+| | Neighbors | 12,560 / 12,560 | 100% | 42.8 / 137.4 |
+| | Joint neighbors | 12,560 / 12,560 | 100% | 42.3 / 133.7 |
+| 64 px cape, 48 frames | Band | 16,068 / 16,071 | 620 / 623 | 343.3 / 1,870.0 |
+| | Neighbors | 15,878 / 16,071 | 176 / 225 | 141.3 / 227.4 |
+| | Joint neighbors | 15,866 / 16,071 | 177 / 225 | 141.1 / 227.9 |
+
+The most consequential misses were in passing clips. The 80 px cloak lost 50 of 559 pixels on southeast walk frame 1, and the 64 px cape lost 49 of 225 on south walk frame 0. The joint projection lost more pixels in aggregate in every case with any loss. Agreement between neighbors did not guarantee support for the middle frame. At least 95% IoU between the two projected masks admitted 8 of 40 cloak frames. In that subset the joint arm still covered just 515 of 550 pixels in east walk frame 2, compared with 526 for fixed neighbors. The same gate admitted 2 of 40 tunic frames, 27 of 40 greathelm frames, and 2 of 48 cape frames. The greathelm passed alpha coverage but each basic neighbor arm excluded 35 of 329 recorded body-cut pixels, including 24 of 232 in the high-agreement subset.
+
+### Truncated edge
+
+| Case | Lost edge px | Band permission | Surviving crop only | Crop plus neighbors | Crop plus joint neighbors | Worst crop-plus-neighbors frame |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 80 px tunic | 1,401 | 1,401 | 1,011 | 1,398 | 1,396 | 65 / 68 |
+| 80 px cloak | 2,228 | 2,228 | 1,474 | 2,183 | 2,183 | 40 / 79 |
+| 80 px greathelm | 2,637 | 2,637 | 1,551 | 2,637 | 2,637 | 100% |
+| 64 px cape | 1,648 | 1,648 | 1,106 | 1,637 | 1,637 | 5 / 8 |
+
+The crop-plus-neighbors mask covered 14,800 of 14,803 total tunic pixels, 29,370 of 29,415 cloak pixels, 12,560 of 12,560 greathelm pixels, and 16,057 of 16,071 cape pixels. It allowed a mean of 119.8 / 148.3 body and background pixels outside the tunic, 201.1 / 375.3 for the cloak, 43.5 / 139.7 for the greathelm, and 150.2 / 241.5 for the cape. The cape's 5-of-8 worst edge was east slash frame 0 in a passing clip. The cloak's edge miss was the same southeast walk frame that failed the complete-loss test.
+
+A full-disappearance input is visually identical to one with no equipment expected. The four cases supplied no genuinely empty target, so I also made a synthetic expected-empty control at south walk frame 3 in each case while leaving the same neighbors. With no semantic visibility signal, the narrow neighbor stencil still opened 529 pixels for the greathelm, 727 for the tunic, 1,366 for the cloak, and 727 for the cape. Every one of those pixels was outside the now-empty proxy item. Eligibility needs a separate visibility or deliberate repair decision before it opens such a frame.
+
+### Candidate order and regressions to preserve
+
+1. **Rigid headwear with supported body cuts.** A union of the two neighbor item masks and their recorded cut masks, dilated by two pixels, retained every proxy greathelm item pixel and all 329 cut pixels over 40 frames. Mean extra exposure was 43.6 body and 153.9 background pixels, compared with 105.0 and 2,757.0 for the band. Projecting the item and cut masks produced the same coverage with 43.1 and 150.1 extra pixels. Adding projected standing cuts did nothing further in this case. A three-pixel dilation without explicit cuts also retained everything, with higher exposure at 62.4 and 216.3. Test the fixed neighbor union with explicit cuts first. Include held-out headwear styles, asymmetric horns, ear and hair occlusion, facing changes, and a known body cut. Any candidate must keep cut permission independent from item alpha and skip hidden frames.
+2. **Close-fitting garments with bounded motion.** Three-pixel fixed-neighbor dilation retained all 14,803 tunic pixels and every truncated-edge pixel, exposing 155.3 body and 224.4 background pixels per frame. At two pixels it missed 15 item pixels and at one pixel it missed 89. The three-pixel setting is a candidate for a separate paid comparison on this walk geometry. Check raised arms, bent knees, loose hems, and color-key collisions before promoting it. Where support is uncertain, preserve the broad repair band and the standing garment extent.
+3. **Loose cloaks and animated capes.** Keep the band for complete loss and truncated regions where the shape can leave its neighboring envelope. Even four-pixel fixed dilation covered only 511 of 559 pixels on the worst cloak frame and 177 of 225 on the worst cape frame. A narrow mask can serve as a review overlay to show expected regions. Treat learned local deformation, swing and depth as separate experiments with out-of-envelope cases and an exact immutable-body control.
+
+A future generation comparison should hold grid layout, reference, seed, palette, and pose fixed. It should score outside-mask changes, inside-mask unowned body pixels, missing motif or edge pixels, body cuts, intentional overhang, and expected emptiness separately. Check the isolated item and composite at native coordinates. Existing grid extraction binds the submitted mask to both the item and its cuts, so an undersized stencil can cause data loss even when the provider draws the intended pixel. This offline comparison supports choosing a first live pilot and explicit fallbacks. [Submitted mask and grid extraction](../../app/src/lib/items/run.ts#L723)
