@@ -1047,11 +1047,13 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
   await expect(tile).toHaveAttribute('aria-pressed', 'true')
   expect(await studio((s) => ({ items: { ...s.doc.items }, drafts: { ...s.doc.drafts } }))).toEqual({ items: before, drafts: { head: 'loading_helm' } })
   const notes = page.locator('.world-loading-items')
+  const coverage = page.getByRole('button', { name: '1 equipped item needs frames', exact: true })
   await expect(notes).toHaveCount(0) // south landed: the draft is drawn
   for (const dir of ['east', 'west', 'north']) {
     await studio((s, d) => { s.ui.dir = d }, dir)
     await expect(notes).toHaveText('Loading helm loading — East, North')
     await expect(page.locator('.world-coverage', { hasText: 'hidden' })).toHaveCount(0)
+    await expect(coverage).toHaveCount(0)
   }
   const card = page.locator('.gen')
   await card.getByRole('button', { name: 'Take off', exact: true }).click()
@@ -1062,9 +1064,13 @@ test('a draft can be worn while it loads: landed views show, pending ones say lo
   // finished with gaps: those views are missing (hidden and said so), no longer loading; Discard takes the draft off
   await studio((s) => { s.gens.find((g) => g.draft.spec.id === 'loading_helm').phase = 'review' })
   await expect(notes).toHaveCount(0)
-  await expect(page.locator('.world-coverage', { hasText: '1 equipped item hidden for this view' })).toBeVisible()
+  await expect(coverage).toBeInViewport()
+  await coverage.click()
+  await expect(page.locator('#preview-coverage')).toContainText('Loading helm')
+  await coverage.click()
   await card.getByRole('button', { name: 'Discard', exact: true }).click()
   await expect(tile).toHaveCount(0)
+  await expect(coverage).toHaveCount(0)
   expect(await studio((s) => ({ items: { ...s.doc.items }, drafts: { ...s.doc.drafts }, presets: JSON.stringify(s.store.project.manifest.presets) }))).toMatchObject({ items: before, drafts: {} })
   expect(await studio((s) => JSON.stringify(s.store.project.manifest))).not.toContain('loading_helm')
   expect(requests).toEqual([])
@@ -2116,7 +2122,10 @@ test('standing-first items quote only standing and offer actual custom moves one
       const before = a.id, after = 'custom_' + before.replaceAll('-', '_'); a.id = after
       for (const it of m.items) for (const layer of it.layers) if (layer.cells?.[before]) { layer.cells[after] = layer.cells[before]; delete layer.cells[before] }
     }
-    for (const layer of item.layers) layer.cells = { default: layer.cells.default }
+    for (const layer of item.layers) {
+      layer.cells = { default: layer.cells.default }
+      if (layer.cells.default) delete layer.cells.default.north
+    }
     item.standing = 'default'
     await db.put('projects', s.doc.id, rec); await s.openProject(s.doc.id); s.pick(id)
   }, fixture.itemId)
@@ -2130,7 +2139,25 @@ test('standing-first items quote only standing and offer actual custom moves one
   await expect(peek.getByText('Pose equipment', { exact: false })).toHaveCount(0)
   await peek.getByRole('button', { name: 'Close API calls', exact: true }).click()
   await newSheet.getByRole('button', { name: 'Cancel', exact: true }).click()
-  const pane = await selectedItemDetails(page)
+  const coverage = page.getByRole('button', { name: /equipped items? needs? frames/ })
+  await page.getByRole('toolbar', { name: 'Preview controls' }).getByRole('combobox', { name: 'Move' }).selectOption('default')
+  await page.getByRole('button', { name: 'Face north', exact: true }).click()
+  await expect(coverage).toBeVisible()
+  await page.getByRole('button', { name: 'Top-down', exact: true }).click()
+  await expect(page.locator('.world-coverage')).toContainText('hidden for this view')
+  await page.getByRole('button', { name: 'Preview', exact: true }).click()
+  await expect(coverage).toBeVisible()
+  await page.setViewportSize({ width: 844, height: 390 })
+  await page.getByRole('toolbar', { name: 'Preview controls' }).getByRole('combobox', { name: 'Move' }).selectOption('custom_walk')
+  await expect(coverage).toBeInViewport()
+  await coverage.click()
+  const gaps = page.locator('#preview-coverage')
+  await expect(gaps).toContainText('Missing frames for Custom walk')
+  const missingItem = gaps.getByRole('button', { name: fixture.itemName, exact: true })
+  await expect(missingItem).toBeInViewport()
+  await missingItem.click()
+  await page.setViewportSize({ width: 1440, height: 900 })
+  const pane = page.getByRole('dialog', { name: 'Item', exact: true })
   const moves = pane.getByRole('combobox', { name: 'Generate item for move', exact: true })
   await expect(moves.locator('option')).toHaveText(['Custom walk', 'Custom cross punch'])
   await moves.selectOption('custom_walk')

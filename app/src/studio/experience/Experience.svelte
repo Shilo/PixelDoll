@@ -3,17 +3,22 @@
   import Toolbar from '../Toolbar.svelte'
   import PhonePanel from '../PhonePanel.svelte'
   import WorldStage from './WorldStage.svelte'
+  import PopoverArrow from '../PopoverArrow.svelte'
   import CharacterThumb from './CharacterThumb.svelte'
   import { ui,doc,store,openProject,refreshProjects } from '../state.svelte.ts'
   import { experience,customize,characters,setMode,type WorldMode } from './state.svelte.ts'
   import { WORLDS,REFLECTION } from './config.ts'
-  import { ChevronDown,ChevronLeft,ChevronRight,Play,Pause,Grid2x2,Copy } from '../icons.ts'
-  import { directionInfo } from './movement.ts'
-  import { moveLabel } from '../model.ts'
+  import { ChevronDown,ChevronLeft,ChevronRight,Play,Pause,Grid2x2,Copy,TriangleAlert } from '../icons.ts'
+  import { directionInfo,directionLabel } from './movement.ts'
+  import { groupOf,moveLabel } from '../model.ts'
+  import { popoverFocus } from './focus.ts'
+  import type { DirectionName, Item } from '../../lib/store/manifest.ts'
   let search=$state('')
   let copyMessage=$state('')
   async function copyPrompt(){try{await navigator.clipboard.writeText(prompt);copyMessage='Copied'}catch{copyMessage='Select the prompt to copy it'}}
   let selection=$state<HTMLDivElement>()
+  let missing=$state.raw<{clip:string;direction:DirectionName;items:Item[]}|null>(null)
+  let coveragePopover=$state<HTMLElement>()
   let viewportWidth=$state(1280),viewportHeight=$state(720)
   const m=$derived(store.project?.manifest)
   const moveIds=$derived(m?.rig.animations.map(a=>a.id)??[])
@@ -53,6 +58,14 @@
   }
   async function changeMode(mode:WorldMode){setMode(mode);await tick();document.querySelector<HTMLElement>('.world-stage')?.focus({preventScroll:true})}
   function panel(id:typeof ui.tab){document.querySelectorAll<HTMLElement>('[popover]:popover-open').forEach(el=>el.hidePopover());ui.tab=id}
+  function showMissingItem(item:Item){
+    if(!missing)return
+    coveragePopover?.hidePopover()
+    ui.group=groupOf(item.slot).id;ui.tab='wardrobe';ui.selected=item.id
+    if(ui.anim!==missing.clip){ui.anim=missing.clip;ui.frame=0}
+    ui.dir=missing.direction
+    ui.sheet='item'
+  }
   $effect(()=>{if(experience.mode!=='preview'&&ui.tab==='moves')ui.tab='wardrobe'})
   $effect(()=>{
     const screen=experience.screen
@@ -111,7 +124,7 @@
       <nav class="view-modes" aria-label="Character view">{#each modes as [id,label]}<button class="bu-action" data-variant="tab" aria-pressed={experience.mode===id} onclick={()=>changeMode(id as WorldMode)}>{label}</button>{/each}</nav>
     </div>
     <div class="experience-stage">
-      <WorldStage/>
+      <WorldStage bind:missing/>
     </div>
     {#if experience.mode==='preview'&&m}
       <div class="experience-playback"><div class="playback-bar bu-floating" role="toolbar" aria-label="Preview controls">
@@ -120,6 +133,20 @@
         {#if experience.presentation!=='animation'}<span class="small muted">{experience.presentation==='unavailable'?'Unavailable':'Still'}</span>{/if}
         <div class="facing-buttons" role="group" aria-label="Direction">{#each m.rig.directions as d}<button class="bu-action" data-variant="direction" aria-pressed={ui.dir===d.id} aria-label="Face {d.id}" onclick={()=>ui.dir=d.id}>{directionInfo(d.id)?.short??d.id}</button>{/each}</div>
         <button class="bu-action" data-variant="quiet" onclick={()=>ui.sheet='inspect'}><Grid2x2 size={16}/><span>Inspect</span></button>
+        {#if missing}
+          <button class="bu-action" data-variant="quiet" aria-label="{missing.items.length} equipped {missing.items.length===1?'item needs':'items need'} frames" popovertarget="preview-coverage"><TriangleAlert size={16}/><span>{missing.items.length}</span></button>
+          <div id="preview-coverage" class="menu preview-coverage bu-popover-anchor" data-placement="top-end" popover bind:this={coveragePopover} ontoggle={popoverFocus}>
+            <PopoverArrow />
+            <div class="menu-surface bu-popover-surface bu-floating">
+              <p class="menu-sec">Missing frames for {moveLabel(missing.clip,moveIds)} · {directionLabel(missing.direction)}</p>
+              {#each missing.items as item (item.id)}
+                {@const saved=m.items.find(i=>i.id===(item.variantOf??item.id))}
+                {#if saved}<button class="row bu-action" data-variant="quiet" onclick={()=>showMissingItem(saved)}>{item.name}<ChevronRight size={16}/></button>
+                {:else}<p class="menu-sec">{item.name}</p>{/if}
+              {/each}
+            </div>
+          </div>
+        {/if}
       </div></div>
     {/if}
     <aside class="equipment-rail" aria-label="Customization"><button class="sheet-expand bu-action" data-variant="quiet" aria-label={experience.expanded?'Collapse equipment':'Expand equipment'} aria-expanded={experience.expanded} onclick={()=>experience.expanded=!experience.expanded}><span></span></button><nav class="equipment-modes" aria-label="Customization panels">{#each tabs as [id,label]}{#if experience.mode==='preview'||id!=='moves'}<button class="bu-action" data-variant="tab" aria-pressed={ui.tab===id} onclick={()=>panel(id)}>{label}</button>{:else}<span class="tab-placeholder" aria-hidden="true">{label}</span>{/if}{/each}</nav><div class="equipment-scroll"><PhonePanel/></div></aside>

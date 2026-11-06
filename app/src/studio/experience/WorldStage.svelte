@@ -5,9 +5,11 @@
   import type { Ground, RenderOptions } from './ground.ts'
   import { MOTION, REFLECTION, WORLDS } from './config.ts'
   import { LoaderCircle } from '../icons.ts'
+  import type { DirectionName, Item } from '../../lib/store/manifest.ts'
   import { paintedFrame, actorScale } from './bounds.ts'
   import { buildPresentation, resolvePreview, resolveLive, renderPresentation, advancePlayback, livePlaybackDelta, type Presentation } from './presentation.ts'
   import { keyboardVector, pointerVector, nearestDirection, integrateMovement, MOVEMENT_KEYS, type Vector } from './movement.ts'
+  let { missing = $bindable(null) }: { missing: { clip: string; direction: DirectionName; items: Item[] } | null } = $props()
   let host: HTMLDivElement, canvas: HTMLCanvasElement, floor: HTMLCanvasElement, sky: HTMLCanvasElement
   let note = $state(''), loadingNote = $state(''), rendererWarning = $state('')
   let stick = $state<{id:number;x:number;y:number;dx:number;dy:number}|null>(null)
@@ -21,7 +23,7 @@
   let clock:ReturnType<typeof advancePlayback>|undefined
   const noticed = new Set<string>()
   function release(){if(stick&&host?.hasPointerCapture(stick.id))host.releasePointerCapture(stick.id);stick=null;secondaryTouches.clear()}
-  let reset = () => { keys.clear(); release(); position={x:0,y:0};camera={x:0,y:0};previous=undefined;clock=undefined;noticed.clear();note='';hasMoved=false }
+  let reset = () => { keys.clear(); release(); position={x:0,y:0};camera={x:0,y:0};previous=undefined;clock=undefined;noticed.clear();note='';missing=null;hasMoved=false }
   $effect(() => { void doc.id; void experience.mode; untrack(reset) })
   // Live views briefly name their movement controls, as in the approved prototype; moving or 6.5s dismisses it.
   let hint = $state(false)
@@ -127,7 +129,15 @@
           }
         }
         const result=imageCache, img=result?.image
-        note=[p.issue,result?.hiddenItems.length?`${result.hiddenItems.length} equipped item${result.hiddenItems.length===1?'':'s'} hidden for this view`:''].filter(Boolean).join(' · ')
+        // A view switch resets the indicator even if the new view reuses the same painted frame.
+        if(!live) {
+          const items=result?.hiddenItems
+          if(!a.loading&&p.clip&&p.direction&&items?.length) {
+            if(missing?.clip!==p.clip||missing.direction!==p.direction||
+              (items!==missing.items&&(items.length!==missing.items.length||items.some((item,i)=>item!==missing?.items[i])))) missing={clip:p.clip,direction:p.direction,items}
+          } else if(missing) missing=null
+        }
+        note=[p.issue,live&&result?.hiddenItems.length?`${result.hiddenItems.length} equipped item${result.hiddenItems.length===1?'':'s'} hidden for this view`:''].filter(Boolean).join(' · ')
         loadingNote=result?.loading??''
         if((velocity.x||velocity.y)&&!hasMoved){hasMoved=true;hint=false}
         if(live&&hasMoved&&!ui.sheet){

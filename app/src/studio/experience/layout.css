@@ -106,6 +106,8 @@
 .close-inspection { min-height:40px; margin:8px; }
 
 .menu.more-equipment { width:250px; }
+.menu.preview-coverage { width:min(320px,calc(100vw - 24px)); }
+.preview-coverage .row { justify-content:space-between; overflow-wrap:anywhere; text-align:left; }
 .menu .row { gap:12px; min-height:44px; padding:10px 12px;font-size:16px; }
 .menu a.row { color:inherit; text-decoration:none; }
 .menu .character-thumbnail { min-width:48px; }
