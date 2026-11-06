@@ -328,6 +328,7 @@ for why there are dedicated exports for these engines and when more would be use
   If **Update paused** persists, choose **Update now** in the dialog. It opens the verified release in a new tab and
   keeps your work open in the original tab. On older versions, once the update says **Available**, finish any work,
   close every PixelDoll tab and installed window, then reopen PixelDoll in the same browser profile.
+  If an immediate reopen still shows the old version, quit and reopen the browser.
   If a download keeps failing while connected, finish your work, then close every PixelDoll window and reopen.
   More device storage may be needed; clearing PixelDoll site data also deletes its local characters.
 - PixelLab may decline some descriptions. Try different words.
