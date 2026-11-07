@@ -468,6 +468,7 @@ export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<
     if (checks.facingReviewFrames) summary.facingReviewFrames = checks.facingReviewFrames; else delete summary.facingReviewFrames;
   };
   reviewCounts(q.qa, h);
+  q.qa.maxPaletteDist = Math.max(q.qa.maxPaletteDist, h.maxPaletteDist);
   for (const [k, why] of h.fails) q.failCalls.set(k, [...(q.failCalls.get(k) ?? []), ...why]);
   q.warnings.push(...h.warnings);
   if (h.fails.size) q.qa.status = 'fail';
@@ -475,6 +476,7 @@ export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<
   for (const [clip, summary] of Object.entries(q.qa.clips ?? {})) {
     const part = dirGate(slot, cells.filter((c) => clipOf(c.key) === clip), keys, rig, bodies, prompt);
     reviewCounts(summary, part);
+    summary.maxPaletteDist = Math.max(summary.maxPaletteDist, part.maxPaletteDist);
     if (part.fails.size) summary.status = 'fail';
     else if (part.warnings.length && summary.status === 'pass') summary.status = 'warn';
   }

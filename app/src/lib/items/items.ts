@@ -1122,10 +1122,11 @@ export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 
  * frames: hair, chest and the cape's front view scored 0.20–0.74 on 31 frames that look right; the cape wrapping the raised arm
  * from behind scored 0.31–0.46). Off for legs, feet (S and N look alike: trousers own ≈ opposite on 13 good frames) and held items.
  */
-export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, referenceBodies?: Partial<Record<DirectionName, Img>>, prompt = ''): { fails: Map<number, string[]>; warnings: string[]; missingLowerFrames: number; footwearReviewFrames: number; waistReviewFrames: number; facingReviewFrames: number } {
+export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, referenceBodies?: Partial<Record<DirectionName, Img>>, prompt = ''): { fails: Map<number, string[]>; warnings: string[]; maxPaletteDist: number; missingLowerFrames: number; footwearReviewFrames: number; waistReviewFrames: number; facingReviewFrames: number } {
   const fails = new Map<number, string[]>(), warnings: string[] = [];
   const missingLower = new Set<string>(), footwearReview = new Set<string>(), waistReview = new Set<string>(), facingReview = new Set<string>();
-  const result = () => ({ fails, warnings, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size, waistReviewFrames: waistReview.size, facingReviewFrames: facingReview.size });
+  let maxPaletteDist = 0;
+  const result = () => ({ fails, warnings, maxPaletteDist, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size, waistReviewFrames: waistReview.size, facingReviewFrames: facingReview.size });
   // A cape can swing above the knees or behind the body. This check is for body-covering garments.
   if (rig && slot.class === 'worn' && slot.bgZ == null) for (const c of cells) {
     const [anim, dir, frame] = c.key.split('/') as [string, DirectionName, string], design = keys[dir];
@@ -1158,13 +1159,16 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
       warnings.push(`G14 ${c.key}: upper torso resembles the opposite standing view; inspect front and back details`);
     }
   }
-  // G6 against the dressed design, every slot: the call-level G6 measures later calls against the first pose call, so a clip
-  // that drifts together with that call passed (round 3 review). Warning only: the corpus max is 14.0 against the 15 cut-off
-  const clips = new Map<string, CellOut[]>();
-  for (const c of cells) if (c.posed && c.area) { const k = c.key.split('/').slice(0, 2).join('/'); (clips.get(k) ?? (clips.set(k, []), clips.get(k)!)).push(c); }
-  for (const [clip, cs] of clips) {
-    const K = keys[clip.split('/')[1] as DirectionName], d = K ? paletteDistance(colors(K), cs.map((c) => c.layer)) : 0;
-    if (d > GATES.paletteDist) warnings.push(`G6 ${clip}: palette distance ${d.toFixed(1)} to the dressed design`);
+  // Compare every posed frame with its own standing design: a clean clip average can conceal one recolored frame.
+  // This remains a review warning and never authorizes another paid attempt.
+  const palettes = new Map<DirectionName, number[]>();
+  for (const c of cells) if (c.posed && c.area) {
+    const dir = c.key.split('/')[1] as DirectionName, K = keys[dir];
+    if (!K) continue;
+    if (!palettes.has(dir)) palettes.set(dir, colors(K));
+    const d = +paletteDistance(palettes.get(dir)!, [c.layer]).toFixed(1);
+    maxPaletteDist = Math.max(maxPaletteDist, d);
+    if (d > GATES.paletteDist) warnings.push(`G6 ${c.key}: palette distance ${d.toFixed(1)} to the dressed design`);
   }
   if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return result();
   // soft items: the clip's best body coverage (item px on the base silhouette / base px)
