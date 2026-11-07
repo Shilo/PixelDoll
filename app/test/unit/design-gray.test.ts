@@ -2,9 +2,10 @@ import { expect, test } from 'vitest';
 import { designGraySmudges, grayShare } from '../../src/lib/items/items.ts';
 import { makeImg } from '../../src/lib/image/png.ts';
 
+// The neutral third is a mid gray: near-black (max channel < 48) counts as line art since 2026-11-07, not as a smudge.
 function glyph(area: number, size = 64) {
   const layer = makeImg(size, size);
-  for (let p = 0; p < area; p++) layer.data.set(p < Math.ceil(area / 3) ? [35, 35, 35, 255] : [110, 135, 30, 255], p * 4);
+  for (let p = 0; p < area; p++) layer.data.set(p < Math.ceil(area / 3) ? [90, 90, 90, 255] : [110, 135, 30, 255], p * 4);
   return layer;
 }
 

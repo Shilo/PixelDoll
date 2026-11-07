@@ -79,9 +79,9 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   describe one color differently, or review the item. Azure sits near blue-gray steel shading: steel stays gray since the
   round 3 despill fix (a green and purple plume on a steel helmet, a tabard over steel plate).
 - **Combinations of body cuts.** Exports include the union of hidden body pixels for every valid equipment combination, including mirrored views. At most 256 body variants are generated. An inventory needing more combinations fails before generating sheets and asks for fewer designs that hide body pixels. Items made before round 3 keep showing the ears until re-dressed. See the [combined cut qualification](research/deep-paperdoll-ownership-followup-2026-11-06.md).
-- **Long held items lose size where the body hides them.** Bows change size between walk frames and may turn against the
-  hand, mostly in the side view, where a left-hand bow is behind the body; some of these clips are real flips of the bow, so
-  the size and turn checks keep flagging the clip for repair. An upright-bow wording looked better but did not reduce failing
+- **Long held items behind the body.** Since 2026-11-07 the part of a bow or spear that reappears past the body is kept
+  (the frozen side-view bow keeps all its expected pixels; it lost a limb in 6 of 8 frames before). Bows may still turn
+  against the hand in the side view; some of these clips are real flips of the bow, so the turn check keeps flagging them. An upright-bow wording looked better but did not reduce failing
   clips enough (round 3 arm V).
 - **Bare bases vary by seed.** New characters are drawn fully bare; some seeds add tattoo-like blotches, gray skin or a
   background scene, and PixelLab occasionally adds a hair tuft or smoke to single animation frames. Re-roll the character

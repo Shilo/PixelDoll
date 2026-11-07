@@ -14,26 +14,26 @@ it with any change to extraction, cleanup or QA. Corpus `6666e4f54851`, gates `1
 | Case | Slot / key | Verdicts | Keep | Keep exact | Drop | Fails | Warnings | Max area CV | Cut px |
 |---|---|---|---|---|---|---|---|---|---|
 | a-helmet | head / green | ok | – | – | 0.0 % (0/39) | 1 | 0 | 0.135 | – |
-| a-cape | back / green | ok | – | – | – | 2 | 2 | 0.358 | – |
-| a-chest | torso_outer / green | ok | – | – | – | 0 | 0 | 0.192 | – |
+| a-cape | back / green | ok | – | – | – | 2 | 2 | 0.353 | – |
+| a-chest | torso_outer / green | ok | – | – | – | 0 | 0 | 0.183 | – |
 | a-boots | feet / green | ok | – | – | – | 0 | 32 | 0.178 | – |
 | a-hair | hair / green | ok | – | – | – | 0 | 0 | 0.070 | – |
 | a-sword96 | main_hand / green | ok | 89.6 % (43/48) | 89.6 % (43/48) | – | 0 | 3 | 0.094 | – |
-| a-axe96 | main_hand / green | ok | 91.7 % (44/48) | 91.7 % (44/48) | – | 1 | 1 | 0.248 | – |
+| a-axe96 | main_hand / green | ok | 91.7 % (44/48) | 91.7 % (44/48) | – | 1 | 1 | 0.238 | – |
 | a-jester-magenta (reference) | head / magenta | ok | 100.0 % (202/202) | 0.0 % (0/202) | – | 3 | 0 | 0.000 | – |
 | a-jester-blue | head / blue | ok | 100.0 % (255/255) | 100.0 % (255/255) | – | 0 | 0 | 0.000 | – |
-| b-tunic | torso_outer / magenta | ok | – | – | – | 0 | 0 | 0.145 | – |
-| b-cloak | back / green | ok | – | – | – | 0 | 0 | 0.079 | 99 |
+| b-tunic | torso_outer / magenta | ok | – | – | – | 0 | 0 | 0.122 | – |
+| b-cloak | back / green | ok | – | – | – | 0 | 0 | 0.035 | 99 |
 | b-greathelm | head / green | ok | – | – | – | 0 | 0 | 0.007 | 370 |
-| b-jester (reference) | head / magenta | ok | 9.4 % (620/6564) | 0.0 % (0/6564) | – | 56 | 0 | 0.008 | – |
+| b-jester (reference) | head / magenta | ok | 9.4 % (620/6564) | 0.0 % (0/6564) | – | 40 | 0 | 0.009 | – |
 | b-jester-blue | head / blue | ok | 100.0 % (7992/7992) | 100.0 % (7992/7992) | – | 0 | 0 | 0.003 | – |
-| n-cloak128 | back / green | ok | – | – | – | 1 | 0 | 0.055 | – |
+| n-cloak128 | back / green | ok | – | – | – | 1 | 0 | 0.054 | – |
 | c-greathelm | head / green | ok | – | – | – | 0 | 0 | 0.004 | 517 |
-| a-bow96 | off_hand / green | ok | 90.9 % (10/11) | 36.4 % (4/11) | – | 5 | 2 | 0.348 | – |
+| a-bow96 | off_hand / green | ok | 100.0 % (11/11) | 45.5 % (5/11) | – | 1 | 1 | 0.122 | – |
 | a-plume-azure | head / azure | ok | 100.0 % (212/212) | 100.0 % (212/212) | – | 0 | 0 | 0.000 | – |
 | a-stripes-azure | torso_outer / azure | ok | 100.0 % (152/152) | 100.0 % (152/152) | – | 0 | 0 | 0.000 | – |
 | a-stripes-magenta (reference) | torso_outer / magenta | ok | – | – | – | 0 | 0 | 0.000 | – |
 
-Totals (reference cases excluded): 0 verdict misses; keep 99.9 % (8708/8718); keep exact 99.8 % (8702/8718); drop 0.0 % (0/39).
+Totals (reference cases excluded): 0 verdict misses; keep 99.9 % (8709/8718); keep exact 99.8 % (8703/8718); drop 0.0 % (0/39).
 
 No verdict misses.

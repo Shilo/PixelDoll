@@ -151,12 +151,15 @@ drawn rest views ─▶ toChroma (§4.4 key) ─▶ edit-animation-v2 with one k
   R1, "Held item pasted on N … frames", since the pasted item stands still); layers are stored with the padded `cell` and
   `pivot = rig.pivot + 16` (spec §2.1). Same price: pose calls bill by frame count, not canvas.
 - **Clip cleanup after extraction [B9]:** held = largest component + components attached to it or to the gripping wrist
-  (≤ 3 px); head items (`slot.band`) = trim px outside the aligned, 2 px-dilated dressed keyframe unless at least half of the
+  (≤ 3 px), plus parts that reappear past the body (mostly outside the body silhouette, joined to a kept part by a straight gap
+  over body px only: a bow limb or spear tip behind the torso; 2026-11-07); head items (`slot.band`) = trim px outside the aligned, 2 px-dilated dressed keyframe unless at least half of the
   direction's other frames have item px there (temporal consensus), skipped on frames whose aligned overlap is < 50 %.
   Below the head band, detached components are trimmed at extraction; px joined to the item above the band (coif, aventail,
   hood mantle) stay only where the aligned, undilated keyframe has them (no consensus), and frames the keyframe cannot judge
   fall back to the band trim (2026-10-24). Body-hugging worn items (torso, legs, feet, arms; not `back`/`hair`) drop detached components with < 50 % of their px on
   the body silhouette (motion smears; T3). Capes and hair keep the component filter only (consensus trim would eat swings).
+  The component filter (< 15 % of the largest part) keeps a part that lies mostly on the aligned dressed keyframe: a cape's
+  clasps or a hem seen between the legs are design, not smears (2026-11-07: 412 to 584 design px per cape were deleted).
 - Cost on the default rig (Top-down 8, 80 px cell, idle + walk): worn **≈ 25 gens** (dress 10 + 5 pose calls × 3), held
   **≈ 50** (2 dress calls + 10 pose calls). On a Default-only character only the dress calls run (10 / 20).
 - Weak spots: more specks from motion smears (largest-component filter removes most), north slash cape vanished on 2 frames,
@@ -318,7 +321,8 @@ do not vote for the nearer wrist. The user reviews uncertain grip; no hidden ana
 from the keyframe (S5) is a review warning (R1), not a failure; its pixels are unchanged.
 D1 (dress, 0 gens): a colorful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-gray px fails the dress call, so the
 design is re-rolled before the pose calls copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks
-for gray/metal/black/white parts. Handedness is set by the
+for gray/metal/black/white parts. Near-black px (max channel < 48) are line art and do not count, so a black outline cannot
+fail an outlined design (2026-11-07). Handedness is set by the
 motion: authored weapon-hand actions and dressed keyframes keep it; prompts and hand marks do not [S3].
 
 ### 4.6 fg/bg split, compose, export

@@ -78,7 +78,8 @@ test('an unrelated forearm cannot excuse extra parts through head alignment alon
 
 test('the saved cape hem is already rejected by the design gate; clean views are preserved', () => {
   expect(GRAYISH.test('red cape')).toBe(false)
-  expect(grayShare(decode(fixture.capeKeys.north))).toBeCloseTo(0.1128, 4)
+  // 74 smudge px (71,64,58); near-black outline px stopped counting in 2026-11-07, so the share rose from 0.1128
+  expect(grayShare(decode(fixture.capeKeys.north))).toBeCloseTo(0.1333, 4)
   expect(grayShare(decode(fixture.capeKeys.north))).toBeGreaterThan(DESIGN.gray)
   expect(grayShare(decode(fixture.capeKeys.south))).toBe(0)
   expect(grayShare(decode(fixture.capeKeys.east))).toBe(0)

@@ -479,6 +479,21 @@ export const TRIM = { support: 2, minOverlap: 0.5 };
  * other frames of that clip and direction (a real part the keyframe lacks). Frames whose aligned overlap is < 50 % of the keyframe
  * (occluded, lying) are left alone. Returns px removed.
  */
+/** Alignment of a posed frame to its dressed keyframe mask: keyframe px (x, y) sits at (x + s[0], y + s[1]) in the frame. The
+ * head joints' move is the first guess, refined within ±2 px by overlap with the frame's own item px. */
+function alignToKeyframe(rig: Rig, c: CellOut, km: Uint8Array, w: number, pad: number) {
+  const { pose, rest } = posedKps(rig, c.key), h0 = kpAt(rest, HEAD, rig.cell, pad), h1 = kpAt(pose, HEAD, rig.cell, pad);
+  const g = h0 && h1 ? [Math.round(h1[0] - h0[0]), Math.round(h1[1] - h0[1])] : [0, 0];
+  let best = { s: [0, 0] as [number, number], ov: -1 };
+  for (let dy = -2; dy <= 2; dy++)
+    for (let dx = -2; dx <= 2; dx++) {
+      const s: [number, number] = [g[0] + dx, g[1] + dy], m = shiftMask(km, w, s[0], s[1]);
+      let ov = 0;
+      for (let p = 0; p < m.length; p++) if (m[p] && c.mask[p]) ov++;
+      if (ov > best.ov || (ov === best.ov && Math.abs(dx) + Math.abs(dy) < Math.abs(best.s[0] - g[0]) + Math.abs(best.s[1] - g[1]))) best = { s, ov };
+    }
+  return best;
+}
 export function trimToKeyframe(rig: Rig, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): number {
   let removed = 0;
   const byClip = new Map<string, CellOut[]>();
@@ -489,20 +504,7 @@ export function trimToKeyframe(rig: Rig, cells: CellOut[], keys: Partial<Record<
     if (!K) continue;
     const w = K.w, km = maskOf(K), kn = sum(km);
     if (!kn) continue;
-    // alignment of each frame: keyframe px (x, y) sits at (x + s[0], y + s[1]) in the frame
-    const al = cs.map((c) => {
-      const { pose, rest } = posedKps(rig, c.key), h0 = kpAt(rest, HEAD, rig.cell, pad), h1 = kpAt(pose, HEAD, rig.cell, pad);
-      const g = h0 && h1 ? [Math.round(h1[0] - h0[0]), Math.round(h1[1] - h0[1])] : [0, 0];
-      let best = { s: [0, 0] as [number, number], ov: -1 };
-      for (let dy = -2; dy <= 2; dy++)
-        for (let dx = -2; dx <= 2; dx++) {
-          const s: [number, number] = [g[0] + dx, g[1] + dy], m = shiftMask(km, w, s[0], s[1]);
-          let ov = 0;
-          for (let p = 0; p < m.length; p++) if (m[p] && c.mask[p]) ov++;
-          if (ov > best.ov || (ov === best.ov && Math.abs(dx) + Math.abs(dy) < Math.abs(best.s[0] - g[0]) + Math.abs(best.s[1] - g[1]))) best = { s, ov };
-        }
-      return best;
-    });
+    const al = cs.map((c) => alignToKeyframe(rig, c, km, w, pad));
     // consensus in keyframe coords: frames (3x3 tolerant) that have item px there
     const back = cs.map((c, i) => dilate(shiftMask(c.mask, w, -al[i].s[0], -al[i].s[1]), w, 1));
     for (const [i, c] of cs.entries()) {
@@ -534,8 +536,43 @@ const clipFloor = (cells: CellOut[]) => cells.reduce((n, c) => {
 }, 0);
 
 /**
+ * A straight gap between two parts that runs only over body pixels may be the body hiding the middle of one object (a spear
+ * behind the torso, a staff split by the other hand). Measured on the closest pair of pixels; any empty pixel on the way means
+ * the part floats in open air. 2026-11-07 audit: requiring contact silently deleted 38 % of a spear and 22 % of a staff.
+ */
+const bodyBridged = (base: Img, w: number, a: number[], b: number[]) => {
+  let best = Infinity, pa = 0, pb = 0;
+  for (const p of a) for (const q of b) { const d = ((p % w) - (q % w)) ** 2 + (((p / w) | 0) - ((q / w) | 0)) ** 2; if (d < best) { best = d; pa = p; pb = q; } }
+  const x0 = pa % w, y0 = (pa / w) | 0, x1 = pb % w, y1 = (pb / w) | 0, n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+  for (let i = 1; i < n; i++) { const x = Math.round(x0 + ((x1 - x0) * i) / n), y = Math.round(y0 + ((y1 - y0) * i) / n); if (!base.data[(y * w + x) * 4 + 3]) return false; }
+  return true;
+};
+/** Parts of a held layer that belong to the object: the largest component, components within `near` px of a kept part, and
+ * components joined to a kept part only across the body (bodyBridged). `extra` may admit more (the gripping wrist). */
+export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: number[]) => boolean) {
+  const w = base.w, comps = components(mask, w, mask.length / w).sort((a, b) => b.length - a.length);
+  const keep = new Array<boolean>(comps.length).fill(false);
+  if (comps.length) keep[0] = true;
+  for (let changed = true; changed;) {
+    changed = false;
+    const kept = new Uint8Array(mask.length);
+    comps.forEach((comp, i) => { if (keep[i]) for (const p of comp) kept[p] = 1; });
+    const close = dilate(kept, w, near);
+    comps.forEach((comp, i) => {
+      if (keep[i]) return;
+      // A hidden part reappears past the body; a detached blob painted over the body itself (a redrawn far hand) does not.
+      const past = () => 2 * comp.filter((p) => !base.data[p * 4 + 3]).length >= comp.length;
+      if (comp.some((p) => close[p]) || extra?.(comp) || (past() && comps.some((k, j) => keep[j] && bodyBridged(base, w, comp, k)))) { keep[i] = changed = true; }
+    });
+  }
+  return { comps, keep };
+}
+
+/**
  * Held items: keep the largest component plus every component attached to it or to the gripping wrist (≤ 3 px: a blade split by
- * the fist or the forearm), drop the rest (detached smears). Returns px removed.
+ * the fist or the forearm) or joined to it across the body, drop the rest (detached smears in open air). Small parts below the
+ * size floor survive only beside the wrist. No review warning for dropped parts: on the frozen sword and axe every dropped part
+ * (10 to 63 px) was a motion smear or redrawn body px, so it would block clean items (2026-11-07). Returns px removed.
  */
 export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): number {
   let removed = 0;
@@ -544,15 +581,13 @@ export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): num
     if (!c.posed || !c.area) continue;
     const w = c.layer.w, comps = components(c.mask, w, c.mask.length / w).sort((a, b) => b.length - a.length);
     if (comps.length < 2) continue;
-    const wr = kpAt(posedKps(rig, c.key).pose, wristL, rig.cell, pad), big = new Uint8Array(c.mask.length);
-    for (const p of comps[0]) big[p] = 1;
-    const near = dilate(big, w, 3), floor = Math.max(4, 0.15 * comps[0].length);
+    const wr = kpAt(posedKps(rig, c.key).pose, wristL, rig.cell, pad), floor = Math.max(4, 0.15 * comps[0].length);
     const grip = (comp: number[], r: number) => !!wr && comp.some((p) => Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]) <= r);
+    const { comps: parts, keep: linked } = heldParts(c.mask, c.base, 3, (comp) => grip(comp, 3));
     const keep = new Uint8Array(c.mask.length);
-    for (const [i, comp] of comps.entries()) {
+    for (const [i, comp] of parts.entries()) {
       // the majorComponents size floor, applied here so a pommel or haft end the fist splits off (within 6 px of the wrist) survives
-      const ok = !i || ((comp.some((p) => near[p]) || grip(comp, 3)) && (comp.length >= floor || grip(comp, 6)));
-      if (ok) for (const p of comp) keep[p] = 1;
+      if (!i || (linked[i] && (comp.length >= floor || grip(comp, 6)))) for (const p of comp) keep[p] = 1;
     }
     removed += setMask(c, keep);
   }
@@ -634,14 +669,19 @@ export function hiddenViews(cells: Pick<CellOut, 'key' | 'area' | 'base'>[], key
  * the largest part of the direction's dressed keyframe, so an item made only of tiny parts (earrings: two 3 px hoops) keeps
  * them; a direction without a keyframe or with an empty one keeps 4 px. Returns px removed.
  */
-export function sizeFloor(cells: CellOut[], keys: Partial<Record<DirectionName, Img>>): number {
+export function sizeFloor(cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, pad = 0): number {
   let removed = 0;
   for (const c of cells) {
     if (!c.posed || !c.area) continue;
     const w = c.layer.w, h = c.mask.length / w, comps = components(c.mask, w, h), big = Math.max(...comps.map((x) => x.length));
-    const floor = Math.max(partFloor(keys[c.key.split('/')[1] as DirectionName]), 0.15 * big);
+    const K = keys[c.key.split('/')[1] as DirectionName], small = partFloor(K), floor = Math.max(small, 0.15 * big);
+    // A part the dressed design has at this place (a cape's clasps or a split hem seen from the front) is the design, not a
+    // smear: requiring 15 % of the largest part deleted 412-584 px of real capes (2026-11-07 audit). Keep a part at least the
+    // small-part floor when most of it lies on the aligned keyframe, as trimToKeyframe judges head items.
+    const km = K && rig && comps.some((comp) => comp.length < floor && comp.length >= small) ? maskOf(K) : undefined;
+    const support = km && sum(km) ? (() => { const a = alignToKeyframe(rig!, c, km, w, pad); return dilate(shiftMask(km, w, a.s[0], a.s[1]), w, TRIM.support); })() : undefined;
     const keep = new Uint8Array(c.mask.length);
-    for (const comp of comps) if (comp.length >= floor) for (const p of comp) keep[p] = 1;
+    for (const comp of comps) if (comp.length >= floor || (support && comp.length >= small && 2 * comp.filter((p) => support[p]).length >= comp.length)) for (const p of comp) keep[p] = 1;
     removed += setMask(c, keep);
   }
   return removed;
@@ -651,7 +691,7 @@ export function sizeFloor(cells: CellOut[], keys: Partial<Record<DirectionName, 
 export function postProcess(rig: Rig, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): { removed: number; repaired: string[] } {
   let removed=cells.reduce((n,c)=>n+clipToStencil(c),0),repaired:string[]=[];
   if (slot.class === 'held') { removed += attachHeld(rig, slot, cells, pad) + clipFloor(cells); closeGrip(cells); repaired=repairDropped(rig, slot, cells, keys, pad); }
-  else removed += sizeFloor(cells, keys) + (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells);
+  else removed += sizeFloor(cells, keys, rig, pad) + (slot.band ? trimToKeyframe(rig, cells, keys, pad) : slot.class === 'worn' && slot.bgZ == null ? dropOffBody(cells) : 0) + clipFloor(cells);
   return {removed:removed+cells.reduce((n,c)=>n+clipToStencil(c),0),repaired};
 }
 
@@ -1097,7 +1137,9 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
  *  the red cape's smudged north hem 0.113; every clean view of hair, chest, trousers and cape ≤ 0.022 (gray items: median < 0.4). */
 export function grayShare(L: Img): number {
   const sat: number[] = [];
-  for (let i = 0; i < L.data.length; i += 4) if (L.data[i + 3]) { const mx = Math.max(L.data[i], L.data[i + 1], L.data[i + 2]), mn = Math.min(L.data[i], L.data[i + 1], L.data[i + 2]); sat.push(mx ? (mx - mn) / mx : 0); }
+  // Near-black px (max channel < 48) are line art, not smudges: a black outline is gray by saturation, so every outlined
+  // colorful design failed D1 on every retry (2026-11-07 audit: a passing jester hat scored 0.23-0.31 against 0.05).
+  for (let i = 0; i < L.data.length; i += 4) if (L.data[i + 3]) { const mx = Math.max(L.data[i], L.data[i + 1], L.data[i + 2]), mn = Math.min(L.data[i], L.data[i + 1], L.data[i + 2]); if (mx >= 48) sat.push((mx - mn) / mx); }
   return sat.length && median(sat) >= 0.4 ? sat.filter((v) => v < 0.25).length / sat.length : 0;
 }
 export const DESIGN = { gray: 0.05 };

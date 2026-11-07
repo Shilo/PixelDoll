@@ -18,11 +18,11 @@ import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches, poseGensFor } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
-import { chromaLayer, components, type Key } from '../image/chroma.ts';
+import { chromaLayer, type Key } from '../image/chroma.ts';
 import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { designConsistency, expectsWaistBand, type StandingDesignView } from './design-consistency.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { GATES, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, designGraySmudges, grayShare, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { GATES, heldParts, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, designGraySmudges, grayShare, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; frozen?: true; reference?: { image: Sha256; cell: CellKey } }
@@ -153,10 +153,10 @@ export function heldRepairRadius(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'key
   for (const r of refs) {
     const wrist = skelOf(ctx, restKey(r.dir), true)?.[spec.slot === 'off_hand' ? 'LEFT ARM' : 'RIGHT ARM'];
     if (!wrist) continue;
-    const { mask } = chromaLayer(r.im, spec.key as Key, padImg(baseCell(ctx, restKey(r.dir), true), pad));
-    // The weapon is the largest part; a detached fleck elsewhere in the view must not widen the editable disc.
-    const largest = components(mask, r.im.w, r.im.h).reduce((a, b) => (b.length > a.length ? b : a), [] as number[]);
-    for (const p of largest) reach = Math.max(reach, Math.hypot((p % r.im.w) + 0.5 - wrist.x - pad, ((p / r.im.w) | 0) + 0.5 - wrist.y - pad));
+    const body = padImg(baseCell(ctx, restKey(r.dir), true), pad), { mask } = chromaLayer(r.im, spec.key as Key, body);
+    // The object's own parts (largest, touching or hidden by the body between them); a fleck in open air must not widen the disc.
+    const { comps, keep } = heldParts(mask, body), parts = comps.filter((_, i) => keep[i]).flat();
+    for (const p of parts) reach = Math.max(reach, Math.hypot((p % r.im.w) + 0.5 - wrist.x - pad, ((p / r.im.w) | 0) + 0.5 - wrist.y - pad));
   }
   return Math.max(34, reach + Math.max(4, 0.1 * reach));
 }
