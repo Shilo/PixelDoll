@@ -3,6 +3,8 @@
 Start with [architecture.md](architecture.md) (v1.3, current pipeline) and [manifest-spec.md](manifest-spec.md) (export
 format). Project state and decisions D1–D17: [PLAN.md](../PLAN.md). Open work: the [board](https://github.com/users/Shilo/projects/7); accepted limits: [known-issues.md](known-issues.md). Casual users: [user-guide.md](user-guide.md).
 
+For a new agent-led research and implementation cycle, invoke the [repeatable paper-doll improvement workflow](handoff/paperdoll-improvement-cycle.md). It covers repository review, online discovery, local source and tool experiments, independent challenge, live PixelLab testing, and verified improvements.
+
 **Evidence media lives at commit [1f95029](https://github.com/Shilo/PixelDoll/tree/1f950291f90d43f5c6f27572445664f757f5716e).** Spike outputs (`spikes/api/out/`), test
 screenshots (`testing/img/`), design screenshots (`design/screenshots/`) and the D2 mockup app (`design-mockups/`) are no longer
 tracked on `main`; links in these docs point to that commit. README images: [media/](media/).
