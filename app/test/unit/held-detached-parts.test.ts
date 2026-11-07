@@ -42,3 +42,13 @@ test('a tiny speck in open air is removed', () => {
   postProcess(rig, slotOf('main_hand'), cells, {})
   expect(cells.every(c => !c.mask[10 * w + 55])).toBe(true)
 })
+
+test('a fleck too small to keep cannot pull a piece painted on the body into the held item', () => {
+  // A 2 px fleck past the torso edge bridges to the spear; beside it sits a 15 px buckle painted on the hip (fully on the body).
+  const fleck = (x: number, y: number) => (x === 39 || x === 40) && y === 45
+  const buckle = (x: number, y: number) => x >= 34 && x <= 38 && y >= 44 && y <= 46
+  const cells = [0, 1, 2, 3].map(i => cell(i, (x, y) => spear(x, y) && x < 27 || fleck(x, y) || buckle(x, y), (x, y) => torso(x, y) && !buckle(x, y)))
+  for (const c of cells) for (let y = 44; y <= 46; y++) for (let x = 34; x <= 38; x++) c.base.data.set([90, 90, 90, 255], (y * w + x) * 4)
+  postProcess(rig, slotOf('main_hand'), cells, {})
+  expect(cells.every(c => !c.mask[45 * w + 36] && !c.mask[45 * w + 39])).toBe(true)
+})

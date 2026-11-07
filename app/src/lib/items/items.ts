@@ -548,9 +548,12 @@ const bodyBridged = (base: Img, w: number, a: number[], b: number[]) => {
   return true;
 };
 /** Parts of a held layer that belong to the object: the largest component, components within `near` px of a kept part, and
- * components joined to a kept part only across the body (bodyBridged). `extra` may admit more (the gripping wrist). */
-export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: number[]) => boolean) {
+ * components joined to a kept part only across the body (bodyBridged). `extra` may admit more (the gripping wrist). Every
+ * admitted part must reach the size floor, max(4 px, 15 % of the largest), unless `small` vouches for it (a pommel beside the
+ * wrist): a fleck the floor drops must not pull a buckle redrawn on the hip into the item through itself (2026-11-07 review). */
+export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: number[]) => boolean, small?: (comp: number[]) => boolean) {
   const w = base.w, comps = components(mask, w, mask.length / w).sort((a, b) => b.length - a.length);
+  const floor = Math.max(4, 0.15 * (comps[0]?.length ?? 0)), sized = (comp: number[]) => comp.length >= floor || !!small?.(comp);
   const keep = new Array<boolean>(comps.length).fill(false);
   if (comps.length) keep[0] = true;
   for (let changed = true; changed;) {
@@ -562,7 +565,7 @@ export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: 
       if (keep[i]) return;
       // A hidden part reappears past the body; a detached blob painted over the body itself (a redrawn far hand) does not.
       const past = () => 2 * comp.filter((p) => !base.data[p * 4 + 3]).length >= comp.length;
-      if (comp.some((p) => close[p]) || extra?.(comp) || (past() && comps.some((k, j) => keep[j] && bodyBridged(base, w, comp, k)))) { keep[i] = changed = true; }
+      if (sized(comp) && (comp.some((p) => close[p]) || extra?.(comp) || (past() && comps.some((k, j) => keep[j] && bodyBridged(base, w, comp, k))))) { keep[i] = changed = true; }
     });
   }
   return { comps, keep };
@@ -581,14 +584,12 @@ export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): num
     if (!c.posed || !c.area) continue;
     const w = c.layer.w, comps = components(c.mask, w, c.mask.length / w).sort((a, b) => b.length - a.length);
     if (comps.length < 2) continue;
-    const wr = kpAt(posedKps(rig, c.key).pose, wristL, rig.cell, pad), floor = Math.max(4, 0.15 * comps[0].length);
+    const wr = kpAt(posedKps(rig, c.key).pose, wristL, rig.cell, pad);
     const grip = (comp: number[], r: number) => !!wr && comp.some((p) => Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]) <= r);
-    const { comps: parts, keep: linked } = heldParts(c.mask, c.base, 3, (comp) => grip(comp, 3));
+    // the majorComponents size floor; a pommel or haft end the fist splits off (within 6 px of the wrist) survives below it
+    const { comps: parts, keep: linked } = heldParts(c.mask, c.base, 3, (comp) => grip(comp, 3), (comp) => grip(comp, 6));
     const keep = new Uint8Array(c.mask.length);
-    for (const [i, comp] of parts.entries()) {
-      // the majorComponents size floor, applied here so a pommel or haft end the fist splits off (within 6 px of the wrist) survives
-      if (!i || (linked[i] && (comp.length >= floor || grip(comp, 6)))) for (const p of comp) keep[p] = 1;
-    }
+    for (const [i, comp] of parts.entries()) if (linked[i]) for (const p of comp) keep[p] = 1;
     removed += setMask(c, keep);
   }
   return removed;
@@ -1139,7 +1140,14 @@ export function grayShare(L: Img): number {
   const sat: number[] = [];
   // Near-black px (max channel < 48) are line art, not smudges: a black outline is gray by saturation, so every outlined
   // colorful design failed D1 on every retry (2026-11-07 audit: a passing jester hat scored 0.23-0.31 against 0.05).
-  for (let i = 0; i < L.data.length; i += 4) if (L.data[i + 3]) { const mx = Math.max(L.data[i], L.data[i + 1], L.data[i + 2]), mn = Math.min(L.data[i], L.data[i + 1], L.data[i + 2]); if (mx >= 48) sat.push((mx - mn) / mx); }
+  // A near-black px inside a solid near-black 3x3 patch is a blotch, not a line, and still counts (2026-11-07 review: a dark
+  // blotch scored 0 when all near-black px were skipped).
+  const dark = (x: number, y: number) => { if (x < 0 || y < 0 || x >= L.w || y >= L.h) return false; const q = (y * L.w + x) * 4; return !!L.data[q + 3] && Math.max(L.data[q], L.data[q + 1], L.data[q + 2]) < 48; };
+  for (let i = 0; i < L.data.length; i += 4) if (L.data[i + 3]) {
+    const mx = Math.max(L.data[i], L.data[i + 1], L.data[i + 2]), mn = Math.min(L.data[i], L.data[i + 1], L.data[i + 2]), p = i / 4, x = p % L.w, y = (p / L.w) | 0;
+    if (mx >= 48) sat.push((mx - mn) / mx);
+    else if ([-1, 0, 1].every((dy) => [-1, 0, 1].every((dx) => dark(x + dx, y + dy)))) sat.push(mx ? (mx - mn) / mx : 0);
+  }
   return sat.length && median(sat) >= 0.4 ? sat.filter((v) => v < 0.25).length / sat.length : 0;
 }
 export const DESIGN = { gray: 0.05 };

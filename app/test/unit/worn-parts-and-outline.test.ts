@@ -42,3 +42,8 @@ test('a black outline around a colorful design is not counted as gray smudges', 
   const smudged = makeImg(w, w); paint(smudged, 5, 5, 26, 26, [40, 90, 220]); paint(smudged, 5, 5, 26, 7, [120, 120, 120])
   expect(grayShare(smudged)).toBeGreaterThan(0.05)
 })
+
+test('a solid dark blotch in a colorful design still counts as a smudge, unlike thin outlines', () => {
+  const blotched = makeImg(w, w); paint(blotched, 4, 4, 27, 27, [10, 10, 12]); paint(blotched, 5, 5, 26, 26, [40, 90, 220]); paint(blotched, 8, 8, 13, 15, [20, 20, 22])
+  expect(grayShare(blotched)).toBeGreaterThan(0.05)
+})
