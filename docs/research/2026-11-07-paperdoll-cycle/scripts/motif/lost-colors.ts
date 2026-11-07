@@ -1,5 +1,5 @@
-// Free: how often does the G15 design-detail note fire on the real frozen bench? For each locomotion posed cell of a worn
-// (non-held) case, the production helpers list the same-facing keyframe's detail colors that are gone from the posed cell.
+// Free: how often does the G15 design-detail note fire on the real frozen bench? For each posed cell of a worn (non-held)
+// case that G15 judges (locomotion, plus the authored slash for items not drawn behind the body), the production helpers list the same-facing keyframe's detail colors that are gone from the posed cell.
 // Also runs a nearest-neighbor 2x and 4x upscale of every cell as a stand-in for larger characters (the bench has one
 // 128 px case and none larger). Run from the repo root: node docs/research/2026-11-07-paperdoll-cycle/scripts/motif/lost-colors.ts
 import { readFileSync } from 'node:fs';
@@ -23,11 +23,11 @@ for (const k of [1, 2, 4]) {
     const pal = Object.fromEntries(run.kf.map((x) => [x.key.split('/')[1], detailColors(up(x.layer, k))]));
     for (const x of run.cells) {
       const [anim, dir] = x.key.split('/');
-      if (isAction(`${anim}/${dir}`)) continue;
+      if (isAction(`${anim}/${dir}`) && (anim !== 'slash' || slotOf(c.slot).bgZ != null)) continue;
       const lost = lostDetails(pal[dir], up(x.layer, k), up(x.base, k));
       cells++; if (lost.length) { flagged++; where.push(`${c.id} ${x.key} lost ${lost.map((l) => '#' + l.color.toString(16).padStart(6, '0') + ' (' + l.px + ' px)').join(' ')}`); }
     }
   }
-  console.log(`${k}x: ${flagged}/${cells} locomotion posed cells flagged`);
+  console.log(`${k}x: ${flagged}/${cells} judged posed cells flagged`);
   if (where.length) console.log(where.join('\n'));
 }

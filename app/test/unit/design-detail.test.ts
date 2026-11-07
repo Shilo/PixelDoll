@@ -55,9 +55,15 @@ test('held items are not checked', () => {
   expect(check(tunic(GOLD, 16), tunic(null), 'main_hand').detailReviewFrames).toBe(0)
 })
 
-test('attacks are not judged, and the detail size scales with the cell', () => {
-  // a cape swinging to its darker side in an attack is legitimate (bench a-cape slash/east)
-  expect(check(tunic(GOLD, 16), tunic(null), 'torso_outer', 'slash/south/2').detailReviewFrames).toBe(0)
+test('the slash is judged for items over the body only, other actions are not, and the detail size scales with the cell', () => {
+  // capes and hair swing to their darker side in an attack (bench a-cape slash/north/3); they are judged in walks
+  for (const slot of ['back', 'hair']) {
+    expect(check(tunic(GOLD, 16), tunic(null), slot, 'slash/south/2').detailReviewFrames, slot).toBe(0)
+    expect(check(tunic(GOLD, 16), tunic(null), slot, 'walk/south/2').detailReviewFrames, slot).toBe(1)
+  }
+  expect(check(tunic(GOLD, 16), tunic(null), 'torso_outer', 'slash/south/2').detailReviewFrames).toBe(1)
+  // a cast, a death or a described move can turn the front away
+  for (const move of ['cast', 'death', 'spin-around']) expect(check(tunic(GOLD, 16), tunic(null), 'torso_outer', `${move}/south/2`).detailReviewFrames, move).toBe(0)
   expect(detailMinPx(makeImg(64, 64))).toBe(4)
   expect(detailMinPx(makeImg(128, 128))).toBe(16) // a 4 px highlight scaled 2x is not a new detail
 })

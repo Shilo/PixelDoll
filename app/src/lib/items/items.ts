@@ -1332,9 +1332,11 @@ export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 
  * G15: a color of the dressed design that is gone from a posed frame (a lost or recolored emblem or buckle in its own color).
  * A presence test per color, not a placement match: a detail that shares any shade with other parts, a recolor into a nearby
  * shade, a motif under `minPx` and 1 px line art cannot be seen. Colors the body also has are skipped (skin the provider drew
- * inside the item can rightly vanish: bench b-tunic), and only locomotion is judged, like G11-G14, since attacks swing capes to
- * their darker side (bench a-cape slash/east, exactly one shade step away). Review note only. On the frozen bench it flags 0
- * of 448 posed frames; it was not validated above 128 px cells beyond a 2x and 4x upscale of the bench (2026-11-07).
+ * inside the item can rightly vanish: bench b-tunic). Actions are judged only for the authored slash on items drawn over the
+ * body: the only attack the bench covers (0 of 72 helmet, tunic and boot frames flagged; worst nearest color 14). Capes and
+ * hair swing to their darker side (bench a-cape slash/north/3; hair by analogy), and casts, deaths and described moves can
+ * turn the front away. Review note only. On the frozen bench it flags 0 of 400 judged frames; no real frame above 128 px
+ * was available (an upscale reproduces the 1x verdict by construction) (2026-11-07).
  */
 export const DETAIL = { minPx: 4, tol: 32, bodyTol: 13 };
 /** Patch size that counts as a detail: `DETAIL.minPx` at a 64 px cell, scaled with the cell area. */
@@ -1416,7 +1418,8 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     maxPaletteDist = Math.max(maxPaletteDist, d);
     if (d > GATES.paletteDist) warnings.push(`G6 ${c.key}: palette distance ${d.toFixed(1)} to the dressed design`);
     // Held items were not qualified for this check (they turn, and the bench measured worn items only).
-    if (slot.class === 'held' || action(c.key.split('/')[0], dir)) continue;
+    const anim = c.key.split('/')[0];
+    if (slot.class === 'held' || (action(anim, dir) && (anim !== 'slash' || slot.bgZ != null))) continue;
     if (!details.has(dir)) details.set(dir, detailColors(K));
     const lost = lostDetails(details.get(dir)!, c.layer, c.base);
     if (lost.length) {
