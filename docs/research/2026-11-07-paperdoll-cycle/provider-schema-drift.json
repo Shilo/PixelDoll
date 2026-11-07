@@ -1,0 +1,538 @@
+{
+  "checkedAt": "2026-11-07T11:18:19.340Z",
+  "source": "https://api.pixellab.ai/v2/openapi.json",
+  "current": {
+    "file": "C:/Programming_Files/Shilocity/PixelLab/checkouts/cycle-2026-11-07/provider/openapi-2026-11-07.json (outside repo)",
+    "sha256": "3f30f84487cd1ed8e6b548ac152b11a2aff535a6a6467b91e464dc74328a382b",
+    "bytes": 502650,
+    "openapi": "3.1.0",
+    "pathCount": 102,
+    "schemaCount": 275
+  },
+  "baseline": {
+    "file": "docs/research/pixellab/pixellab-openapi-v2.json",
+    "sha256": "a459992f91f2fdf8e653f730e0a5436157de6a50b66d561fd35dd897d1c04eb6",
+    "bytes": 497216,
+    "pathCount": 102,
+    "schemaCount": 275
+  },
+  "relevantPaths": [
+    "/create-character-v3",
+    "/create-character-pro-flash",
+    "/characters/animations",
+    "/animate-character",
+    "/animate-with-skeleton-v3",
+    "/estimate-skeleton",
+    "/animate-pixminimax",
+    "/animate-with-text-v3",
+    "/edit-animation-v2",
+    "/inpaint-v3",
+    "/transfer-outfit-v2",
+    "/balance",
+    "/background-jobs/{job_id}",
+    "/pro-flash/capabilities",
+    "/pro-flash/cost",
+    "/enhance-character-v3-prompt",
+    "/enhance-animation-v3-prompt"
+  ],
+  "relevantSchemasChecked": [
+    "AnimatePixminimaxRequest",
+    "AnimatePixminimaxResponse",
+    "AnimateWithSkeletonV3Request",
+    "AnimateWithSkeletonV3Response",
+    "AnimateWithTextV3Request",
+    "AnimateWithTextV3Response",
+    "BackgroundJobResponse",
+    "BalanceResponse",
+    "Base64Image",
+    "BoundingBox",
+    "CameraView",
+    "CancelBackgroundJobResponse",
+    "CreateCharacterAnimationRequest",
+    "CreateCharacterAnimationResponse",
+    "CreateCharacterProFlashRequest",
+    "CreateCharacterProFlashResponse",
+    "CreateCharacterV3Request",
+    "CreateCharacterV3Response",
+    "Credits",
+    "Direction",
+    "EditAnimationV2Request",
+    "EditAnimationV2Response",
+    "EnhanceAnimationV3PromptRequest",
+    "EnhanceAnimationV3PromptResponse",
+    "EnhanceCharacterV3PromptRequest",
+    "EnhanceCharacterV3PromptResponse",
+    "EstimateSkeletonRequest",
+    "EstimateSkeletonResponse",
+    "HTTPValidationError",
+    "InpaintImage",
+    "InpaintV3Request",
+    "InpaintV3Response",
+    "Keypoint-Input",
+    "Keypoint-Output",
+    "ProFlashImageSize",
+    "ProFlashReferenceImage",
+    "ProFlashStyleOptions",
+    "SkeletonLabel",
+    "Subscription",
+    "TargetPalette",
+    "TransferOutfitV2Request",
+    "TransferOutfitV2Response",
+    "Usage",
+    "V3OutputImageSize",
+    "ValidationError",
+    "app__endpoints__external__v2__edit_animation_v2__FrameImage",
+    "app__endpoints__external__v2__edit_animation_v2__FrameImageSize",
+    "app__endpoints__external__v2__edit_animation_v2__ImageSize",
+    "app__endpoints__external__v2__inpaint_v3__ImageSize",
+    "app__endpoints__external__v2__transfer_outfit_v2__FrameImage",
+    "app__endpoints__external__v2__transfer_outfit_v2__FrameImageSize",
+    "app__endpoints__external__v2__transfer_outfit_v2__ImageSize",
+    "app__endpoints__external__v2__transfer_outfit_v2__ReferenceImage"
+  ],
+  "relevantSchemasUnchanged": [
+    "AnimatePixminimaxRequest",
+    "AnimatePixminimaxResponse",
+    "AnimateWithSkeletonV3Request",
+    "AnimateWithSkeletonV3Response",
+    "AnimateWithTextV3Request",
+    "AnimateWithTextV3Response",
+    "BackgroundJobResponse",
+    "BalanceResponse",
+    "Base64Image",
+    "BoundingBox",
+    "CameraView",
+    "CancelBackgroundJobResponse",
+    "CreateCharacterAnimationResponse",
+    "CreateCharacterProFlashRequest",
+    "CreateCharacterProFlashResponse",
+    "CreateCharacterV3Response",
+    "Credits",
+    "Direction",
+    "EditAnimationV2Request",
+    "EditAnimationV2Response",
+    "EnhanceAnimationV3PromptRequest",
+    "EnhanceAnimationV3PromptResponse",
+    "EnhanceCharacterV3PromptRequest",
+    "EnhanceCharacterV3PromptResponse",
+    "EstimateSkeletonRequest",
+    "EstimateSkeletonResponse",
+    "HTTPValidationError",
+    "InpaintImage",
+    "InpaintV3Request",
+    "InpaintV3Response",
+    "Keypoint-Input",
+    "Keypoint-Output",
+    "ProFlashImageSize",
+    "ProFlashReferenceImage",
+    "ProFlashStyleOptions",
+    "SkeletonLabel",
+    "Subscription",
+    "TargetPalette",
+    "TransferOutfitV2Request",
+    "TransferOutfitV2Response",
+    "Usage",
+    "V3OutputImageSize",
+    "ValidationError",
+    "app__endpoints__external__v2__edit_animation_v2__FrameImage",
+    "app__endpoints__external__v2__edit_animation_v2__FrameImageSize",
+    "app__endpoints__external__v2__edit_animation_v2__ImageSize",
+    "app__endpoints__external__v2__inpaint_v3__ImageSize",
+    "app__endpoints__external__v2__transfer_outfit_v2__FrameImage",
+    "app__endpoints__external__v2__transfer_outfit_v2__FrameImageSize",
+    "app__endpoints__external__v2__transfer_outfit_v2__ImageSize",
+    "app__endpoints__external__v2__transfer_outfit_v2__ReferenceImage"
+  ],
+  "addedPaths": [],
+  "removedPaths": [],
+  "addedSchemas": [],
+  "removedSchemas": [],
+  "changes": {
+    "paths": {
+      "/estimate-skeleton": {
+        "relevant": true,
+        "changes": [
+          {
+            "pointer": "#/paths/~1estimate-skeleton/post/description",
+            "old": "Estimates the skeleton of a character, returning a list of keypoints to use with the skeleton animation tool.\n\nSupported image sizes: \n- 16x16\n- 32x32\n- 64x64\n- 128x128\n- 256x256\n\nUsing the Python client:\n```python\nimport pixellab\n\nclient = pixellab.Client(secret=\"YOUR_API_TOKEN\")\n\nresponse = client.estimate_skeleton(\n    image=image_of_the_character_on_a_transparent_background,\n)\nresponse.keypoints\n```",
+            "new": "Estimates the skeleton of a character, returning a list of keypoints to use with the skeleton animation tool.\n\nAny image size up to 256x256 works. The model runs on 16/32/64/128/256 squares, so an\nimage of another size is padded to the next one that fits and the returned coordinates\nare converted back — `x`/`y` are fractions 0-1 of the image YOU sent, not of the padded\nsquare, so they can be passed straight to the skeleton animation endpoints. A 40x40 or\n56x56 sprite therefore needs no padding from you.\n\nCost: 0.1 generations per call. A fully transparent image is refused (422) before it is\ncharged, since there is no character to estimate from.\n\nUsing the Python client:\n```python\nimport pixellab\n\nclient = pixellab.Client(secret=\"YOUR_API_TOKEN\")\n\nresponse = client.estimate_skeleton(\n    image=image_of_the_character_on_a_transparent_background,\n)\nresponse.keypoints\n```",
+            "oldAbsent": false,
+            "newAbsent": false
+          }
+        ]
+      },
+      "/animate-with-skeleton-v3": {
+        "relevant": true,
+        "changes": [
+          {
+            "pointer": "#/paths/~1animate-with-skeleton-v3/post/description",
+            "old": "Beta. Animate a sprite by posing it: one skeleton per frame, drawn from a single reference image.\n\nReturns immediately with a background job ID. Poll `GET /v2/background-jobs/{job_id}`\nto retrieve results when generation completes.\n\n**How it works:**\n1. Send the sprite, the skeleton of the pose it is already in (`first_frame_keypoints`), and one skeleton per frame you want (`keypoints`).\n2. Poll `GET /v2/background-jobs/{background_job_id}` every 5-10 seconds.\n3. When `status` is `completed`, `last_response.images` holds exactly `len(keypoints)` frames, each the size of `first_frame`. The reference frame is not returned.\n\n**Skeletons:** 18 humanoid joints, `x`/`y` as fractions 0-1 of the image. `depth` is\noptional -- leave it out and it is taken from the standing pose of `template_id` for\nyour direction, which is what an editor without 3D data should do. `GET /v2/estimate-skeleton`\nwill derive a skeleton from an image if you do not have one.\n\n**Limits:** 3-15 frames, canvas up to 256x256.\n\n**Cost:** by generation time, which depends on frame count and not on canvas size:\n3 frames = 2 generations,\n8 frames = 3,\n15 frames = 4. A longer clip\nis nearly free, so prefer one long clip to several short ones.\n\nTypical generation time: 3-5 minutes.",
+            "new": "Beta. Animate a sprite by posing it: one skeleton per frame, drawn from a single reference image.\n\nReturns immediately with a background job ID. Poll `GET /v2/background-jobs/{job_id}`\nto retrieve results when generation completes.\n\n**How it works:**\n1. Send the sprite, the skeleton of the pose it is already in (`first_frame_keypoints`), and one skeleton per frame you want (`keypoints`).\n2. Poll `GET /v2/background-jobs/{background_job_id}` every 5-10 seconds.\n3. When `status` is `completed`, `last_response.images` holds exactly `len(keypoints)` frames, each the size of `first_frame`. The reference frame is not returned.\n\n**Skeletons:** 18 humanoid joints, `x`/`y` as fractions 0-1 of the image. `depth` is\noptional -- leave it out and it is taken from the standing pose of `template_id` for\nyour direction, which is what an editor without 3D data should do. `POST /v2/estimate-skeleton`\nwill derive a skeleton from an image if you do not have one — it returns x/y on the same\n0-1 scale as this endpoint expects, so the result drops straight into `keypoints`.\n\n**Limits:** 3-15 frames, canvas up to 256x256.\n\n**Cost:** by generation time, which depends on frame count and not on canvas size:\n3 frames = 2 generations,\n8 frames = 3,\n15 frames = 4. A longer clip\nis nearly free, so prefer one long clip to several short ones.\n\nTypical generation time: 3-5 minutes.",
+            "oldAbsent": false,
+            "newAbsent": false
+          }
+        ]
+      },
+      "/vfx": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/paths/~1vfx/post/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "/create-tiles-pro": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/paths/~1create-tiles-pro/post/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "/portrait-character-pro": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/paths/~1portrait-character-pro/post/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "/generate-font-pro": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/paths/~1generate-font-pro/post/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "/normal-map": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/paths/~1normal-map/post/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      }
+    },
+    "schemas": {
+      "Create8DirectionObjectRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/Create8DirectionObjectRequest/properties/size/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "CreateCharacterAnimationRequest": {
+        "relevant": true,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateCharacterAnimationRequest/properties/mode/description",
+            "old": "Animation mode. \"template\": skeleton-based from template_animation_id (1 gen/direction; canvases over ~100px run in batches billed 1 each, up to one per clip frame at 256px). \"skeleton-v3\": the same template_animation_id posed onto the character, which moves the character instead of redrawing it each frame — steadier identity and colours, 2-4 generations and ~3-5 min per direction, beta. \"v3\": custom animation from action_description with frame_count control. \"pixminimax\": custom animation from action_description on PixMiniMax (beta) — up to 40 frames at any size, priced by size and frame count (64x64 at 8 frames = 1 generation, 40 frames = 6), ~1-7 min per direction. \"pro\" (legacy, prefer v3 or pixminimax): custom animation that generates directions sequentially, using completed sides as reference (10-25 gen/direction). Auto-detected: template if template_animation_id is provided, v3 otherwise.",
+            "new": "Animation mode. \"template\": skeleton-based from template_animation_id (1 gen/direction; canvases over ~100px run in batches billed 1 each, up to one per clip frame at 256px). \"skeleton-v3\": the same template_animation_id posed onto the character, which moves the character instead of redrawing it each frame — steadier identity and colours, 2-4 generations and ~3-5 min per direction, beta. Without template_animation_id, \"skeleton-v3\" animates action_description instead: the action is written into one 3D motion (3-15 frames, ~15 s before the jobs start) that every direction of the animation is drawn from, so directions added later with animation_group_id move the same way (humanoid characters). \"v3\": custom animation from action_description with frame_count control. \"pixminimax\": custom animation from action_description on PixMiniMax (beta) — up to 40 frames at any size, priced by size and frame count (64x64 at 8 frames = 1 generation, 40 frames = 6), ~1-7 min per direction. \"pro\" (legacy, prefer v3 or pixminimax): custom animation that generates directions sequentially, using completed sides as reference (10-25 gen/direction). Auto-detected: template if template_animation_id is provided, v3 otherwise.",
+            "oldAbsent": false,
+            "newAbsent": false
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterAnimationRequest/properties/frame_count/anyOf",
+            "old": [
+              {
+                "type": "integer",
+                "maximum": 40,
+                "minimum": 4
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "new": [
+              {
+                "type": "integer",
+                "maximum": 40,
+                "minimum": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "oldAbsent": false,
+            "newAbsent": false
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterAnimationRequest/properties/frame_count/description",
+            "old": "Number of animation frames. v3 mode: 4-16, even. pixminimax mode: a multiple of 4 from 4 to 40. Not used in other modes.",
+            "new": "Number of animation frames. v3 mode: 4-16, even. pixminimax mode: a multiple of 4 from 4 to 40. skeleton-v3 with action_description: 3-15 (a later direction of the same animation keeps the animation's own count). Not used in other modes.",
+            "oldAbsent": false,
+            "newAbsent": false
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterAnimationRequest/properties/directions/anyOf",
+            "old": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "new": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "south",
+                    "south-east",
+                    "east",
+                    "north-east",
+                    "north",
+                    "north-west",
+                    "west",
+                    "south-west"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "oldAbsent": false,
+            "newAbsent": false
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterAnimationRequest/properties/target_palette/description",
+            "old": "Colours the result must use and/or a colour cap: {\"colors\": [\"#081820\", \"#346856\", \"#88c070\", \"#e0f8d0\"], \"name\": \"Game Boy\", \"max_colors\": 4}. With colors every pixel of every frame of every direction (modes pro, v3 and pixminimax; the character's frame goes onto the palette first; give colors: a max_colors cap alone would pick different colours for each direction) is one of them; max_colors (2-64) caps the colours of every frame of every direction (modes pro, v3 and pixminimax; the character's frame goes onto the palette first; give colors: a max_colors cap alone would pick different colours for each direction).",
+            "new": "Colours the result must use and/or a colour cap: {\"colors\": [\"#081820\", \"#346856\", \"#88c070\", \"#e0f8d0\"], \"name\": \"Game Boy\", \"max_colors\": 4}. With colors every pixel of every frame of every direction (modes pro, v3, pixminimax and skeleton-v3; the character's frame goes onto the palette first; give colors: a max_colors cap alone would pick different colours for each direction) is one of them; max_colors (2-64) caps the colours of every frame of every direction (modes pro, v3, pixminimax and skeleton-v3; the character's frame goes onto the palette first; give colors: a max_colors cap alone would pick different colours for each direction).",
+            "oldAbsent": false,
+            "newAbsent": false
+          }
+        ]
+      },
+      "CreateCharacterProRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateCharacterProRequest/properties/template_id/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "CreateCharacterV3Request": {
+        "relevant": true,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateCharacterV3Request/properties/template_id/description",
+            "old": "Body type for skeleton reconstruction. Picks the 3D template the skeleton estimator fits to the generated frames so the character can be animated. Use `mannequin` for bipedal subjects or one of `bear`/`cat`/`dog`/`horse`/`lion` for quadrupeds. Must match the body type in `reference_image`.",
+            "new": "Body type for skeleton reconstruction. Picks the 3D template the skeleton estimator fits to the generated frames so the character can be animated. Use `mannequin` for bipedal subjects or one of `bear`/`cat`/`dog`/`horse`/`lion` for quadrupeds. Must match the body type in `reference_image`. `custom` skips the skeleton, for bodies no template fits; such a character can't use skeleton-based animations.",
+            "oldAbsent": false,
+            "newAbsent": false
+          }
+        ]
+      },
+      "CreateCharacterWith4DirectionsRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateCharacterWith4DirectionsRequest/properties/view/anyOf",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterWith4DirectionsRequest/properties/view/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterWith4DirectionsRequest/properties/view/type",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterWith4DirectionsRequest/properties/view/enum",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "CreateCharacterWith8DirectionsRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateCharacterWith8DirectionsRequest/properties/view/anyOf",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterWith8DirectionsRequest/properties/view/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterWith8DirectionsRequest/properties/view/type",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateCharacterWith8DirectionsRequest/properties/view/enum",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "CreateImagePixenRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateImagePixenRequest/properties/no_background/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "CreateImagePixfluxRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateImagePixfluxRequest/properties/no_background/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "CreateImageProFlashRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateImageProFlashRequest/properties/seed/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "CreateTilesProRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateTilesProRequest/properties/tile_view_angle/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "CreateTilesetRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/mode/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/shape_style/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/enhance/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/boundary_amplitude/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/text_guidance_scale/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/outline/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/view/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/tile_strength/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/tileset_adherence_freedom/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/tileset_adherence/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/transition_size/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/CreateTilesetRequest/properties/color_image/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "GenerateFontProRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/GenerateFontProRequest/properties/glyph_px/enum",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "NormalMapRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/NormalMapRequest/properties/mode",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/NormalMapRequest/properties/kind",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/NormalMapRequest/properties/strength",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/NormalMapRequest/properties/outline_rounding",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/NormalMapRequest/properties/part_shapes",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/NormalMapRequest/properties/surface_detail",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          },
+          {
+            "pointer": "#/components/schemas/NormalMapRequest/properties/detail_softness",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "PortraitCharacterProRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/PortraitCharacterProRequest/properties/result_size/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      },
+      "VfxRequest": {
+        "relevant": false,
+        "changes": [
+          {
+            "pointer": "#/components/schemas/VfxRequest/properties/artist/description",
+            "summary": "changed (irrelevant to PixelDoll; see full schema)"
+          }
+        ]
+      }
+    }
+  },
+  "notes": [
+    "Label: documented contract (schema text). A schema change does not establish provider behavior or output quality.",
+    "No paid PixelLab request was made to produce this file."
+  ]
+}

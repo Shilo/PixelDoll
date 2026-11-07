@@ -97,9 +97,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   not from the first idle frame as on older characters, and moves added later keep it. **Add idle + walk** picks a new
   random seed on every tap; the character's seed no longer reaches its moves, so an earlier attempt cannot be reproduced.
 - **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
-  the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** poses the items the
-  character has when it is tapped (the ones it is priced for). Held items split over several dress calls pose only after
-  every dress call passed, as before, so a late key switch never wastes poses.
+  the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** adds body moves only;
+  each item keeps its own priced offer for the new moves.
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 - **The authored east axe is an experimental import.** Its full clip can now be opened and inspected in Studio, but only one body/view is supported and rear-foot contact is unknown in two merged poses. The source PNGs and Studio's garment-tagged images have distinct pixel identities. See the [Studio integration evidence](research/2026-11-02-studio-axe-integration.md); it is not a universal preset.

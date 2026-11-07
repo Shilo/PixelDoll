@@ -1,0 +1,831 @@
+{
+ "s2/vest_leather": {
+  "note": "brown leather vest; dark olive-brown contour",
+  "materials": {
+   "leather": [
+    "#664121",
+    "#97653d",
+    "#5a3f1f",
+    "#71502d",
+    "#8b623c",
+    "#a57e56",
+    "#b7875c"
+   ]
+  },
+  "outline": [
+   "#202005",
+   "#272106"
+  ],
+  "ignore": []
+ },
+ "s2/cape_red": {
+  "note": "red cape, inside and outside are the same red cloth; darkest reds and browns sit on the contour",
+  "materials": {
+   "cloth": [
+    "#6a1913",
+    "#6d1915",
+    "#812119",
+    "#8b1615",
+    "#ae342c",
+    "#bb332c"
+   ]
+  },
+  "outline": [
+   "#360a06",
+   "#440303",
+   "#260d03",
+   "#251004",
+   "#360d05",
+   "#490f07"
+  ],
+  "ignore": [
+   "#302e0b"
+  ]
+ },
+ "s2/hair_brown": {
+  "note": "brown hair; near-black contour",
+  "materials": {
+   "hair": [
+    "#352618",
+    "#3f2a1a",
+    "#664933",
+    "#5a462d"
+   ]
+  },
+  "outline": [
+   "#161709",
+   "#20150c"
+  ],
+  "ignore": []
+ },
+ "s2/helmet_steel": {
+  "note": "gray steel helmet L 0.45-0.81",
+  "materials": {
+   "steel": [
+    "#545654",
+    "#585a58",
+    "#828382",
+    "#929491",
+    "#c1c2c0"
+   ]
+  },
+  "outline": [
+   "#1b1b1b",
+   "#1a1d1a"
+  ],
+  "ignore": [
+   "#000001"
+  ]
+ },
+ "s2/hat_wizard": {
+  "note": "blue hat cloth plus gold band/buckle",
+  "materials": {
+   "cloth": [
+    "#162559",
+    "#214482",
+    "#2c5b9e"
+   ],
+   "band": [
+    "#826d34",
+    "#e6d690"
+   ]
+  },
+  "outline": [
+   "#040721"
+  ],
+  "ignore": [
+   "#484f55"
+  ]
+ },
+ "s2/sword_steel": {
+  "note": "steel blade, olive-gold guard; #667162 mixed hilt/blade",
+  "materials": {
+   "blade": [
+    "#3b4d53",
+    "#4e5661",
+    "#839393",
+    "#a5a89b",
+    "#a3b3ac"
+   ],
+   "guard": [
+    "#796d39"
+   ]
+  },
+  "outline": [
+   "#080e0f",
+   "#0b1113"
+  ],
+  "ignore": [
+   "#667162"
+  ]
+ },
+ "s1/chest_leather": {
+  "note": "old S1 extraction with leaked arm skin; skin is real layer content the user should not dye with the leather",
+  "materials": {
+   "leather": [
+    "#532b24",
+    "#6b392e",
+    "#915435"
+   ],
+   "skin": [
+    "#fae1cc",
+    "#913d41",
+    "#b25d56",
+    "#c8796a",
+    "#d77b67",
+    "#de917b",
+    "#ecae93",
+    "#f7c5a4",
+    "#f8d4b7"
+   ]
+  },
+  "outline": [
+   "#080102",
+   "#371614"
+  ],
+  "ignore": [
+   "#000000",
+   "#40475d",
+   "#788186",
+   "#9a574a"
+  ]
+ },
+ "s1/helmet_iron": {
+  "note": "bluish steel to pure white highlight; brown brow band; leaked face skin",
+  "materials": {
+   "steel": [
+    "#3d3a4f",
+    "#4b525f",
+    "#57616b",
+    "#707b80",
+    "#77898e",
+    "#7c888c",
+    "#919c9d",
+    "#b3bbbf",
+    "#c7d2d8",
+    "#f8f8f8",
+    "#ffffff",
+    "#3e475e"
+   ],
+   "band": [
+    "#866961"
+   ],
+   "skin": [
+    "#4c141b",
+    "#a34c49",
+    "#bb6056",
+    "#b67268",
+    "#c36e5d",
+    "#ce7b68",
+    "#f8c3a1",
+    "#f8ccab",
+    "#fadcc5",
+    "#fde3cb"
+   ]
+  },
+  "outline": [
+   "#000000",
+   "#010002",
+   "#060001",
+   "#050202",
+   "#080102",
+   "#2c2528"
+  ],
+  "ignore": [
+   "#564961"
+  ]
+ },
+ "s1/sword_steel": {
+  "note": "steel blade and hilt; leaked hand skin",
+  "materials": {
+   "steel": [
+    "#3a4258",
+    "#474f64",
+    "#5a6370",
+    "#717a80",
+    "#7d878b",
+    "#9da5b0",
+    "#c8cccd",
+    "#fffffd"
+   ],
+   "skin": [
+    "#301514",
+    "#825058",
+    "#a04848",
+    "#ba5e56",
+    "#b86c62",
+    "#d98670",
+    "#e1a086",
+    "#f0a181",
+    "#f5b696",
+    "#fbe0cb"
+   ]
+  },
+  "outline": [
+   "#060001",
+   "#040305",
+   "#090202",
+   "#1c1c34"
+  ],
+  "ignore": [
+   "#968ba9",
+   "#513544"
+  ]
+ },
+ "bench/a-helmet": {
+  "note": "pure gray helmet; #393939 is contour in side views",
+  "materials": {
+   "steel": [
+    "#4e4e4e",
+    "#727272",
+    "#898989",
+    "#999899",
+    "#a8a8a9",
+    "#b5b6b6"
+   ]
+  },
+  "outline": [
+   "#020303",
+   "#0c0c0c",
+   "#0d0d0d",
+   "#151515",
+   "#393939"
+  ],
+  "ignore": []
+ },
+ "bench/a-cape": {
+  "note": "red cape; #e65131 collar highlight is the same cloth; posed-only olive/gray singletons ignored",
+  "materials": {
+   "cloth": [
+    "#3f0a09",
+    "#4a070b",
+    "#53060c",
+    "#581717",
+    "#6f111d",
+    "#861722",
+    "#9f2026",
+    "#b62728",
+    "#ce392a",
+    "#e65131"
+   ]
+  },
+  "outline": [
+   "#2e1806",
+   "#3c170a",
+   "#1a1d04"
+  ],
+  "ignore": [
+   "#56483a",
+   "#525b44",
+   "#6a5c50",
+   "#6c675b",
+   "#6a7265",
+   "#747368",
+   "#692922",
+   "#442411",
+   "#541e15",
+   "#4d2616",
+   "#4a391c",
+   "#2e2b0e",
+   "#312a0e",
+   "#38361a",
+   "#49471e"
+  ]
+ },
+ "bench/a-chest": {
+  "note": "brown leather chest",
+  "materials": {
+   "leather": [
+    "#6b452b",
+    "#724d31",
+    "#855535",
+    "#946747",
+    "#a97a58",
+    "#523720",
+    "#5e4229"
+   ]
+  },
+  "outline": [
+   "#1b1802",
+   "#301806",
+   "#281d05",
+   "#3e2e15",
+   "#2d280b",
+   "#3e351c"
+  ],
+  "ignore": []
+ },
+ "bench/a-boots": {
+  "note": "brown leather boots",
+  "materials": {
+   "leather": [
+    "#3d2211",
+    "#482e18",
+    "#52321c",
+    "#5e3b23",
+    "#6b4226",
+    "#724b2f",
+    "#7d5335",
+    "#936443"
+   ]
+  },
+  "outline": [
+   "#1b0e05",
+   "#271308",
+   "#2a1c09"
+  ],
+  "ignore": [
+   "#312416",
+   "#463622",
+   "#3c2e10",
+   "#24250a"
+  ]
+ },
+ "bench/a-hair": {
+  "note": "dark brown hair; #2c1d14 (L 0.247, C 0.029) is a large interior strand shade, not contour",
+  "materials": {
+   "hair": [
+    "#2c1d14",
+    "#322017",
+    "#38251b",
+    "#422e22",
+    "#4c3427"
+   ]
+  },
+  "outline": [
+   "#180e0a",
+   "#1c130d",
+   "#1c190c"
+  ],
+  "ignore": [
+   "#5e6656",
+   "#72716b",
+   "#80807e",
+   "#80817e"
+  ]
+ },
+ "bench/a-sword96": {
+  "note": "neutral steel blade (dark gray edges, no black contour) and gold hilt; same art as dev-fixtures/s5 sword_fsw (excluded as duplicate)",
+  "materials": {
+   "steel": [
+    "#40413d",
+    "#474a4c",
+    "#55585a",
+    "#64696c",
+    "#767a7c",
+    "#7f8180",
+    "#87898a",
+    "#939596",
+    "#a0a2a3",
+    "#b4b6b8",
+    "#c2c5c5",
+    "#d4d4d4",
+    "#e4e5e5"
+   ],
+   "gold": [
+    "#35361f",
+    "#5c5745",
+    "#746542",
+    "#8b7d62",
+    "#9a8352",
+    "#a39575",
+    "#c0a68f",
+    "#c7ad71",
+    "#424026",
+    "#504e27",
+    "#615834",
+    "#7d792b",
+    "#a9995e",
+    "#d1c152",
+    "#d4c778",
+    "#e2d094",
+    "#f0e5be",
+    "#f4e5b3",
+    "#f1f395",
+    "#faf8d7"
+   ]
+  },
+  "outline": [
+   "#030505",
+   "#040505",
+   "#040606",
+   "#080807",
+   "#0b0b0b"
+  ],
+  "ignore": [
+   "#575a52",
+   "#68604a",
+   "#5e675d",
+   "#797267",
+   "#847e72",
+   "#c3bbaa"
+  ]
+ },
+ "bench/a-axe96": {
+  "note": "bluish steel axe head and brown wood haft",
+  "materials": {
+   "steel": [
+    "#2a2e38",
+    "#2f3441",
+    "#343b45",
+    "#5b646b",
+    "#68747b",
+    "#848f98",
+    "#949fa6",
+    "#a3abb0",
+    "#b2bac0",
+    "#c0c7ca"
+   ],
+   "wood": [
+    "#4f3520",
+    "#724e32",
+    "#3f2a18",
+    "#5f4229"
+   ]
+  },
+  "outline": [
+   "#0d0400",
+   "#1c1007",
+   "#24150a",
+   "#1d1b08",
+   "#271b0f",
+   "#211e1c",
+   "#23262d",
+   "#272a33",
+   "#302a19"
+  ],
+  "ignore": []
+ },
+ "bench/a-jester-blue": {
+  "note": "two-color jester hat with gold bells",
+  "materials": {
+   "pink": [
+    "#712459",
+    "#a0296b",
+    "#b84580",
+    "#cd4b87",
+    "#dc488b"
+   ],
+   "green": [
+    "#255831",
+    "#336940",
+    "#457b4e",
+    "#40834a",
+    "#1c4b29"
+   ],
+   "bells": [
+    "#d99878",
+    "#dc8f27",
+    "#f5cd6b"
+   ]
+  },
+  "outline": [
+   "#040505",
+   "#42203b"
+  ],
+  "ignore": [
+   "#7a6c64"
+  ]
+ },
+ "bench/b-tunic": {
+  "note": "green tunic with gold trim",
+  "materials": {
+   "cloth": [
+    "#134027",
+    "#105c35",
+    "#0d7346",
+    "#118351",
+    "#119b60"
+   ],
+   "trim": [
+    "#c38d61",
+    "#9b6823",
+    "#8e9b41",
+    "#c5ae2f",
+    "#d6be58",
+    "#dfdd77"
+   ]
+  },
+  "outline": [
+   "#0a1009",
+   "#111b0e",
+   "#0b2513"
+  ],
+  "ignore": []
+ },
+ "bench/b-cloak": {
+  "note": "red hooded cloak; hood lining is the same red",
+  "materials": {
+   "cloth": [
+    "#460e0c",
+    "#4a0706",
+    "#6f1514",
+    "#8b1c19",
+    "#a11e1a",
+    "#9e2926",
+    "#b62925",
+    "#c92b25"
+   ]
+  },
+  "outline": [
+   "#230403",
+   "#2d0705",
+   "#3a0504",
+   "#210a02",
+   "#2d1105",
+   "#40150b",
+   "#2d2107"
+  ],
+  "ignore": []
+ },
+ "bench/b-greathelm": {
+  "note": "full-range gray great helm L 0.33-0.98",
+  "materials": {
+   "steel": [
+    "#343439",
+    "#383b3c",
+    "#414045",
+    "#4a4b4f",
+    "#56555a",
+    "#626166",
+    "#6b6a6f",
+    "#747378",
+    "#777c7b",
+    "#87868b",
+    "#939397",
+    "#9e9da2",
+    "#abacb0",
+    "#bdbdc1",
+    "#cdced3",
+    "#e0e0e3",
+    "#f8faf9"
+   ]
+  },
+  "outline": [
+   "#030404",
+   "#131215",
+   "#151a17",
+   "#221f25",
+   "#2b2a2f"
+  ],
+  "ignore": []
+ },
+ "bench/b-jester-blue": {
+  "note": "two-color jester hat with gold bells",
+  "materials": {
+   "pink": [
+    "#651c56",
+    "#8f3670",
+    "#b44785",
+    "#bf568e",
+    "#cc5090",
+    "#f676b1"
+   ],
+   "green": [
+    "#3a924c",
+    "#4fbc5b",
+    "#226241",
+    "#2d7946"
+   ],
+   "bells": [
+    "#775240",
+    "#a37643",
+    "#d9aa46",
+    "#ffe7ab",
+    "#f2e16d"
+   ]
+  },
+  "outline": [
+   "#040505",
+   "#150c15",
+   "#041818",
+   "#350738"
+  ],
+  "ignore": []
+ },
+ "bench/n-cloak128": {
+  "note": "large red cloak, 16-shade ramp; #350b0a is the big dark fold shade",
+  "materials": {
+   "cloth": [
+    "#350b0a",
+    "#3e030c",
+    "#49040f",
+    "#520419",
+    "#5b0419",
+    "#69021d",
+    "#77081f",
+    "#83091f",
+    "#910b20",
+    "#9b0e1f",
+    "#a7121f",
+    "#b11521",
+    "#b81520",
+    "#c21722",
+    "#d21f27",
+    "#ea2b31"
+   ]
+  },
+  "outline": [
+   "#34020a"
+  ],
+  "ignore": [
+   "#4d4d3e",
+   "#646767",
+   "#4b2813",
+   "#6a2017",
+   "#603114"
+  ]
+ },
+ "bench/c-greathelm": {
+  "note": "full-range bluish gray great helm L 0.32-0.94",
+  "materials": {
+   "steel": [
+    "#2f333e",
+    "#373a46",
+    "#3d414c",
+    "#4d515d",
+    "#585b68",
+    "#646875",
+    "#6d717d",
+    "#81848f",
+    "#8b8e99",
+    "#9598a4",
+    "#adafbb",
+    "#c0c2ce",
+    "#d0d2dd",
+    "#eaebf2"
+   ]
+  },
+  "outline": [
+   "#010104",
+   "#05060e",
+   "#080d12",
+   "#151124",
+   "#1d1f2a"
+  ],
+  "ignore": []
+ },
+ "bench/a-bow96": {
+  "note": "brown limbs and a muted brown/olive string; split is uncertain",
+  "lowConfidence": true,
+  "materials": {
+   "wood": [
+    "#40250b",
+    "#3e2e0c",
+    "#492b0e",
+    "#4e3317",
+    "#543312",
+    "#623e1b",
+    "#754f2a",
+    "#82572f",
+    "#926337",
+    "#9e6e3f",
+    "#a87645",
+    "#b27f47"
+   ],
+   "string": [
+    "#5e4528",
+    "#694d30",
+    "#6e5237",
+    "#404116",
+    "#4d4b23",
+    "#545626",
+    "#635d30",
+    "#73694d"
+   ]
+  },
+  "outline": [
+   "#261c1e",
+   "#28231b"
+  ],
+  "ignore": [
+   "#382b26",
+   "#493e3b",
+   "#766858",
+   "#767b76",
+   "#7e7f81"
+  ]
+ },
+ "bench/a-plume-azure": {
+  "note": "gray helmet, green and purple plume",
+  "materials": {
+   "steel": [
+    "#373d3a",
+    "#70797b",
+    "#828c8f",
+    "#b1b9bc"
+   ],
+   "leaves": [
+    "#005829",
+    "#0a793f",
+    "#159e50"
+   ],
+   "feathers": [
+    "#291250",
+    "#401e6d",
+    "#4f2c7d",
+    "#544371",
+    "#6d408e"
+   ]
+  },
+  "outline": [
+   "#0d0c0e",
+   "#100e11",
+   "#0c1913"
+  ],
+  "ignore": [
+   "#352f3a"
+  ]
+ },
+ "bench/a-stripes-azure": {
+  "note": "striped shirt, two stripe colors",
+  "materials": {
+   "green": [
+    "#264a3c",
+    "#2e5d45",
+    "#3b6458",
+    "#4e785b",
+    "#4e805d",
+    "#528167"
+   ],
+   "purple": [
+    "#464558",
+    "#2d2344",
+    "#37214c",
+    "#4d3a5f",
+    "#604a73"
+   ]
+  },
+  "outline": [
+   "#020303",
+   "#060606",
+   "#0a070d",
+   "#080f0c",
+   "#322c37"
+  ],
+  "ignore": []
+ },
+ "s2/base": {
+  "note": "demo base body: plain gray t-shirt and shorts (one shared gray ramp L 0.32-0.87; shirt and shorts reuse the same shades, checked by row position) and skin",
+  "materials": {
+   "clothes": [
+    "#31323d",
+    "#3b3b46",
+    "#383f51",
+    "#44464e",
+    "#424c5d",
+    "#4d4d54",
+    "#505d6c",
+    "#5f6162",
+    "#627280",
+    "#6d7c87",
+    "#77858f",
+    "#818f97",
+    "#89979f",
+    "#96a4a9",
+    "#9eacb1",
+    "#b1b9c6",
+    "#afbdc5",
+    "#c7d4e3"
+   ],
+   "skin": [
+    "#461b24",
+    "#4a221d",
+    "#75312f",
+    "#80352d",
+    "#99444c",
+    "#c06258",
+    "#8c4135",
+    "#994433",
+    "#9b493d",
+    "#a94e39",
+    "#b65941",
+    "#be6247",
+    "#c96e4e",
+    "#d07856",
+    "#d98560",
+    "#db926f",
+    "#e4976e",
+    "#ef9585",
+    "#eea679",
+    "#f1af80",
+    "#f7bb8c",
+    "#facca9",
+    "#f9e7c9"
+   ]
+  },
+  "outline": [
+   "#000000",
+   "#010205",
+   "#0d0d11",
+   "#191010",
+   "#1b1011",
+   "#1a1212",
+   "#2d1917"
+  ],
+  "ignore": [
+   "#f5eae6",
+   "#f2f4ef"
+  ]
+ }
+}

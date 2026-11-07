@@ -99,10 +99,10 @@ or estimate calls run at creation: about 2.25 gens up to a 90 px body (3.25 up t
 the creator as soon as the draw is normalized (`onViews`). The animation workflow and every PixelLab request body are
 unchanged: skeleton-v3 is deferred for replacement ([review §15–§17](research/generation-pipeline-review-2026-10-25.md)).
 
-- **Add idle + walk** (creator result and Moves; `BaseMoves.svelte`, `baseMoveSpecs`) queues the missing base moves with every
-  posable item and accepted shared design the character has when the user taps (the price shown covers them), one random seed, and the request shapes creation used to send (authored idle,
-  managed walk → estimates → raw render), so it costs what creation used to spend (≈ 11 gens per drawn direction plus item
-  poses).
+- **Add idle + walk** (creator result and Moves; `BaseMoves.svelte`, `baseMoveSpecs`) queues the missing base moves for the
+  body only (`items: []`, as the progressive equipment decision in PLAN requires), one random seed, and the request shapes
+  creation used to send (authored idle, managed walk → estimates → raw render), so it costs what creation used to spend
+  (≈ 11 gens per drawn direction). Each item extends to these moves through its own priced offer.
 - **Move queue** (`queueMoves` in `state.svelte.ts`): moves run one at a time, FIFO, through the unchanged `addMove`; Add a
   move queues behind a running move ("Queue another move") and never queues the same move twice. The
   queue is persisted with the running move's record (`studio-move`), and the next move replaces that record in one write.
@@ -169,20 +169,20 @@ whole cell for held items): 16 cells, 10 gens per call → 6 calls ≈ **60 gens
 outside ≤ 0.003 on helmet/vest), design varies slightly per call (palDist 4–10, no anchor-cell option). Used for:
 
 - clips without a keypoint sequence (text-animated or imported);
-- items that fail §4.1 QA twice: **live since B14** per clip-direction. A pose call still failing after its 2 re-rolls (best
-  roll kept) is redone once as a grid of that clip-direction's chroma cells (slot-band mask) plus the 3 dressed keyframes as
-  kept reference cells (64 px rig: 4×3 = 256×192; default 80 px idle + walk: 320×400); the grid stays only with fewer failed
-  checks. A grid over 256 px needs Tier 2: when the account's known plan cannot run it (`queue.planBlocks`), the automatic
-  fallback is skipped (best roll kept, a draft log note or review warning) instead of waiting in the queue forever, and an
-  explicit grid repair fails with the plan message. Also in `poseItemClip` (Add a
-  move) and `regridClip` (an accepted item's clip-direction). Back items get "hangs down the back, never wraps the arms".
+- explicit repair of an accepted item's clip-direction (`regridClip`, Studio repair). Since paid retries require player
+  consent (2026-10-28), a failing pose call is never re-rolled or switched to a grid automatically: the draft keeps its
+  result and waits for review. A planned grid call remains only for imported frames whose poses cannot be posed
+  (`frozenGrid`). A grid over 256 px needs Tier 2: when the account's known plan cannot run it (`queue.planBlocks`), the
+  request fails with the plan message instead of waiting in the queue forever. Back items get "hangs down the back, never
+  wraps the arms". (Rounds B14 to 10 describe an automatic two-re-roll then grid fallback that no longer runs.)
 
 For capes on text clips, `edit-animation-v2` with S2's anchor cell is the second choice.
 
 Accepted-item repair also supports oversize held layers. `gridRepairRequest` pads each frozen body frame into the item's
 existing cell without scaling, adds protected dressed reference cells, and refuses a canvas above 512 px on either side.
-Eight 96 px frames plus four references form a 384×288 grid. Held masks use a 34 px radius around the actual measured
-wrist; missing or out-of-cell measurements fail before enqueue. The held prompt requests exactly one weapon in the
+Eight 96 px frames plus four references form a 384×288 grid. Held masks are a disc around the actual measured
+wrist whose radius is the weapon's farthest pixel from the rest wrist over every dressed view (largest component) plus
+max(4 px, 10 %), never below the former 34 px (a 64 px body's sword already reaches about 39 px); missing or out-of-cell measurements fail before enqueue. The held prompt requests exactly one weapon in the
 intended hand. `regridClip` publishes only complete, correctly sized output with no failed quality checks, and verifies
 the current rig and original item inside the same atomic save transaction. Other directions and moves remain intact.
 
@@ -219,15 +219,17 @@ item on magenta lost its pink on every frame; 2026-10-25 campaign arm K; purples
 green ramp hue-rotated to 210°; scored, despilled and luminance-matched in the rotated frame) when the prompt names green and a
 purple but no blue (a green-and-purple tunic on magenta kept 1.3 % of its purple while every gate passed, on azure 100 %; round
 2 arm Z); magenta when all four collide, as before (the diff route would keep the colors but cannot be posed); never gray; a dressed
-keyframe that fails G3 (key px outside the body: a key/item collision) switches at once to the next key the prompt allows, in
-that order; G2 and posed-frame failures never switch (a collision cannot lower G2; G2 fails on erased body px). Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
+keyframe that fails G3 (key px outside the body: a key/item collision) is reported for review and never switches the key
+automatically (2026-10-28 consent change; `switchTo` has no production caller); G2 and posed-frame failures never switch (a collision cannot lower G2; G2 fails on erased body px). Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
 
 **Round 3 cleanup rules** ([round 3](research/generation-quality-round3-2026-10-25.md)).
 - *Despill*: a key-tinted px first loses the key excess (the key channel down to the next one; azure in its rotated frame),
   then snaps to the nearest clean item color within 40 (Chebyshev RGB); a px left near-gray only snaps to near-gray colors. With
   none that near, the old luminance rule decides, except for a lightly tinted px de-spilled to near-gray (steel stays gray; a
   fold drawn in the key's darkest shade still becomes the item's dark color). The luminance-only snap turned blue-gray steel on
-  the azure key into the plume's purple.
+  the azure key into the plume's purple. A colored px that matches no clean color and scores below the key with a real key
+  excess keeps its own color (jade, fern and turquoise gear were half-despilled into colors the item never had; 2026-11-07
+  cycle), unless the despilled result is near-gray.
 - *Hidden body px* (`Item.baseCut`): PixelLab erases the ear tips under a hood or great helm wider than the head, and layers can
   only add px. The dressed keyframe decides where an item may hide body px (erased, above the neck + 3 rows, touching the item
   and the body's edge, ≥ 3 px components, ≤ 4 % of the body; never held items or in-place edit cells); each posed frame hides its own erased px only
@@ -262,7 +264,7 @@ that changed. It was the first route (S1) and is still the fallback (`image/diff
 | Area | each cell ≥ 50 % of the clip median; CV ≤ max(0.15, 2 × the CV of the body band it covers) (T3: trousers walk E) |
 | Design lock | palette distance to the dressed keyframe ≤ 15 |
 | Grip side (held) | Requested wrist keypoints, or tracked hand anchors as fallback. A frame votes only within 6 px of a wrist and with a > 2 px side margin; at least half the clip's frames must decide. A decided opposite-hand clip fails (G8). Each missing-position, unclear-side or no-contact clip retains a review warning; silhouette proximity is not anatomical proof. |
-| Shape (held, locomotion) | G9 principal-axis turn relative to the forearm ≤ 30° when keypoints and a reliable axis exist; otherwise adjacent-frame aligned IoU ≥ 0.3. With keypoints, pairs containing a mask below 6 pixels retain the minimum-sample skip. Near-round masks (normalized covariance eigenvalue gap < 0.2) use IoU because a one-pixel silhouette change can swap their axis by 90°. |
+| Shape (held, locomotion) | G9 principal-axis turn relative to the forearm ≤ 30° when keypoints and a reliable axis exist. The axis is signed (pointed from the gripping wrist toward the item's centroid, so a blade reversed in the hand reads as a 180° turn) when, in both frames, the item reaches at least 10 px, its centroid lies at least a quarter of that reach from the wrist and within 45° of the axis; otherwise the unsigned axis decides; otherwise adjacent-frame aligned IoU ≥ 0.3. With keypoints, pairs containing a mask below 6 pixels retain the minimum-sample skip. Near-round masks (normalized covariance eigenvalue gap < 0.2) use IoU because a one-pixel silhouette change can swap their axis by 90°. |
 | Anchor spread (head items) | layer centroid − head keypoint ≤ 3 px in front/back views |
 | Framing review | border contact is reported for review; it cannot prove unseen pixels were cropped and does not trigger a G7 retry |
 | Stray px | removed and logged |
@@ -280,8 +282,9 @@ Border contact and optional headwear padding are review policies, not export con
 reach a cell edge. Keep the contact count and a framing warning; reject actual normalization pixel loss, wrong dimensions,
 missing frames or invalid required joints as before. Reference fitting warns about low headroom before a paid trial.
 
-Fail → re-roll the call once (new seed), then switch to the alternative route, then the user decides. When a call is out of
-re-rolls it keeps its roll with the fewest failed checks, not the last one (free ledger re-evaluation; same inputs only) [T3].
+Fail → the draft keeps its result and waits for the user, who may accept it, discard it, or approve a priced Try again or
+repair; nothing is re-rolled automatically (2026-10-28). Manual re-rolls remain on the dev-only M3 page, which keeps the roll
+with the fewest failed checks, not the last one (free ledger re-evaluation; same inputs only) [T3].
 H4 (keyframe consistency) fails only band items (helmet, face) [T3]. B14: soft items (hair, worn torso/back) warn only in a
 clip-direction where the item covers ≥ 50 % of the body in some frame and own < 0.5 (the cape from behind, not its edges from the
 front); off for legs and feet (S and N look alike). On the Ranger: 6 of the 7 real cape-north frames still flag (the 7th clip fails G4 anyway), 43 false flags are gone.
