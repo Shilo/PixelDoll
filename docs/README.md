@@ -14,6 +14,8 @@ tracked on `main`; links in these docs point to that commit. README images: [med
 
 ## Character creator redesign and production integration
 
+[Bronze UI identity audit](research/bronze-ui-identity-audit-2026-11-07.md): Codex-browser comparison with all public Pixel Studio landing-page images, source-level material findings, retained design strengths and controlled proposals for a more purposeful game-like interface. Includes [independent research and challenge](research/bronze-ui-ai-design-research-2026-11-07.md); no theme redesign is implemented by the spike.
+
 [Chronological mockup history](design/mockup-history.html): 285 existing mockup and palette-study images from October 20–23, 2026, ordered from the original six themes through the immersive redesign and frame-repair concepts. Open the HTML gallery locally; it links to existing images without copying them. Generated media remains ignored, so later images require the local files; the original 128 screenshots are also linked at their historical commit.
 
 [Pixel-art world reference](design/pixel-art-worlds-reference.html): explore fully pixel-art scenery that matches the characters for a more cohesive, welcoming look. Moonwell Grove and Ember Outpost are aesthetic examples, not required settings. Includes their plates, all 59 related studies, provenance, historical UI lessons and possible itch.io, PixelLab or artist-commission routes. Opens directly without localhost using existing local media; preserves the current UI and excludes grid lines from the desired style.

@@ -52,6 +52,8 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 - `@shilo/bronze-ui` is the owner's theme and the only UI kit (source: C:/Programming_Files/Shilocity/bronze-ui).
 - Fix shared appearance there (colors, materials, states, focus, borders, radii), release a new version, then update the dependency and lockfile here; never patch node_modules or override that appearance locally.
 - Layout, geometry and spacing stay local.
+- For visual changes, read the [identity audit](docs/research/bronze-ui-identity-audit-2026-11-07.md); justify changed color, type, shape, material and art choices by the user task and Bronze's immersive, simplicity-first identity in the existing plan or review. Preserve useful conventions; similarity to AI-generated work alone is not a reason to change them.
+- Challenge substantial visual changes against the current design in real app states in the browser, including dense forms, selection/focus/hover, dark/light and small screens; record tradeoffs and untested assumptions. Use purposeful hierarchy and domain artwork rather than adding decoration or replacing fonts, colors or corners merely for novelty.
 - Ownership: docs/design/production-experience.md
 - Prototype CSS check: node docs/design/2026-10-22-redesign/round-6-prototype/verify-theme-ownership.mjs from the repo root
 
