@@ -2,6 +2,7 @@ import { get } from 'svelte/store';
 import { sha256, stableStringify } from '../../lib/image/hash.ts';
 import { base64ToBytes, bytesToBase64, type Img } from '../../lib/image/png.ts';
 import { decodePngBytes, encodePngBytes } from '../../lib/image/pngraw.ts';
+import { hardMaskBits } from '../../lib/image/hard-mask.ts';
 import { KEYS, KEY_NAME, type Key } from '../../lib/image/chroma.ts';
 import { editGens, inputCell, itemPrompt, itemRoute } from '../../lib/items/items.ts';
 import { editFrameCap, png, routes, type Req } from '../../lib/pixellab/routes.ts';
@@ -129,6 +130,7 @@ export async function parseTrialPacket(value: unknown): Promise<TrialPacket> {
     const gridSize = { w: p.grid.cols * size.w, h: Math.ceil((targets.length + 1) / p.grid.cols) * size.h };
     if (gridSize.w > 512 || gridSize.h > 512) throw new Error('The inpaint grid exceeds the provider canvas.');
     grid = { image: await image(p.grid.image, 'Grid input', gridSize), mask: await image(p.grid.mask, 'Grid mask', gridSize), cols: p.grid.cols, ...(p.grid.description ? { description: text(p.grid.description, 'Grid description', 8000) } : {}) };
+    hardMaskBits(await decodePngBytes(base64ToBytes(grid.mask)));
   }
   return { version: 1, id: p.id, label: text(p.label, 'Trial label', 160), caseId: p.caseId, ...(p.conditioning ? { conditioning: text(p.conditioning, 'Conditioning label', 160) } : {}), direction: p.direction, anim: p.anim, seed: p.seed, prompt: text(p.prompt, 'Equipment description'), slot: text(p.slot, 'Equipment slot', 80), key: p.key, cell: { ...size }, rig: structuredClone(p.rig), reference, targets, ...(grid ? { grid } : {}) };
 }
@@ -271,6 +273,12 @@ export async function restorePreparedTrialPlan(): Promise<PreparedTrialPlan | nu
 export async function submitTrialPlan(prepared: PreparedTrialPlan): Promise<{ submitted: number; skipped: number }> {
   const checked = await prepareTrialPlan(prepared.plan);
   if (checked.planHash !== prepared.planHash || checked.trials.length !== prepared.trials.length || checked.trials.some((trial, i) => trial.requestHash !== prepared.trials[i].requestHash)) throw new Error('The trial plan changed after preparation. Prepare it again before submitting.');
+  const existing = readTrials();
+  for (const trial of checked.trials) {
+    if (existing.some(record => record.requestHash === trial.requestHash)) continue;
+    const restricted = trialQueue.planBlocks(trial.request, 1);
+    if (restricted) throw new Error(restricted);
+  }
   let submitted = 0, skipped = 0;
   for (const trial of checked.trials) {
     if (readTrials().some(record => record.requestHash === trial.requestHash)) { skipped++; continue; }

@@ -3,12 +3,12 @@ import { makeImg, bytesToBase64 } from '../../src/lib/image/png.ts';
 import { encodePngBytes } from '../../src/lib/image/pngraw.ts';
 import type { Rig } from '../../src/lib/rig/rig.ts';
 
-const controls = vi.hoisted(() => ({ key: 'synthetic-agent-only', block: null as string | null, jobs: [] as { id: string; requestHash: string }[], blobs: new Map<string, Blob>(), enqueue: vi.fn(), persist: vi.fn() }));
+const controls = vi.hoisted(() => ({ key: 'synthetic-agent-only', block: null as string | null | ((path: string) => string | null), jobs: [] as { id: string; requestHash: string }[], blobs: new Map<string, Blob>(), enqueue: vi.fn(), persist: vi.fn() }));
 vi.mock('../../src/lib/pixellab/queue.ts', async original => ({
   ...await original<typeof import('../../src/lib/pixellab/queue.ts')>(),
   Queue: class {
     get key() { return controls.key; }
-    planBlocks() { return controls.block; }
+    planBlocks(request: { path: string }) { return typeof controls.block === 'function' ? controls.block(request.path) : controls.block; }
     enqueue(...args: unknown[]) { return controls.enqueue(...args); }
   },
 }));
@@ -151,6 +151,24 @@ test('a prepared plan refuses stale source data before enqueueing any of its req
   const prepared = await prepareTrialPlan(await plan());
   prepared.plan.trials[1].packet.prompt = 'a different garment';
   await expect(submitTrialPlan(prepared)).rejects.toThrow('plan changed after preparation');
+  expect(readTrials()).toEqual([]);
+  expect(controls.enqueue).not.toHaveBeenCalled();
+});
+
+test('a blocked later route prevents the entire paid plan from starting', async () => {
+  const prepared = await prepareTrialPlan(await plan());
+  controls.block = path => path === '/transfer-outfit-v2' ? 'Synthetic unsupported later route.' : null;
+  await expect(submitTrialPlan(prepared)).rejects.toThrow('unsupported later route');
+  expect(readTrials()).toEqual([]);
+  expect(controls.enqueue).not.toHaveBeenCalled();
+});
+
+test('a nonbinary repair mask is rejected during free preparation', async () => {
+  const p = await packet(), grid = makeImg(96, 32), mask = makeImg(96, 32);
+  for (let i = 0; i < mask.data.length; i += 4) mask.data.set([0, 0, 0, 255], i);
+  mask.data.set([128, 128, 128, 255], 0);
+  p.grid = { image: bytesToBase64(await encodePngBytes(grid)), mask: bytesToBase64(await encodePngBytes(mask)), cols: 3 };
+  await expect(prepareTrial(p, 'grid')).rejects.toThrow('opaque binary hard masks');
   expect(readTrials()).toEqual([]);
   expect(controls.enqueue).not.toHaveBeenCalled();
 });

@@ -111,7 +111,12 @@ for (const { file, evidence } of inputs) {
   writeFileSync(resolve(output, `${name}.png`), await encodePngBytes(sheet));
   const protectedBody = perFrame.reduce((sum, frame) => sum + frame.protectedBody, 0);
   const protectedOffKey = perFrame.reduce((sum, frame) => sum + frame.protectedOffKey, 0);
-  const report = { id: packet.id, arm, endpoint: evidence.job.endpoint, usd: evidence.job.usd, gens: evidence.job.gens,
+  const billingReported = evidence.job.jobs.length > 0 && evidence.job.jobs.every(job => {
+    const usage = job.usage;
+    const value = usage?.type === 'usd' ? usage.usd : usage?.type === 'generations' ? usage.generations : undefined;
+    return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+  });
+  const report = { id: packet.id, arm, endpoint: evidence.job.endpoint, billingReported, usd: billingReported ? evidence.job.usd : null, gens: billingReported ? evidence.job.gens : null,
     durationMs: evidence.job.finishedAt === undefined ? null : evidence.job.finishedAt - (evidence.job.submittedAt ?? evidence.job.createdAt),
     requestHash: evidence.record.requestHash, status: qa.qa.status, warnings: qa.warnings,
     fails: [...qa.failCalls.values()].flat(), worstIoU: Math.min(...perFrame.map(frame => frame.iou)), protectedBody, protectedOffKey, perFrame };
