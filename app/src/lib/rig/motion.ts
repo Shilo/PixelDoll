@@ -113,8 +113,22 @@ function faceForward(p:Pose3,reference:Pose3,amount:number):Pose3{
   const angle=wrap(Math.atan2(hips[2],hips[0])-Math.atan2(restHips[2],restHips[0]))*amount;
   return Object.fromEntries(Object.entries(p).map(([k,v])=>[k,add3(p.PELVIS,rotate3(sub3(v,p.PELVIS),[0,1,0],angle))]));
 }
+function validateMotionTimeline(clip:MotionClip){
+  if(!clip||!Number.isFinite(clip.duration)||clip.duration<0)throw new Error('Source motion duration must be finite and nonnegative.');
+  if(!Array.isArray(clip.samples)||!clip.samples.length)throw new Error('Source motion needs at least one timed sample.');
+  for(let i=0;i<clip.samples.length;i++){
+    const sample=clip.samples[i],previous=clip.samples[i-1];
+    if(!sample||!Number.isFinite(sample.time)||sample.time<0||sample.time>clip.duration||(previous&&sample.time<previous.time))throw new Error('Source motion sample times must be ordered within its duration.');
+    if(previous&&sample.time===previous.time){
+      // Repeated sampled times are valid holds only when their pose and support agree.
+      const samePose=LABELS.every(label=>{const a=previous.points?.[label],b=sample.points?.[label];return a?.length===3&&b?.length===3&&a.every((n,j)=>n===b[j]);});
+      const sameContacts=(['RIGHT LEG','LEFT LEG'] as const).every(foot=>previous.contacts?.[foot]?.weight===sample.contacts?.[foot]?.weight);
+      if(!samePose||!sameContacts)throw new Error('Source motion repeats a timestamp with a different pose or contact.');
+    }
+  }
+}
 export function retargetMotion(clip: MotionClip, calibration: MotionCalibration, options: MotionOptions=DEFAULT_MOTION_OPTIONS): { rest:MotionPoint[]; frames:MotionFrame[]; reference:Pose3; camera:MotionCamera; origin:[number,number]; depthScale:number; issues:string[] } {
-  if(!clip.samples.length||clip.samples.some(s=>!Number.isFinite(s.time)))throw new Error('Motion has no finite samples.');
+  validateMotionTimeline(clip);
   if([options.gain,options.travel,options.contact,options.facing].some(n=>!Number.isFinite(n))||options.gain<0||options.gain>3||options.contact<0||options.contact>1||options.facing<0||options.facing>1||options.travel<0||options.travel>2)throw new Error('Invalid motion options.');
   const weights=options.weights??{torso:1,legs:1,leftArm:1,rightArm:1};
   if(['torso','legs','leftArm','rightArm'].some(k=>{const n=weights[k as keyof typeof weights];return !Number.isFinite(n)||n<0||n>1;}))throw new Error('Body-part motion weights must be between 0 and 1.');
@@ -183,6 +197,7 @@ export function retargetMotion(clip: MotionClip, calibration: MotionCalibration,
 }
 
 export function sampleMotion(clip:MotionClip,times:number[]):MotionClip{
+  validateMotionTimeline(clip);
   if(times.some((t,i)=>!Number.isFinite(t)||t<0||t>clip.duration||(i>0&&t<times[i-1])))throw new Error('Sample times must be ordered within the source duration.');
   const samples=times.map(time=>{
     const next=clip.samples.findIndex(s=>s.time>=time),b=clip.samples[next<0?clip.samples.length-1:next],a=clip.samples[Math.max(0,(next<0?clip.samples.length:next)-1)];
