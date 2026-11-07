@@ -182,7 +182,11 @@ export function despill(L: Img, key: Key, sT = 10): Img {
     const neutral = chroma3(c) < 16;
     for (const [j, k] of core.entries()) { if (neutral && chroma3(k) >= 24) continue; const dist = Math.max(Math.abs(k[0] - c[0]), Math.abs(k[1] - c[1]), Math.abs(k[2] - c[2])); if (dist < bd) { bd = dist; best = j; } }
     if (best < 0 && core.length && (!neutral || keyScore(key, r, g, b) >= KT)) { const l = keyLum(key, r, g, b); let j = 0; for (let n = 1; n < core.length; n++) if (Math.abs(lc[n] - l) < Math.abs(lc[j] - l)) j = n; if (Math.abs(lc[j] - l) <= 0.08) best = j; }
-    o.data.set(best < 0 ? c : core[best], i);
+    // A colored px with a real key excess that scores below the key and matches no clean color is the item's own
+    // green-leaning color (jade, fern, turquoise gear), not spill: half-despilling it invented colors the item never had
+    // (2026-11-07 cycle, extraction CF2c). Results the despill leaves near-gray keep the steel-stays-gray rule above.
+    const own = best < 0 && !neutral && keyScore(key, r, g, b) > 0 && keyScore(key, r, g, b) < KT;
+    o.data.set(own ? [r, g, b] : best < 0 ? c : core[best], i);
   }
   return o;
 }
