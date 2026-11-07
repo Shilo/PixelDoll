@@ -18,7 +18,7 @@ import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches, poseGensFor } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
-import { chromaLayer, type Key } from '../image/chroma.ts';
+import { chromaLayer, keyAllowed, keyFor, KEY_NAME, KEYS, keyScore, KT, nearKeyShare, rampDistance, type Key } from '../image/chroma.ts';
 import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { designConsistency, expectsWaistBand, type StandingDesignView } from './design-consistency.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
@@ -27,7 +27,7 @@ import { GATES, heldParts, planAnchoredMove, reusesStanding, anchored, planGens,
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; frozen?: true; reference?: { image: Sha256; cell: CellKey } }
 export interface Draft { spec: ItemSpec; rigId: string; calls: CallState[]; log: string[]; acceptedAt?: string; activityScope?: string }
-export interface ItemResult { cells: CellOut[]; qa: QaResult | null; g1: Map<number, string>; preview: Project | null; thumbnail?: Img }
+export interface ItemResult { cells: CellOut[]; qa: QaResult | null; g1: Map<number, string>; preview: Project | null; thumbnail?: Img; retryKey?: Key }
 /** G1 is structural; this legacy map also carries ordinary keyframe-art warnings. */
 const structuralReason = (why: string) => /(?:^|;\s*)G1\b/.test(why);
 export const hasStructuralFailure = (r: Pick<ItemResult, 'g1'>) => [...r.g1.values()].some(structuralReason);
@@ -456,6 +456,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx, standingPalettes?: Rea
       designGraySmudges(d.spec.slot, d.spec.prompt, c.layer) && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
   }
+  const retryKey = route === 'none' ? undefined : measuredKeyCollision(d.spec.prompt, route, kfCells, dressOuts, g1);
   const designIssue = designConsistency(d.spec.prompt, standingViews(d, ctx, dressOuts.map(o => ({ dir: dirOf(o.key), im: o.out }))));
   if (designIssue) for (const dir of designIssue.missingDirections) {
     const k = dressOuts.find(o => dirOf(o.key) === dir)!.k;
@@ -473,7 +474,37 @@ export async function evaluateItem(d: Draft, ctx: RigCtx, standingPalettes?: Rea
   if (qa && hiddenWarnings.length) { qa.warnings.push(...hiddenWarnings); if (qa.qa.status === 'pass') qa.qa.status = 'warn'; }
   // Dressed item pixels can land before any target animation cell exists. Expose them without waiting for pose coverage.
   const thumbnail = (kfCells.find(c => c.area && c.key.split('/')[1] === 'south') ?? kfCells.find(c => c.area))?.layer;
-  return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa, pending) : null, ...(thumbnail ? { thumbnail } : {}) };
+  return { cells, qa, g1, preview: qa ? await previewProject(d, ctx, cells, qa, pending) : null, ...(thumbnail ? { thumbnail } : {}), ...(retryKey ? { retryKey } : {}) };
+}
+/** Near-key share of a dressed view from which the item's colors collide with the key (see nearKeyShare). */
+export const KEY_COLLISION = 0.2;
+/**
+ * The key comes from color words in the prompt, so an item the model colors like the key without naming it (goblin armor)
+ * loses those px as background while other gates pass. Measure each dressed view: a near-key share of KEY_COLLISION or more
+ * adds a K1 review note. On any collision (K1, or the keyframe's G3/G4) the key for Try again comes from the measured colors,
+ * the kept item px plus key-colored px off the body, preferring keys the prompt allows. Nothing is resent automatically.
+ */
+export function measuredKeyCollision(prompt: string, route: Key, kfCells: CellOut[], dressOuts: { k: number; key: string; out: Img }[], g1: Map<number, string>): Key | undefined {
+  const measured: [number, number, number][] = [], shares = kfCells.map((c, i) => nearKeyShare(dressOuts[i].out, c.mask, route));
+  let collided = false;
+  for (const [i, c] of kfCells.entries()) {
+    const o = dressOuts[i], od = o.out.data, bd = c.base.data;
+    for (let p = 0; p < c.mask.length; p++) {
+      const q = p * 4;
+      // Off-body key px count as item colors only when they are not mannequin ramp shades (a drifted stand-in edge).
+      if (c.mask[p] || (!bd[q + 3] && od[q + 3] >= 128 && keyScore(route, od[q], od[q + 1], od[q + 2]) >= KT && rampDistance(route, od[q], od[q + 1], od[q + 2]) > 16)) measured.push([od[q], od[q + 1], od[q + 2]]);
+    }
+    if (shares[i] >= KEY_COLLISION || new RegExp(`G3 keyframe ${o.key} |G4 keyframe ${o.key}: item missing`).test(g1.get(o.k) ?? '')) collided = true;
+  }
+  if (!collided || !measured.length) return undefined;
+  const alt = keyFor(measured, [...KEYS.filter(k => keyAllowed(prompt, k)), ...KEYS.filter(k => !keyAllowed(prompt, k))]);
+  const next = alt.key !== route ? alt.key : undefined;
+  for (const i of kfCells.keys()) if (shares[i] >= KEY_COLLISION) {
+    // The retry hint is shown from ItemResult.retryKey, not stored here: a saved item's Try again picks its key afresh.
+    const o = dressOuts[i], note = `K1 keyframe ${o.key}: ${Math.round(shares[i] * 100)} % of the item's colors lean toward the ${KEY_NAME[route]} background, so parts may be missing`;
+    g1.set(o.k, [g1.get(o.k), note].filter(Boolean).join('; '));
+  }
+  return next;
 }
 /** itemQa + the H4 keyframe-consistency gate (posed cells only). */
 export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig: Rig, bodies?: Partial<Record<DirectionName, Img>>, prompt = ''): QaResult {

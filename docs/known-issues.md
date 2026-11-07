@@ -75,8 +75,11 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **A few item colors have no safe key color.** Items are drawn on a single-color stand-in body (green, else magenta, else
   blue, else azure) and separated by that color. An item whose words ban all four keys keeps magenta, and parts in those
   colors can be removed as if they were background. Two words can be enough ("a teal and red tunic": teal bans green, blue
-  and azure). Colors the prompt never names (a goblin's green skin) are not seen at all. Workaround:
-  describe one color differently, or review the item. Azure sits near blue-gray steel shading: steel stays gray since the
+  and azure). Colors the prompt never names (goblin-green armor) are now measured on the dressed views: a view whose colors
+  lean toward the key gets a review note and Try again uses a measured key. The measure misses collisions that leave few
+  near-key shades (one recorded magenta jester at 2 to 6 %), and the two recorded collisions it catches read 21 to 29 %, just
+  above the 20 % note threshold.
+  Workaround: describe one color differently, or review the item. Azure sits near blue-gray steel shading: steel stays gray since the
   round 3 despill fix (a green and purple plume on a steel helmet, a tabard over steel plate).
 - **Combinations of body cuts.** Exports include the union of hidden body pixels for every valid equipment combination, including mirrored views. At most 256 body variants are generated. An inventory needing more combinations fails before generating sheets and asks for fewer designs that hide body pixels. Items made before round 3 keep showing the ears until re-dressed. See the [combined cut qualification](research/deep-paperdoll-ownership-followup-2026-11-06.md).
 - **Long held items behind the body.** Since 2026-11-07 the part of a bow or spear that reappears past the body is kept

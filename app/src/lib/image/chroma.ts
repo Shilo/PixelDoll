@@ -8,8 +8,6 @@ import { makeImg, type Img } from './png.ts';
 export type Key = 'green' | 'magenta' | 'blue' | 'azure';
 export const KEYS: Key[] = ['green', 'magenta', 'blue', 'azure'];
 export const KEY_NAME: Record<Key, string> = { green: 'bright green', magenta: 'magenta', blue: 'bright blue', azure: 'bright azure blue' };
-/** The key a G2 key/item collision switches to: the first other key the prompt allows, in pickKey order. */
-export const switchTo = (prompt: string, k: Key): Key | undefined => KEYS.find((x) => x !== k && keyAllowed(prompt, x));
 
 const lum = (r: number, g: number, b: number) => (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 /** Rotate a color's hue by deg (HSV, saturation and value kept, rounded). */
@@ -75,6 +73,35 @@ const tint = (key: Key, r: number, g: number, b: number) => {
 const isKey = (C: Img, p: number, key: Key, kT: number) => C.data[p * 4 + 3] >= 128 && keyScore(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) >= kT;
 
 export const KT = 35;
+
+/** Key score from which a color leans toward a key: a real key excess, scored below KT (2026-11-07 color audit). */
+export const NEAR_KEY = 20;
+/** Share of an item's px whose raw color leans toward the key (NEAR_KEY <= score < KT). On the frozen benchmark clean items
+ * stay at or below 7 % (one green-olive cloak shadow reads 53 %), while recorded key collisions read 31 % and a goblin-green
+ * item the prompt never called green 100 %. The px that fully match the key were already removed as background. */
+export function nearKeyShare(out: Img, mask: Uint8Array, key: Key): number {
+  let item = 0, near = 0;
+  for (let p = 0; p < mask.length; p++) if (mask[p]) {
+    item++;
+    const r = out.data[p * 4], g = out.data[p * 4 + 1], b = out.data[p * 4 + 2], s = keyScore(key, r, g, b);
+    // A very dark shade's ratio score is inflated by its tiny channels (a green-olive cloak shadow #24310c read 53 % while
+    // nothing was lost), so shades whose brightest channel is below 64 do not count (2026-11-07 review).
+    if (s >= NEAR_KEY && s < KT && Math.max(r, g, b) >= 64) near++;
+  }
+  return item ? near / item : 0;
+}
+/** Chebyshev RGB distance from a color to the key's own ramp (0 = a mannequin shade). */
+export function rampDistance(key: Key, r: number, g: number, b: number): number {
+  let d = Infinity;
+  for (let i = 0; i <= 64; i++) { const c = RAMP[key](i / 64); d = Math.min(d, Math.max(Math.abs(c[0] - r), Math.abs(c[1] - g), Math.abs(c[2] - b))); }
+  return d;
+}
+/** The first key, in `order`, on which at most `tolerance` of `colors` score at least `floor`; otherwise the least affected
+ * key. Picks a key from measured colors instead of prompt words. */
+export function keyFor(colors: [number, number, number][], order: Key[] = KEYS, tolerance = 0.01, floor = NEAR_KEY): { key: Key; share: number } {
+  const scored = order.map((key) => ({ key, share: colors.length ? colors.filter((c) => keyScore(key, c[0], c[1], c[2]) >= floor).length / colors.length : 0 }));
+  return scored.find((s) => s.share <= tolerance) ?? scored.reduce((a, b) => (b.share < a.share ? b : a));
+}
 
 export function chromaMask(C: Img, key: Key, kT = KT): Uint8Array {
   const m = new Uint8Array(C.w * C.h);

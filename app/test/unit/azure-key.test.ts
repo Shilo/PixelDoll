@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest'
 import { makeImg, type Img } from '../../src/lib/image/png.ts'
-import { chromaLayer, keyOutside, keyScore, KT, KEY_NAME, pickKey, switchTo, toChroma } from '../../src/lib/image/chroma.ts'
+import { chromaLayer, keyFor, keyOutside, keyScore, KT, KEY_NAME, pickKey, toChroma } from '../../src/lib/image/chroma.ts'
 import { itemRoute } from '../../src/lib/items/items.ts'
 import fixture from '../fixtures/stripes-keys.json'
 
@@ -35,11 +35,15 @@ test('azure is picked only for green with purple, violet or indigo', () => {
   expect(pickKey('a green and violet cape with a sky pattern')).toBe('magenta')
 })
 
-test('a G2 collision switches to the next key the prompt allows, in pickKey order', () => {
-  expect(switchTo('an iron helmet', 'green')).toBe('magenta')
-  expect(switchTo('a purple wizard hat', 'green')).toBe('azure') // green <-> magenta only could not switch at all
-  expect(switchTo('a green hood', 'magenta')).toBe('blue')
-  expect(switchTo('a green and purple striped tunic', 'azure')).toBeUndefined()
+test('measured colors pick the key, whatever the prompt says', () => {
+  // goblin-green armor the prompt never called green: green is unsafe, magenta is the first safe key
+  const goblin: [number, number, number][] = [[60, 140, 50], [40, 110, 35], [90, 170, 70]]
+  expect(keyFor(goblin, ['green', 'magenta', 'blue', 'azure'])).toEqual({ key: 'magenta', share: 0 })
+  // green and pink, measured: blue, as the team chose by hand for the jester hats
+  expect(keyFor([[60, 150, 60], [230, 90, 160]], ['magenta', 'green', 'blue', 'azure']).key).toBe('blue')
+  // nothing fits: the least affected key, with its share reported
+  const rainbow: [number, number, number][] = [[200, 30, 30], [30, 180, 30], [40, 60, 200], [130, 40, 160], [60, 140, 200]]
+  const r = keyFor(rainbow); expect(r.share).toBeGreaterThan(0.01); expect(r.share).toBeLessThan(1)
 })
 
 test('the azure ramp is the green ramp rotated to 210° and every step is key', () => {

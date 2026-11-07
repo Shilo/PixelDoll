@@ -1124,6 +1124,21 @@ describe('optional review', () => {
     expect(accept).not.toHaveBeenCalled()
   })
 
+  test('a retry carrying a measured key starts a fresh attempt with that key', async () => {
+    // 2026-11-07 review: the consent check compared inputs exactly, so adding the measured key refused every such retry.
+    const run = vi.fn(async () => ({ ...clean, qa: { ...clean.qa, warnings: ['G12 walk/south/0: footwear differs'] }, retryKey: 'magenta' as const }))
+    routeMock(run); const manifest = fixtureManifest()
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest } })
+    const s = await import('../../src/studio/state.svelte.ts'), { app } = await import('../../src/lib/app.svelte.ts')
+    s.doc.id = 'project'; s.store.project = { manifest, images: new Map() }
+    await s.startItem({ name: 'New helm', slot: 'head', prompt: 'a new helm' })
+    await vi.waitFor(() => expect(s.gens[0]?.phase).toBe('review'))
+    const original = s.gens[0]; app.key = 'synthetic-retry-key'
+    s.retryGen(original, 10, 'magenta')
+    await vi.waitFor(() => expect(run).toHaveBeenCalledTimes(2))
+    expect(s.gens.map(g => g.input.key)).toEqual(['magenta'])
+  })
+
   test.each(['target', 'price', 'rig', 'input', 'draft'] as const)('a deferred retry refuses changed %s without discarding the reviewed item', async changed => {
     let price = 10
     const run = vi.fn(async () => ({ ...clean, qa: { ...clean.qa, warnings: ['G12 walk/south/0: footwear differs'] } }))

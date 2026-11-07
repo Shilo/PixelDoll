@@ -13,6 +13,7 @@ import { loadDrafts } from '../lib/items/drafts.ts';
 import { app } from '../lib/app.svelte.ts';
 import { accountTier } from '../lib/pixellab/plans.ts';
 import type { NewItemInput } from './itemRoute.ts';
+import type { Key } from '../lib/image/chroma.ts';
 import type { BodyPaletteRepairPlan, CreateSpec, MeasurementRecoveryPlan, MoveSpec, Progress } from './create.ts';
 import { GROUPS, groupOf, uniqueBy } from './model.ts';
 import { queue, type JobRec } from '../lib/pixellab/queue.ts';
@@ -800,7 +801,7 @@ async function startItemDraft(input: NewItemInput, consent?: ItemAttemptConsent)
   // Taking over another tab rehydrates drafts. Match reviewed content, not the old in-memory object.
   const replaced = consent?.replaces && gens.find(g => g.draft.spec.id === consent.replaces!.id);
   if (doc.id !== projectId || consent?.rig && JSON.stringify(ctx.rec.manifest.rig) !== consent.rig
-    || consent?.replaces && (!replaced || replaced.phase === 'running' || stableStringify({ draft: replaced.draft, input: replaced.input, phase: replaced.phase }) !== consent.replaces.reviewed || stableStringify(replaced.input) !== stableStringify(input))) {
+    || consent?.replaces && (!replaced || replaced.phase === 'running' || stableStringify({ draft: replaced.draft, input: replaced.input, phase: replaced.phase }) !== consent.replaces.reviewed || stableStringify({ ...replaced.input, ...(input.key ? { key: input.key } : {}) }) !== stableStringify(input))) { // Try again may carry a measured key
     toast('This character or item changed. Reopen it and review the attempt before generating.', { tone: 'warning' }); return;
   }
   if (consent && (!Number.isFinite(consent.gens) || route.plan(ctx.rec.manifest.rig, ctx, input).gens !== consent.gens)) {
@@ -965,8 +966,9 @@ export async function discardGen(g: Gen): Promise<boolean> {
     settling.delete(id);
   }
 }
-export function retryGen(g: Gen, reviewedGens: number) {
-  const input = structuredClone($state.snapshot(g.input));
+/** `key`: a background color measured from this attempt's colors (ItemResult.retryKey), so a collision is not repeated. */
+export function retryGen(g: Gen, reviewedGens: number, key?: Key) {
+  const input = { ...structuredClone($state.snapshot(g.input)), ...(key ? { key } : {}) };
   const consent = { projectId: g.draft.rigId, gens: reviewedGens, ...(doc.id === g.draft.rigId && store.project ? { rig: JSON.stringify(store.project.manifest.rig) } : {}), replaces: { id: g.draft.spec.id, reviewed: stableStringify($state.snapshot({ draft: g.draft, input: g.input, phase: g.phase })) } };
   withKey(() => void startItem(input, consent).catch(error => toast(error instanceof Error ? error.message : 'This retry could not start. Existing artwork was kept.', { tone: 'danger' }))); // closing Connect keeps the draft
 }

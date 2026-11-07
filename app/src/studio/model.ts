@@ -174,6 +174,8 @@ export function plainReason(s: string): string {
     if (s.includes('other clips') || s === 'G8') return `The item may change hands between views; check the intended hand${where}`;
     return `The item may be held in the wrong hand; check the intended hand${where}`;
   }
+  const key = /^K1 keyframe [^:]+: \d+ % of the item's colors lean toward the (.+) background, so parts may be missing$/.exec(s);
+  if (key) return `Some of the item's colors are close to the ${key[1]} background, so parts may be missing`;
   if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
   if (s.startsWith('H4')) return 'Some frames do not look like the design (e.g. a cape wrapped around an arm)';
   if (s.startsWith('D1')) return 'The design has gray smudges';

@@ -2,7 +2,7 @@
 import { cellImg, layerFrame } from '../compose/compose.ts';
 import { deriveMaterials } from '../dress/dress.ts';
 import { fromHex } from '../dress/palette.ts';
-import { components, KEY_NAME, KEYS, keyScore, KT, toChroma, type Key } from '../image/chroma.ts';
+import { components, KEY_NAME, KEYS, keyFor, KT, toChroma, type Key } from '../image/chroma.ts';
 import { binaryAlpha, decodePng, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import { stableStringify } from '../image/hash.ts';
@@ -71,9 +71,9 @@ function fitKey(design: EquipmentDesign): Key {
   const colors = designColors(design).map(fromHex);
   const preferred=designItem(design).key;
   const candidates:Key[]=preferred?[preferred,...KEYS.filter(k=>k!==preferred)]:KEYS;
-  const key = candidates.find(k => colors.every(c => keyScore(k, c >> 16, (c >> 8) & 255, c & 255) < KT));
-  if (!key) throw new Error('This colorway overlaps every chroma key. Choose a colorway with a safe key before fitting.');
-  return key;
+  const fit = keyFor(colors.map(c => [c >> 16, (c >> 8) & 255, c & 255]), candidates, 0, KT);
+  if (fit.share) throw new Error('This colorway overlaps every chroma key. Choose a colorway with a safe key before fitting.');
+  return fit.key;
 }
 function specFor(design: EquipmentDesign, target: Project): ItemSpec {
   const rig = target.manifest.rig, body = target.manifest.items.find(i => i.id === rig.baseItem)!;

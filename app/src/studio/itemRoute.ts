@@ -1,13 +1,13 @@
 // The item-generation route the New item sheet talks to. The Studio only sees this interface (routes keep changing as
 // spikes land); swap `itemRoute` to change the backend. Today: B4's runner (lib/items/run.ts): chroma mannequin, dressed
 // keyframe posed with skeleton-v3 per clip (or anchor-cell edit-animation-v2 without joints), extraction and QA gates.
-import { pickKey } from '../lib/image/chroma.ts';
+import { pickKey, type Key } from '../lib/image/chroma.ts';
 import { acceptItem, defaultMethod, gensOf, newDraft, runItem, type Draft, type ItemResult, type RigCtx, type RunHooks } from '../lib/items/run.ts';
 import { itemRoute as libRoute, padOf, planGens, planItem, type ItemSpec } from '../lib/items/items.ts';
 import type { Item, Rig } from '../lib/store/manifest.ts';
 import { DEFAULT_MOVE, matchesStanding } from '../lib/rig/rig.ts';
 
-export interface NewItemInput { name: string; slot: string; prompt: string }
+export interface NewItemInput { name: string; slot: string; prompt: string; key?: Key } // key: measured by a previous attempt (Try again)
 export interface ItemRoute {
   label: string;
   /** Calls and cost before anything is spent ("Make · N gens"). */
@@ -40,7 +40,7 @@ export function standingCoverage(ctx: RigCtx): Pick<ItemSpec, 'anims' | 'dirs' |
   const anims = [standing.id, ...(hasRest ? matching.filter(a => a !== standing).map(a => a.id) : [])];
   return { anims, dirs: available.dirs, clipDirs: Object.fromEntries(anims.map(id => [id, available.dirs])), standing: standing.id };
 }
-const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({ name: i.name, slot: i.slot, prompt: i.prompt, key: pickKey(i.prompt), ...standingCoverage(ctx) });
+const spec = (ctx: RigCtx, i: NewItemInput): Omit<ItemSpec, 'id'> => ({ name: i.name, slot: i.slot, prompt: i.prompt, key: i.key ?? pickKey(i.prompt), ...standingCoverage(ctx) });
 
 export const chromaEdit: ItemRoute = {
   label: `chroma mannequin + ${libRoute.name}`,

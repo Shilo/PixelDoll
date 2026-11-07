@@ -223,7 +223,11 @@ green ramp hue-rotated to 210°; scored, despilled and luminance-matched in the 
 purple but no blue (a green-and-purple tunic on magenta kept 1.3 % of its purple while every gate passed, on azure 100 %; round
 2 arm Z); magenta when all four collide, as before (the diff route would keep the colors but cannot be posed); never gray; a dressed
 keyframe that fails G3 (key px outside the body: a key/item collision) is reported for review and never switches the key
-automatically (2026-10-28 consent change; `switchTo` has no production caller); G2 and posed-frame failures never switch (a collision cannot lower G2; G2 fails on erased body px). Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
+automatically (2026-10-28 consent change). The prompt words are only a first guess: each dressed view also measures its
+near-key share (item px with key score 20 to 34 and a brightest channel of at least 64, since very dark shades inflate the
+ratio score); 20 % or more adds a K1 review note, and on any collision (K1, keyframe G3 or G4) the draft's Try again uses a
+key chosen from the measured colors (`keyFor`, the shared-fit rule; off-body key px count only when they are more than 16
+from the key ramp), preferring keys the prompt allows (2026-11-07); G2 and posed-frame failures never switch (a collision cannot lower G2; G2 fails on erased body px). Color budget: the key ramp takes ~5–8 of ~17–19 quantized colors → items get 6–8 [S2].
 
 **Round 3 cleanup rules** ([round 3](research/generation-quality-round3-2026-10-25.md)).
 - *Despill*: a key-tinted px first loses the key excess (the key channel down to the next one; azure in its rotated frame),

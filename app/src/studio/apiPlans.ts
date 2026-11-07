@@ -63,7 +63,7 @@ function itemCalls(spec: Pick<ItemSpec, 'prompt' | 'key' | 'slot' | 'method'>, c
 export function itemPlan(ctx: RigCtx | null, input: NewItemInput): PeekCall[] {
   if (!ctx) return []
   try {
-    const spec = { prompt: input.prompt, slot: input.slot, key: pickKey(input.prompt), ...standingCoverage(ctx) }
+    const spec = { prompt: input.prompt, slot: input.slot, key: input.key ?? pickKey(input.prompt), ...standingCoverage(ctx) }
     const method = defaultMethod(ctx, spec)
     const calls = planItem(ctx.rec.manifest.rig, { ...spec, method })
     return [...itemCalls({ ...spec, method }, calls, ctx.rec.manifest.rig.cell), ...lifecycle()]
