@@ -95,3 +95,10 @@ More padding left the direction unchanged in every view (one seed drew a longer 
 Removing the orientation clause raised every sword (reach 51 to 77 px), but seed 7101 drew two swords from behind and moved the
 arm in the side view (key outside 0.070, over the 0.05 limit). The bottom-corner direction is the wording "pointing down and
 slightly outward", chosen in S5 to keep the arms frozen; it is not a lack of space.
+
+## Straight-down sword: rejected
+
+"pointing straight down beside the leg" (2 dress calls and 6 pose calls through production `runItem`, $0.37; nothing saved)
+drew vertical blades in every view (86 to 90 degrees) with no body disturbance, but one seed drew a short blade (reach 21 px
+against 37), the side view put the blade across the leg, and the posed clip failed G5 on walk south (area CV 0.16) with an
+unclear grip in idle east. The owner judged both the straight and the raised poses awkward; the wording stays as it was.
