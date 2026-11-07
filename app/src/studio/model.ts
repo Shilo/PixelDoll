@@ -4,6 +4,7 @@ import { makeImg, type Img } from '../lib/image/png.ts';
 import { cellImg, layerFrame, over, unionFrame } from '../lib/compose/compose.ts';
 import type { DirectionName, Item, ItemQa, Manifest, Project, QaSummary } from '../lib/store/manifest.ts';
 import { GATES, isAction } from '../lib/items/items.ts';
+import type { Rig } from '../lib/rig/rig.ts';
 import { originOf, type StoredProject } from '../lib/store/project.ts';
 
 /** Explain historical body-QA records without presenting estimated joints or silhouette bounds as proven defects. */
@@ -191,7 +192,7 @@ export function plainReason(s: string): string {
  * not pass, at the limit that part was gated with: skeleton items and posed frames allow more key outside the body than
  * other dressed views, and actions skip the size check. A passing part never lists a reason.
  */
-export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean): string[] {
+export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig): string[] {
   const r: string[] = [];
   if (q.missingLowerFrames) r.push('G11 lower-garment coverage');
   if (q.footwearReviewFrames) r.push('G12 footwear coverage');
@@ -209,7 +210,7 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean): string[]
     if (p.minKeyKept < GATES.keyKept) r.push('G2');
     if (p.maxKeyOutside > (posed(clip) ? GATES.keyOutsidePosed : GATES.keyOutside)) r.push('G3');
     if (p.minAreaRatio < GATES.areaRatio) r.push('G4');
-    if (p.maxAreaCV > GATES.areaCV && !(clip && isAction(clip))) r.push('G5');
+    if (p.maxAreaCV > GATES.areaCV && !(clip && isAction(clip, rig))) r.push('G5');
     if (p.maxPaletteDist > GATES.paletteDist) r.push('G6');
     if (p.clipPx) r.push('G7');
     if (p.handedness === 'switched') r.push('G8');

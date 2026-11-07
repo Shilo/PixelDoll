@@ -26,7 +26,14 @@ export function shiftMotionPoses(poses: Keypoint[][], dy: number, size: number):
 }
 
 /** The `action` label of a clip. Base frames and item poses send the same one (same request shape, S3). */
-export const actionOf = (anim: string) => (anim.includes('idle') ? 'breathing idle' : anim.includes('walk') ? 'walking' : anim.includes('run') ? 'running' : anim);
+/** Lowercase words of a move id ("Walk_Cycle", "run-slash", "jogIn" -> walk cycle, run slash, jog in). Whole words, so
+ * "rune-blast" is not a run and "walkie-talkie" not a walk (2026-11-07 audit). */
+export const moveWords = (id: string) => id.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/([a-z])(\d)|(\d)([a-z])/gi, '$1$3 $2$4').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+export const WALK_WORDS = ['walk', 'walking', 'walks'], RUN_WORDS = ['run', 'running', 'runs'];
+export const actionOf = (anim: string) => {
+  const w = moveWords(anim);
+  return w.includes('idle') ? 'breathing idle' : w.some(x => WALK_WORDS.includes(x)) ? 'walking' : w.some(x => RUN_WORDS.includes(x)) ? 'running' : anim;
+};
 
 /** Raw /animate-with-skeleton-v3: pose `first` (in pose `rest`) through `keypoints`; one output frame per entry. */
 export const rawClip = (o: { first: string; rest: Keypoint[]; keypoints: Keypoint[][]; description: string; action: string; dir: Direction; seed: number; view?: 'low top-down' | 'high top-down' | 'side' }): Req =>

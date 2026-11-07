@@ -87,7 +87,7 @@
   const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
   const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0)
   const designReasons = $derived([...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))])
-  const reasons = $derived(it?.qa ? qaReasons(it.qa, SLOTS.find((s) => s.id === it.slot)?.class === 'held', it.route === 'skeleton-pose') : [])
+  const reasons = $derived(it?.qa ? qaReasons(it.qa, SLOTS.find((s) => s.id === it.slot)?.class === 'held', it.route === 'skeleton-pose', m?.rig) : [])
   let confirmRemove = $state(false)
   let onlyDir = $state(false)
   let acceptingIssues = $state(false)

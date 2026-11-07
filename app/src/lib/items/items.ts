@@ -10,7 +10,7 @@ import { splitFgBg } from '../compose/split.ts';
 import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import { backView, fromApi, hasAll } from '../rig/poses.ts';
-import { actionOf, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
+import { actionOf, moveWords, RUN_WORDS, WALK_WORDS, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
 import type { CellKey, CellQa, Item, ItemQa, Layer, Provenance, Slot } from '../store/manifest.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
 import { INPAINT_TIER_ONE_SIDE } from '../pixellab/plans.ts';
@@ -812,8 +812,41 @@ export function recompose(c: Pick<CellOut, 'base' | 'layer' | 'cut'>): Img {
 // ---------- QA (gates G1–G8, architecture §3.3) ----------
 /** Minimum wrist-to-tip reach (px) for a signed held-item direction; shorter items keep the unsigned axis comparison. */
 export const HELD_SIGNED_REACH = 10;
-/** Action clips (slash, cast, punch...) legitimately change an item's area and shape; G5/G9 apply to locomotion only. */
-export const isAction = (key: string) => !/idle|walk|run/.test(key.split('/')[0]);
+/** Gait and rest words a move id may contain (whole words, see moveWords). */
+const LOCOMOTION = new Set(['idle', 'breathe', 'breathing', ...WALK_WORDS, ...RUN_WORDS, 'jog', 'jogs', 'jogging', 'sprint', 'sprints', 'sprinting', 'stroll', 'strolling', 'march', 'marching', 'trot', 'trotting']);
+/** Motion no idle, walk or run reaches, from the stored joints (measured, else requested) against the standing pose: on the frozen bench and
+ * the KayKit clips, locomotion moved joints at most 0.39 body heights, raised wrists at most 0.21 and leaned at most 20°, while
+ * slashes and casts reach 0.7, raise wrists over the head, and deaths lean 70° or more. Smaller motion cannot tell a run from an
+ * attack (a KayKit attack moves 0.31-0.33), so it decides nothing (2026-11-07). */
+export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): boolean {
+  // Joints measured on the frozen frames describe the motion actually drawn; the requested sequence is the fallback.
+  const measured = rig.animations.find((x) => x.id === anim)?.sources?.[dir]?.measured;
+  const seq = measured?.length && measured.every(hasAll) ? measured as Keypoint[][] : clipKeypoints(rig, anim, dir), r = rig.rest?.[dir]?.keypoints;
+  if (!seq || !r || !hasAll(r)) return false;
+  const rest = fromApi(r, rig.cell), frames = seq.map((k) => fromApi(k, rig.cell));
+  const mid = (p: typeof rest, a: string, b: string) => [(p[a].x + p[b].x) / 2, (p[a].y + p[b].y) / 2];
+  const feet = mid(rest, 'RIGHT LEG', 'LEFT LEG'), H = Math.hypot(feet[0] - rest.NOSE.x, feet[1] - rest.NOSE.y);
+  if (!H) return false;
+  const leanOf = (p: typeof rest) => { const h = mid(p, 'RIGHT HIP', 'LEFT HIP'); return Math.atan2(p.NECK.x - h[0], h[1] - p.NECK.y) * 180 / Math.PI; };
+  const restHips = mid(rest, 'RIGHT HIP', 'LEFT HIP'), restLean = leanOf(rest), mirror = (l: string) => l.replace(/^(RIGHT|LEFT)/, (s) => (s === 'RIGHT' ? 'LEFT' : 'RIGHT'));
+  // 2026-11-07 review: hip-relative positions so a jump is not a pose change; the nearer of a joint's own and its mirror
+  // joint's standing position, so one estimate with swapped hands cannot flip a front-view walk; lean relative to standing.
+  return frames.some((p) => {
+    const hips = mid(p, 'RIGHT HIP', 'LEFT HIP'), dx = hips[0] - restHips[0], dy = hips[1] - restHips[1];
+    const from = (l: string, q: string) => Math.hypot(p[l].x - dx - rest[q].x, p[l].y - dy - rest[q].y);
+    const moved = Math.max(...Object.keys(rest).map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))) / H;
+    const rise = Math.max(...['RIGHT ARM', 'LEFT ARM'].map((l) => (rest[l].y - (p[l].y - dy)) / H));
+    return moved >= 0.6 || rise >= 0.45 || Math.abs(leanOf(p) - restLean) >= 40;
+  });
+}
+/** Action clips (slash, cast, punch...) legitimately change an item's area and shape; G5/G9 apply to locomotion only. Clearly
+ * large stored motion makes an action whatever the name ("run-slash"); otherwise the move id's words decide, and an unknown
+ * name stays an action, as before. `key` is "move/direction" or a cell key. */
+export const isAction = (key: string, rig?: Rig) => {
+  const [anim, dir] = key.split('/');
+  if (rig && dir && decisiveAction(rig, anim, dir as DirectionName)) return true;
+  return !moveWords(anim).some((w) => LOCOMOTION.has(w));
+};
 export const GATES = { keyKept: 0.97, keyLostPx: 8, keyOutside: 0.02, keyOutsidePosed: 0.05, areaRatio: 0.5, areaCV: 0.15, paletteDist: 15, heldIoU: 0.3, heldTurn: 30 }; // heldIoU: S5 (0.4 false-fails a 96 px axe walk E at 0.38); heldTurn: deg, B9
 /** G2: the body was redrawn. T3: a cape covering the back leaves ~126 body px in north, so 6 olive outline px (27,40,4: key
  * score 32 < 35) read as 0.952 kept and re-rolled a clean keyframe (10 gens) -> also require more than 8 lost px. */
@@ -988,9 +1021,9 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     // a hidden view (hiddenViews) must stay empty: px in some of its frames are an item popping in, not a hidden one
     if (!med) (hidden.has(d) && !areas.some(Boolean) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) && !areas.some(Boolean) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
-    else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
+    else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip, rig) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
     // a standard deviation under 2 px is drawing noise, not a lost part (round 5: earrings 5–10 px per frame read as CV 0.19)
-    if (cv > cvMax && cv * (areas.reduce((s, x) => s + x, 0) / areas.length) >= 2 && !isAction(clip)) {
+    if (cv > cvMax && cv * (areas.reduce((s, x) => s + x, 0) / areas.length) >= 2 && !isAction(clip, rig)) {
       const ref = cs.reduce((big, c) => c.area > big.area ? c : big), ri = +ref.key.split('/')[2];
       const visibility = wrist && cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]]));
       // The largest observed silhouette is only a reference, not an invented full shield. If hidden pixels explain
@@ -1039,7 +1072,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     // instead (a flip changes it, a swing does not). Near-round shields have no reliable axis: compare those
     // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
-    const checkShape = slot.class === 'held' && !isAction(clip);
+    const checkShape = slot.class === 'held' && !isAction(clip, rig);
     // The principal axis has no direction, so a blade reversed about the hand (tip where the pommel was) keeps its axis and
     // passed G9 (2026-11-07 cycle: 28 of 30 reversed clips silent). Point the axis from the gripping wrist toward the item's
     // centroid when that is decisive: the centroid is at least a quarter of the reach away from the wrist (not a bow gripped
@@ -1209,9 +1242,10 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
   let maxPaletteDist = 0;
   const result = () => ({ fails, warnings, maxPaletteDist, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size, waistReviewFrames: waistReview.size, facingReviewFrames: facingReview.size });
   // A cape can swing above the knees or behind the body. This check is for body-covering garments.
+  const actions = new Map<string, boolean>(), action = (anim: string, dir: string) => { const k = `${anim}/${dir}`; if (!actions.has(k)) actions.set(k, isAction(k, rig)); return actions.get(k)!; };
   if (rig && slot.class === 'worn' && slot.bgZ == null) for (const c of cells) {
     const [anim, dir, frame] = c.key.split('/') as [string, DirectionName, string], design = keys[dir];
-    if (!c.posed || !design || isAction(c.key)) continue;
+    if (!c.posed || !design || action(anim, dir)) continue;
     const rest = rig.rest?.[dir]?.keypoints, pose = cellKeypoints(rig, c.key);
     const measured = rig.animations.find(a => a.id === anim)?.sources?.[dir]?.measured?.[+frame];
     const observed = hasAll(measured) ? measured : pose;
