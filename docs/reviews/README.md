@@ -1,5 +1,7 @@
 # Preserved repair and pipeline reviews
 
+**November 7 commit challenge:** [Claude counter-review handoff](../handoff/2026-11-07-claude-post-bb830dfb-review.md) and [reproducible evidence](2026-11-07-post-bb830dfb/README.md) review the 31 commits after `bb830dfb` through `0992bae7`, with seven consolidated findings and explicit qualification limits. No production fixes were made by that review.
+
 These 2026-10-23 reports inform future work. They do not replace the approved immersive prototype or establish that the proposed repairs are implemented. Findings retain their original scope and evidence limits; repository cleanup did not re-audit their technical conclusions.
 
 **Current editor planning:** [Unified Frame Editor](../design/frame-editor/README.md) supersedes the equipment-only

@@ -1,0 +1,39 @@
+{
+  "runtime": "v24.22.1",
+  "paidCalls": 0,
+  "baseline": "bb830dfb",
+  "reviewed": "8ea08c28",
+  "currentSourceSha256": "699649f3dff0dbd2351e7539227be7e5846d446d580fd0dfabc1f512d8e1e548",
+  "cases": [
+    {
+      "description": "a pair of leather boots",
+      "before": "Pair of leather boots",
+      "after": "Pair"
+    },
+    {
+      "description": "a pair of boots",
+      "before": "Pair of boots",
+      "after": "Pair"
+    },
+    {
+      "description": "the pair of leather gloves",
+      "before": "Pair of leather gloves",
+      "after": "Pair"
+    },
+    {
+      "description": "pair of leather boots",
+      "before": "Leather boots",
+      "after": "Leather boots"
+    },
+    {
+      "description": "iron lantern hanging from a short chain",
+      "before": "From a short chain",
+      "after": "Iron lantern"
+    },
+    {
+      "description": "steel longsword with a gold crossguard",
+      "before": "Steel longsword",
+      "after": "Steel longsword"
+    }
+  ]
+}

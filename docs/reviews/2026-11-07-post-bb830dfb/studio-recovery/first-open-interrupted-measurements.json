@@ -1,0 +1,11 @@
+{
+  "firstOpenInterruption": {
+    "injectedFailure": true,
+    "actualBlobReload": true,
+    "staleHash": "sha256:8d54a348d53f653a4b0eb723647ba62519c93e8dc9990d4905e82c98616c3cb0",
+    "normalizedHash": "sha256:a5ea7731e0eebd67724279866b6d88e72fe572b87d758e53b7f6781111ff72f7",
+    "lostOddPixels": 308,
+    "materialMetadataRetained": true,
+    "healedByReopenNormalization": true
+  }
+}
