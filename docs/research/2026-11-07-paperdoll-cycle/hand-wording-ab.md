@@ -102,3 +102,42 @@ slightly outward", chosen in S5 to keep the arms frozen; it is not a lack of spa
 drew vertical blades in every view (86 to 90 degrees) with no body disturbance, but one seed drew a short blade (reach 21 px
 against 37), the side view put the blade across the leg, and the posed clip failed G5 on walk south (area CV 0.16) with an
 unclear grip in idle east. The owner judged both the straight and the raised poses awkward; the wording stays as it was.
+
+## Minimal and negative hand wordings: rejected
+
+The owner asked whether the held prompt could be just the hand ("held in the character's right hand", left for the off hand),
+letting PixelLab choose the pose, and then whether Pro's negative prompting ("not the left hand") would keep the hand. Seven
+items on the 80 px Live Test body: sword, axe, torch and a deliberately right-hand shield in the main hand; shield, lantern and
+bow in the off hand. Current wording (A) and the minimal wording (M) ran through production `runItem` (dress plus idle and walk
+poses in three views; A one seed, M two seeds); M2 to M5 ran the dress call only, two seeds. 203 calls, $8.98, one PixelLab pose
+failure (A axe).
+
+Wordings (main hand; the off hand swaps right and left):
+- A (current): "..., held in the character's right hand, pointing down and slightly outward; exactly one weapon, no other
+  weapons, no scabbard, no shield; the arms stay exactly as they are"
+- M: "..., held in the character's right hand" (pose and grid prompts also lost their one-item clause)
+- M2: M + "; the left hand is empty"
+- M3: M2 + "; the arms stay exactly as they are"
+- M4: "..., held in the character's right hand, not the left hand"
+- M5: M4 + "; the arms stay exactly as they are"
+
+Dressed standing views, front and back of the six items whose hand is checkable (the right-hand shield is listed apart): a view
+is bad when the item is in the wrong hand or drawn in both hands.
+
+| Wording | Bad views | Where | Largest key outside (body moved) |
+| --- | --- | --- | --- |
+| A | 0 of 12 | none | 0.02 |
+| M | 5 of 24 | torch wrong hand (both seeds), two axes | 0.13 (torch, east) |
+| M2 | 3 of 24 | torch wrong hand, a second torch | 0.06 |
+| M3 | 6 of 24 | axe wrong hand (both seeds), torch | 0.03 |
+| M4 | 5 of 24 | torch wrong hand, an axe in the left hand and a second axe | 0.11 (axe, east) |
+| M5 | 6 of 24 | torch wrong hand (both seeds), a second axe, a lantern in the right hand | 0.10 (torch, east) |
+
+The right-hand shield went to the left hand in every wording, A included, so removing "no shield" does not let a shield sit
+in the right hand; PixelLab holds shields in the left hand. Without an orientation, PixelLab raises swords, axes and torches
+(reach up to 65 px against about 30), and a raised torch goes to the left hand whatever the prompt says, negative prompt
+included. Full pipeline: A passed or warned on 2 of 6 scored items; M passed none of 14 (torches and bows failed the body
+checks G2 and G3 in every idle frame, swords and axes failed G5 or G9, and the right-hand shield failed G8).
+
+Decision: keep the current wording. Its direction and one-item clauses are what keep the item in the requested hand and the
+frozen arm in place; dropping them makes PixelLab's own default (a raised, larger item, often in the left hand) the result.
