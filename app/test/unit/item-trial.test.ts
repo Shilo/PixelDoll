@@ -67,6 +67,53 @@ test('paired edit and transfer use the same conditioned source and exact keyed t
   expect(edit.packetHash).toBe(transfer.packetHash);
 });
 
+test('target palette preparation normalizes exact hex colors and rejects unsupported or ambiguous palettes', async () => {
+  const p = await packet();
+  const source = { ...p, targetPalette: { colors: ['#00FFFF', '#AA2200'] } };
+  expect((await parseTrialPacket(source)).targetPalette).toEqual({ colors: ['#00ffff', '#aa2200'] });
+  expect(source.targetPalette.colors).toEqual(['#00FFFF', '#AA2200']);
+  for (const targetPalette of [null, {}, { colors: [] }, { colors: ['#112233'] }, { colors: ['#aabbcc', '#AABBCC'] },
+    { colors: ['#123', '#123456'] }, { colors: ['red', '#123456'] }, { colors: ['#112233', 0] },
+    { colors: ['#112233', '#445566'], max_colors: 2 },
+    { colors: Array.from({ length: 257 }, (_, i) => `#${i.toString(16).padStart(6, '0')}`) }]) {
+    await expect(parseTrialPacket({ ...p, targetPalette })).rejects.toThrow('2–256 distinct six-digit hex colors');
+  }
+  expect((await parseTrialPacket({ ...p, targetPalette: { colors: Array.from({ length: 256 }, (_, i) => `#${i.toString(16).padStart(6, '0')}`) } })).targetPalette!.colors).toHaveLength(256);
+  expect(readTrials()).toEqual([]);
+  expect(controls.enqueue).not.toHaveBeenCalled();
+});
+
+test('target palettes change only the edit or transfer palette condition and preserve source image identities', async () => {
+  const p = await packet(), targetPalette = { colors: ['#00ffff', '#aa2200'] };
+  for (const arm of ['edit', 'transfer'] as const) {
+    const control = await prepareTrial(p, arm), variant = await prepareTrial({ ...p, targetPalette }, arm);
+    const { target_palette, ...body } = variant.request.body as Record<string, unknown>;
+    expect(target_palette).toEqual(targetPalette);
+    expect(body).toEqual(control.request.body);
+    expect(variant.request.path).toBe(control.request.path);
+    expect(variant.requestHash).not.toBe(control.requestHash);
+    expect(variant.packetHash).not.toBe(control.packetHash);
+    expect(variant.inputs).toEqual(control.inputs);
+    expect(variant.sourcePng).toBe(control.sourcePng);
+    expect(variant.targetPngs).toEqual(control.targetPngs);
+    expect(variant.estimatedGenerations).toBe(control.estimatedGenerations);
+    const omitted = await prepareTrial({ ...p, targetPalette: undefined }, arm);
+    expect(omitted.packetHash).toBe(control.packetHash);
+    expect(omitted.requestHash).toBe(control.requestHash);
+    expect(omitted.request.body).not.toHaveProperty('target_palette');
+  }
+});
+
+test('a changed prepared palette refuses a new claim and unsupported arms cannot silently ignore it', async () => {
+  const p = { ...await packet(), targetPalette: { colors: ['#00ffff', '#aa2200'] } };
+  const prepared = await prepareTrial(p, 'edit');
+  prepared.packet.targetPalette!.colors[1] = '#aa3300';
+  await expect(submitTrial(prepared)).rejects.toThrow('changed after preparation');
+  for (const arm of ['pose', 'grid'] as const) await expect(prepareTrial(p, arm)).rejects.toThrow('supported only by the edit and transfer');
+  expect(readTrials()).toEqual([]);
+  expect(controls.enqueue).not.toHaveBeenCalled();
+});
+
 test('validation rejects duplicate or mismatched cells and unsupported route packing before any submission', async () => {
   const duplicate = await packet();
   duplicate.targets[1].key = duplicate.targets[0].key;

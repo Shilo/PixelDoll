@@ -125,6 +125,7 @@
       <p>Reserve {prepared.estimatedGenerations} estimated generations. PixelLab may bill cash. The actual charge is reported in the retained receipt, and this estimate is not a provider quote.</p>
       <p>Request {prepared.requestHash}</p>
       <p>Packet {prepared.packetHash}</p>
+      <p>Target palette: {prepared.packet.targetPalette ? `${prepared.packet.targetPalette.colors.length} exact colors` : 'Provider default'}</p>
       <div class="images"><img src={`data:image/png;base64,${prepared.sourcePng}`} alt="Dressed reference" />{#each prepared.targetPngs as target, i}<img src={`data:image/png;base64,${target}`} alt={prepared.packet.targets[i].key} />{/each}</div>
       <button class="bu-btn" disabled={busy || !connected || claimed} onclick={submit}>{claimed ? 'Request already claimed' : 'Submit one paid request'}</button>
     </section>
@@ -138,9 +139,9 @@
       <button class="bu-btn" disabled={busy || !connected || !pendingPlan.length} onclick={submitPlan}>Submit {pendingPlan.length} planned paid requests</button>
       <button class="bu-btn" disabled={busy} onclick={downloadPlan}>Export plan evidence</button>
       <div class="table-scroll"><table>
-        <thead><tr><th>Trial</th><th>Endpoint</th><th>Seed</th><th>Targets</th><th>Estimated gens</th><th>Claim</th></tr></thead>
+        <thead><tr><th>Trial</th><th>Endpoint</th><th>Seed</th><th>Targets</th><th>Target palette</th><th>Estimated gens</th><th>Claim</th></tr></thead>
         <tbody>{#each preparedPlan.trials as trial (trial.requestHash)}
-          <tr><td>{trial.packet.label} · {trial.arm}</td><td>{trial.request.path}</td><td>{trial.packet.seed}</td><td>{trial.packet.targets.length}</td><td>{trial.estimatedGenerations}</td><td>{records.some(record => record.requestHash === trial.requestHash) ? 'Inspect existing claim' : 'Unclaimed'}</td></tr>
+          <tr><td>{trial.packet.label} · {trial.arm}</td><td>{trial.request.path}</td><td>{trial.packet.seed}</td><td>{trial.packet.targets.length}</td><td>{trial.packet.targetPalette ? `${trial.packet.targetPalette.colors.length} exact colors` : 'Provider default'}</td><td>{trial.estimatedGenerations}</td><td>{records.some(record => record.requestHash === trial.requestHash) ? 'Inspect existing claim' : 'Unclaimed'}</td></tr>
         {/each}</tbody>
       </table></div>
     </section>

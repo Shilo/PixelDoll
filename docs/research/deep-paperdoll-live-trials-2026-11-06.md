@@ -35,8 +35,10 @@ Proxy-mask IoU compares a new result with the older retained accepted layer. Tha
 | Shared-ramp edit, same subset | 8 | 7 / 0 / 1 | 0.8389 | 7.88 | 984 / 35,718 |
 | Raw skeleton pose | 6 | 6 / 0 / 0 | 0.8779 | 0.119 | 290 / 20,562 |
 | Canonical skeleton pose | 6 | 6 / 0 / 0 | 0.8778 | 0.129 | 207 / 20,562 |
+| Raw edit, matched east-cape subset | 4 | 4 / 0 / 0 | 0.7582 | 8.33 | 280 / 13,818 |
+| Raw skeleton pose, same cape subset | 4 | 4 / 0 / 0 | 0.8337 | 0.179 | 226 / 13,818 |
 
-All 480 raw target images have binary alpha. Each edit/transfer call costs $0.08. Skeleton cohorts contain different designs from the route cohorts, so their higher IoU and lower palette distances cannot establish a universal route ranking. The two conditioning subset rows must be compared with their own eight raw edits, not the 16-call mixed-body aggregate.
+All 480 raw target images have binary alpha. Each edit/transfer call costs $0.08. Full skeleton cohorts contain different designs from the route cohorts, so their aggregate numbers cannot establish a universal route ranking. Four east-cape raw pairs do share body, design, seed and target motion. Posing preserves the approved palette much more closely on this subset. Its four receipts total $0.07497 plus three subscription generations, versus $0.32 for editing. These different input contracts still differ in exact target-pixel conditioning. The retained proxy artwork also comes from an older pipeline, so method-correlated agreement is not independent semantic truth. The two conditioning subset rows must be compared with their own eight raw edits, not the 16-call mixed-body aggregate.
 
 The failures are retained in the ledger:
 
@@ -47,7 +49,7 @@ The failures are retained in the ledger:
 
 ## Independent visual challenge
 
-Two fresh reviewers received only image panels and the viewing instructions. They did not read mappings, route names, receipts, metrics or sources. One reviewed the 16 route pairs, the other the 22 conditioning pairs. Candidate order alternates; route identity was withheld until their judgments were returned. Each candidate displays raw keyed output and frozen-body recomposition at integer 3x enlargement for frames **0, 3, 5 and 7**. The same approved standing composite and isolated layer appear beside both candidates. Criteria are garment identity, silhouette, motifs, color, exposed-body preservation, plausible overlap and consistency. These are model judgments, not independent human artist labels, and selected static frames do not establish motion quality.
+Three fresh reviewers received only image panels and the viewing instructions. They did not read mappings, route names, receipts, metrics or sources. One reviewed the 16 route pairs, another the 22 conditioning pairs, and a third the four matched east-cape edit/pose pairs discovered during the final cohort challenge. Candidate order alternates; route identity was withheld until their judgments were returned. Each candidate displays raw keyed output and frozen-body recomposition at integer 3x enlargement for frames **0, 3, 5 and 7**. The same approved standing composite and isolated layer appear beside both candidates. Criteria are garment identity, silhouette, motifs, color, exposed-body preservation, plausible overlap and consistency. These are model judgments, not independent human artist labels, and selected static frames do not establish motion quality.
 
 | Comparison | First method preferred | Second method preferred | Ties |
 | --- | ---: | ---: | ---: |
@@ -55,6 +57,7 @@ Two fresh reviewers received only image panels and the viewing instructions. The
 | Raw edit / canonical edit | 2 | 2 | 4 |
 | Canonical edit / shared edit | 2 | 4 | 2 |
 | Raw pose / canonical pose | 1 | 0 | 5 |
+| Matched cape raw edit / raw pose | 1 | 2 | 1 |
 
 The individual choices below preserve the blinded panel IDs and their decoded result. All unlisted qualities remain uncertain.
 
@@ -98,6 +101,10 @@ The individual choices below preserve the blinded panel IDs and their decoded re
 | 32 | Greathelm east 110602, raw/canonical pose | Tie; helmet and metal palette comparable. |
 | 33 | Hooded cape east 110602, raw/canonical pose | Tie; small plausible edge differences. |
 | 38 | Cape east 110602, raw/canonical pose | Tie; motion width closely matched. |
+| 39 | Hooded cape east 110601, raw edit/pose | Tie, medium confidence; modest width/hem changes remain plausible. |
+| 40 | Cape east 110601, raw edit/pose | Edit, medium confidence; narrower hanging silhouette. |
+| 41 | Hooded cape east 110602, raw edit/pose | Pose, high confidence; closer hood size and cape length. |
+| 42 | Cape east 110602, raw edit/pose | Pose, medium confidence; more coherent downward hem without lateral tips. |
 
 The coordinator separately inspected all eight frames of the three failing contacts and the palette-warning contact. A label-blind preference on selected frames cannot override a failed quality gate on another frame. Neither a clean solo composite nor a similar mask proves that the item will preserve hidden pixels under another equipped layer.
 

@@ -33,6 +33,7 @@ export interface TrialPacket {
   reference: { base: string; raw: string; layer: string; cut?: number[]; conditioned?: string };
   targets: { key: string; base: string; expectedLayer: string; expectedCut?: number[]; keyed?: string; poses?: Keypoint[] }[];
   grid?: { image: string; mask: string; cols: number; description?: string };
+  targetPalette?: { colors: string[] };
 }
 export interface PreparedTrial {
   packet: TrialPacket;
@@ -103,6 +104,15 @@ export async function parseTrialPacket(value: unknown): Promise<TrialPacket> {
   const size = p.cell;
   if (!size || !Number.isInteger(size.w) || !Number.isInteger(size.h) || size.w !== size.h || size.w < 32 || size.w > 256) throw new Error('Item trials require a square native 32–256 px cell.');
   if (!p.rig || p.rig.cell?.w !== size.w || p.rig.cell?.h !== size.h || !p.reference || !Array.isArray(p.targets) || p.targets.length < 2 || p.targets.length > 15) throw new Error('The frozen rig, reference, or target frames are incomplete.');
+  let targetPalette: TrialPacket['targetPalette'];
+  if (p.targetPalette !== undefined) {
+    const palette = p.targetPalette;
+    if (!palette || typeof palette !== 'object' || Object.keys(palette).some(key => key !== 'colors') || !Array.isArray(palette.colors)
+      || palette.colors.length < 2 || palette.colors.length > 256 || palette.colors.some(color => typeof color !== 'string' || !/^#[0-9a-f]{6}$/i.test(color))) throw new Error('Target palettes need only 2–256 distinct six-digit hex colors.');
+    const colors = palette.colors.map(color => color.toLowerCase());
+    if (new Set(colors).size !== colors.length) throw new Error('Target palettes need only 2–256 distinct six-digit hex colors.');
+    targetPalette = { colors };
+  }
   const pixels = size.w * size.h;
   const reference = {
     base: await image(p.reference.base, 'Standing body', size),
@@ -132,13 +142,14 @@ export async function parseTrialPacket(value: unknown): Promise<TrialPacket> {
     grid = { image: await image(p.grid.image, 'Grid input', gridSize), mask: await image(p.grid.mask, 'Grid mask', gridSize), cols: p.grid.cols, ...(p.grid.description ? { description: text(p.grid.description, 'Grid description', 8000) } : {}) };
     hardMaskBits(await decodePngBytes(base64ToBytes(grid.mask)));
   }
-  return { version: 1, id: p.id, label: text(p.label, 'Trial label', 160), caseId: p.caseId, ...(p.conditioning ? { conditioning: text(p.conditioning, 'Conditioning label', 160) } : {}), direction: p.direction, anim: p.anim, seed: p.seed, prompt: text(p.prompt, 'Equipment description'), slot: text(p.slot, 'Equipment slot', 80), key: p.key, cell: { ...size }, rig: structuredClone(p.rig), reference, targets, ...(grid ? { grid } : {}) };
+  return { version: 1, id: p.id, label: text(p.label, 'Trial label', 160), caseId: p.caseId, ...(p.conditioning ? { conditioning: text(p.conditioning, 'Conditioning label', 160) } : {}), direction: p.direction, anim: p.anim, seed: p.seed, prompt: text(p.prompt, 'Equipment description'), slot: text(p.slot, 'Equipment slot', 80), key: p.key, cell: { ...size }, rig: structuredClone(p.rig), reference, targets, ...(grid ? { grid } : {}), ...(targetPalette ? { targetPalette } : {}) };
 }
 
 const b64 = async (im: Img) => bytesToBase64(await encodePngBytes(im));
 export async function prepareTrial(value: unknown, arm: TrialArm): Promise<PreparedTrial> {
   if (!arms.includes(arm)) throw new Error('Choose a supported trial arm.');
   const packet = await parseTrialPacket(value), { cell, seed, reference, targets } = packet;
+  if (packet.targetPalette && arm !== 'edit' && arm !== 'transfer') throw new Error('Target palettes are supported only by the edit and transfer trial arms.');
   const source = reference.conditioned ?? reference.raw;
   const frames = await Promise.all(targets.map(async target => target.keyed ?? b64(inputCell(await decodePngBytes(base64ToBytes(target.base)), packet.key))));
   let request: Req, estimatedGenerations: number, expectedResults = targets.length;
@@ -167,6 +178,7 @@ export async function prepareTrial(value: unknown, arm: TrialArm): Promise<Prepa
     estimatedGenerations = 25;
     expectedResults = 1;
   }
+  if (packet.targetPalette) request = { ...request, body: { ...(request.body as object), target_palette: packet.targetPalette } };
   const identity = await requestIdentity(request);
   return { packet, packetHash: await sha256(stableStringify(packet)), arm, request, requestHash: identity.requestHash, inputs: identity.inputs, expectedResults, estimatedGenerations, sourcePng: source, targetPngs: frames };
 }
