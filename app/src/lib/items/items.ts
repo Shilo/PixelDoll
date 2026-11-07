@@ -87,8 +87,18 @@ export function repairGridLayout(cell: { w: number; h: number }, cells: number, 
   }
   return layout;
 }
-/** Pack cells into one grid (row-major, `cols` wide) plus its mask: white = generate (the cell's mask px), black = keep. */
+/** Pack matching cells and occupancy masks row-major; nonzero mask px generate, null masks and unused cells stay protected. */
 export function packGrid(cells: Img[], masks: (Uint8Array | null)[], cols = GRID_COLS): { image: Img; mask: Img } {
+  if (!cells.length) throw new Error('A repair grid needs at least one frame.');
+  if (!Number.isInteger(cols) || cols < 1) throw new Error('A repair grid needs a positive integer column count.');
+  if (masks.length !== cells.length) throw new Error('A repair grid needs one mask entry per frame.');
+  const first = cells[0];
+  if (!first || !Number.isInteger(first.w) || !Number.isInteger(first.h) || first.w < 1 || first.h < 1) throw new Error('Repair frames need the same positive integer canvas.');
+  for (const c of cells) {
+    if (!c || c.w !== first.w || c.h !== first.h) throw new Error('Repair frames need the same positive integer canvas.');
+    if (!(c.data instanceof Uint8ClampedArray) || c.data.length !== first.w * first.h * 4) throw new Error('Each repair frame needs a complete RGBA buffer.');
+  }
+  for (const m of masks) if (m !== null && (!(m instanceof Uint8Array) || m.length !== first.w * first.h)) throw new Error('Each repair mask needs a Uint8Array matching the cell canvas.');
   const { w, h } = cells[0], rows = Math.ceil(cells.length / cols), image = makeImg(cols * w, rows * h), mask = makeImg(cols * w, rows * h);
   for (let i = 0; i < mask.data.length; i += 4) mask.data.set([0, 0, 0, 255], i);
   cells.forEach((c, k) => {
@@ -759,6 +769,8 @@ export function recompose(c: Pick<CellOut, 'base' | 'layer' | 'cut'>): Img {
 }
 
 // ---------- QA (gates G1–G8, architecture §3.3) ----------
+/** Minimum wrist-to-tip reach (px) for a signed held-item direction; shorter items keep the unsigned axis comparison. */
+export const HELD_SIGNED_REACH = 10;
 /** Action clips (slash, cast, punch...) legitimately change an item's area and shape; G5/G9 apply to locomotion only. */
 export const isAction = (key: string) => !/idle|walk|run/.test(key.split('/')[0]);
 export const GATES = { keyKept: 0.97, keyLostPx: 8, keyOutside: 0.02, keyOutsidePosed: 0.05, areaRatio: 0.5, areaCV: 0.15, paletteDist: 15, heldIoU: 0.3, heldTurn: 30 }; // heldIoU: S5 (0.4 false-fails a 96 px axe walk E at 0.38); heldTurn: deg, B9
@@ -792,9 +804,10 @@ export function paletteDistance(ref: number[], cells: Img[]): number {
   return n ? sum / n : 0;
 }
 const median = (v: number[]) => { const s = [...v].sort((a, b) => a - b); return s.length ? (s[(s.length - 1) >> 1] + s[s.length >> 1]) / 2 : 0; };
+/** Distance from a point in pixel-edge coordinates (keypoints: 0..w across the cell) to the nearest mask pixel's center. */
 const nearest = (m: Uint8Array, w: number, [x, y]: [number, number]) => {
   let d = 1e9;
-  for (let p = 0; p < m.length; p++) if (m[p]) d = Math.min(d, Math.hypot((p % w) - x, ((p / w) | 0) - y));
+  for (let p = 0; p < m.length; p++) if (m[p]) d = Math.min(d, Math.hypot((p % w) + 0.5 - x, ((p / w) | 0) + 0.5 - y));
   return d;
 };
 /** Principal-axis angle (rad), or null for < 6 px or a near-round mask whose axis is unstable. */
@@ -899,10 +912,12 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
   let heldLoopReviewClips = 0;
   const byClip = new Map<string, CellOut[]>(), grip = { R: 0, L: 0, amb: 0, none: 0 };
   for (const c of cells) { const k = c.key.split('/').slice(0, 2).join('/'); (byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c); }
-  // wrists: the clip's requested keypoints (what the item was posed with, S5 gripSide), else the tracked hand anchors
+  // wrists: the clip's requested keypoints (what the item was posed with, S5 gripSide), else the tracked hand anchors.
+  // Keypoints are pixel-edge coordinates; anchors are pixel indices, so they move to their pixel centers (+0.5). Mixing the
+  // two put a half-pixel bias against the 2 px side margin (2026-11-07 cycle, motion.md).
   const handTrack = (id: 'hand_r' | 'hand_l', a: string, d: string) => {
     const k = clipKeypoints(rig, a, d as DirectionName), lab = id === 'hand_r' ? ['RIGHT ARM'] : ['LEFT ARM'];
-    const track = k ? k.map((f) => kpAt(f, lab, rig.cell, 0)) : rig.anchors?.[id]?.[a]?.[d as DirectionName];
+    const track = k ? k.map((f) => kpAt(f, lab, rig.cell, 0)) : rig.anchors?.[id]?.[a]?.[d as DirectionName]?.map((p) => p && [p[0] + 0.5, p[1] + 0.5] as [number, number]);
     return track?.map((p) => p && Number.isFinite(p[0]) && Number.isFinite(p[1]) ? [p[0] + pad, p[1] + pad] as [number, number] : undefined);
   };
   for (const [clip, cs] of byClip) {
@@ -984,6 +999,21 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
     const checkShape = slot.class === 'held' && !isAction(clip);
+    // The principal axis has no direction, so a blade reversed about the hand (tip where the pommel was) keeps its axis and
+    // passed G9 (2026-11-07 cycle: 28 of 30 reversed clips silent). Point the axis from the gripping wrist toward the item's
+    // centroid when that is decisive: the centroid is at least a quarter of the reach away from the wrist (not a bow gripped
+    // at its middle), lies along the axis within 45 degrees (a shield strapped to the forearm sits beside its axis, so its sign
+    // is arbitrary), and the item reaches at least HELD_SIGNED_REACH px (small blades near the fist stay unsigned).
+    const signedRel = (c: CellOut, j: number) => {
+      const wr = wrist?.[j], f = fore?.[j], ct = centroid(c.mask, w), ax = axisOf(c.mask, w);
+      if (!wr || f == null || !ct || ax == null) return null;
+      const cx = ct[0] + 0.5 - wr[0], cy = ct[1] + 0.5 - wr[1];
+      let reach = 0;
+      for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) reach = Math.max(reach, Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]));
+      const off = Math.hypot(cx, cy), along = Math.cos(ax) * cx + Math.sin(ax) * cy;
+      if (reach < HELD_SIGNED_REACH || off < 0.25 * reach || Math.abs(along) < Math.SQRT1_2 * off) return null;
+      return ((along < 0 ? ax + Math.PI : ax) - f) * 180 / Math.PI;
+    };
     let turn = 0, shapeIoU = 1, occluded = false;
     const checkTransition = (j: number, k: number, seam = false) => {
       const c = byCell.get(j), n = byCell.get(k);
@@ -995,7 +1025,8 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       // for a reliable axis, but can still rotate correctly with the hand.
       if (fore && (sum(c.mask) < 6 || sum(n.mask) < 6)) return;
       const x = axisOf(c.mask, w), y = axisOf(n.mask, w);
-      const angle = fore && x != null && y != null ? angleDiff(x - fore[j], y - fore[k]) : null;
+      const sx = signedRel(c, j), sy = signedRel(n, k);
+      const angle = fore && x != null && y != null ? sx != null && sy != null ? Math.abs((((sx - sy) % 360) + 540) % 360 - 180) : angleDiff(x - fore[j], y - fore[k]) : null;
       const iou = angle == null ? overlap : 1;
       if ((angle != null && angle > GATES.heldTurn) || iou < GATES.heldIoU) {
         const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);

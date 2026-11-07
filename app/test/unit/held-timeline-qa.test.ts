@@ -74,3 +74,30 @@ test('a large turn on an authored transition still fails', () => {
   const result = check([0, 22, 44], [0, 2, 1]);
   expect(result.failures).toEqual([expect.stringContaining('G9 walk/south: the item turns 44°')]);
 });
+
+/** A blade drawn on one side of the wrist (pommel in the hand), pointing `degrees` from +x. */
+function bladeCell(index: number, degrees: number): CellOut {
+  const cell = heldCell(index, 0), angle = degrees * Math.PI / 180;
+  cell.mask.fill(0); cell.layer.data.fill(0);
+  let area = 0;
+  for (let y = -18; y <= 18; y++) for (let x = -18; x <= 18; x++) {
+    const along = (x + 0.5) * Math.cos(angle) + (y + 0.5) * Math.sin(angle), across = -(x + 0.5) * Math.sin(angle) + (y + 0.5) * Math.cos(angle);
+    if (along < 0 || along > 16 || Math.abs(across) > 1.3) continue;
+    const pixel = (y + 26) * size + x + 20;
+    cell.mask[pixel] = 1; cell.layer.data.set([120, 70, 30, 255], pixel * 4); area++;
+  }
+  return { ...cell, area };
+}
+function checkBlades(angles: number[]) {
+  const rig: Rig = {
+    cell: { w: size, h: size }, pivot: { x: 24, y: 46 }, baseItem: 'base', baseHash: 'sha256:test', directions: [{ id: 'south' }],
+    animations: [{ id: 'walk', cells: angles.length, loop: false, frames: [], sources: { south: { route: 'skeleton-v3', reference: 'sha256:test', keypoints: angles.map(() => pose), provenance: [] } } }],
+  };
+  return [...itemQa(rig, slotOf('off_hand'), 'green', angles.map((a, i) => bladeCell(i, a)), 0).failCalls.values()].flat();
+}
+
+test('a blade reversed about the hand fails G9 although its unsigned axis is unchanged', () => {
+  expect(checkBlades([90, 100, 95])).toEqual([]);
+  // 90 and 270 degrees share one principal axis; only the signed direction from the wrist tells them apart.
+  expect(checkBlades([90, 100, 280])).toEqual(['G9 walk/south: the item turns 180° against the hand between frames']);
+});

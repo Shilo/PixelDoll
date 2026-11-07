@@ -18,7 +18,7 @@ import type { DirectionName, Keypoint, Rig } from '../rig/rig.ts';
 import { fromApi, hasAll } from '../rig/poses.ts';
 import { paddedPoses, poseBatches, poseGensFor } from '../rig/clips.ts';
 import { acceptQa, clipOf, mergeQa } from './qa-summary.ts';
-import { chromaLayer, type Key } from '../image/chroma.ts';
+import { chromaLayer, components, type Key } from '../image/chroma.ts';
 import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { designConsistency, expectsWaistBand, type StandingDesignView } from './design-consistency.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
@@ -144,11 +144,29 @@ function standingViews(d: Draft, ctx: RigCtx, refs: { dir: DirectionName; im: Im
   return views;
 }
 // ---------- calls ----------
+/** Held repair disc radius around the measured wrist. The fixed 34 px disc predates larger bodies: a 64 px body's sword
+ * already reaches about 39 px, and the mask silently cut the blade tip (2026-11-07 cycle, challenge.md C). Use the farthest
+ * item pixel from the rest wrist over every dressed view, since one view's own reach underestimates its posed frames, plus
+ * max(4 px, 10 %). Never smaller than the historical 34 px. */
+export function heldRepairRadius(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'key'>, refs: { dir: DirectionName; im: Img }[], pad: number): number {
+  let reach = 0;
+  for (const r of refs) {
+    const wrist = skelOf(ctx, restKey(r.dir), true)?.[spec.slot === 'off_hand' ? 'LEFT ARM' : 'RIGHT ARM'];
+    if (!wrist) continue;
+    const { mask } = chromaLayer(r.im, spec.key as Key, padImg(baseCell(ctx, restKey(r.dir), true), pad));
+    // The weapon is the largest part; a detached fleck elsewhere in the view must not widen the editable disc.
+    const largest = components(mask, r.im.w, r.im.h).reduce((a, b) => (b.length > a.length ? b : a), [] as number[]);
+    for (const p of largest) reach = Math.max(reach, Math.hypot((p % r.im.w) + 0.5 - wrist.x - pad, ((p / r.im.w) | 0) + 0.5 - wrist.y - pad));
+  }
+  return Math.max(34, reach + Math.max(4, 0.1 * reach));
+}
 /** B14 grid request (S4 inv3 / S5 H3): the clip-direction's chroma cells masked to the slot band, then the dressed keyframes
  *  (kept, black mask) as the reference design. Rig cell only (held items keep their oversize S5 route). */
 async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>, cells: string[], refs: { dir: DirectionName; im: Img }[], seed: number, pad = 0, compact = false): Promise<Req> {
   const { rig } = ctx.rec.manifest, w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, [anim, dir] = cells[0].split('/') as [string, DirectionName];
   if (cells.some(k => k.split('/')[1] !== dir)) throw new Error('Repair one independently drawn direction at a time.');
+  const held = slotOf(spec.slot).class === 'held';
+  const radius = held ? heldRepairRadius(ctx, spec, refs, pad) : 0;
   // Keep other views for QA; mixing front and back references can confuse the image editor.
   refs = refs.filter(r => r.dir === dir);
   if (refs.length !== 1) throw new Error(`${dir}: repair needs exactly one matching dressed reference`);
@@ -156,7 +174,6 @@ async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'ke
   const layout = compact ? repairGridLayout(cell, cells.length, refs.length) : gridEstimate(cell, cells.length, refs.length);
   const cols = layout.w / w;
   if (refs.some(r => r.im.w !== w || r.im.h !== h)) throw new Error('Equipment reference dimensions do not match its repair canvas.');
-  const held = slotOf(spec.slot).class === 'held';
   const designs = new Map(refs.map(r => [r.dir, chromaLayer(r.im, spec.key as Key, padImg(baseCell(ctx, restKey(r.dir), true), pad)).layer]));
   const masks = cells.map(k => {
     if (!held) {
@@ -169,7 +186,7 @@ async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'ke
     const point = observed?.[spec.slot === 'off_hand' ? 'LEFT ARM' : 'RIGHT ARM'];
     if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < 0 || point.x > rig.cell.w || point.y < 0 || point.y > rig.cell.h) throw new Error('Held-item repair needs valid measured hand positions on every frozen body frame.');
     const mask = new Uint8Array(w * h);
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (Math.hypot(x + 0.5 - point.x - pad, y + 0.5 - point.y - pad) <= 34) mask[y * w + x] = 1;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (Math.hypot(x + 0.5 - point.x - pad, y + 0.5 - point.y - pad) <= radius) mask[y * w + x] = 1;
     return mask;
   });
   const g = packGrid([...cells.map((k) => inputCell(padImg(baseCell(ctx, k), pad), spec.key)), ...refs.map((r) => r.im)], [...masks, ...refs.map(() => null)], cols);

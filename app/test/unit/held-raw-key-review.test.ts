@@ -31,9 +31,10 @@ test('the exact raw comparison reuses key classification and ignores transparent
 });
 
 test('a small raw addition below the current G3 threshold is informational without changing quality or clean-save decisions',()=>{
+  // Distances run from the keypoint (pixel-edge coordinates) to the pixel's center, so the corner-based sqrt(5) is now 1.5 * sqrt(2).
   const f=fixture();add(f.out);const c=f.cell(),q=check([c]);
   expect(c.keyOutside).toBeLessThan(GATES.keyOutsidePosed);expect(c.rawKeyOutside?.pixels).toBe(1);
-  expect(q.qa).toMatchObject({status:'pass',rawKeyReviewFrames:1,cells:{'slash/south/0':{rawKeyOutside:{pixels:1,bounds:{x:40,y:30,w:1,h:1},space:'raw-output-cell',nearestWristPx:Math.sqrt(5)}}}});
+  expect(q.qa).toMatchObject({status:'pass',rawKeyReviewFrames:1,cells:{'slash/south/0':{rawKeyOutside:{pixels:1,bounds:{x:40,y:30,w:1,h:1},space:'raw-output-cell',nearestWristPx:1.5*Math.SQRT2}}}});
   expect(q.failCalls.size).toBe(0);expect(q.softCalls.size).toBe(0);expect(q.qa.rerolls).toBe(0);expect(q.warnings).toEqual([]);
   expect(q.qa.clips!['slash/south']).toMatchObject({status:'pass',rawKeyReviewFrames:1});
   expect(isClean({cells:[c],qa:q,g1:new Map(),preview:null})).toBe(true);
@@ -53,7 +54,7 @@ test('a normal one-pixel redraw shift retains raw evidence even after registrati
 test('the requested left wrist and padded raw coordinates override conflicting hand anchors',()=>{
   const f=fixture(true,16);add(f.out,35,47);const r=structuredClone(rig);r.anchors={hand_l:{slash:{south:[[0,0]]}},hand_r:{slash:{south:[[0,0]]}}};
   const q=check([f.cell()],r,true,16),raw=q.qa.cells['slash/south/0'].rawKeyOutside!;
-  expect(raw.bounds).toEqual({x:35,y:47,w:1,h:1});expect(raw.nearestWristPx).toBe(Math.SQRT2);expect(raw.space).toBe('raw-output-cell');
+  expect(raw.bounds).toEqual({x:35,y:47,w:1,h:1});expect(raw.nearestWristPx).toBeCloseTo(Math.SQRT1_2,12);expect(raw.space).toBe('raw-output-cell'); // pixel center: half a pixel nearer than the former corner distance
 });
 
 test('missing intended-wrist data keeps the observation and does not invent a distance',()=>{

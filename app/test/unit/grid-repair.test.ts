@@ -11,13 +11,13 @@ import { LABELS, fromApi } from '../../src/lib/rig/poses.ts'
 import { sha256 } from '../../src/lib/image/hash.ts'
 import type { Item, Manifest } from '../../src/lib/store/manifest.ts'
 afterEach(()=>vi.restoreAllMocks())
-async function fixture(mode='pass',pad=16){
+async function fixture(mode='pass',pad=16,bladeEnd=52){
  const dirs:DirectionName[]=['south','east','north','west'],body=makeImg(64,64)
  const side=64+2*pad
  for(let y=10;y<60;y++)for(let x=24;x<40;x++)body.data.set([170,120,90,255],(y*64+x)*4)
  const h=await cellHash(body),points=LABELS.map(label=>({label,x:(label==='RIGHT ARM'?25:label==='LEFT ARM'?38:32)/64,y:30/64})),blobs=new Map<string,Blob>()
  const put=async(im:Img)=>{const bytes=await encodePngBytes(im),hash=await sha256(bytes);blobs.set(hash,new Blob([bytes as Uint8Array<ArrayBuffer>],{type:'image/png'}));return hash}
- const reference=inputCell(padImg(body,pad),'green');for(let y=30+pad;y<52+pad;y++)for(let x=23+pad;x<26+pad;x++)reference.data.set([180,180,190,255],(y*side+x)*4)
+ const reference=inputCell(padImg(body,pad),'green');for(let y=30+pad;y<bladeEnd+pad;y++)for(let x=23+pad;x<26+pad;x++)reference.data.set([180,180,190,255],(y*side+x)*4)
  const rh=await put(reference),ih=await cellHash(reference)
  const cell={w:side,h:side},pivot={x:32+pad,y:60+pad}
  const item:Item={id:'sword',name:'Sword',slot:'main_hand',status:'accepted',mirror:'generate',prompt:'steel sword with gold hilt',materials:[],provenance:[],baseHash:h,route:'skeleton-pose',key:'green',dressed:Object.fromEntries(dirs.map(d=>[d,`sha256:${rh}`])),layers:[{id:'fg',role:'fg',z:150,cell,pivot,cells:{idle:{west:[ih]},slash:{south:Array(8).fill(ih),west:Array(8).fill(ih)}}},{id:'bg',role:'bg',z:1,cell,pivot,cells:{idle:{west:[null]},slash:{south:Array(8).fill(null),west:Array(8).fill(null)}}}]}
@@ -47,6 +47,15 @@ test('96px request uses frozen padded frames, measured wrist masks, protected re
  for(let y=192;y<288;y++)for(let x=0;x<384;x++)expect(mask.data[(y*384+x)*4]).toBe(0)
  const expected=inputCell(padImg(f.body,16),'green');for(let y=0;y<96;y++)expect([...im.data.subarray(y*384*4,(y*384+96)*4)]).toEqual([...expected.data.subarray(y*96*4,(y+1)*96*4)])
  expect(f.enqueue).not.toHaveBeenCalled()
+})
+test('a long blade widens the held repair disc beyond the former fixed 34 px, so its tip stays editable',async()=>{
+ const maskOf=async(f:Awaited<ReturnType<typeof fixture>>)=>decodePngBytes(base64ToBytes((((await gridRepairRequest(f.ctx,f.item,'slash','west',123)).body) as {mask_image:{image:{base64:string}}}).mask_image.image.base64))
+ // The wrist sits at (41,46) on the 96 px canvas; (41,91) is 45 px down the blade, outside a 34 px disc.
+ const short=await maskOf(await fixture()),long=await maskOf(await fixture('pass',16,78))
+ expect(short.data[(46*384+41)*4]).toBe(255);expect(short.data[(91*384+41)*4]).toBe(0)
+ expect(long.data[(91*384+41)*4]).toBe(255)
+ // Still a disc around the wrist, not the whole cell.
+ expect(long.data[(2*384+90)*4]).toBe(0)
 })
 test('successful fixed-frame repair retains96px pivot, other directions and idle while linking real grid provenance',async()=>{
  const f=await fixture(),before=structuredClone(f.item),r=await regridClip(f.ctx,f.item,'slash','west',123)
