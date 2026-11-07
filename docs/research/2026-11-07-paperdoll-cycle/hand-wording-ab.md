@@ -78,3 +78,20 @@ with no warning. PixelLab drew it angled low and outward with the flame burning 
 Mirroring each frame's item vertically about the frame's wrist turned that flame downward. Whether the flame ends up at the
 bottom depends on the seed (the dress-only samples above had it at the bottom), so a blind flip breaks the good cases. A fix
 would first need to detect which end is the flame; not attempted.
+
+## Padding test: the sword direction comes from the wording
+
+Question: does the sword point to a bottom corner because the 16 px held padding leaves no room? Same Live Test body, "a steel
+longsword", seeds 7101 and 7202, dress call only (4 new calls, $0.32; the 16 px arm reattached the earlier A jobs for free).
+Blade direction is the angle from the wrist to the farthest item px (90 degrees = straight down, negative = up).
+
+| Arm | South | East | North | Room left to the canvas edge |
+| --- | --- | --- | --- | --- |
+| 16 px padding, current wording | 131 to 136 | 27 to 34 | 44 to 47 | 14 to 26 px |
+| 48 px padding, current wording | 132 to 137 | 30 to 34 | 47 | 36 to 59 px |
+| 48 px padding, no "pointing down" | -137 | -39 to -44 | -41 to -154 | 33 to 50 px |
+
+More padding left the direction unchanged in every view (one seed drew a longer blade, reach 46 to 48 px instead of 34 to 37).
+Removing the orientation clause raised every sword (reach 51 to 77 px), but seed 7101 drew two swords from behind and moved the
+arm in the side view (key outside 0.070, over the 0.05 limit). The bottom-corner direction is the wording "pointing down and
+slightly outward", chosen in S5 to keep the arms frozen; it is not a lack of space.
