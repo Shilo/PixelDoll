@@ -131,7 +131,7 @@ async function dressedKeys(ctx: RigCtx, item: Item, pad: number) {
     if (c.cut) cuts[d] = c.cut;
     cells.push(c);
   }
-  return { keys, cuts, hidden: hiddenViews(cells, keys) };
+  return { keys, cuts, hidden: hiddenViews(cells, keys, item.slot) };
 }
 
 function standingViews(d: Draft, ctx: RigCtx, refs: { dir: DirectionName; im: Img }[]) {
@@ -445,7 +445,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx, standingPalettes?: Rea
   const keys: Partial<Record<DirectionName, Img>> = {}; // dressed keyframe layers per direction (H4)
   const kfCells = dressOuts.map((o) => ex(o, undefined, true));
   for (const [i, c] of kfCells.entries()) { keys[dressOuts[i].key.split('/')[1] as DirectionName] = c.layer; if (c.cut) keyCut[dressOuts[i].key.split('/')[1] as DirectionName] = c.cut; }
-  const hidden = hiddenViews(kfCells, keys), hiddenWarnings: string[] = [];
+  const hidden = hiddenViews(kfCells, keys, d.spec.slot), hiddenWarnings: string[] = [];
   for (const [i, c] of kfCells.entries()) {
     const o = dressOuts[i];
     if (!c.area && hidden.has(o.key.split('/')[1])) hiddenWarnings.push(`G4 keyframe ${o.key}: no item in this view; check that the view hides it`);

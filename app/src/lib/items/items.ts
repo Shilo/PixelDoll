@@ -659,11 +659,37 @@ export const SMALL_SHARE = 0.05;
 /** Back views (north, north-east, north-west) whose dressed keyframe is empty while the item is a small accessory shown in at
  * least half of the views: the body hides it (glasses from behind), so the empty view is reviewed instead of re-rolled; its
  * posed frames must stay empty too (G4). An empty front or side view is a failed dress (round 5: the earrings' front view),
- * and so is a fragment drawn in one view of three. `cells` are the keyframe cells of every dressed view. */
-export function hiddenViews(cells: Pick<CellOut, 'key' | 'area' | 'base'>[], keys: Partial<Record<DirectionName, Img>>): Set<string> {
+ * and so is a fragment drawn in one view of three. `cells` are the keyframe cells of every dressed view.
+ * A Back-slot attachment flat against the back (a backpack, a satchel) is the mirror case: hidden in a front view when the
+ * opposite back view shows at least 12 px lying on the body (>= 95 %) and covering at most a quarter of it, the side view
+ * keeps >= 90 % of the item behind the body's center line, and the back view is at least as large as the side view (a pack
+ * is wider than it is deep; a strip left by a failed back view measured 0.28-0.55 of its side view on the bench capes). A
+ * capelet, scarf tail or quiver showing above the shoulder, a cape covering the back, and a thin strip left by a double
+ * failure keep failing (2026-11-07 synthetic audit and review); earrings and glasses keep the rule above. */
+export function hiddenViews(cells: Pick<CellOut, 'key' | 'area' | 'base'>[], keys: Partial<Record<DirectionName, Img>>, slot?: string): Set<string> {
   const share = Math.max(0, ...cells.map((c) => { let b = 0; for (let p = 3; p < c.base.data.length; p += 4) if (c.base.data[p]) b++; return b ? c.area / b : 0; }));
   const views = Object.entries(keys).filter(([, K]) => K), empty = views.filter(([, K]) => !K!.data.some((v, i) => i % 4 === 3 && v)).map(([d]) => d);
-  return share > 0 && share < SMALL_SHARE && 2 * (views.length - empty.length) >= views.length ? new Set(empty.filter(backView)) : new Set();
+  const shown = 2 * (views.length - empty.length) >= views.length, hidden = new Set(share > 0 && share < SMALL_SHARE && shown ? empty.filter(backView) : []);
+  if (slot === 'back' && shown) for (const d of empty.filter((x) => x.startsWith('south'))) {
+    const o = d.replace('south', 'north').replace(/-(east|west)$/, (_, s: string) => (s === 'east' ? '-west' : '-east')) as DirectionName;
+    const K = keys[o], body = cells.find((c) => c.key.split('/')[1] === o)?.base;
+    if (!K || !body) continue;
+    let item = 0, on = 0, area = 0;
+    for (let i = 3; i < K.data.length; i += 4) { if (body.data[i]) area++; if (K.data[i]) { item++; if (body.data[i]) on++; } }
+    if (item < 12 || on < 0.95 * item || item > 0.25 * area) continue;
+    // A side view must show the item behind the body: east faces +x, so behind is left of the body's center in each row.
+    const side = (['east', 'west'] as const).find((s) => keys[s] && cells.some((c) => c.key.split('/')[1] === s));
+    const S = side && keys[side], sb = side && cells.find((c) => c.key.split('/')[1] === side)!.base;
+    if (!S || !sb) continue;
+    let shown = 0, behind = 0;
+    for (let y = 0; y < S.h; y++) {
+      let lo = -1, hi = -1;
+      for (let x = 0; x < S.w; x++) if (sb.data[(y * S.w + x) * 4 + 3]) { if (lo < 0) lo = x; hi = x; }
+      for (let x = 0; x < S.w; x++) if (S.data[(y * S.w + x) * 4 + 3]) { shown++; if (lo >= 0 && (side === 'east' ? x < (lo + hi + 1) / 2 : x >= (lo + hi + 1) / 2)) behind++; }
+    }
+    if (shown && behind >= 0.9 * shown && item >= shown) hidden.add(d);
+  }
+  return hidden;
 }
 /**
  * Posed non-held items: drop components under max(4 px, 15 % of the largest) (motion-smear specks, S3). The 4 px floor drops to
@@ -1042,7 +1068,8 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const pasted = cs.filter((c) => c.repaired).length;
     if (pasted) warnings.push(`R1 ${clip}: dressed item pasted on ${pasted} near-rest ${pasted === 1 ? 'frame' : 'frames'}; check that it moves`);
     // a hidden view (hiddenViews) must stay empty: px in some of its frames are an item popping in, not a hidden one
-    if (!med) (hidden.has(d) && !areas.some(Boolean) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) && !areas.some(Boolean) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
+    if (hidden.has(d) && areas.some(Boolean)) flag(cs[0].call, `G4 ${clip}: the item appears in a view its dressed view hides`); // a hidden view stays empty in every frame
+    else if (!med) (hidden.has(d) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
     else if (minRatio < GATES.areaRatio && slot.class === 'held' && hiddenExplainsLoss()) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
     else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip, rig) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
