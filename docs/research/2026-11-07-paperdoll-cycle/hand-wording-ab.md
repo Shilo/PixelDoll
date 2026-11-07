@@ -43,3 +43,31 @@ Keep the current wording. The orientation clause is what keeps a main-hand objec
 trade an upside-down torch for a wrong hand or a moved arm, which the grip and body checks then fail. Torches and bouquets
 still draw upside down under the current wording; a fix needs another route (for example an off-hand default for upright
 objects, which PixelLab draws in the left hand anyway), not a wording change.
+
+## Follow-up: upright objects in the off hand
+
+12 more dress calls ($0.96), seeds 7101 and 7202, torch, bouquet and "a lit wax candle in a brass holder":
+
+- **D (off hand):** "held upright in the character's left hand, gripped in the fist; exactly one held item, nothing in the right
+  hand; the arms stay exactly as they are". Torch upright in the left hand in both seeds (key outside 0.011 to 0.018), candle
+  upright in the left hand in both seeds (at most 0.013), bouquet in the left hand in one seed and the right hand in the other.
+- **E (main hand):** the same wording for the right hand. Wrong hand in 4 of 6 runs, and side views reach key outside 0.051 to
+  0.080 (G3 fails at 0.05).
+
+On the dress call alone, D looked right: 5 of 6 runs correct and upright.
+
+## Full pipeline check of D: rejected
+
+The off-hand default and wording D were implemented and run through production `runItem` (dress plus idle and walk poses in
+three views; 21 calls, $0.62; nothing saved). All three items failed:
+
+| Item | Result |
+| --- | --- |
+| Torch | Front views drawn in the right hand (G8 fails on idle and walk south); the side keyframe moved the body (G2 0.966, G3 key outside 0.040 over the 0.02 keyframe gate); walk east G5 |
+| Candle | Drawn in the right hand in every view (G8 fails on 5 clips); G9 turns of 59 and 65 degrees |
+| Bouquet | Walk east fails G4 (area 15 % of median), G5 and G9: the left hand is the far side and the body hides it, the pattern round 3 saw for upright off-hand bows; K1 on its green leaves |
+
+The dress-only A/B did not predict posing: the hand side flips between seeds, and the far-side hand in side views is occluded.
+The change was reverted. Upright objects keep the current wording: the requested hand, drawn pointing down (recorded in
+docs/known-issues.md). A fix needs something other than wording, for example flipping the item about the grip after
+extraction; that idea is untested.
