@@ -2,7 +2,7 @@
 // unity/pixeldoll_unity.json is the manifest flattened for JsonUtility (no dictionaries).
 import type { Manifest } from '../store/manifest.ts';
 import type { OutFile } from './generic.ts';
-import { layerFrame } from '../compose/compose.ts';
+import { layerFrame, variantCovers } from '../compose/compose.ts';
 
 function exportId(m: Manifest): string {
   // Namespace + assembly identity: importing different characters must not define duplicate C# types.
@@ -28,7 +28,7 @@ export function unityJson(m: Manifest) {
       zOverrides: (s.zOverrides ?? []).map((o) => ({ layer: o.layer, z: o.z, dir: o.dir ?? '', anim: o.anim ?? '', cell: o.cell ?? -1 })),
     })),
     items: m.items.map((it) => ({
-      id: it.id, slot: it.slot, variantOf: it.variantOf ?? '', materials: it.materials ?? [], hasHides: !!it.hides, hides: it.hides ?? [],
+      id: it.id, slot: it.slot, variantOf: it.variantOf ?? '', underAll: variantCovers(it), materials: it.materials ?? [], hasHides: !!it.hides, hides: it.hides ?? [],
       layers: it.layers.map((l) => {
         const f = layerFrame(rig, l); // oversize layers: own cell + pivot; PPU stays the base's, so world scale matches
         return { id: l.id, role: l.role, z: l.z, cellW: f.w, cellH: f.h, pivotX: f.x, pivotY: f.y, sheets: rig.animations.map((a) => l.sheets![a.id]), sourceSheets: rig.animations.map((a) => l.sourceSheets?.[a.id] ?? l.sheets![a.id]) };
@@ -49,7 +49,7 @@ namespace PixelDoll
     [Serializable] public class PdZOverride { public string layer; public int z; public string dir; public string anim; public int cell = -1; }
     [Serializable] public class PdSlot { public string id; public int z; public string[] hides; public PdZOverride[] zOverrides; }
     [Serializable] public class PdLayer { public string id; public string role; public int z, cellW, cellH, pivotX, pivotY; public string[] sheets, sourceSheets; }
-    [Serializable] public class PdItem { public string id, slot, variantOf; public bool hasHides; public string[] hides, materials; public PdLayer[] layers; }
+    [Serializable] public class PdItem { public string id, slot, variantOf; public bool hasHides; public string[] hides, materials, underAll; public PdLayer[] layers; }
     [Serializable] public class PdEquip { public string slot; public string item; }
     [Serializable] public class PdSprites { public string item; public string layer; public Sprite[] sprites, sources; }
     [Serializable] public class PdNode { public string slot; public string role; public SpriteRenderer renderer; }
@@ -257,8 +257,18 @@ namespace PixelDoll
         /// The item drawn for an equipped id: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists.
         string Shown(string id)
         {
-            if (!string.IsNullOrEmpty(id)) foreach (var e in equipped) if (Item(id + "~" + e.item) != null) return id + "~" + e.item;
-            return id;
+            string shown = id;
+            int count = 0;
+            foreach (var variant in data.items)
+            {
+                var required = variant.underAll ?? Array.Empty<string>();
+                if (variant.variantOf == id && required.Length > count && Array.TrueForAll(required, cover => equipped.Exists(e => e.item == cover)))
+                {
+                    shown = variant.id;
+                    count = required.Length;
+                }
+            }
+            return shown;
         }
         PdSlot Slot(string id) => Array.Find(data.slots, s => s.id == id);
     }

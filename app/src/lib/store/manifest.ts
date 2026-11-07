@@ -59,6 +59,8 @@ export interface Item {
   hides?: string[];
   variantOf?: string; // B14 export only: baked "<item>~<under>" copy of item `variantOf` tucked under item `under` (slot.clips)
   under?: string;
+  /** Export-only body variant requiring every listed equipped item. Canonical owner stays `variantOf`. */
+  underAll?: string[];
   materials: string[];
   regions?: 'shirt-shorts'; // B15 base only: garment grays carry their region in the blue LSB (even = shirt, odd = shorts)
   prompt: string;
@@ -71,7 +73,7 @@ export interface Item {
   /** Standing clip bound to retained dressed references, including items made before rig setup. */
   standing?: string;
   /** Base px this item hides per cell (ear tips under a hood), as sorted y * rig.cell.w + x indices; generated directions only
-   *  (a mirrored direction flips its source). Studio clears them from the base while the item is worn; exports bake "<base>~<item>". */
+   *  (a mirrored direction flips its source). Studio clears them while the item is worn; exports bake each valid equipment combination. */
   baseCut?: Record<string, Partial<Record<DirectionName, (number[] | null)[]>>>;
   anchorCell?: CellKey; // ea2-anchor: design-call cell passed as frame 1 to later calls
   provenance: Provenance[];

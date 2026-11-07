@@ -75,6 +75,20 @@ test('Godot refuses more layer nodes than its native z range can represent', asy
 test.skipIf(!process.env.GODOT_BIN)('Godot natively imports and runs palettes, presets, ownership, links and equipment guards', async () => {
   const directory = resolve('test-results/godot-export');
   const project = await fixture();
+  const body = project.images.get(project.manifest.items[0].layers[0].cells!['walk-fast']!.south![0]!)!;
+  const cutBody = { ...body, data: body.data.slice() };
+  for (const pixel of [12 * 64 + 20, 16 * 64 + 44]) cutBody.data.set([100, 100, 100, 255], pixel * 4);
+  const bodyHash = await cellHash(cutBody), empty = makeImg(64, 64), emptyHash = await cellHash(empty);
+  project.images.set(bodyHash, cutBody); project.images.set(emptyHash, empty);
+  for (const dirs of Object.values(project.manifest.items[0].layers[0].cells!)) dirs!.south = [bodyHash, bodyHash];
+  for (const [id, slot, pixel] of [['hat', 'head', 12 * 64 + 20], ['cape', 'back', 16 * 64 + 44]] as const) {
+    project.manifest.slots.push({ id: slot, class: 'rigid', z: 130 });
+    project.manifest.items.push({ ...structuredClone(project.manifest.items[0]), id, name: id, slot, materials: [],
+      layers: [{ id: 'main', role: 'fg', z: 130, cells: Object.fromEntries(project.manifest.rig.animations.map((anim) => [anim.id, { south: [emptyHash, emptyHash] }])) }],
+      baseCut: Object.fromEntries(project.manifest.rig.animations.map((anim) => [anim.id, { south: [[pixel], [pixel]] }])) });
+    project.manifest.presets[0].items[slot] = id;
+  }
+  project.manifest.rig.directions.push({ id: 'west', mirrorOf: 'south' });
   project.manifest.rig.directions.unshift({ id: 'east' });
   project.manifest.rig.animations.unshift({ id: 'empty', cells: 1, loop: false, frames: [{ cell: 0, ms: 100 }] });
   project.manifest.items[0].layers[0].z = 10000;
@@ -125,6 +139,20 @@ func run() -> void:
 	root.add_child(doll)
 	await process_frame
 	check(doll.anim == "walk-fast" and doll.dir == "south", "Startup skips empty moves and unavailable first rig view")
+	check(doll._shown("body") == "base~cape~hat", "Both cutters select the combined body")
+	var image: Image = doll.body.sprite_frames.get_frame_texture(doll.body.animation, doll.body.frame).get_image()
+	check(image.get_pixel(20, 12).a == 0 and image.get_pixel(44, 16).a == 0, "Both cuts remain transparent")
+	doll.equip("head", "")
+	check(doll._shown("body") == "base~cape", "One removed cutter restores its original body pixels")
+	doll.equip("back", "")
+	check(doll._shown("body") == "base", "Removing all cutters restores the original body")
+	doll.equip("back", "cape")
+	doll.equip("head", "hat")
+	check(doll._shown("body") == "base~cape~hat", "Equipment order leaves both cuts applied")
+	doll.play_anim("walk-fast", "west")
+	image = doll.body.sprite_frames.get_frame_texture(doll.body.animation, doll.body.frame).get_image()
+	check(image.get_pixel(43, 12).a == 0 and image.get_pixel(19, 16).a == 0, "Mirrored combined cuts remain transparent")
+	doll.play_anim("walk-fast", "south")
 	check(doll.get_node("hair_fg").z_index < doll.body.z_index, "Large source depths retain initial relative ordering")
 	check(doll.manifest.items[0].layers[0].z == 10000 and doll.manifest.items[1].layers[0].z == 9999, "Native ranks must retain original manifest depths")
 	doll.body.set_frame_and_progress(1, 0.2)

@@ -77,9 +77,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   and azure). Colors the prompt never names (a goblin's green skin) are not seen at all. Workaround:
   describe one color differently, or review the item. Azure sits near blue-gray steel shading: steel stays gray since the
   round 3 despill fix (a green and purple plume on a steel helmet, a tabard over steel plate).
-- **Hidden body pixels with two covering items.** A hood or great helm hides the ear tips it covers (round 3). Wearing two
-  such items from different slots (a hooded cloak and a helm), the Studio hides both sets but a game engine draws one baked
-  body, so one item's ear tips can show; export warns. Items made before round 3 keep showing the ears until re-dressed.
+- **Combinations of body cuts.** Exports include the union of hidden body pixels for every valid equipment combination, including mirrored views. At most 256 body variants are generated. An inventory needing more combinations fails before generating sheets and asks for fewer designs that hide body pixels. Items made before round 3 keep showing the ears until re-dressed. See the [combined cut qualification](research/deep-paperdoll-ownership-followup-2026-11-06.md).
 - **Long held items lose size where the body hides them.** Bows change size between walk frames and may turn against the
   hand, mostly in the side view, where a left-hand bow is behind the body; some of these clips are real flips of the bow, so
   the size and turn checks keep flagging the clip for repair. An upright-bow wording looked better but did not reduce failing

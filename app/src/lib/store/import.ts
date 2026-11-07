@@ -1,7 +1,7 @@
 // Local-only import: decode and validate everything before writing a new project. Never runs a generation.
 import { decodePng, makeImg, pngSize, type Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
-import { cellImg, layerFrame } from '../compose/compose.ts';
+import { cellImg, cutAt, layerFrame } from '../compose/compose.ts';
 import { validate } from '../export/generic.ts';
 import { baseHashOf, cellHash, DEFAULT_MOVE, DIRECTIONS, playlist, type DirectionName, type Sha256 } from '../rig/rig.ts';
 import { normalize, opaqueBox, pivotOf } from '../rig/normalize.ts';
@@ -158,6 +158,11 @@ async function sheets(files: Map<string, Uint8Array>): Promise<ImportedCharacter
       if (await cellHash(im) !== h) throw new Error('A saved-design source image does not match its stored hash.');
       images.set(h, im);
     }
+  }
+  for (const item of m.items) for (const [anim, cuts] of Object.entries(item.baseCut ?? {})) {
+    const count = m.rig.animations.find((move) => move.id === anim)?.cells ?? 0;
+    for (const dir of m.rig.directions.filter((dir) => dir.mirrorOf && !cuts[dir.id]))
+      cuts[dir.id] = Array.from({ length: count }, (_, cell) => cutAt(m, item, anim, dir.id, cell)?.sort((a, b) => a - b) ?? null);
   }
   for (const d of m.rig.directions) delete d.mirrorOf;
   // Old engine ZIPs do not carry the referenced rest PNGs or a managed character record.

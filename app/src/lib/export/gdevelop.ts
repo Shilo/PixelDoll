@@ -81,7 +81,14 @@ function createPixelDoll(scene, m, names, x = 320, y = 240, preset = m.presets[0
     for (const [si, slot] of m.slots.entries()) {
       let item = on.find((i) => i.slot === slot.id);
       if (!item || hidden.has(slot.id)) continue;
-      item = on.map((over) => m.items.find((v) => v.variantOf === item.id && v.under === over.id)).find(Boolean) ?? item;
+      let selected = item, count = 0;
+      for (const variant of m.items) {
+        const required = variant.underAll ?? (variant.under ? [variant.under] : []);
+        if (variant.variantOf === item.id && required.length > count && required.every((id) => on.some((over) => over.id === id))) {
+          selected = variant; count = required.length;
+        }
+      }
+      item = selected;
       for (const l of item.layers) {
         const name = names[item.id][l.id];
         let node = d.nodes.get(name);

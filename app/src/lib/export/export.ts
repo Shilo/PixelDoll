@@ -3,7 +3,7 @@ import type { Img } from '../image/png.ts';
 import { encodePngBytes } from '../image/pngraw.ts';
 import type { Engine, Project } from '../store/manifest.ts';
 import { zip, type ZipEntry } from '../store/zip.ts';
-import { cellImg, withTuckVariants } from '../compose/compose.ts';
+import { bodyCutVariantCount, bodyCutVariantLimit, cellImg, MAX_BODY_CUT_VARIANTS, withTuckVariants } from '../compose/compose.ts';
 import { asepriteFiles } from './aseprite.ts';
 import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
 import { godotFiles } from './godot.ts';
@@ -18,10 +18,12 @@ export interface ExportResult { entries: ZipEntry[]; warnings: string[]; errors:
 export async function exportFiles(src: Project, o: ExportOptions): Promise<ExportResult> {
   const invalid = validate(src);
   if (o.pixelsPerUnit !== undefined && (!Number.isFinite(o.pixelsPerUnit) || o.pixelsPerUnit <= 0)) invalid.push('Pixels per unit must be a positive finite number.');
-  // Baked variants represent one covering item. Two independently equipped covering slots need a combined mask.
+  const bodyVariants = bodyCutVariantCount(src.manifest);
+  if (bodyVariants > MAX_BODY_CUT_VARIANTS) invalid.push(bodyCutVariantLimit(bodyVariants));
+  // Body variants include combined covers. Other clipped slots still support one covering slot.
   const source = src.manifest;
   const populated = new Set(source.items.filter((it) => !it.variantOf && it.baseHash === source.rig.baseHash).map((it) => it.slot));
-  for (const target of source.slots.filter((s) => populated.has(s.id))) {
+  for (const target of source.slots.filter((s) => s.id !== 'body' && populated.has(s.id))) {
     const covers = source.slots.filter((s) => s.id !== target.id && s.clips?.includes(target.id) && source.items.some((it) =>
       it.slot === s.id && !it.variantOf && it.baseHash === source.rig.baseHash && !(it.hides ?? s.hides ?? []).includes(target.id)));
     if (new Set(covers.map((s) => s.id)).size > 1) invalid.push(`${target.id}: export supports one populated clipping slot; ${covers.map((s) => s.id).join(', ')} can cover it together. Remove the overlapping clips rules before exporting.`);
@@ -37,9 +39,6 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
     return { entries: [], warnings: [], errors: ['The base body has no visible animation frames to export.'] };
   }
   const { manifest: m, warnings } = exportManifest(p, o);
-  // round 3 baseCut: engines swap to one "<base>~<item>" sheet; the Studio hides the union when two such items are worn
-  const cutSlots = [...new Set(src.manifest.items.filter((it) => it.baseCut && !it.variantOf && it.baseHash === src.manifest.rig.baseHash).map((it) => it.slot))];
-  if (cutSlots.length > 1) warnings.push(`Items in ${cutSlots.join(', ')} each hide body pixels (ears under a hood). Worn together, game engines hide only one item's pixels; the Studio preview hides both.`);
   const files = coreFiles(p, m);
   const sheets = new Map(files.flatMap((f) => (typeof f.data === 'object' && 'w' in f.data ? [[f.name, f.data] as [string, Img]] : [])));
   files.push(...genericFiles(p, m, sheets, { strips: o.engines.includes('generic'), baked: o.baked }));

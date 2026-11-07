@@ -49,3 +49,26 @@ test('same-name characters with different frozen bases have disjoint native obje
   expect(a.resources.resources.some((x: { name: string; file: string }) => b.resources.resources.some((y: { name: string; file: string }) => x.name === y.name || x.file === y.file))).toBe(false);
   expect(a.resources.resources.every((x: { file: string }) => x.file.length < 80)).toBe(true);
 });
+
+test('GDevelop selects combined body cuts and returns to single cutters when equipment changes', () => {
+  const m = gdFixture(), base = m.items[0];
+  m.materials = [];
+  m.slots.push({ id: 'back', class: 'worn', z: 90 });
+  m.items.push({ ...structuredClone(m.items.find((item) => item.id === 'hat')!), id: 'cape', slot: 'back' },
+    { ...structuredClone(base), id: 'base~hat', variantOf: 'base', under: 'hat' },
+    { ...structuredClone(base), id: 'base~cape', variantOf: 'base', under: 'cape' },
+    { ...structuredClone(base), id: 'base~cape~hat', variantOf: 'base', underAll: ['cape', 'hat'] });
+  const names = Object.fromEntries(m.items.map((item) => [item.id, Object.fromEntries(item.layers.map((layer) => [layer.id, gdObjectName(item.id, layer.id)]))]));
+  const scene = { createObject: () => ({ hide() {}, setLayer() {}, setAnimationName() {}, setAnimationFrame() {}, pauseAnimation() {}, setPosition() {}, setZOrder() {}, updatePreRender() {}, getRendererObject: () => ({}) }),
+    getGame: () => ({ getImageManager: () => ({ getPIXITexture: () => ({}) }) }) };
+  const create = new Function(GDEVELOP_RUNTIME + '\nreturn createPixelDoll;')();
+  const d = create(scene, m, names);
+  d.equip('back', 'cape');
+  expect(d.nodes.has(gdObjectName('base~cape~hat', 'main'))).toBe(true);
+  d.equip('head', null);
+  expect(d.nodes.has(gdObjectName('base~cape', 'main'))).toBe(true);
+  d.equip('back', null);
+  d.equip('back', 'cape');
+  d.equip('head', 'hat');
+  expect(d.nodes.has(gdObjectName('base~cape~hat', 'main'))).toBe(true);
+});

@@ -1,0 +1,49 @@
+# Equipment ownership and combined body cuts
+
+November 6, 2026. This follow-up replays the public frozen benchmark and authors controls with independently known owners. The starting application revision was `de3445e9`. No PixelLab requests or private source media were used.
+
+## A reproduced export defect
+
+A 64 px body contains two independent protruding pixels, one hidden by headwear and one by a cape. Both equipment items are worn. Studio applies the union of their `baseCut` arrays and makes both pixels transparent. Export produces `base~hat` and `base~cape`, then picks just one. The selected `base~hat` leaves the cape's hidden pixel at RGBA `[200,150,120,255]`, while Studio shows `[0,0,0,0]`. All four requested export formats succeeded and emitted the existing warning. This was the accepted D22 limit in the earlier generation review. [Original decision](generation-quality-round3-2026-10-25.md) · [Variant construction and selection](../../app/src/lib/compose/compose.ts) · [Export warning](../../app/src/lib/export/export.ts)
+
+Executing the actual exported Phaser `shown()` method made the cause more concrete. Equipment inserted as body, head, back selected `base~hat`. Inserting body, back, head selected `base~cape`. The same worn items therefore produced different hidden body pixels according to equipment insertion order. The original Studio east/west composite remained an exact horizontal mirror.
+
+Native Aseprite 1.3.18.6 rendered the exported two-frame east/west document successfully. The second cut was still opaque in the rendered east frame. The batch process printed warnings from an installed extension about a missing dialog, but exited zero and produced the expected 128 × 64 sheet. The inspected PNG confirms the document's visible body choice independently from the TypeScript renderer. [Native export contract](../../app/test/unit/aseprite-export.test.ts)
+
+The correction now bakes unions for every feasible combination with at most one covering item from each slot. The original body's `variantOf` identity remains the material owner. Combined variants record `underAll`, a sorted list of required equipped IDs, and every renderer selects the eligible variant with the most required covers. Single covers keep their existing `under` field. The body path also combines explicit body clipping with saved cuts, while clipping other targets still supports one populated covering slot. Preparing an already prepared project replaces its generated variants from canonical originals.
+
+The number of body variants is the product of one plus each eligible slot's item count, minus one. Two head items and one cape therefore need five variants. Two items from the same slot can never appear in a combined requirement. The export checks this count before allocating cells and refuses above 256 variants with an actionable error. This chosen memory and asset bound prevents incomplete output or unbounded expansion. The generated images keep shared content hashes where their pixels match. Limiting variants to saved outfits would leave arbitrary runtime equipment combinations incorrect.
+
+## Qualification of the correction
+
+The same independent fixture now selects `base~cape~hat` in both equipment orders. Both cut pixels are transparent in the actual native Aseprite render. A native Godot 4.7.2 script checks both cuts, removal and reapplication of each item, the unrelated body pixel and the mirrored west view. The persistent Godot regression also completes import, direct runtime, selected-scene pack export and runtime from the pack. One earlier standalone editor import exited abnormally after writing its assets. The final native regression completed cleanly. [Combined body tests](../../app/test/unit/base-cut.test.ts) · [Godot native test](../../app/test/unit/godot-export.test.ts) · [Aseprite native test](../../app/test/unit/aseprite-export.test.ts)
+
+The import comparison found another concrete defect. An engine sheet already contains mirrored raster rows, so its importer makes every row independent and removes `mirrorOf`. It previously kept cuts only on the original source direction. That restored the hidden body pixels in the imported mirrored view. The importer now resolves mirrored cuts through `cutAt` before removing the direction link, and sorts their pixel indices to retain the stored contract. The regression includes two adjacent cut pixels so an incorrectly reversed order fails validation. Editable and engine-sheet archives are both imported, compared in all four combinations of the two items, and re-exported without accumulating variants. [Sheet import](../../app/src/lib/store/import.ts) · [Import regression](../../app/test/unit/base-cut.test.ts)
+
+The focused check used Node 24.22.1 and npm 11.19.1. `npm run check` reported zero errors and warnings. The nine relevant unit files passed all 155 tests with native Godot and Aseprite enabled and no skips. Tests also cover owner-local recoloring, hidden covering items, stale cutters, mutually exclusive alternatives, mixed body clipping and cuts, repeated preparation, malformed requirements, and refusal at 257 variants. The existing Phaser fixture was corrected to include its required `under` metadata. Its recoloring and tucked-layer assertions remain in place. Full browser testing is coordinated with the live experiment session separately.
+
+Independent review then found that valid padded or narrower base layers still interpreted rig-cell cut indices as layer indices. An 80 × 80 base at pivot (40, 68) on a 64 × 64 rig at pivot (32, 60) left the intended cut pixels opaque. Both Studio and baked variants now map through the layer's pivot offset before applying the same cut primitive, discarding coordinates outside a smaller layer. Eleven focused controls passed, including complete RGBA comparisons in authored and mirrored views, sentinels at the former wrong indices, input immutability and exported layer sheets. [Shared mapping](../../app/src/lib/compose/compose.ts) · [Geometry controls](../../app/test/unit/base-cut.test.ts)
+
+## Why runtime masks cost more here
+
+Godot, Phaser, Unity and GDevelop already derive recolored textures, so they could also clear the union of cut pixels on a body texture. This avoids storing combinations but adds mask construction, mirror and sheet-coordinate mapping, equipment-sensitive caches and resource lifetime handling to four runtimes. Unity's serialized model would also need a flattened cut representation because its JSON reader cannot directly use the nested per-animation dictionary. Aseprite's fixed visible layer stack would still need the selected outfit's union baked into a body layer. The bounded baked-variant correction reuses the current texture and asset-loading contracts across all five outputs. [Godot texture derivation](../../app/src/lib/export/godot.ts) · [Phaser](../../app/src/lib/export/phaser.ts) · [Unity](../../app/src/lib/export/unity.ts) · [GDevelop](../../app/src/lib/export/gdevelop.ts) · [Aseprite](../../app/src/lib/export/aseprite.ts)
+
+## Signed blade orientation remains a review signal
+
+The replay signs each non-round PCA axis by the wrist-to-centroid projection. It requires at least 4 px signed projection, at least 9 px longitudinal span, at least 3 px forearm length and at most 45° disagreement between the signed axis and the wrist-to-centroid ray. Compare signed orientation relative to the anatomical forearm along the actual clip playlist, including the loop edge only when looped. Use the correct left wrist for the offhand bow.
+
+| Retained item | Eligible frames | Eligible adjacent pairs | Changes above 120° |
+| --- | ---: | ---: | ---: |
+| Sword | 24 / 24 | 24 | 0 |
+| Axe | 22 / 24 | 21 | 0 |
+| Offhand bow | 5 / 24 | 2 | 1 |
+
+The bow warning is east Walk 0→1 at 125.1°. Its visible mask changes sides around the wrist, and the retained imagery does not establish an erroneous bow rotation. Every eligible requested wrist had frozen body alpha within a 3 × 3 neighborhood. That witness does not prove anatomical hand visibility or orientation. These weapon cases store requested joints but no measured joint tracks, so they cannot qualify a measured-joint replacement for the reference frame.
+
+Independent controls detected an exact 180° reversal of a one-ended blade. An 80° arm swing carrying the same blade changed relative orientation by only 2.64° after rasterization. A shortened, occluded blade abstained on the span threshold. A centered double-ended weapon and round shield also abstained. This improves a diagnostic's specificity, but the bow case prevents a generic new hard gate. A production warning needs qualified one-ended item identity and must keep the two exact frames available for review. [Current axis and visibility checks](../../app/src/lib/items/items.ts) · [Earlier polarity counterexample](deep-paperdoll-vision-2026-11-06.md)
+
+## Item overlap needs separate owner evidence
+
+A four-pixel independent depth control gives a weapon and cape two overlaps outside body alpha and two over opaque body. The desired owner alternates at each pair. The existing body-alpha split and one global foreground/background order gets two of four owners correct. Promoting the whole weapon reverses which overlaps fail. A body alpha partition preserves the solo composite but supplies no evidence about cape-versus-blade depth.
+
+Keep exact body cuts and combined equipment selection separate from that unresolved semantic question. The cut union has deterministic ground truth from saved item metadata. A new per-pixel depth assignment needs explicit artist or trusted geometry labels, including protected hand pixels, both sides of a cape, mirrored offhand equipment and designed transparency. [Current splitter](../../app/src/lib/compose/split.ts) · [Geometry source review](deep-paperdoll-geometry-2026-11-06.md)

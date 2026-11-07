@@ -290,12 +290,14 @@ func _layer_of(node: Node) -> Dictionary:
 ## The item drawn in slot: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists.
 func _shown(slot: String) -> String:
 	var id: String = equipped.get(slot, "")
-	if not id.is_empty():
-		for s in equipped:
-			var v := "%s~%s" % [id, equipped[s]]
-			if not _find(manifest["items"], v).is_empty():
-				return v
-	return id
+	var shown := id
+	var count := 0
+	for variant in manifest["items"]:
+		var required: Array = variant.get("underAll", [variant["under"]] if variant.has("under") else [])
+		if variant.get("variantOf", "") == id and required.size() > count and required.all(func(cover): return equipped.values().has(cover)):
+			shown = variant["id"]
+			count = required.size()
+	return shown
 
 
 func _find(list: Array, id: String, key := "id") -> Dictionary:

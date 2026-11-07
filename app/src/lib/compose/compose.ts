@@ -38,10 +38,37 @@ export function hiddenSlots(m: Manifest, items: Item[]): Set<string> {
 /** Equipped items whose slot tucks `slot` under them (slot.clips). Hidden or not: every engine runtime uses the same rule. */
 export const tuckers = (m: Manifest, on: Item[], slot: string) => on.filter((c) => c.slot !== slot && (m.slots.find((s) => s.id === c.slot)?.clips ?? []).includes(slot));
 /** Variant id of `item` tucked under `over` (exports bake these: engines swap sheets, they never mask). */
-export const tuckedId = (item: string, over: string) => `${item}~${over}`;
+export const tuckedId = (item: string, over: string | readonly string[]) => `${item}~${typeof over === 'string' ? over : over.join('~')}`;
+/** Equipment required by a baked variant. Combined body variants retain a canonical material owner. */
+export const variantCovers = (item: Pick<Item, 'under' | 'underAll'>): string[] => item.underAll ?? (item.under ? [item.under] : []);
 /** The equipped items as drawn: an item tucked under another uses its baked variant when the project has one. */
-export const shownItems = (m: Manifest, on: Item[]): Item[] =>
-  on.map((it) => (it.id === m.rig?.baseItem ? on.filter((c) => c.baseCut) : tuckers(m, on, it.slot)).map((c) => m.items.find((v) => v.id === tuckedId(it.id, c.id))).find(Boolean) ?? it);
+export const shownItems = (m: Manifest, on: Item[]): Item[] => on.map((it) => {
+  const covers = new Set((it.id === m.rig?.baseItem ? on.filter((c) => c.baseHash === m.rig.baseHash && affectsBody(m, c)) : tuckers(m, on, it.slot)).map((c) => c.id));
+  let shown = it, count = 0;
+  for (const variant of m.items) {
+    const required = variantCovers(variant);
+    if (variant.variantOf === it.id && required.length > count && required.every((id) => covers.has(id))) {
+      shown = variant;
+      count = required.length;
+    }
+  }
+  return shown;
+});
+
+/** Bound complete body-cover combinations before allocating their cells and export sheets. */
+export const MAX_BODY_CUT_VARIANTS = 256;
+const affectsBody = (m: Manifest, item: Item) => !!item.baseCut || (m.slots.find((s) => s.id === item.slot)?.clips ?? []).includes('body');
+const bodyCoverGroups = (m: Manifest) => {
+  const groups = new Map<string, Item[]>();
+  for (const item of m.items.filter((it) => !it.variantOf && it.baseHash === m.rig.baseHash && it.id !== m.rig.baseItem && affectsBody(m, it))) {
+    const group = groups.get(item.slot) ?? [];
+    group.push(item);
+    groups.set(item.slot, group);
+  }
+  return [...groups].sort(([a], [b]) => a.localeCompare(b)).map(([, items]) => items.sort((a, b) => a.id.localeCompare(b.id)));
+};
+export const bodyCutVariantCount = (m: Manifest) => bodyCoverGroups(m).reduce((count, group) => count * (group.length + 1), 1) - 1;
+export const bodyCutVariantLimit = (count: number) => `This inventory needs ${count} body variants. Export supports at most ${MAX_BODY_CUT_VARIANTS}. Export fewer designs that hide body pixels.`;
 
 // ---------- round 3: items that hide body px (Item.baseCut: ear tips under a hood) ----------
 /** Base px an item hides in one cell (rig-cell indices); a mirrored direction flips its source's. */
@@ -65,6 +92,16 @@ export function cutBase(im: Img, cuts: (number[] | null)[]): Img {
   const o: Img = { w: im.w, h: im.h, data: im.data.slice() };
   for (const c of cuts) for (const p of c ?? []) o.data.fill(0, p * 4, p * 4 + 4);
   return o;
+}
+
+/** Stored cuts use rig coordinates even when the body layer has its own canvas and pivot. */
+function cutBodyLayer(im: Img, cuts: (number[] | null)[], rig: Rig, layer: Layer): Img {
+  const frame = layerFrame(rig, layer), dx = frame.x - rig.pivot.x, dy = frame.y - rig.pivot.y;
+  const local = cuts.map((cut) => cut?.flatMap((pixel) => {
+    const x = pixel % rig.cell.w + dx, y = Math.floor(pixel / rig.cell.w) + dy;
+    return x >= 0 && y >= 0 && x < im.w && y < im.h ? [y * im.w + x] : [];
+  }) ?? null);
+  return cutBase(im, local);
 }
 
 /**
@@ -108,11 +145,14 @@ const tucked = (p: Project, im: Img | null, l: Layer, under: Item[], anim: strin
  *  are worn (stored directions only; a mirrored view is the flip of its source, and tucking commutes with the flip). Stale
  *  items are not exported, and a cover that hides the slot never shows the tucked copy, so neither gets one. */
 export async function withTuckVariants(p: Project): Promise<Project> {
-  const m = p.manifest, images = new Map(p.images), add: Item[] = [], current = (x: Item) => !x.variantOf && x.baseHash === m.rig.baseHash;
+  const m = { ...p.manifest, items: p.manifest.items.filter((item) => !item.variantOf) };
+  const images = new Map(p.images), add: Item[] = [], current = (x: Item) => x.baseHash === m.rig.baseHash;
+  const count = bodyCutVariantCount(m);
+  if (count > MAX_BODY_CUT_VARIANTS) throw new Error(bodyCutVariantLimit(count));
   for (const over of m.items.filter(current)) {
     const overSlot = m.slots.find((s) => s.id === over.slot), hides = over.hides ?? overSlot?.hides ?? [];
     for (const slot of (overSlot?.clips ?? []).filter((s) => !hides.includes(s)))
-      for (const it of m.items.filter((x) => x.slot === slot && current(x))) {
+      for (const it of m.items.filter((x) => x.slot === slot && x.id !== m.rig.baseItem && current(x))) {
         const v: Item = { ...structuredClone(it), id: tuckedId(it.id, over.id), name: `${it.name} under ${over.name}`, variantOf: it.id, under: over.id };
         delete v.qa;
         for (const [li, l] of v.layers.entries())
@@ -130,23 +170,31 @@ export async function withTuckVariants(p: Project): Promise<Project> {
       }
   }
   const base = m.items.find((x) => x.id === m.rig.baseItem);
-  for (const over of m.items.filter((x) => x.baseCut && !x.variantOf && x.baseHash === m.rig.baseHash))
-    if (base) { // engines swap to "<base>~<item>" while the item is worn (the same rule as tucked hair), they never mask
-      const v: Item = { ...structuredClone(base), id: tuckedId(base.id, over.id), name: `${base.name} under ${over.name}`, variantOf: base.id, under: over.id };
+  let combinations: Item[][] = [];
+  for (const group of bodyCoverGroups(m)) {
+    const prefixes = [[], ...combinations];
+    combinations.push(...prefixes.flatMap((prefix) => group.map((over) => [...prefix, over])));
+  }
+  for (const covers of combinations)
+    if (base) {
+      const ids = covers.map((over) => over.id).sort();
+      const v: Item = { ...structuredClone(base), id: tuckedId(base.id, ids), name: `${base.name} under ${covers.map((over) => over.name).join(', ')}`, variantOf: base.id,
+        ...(ids.length === 1 ? { under: ids[0] } : { underAll: ids }) };
       delete v.qa;
       for (const [li, l] of v.layers.entries())
         for (const [anim, dirs] of Object.entries(l.cells ?? {}))
           for (const [dir, cells] of Object.entries(dirs ?? {}) as [DirectionName, (Sha256 | null)[]][])
             dirs![dir] = await Promise.all(cells.map(async (h, i) => {
-              const im = h ? cellImg(p, base.layers[li], anim, dir, i) : null, cut = cutAt(m, over, anim, dir, i);
-              if (!im || !cut?.length) return h;
-              const t = cutBase(im, [cut]), k = await cellHash(t);
+              const im = h ? cellImg(p, base.layers[li], anim, dir, i) : null;
+              if (!im) return h;
+              const clipped = tucked(p, im, base.layers[li], covers.filter((over) => (m.slots.find((s) => s.id === over.slot)?.clips ?? []).includes('body')), anim, dir, i)!;
+              const t = cutBodyLayer(clipped, covers.map((over) => cutAt(m, over, anim, dir, i)), m.rig, base.layers[li]), k = await cellHash(t);
               images.set(k, t);
               return k;
             }));
       add.push(v);
     }
-  return add.length ? { manifest: { ...m, items: [...m.items, ...add] }, images, layerImages: p.layerImages } : p;
+  return { manifest: { ...m, items: [...m.items, ...add] }, images, layerImages: p.layerImages };
 }
 
 /** Most specific matching zOverride (cell > anim > dir > none; later wins on ties), else layer.z. */
@@ -167,7 +215,7 @@ export function drawList(m: Manifest, items: Preset['items'], anim: string, dir:
   const list: Draw[] = [];
   for (const item of shownItems(m, on)) {
     if (hidden.has(item.slot)) continue;
-    const slot = m.slots.find((s) => s.id === item.slot)!, under = item.under ? [] : tuckers(m, on, item.slot); // a baked variant is already tucked
+    const slot = m.slots.find((s) => s.id === item.slot)!, under = item.variantOf ? [] : tuckers(m, on, item.slot); // a baked variant is already tucked
     for (const layer of item.layers) list.push({ item, layer, slot, z: resolveZ(slot, layer, anim, dir, cell), under });
   }
   return list.sort((a, b) => a.z - b.z || slotIx(a.item.slot) - slotIx(b.item.slot) || (a.layer.role === b.layer.role ? 0 : a.layer.role === 'bg' ? -1 : 1) || a.item.id.localeCompare(b.item.id));
@@ -205,7 +253,7 @@ export function composeCell(p: Project, items: Preset['items'], anim: string, di
   const cuts = equipped(m, items).filter((it) => it.baseCut && it.baseHash === m.rig.baseHash).map((it) => cutAt(m, it, anim, dir, cell));
   for (const d of drawList(m, items, anim, dir, cell)) {
     let im = tucked(p, cellImg(p, d.layer, anim, dir, cell), d.layer, d.under, anim, dir, cell);
-    if (im && (d.item.id === m.rig.baseItem || d.item.variantOf === m.rig.baseItem)) im = cutBase(im, cuts);
+    if (im && (d.item.id === m.rig.baseItem || d.item.variantOf === m.rig.baseItem)) im = cutBodyLayer(im, cuts, m.rig, d.layer);
     const f = layerFrame(m.rig, d.layer);
     if (im) over(out, im, frame.x - f.x, frame.y - f.y);
   }

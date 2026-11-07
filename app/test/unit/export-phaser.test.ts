@@ -18,7 +18,7 @@ const fixture = () => ({
     { id: 'base', slot: 'body', materials: ['skin'], layers: [{ id: 'main', role: 'fg', z: 10, sheets: { walk: 'layers/body.png' }, sourceSheets: { walk: 'sources/body.png' } }] },
     { id: 'hair', slot: 'hair', materials: ['hair'], layers: [{ id: 'main', role: 'fg', z: 20, sheets: { walk: 'layers/hair.png' } }] },
     { id: 'hat', slot: 'head', materials: [], layers: [{ id: 'main', role: 'fg', z: 20, sheets: { walk: 'layers/hat.png' }, cell: { w: 96, h: 96 }, pivot: { x: 48, y: 76 } }] },
-    { id: 'hair~hat', variantOf: 'hair', slot: 'hair', materials: ['hair'], layers: [{ id: 'main', role: 'fg', z: 20, sheets: { walk: 'layers/tucked.png' } }] },
+    { id: 'hair~hat', variantOf: 'hair', under: 'hat', slot: 'hair', materials: ['hair'], layers: [{ id: 'main', role: 'fg', z: 20, sheets: { walk: 'layers/tucked.png' } }] },
   ],
   presets: [{ id: 'one', items: { hair: 'hair', head: 'hat' }, variants: {} }, { id: 'two', items: { hair: 'hair', head: null }, variants: { skin: 'red' } }],
 }) as unknown as Manifest;
@@ -77,6 +77,16 @@ function atlasArgs(url: string, m: Manifest): [string, string, string] {
   return [item.id, 'main', 'walk'];
 }
 afterEach(() => vi.unstubAllGlobals());
+
+test('Phaser selects the complete body-cut combination independently of equipment insertion order', () => {
+  const m = fixture(), source = m.items[0], { Paperdoll } = runtime();
+  m.items.push({ ...source, id: 'base~hat', variantOf: 'base', under: 'hat' }, { ...source, id: 'base~cape', variantOf: 'base', under: 'cape' },
+    { ...source, id: 'base~cape~hat', variantOf: 'base', underAll: ['cape', 'hat'] });
+  for (const equipped of [{ body: 'base', head: 'hat', back: 'cape' }, { back: 'cape', body: 'base', head: 'hat' }])
+    expect(Paperdoll.prototype.shown.call({ m, equipped }, 'body')).toBe('base~cape~hat');
+  expect(Paperdoll.prototype.shown.call({ m, equipped: { body: 'base', head: 'hat' } }, 'body')).toBe('base~hat');
+  expect(Paperdoll.prototype.shown.call({ m, equipped: { body: 'base' } }, 'body')).toBe('base');
+});
 
 test('Phaser quick start selects the first playable move and its supported direction', () => {
   const m = fixture();

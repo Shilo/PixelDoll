@@ -178,8 +178,15 @@ export class Paperdoll {
   /** The item drawn in a slot: "<item>~<other>" (baked: hair tucked under a worn helmet, slots[].clips) when it exists. */
   shown(slot) {
     const id = this.equipped[slot];
-    if (id) for (const o of Object.values(this.equipped)) if (this.m.items.some((i) => i.id === \`\${id}~\${o}\`)) return \`\${id}~\${o}\`;
-    return id;
+    const equipped = new Set(Object.values(this.equipped));
+    let shown = id, count = 0;
+    for (const variant of this.m.items) {
+      const required = variant.underAll ?? (variant.under ? [variant.under] : []);
+      if (variant.variantOf === id && required.length > count && required.every((cover) => equipped.has(cover))) {
+        shown = variant.id; count = required.length;
+      }
+    }
+    return shown;
   }
 
   layerOf(n) {

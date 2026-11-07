@@ -11,7 +11,7 @@ import { decodePngBytes } from '../../src/lib/image/pngraw.ts';
 import { cellHash } from '../../src/lib/rig/rig.ts';
 import type { Item, Manifest, Project } from '../../src/lib/store/manifest.ts';
 
-async function fixture() {
+async function fixture(combinedCuts = false) {
   const body = makeImg(4, 4), hair = makeImg(4, 4), hat = makeImg(4, 4), sword = makeImg(6, 6);
   for (const q of [5, 6, 9, 10, 13, 14]) body.data.set([100, 100, 100, 255], q * 4);
   for (let q = 0; q < 16; q++) hair.data.set([100, 100, 100, 255], q * 4);
@@ -34,6 +34,15 @@ async function fixture() {
       ...(id === 'hat' ? { linkTo: 'hair' } : {}), ...(['hair', 'base'].includes(id) ? { defaultVariant: 'blue' } : {}) })),
     presets: [{ id: 'default', name: 'Default', items: { hair: 'hair', head: 'hat', main_hand: 'sword' }, variants: { base: 'red' } }],
   } };
+  if (combinedCuts) {
+    const empty = makeImg(4, 4), hash = await cellHash(empty);
+    p.images.set(hash, empty);
+    const cuts = (pixel: number) => ({ walk: { south: [[pixel], [pixel]], east: [[pixel], [pixel]] } });
+    p.manifest.items.find((item) => item.id === 'hat')!.baseCut = cuts(13);
+    p.manifest.slots.push({ id: 'back', class: 'worn', z: 90 });
+    p.manifest.items.push({ ...item('cape', 'back', hash, 90), materials: [], baseCut: cuts(14) });
+    Object.assign(p.manifest.presets[0].items, { hair: null, main_hand: null, back: 'cape' });
+  }
   const project = await withTuckVariants(p), m = exportManifest(project, { engines: ['aseprite'], baked: true }).manifest;
   const sheets = new Map(coreFiles(project, m).filter((f): f is { name: string; data: Img } => typeof f.data === 'object' && 'w' in f.data).map((f) => [f.name, f.data]));
   return { project, m, sheets };
@@ -75,7 +84,7 @@ test('Aseprite refuses native-format overflow and empty timelines instead of wri
 
 const native = process.env.ASEPRITE_BIN ?? 'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Aseprite\\Aseprite.exe';
 test.skipIf(!existsSync(native))('native Aseprite renders every frame exactly like the PixelDoll compositor', async () => {
-  const { project, m, sheets } = await fixture(), folder = resolve('node_modules/.cache/aseprite-review');
+  const { project, m, sheets } = await fixture(true), folder = resolve('node_modules/.cache/aseprite-review');
   mkdirSync(folder, { recursive: true });
   const file = resolve(folder, 'regression.aseprite'), png = resolve(folder, 'native.png'), json = resolve(folder, 'native.json');
   writeFileSync(file, await asepriteFile(m, sheets));
