@@ -98,6 +98,7 @@ export interface Deps {
 
 const POLL_MS = 5000, SYNC_MS = 1500, ASK_MS = 500, FULL_SYNC_MS = 30_000, MAX_TRIES = 10, MAX_PX = 2048, LOCK = 'pixeldoll-queue';
 export const MOTION_LAB_TAG = 'motion-lab-2026-10-28';
+export const ITEM_TRIAL_TAG = 'item-trials-2026-11-06';
 const LOST_AFTER_MS = 120_000;
 const PROBE_MS = 15_000;
 
@@ -249,7 +250,7 @@ export class Queue {
     this.deps.all = async () => (await all()).filter(owns);
     this.deps.get = async id => { const r = await get(id); return r && owns(r) ? r : undefined; };
   }
-  private ownsRecord(r: Pick<JobRec,'tag'>) { return this.deps.recordTag === undefined ? r.tag !== MOTION_LAB_TAG : r.tag === this.deps.recordTag; }
+  private ownsRecord(r: Pick<JobRec,'tag'>) { return this.deps.recordTag === undefined ? r.tag !== MOTION_LAB_TAG && r.tag !== ITEM_TRIAL_TAG : r.tag === this.deps.recordTag; }
 
   // ---- store contract (Svelte `$queue`) ----
   subscribe(fn: (s: QueueSnapshot) => void) {

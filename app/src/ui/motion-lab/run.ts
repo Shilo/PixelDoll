@@ -56,14 +56,14 @@ export async function exportReviewed(jobId:string){
   frames.at(-1)!.duration+=row.review.terminalHold;
   return{version:1,kind:'pixeldoll-reviewed-motion',label:row.label,source:row.document.clip,fixture:row.document.fixture,direction:row.document.direction,loop:row.document.clip.loop,cell,pivot:{x:pivot.x+row.document.padding,y:pivot.y+row.document.padding},padding:row.document.padding,reference:{png:bytesToBase64(new Uint8Array(await reference.arrayBuffer())),keypoints:params.first_frame_keypoints},review:row.review,frames};
 }
-export async function connectLab():Promise<Balance|null>{
-  await labQueue.connect();
+export async function connectLab(target:Queue=labQueue):Promise<Balance|null>{
+  await target.connect();
   let off=false;try{off=localStorage.getItem('pixeldoll.agentKey')==='off';}catch{/* An unavailable optional kill switch does not create a credential. */}
   if(!import.meta.env.DEV||import.meta.env.MODE!=='agent'||window.top!==window||off)return null;
   const response=await fetch('/__dev/pixellab-key',{cache:'no-store'});
   if(!response.ok)throw new Error(`Agent access is unavailable (${response.status}). Offline editing still works.`);
   const key=await response.text();
-  const balance=await api<Balance>(key,'GET','/balance');labQueue.setKey(key);labQueue.setBalance(balance,key);return balance;
+  const balance=await api<Balance>(key,'GET','/balance');target.setKey(key);target.setBalance(balance,key);return balance;
 }
 export async function generateCandidate(document:MotionDocument,seed:number,stage:ResearchStage='body'):Promise<string>{
   if(document.fixture.directions.find(d=>d.id===document.direction)?.mirrorOf)throw new Error('This view derives from mirrored frozen source frames. Generate and review its source direction instead.');

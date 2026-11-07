@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { Queue, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
+import { ITEM_TRIAL_TAG, MOTION_LAB_TAG, Queue, type Deps, type JobRec } from '../../src/lib/pixellab/queue.ts'
 import { accountBalance } from './account-fixture.ts'
 
 /** Name-aware Web Locks stand-in: one holder per name, FIFO waiters, ifAvailable. */
@@ -59,4 +59,18 @@ test('REVIEW a Motion Lab leader starves Studio work: Studio never leads while t
   console.log('posts', JSON.stringify(f.posts), 'studio role', f.studio.role, 'state', f.store.get(rec.id)?.state)
   f.studio.requestHandoff(false); f.studio.disconnect(); f.lab.disconnect()
   expect(f.posts.studio + f.posts.lab).toBe(1)
+})
+
+test('Studio, Motion Lab and Item Trials load only the records owned by their surface', async () => {
+  const records = [
+    { id: 'studio', tag: 'studio-base' },
+    { id: 'motion', tag: MOTION_LAB_TAG },
+    { id: 'trial', tag: ITEM_TRIAL_TAG },
+  ].map(({ id, tag }): JobRec => ({ id, label: id, tag, method: 'POST', endpoint: '/edit-animation-v2', params: { seed: 7 }, inputs: [], requestHash: id, state: 'done', attempts: 0, nextAt: 0, createdAt: 1, jobs: [], gens: 0, usd: 0 }))
+  const deps: Partial<Deps> = { all: async () => structuredClone(records) }
+  const studio = new Queue(deps), motion = new Queue({ ...deps, recordTag: MOTION_LAB_TAG }), trial = new Queue({ ...deps, recordTag: ITEM_TRIAL_TAG })
+  await Promise.all([studio.load(), motion.load(), trial.load()])
+  expect(studio.snapshot().jobs.map(job => job.id)).toEqual(['studio'])
+  expect(motion.snapshot().jobs.map(job => job.id)).toEqual(['motion'])
+  expect(trial.snapshot().jobs.map(job => job.id)).toEqual(['trial'])
 })
