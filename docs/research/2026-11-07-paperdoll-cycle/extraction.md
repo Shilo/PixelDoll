@@ -26,7 +26,7 @@ Dressing input and key choice, [chroma.ts](../../../app/src/lib/image/chroma.ts)
 
 Per-cell extraction, `chromaLayer` L222 = `chromaMask` L79 then `dropKeyOutline` L90 then `absorbOutline` L196 then 8-connected components >= `minPx` 2 (L225, `components` L115) then `despill` L168:
 
-- `dropKeyOutline` (rim guard): candidate = item px on the base silhouette ring **or over a dark base px (mean RGB < 60)** with >= 2 key 4-neighbors (L96-97); dropped unless an 8-neighbor is a non-candidate item px (L99-110).
+- `dropKeyOutline` (rim guard): candidate = item px on the base silhouette ring **or over a dark base px (mean RGB < 60)** with >= 2 key 4-neighbors (L96-97); dropped unless an 8-neighbor is a non-candidate item px (L99-110). (As read for this spike. Since 2026-11-07 a light generated px needs the dark base px to be a real line; see [fairness.md](fairness.md).)
 - `absorbOutline`: dark key px (lum <= 0.3) become item when off the base and touching item, or with >= 5 of 8 item neighbors; two passes (L209-217).
 - `despill`: px with tint > 10 lose the key excess (L178-180, a max(other channels) limit for green and blue), then snap to a clean ("core", tint <= 10) color within Chebyshev 40 (L183), else a luminance-nearest core color within 0.08 (L184), else keep the partially despilled color.
 

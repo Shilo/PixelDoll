@@ -73,6 +73,9 @@ const tint = (key: Key, r: number, g: number, b: number) => {
 const isKey = (C: Img, p: number, key: Key, kT: number) => C.data[p * 4 + 3] >= 128 && keyScore(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) >= kT;
 
 export const KT = 35;
+/** Rim guard "dark outline" base px: mean RGB under `mean`; when the generated px is light (luminance >= `lightOut`), also
+ * near-black (< `black`) or darker than `contrast` x the brightest neighbor. */
+const OUTLINE = { mean: 60, lightOut: 0.25, black: 0.06, contrast: 0.5 };
 
 /** Key score from which a color leans toward a key: a real key excess, scored below KT (2026-11-07 color audit). */
 export const NEAR_KEY = 20;
@@ -110,18 +113,32 @@ export function chromaMask(C: Img, key: Key, kT = KT): Uint8Array {
 }
 
 /**
- * Rim guard: drop mask px on the base silhouette ring (or a dark base px) whose base-opaque 4-neighbors are mostly key in C
+ * Rim guard: drop mask px on the base silhouette ring (or a dark outline px inside it) whose base-opaque 4-neighbors are mostly key in C
  * (S2: a mannequin outline redrawn off-key, olive 48,46,11). M3 refinement: a candidate that touches item px which are not
  * candidates themselves is the item's own outline (hair tips, trouser edges over dark base lines) and is kept.
  */
 export function dropKeyOutline(mask: Uint8Array, B: Img, C: Img, key: Key, kT = KT): Uint8Array {
   const { w, h } = B, cand = new Uint8Array(mask.length), op = (p: number) => B.data[p * 4 + 3] > 0;
+  // A base px under mean RGB 60 used to count as outline on its own. That includes a deep skin tone's midtones (and dark
+  // clothing), so light thin items over a darker-skinned body lost more px than over a lighter one. A light generated px now
+  // needs the base px to be a real line: near-black or much darker than a neighbor. A dark generated px keeps the old test,
+  // since mannequin redraws (olive 48,46,11, 27,40,4) are dark and dark clothing must stay guarded; so dark items (a black
+  // strap) still lose more px over deep skin (2026-11-07 review: docs/research/2026-11-07-paperdoll-cycle/fairness.md).
+  const L = (im: Img, p: number) => lum(im.data[p * 4], im.data[p * 4 + 1], im.data[p * 4 + 2]);
+  const outline = (p: number, x: number, y: number) => {
+    if ((B.data[p * 4] + B.data[p * 4 + 1] + B.data[p * 4 + 2]) / 3 >= OUTLINE.mean) return false;
+    const l = L(B, p);
+    if (L(C, p) < OUTLINE.lightOut || l < OUTLINE.black) return true;
+    let top = 0;
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const X = x + dx, Y = y + dy; if ((dx || dy) && X >= 0 && Y >= 0 && X < w && Y < h && op(Y * w + X)) top = Math.max(top, L(B, Y * w + X)); }
+    return l < OUTLINE.contrast * top;
+  };
   for (let p = 0; p < mask.length; p++) {
     if (!mask[p] || !op(p)) continue;
     const x = p % w, y = (p / w) | 0;
     const nb = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]].filter(([X, Y]) => X >= 0 && Y >= 0 && X < w && Y < h).map(([X, Y]) => Y * w + X);
-    const edge = nb.length < 4 || nb.some((q) => !op(q)), dark = (B.data[p * 4] + B.data[p * 4 + 1] + B.data[p * 4 + 2]) / 3 < 60;
-    if ((edge || dark) && nb.filter((q) => op(q) && isKey(C, q, key, kT)).length >= 2) cand[p] = 1;
+    if (nb.filter((q) => op(q) && isKey(C, q, key, kT)).length < 2) continue;
+    if (nb.length < 4 || nb.some((q) => !op(q)) || outline(p, x, y)) cand[p] = 1;
   }
   const o = new Uint8Array(mask);
   for (let p = 0; p < o.length; p++) {

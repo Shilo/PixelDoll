@@ -102,6 +102,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
   the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** adds body moves only;
   each item keeps its own priced offer for the new moves.
+- **Dark thin items over deep skin lose more pixels.** The outline guard drops a dark generated pixel over any dark body
+  pixel, because PixelLab's redraws of the stand-in body are dark too. A black strap over a deep skin tone therefore keeps
+  fewer pixels than over a light one (about 8 % fewer in the synthetic check); light items are treated equally. See
+  [rim guard and skin tone](research/2026-11-07-paperdoll-cycle/fairness.md).
 - **The gray-smudge check (D1) compares views.** With three or more drawn views, a view is flagged only when it is much
   grayer than the item's least gray other view, so a neutral emblem drawn in every view passes. A smudge the provider adds
   to every view is therefore not flagged; items with one or two drawn views keep the stricter per-view rule. See the

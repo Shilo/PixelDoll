@@ -29,7 +29,7 @@ it with any change to extraction, cleanup or QA. Corpus `6666e4f54851`, gates `1
 | b-jester-blue | head / blue | ok | 100.0 % (7992/7992) | 100.0 % (7992/7992) | – | 0 | 0 | 0.003 | – |
 | n-cloak128 | back / green | ok | – | – | – | 1 | 0 | 0.054 | – |
 | c-greathelm | head / green | ok | – | – | – | 0 | 0 | 0.004 | 517 |
-| a-bow96 | off_hand / green | ok | 100.0 % (11/11) | 45.5 % (5/11) | – | 1 | 1 | 0.122 | – |
+| a-bow96 | off_hand / green | ok | 100.0 % (11/11) | 45.5 % (5/11) | – | 1 | 1 | 0.124 | – |
 | a-plume-azure | head / azure | ok | 100.0 % (212/212) | 100.0 % (212/212) | – | 0 | 0 | 0.000 | – |
 | a-stripes-azure | torso_outer / azure | ok | 100.0 % (152/152) | 100.0 % (152/152) | – | 0 | 0 | 0.000 | – |
 | a-stripes-magenta (reference) | torso_outer / magenta | ok | – | – | – | 0 | 0 | 0.000 | – |
