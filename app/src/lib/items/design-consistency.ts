@@ -13,8 +13,11 @@ export interface WaistBandConsistency {
 
 /** Only a wraparound waist detail is comparable across front and back; knots and collars need not match. */
 export function expectsWaistBand(prompt: string): boolean {
-  if (!/\b(?:belts?|waistbands?|sashes|sash)\b/i.test(prompt)) return false;
-  if (/\b(?:without|no|not|absent|omit)\b.{0,35}\b(?:belt|waistband|sash)\b/i.test(prompt)) return false;
+  if (!/\b(?:belts?|waistbands?|sashes|sash|girdles?|cummerbunds?)\b/i.test(prompt)) return false;
+  // The negation must modify the band itself ("no belt", "without a leather belt"), not another part earlier in the
+  // sentence ("a tunic with no sleeves and a leather belt" was read as beltless; 2026-11-07 audit).
+  // Up to four words may sit between ("without a thick brown leather belt", "no gold or silver belt"), but not a clause break.
+  if (/\b(?:without|no|not|absent|omit)\s+(?:(?!(?:and|but|with|plus)\b)[\w-]+\s+){0,4}(?:belts?|waistbands?|sash(?:es)?|girdles?|cummerbunds?)\b/i.test(prompt)) return false;
   if (/\b(?:diagonal|diagonally|shoulder|cross[- ]body|baldric|asymmetr\w*|front[- ]only|back[- ]only|one[- ]sided)\b/i.test(prompt)) return false;
   return !/\bsash\b/i.test(prompt) || /\bwaist\b|\bwaistband\b|\bobi\b/i.test(prompt);
 }

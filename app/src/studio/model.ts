@@ -29,7 +29,8 @@ export const GROUPS: Group[] = [
 ];
 /** Held items PixelLab draws in the left hand: bows (archery prior; round 2 arm B: main hand got the right hand on 1/3 seeds,
  * off hand 3/3) and shields (the main-hand wording forbids a shield). Crossbows stay in the main hand. */
-const OFF_HAND = /\b(?:long|short|recurve|hunting|war|great|flat)?bows?\b|\b(?:shield|buckler)s?\b/i;
+// (?!-): "shield-breaker axe" and "bow-staff" name the main-hand weapon. "aegis" is left out: it names engravings and crests too.
+const OFF_HAND = /\b(?:long|short|recurve|hunting|war|great|flat)?bows?\b(?!-)|\b(?:shield|buckler|targe|pavise|scutum)s?\b(?!-)/i;
 export const heldSlotFor = (prompt: string) => (OFF_HAND.test(prompt) ? 'off_hand' : 'main_hand');
 export const groupOf = (slot: string) => GROUPS.find((g) => g.slots.includes(slot)) ?? GROUPS[3];
 export const SLOT_LABEL: Record<string, string> = {

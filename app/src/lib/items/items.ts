@@ -1260,6 +1260,20 @@ export const DESIGN = { gray: 0.05 };
 /** Prompts that ask for gray/black/white parts: the gray check does not apply. */
 export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|\bfur(?!i)|stone|\bash/i; // not sash, cashmere, furious
 
+/** D1 per dressed view. A neutral part of the design (a skull emblem, a buckle, white trim) shows in every view, while a
+ * smudge is view-specific (T3: the cape hem only from the north), so a view fails only when its gray share exceeds the lowest
+ * share of the item's other drawn views by more than DESIGN.gray. Words naming gray parts still exempt the item; this covers
+ * the neutral words the list misses (armor, skull, bone, pearl, other languages; 2026-11-07 audit). An item needs two other
+ * drawn views to compare against; with fewer (one drawn view, or a two-view item where one smudged view would excuse the
+ * other) the single-view rule stays. A smudge in every drawn view is not caught (known issue). */
+export function smudgedViews(slot: string, prompt: string, layers: Img[]): boolean[] {
+  const drawn = layers.map((l) => l.data.some((v, i) => i % 4 === 3 && v)), share = layers.map((l, i) => (drawn[i] ? grayShare(l) : 0));
+  return layers.map((l, i) => {
+    if (!designGraySmudges(slot, prompt, l)) return false;
+    const others = share.filter((_, j) => j !== i && drawn[j]);
+    return others.length < 2 || share[i] - Math.min(...others) > DESIGN.gray;
+  });
+}
 /** Neutral pupils, eyebrows and eye whites are expected in tiny facial glyphs; their palette ratios cannot establish smudges. */
 export function designGraySmudges(slot: string, prompt: string, layer: Img): boolean {
   if (GRAYISH.test(prompt)) return false;

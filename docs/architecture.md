@@ -325,9 +325,11 @@ frame; missing positions cannot be reported as merely ambiguous. Conversely, val
 as missing anchors. A confident sibling never hides an uncertain clip. Detached pixels retain `grip.none` diagnostics and
 do not vote for the nearer wrist. The user reviews uncertain grip; no hidden anatomy is inferred. A held frame repaired
 from the keyframe (S5) is a review warning (R1), not a failure; its pixels are unchanged.
-D1 (dress, 0 gens): a colorful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-gray px fails the dress call, so the
-design is re-rolled before the pose calls copy it (T3 cape north hem 11 %; clean views ≤ 2.2 %); skipped when the prompt asks
-for gray/metal/black/white parts. Near-black px (max channel < 48) are line art and do not count, so a black outline cannot
+D1 (dress, 0 gens): a colorful keyframe (median HSV saturation ≥ 0.4) with > 5 % near-gray px flags the dressed view for
+review and holds the early pose start; the pose calls still run, since only G1 is structural (T3 cape north hem 11 %; clean
+views ≤ 2.2 %). It is skipped when the prompt asks for gray/metal/black/white parts. With three or more drawn views a view
+fails only when it is > 5 % grayer than the least gray other view, so a neutral emblem drawn in every view passes; a smudge
+in every view is then missed (2026-11-07). Near-black px (max channel < 48) are line art and do not count, so a black outline cannot
 fail an outlined design (2026-11-07). Handedness is set by the
 motion: authored weapon-hand actions and dressed keyframes keep it; prompts and hand marks do not [S3].
 

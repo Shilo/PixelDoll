@@ -102,6 +102,10 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
   the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** adds body moves only;
   each item keeps its own priced offer for the new moves.
+- **The gray-smudge check (D1) compares views.** With three or more drawn views, a view is flagged only when it is much
+  grayer than the item's least gray other view, so a neutral emblem drawn in every view passes. A smudge the provider adds
+  to every view is therefore not flagged; items with one or two drawn views keep the stricter per-view rule. See the
+  [word-list review](research/2026-11-07-paperdoll-cycle/review-word-lists.md).
 - **Garment regions use a 1/255 blue nudge** to keep shirt/shorts colors disjoint (D10). Invisible, but it alters
   PixelLab pixels; upgrade path = per-layer region mask in the manifest.
 - **The authored east axe is an experimental import.** Its full clip can now be opened and inspected in Studio, but only one body/view is supported and rear-foot contact is unknown in two merged poses. The source PNGs and Studio's garment-tagged images have distinct pixel identities. See the [Studio integration evidence](research/2026-11-02-studio-axe-integration.md); it is not a universal preset.

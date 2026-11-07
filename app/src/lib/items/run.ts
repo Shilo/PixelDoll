@@ -22,7 +22,7 @@ import { chromaLayer, keyAllowed, keyFor, KEY_NAME, KEYS, keyScore, KT, nearKeyS
 import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { designConsistency, expectsWaistBand, type StandingDesignView } from './design-consistency.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { GATES, heldParts, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, designGraySmudges, grayShare, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { GATES, heldParts, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, grayShare, smudgedViews, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; frozen?: true; reference?: { image: Sha256; cell: CellKey } }
@@ -445,15 +445,15 @@ export async function evaluateItem(d: Draft, ctx: RigCtx, standingPalettes?: Rea
   const keys: Partial<Record<DirectionName, Img>> = {}; // dressed keyframe layers per direction (H4)
   const kfCells = dressOuts.map((o) => ex(o, undefined, true));
   for (const [i, c] of kfCells.entries()) { keys[dressOuts[i].key.split('/')[1] as DirectionName] = c.layer; if (c.cut) keyCut[dressOuts[i].key.split('/')[1] as DirectionName] = c.cut; }
-  const hidden = hiddenViews(kfCells, keys, d.spec.slot), hiddenWarnings: string[] = [];
+  const hidden = hiddenViews(kfCells, keys, d.spec.slot), hiddenWarnings: string[] = [], smudged = smudgedViews(d.spec.slot, d.spec.prompt, kfCells.map((c) => c.layer));
   for (const [i, c] of kfCells.entries()) {
     const o = dressOuts[i];
     if (!c.area && hidden.has(o.key.split('/')[1])) hiddenWarnings.push(`G4 keyframe ${o.key}: no item in this view; check that the view hides it`);
     const bad = [g2Fails(c) && `G2 keyframe ${o.key} key kept ${c.keyKept!.toFixed(3)} (${c.keyLost} px)`,
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
       !c.area && !hidden.has(o.key.split('/')[1]) && `G4 keyframe ${o.key}: item missing`,
-      // B14: re-roll a smudged design (10 gens) before 36 gens of poses copy it (T3: red cape north hem)
-      designGraySmudges(d.spec.slot, d.spec.prompt, c.layer) && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
+      // B14: flag a smudged design for review (T3: red cape north hem); it holds the early pose start, but only G1 stops poses
+      smudged[i] && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
   }
   const retryKey = route === 'none' ? undefined : measuredKeyCollision(d.spec.prompt, route, kfCells, dressOuts, g1);
