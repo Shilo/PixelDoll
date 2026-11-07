@@ -1,7 +1,7 @@
 import type { StoredProject } from '../lib/store/project.ts';
 import { mergeQa, summaryOf } from '../lib/items/qa-summary.ts';
 import { dropCut } from '../lib/compose/compose.ts';
-import { rigArtworkVersion, type DirectionName, type Rig } from '../lib/rig/rig.ts';
+import { rigArtworkVersion, type DirectionName, type Rig, type Sha256 } from '../lib/rig/rig.ts';
 import type { Skeleton } from '../lib/rig/skeleton.ts';
 import type { ItemQa, Manifest } from '../lib/store/manifest.ts';
 
@@ -59,6 +59,9 @@ export function clearMovePoseData(rig: Manifest['rig'], skeletons: Record<string
 }
 
 
-/** Optimistic generation input version: excludes outfits/materials, includes same-body rig setup/reference changes. */
+/** Optimistic generation input version: excludes outfits/materials, includes same-body rig setup/reference changes. The body
+ * hash is left out: only the first-open garment-region split (saveSplit) changes it on a saved rig, and that split keeps every
+ * frame a move publishes into the re-read record. Counting it failed every move started before the character first opened
+ * (Add idle + walk from the creator) with a false "changed in another tab" (2026-11-07 live test). */
 export const moveRigVersion = (record: Pick<StoredProject, 'manifest' | 'character'>): string =>
-  rigArtworkVersion(record.manifest.rig, record.character);
+  rigArtworkVersion({ ...record.manifest.rig, baseHash: '' as Sha256 }, record.character);
