@@ -69,5 +69,12 @@ three views; 21 calls, $0.62; nothing saved). All three items failed:
 
 The dress-only A/B did not predict posing: the hand side flips between seeds, and the far-side hand in side views is occluded.
 The change was reverted. Upright objects keep the current wording: the requested hand, drawn pointing down (recorded in
-docs/known-issues.md). A fix needs something other than wording, for example flipping the item about the grip after
-extraction; that idea is untested.
+docs/known-issues.md). A fix needs something other than wording.
+
+## Flip about the grip: rejected
+
+A main-hand torch with the current wording through the full pipeline (7 calls, about $0.2; nothing saved) passed every check
+with no warning. PixelLab drew it angled low and outward with the flame burning upward at its end, which reads naturally.
+Mirroring each frame's item vertically about the frame's wrist turned that flame downward. Whether the flame ends up at the
+bottom depends on the seed (the dress-only samples above had it at the bottom), so a blind flip breaks the good cases. A fix
+would first need to detect which end is the flame; not attempted.

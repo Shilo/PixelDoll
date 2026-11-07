@@ -102,9 +102,11 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 - **Items made before idle and walk exist** (a Default-only character) have no frames for those moves until the user taps
   the item's priced **Make for Idle + Walk** offer; nothing is posed automatically. **Add idle + walk** adds body moves only;
   each item keeps its own priced offer for the new moves.
-- **Upright held objects are drawn pointing down.** A torch, candle or bouquet in the hand follows the held-item wording
-  ("pointing down and slightly outward"), which keeps it in the requested hand. Asking for it upright moved it to the other
-  hand or bent the arm, and an off-hand upright default failed hand and occlusion checks once posed. See the
+- **Upright held objects can be drawn pointing down.** A torch, candle or bouquet in the hand follows the held-item wording
+  ("pointing down and slightly outward"), which keeps it in the requested hand. Depending on the seed it is carried low with
+  its flame or flowers upright (a full-pipeline torch passed every check) or upside down; Try again draws a new one. Asking
+  for it upright moved it to the other hand or bent the arm, an off-hand upright default failed hand and occlusion checks
+  once posed, and flipping it about the grip breaks the good cases. See the
   [hand wording A/B](research/2026-11-07-paperdoll-cycle/hand-wording-ab.md).
 - **Dark thin items over deep skin lose more pixels.** The outline guard drops a dark generated pixel over any dark body
   pixel, because PixelLab's redraws of the stand-in body are dark too. A black strap over a deep skin tone therefore keeps
