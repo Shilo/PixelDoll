@@ -53,6 +53,24 @@ Balance observations, not reconciled: the account read $14.31 USD credit before 
 - `npm run e2e -- studio`: 54 of 56 passed on the first run; the two failures were this cycle's new locators (the accessible name is "Try again · Est. N gens"). Both pass after the fix.
 - Motion probe through production gates after the change: reversal about the wrist fails 6 of 15 clip runs (every sword and axe walk; slash is unchecked and bows abstain), controls 45 of 45 silent.
 
+## Live Agent-mode test (after the audit fixes)
+
+Browser: the Claude desktop app's built-in browser pane, on the agent server at `localhost:5199` with the Agent mode badge. All
+105 requests completed, $1.4343 USD and 0 subscription generations, read from the tab's job ledger (the shared balance also
+moved with another agent's work).
+
+| Step | Result |
+| --- | --- |
+| New character (64 px, Top-down 4, brown skin), Add idle + walk from the creator | Created. Idle failed at publication with a false "changed in another tab": the Studio's first open saved the garment-region split, which changed the rig body hash. Fixed (`41411fca`, move version leaves the body hash out); the retried Idle and the queued Walk published. |
+| Sword (main hand), red cape with gold clasps, leather backpack, iron lantern on a chain (off hand) | Cape and backpack passed and saved themselves. Sword and lantern flagged the east view's hand (PixelLab drew both in the near hand, the known side-view limit). The lantern also had real stand-in body drift (G3) and offered a measured magenta background. |
+| Review after a reload | Only one of two review cards loaded: concurrent checks overwrote each other's results. Fixed (`2dbbbf80`). Item names and the hand note text were also corrected (`82b0f424`). |
+| Try again | The lantern's retry ran on magenta as promised and lost its G3; the sword's retry passed with only a "grip side unclear" note in east. Both kept. |
+| Walk for all four items (skeleton route) | Cape, backpack and sword passed every direction (sword right hand throughout, area CV 1.7-7.3 %). Lantern passed south and north (left hand) and failed only the east hand check. No false G5 or G9 failure on any item. |
+| Reload and export | Reload kept every move and item. The PNG + JSON, Godot, Phaser and Aseprite export built 432 files with no errors or warnings. |
+
+Observation kept for later: when a keyframe fails G3 because the provider redrew the stand-in body, the measured retry key can
+still switch (green to magenta for the lantern). It was harmless here, but the hint's stated reason is imprecise.
+
 ## Resumption
 
 No paid job is pending or unknown from this cycle. The agent server ran on `localhost:5199` in Agent mode. Next discriminating work, in order:
