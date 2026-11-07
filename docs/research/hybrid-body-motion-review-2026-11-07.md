@@ -2,6 +2,8 @@
 
 November 7, 2026. This spike evaluates motion-reference generation, endpoint dressing, parametric bodies, and 3D-derived evidence against PixelDoll's frozen-body paper-doll contract. It complements the [ComfyUI review](comfyui-paperdoll-review-2026-11-07.md) and [dedicated RGB MoCap review](rgbmocap-pixeldoll-review-2026-11-07.md); it does not propose a ComfyUI backend or another production generation provider.
 
+**Executed follow-up:** [post-handoff qualification](post-handoff-qualification-2026-11-07/README.md) records motion/ownership controls, native rendering, live endpoint dressing, fixes and independent challenge. Native reconstruction, body authoring and fitting claims that remain unqualified are identified separately.
+
 ## Result and evidence boundaries
 
 The strongest transferable idea is to separate **motion and geometry evidence** from **appearance generation**. A reusable animation needs an exact frame/pivot/pose contract; a convincing video or a dressed final frame alone does not supply that contract. A parametric 3D body can provide explicit correspondence and visibility, while an AI result can supply appearance. Neither automatically creates swappable low-resolution equipment.

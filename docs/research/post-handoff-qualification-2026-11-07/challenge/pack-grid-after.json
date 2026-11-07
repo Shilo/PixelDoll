@@ -1,0 +1,67 @@
+{
+  "runtime": "v24.22.1",
+  "paidCalls": 0,
+  "itemSourceSha256": "35bd8957eaef7aa78363a596b55c3d9c62dfda1f2543f59e7e0d96f4afe70d2d",
+  "sourceImagesUnchanged": true,
+  "valid": [
+    {
+      "value": 1,
+      "sameMaskBytes": true,
+      "exactSourceCells": true,
+      "nullReferenceProtected": true,
+      "tailProtected": true
+    },
+    {
+      "value": 128,
+      "sameMaskBytes": true,
+      "exactSourceCells": true,
+      "nullReferenceProtected": true,
+      "tailProtected": true
+    },
+    {
+      "value": 255,
+      "sameMaskBytes": true,
+      "exactSourceCells": true,
+      "nullReferenceProtected": true,
+      "tailProtected": true
+    }
+  ],
+  "malformed": [
+    {
+      "name": "cell-zero mask spills onto protected reference",
+      "rejected": true,
+      "error": "Each repair mask needs a Uint8Array matching the cell canvas."
+    },
+    {
+      "name": "cell-one mask spills onto protected tail",
+      "rejected": true,
+      "error": "Each repair mask needs a Uint8Array matching the cell canvas."
+    },
+    {
+      "name": "short mask list",
+      "rejected": true,
+      "error": "A repair grid needs one mask entry per frame."
+    },
+    {
+      "name": "extra mask list",
+      "rejected": true,
+      "error": "A repair grid needs one mask entry per frame."
+    },
+    {
+      "name": "short frame mask",
+      "rejected": true,
+      "error": "Each repair mask needs a Uint8Array matching the cell canvas."
+    },
+    {
+      "name": "fractional columns",
+      "rejected": true,
+      "error": "A repair grid needs a positive integer column count."
+    },
+    {
+      "name": "zero columns",
+      "rejected": true,
+      "error": "A repair grid needs a positive integer column count."
+    }
+  ],
+  "limits": "Synthetic direct-helper challenge. A real caller producing malformed masks or a submitted paid defect is not established."
+}

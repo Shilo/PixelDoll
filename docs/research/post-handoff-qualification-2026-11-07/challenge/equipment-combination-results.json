@@ -1,0 +1,17 @@
+{
+  "runtime": "v24.22.1",
+  "paidCalls": 0,
+  "states": 96,
+  "exactGolden": 96,
+  "bakedParity": 96,
+  "orderInvariant": 96,
+  "restoration": 96,
+  "bodyVariants": 7,
+  "inputsUnchanged": true,
+  "sourceHashes": {
+    "compose/compose.ts": "368b3dce86fe692e28b3508a42a353b47e31ded6f36833da269d1741ee8435d7",
+    "dress/dress.ts": "7f04af1ba49b644db1fc08c6526d470e94a26e3c3f056985c57ae6599e443794"
+  },
+  "failures": [],
+  "limits": "Exhaustive only over this three-slot binary-alpha synthetic fixture. No renderer/native engine, flexible cloth, arbitrary real compatibility, or within-item same-RGB semantic ownership is qualified."
+}

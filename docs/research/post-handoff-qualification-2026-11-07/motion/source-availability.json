@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "paidCalls": 0,
+  "source": "https://api.github.com/repos/toyxyz/toyxyz_RGBMocap/git/trees/75cda26531b47f41c75d4aa4a82c4f135daa6eea?recursive=1",
+  "commit": "75cda26531b47f41c75d4aa4a82c4f135daa6eea",
+  "truncated": false,
+  "structuredMotionFiles": [],
+  "previewVideos": [
+    "docs/samples/character-retargeting.mp4",
+    "docs/samples/motion-capture.mp4",
+    "docs/samples/multi-cam-mocap.mp4"
+  ],
+  "disposition": "Pinned public tree inspection only. Preview videos are not structured exports. No RGBMoCap model or native application was run; external releases or separately supplied exports were not exhaustively searched."
+}

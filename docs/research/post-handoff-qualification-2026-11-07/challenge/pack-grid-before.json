@@ -1,0 +1,74 @@
+{
+  "runtime": "v24.22.1",
+  "paidCalls": 0,
+  "itemSourceSha256": "8a52e4297947ab9468b592a40d523cda83f967f5ba2c99592d19882eb44cc1b1",
+  "sourceImagesUnchanged": true,
+  "valid": [
+    {
+      "value": 1,
+      "sameMaskBytes": true,
+      "exactSourceCells": true,
+      "nullReferenceProtected": true,
+      "tailProtected": true
+    },
+    {
+      "value": 128,
+      "sameMaskBytes": true,
+      "exactSourceCells": true,
+      "nullReferenceProtected": true,
+      "tailProtected": true
+    },
+    {
+      "value": 255,
+      "sameMaskBytes": true,
+      "exactSourceCells": true,
+      "nullReferenceProtected": true,
+      "tailProtected": true
+    }
+  ],
+  "malformed": [
+    {
+      "name": "cell-zero mask spills onto protected reference",
+      "rejected": false,
+      "protectedCellEdited": true,
+      "tailEdited": false
+    },
+    {
+      "name": "cell-one mask spills onto protected tail",
+      "rejected": false,
+      "protectedCellEdited": false,
+      "tailEdited": true
+    },
+    {
+      "name": "short mask list",
+      "rejected": false,
+      "protectedCellEdited": false,
+      "tailEdited": false
+    },
+    {
+      "name": "extra mask list",
+      "rejected": false,
+      "protectedCellEdited": false,
+      "tailEdited": false
+    },
+    {
+      "name": "short frame mask",
+      "rejected": false,
+      "protectedCellEdited": false,
+      "tailEdited": false
+    },
+    {
+      "name": "fractional columns",
+      "rejected": false,
+      "protectedCellEdited": false,
+      "tailEdited": false
+    },
+    {
+      "name": "zero columns",
+      "rejected": false,
+      "protectedCellEdited": false,
+      "tailEdited": false
+    }
+  ],
+  "limits": "Synthetic direct-helper challenge. A real caller producing malformed masks or a submitted paid defect is not established."
+}

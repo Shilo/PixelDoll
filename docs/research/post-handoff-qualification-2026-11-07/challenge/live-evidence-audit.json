@@ -1,0 +1,734 @@
+{
+  "runtime": "v24.22.1",
+  "paidCallsByAuditor": 0,
+  "evidenceSha256": "f267404c3ad4607fd84e5279895f28fb63fb0c78b8a34092f24a8368b647dab6",
+  "judgmentsSha256": "0ecf498564650b8868087c23b7f6513b3e246257ebcb31ce5ccd981e7a2f1b9a",
+  "summary": {
+    "requests": 8,
+    "claims": 8,
+    "imageReferences": 72,
+    "distinctPngHashes": 68,
+    "galleryImagesVerified": 72,
+    "allDecodedAnchorsExact": true,
+    "byteExactAnchors": 0,
+    "distinctProviderJobs": 8,
+    "cardinalityDeviations": 8,
+    "confirmedJobUsd": 0.09793791823254691,
+    "retainedProviderUsageUsd": 0.09793791823254691,
+    "subscriptionGenerations": 0,
+    "pairedRequests": 4
+  },
+  "pairs": [
+    {
+      "name": "a-chest/south",
+      "sameSanitizedRequestExceptDescription": true,
+      "sameRequestedSeed": true
+    },
+    {
+      "name": "a-chest/east",
+      "sameSanitizedRequestExceptDescription": true,
+      "sameRequestedSeed": true
+    },
+    {
+      "name": "b-tunic/south",
+      "sameSanitizedRequestExceptDescription": true,
+      "sameRequestedSeed": true
+    },
+    {
+      "name": "b-tunic/east",
+      "sameSanitizedRequestExceptDescription": true,
+      "sameRequestedSeed": true
+    }
+  ],
+  "rows": [
+    {
+      "id": "a-chest-south-plain",
+      "requestHash": "cbec72328e689cb2bdea6a6f617c2daa941ab18b77039f90108e45c9a2a0a274",
+      "inputPngSha256": "bcc58829dd38e8613edfc59f31765c8ffd325242024e5545be418f27dbcc38d8",
+      "state": "done",
+      "attempts": 1,
+      "actualImages": 9,
+      "expectedImages": 8,
+      "decodedAnchorExact": true,
+      "jobUsd": 0.01379407032330831,
+      "providerUsageUsd": 0.01379407032330831,
+      "images": [
+        {
+          "index": 0,
+          "pngSha256": "e326e65bbc86eb96844479337f05ce9382dd9a6f58f2b82a500fff1faed81a54",
+          "rgbaSha256": "40964f58e2194c51e00a3f1c97ba5f4f766e2ed3a4a4e8d062abeb3673cdd6fa",
+          "decodedExactInput": true,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 182
+        },
+        {
+          "index": 1,
+          "pngSha256": "93defcec1fdb19c66ed0bfb6b8e17d2b08f10813de9be5257fbf80a47f8a98f5",
+          "rgbaSha256": "a09644e55c32918d77c72614b474b4e11af591e1f2f5eb8956d5c77909697930",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 2,
+          "pngSha256": "6b63ad6990e07b362e181ba3f5f7b11a00f0ab29394a31cd195434e0cf8551d7",
+          "rgbaSha256": "7515cb7c5a89ef083464d9bd5585f0cf48a75521978377bae24d4a91213ccd06",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 3,
+          "pngSha256": "01f7c4a55eb8a9a09cbda87e3c85c7855bbc8881d554916fd4e9b1829dec609c",
+          "rgbaSha256": "3d458f8fd312dc5ea74c3889873d08dd97f4325c03864b2a26d1ffe0fc9387ef",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 4,
+          "pngSha256": "04dd6340185923918b90ebde837816543dcc063a978a9b25d3c51245e436f520",
+          "rgbaSha256": "743e3a5db4367429ba33f164f4ff40652531ae0ae2f85e74f33683cd4ee646c7",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 5,
+          "pngSha256": "0a4757a4df46ac53ddd9ee0b85cfa338bde5f0d0838108812039298366fe092b",
+          "rgbaSha256": "97109d617eadb63af0eb920b5eace5c207c03bed4412b293387f7e78bd8d9982",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 6,
+          "pngSha256": "5d2f01bef255e1beb6345c8cdca602fdf59b15a948f8f5d99c3302fcb6835b04",
+          "rgbaSha256": "b73549e68b52a7eff027b0dcd86b360133d1db13c7913eb0cc9b826226bf22d4",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 7,
+          "pngSha256": "b1b5cf7b285bfb505887e73de77ea753140361f80616e2e008829311ea1ee445",
+          "rgbaSha256": "36692b6cb6274334d5d0930469bca9ba07a532b82482b9fd9c7d29fed3ee8bec",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 8,
+          "pngSha256": "61e62c6943f7c25dda49c1f86203a337ff9657a61c9212c88e1673bfbf01c749",
+          "rgbaSha256": "acf1100d0035dbac3d548345a6a24e8a715411436a04866074b112231f04f6d1",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        }
+      ]
+    },
+    {
+      "id": "a-chest-south-physics",
+      "requestHash": "3731cf1f2e31e168e99dbf25921f79dad789a6132d9e778f4b6b76256b7d71f7",
+      "inputPngSha256": "bcc58829dd38e8613edfc59f31765c8ffd325242024e5545be418f27dbcc38d8",
+      "state": "done",
+      "attempts": 1,
+      "actualImages": 9,
+      "expectedImages": 8,
+      "decodedAnchorExact": true,
+      "jobUsd": 0.014375264737341138,
+      "providerUsageUsd": 0.014375264737341138,
+      "images": [
+        {
+          "index": 0,
+          "pngSha256": "e326e65bbc86eb96844479337f05ce9382dd9a6f58f2b82a500fff1faed81a54",
+          "rgbaSha256": "40964f58e2194c51e00a3f1c97ba5f4f766e2ed3a4a4e8d062abeb3673cdd6fa",
+          "decodedExactInput": true,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 182
+        },
+        {
+          "index": 1,
+          "pngSha256": "43d037556628243eb8ec50546d5b4872c9a2e72dfe438cbb763c822fcd387b01",
+          "rgbaSha256": "88f97d883325826feff79d1b3388dc6b7bb5e47f019d9e8af921ca21bdb70014",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 543
+        },
+        {
+          "index": 2,
+          "pngSha256": "a4f66aa3d620535be0a9e2571300b3a092a01d818a2f3495e057815f50ac724c",
+          "rgbaSha256": "214fdf004fec723df4bd3d30e5baad94695389c7b2ed68484b15bd7b6d54a8b0",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 399
+        },
+        {
+          "index": 3,
+          "pngSha256": "7feec60ae06afe08f6d9c2e3e8598a7068bf3e7b6b36eb398806b29597d1b2dd",
+          "rgbaSha256": "a0461fc29d51371145be66a07057ea84a5237d601182cf47505ad63338d9d3c7",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 5
+        },
+        {
+          "index": 4,
+          "pngSha256": "8621ff1566460877b82569b4096c764cf818bb7798596941398af35cb885992d",
+          "rgbaSha256": "4654f931af72a56dddf0338ae43a46e1b843c0a910a87894d898c0d829b92586",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 5,
+          "pngSha256": "3f3d10d2a978263943f967e3241c66fbb2ca6f4a85a090e4071d1db71432ff93",
+          "rgbaSha256": "9de24efc87ea482a0311795cfa11d941bf11d29d79e67ccdceeaad8e93101716",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 6,
+          "pngSha256": "59fad8265da0d175bf0e6dbb9e6a7a372f0d4cf72a55f774df9b8e55745feb4b",
+          "rgbaSha256": "a932f48fe93fc7a600c94d4e39dafcc95d5eafa670e35c726aa824de9c501106",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 7,
+          "pngSha256": "9f0254a3da9e0128f896f37dd26c194144b587f0fe9d53b0aceb585253ef8c0d",
+          "rgbaSha256": "69d8f07ce51439fdc805d6395438a7877e416d4b0712d1c218eac0ad4d04ec99",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 8,
+          "pngSha256": "62fa967413af4df627a4ab4ace42a5aaa0c26b13603a1af71b9584057eb5bd3f",
+          "rgbaSha256": "0af66b38c309a49bc8daef86c9af14a40797bfadcbed02bb59a9cd2933824c55",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        }
+      ]
+    },
+    {
+      "id": "a-chest-east-plain",
+      "requestHash": "6e84dc4d06546f6648069e031c47a0ae5187eca85d57c94ca02cef09c54cb299",
+      "inputPngSha256": "7cbd2e285133e50feb00359058e0e8ef1523e86f3a8c2c34e42f72a904352ca2",
+      "state": "done",
+      "attempts": 1,
+      "actualImages": 9,
+      "expectedImages": 8,
+      "decodedAnchorExact": true,
+      "jobUsd": 0.011646668314933776,
+      "providerUsageUsd": 0.011646668314933776,
+      "images": [
+        {
+          "index": 0,
+          "pngSha256": "fd2f3c73b723a4dd01accb772068154bd074c573c1bf8766bcd278238617d331",
+          "rgbaSha256": "bc6422b6825c71107a5333d949d08cdab223d265ee0641247ac30df27609c0f1",
+          "decodedExactInput": true,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 73
+        },
+        {
+          "index": 1,
+          "pngSha256": "23620181d138f5f8ef5de59213dfa7cd8f798c6ece3c6efd19f3db5033ab30d6",
+          "rgbaSha256": "b6b4b11331b45cce7b9baa6ce2822be783567a6d329f58d071eabe22f0da32d0",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 170
+        },
+        {
+          "index": 2,
+          "pngSha256": "34648d1b182442f05c88d008c7acc7d2f191123da46b03f63564fe846975a865",
+          "rgbaSha256": "80f246341056d42b0b8c5fdaea138d6e5ae2314e6959fcab0b42107d97db365c",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 169
+        },
+        {
+          "index": 3,
+          "pngSha256": "0245ffede3ba15d628968a864fc0bd5d99654be64edaf36166a47470ba2a8445",
+          "rgbaSha256": "b044f67405529854201ed6e35fb6465c7c89efe7cf77ba40bd40040f0d82c9f8",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 4,
+          "pngSha256": "52a7ed60996bfe6e7c16d5621ed8c90cc34ac2a7d6bd583f4d27f5df71a9dc76",
+          "rgbaSha256": "713f6875cae891b25bbd7c19de16fceefaf3343f78f2b76d62637765b3b45ea9",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 5,
+          "pngSha256": "c6dbc1ea97746e4955146d47db525c1ca9c7e7d391ee667c40478c29a17cf906",
+          "rgbaSha256": "2386a6c513fdfb53396034101daf5e342417fa93fbe306688dfc9058785fe470",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 6,
+          "pngSha256": "80b3c4aa2ba3ae15c7ea088d6e3dd2d7d2e86f1ac971ce3cd4d8d5db95970dbe",
+          "rgbaSha256": "3e718cb2ab5b4bcc05f9b9bf3e35834577cb9dd429f196b4a84680c34c25828f",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 7,
+          "pngSha256": "e87c4457ff961d8f1ee1e399f61ed44b986bd1c2244377072d95e48d41078924",
+          "rgbaSha256": "29747b1f646bab95258c5ab37e7bf388c4b2f7d65e2cd2feac2ac2cca6d09be0",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 8,
+          "pngSha256": "0b85d9efefaa6d52b27c3de82cea763793ed226dab2558a3a6496778bb736c46",
+          "rgbaSha256": "f52ac23b102f7a1f47702a38f552702133c135d56a468d60c0461c4d35ee6472",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        }
+      ]
+    },
+    {
+      "id": "a-chest-east-physics",
+      "requestHash": "8e8708d82ff466a0a3b2198c2bba7cc66f9c8fde0f5509835570c9f170a35a30",
+      "inputPngSha256": "7cbd2e285133e50feb00359058e0e8ef1523e86f3a8c2c34e42f72a904352ca2",
+      "state": "done",
+      "attempts": 1,
+      "actualImages": 9,
+      "expectedImages": 8,
+      "decodedAnchorExact": true,
+      "jobUsd": 0.013074984504116906,
+      "providerUsageUsd": 0.013074984504116906,
+      "images": [
+        {
+          "index": 0,
+          "pngSha256": "fd2f3c73b723a4dd01accb772068154bd074c573c1bf8766bcd278238617d331",
+          "rgbaSha256": "bc6422b6825c71107a5333d949d08cdab223d265ee0641247ac30df27609c0f1",
+          "decodedExactInput": true,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 73
+        },
+        {
+          "index": 1,
+          "pngSha256": "4bba37c694b6e0e8cf9917d0e03ea4d511fc46347b58b935f7e8889d39e4f260",
+          "rgbaSha256": "4ef0b9c4a7b4171a48df0f72ffced0a4b796377db433fc13aa5c22b1ecf18fd4",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 73
+        },
+        {
+          "index": 2,
+          "pngSha256": "aa2c5db14c822e4e04fab2376c4bc24bfdbc6dc2b3e501e5113a8d69cc44d244",
+          "rgbaSha256": "fea2bd7f11e72d1ba2cc6125948a24676699de4ddc5684366ec04938992695b3",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 179
+        },
+        {
+          "index": 3,
+          "pngSha256": "3c13d6b101125d620f96b1405a655c897955f526becd0fb4ecee0307f0247be1",
+          "rgbaSha256": "0f3a50b43fd29cfbf152e6162af7493c1f493bbcf2713e4d98183261b2795090",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 4,
+          "pngSha256": "3141d740ce3fafa3027fcf1a84c8a377825af54489d2a2b9b8eaa33cf5759841",
+          "rgbaSha256": "1bd0600f21900f6771083c93e1271d539820092c1912efbe295b06c0832a020a",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 5,
+          "pngSha256": "1cc70c64317bf7ed0c2820bbe06f1a1133c749157f29c91a00a929d26f093fc6",
+          "rgbaSha256": "d24823cdd9db701df42ec32f7843936a55f1b8767f5ca302242da289e2ff5ae9",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 6,
+          "pngSha256": "e461cd018809ed16ea853822a31fb812b7d558f00f2580d3d3c847cb8131645c",
+          "rgbaSha256": "02ae5998bf0490c7582f1b8af79b893f358abb13aeb43ab4870db3c4fcf428bc",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 7,
+          "pngSha256": "fba226075c963bcf960bf24f3fb0fa203d1feb6b0cdef60c7b28eb7b981e587b",
+          "rgbaSha256": "3f8ab62dd654047ba6369ce004075f7dd4cfca1ed129b40ae82827bf1b36f153",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 8,
+          "pngSha256": "db4e39d7d7be16c661306915d68e54f1fa7b64dfffec3f72264f618208331a58",
+          "rgbaSha256": "2251956e82356373f5e54f3c8c8f8fb8cd4669bb39528b11e985d476e8120b97",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        }
+      ]
+    },
+    {
+      "id": "b-tunic-south-plain",
+      "requestHash": "49639d68a0a4792f3056674d545842e991bd223012b73fb1f8312e7c3c740f22",
+      "inputPngSha256": "aa9c50df48b479e2b4d144a0bbb9edc41a71aef0fb8199bafa8a16f4d1ae71e6",
+      "state": "done",
+      "attempts": 1,
+      "actualImages": 9,
+      "expectedImages": 8,
+      "decodedAnchorExact": true,
+      "jobUsd": 0.010561961458788977,
+      "providerUsageUsd": 0.010561961458788977,
+      "images": [
+        {
+          "index": 0,
+          "pngSha256": "b49beef722837cc1269b8319f1cc612e101448db6b0be748ea26bce87c0e56c8",
+          "rgbaSha256": "048b600c46c681e471714a039e746c7e37f8bc337e7c8074f91dbe393cc3cc1e",
+          "decodedExactInput": true,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 461
+        },
+        {
+          "index": 1,
+          "pngSha256": "ae19ceff939d17b2c17d7615dc3dd92e7072c34b48526e9e2bc87ef75ab1de87",
+          "rgbaSha256": "f284dac0e657d1a671a012bdc8f18068d0f430b2430269767a1bb758127d6003",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 459
+        },
+        {
+          "index": 2,
+          "pngSha256": "0672975057e93999ce35d4ff7d0ac27043bd68750823b163d688fe665d43a226",
+          "rgbaSha256": "3ff4d26391676762186a492108143cbb32f267bda2683de26091bd43ae18fb0e",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 458
+        },
+        {
+          "index": 3,
+          "pngSha256": "7bd3f2ce7c83ce5569604412a1550f77aaf6e9c378b40087bffc188b4a236e9d",
+          "rgbaSha256": "94dcf4c3cd6efd4e533b1a0f8fb43e9ed38d2676786ac995a0acab62627fee9c",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 4,
+          "pngSha256": "6feecb21ffd451fd7cdef842794fd547fe31db436c5338ae3978dbfb8c62f22f",
+          "rgbaSha256": "63361663d6d37e7d579aa55e2724808e0f4f2c31e566ec9b28209106c02d9ff0",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 5,
+          "pngSha256": "a5739f2528dda129de73bebf3de5fd14133a146f194fe3263b0252cbf6018ba1",
+          "rgbaSha256": "a0b163db52de073d8e7b4c3c89d5604190fd0df934b8db9dfe3c7a352d9bc7c2",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 6,
+          "pngSha256": "928724ce05e23170632d26363f021ab8624b9c9b5ca520bffc354787f63b1a58",
+          "rgbaSha256": "924c6ff8b7e4c0b6694a3a76720b16a012f427757d7341ce2a954cdee4f2c91a",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 7,
+          "pngSha256": "eff00b8300902d4d6eaf4afc9b8b8483b8a390cff3b3e7d3c21d3e5cfe2129c6",
+          "rgbaSha256": "b6de8e8730b87f2d41fd347540846983ecacf906a08c3c6bfc1a889a36bb40f6",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 8,
+          "pngSha256": "7dcca042b4aa29a31c4d7a631901011579ac6c248f52ae9a4a7659a95c90c133",
+          "rgbaSha256": "81bb1be66a1d05cb5d0db4c4952c69478b3c7ca87b75468f05a681c188d1f442",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        }
+      ]
+    },
+    {
+      "id": "b-tunic-south-physics",
+      "requestHash": "5040087effc6caffcff705c85426cade7e060e56654c7da4c934ea038b9f50bc",
+      "inputPngSha256": "aa9c50df48b479e2b4d144a0bbb9edc41a71aef0fb8199bafa8a16f4d1ae71e6",
+      "state": "done",
+      "attempts": 1,
+      "actualImages": 9,
+      "expectedImages": 8,
+      "decodedAnchorExact": true,
+      "jobUsd": 0.011351682470904456,
+      "providerUsageUsd": 0.011351682470904456,
+      "images": [
+        {
+          "index": 0,
+          "pngSha256": "b49beef722837cc1269b8319f1cc612e101448db6b0be748ea26bce87c0e56c8",
+          "rgbaSha256": "048b600c46c681e471714a039e746c7e37f8bc337e7c8074f91dbe393cc3cc1e",
+          "decodedExactInput": true,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 461
+        },
+        {
+          "index": 1,
+          "pngSha256": "56359808966f8c1f688e41decb18b6e1aeba8d7e67f72c0242f3ec3e1086202e",
+          "rgbaSha256": "e2e16039cc893aa5c9736f5aa388c2af7638137a3611ee7e040ffba4bae7da02",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 456
+        },
+        {
+          "index": 2,
+          "pngSha256": "35623bb58c11c1d85117350c1379cd197b602c0749e69802dd06c95e4104211c",
+          "rgbaSha256": "ce2287eeb41f6aef229c7bb5af28ed948f83b9d3bb0cd3b251aab084be5b3079",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 3,
+          "pngSha256": "1c04e070e8bf45384727c31ce81f81149712f6d13b7962e89b746b9ff95fd85f",
+          "rgbaSha256": "43ab5c958f061622ff4c9daac956be6043b0d75d7c4fa15848f525819f112956",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 4,
+          "pngSha256": "50648d8e515bf59b66c506dfcf41851e7945a80af0417ab9fccf2b4fe199f77a",
+          "rgbaSha256": "15d91afba7924fcc54a8d0ac41749f403fa4d1cf62d0b8de920800501b520ebe",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 5,
+          "pngSha256": "a52eb0aa3ab6926c9dbb14b88f42ca334392078f7798048741ab6c5ce171b949",
+          "rgbaSha256": "241f2b2ea2d7ecb28978fad68387a118fe55b40bd8d06ec63c53ed390521d9b3",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 6,
+          "pngSha256": "58416cd9e00a7654fd3d445d03df4a92a88acf311ba9fbc13b033038f89e5ac5",
+          "rgbaSha256": "0d962d2f68be4778431c5017f96f2a93b9a1f69eff29b4f37890c8bcbf6ebb4e",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 7,
+          "pngSha256": "2de5cfff35cbc6eea783c729c680f96b5179a2f2ae92113c3153fca227b164d6",
+          "rgbaSha256": "cea5086aaf3448d406a818483b702b8bb7d47acacab43b22325d895e418cf709",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 8,
+          "pngSha256": "cbced24ce718d76addf34be6f109acf73e7cc4ad4f1bf47ab9e2d442a63f2a15",
+          "rgbaSha256": "102a5572129614b0a72f4b9309916fda9e37d0a0040196b98d5427bb942661f8",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        }
+      ]
+    },
+    {
+      "id": "b-tunic-east-plain",
+      "requestHash": "c85f73b98a7922748d0dd035000a0b0f2c66d4a093cc8383aee0dcede7148040",
+      "inputPngSha256": "68b27a7505320348eac28f6ebb7eb86c986d617cfe246ccff0915d586eed7652",
+      "state": "done",
+      "attempts": 1,
+      "actualImages": 9,
+      "expectedImages": 8,
+      "decodedAnchorExact": true,
+      "jobUsd": 0.012032514141665564,
+      "providerUsageUsd": 0.012032514141665564,
+      "images": [
+        {
+          "index": 0,
+          "pngSha256": "b93a864b0a505e95dae49d1e1065af1571d4cffac4ccad8a3173a150364b3c27",
+          "rgbaSha256": "7cfb9e168b233a4aa229c19ad08c80642bf5840e824772378add36c065cbd1b8",
+          "decodedExactInput": true,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 223
+        },
+        {
+          "index": 1,
+          "pngSha256": "fb8f449d1f4db64461f537698b2f3d4cfcf5e74b87423b3ea7cfee1ed23e9519",
+          "rgbaSha256": "cae3bccb8c00c89f832d5aa39eab598afd23ba5d70da010d4c0608e22d0c292f",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 305
+        },
+        {
+          "index": 2,
+          "pngSha256": "063ea0c7ef55aeba8d74edde0dc17aaf9c5fb7e6f844ece9c8a37a96df7a712a",
+          "rgbaSha256": "79daa68602e9fbd575d7e5e25f2fabbfafd93a8664e362d0278d110c5881ba5f",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 377
+        },
+        {
+          "index": 3,
+          "pngSha256": "3cfb67327d428405a5237814d9f1cfb556746ccac1d9b68bc4baf95e52f6f56e",
+          "rgbaSha256": "3fad9824b51576a0b644f2213ba568de6b93fdb034a888fd4cbf53c1273e4684",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 297
+        },
+        {
+          "index": 4,
+          "pngSha256": "59ead259f67e85fa05eec016e188a01bea10cc2f501ce1f58257340e5406de32",
+          "rgbaSha256": "9a7f9cee12cbacaddc6f71c28cc5e3dc3be6193e46fae8c03c148bb09d3c6b74",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 18
+        },
+        {
+          "index": 5,
+          "pngSha256": "31affe7c1ada40d23b47389215134645b3437aa52aac2808813b4e3f98a6505e",
+          "rgbaSha256": "b71929bf6503dee74756cb3378945b62bf1615bf13f46c68f973f7b7d8535fca",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 6,
+          "pngSha256": "ae512da573254720f42ed7f592926b2f82c1e476ceb009c5b159d0e42a2ba07c",
+          "rgbaSha256": "1c6224c4575782b720cbd2ff3f7cad49a396a4cafbc59bb441940b7be2ed0753",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 7,
+          "pngSha256": "9a70855c6693810fec2ec2250cddf82a520481c2762163b77002a1a0296fd6dc",
+          "rgbaSha256": "669654ca695e43b92ff0664e91e112f13d79e2ebd86224083805f3434cdf2e4f",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 8,
+          "pngSha256": "ce2d558cf1ddae7793e7bde91dc09065684b38169348a4e2f0c58905e4380c54",
+          "rgbaSha256": "56ab30bd060ccf47ac7855b48bf01b131ffd81d494b321a305592c39e9c025a9",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        }
+      ]
+    },
+    {
+      "id": "b-tunic-east-physics",
+      "requestHash": "097dee5746819ef53407aadd3f6389de03ac662d4886b184a42991c97b3e8a47",
+      "inputPngSha256": "68b27a7505320348eac28f6ebb7eb86c986d617cfe246ccff0915d586eed7652",
+      "state": "done",
+      "attempts": 1,
+      "actualImages": 9,
+      "expectedImages": 8,
+      "decodedAnchorExact": true,
+      "jobUsd": 0.011100772281487783,
+      "providerUsageUsd": 0.011100772281487783,
+      "images": [
+        {
+          "index": 0,
+          "pngSha256": "b93a864b0a505e95dae49d1e1065af1571d4cffac4ccad8a3173a150364b3c27",
+          "rgbaSha256": "7cfb9e168b233a4aa229c19ad08c80642bf5840e824772378add36c065cbd1b8",
+          "decodedExactInput": true,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 223
+        },
+        {
+          "index": 1,
+          "pngSha256": "122a622c7973b0199acffdd3c0fa3a6d5c2a99458ad73fd2d2d064952554b128",
+          "rgbaSha256": "1ff25ddd3a82a109a319434a0790468a936f4938d335da59fda2ad0ec4d10ace",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 205
+        },
+        {
+          "index": 2,
+          "pngSha256": "54ebbcb7c868d3b4a17c93428a9f3a6acdf0ebc6b5c88ac11f9b105bac168469",
+          "rgbaSha256": "c46fdc91a8b921dc2782d2759757625eb799ee2198887c2ee38cd7080eb39827",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 3,
+          "pngSha256": "0563a02ef81719d890bda5d1e7b417b4954afc8d19822aa9013a9d7f9bbecf01",
+          "rgbaSha256": "350be7342f721e189c528280b8c30a27b9d4f2493a7e81ed90980ab9784e5689",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 4,
+          "pngSha256": "d3eeb8e5ba4b06a06a27ae1bd869a61fa7dcce42228cc3d0405c7ac6d584b697",
+          "rgbaSha256": "a49b3a4ac906839ca401b276a4ee27e5d2e0337b282fb31c10c205b613bed0e7",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 5,
+          "pngSha256": "c9aed5fd96a06495120184dc0d600de424e4eb47bc7781d9d44c2b9b5dfb1a88",
+          "rgbaSha256": "0c6fa8fc308a94490ec5e82a06f017cec6399c597fd7820fac262ec9648b4e13",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 6,
+          "pngSha256": "360fa80c60c243da52f7700492c7e9f90f842725257a82e67e261752d6039c6d",
+          "rgbaSha256": "7b83db1e1373a20d02ec14a4e99d7e76e5d6e280f82b7b0dead4d7503ff87c87",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 7,
+          "pngSha256": "e488aa8b4a74ec2bcfdabb08930ce98e3c2c7a68975731604a01e4891d33f6fd",
+          "rgbaSha256": "0175b89f609311a915395475cf7ca570ef33cd5245ec197a0e7d01ef6e045ca4",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        },
+        {
+          "index": 8,
+          "pngSha256": "0acbd32de657adc99b983a06bc93933182af2bb1e3d49445c8022705e9dd0fd3",
+          "rgbaSha256": "45cdd3badaa9c0e6875b673dce30317b306d2aaff03cb297bed7e43f95e7eefa",
+          "decodedExactInput": false,
+          "nonbinaryAlpha": 0,
+          "rightPaneAnyAlpha": 0
+        }
+      ]
+    }
+  ],
+  "limits": "Audits retained provider usage and queue receipts, not an independent account statement. Nine raw images include a decoded-exact input anchor; primary raw index7 remains separate from last-index8 sensitivity. No paid request was retried or created by this script."
+}

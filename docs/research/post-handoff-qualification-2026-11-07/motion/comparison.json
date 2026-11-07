@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "paidCalls": 0,
+  "baselineCommit": "ee29e0adadaad196a618f194cc1431e0e9ccfa03",
+  "baselineSourceSha256": "1eb24d02d248dc132fa3cb6b33ec5a9474b9aa44ee7b433596509defd6c3f244",
+  "currentSourceSha256": "5d58348f461f6369c98c914b54b5dd790f62195926f5ef5c3138f974ce2d36e9",
+  "controlsCompared": 36,
+  "controlsChanged": 0,
+  "allInputsPreserved": true,
+  "timing": {
+    "callsPerRound": 100,
+    "framesPerCall": 82,
+    "rounds": [
+      {
+        "beforeMs": 111.23410000000004,
+        "afterMs": 104.05590000000001
+      },
+      {
+        "beforeMs": 99.47440000000006,
+        "afterMs": 108.93689999999998
+      },
+      {
+        "beforeMs": 107.83280000000002,
+        "afterMs": 95.00659999999993
+      },
+      {
+        "beforeMs": 96.7491,
+        "afterMs": 96.31579999999997
+      },
+      {
+        "beforeMs": 93.03839999999991,
+        "afterMs": 95.19810000000007
+      }
+    ],
+    "baselineMedianMs": 99.47440000000006,
+    "currentMedianMs": 96.31579999999997,
+    "note": "Single local warmed CPU probe; alternating order, five rounds. Timing is descriptive, not a portable performance guarantee or quality metric."
+  }
+}

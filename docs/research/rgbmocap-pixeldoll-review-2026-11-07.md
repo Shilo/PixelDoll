@@ -2,6 +2,8 @@
 
 November 7, 2026. Research and source review of a public RGB-video motion-capture project, its conversion requirements, and possible value to PixelDoll. Companion: [hybrid body, clothing, and motion review](hybrid-body-motion-review-2026-11-07.md).
 
+**Executed follow-up:** [motion qualification](post-handoff-qualification-2026-11-07/motion/README.md) and the [independent challenge](post-handoff-qualification-2026-11-07/challenge.md) reproduce and fix a real motion-import timing defect while preserving 3,234 valid control frames. This qualifies PixelDoll's motion contract; actual RGB MoCap reconstruction and export conversion remain unqualified.
+
 ## What it is and what it could improve
 
 RGB-video motion capture means estimating a person's three-dimensional movement from ordinary color video. It does not mean that the input must already be a red/green/blue stick-figure animation. A colored skeleton video is a rendered representation of movement; it is different from structured joint coordinates with names, timestamps, units, and a reference pose.

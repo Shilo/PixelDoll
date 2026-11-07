@@ -1,0 +1,348 @@
+{
+  "version": "v24.22.1",
+  "platform": "win32",
+  "executedAt": "2026-11-07T12:07:25.994Z",
+  "sources": {
+    "app/src/lib/image/chroma.ts": "c5f21cf6f7ff9204f7fc2cc90e88b90b2371604ae56cc4b620161c35d3945157",
+    "app/src/lib/items/items.ts": "35bd8957eaef7aa78363a596b55c3d9c62dfda1f2543f59e7e0d96f4afe70d2d",
+    "app/src/lib/pixellab/queue.ts": "a6fec1c3819a03797464430f939aa8a5b6ddbf4599eb93905cc5041909566082",
+    "app/src/lib/image/png.ts": "e486f02e2224f1a7929f2d78579802e435e53c80767370905acaebe0e6939083"
+  },
+  "contracts": [
+    {
+      "name": "bright body hole with explicit ownership stencil",
+      "pass": true,
+      "area": 8
+    },
+    {
+      "name": "dark body hole with explicit ownership stencil",
+      "pass": true,
+      "area": 8
+    },
+    {
+      "name": "request identity changes with source bytes",
+      "pass": true
+    },
+    {
+      "name": "request identity changes with mask bytes",
+      "pass": true
+    },
+    {
+      "name": "request identity changes with source dimensions",
+      "pass": true
+    },
+    {
+      "name": "request identity changes with seed",
+      "pass": true
+    },
+    {
+      "name": "request identity changes with route",
+      "pass": true
+    },
+    {
+      "name": "request identity stable for identical deep copy",
+      "pass": true
+    },
+    {
+      "name": "request identity changes with ordered edit frames",
+      "pass": true
+    },
+    {
+      "name": "pack/cut exact frame round trip",
+      "pass": true
+    },
+    {
+      "name": "packed mask polarity and independent frame mapping",
+      "pass": true
+    },
+    {
+      "name": "packGrid rejects short mask list",
+      "pass": true,
+      "error": "A repair grid needs one mask entry per frame."
+    },
+    {
+      "name": "packGrid rejects extra mask list",
+      "pass": true,
+      "error": "A repair grid needs one mask entry per frame."
+    },
+    {
+      "name": "packGrid rejects wrong mask dimensions",
+      "pass": true,
+      "error": "Each repair mask needs a Uint8Array matching the cell canvas."
+    },
+    {
+      "name": "packGrid rejects oversized mask dimensions",
+      "pass": true,
+      "error": "Each repair mask needs a Uint8Array matching the cell canvas."
+    },
+    {
+      "name": "packGrid rejects mixed cell dimensions",
+      "pass": true,
+      "error": "Repair frames need the same positive integer canvas."
+    },
+    {
+      "name": "packGrid preserves nonzero occupancy semantics",
+      "pass": true
+    },
+    {
+      "name": "completed queue receipt reused after reload without another injected POST",
+      "pass": true,
+      "injectedPostCount": 1
+    }
+  ],
+  "extraction": [
+    {
+      "name": "wide-enclosed-body-hole",
+      "key": "green",
+      "expected": 24,
+      "actual": 24,
+      "truePositive": 24,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "connected-one-pixel-strand",
+      "key": "green",
+      "expected": 35,
+      "actual": 37,
+      "truePositive": 35,
+      "falsePositive": 2,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "diagonal-bridge-three-pixels",
+      "key": "green",
+      "expected": 3,
+      "actual": 3,
+      "truePositive": 3,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 3,
+      "actualComponents4": 3,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "wide-enclosed-body-hole",
+      "key": "magenta",
+      "expected": 24,
+      "actual": 24,
+      "truePositive": 24,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "connected-one-pixel-strand",
+      "key": "magenta",
+      "expected": 35,
+      "actual": 37,
+      "truePositive": 35,
+      "falsePositive": 2,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "diagonal-bridge-three-pixels",
+      "key": "magenta",
+      "expected": 3,
+      "actual": 3,
+      "truePositive": 3,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 3,
+      "actualComponents4": 3,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "wide-enclosed-body-hole",
+      "key": "blue",
+      "expected": 24,
+      "actual": 24,
+      "truePositive": 24,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "connected-one-pixel-strand",
+      "key": "blue",
+      "expected": 35,
+      "actual": 37,
+      "truePositive": 35,
+      "falsePositive": 2,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "diagonal-bridge-three-pixels",
+      "key": "blue",
+      "expected": 3,
+      "actual": 3,
+      "truePositive": 3,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 3,
+      "actualComponents4": 3,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "wide-enclosed-body-hole",
+      "key": "azure",
+      "expected": 24,
+      "actual": 24,
+      "truePositive": 24,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "connected-one-pixel-strand",
+      "key": "azure",
+      "expected": 35,
+      "actual": 37,
+      "truePositive": 35,
+      "falsePositive": 2,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "diagonal-bridge-three-pixels",
+      "key": "azure",
+      "expected": 3,
+      "actual": 3,
+      "truePositive": 3,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 3,
+      "actualComponents4": 3,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "one-pixel-bright-body-hole",
+      "key": "green",
+      "expected": 8,
+      "actual": 8,
+      "truePositive": 8,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "one-pixel-dark-body-hole",
+      "key": "green",
+      "expected": 8,
+      "actual": 9,
+      "truePositive": 8,
+      "falsePositive": 1,
+      "falseNegative": 0,
+      "expectedComponents4": 1,
+      "actualComponents4": 1,
+      "expectedComponents8": 1,
+      "actualComponents8": 1
+    },
+    {
+      "name": "isolated-single-pixel-legitimate-detail",
+      "key": "green",
+      "expected": 1,
+      "actual": 0,
+      "truePositive": 0,
+      "falsePositive": 0,
+      "falseNegative": 1,
+      "expectedComponents4": 1,
+      "actualComponents4": 0,
+      "expectedComponents8": 1,
+      "actualComponents8": 0,
+      "observedImageHash": "fe50653693fd6a70cdfaec97301e3608e28e8b57b45bb9ca1dfe6c9f25415d26"
+    },
+    {
+      "name": "isolated-single-pixel-stray-artifact",
+      "key": "green",
+      "expected": 0,
+      "actual": 0,
+      "truePositive": 0,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 0,
+      "actualComponents4": 0,
+      "expectedComponents8": 0,
+      "actualComponents8": 0,
+      "observedImageHash": "fe50653693fd6a70cdfaec97301e3608e28e8b57b45bb9ca1dfe6c9f25415d26"
+    },
+    {
+      "name": "same-observed-key-RGB-owner-body",
+      "key": "green",
+      "expected": 0,
+      "actual": 0,
+      "truePositive": 0,
+      "falsePositive": 0,
+      "falseNegative": 0,
+      "expectedComponents4": 0,
+      "actualComponents4": 0,
+      "expectedComponents8": 0,
+      "actualComponents8": 0,
+      "observedImageHash": "988c39ad8aebafb566af395afbb60fe99d85d88a969c3757f3fd481d7243cbb7"
+    },
+    {
+      "name": "same-observed-key-RGB-owner-gear",
+      "key": "green",
+      "expected": 20,
+      "actual": 0,
+      "truePositive": 0,
+      "falsePositive": 0,
+      "falseNegative": 20,
+      "expectedComponents4": 1,
+      "actualComponents4": 0,
+      "expectedComponents8": 1,
+      "actualComponents8": 0,
+      "observedImageHash": "988c39ad8aebafb566af395afbb60fe99d85d88a969c3757f3fd481d7243cbb7"
+    }
+  ],
+  "limitations": [
+    "All API operations use injected in-memory fixtures. No provider calls or credentials are used.",
+    "Canonical identity probes use synthetic byte payloads to isolate hashing; they do not establish valid PNG/provider inputs or provider acceptance.",
+    "Opposite semantic labels on identical observed inputs deliberately demonstrate identifiability limits rather than a safe threshold fix.",
+    "Production files have concurrent edits; exact content hashes identify this execution."
+  ],
+  "summary": {
+    "contracts": 18,
+    "contractPass": 18,
+    "contractFail": 0,
+    "extractionCases": 18,
+    "extractionExact": 11,
+    "falsePositivePixels": 9,
+    "falseNegativePixels": 21
+  }
+}

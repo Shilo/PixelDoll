@@ -1,0 +1,735 @@
+{
+  "version": 1,
+  "paidCalls": 0,
+  "source": "existing CC0 Quaternius-baked motion library; no RGBMoCap export was executed",
+  "librarySha256": "c1d7427fa722ba14b0ff6bb858e38cc3d76904778caddf183c548fb88149a5ff",
+  "licenseFile": "../../../../app/dev-fixtures/motion-lab/LICENSE.txt",
+  "sourceCodeSha256": "5d58348f461f6369c98c914b54b5dd790f62195926f5ef5c3138f974ce2d36e9",
+  "valid": [
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "idle",
+      "frames": 151,
+      "inputHash": "c47fcf70ffd0e70d3b51361ea1d2cbca636a9d370073c28985b1f30abf0e39a6",
+      "maxSegmentError": 1.4210854715202004e-14,
+      "maxRestErrorPx": 4.440892098500626e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "80addf770956cb904fe74f0cfcbd23ce81322026f368af3ac584301bd67221ba",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "walk",
+      "frames": 82,
+      "inputHash": "de1f0ce86491511694568aea91c5cb18674d5db115b29f450a66e3dbe5726e08",
+      "maxSegmentError": 1.0658141036401503e-14,
+      "maxRestErrorPx": 4.440892098500626e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "5fb88f44aa2baf75fa6e3b93790934b5a24cbd1e5ee427817406b03e9bdaf21e",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "run",
+      "frames": 58,
+      "inputHash": "2f12994e863f5b0be33d46dbdf823cf7c36f411eb2974ca51460e6fad565eaab",
+      "maxSegmentError": 1.0658141036401503e-14,
+      "maxRestErrorPx": 4.440892098500626e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "d23e0d4a513df40b53c56fcf6cb463933c6402eb8928d21c646589943b53b233",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "attack",
+      "frames": 93,
+      "inputHash": "26a9f3b2edc7790f6a8ee7562ea38995c3380e7e1031bdb4e24ee3a13a1f4e84",
+      "maxSegmentError": 1.0658141036401503e-14,
+      "maxRestErrorPx": 4.440892098500626e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "b082c815349b4f5c221e23e0e08134bdc29bc23bc93ff919da050fed82938a58",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "hurt",
+      "frames": 22,
+      "inputHash": "475ed4dc213dfd3b83bdf381f1a59e0f3f2b2f4aa760c8085cd4109406571d72",
+      "maxSegmentError": 1.2434497875801753e-14,
+      "maxRestErrorPx": 4.440892098500626e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "9183e74b056d41521ba2e569b84b329df84f57099e2459c5040f520c77620f83",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "death",
+      "frames": 133,
+      "inputHash": "efad20f697c91176b279ae271232febf427d262f9a1e621ad4f70522d84b5314",
+      "maxSegmentError": 5.329070518200751e-15,
+      "maxRestErrorPx": 4.440892098500626e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "e857aca4c4b9241687c12dfa27a6f5ceae3c853f985436c5fef912ae0c3433c1",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "idle",
+      "frames": 151,
+      "inputHash": "b29690bd6fb4857da9b28c7f7b5c4c13831744b130332312034598504b337bf0",
+      "maxSegmentError": 1.4210854715202004e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "6652a33ad0d182cd4c7f629c8ac7fd53eacbaa804f00599a554ea2efe53cefef",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "walk",
+      "frames": 82,
+      "inputHash": "ee8b4ea15e2c9c2889ee20bc82d848278698f3e4d97eeb6c349f4f4c1705255b",
+      "maxSegmentError": 1.2434497875801753e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "add58485b1744ea0cbfdffb8a44b42dfb565d0320eb99e38a2ad22cc7f6b3421",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "run",
+      "frames": 58,
+      "inputHash": "6068753fc4206e2661cd97e9d3b6bf68138376415989e79eeb2168ace937b043",
+      "maxSegmentError": 7.105427357601002e-15,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "f3cb5438bceca88ce9257dbd8a64546ac165d7b3871683532579fba818440205",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "attack",
+      "frames": 93,
+      "inputHash": "484fe63e05e89cee43feb9e7b64dc3bd4ade1ce379c57a982c6deadffa877a56",
+      "maxSegmentError": 8.881784197001252e-15,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "8fdb05a01fc08c0041c3e35e5758d9a02cbceb2a0234ca1c80a76eca1e974200",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "hurt",
+      "frames": 22,
+      "inputHash": "91072467398273a7c4260630e6e1e23f1878dd38d2b37a3a27c0a6eecbb21c0e",
+      "maxSegmentError": 1.4210854715202004e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "06d017a3d61cbe9c17dd0d5935e68985acf8cdde409d86dd88af090136306bb8",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "c27man",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "death",
+      "frames": 133,
+      "inputHash": "2ba1b82110278c9661c63c8339b4bf6133a699a663fbeac8f3fd374becffc33f",
+      "maxSegmentError": 5.329070518200751e-15,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "d6f6d89a707eeda790bcd1ce7cfd031f75a03d99ff5daefdd518e5eb64750363",
+      "inputPreserved": true,
+      "issues": [
+        "RIGHT EAR: outside the canvas; add padding or edit the pose",
+        "RIGHT ARM: outside the canvas; add padding or edit the pose",
+        "NOSE: outside the canvas; add padding or edit the pose",
+        "RIGHT EYE: outside the canvas; add padding or edit the pose",
+        "LEFT EYE: outside the canvas; add padding or edit the pose",
+        "LEFT EAR: outside the canvas; add padding or edit the pose",
+        "RIGHT ELBOW: outside the canvas; add padding or edit the pose"
+      ]
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "idle",
+      "frames": 151,
+      "inputHash": "91cdc2100bd3c843371674acab72ba34820bbf7bd4509f10149b2f04b0cdea65",
+      "maxSegmentError": 8.881784197001252e-15,
+      "maxRestErrorPx": 9.930136612989092e-15,
+      "maxBindErrorPx": 8.881784197001252e-15,
+      "maxZeroGainErrorPx": 8.881784197001252e-15,
+      "outputHash": "fda9ec4539b2bf968a7a4ed494c57d423605c81f6c48cd2d031a3a04f4be033d",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "walk",
+      "frames": 82,
+      "inputHash": "fd9f35622f3ad890448ab78be38d51a954e040248cec0a8e4e51078412ae6811",
+      "maxSegmentError": 7.993605777301127e-15,
+      "maxRestErrorPx": 9.930136612989092e-15,
+      "maxBindErrorPx": 8.881784197001252e-15,
+      "maxZeroGainErrorPx": 8.881784197001252e-15,
+      "outputHash": "8262d40e3e0f061ad5b399e76ef65160cdab2ab8d999623c5add6dcb7f89d74e",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "run",
+      "frames": 58,
+      "inputHash": "106aecd1056811819c605165a05a895791aba27312cb813d985438267fea0e9f",
+      "maxSegmentError": 3.552713678800501e-15,
+      "maxRestErrorPx": 9.930136612989092e-15,
+      "maxBindErrorPx": 8.881784197001252e-15,
+      "maxZeroGainErrorPx": 8.881784197001252e-15,
+      "outputHash": "2c897df0566442c91d896231f3ee341bb743cb5875bdb3630728aaae6d0c94f5",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "attack",
+      "frames": 93,
+      "inputHash": "317af8d16f2ed17e476b38e6379b9b631fe8838256becb946c8d8a8239972200",
+      "maxSegmentError": 5.329070518200751e-15,
+      "maxRestErrorPx": 9.930136612989092e-15,
+      "maxBindErrorPx": 8.881784197001252e-15,
+      "maxZeroGainErrorPx": 8.881784197001252e-15,
+      "outputHash": "6fb91e7fd542e007af5e1b0522efc6f7dfc5960ba1b981a79eecf87e9b3f72ce",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "hurt",
+      "frames": 22,
+      "inputHash": "2d2996d8d88a6605434548e1d972fb4c12073edcf345ce29268abda3a603e478",
+      "maxSegmentError": 6.217248937900877e-15,
+      "maxRestErrorPx": 9.930136612989092e-15,
+      "maxBindErrorPx": 8.881784197001252e-15,
+      "maxZeroGainErrorPx": 8.881784197001252e-15,
+      "outputHash": "d81c0641c50eac04347ac72d6f3238b31f9c0f817aa42675eb02fac304793c66",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "south",
+      "clip": "death",
+      "frames": 133,
+      "inputHash": "6f0e511308425d8c740d4a932213430b542a65a6b354b398aa9fbd1e2095cbc4",
+      "maxSegmentError": 5.329070518200751e-15,
+      "maxRestErrorPx": 9.930136612989092e-15,
+      "maxBindErrorPx": 8.881784197001252e-15,
+      "maxZeroGainErrorPx": 8.881784197001252e-15,
+      "outputHash": "6064a98b66bbde4b0bd0d6d0afb3c9e09aaa77aa953b2d795672e442ac404830",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "idle",
+      "frames": 151,
+      "inputHash": "94bf5ff5e7e4569a3d31216f3415cbea5ffb4cf8ca3e16a3e0b234742f417f16",
+      "maxSegmentError": 9.769962616701378e-15,
+      "maxRestErrorPx": 6.2803698347351005e-15,
+      "maxBindErrorPx": 1.2560739669470201e-14,
+      "maxZeroGainErrorPx": 1.2560739669470201e-14,
+      "outputHash": "d0ecdc0ff84c0608740f41ab3906913a65b7018d5a8a1fea819d3741f80b9acc",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "walk",
+      "frames": 82,
+      "inputHash": "83b532815b34f2b392141889907ed94f16facb96da7dc34a7b3a988f64fe02d4",
+      "maxSegmentError": 1.2434497875801753e-14,
+      "maxRestErrorPx": 6.2803698347351005e-15,
+      "maxBindErrorPx": 1.2560739669470201e-14,
+      "maxZeroGainErrorPx": 1.2560739669470201e-14,
+      "outputHash": "f6f79d1b30b18d4b447bec267401871f18efac434f044fb4394c573d53fac45c",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "run",
+      "frames": 58,
+      "inputHash": "b650176438ca3581ceca2484247dfba823ac570a52ea7eade6ee876a58f42e86",
+      "maxSegmentError": 5.329070518200751e-15,
+      "maxRestErrorPx": 6.2803698347351005e-15,
+      "maxBindErrorPx": 1.2560739669470201e-14,
+      "maxZeroGainErrorPx": 1.2560739669470201e-14,
+      "outputHash": "ed1aa86023ab0f2208ca019aa1f1e08f1448a5b4b754e6ce2a65fca0e3fb9d3c",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "attack",
+      "frames": 93,
+      "inputHash": "22fbf5f476c0682de6bf9669bb46a397b3c4d9a6a85551662a3f035e8a1a0fa3",
+      "maxSegmentError": 5.329070518200751e-15,
+      "maxRestErrorPx": 6.2803698347351005e-15,
+      "maxBindErrorPx": 1.2560739669470201e-14,
+      "maxZeroGainErrorPx": 1.2560739669470201e-14,
+      "outputHash": "27bddadb35617bb8085563f542040c1c2c29f50204268c314628e86a4d8ad27d",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "hurt",
+      "frames": 22,
+      "inputHash": "f6caf38d4abebb9db317bd3f8e43caf3fba7551f21a9632260ed6e12092854dd",
+      "maxSegmentError": 9.769962616701378e-15,
+      "maxRestErrorPx": 6.2803698347351005e-15,
+      "maxBindErrorPx": 1.2560739669470201e-14,
+      "maxZeroGainErrorPx": 1.2560739669470201e-14,
+      "outputHash": "7d99babf68be39541d0e14189161639c6e6480410b09531dcaa7aeeb7b5e1eba",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "chibi",
+      "size": {
+        "w": 80,
+        "h": 80
+      },
+      "direction": "east",
+      "clip": "death",
+      "frames": 133,
+      "inputHash": "5d589f26c72bba67b1108054aa9d77105c7079166cf23b41c6b01180948c82c5",
+      "maxSegmentError": 5.329070518200751e-15,
+      "maxRestErrorPx": 6.2803698347351005e-15,
+      "maxBindErrorPx": 1.2560739669470201e-14,
+      "maxZeroGainErrorPx": 1.2560739669470201e-14,
+      "outputHash": "5b8752cc9dd64135a00c1ecb3e9e7f1a67bfe976630ccd16af046742e9d27ec9",
+      "inputPreserved": true,
+      "issues": [
+        "NOSE: outside the canvas; add padding or edit the pose",
+        "RIGHT ARM: outside the canvas; add padding or edit the pose"
+      ]
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "south",
+      "clip": "idle",
+      "frames": 151,
+      "inputHash": "58e7d5859876f7eb8a2d226919b40709440ffdbd00740cafc8a09aadd3f5d0fe",
+      "maxSegmentError": 2.4868995751603507e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "43db5e281f2fec08d2157602966d4bd5c00aa922ede6f336460e7069f369ca41",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "south",
+      "clip": "walk",
+      "frames": 82,
+      "inputHash": "1deb829c7933b17df3c0847c6c6cd01ebbb786ef26456fdb67ee3cf054a278eb",
+      "maxSegmentError": 2.4868995751603507e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "f09814dedf990b7cce51dafb2b71f47204fd34ebc9e86256fa25a5cdf120ef81",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "south",
+      "clip": "run",
+      "frames": 58,
+      "inputHash": "3fa1d2da1348f7c29703107e832f2d0a9ac65c707cac0675bede60aaf3faccd7",
+      "maxSegmentError": 1.0658141036401503e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "417882ba185a7497296a72b183af140c293a57bd1a92bd165fe7a1e40eed3b7c",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "south",
+      "clip": "attack",
+      "frames": 93,
+      "inputHash": "2a31b9d0c3d223947541bfa2d142ee9109cdb3bfecd408eef4be11a924884bd6",
+      "maxSegmentError": 1.7763568394002505e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "9872e332e1e9b32d6cd792f69c39657aaa1f117ff71fddaa74bbf37a46dfddda",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "south",
+      "clip": "hurt",
+      "frames": 22,
+      "inputHash": "4ffc8289902e366a0fa81979b076f40f9aed0dcbd2be5b00b3562bbaba149b43",
+      "maxSegmentError": 2.1316282072803006e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "1a3587854dccb110109b9b4c7fbe4c60f4cccaccd86f03b7194e3393ec388b3a",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "south",
+      "clip": "death",
+      "frames": 133,
+      "inputHash": "545c879471f36bacfdfe7b95d12f2f05b6f344ed7353554793eaac6295bd7c4e",
+      "maxSegmentError": 1.0658141036401503e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 0,
+      "maxZeroGainErrorPx": 0,
+      "outputHash": "54a64b580587b232f982a74d1912c2f07a6e1456123ec78602012da1bddd9873",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "east",
+      "clip": "idle",
+      "frames": 151,
+      "inputHash": "7f979dc7d6c132a46dfad60482189615a85d5be9482fa8da99146445c239ad49",
+      "maxSegmentError": 3.197442310920451e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "edbb4daa16eb8e2e55673dd3231bbbf8bbdae16e042c336f7317cf36d91a7ad1",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "east",
+      "clip": "walk",
+      "frames": 82,
+      "inputHash": "87e2f84c087bf78974790e3d7e858cc53438d776c499ae2d4b5308438354fd55",
+      "maxSegmentError": 3.197442310920451e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "dff3e9ccc7fd5feb09f434ba26c0b4d5500ec97ee0db00da67b825f5bc014a4c",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "east",
+      "clip": "run",
+      "frames": 58,
+      "inputHash": "0dbc8af7c282ed3133962a864ed0a711d3f166e25608a764c680252cc0cfd36b",
+      "maxSegmentError": 1.4210854715202004e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "abb64e5773180b11835f48c1735e8f99624e506e8474562c9c83b1b90331ca1b",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "east",
+      "clip": "attack",
+      "frames": 93,
+      "inputHash": "ec088481dc2d6de97d8edc7c3e6ed20dfb7e69a1916209e1722ab72905f781a0",
+      "maxSegmentError": 2.842170943040401e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "3f66bba068bf104afd60d7502a4d623d6537a381db89ebcafdfdb2992b8db16e",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "east",
+      "clip": "hurt",
+      "frames": 22,
+      "inputHash": "ad433a70c65d023c2c0cce744f6144aa0c77af725688e998fb02235ddc85658e",
+      "maxSegmentError": 2.842170943040401e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "507b6319e428fd33c2052b83f938a1c80ff69520ad00d03edc2a53adbf2a5280",
+      "inputPreserved": true,
+      "issues": []
+    },
+    {
+      "fixture": "body128",
+      "size": {
+        "w": 160,
+        "h": 160
+      },
+      "direction": "east",
+      "clip": "death",
+      "frames": 133,
+      "inputHash": "77d59f8b1d7034b17d1ea5d1ba9d0877d1c754982227a2a1e9159e09ad88b404",
+      "maxSegmentError": 1.0658141036401503e-14,
+      "maxRestErrorPx": 8.881784197001252e-15,
+      "maxBindErrorPx": 1.7763568394002505e-14,
+      "maxZeroGainErrorPx": 1.7763568394002505e-14,
+      "outputHash": "eb7fce91b493103a4801b82b34a1c6a77a5638f6b78938e2d3e068922bf3494e",
+      "inputPreserved": true,
+      "issues": [
+        "RIGHT EAR: outside the canvas; add padding or edit the pose",
+        "RIGHT ARM: outside the canvas; add padding or edit the pose",
+        "NOSE: outside the canvas; add padding or edit the pose",
+        "RIGHT EYE: outside the canvas; add padding or edit the pose",
+        "LEFT EYE: outside the canvas; add padding or edit the pose",
+        "RIGHT ELBOW: outside the canvas; add padding or edit the pose"
+      ]
+    }
+  ],
+  "summary": {
+    "cases": 36,
+    "frames": 3234,
+    "maxSegmentError": 3.197442310920451e-14,
+    "maxRestErrorPx": 9.930136612989092e-15,
+    "maxBindErrorPx": 1.7763568394002505e-14,
+    "maxZeroGainErrorPx": 1.7763568394002505e-14,
+    "inputPreserved": true,
+    "invalidRejected": 8,
+    "invalidCases": 8
+  },
+  "invalid": [
+    {
+      "name": "descending source timestamps",
+      "rejected": true,
+      "error": "Source motion sample times must be ordered within its duration."
+    },
+    {
+      "name": "duplicate source timestamps with different poses",
+      "rejected": true,
+      "error": "Source motion repeats a timestamp with a different pose or contact."
+    },
+    {
+      "name": "nonfinite source duration",
+      "rejected": true,
+      "error": "Source motion duration must be finite and nonnegative."
+    },
+    {
+      "name": "negative source duration",
+      "rejected": true,
+      "error": "Source motion duration must be finite and nonnegative."
+    },
+    {
+      "name": "negative source timestamp",
+      "rejected": true,
+      "error": "Source motion sample times must be ordered within its duration."
+    },
+    {
+      "name": "source timestamp beyond duration",
+      "rejected": true,
+      "error": "Source motion sample times must be ordered within its duration."
+    },
+    {
+      "name": "missing source joint",
+      "rejected": true,
+      "error": "Cannot read properties of undefined (reading '0')"
+    },
+    {
+      "name": "invalid contact weight",
+      "rejected": true,
+      "error": "Contact weights must be 0-1."
+    }
+  ],
+  "sparseCoverage": {
+    "requested": 1.3333333730697632,
+    "observedLast": 0.016460905840367447,
+    "armDistanceBeyondObservedLast": 0,
+    "interpretation": "diagnostic only: extrapolation beyond actual source coverage can invent motion; source coverage policy needs explicit qualification"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "runtime": "v24.22.1",
+  "paidCalls": 0,
+  "source": "existing public CC0 motion library and Motion Lab JSON validation; no RGBMoCap export or reconstruction",
+  "librarySha256": "c1d7427fa722ba14b0ff6bb858e38cc3d76904778caddf183c548fb88149a5ff",
+  "motionSourceSha256": "5d58348f461f6369c98c914b54b5dd790f62195926f5ef5c3138f974ce2d36e9",
+  "documentSourceSha256": "9092c84efa494d54365a28de62bae35e98999ea7795724d95b306ac297a22e4b",
+  "cases": [
+    {
+      "name": "valid existing authored document",
+      "accepted": true,
+      "frames": 12,
+      "finite": true
+    },
+    {
+      "name": "valid repeated target sample times for an authored hold",
+      "accepted": true,
+      "frames": 4,
+      "finite": true
+    },
+    {
+      "name": "descending source sample chronology",
+      "accepted": false,
+      "error": "Source motion sample times must be ordered within its duration."
+    },
+    {
+      "name": "contradictory poses at one source timestamp",
+      "accepted": false,
+      "error": "Source motion repeats a timestamp with a different pose or contact."
+    },
+    {
+      "name": "null source duration through JSON",
+      "accepted": false,
+      "error": "Source motion duration must be finite and nonnegative."
+    },
+    {
+      "name": "negative source timestamp through JSON",
+      "accepted": false,
+      "error": "Source motion sample times must be ordered within its duration."
+    },
+    {
+      "name": "source sample timestamp after declared duration",
+      "accepted": false,
+      "error": "Source motion sample times must be ordered within its duration."
+    },
+    {
+      "name": "missing joint through authored-document import",
+      "accepted": false,
+      "error": "Source motion contains a missing or invalid joint."
+    }
+  ]
+}

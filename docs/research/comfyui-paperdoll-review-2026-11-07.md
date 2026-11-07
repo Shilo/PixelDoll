@@ -2,6 +2,8 @@
 
 Research spike, November 7, 2026. PixelDoll source inspected at `6a33fd37`. This is a source and contract comparison, not a claim that a ComfyUI workflow was installed or that its generated outputs passed PixelDoll's gates.
 
+**Executed follow-up:** [post-handoff qualification](post-handoff-qualification-2026-11-07/README.md) records real contract/extraction probes, a shared grid-validation fix, application checks, live endpoint dressing and independent challenge. The source-review execution limits below describe this spike, not the later follow-up.
+
 ## Findings
 
 ComfyUI is relevant, but it is not a new replacement for PixelDoll's renderer or PixelLab. Its useful lessons are explicit reference roles, stage-local recovery, dependency-complete caching, frame/mask identity, and protected compositing onto original frames. PixelDoll already implements much of that structure. The next useful work is targeted qualification, not adding a node editor or a GPU backend.

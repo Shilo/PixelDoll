@@ -1,0 +1,282 @@
+{
+  "version": "v24.22.1",
+  "examinedPackets": 20,
+  "uniqueSources": 10,
+  "rows": [
+    {
+      "id": "a-cape-east-raw-110601",
+      "packetSha256": "67623abf9cf90d553f72e134e1607536fbfb9ae20be3eb9d6b805027181212ef",
+      "sourceHash": "e2017ac6bc526e44268f530c4a634e1834a7859a01ae768bf319a34582210ae7",
+      "duplicatePackets": [
+        "a-cape-east-raw-110602"
+      ],
+      "dimensions": [
+        64,
+        64
+      ],
+      "key": "green",
+      "visibleKey": 350,
+      "keyOutsideFrozenBody": 0,
+      "allJoints": 18,
+      "gearOccludedJoints": 1,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 17,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "a-cape-south-raw-110601",
+      "packetSha256": "9ca4e367085c544b0584f9145f290db8d50f7c6856626e535796d1fee3c64f5e",
+      "sourceHash": "742f5fcd406b0609affdbd3b23ab23252883d3969c9f78d3c2674d210b4d73be",
+      "duplicatePackets": [
+        "a-cape-south-raw-110602"
+      ],
+      "dimensions": [
+        64,
+        64
+      ],
+      "key": "green",
+      "visibleKey": 601,
+      "keyOutsideFrozenBody": 1,
+      "allJoints": 18,
+      "gearOccludedJoints": 2,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 16,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "a-chest-east-raw-110601",
+      "packetSha256": "f80e689c68b7eb71696ad9c0b486052a230bb9bbdb15ddf584715103d2f9aa65",
+      "sourceHash": "d8e27c26b8c63552416834011b08f5020c88aaab476e2da108d7dd9c9880d7dc",
+      "duplicatePackets": [
+        "a-chest-east-raw-110602"
+      ],
+      "dimensions": [
+        64,
+        64
+      ],
+      "key": "green",
+      "visibleKey": 311,
+      "keyOutsideFrozenBody": 0,
+      "allJoints": 18,
+      "gearOccludedJoints": 4,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 14,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "a-chest-south-raw-110601",
+      "packetSha256": "f3327d469337ea759ef6c3baf0622e89c5dd87f5b8011ab417691896b81f6d5e",
+      "sourceHash": "5ef9356f3459af97170b6040f7116349e0ddac81befd082df9d96177ca8946fd",
+      "duplicatePackets": [
+        "a-chest-south-raw-110602"
+      ],
+      "dimensions": [
+        64,
+        64
+      ],
+      "key": "green",
+      "visibleKey": 455,
+      "keyOutsideFrozenBody": 0,
+      "allJoints": 18,
+      "gearOccludedJoints": 4,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 14,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "b-cloak-east-raw-110601",
+      "packetSha256": "6e1c27f881b5eab16e2cfee7acc45bcc58b74b859637c7ee8ef16fb28af7221d",
+      "sourceHash": "f489b9d1a84c0d068ee439e4587b31cd6ccdd2305374b6a7432c752506fd1292",
+      "duplicatePackets": [
+        "b-cloak-east-raw-110602"
+      ],
+      "dimensions": [
+        80,
+        80
+      ],
+      "key": "green",
+      "visibleKey": 401,
+      "keyOutsideFrozenBody": 0,
+      "allJoints": 18,
+      "gearOccludedJoints": 4,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 14,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "b-cloak-south-raw-110601",
+      "packetSha256": "e88252c73ede65f53c81d1f647ee00fa6580eb858feac8bbd191188909a20649",
+      "sourceHash": "95fee76990e57b1e299402c5b5a84f90d66f8690afa44a669bae4b6e92ebcc7b",
+      "duplicatePackets": [
+        "b-cloak-south-raw-110602"
+      ],
+      "dimensions": [
+        80,
+        80
+      ],
+      "key": "green",
+      "visibleKey": 784,
+      "keyOutsideFrozenBody": 10,
+      "allJoints": 18,
+      "gearOccludedJoints": 5,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 13,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "b-greathelm-east-raw-110601",
+      "packetSha256": "f54a025da3bc60dccff5a93ed6b453c0a4a334899af1e5789d06a3703a35e061",
+      "sourceHash": "c589787674d703f298b34f3e835a1ed1954581db2c28d4ed415cb9bdfc4b8f16",
+      "duplicatePackets": [
+        "b-greathelm-east-raw-110602"
+      ],
+      "dimensions": [
+        80,
+        80
+      ],
+      "key": "green",
+      "visibleKey": 357,
+      "keyOutsideFrozenBody": 1,
+      "allJoints": 18,
+      "gearOccludedJoints": 5,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 13,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "b-greathelm-south-raw-110601",
+      "packetSha256": "d652011334103e6cb3955d4231fe8124dc7ede9f220f74142b260009f27ab593",
+      "sourceHash": "d0cae3d1b46cd7fb3709cba58e7437a237ba8837f4559819fda662f5fd60f113",
+      "duplicatePackets": [
+        "b-greathelm-south-raw-110602"
+      ],
+      "dimensions": [
+        80,
+        80
+      ],
+      "key": "green",
+      "visibleKey": 671,
+      "keyOutsideFrozenBody": 0,
+      "allJoints": 18,
+      "gearOccludedJoints": 6,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 12,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "b-tunic-east-raw-110601",
+      "packetSha256": "fbfc8217dbeb2cd59e526c0686b329c4349569860ae6815328cf340a639b462e",
+      "sourceHash": "a9d181ba0f981e29259a205f90ce275b1e122ac3f559772ac3a2257d35dd5635",
+      "duplicatePackets": [
+        "b-tunic-east-raw-110602"
+      ],
+      "dimensions": [
+        80,
+        80
+      ],
+      "key": "magenta",
+      "visibleKey": 436,
+      "keyOutsideFrozenBody": 0,
+      "allJoints": 18,
+      "gearOccludedJoints": 6,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 12,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    },
+    {
+      "id": "b-tunic-south-raw-110601",
+      "packetSha256": "13bac2091f4ddef9371c4f84707995840e7db1a8fc0225ed89a84d54b3ba9e5b",
+      "sourceHash": "d9c59f710385f7cf6bb82ef1fb1a20c02b2cbfc014dc0ff25332401e009d16a6",
+      "duplicatePackets": [
+        "b-tunic-south-raw-110602"
+      ],
+      "dimensions": [
+        80,
+        80
+      ],
+      "key": "magenta",
+      "visibleKey": 557,
+      "keyOutsideFrozenBody": 0,
+      "allJoints": 18,
+      "gearOccludedJoints": 4,
+      "unsupportedInFrozenBody": 0,
+      "exactVisibleKeyJoints": 14,
+      "noVisibleKeyWithinThreePixels": 0,
+      "missingWitnesses": [],
+      "registrationOffset": [
+        0,
+        0
+      ],
+      "registrationShifted": false
+    }
+  ],
+  "totals": {
+    "visibleKey": 4923,
+    "keyOutsideFrozenBody": 12,
+    "allJoints": 180,
+    "gearOccludedJoints": 41,
+    "unsupportedInFrozenBody": 0,
+    "exactVisibleKeyJoints": 139,
+    "noVisibleKeyWithinThreePixels": 0
+  },
+  "limits": [
+    "Stored joints are assigned reference coordinates, not independently labeled source-image anatomy.",
+    "Gear occlusion and absent visible-key support are abstentions, not measured joint displacement.",
+    "Nearest key support does not prove semantic landmark identity.",
+    "Prior canonical-conditioning live comparisons were mixed and did not qualify a new default."
+  ]
+}

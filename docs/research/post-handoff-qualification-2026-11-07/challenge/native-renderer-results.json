@@ -1,0 +1,252 @@
+{
+  "nativeExecuted": true,
+  "paidCalls": 0,
+  "probe": "native-renderer-probe.gd",
+  "background": true,
+  "godot_version": {
+    "build": "official",
+    "hash": "a13da4feb8d8aefc283c3763d33a2f170a18d541",
+    "hex": 263937,
+    "major": 4,
+    "minor": 7,
+    "patch": 1,
+    "status": "stable",
+    "string": "4.7.1-stable (official)",
+    "timestamp": 0
+  },
+  "limits": "ImageTexture and Sprite2D/SubViewport readback only; no imported texture, mipmap/compression, atlas, generated export, browser or other engine was tested.",
+  "linear_half_pixel": {
+    "alpha_mismatch": 38,
+    "max_premultiplied_rgb_error": 235,
+    "opaque_rgb_mismatch": 16,
+    "premultiplied_rgb_mismatch": 18,
+    "readback_color_samples": [
+      [
+        63,
+        0,
+        0,
+        127
+      ],
+      [
+        48,
+        0,
+        0,
+        96
+      ],
+      [
+        12,
+        12,
+        0,
+        48
+      ],
+      [
+        0,
+        40,
+        20,
+        80
+      ],
+      [
+        0,
+        32,
+        32,
+        127
+      ],
+      [
+        8,
+        8,
+        8,
+        127
+      ],
+      [
+        24,
+        24,
+        24,
+        127
+      ],
+      [
+        40,
+        40,
+        40,
+        127
+      ]
+    ],
+    "straight_rgb_mismatch": 18,
+    "transparent_leak_pixels": 20
+  },
+  "linear_integer": {
+    "alpha_mismatch": 0,
+    "max_premultiplied_rgb_error": 0,
+    "opaque_rgb_mismatch": 0,
+    "premultiplied_rgb_mismatch": 0,
+    "readback_color_samples": [
+      [
+        255,
+        0,
+        0,
+        255
+      ],
+      [
+        128,
+        0,
+        0,
+        128
+      ],
+      [
+        0,
+        64,
+        0,
+        64
+      ],
+      [
+        0,
+        255,
+        255,
+        255
+      ],
+      [
+        0,
+        0,
+        0,
+        255
+      ],
+      [
+        64,
+        64,
+        64,
+        255
+      ],
+      [
+        128,
+        128,
+        128,
+        255
+      ],
+      [
+        192,
+        192,
+        192,
+        255
+      ]
+    ],
+    "straight_rgb_mismatch": 2,
+    "transparent_leak_pixels": 0
+  },
+  "nearest_half_pixel": {
+    "alpha_mismatch": 0,
+    "max_premultiplied_rgb_error": 0,
+    "opaque_rgb_mismatch": 0,
+    "premultiplied_rgb_mismatch": 0,
+    "readback_color_samples": [
+      [
+        255,
+        0,
+        0,
+        255
+      ],
+      [
+        128,
+        0,
+        0,
+        128
+      ],
+      [
+        0,
+        64,
+        0,
+        64
+      ],
+      [
+        0,
+        255,
+        255,
+        255
+      ],
+      [
+        0,
+        0,
+        0,
+        255
+      ],
+      [
+        64,
+        64,
+        64,
+        255
+      ],
+      [
+        128,
+        128,
+        128,
+        255
+      ],
+      [
+        192,
+        192,
+        192,
+        255
+      ]
+    ],
+    "straight_rgb_mismatch": 2,
+    "transparent_leak_pixels": 0
+  },
+  "nearest_integer": {
+    "alpha_mismatch": 0,
+    "max_premultiplied_rgb_error": 0,
+    "opaque_rgb_mismatch": 0,
+    "premultiplied_rgb_mismatch": 0,
+    "readback_color_samples": [
+      [
+        255,
+        0,
+        0,
+        255
+      ],
+      [
+        128,
+        0,
+        0,
+        128
+      ],
+      [
+        0,
+        64,
+        0,
+        64
+      ],
+      [
+        0,
+        255,
+        255,
+        255
+      ],
+      [
+        0,
+        0,
+        0,
+        255
+      ],
+      [
+        64,
+        64,
+        64,
+        255
+      ],
+      [
+        128,
+        128,
+        128,
+        255
+      ],
+      [
+        192,
+        192,
+        192,
+        255
+      ]
+    ],
+    "straight_rgb_mismatch": 2,
+    "transparent_leak_pixels": 0
+  },
+  "renderer": "gl_compatibility",
+  "probeSha256": "55ff053b2ecf68865a6b59654c87cca36294f5654f823b56bb0e7f2ad191fa87"
+}
