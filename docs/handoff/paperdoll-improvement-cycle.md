@@ -54,6 +54,8 @@ These are internal entry points, not a closed bibliography. Follow their referen
 | Modern AI and sprite processing | [Vision and temporal research](../research/deep-paperdoll-vision-2026-11-06.md), [modern sprite sources](../research/deep-paperdoll-modern-sprite-sources-2026-11-06.md) |
 | Native application comparisons | [Native tool experiments](../research/deep-paperdoll-native-followup-2026-11-06.md), [LPC generator review](../research/tools/lpc/lpc_generator_review.md), [Fralonra review](../research/tools/fralonra/fralonra_paperdoll_review.md) |
 | Games and runtime visual equipment | [Game survey](../research/games/games_paperdolling_survey.md), [verified Ultima paper-doll research](../research/games/ultima_online/ultima_online_paperdolling_verification.md) and the engine research directory |
+| Equipment designs, fitted copies, and compatibility | [Shared equipment and fitted-copy plan](../research/shared-equipment-fitted-copies-plan.md), [shared-equipment verification](../testing/shared-equipment-2026-10-22.md) |
+| Interactive correction and authoring | [Frame-editor research and spikes](../design/frame-editor/research-and-spikes.md), [frame-editor consensus](../design/frame-editor/consensus.md); distinguish research proposals from approved product scope |
 | Motion, skeletons, and held items | [Motion spike](../research/tool-spikes-2026-11-06-motion.md), [rig feasibility](../spikes/S3_skeleton_rigging.md), [held-item feasibility](../spikes/S5_held_items.md), [custom skeleton work](../research/2026-11-01-custom-skeleton-v3.md), [animation closeout](../research/2026-11-02-animation-closeout.md) and their linked authoring, grip, and engine experiments |
 | Paid comparisons and counterfactuals | [Matched live trials](../research/deep-paperdoll-live-trials-2026-11-06.md), [target-palette trials and offline controls](../research/deep-paperdoll-target-palette-2026-11-06.md) |
 | Independent review history | [Reviews index](../reviews/README.md), [joint counter-review](../reviews/2026-11-02-joint-counter-review-and-fixes.md), [complete-session challenge](../reviews/2026-11-02-complete-session-counter-review.md), [final motion review](../reviews/2026-11-02-final-motion-review.md) |
@@ -92,6 +94,13 @@ Maintain a query and coverage log with search date, query family, channel, usefu
 - Pixel correspondence, optical flow, dense matching, landmark constraints, contact-aware motion, foot sliding, hand-object contact, rigging, 3D-to-2D projection, and per-pixel depth.
 - Virtual try-on, garment identity, human identity preservation, accessory transfer, disentangled materials, recoloring, uncertainty, and model evaluation.
 - Engine-specific equipment renderers, sprite formats, runtime attachments, layer ordering, pivots, animation timing, palette swaps, and authoring/export integrations.
+- Equip regions, coverage masks, hide rules, skin placeholders, attachment substitution, reusable designs versus fitted instances, and body/rig compatibility signatures.
+- Constrained covering arrays, pairwise and higher-order interaction testing, metamorphic testing, equivariance, and idempotence.
+- Digital topology, 4/8-connectivity, pixel clusters, negative space, topology-preserving morphology, RotSprite, texel centers, pixel-grid phase, atlas extrusion, texture bleeding, premultiplied alpha, and color-space conversion.
+- Material-ID maps, indexed sprites, palette lookup tables, semantic recoloring, palette-index preservation, and protected material boundaries.
+- Interactive segmentation, corrective clicks and scribbles, selective prediction, risk versus coverage, confidence calibration, correction propagation, and time to an acceptable result.
+
+Assign a researcher to challenge the search vocabulary and coverage map themselves. Search adjacent terminology used by game engines, sprite formats, graphics research, artist workflows, and newer AI systems; follow mechanisms and citation/code links absent from this list. Record newly discovered terms, why they matter, and investigated or rejected leads in the cycle index so later runs expand the taxonomy rather than merely repeat it.
 
 Search official documentation, repositories and forks, source indexes, release notes, issues and discussions, primary papers and accompanying code, game technical writeups, creator devlogs, app marketplaces, playable demos, native tools, workflow repositories, and videos with descriptions/transcripts. Follow citations, project dependencies, implementation references, competing approaches, and linked failures. Search for the exact failure mechanisms found in PixelDoll, not just the generic product category.
 
@@ -107,7 +116,9 @@ Map coverage across the following dimensions and open further agent waves for we
 | Extraction | Which pixels are gear, body, skin shading, contact shadows, unchanged source, or uncertainty? Can the method abstain? |
 | Layer semantics | Do hair, capes, shields, weapons, hands, and clothing require front/back passes, body cuts, or per-frame visibility? |
 | Item interactions | Do arbitrary combinations work, including removing an occluder, swapping a body palette, and changing item order? |
+| Compatibility and fitted assets | Which coverage, substitution, hide, body, and rig rules make an item usable? Is a reusable visual design being mistaken for pixels already fitted to another character? |
 | Postprocessing | Are outline, alpha, motif, highlight, palette ramps, tiny parts, and intentional asymmetry preserved? |
+| Pixel structure and rendering | Are intentional connections, holes, gaps, and clusters preserved? Can decoded-pixel damage be distinguished from browser or engine sampling, alpha, compression, and color-space differences? |
 | Animation | Does equipment stay coherent through turns, action extremes, holds, loops, reordered playback, and all stored frames? |
 | Runtime/export | Are pivots, padding, trim bounds, material ownership, cut composition, timing, and manifests correct in real consumers? |
 | User workflow | Can an ordinary user create, dress, inspect, repair, recolor, recover, and export with clear feedback and few decisions? |
@@ -215,12 +226,19 @@ Cover the current supported domain and its meaningful boundaries:
 - Thin straps, tiny buckles, gaps, eye and eyebrow protection, hair shading, front/back hair, capes, two-handed items, mirrored views, weapon tip polarity, grip side, contact and padding.
 - Empty or corrupt frames, provider size/cardinality errors, missing references, sparse visible body witnesses, near-total occlusion, registration ambiguity, boundary contact, and cropped exports.
 - Multiple items with overlapping cuts; arbitrary combinations; occluder removal; item swaps; palette changes; layer permutations; all frames contributing to bounds.
+- Explicit fitting and compatibility contracts: hide/substitution rules, unsupported combinations, and preflight rejection. Matching dimensions or rig topology alone do not prove that equipment fits another body.
+- Measured interaction coverage across items, bodies, directions, moves, and materials. Use constrained pairwise or higher-order cases plus targeted known failures; do not treat pairwise coverage as proof of arbitrary compatibility. Test valid metamorphic relations, such as equip/unequip restoration, repeated normalization, or adding common padding while preserving artwork and world-space registration through the corresponding pivot/offset adjustment. State each relation's preconditions rather than assuming all item ordering, mirroring, or poses are interchangeable.
+- Intentional components, one-pixel bridges, holes, and negative space under declared connectivity conventions. Compare decoded pixels, browser playback, and native exports for sampling phase, filtering, atlas fringes, alpha interpretation, and color-space changes. Topology measures are diagnostics, not universal hard gates across poses where valid occlusion changes connectivity.
 - Authored timing, holds, reordered/repeated cells, one-shot and loop transitions, direction changes, natural motion, foot sliding, hand contact, and pose consistency.
 - Queue cancellation and completion races, persistence conflicts, concurrent edits, repeated sessions, cache identity, unknown paid outcomes, recovery using saved frames, and export/import contracts where currently supported.
 
 Use mutation tests with known damage to show that a metric catches the intended failure and does not reject valid tiny details. Measure raw provider fidelity, corrected fidelity, and the cost of correction separately. If a method abstains, preserve uncertainty and make review/recovery useful; do not silently turn low-confidence pixels into approved gear.
 
 For experiments involving ownership or recoloring, use independent pixel labels and deliberately conflicting examples. A detector and its evaluation cannot both define correctness using the same color-key assumption. Keep alpha, body identity, material ownership, shape, palette, and contrast as separate observations.
+
+Compare explicit material/owner labels and indexed representations with RGB inference, including identical RGB values belonging to different materials and protected outlines. Qualify how labels are acquired separately from how accurately their palettes are reconstructed; a palette index is not automatically a semantic material identity.
+
+Measure practical correction effort alongside automatic quality: time, actions, paid calls, preserved pixels, and final accepted output. Distinguish agent-operated correction-time proxies from measured artist effort. Study corrective interaction and confidence-based abstention using false acceptance and review coverage by defect class. Retain authorized corrections as reviewed regression evidence. Do not assume confidence scores are calibrated or that a correction can propagate safely across directions, poses, or items. Research these mechanisms without presuming a new learned model or editor feature is approved.
 
 ## 10. Run live Agent-mode experiments and real user workflows
 
