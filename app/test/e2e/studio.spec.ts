@@ -1561,7 +1561,8 @@ test('moves waiting behind another character’s failed move point to it', async
   await expect(sheet).toContainText('Cast failed on Failed mover, so new moves wait. Open it to try again or start over.')
   await sheet.getByRole('button', { name: 'Open Failed mover', exact: true }).click()
   await expect(page.locator('.project-btn')).toContainText('Failed mover')
-  await expect(sheet.getByRole('button', { name: 'Try again', exact: true })).toBeVisible()
+  // A paid retry discloses its estimate on the button itself, not only when saved frames exist.
+  await expect(sheet.getByRole('button', { name: /^Try again · Est\. [1-9]\d* gens$/ })).toBeVisible()
   await expect(sheet.getByRole('button', { name: 'Start over', exact: true })).toBeVisible()
 })
 
@@ -2161,7 +2162,7 @@ test('bounded body color correction discloses changed checks and equipment cost 
   expect(consent.bodyPaletteRepair.checkHashes.every((hash: string) => /^[a-f0-9]{64}$/.test(hash))).toBe(true)
   expect(consent.bodyPaletteRepair.id).toMatch(/^[a-f0-9-]{36}$/)
   expect(consent.measurementRecovery).toBeUndefined()
-  await sheet.getByRole('button', { name: 'Try again', exact: true }).click()
+  await sheet.getByRole('button', { name: /^Try again · Est\. [1-9]\d* gens$/ }).click()
   await expect.poll(() => page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.spec?.seed })).not.toBe(original.spec.seed)
   const fresh = await page.evaluate(async () => { const p = '/src/studio/state.svelte.ts', s = await import(p); return s.moving.spec })
   expect(fresh.seed).not.toBe(original.spec.seed)

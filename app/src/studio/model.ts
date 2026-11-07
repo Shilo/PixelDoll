@@ -2,7 +2,8 @@
 // QA and costs. Frame placement lives in lib/rig/normalize.ts (one rule for M2/M3/Studio).
 import { makeImg, type Img } from '../lib/image/png.ts';
 import { cellImg, layerFrame, over, unionFrame } from '../lib/compose/compose.ts';
-import type { DirectionName, Item, Manifest, Project } from '../lib/store/manifest.ts';
+import type { DirectionName, Item, ItemQa, Manifest, Project, QaSummary } from '../lib/store/manifest.ts';
+import { GATES, isAction } from '../lib/items/items.ts';
 import { originOf, type StoredProject } from '../lib/store/project.ts';
 
 /** Explain historical body-QA records without presenting estimated joints or silhouette bounds as proven defects. */
@@ -181,6 +182,46 @@ export function plainReason(s: string): string {
   const noGrid = /^([^/]+)\/([^:]+): no inpaint-v3 repair grid \((.+)\); kept the best pose roll/.exec(s);
   if (noGrid) return `No repair grid for ${noGrid[1].replaceAll('-', ' ')} (${noGrid[2].replaceAll('-', ' ')}): ${noGrid[3]}; the best try was kept`;
   return s;
+}
+
+/**
+ * Review reasons for a saved item. Saved QA keeps numbers, not messages, so numeric gates are named only for parts that did
+ * not pass, at the limit that part was gated with: skeleton items and posed frames allow more key outside the body than
+ * other dressed views, and actions skip the size check. A passing part never lists a reason.
+ */
+export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean): string[] {
+  const r: string[] = [];
+  if (q.missingLowerFrames) r.push('G11 lower-garment coverage');
+  if (q.footwearReviewFrames) r.push('G12 footwear coverage');
+  if (q.waistReviewFrames) r.push('G13 waist-band consistency');
+  if (q.facingReviewFrames) r.push('G14 torso consistency');
+  if (q.heldLoopReviewClips) r.push('The held item changes shape or angle when a move loops');
+  if (q.unmeasured) return [...new Set(r.map(plainReason))];
+  // Skeleton-posed drafts gate every cell, standing views included, at the posed limit (run.ts kOut); older routes by cell.
+  const posed = (clip: string | null) => skeleton || Object.entries(q.cells).some(([k, c]) => (clip === null || k.startsWith(`${clip}/`)) && c.route === 'posed');
+  const parts: [string | null, QaSummary][] = q.clips
+    ? [...Object.entries(q.clips), ...(q.legacy?.summary ? [[null, q.legacy.summary] as [null, QaSummary]] : [])]
+    : [[null, q]];
+  for (const [clip, p] of parts) {
+    if (p.status === 'pass') continue;
+    if (p.minKeyKept < GATES.keyKept) r.push('G2');
+    if (p.maxKeyOutside > (posed(clip) ? GATES.keyOutsidePosed : GATES.keyOutside)) r.push('G3');
+    if (p.minAreaRatio < GATES.areaRatio) r.push('G4');
+    if (p.maxAreaCV > GATES.areaCV && !(clip && isAction(clip))) r.push('G5');
+    if (p.maxPaletteDist > GATES.paletteDist) r.push('G6');
+    if (p.clipPx) r.push('G7');
+    if (p.handedness === 'switched') r.push('G8');
+  }
+  if (q.handedness === 'switched') r.push('G8');
+  if (held) {
+    for (const [clip, part] of Object.entries(q.clips ?? {})) {
+      if (!part.hand) r.push(`G8 ${clip}: handedness not checked`);
+      else if (part.hand === '?' && (!part.grip || part.grip.R + part.grip.L + part.grip.amb > 0)) r.push(`G8 ${clip}: grip side is unclear`);
+    }
+    if (q.grip?.none) r.push('G8 grip contact not confirmed');
+    if (!q.clips && !q.handedness) r.push('G8 handedness not checked');
+  }
+  return [...new Set(r.map(plainReason))];
 }
 
 export const fmtGens = (n: number) => `${Math.round(n * 10) / 10} gens`;

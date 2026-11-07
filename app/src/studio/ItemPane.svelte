@@ -8,7 +8,7 @@
   import ApiPeek from './ApiPeek.svelte'
   import Sprite from './Sprite.svelte'
   import Colors from './Colors.svelte'
-  import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason, moveLabel } from './model.ts'
+  import { HEALTH_LABEL, groupOf, healthOf, itemPreviewFrames, slotLabel, plainReason, moveLabel, qaReasons } from './model.ts'
   import { ui, doc, store, view, wear, toggleHide, moveLayer, resetLayer, removeItem, isDemo, openNewItem, withKey, startMove, queueMoves, pendingMoves, moving, settingUp, matchItemPalette, acceptItemIssues, openSaveDesign, openPinnedDesign, openItemExtension, extensionPreparing } from './state.svelte.ts'
   import { ArrowUp, ArrowDown, Bookmark, Check, ChevronRight, CircleCheck, RefreshCw, Trash, TriangleAlert } from './icons.ts'
 
@@ -87,33 +87,7 @@
   const gensSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.generations ?? 0), 0) : 0)
   const usdSpent = $derived(it ? it.provenance.reduce((s, p) => s + (p.usage?.usd ?? 0), 0) : 0)
   const designReasons = $derived([...new Set((it?.designWarnings ?? []).flatMap((s) => s.split('; ')).map(plainReason))])
-  const reasons = $derived.by(() => {
-    const q = it?.qa
-    if (!q) return []
-    const r: string[] = []
-    if (q.missingLowerFrames) r.push('G11 lower-garment coverage')
-    if (q.footwearReviewFrames) r.push('G12 footwear coverage')
-    if (q.waistReviewFrames) r.push('G13 waist-band consistency')
-    if (q.facingReviewFrames) r.push('G14 torso consistency')
-    if (q.heldLoopReviewClips) r.push('The held item changes shape or angle when a move loops')
-    if (q.unmeasured) return r.map(plainReason)
-    if (q.minKeyKept < 0.97) r.push('G2')
-    if (q.maxKeyOutside > 0.02) r.push('G3')
-    if (q.minAreaRatio < 0.5) r.push('G4')
-    if (q.maxAreaCV > 0.15) r.push('G5')
-    if (q.maxPaletteDist > 15) r.push('G6')
-    if (q.clipPx) r.push('G7')
-    if (q.handedness === 'switched') r.push('G8')
-    if (SLOTS.find((s) => s.id === it?.slot)?.class === 'held') {
-      for (const [clip, part] of Object.entries(q.clips ?? {})) {
-        if (!part.hand) r.push(`G8 ${clip}: handedness not checked`)
-        else if (part.hand === '?' && (!part.grip || part.grip.R + part.grip.L + part.grip.amb > 0)) r.push(`G8 ${clip}: grip side is unclear`)
-      }
-      if (q.grip?.none) r.push('G8 grip contact not confirmed')
-      if (!q.clips && !q.handedness) r.push('G8 handedness not checked')
-    }
-    return r.map(plainReason)
-  })
+  const reasons = $derived(it?.qa ? qaReasons(it.qa, SLOTS.find((s) => s.id === it.slot)?.class === 'held', it.route === 'skeleton-pose') : [])
   let confirmRemove = $state(false)
   let onlyDir = $state(false)
   let acceptingIssues = $state(false)
