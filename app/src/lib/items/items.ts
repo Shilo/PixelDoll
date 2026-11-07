@@ -1174,7 +1174,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const r = decided.filter((c) => c.hand === 'r').length, major = r * 2 >= decided.length ? 'r' : 'l';
     handedness = 'ok';
     for (const c of decided.filter((c) => c.hand !== major)) { handedness = 'switched'; flag(c.call, `G8 ${c.clip}: held in the ${c.hand === 'r' ? 'right' : 'left'} hand, other clips ${major === 'r' ? 'right' : 'left'}`); }
-    if (slot.anchor && slot.anchor.endsWith(major === 'r' ? 'l' : 'r')) warnings.push(`held in the ${major === 'r' ? 'right' : 'left'} hand; slot ${slot.id} expects ${slot.anchor}`);
+    if (slot.anchor && slot.anchor.endsWith(major === 'r' ? 'l' : 'r')) warnings.push(`G8 ${slot.id}: held in the ${major === 'r' ? 'right' : 'left'} hand; slot ${slot.id} expects ${slot.anchor}`); // G8 tag: review shows it in plain words
   }
 
   // Anchored edits have a known palette for each direction. One off-color frame should not be diluted by a clean batch.

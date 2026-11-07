@@ -138,7 +138,8 @@ export function nameFrom(desc: string): string {
 
 /** Item name from its description, sentence case like the demo: "a straw farmer hat, frayed" -> "Straw farmer hat" (T1 P2-15). */
 export function itemNameFrom(desc: string): string {
-  const head = desc.trim().split(/\s+(?:with|that|which|for|made|in|on|and)\s+|[,.;:]/i)[0].replace(/^(?:a|an|the|some|two|pair of)\s+/i, '');
+  // Also stop at prepositions and attachment words: "iron lantern hanging from a short chain" was named "From a short chain".
+  const head = desc.trim().replace(/^(?:a|an|the|some|two|pair of)\s+/i, '').split(/\s+(?:with|that|which|for|made|in|on|and|from|of|by|at|to|under|over|around|hanging|holding|held|carrying|dangling|attached|wrapped|covered|trimmed|decorated|lined|studded)\s+|[,.;:]/i)[0];
   const w = head.split(/\s+/).filter(Boolean).slice(-4).join(' ');
   return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
 }
