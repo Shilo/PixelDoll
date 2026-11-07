@@ -156,6 +156,9 @@ export const HEALTH_LABEL: Record<Health, string> = { clean: 'Clean', accepted: 
 
 /** QA gate messages in plain words (D1 §5.5). */
 export function plainReason(s: string): string {
+  // Per-move checks prefix a whole-item message with its move ("default/east: G8 ..."): translate the message itself.
+  const scoped = /^[^ :/]+\/[^ :/]+: ([A-Z]\d+ .*)$/.exec(s);
+  if (scoped) return plainReason(scoped[1]);
   if (s.startsWith('D2 ')) return 'The requested waist band differs between standing views';
   if (s.startsWith('G13 ')) return 'The waist band differs from the standing design; inspect the clothing';
   if (s.startsWith('G14 ')) return 'Some frames resemble the opposite view; inspect the torso';

@@ -887,7 +887,10 @@ async function autoSave(g: Gen): Promise<boolean> {
 }
 async function evalGen(g: Gen) {
   const ctx = await loadProject(g.draft.rigId);
-  store.results = { ...store.results, [g.draft.spec.id]: await (await itemRun()).evaluateItem(g.draft, ctx) };
+  // Spread after the await: concurrent evaluations (every review draft after a reload) otherwise overwrite each other's results,
+  // leaving a card on "Checking the frames" forever (2026-11-07 live test).
+  const result = await (await itemRun()).evaluateItem(g.draft, ctx);
+  store.results = { ...store.results, [g.draft.spec.id]: result };
 }
 export const genOf = (sel: string) => gens.find((g) => `gen:${g.draft.spec.id}` === sel);
 

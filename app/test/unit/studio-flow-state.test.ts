@@ -1490,3 +1490,28 @@ test('notification timers pause for pointer and focus, and dismissal cannot paus
     expect(s.ui.toast).toBe('')
   } finally { s.dismissToast(); vi.useRealTimers() }
 })
+
+test('review drafts re-checked together after a reload all keep their results', async () => {
+  // 2026-11-07 live test: the results object was copied before each check awaited, so the last check to finish dropped the
+  // other draft's result and its card stayed on "Checking the frames" forever.
+  const gate = pending<void>(), seen: string[] = []
+  vi.doMock('../../src/lib/items/run.ts', async original => ({ ...await original<typeof import('../../src/lib/items/run.ts')>(), matchItemColors: mocks.match,
+    evaluateItem: async (d: { spec: { id: string } }) => { seen.push(d.spec.id); if (d.spec.id === 'slow') await gate.promise; return { cells: [], qa: null, g1: new Map(), preview: null } } }))
+  try {
+    const draft = (id: string) => ({ draft: { spec: { id, slot: 'head', name: id }, rigId: 'project', calls: [], log: [] }, input: { name: id, slot: 'head', prompt: id }, phase: 'review', status: '' })
+    mocks.get.mockImplementation(async (_store: string, id: string) => (id === 'studio-drafts' ? { gens: [draft('slow'), draft('fast')] } : undefined))
+    mocks.load.mockResolvedValue({ rec: { id: 'project', manifest: fixtureManifest() } })
+    await import('../../src/lib/items/run.ts') // resolve the mocked pipeline once, as a loaded page would have it
+    const { queue } = await import('../../src/lib/pixellab/queue.ts') as unknown as { queue: { role: string } }
+    queue.role = 'follower' // a follower only re-checks the drafts it mirrors
+    try {
+      const s = await import('../../src/studio/state.svelte.ts')
+      await s.loadGens()
+      // The slow check is still waiting when the other draft's result lands.
+      await vi.waitFor(() => expect(Object.keys(s.store.results)).toContain('fast'))
+      expect(seen).toContain('slow')
+      gate.resolve()
+      await vi.waitFor(() => expect(Object.keys(s.store.results).sort()).toEqual(['fast', 'slow']))
+    } finally { queue.role = 'leader' }
+  } finally { vi.doUnmock('../../src/lib/items/run.ts') }
+})

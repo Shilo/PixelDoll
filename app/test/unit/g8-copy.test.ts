@@ -15,3 +15,7 @@ test.each([
   expect(plainReason(raw)).toBe(expected)
   expect(plainReason(raw)).not.toContain('The item switches hands')
 })
+
+test('a whole-item hand summary scoped to a move reads in plain words', () => {
+  expect(plainReason('default/east: G8 off_hand: held in the right hand; slot off_hand expects hand_l')).toBe('The item may be held in the wrong hand; check the intended hand')
+})
