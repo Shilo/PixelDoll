@@ -177,6 +177,7 @@ export function plainReason(s: string): string {
   }
   const key = /^K1 keyframe [^:]+: \d+ % of the item's colors lean toward the (.+) background, so parts may be missing$/.exec(s);
   if (key) return `Some of the item's colors are close to the ${key[1]} background, so parts may be missing`;
+  if (s.startsWith('G9') && s.includes('keeps its own angle')) return 'The held item hangs or sways instead of turning with the hand; check that it should';
   if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
   if (s.startsWith('H4')) return 'Some frames do not look like the design (e.g. a cape wrapped around an arm)';
   if (s.startsWith('D1')) return 'The design has gray smudges';
@@ -199,6 +200,7 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
   if (q.waistReviewFrames) r.push('G13 waist-band consistency');
   if (q.facingReviewFrames) r.push('G14 torso consistency');
   if (q.heldLoopReviewClips) r.push('The held item changes shape or angle when a move loops');
+  if (q.heldHangReviewClips) r.push('The held item hangs or sways instead of turning with the hand; check that it should');
   if (q.unmeasured) return [...new Set(r.map(plainReason))];
   // Skeleton-posed drafts gate every cell, standing views included, at the posed limit (run.ts kOut); older routes by cell.
   const posed = (clip: string | null) => skeleton || Object.entries(q.cells).some(([k, c]) => (clip === null || k.startsWith(`${clip}/`)) && c.route === 'posed');

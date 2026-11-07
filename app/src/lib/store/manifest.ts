@@ -108,6 +108,7 @@ export interface QaSummary {
   facingReviewFrames?: number; // observable upper-torso matches to the opposite standing view
   rawKeyReviewFrames?: number; // held frames with exact new key-colored pixels before registration; informational, never changes status
   heldLoopReviewClips?: number; // held items with a shape or angle jump at the playback seam
+  heldHangReviewClips?: number; // held clips excused from G9 because the item hangs below the hand (review note)
   grip?: { R: number; L: number; amb: number; none: number }; // held items, per cell
   strayPx?: number; // extraction/cleanup removals, including permission clipping; not a semantic artifact count
   status: 'pass' | 'warn' | 'fail' | 'accepted';

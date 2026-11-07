@@ -983,7 +983,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
 
   // per clip: presence, stability, placement, handedness
   const clips: ClipQa[] = [];
-  let heldLoopReviewClips = 0;
+  let heldLoopReviewClips = 0, heldHangReviewClips = 0;
   const byClip = new Map<string, CellOut[]>(), grip = { R: 0, L: 0, amb: 0, none: 0 };
   for (const c of cells) { const k = c.key.split('/').slice(0, 2).join('/'); (byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c); }
   // wrists: the clip's requested keypoints (what the item was posed with, S5 gripSide), else the tracked hand anchors.
@@ -1014,6 +1014,29 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     const cv = cvOf(areas), baseCv = cvOf(cs.map((c) => c.baseBand)), cvMax = Math.max(GATES.areaCV, 2 * baseCv);
     const wrist = slot.class === 'held' && cs.every((c) => c.posed) ? slot.anchor === 'hand_l' ? hl : hr : undefined;
     const minRatio = med ? Math.min(...areas) / med : 0;
+    // G4 for a held item the body partly hides (a buckler sliding behind the torso). An empty frame is never excused.
+    // The item's px within half its largest reach of the wrist (rotation-invariant count) stay within 25 % in every frame.
+    const steadyGrip = () => {
+      if (!wrist) return false;
+      const at = (c: CellOut) => wrist[+c.key.split('/')[2]], dist = (c: CellOut, p: number) => Math.hypot((p % w) + 0.5 - at(c)[0], ((p / w) | 0) + 0.5 - at(c)[1]);
+      let reach = 0;
+      for (const c of cs) for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) reach = Math.max(reach, dist(c, p));
+      const core = cs.map((c) => { let n = 0; for (let p = 0; p < c.mask.length; p++) if (c.mask[p] && dist(c, p) <= reach / 2) n++; return n; });
+      const top = Math.max(...core);
+      // and every frame keeps 70 % of the largest reach: a blade that loses its tip is not waving (2026-11-07 review)
+      const ext = cs.map((c) => { let r = 0; for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) r = Math.max(r, dist(c, p)); return r; });
+      return top >= 6 && core.every((n) => n >= 0.75 * top) && ext.every((r) => r >= 0.7 * reach);
+    };
+    const hiddenExplainsLoss = () => {
+      if (!wrist) return false;
+      // The same clip-wide test as G5's occlusion excuse: every frame compatible with the largest, hidden px restoring a
+      // steady area, and each frame reaching the floor with its own hidden px (2026-11-07 review: checking only the smallest
+      // frame excused a frame half missing in the open).
+      const ref = cs.reduce((big, c) => c.area > big.area ? c : big), ri = +ref.key.split('/')[2];
+      if (cs.some((c) => !c.area)) return false;
+      const vis = cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]])), fixed = cs.map((c, i) => c.area + vis[i].hiddenB);
+      return vis.every((v) => v.compatible) && vis.some((v) => v.hiddenB) && cvOf(fixed) <= cvMax && fixed.every((a) => a >= GATES.areaRatio * med);
+    };
     // R1: the S5 repair pastes the dressed keyframe on near-rest frames. Free and allowed, but the pasted item stands still
     // there (round 10: a static weapon over idle), so review says so; the pixels are unchanged.
     const pasted = cs.filter((c) => c.repaired).length;
@@ -1021,6 +1044,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     // a hidden view (hiddenViews) must stay empty: px in some of its frames are an item popping in, not a hidden one
     if (!med) (hidden.has(d) && !areas.some(Boolean) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) && !areas.some(Boolean) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
+    else if (minRatio < GATES.areaRatio && slot.class === 'held' && hiddenExplainsLoss()) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
     else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip, rig) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
     // a standard deviation under 2 px is drawing noise, not a lost part (round 5: earrings 5–10 px per frame read as CV 0.19)
     if (cv > cvMax && cv * (areas.reduce((s, x) => s + x, 0) / areas.length) >= 2 && !isAction(clip, rig)) {
@@ -1029,8 +1053,10 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       // The largest observed silhouette is only a reference, not an invented full shield. If hidden pixels explain
       // the area variation, stop paid G5 retries but retain an explicit review warning and the original QA metrics.
       if (visibility?.every((v) => v.compatible) && visibility.some((v) => v.hiddenB) && cvOf(cs.map((c, i) => c.area + visibility[i].hiddenB)) <= cvMax)
-        warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
-      else flag(cs[0].call, `G5 ${clip}: area CV ${cv.toFixed(2)} > ${cvMax.toFixed(2)}`);
+        { if (!warnings.some((m) => m.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`); }
+      // A held flag waves and a flame flickers while the part in the hand stays the same: review, not a failure (2026-11-07
+      // audit: a waving banner failed 6 of 6 clips, a flickering torch 4 of 6). A shield that shrinks changes at the grip too.
+      else (slot.class === 'held' && steadyGrip() ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G5 ${clip}: area CV ${cv.toFixed(2)} > ${cvMax.toFixed(2)}`);
     }
     // placement: centroid spread relative to the slot anchor (info)
     const anc = slot.anchor ? rig.anchors?.[slot.anchor as 'head']?.[a]?.[d as DirectionName] : undefined;
@@ -1073,6 +1099,16 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
     const checkShape = slot.class === 'held' && !isAction(clip, rig);
+    // Hanging, physically: the item lies below the hand (centroid at least half its reach lower than the wrist) along a
+    // near-vertical axis (within 25 degrees). A strapped shield or a bow held at its middle does not hang, so a shield
+    // that fails to turn with the arm still fails G9 (2026-11-07: the saved east-walk shield control).
+    const hangsDown = (c: CellOut, j: number, ax: number) => {
+      const wr = wrist?.[j], ct = centroid(c.mask, w);
+      if (!wr || !ct || Math.abs(Math.sin(ax)) < Math.cos(Math.PI * 25 / 180)) return false;
+      let reach = 0;
+      for (let p = 0; p < c.mask.length; p++) if (c.mask[p]) reach = Math.max(reach, Math.hypot((p % w) + 0.5 - wr[0], ((p / w) | 0) + 0.5 - wr[1]));
+      return ct[1] + 0.5 - wr[1] >= 0.5 * reach;
+    };
     // The principal axis has no direction, so a blade reversed about the hand (tip where the pommel was) keeps its axis and
     // passed G9 (2026-11-07 cycle: 28 of 30 reversed clips silent). Point the axis from the gripping wrist toward the item's
     // centroid when that is decisive: the centroid is at least a quarter of the reach away from the wrist (not a bow gripped
@@ -1088,7 +1124,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       if (reach < HELD_SIGNED_REACH || off < 0.25 * reach || Math.abs(along) < Math.SQRT1_2 * off) return null;
       return ((along < 0 ? ax + Math.PI : ax) - f) * 180 / Math.PI;
     };
-    let turn = 0, shapeIoU = 1, occluded = false;
+    let turn = 0, shapeIoU = 1, occluded = false, hangs = false;
     const checkTransition = (j: number, k: number, seam = false) => {
       const c = byCell.get(j), n = byCell.get(k);
       // Missing candidates cannot establish a transition, and a repeated cell holds the same image.
@@ -1102,6 +1138,14 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       const sx = signedRel(c, j), sy = signedRel(n, k);
       const angle = fore && x != null && y != null ? sx != null && sy != null ? Math.abs((((sx - sy) % 360) + 540) % 360 - 180) : angleDiff(x - fore[j], y - fore[k]) : null;
       const iou = angle == null ? overlap : 1;
+      // An item hanging below the hand that keeps its own angle while the forearm swings (a lantern, a censer, a flail's chain)
+      // is a review note, not a failure. A real flip or reversal changes this world angle too (2026-11-07 audit).
+      if (angle != null && angle > GATES.heldTurn && fore) {
+        const deg = 180 / Math.PI, world = sx != null && sy != null ? Math.abs((((sx + fore[j] * deg - sy - fore[k] * deg) % 360) + 540) % 360 - 180) : angleDiff(x!, y!);
+        // It lags the arm: at most half the forearm's own turn in the frame, so counter-rotation still fails (2026-11-07 review).
+        const foreTurn = Math.abs((((fore[j] - fore[k]) * deg % 360) + 540) % 360 - 180);
+        if (world <= Math.min(GATES.heldTurn, foreTurn / 2) && hangsDown(c, j, x!) && hangsDown(n, k, y!)) { if (!seam) hangs = true; return; }
+      }
       if ((angle != null && angle > GATES.heldTurn) || iou < GATES.heldIoU) {
         const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);
         if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) { occluded = true; return; }
@@ -1119,6 +1163,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     if (animation?.loop && frames.length > 1) checkTransition(frames.at(-1)!, frames[0], true);
     if (occluded && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
     if (turn > GATES.heldTurn) flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
+    else if (hangs && ++heldHangReviewClips) warnings.push(`G9 ${clip}: the held item keeps its own angle while the hand swings; check that it should hang or sway`);
     if (shapeIoU < GATES.heldIoU) flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
     clips.push({ clip, call: cs[0].call, median: med, cv: +cv.toFixed(3), baseCv: +baseCv.toFixed(3), minIoU: +minIoU.toFixed(2), minRatio: +minRatio.toFixed(2), hand, spread: +spread.toFixed(1) });
   }
@@ -1161,6 +1206,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       shiftedFrames: cells.filter((c) => c.shifted).length, strayPx: cells.reduce((s, c) => s + c.stray, 0), ...(slot.class === 'held' ? { grip } : {}), rerolls, status, cells: cellsQa,
       ...(slot.class === 'held' && cells.some(c => c.rawKeyOutside) ? { rawKeyReviewFrames: cells.filter(c => c.rawKeyOutside).length } : {}),
       ...(heldLoopReviewClips ? { heldLoopReviewClips } : {}),
+      ...(heldHangReviewClips ? { heldHangReviewClips } : {}),
     },
     clips, failCalls: fail, softCalls, warnings, paletteDist, splitExact,
   };
