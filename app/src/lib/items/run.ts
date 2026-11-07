@@ -601,10 +601,7 @@ export async function animateAnchoredItem(ctx: RigCtx, item: Item, anim: string,
   }
   const draft: Draft = { rigId: ctx.rec.id, activityScope: options.activityScope, spec: { id: item.id, name: item.name, prompt: item.prompt, slot: item.slot, key: item.key!, method: 'anchor', anims: [anim], dirs }, calls, log: [] };
   if (options.savedOnly) await Promise.all(draft.calls.map(async (call, k) => {
-    const { requestHash } = await requestIdentity(await callRequest(draft, k, ctx));
-    const saved = jobs.findLast(r => r.requestHash === requestHash && r.state === 'done');
-    if (!saved) throw new Error('Completed frames matching the current body and equipment are unavailable. No generation was requested.');
-    call.recId = saved.id;
+    call.recId = (await submitOrSaved(await callRequest(draft, k, ctx), {}, true)).id;
   }));
   const standingPalettes = new Map(dirs.map(dir => {
     const standing = item.layers.flatMap(layer => {
@@ -649,9 +646,18 @@ export class PartialMoveError extends Error {
   constructor(readonly reason: string, readonly savedDirs: DirectionName[]) { super(`${reason} The finished views were saved.`); }
 }
 
+export const SAVED_FRAMES_UNAVAILABLE = 'Completed frames matching the current body and equipment are unavailable. No generation was requested.';
+/** Enqueue a paid request, or with `savedOnly` reattach the completed record of the identical request and never send one. */
+async function submitOrSaved(req: Req, meta: Parameters<typeof queue.enqueue>[1], savedOnly?: boolean): Promise<JobRec> {
+  if (!savedOnly) return queue.enqueue(req, meta);
+  const { requestHash } = await requestIdentity(req), saved = jobs.findLast(r => r.requestHash === requestHash && r.state === 'done');
+  if (!saved) throw new Error(SAVED_FRAMES_UNAVAILABLE);
+  return saved;
+}
+
 /** Pose each planned clip-direction batch once, retaining its checks for explicit player review.
  * Stable request seeds reattach to accepted jobs after reload; only a new player request changes moveSeed. */
-export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number, selectedDirs?: DirectionName[], activityScope?: string): Promise<QaResult> {
+export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number, selectedDirs?: DirectionName[], activityScope?: string, savedOnly = false): Promise<QaResult> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), key = item.key!, pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const available = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   if (selectedDirs && (!selectedDirs.length || new Set(selectedDirs).size !== selectedDirs.length || selectedDirs.some(d => !available.includes(d)))) throw new Error('Choose supported independently drawn equipment directions.');
@@ -668,13 +674,13 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     const poses = allPoses.slice(start, start + count), cells = poses.map((_, i) => `${anim}/${dir}/${start + i}`);
     const seed = seedOf(`${item.id}/${anim}/${dir}/0${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`);
     if (frozenGrid(rig, { slot: item.slot, key }, cells)) {
-      const g = await gridItemClip(ctx, item, anim, dir, k, keys, cuts, seed, cells, activityScope);
+      const g = await gridItemClip(ctx, item, anim, dir, k, keys, cuts, seed, cells, activityScope, savedOnly);
       if ('blocked' in g) throw new Error(`The planned frozen-frame request is unavailable: ${g.blocked}. Existing artwork was kept.`);
       onCall(); prov.push(g.prov); collected.push(...g.cells);
       continue;
     }
     const req = itemRoute.pose({ keyframePngB64: await blobB64(item.dressed![dir]!.slice(7)), rest, poses, item: item.prompt, slot: item.slot, key, anim, dir, seed, cell: rig.cell, pad, view: rig.view });
-    const rec = await queue.enqueue(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move', playerRequested: true, activityScope, minimumTier: 1 });
+    const rec = await submitOrSaved(req, { label: `pose ${item.name} · ${anim} ${dir}`, tag: 'studio-move', playerRequested: true, activityScope, minimumTier: 1 }, savedOnly);
     const r = terminal(rec) ? rec : await settled(rec.id);
     onCall();
     if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir}: ${r.state} ${r.error ?? ''}`);
@@ -703,7 +709,7 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   return q;
 }
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */
-export const ITEM_MOVE_SAVE_CONFLICT = 'This character or item changed while the repair was generating. Existing artwork was kept. Reopen it before trying again.';
+export const ITEM_MOVE_SAVE_CONFLICT = 'This character or item changed while its frames were generating. Existing artwork was kept; finished frames stay in Activity.';
 function clipArtwork({ materials: _materials, hides: _hides, ...artwork }: Item) {
   return stableStringify(artwork);
 }
@@ -777,14 +783,15 @@ export async function gridRepairRequest(ctx: RigCtx, item: Item, anim: string, d
 }
 /** One clip-direction edited on its own canvas; body frames remain frozen and reference cells are protected. A grid the account's
  *  plan cannot run (> 256 px needs Tier 2) is never enqueued, since the queue would hold it forever: `blocked` says why. */
-async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, cuts: Cuts, seed: number, selectedCells?: string[], activityScope?: string): Promise<{ cells: CellOut[]; prov: Provenance } | { blocked: string }> {
+async function gridItemClip(ctx: RigCtx, item: Item, anim: string, dir: DirectionName, call: number, keys: Partial<Record<DirectionName, Img>>, cuts: Cuts, seed: number, selectedCells?: string[], activityScope?: string, savedOnly = false): Promise<{ cells: CellOut[]; prov: Provenance } | { blocked: string }> {
   const { rig } = ctx.rec.manifest, slot = slotOf(item.slot), pad = ((item.layers[0].cell?.w ?? rig.cell.w) - rig.cell.w) / 2;
   const cells = selectedCells ?? Array.from({ length: rig.animations.find(a => a.id === anim)!.cells }, (_, i) => `${anim}/${dir}/${i}`), n = cells.length;
-  const req = await gridRepairRequest(ctx, item, anim, dir, seed, cells), blocked = queue.planBlocks(req, 1);
+  // Reattaching a finished grid needs no plan check: nothing is sent.
+  const req = await gridRepairRequest(ctx, item, anim, dir, seed, cells), blocked = savedOnly ? null : queue.planBlocks(req, 1);
   if (blocked) return { blocked };
   const w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad;
   const stencils = await inpaintStencils(req.body, n, w, h);
-  const rec = await queue.enqueue(req, { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move', playerRequested: true, activityScope, minimumTier: 1 });
+  const rec = await submitOrSaved(req, { label: `grid ${item.name} · ${anim} ${dir}`, tag: 'studio-move', playerRequested: true, activityScope, minimumTier: 1 }, savedOnly);
   const r = terminal(rec) ? rec : await settled(rec.id);
   if (r.state !== 'done') throw new Error(`${item.name} ${anim} ${dir} grid: ${r.state} ${r.error ?? ''}`);
   if (outputsOf(r).length !== 1) throw new Error('PixelLab returned a malformed repair grid. Existing artwork was kept.');

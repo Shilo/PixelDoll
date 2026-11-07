@@ -51,7 +51,8 @@
   let adding = $state(false)
   const progress = $derived(mine && !adding)
   const busy = $derived(!!moving.spec && !moving.done)
-  const savedItemFrames = $derived(moving.spec?.itemMethod === 'anchor' && moving.spec.itemsOnly && !moving.spec.itemReview && moving.error.startsWith(ITEM_MOVE_SAVE_CONFLICT))
+  // A save conflict leaves the paid frames in Activity: anchored and skeleton item moves can reattach them for free.
+  const savedItemFrames = $derived(!!moving.spec && moving.spec.itemMethod !== 'grid' && !!moving.spec.itemsOnly && !moving.spec.replace && !moving.spec.itemReview && moving.error.startsWith(ITEM_MOVE_SAVE_CONFLICT))
   const retryPlan = $derived(moving.error && moving.spec ? movePlan(rec, { ...moving.spec, reuseItemFrames: undefined, measurementRecovery: undefined, bodyPaletteRepair: undefined, seed: undefined }) : [])
   const retryGens = $derived(Math.ceil(retryPlan.reduce((sum, call) => sum + (call.generations ?? 0), 0)))
   const pendingIds = $derived(pendingMoves(doc.id).map((s) => s.id))

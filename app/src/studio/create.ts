@@ -718,7 +718,8 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
   };
   assertReview(rec.manifest);
   const dirs = moveDirections(rec.manifest, spec.dirs), existing = rec.manifest.rig.animations.find(a => a.id === spec.id);
-  if (spec.reuseItemFrames && spec.itemMethod !== 'anchor') throw new Error('Saved equipment recovery requires an anchored item move. No generation was requested.');
+  // Saved-frame recovery only reattaches completed equipment requests: never a body clip, a replace or a grid repair.
+  if (spec.reuseItemFrames && (spec.itemMethod === 'grid' || !spec.itemsOnly || !existing || spec.replace)) throw new Error('Saved equipment recovery needs an existing move and its equipment only. No generation was requested.');
   if (spec.itemMethod === 'anchor') {
     if (!spec.itemsOnly || !existing || spec.replace || spec.measurementRecovery || spec.bodyPaletteRepair || spec.sharedItems?.length || !spec.items.length || spec.items.some(id => !anchorable(rec.manifest).some(i => i.id === id))) throw new Error('Anchored equipment generation requires an existing move and its saved standing items. No generation was requested.');
   } else if (spec.itemsOnly && existing && !spec.replace && !spec.measurementRecovery && !spec.bodyPaletteRepair) {
@@ -767,11 +768,11 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
       const result = await regridClip(current, item, spec.id, d, spec.seed); tick();
       if (!result.saved) throw new Error(`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`);
     }
-    else await poseItemClip(ctx, it, spec.id, tick, spec.seed, plan.dirs, spec.activityScope).catch((error: unknown) => {
+    else await poseItemClip(ctx, it, spec.id, tick, spec.seed, plan.dirs, spec.activityScope, !!spec.reuseItemFrames).catch((error: unknown) => {
       if (!(error instanceof PartialMoveError)) throw error;
       // Try again skips complete views unless it replaces the move, which redraws the body and every view.
       const views = error.savedDirs.map(directionLabel).join(', ');
-      throw new Error(`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : '; Try again requests only the missing ones.'}`);
+      throw new Error(`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : `; ${spec.reuseItemFrames ? 'Generate new frames' : 'Try again'} requests only the missing ones.`}`);
     });
 
   }

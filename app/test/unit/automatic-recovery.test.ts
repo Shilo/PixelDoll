@@ -11,11 +11,11 @@ import { fromApi, LABELS } from '../../src/lib/rig/poses.ts';
 import { toChroma } from '../../src/lib/image/chroma.ts';
 import { over } from '../../src/lib/compose/compose.ts';
 import { itemRoute, packGrid, padImg } from '../../src/lib/items/items.ts';
-import { acceptItem, evaluateItem, gensOf, isClean, newDraft, poseItemClip, rerollCall, runItem, type Draft, type RigCtx } from '../../src/lib/items/run.ts';
+import { acceptItem, evaluateItem, gensOf, isClean, newDraft, poseItemClip, rerollCall, runItem, SAVED_FRAMES_UNAVAILABLE, type Draft, type RigCtx } from '../../src/lib/items/run.ts';
 import { draftQueueIds } from '../../src/studio/apiPlans.ts';
 
 const ledger = vi.hoisted(() => ({ records: new Map<string, JobRec>(), requests: [] as Req[], blobs: new Map<string, Blob>(), identities: new Map<string, string>(), listeners: new Set<(s: { jobs: JobRec[] }) => void>(), next: 0, enqueues: 0, project: null as StoredProject | null, output: null as null | ((req: Req) => Promise<Img[]>) }));
-vi.mock('../../src/lib/pixellab/queue.ts', () => ({ queue: {
+vi.mock('../../src/lib/pixellab/queue.ts', () => ({ requestIdentity: async (req: Req) => ({ requestHash: ledger.identities.get(JSON.stringify(req)) ?? 'never-sent' }), queue: {
   subscribe(cb: (s: { jobs: JobRec[] }) => void) { ledger.listeners.add(cb); cb({ jobs: [...ledger.records.values()] }); return () => ledger.listeners.delete(cb); },
   planBlocks: () => null,
   async enqueue(req: Req, meta: { label: string }) {
@@ -543,6 +543,23 @@ test('a direction that fails does not discard the finished ones, and retrying re
   expect(ledger.requests).toHaveLength(3)
   saved = ledger.project!.manifest.items.find(i => i.id === f.item.id)!
   expect(saved.layers[0].cells!.walking!.north).toHaveLength(3); expect(saved.layers[0].cells!.walking!.south).toHaveLength(3)
+});
+
+test('saved frames reattach completed pose requests without sending one, and refuse when none match', async () => {
+  const f = await fixture(), before = structuredClone(ledger.project)
+  ledger.output = async () => Array(3).fill(f.missing)
+  await poseItemClip(f.ctx, f.item, 'walking', () => {}, 77)
+  const sent = ledger.enqueues, requests = ledger.requests.length
+  // a save conflict left the project as it was; the same seed reattaches the finished job
+  ledger.project = structuredClone(before)
+  const qa = await poseItemClip(f.ctx, f.item, 'walking', () => {}, 77, undefined, undefined, true)
+  expect(ledger.enqueues).toBe(sent); expect(ledger.requests).toHaveLength(requests)
+  expect(qa.qa.footwearReviewFrames).toBe(3)
+  expect(ledger.project!.manifest.items.find(i => i.id === f.item.id)!.layers[0].cells!.walking!.south).toHaveLength(3)
+  // another seed has no finished job: nothing is sent and the artwork is kept
+  ledger.project = structuredClone(before)
+  await expect(poseItemClip(f.ctx, f.item, 'walking', () => {}, 78, undefined, undefined, true)).rejects.toThrow(SAVED_FRAMES_UNAVAILABLE)
+  expect(ledger.enqueues).toBe(sent); expect(ledger.project).toEqual(before)
 });
 
 test('a long accepted-item move makes one request for each planned batch and keeps each source identity', async () => {

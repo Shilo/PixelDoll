@@ -52,3 +52,14 @@ test('a partly failed item move names the saved views and says Try again request
   }
   expect(await run()).toBe('Hat valid_custom east: lost. The finished views were saved (South, North-west); Try again requests only the missing ones.')
 })
+
+test('saved-frame recovery passes through to posing and never covers a body clip or a replace', async () => {
+  const { manifest, spec } = await fixture(), offer = itemMoveOffer(manifest, [spec])
+  const reviewed = { ...offer.specs[0] }; delete reviewed.itemReview
+  await addMove('rig-scoped-readiness', { ...reviewed, reuseItemFrames: true })
+  expect(state.pose.mock.calls[0][7]).toBe(true) // savedOnly
+  state.pose.mockClear()
+  for (const bad of [{ ...reviewed, reuseItemFrames: true as const, itemsOnly: undefined }, { ...reviewed, reuseItemFrames: true as const, replace: true }, { ...reviewed, reuseItemFrames: true as const, id: 'brand_new' }, { ...reviewed, reuseItemFrames: true as const, itemMethod: 'grid' as const }])
+    await expect(addMove('rig-scoped-readiness', bad as MoveSpec)).rejects.toThrow('Saved equipment recovery needs an existing move and its equipment only. No generation was requested.')
+  expect(state.pose).not.toHaveBeenCalled()
+})
