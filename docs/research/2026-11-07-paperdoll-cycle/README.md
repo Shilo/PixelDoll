@@ -13,6 +13,7 @@ One run of the [repeatable improvement workflow](../../handoff/paperdoll-improve
 | [ecosystem.md](ecosystem.md), [search-log.md](search-log.md) | Recursive discovery, new vocabulary, seven pinned acquisitions, replays on LPC ground truth |
 | [code-map.md](code-map.md) | Current production call chain from New item to export, doc and code disagreements, gap matrix |
 | [challenge.md](challenge.md) | Fresh independent reviewer's two-way challenge of the spikes and the code |
+| [fairness.md](fairness.md) | Rim guard dark rule across skin tones: three rules on recolored bench bodies and the real corpus |
 | [dye-ramps.md](dye-ramps.md) | Qualification of adjacency-based dye ramp merging on labeled PixelDoll items |
 | `scripts/` | Reproducible offline scripts; they import production helpers. Run from the repo root with `node <file>.ts`. Large outputs and downloads live outside the repository in `checkouts/cycle-2026-11-07/` |
 
@@ -30,9 +31,11 @@ Claims in the spikes carry evidence labels (source, offline reproduction, paid e
 | Failed-move Try again price | The estimate was computed but shown only with saved frames. | **Implemented** |
 | Stale architecture and known-issues text | Automatic re-rolls, grid fallback and G3 key switching no longer run (consent change 2026-10-28); Add idle + walk adds body moves only. | **Corrected** |
 | Rim guard restoration (CF1b) | Restores thin belts on dark bodies, but redrawn mannequin outlines rise from 485 to 1,202 false pixels on the 160 px body; production skin-tone gap measured by the reviewer is modest (355 vs 362, 1,696 vs 1,728). Two vetoed variants remain. | **Rejected as specified; deferred** pending visual review of 6 and 18 real candidate pixels and human-drawn multi-tone ground truth |
+| Rim guard dark rule and skin tone | Deep skin midtones counted as outline under the fixed mean RGB 60. For a light generated pixel the dark base pixel must now also be a real line (near-black or much darker than a neighbor). Light thin items keep 191/201 (A) on every tone and 427/427/425 of 453 (N), against 188 and 413 on deep skin before; false pixels match the old rule; 10 real shipped px change. Dark items keep the old rule and its gap. A relative threshold and a contrast-only rule were rejected (a real speck; 2.5 times the false pixels on deep skin). See [fairness.md](fairness.md). | **Implemented** (`dropKeyOutline`) |
 | Body-palette check for repainted skin | Flags 0 of 627 real cells exactly, catches only exact copies, and misses or false-flags unevenly by skin tone. | **Rejected** |
 | Dressed-keyframe skeleton as `first_frame_keypoints` (E1) | Paid estimate check below: bare controls reproduce rest joints within 0.11 px, dressed keyframes drift 0.35 to 1.01 px mean, up to 2.64 px, while the pose is unchanged. Sending them would encode false pose offsets against the body's shared keypoints. | **Rejected** without the 19-generation pose A/B |
 | Adjacency dye ramp merge | On 45 labeled PixelDoll materials: production 33 exact, proposed hybrid 30 with 6 cross-material items (clothes with skin, gold guard into blade). A guarded variant reaches 36 but its limits were tuned after seeing both corpora. | **Rejected as proposed; guarded variant deferred** to blind held-out items |
+| Inpaint grid price by canvas shape | 11 billed canvas shapes in the repository's records, against the catalog's 256²/341²/512² bands: area misses 448×112 (billed 15, quoted 10) and 480×240 (billed 25, quoted 15); no longest-side rule gives both 448×112 = 15 and 432×288 = 25 (a 240×240 receipt is $0.08, the 10 band). The mean of the two sides matches all of them and never quotes below area; band edges are pinned only to [256, 280) and [336, 360). Inferred, not a provider formula. | **Implemented** (`gridEstimate`) |
 | 13 to 14 frame pose price | REST documents only 3, 8 and 15 frames; the 4-generation quote errs high. | No change |
 | Signed check on action clips, contact and reach warnings, per-frame grip export | Thresholds rest on two items or are untested in engines. | Deferred |
 
@@ -69,7 +72,11 @@ moved with another agent's work).
 | Reload and export | Reload kept every move and item. The PNG + JSON, Godot, Phaser and Aseprite export built 432 files with no errors or warnings. |
 
 Observation kept for later: when a keyframe fails G3 because the provider redrew the stand-in body, the measured retry key can
-still switch (green to magenta for the lantern). It was harmless here, but the hint's stated reason is imprecise.
+still switch (green to magenta for the lantern). It was harmless here, but the hint's stated reason is imprecise. Offline
+check on the bench keyframes (2026-11-07): stray key pixels outside the body are exact mannequin shades on one drift case
+(n-cloak128 north, 0 of 54 off the ramp), but on b-jester, whose colors do not lean toward the key (near-key share 0.02 to
+0.06), 64 to 73 % of them are redrawn shades off the ramp, as many as on a true collision (a-jester-magenta, 96 %). Color
+cannot separate drift from item pixels, so the trigger was left unchanged.
 
 ## Resumption
 
@@ -79,4 +86,4 @@ No paid job is pending or unknown from this cycle. The agent server ran on `loca
 2. A real small held item (dagger) fixture before widening any held geometry gate; then the 120 degree action warning on more than two items.
 3. Skeleton-route item moves are all-or-nothing and Try again always uses a new seed, so completed paid views are bought again (code-map row 3). Reusing completed passing views is the largest remaining cost fix.
 4. Standing designs are never compared across views (code-map row 4), and small motifs pass G6 and H4 (row 1). Both need labeled damaged-motif cases before a gate.
-5. Inpaint grid estimates price by area; a 448×112 grid billed 15 while the estimator says 10 (inventory). A receipt audit by canvas shape is free from retained ledgers.
+5. Done: inpaint grids now price by the mean side, which fits all 11 billed shapes. Follow-up: `repairGridLayout` repacks only to reach Tier 1, so it can keep a layout a narrower packing would price lower (for example 86 px cells, 4 frames + 1 reference: 344×172 at 15 against 172×258 at 10).

@@ -55,6 +55,6 @@ export async function repairEquipmentProbe(bodyId:string,dressId:string,seed:num
   const outputs=dress.jobs.flatMap(j=>j.results),dirs=['east','south'] as const;for(const dir of dirs){const reference=context.references[dir];if(!reference||!outputs[reference.index])throw new Error('Probe requires east and south dressed reference art.');images.push(await imageOf(outputs[reference.index].sha));masks.push(null);}
   const estimate=gridEstimate(cell,indices.length,dirs.length),grid=packGrid(images,masks),sized=async(image:ReturnType<typeof makeImg>)=>({image:png(bytesToBase64(await encodePngBytes(image))),size:{width:image.w,height:image.h}});
   const request=routes.inpaintV3({description:gridPrompt({item:context.prompt,slot:context.slot,key:context.key,anim:'overhead arm strike',dir:doc.direction,n:indices.length,refs:[...dirs],cell}),inpainting_image:await sized(grid.image),mask_image:await sized(grid.mask),no_background:true,seed});
-  // The 448x112 live probe cost 15 despite the area estimate of 10. Reserve the supported grid ceiling until tier pricing is established.
+  // The 448x112 live probe cost 15 (quoted 10 by the area rule then in use). Reserve the supported grid ceiling: the mean-side estimate is still inferred.
   return enqueueLab(doc,seed,request,Math.max(estimate.gens,25),{...context,kind:'equipment-grid',bodyId,dressId,indices});
 }

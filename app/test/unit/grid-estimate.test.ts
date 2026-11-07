@@ -14,7 +14,18 @@ test.each([
  const estimate=gridEstimate(cell,frames,refs,cols);expect(estimate).toEqual(expected);expect([estimate.w,estimate.h]).toEqual([grid.image.w,grid.image.h])
 })
 
-test('area tiers use explicit catalog square boundaries, with per-side submission limits retained',()=>{
+test('grids price by their mean side, as billed',()=>{
+ // job f9d4ef6a (2026-10-28 frozen-frame probe): 448×112 billed 15; its area is under 256², so area quoted 10
+ expect(gridEstimate({w:112,h:112},4,0,4)).toEqual({w:448,h:112,gens:15})
+ // spikes/api/out/x28: 480×240 billed 25 seven times; area (under 341²) would quote 15
+ expect(gridEstimate({w:120,h:120},7,1)).toEqual({w:480,h:240,gens:25})
+ // jobs 43f75ed0 and b3ae338e (2026-11-02 weapon-aware grip): 432×288 billed 25; with 448×112 = 15 no longest-side rule fits
+ expect(gridEstimate({w:144,h:144},4,2,3)).toEqual({w:432,h:288,gens:25})
+ // not a receipt: the default 128 px frame's single-row grid, quoted by the same rule
+ expect(gridEstimate({w:128,h:128},2,1,4)).toEqual({w:512,h:128,gens:15})
+})
+
+test('catalog square boundaries hold, with per-side submission limits retained',()=>{
  expect(gridEstimate({w:256,h:256},1,0,1).gens).toBe(10);expect(gridEstimate({w:257,h:256},1,0,1).gens).toBe(15)
  expect(gridEstimate({w:341,h:341},1,0,1).gens).toBe(15);expect(gridEstimate({w:342,h:341},1,0,1).gens).toBe(25)
  expect(gridEstimate({w:512,h:512},1,0,1).gens).toBe(25);expect(()=>gridEstimate({w:513,h:32},1,0,1)).toThrow('512')

@@ -59,17 +59,20 @@ export const itemRoute = {
 
 // ---------- B14 fallback: one clip-direction as a Pro inpaint-v3 packed masked grid (S4 inv3, S5 H3) ----------
 export const GRID_COLS = 4;
-/** Estimated Pro inpaint tiers from the official 256²/341²/512² catalog bands (2026-10-22).
- * Area interpretation is inferred from actual 384×288=15 and 480×384=25 charges; it is not a provider quote.
- * References and unused packed cells remain part of the submitted canvas. */
 /** Does a packed repair grid fit PixelLab's 32–512 px canvas? */
 export const gridFits = (cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS) => { const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h; return w >= 32 && h >= 32 && w <= 512 && h <= 512; };
+/** Estimated Pro inpaint tiers from the official 256²/341²/512² catalog bands (2026-10-22), applied to the mean of the two
+ * sides. Inferred, not a provider quote, from 11 billed canvas shapes (2026-11-07 receipt audit): area misses 448×112 = 15 and
+ * 480×240 = 25, and the longest side (with any thresholds) cannot give both 448×112 = 15 and 432×288 = 25. Receipts pin the
+ * band edges only to [256, 280) and [336, 360). The mean is never below the square root of the area, so it never quotes less
+ * than area did.
+ * References and unused packed cells remain part of the submitted canvas. */
 export function gridEstimate(cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS): { w: number; h: number; gens: number } {
   if (![cell.w, cell.h, cells, refs, cols].every(Number.isInteger) || cell.w <= 0 || cell.h <= 0 || cells <= 0 || refs < 0 || cols <= 0) throw new Error('Repair grid dimensions and frame/reference counts must be valid integers.');
   const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h;
   if (!gridFits(cell, cells, refs, cols)) throw new Error('This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.');
-  const area = w * h;
-  return { w, h, gens: area <= 256 * 256 ? 10 : area <= 341 * 341 ? 15 : 25 };
+  const side = (w + h) / 2;
+  return { w, h, gens: side <= 256 ? 10 : side <= 341 ? 15 : 25 };
 }
 
 /** Keep the qualified layout unless repacking lets the entire repair run on Tier 1. */
