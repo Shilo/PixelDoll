@@ -162,7 +162,7 @@ export function heldRepairRadius(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'key
 }
 /** B14 grid request (S4 inv3 / S5 H3): the clip-direction's chroma cells masked to the slot band, then the dressed keyframes
  *  (kept, black mask) as the reference design. Rig cell only (held items keep their oversize S5 route). */
-async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>, cells: string[], refs: { dir: DirectionName; im: Img }[], seed: number, pad = 0, compact = false): Promise<Req> {
+async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'key'>, cells: string[], refs: { dir: DirectionName; im: Img }[], seed: number, pad = 0, repair = false): Promise<Req> {
   const { rig } = ctx.rec.manifest, w = rig.cell.w + 2 * pad, h = rig.cell.h + 2 * pad, [anim, dir] = cells[0].split('/') as [string, DirectionName];
   if (cells.some(k => k.split('/')[1] !== dir)) throw new Error('Repair one independently drawn direction at a time.');
   const held = slotOf(spec.slot).class === 'held';
@@ -171,7 +171,7 @@ async function gridReq(ctx: RigCtx, spec: Pick<ItemSpec, 'slot' | 'prompt' | 'ke
   refs = refs.filter(r => r.dir === dir);
   if (refs.length !== 1) throw new Error(`${dir}: repair needs exactly one matching dressed reference`);
   const cell = { w, h };
-  const layout = compact ? repairGridLayout(cell, cells.length, refs.length) : gridEstimate(cell, cells.length, refs.length);
+  const layout = repair ? repairGridLayout(cell, cells.length, refs.length) : gridEstimate(cell, cells.length, refs.length);
   const cols = layout.w / w;
   if (refs.some(r => r.im.w !== w || r.im.h !== h)) throw new Error('Equipment reference dimensions do not match its repair canvas.');
   const designs = new Map(refs.map(r => [r.dir, chromaLayer(r.im, spec.key as Key, padImg(baseCell(ctx, restKey(r.dir), true), pad)).layer]));

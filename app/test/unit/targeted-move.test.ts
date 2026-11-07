@@ -93,7 +93,8 @@ test('item review binds artwork and cost while unrelated queued clips and playba
  expect(reviewItemMove(m, spec).itemReview).toEqual(reviewed);
  item.layers[0].cells!.idle!.south![0] = 'sha256:changed';
  expect(reviewItemMove(m, spec).itemReview!.artwork).not.toBe(reviewed.artwork);
- item.layers[0].cell = { w: 96, h: 96 };
+ // a larger canvas re-prices the review (96 px now packs 4 frames + 1 reference into a 10-gen 288x192 grid, so use 128 px)
+ item.layers[0].cell = { w: 128, h: 128 };
  expect(reviewItemMove(m, spec).itemReview!.gens).toBe(15);
 });
 

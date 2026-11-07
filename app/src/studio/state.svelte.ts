@@ -686,7 +686,7 @@ export function pick(id: string) {
 // ---------- item generations ----------
 // Bump when PixelLab request inputs change. Work saved with different inputs no longer matches its ledger records and would
 // resend paid calls, so it waits for review instead of resuming by itself.
-export const REQUEST_TEXT = 4;
+export const REQUEST_TEXT = 5; // 5: repair grids pack into the cheapest layout (2026-11-07)
 const STOPPED = 'Generation stopped. Review Activity before trying again.';
 const SETUP_STOPPED = 'Setup stopped. Review Activity before trying again.';
 const halted = (r: { status?: string; requestText?: number }) => r.status === 'failed' || r.requestText !== REQUEST_TEXT;

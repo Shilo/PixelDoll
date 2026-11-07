@@ -27,7 +27,8 @@ test('grids price by their mean side, as billed',()=>{
 
 test('catalog square boundaries hold, with per-side submission limits retained',()=>{
  expect(gridEstimate({w:256,h:256},1,0,1).gens).toBe(10);expect(gridEstimate({w:257,h:256},1,0,1).gens).toBe(15)
- expect(gridEstimate({w:341,h:341},1,0,1).gens).toBe(15);expect(gridEstimate({w:342,h:341},1,0,1).gens).toBe(25)
+ // the catalog says 341 px; receipts only pin the edge to [336, 360), so means above 336 quote 25 (never low)
+ expect(gridEstimate({w:336,h:336},1,0,1).gens).toBe(15);expect(gridEstimate({w:337,h:336},1,0,1).gens).toBe(25)
  expect(gridEstimate({w:512,h:512},1,0,1).gens).toBe(25);expect(()=>gridEstimate({w:513,h:32},1,0,1)).toThrow('512')
 })
 
@@ -41,7 +42,7 @@ test('invalid frame/reference/dimension counts cannot produce a misleading finit
  for(const [cell,frames,refs,cols] of [[{w:64,h:64},0,1,4],[{w:64,h:64},8,-1,4],[{w:64,h:64},8,1.5,4],[{w:NaN,h:64},8,1,4],[{w:64,h:64},8,1,0]] as const)expect(()=>gridEstimate(cell,frames,refs,cols)).toThrow()
 })
 
-test('repair packing changes only when it fits a previously Tier 2 request within Tier 1', () => {
+test('repair packing moves to Tier 1 when it can, and fits wider when 4 columns are too wide', () => {
  const regular = { w: 80, h: 80 };
  const compact = repairGridLayout(regular, 8, 1);
  expect(compact).toEqual({ w: 240, h: 240, gens: 10, cols: 3 });
@@ -51,7 +52,24 @@ test('repair packing changes only when it fits a previously Tier 2 request withi
  expect(repairGridLayout(regular, 9, 1)).toEqual({ w: 320, h: 240, gens: 15, cols: 4 });
  expect(repairGridLayout({ w: 64, h: 64 }, 8, 1)).toEqual({ w: 256, h: 192, gens: 10, cols: 4 });
  expect(repairGridLayout({ w: 128, h: 128 }, 3, 1)).toEqual({ w: 256, h: 256, gens: 10, cols: 2 });
- expect(() => repairGridLayout({ w: 160, h: 160 }, 8, 1)).toThrow('512');
+ // 4 columns of 160 px exceed 512 px; 3 columns fit, so the repair runs instead of failing (2026-11-07 cheapest layout)
+ expect(repairGridLayout({ w: 160, h: 160 }, 8, 1)).toEqual({ w: 480, h: 480, gens: 25, cols: 3 });
+ expect(() => repairGridLayout({ w: 300, h: 300 }, 1, 1)).toThrow('512');
+});
+
+test('a narrower packing replaces the qualified layout only when it is strictly cheaper', () => {
+ // 86 px cells, 4 frames + 1 reference: 344x172 quotes 15; 258x172 quotes 10 (both Tier 2; ties go to more columns)
+ expect(repairGridLayout({ w: 86, h: 86 }, 4, 1)).toEqual({ w: 258, h: 172, gens: 10, cols: 3 });
+ // 120 px cells, 5 frames + 1 reference: 480x240 quotes 25; 360x240 quotes 15
+ expect(repairGridLayout({ w: 120, h: 120 }, 5, 1)).toEqual({ w: 360, h: 240, gens: 15, cols: 3 });
+ // the same price on the same tier keeps the qualified 4 columns
+ expect(repairGridLayout({ w: 96, h: 96 }, 8, 1)).toMatchObject({ w: 384, h: 288, gens: 15, cols: 4 });
+ // the automatic draft fallback keeps the qualified 4 columns (no matched quality test of other layouts)
+ const plan = [{ kind: 'grid' as const, cells: Array.from({ length: 4 }, (_, i) => `slash/north/${i}`) }]
+ expect(planGens(plan, { w: 86, h: 86 })).toBe(15);
+ // ties go to more columns: 1 frame + 1 reference is a row, not a stack
+ expect(repairGridLayout({ w: 300, h: 200 }, 1, 0)).toMatchObject({ cols: 1 });
+ expect(repairGridLayout({ w: 80, h: 80 }, 1, 1)).toMatchObject({ w: 160, h: 80, cols: 2 });
 });
 
 test('move estimate prices each actual item canvas with only its matching direction reference',()=>{

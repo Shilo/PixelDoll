@@ -64,30 +64,39 @@ export const gridFits = (cell: { w: number; h: number }, cells: number, refs: nu
 /** Estimated Pro inpaint tiers from the official 256²/341²/512² catalog bands (2026-10-22), applied to the mean of the two
  * sides. Inferred, not a provider quote, from 11 billed canvas shapes (2026-11-07 receipt audit): area misses 448×112 = 15 and
  * 480×240 = 25, and the longest side (with any thresholds) cannot give both 448×112 = 15 and 432×288 = 25. Receipts pin the
- * band edges only to [256, 280) and [336, 360). The mean is never below the square root of the area, so it never quotes less
- * than area did.
+ * band edges only to [256, 280) and [336, 360); the second edge is taken at 336, the highest mean billed 15. The mean is never
+ * below the square root of the area, so it never quotes less than area did.
  * References and unused packed cells remain part of the submitted canvas. */
 export function gridEstimate(cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS): { w: number; h: number; gens: number } {
   if (![cell.w, cell.h, cells, refs, cols].every(Number.isInteger) || cell.w <= 0 || cell.h <= 0 || cells <= 0 || refs < 0 || cols <= 0) throw new Error('Repair grid dimensions and frame/reference counts must be valid integers.');
   const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h;
   if (!gridFits(cell, cells, refs, cols)) throw new Error('This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.');
   const side = (w + h) / 2;
-  return { w, h, gens: side <= 256 ? 10 : side <= 341 ? 15 : 25 };
+  // Receipts pin the 15/25 edge only to [336, 360) (384x288 = 336 billed 15), so a mean above 336 quotes 25: never low.
+  return { w, h, gens: side <= 256 ? 10 : side <= 336 ? 15 : 25 };
 }
 
-/** Keep the qualified layout unless repacking lets the entire repair run on Tier 1. */
+/** The grid layout explicit equipment repairs (regridClip) and the frozen-grid fallback inside moves are sent and priced with.
+ * Keep the qualified GRID_COLS layout unless another column count is strictly cheaper: fewer gens, or the same gens on a lower
+ * plan tier (Tier 1 needs both sides <= 256). Among cheaper ones take the smallest canvas, then the squarest, then the most
+ * columns (closest to the qualified row). When GRID_COLS does not fit 512 px, another column count still may. Both paths have
+ * repacked to reach Tier 1 since 218f448e and their results are checked for review; no matched test has qualified other
+ * layouts for the new-item draft fallback, which stays on GRID_COLS (2026-11-07). */
 export function repairGridLayout(cell: { w: number; h: number }, cells: number, refs: number) {
-  const fixed = gridEstimate(cell, cells, refs);
-  let layout = { ...fixed, cols: GRID_COLS };
-  if (Math.max(fixed.w, fixed.h) <= INPAINT_TIER_ONE_SIDE) return layout;
-  for (let cols = 1; cols * cell.w <= INPAINT_TIER_ONE_SIDE; cols++) {
-    const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h;
-    if (w < 32 || h < 32 || h > INPAINT_TIER_ONE_SIDE) continue;
-    if (layout.cols === GRID_COLS || w * h < layout.w * layout.h ||
-      (w * h === layout.w * layout.h && Math.abs(w - h) < Math.abs(layout.w - layout.h))) {
-      layout = { ...gridEstimate(cell, cells, refs, cols), cols };
-    }
+  const tier = (l: { w: number; h: number }) => (Math.max(l.w, l.h) <= INPAINT_TIER_ONE_SIDE ? 1 : 2);
+  const fits = (cols: number) => gridFits(cell, cells, refs, cols);
+  const better = (a: { w: number; h: number; gens: number }, b: { w: number; h: number; gens: number }) =>
+    a.gens !== b.gens ? a.gens < b.gens : tier(a) !== tier(b) ? tier(a) < tier(b) : a.w * a.h !== b.w * b.h ? a.w * a.h < b.w * b.h : Math.abs(a.w - a.h) < Math.abs(b.w - b.h);
+  let layout = fits(GRID_COLS) ? { ...gridEstimate(cell, cells, refs), cols: GRID_COLS } : undefined;
+  const qualified = layout;
+  for (let cols = Math.floor(512 / cell.w); cols >= 1; cols--) {
+    if (cols === GRID_COLS || !fits(cols)) continue;
+    const next = { ...gridEstimate(cell, cells, refs, cols), cols };
+    // Against the qualified layout only a strictly lower price or tier counts; among alternatives, the full order.
+    const cheaper = (l: typeof next) => l.gens < qualified!.gens || (l.gens === qualified!.gens && tier(l) < tier(qualified!));
+    if (!layout || (layout === qualified ? cheaper(next) : better(next, layout))) layout = next;
   }
+  if (!layout) return { ...gridEstimate(cell, cells, refs), cols: GRID_COLS }; // throws the canvas-bounds error
   return layout;
 }
 /** Pack matching cells and occupancy masks row-major; nonzero mask px generate, null masks and unused cells stay protected. */
