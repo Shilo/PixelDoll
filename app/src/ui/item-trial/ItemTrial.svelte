@@ -13,6 +13,7 @@
   let busy = $state(false);
   let error = $state('');
   let message = $state('Import a frozen public-fixture packet to begin.');
+  let evidenceDownload = $state<{ url: string; name: string }>();
 
   onMount(() => {
     void action(async () => {
@@ -24,6 +25,7 @@
         if (import.meta.env.MODE === 'agent') await connectQueue();
       }
     });
+    return () => { if (evidenceDownload) URL.revokeObjectURL(evidenceDownload.url); };
   });
   async function action(work: () => Promise<void>) {
     if (busy) return;
@@ -78,12 +80,10 @@
     });
   }
   function downloadJson(name: string, value: unknown) {
+    if (evidenceDownload) URL.revokeObjectURL(evidenceDownload.url);
     const url = URL.createObjectURL(new Blob([JSON.stringify(value)], { type: 'application/json' }));
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = name;
-    anchor.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    evidenceDownload = { url, name };
+    message = 'Evidence is ready. Download the prepared file below.';
   }
   async function download(record: TrialRecord) {
     await action(async () => {
@@ -116,6 +116,7 @@
   </select></label>
   <button class="bu-btn" disabled={busy || !packet} onclick={prepare}>Prepare request</button>
   <p role="status">{message}</p>
+  {#if evidenceDownload}<a href={evidenceDownload.url} download={evidenceDownload.name}>Download prepared evidence</a>{/if}
   {#if error}<p role="alert" class="bu-error">{error}</p>{/if}
   {#if prepared}
     <section aria-label="Prepared request">
