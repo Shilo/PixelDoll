@@ -39,3 +39,16 @@ test('invalid joints on the selected move stop before generation', async () => {
   await expect(addMove('rig-scoped-readiness', spec)).rejects.toThrow(/joints/)
   expect(state.pose).not.toHaveBeenCalled()
 })
+
+test('a partly failed item move names the saved views and says Try again requests only the missing ones', async () => {
+  const { PartialMoveError } = await import('../../src/lib/items/run.ts')
+  const run = async () => {
+    const { manifest, spec } = await fixture(), offer = itemMoveOffer(manifest, [spec])
+    // A local mock: a rejection recorded by the module-level one fails the test in this Vitest version.
+    const shared = state.pose
+    state.pose = vi.fn(async () => { throw new PartialMoveError('Hat valid_custom east: lost.', ['south', 'north-west']) })
+    try { return ((await addMove('rig-scoped-readiness', offer.specs[0]).catch((e: Error) => e)) as Error).message }
+    finally { state.pose = shared }
+  }
+  expect(await run()).toBe('Hat valid_custom east: lost. The finished views were saved (South, North-west); Try again requests only the missing ones.')
+})

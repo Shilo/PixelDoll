@@ -22,7 +22,8 @@ import { rigReady } from '../lib/rig/setup.ts';
 import { PaletteRepairUnavailable, repairBodyPalette } from '../lib/rig/palette.ts';
 import { RIG_GATES, actionOf, bodyComponents, clipQa, poseCallGens, rawClip, managedMotionOffsets, shiftMotionPoses, type ClipQa } from '../lib/rig/clips.ts';
 import { canPose, repairGridLayout, planAnchoredMove, planGens } from '../lib/items/items.ts';
-import { posable, anchorable, animateAnchoredItem, poseGens, itemPoseGens, poseItemClip, regridClip, type RigCtx } from '../lib/items/run.ts';
+import { posable, anchorable, animateAnchoredItem, poseGens, itemPoseGens, poseItemClip, regridClip, PartialMoveError, type RigCtx } from '../lib/items/run.ts';
+import { directionLabel } from './experience/movement.ts';
 import { coverage } from './itemRoute.ts';
 import { CURRENT_FORMAT, type CellKey, type Manifest, type Provenance } from '../lib/store/manifest.ts';
 import { baseClothesIn, basePrompt, looksOf, withoutBaseBody } from './model.ts';
@@ -766,7 +767,12 @@ export async function addMove(projectId: string, spec: MoveSpec, onProgress: (p:
       const result = await regridClip(current, item, spec.id, d, spec.seed); tick();
       if (!result.saved) throw new Error(`${item.name} ${spec.id} ${d}: the repair still fails quality checks. Existing artwork was kept; review Activity before trying again.`);
     }
-    else await poseItemClip(ctx, it, spec.id, tick, spec.seed, plan.dirs, spec.activityScope);
+    else await poseItemClip(ctx, it, spec.id, tick, spec.seed, plan.dirs, spec.activityScope).catch((error: unknown) => {
+      if (!(error instanceof PartialMoveError)) throw error;
+      // Try again skips complete views unless it replaces the move, which redraws the body and every view.
+      const views = error.savedDirs.map(directionLabel).join(', ');
+      throw new Error(`${error.reason} The finished views were saved (${views})${spec.replace ? '.' : '; Try again requests only the missing ones.'}`);
+    });
 
   }
   // Shared copies require a separately priced, reviewed candidate. Preparing it never sends a paid request.

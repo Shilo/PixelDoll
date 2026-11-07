@@ -643,6 +643,11 @@ export function itemPoseGens(rig: Rig, item: Item, anim: string, frames: number,
 }
 const seedOf = (s: string) => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 2_000_000);
 
+/** Some directions of an item move failed after the others were saved. */
+export class PartialMoveError extends Error {
+  constructor(readonly reason: string, readonly savedDirs: DirectionName[]) { super(`${reason} The finished views were saved.`); }
+}
+
 /** Pose each planned clip-direction batch once, retaining its checks for explicit player review.
  * Stable request seeds reattach to accepted jobs after reload; only a new player request changes moveSeed. */
 export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall: () => void = () => {}, moveSeed?: number, selectedDirs?: DirectionName[], activityScope?: string): Promise<QaResult> {
@@ -650,14 +655,14 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   const available = rig.directions.filter((d) => !d.mirrorOf && item.dressed?.[d.id]).map((d) => d.id);
   if (selectedDirs && (!selectedDirs.length || new Set(selectedDirs).size !== selectedDirs.length || selectedDirs.some(d => !available.includes(d)))) throw new Error('Choose supported independently drawn equipment directions.');
   const dirs = selectedDirs ?? available;
-  const prov: Provenance[] = [], keys: Partial<Record<DirectionName, Img>> = {};
+  const keys: Partial<Record<DirectionName, Img>> = {};
   const { keys: k0, cuts, hidden } = await dressedKeys(ctx, item, pad);
   const bodies = referenceBodies(rig, ctx.project.images);
   Object.assign(keys, k0);
-  const perDir = await Promise.all(dirs.map(async (dir, k) => {
+  const perDir = await Promise.allSettled(dirs.map(async (dir, k) => {
     const allPoses = clipKeypoints(rig, anim, dir), rest = rig.rest?.[dir]?.keypoints;
     if (!allPoses || !rest) throw new Error(`${anim}/${dir}: no stored keypoints`);
-    const collected: CellOut[] = [];
+    const collected: CellOut[] = [], prov: Provenance[] = [];
     for (const { start, count } of poseBatches(allPoses.length)) {
     const poses = allPoses.slice(start, start + count), cells = poses.map((_, i) => `${anim}/${dir}/${start + i}`);
     const seed = seedOf(`${item.id}/${anim}/${dir}/0${allPoses.length > 15 ? `/batch-${start}` : ''}${moveSeed ? `/${moveSeed}` : ''}`);
@@ -681,12 +686,19 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
     postProcess(rig, slot, candidate, keys, pad);
     prov.push(toProv(r, { cells, seed, rerolls: 0, old: [] })); collected.push(...candidate);
     }
-    return collected;
+    return { collected, prov };
   }));
-  const cells = perDir.flat();
+  // Directions that finished are paid for: save them even when another direction failed, so a retry that skips complete
+  // directions (addMove without replace) requests only the missing ones instead of buying them again (2026-11-07 audit).
+  const doneDirs = dirs.filter((_, i) => perDir[i].status === 'fulfilled'), failures = perDir.flatMap((r) => (r.status === 'rejected' ? [r.reason] : []));
+  const done = perDir.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : [])), cells = done.flatMap((r) => r.collected), prov = done.flatMap((r) => r.prov);
+  if (failures.length && !cells.length) throw failures[0];
   if (!cells.length) throw new Error(`${item.name}: PixelLab returned no usable ${anim} frames`);
   const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad, hidden), slot, cells, keys, rig, bodies, item.prompt);
-  await mergeClip(ctx, item, anim, dirs, cells, prov, q, pad);
+  const first = failures.length ? (failures[0] instanceof Error ? failures[0].message : String(failures[0])) : '';
+  try { await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad); }
+  catch (error) { throw failures.length ? new Error(`${first} ${error instanceof Error ? error.message : String(error)}`) : error; }
+  if (failures.length) throw new PartialMoveError(first, doneDirs);
   return q;
 }
 /** Write a clip's cells (the given directions only) into an accepted item, with their provenance and QA. */

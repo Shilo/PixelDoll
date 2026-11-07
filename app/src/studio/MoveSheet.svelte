@@ -20,7 +20,8 @@
 
   const m = $derived(store.project?.manifest)
   let rec = $state.raw<StoredProject | null>(null)
-  $effect(() => { if (!isDemo()) void db.get<StoredProject>('projects', doc.id).then((r) => (rec = r ?? null)) })
+  // Re-read after a failure: a move saves its body and finished item views before failing, and Try again is priced from them.
+  $effect(() => { const id = doc.id; void moving.error; if (!isDemo()) void db.get<StoredProject>('projects', id).then((r) => (rec = r ?? null)) })
   const ok = $derived(!!m && isV13(rec ? { ...rec, manifest: m } : null))
   const have = $derived(new Set(m?.rig.animations.map((a) => a.id) ?? []))
   // Default is the standing views themselves: nothing to generate or replace.

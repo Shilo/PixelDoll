@@ -84,6 +84,6 @@ No paid job is pending or unknown from this cycle. The agent server ran on `loca
 
 1. Visual review of the 6 and 18 real pixels the vetoed rim-guard variants add (`scripts/challenge/rim-despill-challenge.ts`), then a multi-tone human-drawn body set (LPC bodies, ecosystem rank 4) as independent ground truth.
 2. A real small held item (dagger) fixture before widening any held geometry gate; then the 120 degree action warning on more than two items.
-3. Skeleton-route item moves are all-or-nothing and Try again always uses a new seed, so completed paid views are bought again (code-map row 3). Reusing completed passing views is the largest remaining cost fix.
+3. Partly done: when one view of a skeleton item move fails, the finished views are now saved and Try again requests only the missing ones (not on a replace move, which redraws the body and every view). Still open: a save conflict repays the whole move, and a failed later batch of a long (> 15 frame) view repays its earlier batches (code-map row 3).
 4. Standing designs are never compared across views (code-map row 4), and small motifs pass G6 and H4 (row 1). Both need labeled damaged-motif cases before a gate.
 5. Done: inpaint grids now price by the mean side, which fits all 11 billed shapes. Follow-up: `repairGridLayout` repacks only to reach Tier 1, so it can keep a layout a narrower packing would price lower (for example 86 px cells, 4 frames + 1 reference: 344×172 at 15 against 172×258 at 10).

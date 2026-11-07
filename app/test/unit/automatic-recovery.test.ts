@@ -529,6 +529,22 @@ test('posing accepted equipment submits one batch, preserves its warnings and so
   expect(ledger.requests).toHaveLength(count);
 });
 
+test('a direction that fails does not discard the finished ones, and retrying requests only the missing view', async () => {
+  const f = await facingFixture()
+  f.item.dressed!.north = f.item.dressed!.south; ledger.project = structuredClone(f.ctx.rec)
+  ledger.output = async req => (req.body as { direction: string }).direction === 'north' ? [f.dressed] : Array(3).fill(f.missing)
+  await expect(poseItemClip(f.ctx, f.item, 'walking')).rejects.toThrow(/malformed.*The finished views were saved\.$/)
+  expect(ledger.requests).toHaveLength(2)
+  let saved = ledger.project!.manifest.items.find(i => i.id === f.item.id)!
+  expect(saved.layers[0].cells!.walking!.south).toHaveLength(3); expect(saved.layers[0].cells!.walking!.north).toBeUndefined()
+  // Try again skips complete directions (addMove), so only north is requested
+  ledger.output = async () => Array(3).fill(f.missing)
+  await poseItemClip({ rec: ledger.project!, project: { ...f.ctx.project, manifest: ledger.project!.manifest } }, saved, 'walking', () => {}, 99, ['north'])
+  expect(ledger.requests).toHaveLength(3)
+  saved = ledger.project!.manifest.items.find(i => i.id === f.item.id)!
+  expect(saved.layers[0].cells!.walking!.north).toHaveLength(3); expect(saved.layers[0].cells!.walking!.south).toHaveLength(3)
+});
+
 test('a long accepted-item move makes one request for each planned batch and keeps each source identity', async () => {
   const f = await fixture(), rig = f.ctx.rec.manifest.rig, animation = rig.animations[0], points = rig.rest!.south!.keypoints;
   animation.cells = 18; animation.frames = Array.from({ length: 18 }, (_, cell) => ({ cell, ms: 100 }));
