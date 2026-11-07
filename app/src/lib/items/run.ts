@@ -509,11 +509,12 @@ export function measuredKeyCollision(prompt: string, route: Key, kfCells: CellOu
 /** itemQa + the H4 keyframe-consistency gate (posed cells only). */
 export function withH4(q: QaResult, slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig: Rig, bodies?: Partial<Record<DirectionName, Img>>, prompt = ''): QaResult {
   const h = dirGate(slot, cells, keys, rig, bodies, prompt);
-  const reviewCounts = (summary: { missingLowerFrames?: number; footwearReviewFrames?: number; waistReviewFrames?: number; facingReviewFrames?: number }, checks: ReturnType<typeof dirGate>) => {
+  const reviewCounts = (summary: { missingLowerFrames?: number; footwearReviewFrames?: number; waistReviewFrames?: number; facingReviewFrames?: number; detailReviewFrames?: number }, checks: ReturnType<typeof dirGate>) => {
     if (checks.missingLowerFrames) summary.missingLowerFrames = checks.missingLowerFrames; else delete summary.missingLowerFrames;
     if (checks.footwearReviewFrames) summary.footwearReviewFrames = checks.footwearReviewFrames; else delete summary.footwearReviewFrames;
     if (checks.waistReviewFrames) summary.waistReviewFrames = checks.waistReviewFrames; else delete summary.waistReviewFrames;
     if (checks.facingReviewFrames) summary.facingReviewFrames = checks.facingReviewFrames; else delete summary.facingReviewFrames;
+    if (checks.detailReviewFrames) summary.detailReviewFrames = checks.detailReviewFrames; else delete summary.detailReviewFrames;
   };
   reviewCounts(q.qa, h);
   q.qa.maxPaletteDist = Math.max(q.qa.maxPaletteDist, h.maxPaletteDist);

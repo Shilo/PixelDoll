@@ -106,6 +106,7 @@ export interface QaSummary {
   footwearReviewFrames?: number; // distinct frames whose observed foot coverage needs review; one frame counts once even if both feet differ
   waistReviewFrames?: number; // visible waist-band omissions relative to a dressed reference that clearly has the requested detail
   facingReviewFrames?: number; // observable upper-torso matches to the opposite standing view
+  detailReviewFrames?: number; // posed frames missing a same-color detail patch of their dressed design (G15 review note)
   rawKeyReviewFrames?: number; // held frames with exact new key-colored pixels before registration; informational, never changes status
   heldLoopReviewClips?: number; // held items with a shape or angle jump at the playback seam
   heldHangReviewClips?: number; // held clips excused from G9 because the item hangs below the hand (review note)

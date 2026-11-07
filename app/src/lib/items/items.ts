@@ -1320,17 +1320,49 @@ function headOcclusion(c: CellOut, rig: Rig): { mask: Uint8Array; shift: [number
 // (round 5: steady earrings from behind scored 0.47–0.58); a frame that grew past 1.5× its keyframe is still judged
 export const H4 = { own: 0.75, oppMargin: 0.1, soft: 0.5, cover: 0.5, minPx: 12 };
 /**
+ * G15: a color of the dressed design that is gone from a posed frame (a lost or recolored emblem or buckle in its own color).
+ * A presence test per color, not a placement match: a detail that shares any shade with other parts, a recolor into a nearby
+ * shade, a motif under `minPx` and 1 px line art cannot be seen. Colors the body also has are skipped (skin the provider drew
+ * inside the item can rightly vanish: bench b-tunic), and only locomotion is judged, like G11-G14, since attacks swing capes to
+ * their darker side (bench a-cape slash/east, exactly one shade step away). Review note only. On the frozen bench it flags 0
+ * of 448 posed frames; it was not validated above 128 px cells beyond a 2x and 4x upscale of the bench (2026-11-07).
+ */
+export const DETAIL = { minPx: 4, tol: 32, bodyTol: 13 };
+/** Patch size that counts as a detail: `DETAIL.minPx` at a 64 px cell, scaled with the cell area. */
+export const detailMinPx = (im: Img) => Math.max(DETAIL.minPx, Math.round(DETAIL.minPx * (im.w * im.h) / (64 * 64)));
+/** Colors of the layer's same-color 4-connected patches of at least `minPx` px, with the largest patch size. */
+export function detailColors(im: Img, minPx = detailMinPx(im)): Map<number, number> {
+  const rgb = (p: number) => (im.data[p * 4] << 16) | (im.data[p * 4 + 1] << 8) | im.data[p * 4 + 2];
+  const seen = new Uint8Array(im.w * im.h), out = new Map<number, number>();
+  for (let p = 0; p < seen.length; p++) {
+    if (seen[p] || !im.data[p * 4 + 3]) continue;
+    const c = rgb(p), stack = [p]; let n = 0; seen[p] = 1;
+    while (stack.length) {
+      const q = stack.pop()!, x = q % im.w, y = (q / im.w) | 0; n++;
+      for (const [X, Y] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) { const r = Y * im.w + X; if (X >= 0 && Y >= 0 && X < im.w && Y < im.h && !seen[r] && im.data[r * 4 + 3] && rgb(r) === c) { seen[r] = 1; stack.push(r); } }
+    }
+    if (n >= minPx) out.set(c, Math.max(out.get(c) ?? 0, n));
+  }
+  return out;
+}
+/** Design detail colors (from detailColors) with no color within `tol` in the frame layer, skipping colors within `bodyTol`
+ * of the frame's body. */
+export function lostDetails(design: Map<number, number>, layer: Img, body?: Img, tol = DETAIL.tol, bodyTol = DETAIL.bodyTol): { color: number; px: number }[] {
+  const frame = colors(layer), skin = body ? colors(body) : [];
+  return [...design].filter(([c]) => !frame.some((f) => cdist(c, f) <= tol) && !skin.some((b) => cdist(c, b) <= bodyTol)).map(([color, px]) => ({ color, px }));
+}
+/**
  * H4: a posed layer must look like its own direction's dressed keyframe layer. Band items (helmet, face): own < 0.75 fails in every
  * view (S5: a visor on a back view; B7 live: a blade drawn into a helmet's slash frames). Soft items (worn torso/back, hair) only
  * warn, and only where the item covers ≥ 50 % of the body in some frame of the clip and own < 0.5 (B14 on the Ranger's stored
  * frames: hair, chest and the cape's front view scored 0.20–0.74 on 31 frames that look right; the cape wrapping the raised arm
  * from behind scored 0.31–0.46). Off for legs, feet (S and N look alike: trousers own ≈ opposite on 13 good frames) and held items.
  */
-export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, referenceBodies?: Partial<Record<DirectionName, Img>>, prompt = ''): { fails: Map<number, string[]>; warnings: string[]; maxPaletteDist: number; missingLowerFrames: number; footwearReviewFrames: number; waistReviewFrames: number; facingReviewFrames: number } {
+export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, rig?: Rig, referenceBodies?: Partial<Record<DirectionName, Img>>, prompt = ''): { fails: Map<number, string[]>; warnings: string[]; maxPaletteDist: number; missingLowerFrames: number; footwearReviewFrames: number; waistReviewFrames: number; facingReviewFrames: number; detailReviewFrames: number } {
   const fails = new Map<number, string[]>(), warnings: string[] = [];
-  const missingLower = new Set<string>(), footwearReview = new Set<string>(), waistReview = new Set<string>(), facingReview = new Set<string>();
+  const missingLower = new Set<string>(), footwearReview = new Set<string>(), waistReview = new Set<string>(), facingReview = new Set<string>(), detailReview = new Set<string>();
   let maxPaletteDist = 0;
-  const result = () => ({ fails, warnings, maxPaletteDist, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size, waistReviewFrames: waistReview.size, facingReviewFrames: facingReview.size });
+  const result = () => ({ fails, warnings, maxPaletteDist, missingLowerFrames: missingLower.size, footwearReviewFrames: footwearReview.size, waistReviewFrames: waistReview.size, facingReviewFrames: facingReview.size, detailReviewFrames: detailReview.size });
   // A cape can swing above the knees or behind the body. This check is for body-covering garments.
   const actions = new Map<string, boolean>(), action = (anim: string, dir: string) => { const k = `${anim}/${dir}`; if (!actions.has(k)) actions.set(k, isAction(k, rig)); return actions.get(k)!; };
   if (rig && slot.class === 'worn' && slot.bgZ == null) for (const c of cells) {
@@ -1366,7 +1398,7 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
   }
   // Compare every posed frame with its own standing design: a clean clip average can conceal one recolored frame.
   // This remains a review warning and never authorizes another paid attempt.
-  const palettes = new Map<DirectionName, number[]>();
+  const palettes = new Map<DirectionName, number[]>(), details = new Map<DirectionName, Map<number, number>>();
   for (const c of cells) if (c.posed && c.area) {
     const dir = c.key.split('/')[1] as DirectionName, K = keys[dir];
     if (!K) continue;
@@ -1374,6 +1406,14 @@ export function dirGate(slot: Slot, cells: CellOut[], keys: Partial<Record<Direc
     const d = +paletteDistance(palettes.get(dir)!, [c.layer]).toFixed(1);
     maxPaletteDist = Math.max(maxPaletteDist, d);
     if (d > GATES.paletteDist) warnings.push(`G6 ${c.key}: palette distance ${d.toFixed(1)} to the dressed design`);
+    // Held items were not qualified for this check (they turn, and the bench measured worn items only).
+    if (slot.class === 'held' || action(c.key.split('/')[0], dir)) continue;
+    if (!details.has(dir)) details.set(dir, detailColors(K));
+    const lost = lostDetails(details.get(dir)!, c.layer, c.base);
+    if (lost.length) {
+      detailReview.add(c.key);
+      warnings.push(`G15 ${c.key}: a detail of the dressed design (${Math.max(...lost.map(l => l.px))} px) is missing or recolored`);
+    }
   }
   if (slot.class === 'held' || slot.id === 'feet' || slot.id === 'legs') return result();
   // soft items: the clip's best body coverage (item px on the base silhouette / base px)

@@ -23,7 +23,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
   const parts: (QaSummary & { hand?: 'r' | 'l' | '?' })[] = [...Object.values(clips), ...(legacy?.summary ? [legacy.summary] : [])];
   const min = (k: 'minKeyKept' | 'minAreaRatio') => Math.min(1, ...parts.map((p) => p[k]));
   const max = (k: 'maxKeyOutside' | 'maxAreaCV' | 'maxPaletteDist') => Math.max(0, ...parts.map((p) => p[k]));
-  const sum = (k: 'clipPx' | 'shiftedFrames' | 'strayPx' | 'missingLowerFrames' | 'footwearReviewFrames' | 'waistReviewFrames' | 'facingReviewFrames' | 'rawKeyReviewFrames' | 'heldLoopReviewClips' | 'heldHangReviewClips') => parts.reduce((n, p) => n + (p[k] ?? 0), 0);
+  const sum = (k: 'clipPx' | 'shiftedFrames' | 'strayPx' | 'missingLowerFrames' | 'footwearReviewFrames' | 'waistReviewFrames' | 'facingReviewFrames' | 'detailReviewFrames' | 'rawKeyReviewFrames' | 'heldLoopReviewClips' | 'heldHangReviewClips') => parts.reduce((n, p) => n + (p[k] ?? 0), 0);
   const missingLowerFrames = sum('missingLowerFrames'), footwearReviewFrames = sum('footwearReviewFrames'), waistReviewFrames = sum('waistReviewFrames'), facingReviewFrames = sum('facingReviewFrames');
   const decided = parts.filter((p) => p.hand === 'r' || p.hand === 'l');
   const switched = new Set(decided.map((p) => p.hand)).size > 1 || parts.some((p) => p.handedness === 'switched');
@@ -42,6 +42,7 @@ export function mergeQa(item: Item, next: ItemQa, cells: Record<CellKey, CellQa>
     ...(missingLowerFrames ? { missingLowerFrames } : {}), ...(footwearReviewFrames ? { footwearReviewFrames } : {}),
     ...(waistReviewFrames ? { waistReviewFrames } : {}),
     ...(facingReviewFrames ? { facingReviewFrames } : {}),
+    ...(sum('detailReviewFrames') ? { detailReviewFrames: sum('detailReviewFrames') } : {}),
     ...(sum('rawKeyReviewFrames') ? { rawKeyReviewFrames: sum('rawKeyReviewFrames') } : {}),
     ...(sum('heldLoopReviewClips') ? { heldLoopReviewClips: sum('heldLoopReviewClips') } : {}),
     ...(sum('heldHangReviewClips') ? { heldHangReviewClips: sum('heldHangReviewClips') } : {}),
