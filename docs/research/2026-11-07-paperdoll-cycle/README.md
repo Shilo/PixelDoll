@@ -86,10 +86,11 @@ cannot separate drift from item pixels, so the trigger was left unchanged.
 
 ## Resumption
 
-No paid job is pending or unknown from this cycle. The agent server ran on `localhost:5199` in Agent mode. Next discriminating work, in order:
+No paid job is pending or unknown from this cycle (last checked after the G15 live check, balance $15.08 USD credit). The agent server ran on `localhost:5199` in Agent mode. Next discriminating work, in order:
 
-1. Visual review of the 6 and 18 real pixels the vetoed rim-guard variants add (`scripts/challenge/rim-despill-challenge.ts`), then a multi-tone human-drawn body set (LPC bodies, ecosystem rank 4) as independent ground truth.
+1. Partly done: the outline guard now treats light thin items equally across skin tones ([fairness.md](fairness.md)); dark thin items still lose about 8 % more pixels over deep skin. Still open: a multi-tone human-drawn body set (LPC bodies, ecosystem rank 4) as independent ground truth, which would also settle the vetoed CF1b variants.
 2. Done as a live check, not a stored fixture: two real short blades on the 80 px Live Test character (72 posed frames) reach 7 to 19 px from the wrist, mostly above the 10 px signed-direction floor. The curved knife passed every check. The steel dagger failed G4, G5 and G9 on walk/south only, and those failures are real: PixelLab drew a diagonal blade in frame 0 and a hilt stub pointing down in frames 1 to 3. No false fail on a real small blade. Still open: a stored small-item bench fixture, and the 120 degree action warning on more than two items.
 3. Partly done: when one view of a skeleton item move fails, the finished views are now saved and Try again requests only the missing ones (not on a replace move, which redraws the body and every view). Still open: a save conflict repays the whole move, and a failed later batch of a long (> 15 frame) view repays its earlier batches (code-map row 3).
-4. Standing designs are never compared across views (code-map row 4), and small motifs pass G6 and H4 (row 1). Both need labeled damaged-motif cases before a gate.
+4. Partly done: G15 now notes a design detail in its own color that a posed walk or idle frame loses (code-map row 1). Still open: details sharing a shade with other parts, attacks, and comparing standing views with each other.
+6. Upright held objects (torch, bouquet) draw upside down; the paid wording A/B showed wording alone moves them to the wrong hand ([hand-wording-ab.md](hand-wording-ab.md)). Next idea: an off-hand default for upright objects.
 5. Done: inpaint grids now price by the mean side, which fits all 11 billed shapes. Follow-up: `repairGridLayout` repacks only to reach Tier 1, so it can keep a layout a narrower packing would price lower (for example 86 px cells, 4 frames + 1 reference: 344×172 at 15 against 172×258 at 10).
