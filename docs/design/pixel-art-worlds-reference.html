@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pixel-art worlds that match the characters</title>
+  <style>
+    :root { color-scheme: dark light; --page:#141c21; --surface:#1e2a30; --ink:#eef0e9; --muted:#b7c5c4; --link:#b2ddce; --line:#41535a; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:var(--page); color:var(--ink); font:17px/1.65 system-ui,sans-serif; }
+    main { width:min(1120px,100%); margin:auto; padding:40px 24px 64px; }
+    h1,h2,h3 { line-height:1.2; text-wrap:balance; }
+    h1 { font-size:clamp(30px,5vw,54px); max-width:850px; margin:12px 0 20px; }
+    h2 { font-size:28px; margin:0 0 20px; }
+    h3 { font-size:21px; margin:0 0 12px; }
+    p { margin:0 0 16px; }
+    a { color:var(--link); text-underline-offset:3px; overflow-wrap:anywhere; }
+    a:focus-visible,summary:focus-visible { outline:3px solid var(--link); outline-offset:5px; }
+    nav { display:flex; flex-wrap:wrap; gap:12px 24px; margin:28px 0; }
+    section { margin-top:52px; scroll-margin-top:24px; }
+    article { margin-top:28px; }
+    figure { margin:24px 0; }
+    img { display:block; max-width:100%; height:auto; margin:auto; }
+    figcaption,.muted { color:var(--muted); }
+    figcaption { font-size:14px; margin-top:10px; }
+    .eyebrow { color:var(--muted); letter-spacing:.12em; text-transform:uppercase; font-size:13px; }
+    .note { border-left:3px solid var(--link); padding:12px 20px; background:var(--surface); margin:24px 0; }
+    .note p:last-child { margin-bottom:0; }
+    .table-wrap { overflow-x:auto; }
+    table { border-collapse:collapse; width:100%; margin:20px 0; }
+    th,td { text-align:left; vertical-align:top; padding:14px 12px; border-bottom:1px solid var(--line); }
+    th { color:var(--muted); font-weight:600; }
+    td:first-child,th:first-child { padding-left:0; }
+    ul,ol { padding-left:24px; }
+    li { margin:8px 0; }
+    code { overflow-wrap:anywhere; }
+    details { border-top:1px solid var(--line); padding:16px 0; }
+    summary { cursor:pointer; font-weight:600; }
+    details > :not(summary) { margin-top:18px; }
+    .gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,310px),1fr)); gap:24px; }
+    .gallery figure { margin:0; }
+    .gallery img { width:100%; height:240px; object-fit:contain; background:var(--surface); }
+    footer { border-top:1px solid var(--line); margin-top:48px; padding-top:24px; color:var(--muted); }
+    @media (max-width:680px) { main { padding:24px 16px 48px; } th,td { padding:10px 8px; } }
+    @media (prefers-color-scheme:light) { :root { --page:#f3f4ed; --surface:#e4e9e2; --ink:#182629; --muted:#485b5c; --link:#185f51; --line:#b5c5bf; } }
+    @media print { details { display:block; } main { width:100%; padding:0; } a { color:inherit; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <p class="eyebrow">PixelDoll / environment reference / round two, October 22, 2026</p>
+    <h1>One pixel-art aesthetic for characters and worlds</h1>
+    <p>Explore fully pixel-art backgrounds that share the characters' visual language. The current generated scenery simulates a 3D space and reads as 2.5D beside the crisp pixel-art actors. Matching the world's pixel scale, edges, detail and overall aesthetic to the characters may make the whole scene feel more cohesive, welcoming and comfortable.</p>
+    <div class="note">
+      <p><strong>Current request:</strong> consider the world artwork only. Keep the current production UI and behavior. Grid lines, debug overlays and the historical UI shown in these screenshots are not part of the desired style.</p>
+      <p><strong>Aesthetic references:</strong> Moonwell Grove and Ember Outpost show the consistency sought between characters and their environment. Their forest and courtyard settings are examples; no particular biome, named world or exact recreation is selected.</p>
+      <p><strong>Possible routes:</strong> evaluate suitable itch.io assets, PixelLab generation or paying a pixel artist to create backgrounds. The desired result is consistent pixel art; a sourcing method has not been chosen.</p>
+      <p>This records a possible future background replacement, not an approved implementation. The old UI is documented below so its lessons and rejected choices remain clear.</p>
+    </div>
+    <p class="muted">This page opens directly as a local HTML file. It has no scripts, server, build step, external fonts or required network requests. Images link to the existing repository files rather than duplicating or embedding them; the ignored historical PNGs must remain beside the documentation. Optional source links open the original records.</p>
+  </header>
+
+  <nav aria-label="Reference sections">
+    <a href="#worlds">Aesthetic examples</a><a href="#selected">Selected screenshots</a><a href="#craft">Art direction</a><a href="#ui">Historical UI lessons</a><a href="#history">What changed later</a><a href="#research">Research</a><a href="#future">Future evaluation and sourcing</a><a href="#evidence">All 59 studies</a><a href="#sources">Sources</a>
+  </nav>
+
+  <section id="worlds">
+    <h2>The world artwork, without the UI</h2>
+    <p>These original background plates illustrate a shared pixel-art aesthetic with the characters, rather than prescribe a forest or courtyard. The screenshot controls and grid overlays were added separately by the study and should be ignored when judging the scenery.</p>
+    <article>
+      <h3>Moonwell Grove</h3>
+      <figure><a href="2026-10-22-redesign/round-2/assets/moonwell-grove.png"><img src="2026-10-22-redesign/round-2/assets/moonwell-grove.png" alt="Moonwell Grove original pixel-art background: a broad teal clearing framed by dark forest, rocks and a pond" width="1672" height="941"></a><figcaption>Original background plate. No character, UI or study grid overlay. Existing file: <code>round-2/assets/moonwell-grove.png</code>.</figcaption></figure>
+      <p>A moonlit forest clearing in navy, teal and muted green. Trees, rocks, water and small plants frame a wide open center. Chunky shapes and darker distant trees give the actor a place to stand without filling the dressing area with scenery.</p>
+      <p><strong>Lesson:</strong> the quieter of the two scenic concepts and the stronger historical recommendation for welcoming character selection and casual dressing. Keep perimeter detail out of unusual hats, capes and weapon silhouettes.</p>
+    </article>
+    <article>
+      <h3>Ember Outpost</h3>
+      <figure><a href="2026-10-22-redesign/round-2/assets/ember-outpost.png"><img src="2026-10-22-redesign/round-2/assets/ember-outpost.png" alt="Ember Outpost original pixel-art background: an open mauve courtyard framed by a lodge, fence, mountains, lanterns and a small fire" loading="lazy" width="1672" height="941"></a><figcaption>Original background plate. Its paving is scenery; reproducing a grid, tile seams or editor overlay is not a requirement. Existing file: <code>round-2/assets/ember-outpost.png</code>.</figcaption></figure>
+      <p>A dusk courtyard with a timber lodge, distant mountains, wooden fencing and restrained amber lantern/fire accents. Desaturated mauve ground leaves a broad empty stage while the perimeter suggests an inhabited world.</p>
+      <p><strong>Lesson:</strong> stronger warmth and sense of place, with more visual competition from architecture, paving and warm light. A handcrafted interpretation should keep that atmosphere while simplifying material detail and protecting outfit color judgments.</p>
+    </article>
+    <div class="note"><p><strong>Provenance:</strong> both plates were generated as original ImageGen scene studies on October 22, 2026. They are not existing handcrafted tilesets. Their value here is the visual direction; production art could be sourced, generated with suitable PixelLab tooling or commissioned separately. The source records call the original tool ImageGen; no specific internal GPT image-model identifier was exposed.</p></div>
+  </section>
+
+  <section id="selected">
+    <h2>The three screenshots you selected</h2>
+    <p>The numbers are positions in the 285-image mockup-history gallery, not names or revision numbers belonging to the original files. UI and grid lines in these captures are historical context only.</p>
+    <figure><a href="2026-10-22-redesign/round-2/mockups/grove-desktop-select.png"><img src="2026-10-22-redesign/round-2/mockups/grove-desktop-select.png" alt="Moonwell Grove desktop character selection with three characters standing in the forest clearing" loading="lazy" width="1440" height="900"></a><figcaption><strong>159. grove-desktop-select.png:</strong> the cast shares one ground plane; open scenery and a direct character choice establish the world without requiring navigation through it.</figcaption></figure>
+    <figure><a href="2026-10-22-redesign/round-2/mockups/grove-desktop-dress.png"><img src="2026-10-22-redesign/round-2/mockups/grove-desktop-dress.png" alt="Moonwell Grove desktop dressing study with the composed character prominent in an open forest clearing" loading="lazy" width="1440" height="900"></a><figcaption><strong>161. grove-desktop-dress.png:</strong> the same environment supports a single larger actor. Recreate the pixel-art world, not its old category rail, panels, header or grid.</figcaption></figure>
+    <figure><a href="2026-10-22-redesign/round-2/mockups/outpost-desktop-select.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-desktop-select.png" alt="Ember Outpost desktop selection study with a cast on a broad courtyard in front of a timber building and dusk mountains" loading="lazy" width="1440" height="900"></a><figcaption><strong>164. outpost-desktop-select.png:</strong> warm perimeter accents and simple village scenery create a more inhabited alternative. The current UI remains the UI reference.</figcaption></figure>
+  </section>
+
+  <section id="craft">
+    <h2>What the art studies taught us</h2>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Aspect</th><th>What to carry forward</th><th>Limits and cautions</th></tr></thead>
+      <tbody>
+        <tr><td>Pixel construction</td><td>Deliberate hard-edged clusters, a consistent native pixel scale, nearest-neighbor presentation and a coherent limited palette.</td><td>A pixel construction grid is internal to drawing, not a request for visible grid lines. Avoid blur, smooth painterly detail and mixed-resolution decorative elements.</td></tr>
+        <tr><td>Composition</td><td>One continuous scenic place, with quiet open ground around the actor and detail concentrated at the perimeter and in the distance.</td><td>Do not recreate an outlined specimen box, fenced preview arena or obstacle course. Do not shrink the character to show more scenery.</td></tr>
+        <tr><td>Palette</td><td>Grove's cool navy/teal/green or Outpost's subdued mauve with sparse amber accents. Character and equipment should remain the strongest color information.</td><td>Scene colors change perceived outfit colors even when sprite RGB values stay identical. Evaluate dark, light and saturated outfits.</td></tr>
+        <tr><td>Depth</td><td>Foreground framing, a clear contact plane, simpler distant silhouettes and restrained separation between layers.</td><td>The backdrop's lighting must not tint, filter, relight or repaint character pixels. Historical contact marks do not authorize new actor shadows.</td></tr>
+        <tr><td>Scale</td><td>Check the actual body, cape, tall headgear and padded held-weapon extent against scenery at useful dressing and game scales.</td><td>The old research used a 48/56-pixel body in a 64-pixel cell and 96-pixel weapon examples. These are study references, not a limit for all current characters.</td></tr>
+        <tr><td>Responsive crops</td><td>Keep a readable open center and useful perimeter composition across desktop, phone portrait and short landscape layouts.</td><td>A wide scenic plate can crop away important context on a phone. Moving the crop must not hide the actor behind equipment controls.</td></tr>
+        <tr><td>World continuity</td><td>If developed later, keep continuous ground and coherent top-down/side compositions while preserving the current movement and camera behavior.</td><td>A single scenic plate does not establish a repeating map, occlusion system or correct side-view perspective. Merely swapping the two current PNGs may not be sufficient.</td></tr>
+      </tbody>
+    </table></div>
+    <details><summary>Original scene briefs and what they actually establish</summary>
+      <p>The Grove prompt requested a moonlit clearing, stepped conifer silhouettes, pond, stone path, navy distance and an almost empty central 70%, using a nominal 16-color palette. Outpost requested a dusk courtyard, timber lodge, fence, mountains, tiny perimeter props and an empty lower/central 65%, using a nominal 20-color palette. Both requested chunky pixel art resembling a 320 × 180 scene enlarged to widescreen, with no characters or UI.</p>
+      <p>Those are prompt intentions, not verified native art specifications. The stored plates are both 1672 × 941 PNGs, and neither is a proven 16/32-pixel tile lattice or counted palette. No production-ready tile sheet was exported. The <a href="2026-10-22-redesign/round-2/assets/README.md">original art record</a> preserves both complete prompts and output IDs.</p>
+      <p>The four other concepts were different: Calibration Yard, Blueprint Field, Claybox Courtyard and Test Islands use original code-authored integer-coordinate geometry in <a href="2026-10-22-redesign/round-2/study.js">study.js</a>. The study draws scenery and fixture sprites onto the same low-resolution canvas with smoothing disabled. It uses 4× desktop dressing, 3× phone dressing and 2× test-world or short-screen scale. That implementation is evidence of the old study, not a proposed replacement renderer.</p>
+    </details>
+  </section>
+
+  <section id="ui">
+    <h2>Historical UI and workflow lessons</h2>
+    <p>The research covered the whole creator, not only scenery. These lessons explain the old images and retain useful constraints; this task does not adopt their UI.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Area</th><th>What the study explored or learned</th><th>How to read it now</th></tr></thead>
+      <tbody>
+        <tr><td>Character selection</td><td>Three characters standing in a shared desktop scene; one focal character on a phone; paging, search, Import and New character remain direct actions.</td><td>The six-person sample cast was illustrative. A scene must not require walking to a character, crossing bridges or using hidden hotspots to select one.</td></tr>
+        <tr><td>Creation</td><td>A separate scene with an explicitly labeled example body, name, appearance, facing options and a paid-step cost disclosure.</td><td>The Imagine → Review → Animate wizard in these images is superseded. Preserve the current complete creator form, validation, costs and recovery.</td></tr>
+        <tr><td>Dressing</td><td>One active named category, available-item thumbnails, an explicit None choice and a visible New action; retain the composed outfit in view.</td><td>Keep body identity separate from equipment. A new base is a new character; arbitrary per-part transforms are repair tools, not casual styling.</td></tr>
+        <tr><td>Equipment structure</td><td>Wardrobe, Colors, Moves and Outfits; Head, Hair, Body, Legs, Feet, Back and Hands; source layer order, hiding and held-item pivots still matter.</td><td>The old left category rail and separate bottom mode bar were rejected as scattered editing furniture. Preserve the current equipment region.</td></tr>
+        <tr><td>Item imagery</td><td>Crop thumbnails to opaque bounds and enlarge at integer scale so a small hat remains comparable with a helmet.</td><td>Thumbnail normalization must not resize the actual equipped layer or alter frame alignment.</td></tr>
+        <tr><td>Color</td><td>Offer coherent local ramps, reversible swatches and deeper exact-color controls contextually. Separate deterministic recolor from a probabilistic paid generation prompt.</td><td>The old study wired simplified recolor, not a complete production ramp editor. A scene's palette is independent of the character palette.</td></tr>
+        <tr><td>Quality and export</td><td>Inspect different facings and animation frames; make clipping, stray pixels, hiding and handed-weapon problems discoverable before export.</td><td>The old Grid/Bounds/1× Proof buttons are historical. Preserve the current contextual inspection and export truth without adding world-overlay controls.</td></tr>
+        <tr><td>Phone layout</td><td>Keep a prominent actor above one lower equipment area; retain All parts and labeled New; scroll content instead of shrinking controls.</td><td>No hover-only actions, hidden double-tap requirement or tiny movement-button bank should follow from the artwork.</td></tr>
+        <tr><td>Moves and testing</td><td>Try a dressed actor at 2× world scale in top-down or side mockups using real stored walk frames and the same outfit.</td><td>The study had discrete movement and no collision, jumping, gravity, occlusion sorting or camera following. It is not a game engine or today's motion contract.</td></tr>
+        <tr><td>Advanced operations</td><td>Retain library/restore, frozen base generation, fitting, palette editing, moves, saved outfits/designs, layer details, manifests, engine exports, token/storage/backup and Activity access.</td><td>Keep frequent actions direct and consequential cost/error details near the action. Do not turn the world into a new setup or navigation layer.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The broader <a href="2026-10-22-redesign/research-2d.md">2D creator research</a> used Stardew Valley for frame-dependent layering, Terraria for appearance versus functional equipment, MapleStory for whole-outfit previews, Starbound for body/slot/pose separation, Sun Haven for explicit None choices, RPG Maker for multi-view/layer output and Picrew for contextual part controls. These were comparative observations and design inferences, not evidence that PixelDoll should copy a game's inventories, commerce, unlocks or asset catalog.</p>
+  </section>
+
+  <section id="history">
+    <h2>Why the UI changed later</h2>
+    <p>Round two's historical recommendation was Calibration Yard for everyday inspection, with Moonwell Grove as a welcoming collection backdrop. The subsequent review rejected the tool-like framing: a solid header, boxed name card, category rail on the opposite side from items, outlined stage, grid/debug controls, multiple bottom bars and a smaller actor overwhelmed the sense of a world.</p>
+    <p>The important distinction was <strong>composition and hierarchy</strong>, not a verdict against pixel art. The first-round Moonlit Camp reference supplied continuous scenery and a prominent character; round three restored that immersive hierarchy and later work consolidated it into Obsidian / Porcelain Bronze. This new reference revisits the scenic pixel-art language of Grove and Outpost while retaining the current UI.</p>
+    <ul>
+      <li>Keep a continuous world behind the existing identity, equipment and utility controls. Keep dependable local backing for text where scenery is busy.</li>
+      <li>Preserve today's Preview / Top-down / Side-scroller structure, live movement, camera, touch ownership, focus and reduced-motion behavior.</li>
+      <li>Preserve current direction/clip fallbacks and matching equipment timing. Round two's four-view sample and mirrored west do not authorize new mirroring, invented directions or missing-frame synthesis.</li>
+      <li>Movement must not freeze just because an animation is missing. Live fallbacks are distinct from actual coverage reported by Preview, quality review and exports.</li>
+      <li>Current design excludes new actor lighting or shadows. Existing source shading stays untouched; reflection remains a code-only presentation choice.</li>
+      <li>Do not restore old wizard steps, movement buttons, Grid/Bounds/Proof controls, fixed test-room borders, props, combat or jumping as part of a scenery replacement.</li>
+    </ul>
+    <p>The <a href="2026-10-22-redesign/round-3/research-ui-critique.md">round-three critique</a> explains the rejection. The <a href="2026-10-22-redesign/round-4-discussion/current-design.md">accepted design record</a> resolves later behavior corrections, and <a href="production-experience.md">production experience</a> describes the implemented integration. Historical documents do not override those records.</p>
+  </section>
+
+  <section id="research">
+    <h2>Related world research and its limits</h2>
+    <p>These findings are attributed to the October 22, 2026 research record. The original researchers inspected linked visuals and maker descriptions; the downloadable extensions were not installed or play-tested. External product and license details have not been reverified for this reference. No third-party artwork is included here.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Reference</th><th>Lesson recorded</th><th>Boundary</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://maplegecko.itch.io/asemulator">Asemulator</a>, <a href="https://maplegecko.itch.io/asemulator-side-scroller">Side-scroller</a> and <a href="https://maplegecko.itch.io/asemulator-top-down">Top-down</a></td><td>Preview an animated sprite in world-scale context. Simple terrain, few materials and clear floor/edge cues can make a scene readable.</td><td>The blue/purple/green grids are incidental reference styling, not the user's target. Do not copy its artwork or infer physics, collision, jumping, isometric rigs or advanced actions from its feature list.</td></tr>
+        <tr><td><a href="https://craftpix.net/freebies/free-prototype-2d-platformer-32x32-pixel-tileset/">CraftPix prototype tileset</a></td><td>Consistent modules and restrained landmarks can establish a world with few motifs.</td><td>Dimension labels, hazard colors and dense test markings compete with equipment. The historical record treated it as a reference pending license review.</td></tr>
+        <tr><td><a href="https://ardonie.itch.io/petixel-prototype">Petixel Prototype</a></td><td>Rooms, stairs and clear boundaries make provisional tilemaps understandable.</td><td>The archived research records a license exclusion for game-making tools. Do not use these assets in PixelDoll. Strong checker patterns and route arrows are not the requested style.</td></tr>
+        <tr><td><a href="https://kenney.nl/assets/1-bit-platformer-pack">Kenney 1-Bit Platformer</a> and <a href="https://kenney.nl/assets/roguelike-rpg-pack">Roguelike/RPG</a></td><td>A coherent pixel scale, palette and tiny compatible set of floor/edge/prop motifs can hold a scene together.</td><td>The research recorded CC0 publisher listings. No pack was adopted; the full sample towns and extreme black/white values can compete with outfits.</td></tr>
+        <tr><td><a href="https://www.playlostark.com/en-us/news/articles/release-notes-sept">Lost Ark / Trixion</a></td><td>A dedicated try-before-commit space can keep the actor in focus.</td><td>The remembered game was only a plausible identification, not confirmed memory. Its ornate 3D arena, enemies and combat HUD were rejected. Blade &amp; Soul was another uncertain historical comparison.</td></tr>
+      </tbody>
+    </table></div>
+    <p><strong>Moonwell Grove and Ember Outpost</strong> illustrate the desired consistency between pixel-art characters and scenery. They do not prescribe the future world's setting. Asemulator and the other sources explain historical research. The <a href="2026-10-22-redesign/round-2/research-prototype-worlds.md">full research record</a> retains individual screenshot links, observation/inference labels and the uncertain MMO identification.</p>
+  </section>
+
+  <section id="future">
+    <h2>What a future background-only evaluation needs</h2>
+    <p>Deferred board task: <a href="https://github.com/users/Shilo/projects/7?pane=issue&amp;itemId=296731626">Consider pixel-art backgrounds that match the characters</a> (Later).</p>
+    <p>The deferred idea is to <strong>possibly replace the current 2.5D-style generated scenery with fully pixel-art backgrounds that match the characters' style and aesthetics</strong>. The goal is a more consistent, welcoming and comfortable scene. Grove and Outpost demonstrate the difference in visual language; neither is a required environment. The current plates' recorded provenance is ImageGen. Grid lines are excluded from the desired style.</p>
+    <h3>Possible ways to obtain the backgrounds</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Route to evaluate</th><th>Possible goal</th><th>What needs checking before choosing</th></tr></thead>
+      <tbody>
+        <tr><td>itch.io assets</td><td>Find existing pixel-art backgrounds or a small compatible tileset that fits the characters' aesthetic, with adaptation where needed.</td><td>Pixel scale, palette, scenery density, required views, cost and whether the specific license permits the intended use and redistribution in this open-source app. No pack is selected.</td></tr>
+        <tr><td>PixelLab generation</td><td>Evaluate whether suitable PixelLab tooling can produce coherent pixel-art environments that match the character artwork, with cleanup or assembly if needed.</td><td>Available supported workflows, consistent pixels and palettes, scene continuity, projections, output rights and quoted generation costs. This is an option to investigate, not a verified endpoint or model choice; any paid trial needs separate authorization.</td></tr>
+        <tr><td>Commission a pixel artist</td><td>Pay an artist to create backgrounds specifically matched to the characters and the existing app composition.</td><td>A brief covering pixel scale, palette, quiet actor space, responsive crops, mode-appropriate views and continuity; agree on budget, revisions, editable source delivery and usage/redistribution rights before commissioning.</td></tr>
+      </tbody>
+    </table></div>
+    <p>Compare the routes by visual consistency, fit with the current renderer, quality, cost and usable rights. The proposal does not require handcrafting everything or commit to a provider.</p>
+    <ol>
+      <li><strong>Define the visual match:</strong> compare environment pixel scale, edge treatment, detail, palette and sense of depth with real character artwork. Choose setting and subject matter later. A dark/light pair and mode-appropriate compositions still need decisions; Grove and Outpost were not designed as a matching dark/light theme pair.</li>
+      <li><strong>Choose a sourcing route:</strong> evaluate itch.io assets, PixelLab and an artist commission against that visual goal. Whatever the route, aim for clean pixel clusters, quiet ground and restrained detail. Tile-based construction is optional. Visible grids are not a goal.</li>
+      <li><strong>Check the current renderer:</strong> production currently uses Obsidian and Porcelain stage plates and samples their material for continuous live floors. New scenic art needs appropriate continuity, horizon and projection handling; do not assume a PNG swap will produce a convincing walkable forest or courtyard.</li>
+      <li><strong>Keep the current UI and behavior:</strong> evaluate the art beneath the existing Bronze UI, camera and controls. Any separate renderer work would need its own scoped plan; no UI redesign is implied.</li>
+      <li><strong>Validate real characters:</strong> test multiple palettes, silhouettes, sizes, facings and held weapons in still and moving views. Source sprite pixels and export output must stay unchanged.</li>
+      <li><strong>Validate every composition:</strong> desktop, portrait phone, short phone and landscape; light/dark UI readability; selection, creation, Preview and both live views; world edges, repeating seams, cropping, movement cues and reduced motion.</li>
+      <li><strong>Keep the proposal deferred:</strong> the reference does not authorize production replacement, paid generations, new dependencies, third-party asset acquisition or changes to the current UI.</li>
+    </ol>
+    <p>Current implementation references: <a href="world-artwork.md">production world artwork and hashes</a>, <a href="../../app/src/studio/experience/config.ts">scene configuration</a> and <a href="../../app/src/studio/experience/ground.ts">continuous ground renderer</a>. Shared UI appearance remains owned by Bronze UI.</p>
+  </section>
+
+  <section id="evidence">
+    <h2>All 59 related round-two studies</h2>
+    <p>The main scenic concepts each have desktop selection, creation, dressing, top-down and side studies, plus phone selection, creation and dressing. The four geometric alternatives are preserved for comparison, not as the requested scenic direction.</p>
+    <p>Historical evidence totals: 36 primary images, 14 future-map images, six additional small/landscape Yard captures and three comparison boards. The old records report 50 viewport checks, 18 interactive checks and six extra layouts. Those records are not new production or accessibility certifications, and were not rerun to write this reference.</p>
+    <p>The old study wired sample headgear swapping, simplified recolor and limited movement using stored fixture frames. Generation, saving, import, fitting and export were simulations. The fixture had south/east/north and mirrored west; the side-view sample did not establish a dedicated side rig or jumping clips.</p>
+    <details id="gallery-grove"><summary>Moonwell Grove: 8 images / Scenic reference</summary><div class="gallery">
+<figure><a href="2026-10-22-redesign/round-2/mockups/grove-desktop-create.png"><img src="2026-10-22-redesign/round-2/mockups/grove-desktop-create.png" alt="Moonwell Grove: desktop, creation" loading="lazy"></a><figcaption>grove-desktop-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/grove-desktop-dress.png"><img src="2026-10-22-redesign/round-2/mockups/grove-desktop-dress.png" alt="Moonwell Grove: desktop, dressing" loading="lazy"></a><figcaption>grove-desktop-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/grove-desktop-select.png"><img src="2026-10-22-redesign/round-2/mockups/grove-desktop-select.png" alt="Moonwell Grove: desktop, character selection" loading="lazy"></a><figcaption>grove-desktop-select.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/grove-desktop-side.png"><img src="2026-10-22-redesign/round-2/mockups/grove-desktop-side.png" alt="Moonwell Grove: desktop, side-view study" loading="lazy"></a><figcaption>grove-desktop-side.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/grove-desktop-topdown.png"><img src="2026-10-22-redesign/round-2/mockups/grove-desktop-topdown.png" alt="Moonwell Grove: desktop, top-down study" loading="lazy"></a><figcaption>grove-desktop-topdown.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/grove-mobile-create.png"><img src="2026-10-22-redesign/round-2/mockups/grove-mobile-create.png" alt="Moonwell Grove: mobile, creation" loading="lazy"></a><figcaption>grove-mobile-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/grove-mobile-dress.png"><img src="2026-10-22-redesign/round-2/mockups/grove-mobile-dress.png" alt="Moonwell Grove: mobile, dressing" loading="lazy"></a><figcaption>grove-mobile-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/grove-mobile-select.png"><img src="2026-10-22-redesign/round-2/mockups/grove-mobile-select.png" alt="Moonwell Grove: mobile, character selection" loading="lazy"></a><figcaption>grove-mobile-select.png</figcaption></figure></div></details>
+<details id="gallery-outpost"><summary>Ember Outpost: 8 images / Scenic reference</summary><div class="gallery">
+<figure><a href="2026-10-22-redesign/round-2/mockups/outpost-desktop-create.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-desktop-create.png" alt="Ember Outpost: desktop, creation" loading="lazy"></a><figcaption>outpost-desktop-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/outpost-desktop-dress.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-desktop-dress.png" alt="Ember Outpost: desktop, dressing" loading="lazy"></a><figcaption>outpost-desktop-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/outpost-desktop-select.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-desktop-select.png" alt="Ember Outpost: desktop, character selection" loading="lazy"></a><figcaption>outpost-desktop-select.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/outpost-desktop-side.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-desktop-side.png" alt="Ember Outpost: desktop, side-view study" loading="lazy"></a><figcaption>outpost-desktop-side.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/outpost-desktop-topdown.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-desktop-topdown.png" alt="Ember Outpost: desktop, top-down study" loading="lazy"></a><figcaption>outpost-desktop-topdown.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/outpost-mobile-create.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-mobile-create.png" alt="Ember Outpost: mobile, creation" loading="lazy"></a><figcaption>outpost-mobile-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/outpost-mobile-dress.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-mobile-dress.png" alt="Ember Outpost: mobile, dressing" loading="lazy"></a><figcaption>outpost-mobile-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/outpost-mobile-select.png"><img src="2026-10-22-redesign/round-2/mockups/outpost-mobile-select.png" alt="Ember Outpost: mobile, character selection" loading="lazy"></a><figcaption>outpost-mobile-select.png</figcaption></figure></div></details>
+<details id="gallery-yard"><summary>Calibration Yard: 16 images / Historical geometric alternative</summary><div class="gallery">
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-desktop-create.png"><img src="2026-10-22-redesign/round-2/mockups/yard-desktop-create.png" alt="Calibration Yard: desktop, creation" loading="lazy"></a><figcaption>yard-desktop-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-desktop-dress.png"><img src="2026-10-22-redesign/round-2/mockups/yard-desktop-dress.png" alt="Calibration Yard: desktop, dressing" loading="lazy"></a><figcaption>yard-desktop-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-desktop-select.png"><img src="2026-10-22-redesign/round-2/mockups/yard-desktop-select.png" alt="Calibration Yard: desktop, character selection" loading="lazy"></a><figcaption>yard-desktop-select.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-desktop-side.png"><img src="2026-10-22-redesign/round-2/mockups/yard-desktop-side.png" alt="Calibration Yard: desktop, side-view study" loading="lazy"></a><figcaption>yard-desktop-side.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-desktop-topdown.png"><img src="2026-10-22-redesign/round-2/mockups/yard-desktop-topdown.png" alt="Calibration Yard: desktop, top-down study" loading="lazy"></a><figcaption>yard-desktop-topdown.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-landscape-create.png"><img src="2026-10-22-redesign/round-2/mockups/yard-landscape-create.png" alt="Calibration Yard: landscape, creation" loading="lazy"></a><figcaption>yard-landscape-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-landscape-dress.png"><img src="2026-10-22-redesign/round-2/mockups/yard-landscape-dress.png" alt="Calibration Yard: landscape, dressing" loading="lazy"></a><figcaption>yard-landscape-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-landscape-select.png"><img src="2026-10-22-redesign/round-2/mockups/yard-landscape-select.png" alt="Calibration Yard: landscape, character selection" loading="lazy"></a><figcaption>yard-landscape-select.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-mobile-create.png"><img src="2026-10-22-redesign/round-2/mockups/yard-mobile-create.png" alt="Calibration Yard: mobile, creation" loading="lazy"></a><figcaption>yard-mobile-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-mobile-dress.png"><img src="2026-10-22-redesign/round-2/mockups/yard-mobile-dress.png" alt="Calibration Yard: mobile, dressing" loading="lazy"></a><figcaption>yard-mobile-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-mobile-select.png"><img src="2026-10-22-redesign/round-2/mockups/yard-mobile-select.png" alt="Calibration Yard: mobile, character selection" loading="lazy"></a><figcaption>yard-mobile-select.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-mobile-side.png"><img src="2026-10-22-redesign/round-2/mockups/yard-mobile-side.png" alt="Calibration Yard: mobile, side-view study" loading="lazy"></a><figcaption>yard-mobile-side.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-mobile-topdown.png"><img src="2026-10-22-redesign/round-2/mockups/yard-mobile-topdown.png" alt="Calibration Yard: mobile, top-down study" loading="lazy"></a><figcaption>yard-mobile-topdown.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-small-create.png"><img src="2026-10-22-redesign/round-2/mockups/yard-small-create.png" alt="Calibration Yard: small, creation" loading="lazy"></a><figcaption>yard-small-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-small-dress.png"><img src="2026-10-22-redesign/round-2/mockups/yard-small-dress.png" alt="Calibration Yard: small, dressing" loading="lazy"></a><figcaption>yard-small-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/yard-small-select.png"><img src="2026-10-22-redesign/round-2/mockups/yard-small-select.png" alt="Calibration Yard: small, character selection" loading="lazy"></a><figcaption>yard-small-select.png</figcaption></figure></div></details>
+<details id="gallery-blueprint"><summary>Blueprint Field: 8 images / Historical geometric alternative</summary><div class="gallery">
+<figure><a href="2026-10-22-redesign/round-2/mockups/blueprint-desktop-create.png"><img src="2026-10-22-redesign/round-2/mockups/blueprint-desktop-create.png" alt="Blueprint Field: desktop, creation" loading="lazy"></a><figcaption>blueprint-desktop-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/blueprint-desktop-dress.png"><img src="2026-10-22-redesign/round-2/mockups/blueprint-desktop-dress.png" alt="Blueprint Field: desktop, dressing" loading="lazy"></a><figcaption>blueprint-desktop-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/blueprint-desktop-select.png"><img src="2026-10-22-redesign/round-2/mockups/blueprint-desktop-select.png" alt="Blueprint Field: desktop, character selection" loading="lazy"></a><figcaption>blueprint-desktop-select.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/blueprint-desktop-side.png"><img src="2026-10-22-redesign/round-2/mockups/blueprint-desktop-side.png" alt="Blueprint Field: desktop, side-view study" loading="lazy"></a><figcaption>blueprint-desktop-side.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/blueprint-desktop-topdown.png"><img src="2026-10-22-redesign/round-2/mockups/blueprint-desktop-topdown.png" alt="Blueprint Field: desktop, top-down study" loading="lazy"></a><figcaption>blueprint-desktop-topdown.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/blueprint-mobile-create.png"><img src="2026-10-22-redesign/round-2/mockups/blueprint-mobile-create.png" alt="Blueprint Field: mobile, creation" loading="lazy"></a><figcaption>blueprint-mobile-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/blueprint-mobile-dress.png"><img src="2026-10-22-redesign/round-2/mockups/blueprint-mobile-dress.png" alt="Blueprint Field: mobile, dressing" loading="lazy"></a><figcaption>blueprint-mobile-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/blueprint-mobile-select.png"><img src="2026-10-22-redesign/round-2/mockups/blueprint-mobile-select.png" alt="Blueprint Field: mobile, character selection" loading="lazy"></a><figcaption>blueprint-mobile-select.png</figcaption></figure></div></details>
+<details id="gallery-clay"><summary>Claybox Courtyard: 8 images / Historical geometric alternative</summary><div class="gallery">
+<figure><a href="2026-10-22-redesign/round-2/mockups/clay-desktop-create.png"><img src="2026-10-22-redesign/round-2/mockups/clay-desktop-create.png" alt="Claybox Courtyard: desktop, creation" loading="lazy"></a><figcaption>clay-desktop-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/clay-desktop-dress.png"><img src="2026-10-22-redesign/round-2/mockups/clay-desktop-dress.png" alt="Claybox Courtyard: desktop, dressing" loading="lazy"></a><figcaption>clay-desktop-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/clay-desktop-select.png"><img src="2026-10-22-redesign/round-2/mockups/clay-desktop-select.png" alt="Claybox Courtyard: desktop, character selection" loading="lazy"></a><figcaption>clay-desktop-select.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/clay-desktop-side.png"><img src="2026-10-22-redesign/round-2/mockups/clay-desktop-side.png" alt="Claybox Courtyard: desktop, side-view study" loading="lazy"></a><figcaption>clay-desktop-side.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/clay-desktop-topdown.png"><img src="2026-10-22-redesign/round-2/mockups/clay-desktop-topdown.png" alt="Claybox Courtyard: desktop, top-down study" loading="lazy"></a><figcaption>clay-desktop-topdown.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/clay-mobile-create.png"><img src="2026-10-22-redesign/round-2/mockups/clay-mobile-create.png" alt="Claybox Courtyard: mobile, creation" loading="lazy"></a><figcaption>clay-mobile-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/clay-mobile-dress.png"><img src="2026-10-22-redesign/round-2/mockups/clay-mobile-dress.png" alt="Claybox Courtyard: mobile, dressing" loading="lazy"></a><figcaption>clay-mobile-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/clay-mobile-select.png"><img src="2026-10-22-redesign/round-2/mockups/clay-mobile-select.png" alt="Claybox Courtyard: mobile, character selection" loading="lazy"></a><figcaption>clay-mobile-select.png</figcaption></figure></div></details>
+<details id="gallery-islands"><summary>Test Islands: 8 images / Historical geometric alternative</summary><div class="gallery">
+<figure><a href="2026-10-22-redesign/round-2/mockups/islands-desktop-create.png"><img src="2026-10-22-redesign/round-2/mockups/islands-desktop-create.png" alt="Test Islands: desktop, creation" loading="lazy"></a><figcaption>islands-desktop-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/islands-desktop-dress.png"><img src="2026-10-22-redesign/round-2/mockups/islands-desktop-dress.png" alt="Test Islands: desktop, dressing" loading="lazy"></a><figcaption>islands-desktop-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/islands-desktop-select.png"><img src="2026-10-22-redesign/round-2/mockups/islands-desktop-select.png" alt="Test Islands: desktop, character selection" loading="lazy"></a><figcaption>islands-desktop-select.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/islands-desktop-side.png"><img src="2026-10-22-redesign/round-2/mockups/islands-desktop-side.png" alt="Test Islands: desktop, side-view study" loading="lazy"></a><figcaption>islands-desktop-side.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/islands-desktop-topdown.png"><img src="2026-10-22-redesign/round-2/mockups/islands-desktop-topdown.png" alt="Test Islands: desktop, top-down study" loading="lazy"></a><figcaption>islands-desktop-topdown.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/islands-mobile-create.png"><img src="2026-10-22-redesign/round-2/mockups/islands-mobile-create.png" alt="Test Islands: mobile, creation" loading="lazy"></a><figcaption>islands-mobile-create.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/islands-mobile-dress.png"><img src="2026-10-22-redesign/round-2/mockups/islands-mobile-dress.png" alt="Test Islands: mobile, dressing" loading="lazy"></a><figcaption>islands-mobile-dress.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/islands-mobile-select.png"><img src="2026-10-22-redesign/round-2/mockups/islands-mobile-select.png" alt="Test Islands: mobile, character selection" loading="lazy"></a><figcaption>islands-mobile-select.png</figcaption></figure></div></details>
+<details id="gallery-board"><summary>Comparison boards: 3 images / Historical family and future-view comparisons</summary><div class="gallery">
+<figure><a href="2026-10-22-redesign/round-2/mockups/board-future.png"><img src="2026-10-22-redesign/round-2/mockups/board-future.png" alt="Comparison boards: future-view comparison" loading="lazy"></a><figcaption>board-future.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/board-stages.png"><img src="2026-10-22-redesign/round-2/mockups/board-stages.png" alt="Comparison boards: geometric stage comparison" loading="lazy"></a><figcaption>board-stages.png</figcaption></figure>
+<figure><a href="2026-10-22-redesign/round-2/mockups/board-worlds.png"><img src="2026-10-22-redesign/round-2/mockups/board-worlds.png" alt="Comparison boards: scenic world comparison" loading="lazy"></a><figcaption>board-worlds.png</figcaption></figure></div></details>
+    <p>Historical check records: <a href="2026-10-22-redesign/round-2/mockups/verification.json">viewport results</a> and <a href="2026-10-22-redesign/round-2/mockups/interaction-verification.json">interaction/layout results</a>. Reproduction scripts belong to the old prototype and may require its local server; viewing this reference and its images does not.</p>
+  </section>
+
+  <section id="sources">
+    <h2>Source records</h2>
+    <ul>
+      <li><a href="2026-10-22-redesign/round-2/README.md">Round-two design, alternatives, capability contract and validation limits</a></li>
+      <li><a href="2026-10-22-redesign/round-2/assets/README.md">Original scene prompts, ImageGen output IDs and code-authored world provenance</a></li>
+      <li><a href="2026-10-22-redesign/round-2/research-prototype-worlds.md">Prototype-world research, inspected references and reuse boundaries</a></li>
+      <li><a href="2026-10-22-redesign/research-2d.md">2D creator and wardrobe evidence, synthesis and rejected patterns</a></li>
+      <li><a href="2026-10-22-redesign/round-3/research-ui-critique.md">Why the earlier UI framing was superseded</a></li>
+      <li><a href="2026-10-22-redesign/round-4-discussion/current-design.md">Accepted design and later behavior corrections</a></li>
+      <li><a href="production-experience.md">Production integration and intentional mockup differences</a></li>
+      <li><a href="world-artwork.md">Current production plate provenance and rendering ownership</a></li>
+      <li><a href="mockup-history.html">Complete chronological mockup history</a></li>
+    </ul>
+  </section>
+  <footer>Repository reference only. Existing images are linked in place; no new artwork, production UI or production background changes are included.</footer>
+</main>
+</body>
+</html>
