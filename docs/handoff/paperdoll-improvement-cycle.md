@@ -1,18 +1,20 @@
-# Repeatable paper-doll research and improvement cycle
+# PixelDoll research and improvement cycle
 
-An executable handoff for Claude, Codex, or another coding agent. Invoke it whenever PixelDoll needs another deep improvement cycle. Read this document in full. It defines a process, not a report that the research or implementation is already complete.
+Improve PixelDoll's paper-doll output and the complete workflow that produces it. Research existing and emerging methods, challenge the current implementation, and deliver verified improvements to generation quality, preprocessing, postprocessing, frame alignment, animation, equipment ownership, composition, user experience, reliability, speed, and cost. Preserve the core result: swappable transparent equipment that fits a frozen character across its supported frames and directions.
 
-## Invocation
+Coordinate subagents to review all relevant repository research, conduct extensive recursive online discovery, acquire and test source code and applications locally, and compare their mechanisms against the full application. After the research, work with a fresh independent reviewer to challenge the evidence and implementation. Implement qualified changes, test deterministic behavior and live PixelLab generation through Agent mode, review failures, and repeat the research, implementation, and verification loop. Document reproducible findings and commit every coherent change you make.
 
-The owner can attach, embed, or link this document and say:
+**PixelLab generation spending has no budget limit for this process.** Use as many justified experiments and agent waves as needed to resolve substantive questions. Track actual charges and retain all results. Uncapped spending does not justify redundant requests, automatic resubmission of uncertain paid jobs, or bypassing enforced approvals.
 
-> Run the paper-doll improvement cycle against the current checkout. Use subagents for comprehensive repository review, broad online research, local source and tool experiments, and fresh independent challenge reviews. Compare the evidence against the full application, implement qualified improvements, and test them offline and through live PixelLab Agent mode. Iterate through weaknesses and failed hypotheses, document the evidence, and commit your changes. Use the constraints I provide with this invocation; otherwise this cycle has no preset PixelLab generation spending cap. Work autonomously and continue beyond an initial survey or a single successful example.
+Work autonomously. Resolve routine technical questions with the research team, source evidence, and controlled experiments. Continue independent work when one source or prerequisite is unavailable. Do not stop at a short survey, an initial set of spikes, or a successful example. Seek meaningful improvements rather than manufacturing changes to satisfy a quota; reject failed hypotheses and pursue the next substantive opportunity.
 
-An explicit invocation authorizes this cycle. Merely encountering this file during another task does not start it. Later instructions from the owner narrow or change the current cycle. This document is agent-neutral: use the browser, delegation, terminal, and connector tools actually available to the executing agent. Do not assume another agent's tool names, credentials, open tabs, or session memory exist.
+When the current user message contains only this document's repository URL or link, execute the complete process without requiring an additional invocation phrase or previous conversation. A request to run this document has the same effect. If the user instead requests an edit, explanation, or review of this document, or supplies it as context for another task, perform only that requested work. Follow current user instructions and applicable repository and platform requirements. Use the tools actually available in the execution environment; do not assume particular agent APIs, credentials, open tabs, or session memory.
 
-The intended result of each cycle is meaningful, verified application improvement: better artwork, consistency, correctness, recovery, usability, speed, or generation cost. Documentation and experiment counts support that result; they do not substitute for it. Do not manufacture a product change to satisfy an improvement quota. If a candidate fails, retain the negative evidence and investigate the next substantive opportunity. State a genuine remaining blocker when no qualified change can be completed.
+## 1. Locate the repository and establish the starting point
 
-## 1. Read current authority and establish the starting point
+Identify the containing repository and document location from the supplied repository URL, file attachment, or existing workspace. For a URL, derive the repository, requested branch or revision, and document path from its origin. Reuse a matching writable checkout without discarding local changes, or obtain a legitimate checkout in an appropriate workspace if none exists. Verify repository identity before editing; do not confuse a downloaded comparison project with PixelDoll. If only pasted text is available, locate the existing PixelDoll checkout through the workspace and its documentation index.
+
+Resolve relative links from this document's repository location, not the terminal's working directory. Read linked files from the checkout or retrieve them from the same repository revision when bootstrapping remotely. A single linked document supplies the assignment; its repository references supply the supporting context. Fetch that context rather than treating absent prior chat as a blocker. If a required source or execution capability is genuinely unavailable, identify the specific missing prerequisite and continue the portions that can be completed without it.
 
 Read the current [agent instructions](../../AGENTS.md), any applicable nested instructions and agent configuration, [project decisions](../../PLAN.md), [documentation index](../README.md), [architecture](../architecture.md), [manifest contract](../manifest-spec.md), and [accepted limits](../known-issues.md). Inspect the actual checkout, branch, worktree, working changes, running agents, local servers, and current board before editing. Follow the current instructions if commands, models, dependencies, paths, or policies have changed since this handoff was written.
 
@@ -113,11 +115,15 @@ Map coverage across the following dimensions and open further agent waves for we
 
 There is no predetermined source-count target. Continue discovery while it yields materially different mechanisms, unresolved contradictions, or untested high-value leads. Document saturation by topic and search approach. Never claim to have read the entire internet or tested every possible output.
 
+Develop original hypotheses as well as adaptations of existing tools. Investigate combinations such as geometry-guided AI conditioning, explicit ownership uncertainty, multiple reference views, separate conditioning and approved-art representations, or selective repair constrained by trusted pixels. Test whether these mechanisms solve failures that simpler baselines cannot. Keep experiments within current model and infrastructure policy, and require evidence before adding complexity or changing a default.
+
 ## 5. Acquire and test relevant materials locally
 
 Download and inspect relevant feasible projects, source code, tools, apps, workflows, samples, documentation, and evaluation assets. Do not stop at browsing a project landing page when runnable or readable materials are available. Reuse existing local acquisitions only after verifying their version and provenance.
 
 Create an ignored temporary source workspace, verify its ignore status before downloading, and keep it outside production source and tracked evidence. Prefer official repositories, official releases, and legitimate freely available builds. Pin repository commits; record release versions, file hashes, licenses, dependencies, platform requirements, source locations, and acquisition dates. Do not add vendor source trees, installers, private media, or model weights to Git by accident.
+
+Inspect acquired code's installation and build hooks before execution. Use available execution isolation to prevent third-party programs from reading PixelDoll credentials, private assets, or unrelated data. Do not pass secrets to these programs or weaken platform restrictions to run them. If safe native execution is unavailable, record it as blocked and continue with source analysis.
 
 For each source, distinguish:
 
@@ -220,7 +226,7 @@ Run keyless tests under the repository's required off switch. The switch is orig
 
 ### Paid experiment design and spending
 
-Unless the current invocation sets a cap, there is **no preset PixelLab generation budget limit** for this cycle. Do not inherit an earlier campaign's dollar limit or request count. Existing authorization covers deliberate PixelLab experiments needed for the invoked cycle, subject to current repository and tool requirements. This is not a direction to spend indefinitely without learning.
+There is **no PixelLab generation budget limit** for this cycle. Do not inherit an earlier campaign's dollar limit or request count. The user's request to execute this process authorizes deliberate PixelLab experiments needed for the work, subject to current repository and tool requirements. Do not impose an arbitrary monetary or sample-count stopping point; let evidence determine the next experiment. This does not authorize spending indefinitely without learning or override a later explicit instruction from the user.
 
 Before each campaign:
 
@@ -263,6 +269,8 @@ Have the fresh reviewer challenge the final implementation and validation. Resol
 Do not stop after a short web survey, the first round of subagents, a document bundle, one passing seed, or one successful test run while substantive authorized work remains. Continue through source discovery, local execution, controlled experiments, independent challenge, implementation, and verification. Expand the team or change hypotheses when useful evidence remains.
 
 An invocation is a finite execution of this repeatable process. It is not a claim of permanent perfection or an unbounded background task. Close the cycle when the researched opportunities have received reasoned dispositions, qualified changes have been delivered and independently reviewed, required checks pass, and further progress needs a genuinely new hypothesis, inaccessible prerequisite, or a future cycle. Explain why remaining leads were rejected, deferred, blocked, or require more evidence. Time spent, agent counts, passing metrics, or money spent alone are not completion criteria.
+
+Before closing, have the independent reviewer identify the strongest remaining opportunity and challenge the proposed stopping point. If a productive research lead, feasible discriminating experiment, or confirmed fix remains within the authorized work, continue the loop. Do not defer a discoverable hypothesis merely because the first research wave, implementation, or paid batch finished.
 
 Update the board truthfully under current instructions. Do not mark a larger outcome Done while requested review, testing, or implementation remains. Preserve a durable resumption note containing current revision, commits, artifact locations, active-job and receipt state, unresolved failures, and the most useful next discriminating experiments. A future invocation must reconcile that state before submitting anything new; unknown historical jobs must not be silently retried.
 
