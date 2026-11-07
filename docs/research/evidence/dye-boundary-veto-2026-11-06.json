@@ -1,0 +1,197 @@
+{
+  "scope": "Eight retained raw edit controls; owned shades derived independently per same-facing approved standing layer with autoRamps. Labels are art-derived, not artist gold.",
+  "rows": [
+    {
+      "id": "b-tunic-south-raw-110601",
+      "frames": 8,
+      "original": {
+        "changes": 0,
+        "ownedPixels": 0,
+        "collapsedEdges": 0,
+        "edges": 2642
+      },
+      "old": {
+        "changes": 2425,
+        "ownedPixels": 2425,
+        "collapsedEdges": 0,
+        "edges": 2642
+      },
+      "next": {
+        "changes": 2425,
+        "ownedPixels": 2425,
+        "collapsedEdges": 0,
+        "edges": 2642
+      },
+      "lostExactDyeCoverage": 0
+    },
+    {
+      "id": "b-tunic-east-raw-110601",
+      "frames": 8,
+      "original": {
+        "changes": 0,
+        "ownedPixels": 0,
+        "collapsedEdges": 0,
+        "edges": 1373
+      },
+      "old": {
+        "changes": 465,
+        "ownedPixels": 465,
+        "collapsedEdges": 0,
+        "edges": 1373
+      },
+      "next": {
+        "changes": 465,
+        "ownedPixels": 465,
+        "collapsedEdges": 0,
+        "edges": 1373
+      },
+      "lostExactDyeCoverage": 0
+    },
+    {
+      "id": "b-cloak-south-raw-110601",
+      "frames": 8,
+      "original": {
+        "changes": 0,
+        "ownedPixels": 0,
+        "collapsedEdges": 0,
+        "edges": 4536
+      },
+      "old": {
+        "changes": 2298,
+        "ownedPixels": 2298,
+        "collapsedEdges": 0,
+        "edges": 4536
+      },
+      "next": {
+        "changes": 2298,
+        "ownedPixels": 2298,
+        "collapsedEdges": 0,
+        "edges": 4536
+      },
+      "lostExactDyeCoverage": 0
+    },
+    {
+      "id": "b-cloak-east-raw-110601",
+      "frames": 8,
+      "original": {
+        "changes": 0,
+        "ownedPixels": 0,
+        "collapsedEdges": 0,
+        "edges": 5493
+      },
+      "old": {
+        "changes": 2535,
+        "ownedPixels": 2535,
+        "collapsedEdges": 431,
+        "edges": 5493
+      },
+      "next": {
+        "changes": 481,
+        "ownedPixels": 481,
+        "collapsedEdges": 0,
+        "edges": 5493
+      },
+      "lostExactDyeCoverage": 2054
+    },
+    {
+      "id": "b-tunic-south-raw-110602",
+      "frames": 8,
+      "original": {
+        "changes": 0,
+        "ownedPixels": 0,
+        "collapsedEdges": 0,
+        "edges": 2792
+      },
+      "old": {
+        "changes": 2409,
+        "ownedPixels": 2409,
+        "collapsedEdges": 0,
+        "edges": 2792
+      },
+      "next": {
+        "changes": 2409,
+        "ownedPixels": 2409,
+        "collapsedEdges": 0,
+        "edges": 2792
+      },
+      "lostExactDyeCoverage": 0
+    },
+    {
+      "id": "b-tunic-east-raw-110602",
+      "frames": 8,
+      "original": {
+        "changes": 0,
+        "ownedPixels": 0,
+        "collapsedEdges": 0,
+        "edges": 1645
+      },
+      "old": {
+        "changes": 1303,
+        "ownedPixels": 1303,
+        "collapsedEdges": 0,
+        "edges": 1645
+      },
+      "next": {
+        "changes": 1303,
+        "ownedPixels": 1303,
+        "collapsedEdges": 0,
+        "edges": 1645
+      },
+      "lostExactDyeCoverage": 0
+    },
+    {
+      "id": "b-cloak-south-raw-110602",
+      "frames": 8,
+      "original": {
+        "changes": 0,
+        "ownedPixels": 0,
+        "collapsedEdges": 0,
+        "edges": 5451
+      },
+      "old": {
+        "changes": 2159,
+        "ownedPixels": 2159,
+        "collapsedEdges": 221,
+        "edges": 5451
+      },
+      "next": {
+        "changes": 783,
+        "ownedPixels": 783,
+        "collapsedEdges": 0,
+        "edges": 5451
+      },
+      "lostExactDyeCoverage": 1376
+    },
+    {
+      "id": "b-cloak-east-raw-110602",
+      "frames": 8,
+      "original": {
+        "changes": 0,
+        "ownedPixels": 0,
+        "collapsedEdges": 0,
+        "edges": 2589
+      },
+      "old": {
+        "changes": 2906,
+        "ownedPixels": 2906,
+        "collapsedEdges": 0,
+        "edges": 2589
+      },
+      "next": {
+        "changes": 2906,
+        "ownedPixels": 2906,
+        "collapsedEdges": 0,
+        "edges": 2589
+      },
+      "lostExactDyeCoverage": 0
+    }
+  ],
+  "totals": {
+    "frames": 64,
+    "oldChanges": 16500,
+    "newChanges": 13070,
+    "oldCollapsedEdges": 652,
+    "newCollapsedEdges": 0,
+    "lostExactDyeCoverage": 3430
+  }
+}

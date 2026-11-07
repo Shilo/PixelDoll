@@ -578,7 +578,7 @@ export async function animateAnchoredItem(ctx: RigCtx, item: Item, anim: string,
     materials = reference.manifest.materials.filter(m => m.owner === item.id);
   }
   const owned = new Set(materials.flatMap(m => m.ramp.map(fromHex)));
-  const matchers = new Map([...standingPalettes].map(([dir, colors]) => [dir, standingDyeMatcher(new Set(colors), owned)]));
+  const matchers = new Map([...standingPalettes].map(([dir, colors]) => [dir, standingDyeMatcher(new Set(colors), owned, result.cells.filter(c => c.key.split('/')[1] === dir).map(c => c.layer))]));
   const cells = result.cells.map(c => ({ ...c, layer: matchers.get(c.key.split('/')[1] as DirectionName)!(c.layer) }));
   await mergeClip(ctx, item, anim, dirs, cells, draft.calls.map(c => toProv(recOf(c.recId)!, c)), result.qa, 0, needsMaterials ? materials : undefined);
   dirs.forEach(onCall);

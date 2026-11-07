@@ -16,14 +16,45 @@ function pixels(cols: string[]) { const im=makeImg(cols.length,1);cols.forEach((
 const colors = (im: Img) => Array.from({length:im.w*im.h},(_,i)=>[...im.data.slice(i*4,i*4+3)]);
 test('standing dye matching changes only close unambiguous owned RGB without touching transparency', () => {
  const set = (values: string[]) => new Set(values.map(fromHex));
- const match = standingDyeMatcher(set(['#5c2633', '#411723', '#1c090d', '#280812', '#d6ab63']), set(['#5c2633', '#411723', '#280812', '#d6ab63', '#793845']));
  const source = pixels(['#552833', '#3d1a24', '#230a0e', '#200f0f', '#c88f74', '#793845', '#552833']);
  source.data[3] = 180;
  source.data[27] = 0;
+ const match = standingDyeMatcher(set(['#5c2633', '#411723', '#1c090d', '#280812', '#d6ab63']), set(['#5c2633', '#411723', '#280812', '#d6ab63', '#793845']), [source]);
  const before = source.data.slice(), out = match(source);
  expect(colors(out)).toEqual(colors(pixels(['#5c2633', '#411723', '#230a0e', '#200f0f', '#c88f74', '#793845', '#552833'])));
  expect(out.data.filter((_, i) => i % 4 === 3)).toEqual(before.filter((_, i) => i % 4 === 3));
  expect(source.data).toEqual(before);
+});
+test('standing dye matching preserves the two colors of a two-pixel gold buckle', () => {
+ const source=makeImg(4,2),brown=0x643c1e,gold=0xc8a028;
+ for(let p=0;p<8;p++)source.data.set([100,60,30,255],p*4);
+ source.data.set([198,158,40,255],4);source.data.set([200,160,40,255],8);
+ const before=source.data.slice(),match=standingDyeMatcher(new Set([brown,gold]),new Set([brown,gold]),[source]);
+ expect(match(source).data).toEqual(before);
+ expect(source.data).toEqual(before);
+});
+test('a boundary in one frame vetoes its changed colors throughout the same-facing clip', () => {
+ const single=pixels(['#636363']),boundary=pixels(['#636363','#656565']);
+ const before=[single.data.slice(),boundary.data.slice()];
+ const match=standingDyeMatcher(new Set([0x646464]),new Set([0x646464]),[single,boundary]);
+ expect(match(single).data).toEqual(before[0]);expect(match(boundary).data).toEqual(before[1]);
+ expect(single.data).toEqual(before[0]);expect(boundary.data).toEqual(before[1]);
+});
+test('standing dye matching retains an isolated correction but abstains on unseen colors', () => {
+ const source=pixels(['#636363']),match=standingDyeMatcher(new Set([0x646464]),new Set([0x646464]),[source]);
+ expect(colors(match(source))).toEqual([[100,100,100]]);
+ const unseen=pixels(['#656565']);expect(match(unseen)).toBe(unseen);
+ expect(standingDyeMatcher(new Set(),new Set([0x646464]),[source])(source)).toBe(source);
+ expect(standingDyeMatcher(new Set([0x646464]),new Set(),[source])(source)).toBe(source);
+});
+test('the clip veto uses visible four-neighbor edges, including fractional alpha, not diagonal or hidden pixels', () => {
+ const diagonal=makeImg(2,2);diagonal.data.set([99,99,99,180],0);diagonal.data.set([101,101,101,255],12);
+ const match=standingDyeMatcher(new Set([0x646464]),new Set([0x646464]),[diagonal]);
+ expect([...match(diagonal).data]).toEqual([100,100,100,180,0,0,0,0,0,0,0,0,100,100,100,255]);
+ const vertical=makeImg(1,2);vertical.data.set([99,99,99,180,100,100,100,255]);
+ expect(standingDyeMatcher(new Set([0x646464]),new Set([0x646464]),[vertical])(vertical).data).toEqual(vertical.data);
+ const hidden=pixels(['#636363','#646464']);hidden.data[7]=0;
+ expect([...standingDyeMatcher(new Set([0x646464]),new Set([0x646464]),[hidden])(hidden).data]).toEqual([100,100,100,255,100,100,100,0]);
 });
 test('matches only the eleven known eligible steel colors while preserving warm guard, outline and already owned RGB',()=>{
  const source=pixels(['#4b525c','#2e3c46','#394753','#dfe3e5','#b8c1c9','#9da6b1','#717882','#6c757d','#ffffff','#bec1c4','#626063','#352f17','#555a49','#665a51','#000000','#433f1f']);

@@ -26,6 +26,7 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
 
 ## Generation and quality
 
+- **Automatic dye correction trades coverage for detail.** Close, unambiguous owned shades can be matched to the approved standing palette. A clip-wide veto keeps an existing visible RGB boundary from collapsing, so some generated shades remain outside exact dye ramps. This does not identify semantic pixel ownership or recover a missing motif. Global palette snapping remains unqualified. See the [palette experiment and boundary safeguard](research/deep-paperdoll-target-palette-2026-11-06.md).
 - **Thin held-item fragments can be lost inside an allowed mask.** Conservative outline and held-component cleanup can
   remove valid rear handle or pommel pixels. Mask containment limits where pixels may survive; it is not a semantic
   weapon matte. Proposed restoration Rules A/B remain deferred because they restore known body-rim false positives.

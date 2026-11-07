@@ -1,32 +1,51 @@
 // Explicit, local color matching for an existing item. Source ramps and variants never change.
 import type { Img } from '../image/png.ts';
 import type { Item, Material } from '../store/manifest.ts';
-import { fromHex, lab, OUTLINE_C, OUTLINE_L } from './palette.ts';
+import { colorCounts, fromHex, lab, OUTLINE_C, OUTLINE_L } from './palette.ts';
 
 export const ITEM_PALETTE_POLICY = 'neutral-owned-v1' as const;
 const channels = (c: number) => [c >> 16, (c >> 8) & 255, c & 255];
 
-/** Keep a generated move dyeable where a same-facing standing color is a close and unique match. */
-export function standingDyeMatcher(standing: ReadonlySet<number>, owned: ReadonlySet<number>) {
+/** Match close owned shades without merging a visible color boundary. Context must cover every same-facing frame to map. */
+export function standingDyeMatcher(standing: ReadonlySet<number>, owned: ReadonlySet<number>, context: readonly Img[]) {
+  if (!standing.size || !owned.size) return (image: Img) => image;
   const palette = [...standing].map(color => ({ color, rgb: channels(color) }));
-  const matches = new Map<number, number | undefined>();
+  const matches = new Map<number, number>();
+  const colorAt = (image: Img, i: number) => image.data[i] * 65536 + image.data[i + 1] * 256 + image.data[i + 2];
+  for (const color of colorCounts(context).keys()) {
+    if (standing.has(color) || owned.has(color)) continue;
+    const src = channels(color);
+    const ranked = palette.map(entry => {
+      const deltas = entry.rgb.map((channel, j) => Math.abs(channel - src[j]));
+      return { color: entry.color, max: Math.max(...deltas), distance: Math.hypot(...deltas) };
+    }).sort((a, b) => a.distance - b.distance);
+    const [best, next] = ranked;
+    // Unowned shades compete so an outline cannot acquire a dye ramp by proximity alone.
+    if (best && owned.has(best.color) && best.max <= 12 && (!next || next.distance - best.distance >= 3)) matches.set(color, best.color);
+  }
+  if (!matches.size) return (image: Img) => image;
+  const veto = new Set<number>();
+  for (const image of context) for (let y = 0; y < image.h; y++) for (let x = 0; x < image.w; x++) {
+    const i = (y * image.w + x) * 4;
+    if (!image.data[i + 3]) continue;
+    const color = colorAt(image, i);
+    for (const j of [x + 1 < image.w ? i + 4 : -1, y + 1 < image.h ? i + image.w * 4 : -1]) {
+      if (j < 0 || !image.data[j + 3]) continue;
+      const neighbor = colorAt(image, j);
+      if (color !== neighbor && (matches.get(color) ?? color) === (matches.get(neighbor) ?? neighbor)) {
+        if (matches.has(color)) veto.add(color);
+        if (matches.has(neighbor)) veto.add(neighbor);
+      }
+    }
+  }
+  // Reverting a proposal cannot create another collision: changed source colors are outside the standing palette,
+  // while every replacement is inside it. Veto throughout the clip to avoid frame-dependent shade choices.
+  for (const color of veto) matches.delete(color);
   return (image: Img): Img => {
     let data: Img['data'] | undefined;
     for (let i = 0; i < image.data.length; i += 4) {
       if (!image.data[i + 3]) continue;
-      const color = image.data[i] * 65536 + image.data[i + 1] * 256 + image.data[i + 2];
-      if (standing.has(color) || owned.has(color)) continue;
-      if (!matches.has(color)) {
-        const src = channels(color);
-        const ranked = palette.map(entry => {
-          const deltas = entry.rgb.map((channel, j) => Math.abs(channel - src[j]));
-          return { color: entry.color, max: Math.max(...deltas), distance: Math.hypot(...deltas) };
-        }).sort((a, b) => a.distance - b.distance);
-        const [best, next] = ranked;
-        // Include unowned standing shades in the comparison so an outline cannot acquire a dye ramp by proximity alone.
-        matches.set(color, best && owned.has(best.color) && best.max <= 12 && (!next || next.distance - best.distance >= 3) ? best.color : undefined);
-      }
-      const match = matches.get(color);
+      const match = matches.get(colorAt(image, i));
       if (match === undefined) continue;
       data ??= image.data.slice();
       data.set(channels(match), i);
