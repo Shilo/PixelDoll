@@ -49,8 +49,20 @@ its neighbor on the handle now anchors it. The bench report changes only one are
 olive mannequin shade over dark shorts. Local contrast alone lost 2 px on body A. The generated color alone cannot separate
 dark item px from mannequin shades: every dark color lies within about 30 to 40 of the key ramp's dark end (`rampDistance`).
 
+## Follow-up: dark items (same day)
+
+Human-drawn LPC bodies in 15 skin tones ([lpc-fairness.md](lpc-fairness.md)) showed the dark-item gap is negligible for real
+2 px+ items but severe for 1 px dark straps (98.9 % kept on light skin, 32 % on the deepest tone). Production now adopts the
+study's hueStroke rule on the green key: a dark generated px over a dark body px that is not a line counts as a redraw only if
+it leans toward green or is not on a straight run of 4 dark, non-green item px. The strap keeps about 94 % on the deepest
+tone, olive-family scattered redraws ship exactly as before, and the frozen bench changes in 1 px (n-cloak128 walk/south/0,
+an olive px anchored by the cloak's maroon run). On the recolored bench bodies above, body N keeps 439 of 453 on every tone.
+The review found the stroke could borrow light item px; it now counts only dark, non-green px.
+
 ## Limits
 
-Dark thin items still lose more px over deep skin than over light skin. Synthetic bodies recolor only the warm skin px of two real
-bodies; the redraw study used the green key only; there is still no human-drawn multi-tone ground truth (LPC bodies, ecosystem
-rank 4).
+On the green key a straight dark redraw line that does not lean toward green (gray, maroon, a near-black green with channel
+spread under 12) would now ship; no such redraw was found in the frozen corpus or 432 older real pairs. Magenta, blue and
+azure keys keep the old dark-px rule and its skin-tone gap, and dark bronze or teal straps (hue near the edge of the green
+window) are still dropped over deep skin. Synthetic bodies recolor only the warm skin px of two real bodies, and LPC bodies
+are not PixelLab output.

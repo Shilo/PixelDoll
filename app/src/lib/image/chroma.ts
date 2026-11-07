@@ -73,9 +73,18 @@ const tint = (key: Key, r: number, g: number, b: number) => {
 const isKey = (C: Img, p: number, key: Key, kT: number) => C.data[p * 4 + 3] >= 128 && keyScore(key, C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]) >= kT;
 
 export const KT = 35;
-/** Rim guard "dark outline" base px: mean RGB under `mean`; when the generated px is light (luminance >= `lightOut`), also
- * near-black (< `black`) or darker than `contrast` x the brightest neighbor. */
-const OUTLINE = { mean: 60, lightOut: 0.25, black: 0.06, contrast: 0.5 };
+/** Rim guard "dark outline" base px: mean RGB under `mean`, and either a real line (near-black, < `black`, or darker than
+ * `contrast` x the brightest neighbor) or covered by a generated px that could be a mannequin redraw. A light generated px
+ * (luminance >= `lightOut`) never is; on the green key a dark one is unless it lies on a straight `stroke` of dark item px
+ * that do not lean toward green (`greenHue` +- `hueSpan`, channel spread >= `spread`). */
+const OUTLINE = { mean: 60, lightOut: 0.25, black: 0.06, contrast: 0.5, stroke: 4, greenHue: 120, hueSpan: 75, spread: 12 };
+/** Hue in degrees of an RGB color, and its channel spread. */
+const hueSpread = (r: number, g: number, b: number): [number, number] => {
+  const mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
+  if (!d) return [0, 0];
+  const h = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return [(h * 60 + 360) % 360, d];
+};
 
 /** Key score from which a color leans toward a key: a real key excess, scored below KT (2026-11-07 color audit). */
 export const NEAR_KEY = 20;
@@ -120,18 +129,30 @@ export function chromaMask(C: Img, key: Key, kT = KT): Uint8Array {
 export function dropKeyOutline(mask: Uint8Array, B: Img, C: Img, key: Key, kT = KT): Uint8Array {
   const { w, h } = B, cand = new Uint8Array(mask.length), op = (p: number) => B.data[p * 4 + 3] > 0;
   // A base px under mean RGB 60 used to count as outline on its own. That includes a deep skin tone's midtones (and dark
-  // clothing), so light thin items over a darker-skinned body lost more px than over a lighter one. A light generated px now
-  // needs the base px to be a real line: near-black or much darker than a neighbor. A dark generated px keeps the old test,
-  // since mannequin redraws (olive 48,46,11, 27,40,4) are dark and dark clothing must stay guarded; so dark items (a black
-  // strap) still lose more px over deep skin (2026-11-07 review: docs/research/2026-11-07-paperdoll-cycle/fairness.md).
+  // clothing), so thin items over a darker-skinned body lost more px than over a lighter one: on human-drawn LPC bodies a
+  // 1 px black strap kept 98.9 % on light skin and 32 % on the deepest tone. Now the base px must be a real line, unless the
+  // generated px could be a mannequin redraw: those are dark and lean toward the key (olive 48,46,11, 27,40,4, 36,49,12), and
+  // they scatter rather than form a straight stroke. That keeps the strap at about 94 % with no more olive redraw px shipped
+  // (2026-11-07: docs/research/2026-11-07-paperdoll-cycle/fairness.md and lpc-fairness.md). Redraw colors were measured on
+  // the green key only, so other keys keep every dark generated px guarded.
   const L = (im: Img, p: number) => lum(im.data[p * 4], im.data[p * 4 + 1], im.data[p * 4 + 2]);
+  const greenLeaning = (p: number) => { const [hue, spread] = hueSpread(C.data[p * 4], C.data[p * 4 + 1], C.data[p * 4 + 2]); return spread >= OUTLINE.spread && Math.abs(hue - OUTLINE.greenHue) <= OUTLINE.hueSpan; };
+  // Only dark, non-green item px make a stroke, so a redraw cannot borrow neighboring light item px to form one.
+  const strokePx = (q: number) => mask[q] && L(C, q) < OUTLINE.lightOut && !greenLeaning(q);
+  const stroke = (x: number, y: number) => [[1, 0], [0, 1], [1, 1], [1, -1]].some(([dx, dy]) => {
+    let len = 1;
+    for (const s of [1, -1]) for (let k = 1; k < OUTLINE.stroke; k++) { const X = x + s * k * dx, Y = y + s * k * dy; if (X < 0 || Y < 0 || X >= w || Y >= h || !strokePx(Y * w + X)) break; len++; }
+    return len >= OUTLINE.stroke;
+  });
+  const redrawLike = (p: number, x: number, y: number) => key !== 'green' || greenLeaning(p) || !stroke(x, y);
   const outline = (p: number, x: number, y: number) => {
     if ((B.data[p * 4] + B.data[p * 4 + 1] + B.data[p * 4 + 2]) / 3 >= OUTLINE.mean) return false;
     const l = L(B, p);
-    if (L(C, p) < OUTLINE.lightOut || l < OUTLINE.black) return true;
+    if (l < OUTLINE.black) return true;
     let top = 0;
     for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const X = x + dx, Y = y + dy; if ((dx || dy) && X >= 0 && Y >= 0 && X < w && Y < h && op(Y * w + X)) top = Math.max(top, L(B, Y * w + X)); }
-    return l < OUTLINE.contrast * top;
+    if (l < OUTLINE.contrast * top) return true;
+    return L(C, p) < OUTLINE.lightOut && redrawLike(p, x, y);
   };
   for (let p = 0; p < mask.length; p++) {
     if (!mask[p] || !op(p)) continue;

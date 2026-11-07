@@ -108,10 +108,11 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   for it upright moved it to the other hand or bent the arm, an off-hand upright default failed hand and occlusion checks
   once posed, and flipping it about the grip breaks the good cases. See the
   [hand wording A/B](research/2026-11-07-paperdoll-cycle/hand-wording-ab.md).
-- **Dark thin items over deep skin lose more pixels.** The outline guard drops a dark generated pixel over any dark body
-  pixel, because PixelLab's redraws of the stand-in body are dark too. A black strap over a deep skin tone therefore keeps
-  fewer pixels than over a light one (about 8 % fewer in the synthetic check); light items are treated equally. See
-  [rim guard and skin tone](research/2026-11-07-paperdoll-cycle/fairness.md).
+- **Dark thin items over deep skin can lose pixels on non-green backgrounds.** The outline guard drops dark generated pixels
+  over dark body pixels because PixelLab's redraws of the stand-in body are dark too. On the green background a dark strap
+  is kept when it forms a straight line in a non-green color (a 1 px black strap keeps about 94 % on the deepest LPC tone),
+  but on magenta, blue and azure backgrounds, and for dark bronze or teal straps, the old gap remains (as low as 32 % on the
+  deepest tone). See [rim guard and skin tone](research/2026-11-07-paperdoll-cycle/fairness.md).
 - **The gray-smudge check (D1) compares views.** With three or more drawn views, a view is flagged only when it is much
   grayer than the item's least gray other view, so a neutral emblem drawn in every view passes. A smudge the provider adds
   to every view is therefore not flagged; items with one or two drawn views keep the stricter per-view rule. See the
