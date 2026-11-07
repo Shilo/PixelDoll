@@ -69,6 +69,13 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   Independent views avoid the forced flip, but generated anatomy and grip still need review: the idle sword keeps a
   west-profile ambiguity, and the repaired Slash keeps its item review warnings. An item-only toggle cannot repair old
   flipped actions.
+- **The hand covers the grip of a held item.** The body stays frozen, so a sword or lantern is drawn as two layers: the part
+  off the body behind or beside it, and the part over the body on top of everything. Where PixelLab draws the fist over the
+  grip, those pixels stay body, so the grip shows under the fingers, as a real grip would. Nothing is cut from the item.
+- **Side views can put an off-hand item in the near hand.** In east and west views PixelLab sometimes draws a lantern,
+  shield or bow in the hand nearest the viewer, the sword hand, instead of the far hand behind the body. The hand check
+  (G8) flags it for review; keeping the item keeps the wrong hand, and a mirrored west copies it. Try again or a repair of
+  that view draws a new one (2026-11-07 live test: the lantern in east).
 - **Historical item QA.** Older saved items lack replaceable checks; after an edit they stay marked for review with an
   explicit incomplete-check notice. Retained historical totals may omit old additions or include replaced frames until
   all older coverage is replaced. No paid recheck or silent reconstruction is performed.
