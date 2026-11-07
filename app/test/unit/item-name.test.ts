@@ -7,5 +7,6 @@ test.each([
   ['brown leather travel backpack', 'Brown leather travel backpack'],
   ['a straw farmer hat, frayed', 'Straw farmer hat'],
   ['pair of leather boots', 'Leather boots'],
-  ['cloak of shadows', 'Cloak'],
+  // "of" names the item; cutting it lost meaning (2026-11-07 counter-review R5)
+  ['cloak of shadows', 'Cloak of shadows'],
 ])('item names come from the description head: %s', (desc, name) => expect(itemNameFrom(desc)).toBe(name))

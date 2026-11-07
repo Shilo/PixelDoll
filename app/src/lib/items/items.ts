@@ -67,8 +67,11 @@ export const gridFits = (cell: { w: number; h: number }, cells: number, refs: nu
  * band edges only to [256, 280) and [336, 360); the second edge is taken at 336, the highest mean billed 15. The mean is never
  * below the square root of the area, so it never quotes less than area did.
  * References and unused packed cells remain part of the submitted canvas. */
-export function gridEstimate(cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS): { w: number; h: number; gens: number } {
+const validGrid = (cell: { w: number; h: number }, cells: number, refs: number, cols = 1) => {
   if (![cell.w, cell.h, cells, refs, cols].every(Number.isInteger) || cell.w <= 0 || cell.h <= 0 || cells <= 0 || refs < 0 || cols <= 0) throw new Error('Repair grid dimensions and frame/reference counts must be valid integers.');
+};
+export function gridEstimate(cell: { w: number; h: number }, cells: number, refs: number, cols = GRID_COLS): { w: number; h: number; gens: number } {
+  validGrid(cell, cells, refs, cols);
   const w = cols * cell.w, h = Math.ceil((cells + refs) / cols) * cell.h;
   if (!gridFits(cell, cells, refs, cols)) throw new Error('This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.');
   const side = (w + h) / 2;
@@ -83,6 +86,7 @@ export function gridEstimate(cell: { w: number; h: number }, cells: number, refs
  * repacked to reach Tier 1 since 218f448e and their results are checked for review; no matched test has qualified other
  * layouts for the new-item draft fallback, which stays on GRID_COLS (2026-11-07). */
 export function repairGridLayout(cell: { w: number; h: number }, cells: number, refs: number) {
+  validGrid(cell, cells, refs); // bound the column search: a zero or non-integer width would never end it (malformed records)
   const tier = (l: { w: number; h: number }) => (Math.max(l.w, l.h) <= INPAINT_TIER_ONE_SIDE ? 1 : 2);
   const fits = (cols: number) => gridFits(cell, cells, refs, cols);
   const better = (a: { w: number; h: number; gens: number }, b: { w: number; h: number; gens: number }) =>
@@ -562,10 +566,13 @@ const bodyBridged = (base: Img, w: number, a: number[], b: number[]) => {
 /** Parts of a held layer that belong to the object: the largest component, components within `near` px of a kept part, and
  * components joined to a kept part only across the body (bodyBridged). `extra` may admit more (the gripping wrist). Every
  * admitted part must reach the size floor, max(4 px, 15 % of the largest), unless `small` vouches for it (a pommel beside the
- * wrist): a fleck the floor drops must not pull a buckle redrawn on the hip into the item through itself (2026-11-07 review). */
+ * wrist): a fleck the floor drops must not pull a buckle redrawn on the hip into the item through itself (2026-11-07 review).
+ * A small part may still connect to a full-size part that hangs mostly off the body (a flail's chain link to its head): that
+ * part is the item's, while a part on the body could be a repaint (2026-11-07 counter-review R1). */
 export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: number[]) => boolean, small?: (comp: number[]) => boolean) {
   const w = base.w, comps = components(mask, w, mask.length / w).sort((a, b) => b.length - a.length);
   const floor = Math.max(4, 0.15 * (comps[0]?.length ?? 0)), sized = (comp: number[]) => comp.length >= floor || !!small?.(comp);
+  const offBody = (comp: number[]) => 2 * comp.filter((p) => !base.data[p * 4 + 3]).length >= comp.length;
   const keep = new Array<boolean>(comps.length).fill(false);
   if (comps.length) keep[0] = true;
   for (let changed = true; changed;) {
@@ -576,8 +583,12 @@ export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: 
     comps.forEach((comp, i) => {
       if (keep[i]) return;
       // A hidden part reappears past the body; a detached blob painted over the body itself (a redrawn far hand) does not.
-      const past = () => 2 * comp.filter((p) => !base.data[p * 4 + 3]).length >= comp.length;
-      if (sized(comp) && (comp.some((p) => close[p]) || extra?.(comp) || (past() && comps.some((k, j) => keep[j] && bodyBridged(base, w, comp, k))))) { keep[i] = changed = true; }
+      if (sized(comp) && (comp.some((p) => close[p]) || extra?.(comp) || (offBody(comp) && comps.some((k, j) => keep[j] && bodyBridged(base, w, comp, k))))) { keep[i] = changed = true; return; }
+      if (!sized(comp) && comp.some((p) => close[p])) {
+        const own = new Uint8Array(mask.length); for (const p of comp) own[p] = 1;
+        const reach = dilate(own, w, near);
+        if (comps.some((c, j) => !keep[j] && j !== i && sized(c) && offBody(c) && c.some((p) => reach[p]))) keep[i] = changed = true;
+      }
     });
   }
   return { comps, keep };
@@ -585,8 +596,9 @@ export function heldParts(mask: Uint8Array, base: Img, near = 3, extra?: (comp: 
 
 /**
  * Held items: keep the largest component plus every component attached to it or to the gripping wrist (≤ 3 px: a blade split by
- * the fist or the forearm) or joined to it across the body, drop the rest (detached smears in open air). Small parts below the
- * size floor survive only beside the wrist. No review warning for dropped parts: on the frozen sword and axe every dropped part
+ * the fist or the forearm) or joined to it across the body, drop the rest (detached smears in open air). Small parts below
+ * the size floor survive beside the wrist, or as a link to a full-size part off the body (heldParts). No review warning for
+ * dropped parts: on the frozen sword and axe every dropped part
  * (10 to 63 px) was a motion smear or redrawn body px, so it would block clean items (2026-11-07). Returns px removed.
  */
 export function attachHeld(rig: Rig, slot: Slot, cells: CellOut[], pad = 0): number {
@@ -852,6 +864,8 @@ export function recompose(c: Pick<CellOut, 'base' | 'layer' | 'cut'>): Img {
 export const HELD_SIGNED_REACH = 10;
 /** Gait and rest words a move id may contain (whole words, see moveWords). */
 const LOCOMOTION = new Set(['idle', 'breathe', 'breathing', ...WALK_WORDS, ...RUN_WORDS, 'jog', 'jogs', 'jogging', 'sprint', 'sprints', 'sprinting', 'stroll', 'strolling', 'march', 'marching', 'trot', 'trotting']);
+/** Each limb and face joint's parent toward the trunk, for the bone-length plausibility check in decisiveAction. */
+const BONE: Record<string, string> = { 'RIGHT EYE': 'NOSE', 'LEFT EYE': 'NOSE', 'RIGHT EAR': 'NOSE', 'LEFT EAR': 'NOSE', NOSE: 'NECK', 'RIGHT SHOULDER': 'NECK', 'LEFT SHOULDER': 'NECK', 'RIGHT ELBOW': 'RIGHT SHOULDER', 'LEFT ELBOW': 'LEFT SHOULDER', 'RIGHT ARM': 'RIGHT ELBOW', 'LEFT ARM': 'LEFT ELBOW', 'RIGHT KNEE': 'RIGHT HIP', 'LEFT KNEE': 'LEFT HIP', 'RIGHT LEG': 'RIGHT KNEE', 'LEFT LEG': 'LEFT KNEE' };
 /** Motion no idle, walk or run reaches, from the stored joints (measured, else requested) against the standing pose: on the frozen bench and
  * the KayKit clips, locomotion moved joints at most 0.39 body heights, raised wrists at most 0.21 and leaned at most 20°, while
  * slashes and casts reach 0.7, raise wrists over the head, and deaths lean 70° or more. Smaller motion cannot tell a run from an
@@ -865,16 +879,29 @@ export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): bool
   const mid = (p: typeof rest, a: string, b: string) => [(p[a].x + p[b].x) / 2, (p[a].y + p[b].y) / 2];
   const feet = mid(rest, 'RIGHT LEG', 'LEFT LEG'), H = Math.hypot(feet[0] - rest.NOSE.x, feet[1] - rest.NOSE.y);
   if (!H) return false;
-  const leanOf = (p: typeof rest) => { const h = mid(p, 'RIGHT HIP', 'LEFT HIP'); return Math.atan2(p.NECK.x - h[0], h[1] - p.NECK.y) * 180 / Math.PI; };
-  const restHips = mid(rest, 'RIGHT HIP', 'LEFT HIP'), restLean = leanOf(rest), mirror = (l: string) => l.replace(/^(RIGHT|LEFT)/, (s) => (s === 'RIGHT' ? 'LEFT' : 'RIGHT'));
+  const angle = (top: number[], h: number[]) => Math.atan2(top[0] - h[0], h[1] - top[1]) * 180 / Math.PI;
+  const restHips = mid(rest, 'RIGHT HIP', 'LEFT HIP'), mirror = (l: string) => l.replace(/^(RIGHT|LEFT)/, (s) => (s === 'RIGHT' ? 'LEFT' : 'RIGHT'));
   // 2026-11-07 review: hip-relative positions so a jump is not a pose change; the nearer of a joint's own and its mirror
   // joint's standing position, so one estimate with swapped hands cannot flip a front-view walk; lean relative to standing.
+  // A joint counts only while every bone on its chain to the trunk keeps a plausible length (within 0.2 body heights of
+  // standing; stored clips stretch at most 0.06): one bad estimate, such as an eye placed at the frame corner, must not turn a
+  // walk into an action and silently skip its held-item checks (2026-11-07 counter-review R2). The trunk is checked the same
+  // way: a frame whose hip width grew is skipped (the hip center places every joint), the neck's bone runs to the hip center,
+  // and a lean counts only when the shoulders lean with the neck. Real slashes are decided by one joint, the wrist, often in
+  // only two or three frames, so one plausible decisive frame still decides.
+  const len = (q: typeof rest, a: string, b: string) => Math.hypot(q[a].x - q[b].x, q[a].y - q[b].y) / H;
+  const torso = (q: typeof rest, h: number[]) => Math.hypot(q.NECK.x - h[0], q.NECK.y - h[1]) / H;
+  const shoulders = (q: typeof rest) => mid(q, 'RIGHT SHOULDER', 'LEFT SHOULDER');
   return frames.some((p) => {
+    if (len(p, 'RIGHT HIP', 'LEFT HIP') - len(rest, 'RIGHT HIP', 'LEFT HIP') > 0.2) return false;
     const hips = mid(p, 'RIGHT HIP', 'LEFT HIP'), dx = hips[0] - restHips[0], dy = hips[1] - restHips[1];
+    const torsoOk = torso(p, hips) - torso(rest, restHips) <= 0.2;
+    const plausible = (l: string): boolean => (l === 'NECK' ? torsoOk : !BONE[l] || (len(p, l, BONE[l]) - len(rest, l, BONE[l]) <= 0.2 && plausible(BONE[l])));
     const from = (l: string, q: string) => Math.hypot(p[l].x - dx - rest[q].x, p[l].y - dy - rest[q].y);
-    const moved = Math.max(...Object.keys(rest).map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))) / H;
-    const rise = Math.max(...['RIGHT ARM', 'LEFT ARM'].map((l) => (rest[l].y - (p[l].y - dy)) / H));
-    return moved >= 0.6 || rise >= 0.45 || Math.abs(leanOf(p) - restLean) >= 40;
+    const moved = Math.max(0, ...Object.keys(rest).filter(plausible).map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))) / H;
+    const rise = Math.max(-1, ...['RIGHT ARM', 'LEFT ARM'].filter(plausible).map((l) => (rest[l].y - (p[l].y - dy)) / H));
+    const lean = !torsoOk ? 0 : Math.min(Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(angle(shoulders(p), hips) - angle(shoulders(rest), restHips)));
+    return moved >= 0.6 || rise >= 0.45 || lean >= 40;
   });
 }
 /** Action clips (slash, cast, punch...) legitimately change an item's area and shape; G5/G9 apply to locomotion only. Clearly
@@ -1254,7 +1281,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
 // ---------- B14 dress design check (0 gens): gray smudges in a colorful keyframe ----------
 /** Share of near-gray px (HSV saturation < 0.25) in a colorful layer (median saturation ≥ 0.4), else 0. T3 Ranger keyframes:
  *  the red cape's smudged north hem 0.113; every clean view of hair, chest, trousers and cape ≤ 0.022 (gray items: median < 0.4). */
-export function grayShare(L: Img): number {
+export function grayShare(L: Img, darkPatches = true): number {
   const sat: number[] = [];
   // Near-black px (max channel < 48) are line art, not smudges: a black outline is gray by saturation, so every outlined
   // colorful design failed D1 on every retry (2026-11-07 audit: a passing jester hat scored 0.23-0.31 against 0.05).
@@ -1264,7 +1291,7 @@ export function grayShare(L: Img): number {
   for (let i = 0; i < L.data.length; i += 4) if (L.data[i + 3]) {
     const mx = Math.max(L.data[i], L.data[i + 1], L.data[i + 2]), mn = Math.min(L.data[i], L.data[i + 1], L.data[i + 2]), p = i / 4, x = p % L.w, y = (p / L.w) | 0;
     if (mx >= 48) sat.push((mx - mn) / mx);
-    else if ([-1, 0, 1].every((dy) => [-1, 0, 1].every((dx) => dark(x + dx, y + dy)))) sat.push(mx ? (mx - mn) / mx : 0);
+    else if (darkPatches && [-1, 0, 1].every((dy) => [-1, 0, 1].every((dx) => dark(x + dx, y + dy)))) sat.push(mx ? (mx - mn) / mx : 0);
   }
   return sat.length && median(sat) >= 0.4 ? sat.filter((v) => v < 0.25).length / sat.length : 0;
 }
@@ -1278,19 +1305,26 @@ export const GRAYISH = /gr[ae]y|silver|steel|iron|metal|chain|white|black|\bfur(
  * the neutral words the list misses (armor, skull, bone, pearl, other languages; 2026-11-07 audit). An item needs two other
  * drawn views to compare against; with fewer (one drawn view, or a two-view item where one smudged view would excuse the
  * other) the single-view rule stays. A smudge in every drawn view is not caught (known issue). */
-export function smudgedViews(slot: string, prompt: string, layers: Img[]): boolean[] {
-  const drawn = layers.map((l) => l.data.some((v, i) => i % 4 === 3 && v)), share = layers.map((l, i) => (drawn[i] ? grayShare(l) : 0));
-  return layers.map((l, i) => {
-    if (!designGraySmudges(slot, prompt, l)) return false;
-    const others = share.filter((_, j) => j !== i && drawn[j]);
-    return others.length < 2 || share[i] - Math.min(...others) > DESIGN.gray;
-  });
+export function smudgedViews(slot: string, prompt: string, layers: Img[]): ('smudge' | 'dark' | false)[] {
+  const drawn = layers.map((l) => l.data.some((v, i) => i % 4 === 3 && v));
+  const flagged = (darkPatches: boolean) => {
+    const share = layers.map((l, i) => (drawn[i] ? grayShare(l, darkPatches) : 0));
+    return layers.map((l, i) => {
+      if (!drawn[i] || !designGraySmudges(slot, prompt, l, darkPatches)) return false;
+      const others = share.filter((_, j) => j !== i && drawn[j]);
+      return others.length < 2 || share[i] - Math.min(...others) > DESIGN.gray;
+    });
+  };
+  // A view flagged only by solid near-black patches may hold an intended dark detail drawn on one side (a charcoal emblem on
+  // the front), so it is reported as uncertain, not as a smudge (2026-11-07 counter-review R3).
+  const all = flagged(true), gray = flagged(false);
+  return all.map((f, i) => (!f ? false : gray[i] ? 'smudge' : 'dark'));
 }
 /** Neutral pupils, eyebrows and eye whites are expected in tiny facial glyphs; their palette ratios cannot establish smudges. */
-export function designGraySmudges(slot: string, prompt: string, layer: Img): boolean {
+export function designGraySmudges(slot: string, prompt: string, layer: Img, darkPatches = true): boolean {
   if (GRAYISH.test(prompt)) return false;
   if (slot === 'face_acc' && sum(maskOf(layer)) <= 32 * layer.w * layer.h / (64 * 64)) return false;
-  return grayShare(layer) > DESIGN.gray;
+  return grayShare(layer, darkPatches) > DESIGN.gray;
 }
 
 // ---------- H4 keyframe-consistency gate (port of S5 s5_dircheck.mjs, 0 gens) ----------

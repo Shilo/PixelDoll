@@ -71,7 +71,8 @@ Accepted limitations and standing risks. They are not tasks: open work lives on 
   flipped actions.
 - **The hand covers the grip of a held item.** The body stays frozen, so a sword or lantern is drawn as two layers: the part
   off the body behind or beside it, and the part over the body on top of everything. Where PixelLab draws the fist over the
-  grip, those pixels stay body, so the grip shows under the fingers, as a real grip would. Nothing is cut from the item.
+  grip, those pixels stay body, so the grip shows under the fingers, as a real grip would. The layering cuts nothing from the
+  item at the grip; extraction cleanup can still drop small detached parts elsewhere.
 - **Side views can put an off-hand item in the near hand.** In east and west views PixelLab sometimes draws a lantern,
   shield or bow in the hand nearest the viewer, the sword hand, instead of the far hand behind the body. The hand check
   (G8) flags it for review; keeping the item keeps the wrong hand, and a mirrored west copies it. Try again or a repair of

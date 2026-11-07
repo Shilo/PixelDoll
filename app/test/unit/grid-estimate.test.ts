@@ -85,3 +85,9 @@ test('fallback plan costs include one matching reference and keep normal pose/ed
  expect(planGens(plan)).toBe(20);expect(planGens(plan,{w:96,h:96})).toBe(25)
  expect(planGens([{kind:'pose',cells:Array(8).fill('slash/north/0')},{kind:'edit',cells:['idle/south/0']}])).toBe(13)
 })
+
+test('invalid repair input is rejected at once instead of searching forever', () => {
+ for (const [cell, frames, refs] of [[{ w: 0, h: 64 }, 8, 1], [{ w: 64, h: 0 }, 8, 1], [{ w: NaN, h: 64 }, 8, 1], [{ w: 1.5, h: 64 }, 8, 1], [{ w: 64, h: 64 }, 0, 1], [{ w: 64, h: 64 }, 8, -1]] as const)
+  expect(() => repairGridLayout(cell, frames, refs), JSON.stringify([cell, frames, refs])).toThrow('valid integers')
+ expect(repairGridLayout({ w: 160, h: 160 }, 8, 1)).toMatchObject({ cols: 3 }) // a valid layout 4 columns cannot hold still works
+})

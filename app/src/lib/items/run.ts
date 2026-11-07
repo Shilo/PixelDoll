@@ -453,7 +453,8 @@ export async function evaluateItem(d: Draft, ctx: RigCtx, standingPalettes?: Rea
       c.keyOutside != null && c.keyOutside > GATES.keyOutside && `G3 keyframe ${o.key} key outside ${c.keyOutside.toFixed(3)}`,
       !c.area && !hidden.has(o.key.split('/')[1]) && `G4 keyframe ${o.key}: item missing`,
       // B14: flag a smudged design for review (T3: red cape north hem); it holds the early pose start, but only G1 stops poses
-      smudged[i] && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
+      smudged[i] === 'smudge' && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
+    if (smudged[i] === 'dark') hiddenWarnings.push(`D1 keyframe ${o.key}: a dark patch not seen in the other views; check that it is part of the design`);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
   }
   const retryKey = route === 'none' ? undefined : measuredKeyCollision(d.spec.prompt, route, kfCells, dressOuts, g1);
@@ -704,7 +705,8 @@ export async function poseItemClip(ctx: RigCtx, item: Item, anim: string, onCall
   const q = withH4(itemQa(rig, slot, key, cells, 0, GATES.keyOutsidePosed, pad, hidden), slot, cells, keys, rig, bodies, item.prompt);
   const first = failures.length ? (failures[0] instanceof Error ? failures[0].message : String(failures[0])) : '';
   try { await mergeClip(ctx, item, anim, doneDirs, cells, prov, q, pad); }
-  catch (error) { throw failures.length ? new Error(`${first} ${error instanceof Error ? error.message : String(error)}`) : error; }
+  // The save error leads: the Studio offers free saved-frame recovery by its prefix (ITEM_MOVE_SAVE_CONFLICT).
+  catch (error) { throw failures.length ? new Error(`${error instanceof Error ? error.message : String(error)} ${first}`) : error; }
   if (failures.length) throw new PartialMoveError(first, doneDirs);
   return q;
 }

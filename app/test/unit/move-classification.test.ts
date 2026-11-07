@@ -43,3 +43,40 @@ test('one estimate with swapped hands or a jump does not make a walk an action',
   src.measured = src.keypoints!.map((f, i) => i === 3 ? f.map(p => ({ ...p, y: p.y - 0.3 })) : f) // the whole body lifted
   expect(decisiveAction(rig, 'walk', 'south')).toBe(false)
 })
+
+test('one bad joint estimate cannot make a walk an action (2026-11-07 review R2)', () => {
+  const rig = bench('A'), walk = rig.animations.find(a => a.id === 'walk')!, src = walk.sources!.south!
+  // one eye thrown to the corner of the frame in one frame
+  src.measured = src.keypoints!.map((f, i) => i === 2 ? f.map(p => p.label === 'RIGHT EYE' ? { ...p, x: 0.95, y: 0.95 } : p) : f)
+  expect(decisiveAction(rig, 'walk', 'south')).toBe(false)
+  // the same eye wrong in every frame is still one joint
+  src.measured = src.keypoints!.map(f => f.map(p => p.label === 'RIGHT EYE' ? { ...p, x: 0.95, y: 0.95 } : p))
+  expect(decisiveAction(rig, 'walk', 'south')).toBe(false)
+  // correlated bad estimates in two frames: both eyes in the corner, a wrist thrown above the head, a knee in the corner
+  for (const bad of [(p: { label: string }) => /EYE/.test(p.label) ? { x: 0.95, y: 0.95 } : null, (p: { label: string }) => p.label === 'RIGHT ARM' ? { y: 0.02 } : null, (p: { label: string }) => p.label === 'RIGHT KNEE' ? { x: 0.02, y: 0.02 } : null]) {
+    src.measured = src.keypoints!.map((f, i) => (i === 2 || i === 4 ? f.map(p => ({ ...p, ...(bad(p) ?? {}) })) : f))
+    expect(decisiveAction(rig, 'walk', 'south')).toBe(false)
+  }
+})
+
+test('one bad trunk estimate cannot make a walk an action either', () => {
+  const rig = bench('A'), walk = rig.animations.find(a => a.id === 'walk')!, src = walk.sources!.south!
+  const cases: ((p: { label: string; x: number; y: number }) => object | null)[] = [
+    p => p.label === 'NECK' ? { x: p.x + 0.25 } : null, p => p.label === 'NECK' ? { x: 0.98, y: 0.5 } : null,
+    p => p.label === 'RIGHT HIP' ? { x: p.x + 0.4 } : null, p => p.label === 'RIGHT HIP' ? { x: 0.98, y: 0.02 } : null,
+  ]
+  for (const bad of cases) {
+    src.measured = src.keypoints!.map((f, i) => (i === 2 ? f.map(p => ({ ...p, ...(bad(p) ?? {}) })) : f))
+    expect(decisiveAction(rig, 'walk', 'south')).toBe(false)
+  }
+})
+
+test('a short slash named like a gait is still an action (4 of its 8 frames)', () => {
+  const rig = bench('A'), slash = rig.animations.find(a => a.id === 'slash')!
+  for (const pick of [[0, 2, 4, 6], [1, 3, 5, 7]]) {
+    const src = slash.sources!.south!, take = <T,>(a?: T[]) => a && pick.map(i => a[i])
+    rig.animations.push({ ...slash, id: 'run-slash', cells: 4, sources: { south: { ...src, keypoints: take(src.keypoints), ...(src.measured ? { measured: take(src.measured) } : {}) } } })
+    expect(isAction('run-slash/south', rig), pick.join()).toBe(true)
+    rig.animations.pop()
+  }
+})

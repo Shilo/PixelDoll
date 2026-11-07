@@ -545,6 +545,17 @@ test('a direction that fails does not discard the finished ones, and retrying re
   expect(saved.layers[0].cells!.walking!.north).toHaveLength(3); expect(saved.layers[0].cells!.walking!.south).toHaveLength(3)
 });
 
+test('a failed direction plus a save conflict keeps the conflict first, so free recovery stays offered', async () => {
+  const { ITEM_MOVE_SAVE_CONFLICT } = await import('../../src/lib/items/run.ts')
+  const f = await facingFixture()
+  f.item.dressed!.north = f.item.dressed!.south; ledger.project = structuredClone(f.ctx.rec)
+  ledger.output = async req => (req.body as { direction: string }).direction === 'north' ? [f.dressed] : Array(3).fill(f.missing)
+  ledger.project!.manifest.rig.pivot = { x: 15, y: 31 } // another tab changed the rig while the move generated
+  const error = await poseItemClip(f.ctx, f.item, 'walking').catch((e: Error) => e)
+  expect((error as Error).message.startsWith(ITEM_MOVE_SAVE_CONFLICT)).toBe(true)
+  expect((error as Error).message).toMatch(/malformed/)
+});
+
 test('saved frames reattach completed pose requests without sending one, and refuse when none match', async () => {
   const f = await fixture(), before = structuredClone(ledger.project)
   ledger.output = async () => Array(3).fill(f.missing)

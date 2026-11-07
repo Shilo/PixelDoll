@@ -31,7 +31,10 @@ export const GROUPS: Group[] = [
  * off hand 3/3) and shields (the main-hand wording forbids a shield). Crossbows stay in the main hand. */
 // (?!-): "shield-breaker axe" and "bow-staff" name the main-hand weapon. "aegis" is left out: it names engravings and crests too.
 const OFF_HAND = /\b(?:long|short|recurve|hunting|war|great|flat)?bows?\b(?!-)|\b(?:shield|buckler|targe|pavise|scutum)s?\b(?!-)/i;
-export const heldSlotFor = (prompt: string) => (OFF_HAND.test(prompt) ? 'off_hand' : 'main_hand');
+// The item's subject decides: "a steel sword with a scutum emblem" is a sword (2026-11-07 counter-review R6). The cut is at
+// attachment and decoration clauses only, so color pairs and adjective lists stay ("a black and gold kite shield").
+const SUBJECT_END = /\s+(?:with|that|which|bearing|featuring|showing|depicting|decorated|engraved|emblazoned|etched|painted|carved|inlaid|of|from|on|in|for|by|at|to|under|over|around|hanging|holding|held|carrying|dangling|attached|wrapped|covered|trimmed|lined|studded|made)\s+/i;
+export const heldSlotFor = (prompt: string) => (OFF_HAND.test(stripCount(prompt).split(SUBJECT_END)[0]) ? 'off_hand' : 'main_hand');
 export const groupOf = (slot: string) => GROUPS.find((g) => g.slots.includes(slot)) ?? GROUPS[3];
 export const SLOT_LABEL: Record<string, string> = {
   head: 'Head', hair: 'Hair', facial_hair: 'Facial hair', face_acc: 'Face', torso_inner: 'Top (inner)', torso_outer: 'Top (outer)',
@@ -137,10 +140,18 @@ export function nameFrom(desc: string): string {
   return w ? w[0].toUpperCase() + w.slice(1) : 'My character';
 }
 
+/** A description without its leading article and count ("a pair of leather boots" -> "leather boots"). */
+const stripCount = (desc: string) => desc.trim().replace(/^(?:(?:a|an|the|some|two)\s+)?(?:(?:pairs?|sets?|couple)\s+of\s+)?/i, '');
+/** The head phrase of an item description: article and count removed, then cut at prepositions and attachment words ("iron
+ * lantern hanging from a short chain" -> "iron lantern"). "of" stays: it names the item ("cloak of shadows"); a head longer
+ * than four words is cut there ("sword of a thousand truths"). */
+const itemHead = (desc: string) => {
+  const head = stripCount(desc).split(/\s+(?:with|that|which|for|made|in|on|and|from|by|at|to|under|over|around|hanging|holding|held|carrying|dangling|attached|wrapped|covered|trimmed|decorated|lined|studded)\s+|[,.;:]/i)[0];
+  return head.split(/\s+/).length > 4 ? head.split(/\s+of\s+/i)[0] : head;
+};
 /** Item name from its description, sentence case like the demo: "a straw farmer hat, frayed" -> "Straw farmer hat" (T1 P2-15). */
 export function itemNameFrom(desc: string): string {
-  // Also stop at prepositions and attachment words: "iron lantern hanging from a short chain" was named "From a short chain".
-  const head = desc.trim().replace(/^(?:a|an|the|some|two|pair of)\s+/i, '').split(/\s+(?:with|that|which|for|made|in|on|and|from|of|by|at|to|under|over|around|hanging|holding|held|carrying|dangling|attached|wrapped|covered|trimmed|decorated|lined|studded)\s+|[,.;:]/i)[0];
+  const head = itemHead(desc);
   const w = head.split(/\s+/).filter(Boolean).slice(-4).join(' ');
   return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : '';
 }
@@ -186,6 +197,7 @@ export function plainReason(s: string): string {
   if (s.startsWith('G9') && s.includes('keeps its own angle')) return 'The held item hangs or sways instead of turning with the hand; check that it should';
   if (s.startsWith('G1')) return 'PixelLab returned an unexpected image';
   if (s.startsWith('H4')) return 'Some frames do not look like the design (e.g. a cape wrapped around an arm)';
+  if (s.startsWith('D1') && s.includes('dark patch')) return 'A dark patch is not seen in the other views; check that it is part of the design';
   if (s.startsWith('D1')) return 'The design has gray smudges';
   const pasted = /^R1 ([^/]+)\/([^:]+): dressed item pasted on (\d+)/.exec(s);
   if (pasted) return `Held item pasted on ${pasted[3]} ${pasted[1].replaceAll('-', ' ')} ${pasted[3] === '1' ? 'frame' : 'frames'} (${pasted[2].replaceAll('-', ' ')}); check that it moves`;
