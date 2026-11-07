@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest'
 import { makeImg, type Img } from '../../src/lib/image/png.ts'
 import { toChroma } from '../../src/lib/image/chroma.ts'
-import { extractCell, postProcess, slotOf, type CellOut } from '../../src/lib/items/items.ts'
+import { extractCell, postProcess, slotOf, trimToKeyframe, type CellOut } from '../../src/lib/items/items.ts'
 import type { Rig } from '../../src/lib/rig/rig.ts'
 
 // Posed head items used to lose every px below the head band, so a coif, aventail or hood mantle was cut at the neck.
@@ -54,4 +54,54 @@ test('without a keyframe the band trim is the floor, also for slots without the 
   const t = frame(1, out => hood(out, 4))
   postProcess(rig, slotOf('torso_outer'), [t], keyframe(4))
   expect(below(t)).toBe(0)
+})
+
+function consensusFrame(anim: string, i: number, extra: boolean, dir = 'south'): CellOut {
+  const layer = makeImg(W, W), mask = new Uint8Array(W * W)
+  for (let y = 2; y < 9; y++) for (let x = 10; x < 19; x++) put(layer, x, y, BROWN)
+  if (extra) for (let y = 2; y < 5; y++) for (let x = 22; x < 29; x++) put(layer, x, y, [220, 180, 80])
+  for (let p = 0; p < mask.length; p++) mask[p] = Number(layer.data[p * 4 + 3] > 0)
+  return { ...frame(i, out => hood(out, 0)), key: `${anim}/${dir}/${i}`, layer, mask, area: extra ? 84 : 63 }
+}
+const consensusKey = () => ({ south: consensusFrame('rest', 0, false).layer })
+
+test('another move cannot vote to preserve a transient head-item component', () => {
+  const alone = [0, 1, 2, 3].map(i => consensusFrame('walk', i, i === 1))
+  const pooled = [0, 1, 2, 3].map(i => consensusFrame('walk', i, i === 1))
+  pooled.push(...['idle', 'run'].flatMap(anim => [0, 1, 2, 3].map(i => consensusFrame(anim, i, true))))
+  trimToKeyframe(rig, alone, consensusKey())
+  trimToKeyframe(rig, pooled, consensusKey())
+  for (const [i, expected] of alone.entries()) {
+    expect(expected.area).toBe(63)
+    expect(pooled[i].mask).toEqual(expected.mask)
+    expect(pooled[i].layer.data).toEqual(expected.layer.data)
+  }
+  for (const c of pooled.slice(4)) expect(c.area).toBe(84)
+})
+
+test('a real extension supported within its own move survives unrelated clips and input order', () => {
+  const alone = [0, 1, 2, 3].map(i => consensusFrame('walk', i, true))
+  const pooled = [
+    ...[0, 1, 2, 3].map(i => consensusFrame('walk', i, true)),
+    ...['idle', 'run'].flatMap(anim => [0, 1, 2, 3].map(i => consensusFrame(anim, i, false))),
+    ...[0, 1, 2, 3].map(i => consensusFrame('walk', i, false, 'east')),
+  ].reverse()
+  trimToKeyframe(rig, alone, consensusKey())
+  trimToKeyframe(rig, pooled, consensusKey())
+  for (const expected of alone) {
+    const actual = pooled.find(c => c.key === expected.key)!
+    expect(expected.area).toBe(84)
+    expect(actual.mask).toEqual(expected.mask)
+    expect(actual.layer.data).toEqual(expected.layer.data)
+  }
+})
+
+test('a partial move does not borrow temporal votes from a complete unrelated move', () => {
+  const alone = [consensusFrame('walk', 1, true)]
+  const pooled = [consensusFrame('walk', 1, true), ...[0, 1, 2, 3].map(i => consensusFrame('idle', i, true))]
+  trimToKeyframe(rig, alone, consensusKey())
+  trimToKeyframe(rig, pooled, consensusKey())
+  expect(alone[0].area).toBe(63)
+  expect(pooled[0].layer.data).toEqual(alone[0].layer.data)
+  expect(pooled[0].mask).toEqual(alone[0].mask)
 })

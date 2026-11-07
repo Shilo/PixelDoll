@@ -466,14 +466,15 @@ export const TRIM = { support: 2, minOverlap: 0.5 };
  * Rigid head-class items (slot.band): the dressed keyframe is the design. Per frame the keyframe mask is aligned (the requested
  * head move, refined ±2 px by overlap) and dilated by 2 px; item px outside that support are streaks/props the pose invented
  * (B7: helmet slash streaks) UNLESS temporal consensus keeps them: the same keyframe-relative px is item in at least half of the
- * other frames of that direction (a real part the keyframe lacks). Frames whose aligned overlap is < 50 % of the keyframe
+ * other frames of that clip and direction (a real part the keyframe lacks). Frames whose aligned overlap is < 50 % of the keyframe
  * (occluded, lying) are left alone. Returns px removed.
  */
 export function trimToKeyframe(rig: Rig, cells: CellOut[], keys: Partial<Record<DirectionName, Img>>, pad = 0): number {
   let removed = 0;
-  const byDir = new Map<DirectionName, CellOut[]>();
-  for (const c of cells) if (c.posed && c.area) { const d = c.key.split('/')[1] as DirectionName; (byDir.get(d) ?? (byDir.set(d, []), byDir.get(d)!)).push(c); }
-  for (const [dir, cs] of byDir) {
+  const byClip = new Map<string, CellOut[]>();
+  for (const c of cells) if (c.posed && c.area) { const clip = c.key.split('/').slice(0, 2).join('/'); (byClip.get(clip) ?? (byClip.set(clip, []), byClip.get(clip)!)).push(c); }
+  for (const [clip, cs] of byClip) {
+    const dir = clip.split('/')[1] as DirectionName;
     const K = keys[dir] && despeck(keys[dir]!);
     if (!K) continue;
     const w = K.w, km = maskOf(K), kn = sum(km);
