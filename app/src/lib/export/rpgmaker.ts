@@ -45,20 +45,69 @@ function leads(m: Manifest, walk: RigAnimation, dir: DirectionName): number[] | 
   return of(src?.measured) ?? of(src?.keypoints);
 }
 
-/** Walk frames by time, never by pixels: the left-foot stride (the frame whose lead most exceeds the lead half a cycle later),
- *  then the frames on screen a quarter and half a cycle later. Ankle gaps alone misread front and back views, where a square
- *  stance looks wide and a stride overlaps (7 of 12 bench views, south, east and north of 4 bodies; the signed lead got all 12,
- *  2026-11-08). Views of one managed template share a gait phase per frame, so they take the side view's phase, whose signal
- *  is about 4x stronger.
- *  Without keypoints the first frame stands in for the stride. Mirrored views use their source view's choice. */
-function walkPicks(m: Manifest, walk: RigAnimation, dir: DirectionName): { strideA: number; passing: number; strideB: number } {
-  const tl = timeline(walk), half = tl.total / 2, src = walk.sources ?? {};
-  const side = (['east', 'west'] as const).find((d) => leads(m, walk, d));
-  const motion = src[dir]?.motion, shared = !!side && !!motion?.startsWith('managed-') && src[side]?.motion === motion;
-  const L = leads(m, walk, shared ? side! : dir);
-  const score = (e: { cell: number; t: number }) => L![e.cell] - L![atTime(tl, e.t + half)];
-  const start = L ? tl.at.reduce((best, e) => (score(e) > score(best) ? e : best)) : tl.at[0];
-  return { strideA: start.cell, passing: atTime(tl, start.t + tl.total / 4), strideB: atTime(tl, start.t + half) };
+/** The bare body's feet per walk cell in one view, measured on the body layer alone so capes and weapons cannot change it:
+ *  `span` is their width near the ground (a side view's step: feet apart), `lift` the height difference between the lowest
+ *  pixels left and right of the pivot (a front or back view's step, where the width stays square). Undefined on an empty cell. */
+function feet(p: Project, walk: RigAnimation, dir: DirectionName): { span: number[]; lift: number[] } | undefined {
+  const m = p.manifest, base = m.items.find((i) => i.id === m.rig.baseItem);
+  if (!base) return;
+  const rows = Math.max(3, Math.round((m.rig.cell.h * 6) / 64)), pivot = Math.round(m.rig.pivot.x), span: number[] = [], lift: number[] = [];
+  for (let cell = 0; cell < walk.cells; cell++) {
+    const im = composeCell(p, { [base.slot]: base.id }, walk.id, dir, cell);
+    let bottom = -1, left = im.w, right = -1, lowL = -1, lowR = -1;
+    for (let y = 0; y < im.h; y++) for (let x = 0; x < im.w; x++) if (im.data[(y * im.w + x) * 4 + 3]) { bottom = y; if (x < pivot) lowL = y; else lowR = y; }
+    if (bottom < 0) return;
+    for (let y = Math.max(0, bottom - rows + 1); y <= bottom; y++) for (let x = 0; x < im.w; x++) if (im.data[(y * im.w + x) * 4 + 3]) { left = Math.min(left, x); right = Math.max(right, x); }
+    span.push(right - left + 1);
+    lift.push(lowL < 0 || lowR < 0 ? 0 : Math.abs(lowL - lowR));
+  }
+  return { span, lift };
+}
+
+/** When a signal that peaks at both steps (twice per cycle) first peaks: the phase of that twice-per-cycle rhythm, fitted over
+ *  every frame weighted by its time on screen, so one odd frame (a hem near the ground, a held pose) cannot win on its own as
+ *  the widest frame would. Undefined when the rhythm is under half a pixel (no usable signal). */
+function stepTime(tl: ReturnType<typeof timeline>, v: number[]): number | undefined {
+  let c = 0, s = 0;
+  tl.at.forEach((e, i) => {
+    const ms = (tl.at[i + 1]?.t ?? tl.total) - e.t, a = (4 * Math.PI * (e.t + ms / 2)) / tl.total;
+    c += v[e.cell] * ms * Math.cos(a); s += v[e.cell] * ms * Math.sin(a);
+  });
+  if ((2 * Math.hypot(c, s)) / tl.total < 0.5) return;
+  const t = (Math.atan2(s, c) / (4 * Math.PI)) * tl.total;
+  return ((t % (tl.total / 2)) + tl.total / 2) % (tl.total / 2);
+}
+
+type Gait = { strideA: number; passing: number; strideB: number; rest: number; guessed: boolean };
+/** Walk frames by time: stride A, then the frames on screen a quarter (passing), half (stride B) and three quarters (the other
+ *  feet-together pose) of a cycle later. Stride A, best evidence first:
+ *  1. the view's own keypoints (measured, else requested): the frame whose left-ankle lead along the facing most exceeds the
+ *     lead half a cycle later. Ankle gaps alone misread front and back views, where a square stance looks wide and a stride
+ *     overlaps (7 of 12 bench views; the signed lead got all 12, 2026-11-08). Views of one managed template share a gait phase
+ *     per frame, so they take the side view's lead, about 4x stronger;
+ *  2. the side view's keypoint lead, when the walk's views share one gait phase (a template or one managed motion);
+ *  3. without keypoints, the bare body's feet fitted by `stepTime`: on a phase-shared walk the side view's foot span (steps at
+ *     2 and 6 on the demo and every bench, cycle and template walk tested); otherwise each view's own signal, span for side
+ *     views and foot lift for front and back (an import's back view stepped at 3 and 7 while its side view stepped at 0 and 4);
+ *  4. the first frame, flagged as a guess.
+ *  Mirrored views use their source view's choice. */
+function walkPicks(p: Project, walk: RigAnimation, dir: DirectionName): Gait {
+  const m = p.manifest, tl = timeline(walk), half = tl.total / 2, quarter = tl.total / 4, src = walk.sources ?? {};
+  const motions = Object.values(src).map((s) => s?.motion);
+  const aligned = walk.source?.mode === 'template' || (motions.length > 0 && motions.every((x) => !!x?.startsWith('managed-') && x === motions[0]));
+  const keyed = (['east', 'west'] as const).find((d) => leads(m, walk, d));
+  const motion = src[dir]?.motion, shared = !!keyed && !!motion?.startsWith('managed-') && src[keyed]?.motion === motion;
+  const L = leads(m, walk, shared ? keyed! : dir) ?? (keyed && aligned ? leads(m, walk, keyed) : undefined);
+  let start: { cell: number; t: number } | undefined;
+  if (L) start = tl.at.reduce((best, e) => (L[e.cell] - L[atTime(tl, e.t + half)] > L[best.cell] - L[atTime(tl, best.t + half)] ? e : best));
+  else {
+    const side = (['east', 'west'] as const).find((d) => m.rig.directions.some((x) => x.id === d && !x.mirrorOf));
+    const view = aligned ? side ?? dir : dir, f = feet(p, walk, view);
+    const t = f && stepTime(tl, view === 'east' || view === 'west' ? f.span : f.lift);
+    if (t !== undefined) start = tl.at.findLast((e) => e.t <= t);
+  }
+  const s = start ?? tl.at[0];
+  return { strideA: s.cell, passing: atTime(tl, s.t + quarter), strideB: atTime(tl, s.t + half), rest: atTime(tl, s.t + 3 * quarter), guessed: !start };
 }
 
 /** ASCII file name parts: accents dropped (é → e), other characters → _. */
@@ -82,16 +131,25 @@ export function rpgMakerFiles(p: Project, m: Manifest, layout: RpgLayout): { fil
   const standing = rig.animations.find((a) => a.id === DEFAULT_MOVE);
   const walk = walkMove(rig);
   if (!walk) warnings.push('RPG Maker: no walk move, so the sheets stand still. Add a walk move to animate them.');
-  const stand = (dir: DirectionName): Pick => (standing ? { anim: standing.id, cell: 0 } : walk ? { anim: walk.id, cell: walkPicks(src, walk, srcOf(dir)).passing } : { anim: rig.animations[0].id, cell: 0 });
   const srcOf = (dir: DirectionName) => rig.directions.find((d) => d.id === dir)?.mirrorOf ?? dir;
   const walkDirs = walk ? new Set(moveDirs(src, walk.id)) : new Set<DirectionName>();
+  const gaits = new Map(walk ? ROWS.filter((d) => walkDirs.has(d)).map((d) => [d, walkPicks(p, walk, srcOf(d))] as const) : []);
+  // standing: the standing view; without it the walk's other feet-together pose (XP's passing column takes the first one);
+  // a view the walk lacks takes any move that has it, so no row is left empty
+  const stand = (dir: DirectionName): Pick => {
+    if (standing) return { anim: standing.id, cell: 0 };
+    const g = gaits.get(dir);
+    if (g) return { anim: walk!.id, cell: g.rest };
+    return { anim: (rig.animations.find((a) => moveDirs(src, a.id).includes(dir)) ?? rig.animations[0]).id, cell: 0 };
+  };
   const picks = new Map(ROWS.map((dir) => {
-    const s = stand(dir);
-    if (!walk || !walkDirs.has(dir)) return [dir, { stand: s, strideA: s, passing: s, strideB: s }] as const;
-    const w = walkPicks(src, walk, srcOf(dir)), at = (cell: number): Pick => ({ anim: walk.id, cell });
-    return [dir, { stand: s, strideA: at(w.strideA), passing: at(w.passing), strideB: at(w.strideB) }] as const;
+    const s = stand(dir), g = gaits.get(dir);
+    if (!g) return [dir, { stand: s, strideA: s, passing: s, strideB: s }] as const;
+    const at = (cell: number): Pick => ({ anim: walk!.id, cell });
+    return [dir, { stand: s, strideA: at(g.strideA), passing: at(g.passing), strideB: at(g.strideB) }] as const;
   }));
   if (walk && ROWS.some((d) => !walkDirs.has(d))) warnings.push(`RPG Maker: the walk has no ${ROWS.filter((d) => !walkDirs.has(d)).join(', ')} view, so those rows stand still.`);
+  if ([...gaits.values()].some((g) => g.guessed)) warnings.push('RPG Maker: the walk steps could not be detected, so the first walk frame is used as a step. Check the sheet.');
 
   const f = bakedFrame(m), files: OutFile[] = [], used = new Set<string>();
   const name = safeName(m.name) || 'character';
@@ -123,7 +181,7 @@ MZ and MV use 48 px tiles, VX Ace and VX 32 px tiles; their built-in characters 
 One sheet per outfit. Rows: down, left, right, up. The first column is the standing frame, then step, passing, other step.
 XP uses 32 px tiles; its built-in characters are 32 x 48.
 `) + `Sheets keep your character's own size (PixelDoll never scales pixel art): a larger Body stands taller than built-in characters.
-The steps come from your walk move: the left-foot step from the skeleton, the others a quarter and half a cycle later. Feet sit on the bottom row, centered; empty space around the art is
+The steps are picked from your walk move automatically, where the feet are furthest apart, with the feet-together frames between them. Feet sit on the bottom row, centered; empty space around the art is
 trimmed, so speech balloons sit just above the head. Diagonal views, idle and action moves have no place in this format.
 project.json and cells/ are PixelDoll's editable copy (Import it to keep working); the game does not need them.
 ` });

@@ -1588,7 +1588,10 @@ test('export picker has accessible categories, local icons and a native GDevelop
   await page.getByRole('button', { name: 'Export', exact: true }).first().click()
   await expect(dialog.getByRole('radio', { name: 'RPG Maker', exact: true })).toBeChecked()
   await expect(versionButton).toHaveAccessibleName('RPG Maker version: XP and Pokémon Essentials')
-  const xpWidth = (await versionButton.boundingBox())!.width
+  // layout width of the value area: on-screen boxes are scaled while the sheet animates open, and a description change can
+  // toggle the sheet's scrollbar and resize every card
+  const valueWidth = () => dialog.locator('.version-value').evaluate((element) => (element as HTMLElement).offsetWidth)
+  const xpWidth = await valueWidth()
   await versionButton.click()
   await expect(versionMenu).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('export-rpg-version-desktop.png') })
@@ -1598,7 +1601,7 @@ test('export picker has accessible categories, local icons and a native GDevelop
   await expect(versionButton).toHaveAccessibleName('RPG Maker version: XP and Pokémon Essentials')
   await versionButton.click()
   await versionMenu.getByRole('menuitemradio', { name: 'Standard: MZ, MV, VX Ace, VX' }).click()
-  expect((await versionButton.boundingBox())!.width).toBe(xpWidth)
+  expect(await valueWidth()).toBe(xpWidth)
   // phone: the version button becomes a full-width strip under the card body, at least 44 px tall
   await page.setViewportSize({ width: 390, height: 844 })
   const body = dialog.locator('.split-card .export-target')

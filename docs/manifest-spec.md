@@ -607,15 +607,20 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   highest opaque row (MV and MZ place balloons from the sprite height) down to the feet line (`bakedPivot.y`), or lower when art hangs below the feet (kept; more than 2 px adds a warning, since the character then
   stands that much higher; walk frames often dip a pixel or two).
 - Columns: MZ/MV/VX play 1, 2, 1, 0, so they are [stride A, standing, stride B]; XP plays 0, 1, 2, 3, so [standing, stride A,
-  passing, stride B]. Standing is the `default` move's frame; without one, the walk's passing frame, else the first move's
-  frame 0. Stride A is the left-foot step: the playlist entry whose lead (left ankle ahead of the right along the view's
-  facing: east +x, west −x, south +y, north −y; `measured` keypoints, else the requested `keypoints`) most exceeds the lead half
-  a cycle later; without both ankles on every frame, the first playlist entry. Views that share a `managed-` motion with the
-  side view take the side view's step, since one template keeps a gait phase per frame index and side views show steps about
-  four times more clearly. Passing and stride B are the frames on screen a quarter and half a cycle later by playlist time. An
-  unsigned ankle gap picked a square stance in front and back views (7 of 12 bench views right: south, east and north of the 4
-  bench bodies); this rule picked the steps in all 12 (2026-11-08; body A's north view lands one frame early, as its strides do). West uses east's choice when it mirrors east. A view the walk lacks, or a character with no move named walk, repeats the standing frame
-  (with a warning). Characters without south, east, west and north views are refused.
+  passing, stride B]. Standing is the `default` move's frame; without one, the walk's other feet-together frame (three
+  quarters of a cycle after stride A); for a view the walk lacks, frame 0 of a move that has the view. Stride A, best evidence
+  first: (1) the view's own keypoints (`measured`, else requested): the playlist entry whose left-ankle lead along the facing
+  (east +x, west −x, south +y, north −y) most exceeds the lead half a cycle later; views sharing a `managed-` motion with the
+  side view take its lead, about four times clearer; (2) the side view's keypoint lead, when the walk's views share one gait
+  phase (a `template` source or one `managed-` motion); (3) without keypoints, the bare body's feet (base layer only), the
+  phase of their twice-per-cycle rhythm fitted over all frames by time on screen: the side view's foot span on a phase-shared
+  walk, otherwise each view's own signal (span for side views, the left/right foot height difference for front and back);
+  (4) the first playlist entry, with a warning. Passing and stride B are the frames on screen a quarter and half a cycle
+  later. An unsigned ankle gap picked a square stance in front and back views (7 of 12 bench views); the signed lead picked
+  all 12, and the foot-span fit picked frames 2 and 6 on the demo, all 4 bench walks and a long-cape walk where the widest
+  single frame was one early (2026-11-08). West uses east's choice when it mirrors east. A view the walk lacks, or a character
+  with no move named walk, repeats the standing frame (with a warning). Characters without south, east, west and north views
+  are refused.
 - Not supported: RPG Maker 2000/2003 (fixed 24 × 32 cells, indexed color), Unite (per-direction strips registered one by
   one; off Steam and superseded by U2U), WITH and other console or handheld editions (no custom images), and U2U (unreleased;
   no announced character import). The research is in `docs/research/rpg-maker-export-2026-11-07.md`.

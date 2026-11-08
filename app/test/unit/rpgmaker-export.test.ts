@@ -9,7 +9,7 @@ import type { Manifest, Project } from '../../src/lib/store/manifest.ts'
 // Square cells, pivot (3, 7). Each frame is one pixel whose red channel names it (standing 200, walk cell n = 10 + n), at x 3
 // (south, north) or x 5 (east; west mirrors it to x 2), on row 6. `head` adds a marker (red 1) at x 3, row 2 to every frame.
 type Source = { keypoints?: Keypoint[][]; measured?: Keypoint[][]; motion?: string }
-type Options = { walk?: boolean; walkId?: string; dirs?: string[]; below?: number; size?: number; head?: boolean; names?: string[]; character?: string
+type Options = { walk?: boolean; walkId?: string; dirs?: string[]; below?: number; size?: number; head?: boolean; names?: string[]; character?: string; standing?: boolean; feet?: number[]; aligned?: boolean
   frames?: { cell: number; ms: number }[]; keys?: Record<string, Source> }
 /** Ankle keypoints per cell for a view, where `lead` is how far the left ankle is ahead of the right along the facing. A wide
  *  side-to-side stance is added in front and back views: it must not read as a stride. */
@@ -20,8 +20,9 @@ const gait = (dir: string, leads: number[]) => leads.map((lead) => {
 })
 async function project(o: Options = {}): Promise<Project> {
   const W = o.size ?? 8, H = W, images = new Map<string, Img>()
-  const frame = async (red: number, x: number, y = 6) => {
+  const frame = async (red: number, x: number, y = 6, feet = 1) => {
     const im = makeImg(W, H); im.data.set([red, 0, 0, 255], (y * W + x) * 4)
+    for (let f = 1; f < feet; f++) im.data.set([1, 1, 1, 255], (y * W + x - f) * 4) // markers widening the feet (ignored by frameAt)
     if (o.head) im.data.set([1, 1, 1, 255], (2 * W + 3) * 4)
     const h = await cellHash(im); images.set(h, im); return h
   }
@@ -29,10 +30,11 @@ async function project(o: Options = {}): Promise<Project> {
   const standing: Record<string, string[]> = {}, walk: Record<string, string[]> = {}
   for (const d of dirs) {
     standing[d] = [await frame(200, xOf(d), o.below && d === 'south' ? 6 + o.below : 6)]
-    walk[d] = await Promise.all([0, 1, 2, 3].map((n) => frame(10 + n, xOf(d))))
+    walk[d] = await Promise.all([0, 1, 2, 3].map((n) => frame(10 + n, xOf(d), 6, d === 'east' ? o.feet?.[n] ?? 1 : 1)))
   }
   const base = [...images.keys()][0]
-  const keys = o.keys ?? { south: { keypoints: gait('south', [0, 0.3, 0, -0.3]) } }
+  // by default a template walk (one gait phase in every view) with front and side keypoints, as Studio walks have
+  const keys = o.keys ?? { south: { keypoints: gait('south', [0, 0.3, 0, -0.3]) }, east: { keypoints: gait('east', [0, 0.3, 0, -0.3]) } }
   const sources = Object.fromEntries(Object.entries(keys).map(([d, k]) => [d, { route: 'skeleton-v3', reference: base, provenance: [], ...k }]))
   const manifest = {
     format: 'pixeldoll/2', name: o.character ?? 'Hero Knight', app: 'PixelDoll',
@@ -40,13 +42,13 @@ async function project(o: Options = {}): Promise<Project> {
       cell: { w: W, h: H }, pivot: { x: 3, y: 7 }, baseItem: 'body', baseHash: base,
       directions: [...dirs.map((id) => ({ id })), ...(dirs.includes('east') ? [{ id: 'west', mirrorOf: 'east' }] : [])],
       animations: [
-        { id: 'default', cells: 1, loop: true, frames: playlist(1, 100) },
-        ...(o.walk === false ? [] : [{ id: walkId, cells: 4, loop: true, frames: o.frames ?? playlist(4, 100), sources }]),
+        ...(o.standing === false ? [] : [{ id: 'default', cells: 1, loop: true, frames: playlist(1, 100) }]),
+        ...(o.walk === false ? [] : [{ id: walkId, cells: 4, loop: true, frames: o.frames ?? playlist(4, 100), sources, ...(o.aligned === false ? {} : { source: { endpoint: '/characters/animations', mode: 'template', template_animation_id: 'walking-4-frames' } }) }]),
       ],
     },
     slots: [{ id: 'body', z: 10, class: 'base' }], materials: [],
     items: [{ id: 'body', name: 'Body', slot: 'body', status: 'accepted', baseHash: base, mirror: 'flip', materials: [], prompt: '', provenance: [],
-      layers: [{ id: 'main', role: 'fg', z: 10, cells: { default: standing, ...(o.walk === false ? {} : { [walkId]: walk }) } }] }],
+      layers: [{ id: 'main', role: 'fg', z: 10, cells: { ...(o.standing === false ? {} : { default: standing }), ...(o.walk === false ? {} : { [walkId]: walk }) } }] }],
     presets: (o.names ?? ['Current look', 'Night', 'night']).map((name, i) => ({ id: i ? `p${i}` : 'current', name, items: { body: 'body' }, variants: {} })),
   } as unknown as Manifest
   return { manifest, images } as unknown as Project
@@ -98,14 +100,14 @@ test('a square stance in front and back views is not a step; the left foot ahead
   expect(reds(vx, 3, 3)).toEqual([13, 200, 11])
 })
 
-test('rows are down, left, right, up; left is mirrored right and uses its steps; views without keypoints start at frame 0', async () => {
+test('rows are down, left, right, up; left is mirrored right and uses its steps; views without keypoints take the side view step', async () => {
   const p = await project({ keys: { south: { keypoints: gait('south', [0.3, 0, -0.3, 0]) }, east: { keypoints: gait('east', [-0.3, 0, 0.3, 0]) } } })
   const vx = vxOf(p)
   expect(reds(vx, 3, 0)).toEqual([10, 200, 12])
   expect(reds(vx, 3, 2)).toEqual([12, 200, 10]) // east: left foot leads in cell 2
   expect(reds(vx, 3, 1)).toEqual([12, 200, 10]) // west: east's choice
   expect([frameAt(vx, 3, 1, 1)!.x, frameAt(vx, 3, 1, 2)!.x]).toEqual([2, 5]) // west is east flipped
-  expect(reds(vx, 3, 3)).toEqual([10, 200, 12]) // north: no keypoints
+  expect(reds(vx, 3, 3)).toEqual([12, 200, 10]) // north: no keypoints, so the side view's step (one walk, one clock)
 })
 
 test('views of one managed template take the side view phase; other walks use their own', async () => {
@@ -196,4 +198,39 @@ test('credits name no layer sheets, since RPG Maker zips have none', async () =>
   const credits = new TextDecoder().decode(r.entries.find((e) => e.name === 'CREDITS.txt')!.data)
   expect(credits.split('\n')[1]).toMatch(/^"body","Body","body","",/) // empty sheets column
   expect(credits).not.toContain('layers/')
+})
+
+test('a walk without any keypoints takes its steps from the side view bare-body foot span', async () => {
+  // east feet 2, 5, 2, 5 px wide: steps at cells 1 and 3, feet together at 0 and 2, in every row (one walk, one clock)
+  const p = await project({ keys: {}, feet: [2, 5, 2, 5] })
+  for (const row of [0, 1, 2, 3]) expect(reds(vxOf(p), 3, row)).toEqual([11, 200, 13])
+  expect(reds(xpOf(p), 4, 0)).toEqual([200, 11, 12, 13])
+  // without any signal, the first frame stands in, with a warning
+  const flat = await project({ keys: {} })
+  expect(reds(vxOf(flat), 3, 0)).toEqual([10, 200, 12])
+  expect(run(flat).warnings).toEqual(['RPG Maker: the walk steps could not be detected, so the first walk frame is used as a step. Check the sheet.'])
+})
+
+test('a walk whose views do not share one gait phase uses each view own signal, not the side view timing', async () => {
+  // not a template: the side row keeps its own steps (cells 1 and 3); the front row has keypoints with steps at 0 and 2
+  const p = await project({ aligned: false, feet: [2, 5, 2, 5], keys: { south: { keypoints: gait('south', [0.3, 0, -0.3, 0]) } } })
+  const vx = vxOf(p)
+  expect(reds(vx, 3, 2)).toEqual([11, 200, 13])
+  expect(reds(vx, 3, 0)).toEqual([10, 200, 12])
+})
+
+test('the standing column never leaves an empty row when the walk lacks a view and there is no standing view', async () => {
+  const p = await project({ standing: false })
+  const layer = p.manifest.items[0].layers[0] as unknown as { cells: Record<string, Record<string, unknown>> }
+  delete layer.cells.walk.north
+  // a second move that has north stands in there
+  p.manifest.rig.animations.push({ id: 'idle', cells: 1, loop: true, frames: playlist(1, 100) } as never)
+  layer.cells.idle = { north: [(layer.cells.walk.south as string[])[0]] }
+  expect(frameAt(vxOf(p), 3, 1, 3)).not.toBeNull()
+})
+
+test('without a standing view, the walk feet-together frames fill the standing columns', async () => {
+  const p = await project({ keys: {}, feet: [2, 5, 2, 5], standing: false })
+  expect(reds(vxOf(p), 3, 0)).toEqual([11, 10, 13]) // step, feet together (cell 0, three quarters after the step), step
+  expect(reds(xpOf(p), 4, 0)).toEqual([10, 11, 12, 13]) // feet together, step, passing (cell 2), step
 })
