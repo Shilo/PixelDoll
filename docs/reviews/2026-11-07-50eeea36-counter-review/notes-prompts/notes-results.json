@@ -1,0 +1,48 @@
+[
+  {
+    "name": "dark",
+    "draftWarnings": [
+      "D1 keyframe rest/south/0: a dark patch not seen in the other views, possibly not part of the design"
+    ],
+    "savedNotes": [
+      "D1 keyframe rest/south/0: a dark patch not seen in the other views, possibly not part of the design"
+    ],
+    "afterMergeCounts": [
+      1,
+      1
+    ],
+    "exportNotes": [
+      "D1 keyframe rest/south/0: a dark patch not seen in the other views, possibly not part of the design"
+    ],
+    "validationErrors": [],
+    "afterMergeHealth": "accepted"
+  },
+  {
+    "name": "gray",
+    "draftWarnings": [],
+    "savedNotes": [
+      "D1 keyframe rest/south/0: 39 % gray smudges in a colorful design"
+    ],
+    "afterMergeCounts": [
+      1,
+      1
+    ],
+    "exportNotes": [
+      "D1 keyframe rest/south/0: 39 % gray smudges in a colorful design"
+    ],
+    "validationErrors": [],
+    "afterMergeHealth": "accepted"
+  },
+  {
+    "name": "clean",
+    "draftWarnings": [],
+    "savedNotes": [],
+    "afterMergeCounts": [
+      0,
+      0
+    ],
+    "exportNotes": [],
+    "validationErrors": [],
+    "afterMergeHealth": "clean"
+  }
+]

@@ -1,0 +1,476 @@
+{
+  "rows": [
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 96,
+        "height": 96
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 604
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 64,
+        "height": 64
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 438
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 96,
+        "height": 96
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 593
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 64,
+        "height": 64
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 440
+    },
+    {
+      "size": 64,
+      "slot": "back",
+      "method": "skel",
+      "hasHand": false,
+      "canvas": {
+        "width": 64,
+        "height": 64
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 433
+    },
+    {
+      "size": 64,
+      "slot": "back",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 64,
+        "height": 64
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 436
+    },
+    {
+      "size": 224,
+      "slot": "main_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 604
+    },
+    {
+      "size": 224,
+      "slot": "main_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 224,
+        "height": 224
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 438
+    },
+    {
+      "size": 224,
+      "slot": "off_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 593
+    },
+    {
+      "size": 224,
+      "slot": "off_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 224,
+        "height": 224
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 440
+    },
+    {
+      "size": 224,
+      "slot": "back",
+      "method": "skel",
+      "hasHand": false,
+      "canvas": {
+        "width": 224,
+        "height": 224
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 433
+    },
+    {
+      "size": 224,
+      "slot": "back",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 224,
+        "height": 224
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 436
+    },
+    {
+      "size": 240,
+      "slot": "main_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 604
+    },
+    {
+      "size": 240,
+      "slot": "main_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 240,
+        "height": 240
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 438
+    },
+    {
+      "size": 240,
+      "slot": "off_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 593
+    },
+    {
+      "size": 240,
+      "slot": "off_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 240,
+        "height": 240
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 440
+    },
+    {
+      "size": 240,
+      "slot": "back",
+      "method": "skel",
+      "hasHand": false,
+      "canvas": {
+        "width": 240,
+        "height": 240
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 433
+    },
+    {
+      "size": 240,
+      "slot": "back",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 240,
+        "height": 240
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 436
+    },
+    {
+      "size": 254,
+      "slot": "main_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 604
+    },
+    {
+      "size": 254,
+      "slot": "main_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 254,
+        "height": 254
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 438
+    },
+    {
+      "size": 254,
+      "slot": "off_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 593
+    },
+    {
+      "size": 254,
+      "slot": "off_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 254,
+        "height": 254
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 440
+    },
+    {
+      "size": 254,
+      "slot": "back",
+      "method": "skel",
+      "hasHand": false,
+      "canvas": {
+        "width": 254,
+        "height": 254
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 433
+    },
+    {
+      "size": 254,
+      "slot": "back",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 254,
+        "height": 254
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 436
+    },
+    {
+      "size": 255,
+      "slot": "main_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 255,
+        "height": 255
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 604
+    },
+    {
+      "size": 255,
+      "slot": "main_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 255,
+        "height": 255
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 438
+    },
+    {
+      "size": 255,
+      "slot": "off_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 255,
+        "height": 255
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 593
+    },
+    {
+      "size": 255,
+      "slot": "off_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 255,
+        "height": 255
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 440
+    },
+    {
+      "size": 255,
+      "slot": "back",
+      "method": "skel",
+      "hasHand": false,
+      "canvas": {
+        "width": 255,
+        "height": 255
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 433
+    },
+    {
+      "size": 255,
+      "slot": "back",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 255,
+        "height": 255
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 436
+    },
+    {
+      "size": 256,
+      "slot": "main_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 604
+    },
+    {
+      "size": 256,
+      "slot": "main_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 438
+    },
+    {
+      "size": 256,
+      "slot": "off_hand",
+      "method": "skel",
+      "hasHand": true,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 593
+    },
+    {
+      "size": 256,
+      "slot": "off_hand",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 440
+    },
+    {
+      "size": 256,
+      "slot": "back",
+      "method": "skel",
+      "hasHand": false,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": true,
+      "descriptionLength": 433
+    },
+    {
+      "size": 256,
+      "slot": "back",
+      "method": "anchor",
+      "hasHand": false,
+      "canvas": {
+        "width": 256,
+        "height": 256
+      },
+      "draftPreviewMatches": true,
+      "pricedPreviewMatches": null,
+      "descriptionLength": 436
+    }
+  ],
+  "matrix": {
+    "changes": 132,
+    "unchanged": 14508
+  }
+}

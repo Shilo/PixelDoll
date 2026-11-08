@@ -1,0 +1,55 @@
+{
+  "baseline": "6006a55cd106859937958aae50d0dd8abb475209",
+  "endpoint": "50eeea36446f146f6e499a6325843de8ffb77e96",
+  "checkoutAtReview": "50eeea36446f146f6e499a6325843de8ffb77e96",
+  "files": [
+    {
+      "path": "app/src/lib/items/items.ts",
+      "gitBlob": "70fdb096509dc9d8c2fbfea4f283a7f213dcda3c",
+      "sha256": "e72e87e9391c872c98b3ab7eb52d4427f6a5082271993482a38e5aced445fb02",
+      "worktreeComparison": "identical-to-pin"
+    },
+    {
+      "path": "app/src/lib/items/run.ts",
+      "gitBlob": "87fbc6350bc3ffc55e04c84d88c3584e6cca312f",
+      "sha256": "4501d2da4a521a87f426f6b0c0c5d7ba13956a93804564907c4eac3f486af1ac",
+      "worktreeComparison": "identical-to-pin"
+    },
+    {
+      "path": "app/src/studio/apiPlans.ts",
+      "gitBlob": "df23aee397daf52ad2aec5fa5106246641d6216e",
+      "sha256": "eb246a245763f16228293155500788b2edc506489e33ea7fb1558b850fcf3b58",
+      "worktreeComparison": "identical-to-pin"
+    },
+    {
+      "path": "app/test/unit/automatic-recovery.test.ts",
+      "gitBlob": "67fd65121386677caaa77c45f87092656de315bc",
+      "sha256": "35c29fd347a0b5efbc636908725713ea7af13b4d6b402a30b644819a59f7c444",
+      "worktreeComparison": "identical-to-pin"
+    },
+    {
+      "path": "app/test/unit/move-classification.test.ts",
+      "gitBlob": "9bccde60f71d872acd228dd540d904a8a524a6f3",
+      "sha256": "3c313d53aeff032138c4f36cc92f37434c2840ba637bb50abf8624e050380ddb",
+      "worktreeComparison": "identical-to-pin"
+    },
+    {
+      "path": "app/test/unit/word-lists.test.ts",
+      "gitBlob": "ff1e4b6e6bcd93cff14c2ca3e2f7a8ace07a6e2f",
+      "sha256": "6326e6b53eb29349cc59917864a7d2da5878d173bb91c48a3ca03d47c8a79014",
+      "worktreeComparison": "identical-to-pin"
+    },
+    {
+      "path": "docs/reviews/2026-11-07-session-counter-review/claude-response.md",
+      "gitBlob": "603606f0542ac5d3baea20128804ae70186dc794",
+      "sha256": "989c4799c1baf3813a5f347509cc26c1ba32bd975dca6dc58c1a38a34f05f683",
+      "worktreeComparison": "identical-to-pin"
+    },
+    {
+      "path": "docs/reviews/README.md",
+      "gitBlob": "d12516564ffe298a0050d6ca62de84780b205f23",
+      "sha256": "0ccd07ac7857b718345109761c2bec1d374c2de5c55a1e2a94fa69d90ddb6b56",
+      "worktreeComparison": "review-index-intentionally-updated-by-this-delivery"
+    }
+  ]
+}

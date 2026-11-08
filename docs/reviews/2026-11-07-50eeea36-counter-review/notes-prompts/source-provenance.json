@@ -1,0 +1,23 @@
+{
+  "before": "6006a55c",
+  "after": "50eeea36446f146f6e499a6325843de8ffb77e96",
+  "head": "50eeea36446f146f6e499a6325843de8ffb77e96",
+  "sources": [
+    {
+      "path": "app/src/lib/items/items.ts",
+      "sha256": "e72e87e9391c872c98b3ab7eb52d4427f6a5082271993482a38e5aced445fb02"
+    },
+    {
+      "path": "app/src/lib/items/run.ts",
+      "sha256": "4501d2da4a521a87f426f6b0c0c5d7ba13956a93804564907c4eac3f486af1ac"
+    },
+    {
+      "path": "app/src/studio/apiPlans.ts",
+      "sha256": "eb246a245763f16228293155500788b2edc506489e33ea7fb1558b850fcf3b58"
+    },
+    {
+      "path": "app/test/unit/automatic-recovery.test.ts",
+      "sha256": "35c29fd347a0b5efbc636908725713ea7af13b4d6b402a30b644819a59f7c444"
+    }
+  ]
+}

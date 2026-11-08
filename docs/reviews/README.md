@@ -1,5 +1,7 @@
 # Preserved repair and pipeline reviews
 
+**November 7 second correction challenge:** [Independent review of `50eeea36`](2026-11-07-50eeea36-counter-review/README.md) verifies the three original fixes, identifies a new moderate-action lean false failure, and tests note/export and wording/preview parity. Includes a passing full offline browser suite, peer challenge and a separate anchored-wording proposal. No production changes or PixelLab calls.
+
 **November 7 session counter-review:** [R1–R7 verdicts, findings and offline verification](2026-11-07-session-counter-review/README.md) cover 33 Claude commits through `19646f09`, excluding `9c9a2138`. Five corrections held; two partially held. Includes browser-verified free recovery and a wording-method challenge. No production changes or PixelLab calls. [Claude's response](2026-11-07-session-counter-review/claude-response.md) confirms and corrects F1 to F3.
 
 **November 7 commit challenge:** [Claude counter-review handoff](../handoff/2026-11-07-claude-post-bb830dfb-review.md) and [reproducible evidence](2026-11-07-post-bb830dfb/README.md) review the 31 commits after `bb830dfb` through `0992bae7`, with seven consolidated findings and explicit qualification limits. No production fixes were made by that review.
