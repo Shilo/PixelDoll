@@ -14,13 +14,22 @@
   import type { Engine, Manifest, Preset } from '../lib/store/manifest.ts'
   import { ui, doc, store, toast, isDemo } from './state.svelte.ts'
   import { moveLabel } from './model.ts'
-  import { ChevronLeft, ChevronRight, Download, Settings2, TriangleAlert, X } from './icons.ts'
+  import { Check, ChevronDown, ChevronLeft, ChevronRight, Download, Settings2, TriangleAlert, X } from './icons.ts'
+  import PopoverArrow from './PopoverArrow.svelte'
+  import { popoverFocus } from './experience/focus.ts'
 
   type Target = { id: Engine; name: string; sub: string; detail: string }
-  // One RPG Maker card; its two sheet layouts are a Version choice shown below the grid while the card is selected, kept as
-  // the stored engine id (rpgmaker or rpgmakerxp) so the choice persists like any format.
-  const RPG_XP = { id: 'rpgmakerxp', name: 'RPG Maker', sub: 'MZ, MV, VX, XP', detail: 'A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views.' } satisfies Target
+  // One RPG Maker card split in two: its body only selects (Standard, or the version already chosen), and its version button
+  // selects and opens the version menu. The version is the stored engine id (rpgmaker or rpgmakerxp), so it persists like any
+  // format. Selecting never opens the menu by itself, so arrow keys across the cards stay plain radio behavior.
+  const RPG_XP = { id: 'rpgmakerxp', name: 'RPG Maker', sub: 'Walking sheets', detail: 'A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views.' } satisfies Target
+  const RPG_VERSIONS = [
+    { id: 'rpgmaker', value: 'Standard', title: 'Standard: MZ, MV, VX Ace, VX', sub: '3 × 4 layout · $Name.png' },
+    { id: 'rpgmakerxp', value: 'XP', title: 'XP and Pokémon Essentials', sub: '4 × 4 layout · Name.png' },
+  ] as const satisfies readonly { id: Engine; value: string; title: string; sub: string }[]
   const cardOf = (id: Engine): Engine => (id === 'rpgmakerxp' ? 'rpgmaker' : id)
+  const rpgVersion = $derived(RPG_VERSIONS.find((v) => v.id === engine) ?? RPG_VERSIONS[0])
+  let versionMenu = $state<HTMLElement>()
   // Product order for this layered 2D workflow; asset formats are useful across engines.
   const GROUPS: { id: string; name: string; targets: Target[] }[] = [
     { id: 'engines', name: 'Engines and frameworks', targets: [
@@ -28,7 +37,7 @@
       { id: 'unity', name: 'Unity', sub: 'Prefab importer', detail: 'Unity Editor importer creates a layered prefab and animation assets. Requires the 2D Sprite package.' },
       { id: 'phaser', name: 'Phaser', sub: 'Atlas + runtime', detail: 'Phaser 3 / 4 atlases and a Container runtime for equipment, colors and synchronized playback.' },
       { id: 'gdevelop', name: 'GDevelop', sub: 'Editable project', detail: 'Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game.' },
-      { id: 'rpgmaker', name: 'RPG Maker', sub: 'MZ, MV, VX, XP', detail: 'A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views.' },
+      { id: 'rpgmaker', name: 'RPG Maker', sub: 'Walking sheets', detail: 'A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views.' },
     ] },
     { id: 'assets', name: 'Assets', targets: [
       { id: 'aseprite', name: 'Aseprite', sub: 'Editable layers', detail: 'One layered .aseprite animation with tags, timing, pivot and your current look. Open in Aseprite 1.3 or later.' },
@@ -256,25 +265,42 @@
         <h3 class="label" id={`export-${group.id}`}>{group.name}</h3>
         <div class="export-targets">
           {#each group.targets as e (e.id)}
-            <label class="export-target">
-              <span class="target-icon" aria-hidden="true" style:mask-image={`url("${assetUrl(`icons/exports/${e.id}.svg`)}")`}></span>
-              <span class="target-label"><span class="engine-name">{e.name}</span><span class="engine-sub">{e.sub}</span></span>
-              <input type="radio" name="export-format" value={e.id} checked={cardOf(engine) === e.id} disabled={!ready} onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })} aria-label={e.name} aria-describedby={cardOf(engine) === e.id ? 'export-description' : undefined} />
-            </label>
+            {#snippet target()}
+              <label class="export-target">
+                <span class="target-icon" aria-hidden="true" style:mask-image={`url("${assetUrl(`icons/exports/${e.id}.svg`)}")`}></span>
+                <span class="target-label"><span class="engine-name">{e.name}</span><span class="engine-sub">{e.sub}</span></span>
+                <input type="radio" name="export-format" value={e.id} checked={cardOf(engine) === e.id} disabled={!ready} onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })} aria-label={e.name} aria-describedby={cardOf(engine) === e.id ? 'export-description' : undefined} />
+              </label>
+            {/snippet}
+            {#if e.id === 'rpgmaker'}
+              <div class="export-split"><div class="split-card" class:on={rpg}>
+                {@render target()}
+                <button type="button" class="version-btn" popovertarget="rpg-version-menu" aria-haspopup="menu" disabled={!ready}
+                  aria-label={`RPG Maker version: ${rpgVersion.title}`} onclick={() => { if (!rpg) chooseEngine(rpgVersion.id) }}>
+                  <span class="version-value">{#each RPG_VERSIONS as v (v.id)}<span aria-hidden="true" class:hidden={v.id !== rpgVersion.id}>{v.value}</span>{/each}</span>
+                  <ChevronDown size={16} aria-hidden="true" />
+                </button>
+              </div></div>
+            {:else}
+              {@render target()}
+            {/if}
           {/each}
         </div>
-        {#if group.id === 'engines' && rpg}
-          <div class="rpg-version">
-            <span class="label" id="rpg-version-label">Version</span>
-            <div class="seg full" role="radiogroup" aria-labelledby="rpg-version-label">
-              <button type="button" role="radio" aria-checked={engine === 'rpgmaker'} aria-label="MZ, MV, VX Ace, VX" tabindex={engine === 'rpgmaker' ? 0 : -1} disabled={!ready} onclick={() => chooseEngine('rpgmaker')}>MZ, MV, VX</button>
-              <button type="button" role="radio" aria-checked={engine === 'rpgmakerxp'} aria-label="XP, Pokémon Essentials" tabindex={engine === 'rpgmakerxp' ? 0 : -1} disabled={!ready} onclick={() => chooseEngine('rpgmakerxp')}>XP</button>
-            </div>
-          </div>
-        {/if}
       </section>
     {/each}
   </fieldset>
+  <div id="rpg-version-menu" class="menu version-menu bu-popover-anchor" data-placement="bottom-end" popover role="menu" aria-label="RPG Maker version" bind:this={versionMenu} ontoggle={popoverFocus}>
+    <PopoverArrow />
+    <div class="menu-surface bu-popover-surface bu-floating">
+      <p class="menu-sec">Version</p>
+      {#each RPG_VERSIONS as v (v.id)}
+        <button type="button" class="row version-row" role="menuitemradio" aria-checked={engine === v.id} onclick={() => { chooseEngine(v.id); versionMenu?.hidePopover() }}>
+          <span class="version-check" aria-hidden="true">{#if engine === v.id}<Check size={16} />{/if}</span>
+          <span class="version-text"><span class="version-title">{v.title}</span><span class="version-sub">{v.sub}</span></span>
+        </button>
+      {/each}
+    </div>
+  </div>
   {#if selected}<p class="export-description muted small" id="export-description" aria-live="polite"><strong>{selected.name}:</strong> {selected.detail}</p>{/if}
   {#if m}
     {#if rpg}<p class="muted">Includes a walking sheet for {m.presets.filter((x) => x.id !== 'current').length ? `your current look and ${n(m.presets.filter((x) => x.id !== 'current').length, 'saved outfit')}` : 'your current look'}.</p>{:else}
@@ -329,9 +355,36 @@
   .export-summary dd { margin:0; overflow-wrap:anywhere; }
   .export-picker { border:0; padding:0; margin:0; min-width:0; display:flex; flex-direction:column; gap:16px; }
   .export-picker h3 { margin:0 0 8px; }
-  .rpg-version { display:flex; align-items:center; gap:12px; margin-top:8px; }
-  .rpg-version .label { flex:none; margin:0; }
-  .rpg-version .seg { flex:1; }
+  /* RPG Maker: the card body selects; the version button beside it (below it on narrow cards) selects and opens the menu. */
+  .export-split { container-type:inline-size; min-width:0; }
+  .split-card { display:grid; grid-template-columns:minmax(0, 1fr) auto; height:100%; box-sizing:border-box; border:1px solid var(--line-strong); border-radius:var(--r-card); background:var(--bg); }
+  .split-card.on { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); background:var(--accent-soft); }
+  .split-card .export-target, .split-card .export-target:has(input:checked) { position:relative; grid-template-columns:28px minmax(0, 1fr); border:0; box-shadow:none; background:transparent; }
+  /* the radio stays the real control: invisible, covering the card body, so any tap on the body checks it */
+  .split-card .export-target input { position:absolute; inset:0; width:100%; height:100%; margin:0; opacity:0; cursor:pointer; }
+  .version-btn { display:flex; align-items:center; justify-content:space-between; gap:4px; min-width:44px; padding:0 10px 0 12px; border:0; border-left:1px solid var(--line-strong); border-radius:0 var(--r-card) var(--r-card) 0; background:transparent; color:var(--text); font:inherit; font-size:var(--fs-sm); font-weight:600; cursor:pointer; }
+  .split-card.on .version-btn { border-color:color-mix(in srgb, var(--accent), transparent 45%); }
+  .version-btn:hover:not(:disabled) { background:color-mix(in srgb, var(--text), transparent 94%); }
+  /* one focus ring around the whole card, as on the other cards, whichever half has focus; keyboard focus on the version
+     half also tints it, so Tab shows whether Space selects the card or opens the menu */
+  .split-card:focus-within { outline:2px solid var(--accent); outline-offset:2px; }
+  .split-card .export-target:focus-within { outline:none; }
+  .version-btn:focus-visible { outline:none; background:color-mix(in srgb, var(--accent), transparent 80%); }
+  .version-btn:disabled { cursor:default; opacity:.6; }
+  /* every value shares one cell, so the button keeps the longest value's width and never shifts */
+  .version-value { display:grid; }
+  .version-value > span { grid-area:1 / 1; }
+  .version-value > .hidden { visibility:hidden; }
+  @container (max-width: 220px) {
+    .split-card { grid-template-columns:minmax(0, 1fr); }
+    .version-btn { min-height:44px; border-left:0; border-top:1px solid var(--line-strong); border-radius:0 0 var(--r-card) var(--r-card); }
+  }
+  .version-menu { width:min(300px, calc(100vw - 16px)); }
+  .version-row { display:grid; grid-template-columns:16px minmax(0, 1fr); align-items:center; width:100%; text-align:left; }
+  .version-check { display:inline-flex; color:var(--accent); }
+  .version-text { display:flex; flex-direction:column; min-width:0; }
+  .version-title { font-weight:600; }
+  .version-sub { color:var(--text-2); font-size:var(--fs-sm); }
   .export-targets { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
   .export-target { display:grid; grid-template-columns:28px minmax(0, 1fr) 16px; align-items:center; gap:10px; padding:12px; min-height:68px; border:1px solid var(--line-strong); border-radius:var(--r-card); background:var(--bg); cursor:pointer; }
   .export-target:has(input:checked) { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); background:var(--accent-soft); }

@@ -282,9 +282,9 @@ controller event: open `gdevelop/game.json` and Preview, or follow its README to
 These integrations keep the layers synchronized and expose equipment and outfit controls.
 
 RPG Maker has no equipment layers, so it gets one finished walking sheet per outfit (current look and saved outfits), at your
-character's own size: the standing view and the walk steps picked from your walk move. Choose **RPG Maker**, then its
-**Version**: **MZ, MV, VX** (one file works in MZ, MV, VX Ace and VX) or **XP** (also Pokémon Essentials). Copy the PNG files
-into your project's characters folder; the zip's README names it. It needs front, side and back views; diagonal views, idle and action
+character's own size: the standing view and the walk steps picked from your walk move. Choose **RPG Maker**; it uses **Standard**
+(one file works in MZ, MV, VX Ace and VX). For RPG Maker XP or Pokémon Essentials, open the version button on the card and
+choose **XP**. Copy the PNG files into your project's characters folder; the zip's README names it. It needs front, side and back views; diagonal views, idle and action
 moves are left out because these formats have no place for them. RPG Maker 2000/2003 need 24 × 32 cells, which would mean
 scaling, so they are not supported.
 

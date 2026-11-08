@@ -461,9 +461,11 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
   await dialog.getByRole('button', { name: 'Back', exact: true }).click()
   const playback = (animations: { id: string; loop: boolean }[]) => Object.fromEntries(animations.map(move => [move.id, move.loop]))
   const expected = { walk: false, 'cross-punch': true }
-  for (const [engine, label] of [['godot', 'Godot'], ['unity', 'Unity'], ['phaser', 'Phaser'], ['gdevelop', 'GDevelop'], ['rpgmaker', 'RPG Maker'], ['rpgmakerxp', 'XP, Pokémon Essentials'], ['aseprite', 'Aseprite'], ['generic', 'PNG + JSON']] as const) {
-    if (engine === 'rpgmakerxp') await dialog.getByRole('radio', { name: label, exact: true }).click() // the RPG Maker card's Version row
-    else await dialog.getByRole('radio', { name: label, exact: true }).check()
+  for (const [engine, label] of [['godot', 'Godot'], ['unity', 'Unity'], ['phaser', 'Phaser'], ['gdevelop', 'GDevelop'], ['rpgmaker', 'RPG Maker'], ['rpgmakerxp', 'XP and Pokémon Essentials'], ['aseprite', 'Aseprite'], ['generic', 'PNG + JSON']] as const) {
+    if (engine === 'rpgmakerxp') { // the RPG Maker card's version menu
+      await dialog.getByRole('button', { name: /^RPG Maker version/ }).click()
+      await page.getByRole('menuitemradio', { name: label }).click()
+    } else await dialog.getByRole('radio', { name: label, exact: true }).check()
     const button = dialog.getByRole('button', { name: /^Download ZIP/ })
     if (engine === 'rpgmaker' || engine === 'rpgmakerxp') { // this south-only test character cannot fill a 4-row RPG Maker sheet
       await expect(dialog.getByText('RPG Maker: characters need front, side and back views; this one has no west, east, north view.')).toBeVisible()
@@ -1545,17 +1547,27 @@ test('export picker has accessible categories, local icons and a native GDevelop
   const nativeProject = JSON.parse(new TextDecoder().decode(entries.get('gdevelop/game.json')!)) as { layouts: unknown[]; resources: { resources: unknown[] } }
   expect(nativeProject.layouts.length).toBeGreaterThan(0)
   expect(nativeProject.resources.resources.length).toBeGreaterThan(0)
-  // RPG Maker: one card; its Version row (shown only while the card is selected) picks the layout, and the zip holds only
-  // that layout's sheets at the root, at the demo's own cell size, with no layer files
+  // RPG Maker: one split card. Its body only selects; its version button selects and opens the version menu (the app's
+  // popover menu). The zip holds only that layout's sheets at the root, at the demo's own cell size, with no layer files.
   const rpgSheets: Record<string, { w: number; h: number }> = {}
-  const version = dialog.getByRole('radiogroup', { name: 'Version' })
-  for (const [engine, segment, cols, name] of [['rpgmaker', 'MZ, MV, VX Ace, VX', 3, /^\$[^/]+\.png$/], ['rpgmakerxp', 'XP, Pokémon Essentials', 4, /^[^$/][^/]*\.png$/]] as const) {
+  const versionButton = dialog.getByRole('button', { name: /^RPG Maker version/ })
+  const versionMenu = page.getByRole('menu', { name: 'RPG Maker version' })
+  for (const [engine, item, cols, name] of [['rpgmaker', 'Standard: MZ, MV, VX Ace, VX', 3, /^\$[^/]+\.png$/], ['rpgmakerxp', 'XP and Pokémon Essentials', 4, /^[^$/][^/]*\.png$/]] as const) {
     await page.getByRole('button', { name: 'Export', exact: true }).first().click()
-    if (engine === 'rpgmaker') await expect(version).toBeHidden() // GDevelop was the last format
-    await dialog.getByRole('radio', { name: 'RPG Maker', exact: true }).check()
-    await expect(version).toBeVisible()
-    await version.getByRole('radio', { name: segment }).click()
-    await expect(version.getByRole('radio', { name: segment })).toHaveAttribute('aria-checked', 'true')
+    if (engine === 'rpgmaker') { // GDevelop was the last format: the card body selects Standard and opens nothing
+      await dialog.getByRole('radio', { name: 'RPG Maker', exact: true }).check()
+      await expect(versionMenu).toBeHidden()
+      // like every card, the focus ring surrounds the whole card, never only the half that has focus
+      const ring = (selector: string) => dialog.locator(selector).first().evaluate((element) => getComputedStyle(element).outlineStyle)
+      expect([await ring('.split-card'), await ring('.split-card .export-target')]).toEqual(['solid', 'none'])
+      await expect(versionButton).toHaveAccessibleName('RPG Maker version: Standard: MZ, MV, VX Ace, VX')
+    }
+    await versionButton.click()
+    await expect(versionMenu).toBeVisible()
+    await expect(versionMenu.getByRole('menuitemradio', { name: 'Standard: MZ, MV, VX Ace, VX' })).toHaveAttribute('aria-checked', 'true') // Standard is current both times
+    await versionMenu.getByRole('menuitemradio', { name: item }).click()
+    await expect(versionMenu).toBeHidden()
+    await expect(versionButton).toHaveAccessibleName(`RPG Maker version: ${item}`)
     await expect(dialog.locator('#export-description')).toContainText('Copy the PNG files into')
     await expect(dialog.getByText('Includes a walking sheet for your current look')).toBeVisible()
     await expect(downloadButton).toBeEnabled({ timeout: 30_000 })
@@ -1572,18 +1584,35 @@ test('export picker has accessible categories, local icons and a native GDevelop
     rpgSheets[engine] = { w: image.w / cols, h: image.h / 4 }
   }
   expect(rpgSheets.rpgmaker).toEqual(rpgSheets.rpgmakerxp) // same native cell in both layouts
-  // the XP choice persists: the card stays selected with XP, and other formats hide the row
+  // XP persists; the button keeps one width for both values; clicking outside the open menu closes it and keeps the choice
   await page.getByRole('button', { name: 'Export', exact: true }).first().click()
   await expect(dialog.getByRole('radio', { name: 'RPG Maker', exact: true })).toBeChecked()
-  await expect(version.getByRole('radio', { name: 'XP, Pokémon Essentials' })).toHaveAttribute('aria-checked', 'true')
-  // touch sizing comes from the shared `.seg` rule (44 px under pointer: coarse); here the row must stay usable at phone width
+  await expect(versionButton).toHaveAccessibleName('RPG Maker version: XP and Pokémon Essentials')
+  const xpWidth = (await versionButton.boundingBox())!.width
+  await versionButton.click()
+  await expect(versionMenu).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('export-rpg-version-desktop.png') })
+  await dialog.locator('#export-description').click()
+  await expect(versionMenu).toBeHidden()
+  await expect(dialog.getByRole('radio', { name: 'RPG Maker', exact: true })).toBeChecked()
+  await expect(versionButton).toHaveAccessibleName('RPG Maker version: XP and Pokémon Essentials')
+  await versionButton.click()
+  await versionMenu.getByRole('menuitemradio', { name: 'Standard: MZ, MV, VX Ace, VX' }).click()
+  expect((await versionButton.boundingBox())!.width).toBe(xpWidth)
+  // phone: the version button becomes a full-width strip under the card body, at least 44 px tall
   await page.setViewportSize({ width: 390, height: 844 })
-  await expect(version).toBeInViewport({ ratio: 1 })
+  const body = dialog.locator('.split-card .export-target')
+  await expect(versionButton).toBeInViewport({ ratio: 1 })
+  const [bodyBox, buttonBox] = [(await body.boundingBox())!, (await versionButton.boundingBox())!]
+  expect(buttonBox.height).toBeGreaterThanOrEqual(44)
+  expect(buttonBox.y).toBeGreaterThanOrEqual(bodyBox.y + bodyBox.height - 1)
+  expect(Math.abs(buttonBox.width - bodyBox.width)).toBeLessThanOrEqual(2)
+  await versionButton.click()
+  await expect(versionMenu).toBeVisible()
   await page.screenshot({ path: testInfo.outputPath('export-rpg-version-390.png') })
+  await page.keyboard.press('Escape')
+  await expect(versionMenu).toBeHidden()
   expect(await dialog.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true)
-  await dialog.getByRole('radio', { name: 'Godot', exact: true }).check()
-  await expect(version).toBeHidden()
   await page.getByRole('button', { name: 'Close export' }).click()
   expect(errors).toEqual([])
   expect(apiRequests).toEqual([])

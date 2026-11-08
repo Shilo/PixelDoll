@@ -595,11 +595,13 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   look) and `<character>_<outfit>` otherwise. Names are ASCII: accents are dropped (é → e), other characters become `_`, an
   empty outfit name falls back to its id, collisions get `_2`…, and Windows device names (CON, NUL…) get a trailing `_`. Research and sources:
   `docs/research/rpg-maker-export-2026-11-07.md`.
-- One **RPG Maker** card ("MZ, MV, VX, XP") with a **Version** row shown under the Engines grid while the card is selected,
-  so a zip only holds what its engine reads: "MZ, MV, VX" (engine id `rpgmaker`, the default; MZ, MV, VX Ace and VX share one
-  file) writes `$<name>.png`, 3 × 4 cells; "XP" (`rpgmakerxp`, also Pokémon Essentials) writes `<name>.png`, 4 × 4 cells. The
-  stored engine id remembers the version. The row is a radiogroup of 44 px touch segments outside the card's label (a control
-  inside a radio label is invalid). RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
+- One split **RPG Maker** card, so a zip only holds what its engine reads. The card body (its radio) only selects; the
+  version button beside it (a full-width 44 px strip under it on cards narrower than 220 px) selects and opens the version
+  menu, the app's popover menu with the current version checked. Selecting never opens the menu, so arrow keys across the
+  cards stay plain radio behavior; clicking outside closes the menu and keeps the choice. **Standard** (engine id `rpgmaker`,
+  the default; MZ, MV, VX Ace and VX share one file) writes `$<name>.png`, 3 × 4 cells; **XP** (`rpgmakerxp`, also Pokémon
+  Essentials) writes `<name>.png`, 4 × 4 cells. The button keeps the longest value's width so it never shifts, and the stored
+  engine id remembers the version. RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
   rig's mirrored or generated view; diagonals are dropped). The engines derive the cell from the image size, so the cell is
   native, never scaled: the art's bounds around the pivot, padded to an even width with the pivot at its center, from the
   highest opaque row (MV and MZ place balloons from the sprite height) down to the feet line (`bakedPivot.y`), or lower when art hangs below the feet (kept; more than 2 px adds a warning, since the character then
