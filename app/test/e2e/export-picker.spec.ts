@@ -461,10 +461,10 @@ test('actual UI ZIPs materialize global playback in every engine and asset forma
   await dialog.getByRole('button', { name: 'Back', exact: true }).click()
   const playback = (animations: { id: string; loop: boolean }[]) => Object.fromEntries(animations.map(move => [move.id, move.loop]))
   const expected = { walk: false, 'cross-punch': true }
-  for (const [engine, label] of [['godot', 'Godot'], ['unity', 'Unity'], ['phaser', 'Phaser'], ['gdevelop', 'GDevelop'], ['rpgmaker', 'RPG Maker'], ['aseprite', 'Aseprite'], ['generic', 'PNG + JSON']] as const) {
+  for (const [engine, label] of [['godot', 'Godot'], ['unity', 'Unity'], ['phaser', 'Phaser'], ['gdevelop', 'GDevelop'], ['rpgmaker', 'RPG Maker'], ['rpgmakerxp', 'RPG Maker XP'], ['aseprite', 'Aseprite'], ['generic', 'PNG + JSON']] as const) {
     await dialog.getByRole('radio', { name: label, exact: true }).check()
     const button = dialog.getByRole('button', { name: /^Download ZIP/ })
-    if (engine === 'rpgmaker') { // this south-only test character cannot fill a 4-row RPG Maker sheet
+    if (engine === 'rpgmaker' || engine === 'rpgmakerxp') { // this south-only test character cannot fill a 4-row RPG Maker sheet
       await expect(dialog.getByText('RPG Maker: characters need front, side and back views; this one has no west, east, north view.')).toBeVisible()
       await expect(button).toBeDisabled()
       continue
@@ -593,7 +593,7 @@ test('Export settings persist explicit None, list and All choices, and toggle co
   await openSettings()
   for (let i = 0; i < count; i++) { await moves.nth(i).check(); await expect(moves.nth(i)).toBeEnabled() }
   const dressed = dialog.getByRole('checkbox', { name: 'Include dressed character sheets', exact: true })
-  await expect(dressed).toHaveAccessibleDescription('Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included.')
+  await expect(dressed).toHaveAccessibleDescription('Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included, except in RPG Maker sheets, which are always combined.')
   await dressed.uncheck(); await expect(dressed).toBeEnabled()
   await back(); await expect(summary).toHaveText(['All', 'None'])
   await dialog.getByRole('button', { name: 'Close export' }).click()
@@ -1504,9 +1504,9 @@ test('export picker has accessible categories, local icons and a native GDevelop
   await expect(dialog.getByRole('heading', { name: 'Engines and frameworks', exact: true })).toBeVisible()
   await expect(dialog.getByRole('heading', { name: 'Assets', exact: true })).toBeVisible()
   const radios = dialog.getByRole('radio')
-  await expect(radios).toHaveCount(7)
+  await expect(radios).toHaveCount(8)
   expect(await radios.evaluateAll((inputs) => inputs.map((input) => input.getAttribute('aria-label'))))
-    .toEqual(['Godot', 'Unity', 'Phaser', 'GDevelop', 'RPG Maker', 'Aseprite', 'PNG + JSON'])
+    .toEqual(['Godot', 'Unity', 'Phaser', 'GDevelop', 'RPG Maker', 'RPG Maker XP', 'Aseprite', 'PNG + JSON'])
   await expect(dialog.getByRole('radio', { name: 'Godot', exact: true })).toBeChecked()
   await dialog.getByRole('radio', { name: 'Godot', exact: true }).focus()
   await page.keyboard.press('ArrowRight')
@@ -1544,21 +1544,27 @@ test('export picker has accessible categories, local icons and a native GDevelop
   const nativeProject = JSON.parse(new TextDecoder().decode(entries.get('gdevelop/game.json')!)) as { layouts: unknown[]; resources: { resources: unknown[] } }
   expect(nativeProject.layouts.length).toBeGreaterThan(0)
   expect(nativeProject.resources.resources.length).toBeGreaterThan(0)
-  // RPG Maker: one baked walking sheet per outfit and version folder, at the demo's own cell size
-  await page.getByRole('button', { name: 'Export', exact: true }).first().click()
-  await dialog.getByRole('radio', { name: 'RPG Maker', exact: true }).check()
-  await expect(dialog.locator('#export-description')).toContainText('RPG Maker MZ, MV, VX Ace, VX and XP')
-  await expect(downloadButton).toBeEnabled({ timeout: 30_000 })
-  const [rpg] = await Promise.all([page.waitForEvent('download'), downloadButton.click()])
-  expect(rpg.suggestedFilename()).toContain('-rpgmaker.pixeldoll.zip')
-  const rpgEntries = await unzip(new Uint8Array(await readFile((await rpg.path())!)))
-  const sheets = [...rpgEntries.keys()].filter(name => name.startsWith('rpgmaker/') && name.endsWith('.png'))
-  const vx = sheets.find(name => /^rpgmaker\/mz-mv\/img\/characters\/\$[^/]+\.png$/.test(name)), xp = sheets.find(name => /^rpgmaker\/xp\/Graphics\/Characters\/[^$/][^/]*\.png$/.test(name))
-  expect(vx && xp).toBeTruthy()
-  const vxImage = await decodePngBytes(rpgEntries.get(vx!)!), xpImage = await decodePngBytes(rpgEntries.get(xp!)!)
-  expect([vxImage.w % 3, vxImage.h % 4, xpImage.w % 4, xpImage.h % 4, vxImage.h === xpImage.h, vxImage.w / 3 === xpImage.w / 4]).toEqual([0, 0, 0, 0, true, true])
-  expect(sheets.some(name => name.startsWith('rpgmaker/vx-ace-vx/Graphics/Characters/$'))).toBe(true)
-  expect(new TextDecoder().decode(rpgEntries.get('rpgmaker/README.txt')!)).toContain('RPG Maker MZ and MV')
+  // RPG Maker cards: only that layout's sheets at the zip root, at the demo's own cell size, with no layer files
+  const rpgSheets: Record<string, { w: number; h: number }> = {}
+  for (const [engine, label, cols, name] of [['rpgmaker', 'RPG Maker', 3, /^\$[^/]+\.png$/], ['rpgmakerxp', 'RPG Maker XP', 4, /^[^$/][^/]*\.png$/]] as const) {
+    await page.getByRole('button', { name: 'Export', exact: true }).first().click()
+    await dialog.getByRole('radio', { name: label, exact: true }).check()
+    await expect(dialog.locator('#export-description')).toContainText('Copy the PNG files into')
+    await expect(dialog.getByText('Includes a walking sheet for your current look')).toBeVisible()
+    await expect(downloadButton).toBeEnabled({ timeout: 30_000 })
+    const [rpg] = await Promise.all([page.waitForEvent('download'), downloadButton.click()])
+    expect(rpg.suggestedFilename()).toContain(`-${engine}.pixeldoll.zip`)
+    const rpgEntries = await unzip(new Uint8Array(await readFile((await rpg.path())!)))
+    const top = [...rpgEntries.keys()].filter(entry => !entry.startsWith('cells/'))
+    const sheets = top.filter(entry => entry.endsWith('.png'))
+    expect(sheets.length).toBeGreaterThan(0)
+    expect(sheets.every(entry => name.test(entry))).toBe(true)
+    expect(top.filter(entry => !entry.endsWith('.png')).sort()).toEqual(['CREDITS.txt', 'README.txt', 'project.json'])
+    const image = await decodePngBytes(rpgEntries.get(sheets[0])!)
+    expect([image.w % cols, image.h % 4]).toEqual([0, 0])
+    rpgSheets[engine] = { w: image.w / cols, h: image.h / 4 }
+  }
+  expect(rpgSheets.rpgmaker).toEqual(rpgSheets.rpgmakerxp) // same native cell in both layouts
   expect(errors).toEqual([])
   expect(apiRequests).toEqual([])
 })

@@ -4,6 +4,8 @@
   import Sheet from './Sheet.svelte'
   import { tick, untrack } from 'svelte'
   import { exportZip } from '../lib/export/export.ts'
+  import { walkMove } from '../lib/export/rpgmaker.ts'
+  import { DEFAULT_MOVE } from '../lib/rig/rig.ts'
   import { stableStringify } from '../lib/image/hash.ts'
   import { coverageGaps, moveDirs, storeVariants } from '../lib/dress/dress.ts'
   import * as db from '../lib/store/db.ts'
@@ -14,7 +16,7 @@
   import { moveLabel } from './model.ts'
   import { ChevronLeft, ChevronRight, Download, Settings2, TriangleAlert, X } from './icons.ts'
 
-  type Target = { id: Engine; name: string; sub: string; detail: string }
+  type Target = { id: Engine; name: string; sub: string; detail: string; icon?: string }
   // Product order for this layered 2D workflow; asset formats are useful across engines.
   const GROUPS: { id: string; name: string; targets: Target[] }[] = [
     { id: 'engines', name: 'Engines and frameworks', targets: [
@@ -22,7 +24,8 @@
       { id: 'unity', name: 'Unity', sub: 'Prefab importer', detail: 'Unity Editor importer creates a layered prefab and animation assets. Requires the 2D Sprite package.' },
       { id: 'phaser', name: 'Phaser', sub: 'Atlas + runtime', detail: 'Phaser 3 / 4 atlases and a Container runtime for equipment, colors and synchronized playback.' },
       { id: 'gdevelop', name: 'GDevelop', sub: 'Editable project', detail: 'Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game.' },
-      { id: 'rpgmaker', name: 'RPG Maker', sub: 'Walking sheets', detail: 'A walking character sheet per outfit for RPG Maker MZ, MV, VX Ace, VX and XP, at your character’s own size. Needs front, side and back views.' },
+      { id: 'rpgmaker', name: 'RPG Maker', sub: 'MZ, MV, VX Ace, VX', detail: 'A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views.' },
+      { id: 'rpgmakerxp', name: 'RPG Maker XP', sub: 'XP, Pokémon Essentials', icon: 'rpgmaker', detail: 'A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views.' },
     ] },
     { id: 'assets', name: 'Assets', targets: [
       { id: 'aseprite', name: 'Aseprite', sub: 'Editable layers', detail: 'One layered .aseprite animation with tags, timing, pivot and your current look. Open in Aseprite 1.3 or later.' },
@@ -59,7 +62,8 @@
   const playbackSummary = $derived(!once.length ? 'None' : once.length === names.length ? 'All' : once.map(animationLabel).join(', '))
   const outfits = $derived(m?.presets.filter(p => p.id !== 'current') ?? [])
   // RPG Maker sheets are always dressed composites, whatever the setting says
-  const outfitSummary = $derived(!baked && engine !== 'rpgmaker' ? 'None' : outfits.length ? 'Current look + saved outfits' : 'Current look')
+  const rpg = $derived(engine === 'rpgmaker' || engine === 'rpgmakerxp')
+  const outfitSummary = $derived(!baked && !rpg ? 'None' : outfits.length ? 'Current look + saved outfits' : 'Current look')
   const items = $derived(m ? m.items.filter((i) => i.slot !== 'body') : [])
   const reviewItems = $derived(m ? m.items.filter((i) => i.designWarnings?.length || (i.qa && i.qa.status !== 'pass')).map((i) => i.name) : [])
   const PLAY_ONCE = 'Play animation once'
@@ -144,11 +148,13 @@
     }
   }
   // B10 (T1 P1-1): views a move or an item doesn't have are empty in the sheets; say so before the download
+  // RPG Maker sheets use only the standing view and the walk, and their export warns about walk views itself
   const gaps = $derived.by(() => {
     if (!m) return []
-    const out: string[] = []
-    for (const a of m.rig.animations) { const d = moveDirs(m, a.id); if (d.length < m.rig.directions.length) out.push(`${nice(a.id)} has ${d.join(' and ')} only`) }
-    for (const it of items) { const g = coverageGaps(m, it); if (g.length) out.push(`${it.name} has no ${g.map((x) => x.replace('-', ' ').replace('/', ' ')).join(', ')} frames`) }
+    const out: string[] = [], walk = rpg ? walkMove(m.rig)?.id : undefined
+    const used = (key: string) => !rpg || key.startsWith(`${DEFAULT_MOVE}/`) || (!!walk && key.startsWith(`${walk}/`))
+    if (!rpg) for (const a of m.rig.animations) { const d = moveDirs(m, a.id); if (d.length < m.rig.directions.length) out.push(`${nice(a.id)} has ${d.join(' and ')} only`) }
+    for (const it of items) { const g = coverageGaps(m, it).filter(used); if (g.length) out.push(`${it.name} has no ${g.map((x) => x.replace('-', ' ').replace('/', ' ')).join(', ')} frames`) }
     return out
   })
 
@@ -235,7 +241,7 @@
     <hr class="bu-separator export-divider" />
     <label class="check export-dressed">
       <input type="checkbox" checked={baked} disabled={saving || !ready} aria-label={DRESSED_SHEETS} aria-describedby="export-dressed-description" onchange={(e) => changeSetting(e.currentTarget, { dressedCharacterSheets: e.currentTarget.checked })} />
-      <span><span>{DRESSED_SHEETS}</span><span class="muted small" id="export-dressed-description">Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included.</span></span>
+      <span><span>{DRESSED_SHEETS}</span><span class="muted small" id="export-dressed-description">Adds PNG sprite sheets of your current look and each saved outfit, with the body and equipped items combined. Separate layers are always included, except in RPG Maker sheets, which are always combined.</span></span>
     </label>
   {:else}
   <fieldset class="export-picker" aria-label="Export format">
@@ -245,7 +251,7 @@
         <div class="export-targets">
           {#each group.targets as e (e.id)}
             <label class="export-target">
-              <span class="target-icon" aria-hidden="true" style:mask-image={`url("${assetUrl(`icons/exports/${e.id}.svg`)}")`}></span>
+              <span class="target-icon" aria-hidden="true" style:mask-image={`url("${assetUrl(`icons/exports/${e.icon ?? e.id}.svg`)}")`}></span>
               <span class="target-label"><span class="engine-name">{e.name}</span><span class="engine-sub">{e.sub}</span></span>
               <input type="radio" name="export-format" value={e.id} checked={engine === e.id} disabled={!ready} onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })} aria-label={e.name} aria-describedby={engine === e.id ? 'export-description' : undefined} />
             </label>
@@ -256,10 +262,11 @@
   </fieldset>
   {#if selected}<p class="export-description muted small" id="export-description" aria-live="polite"><strong>{selected.name}:</strong> {selected.detail}</p>{/if}
   {#if m}
-    <p class="muted">Includes {n(m.rig.directions.length, 'direction')} · {n(m.rig.animations.length, 'move')} · {n(items.length, 'item')} · {m.presets.filter((x) => x.id !== 'current').length ? `${n(m.presets.filter((x) => x.id !== 'current').length, 'outfit')} + your current look` : 'your current look'}, each item on its own layer sheet.</p>
+    {#if rpg}<p class="muted">Includes a walking sheet for {m.presets.filter((x) => x.id !== 'current').length ? `your current look and ${n(m.presets.filter((x) => x.id !== 'current').length, 'saved outfit')}` : 'your current look'}.</p>{:else}
+    <p class="muted">Includes {n(m.rig.directions.length, 'direction')} · {n(m.rig.animations.length, 'move')} · {n(items.length, 'item')} · {m.presets.filter((x) => x.id !== 'current').length ? `${n(m.presets.filter((x) => x.id !== 'current').length, 'outfit')} + your current look` : 'your current look'}, each item on its own layer sheet.</p>{/if}
     {#if reviewItems.length}<p class="notice warn small"><TriangleAlert size={14} /><span>Saved quality or appearance flags: {reviewItems.join(', ')}. Review the flagged moves and directions before using these sprites. Export remains available, including explicitly accepted artwork.</span></p>{/if}
     {#if result?.rigIssues.length}<p class="notice warn small"><TriangleAlert size={14} /><span>Body frames failed saved checks: {result.rigIssues.join(', ')}. Inspect these moves before using the exported sprites.</span></p>{/if}
-    {#if gaps.length}<p class="notice small"><TriangleAlert size={14} /><span>{gaps.join(' · ')}. Those frames stay empty in the sheets; manifest.json lists the directions of each move.</span></p>{/if}
+    {#if gaps.length}<p class="notice small"><TriangleAlert size={14} /><span>{gaps.join(' · ')}. Those frames stay empty in the sheets{rpg ? '' : '; manifest.json lists the directions of each move'}.</span></p>{/if}
   {/if}
   {#if result?.errors.length}
     {#each result.errors as e (e)}<p class="notice bad small"><TriangleAlert size={14} />{e}</p>{/each}
@@ -269,7 +276,7 @@
   <section aria-labelledby="export-settings-summary">
     <h3 class="label" id="export-settings-summary">Current settings</h3>
     <dl class="export-summary small">
-      <dt>{PLAY_ONCE}</dt><dd>{ready ? playbackSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>
+      {#if !rpg}<dt>{PLAY_ONCE}</dt><dd>{ready ? playbackSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>{/if}
       <dt>{DRESSED_SHEETS}</dt><dd>{ready ? outfitSummary : refreshing ? 'Loading…' : 'Unavailable'}</dd>
     </dl>
   </section>

@@ -2,13 +2,15 @@
 
 Research date: 2026-11-07. Research only: no repo edits, no PixelLab calls.
 
-> **Implemented differently (2026-11-07):** the exporter (`app/src/lib/export/rpgmaker.ts`, manifest-spec §6.8) is one
-> "RPG Maker" target whose zip carries drop-in folders `rpgmaker/mz-mv/img/characters/`, `rpgmaker/vx-ace-vx/Graphics/Characters/`
-> and `rpgmaker/xp/Graphics/Characters/` (names `<character>_<outfit>`), instead of a version choice and the §5 paths. Feet are
+> **Implemented differently (2026-11-07, revised 2026-11-08):** the exporter (`app/src/lib/export/rpgmaker.ts`, manifest-spec
+> §6.8) has two cards: "RPG Maker" (MZ, MV, VX Ace, VX: `$<character>_<outfit>.png`) and "RPG Maker XP" (XP, Pokémon Essentials:
+> `<character>_<outfit>.png`), each writing only its sheets at the zip root, instead of a version choice and the §5 paths. Feet are
 > anchored on the baked pivot's feet line rather than the lowest opaque pixel, so a weapon tip below the feet cannot lift the
-> character; art below the feet extends the cell (a warning above 2 px). Cells are trimmed to the art, top included. The widest
-> stride uses the ankle keypoints (LEFT LEG / RIGHT LEG, measured first) instead of the foot anchors. Unite and the side-view
-> battler sheet are not implemented.
+> character; art below the feet extends the cell (a warning above 2 px). Cells are trimmed to the art, top included. Steps are
+> picked by the signed lead of the left ankle along each view's facing, with managed template views taking the side view's
+> phase (all 12 south, east and north bench views; the widest-spread rule of §5 got 7 of 12), instead of the foot anchors. Unite and the
+> side-view battler sheet are not implemented. 2026-11-08 follow-up: WITH cannot import images; U2U is unreleased and only
+> mentions MV/MZ map assets, so it is rechecked at release.
 Confidence tags: **[V]** verified in engine source or an official page, **[C]** corroborated by several community sources, **[U]** unverified or single weak source.
 
 ## TL;DR

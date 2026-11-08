@@ -269,10 +269,11 @@ selected equipment posing. The previous body remains if any quality check still 
 ## Export
 
 Press **Export** (toolbar), choose an **Export format**, and download the zip. **Engines and frameworks** lists Godot, Unity,
-Phaser, GDevelop and RPG Maker; **Assets** lists Aseprite and PNG + JSON. Export is
+Phaser, GDevelop, RPG Maker and RPG Maker XP; **Assets** lists Aseprite and PNG + JSON. Export is
 free and runs on your device. Check **Also export finished characters** to also get one ready-made sheet per outfit.
 
-Each zip has a `README.txt` with a quick start for that engine. Copy the whole folder into your project.
+Each zip has a `README.txt` with a quick start for that engine. Copy the whole folder into your project (for RPG Maker, only
+the PNG files go into the characters folder).
 
 Godot includes a native scene, animation resources and an equipment runtime. Unity includes an Editor importer that creates
 a layered prefab, sliced sprites and animation assets; follow its package requirements before importing. Phaser includes
@@ -281,10 +282,11 @@ controller event: open `gdevelop/game.json` and Preview, or follow its README to
 These integrations keep the layers synchronized and expose equipment and outfit controls.
 
 RPG Maker has no equipment layers, so it gets one finished walking sheet per outfit (current look and saved outfits), at your
-character's own size: the standing view and walk frames picked from your walk move. Copy the folder for your version (MZ and MV,
-VX Ace and VX, or XP) into your project; the zip's README says where. It needs front, side and back views; diagonal views,
-idle and action moves are left out because these formats have no place for them. RPG Maker 2000/2003 need 24 × 32 cells,
-which would mean scaling, so they are not supported.
+character's own size: the standing view and the walk steps picked from your walk move. Choose **RPG Maker** for MZ, MV, VX Ace
+and VX (one file works in all four) or **RPG Maker XP** for XP and Pokémon Essentials, then copy the PNG files into your
+project's characters folder; the zip's README names it. It needs front, side and back views; diagonal views, idle and action
+moves are left out because these formats have no place for them. RPG Maker 2000/2003 need 24 × 32 cells, which would mean
+scaling, so they are not supported.
 
 The selected format's description stays visible; hover a card for more detail. Arrow keys move between native radio choices.
 GameMaker is deferred until native runtime verification is available. Unreal is not currently an export option.

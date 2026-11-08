@@ -157,7 +157,7 @@ export interface Preset {
   items: Record<string, string | null>; // slot -> item id
   variants: Record<string, string>;
 }
-export const EXPORT_ENGINES = ['generic', 'godot', 'unity', 'phaser', 'gdevelop', 'aseprite', 'rpgmaker'] as const;
+export const EXPORT_ENGINES = ['generic', 'godot', 'unity', 'phaser', 'gdevelop', 'aseprite', 'rpgmaker', 'rpgmakerxp'] as const;
 export type Engine = typeof EXPORT_ENGINES[number];
 export interface ExportInfo {
   exportedAt: string;

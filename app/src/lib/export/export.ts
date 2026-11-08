@@ -5,7 +5,7 @@ import type { Engine, Project } from '../store/manifest.ts';
 import { zip, type ZipEntry } from '../store/zip.ts';
 import { bodyCutVariantCount, bodyCutVariantLimit, cellImg, MAX_BODY_CUT_VARIANTS, withTuckVariants } from '../compose/compose.ts';
 import { asepriteFiles } from './aseprite.ts';
-import { coreFiles, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
+import { coreFiles, creditsCsv, exportManifest, genericFiles, validate, type OutFile } from './generic.ts';
 import { godotFiles } from './godot.ts';
 import { phaserFiles } from './phaser.ts';
 import { unityFiles } from './unity.ts';
@@ -40,9 +40,12 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
     return { entries: [], warnings: [], errors: ['The base body has no visible animation frames to export.'] };
   }
   const { manifest: m, warnings } = exportManifest(p, o);
-  const files = coreFiles(p, m);
+  // RPG Maker uses no layers, manifest or generic README: its zip holds only its sheets, credits and the editable copy
+  const rpg = o.engines.includes('rpgmaker') ? 'vx' : o.engines.includes('rpgmakerxp') ? 'xp' : null;
+  if (rpg && o.engines.length > 1) return { entries: [], warnings, errors: ['RPG Maker sheets export on their own; choose one format.'] };
+  const files: OutFile[] = rpg ? [{ name: 'CREDITS.txt', data: creditsCsv(m, false) }] : coreFiles(p, m);
   const sheets = new Map(files.flatMap((f) => (typeof f.data === 'object' && 'w' in f.data ? [[f.name, f.data] as [string, Img]] : [])));
-  files.push(...genericFiles(p, m, sheets, { strips: o.engines.includes('generic'), baked: o.baked }));
+  if (!rpg) files.push(...genericFiles(p, m, sheets, { strips: o.engines.includes('generic'), baked: o.baked }));
   if (o.engines.includes('godot')) {
     try { files.push(...godotFiles(m)); }
     catch (error) {
@@ -59,8 +62,8 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
       return { entries: [], warnings, errors: [error.message] };
     }
   }
-  if (o.engines.includes('rpgmaker')) {
-    try { const r = rpgMakerFiles(p, m); files.push(...r.files); warnings.push(...r.warnings); }
+  if (rpg) {
+    try { const r = rpgMakerFiles(p, m, rpg); files.push(...r.files); warnings.push(...r.warnings); }
     catch (error) {
       if (!(error instanceof Error) || !error.message.startsWith('RPG Maker: ')) throw error;
       return { entries: [], warnings, errors: [error.message] };

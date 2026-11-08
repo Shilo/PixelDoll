@@ -227,7 +227,7 @@ export interface Preset {
 export interface ExportInfo {
   exportedAt: string;
   layout: 'pixeldoll-sheets/1';
-  engines: ('generic' | 'godot' | 'unity' | 'phaser' | 'gdevelop' | 'aseprite' | 'rpgmaker')[];
+  engines: ('generic' | 'godot' | 'unity' | 'phaser' | 'gdevelop' | 'aseprite')[]; // RPG Maker zips ship no manifest.json
   pixelsPerUnit: number;                  // Unity; default = rig.cell.w
   baked?: string[];                       // preset ids with baked composites
   bakedCell?: { w: number; h: number };   // v1.3.1: cell of every baked sheet = union of all exported layers around the pivot
@@ -443,7 +443,7 @@ are preserved; use the character root's depth for positioning among scene object
                                                   #   (B11: not .csv, which Godot imports as a translation table)
   layers/<slot>/<item>/<layer>/<anim>.png         # ONE untrimmed PNG per layer per animation
                                                   #   rows = rig.directions (mirrored rows baked), cols = cells
-  baked/<preset>/<anim>.png                       # optional composites, same grid on export.bakedCell (RPG Maker, crowds)
+  baked/<preset>/<anim>.png                       # optional composites, same grid on export.bakedCell (crowds, engines without layering)
   project.json, cells/<rgba-sha256>.png           # editable import copy (§7)
   godot/      <item>_<layer>.tres, library.tres, Paperdoll.tscn, paperdoll.gd, README.txt
   unity/      Editor/PixelDollImporter.cs, Runtime/Paperdoll.cs, Editor/Runtime asmdefs, README.txt
@@ -451,9 +451,10 @@ are preserved; use the character root's depth for positioning among scene object
   gdevelop/   game.json, Paperdoll.js, images/<registered-frame>.png, README.txt
   generic/    <item>_<layer>/<anim>_<dir>_strip<N>.png, README.txt
   aseprite/   <name>.aseprite, README.txt          # B11: layered, zero-code path (§6.5)
-  rpgmaker/   mz-mv/img/characters/$<name>.png, vx-ace-vx/Graphics/Characters/$<name>.png,
-              xp/Graphics/Characters/<name>.png, README.txt   # baked walking sheets per outfit (§6.8)
 ```
+
+RPG Maker zips (§6.8) instead hold only `$<name>.png` (RPG Maker card) or `<name>.png` (RPG Maker XP card) per outfit at the
+root, `README.txt`, `CREDITS.txt` and the editable copy (§7): no layer sheets, `manifest.json` or baked sheets.
 
 Why per-animation sheets: an all-animation sheet passes 4096 px quickly (8 dirs × 12 anims × 64 px [R3]); per-animation sheets are
 at most 16 × 64 = 1024 px wide and 8 × 64 = 512 px tall at the v1 limits. Frame names everywhere: **`<anim>_<dir>_<cell>`**
@@ -594,19 +595,26 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   look) and `<character>_<outfit>` otherwise. Names are ASCII: accents are dropped (é → e), other characters become `_`, an
   empty outfit name falls back to its id, collisions get `_2`…, and Windows device names (CON, NUL…) get a trailing `_`. Research and sources:
   `docs/research/rpg-maker-export-2026-11-07.md`.
-- MZ, MV, VX Ace, VX: `$<name>.png`, 3 × 4 cells; XP: `<name>.png`, 4 × 4 cells. Rows: south, west, east, north (west is the
+- Two cards, one layout each, so a zip only holds what its engines read: **RPG Maker** (MZ, MV, VX Ace, VX share one file)
+  writes `$<name>.png`, 3 × 4 cells; **RPG Maker XP** (also Pokémon Essentials) writes `<name>.png`, 4 × 4 cells. A version
+  picker would only change the README's folder name. RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
   rig's mirrored or generated view; diagonals are dropped). The engines derive the cell from the image size, so the cell is
   native, never scaled: the art's bounds around the pivot, padded to an even width with the pivot at its center, from the
   highest opaque row (MV and MZ place balloons from the sprite height) down to the feet line (`bakedPivot.y`), or lower when art hangs below the feet (kept; more than 2 px adds a warning, since the character then
   stands that much higher; walk frames often dip a pixel or two).
 - Columns: MZ/MV/VX play 1, 2, 1, 0, so they are [stride A, standing, stride B]; XP plays 0, 1, 2, 3, so [standing, stride A,
   passing, stride B]. Standing is the `default` move's frame; without one, the walk's passing frame, else the first move's
-  frame 0. Stride A is the walk frame with the widest ankle spread in that view's `measured` keypoints (else the requested
-  `keypoints`, else the first playlist frame); passing and stride B are the frames on screen a quarter and half a cycle later
-  by playlist time. West uses east's choice when it mirrors east. A view the walk lacks, or a character with no move named walk, repeats the standing frame
+  frame 0. Stride A is the left-foot step: the playlist entry whose lead (left ankle ahead of the right along the view's
+  facing: east +x, west −x, south +y, north −y; `measured` keypoints, else the requested `keypoints`) most exceeds the lead half
+  a cycle later; without both ankles on every frame, the first playlist entry. Views that share a `managed-` motion with the
+  side view take the side view's step, since one template keeps a gait phase per frame index and side views show steps about
+  four times more clearly. Passing and stride B are the frames on screen a quarter and half a cycle later by playlist time. An
+  unsigned ankle gap picked a square stance in front and back views (7 of 12 bench views right: south, east and north of the 4
+  bench bodies); this rule picked the steps in all 12 (2026-11-08; body A's north view lands one frame early, as its strides do). West uses east's choice when it mirrors east. A view the walk lacks, or a character with no move named walk, repeats the standing frame
   (with a warning). Characters without south, east, west and north views are refused.
-- Not supported: RPG Maker 2000/2003 (fixed 24 × 32 cells, indexed color), Unite (manual per-image registration; superseded),
-  console and handheld editions (no custom images).
+- Not supported: RPG Maker 2000/2003 (fixed 24 × 32 cells, indexed color), Unite (per-direction strips registered one by
+  one; off Steam and superseded by U2U), WITH and other console or handheld editions (no custom images), and U2U (unreleased;
+  no announced character import). The research is in `docs/research/rpg-maker-export-2026-11-07.md`.
 
 ## 7. Editable import copy
 

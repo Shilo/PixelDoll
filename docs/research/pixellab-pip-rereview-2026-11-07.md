@@ -138,8 +138,10 @@ a pauldron flare, plus the fixture's 6 px.
    unarmed, contact depends on weapon reach and the game's hitbox, the peak differs per view, and bow, cast and multi-hit moves
    have none or several. Pip's own `--hit` is a hand-typed number. Developers tune active and recovery windows in their engines
    and can read frame indices from every export. Revisit on user requests or for motions whose contact is known by construction.
-2. **RPG Maker export: implemented.** One "RPG Maker" target writes a baked walking sheet per outfit at native size for MZ, MV,
-   VX Ace and VX (`$` 3 × 4) and XP (4 × 4). Format and adoption research: [rpg-maker-export-2026-11-07.md](rpg-maker-export-2026-11-07.md);
+2. **RPG Maker export: implemented.** Two cards write a baked walking sheet per outfit at native size: "RPG Maker" for MZ, MV,
+   VX Ace and VX (`$` 3 × 4) and "RPG Maker XP" for XP and Pokémon Essentials (4 × 4). Pip's blueprint also asks for one
+   version and writes one sheet; it pins template frame indices because pixel metrics misread steps, while PixelDoll reads
+   the signed ankle lead from keypoints. Format and adoption research: [rpg-maker-export-2026-11-07.md](rpg-maker-export-2026-11-07.md);
    contract: manifest-spec §6.8. 2000/2003 (fixed 24 × 32 cells), Unite (manual registration, superseded) and console editions
    (no custom images) are out of scope. An independent review found two defects (duplicate warnings could crash the sheet,
    accents became underscores) and smaller issues; all were fixed before tests passed.
