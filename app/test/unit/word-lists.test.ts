@@ -68,7 +68,7 @@ test('review R3: a dark detail on one side is reported as uncertain, a gray smud
   expect(smudgedViews('torso_outer', 'a blue tunic', [tunic(CHARCOAL), tunic(), tunic()])).toEqual(['dark', false, false])
   // a gray patch in one view stays a smudge
   expect(smudgedViews('torso_outer', 'a blue tunic', [tunic(ASH), tunic(), tunic()])).toEqual(['smudge', false, false])
-  expect(plainReason('D1 keyframe rest/south/0: a dark patch not seen in the other views; check that it is part of the design')).toBe('A dark patch is not seen in the other views; check that it is part of the design')
+  expect(plainReason('D1 keyframe rest/south/0: a dark patch not seen in the other views, possibly not part of the design')).toBe('A dark patch is not seen in the other views; check that it is part of the design')
 })
 
 test('review round 2: color pairs and adjective lists keep shields in the off hand; "of" names keep their meaning', async () => {

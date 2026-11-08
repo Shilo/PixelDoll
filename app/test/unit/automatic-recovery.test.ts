@@ -622,3 +622,47 @@ test('an initial frozen-grid item retains its first flagged grid and never submi
   expect(result!.qa!.qa.footwearReviewFrames).toBe(3); expect(draft.calls[1].old).toEqual([]);
   const count = ledger.enqueues; await runItem(JSON.parse(JSON.stringify(draft)), f.ctx); expect(ledger.enqueues).toBe(count);
 });
+
+test('a kept item saves its dark-patch review note, beside the gray smudge note (2026-11-07 session counter-review F2)', async () => {
+  const saved: Record<string, string[] | undefined> = {};
+  for (const [name, rgb] of [['dark', [12, 12, 12]], ['gray', [140, 140, 140]], ['none', null]] as const) {
+    const f = await singleStandingFixture(), rig = f.ctx.rec.manifest.rig;
+    for (const dir of ['east', 'north'] as const) { // three standing views, so one view can differ from the others
+      rig.directions.push({ id: dir }); rig.rest![dir] = structuredClone(rig.rest!.south!);
+      rig.animations[0].sources![dir] = structuredClone(rig.animations[0].sources!.south!);
+      f.ctx.rec.manifest.items[0].layers[0].cells!.walking![dir] = [rig.rest!.south!.image];
+      f.ctx.rec.skeletons![`walking/${dir}/0`] = f.ctx.rec.skeletons!['walking/south/0'];
+    }
+    const body = f.ctx.project.images.get(rig.rest!.south!.image)!;
+    const views = [0, 1, 2].map((i) => { const o = toChroma(body, 'green'); paint(o, 12, 13, 8, 8, [200, 40, 50]); if (i === 0 && rgb) paint(o, 14, 14, 4, 4, [...rgb]); return o; });
+    ledger.output = async () => views;
+    ledger.project = structuredClone(f.ctx.rec);
+    const d = newDraft(f.ctx, { name: `N ${name}`, slot: 'back', prompt: 'a red cloak', key: 'green', anims: ['walking'], dirs: ['south', 'east', 'north'] });
+    const r = (await runItem(d, f.ctx))!;
+    if (name === 'dark') expect(r.qa!.warnings.some((w) => w.includes('dark patch'))).toBe(true);
+    const { item } = await acceptItem(d, f.ctx, r);
+    saved[name] = ledger.project.manifest.items.find((i) => i.id === item.id)!.designWarnings;
+  }
+  expect(saved.dark).toEqual([expect.stringMatching(/^D1 keyframe .*south.*: a dark patch not seen in the other views/)])
+  expect(saved.gray).toEqual([expect.stringMatching(/^D1 keyframe .*gray smudges/)])
+  expect(saved.none).toBeUndefined()
+})
+
+test('a held dress keeps its hand wording on an unpadded 256 px cell (2026-11-07 session counter-review F3)', async () => {
+  for (const size of [64, 256]) for (const slot of ['main_hand', 'off_hand']) {
+    const f = await fixture();
+    f.ctx.rec.manifest.rig.cell = { w: size, h: size }; f.ctx.rec.manifest.items[0].layers[0].cell = { w: size, h: size };
+    for (const [hash] of f.ctx.project.images) { const b = makeImg(size, size); paint(b, size / 2 - 3, 8, 6, 20, [180, 130, 100]); f.ctx.project.images.set(hash, b); ledger.blobs.set(hash.slice(7), new Blob([await encodePngBytes(b) as Uint8Array<ArrayBuffer>])); }
+    let req: Req | undefined; ledger.output = async (q) => { req = q; throw new Error('stop before transport'); };
+    const d = newDraft(f.ctx, { name: 'P', slot, prompt: slot === 'off_hand' ? 'a wooden shield' : 'a steel sword', key: 'green', anims: ['walking'], dirs: ['south'] });
+    await runItem(d, f.ctx).catch(() => undefined); // the capture stops the run before any output
+    const body = req!.body as { description: string; image_size: { width: number } }, hand = slot === 'off_hand' ? 'left' : 'right';
+    expect(body.image_size.width, `${size} ${slot}`).toBe(Math.min(size + 32, 256)); // the canvas cap is unchanged
+    expect(body.description, `${size} ${slot}`).toContain(`held in the character's ${hand} hand`);
+    expect(body.description, `${size} ${slot}`).toContain('exactly one')
+  }
+  // a worn item gets no hand wording
+  const f = await fixture(); let req: Req | undefined; ledger.output = async (q) => { req = q; throw new Error('stop before transport'); };
+  await runItem(newDraft(f.ctx, { name: 'C', slot: 'back', prompt: 'a red cloak', key: 'green', anims: ['walking'], dirs: ['south'] }), f.ctx).catch(() => undefined);
+  expect((req!.body as { description: string }).description).not.toMatch(/held in the character/)
+})

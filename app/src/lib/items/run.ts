@@ -22,7 +22,7 @@ import { chromaLayer, keyAllowed, keyFor, KEY_NAME, KEYS, keyScore, KT, nearKeyS
 import { garmentBand, referenceBodies } from './garment-coverage.ts';
 import { designConsistency, expectsWaistBand, type StandingDesignView } from './design-consistency.ts';
 import { EDIT_MIN_FRAMES, editFrameCap, png, routes, type Req } from '../pixellab/routes.ts';
-import { GATES, heldParts, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, grayShare, smudgedViews, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, heldPhrase, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
+import { GATES, heldParts, planAnchoredMove, reusesStanding, anchored, planGens, SLOTS, gridEstimate, repairGridLayout, bandMask, cutGrid, g2Fails, grayShare, smudgedViews, gridPrompt, packGrid, bandOf, buildItem, frozenGrid, hiddenViews, callAnim, callParts, canPose, cellKeypoints, clipKeypoints, cutAllow, cutRows, dirGate, extractCell, posedTol, f0Last, dressItem, inputCell, itemPrompt, itemQa, itemRoute, padImg, padOf, planItem, postProcess, restKey, slotOf, unrotate, type CallKind, type CellOut, type ItemSpec, type QaResult } from './items.ts';
 
 /** kind: 'edit' (packed edit-animation-v2, anchor cell after the first), 'dress' (rest keyframes), 'pose' (one clip x dir). */
 export interface CallState { cells: string[]; seed: number; recId?: string; rerolls: number; old: string[]; kind?: CallKind; frozen?: true; reference?: { image: Sha256; cell: CellKey } }
@@ -231,7 +231,7 @@ async function callRequest(d: Draft, k: number, ctx: RigCtx): Promise<Req> {
     }
     for (const key of c.cells) frames.push(bytesToBase64(await encodePngBytes(padImg(inputCell(baseCell(ctx, key, c.kind === 'dress'), route), pad))));
     // held (S5): dress the rest views on the 96 canvas, "pointing down and slightly outward", one weapon
-    req = itemRoute.edit(frames, itemPrompt(pad ? heldPhrase(d.spec.prompt, d.spec.slot) : d.spec.prompt, route, c.cells, c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined)), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
+    req = itemRoute.edit(frames, itemPrompt(dressItem(d.spec), route, c.cells, c.reference?.cell ?? (anchored(k, c.kind) ? d.calls[0].cells[0] : undefined)), c.seed, { w: rig.cell.w + 2 * pad, h: rig.cell.h + 2 * pad });
   }
   return req;
 }
@@ -454,7 +454,7 @@ export async function evaluateItem(d: Draft, ctx: RigCtx, standingPalettes?: Rea
       !c.area && !hidden.has(o.key.split('/')[1]) && `G4 keyframe ${o.key}: item missing`,
       // B14: flag a smudged design for review (T3: red cape north hem); it holds the early pose start, but only G1 stops poses
       smudged[i] === 'smudge' && `D1 keyframe ${o.key}: ${(grayShare(c.layer) * 100).toFixed(0)} % gray smudges in a colorful design`].filter(Boolean);
-    if (smudged[i] === 'dark') hiddenWarnings.push(`D1 keyframe ${o.key}: a dark patch not seen in the other views; check that it is part of the design`);
+    if (smudged[i] === 'dark') hiddenWarnings.push(`D1 keyframe ${o.key}: a dark patch not seen in the other views, possibly not part of the design`);
     if (bad.length) g1.set(o.k, [g1.get(o.k), ...bad].filter(Boolean).join('; '));
   }
   const retryKey = route === 'none' ? undefined : measuredKeyCollision(d.spec.prompt, route, kfCells, dressOuts, g1);
@@ -570,7 +570,9 @@ export async function acceptItem(d: Draft, ctx: RigCtx, res?: ItemResult): Promi
     spec: JSON.parse(JSON.stringify(d.spec)) as ItemSpec, rig: ctx.rec.manifest.rig, cells: r.cells, route: d.spec.key, qa, ...(Object.keys(dressed).length ? { dressed } : {}), pad: padOf(d.spec.slot, d.spec.method, ctx.rec.manifest.rig.cell),
     provenance, anchorCell: d.calls.length > 1 ? d.calls[0].cells[0] : undefined,
   });
-  const designWarnings = [...new Set([...r.g1.values()].flatMap((why) => why.split(/;\s*/)))];
+  // Accepted keyframe issues, and the dark-patch review notes, stay with the saved item (2026-11-07 session counter-review F2).
+  const darkNotes = r.qa.warnings.filter((why) => why.startsWith('D1 '));
+  const designWarnings = [...new Set([...[...r.g1.values()].flatMap((why) => why.split(/;\s*/)), ...darkNotes])];
   if (designWarnings.length) { item.designWarnings = designWarnings; if (item.qa) item.qa.status = 'accepted'; }
   // A move published since ctx was read (addBodyClip rebases only items already stored) changed baseHash. When every body cell
   // this item was made against is unchanged (moves were only added), it still fits and moves to the new hash, as addBodyClip

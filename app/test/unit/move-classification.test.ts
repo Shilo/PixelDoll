@@ -71,6 +71,38 @@ test('one bad trunk estimate cannot make a walk an action either', () => {
   }
 })
 
+test('one detached trunk, face or limb joint cannot make a walk an action (2026-11-07 session counter-review F1)', () => {
+  // A lone joint whose own chain to the trunk looks plausible still stretches the bones to its children: the neck below the
+  // hips, the nose, an elbow or a knee thrown away from its wrist or ankle, or one hip moving the hip center.
+  for (const b of ['A', 'B', 'C', 'N']) {
+    const rig = bench(b), walk = rig.animations.find(a => a.id === 'walk')!
+    for (const dir of Object.keys(walk.sources ?? {}) as DirectionName[]) {
+      const src = walk.sources![dir]!, base = src.measured ?? src.keypoints!
+      for (const label of ['NECK', 'NOSE', 'RIGHT ELBOW', 'LEFT ELBOW', 'RIGHT KNEE', 'LEFT KNEE', 'RIGHT HIP', 'LEFT HIP'])
+        for (let x = 0.025; x < 1; x += 0.05) for (let y = 0.025; y < 1; y += 0.05) {
+          src.measured = base.map((f, i) => (i === 1 ? f.map(p => (p.label === label ? { ...p, x, y } : p)) : f))
+          expect(decisiveAction(rig, 'walk', dir), `${b} ${dir} ${label} (${x.toFixed(3)}, ${y.toFixed(3)})`).toBe(false)
+        }
+      src.measured = base === src.keypoints ? undefined : base
+    }
+  }
+})
+
+test('one detached hip cannot lean a walk into an action (review of the F1 correction)', () => {
+  // A stored 64 px import walk (spikes/api/out/user-import-review-2026-10-27, south-east, frame 0): moving only the left hip
+  // shifts the hip center so the neck and shoulders seem to lean 41 degrees about it, while every bone stays under the limit.
+  const kp = (rows: [string, number, number][]) => rows.map(([label, x, y]) => ({ label, x, y }))
+  const rest = kp([['NOSE', 0.56, 0.306], ['NECK', 0.489, 0.399], ['RIGHT SHOULDER', 0.419, 0.408], ['RIGHT ELBOW', 0.388, 0.511], ['RIGHT ARM', 0.413, 0.599], ['LEFT SHOULDER', 0.56, 0.39], ['LEFT ELBOW', 0.585, 0.495], ['LEFT ARM', 0.601, 0.577], ['RIGHT HIP', 0.47, 0.579], ['RIGHT KNEE', 0.451, 0.706], ['RIGHT LEG', 0.428, 0.811], ['LEFT HIP', 0.549, 0.576], ['LEFT KNEE', 0.556, 0.699], ['LEFT LEG', 0.558, 0.791], ['RIGHT EYE', 0.524, 0.281], ['LEFT EYE', 0.578, 0.281], ['RIGHT EAR', 0.444, 0.274], ['LEFT EAR', 0.544, 0.269]])
+  const frame = kp([['NOSE', 0.603, 0.313], ['NECK', 0.526, 0.403], ['RIGHT SHOULDER', 0.444, 0.404], ['RIGHT ELBOW', 0.378, 0.468], ['RIGHT ARM', 0.357, 0.565], ['LEFT SHOULDER', 0.607, 0.403], ['LEFT ELBOW', 0.637, 0.485], ['LEFT ARM', 0.683, 0.543], ['RIGHT HIP', 0.494, 0.584], ['RIGHT KNEE', 0.532, 0.711], ['RIGHT LEG', 0.551, 0.82], ['LEFT HIP', 0.56, 0.586], ['LEFT KNEE', 0.482, 0.686], ['LEFT LEG', 0.432, 0.74], ['RIGHT EYE', 0.56, 0.285], ['LEFT EYE', 0.626, 0.285], ['RIGHT EAR', 0.477, 0.276], ['LEFT EAR', 0.592, 0.274]])
+  const rig = (measured: typeof frame) => ({ cell: { w: 64, h: 64 }, rest: { 'south-east': { keypoints: rest } }, animations: [{ id: 'walking', sources: { 'south-east': { measured: [measured] } } }] }) as unknown as Rig
+  expect(decisiveAction(rig(frame), 'walking', 'south-east')).toBe(false)
+  expect(decisiveAction(rig(frame.map(p => (p.label === 'LEFT HIP' ? { ...p, x: 0.34, y: 0.54 } : p))), 'walking', 'south-east')).toBe(false)
+  // the lean itself still decides when the whole upper body tips: the shoulders, neck and head turned 60 degrees about the hips
+  const hips = [(0.494 + 0.56) / 2, 0.585], turn = (x: number, y: number) => { const c = Math.cos(Math.PI / 3), s = Math.sin(Math.PI / 3), dx = x - hips[0], dy = y - hips[1]; return { x: hips[0] + dx * c - dy * s, y: hips[1] + dx * s + dy * c } }
+  const upper = /NOSE|NECK|SHOULDER|ELBOW|ARM|EYE|EAR/
+  expect(decisiveAction(rig(frame.map(p => (upper.test(p.label) ? { ...p, ...turn(p.x, p.y) } : p))), 'walking', 'south-east')).toBe(true)
+})
+
 test('a short slash named like a gait is still an action (4 of its 8 frames)', () => {
   const rig = bench('A'), slash = rig.animations.find(a => a.id === 'slash')!
   for (const pick of [[0, 2, 4, 6], [1, 3, 5, 7]]) {

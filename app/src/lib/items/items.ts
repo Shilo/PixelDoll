@@ -152,8 +152,10 @@ export function gridPrompt(o: { item: string; slot: string; key: Key; anim: stri
 // ---------- S5 held route: oversize canvas, held wording, frame 0 last ----------
 /** S5: held items are generated on a 96 px canvas around the same pivot (64 + 2 × 16): no blade px on the border, no flips. */
 export const HELD_PAD = 16;
-/** Oversize padding of an item's layers (skeleton-pose held items only; the anchor route stays on the rig cell). */
-export const padOf = (slot: string, method?: Method, cell?: { w: number; h: number }) => (method === 'skel' && slotOf(slot).class === 'held' ? Math.max(0, Math.min(HELD_PAD, Math.floor((256 - Math.max(cell?.w ?? 64, cell?.h ?? 64)) / 2))) : 0);
+/** The S5 held route: a held item posed with the skeleton (the anchor route stays on the rig cell, without held wording). */
+const heldSkel = (slot: string, method?: Method) => method === 'skel' && slotOf(slot).class === 'held';
+/** Oversize padding of an item's layers (S5 held route only), up to the 256 px canvas cap. */
+export const padOf = (slot: string, method?: Method, cell?: { w: number; h: number }) => (heldSkel(slot, method) ? Math.max(0, Math.min(HELD_PAD, Math.floor((256 - Math.max(cell?.w ?? 64, cell?.h ?? 64)) / 2))) : 0);
 /** Grow a cell by `p` transparent px on every side (same pivot, never resampled). */
 export function padImg(im: Img, p: number): Img {
   if (!p) return im;
@@ -166,6 +168,9 @@ export const padKeypoints = (k: Keypoint[], cell: { w: number; h: number }, p: n
   p ? k.map((q) => ({ ...q, x: +((q.x * cell.w + p) / (cell.w + 2 * p)).toFixed(4), y: +((q.y * cell.h + p) / (cell.h + 2 * p)).toFixed(4) })) : k;
 const handOf = (slot: string) => (slot === 'off_hand' ? 'left' : 'right');
 const oneHeld = (slot: string) => (slot === 'off_hand' ? 'exactly one held item, nothing in the right hand' : 'exactly one weapon, no other weapons, no scabbard, no shield');
+/** The dress description of an item: held wording on the S5 route at every size, including an unpadded 256 px cell (2026-11-07
+ * session counter-review F3), and the plain description otherwise. */
+export const dressItem = (spec: { prompt: string; slot: string; method?: Method }) => (heldSkel(spec.slot, spec.method) ? heldPhrase(spec.prompt, spec.slot) : spec.prompt);
 /** S5 dress wording: continue the forearm ("upright" bent the arm and broke posing), one object only. */
 export const heldPhrase = (item: string, slot: string) => `${item}, held in the character's ${handOf(slot)} hand, pointing down and slightly outward; ${oneHeld(slot)}; the arms stay exactly as they are`;
 /** Mean joint distance (px) between two keypoint sets. */
@@ -866,6 +871,8 @@ export const HELD_SIGNED_REACH = 10;
 const LOCOMOTION = new Set(['idle', 'breathe', 'breathing', ...WALK_WORDS, ...RUN_WORDS, 'jog', 'jogs', 'jogging', 'sprint', 'sprints', 'sprinting', 'stroll', 'strolling', 'march', 'marching', 'trot', 'trotting']);
 /** Each limb and face joint's parent toward the trunk, for the bone-length plausibility check in decisiveAction. */
 const BONE: Record<string, string> = { 'RIGHT EYE': 'NOSE', 'LEFT EYE': 'NOSE', 'RIGHT EAR': 'NOSE', 'LEFT EAR': 'NOSE', NOSE: 'NECK', 'RIGHT SHOULDER': 'NECK', 'LEFT SHOULDER': 'NECK', 'RIGHT ELBOW': 'RIGHT SHOULDER', 'LEFT ELBOW': 'LEFT SHOULDER', 'RIGHT ARM': 'RIGHT ELBOW', 'LEFT ARM': 'LEFT ELBOW', 'RIGHT KNEE': 'RIGHT HIP', 'LEFT KNEE': 'LEFT HIP', 'RIGHT LEG': 'RIGHT KNEE', 'LEFT LEG': 'LEFT KNEE' };
+/** The joints whose bone runs to each joint (BONE inverted). */
+const KIDS = Object.entries(BONE).reduce<Record<string, string[]>>((m, [c, p]) => ((m[p] ??= []).push(c), m), {});
 /** Motion no idle, walk or run reaches, from the stored joints (measured, else requested) against the standing pose: on the frozen bench and
  * the KayKit clips, locomotion moved joints at most 0.39 body heights, raised wrists at most 0.21 and leaned at most 20°, while
  * slashes and casts reach 0.7, raise wrists over the head, and deaths lean 70° or more. Smaller motion cannot tell a run from an
@@ -884,23 +891,28 @@ export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): bool
   // 2026-11-07 review: hip-relative positions so a jump is not a pose change; the nearer of a joint's own and its mirror
   // joint's standing position, so one estimate with swapped hands cannot flip a front-view walk; lean relative to standing.
   // A joint counts only while every bone on its chain to the trunk keeps a plausible length (within 0.2 body heights of
-  // standing; stored clips stretch at most 0.06): one bad estimate, such as an eye placed at the frame corner, must not turn a
+  // standing; stored PixelLab clips stretch at most 0.06, retargeted chibi clips 0.23): one bad estimate, such as an eye placed at the frame corner, must not turn a
   // walk into an action and silently skip its held-item checks (2026-11-07 counter-review R2). The trunk is checked the same
-  // way: a frame whose hip width grew is skipped (the hip center places every joint), the neck's bone runs to the hip center,
-  // and a lean counts only when the shoulders lean with the neck. Real slashes are decided by one joint, the wrist, often in
-  // only two or three frames, so one plausible decisive frame still decides.
+  // way: a frame whose hip width or thigh grew is skipped (the hip center places every joint), the neck's bone runs to the hip
+  // center, and a lean counts only when the shoulders lean with the neck, about the hips and about the knees (one detached hip
+  // moves the hip center alone). A joint also needs the bones to its own children
+  // plausible: a lone detached neck, nose, elbow or knee stretches them (2026-11-07 session counter-review F1). Real slashes
+  // are decided by one joint, the wrist, often in only two or three frames, so one plausible decisive frame still decides.
   const len = (q: typeof rest, a: string, b: string) => Math.hypot(q[a].x - q[b].x, q[a].y - q[b].y) / H;
   const torso = (q: typeof rest, h: number[]) => Math.hypot(q.NECK.x - h[0], q.NECK.y - h[1]) / H;
   const shoulders = (q: typeof rest) => mid(q, 'RIGHT SHOULDER', 'LEFT SHOULDER');
   return frames.some((p) => {
-    if (len(p, 'RIGHT HIP', 'LEFT HIP') - len(rest, 'RIGHT HIP', 'LEFT HIP') > 0.2) return false;
+    const grew = (a: string, b: string) => len(p, a, b) - len(rest, a, b) > 0.2;
+    if (grew('RIGHT HIP', 'LEFT HIP') || grew('RIGHT KNEE', 'RIGHT HIP') || grew('LEFT KNEE', 'LEFT HIP')) return false;
     const hips = mid(p, 'RIGHT HIP', 'LEFT HIP'), dx = hips[0] - restHips[0], dy = hips[1] - restHips[1];
     const torsoOk = torso(p, hips) - torso(rest, restHips) <= 0.2;
-    const plausible = (l: string): boolean => (l === 'NECK' ? torsoOk : !BONE[l] || (len(p, l, BONE[l]) - len(rest, l, BONE[l]) <= 0.2 && plausible(BONE[l])));
+    const chain = (l: string): boolean => (l === 'NECK' ? torsoOk : !BONE[l] || (!grew(l, BONE[l]) && chain(BONE[l])));
+    const plausible = (l: string) => chain(l) && !(KIDS[l] ?? []).some((c) => grew(c, l));
     const from = (l: string, q: string) => Math.hypot(p[l].x - dx - rest[q].x, p[l].y - dy - rest[q].y);
     const moved = Math.max(0, ...Object.keys(rest).filter(plausible).map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))) / H;
     const rise = Math.max(-1, ...['RIGHT ARM', 'LEFT ARM'].filter(plausible).map((l) => (rest[l].y - (p[l].y - dy)) / H));
-    const lean = !torsoOk ? 0 : Math.min(Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(angle(shoulders(p), hips) - angle(shoulders(rest), restHips)));
+    const knees = (q: typeof rest) => mid(q, 'RIGHT KNEE', 'LEFT KNEE');
+    const lean = !torsoOk ? 0 : Math.min(Math.abs(angle(shoulders(p), knees(p)) - angle(shoulders(rest), knees(rest))), Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(angle(shoulders(p), hips) - angle(shoulders(rest), restHips)));
     return moved >= 0.6 || rise >= 0.45 || lean >= 40;
   });
 }

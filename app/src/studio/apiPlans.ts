@@ -4,7 +4,7 @@ import { type CreateSpec, type MoveSpec, bodyMoveIssue, creationLooks, isAuthore
 import { basePrompt } from './model.ts'
 import { actionOf, poseBatches, poseCallGens } from '../lib/rig/clips.ts'
 import { pickKey } from '../lib/image/chroma.ts'
-import { gridEstimate, repairGridLayout, frozenGrid, planItem, planAnchoredMove, itemPrompt, planGens, padOf, heldPhrase, type ItemSpec } from '../lib/items/items.ts'
+import { gridEstimate, repairGridLayout, frozenGrid, planItem, planAnchoredMove, itemPrompt, planGens, padOf, dressItem, type ItemSpec } from '../lib/items/items.ts'
 import { defaultMethod, type Draft, type RigCtx } from '../lib/items/run.ts'
 import { standingCoverage, type NewItemInput } from './itemRoute.ts'
 import type { StoredProject } from '../lib/store/project.ts'
@@ -55,7 +55,7 @@ function itemCalls(spec: Pick<ItemSpec, 'prompt' | 'key' | 'slot' | 'method'>, c
     }
     const pose = call.kind === 'pose', anchor = index > 0 && !pose ? calls[0].cells[0] : undefined
     return { method: 'POST', path: pose ? '/animate-with-skeleton-v3' : '/edit-animation-v2', label: `${pose ? 'Pose equipment' : call.kind === 'dress' ? 'Dress standing views' : 'Edit packed frames'} · ${call.cells.length} frames`,
-      ...(pose ? {} : { body: { description: itemPrompt(pad ? heldPhrase(spec.prompt, spec.slot) : spec.prompt, spec.key, call.cells, anchor), ...(call.seed === undefined ? {} : { seed: call.seed }), ...(cell ? { image_size: { width: cell.w + 2 * pad, height: cell.h + 2 * pad } } : {}), no_background: true } }),
+      ...(pose ? {} : { body: { description: itemPrompt(dressItem(spec), spec.key, call.cells, anchor), ...(call.seed === undefined ? {} : { seed: call.seed }), ...(cell ? { image_size: { width: cell.w + 2 * pad, height: cell.h + 2 * pad } } : {}), no_background: true } }),
       generations: planGens([{ kind: pose ? 'pose' : 'edit', cells: call.cells }], cell && { w: cell.w + 2 * pad, h: cell.h + 2 * pad }),
       note: `Known fields only. ${pose ? 'Sends the dressed reference image, exact stored poses, appearance, action, direction and seed.' : 'Frames and image_size are prepared from this character on submission.'} ${!pose && !anchor && call.cells.length === 1 ? 'The single input is duplicated for the two-frame API minimum; only the first returned frame is used.' : ''} ${call.seed === undefined ? selectedSeed : ''} Coverage: ${call.cells.join(', ')}.` }
   })
