@@ -927,7 +927,13 @@ export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): bool
     const moved = Math.max(0, ...Object.keys(rest).filter(plausible).map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))) / H;
     const rise = Math.max(-1, ...['RIGHT ARM', 'LEFT ARM'].filter(plausible).map((l) => (rest[l].y - (p[l].y - dy)) / H));
     const bend = angle(shoulders(p), hips) - angle(shoulders(rest), restHips);
-    const lean = !torsoOk ? 0 : Math.min(...pivots.map(([f, scale]) => Math.abs(angle(shoulders(p), f(p)) - angle(shoulders(rest), f(rest))) * scale[Math.sign(bend) || 1]), Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(bend));
+    const pivotLean = pivots.map(([f, scale]) => Math.abs(angle(shoulders(p), f(p)) - angle(shoulders(rest), f(rest))) * scale[Math.sign(bend) || 1]);
+    const hipLean = Math.min(pivotLean[1], pivotLean[2]);
+    // A coherent pelvis can counter-tilt under the torso. Two disjoint upper-body axes can corroborate that lean when
+    // the individual hips cannot; a lone bad hip, head or shoulder estimate cannot turn both axes. Keep the knee check.
+    const upperLean = hipLean >= 40 || Math.abs(bend) < 40 ? 0 : Math.min(...[['NOSE', 'NECK'], ['RIGHT SHOULDER', 'LEFT SHOULDER']].map(([a, b]) =>
+      plausible(a) && plausible(b) && len(rest, a, b) > 0 && len(p, a, b) > 0 ? angleDiff(Math.atan2(p[a].y - p[b].y, p[a].x - p[b].x), Math.atan2(rest[a].y - rest[b].y, rest[a].x - rest[b].x)) : 0));
+    const lean = !torsoOk ? 0 : Math.min(pivotLean[0], Math.max(hipLean, upperLean), Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(bend));
     return moved >= 0.6 || rise >= 0.45 || lean >= 40;
   });
 }

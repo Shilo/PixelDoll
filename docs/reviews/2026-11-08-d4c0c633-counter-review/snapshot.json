@@ -1,0 +1,7 @@
+{
+  "revision": "d4c0c633d4ba9fbffd8a9765420a0527c100e208",
+  "sourceSha256": "9f734681eba58e7543f7c78ffccba258dfcebd7d3004d4cfedf3a81d625ac738",
+  "snapshot": "temp.local/pinned",
+  "dependencies": "Junction to existing app/node_modules; no install and no dependency changes",
+  "exclusions": "Uncommitted source, tests, exports and private .env are not archived"
+}

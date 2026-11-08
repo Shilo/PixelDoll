@@ -1,0 +1,1380 @@
+{
+  "before": "3eed2a9c",
+  "after": "d4c0c633",
+  "ancestor": "50eeea36",
+  "sourceHashes": {
+    "before": "21cbcf54fe9bdaf567bbe1df890af6be94dd68a01b2fbeae675ee4f480a28028",
+    "after": "9f734681eba58e7543f7c78ffccba258dfcebd7d3004d4cfedf3a81d625ac738",
+    "ancestor": "e72e87e9391c872c98b3ab7eb52d4427f6a5082271993482a38e5aced445fb02"
+  },
+  "rows": 480,
+  "changed": 10,
+  "changedSummaries": [
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "clean",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median",
+          "G5 run/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median",
+          "G5 run/south: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "clean",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median",
+          "G5 run/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run/north: min area 32 % of median"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 32 % of median",
+          "G5 run/north: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    }
+  ],
+  "n1": [
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "clean",
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median",
+          "G5 run/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median",
+          "G5 run/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median",
+          "G5 run/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median",
+          "G5 run/south: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median",
+          "G5 run/south: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median",
+          "G5 run/south: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "clean",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median",
+          "G5 run/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median",
+          "G5 run/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median",
+          "G5 run/south: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median",
+          "G5 run/south: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "clean",
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median",
+          "G5 run/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median",
+          "G5 run/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median",
+          "G5 run/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": false,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 32 % of median",
+          "G5 run/north: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 32 % of median",
+          "G5 run/north: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 32 % of median",
+          "G5 run/north: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "clean",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median",
+          "G5 run/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median",
+          "G5 run/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 30,
+      "swing": 45,
+      "badMeasuredHip": true,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run/north: min area 32 % of median"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 32 % of median",
+          "G5 run/north: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 32 % of median",
+          "G5 run/north: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    }
+  ],
+  "originalC1": [
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "clean",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median",
+          "G5 run/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: item missing"
+        ],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "south",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median"
+        ],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 32 % of median",
+          "G5 run/south: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "clean",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median",
+          "G5 run/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: item missing"
+        ],
+        "warnings": [
+          "G8 run/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "run",
+      "dir": "north",
+      "lean": 45,
+      "swing": 0,
+      "badMeasuredHip": false,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run/north: min area 32 % of median"
+        ],
+        "valid": true
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run/north: min area 32 % of median"
+        ],
+        "valid": true
+      },
+      "ancestor": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 32 % of median",
+          "G5 run/north: area CV 0.28 > 0.15"
+        ],
+        "warnings": [],
+        "valid": true
+      }
+    }
+  ]
+}

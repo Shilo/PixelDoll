@@ -1,0 +1,639 @@
+{
+  "scratchOnly": true,
+  "candidateSha256": "51a292257d79e1da499b9bfe0454f24eeaade4d050f18d1f4ad8da48327b0728",
+  "n1Decisive": false,
+  "stored": [
+    {
+      "body": "A",
+      "id": "walk",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "A",
+      "id": "walk",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "A",
+      "id": "walk",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "A",
+      "id": "slash",
+      "dir": "south",
+      "before": true,
+      "candidate": true
+    },
+    {
+      "body": "A",
+      "id": "slash",
+      "dir": "east",
+      "before": true,
+      "candidate": true
+    },
+    {
+      "body": "A",
+      "id": "slash",
+      "dir": "north",
+      "before": true,
+      "candidate": true
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "south-east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "north-east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "C",
+      "id": "walk",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "C",
+      "id": "walk",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "C",
+      "id": "walk",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "N",
+      "id": "walk",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "N",
+      "id": "walk",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "body": "N",
+      "id": "walk",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    }
+  ],
+  "projected": [
+    {
+      "fixture": "c27man",
+      "clip": "idle",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "idle",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "idle",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "idle",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "walk",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "walk",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "walk",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "walk",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "run",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "run",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "run",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "run",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "attack",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "attack",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "attack",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "attack",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "hurt",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "hurt",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "hurt",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "hurt",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "death",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "death",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "death",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "death",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "idle",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "idle",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "idle",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "idle",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "walk",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "walk",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "walk",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "walk",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "run",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "run",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "run",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "run",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "attack",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "attack",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "attack",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "attack",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "hurt",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "hurt",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "hurt",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "hurt",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "death",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "death",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "death",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "death",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "idle",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "idle",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "idle",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "idle",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "walk",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "walk",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "walk",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "walk",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "run",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "run",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "run",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "run",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "attack",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "attack",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "attack",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "attack",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "hurt",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "hurt",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "hurt",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "hurt",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "death",
+      "dir": "south",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "death",
+      "dir": "east",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "death",
+      "dir": "north",
+      "before": false,
+      "candidate": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "death",
+      "dir": "west",
+      "before": false,
+      "candidate": false
+    }
+  ],
+  "outlierGrid": {
+    "bodies": 4,
+    "direction": "south",
+    "step": 0.05,
+    "tested": 25992,
+    "changes": []
+  }
+}

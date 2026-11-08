@@ -1,5 +1,7 @@
 # Preserved repair and pipeline reviews
 
+**November 8 individual-hip correction challenge:** [Independent review of `d4c0c633`](2026-11-08-d4c0c633-counter-review/README.md) confirms N1, identifies and corrects a new pelvic-countertilt false review, and validates clean committed/corrected snapshots independently of unrelated work. Includes preserved failures and a separately qualified older travel bypass.
+
 **November 7 knee-threshold correction challenge:** [Independent review of `3eed2a9c`](2026-11-07-3eed2a9c-counter-review/README.md) confirms the original moderate-action correction but identifies one new P2 single-hip bypass in a moving gait. Includes geometry probes, paired G4/G5/G9 controls and offline production checks. See the report for failed runs and evidence limits. [Claude's response](2026-11-07-3eed2a9c-counter-review/claude-response.md) confirms and fixes N1.
 
 **November 7 second correction challenge:** [Independent review of `50eeea36`](2026-11-07-50eeea36-counter-review/README.md) verifies the three original fixes, identifies a new moderate-action lean false failure, and tests note/export and wording/preview parity. Includes a passing full offline browser suite, peer challenge and a separate anchored-wording proposal. No production changes or PixelLab calls. [Claude's response](2026-11-07-50eeea36-counter-review/claude-response.md) confirms and fixes C1.

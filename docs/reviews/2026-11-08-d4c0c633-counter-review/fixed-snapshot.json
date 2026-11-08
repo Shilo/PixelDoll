@@ -1,0 +1,8 @@
+{
+  "revision": "d4c0c633d4ba9fbffd8a9765420a0527c100e208",
+  "sourceSha256": "1a1343712072ad6f3e2dd8ed6bac2cee9ea67edc6714a007181b469835f22a6a",
+  "snapshot": "temp.local/fixed",
+  "overlay": "Only the owned decisiveAction function and move-classification tests",
+  "dependencies": "Junction to existing app/node_modules; no install and no dependency changes",
+  "exclusions": "Other uncommitted source, tests, exports and private .env are not archived"
+}

@@ -1,0 +1,156 @@
+{
+  "scratchOnly": true,
+  "rows": [
+    {
+      "id": "run-dodge",
+      "pelvis": 0,
+      "lean": 45,
+      "after": true,
+      "candidate": true
+    },
+    {
+      "id": "run-dodge",
+      "pelvis": -30,
+      "lean": 45,
+      "after": false,
+      "candidate": true
+    },
+    {
+      "id": "dodge",
+      "pelvis": -30,
+      "lean": 45,
+      "after": false,
+      "candidate": true
+    },
+    {
+      "id": "run-dodge",
+      "pelvis": -30,
+      "lean": 0,
+      "after": false,
+      "candidate": false
+    }
+  ],
+  "n1Candidate": false,
+  "stored": [
+    {
+      "body": "A",
+      "id": "walk",
+      "dir": "south",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "A",
+      "id": "walk",
+      "dir": "east",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "A",
+      "id": "walk",
+      "dir": "north",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "A",
+      "id": "slash",
+      "dir": "south",
+      "after": true,
+      "candidate": true
+    },
+    {
+      "body": "A",
+      "id": "slash",
+      "dir": "east",
+      "after": true,
+      "candidate": true
+    },
+    {
+      "body": "A",
+      "id": "slash",
+      "dir": "north",
+      "after": true,
+      "candidate": true
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "south",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "south-east",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "east",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "north-east",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "B",
+      "id": "walk",
+      "dir": "north",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "C",
+      "id": "walk",
+      "dir": "south",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "C",
+      "id": "walk",
+      "dir": "east",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "C",
+      "id": "walk",
+      "dir": "north",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "N",
+      "id": "walk",
+      "dir": "south",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "N",
+      "id": "walk",
+      "dir": "east",
+      "after": false,
+      "candidate": false
+    },
+    {
+      "body": "N",
+      "id": "walk",
+      "dir": "north",
+      "after": false,
+      "candidate": false
+    }
+  ],
+  "changes": []
+}

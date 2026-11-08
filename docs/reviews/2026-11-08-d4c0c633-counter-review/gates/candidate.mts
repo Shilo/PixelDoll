@@ -1,0 +1,25 @@
+import{readFileSync,writeFileSync,mkdirSync}from'node:fs';import{fileURLToPath,pathToFileURL}from'node:url';import{execFileSync}from'node:child_process';import{createHash}from'node:crypto';import assert from'node:assert/strict';
+const here=fileURLToPath(new URL('./',import.meta.url)),root=fileURLToPath(new URL('../../../../',import.meta.url)),dir=here+'temp.local/candidate/';mkdirSync(dir,{recursive:true});
+execFileSync('git',['archive','--format=tar','--output',here+'temp.local/candidate.tar','d4c0c633','app/src','app/package.json'],{cwd:root});execFileSync('tar',['-xf',here+'temp.local/candidate.tar','-C',dir]);
+const candidateSource=readFileSync(here+'../motion/temp.local/candidate/app/src/lib/items/items.ts');writeFileSync(dir+'app/src/lib/items/items.ts',candidateSource);
+const mod=await import(pathToFileURL(dir+'app/src/lib/items/items.ts').href),before=await import(pathToFileURL(here+'temp.local/after/app/src/lib/items/items.ts').href);
+const {LABELS}=await import(pathToFileURL(dir+'app/src/lib/rig/poses.ts').href),{newDocument,renderPoses}=await import(pathToFileURL(dir+'app/src/ui/motion-lab/model.ts').href);
+const bodies=['A','B','C','N'].map(b=>({body:b,rig:JSON.parse(execFileSync('git',['show',`d4c0c633:app/test/fixtures/bench/body${b}.json`],{cwd:root,encoding:'utf8'})).rig}));
+const stored:any[]=[],outliers:any[]=[],projected:any[]=[];let tested=0;
+for(const{body,rig}of bodies){for(const a of rig.animations)for(const dir of Object.keys(a.sources??{}))stored.push({body,id:a.id,dir,before:before.decisiveAction(rig,a.id,dir),candidate:mod.decisiveAction(rig,a.id,dir)});
+ const dir='south',rest=rig.rest[dir].keypoints;
+ for(const label of LABELS)for(let x=.05;x<1;x+=.05)for(let y=.05;y<1;y+=.05){const frame=rest.map((p:any)=>p.label===label?{...p,x,y}:p),r:any={cell:rig.cell,rest:rig.rest,animations:[{id:'walk',sources:{south:{keypoints:[rest,frame,rest],measured:[rest,frame,rest]}}}]};tested++;const old=before.decisiveAction(r,'walk',dir),next=mod.decisiveAction(r,'walk',dir);if(old!==next)outliers.push({body,label,x,y,before:old,candidate:next});}
+}
+const library=JSON.parse(execFileSync('git',['show','d4c0c633:app/dev-fixtures/motion-lab/library.json'],{cwd:root,encoding:'utf8'}));
+for(const fixture of library.fixtures)for(const clip of library.clips)for(const dir of['south','east','north','west']){const d=newDocument(library,fixture,clip,dir),r=renderPoses(d),rig:any={cell:{w:fixture.cell.w+2*d.padding,h:fixture.cell.h+2*d.padding},rest:{[dir]:{keypoints:r.result.rest}},animations:[{id:clip.id,sources:{[dir]:{keypoints:r.poses}}}]};projected.push({fixture:fixture.id,clip:clip.id,dir,before:before.decisiveAction(rig,clip.id,dir),candidate:mod.decisiveAction(rig,clip.id,dir)});}
+assert(stored.every(r=>r.before===r.candidate));assert(projected.every(r=>r.before===r.candidate));assert.equal(outliers.length,0);
+const hip=JSON.parse(execFileSync('git',['show','d4c0c633:docs/reviews/2026-11-07-3eed2a9c-counter-review/motion/hip-candidate-results.json'],{cwd:root,encoding:'utf8'})).fixture;
+const n1Rig:any={cell:{w:64,h:64},rest:{south:{keypoints:hip.rest}},animations:[{id:'run',sources:{south:{keypoints:hip.requested,measured:hip.measured}}}]};assert.equal(mod.decisiveAction(n1Rig,'run','south'),false);
+// Replay the actual pelvis item-QA fixture against our private candidate copy, preserving the original historical probe.
+let pelvis=readFileSync(here+'../motion/pelvis-probe.mts','utf8');
+const prefix=pelvis.slice(0,pelvis.indexOf('\n'))+`\nconst here=${JSON.stringify(here)},temp=${JSON.stringify(here+'temp.local/')};\nconst sourceHashes={before:${JSON.stringify(createHash('sha256').update(readFileSync(here+'temp.local/after/app/src/lib/items/items.ts')).digest('hex'))},after:${JSON.stringify(createHash('sha256').update(candidateSource).digest('hex'))}};\nconst before=await import(pathToFileURL(temp+'after/app/src/lib/items/items.ts').href),after=await import(pathToFileURL(temp+'candidate/app/src/lib/items/items.ts').href);\n`;
+pelvis=prefix+pelvis.slice(pelvis.indexOf('const{LABELS'));
+pelvis=pelvis.replace("before:'3eed2a9c',after:'d4c0c633'","before:'d4c0c633',after:'scratch-independent-axes'").replace("here+'pelvis-results.json'","here+'candidate-pelvis-results.json'");
+pelvis=pelvis.replace("assert.equal(qa[1].before.status,'pass');assert.equal(qa[1].after.status,'fail');assert(qa[1].after.failures.some((s:any)=>s.startsWith('G9 ')));","assert.equal(qa[1].before.status,'fail');assert.equal(qa[1].after.status,'pass');assert.equal(qa[1].after.action,true);");
+writeFileSync(here+'temp.local/pelvis-candidate.mts',pelvis);await import(pathToFileURL(here+'temp.local/pelvis-candidate.mts').href);
+const result={scratchOnly:true,candidateSha256:createHash('sha256').update(candidateSource).digest('hex'),n1Decisive:false,stored,projected,outlierGrid:{bodies:4,direction:'south',step:.05,tested,changes:outliers}};writeFileSync(here+'candidate-results.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify({stored:stored.length,projected:projected.length,tested,outlierChanges:outliers.length,candidateSha256:result.candidateSha256}));

@@ -1,0 +1,202 @@
+{
+  "reviewed": "d4c0c633d4ba9fbffd8a9765420a0527c100e208",
+  "baseline": "3eed2a9c05e90f7b0febccc80e7caff804642ae0",
+  "node": "v24.22.1",
+  "source": {
+    "pinnedSha256": "9f734681eba58e7543f7c78ffccba258dfcebd7d3004d4cfedf3a81d625ac738",
+    "fixedSha256": "1a1343712072ad6f3e2dd8ed6bac2cee9ea67edc6714a007181b469835f22a6a",
+    "ownedFunctionMatchesWorkingTree": true,
+    "ownedTestSha256": "18e7d668f5c69c6e00c135b0d8f61f416a820a65ac99fdda25e1b10a20b41f04",
+    "sharedWorktreeSourceIntentionallyNotStagedWhole": true
+  },
+  "exits": {
+    "pinnedCheck": 0,
+    "pinnedFullUnitAttempts": [
+      1,
+      1
+    ],
+    "pinnedFocused": 0,
+    "pinnedBench": 0,
+    "pinnedBrowser": 0,
+    "fixedCheck": 0,
+    "fixedUnit": 0,
+    "fixedBench": 0,
+    "fixedBrowser": 0,
+    "pairedNewRegressions": 1
+  },
+  "logs": {
+    "check": {
+      "path": "app/test-results-d4-review-check.log",
+      "sha256": "8ab5bf6417aee99848adf9e05d33936b5ae47acaff11b102ba3c99dbe6ce029a",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "svelte-check found 0 errors and 0 warnings"
+      ]
+    },
+    "unit": {
+      "path": "app/test-results-d4-review-unit.log",
+      "sha256": "cc8785db2583344562e5c37c57d474c96c0bdc8dad0b8088e7419ebb61f04ca1",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+        "Error: Test timed out in 20000ms.",
+        " Test Files  1 failed | 166 passed (167)",
+        "      Tests  1 failed | 2012 passed | 1 skipped (2014)",
+        "   Duration  38.42s (transform 39.11s, setup 0ms, import 73.74s, tests 207.38s, environment 11ms)"
+      ]
+    },
+    "unit-quiet": {
+      "path": "app/test-results-d4-review-unit-quiet.log",
+      "sha256": "2b4db235f01ccc99d55cd31cd50108c19e65542014d2fc592ccda2e5a7caa737",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+        "Error: Test timed out in 20000ms.",
+        " Test Files  1 failed | 166 passed (167)",
+        "      Tests  1 failed | 2012 passed | 1 skipped (2014)",
+        "   Duration  27.04s (transform 31.12s, setup 0ms, import 71.36s, tests 151.30s, environment 16ms)"
+      ]
+    },
+    "pinned-focused": {
+      "path": "app/test-results-d4-review-pinned-focused.log",
+      "sha256": "cbd063a8c8b4e9ab4710f6d39d27d6cecacb0d692f159ba8b3e8695840836039",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": []
+    },
+    "bench": {
+      "path": "app/test-results-d4-review-bench.log",
+      "sha256": "510dffac0dd0129d1e785fb56756e0eaa6078b085f05645138acdd916b4a10c1",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "a-helmet           ok | keep – exact – | drop 0.0 % (0/39) | fails 1 warn 0",
+        "a-cape             ok | keep – exact – | drop – | fails 2 warn 2",
+        "a-chest            ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-boots            ok | keep – exact – | drop – | fails 0 warn 32",
+        "a-hair             ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-sword96          ok | keep 89.6 % (43/48) exact 89.6 % (43/48) | drop – | fails 0 warn 3",
+        "a-axe96            ok | keep 91.7 % (44/48) exact 91.7 % (44/48) | drop – | fails 1 warn 1",
+        "a-jester-magenta   ok | keep 100.0 % (202/202) exact 0.0 % (0/202) | drop – | fails 3 warn 0",
+        "a-jester-blue      ok | keep 100.0 % (255/255) exact 100.0 % (255/255) | drop – | fails 0 warn 0",
+        "b-tunic            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-cloak            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-jester           ok | keep 9.4 % (620/6564) exact 0.0 % (0/6564) | drop – | fails 40 warn 0",
+        "b-jester-blue      ok | keep 100.0 % (7992/7992) exact 100.0 % (7992/7992) | drop – | fails 0 warn 0",
+        "n-cloak128         ok | keep – exact – | drop – | fails 1 warn 0",
+        "c-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-bow96            ok | keep 100.0 % (11/11) exact 45.5 % (5/11) | drop – | fails 1 warn 1",
+        "a-plume-azure      ok | keep 100.0 % (212/212) exact 100.0 % (212/212) | drop – | fails 0 warn 0",
+        "a-stripes-azure    ok | keep 100.0 % (152/152) exact 100.0 % (152/152) | drop – | fails 0 warn 0",
+        "a-stripes-magenta  ok | keep – exact – | drop – | fails 0 warn 0"
+      ]
+    },
+    "browser": {
+      "path": "app/test-results-d4-review-browser.log",
+      "sha256": "40710d7fc34749757faf961419f8c22dc8d365fdedecdae0097b516d1c77ddca",
+      "passingBrowserBodies": 68,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "  68 passed (2.1m)"
+      ]
+    },
+    "fixed-check": {
+      "path": "app/test-results-d4-review-fixed-check.log",
+      "sha256": "f07fbcbad9eccb4a808c335c7c427e765ba42992d6a751a76fca1b8748d83874",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "svelte-check found 0 errors and 0 warnings"
+      ]
+    },
+    "fixed-unit": {
+      "path": "app/test-results-d4-review-fixed-unit.log",
+      "sha256": "bb1f97ea29837cc537fef41c78a0fae63c13233802aab928c890b783e66be06b",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        " Test Files  167 passed (167)",
+        "      Tests  2015 passed | 1 skipped (2016)",
+        "   Duration  18.65s (transform 21.36s, setup 0ms, import 51.40s, tests 115.12s, environment 13ms)"
+      ]
+    },
+    "fixed-bench": {
+      "path": "app/test-results-d4-review-fixed-bench.log",
+      "sha256": "510dffac0dd0129d1e785fb56756e0eaa6078b085f05645138acdd916b4a10c1",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "a-helmet           ok | keep – exact – | drop 0.0 % (0/39) | fails 1 warn 0",
+        "a-cape             ok | keep – exact – | drop – | fails 2 warn 2",
+        "a-chest            ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-boots            ok | keep – exact – | drop – | fails 0 warn 32",
+        "a-hair             ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-sword96          ok | keep 89.6 % (43/48) exact 89.6 % (43/48) | drop – | fails 0 warn 3",
+        "a-axe96            ok | keep 91.7 % (44/48) exact 91.7 % (44/48) | drop – | fails 1 warn 1",
+        "a-jester-magenta   ok | keep 100.0 % (202/202) exact 0.0 % (0/202) | drop – | fails 3 warn 0",
+        "a-jester-blue      ok | keep 100.0 % (255/255) exact 100.0 % (255/255) | drop – | fails 0 warn 0",
+        "b-tunic            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-cloak            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-jester           ok | keep 9.4 % (620/6564) exact 0.0 % (0/6564) | drop – | fails 40 warn 0",
+        "b-jester-blue      ok | keep 100.0 % (7992/7992) exact 100.0 % (7992/7992) | drop – | fails 0 warn 0",
+        "n-cloak128         ok | keep – exact – | drop – | fails 1 warn 0",
+        "c-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-bow96            ok | keep 100.0 % (11/11) exact 45.5 % (5/11) | drop – | fails 1 warn 1",
+        "a-plume-azure      ok | keep 100.0 % (212/212) exact 100.0 % (212/212) | drop – | fails 0 warn 0",
+        "a-stripes-azure    ok | keep 100.0 % (152/152) exact 100.0 % (152/152) | drop – | fails 0 warn 0",
+        "a-stripes-magenta  ok | keep – exact – | drop – | fails 0 warn 0"
+      ]
+    },
+    "fixed-browser": {
+      "path": "app/test-results-d4-review-fixed-browser.log",
+      "sha256": "18e85e5c6aceacec9cc1acb295f64e920d457bc9e97d53a20bca5beb0c599c14",
+      "passingBrowserBodies": 68,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "  68 passed (2.8m)"
+      ]
+    },
+    "regression": {
+      "path": "app/test-results-d4-review-regression.log",
+      "sha256": "743e93451c9c083a67df33787bc0150b8d618c4b847139cea92a11197b2c84a9",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": []
+    }
+  },
+  "pairedNewRegressions": [
+    {
+      "name": "docs/reviews/2026-11-08-d4c0c633-counter-review/temp.local/regression-after/motion.test.ts",
+      "cases": [
+        {
+          "title": "a coherent action lean stays decisive when the pelvis counter-tilts",
+          "status": "passed"
+        },
+        {
+          "title": "one head or shoulder estimate cannot promote a subthreshold lean to an action",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "docs/reviews/2026-11-08-d4c0c633-counter-review/temp.local/regression-before/motion.test.ts",
+      "cases": [
+        {
+          "title": "a coherent action lean stays decisive when the pelvis counter-tilts",
+          "status": "failed"
+        },
+        {
+          "title": "one head or shoulder estimate cannot promote a subthreshold lean to an action",
+          "status": "passed"
+        }
+      ]
+    }
+  ],
+  "tracking": "Public board-card creation rejected by automatic approval review; no mutation retried. File work remained independently authorized.",
+  "transport": "No PixelLab calls; Node review preload plus offline Playwright wrapper, keyless loopback servers and workspace TEMP/TMP."
+}

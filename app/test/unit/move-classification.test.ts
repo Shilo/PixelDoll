@@ -215,3 +215,36 @@ test('one wrong hip estimate cannot make a leaning, striding run an action (2026
   // while the same stride with a 45 degree lean is still an action
   expect(decisiveAction(leanRig('run', 'south', stick, [stick, swing(tip(stick, 45), 45), stick]), 'run', 'south')).toBe(true)
 })
+
+test('a coherent action lean stays decisive when the pelvis counter-tilts', () => {
+  const counterTilt = (lean: number, pelvis: number) => {
+    const upper = tip(stick, lean), [hx, hy] = hipsOf(stick), t = pelvis * Math.PI / 180
+    const pose = upper.map(p => {
+      if (UPPER.test(p.label)) return p
+      const hip = stick.find(q => q.label === (p.label.startsWith('RIGHT') ? 'RIGHT HIP' : 'LEFT HIP'))!
+      const dx = hip.x - hx, dy = hip.y - hy
+      return { ...p, x: p.x + hx + dx * Math.cos(t) - dy * Math.sin(t) - hip.x, y: p.y + hy + dx * Math.sin(t) + dy * Math.cos(t) - hip.y }
+    })
+    // Move the whole pose to keep the support sole at the standing height, without changing any bone or relative angle.
+    const bottom = Math.max(...pose.filter(p => p.label.endsWith('LEG')).map(p => p.y)), restBottom = Math.max(...stick.filter(p => p.label.endsWith('LEG')).map(p => p.y))
+    return pose.map(p => ({ ...p, y: p.y - bottom + restBottom }))
+  }
+  for (const sign of [-1, 1]) {
+    const frame = counterTilt(sign * 45, -sign * 30), poses = [stick, stick, frame, stick]
+    for (const id of ['run-dodge', 'dodge']) {
+      expect(isAction(`${id}/south`, leanRig(id, 'south', stick, poses)), id).toBe(true)
+      expect(g9(id, poses, poses, [0, 0, 0, 0]), id).toEqual([])
+    }
+    const stillTorso = counterTilt(0, -sign * 30)
+    expect(isAction('run-dodge/south', leanRig('run-dodge', 'south', stick, [stick, stillTorso, stick]))).toBe(false)
+  }
+})
+
+test('one head or shoulder estimate cannot promote a subthreshold lean to an action', () => {
+  const frame = tip(stick, 30)
+  for (const label of ['NOSE', 'NECK', 'RIGHT SHOULDER', 'LEFT SHOULDER'])
+    for (const x of [0.05, 0.25, 0.5, 0.75, 0.95]) for (const y of [0.05, 0.25, 0.5, 0.75, 0.95]) {
+      const measured = frame.map(p => p.label === label ? { ...p, x, y } : p)
+      expect(isAction('run-dodge/south', leanRig('run-dodge', 'south', stick, [stick, measured, stick])), `${label} (${x}, ${y})`).toBe(false)
+    }
+})

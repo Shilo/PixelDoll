@@ -1,0 +1,219 @@
+{
+  "fixedSourceHash": "1a1343712072ad6f3e2dd8ed6bac2cee9ea67edc6714a007181b469835f22a6a",
+  "qa": [
+    {
+      "id": "run-dodge",
+      "pelvis": 0,
+      "lean": 45,
+      "rigErrors": [],
+      "allPointsValid": true,
+      "maxBoneErrorPx": 7.105427357601002e-15,
+      "torsoErrorPx": 3.552713678800501e-15,
+      "sourceQa": {
+        "fails": [],
+        "warnings": [],
+        "adherence": 0
+      },
+      "gripPx": [
+        0.7071067811865476,
+        0.7071067811865476,
+        0.6571839780189496,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476
+      ],
+      "corrected": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "inputHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "4f64da865f541ebf58d27b930195f399c3e893a1cf7b942be122a4960a43d36e",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ],
+        "outputHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "4f64da865f541ebf58d27b930195f399c3e893a1cf7b942be122a4960a43d36e",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "pelvis": -30,
+      "lean": 45,
+      "rigErrors": [],
+      "allPointsValid": true,
+      "maxBoneErrorPx": 7.105427357601002e-15,
+      "torsoErrorPx": 3.552713678800501e-15,
+      "sourceQa": {
+        "fails": [],
+        "warnings": [],
+        "adherence": 0
+      },
+      "gripPx": [
+        0.7071067811865476,
+        0.7071067811865476,
+        0.6571839780189496,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476
+      ],
+      "corrected": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "inputHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "94a9c3030c11e9f0a2085b6f34db6c3ecde983dbce581f62f3932940f1261210",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ],
+        "outputHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "94a9c3030c11e9f0a2085b6f34db6c3ecde983dbce581f62f3932940f1261210",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "pelvis": -30,
+      "lean": 45,
+      "rigErrors": [],
+      "allPointsValid": true,
+      "maxBoneErrorPx": 7.105427357601002e-15,
+      "torsoErrorPx": 3.552713678800501e-15,
+      "sourceQa": {
+        "fails": [],
+        "warnings": [],
+        "adherence": 0
+      },
+      "gripPx": [
+        0.7071067811865476,
+        0.7071067811865476,
+        0.6571839780189496,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476
+      ],
+      "corrected": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "inputHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "94a9c3030c11e9f0a2085b6f34db6c3ecde983dbce581f62f3932940f1261210",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ],
+        "outputHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "94a9c3030c11e9f0a2085b6f34db6c3ecde983dbce581f62f3932940f1261210",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "pelvis": -30,
+      "lean": 0,
+      "rigErrors": [],
+      "allPointsValid": true,
+      "maxBoneErrorPx": 5.329070518200751e-15,
+      "torsoErrorPx": 0,
+      "sourceQa": {
+        "fails": [],
+        "warnings": [],
+        "adherence": 0
+      },
+      "gripPx": [
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476
+      ],
+      "corrected": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "inputHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "e838663f54a0aa034e9702b960f095a8759f3ae29557e00a1dac61a38ab25616",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ],
+        "outputHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "e838663f54a0aa034e9702b960f095a8759f3ae29557e00a1dac61a38ab25616",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      }
+    }
+  ],
+  "degenerate": [
+    {
+      "labels": [
+        "NOSE",
+        "NECK"
+      ],
+      "before": false,
+      "corrected": false
+    },
+    {
+      "labels": [
+        "RIGHT SHOULDER",
+        "LEFT SHOULDER"
+      ],
+      "before": false,
+      "corrected": false
+    }
+  ],
+  "n1": {
+    "before": false,
+    "corrected": false
+  }
+}
