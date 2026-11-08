@@ -73,6 +73,7 @@ Generated screenshots and prototype capture manifests remain local and ignored, 
 | Doc | What |
 |---|---|
 | R1 [pixellab_pip_paperdolling_review.md](research/tools/pixellab_pip/pixellab_pip_paperdolling_review.md) | What the `pixellab-pip` skill and earlier paperdoll spikes offer PixelDoll. |
+| [pixellab-pip-rereview-2026-11-07.md](research/pixellab-pip-rereview-2026-11-07.md) | Every pip script and paper-doll doc re-checked against current PixelDoll, with pip's animation doctor replayed on the frozen bench, plus an audit of the original reviews' open items: nothing to port; long hair is cut by armor that sticks out past the body (confirmed live). |
 | R2 [pixellab_current_capabilities_2026-10.md](research/pixellab/pixellab_current_capabilities_2026-10.md) | PixelLab API as of 2026-10: endpoints, frame caps per size, CORS, costs. Corrects the two older PixelLab docs below. |
 | R3 [engine_paperdolling_implementation.md](research/engines/engine_paperdolling_implementation.md) | How Godot, Unity and Phaser do layered frame paperdolls: one sprite per layer, same grid, one clock. |
 | R4 [games_paperdolling_survey.md](research/games/games_paperdolling_survey.md) | How shipped games layer characters (UO, LPC, Tibia, RO, MapleStory, Stardew, …). |
