@@ -344,7 +344,13 @@ When appending or replacing an accepted item's move, each new `CellQa.provenance
 requests can finish out of order, span batches, or use a grid fallback. Existing cells keep their source references;
 missing source evidence fails before persistence. Historical exports are not rewritten automatically.
 
-`fg = layer ∩ base alpha`, `bg = layer − fg` for slots with `bgZ` (exact recompose [S1]). Compose and export as built in M4/M5:
+`fg = layer ∩ base alpha`, `bg = layer − fg` for slots with `bgZ` (exact recompose [S1]). Hair, when the cell's NECK keypoint is
+known: an fg piece reaching below the neck is front hair, and bg px within `strandEdge` of it (3 px at 80 px, scaled with the cell)
+move to fg, so armor wider than the body no longer covers the outer edge of strands drawn over it (live 2026-11-07: 34 and 22
+hidden px in east and north went to 0; south keeps 16 px of back hair between arm and torso, 4 to 5 px from the strand, behind the
+armor). Farther hair, such as a back mass beside the shoulders, stays bg, so pauldrons, collars, beards and an upright staff still
+cover it. Short hair that ends above the neck keeps the plain split, and the demo fixture (no stored keypoints) is unchanged. Hair
+items saved before 2026-11-07 keep their stored split until a move is regenerated. Compose and export as built in M4/M5:
 draw list by resolved z (cell > anim > dir overrides), ties by slot order, bg before fg, item id. Export: manifest-spec §5–§6.
 
 ### 4.7 Streaming, worn drafts and optional review [D26]

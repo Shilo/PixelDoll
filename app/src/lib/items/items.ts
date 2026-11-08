@@ -7,7 +7,7 @@ import { diffLayer, type Rect } from '../image/diff.ts';
 import { makeImg, type Img } from '../image/png.ts';
 import { cutBase, over } from '../compose/compose.ts';
 import { splitFgBg } from '../compose/split.ts';
-import { cellHash, cellKey, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
+import { cellHash, cellKey, DEFAULT_MOVE, type DirectionName, type Keypoint, type Rig, type Sha256 } from '../rig/rig.ts';
 import type { Skeleton } from '../rig/skeleton.ts';
 import { backView, fromApi, hasAll } from '../rig/poses.ts';
 import { actionOf, moveWords, RUN_WORDS, WALK_WORDS, paddedPoses, poseBatches, poseCallGens, rawClip } from '../rig/clips.ts';
@@ -191,6 +191,12 @@ export const clipKeypoints = (rig: Rig, anim: string, dir: DirectionName) => {
 };
 /** Stored keypoints of one cell ("walk/south/3"): a packed call holds cells of more than one move. */
 export const cellKeypoints = (rig: Rig, key: string) => { const [a, d, i] = key.split('/') as [string, DirectionName, string]; return clipKeypoints(rig, a, d)?.[+i]; };
+/** NECK y of a cell on its (padded) canvas, pixel-edge: posed cells use their stored keypoints, standing cells the rest view's. */
+export const neckY = (rig: Rig, key: string, pad = 0): number | undefined => {
+  const [a, d] = key.split('/') as [string, DirectionName], k = cellKeypoints(rig, key) ?? (a === DEFAULT_MOVE ? rig.rest?.[d]?.keypoints : undefined);
+  const neck = k?.find((q) => q.label === 'NECK');
+  return neck ? neck.y * rig.cell.h + pad : undefined;
+};
 /** The move whose action words a pose call sends: the one with the most frames (walk in a packed idle + walk call). */
 export const callAnim = (cells: string[]) => { const n = new Map<string, number>(); for (const k of cells) { const a = k.split('/')[0]; n.set(a, (n.get(a) ?? 0) + 1); } return [...n].sort((x, y) => y[1] - x[1])[0][0]; };
 /** Moves of one cell list in order, with frame counts. */
@@ -1072,7 +1078,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     clipPx += border;
     if (slot.bgZ != null) {
       const base = visibleBase(c);
-      const { fg, bg } = splitFgBg(c.layer, c.base), a = makeImg(w, h), b = recompose({ base, layer: c.layer });
+      const { fg, bg } = splitFgBg(c.layer, c.base, slot.id === 'hair' ? neckY(rig, c.key, pad) : undefined), a = makeImg(w, h), b = recompose({ base, layer: c.layer });
       over(a, bg); over(a, base); over(a, fg);
       if (a.data.some((v, i) => v !== b.data[i])) splitExact = false;
     }
@@ -1555,7 +1561,7 @@ export async function buildItem(o: {
       for (let i = 0; i < n; i++) {
         const c = byKey.get(cellKey(a, d, i));
         if (c) covered.push(cellKey(a, d, i) as CellKey);
-        const parts = !c ? [null, null] : slot.bgZ != null ? (({ fg, bg }) => [fg, bg])(splitFgBg(c.layer, c.base)) : [c.layer];
+        const parts = !c ? [null, null] : slot.bgZ != null ? (({ fg, bg }) => [fg, bg])(splitFgBg(c.layer, c.base, slot.id === 'hair' ? neckY(rig, c.key, p) : undefined)) : [c.layer];
         for (const [j, l] of layers.entries()) ((l.cells![a]![d] ??= Array(n).fill(null)) as (Sha256 | null)[])[i] = parts[j] ? await put(parts[j]!) : null;
         if (c?.cut) ((baseCut[a] ??= {})[d] ??= Array(n).fill(null))[i] = cutIndices(c.cut);
       }
