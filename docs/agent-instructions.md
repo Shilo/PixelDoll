@@ -32,15 +32,19 @@ over 20% to cost, but agents follow them well when they state conventions an age
 These are observed, repeated failures, not style preferences
 ([GitClear 2025](https://devclass.com/2025/02/20/ai-is-eroding-code-quality-states-new-in-depth-report/),
 [complexity creep](https://codex.danielvaughan.com/2026/07/20/complexity-creep-ai-coding-agents-codebase-entropy-codex-cli-refactoring-defence/),
-[agents editing tests](https://dev.to/penloom_studio_829b7817d3/your-ai-agent-will-pass-any-test-its-allowed-to-edit-51fo)):
+[agents editing tests](https://dev.to/penloom_studio_829b7817d3/your-ai-agent-will-pass-any-test-its-allowed-to-edit-51fo),
+[Karpathy's coding notes, Jan 2026](https://x.com/karpathy/status/2015883857489522876) and the guidelines distilled
+from them, [andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills)):
 
 | Failure | Rule in AGENTS.md |
 |---|---|
-| Over-engineering, speculative options | KISS and YAGNI |
+| Silent wrong assumptions, hidden confusion, no tradeoffs, sycophancy | Think before coding (ask only if a wrong guess is costly to undo) |
+| Over-engineering, speculative options, 1000 lines where 100 do | KISS and YAGNI (cut to the least code that solves it) |
+| Imperative steps without a success check | Goal-driven (failing test or offline reproduction first, never paid) |
 | Migrations and legacy shims for data nobody has | No backward compatibility (preview app; ask first) |
 | Re-implementing an existing helper; copy-paste | DRY in app/ (reuse first, extract at the second caller) |
 | Patching the reported path only | Fix the root cause in shared code |
-| Drive-by refactors and renames | Stay in scope |
+| Drive-by refactors, renames, side-effect edits | Stay in scope |
 | Reverting or committing someone else's edits | Never touch changes you did not make |
 | Silent catch, placeholder data, hidden fallback | Surface errors (with the intended fallbacks named) |
 | Editing tests or expected values to get green | Never weaken a test just to pass |

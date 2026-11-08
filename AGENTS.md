@@ -80,12 +80,14 @@ Quality bar: accurate, consistent, high-quality output using proper PixelLab too
 ## Rules
 
 - Remembered PixelLab credentials remain plaintext in optional `localStorage['pixellabApiKey']`, intentionally shared with every app on this origin. Never broadcast credentials. Follow `docs/shared-token-security.md` for credential-free Forget/replacement notifications; do not introduce encryption or an extra unlock step. A deferred board card tracks encryption.
-- KISS and YAGNI: no feature, dependency, option or abstraction without a real need.
+- Think before coding: state non-obvious assumptions. If a request is ambiguous, contradicts the code or docs, or has a clearly simpler or better alternative, say so; ask only when a wrong guess is costly to undo, otherwise proceed. Push back with evidence; never agree just to please.
+- KISS and YAGNI: no feature, dependency, option or abstraction without a real need; before finishing, cut your change to the least code that fully solves the task.
+- Goal-driven: before changing behavior, decide how you will prove it works (for a bug, a failing test or offline reproduction on stored frames first, never a paid generation), then iterate until that check passes.
 - Follow **simplicity-first design**: strong defaults, minimal necessary features/settings and no unnecessary setup for ordinary use. Keep frequent actions easy to reach; reveal necessary infrequent options through clear contextual access. Preserve accessibility, timely feedback/recovery and consequential disclosures, especially paid costs. Use concise, familiar labels. Read [Usability principles](docs/usability-principles.md) when changing features, settings, navigation or user-facing copy; its linked research is optional.
 - No backward compatibility for data saved by earlier versions (no new migrations, upgrades or legacy shims): the app is in preview, so breaking changes are fine as long as old data cannot brick it (ignore it or fail with a clear message). Ask first if compatibility seems needed.
 - DRY in app/: before writing a helper, type or constant, search for one and reuse it (extend it only if existing callers keep their behavior); never copy logic. Extract shared code when a second caller needs it, not before.
 - Fix the root cause in the code all callers share, not only where the symptom shows.
-- Stay in scope: no unrequested refactors, renames, reformatting or restyling; mention them instead.
+- Stay in scope: change only what the task needs; no unrequested refactors, renames, reformatting or restyling, and leave unrelated code and comments alone; mention them instead.
 - Never revert, stash, reformat or commit changes you did not make; the owner and other agents work in this tree.
 - Surface errors: no empty catch, placeholder value or silent fallback that hides a failure unless documented as intended (e.g. the inpaint-v3 fallback, legacy manifest reading, optional localStorage).
 - Never weaken, skip or delete a test or assertion, or change its expected values, just to make it pass; if the test itself is wrong, fix it and say why.
