@@ -904,11 +904,18 @@ export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): bool
   // The knees sit further from the shoulders than the hips, so one lean turns the shoulders less about them (45 degrees about
   // the hips read 25 to 34 about the knees, and a coherent run-dodge became a walk: 2026-11-07 50eeea36 counter-review C1).
   // The knee lean is therefore measured against what a 40 degree lean about the hips shows from the knees of this standing pose.
-  const kneeLean = (deg: number) => {
-    const t = deg * Math.PI / 180, [x, y] = shoulders(rest), dx = x - restHips[0], dy = y - restHips[1];
-    return Math.abs(angle([restHips[0] + dx * Math.cos(t) - dy * Math.sin(t), restHips[1] + dx * Math.sin(t) + dy * Math.cos(t)], knees(rest)) - angle(shoulders(rest), knees(rest)));
+  // So is the lean about each hip on its own: one wrong hip estimate moves the hip center, and a leg swing moves the knee
+  // midpoint, so together they made a 30 degree run lean decisive, while the other hip still shows the true lean (2026-11-07
+  // 3eed2a9c counter-review N1).
+  const at = (q: typeof rest, l: string) => [q[l].x, q[l].y];
+  const scaleAbout = (pivot: number[]) => {
+    const seen = (deg: number) => {
+      const t = deg * Math.PI / 180, [x, y] = shoulders(rest), dx = x - restHips[0], dy = y - restHips[1];
+      return Math.abs(angle([restHips[0] + dx * Math.cos(t) - dy * Math.sin(t), restHips[1] + dx * Math.sin(t) + dy * Math.cos(t)], pivot) - angle(shoulders(rest), pivot));
+    };
+    return { [-1]: 40 / seen(-40), 1: 40 / seen(40) } as Record<number, number>;
   };
-  const kneeScale = { [-1]: 40 / kneeLean(-40), 1: 40 / kneeLean(40) } as Record<number, number>;
+  const pivots: [(q: typeof rest) => number[], Record<number, number>][] = [knees, (q: typeof rest) => at(q, 'RIGHT HIP'), (q: typeof rest) => at(q, 'LEFT HIP')].map((f) => [f, scaleAbout(f(rest))]);
   return frames.some((p) => {
     const grew = (a: string, b: string) => len(p, a, b) - len(rest, a, b) > 0.2;
     if (grew('RIGHT HIP', 'LEFT HIP') || grew('RIGHT KNEE', 'RIGHT HIP') || grew('LEFT KNEE', 'LEFT HIP')) return false;
@@ -920,7 +927,7 @@ export function decisiveAction(rig: Rig, anim: string, dir: DirectionName): bool
     const moved = Math.max(0, ...Object.keys(rest).filter(plausible).map((l) => Math.min(from(l, l), rest[mirror(l)] ? from(l, mirror(l)) : Infinity))) / H;
     const rise = Math.max(-1, ...['RIGHT ARM', 'LEFT ARM'].filter(plausible).map((l) => (rest[l].y - (p[l].y - dy)) / H));
     const bend = angle(shoulders(p), hips) - angle(shoulders(rest), restHips);
-    const lean = !torsoOk ? 0 : Math.min(Math.abs(angle(shoulders(p), knees(p)) - angle(shoulders(rest), knees(rest))) * kneeScale[Math.sign(bend) || 1], Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(bend));
+    const lean = !torsoOk ? 0 : Math.min(...pivots.map(([f, scale]) => Math.abs(angle(shoulders(p), f(p)) - angle(shoulders(rest), f(rest))) * scale[Math.sign(bend) || 1]), Math.abs(angle([p.NECK.x, p.NECK.y], hips) - angle([rest.NECK.x, rest.NECK.y], restHips)), Math.abs(bend));
     return moved >= 0.6 || rise >= 0.45 || lean >= 40;
   });
 }

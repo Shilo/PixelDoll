@@ -163,28 +163,55 @@ test('hips sliding under still shoulders, or one hip or the neck thrown, is no l
   }
 })
 
+/** A 64 px stick body standing south, for the held-item gate tests. */
+const STICK: Record<string, [number, number]> = { NOSE: [32, 10], NECK: [32, 20], 'RIGHT SHOULDER': [24, 22], 'LEFT SHOULDER': [40, 22], 'RIGHT ELBOW': [20, 27], 'LEFT ELBOW': [44, 27], 'RIGHT ARM': [20, 35], 'LEFT ARM': [44, 35], 'RIGHT HIP': [28, 40], 'LEFT HIP': [36, 40], 'RIGHT KNEE': [28, 50], 'LEFT KNEE': [36, 50], 'RIGHT LEG': [28, 60], 'LEFT LEG': [36, 60], 'RIGHT EYE': [30, 9], 'LEFT EYE': [34, 9], 'RIGHT EAR': [28, 10], 'LEFT EAR': [36, 10] }
+const stick = LABELS.map(label => ({ label, x: STICK[label][0] / 64, y: STICK[label][1] / 64 }))
+/** A 2 px torch, 16 px long, rising from the right wrist `deg` from upright. */
+const torch = (pose: Point[], deg: number, i: number, id: string): CellOut => {
+  const base = makeImg(64, 64), layer = makeImg(64, 64), mask = new Uint8Array(64 * 64), wr = pose.find(p => p.label === 'RIGHT ARM')!, t = deg * Math.PI / 180
+  for (let s = 0; s < 16; s += 0.25) for (const o of [-0.5, 0.5]) {
+    const x = Math.floor(wr.x * 64 + s * Math.sin(t) + o * Math.cos(t)), y = Math.floor(wr.y * 64 - s * Math.cos(t) + o * Math.sin(t)), q = y * 64 + x
+    if (!mask[q]) { mask[q] = 1; layer.data.set(s > 12 ? [235, 170, 35, 255] : [130, 80, 40, 255], q * 4) }
+  }
+  return { key: `${id}/south/${i}`, call: 0, base, input: base, out: layer, layer, mask, area: mask.reduce((a, v) => a + v, 0), outBand: 0, baseBand: 0, specks: 0, pinholes: 0, shifted: false, offset: [0, 0], stray: 0, posed: true }
+}
+/** The G9 failures of a torch held at `degs` through the requested poses, with the measured joints the classifier reads. */
+const g9 = (id: string, requested: Point[][], measured: Point[][], degs: number[]) => {
+  const rig = { cell: { w: 64, h: 64 }, pivot: { x: 32, y: 60 }, baseItem: 'base', baseHash: 'sha256:test', directions: [{ id: 'south' }], rest: { south: { image: 'sha256:test', keypoints: stick } },
+    animations: [{ id, cells: requested.length, loop: false, frames: requested.map((_, cell) => ({ cell, ms: 100 })), sources: { south: { route: 'skeleton-v3', reference: 'sha256:test', keypoints: requested, measured, provenance: [] } } }] } as unknown as Rig
+  const cells = requested.map((pose, i) => torch(pose, degs[i], i, id))
+  return [...itemQa(rig, slotOf('main_hand'), 'green', cells, 0).failCalls.values()].flat().filter(why => why.startsWith('G9'))
+}
+
 test('G9 lets a torch stay upright through a coherent lean, under a gait name too, and still checks it on a walk with a thrown neck', () => {
-  const px: Record<string, [number, number]> = { NOSE: [32, 10], NECK: [32, 20], 'RIGHT SHOULDER': [24, 22], 'LEFT SHOULDER': [40, 22], 'RIGHT ELBOW': [20, 27], 'LEFT ELBOW': [44, 27], 'RIGHT ARM': [20, 35], 'LEFT ARM': [44, 35], 'RIGHT HIP': [28, 40], 'LEFT HIP': [36, 40], 'RIGHT KNEE': [28, 50], 'LEFT KNEE': [36, 50], 'RIGHT LEG': [28, 60], 'LEFT LEG': [36, 60], 'RIGHT EYE': [30, 9], 'LEFT EYE': [34, 9], 'RIGHT EAR': [28, 10], 'LEFT EAR': [36, 10] }
-  const rest = LABELS.map(label => ({ label, x: px[label][0] / 64, y: px[label][1] / 64 }))
-  /** A 2 px torch, 16 px long, rising from the right wrist `deg` from upright. */
-  const torch = (pose: Point[], deg: number, i: number, id: string): CellOut => {
-    const base = makeImg(64, 64), layer = makeImg(64, 64), mask = new Uint8Array(64 * 64), wr = pose.find(p => p.label === 'RIGHT ARM')!, t = deg * Math.PI / 180
-    for (let s = 0; s < 16; s += 0.25) for (const o of [-0.5, 0.5]) {
-      const x = Math.floor(wr.x * 64 + s * Math.sin(t) + o * Math.cos(t)), y = Math.floor(wr.y * 64 - s * Math.cos(t) + o * Math.sin(t)), q = y * 64 + x
-      if (!mask[q]) { mask[q] = 1; layer.data.set(s > 12 ? [235, 170, 35, 255] : [130, 80, 40, 255], q * 4) }
-    }
-    return { key: `${id}/south/${i}`, call: 0, base, input: base, out: layer, layer, mask, area: mask.reduce((a, v) => a + v, 0), outBand: 0, baseBand: 0, specks: 0, pinholes: 0, shifted: false, offset: [0, 0], stray: 0, posed: true }
-  }
-  const g9 = (id: string, requested: Point[][], measured: Point[][], degs: number[]) => {
-    const rig = { cell: { w: 64, h: 64 }, pivot: { x: 32, y: 60 }, baseItem: 'base', baseHash: 'sha256:test', directions: [{ id: 'south' }], rest: { south: { image: 'sha256:test', keypoints: rest } },
-      animations: [{ id, cells: requested.length, loop: false, frames: requested.map((_, cell) => ({ cell, ms: 100 })), sources: { south: { route: 'skeleton-v3', reference: 'sha256:test', keypoints: requested, measured, provenance: [] } } }] } as unknown as Rig
-    const cells = requested.map((pose, i) => torch(pose, degs[i], i, id))
-    return [...itemQa(rig, slotOf('main_hand'), 'green', cells, 0).failCalls.values()].flat().filter(why => why.startsWith('G9'))
-  }
+  const rest = stick
   const lean = [rest, tip(rest, 45), rest]
   for (const id of ['run-dodge', 'dodge']) expect(g9(id, lean, lean, [0, 0, 0]), id).toEqual([])
   // a walk whose neck estimate is thrown in one frame is still a walk: a torch that twists in the still hand fails
   const thrown = [rest, rest.map(p => (p.label === 'NECK' ? { ...p, x: 0.05, y: 0.5 } : p)), rest], still = [rest, rest, rest]
   expect(g9('walk', still, thrown, [0, 45, 0])).toEqual([expect.stringMatching(/^G9 walk\/south: the item turns 4\d° against the hand/)])
   expect(g9('walk', still, thrown, [0, 0, 0])).toEqual([])
+})
+
+test('one wrong hip estimate cannot make a leaning, striding run an action (2026-11-07 3eed2a9c counter-review N1)', () => {
+  // A real 30 degree lean with the left leg swung 45 degrees: the swing moves the knee midpoint, so the knee lean read 42
+  // degrees after scaling, and one hip estimate thrown 9 px pushed the lean about the hip center past 40 too.
+  const swing = (pose: Point[], deg: number) => {
+    const hip = pose.find(p => p.label === 'LEFT HIP')!, t = deg * Math.PI / 180, c = Math.cos(t), s = Math.sin(t)
+    return pose.map(p => (/^LEFT (KNEE|LEG)$/.test(p.label) ? { ...p, x: hip.x + (p.x - hip.x) * c - (p.y - hip.y) * s, y: hip.y + (p.x - hip.x) * s + (p.y - hip.y) * c } : p))
+  }
+  const stride = swing(tip(stick, 30), 45), poses = [stick, stick, stride, stick]
+  const run = (frame: Point[]) => ({ cell: { w: 64, h: 64 }, rest: { south: { keypoints: stick } }, animations: [{ id: 'run', sources: { south: { keypoints: poses, measured: [stick, stick, frame, stick] } } }] }) as unknown as Rig
+  const thrown = stride.map(p => (p.label === 'RIGHT HIP' ? { ...p, x: 0.32, y: 0.54 } : p))
+  expect(isAction('run/south', run(stride))).toBe(false)
+  expect(isAction('run/south', run(thrown))).toBe(false)
+  // nowhere else for either hip in that frame
+  for (const label of ['RIGHT HIP', 'LEFT HIP']) for (let x = 0.01; x < 1; x += 0.02) for (let y = 0.01; y < 1; y += 0.02)
+    expect(decisiveAction(run(stride.map(p => (p.label === label ? { ...p, x, y } : p))), 'run', 'south'), `${label} (${x.toFixed(2)}, ${y.toFixed(2)})`).toBe(false)
+  // so G9 still fails a torch reversed against the hand in that frame, and passes one that turns with it
+  const measured = [stick, stick, thrown, stick]
+  expect(g9('run', poses, measured, [0, 0, 210, 0])).toEqual([expect.stringMatching(/^G9 run\/south: the item turns 180° against the hand/)])
+  expect(g9('run', poses, measured, [0, 0, 30, 0])).toEqual([])
+  // while the same stride with a 45 degree lean is still an action
+  expect(decisiveAction(leanRig('run', 'south', stick, [stick, swing(tip(stick, 45), 45), stick]), 'run', 'south')).toBe(true)
 })
