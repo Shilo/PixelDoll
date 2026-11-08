@@ -1,0 +1,169 @@
+{
+  "reviewed": "3eed2a9c05e90f7b0febccc80e7caff804642ae0",
+  "baseline": "50eeea36446f146f6e499a6325843de8ffb77e96",
+  "node": "v24.22.1",
+  "sourceHash": "21cbcf54fe9bdaf567bbe1df890af6be94dd68a01b2fbeae675ee4f480a28028",
+  "reviewedFiles": [
+    {
+      "path": "app/src/lib/items/items.ts",
+      "pinnedSha256": "21cbcf54fe9bdaf567bbe1df890af6be94dd68a01b2fbeae675ee4f480a28028",
+      "workingSha256": "21cbcf54fe9bdaf567bbe1df890af6be94dd68a01b2fbeae675ee4f480a28028"
+    },
+    {
+      "path": "app/test/unit/move-classification.test.ts",
+      "pinnedSha256": "f6c9570cbfebdbe64bc998f960694a97401cd0b7ebad561a91abdb53ed831a3e",
+      "workingSha256": "f6c9570cbfebdbe64bc998f960694a97401cd0b7ebad561a91abdb53ed831a3e"
+    },
+    {
+      "path": "docs/reviews/2026-11-07-50eeea36-counter-review/claude-response.md",
+      "pinnedSha256": "f72a5cd6e933d312a5c17e6a5ccee7aef6d585c9b9d64631cd7e2aeb685170a8",
+      "workingSha256": "f72a5cd6e933d312a5c17e6a5ccee7aef6d585c9b9d64631cd7e2aeb685170a8"
+    },
+    {
+      "path": "docs/reviews/README.md",
+      "pinnedSha256": "b2d6ea76f8b823bd64fca80ddb3f42f4e248299e68163b5523c7686f101c8c6d",
+      "workingSha256": "730d1e3fc2e126a46c5296f831c6e5d640cb2c25a4456faf2045ed27d09cdd0d"
+    }
+  ],
+  "logs": {
+    "check": {
+      "path": "app/test-results-3eed-review-check.log",
+      "sha256": "7ba5aa83c76507aa6bff3d56d8274c91acc993f64b183b8bbcea85414d9cb40b",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "canceledDownloads": 0,
+      "summaries": [
+        "svelte-check found 0 errors and 0 warnings"
+      ]
+    },
+    "unit": {
+      "path": "app/test-results-3eed-review-unit.log",
+      "sha256": "4f5937b52557efe9fd92370b7378e9e9f7b75a8aab02a81ef83bd73f62cff932",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "canceledDownloads": 0,
+      "summaries": [
+        " Test Files  167 passed (167)",
+        "      Tests  2012 passed | 1 skipped (2013)",
+        "   Duration  12.15s (transform 9.75s, setup 0ms, import 30.30s, tests 73.62s, environment 12ms)"
+      ]
+    },
+    "bench": {
+      "path": "app/test-results-3eed-review-bench.log",
+      "sha256": "510dffac0dd0129d1e785fb56756e0eaa6078b085f05645138acdd916b4a10c1",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "canceledDownloads": 0,
+      "summaries": [
+        "a-helmet           ok | keep – exact – | drop 0.0 % (0/39) | fails 1 warn 0",
+        "a-cape             ok | keep – exact – | drop – | fails 2 warn 2",
+        "a-chest            ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-boots            ok | keep – exact – | drop – | fails 0 warn 32",
+        "a-hair             ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-sword96          ok | keep 89.6 % (43/48) exact 89.6 % (43/48) | drop – | fails 0 warn 3",
+        "a-axe96            ok | keep 91.7 % (44/48) exact 91.7 % (44/48) | drop – | fails 1 warn 1",
+        "a-jester-magenta   ok | keep 100.0 % (202/202) exact 0.0 % (0/202) | drop – | fails 3 warn 0",
+        "a-jester-blue      ok | keep 100.0 % (255/255) exact 100.0 % (255/255) | drop – | fails 0 warn 0",
+        "b-tunic            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-cloak            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-jester           ok | keep 9.4 % (620/6564) exact 0.0 % (0/6564) | drop – | fails 40 warn 0",
+        "b-jester-blue      ok | keep 100.0 % (7992/7992) exact 100.0 % (7992/7992) | drop – | fails 0 warn 0",
+        "n-cloak128         ok | keep – exact – | drop – | fails 1 warn 0",
+        "c-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-bow96            ok | keep 100.0 % (11/11) exact 45.5 % (5/11) | drop – | fails 1 warn 1",
+        "a-plume-azure      ok | keep 100.0 % (212/212) exact 100.0 % (212/212) | drop – | fails 0 warn 0",
+        "a-stripes-azure    ok | keep 100.0 % (152/152) exact 100.0 % (152/152) | drop – | fails 0 warn 0",
+        "a-stripes-magenta  ok | keep – exact – | drop – | fails 0 warn 0"
+      ]
+    },
+    "regression": {
+      "path": "app/test-results-3eed-review-regression.log",
+      "sha256": "5b85dafddd9870473dccdc2a731163e174124f1adf8d2e4ed6261d399cd6107d",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "canceledDownloads": 0,
+      "summaries": []
+    },
+    "browser": {
+      "path": "app/test-results-3eed-review-browser.log",
+      "sha256": "17eb8d91a267b8a9e195e3045d3e053b25bd6afbccbedbb7f6cb4a62438af97c",
+      "passingBrowserBodies": 58,
+      "failingBrowserBodies": 10,
+      "canceledDownloads": 0,
+      "summaries": []
+    },
+    "browser-temp-control": {
+      "path": "app/test-results-3eed-review-browser-temp-control.log",
+      "sha256": "ce6e7a48a7a68a823a3b5b00f2f6a2ea9bdc3ff5881816568a23ec19da27560f",
+      "passingBrowserBodies": 1,
+      "failingBrowserBodies": 0,
+      "canceledDownloads": 0,
+      "summaries": []
+    },
+    "browser-final": {
+      "path": "app/test-results-3eed-review-browser-final.log",
+      "sha256": "adbc3e4fa19876cb455a0e9aa23852bb2c7782c3a7a8bfdddb772b7cf0c3254f",
+      "passingBrowserBodies": 68,
+      "failingBrowserBodies": 0,
+      "canceledDownloads": 0,
+      "summaries": [
+        "  68 passed (1.4m)"
+      ]
+    }
+  },
+  "pairedRegressions": [
+    {
+      "name": "docs/reviews/2026-11-07-3eed2a9c-counter-review/temp.local/after/motion.test.ts",
+      "cases": [
+        {
+          "title": "a coherent moderate lean is an action at the hip threshold on every bench body (2026-11-07 50eeea36 counter-review C1)",
+          "status": "passed"
+        },
+        {
+          "title": "a gait word in an action name does not hide its moderate lean; an ordinary action name needs none",
+          "status": "passed"
+        },
+        {
+          "title": "hips sliding under still shoulders, or one hip or the neck thrown, is no lean",
+          "status": "passed"
+        },
+        {
+          "title": "G9 lets a torch stay upright through a coherent lean, under a gait name too, and still checks it on a walk with a thrown neck",
+          "status": "passed"
+        }
+      ]
+    },
+    {
+      "name": "docs/reviews/2026-11-07-3eed2a9c-counter-review/temp.local/before/motion.test.ts",
+      "cases": [
+        {
+          "title": "a coherent moderate lean is an action at the hip threshold on every bench body (2026-11-07 50eeea36 counter-review C1)",
+          "status": "failed"
+        },
+        {
+          "title": "a gait word in an action name does not hide its moderate lean; an ordinary action name needs none",
+          "status": "failed"
+        },
+        {
+          "title": "hips sliding under still shoulders, or one hip or the neck thrown, is no lean",
+          "status": "passed"
+        },
+        {
+          "title": "G9 lets a torch stay upright through a coherent lean, under a gait name too, and still checks it on a walk with a thrown neck",
+          "status": "failed"
+        }
+      ]
+    }
+  ],
+  "exits": {
+    "check": 0,
+    "unit": 0,
+    "bench": 0,
+    "pairedRegressions": 1,
+    "browserInitial": "interrupted during shutdown after test bodies",
+    "browserTempControl": "interrupted during shutdown after test body",
+    "browserFinal": 0
+  },
+  "transport": "No real PixelLab calls; review Node preload and offline Playwright wrapper. Final browser run uses workspace TEMP/TMP and unsandboxed execution for process cleanup."
+}

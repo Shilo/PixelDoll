@@ -1,0 +1,2042 @@
+{
+  "before": "50eeea36",
+  "after": "3eed2a9c",
+  "beforeSourceHash": "e72e87e9391c872c98b3ab7eb52d4427f6a5082271993482a38e5aced445fb02",
+  "sourceHash": "21cbcf54fe9bdaf567bbe1df890af6be94dd68a01b2fbeae675ee4f480a28028",
+  "rows": [
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "steady",
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 29 % of median",
+          "G5 run-dodge/south: area CV 0.30 > 0.15"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 29 % of median",
+          "G5 run-dodge/south: area CV 0.30 > 0.15"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median",
+          "G5 run-dodge/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median",
+          "G5 run-dodge/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "steady",
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 29 % of median",
+          "G5 run-dodge/south: area CV 0.30 > 0.15",
+          "G9 run-dodge/south: the item turns 30° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 29 % of median",
+          "G5 run-dodge/south: area CV 0.30 > 0.15",
+          "G9 run-dodge/south: the item turns 30° against the hand between frames"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median",
+          "G5 run-dodge/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median",
+          "G5 run-dodge/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/south: the item turns 150° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/south: the item turns 150° against the hand between frames"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "steady",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/south: the item turns 45° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 24 % of median",
+          "G5 run-dodge/south: area CV 0.33 > 0.15",
+          "G9 run-dodge/south: the item turns 45° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 24 % of median"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median",
+          "G5 run-dodge/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/south: the item turns 135° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 29 % of median"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 29 % of median"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "steady",
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 29 % of median",
+          "G5 run-dodge/north: area CV 0.30 > 0.15"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 29 % of median",
+          "G5 run-dodge/north: area CV 0.30 > 0.15"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G5 run-dodge/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G5 run-dodge/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/north: the item turns 180° against the hand between frames"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "steady",
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 29 % of median",
+          "G5 run-dodge/north: area CV 0.30 > 0.15",
+          "G9 run-dodge/north: the item turns 30° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 29 % of median",
+          "G5 run-dodge/north: area CV 0.30 > 0.15",
+          "G9 run-dodge/north: the item turns 30° against the hand between frames"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G5 run-dodge/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G5 run-dodge/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/north: the item turns 150° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/north: the item turns 150° against the hand between frames"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "steady",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/north: the item turns 45° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 24 % of median",
+          "G5 run-dodge/north: area CV 0.33 > 0.15",
+          "G9 run-dodge/north: the item turns 45° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run-dodge/north: min area 24 % of median"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G5 run-dodge/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/north: the item turns 135° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run-dodge/north: min area 29 % of median"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run-dodge/north: min area 29 % of median"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 29 % of median"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 29 % of median"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 0,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 29 % of median"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 29 % of median"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 30,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 24 % of median"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 24 % of median"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 29 % of median"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 29 % of median"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "south",
+      "angle": 70,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 29 % of median"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 29 % of median"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 0 % of median",
+          "G8 dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 0 % of median",
+          "G8 dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 0,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 29 % of median"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 29 % of median"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 0 % of median",
+          "G8 dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 0 % of median",
+          "G8 dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 30,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 24 % of median"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 24 % of median"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 0 % of median",
+          "G8 dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 0 % of median",
+          "G8 dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "steady",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "shrink",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 29 % of median"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 29 % of median"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 0 % of median",
+          "G8 dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 dodge/north: min area 0 % of median",
+          "G8 dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "empty-all",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "dir": "north",
+      "angle": 70,
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    }
+  ],
+  "changed": [
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "steady",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/south: the item turns 45° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 24 % of median",
+          "G5 run-dodge/south: area CV 0.33 > 0.15",
+          "G9 run-dodge/south: the item turns 45° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 24 % of median"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median",
+          "G5 run-dodge/south: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: min area 0 % of median"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/south: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "south",
+      "angle": 45,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/south: the item turns 135° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "steady",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/north: the item turns 45° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "shrink",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 24 % of median",
+          "G5 run-dodge/north: area CV 0.33 > 0.15",
+          "G9 run-dodge/north: the item turns 45° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run-dodge/north: min area 24 % of median"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "empty-one",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G5 run-dodge/north: area CV 0.45 > 0.15"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G4 run-dodge/north: min area 0 % of median",
+          "G8 run-dodge/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "empty-all",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run-dodge/north: item missing"
+        ],
+        "warnings": [
+          "G8 run-dodge/north: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "dir": "north",
+      "angle": 45,
+      "kind": "flip",
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run-dodge/north: the item turns 135° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    }
+  ]
+}

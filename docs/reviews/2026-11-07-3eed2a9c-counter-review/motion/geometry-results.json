@@ -1,0 +1,190 @@
+{
+  "before": "50eeea36",
+  "after": "3eed2a9c",
+  "sourceHash": "21cbcf54fe9bdaf567bbe1df890af6be94dd68a01b2fbeae675ee4f480a28028",
+  "property": {
+    "count": 6615,
+    "missed": [],
+    "newSmallPositives": [],
+    "previousSmallPositives": [
+      {
+        "body": "C",
+        "dir": "south",
+        "aspect": 2,
+        "inclination": -15,
+        "turn": 30,
+        "before": true,
+        "after": true
+      },
+      {
+        "body": "C",
+        "dir": "south",
+        "aspect": 2,
+        "inclination": 15,
+        "turn": -30,
+        "before": true,
+        "after": true
+      }
+    ],
+    "changes": 2212,
+    "byTurn": [
+      {
+        "turn": -60,
+        "count": 945,
+        "beforeDecisive": 611,
+        "afterDecisive": 945
+      },
+      {
+        "turn": -45,
+        "count": 945,
+        "beforeDecisive": 172,
+        "afterDecisive": 945
+      },
+      {
+        "turn": -30,
+        "count": 945,
+        "beforeDecisive": 1,
+        "afterDecisive": 1
+      },
+      {
+        "turn": 0,
+        "count": 945,
+        "beforeDecisive": 0,
+        "afterDecisive": 0
+      },
+      {
+        "turn": 30,
+        "count": 945,
+        "beforeDecisive": 1,
+        "afterDecisive": 1
+      },
+      {
+        "turn": 45,
+        "count": 945,
+        "beforeDecisive": 173,
+        "afterDecisive": 945
+      },
+      {
+        "turn": 60,
+        "count": 945,
+        "beforeDecisive": 612,
+        "afterDecisive": 945
+      }
+    ],
+    "changedExamples": [
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -45,
+        "turn": -60,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -45,
+        "turn": -45,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -45,
+        "turn": 45,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -45,
+        "turn": 60,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -30,
+        "turn": -60,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -30,
+        "turn": -45,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -30,
+        "turn": 45,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -30,
+        "turn": 60,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -15,
+        "turn": -60,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -15,
+        "turn": -45,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -15,
+        "turn": 45,
+        "before": false,
+        "after": true
+      },
+      {
+        "body": "A",
+        "dir": "south",
+        "aspect": 0.5,
+        "inclination": -15,
+        "turn": 60,
+        "before": false,
+        "after": true
+      }
+    ]
+  },
+  "translatedHips": {
+    "count": 1701,
+    "decisive": [],
+    "changes": []
+  }
+}

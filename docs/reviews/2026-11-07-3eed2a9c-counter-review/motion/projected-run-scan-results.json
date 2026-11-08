@@ -1,0 +1,19 @@
+{
+  "before": "50eeea36",
+  "after": "3eed2a9c",
+  "fixtures": [
+    "c27man",
+    "chibi",
+    "body128"
+  ],
+  "clip": "run",
+  "directions": [
+    "east",
+    "west",
+    "south",
+    "north"
+  ],
+  "step": 0.025,
+  "noNewHits": true,
+  "total": 401544
+}

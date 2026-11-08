@@ -1,0 +1,2488 @@
+{
+  "before": "6006a55c",
+  "after": "3eed2a9c",
+  "beforeSourceHash": "c3fbccf20dbc3b99c0b705de2986ecb57af3b68c13cfa066af9eb5c614e6491c",
+  "sourceHash": "21cbcf54fe9bdaf567bbe1df890af6be94dd68a01b2fbeae675ee4f480a28028",
+  "synthetic": [
+    {
+      "angle": 0,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 0,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 0,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 20,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 20,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 20,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 39,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 39,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 39,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "angle": 40,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 40,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 40,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 41,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 41,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 41,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 45,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 45,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 45,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 50,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 50,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 50,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 55,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 55,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 55,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 60,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 60,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 60,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 70,
+      "count": 1,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 70,
+      "count": 4,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "angle": 70,
+      "count": 8,
+      "validateErrors": [],
+      "inBounds": true,
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    }
+  ],
+  "originalNeck": {
+    "beforeDecisive": true,
+    "afterDecisive": false,
+    "beforeAction": true,
+    "afterAction": false
+  },
+  "uprightTorch": [
+    {
+      "id": "run-dodge",
+      "angle": 0,
+      "rigValid": [],
+      "maxBoneLengthChangePx": 0,
+      "wristContactPx": [
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476
+      ],
+      "sourceBodyQa": {
+        "adherence": 0,
+        "fails": [],
+        "warnings": []
+      },
+      "bodyHashes": [
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9"
+      ],
+      "layerHashes": [
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+      ],
+      "before": {
+        "classification": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "layerHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      },
+      "after": {
+        "classification": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "layerHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "angle": 45,
+      "rigValid": [],
+      "maxBoneLengthChangePx": 7.105427357601002e-15,
+      "wristContactPx": [
+        0.7071067811865476,
+        0.7071067811865476,
+        0.6571839780189496,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476
+      ],
+      "sourceBodyQa": {
+        "adherence": 0,
+        "fails": [],
+        "warnings": []
+      },
+      "bodyHashes": [
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "f1a312f5fcf1c1df22020307e3fb660dab15b6539e5d62252417d51edc0b61c1",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9"
+      ],
+      "layerHashes": [
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "4f64da865f541ebf58d27b930195f399c3e893a1cf7b942be122a4960a43d36e",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+      ],
+      "before": {
+        "classification": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "layerHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "4f64da865f541ebf58d27b930195f399c3e893a1cf7b942be122a4960a43d36e",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      },
+      "after": {
+        "classification": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "layerHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "4f64da865f541ebf58d27b930195f399c3e893a1cf7b942be122a4960a43d36e",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      }
+    },
+    {
+      "id": "dodge",
+      "angle": 45,
+      "rigValid": [],
+      "maxBoneLengthChangePx": 7.105427357601002e-15,
+      "wristContactPx": [
+        0.7071067811865476,
+        0.7071067811865476,
+        0.6571839780189496,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476
+      ],
+      "sourceBodyQa": {
+        "adherence": 0,
+        "fails": [],
+        "warnings": []
+      },
+      "bodyHashes": [
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "f1a312f5fcf1c1df22020307e3fb660dab15b6539e5d62252417d51edc0b61c1",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9"
+      ],
+      "layerHashes": [
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "4f64da865f541ebf58d27b930195f399c3e893a1cf7b942be122a4960a43d36e",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+      ],
+      "before": {
+        "classification": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "layerHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "4f64da865f541ebf58d27b930195f399c3e893a1cf7b942be122a4960a43d36e",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      },
+      "after": {
+        "classification": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "layerHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "4f64da865f541ebf58d27b930195f399c3e893a1cf7b942be122a4960a43d36e",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      }
+    },
+    {
+      "id": "run-dodge",
+      "angle": 70,
+      "rigValid": [],
+      "maxBoneLengthChangePx": 5.329070518200751e-15,
+      "wristContactPx": [
+        0.7071067811865476,
+        0.7071067811865476,
+        0.5221591063831877,
+        0.7071067811865476,
+        0.7071067811865476,
+        0.7071067811865476
+      ],
+      "sourceBodyQa": {
+        "adherence": 0,
+        "fails": [],
+        "warnings": [
+          "8 opaque pixels touch the frame border; check framing",
+          "the body turns side-on or falls in frame 3 (shoulders down to 34 % of the standing width); check that it still faces south"
+        ]
+      },
+      "bodyHashes": [
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "291b1641e1b66e37fca4ad5c1537d22816da0db9ffa7e2cd7e5014a616c5f07c",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9",
+        "e5aef8435e8ca87bd5bb96cd125d25ed8304062370ff36b8d41a9add94437cd9"
+      ],
+      "layerHashes": [
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "0b009f20162291707d1eab457b8c02bfbef6cf8d2fb687fddce37e0e061c0df4",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+        "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+      ],
+      "before": {
+        "classification": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "layerHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "0b009f20162291707d1eab457b8c02bfbef6cf8d2fb687fddce37e0e061c0df4",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      },
+      "after": {
+        "classification": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "cleanup": {
+          "removed": 0,
+          "repaired": []
+        },
+        "layerHashes": [
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "0b009f20162291707d1eab457b8c02bfbef6cf8d2fb687fddce37e0e061c0df4",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f",
+          "5c85e379e9d276c334c6570869d49658934f258942dc3897fb26ab978f89077f"
+        ]
+      }
+    }
+  ],
+  "storedRigCount": 12,
+  "stored": [
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "sourceHash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "walk",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "sourceHash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "walk",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "sourceHash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "walk",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "sourceHash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "slash",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "sourceHash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "slash",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "sourceHash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "slash",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "sourceHash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "sourceHash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "south-east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "sourceHash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "sourceHash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "north-east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "sourceHash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyC.json",
+      "sourceHash": "0ff827d316779d0933af9410fc057fdf0c3dc4002c402eb40cf1e3d9414fcc6f",
+      "anim": "walk",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyC.json",
+      "sourceHash": "0ff827d316779d0933af9410fc057fdf0c3dc4002c402eb40cf1e3d9414fcc6f",
+      "anim": "walk",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyC.json",
+      "sourceHash": "0ff827d316779d0933af9410fc057fdf0c3dc4002c402eb40cf1e3d9414fcc6f",
+      "anim": "walk",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyN.json",
+      "sourceHash": "699421cda6600ce491594559fe7e68270769118dbcbe48fc879f02225e40584e",
+      "anim": "walk",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyN.json",
+      "sourceHash": "699421cda6600ce491594559fe7e68270769118dbcbe48fc879f02225e40584e",
+      "anim": "walk",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyN.json",
+      "sourceHash": "699421cda6600ce491594559fe7e68270769118dbcbe48fc879f02225e40584e",
+      "anim": "walk",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "sourceHash": "caff03dce3ac7098f8645b0d3ed0e830f0147a581a08707317d3e7e37c0912f5",
+      "anim": "slash",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "sourceHash": "caff03dce3ac7098f8645b0d3ed0e830f0147a581a08707317d3e7e37c0912f5",
+      "anim": "hurt",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "sourceHash": "caff03dce3ac7098f8645b0d3ed0e830f0147a581a08707317d3e7e37c0912f5",
+      "anim": "hurt",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "sourceHash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "rest",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "sourceHash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "rest",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "sourceHash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "rest",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "sourceHash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "rest",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "sourceHash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "walking",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "sourceHash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "walking-47c00e8a",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "sourceHash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "walking-6fb9c602",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "sourceHash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "sourceHash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "sourceHash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "sourceHash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "sourceHash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "slash",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "sourceHash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "slash",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "sourceHash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "slash",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "sourceHash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "slash",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "sourceHash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "sourceHash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "sourceHash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "sourceHash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "sourceHash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "slash",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "sourceHash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "slash",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "sourceHash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "slash",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "sourceHash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "slash",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-idle-runtime/export/manifest.json",
+      "sourceHash": "5095cfc4f4ba9dfa7fd157fada1b662679838dc76857df31aec593e675cd5a34",
+      "anim": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-idle-runtime/export/manifest.json",
+      "sourceHash": "5095cfc4f4ba9dfa7fd157fada1b662679838dc76857df31aec593e675cd5a34",
+      "anim": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-idle-runtime/export/manifest.json",
+      "sourceHash": "5095cfc4f4ba9dfa7fd157fada1b662679838dc76857df31aec593e675cd5a34",
+      "anim": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-idle-runtime/export/manifest.json",
+      "sourceHash": "5095cfc4f4ba9dfa7fd157fada1b662679838dc76857df31aec593e675cd5a34",
+      "anim": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-live-runtime/export/manifest.json",
+      "sourceHash": "68767f74bf5e1a7c5344f556110a4cbd55c68e2840b6d0072cf7f6450eb2188b",
+      "anim": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-live-runtime/export/manifest.json",
+      "sourceHash": "68767f74bf5e1a7c5344f556110a4cbd55c68e2840b6d0072cf7f6450eb2188b",
+      "anim": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-live-runtime/export/manifest.json",
+      "sourceHash": "68767f74bf5e1a7c5344f556110a4cbd55c68e2840b6d0072cf7f6450eb2188b",
+      "anim": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-live-runtime/export/manifest.json",
+      "sourceHash": "68767f74bf5e1a7c5344f556110a4cbd55c68e2840b6d0072cf7f6450eb2188b",
+      "anim": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "sourceHash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "sourceHash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "sourceHash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "sourceHash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "sourceHash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "slash",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "sourceHash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "slash",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "sourceHash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "slash",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "sourceHash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "slash",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "sourceHash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "sourceHash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "sourceHash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "sourceHash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "sourceHash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "slash",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "sourceHash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "slash",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "sourceHash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "slash",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "sourceHash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "slash",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    }
+  ],
+  "subsamples": [
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "south",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "south",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "east",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "east",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "north",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "north",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "dir": "south",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "dir": "south",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "picks": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "picks": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    }
+  ],
+  "retargeted": [
+    {
+      "fixture": "c27man",
+      "clip": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "walk",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "walk",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "walk",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "walk",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "run",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "run",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "run",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "run",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "c27man",
+      "clip": "attack",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "attack",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "attack",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "attack",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "hurt",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "hurt",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "hurt",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "hurt",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "death",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "death",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "death",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "c27man",
+      "clip": "death",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "walk",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "walk",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "walk",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "walk",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "run",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "run",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "run",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "run",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "chibi",
+      "clip": "attack",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "attack",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "attack",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "attack",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "hurt",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "hurt",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "hurt",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "hurt",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "death",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "death",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "death",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "chibi",
+      "clip": "death",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "idle",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "idle",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "idle",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "idle",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "walk",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "walk",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "walk",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "walk",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "run",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "run",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "run",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "run",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": false,
+      "afterAction": false
+    },
+    {
+      "fixture": "body128",
+      "clip": "attack",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "attack",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "attack",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "attack",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "hurt",
+      "dir": "south",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "hurt",
+      "dir": "east",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "hurt",
+      "dir": "north",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "hurt",
+      "dir": "west",
+      "beforeDecisive": false,
+      "afterDecisive": false,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "death",
+      "dir": "south",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "death",
+      "dir": "east",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "death",
+      "dir": "north",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    },
+    {
+      "fixture": "body128",
+      "clip": "death",
+      "dir": "west",
+      "beforeDecisive": true,
+      "afterDecisive": true,
+      "beforeAction": true,
+      "afterAction": true
+    }
+  ]
+}
