@@ -1,0 +1,531 @@
+{
+  "baseline": "bb830dfb9ac6e7347200e487302b60b2d779f457",
+  "endpoint": "19646f097a44dff32e7c02563e4a744499a8ff0e",
+  "handoff": "304f27bdbb49b568cb49eaaa7623a621d9334b52",
+  "checkoutAtReview": "304f27bdbb49b568cb49eaaa7623a621d9334b52",
+  "excluded": "9c9a21385d4f145a1d9c708a10462531199b5e88",
+  "claudeCommitCount": 33,
+  "commits": [
+    {
+      "sha": "45d0b4e0b422167a95457e39d5bd7236a4d54bc4",
+      "date": "2026-11-07T04:59:51-08:00",
+      "subject": "fix(items): apply the held size floor while linking parts; count dark blotches in D1",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/test/unit/held-detached-parts.test.ts",
+        "app/test/unit/worn-parts-and-outline.test.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/review-735b92d3.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/bow-holes.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/compare-735b.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/d1-variants.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/despill-blend.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/held-radius.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/held-reasons.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/strip.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/why-kept.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/worn-consensus.ts"
+      ]
+    },
+    {
+      "sha": "abcecf0ee733bb45f95dda70af40246906d1b419",
+      "date": "2026-11-07T05:19:02-08:00",
+      "subject": "fix(items): measure item colors against the chroma key and retry with a safe key",
+      "files": [
+        "app/src/lib/equipment/generate.ts",
+        "app/src/lib/image/chroma.ts",
+        "app/src/lib/items/run.ts",
+        "app/src/studio/GenCard.svelte",
+        "app/src/studio/apiPlans.ts",
+        "app/src/studio/itemRoute.ts",
+        "app/src/studio/model.ts",
+        "app/src/studio/state.svelte.ts",
+        "app/test/unit/azure-key.test.ts",
+        "app/test/unit/measured-key.test.ts",
+        "app/test/unit/studio-flow-state.test.ts",
+        "docs/architecture.md",
+        "docs/known-issues.md",
+        "docs/research/2026-11-07-paperdoll-cycle/review-measured-key.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/fitkey-equivalence.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/measured-key-bench.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/measured-key-synthetic.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/measured-key-variants.ts"
+      ]
+    },
+    {
+      "sha": "edc604be3e188f0c20a5accec800fbef10999a49",
+      "date": "2026-11-07T05:43:14-08:00",
+      "subject": "fix(items): classify walk vs action moves by whole words and decisive motion",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/src/lib/rig/clips.ts",
+        "app/src/studio/ItemPane.svelte",
+        "app/src/studio/model.ts",
+        "app/test/unit/move-classification.test.ts",
+        "docs/architecture.md",
+        "docs/research/2026-11-07-paperdoll-cycle/review-move-classification.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/moves/kaykit-stats.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/moves/motion-stats.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/move-classification.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/move-root.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/move-swaps.ts"
+      ]
+    },
+    {
+      "sha": "236876cc6f890abcc32c782ad03baaf9f75b08e0",
+      "date": "2026-11-07T06:11:49-08:00",
+      "subject": "fix(items): review hanging, waving and body-hidden held items instead of failing them",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/src/lib/items/qa-summary.ts",
+        "app/src/lib/store/manifest.ts",
+        "app/src/studio/model.ts",
+        "app/test/unit/held-hang-wave.test.ts",
+        "docs/architecture.md",
+        "docs/research/2026-11-07-paperdoll-cycle/review-held-hang.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/held-hang.ts"
+      ]
+    },
+    {
+      "sha": "cd107b772cb2058a208caa665e4fd57d2b7e8331",
+      "date": "2026-11-07T06:35:52-08:00",
+      "subject": "docs(research): add the frame-count gate check script",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/moves/frame-count.ts"
+      ]
+    },
+    {
+      "sha": "38fc7f02ad2919db1e2730a2c00f93ed2bdbad39",
+      "date": "2026-11-07T06:45:28-08:00",
+      "subject": "docs(design): audit Bronze identity and guide purposeful UI changes",
+      "files": [
+        "AGENTS.md",
+        "docs/README.md",
+        "docs/research/bronze-ui-ai-design-research-2026-11-07.md",
+        "docs/research/bronze-ui-identity-audit-2026-11-07.md"
+      ]
+    },
+    {
+      "sha": "41411fcab3b2c7d8328a49e748cfee8acb67759b",
+      "date": "2026-11-07T06:54:31-08:00",
+      "subject": "fix(studio): keep moves started before a character first opens from failing",
+      "files": [
+        "app/src/studio/replaceMove.ts",
+        "app/test/unit/move-rig-version.test.ts"
+      ]
+    },
+    {
+      "sha": "a461988d47043743f9ad9005977a64d8f98ad6ea",
+      "date": "2026-11-07T06:58:59-08:00",
+      "subject": "docs(agents): make visual design guidance self-contained",
+      "files": [
+        "AGENTS.md"
+      ]
+    },
+    {
+      "sha": "82b0f4246dc6f9ecfd58ec45d65716382e958d1d",
+      "date": "2026-11-07T07:00:58-08:00",
+      "subject": "fix(studio): name items from the description head and show the hand summary plainly",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/src/studio/model.ts",
+        "app/test/unit/item-name.test.ts"
+      ]
+    },
+    {
+      "sha": "258afdb01e51c34560706c1d9fbcf9d515c4060c",
+      "date": "2026-11-07T07:03:49-08:00",
+      "subject": "docs(design): distinguish Bronze goals from PixelDoll priorities",
+      "files": [
+        "AGENTS.md",
+        "docs/research/bronze-ui-identity-audit-2026-11-07.md"
+      ]
+    },
+    {
+      "sha": "2dbbbf80c31bbd157bbab477d19a8c6e27c01b5f",
+      "date": "2026-11-07T07:05:07-08:00",
+      "subject": "fix(studio): keep every review draft's result when checks run together",
+      "files": [
+        "app/src/studio/model.ts",
+        "app/src/studio/state.svelte.ts",
+        "app/test/unit/g8-copy.test.ts",
+        "app/test/unit/studio-flow-state.test.ts"
+      ]
+    },
+    {
+      "sha": "a2313016760107aca5ca500ec5508dcb75d8739b",
+      "date": "2026-11-07T07:21:11-08:00",
+      "subject": "docs(research): record the live Agent-mode test of the cycle fixes",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/README.md"
+      ]
+    },
+    {
+      "sha": "15e6d993e83c22c431f195e2a2d221ae2899bd88",
+      "date": "2026-11-07T07:36:21-08:00",
+      "subject": "fix(items): let a pack worn flat on the back be hidden in front views",
+      "files": [
+        "app/src/lib/equipment/generate.ts",
+        "app/src/lib/items/items.ts",
+        "app/src/lib/items/run.ts",
+        "app/test/unit/hidden-back-views.test.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/review-hidden-back.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/hidden-back.ts"
+      ]
+    },
+    {
+      "sha": "4bc9f3fb8cd0dafcdb51840c4a7b06fd63637aab",
+      "date": "2026-11-07T07:46:41-08:00",
+      "subject": "fix(items): judge gray smudges across views and read item words more carefully",
+      "files": [
+        "app/src/lib/items/design-consistency.ts",
+        "app/src/lib/items/items.ts",
+        "app/src/lib/items/run.ts",
+        "app/src/studio/model.ts",
+        "app/test/unit/word-lists.test.ts",
+        "docs/architecture.md",
+        "docs/known-issues.md",
+        "docs/research/2026-11-07-paperdoll-cycle/review-word-lists.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/d1-cross-view.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/review/word-lists.ts"
+      ]
+    },
+    {
+      "sha": "77b863e92dca49250458cacfcae73d1423a3a31b",
+      "date": "2026-11-07T08:02:48-08:00",
+      "subject": "fix(chroma): keep light thin items over darker skin in the outline guard",
+      "files": [
+        "app/src/lib/image/chroma.ts",
+        "app/test/unit/rim-guard-skin-tones.test.ts",
+        "docs/known-issues.md",
+        "docs/research/2026-11-07-paperdoll-cycle/audit-color-prompt.md",
+        "docs/research/2026-11-07-paperdoll-cycle/extraction.md",
+        "docs/research/2026-11-07-paperdoll-cycle/fairness.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/fairness/rim-dark-relative.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/fairness/shipped-layers.ts",
+        "docs/testing/bench.md"
+      ]
+    },
+    {
+      "sha": "0baa1ac3772cba0c8f8ce7e74ba7794b267986f7",
+      "date": "2026-11-07T08:04:33-08:00",
+      "subject": "fix(items): price inpaint repair grids by their mean side",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/src/ui/motion-lab/equipment.ts",
+        "app/test/unit/grid-estimate.test.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/README.md"
+      ]
+    },
+    {
+      "sha": "e951da85225c83ae0bb8f3bbecc9120b440fa0cd",
+      "date": "2026-11-07T08:11:28-08:00",
+      "subject": "fix(studio): keep finished views when one view of an item move fails",
+      "files": [
+        "app/src/lib/items/run.ts",
+        "app/src/studio/MoveSheet.svelte",
+        "app/src/studio/create.ts",
+        "app/test/unit/automatic-recovery.test.ts",
+        "app/test/unit/item-move-readiness.test.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/README.md",
+        "docs/research/2026-11-07-paperdoll-cycle/code-map.md"
+      ]
+    },
+    {
+      "sha": "e4cc1a698c9affaf574cc92c9331dd59025b7dc2",
+      "date": "2026-11-07T08:33:52-08:00",
+      "subject": "docs(research): record the paid hand wording A/B and keep the current wording",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/README.md",
+        "docs/research/2026-11-07-paperdoll-cycle/hand-wording-ab.md"
+      ]
+    },
+    {
+      "sha": "e3a8834c2261343a2ce4548083f5815704c59597",
+      "date": "2026-11-07T08:40:53-08:00",
+      "subject": "docs(research): record the live small-blade check of the held-item gates",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/README.md"
+      ]
+    },
+    {
+      "sha": "b11755647117a6b388399702cd4006947069ffb0",
+      "date": "2026-11-07T08:58:44-08:00",
+      "subject": "feat(items): flag design details lost in posed item frames",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/src/lib/items/qa-summary.ts",
+        "app/src/lib/items/run.ts",
+        "app/src/lib/store/manifest.ts",
+        "app/src/studio/model.ts",
+        "app/test/unit/design-detail.test.ts",
+        "docs/architecture.md",
+        "docs/research/2026-11-07-paperdoll-cycle/README.md",
+        "docs/research/2026-11-07-paperdoll-cycle/code-map.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/motif/lost-colors.ts"
+      ]
+    },
+    {
+      "sha": "83231919af74608be49a9400ea8bda485125ad91",
+      "date": "2026-11-07T08:59:02-08:00",
+      "subject": "docs(research): update the cycle resumption note",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/README.md"
+      ]
+    },
+    {
+      "sha": "f7c771fad3bcc0411b3e2a0d0eca895292b42747",
+      "date": "2026-11-07T09:16:44-08:00",
+      "subject": "fix(items): pack repair grids into the cheapest priced layout",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/src/lib/items/run.ts",
+        "app/src/studio/state.svelte.ts",
+        "app/test/unit/grid-estimate.test.ts",
+        "app/test/unit/targeted-move.test.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/README.md"
+      ]
+    },
+    {
+      "sha": "fa315b2a836c5217a1cb1bd7c96e4a41a293a2f8",
+      "date": "2026-11-07T09:27:51-08:00",
+      "subject": "docs(research): record the rejected upright held-object tests",
+      "files": [
+        "docs/known-issues.md",
+        "docs/research/2026-11-07-paperdoll-cycle/README.md",
+        "docs/research/2026-11-07-paperdoll-cycle/hand-wording-ab.md"
+      ]
+    },
+    {
+      "sha": "666f489a04da97916a964d889f638e5f3833dda0",
+      "date": "2026-11-07T09:36:18-08:00",
+      "subject": "fix(studio): reuse finished skeleton item frames after a save conflict",
+      "files": [
+        "app/src/lib/items/run.ts",
+        "app/src/studio/MoveSheet.svelte",
+        "app/src/studio/create.ts",
+        "app/test/unit/automatic-recovery.test.ts",
+        "app/test/unit/item-move-readiness.test.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/README.md",
+        "docs/research/2026-11-07-paperdoll-cycle/code-map.md"
+      ]
+    },
+    {
+      "sha": "4981d2cdef03da74d67a729b4960d6fd720f1d7d",
+      "date": "2026-11-07T09:40:28-08:00",
+      "subject": "docs(research): record the rejected flip of upright held objects",
+      "files": [
+        "docs/known-issues.md",
+        "docs/research/2026-11-07-paperdoll-cycle/hand-wording-ab.md"
+      ]
+    },
+    {
+      "sha": "2fbe38eb503777f06cd6592ac3c4cd4e4cd7a0dc",
+      "date": "2026-11-07T09:47:58-08:00",
+      "subject": "feat(items): judge design details in the slash for items over the body",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/test/unit/design-detail.test.ts",
+        "docs/architecture.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/motif/lost-colors.ts"
+      ]
+    },
+    {
+      "sha": "d80303915d06b1dd3267e2c7d4fc3699f878e5da",
+      "date": "2026-11-07T09:56:21-08:00",
+      "subject": "fix(chroma): keep thin dark straps over deep skin on the green key",
+      "files": [
+        "app/src/lib/image/chroma.ts",
+        "app/test/unit/rim-guard-skin-tones.test.ts",
+        "docs/known-issues.md",
+        "docs/research/2026-11-07-paperdoll-cycle/README.md",
+        "docs/research/2026-11-07-paperdoll-cycle/fairness.md",
+        "docs/research/2026-11-07-paperdoll-cycle/lpc-fairness.md",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/lpc-fairness/bench-diff.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/lpc-fairness/bench-drops.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/lpc-fairness/lpc-fairness.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/lpc-fairness/lpc.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/lpc-fairness/report.ts",
+        "docs/research/2026-11-07-paperdoll-cycle/scripts/lpc-fairness/sheet.ts"
+      ]
+    },
+    {
+      "sha": "8ea08c28d92d9a8d41524dcd78f379c38699ea63",
+      "date": "2026-11-07T09:57:17-08:00",
+      "subject": "docs(research): record the flip prototype run in the paid ledger",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/README.md"
+      ]
+    },
+    {
+      "sha": "2611cc3433bcb3548a31bd6c25e0a0187b5e3989",
+      "date": "2026-11-07T10:47:04-08:00",
+      "subject": "docs(studio): disclose held-item grip, side-view and mirrored hand limits",
+      "files": [
+        "app/src/studio/CharacterForm.svelte",
+        "docs/known-issues.md"
+      ]
+    },
+    {
+      "sha": "f26751bf50beb0dbd1324f741f5afb2ad4c2b9a1",
+      "date": "2026-11-07T10:53:36-08:00",
+      "subject": "docs(research): show held padding does not set the sword direction",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/hand-wording-ab.md"
+      ]
+    },
+    {
+      "sha": "0992bae7aab684b969880be481a96ff8876d2801",
+      "date": "2026-11-07T11:09:05-08:00",
+      "subject": "docs(research): record the rejected straight-down sword wording",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/hand-wording-ab.md"
+      ]
+    },
+    {
+      "sha": "1a3534b92fe83bd21a3f959c614c0ae6a7972c29",
+      "date": "2026-11-07T12:34:31-08:00",
+      "subject": "docs(research): keep the held wording after testing minimal and negative prompts",
+      "files": [
+        "docs/research/2026-11-07-paperdoll-cycle/README.md",
+        "docs/research/2026-11-07-paperdoll-cycle/hand-wording-ab.md"
+      ]
+    },
+    {
+      "sha": "19646f097a44dff32e7c02563e4a744499a8ff0e",
+      "date": "2026-11-07T13:03:55-08:00",
+      "subject": "fix(items): answer the post-bb830dfb counter-review findings",
+      "files": [
+        "app/src/lib/items/items.ts",
+        "app/src/lib/items/run.ts",
+        "app/src/studio/model.ts",
+        "app/test/unit/automatic-recovery.test.ts",
+        "app/test/unit/grid-estimate.test.ts",
+        "app/test/unit/held-connector.test.ts",
+        "app/test/unit/item-name.test.ts",
+        "app/test/unit/move-classification.test.ts",
+        "app/test/unit/word-lists.test.ts",
+        "docs/known-issues.md",
+        "docs/reviews/2026-11-07-post-bb830dfb/claude-response.md"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "path": "app/src/lib/equipment/generate.ts",
+      "gitBlob": "ec4c17cb1ceec52f63ed8b1ef2d4ebf2bb50bb07",
+      "sha256": "f77c205153d57960ca2d62ac5287de69aca05f1b6c186c092940057a49ef4854"
+    },
+    {
+      "path": "app/src/lib/image/chroma.ts",
+      "gitBlob": "22c8452aee42fd0331e5c9bb726957a471c62cec",
+      "sha256": "109db870aff8281e993103a5a1ccff88ac60cf60f788ba0dd5632b150f84dae0"
+    },
+    {
+      "path": "app/src/lib/items/design-consistency.ts",
+      "gitBlob": "64cac2d9d1ac7e702cd9aa07f5855b777f15d0e3",
+      "sha256": "23ab52dbdc1390a4842541e11afb02205bf4872f31b91a4629d9b3ac1b397c49"
+    },
+    {
+      "path": "app/src/lib/items/items.ts",
+      "gitBlob": "b3ae573b26bc0c06e5b64ccfcc0d57891e389517",
+      "sha256": "c3fbccf20dbc3b99c0b705de2986ecb57af3b68c13cfa066af9eb5c614e6491c"
+    },
+    {
+      "path": "app/src/lib/items/qa-summary.ts",
+      "gitBlob": "f29471629bec90fd11feeb8dd6541e19d2086138",
+      "sha256": "34c5db2dbf0598e6c22c39bb82a5e414afe0dc2ceb4ae1814aab2502c96be0c4"
+    },
+    {
+      "path": "app/src/lib/items/run.ts",
+      "gitBlob": "6487d3f1d953d3a73420c3f02445bbdea7896463",
+      "sha256": "c6ce803d224b8410def33144d927020877541e77f515e9e5dad957c4750841fe"
+    },
+    {
+      "path": "app/src/lib/rig/clips.ts",
+      "gitBlob": "a6da70c7b5d1c28270f9932d3f84092ccff1c773",
+      "sha256": "584e610e1c6d0a76265b91f0d63f3ea48e52999438189cc51d6ba0c52c2a9b0b"
+    },
+    {
+      "path": "app/src/lib/store/manifest.ts",
+      "gitBlob": "ff2a5db18bd108d8422215fddf23f5c09f2f51a4",
+      "sha256": "a2e1df44cd8ebc72a462cb37777a2b2e284da3b596159be39b4fa689fb6666a1"
+    },
+    {
+      "path": "app/src/studio/CharacterForm.svelte",
+      "gitBlob": "b0caac17ddafc5eeddadace880a030e004bbd2d9",
+      "sha256": "5a6a0d95bff17eaadc5b7ac8a721ca1b0acb1c32efc21137bbcf009a40bfa0dc"
+    },
+    {
+      "path": "app/src/studio/GenCard.svelte",
+      "gitBlob": "a9e99e6a8c2e25c10bfd1efc124a97f88dc2b534",
+      "sha256": "41fa632f0c48810bc5888777b0a40a3680db059240aa97e6442d3a6e09dc3bc3"
+    },
+    {
+      "path": "app/src/studio/ItemPane.svelte",
+      "gitBlob": "dc2504b5e23f5d33d040b37c6e1e626884b9f59b",
+      "sha256": "f230d0673216cfb528b954490af97776fdf774a2b06a52e79e614191507f3316"
+    },
+    {
+      "path": "app/src/studio/MoveSheet.svelte",
+      "gitBlob": "ecb48a009d94bbb575ab65ae0d2fe5f59df66a2c",
+      "sha256": "58093dd0adac09538b8cc3d92af576e72635206523b9e8dae43d569ad0aab02c"
+    },
+    {
+      "path": "app/src/studio/apiPlans.ts",
+      "gitBlob": "e51b69ed19a0f39cbcfcd98bc2a4c25dbe60ed1c",
+      "sha256": "7a38ebe600ef6e2c038a4952a866f25cb63ca611a038e455a252a2eba3b7f7ab"
+    },
+    {
+      "path": "app/src/studio/create.ts",
+      "gitBlob": "7192aaf630da6f082e000cf7025c7551c2e1a1bd",
+      "sha256": "310d39665ef634584f3d43e14d932e0419e1f75691a57432ebc6b08e628554b4"
+    },
+    {
+      "path": "app/src/studio/itemRoute.ts",
+      "gitBlob": "36ab9a5b11101d398f5d32c8f1e22a3fd1679105",
+      "sha256": "169fb1ba1f33694088c22dbfc246a5aaecef011b89100f7446fe790d7f964000"
+    },
+    {
+      "path": "app/src/studio/model.ts",
+      "gitBlob": "93228971dd63984018730bd769acfdcb8b6d4ba0",
+      "sha256": "97b03464525906aa8d503f6f41ceb0c4fcf1935a73a1608c4eb61aa2f6793fef"
+    },
+    {
+      "path": "app/src/studio/replaceMove.ts",
+      "gitBlob": "2af4b9d93cc9ca00732a5d7d291174963bd2acd7",
+      "sha256": "f3a8ab178e95ba2e70f7f6ed0e4d547cb2e4aea9059273b799e085be42d40a56"
+    },
+    {
+      "path": "app/src/studio/state.svelte.ts",
+      "gitBlob": "94745a5fdb528686dd8eef097c85366635010e7c",
+      "sha256": "0566b6bfa987a16d4456eabdc91fb4c32cb8d6f0e5228a3245ae81ac2fb140df"
+    },
+    {
+      "path": "app/src/ui/motion-lab/equipment.ts",
+      "gitBlob": "99f844b0c9048bfacf1f58f8d7b3c2fcb0fbe883",
+      "sha256": "1120251749ec1205e8b78d313f87fa6345407aa270e78f328003d392856d0208"
+    }
+  ],
+  "fixtureSources": [
+    {
+      "path": "app/test/unit/automatic-recovery.test.ts",
+      "sha256": "9fb52fd0d2f103d8d83bbcba09b798302a342437ccb2c945e651911d947fe212"
+    },
+    {
+      "path": "app/test/e2e/studio.spec.ts",
+      "sha256": "7548bb5727cec2e86f214453b3fbc93efecdce8b35853a6e1897f0ccce53a0d2"
+    },
+    {
+      "path": "app/test/e2e/immersive-helpers.ts",
+      "sha256": "d9c497eb8c033491ea7ad6d97796ea10332c9ee6cbb3b6874b17c11e0517da77"
+    },
+    {
+      "path": "app/dev-fixtures/motion-lab/library.json",
+      "sha256": "c1d7427fa722ba14b0ff6bb858e38cc3d76904778caddf183c548fb88149a5ff"
+    },
+    {
+      "path": "docs/research/pixellab/pixellab-openapi-v2.json",
+      "sha256": "a459992f91f2fdf8e653f730e0a5436157de6a50b66d561fd35dd897d1c04eb6"
+    }
+  ]
+}

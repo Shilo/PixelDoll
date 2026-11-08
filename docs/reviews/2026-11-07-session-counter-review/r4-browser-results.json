@@ -1,0 +1,21 @@
+{
+  "synthetic": true,
+  "seeded": {
+    "projectId": "rig-448780c26d25",
+    "count": 8,
+    "beforeGens": 6
+  },
+  "beforeText": "Generate new frames\nEst. 6 gens",
+  "afterText": "Generate new frames\nEst. 3 gens",
+  "after": {
+    "east": 8,
+    "south": 0,
+    "afterGens": 3,
+    "jobIds": [
+      "offline-r4-completed-east"
+    ],
+    "error": "Completed frames matching the current body and equipment are unavailable. No generation was requested. The finished views were saved (East); Generate new frames requests only the missing ones."
+  },
+  "generationPosts": [],
+  "externalAttempts": []
+}

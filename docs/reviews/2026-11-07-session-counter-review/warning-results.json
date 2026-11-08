@@ -1,0 +1,26 @@
+[
+  {
+    "name": "dark",
+    "draftNotes": [
+      "D1 keyframe rest/south/0: a dark patch not seen in the other views; check that it is part of the design"
+    ],
+    "designFailures": [],
+    "savedDesignNotes": [],
+    "savedStatus": "accepted",
+    "savedReasons": [],
+    "serializedItemHasDarkText": false
+  },
+  {
+    "name": "gray",
+    "draftNotes": [],
+    "designFailures": [
+      "D1 keyframe rest/south/0: 39 % gray smudges in a colorful design"
+    ],
+    "savedDesignNotes": [
+      "D1 keyframe rest/south/0: 39 % gray smudges in a colorful design"
+    ],
+    "savedStatus": "accepted",
+    "savedReasons": [],
+    "serializedItemHasDarkText": false
+  }
+]

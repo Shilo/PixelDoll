@@ -1,0 +1,2655 @@
+{
+  "revision": "304f27bdbb49b568cb49eaaa7623a621d9334b52",
+  "functionalPin": "19646f09",
+  "synthetic": true,
+  "singleJointSearch": {
+    "count": 102,
+    "examples": [
+      {
+        "joint": "NECK",
+        "x": 0.05,
+        "y": 0.5
+      },
+      {
+        "joint": "NECK",
+        "x": 0.05,
+        "y": 0.55
+      },
+      {
+        "joint": "NECK",
+        "x": 0.05,
+        "y": 0.6
+      },
+      {
+        "joint": "NECK",
+        "x": 0.05,
+        "y": 0.65
+      },
+      {
+        "joint": "NECK",
+        "x": 0.05,
+        "y": 0.7
+      },
+      {
+        "joint": "NECK",
+        "x": 0.05,
+        "y": 0.75
+      },
+      {
+        "joint": "NECK",
+        "x": 0.1,
+        "y": 0.6
+      },
+      {
+        "joint": "NECK",
+        "x": 0.1,
+        "y": 0.65
+      },
+      {
+        "joint": "NECK",
+        "x": 0.1,
+        "y": 0.7
+      },
+      {
+        "joint": "NECK",
+        "x": 0.1,
+        "y": 0.75
+      },
+      {
+        "joint": "NECK",
+        "x": 0.1,
+        "y": 0.8
+      },
+      {
+        "joint": "NECK",
+        "x": 0.1,
+        "y": 0.85
+      },
+      {
+        "joint": "NECK",
+        "x": 0.15,
+        "y": 0.65
+      },
+      {
+        "joint": "NECK",
+        "x": 0.15,
+        "y": 0.7
+      },
+      {
+        "joint": "NECK",
+        "x": 0.15,
+        "y": 0.75
+      },
+      {
+        "joint": "NECK",
+        "x": 0.15,
+        "y": 0.8
+      },
+      {
+        "joint": "NECK",
+        "x": 0.15,
+        "y": 0.85
+      },
+      {
+        "joint": "NECK",
+        "x": 0.15,
+        "y": 0.9
+      },
+      {
+        "joint": "NECK",
+        "x": 0.2,
+        "y": 0.7
+      },
+      {
+        "joint": "NECK",
+        "x": 0.2,
+        "y": 0.75
+      }
+    ]
+  },
+  "neckOutlier": {
+    "changedFrame": 2,
+    "changedLabel": "NECK",
+    "changedPosition": {
+      "x": 0.05,
+      "y": 0.5
+    },
+    "normal": {
+      "validatedRigErrors": [],
+      "action": false,
+      "status": "fail",
+      "failures": [
+        "G9 walk/south: the item turns 180° against the hand between frames"
+      ],
+      "warnings": [],
+      "hashes": [
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "59032c677226b9263ffac9bdd83bd3c0776f51c6cbfb1eba138be5ae03f8ebc5",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+      ],
+      "sourceQa": {
+        "adherence": 0,
+        "feetDrift": 0,
+        "paletteFit": 1,
+        "border": 0,
+        "stray": 0,
+        "disconnectedPixels": 0,
+        "fails": [],
+        "warnings": []
+      }
+    },
+    "defective": {
+      "validatedRigErrors": [],
+      "action": true,
+      "status": "pass",
+      "failures": [],
+      "warnings": [],
+      "hashes": [
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "59032c677226b9263ffac9bdd83bd3c0776f51c6cbfb1eba138be5ae03f8ebc5",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+      ],
+      "sourceQa": {
+        "adherence": 0,
+        "feetDrift": 0,
+        "paletteFit": 1,
+        "border": 0,
+        "stray": 0,
+        "disconnectedPixels": 0,
+        "fails": [],
+        "warnings": []
+      }
+    },
+    "valid": {
+      "validatedRigErrors": [],
+      "action": true,
+      "status": "pass",
+      "failures": [],
+      "warnings": [],
+      "hashes": [
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+      ],
+      "sourceQa": {
+        "adherence": 0,
+        "feetDrift": 0,
+        "paletteFit": 1,
+        "border": 0,
+        "stray": 0,
+        "disconnectedPixels": 0,
+        "fails": [],
+        "warnings": []
+      }
+    }
+  },
+  "collapsedHips": {
+    "normal": {
+      "validatedRigErrors": [],
+      "action": false,
+      "status": "fail",
+      "failures": [
+        "G9 walk/south: the item turns 180° against the hand between frames"
+      ],
+      "warnings": [],
+      "hashes": [
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "59032c677226b9263ffac9bdd83bd3c0776f51c6cbfb1eba138be5ae03f8ebc5",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+      ],
+      "sourceQa": {
+        "adherence": 0,
+        "feetDrift": 0,
+        "paletteFit": 1,
+        "border": 0,
+        "stray": 0,
+        "disconnectedPixels": 0,
+        "fails": [],
+        "warnings": []
+      }
+    },
+    "defective": {
+      "validatedRigErrors": [],
+      "action": true,
+      "status": "pass",
+      "failures": [],
+      "warnings": [],
+      "hashes": [
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "59032c677226b9263ffac9bdd83bd3c0776f51c6cbfb1eba138be5ae03f8ebc5",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+      ],
+      "sourceQa": {
+        "adherence": 0,
+        "feetDrift": 0,
+        "paletteFit": 1,
+        "border": 0,
+        "stray": 0,
+        "disconnectedPixels": 0,
+        "fails": [],
+        "warnings": []
+      }
+    },
+    "valid": {
+      "validatedRigErrors": [],
+      "action": true,
+      "status": "pass",
+      "failures": [],
+      "warnings": [],
+      "hashes": [
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+        "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+      ],
+      "sourceQa": {
+        "adherence": 0,
+        "feetDrift": 0,
+        "paletteFit": 1,
+        "border": 0,
+        "stray": 0,
+        "disconnectedPixels": 0,
+        "fails": [],
+        "warnings": []
+      }
+    }
+  },
+  "rigCount": 12,
+  "motionRows": [
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "hash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "walk",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "hash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "walk",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "hash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "walk",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "hash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "slash",
+      "dir": "south",
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "hash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "slash",
+      "dir": "east",
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "hash": "7b211214e81c5afa6355a214f529521d0698f48e336fbc70405bfab55b8dfbbf",
+      "anim": "slash",
+      "dir": "north",
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "hash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "hash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "south-east",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "hash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "hash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "north-east",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyB.json",
+      "hash": "9f210d7706bbbbc6ccae6a6204d343e4b5f3ce28fa51ba3cd2c0111df12267ed",
+      "anim": "walk",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyC.json",
+      "hash": "0ff827d316779d0933af9410fc057fdf0c3dc4002c402eb40cf1e3d9414fcc6f",
+      "anim": "walk",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyC.json",
+      "hash": "0ff827d316779d0933af9410fc057fdf0c3dc4002c402eb40cf1e3d9414fcc6f",
+      "anim": "walk",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyC.json",
+      "hash": "0ff827d316779d0933af9410fc057fdf0c3dc4002c402eb40cf1e3d9414fcc6f",
+      "anim": "walk",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyN.json",
+      "hash": "699421cda6600ce491594559fe7e68270769118dbcbe48fc879f02225e40584e",
+      "anim": "walk",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyN.json",
+      "hash": "699421cda6600ce491594559fe7e68270769118dbcbe48fc879f02225e40584e",
+      "anim": "walk",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyN.json",
+      "hash": "699421cda6600ce491594559fe7e68270769118dbcbe48fc879f02225e40584e",
+      "anim": "walk",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "hash": "caff03dce3ac7098f8645b0d3ed0e830f0147a581a08707317d3e7e37c0912f5",
+      "anim": "slash",
+      "dir": "south",
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "hash": "caff03dce3ac7098f8645b0d3ed0e830f0147a581a08707317d3e7e37c0912f5",
+      "anim": "hurt",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "hash": "caff03dce3ac7098f8645b0d3ed0e830f0147a581a08707317d3e7e37c0912f5",
+      "anim": "hurt",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "hash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "rest",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "hash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "rest",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "hash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "rest",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "hash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "rest",
+      "dir": "west",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "hash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "walking",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "hash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "walking-47c00e8a",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/actual-helmet-runtime/export/manifest.json",
+      "hash": "d251d05ba3d61b3c23834f25be9b5c996cf46d855254c33096001175b6faee2b",
+      "anim": "walking-6fb9c602",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "hash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "idle",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "hash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "idle",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "hash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "idle",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "hash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "idle",
+      "dir": "west",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "hash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "slash",
+      "dir": "south",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "hash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "slash",
+      "dir": "north",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "hash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "slash",
+      "dir": "east",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "hash": "ab0289c97c5290d321d06108d389658f669fa62af25cfc5b21660f83bd002147",
+      "anim": "slash",
+      "dir": "west",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "hash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "idle",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "hash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "idle",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "hash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "idle",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "hash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "idle",
+      "dir": "west",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "hash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "slash",
+      "dir": "south",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "hash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "slash",
+      "dir": "north",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "hash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "slash",
+      "dir": "east",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "hash": "32d566c2d972a1751cf71ce45bc7b93f4c68e89067b5e9f93f6ceacb6b5e0bef",
+      "anim": "slash",
+      "dir": "west",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-idle-runtime/export/manifest.json",
+      "hash": "5095cfc4f4ba9dfa7fd157fada1b662679838dc76857df31aec593e675cd5a34",
+      "anim": "idle",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-idle-runtime/export/manifest.json",
+      "hash": "5095cfc4f4ba9dfa7fd157fada1b662679838dc76857df31aec593e675cd5a34",
+      "anim": "idle",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-idle-runtime/export/manifest.json",
+      "hash": "5095cfc4f4ba9dfa7fd157fada1b662679838dc76857df31aec593e675cd5a34",
+      "anim": "idle",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-idle-runtime/export/manifest.json",
+      "hash": "5095cfc4f4ba9dfa7fd157fada1b662679838dc76857df31aec593e675cd5a34",
+      "anim": "idle",
+      "dir": "west",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-live-runtime/export/manifest.json",
+      "hash": "68767f74bf5e1a7c5344f556110a4cbd55c68e2840b6d0072cf7f6450eb2188b",
+      "anim": "idle",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-live-runtime/export/manifest.json",
+      "hash": "68767f74bf5e1a7c5344f556110a4cbd55c68e2840b6d0072cf7f6450eb2188b",
+      "anim": "idle",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-live-runtime/export/manifest.json",
+      "hash": "68767f74bf5e1a7c5344f556110a4cbd55c68e2840b6d0072cf7f6450eb2188b",
+      "anim": "idle",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-live-runtime/export/manifest.json",
+      "hash": "68767f74bf5e1a7c5344f556110a4cbd55c68e2840b6d0072cf7f6450eb2188b",
+      "anim": "idle",
+      "dir": "west",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "hash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "idle",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "hash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "idle",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "hash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "idle",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "hash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "idle",
+      "dir": "west",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "hash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "slash",
+      "dir": "south",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "hash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "slash",
+      "dir": "east",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "hash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "slash",
+      "dir": "north",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "hash": "d93133dcb8eca8b150d15a341da665835d551fe7eb158517feb5fd76afa9ba23",
+      "anim": "slash",
+      "dir": "west",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "hash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "idle",
+      "dir": "south",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "hash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "idle",
+      "dir": "east",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "hash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "idle",
+      "dir": "north",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "hash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "idle",
+      "dir": "west",
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "hash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "slash",
+      "dir": "south",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "hash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "slash",
+      "dir": "north",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "hash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "slash",
+      "dir": "east",
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "hash": "ee5b357713e284ce454f0fad36f50e33ec733fe3ca87767fbaad6b2002fd8bc9",
+      "anim": "slash",
+      "dir": "west",
+      "decisive": true
+    }
+  ],
+  "subsamples": [
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "south",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "south",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "east",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "east",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "north",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/bench/bodyA.json",
+      "dir": "north",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "dir": "south",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "app/test/fixtures/helmet-occlusion.json",
+      "dir": "south",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/colour-final-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/final-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/independent-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": false
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "south",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "north",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "east",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "pick": [
+        0,
+        2,
+        4,
+        6
+      ],
+      "decisive": true
+    },
+    {
+      "path": "docs/testing/img/audit-worktree-39533f7/testing-img/professional-audit/repaired-slash96-runtime/export/manifest.json",
+      "dir": "west",
+      "pick": [
+        1,
+        3,
+        5,
+        7
+      ],
+      "decisive": true
+    }
+  ],
+  "kaykit": [
+    {
+      "fixture": "c27man",
+      "direction": "south",
+      "frames": 14,
+      "decisive": true
+    },
+    {
+      "fixture": "c27man",
+      "direction": "east",
+      "frames": 14,
+      "decisive": true
+    },
+    {
+      "fixture": "c27man",
+      "direction": "north",
+      "frames": 14,
+      "decisive": true
+    },
+    {
+      "fixture": "c27man",
+      "direction": "west",
+      "frames": 14,
+      "decisive": true
+    }
+  ],
+  "names": [
+    {
+      "prompt": "three leather boots",
+      "name": "Three leather boots",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "a few throwing knives",
+      "name": "Few throwing knives",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "2 leather gloves",
+      "name": "2 leather gloves",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "a coat of arms shield",
+      "name": "Coat of arms shield",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "a shield of oak",
+      "name": "Shield of oak",
+      "slot": "off_hand"
+    },
+    {
+      "prompt": "a bow of yew",
+      "name": "Bow of yew",
+      "slot": "off_hand"
+    },
+    {
+      "prompt": "a steel sword; decorated with a scutum",
+      "name": "Steel sword",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "a steel sword, bearing a scutum emblem",
+      "name": "Steel sword",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "a ring of the northern lights",
+      "name": "Ring",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "a pair of",
+      "name": "Pair of",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "a",
+      "name": "A",
+      "slot": "main_hand"
+    },
+    {
+      "prompt": "一面盾牌",
+      "name": "一面盾牌",
+      "slot": "main_hand"
+    }
+  ],
+  "grids": [
+    {
+      "w": "0",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.12120000000004438
+    },
+    {
+      "w": "0",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.02220000000033906
+    },
+    {
+      "w": "0",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.02080000000023574
+    },
+    {
+      "w": "0",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015599999999722058
+    },
+    {
+      "w": "0",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.016099999999823922
+    },
+    {
+      "w": "0",
+      "count": "1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015300000000024738
+    },
+    {
+      "w": "0",
+      "count": "8",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "0",
+      "count": "15",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "0",
+      "count": "9007199254740991",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01540000000022701
+    },
+    {
+      "w": "-1",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015099999999620195
+    },
+    {
+      "w": "-1",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015100000000074942
+    },
+    {
+      "w": "-1",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015100000000074942
+    },
+    {
+      "w": "-1",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015100000000074942
+    },
+    {
+      "w": "-1",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015000000000327418
+    },
+    {
+      "w": "-1",
+      "count": "1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "-1",
+      "count": "8",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "-1",
+      "count": "15",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "-1",
+      "count": "9007199254740991",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015100000000074942
+    },
+    {
+      "w": "0.5",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015000000000327418
+    },
+    {
+      "w": "0.5",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "0.5",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014899999999670399
+    },
+    {
+      "w": "0.5",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014800000000377622
+    },
+    {
+      "w": "0.5",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "0.5",
+      "count": "1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "0.5",
+      "count": "8",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014799999999922875
+    },
+    {
+      "w": "0.5",
+      "count": "15",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "0.5",
+      "count": "9007199254740991",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "NaN",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "NaN",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "NaN",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015100000000074942
+    },
+    {
+      "w": "NaN",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "NaN",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014799999999922875
+    },
+    {
+      "w": "NaN",
+      "count": "1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "NaN",
+      "count": "8",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "NaN",
+      "count": "15",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "NaN",
+      "count": "9007199254740991",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015000000000327418
+    },
+    {
+      "w": "Infinity",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "Infinity",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "Infinity",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "Infinity",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "Infinity",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "Infinity",
+      "count": "1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "Infinity",
+      "count": "8",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "Infinity",
+      "count": "15",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014799999999922875
+    },
+    {
+      "w": "Infinity",
+      "count": "9007199254740991",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015000000000327418
+    },
+    {
+      "w": "1",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015100000000074942
+    },
+    {
+      "w": "1",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "1",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "1",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "1",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015000000000327418
+    },
+    {
+      "w": "1",
+      "count": "1",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.1392000000000735
+    },
+    {
+      "w": "1",
+      "count": "8",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.05670000000009168
+    },
+    {
+      "w": "1",
+      "count": "15",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.04320000000006985
+    },
+    {
+      "w": "1",
+      "count": "9007199254740991",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.08490000000028886
+    },
+    {
+      "w": "32",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.016900000000077853
+    },
+    {
+      "w": "32",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015499999999974534
+    },
+    {
+      "w": "32",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015399999999772263
+    },
+    {
+      "w": "32",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015199999999822467
+    },
+    {
+      "w": "32",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.017299999999977445
+    },
+    {
+      "w": "32",
+      "count": "1",
+      "layout": {
+        "w": 128,
+        "h": 32,
+        "gens": 10,
+        "cols": 4
+      },
+      "ms": 0.06850000000031287
+    },
+    {
+      "w": "32",
+      "count": "8",
+      "layout": {
+        "w": 128,
+        "h": 96,
+        "gens": 10,
+        "cols": 4
+      },
+      "ms": 0.010099999999965803
+    },
+    {
+      "w": "32",
+      "count": "15",
+      "layout": {
+        "w": 128,
+        "h": 128,
+        "gens": 10,
+        "cols": 4
+      },
+      "ms": 0.0079000000000633
+    },
+    {
+      "w": "32",
+      "count": "9007199254740991",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.018800000000283035
+    },
+    {
+      "w": "64",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015499999999974534
+    },
+    {
+      "w": "64",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "64",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015200000000277214
+    },
+    {
+      "w": "64",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.020199999999931606
+    },
+    {
+      "w": "64",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01989999999977954
+    },
+    {
+      "w": "64",
+      "count": "1",
+      "layout": {
+        "w": 256,
+        "h": 64,
+        "gens": 10,
+        "cols": 4
+      },
+      "ms": 0.011799999999766442
+    },
+    {
+      "w": "64",
+      "count": "8",
+      "layout": {
+        "w": 256,
+        "h": 192,
+        "gens": 10,
+        "cols": 4
+      },
+      "ms": 0.0037999999999556167
+    },
+    {
+      "w": "64",
+      "count": "15",
+      "layout": {
+        "w": 256,
+        "h": 256,
+        "gens": 10,
+        "cols": 4
+      },
+      "ms": 0.0032999999998537533
+    },
+    {
+      "w": "64",
+      "count": "9007199254740991",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.016599999999925785
+    },
+    {
+      "w": "160",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "160",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "160",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "160",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015099999999620195
+    },
+    {
+      "w": "160",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014899999999670399
+    },
+    {
+      "w": "160",
+      "count": "1",
+      "layout": {
+        "w": 320,
+        "h": 160,
+        "gens": 10,
+        "cols": 2
+      },
+      "ms": 0.01859999999987849
+    },
+    {
+      "w": "160",
+      "count": "8",
+      "layout": {
+        "w": 480,
+        "h": 480,
+        "gens": 25,
+        "cols": 3
+      },
+      "ms": 0.001099999999951251
+    },
+    {
+      "w": "160",
+      "count": "15",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.01639999999997599
+    },
+    {
+      "w": "160",
+      "count": "9007199254740991",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.016400000000430737
+    },
+    {
+      "w": "336",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015300000000024738
+    },
+    {
+      "w": "336",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014799999999922875
+    },
+    {
+      "w": "336",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "336",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014799999999922875
+    },
+    {
+      "w": "336",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014899999999670399
+    },
+    {
+      "w": "336",
+      "count": "1",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.01610000000027867
+    },
+    {
+      "w": "336",
+      "count": "8",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.015900000000328873
+    },
+    {
+      "w": "336",
+      "count": "15",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.015900000000328873
+    },
+    {
+      "w": "336",
+      "count": "9007199254740991",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.01599999999962165
+    },
+    {
+      "w": "512",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015200000000277214
+    },
+    {
+      "w": "512",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "512",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "512",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014799999999922875
+    },
+    {
+      "w": "512",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "512",
+      "count": "1",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.015899999999874126
+    },
+    {
+      "w": "512",
+      "count": "8",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.015900000000328873
+    },
+    {
+      "w": "512",
+      "count": "15",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.0158000000001266
+    },
+    {
+      "w": "512",
+      "count": "9007199254740991",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.015899999999874126
+    },
+    {
+      "w": "1000000000",
+      "count": "0",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.015100000000074942
+    },
+    {
+      "w": "1000000000",
+      "count": "-1",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.01499999999987267
+    },
+    {
+      "w": "1000000000",
+      "count": "0.5",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014899999999670399
+    },
+    {
+      "w": "1000000000",
+      "count": "NaN",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "1000000000",
+      "count": "Infinity",
+      "error": "Repair grid dimensions and frame/reference counts must be valid integers.",
+      "ms": 0.014900000000125146
+    },
+    {
+      "w": "1000000000",
+      "count": "1",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.0158000000001266
+    },
+    {
+      "w": "1000000000",
+      "count": "8",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.0158000000001266
+    },
+    {
+      "w": "1000000000",
+      "count": "15",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.0158000000001266
+    },
+    {
+      "w": "1000000000",
+      "count": "9007199254740991",
+      "error": "This repair grid must fit PixelLab’s 32–512 px canvas bounds. Choose a shorter move.",
+      "ms": 0.0158000000001266
+    }
+  ],
+  "paddedLinks": [
+    {
+      "pad": 0,
+      "canvas": 64,
+      "keptPixels": 122
+    },
+    {
+      "pad": 16,
+      "canvas": 96,
+      "keptPixels": 122
+    }
+  ],
+  "mixedGrayDark": [
+    "smudge",
+    false,
+    false
+  ],
+  "priceEdge": {
+    "w": 384,
+    "h": 288,
+    "gens": 15
+  },
+  "prompts": [
+    {
+      "slot": "main_hand",
+      "key": "green",
+      "count": 1,
+      "dress": 891,
+      "anchored": 1508,
+      "grid": 1544,
+      "pose": 436,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "green",
+      "count": 3,
+      "dress": 891,
+      "anchored": 1508,
+      "grid": 1544,
+      "pose": 436,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "green",
+      "count": 8,
+      "dress": 891,
+      "anchored": 1508,
+      "grid": 1544,
+      "pose": 436,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "green",
+      "count": 15,
+      "dress": 892,
+      "anchored": 1509,
+      "grid": 1546,
+      "pose": 436,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "green",
+      "count": 16,
+      "dress": 892,
+      "anchored": 1509,
+      "grid": 1546,
+      "pose": 436,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "magenta",
+      "count": 1,
+      "dress": 871,
+      "anchored": 1488,
+      "grid": 1529,
+      "pose": 431,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "magenta",
+      "count": 3,
+      "dress": 871,
+      "anchored": 1488,
+      "grid": 1529,
+      "pose": 431,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "magenta",
+      "count": 8,
+      "dress": 871,
+      "anchored": 1488,
+      "grid": 1529,
+      "pose": 431,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "magenta",
+      "count": 15,
+      "dress": 872,
+      "anchored": 1489,
+      "grid": 1531,
+      "pose": 431,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "magenta",
+      "count": 16,
+      "dress": 872,
+      "anchored": 1489,
+      "grid": 1531,
+      "pose": 431,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "blue",
+      "count": 1,
+      "dress": 887,
+      "anchored": 1504,
+      "grid": 1541,
+      "pose": 435,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "blue",
+      "count": 3,
+      "dress": 887,
+      "anchored": 1504,
+      "grid": 1541,
+      "pose": 435,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "blue",
+      "count": 8,
+      "dress": 887,
+      "anchored": 1504,
+      "grid": 1541,
+      "pose": 435,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "blue",
+      "count": 15,
+      "dress": 888,
+      "anchored": 1505,
+      "grid": 1543,
+      "pose": 435,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "blue",
+      "count": 16,
+      "dress": 888,
+      "anchored": 1505,
+      "grid": 1543,
+      "pose": 435,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "azure",
+      "count": 1,
+      "dress": 911,
+      "anchored": 1528,
+      "grid": 1559,
+      "pose": 441,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "azure",
+      "count": 3,
+      "dress": 911,
+      "anchored": 1528,
+      "grid": 1559,
+      "pose": 441,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "azure",
+      "count": 8,
+      "dress": 911,
+      "anchored": 1528,
+      "grid": 1559,
+      "pose": 441,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "azure",
+      "count": 15,
+      "dress": 912,
+      "anchored": 1529,
+      "grid": 1561,
+      "pose": 441,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "main_hand",
+      "key": "azure",
+      "count": 16,
+      "dress": 912,
+      "anchored": 1529,
+      "grid": 1561,
+      "pose": 441,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "green",
+      "count": 1,
+      "dress": 878,
+      "anchored": 1482,
+      "grid": 1531,
+      "pose": 423,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "green",
+      "count": 3,
+      "dress": 878,
+      "anchored": 1482,
+      "grid": 1531,
+      "pose": 423,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "green",
+      "count": 8,
+      "dress": 878,
+      "anchored": 1482,
+      "grid": 1531,
+      "pose": 423,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "green",
+      "count": 15,
+      "dress": 879,
+      "anchored": 1483,
+      "grid": 1533,
+      "pose": 423,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "green",
+      "count": 16,
+      "dress": 879,
+      "anchored": 1483,
+      "grid": 1533,
+      "pose": 423,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "magenta",
+      "count": 1,
+      "dress": 858,
+      "anchored": 1462,
+      "grid": 1516,
+      "pose": 418,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "magenta",
+      "count": 3,
+      "dress": 858,
+      "anchored": 1462,
+      "grid": 1516,
+      "pose": 418,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "magenta",
+      "count": 8,
+      "dress": 858,
+      "anchored": 1462,
+      "grid": 1516,
+      "pose": 418,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "magenta",
+      "count": 15,
+      "dress": 859,
+      "anchored": 1463,
+      "grid": 1518,
+      "pose": 418,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "magenta",
+      "count": 16,
+      "dress": 859,
+      "anchored": 1463,
+      "grid": 1518,
+      "pose": 418,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "blue",
+      "count": 1,
+      "dress": 874,
+      "anchored": 1478,
+      "grid": 1528,
+      "pose": 422,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "blue",
+      "count": 3,
+      "dress": 874,
+      "anchored": 1478,
+      "grid": 1528,
+      "pose": 422,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "blue",
+      "count": 8,
+      "dress": 874,
+      "anchored": 1478,
+      "grid": 1528,
+      "pose": 422,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "blue",
+      "count": 15,
+      "dress": 875,
+      "anchored": 1479,
+      "grid": 1530,
+      "pose": 422,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "blue",
+      "count": 16,
+      "dress": 875,
+      "anchored": 1479,
+      "grid": 1530,
+      "pose": 422,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "azure",
+      "count": 1,
+      "dress": 898,
+      "anchored": 1502,
+      "grid": 1546,
+      "pose": 428,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "azure",
+      "count": 3,
+      "dress": 898,
+      "anchored": 1502,
+      "grid": 1546,
+      "pose": 428,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "azure",
+      "count": 8,
+      "dress": 898,
+      "anchored": 1502,
+      "grid": 1546,
+      "pose": 428,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "azure",
+      "count": 15,
+      "dress": 899,
+      "anchored": 1503,
+      "grid": 1548,
+      "pose": 428,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "off_hand",
+      "key": "azure",
+      "count": 16,
+      "dress": 899,
+      "anchored": 1503,
+      "grid": 1548,
+      "pose": 428,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "green",
+      "count": 1,
+      "dress": 722,
+      "anchored": 1170,
+      "grid": 1544,
+      "pose": 380,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "green",
+      "count": 3,
+      "dress": 722,
+      "anchored": 1170,
+      "grid": 1544,
+      "pose": 380,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "green",
+      "count": 8,
+      "dress": 722,
+      "anchored": 1170,
+      "grid": 1544,
+      "pose": 380,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "green",
+      "count": 15,
+      "dress": 723,
+      "anchored": 1171,
+      "grid": 1546,
+      "pose": 380,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "green",
+      "count": 16,
+      "dress": 723,
+      "anchored": 1171,
+      "grid": 1546,
+      "pose": 380,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "magenta",
+      "count": 1,
+      "dress": 702,
+      "anchored": 1150,
+      "grid": 1529,
+      "pose": 375,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "magenta",
+      "count": 3,
+      "dress": 702,
+      "anchored": 1150,
+      "grid": 1529,
+      "pose": 375,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "magenta",
+      "count": 8,
+      "dress": 702,
+      "anchored": 1150,
+      "grid": 1529,
+      "pose": 375,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "magenta",
+      "count": 15,
+      "dress": 703,
+      "anchored": 1151,
+      "grid": 1531,
+      "pose": 375,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "magenta",
+      "count": 16,
+      "dress": 703,
+      "anchored": 1151,
+      "grid": 1531,
+      "pose": 375,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "blue",
+      "count": 1,
+      "dress": 718,
+      "anchored": 1166,
+      "grid": 1541,
+      "pose": 379,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "blue",
+      "count": 3,
+      "dress": 718,
+      "anchored": 1166,
+      "grid": 1541,
+      "pose": 379,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "blue",
+      "count": 8,
+      "dress": 718,
+      "anchored": 1166,
+      "grid": 1541,
+      "pose": 379,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "blue",
+      "count": 15,
+      "dress": 719,
+      "anchored": 1167,
+      "grid": 1543,
+      "pose": 379,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "blue",
+      "count": 16,
+      "dress": 719,
+      "anchored": 1167,
+      "grid": 1543,
+      "pose": 379,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "azure",
+      "count": 1,
+      "dress": 742,
+      "anchored": 1190,
+      "grid": 1559,
+      "pose": 385,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "azure",
+      "count": 3,
+      "dress": 742,
+      "anchored": 1190,
+      "grid": 1559,
+      "pose": 385,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "azure",
+      "count": 8,
+      "dress": 742,
+      "anchored": 1190,
+      "grid": 1559,
+      "pose": 385,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "azure",
+      "count": 15,
+      "dress": 743,
+      "anchored": 1191,
+      "grid": 1561,
+      "pose": 385,
+      "expectedHand": true,
+      "oneItem": true
+    },
+    {
+      "slot": "back",
+      "key": "azure",
+      "count": 16,
+      "dress": 743,
+      "anchored": 1191,
+      "grid": 1561,
+      "pose": 385,
+      "expectedHand": true,
+      "oneItem": true
+    }
+  ],
+  "schemaLimits": {
+    "/edit-animation-v2": 2000,
+    "/inpaint-v3": 2000,
+    "/animate-with-skeleton-v3": null
+  }
+}

@@ -1,0 +1,497 @@
+{
+  "version": 1,
+  "reviewedRange": {
+    "baseline": "0992bae7",
+    "head": "19646f09"
+  },
+  "sourceHashes": {
+    "baseline": "380bebd57924f3a59dd9390879f691f0580c5b43293855776b5a96c015ed962e",
+    "head": "c3fbccf20dbc3b99c0b705de2986ecb57af3b68c13cfa066af9eb5c614e6491c"
+  },
+  "provenance": "Own synthetic fixtures with explicit intended ownership. No paid generation or external asset used.",
+  "heldChain": {
+    "baseline": {
+      "linked": {
+        "before": 122,
+        "after": 100,
+        "removed": 22,
+        "frames": 6,
+        "allCellsUniform": true,
+        "terminalPixels": 0
+      },
+      "detachedInvalidControl": {
+        "before": 120,
+        "after": 100,
+        "removed": 20,
+        "frames": 6,
+        "allCellsUniform": true,
+        "terminalPixels": 0
+      },
+      "bridgedRepaintControl": {
+        "after": 100,
+        "removed": 22,
+        "frames": 6,
+        "allCellsUniform": true,
+        "unwantedBucklePixels": 0
+      }
+    },
+    "head": {
+      "linked": {
+        "before": 122,
+        "after": 122,
+        "removed": 0,
+        "frames": 6,
+        "allCellsUniform": true,
+        "terminalPixels": 20
+      },
+      "detachedInvalidControl": {
+        "before": 120,
+        "after": 100,
+        "removed": 20,
+        "frames": 6,
+        "allCellsUniform": true,
+        "terminalPixels": 0
+      },
+      "bridgedRepaintControl": {
+        "after": 100,
+        "removed": 22,
+        "frames": 6,
+        "allCellsUniform": true,
+        "unwantedBucklePixels": 0
+      }
+    }
+  },
+  "actionOverride": {
+    "baseline": {
+      "valid": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "sourceClipQa": {
+          "adherence": 0,
+          "failures": [],
+          "warnings": []
+        },
+        "completeMeasuredPose": true,
+        "sourceCoordinatesInBounds": true,
+        "sourceBodyHash": "65b332b9c2e1d91652ad5554edfb58d1304f94e462bb5544d4195d6e556b9fae",
+        "requestedPoseHash": "7092486333c353bf502bc29d7a74fea7965898c511bb6385f0ce0c70b2963073",
+        "layerHashes": [
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+        ]
+      },
+      "defective": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 walk/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "sourceClipQa": {
+          "adherence": 0,
+          "failures": [],
+          "warnings": []
+        },
+        "completeMeasuredPose": true,
+        "sourceCoordinatesInBounds": true,
+        "sourceBodyHash": "65b332b9c2e1d91652ad5554edfb58d1304f94e462bb5544d4195d6e556b9fae",
+        "requestedPoseHash": "7092486333c353bf502bc29d7a74fea7965898c511bb6385f0ce0c70b2963073",
+        "layerHashes": [
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "59032c677226b9263ffac9bdd83bd3c0776f51c6cbfb1eba138be5ae03f8ebc5",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+        ]
+      },
+      "defectiveOneEyeOutlier": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "sourceClipQa": {
+          "adherence": 0,
+          "failures": [],
+          "warnings": []
+        },
+        "completeMeasuredPose": true,
+        "sourceCoordinatesInBounds": true,
+        "sourceBodyHash": "65b332b9c2e1d91652ad5554edfb58d1304f94e462bb5544d4195d6e556b9fae",
+        "requestedPoseHash": "7092486333c353bf502bc29d7a74fea7965898c511bb6385f0ce0c70b2963073",
+        "layerHashes": [
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "59032c677226b9263ffac9bdd83bd3c0776f51c6cbfb1eba138be5ae03f8ebc5",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+        ]
+      }
+    },
+    "head": {
+      "valid": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "sourceClipQa": {
+          "adherence": 0,
+          "failures": [],
+          "warnings": []
+        },
+        "completeMeasuredPose": true,
+        "sourceCoordinatesInBounds": true,
+        "sourceBodyHash": "65b332b9c2e1d91652ad5554edfb58d1304f94e462bb5544d4195d6e556b9fae",
+        "requestedPoseHash": "7092486333c353bf502bc29d7a74fea7965898c511bb6385f0ce0c70b2963073",
+        "layerHashes": [
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+        ]
+      },
+      "defective": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 walk/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "sourceClipQa": {
+          "adherence": 0,
+          "failures": [],
+          "warnings": []
+        },
+        "completeMeasuredPose": true,
+        "sourceCoordinatesInBounds": true,
+        "sourceBodyHash": "65b332b9c2e1d91652ad5554edfb58d1304f94e462bb5544d4195d6e556b9fae",
+        "requestedPoseHash": "7092486333c353bf502bc29d7a74fea7965898c511bb6385f0ce0c70b2963073",
+        "layerHashes": [
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "59032c677226b9263ffac9bdd83bd3c0776f51c6cbfb1eba138be5ae03f8ebc5",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+        ]
+      },
+      "defectiveOneEyeOutlier": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 walk/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "sourceClipQa": {
+          "adherence": 0,
+          "failures": [],
+          "warnings": []
+        },
+        "completeMeasuredPose": true,
+        "sourceCoordinatesInBounds": true,
+        "sourceBodyHash": "65b332b9c2e1d91652ad5554edfb58d1304f94e462bb5544d4195d6e556b9fae",
+        "requestedPoseHash": "7092486333c353bf502bc29d7a74fea7965898c511bb6385f0ce0c70b2963073",
+        "layerHashes": [
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "59032c677226b9263ffac9bdd83bd3c0776f51c6cbfb1eba138be5ae03f8ebc5",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e",
+          "18f6dc7c11842af4910a71c5871b943c4641a9178cea57fa2bbba5acd886092e"
+        ]
+      }
+    }
+  },
+  "asymmetricNeutralDesign": {
+    "prompt": "a blue tunic with an ivory medallion on the front",
+    "headFlags": [
+      "smudge",
+      false,
+      false
+    ],
+    "baselineFlags": [
+      true,
+      false,
+      false
+    ]
+  },
+  "charcoalDesign": {
+    "prompt": "a blue tunic with a charcoal medallion on the front",
+    "baselineShare": 0.109375,
+    "headShare": 0.109375,
+    "baselineFlags": [
+      true,
+      false,
+      false
+    ],
+    "headFlags": [
+      "dark",
+      false,
+      false
+    ],
+    "headAllViewsIntendedControl": [
+      false,
+      false,
+      false
+    ],
+    "headUnrequestedBlotchControl": [
+      "dark",
+      false,
+      false
+    ]
+  },
+  "hiddenBack": {
+    "baseline": {
+      "hidden": [
+        "south"
+      ],
+      "status": "warn",
+      "failures": [],
+      "warnings": [
+        "G4 walk/south: no item in this view, as in its dressed view; check that the view hides it"
+      ],
+      "note": "Same inferred visibility for a valid plain flat backpack and an invalid requested-front-strap omission; prompt is not an input of hiddenViews."
+    },
+    "head": {
+      "hidden": [
+        "south"
+      ],
+      "status": "warn",
+      "failures": [],
+      "warnings": [
+        "G4 walk/south: no item in this view, as in its dressed view; check that the view hides it"
+      ],
+      "note": "Same inferred visibility for a valid plain flat backpack and an invalid requested-front-strap omission; prompt is not an input of hiddenViews."
+    }
+  },
+  "lexical": [
+    {
+      "prompt": "a scutum",
+      "baseline": "off_hand",
+      "head": "off_hand"
+    },
+    {
+      "prompt": "a steel sword with a scutum emblem",
+      "baseline": "off_hand",
+      "head": "main_hand"
+    },
+    {
+      "prompt": "shield-breaker axe",
+      "baseline": "main_hand",
+      "head": "main_hand"
+    },
+    {
+      "prompt": "a shield breaker axe",
+      "baseline": "off_hand",
+      "head": "off_hand"
+    }
+  ],
+  "names": [
+    {
+      "prompt": "iron lantern hanging from a short chain",
+      "baseline": "Iron lantern",
+      "head": "Iron lantern"
+    },
+    {
+      "prompt": "a cloak of shadows",
+      "baseline": "Cloak",
+      "head": "Cloak of shadows"
+    },
+    {
+      "prompt": "a pair of leather boots",
+      "baseline": "Pair",
+      "head": "Leather boots"
+    }
+  ],
+  "detailBounds": [
+    {
+      "size": 64,
+      "motifPixels": 16,
+      "remaining": 16,
+      "minPx": 4,
+      "lost": []
+    },
+    {
+      "size": 64,
+      "motifPixels": 16,
+      "remaining": 0,
+      "minPx": 4,
+      "lost": [
+        {
+          "color": 15121980,
+          "px": 16
+        }
+      ]
+    },
+    {
+      "size": 64,
+      "motifPixels": 16,
+      "remaining": 1,
+      "minPx": 4,
+      "lost": []
+    },
+    {
+      "size": 128,
+      "motifPixels": 4,
+      "remaining": 0,
+      "minPx": 16,
+      "lost": []
+    },
+    {
+      "size": 128,
+      "motifPixels": 16,
+      "remaining": 0,
+      "minPx": 16,
+      "lost": [
+        {
+          "color": 15121980,
+          "px": 16
+        }
+      ]
+    }
+  ],
+  "poseBatchBounds": [
+    {
+      "count": 1,
+      "batches": [
+        {
+          "start": 0,
+          "count": 1
+        }
+      ],
+      "paddedCounts": [
+        3
+      ]
+    },
+    {
+      "count": 2,
+      "batches": [
+        {
+          "start": 0,
+          "count": 2
+        }
+      ],
+      "paddedCounts": [
+        3
+      ]
+    },
+    {
+      "count": 3,
+      "batches": [
+        {
+          "start": 0,
+          "count": 3
+        }
+      ],
+      "paddedCounts": [
+        3
+      ]
+    },
+    {
+      "count": 14,
+      "batches": [
+        {
+          "start": 0,
+          "count": 14
+        }
+      ],
+      "paddedCounts": [
+        14
+      ]
+    },
+    {
+      "count": 15,
+      "batches": [
+        {
+          "start": 0,
+          "count": 15
+        }
+      ],
+      "paddedCounts": [
+        15
+      ]
+    },
+    {
+      "count": 16,
+      "batches": [
+        {
+          "start": 0,
+          "count": 8
+        },
+        {
+          "start": 8,
+          "count": 8
+        }
+      ],
+      "paddedCounts": [
+        8,
+        8
+      ]
+    },
+    {
+      "count": 29,
+      "batches": [
+        {
+          "start": 0,
+          "count": 15
+        },
+        {
+          "start": 15,
+          "count": 14
+        }
+      ],
+      "paddedCounts": [
+        15,
+        14
+      ]
+    },
+    {
+      "count": 30,
+      "batches": [
+        {
+          "start": 0,
+          "count": 15
+        },
+        {
+          "start": 15,
+          "count": 15
+        }
+      ],
+      "paddedCounts": [
+        15,
+        15
+      ]
+    },
+    {
+      "count": 31,
+      "batches": [
+        {
+          "start": 0,
+          "count": 11
+        },
+        {
+          "start": 11,
+          "count": 10
+        },
+        {
+          "start": 21,
+          "count": 10
+        }
+      ],
+      "paddedCounts": [
+        11,
+        10,
+        10
+      ]
+    }
+  ]
+}

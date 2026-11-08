@@ -1,0 +1,50 @@
+[
+  {
+    "size": 64,
+    "slot": "main_hand",
+    "method": "skel",
+    "description": "This pixel art character is a solid bright green mannequin. The bright green color is intentional (a chroma key) and must stay exactly the same bright green in every frame. Add only a steel sword, held in the character's right hand, pointing down and slightly outward; exactly one weapon, no other weapons, no scabbard, no shield; the arms stay exactly as they are, drawn in its own natural colors (no bright green on the item), identical design in all frames. Cells in order: 1 cells rest facing south (front view). Keep every other pixel, the pose, the outline and the transparent background unchanged.",
+    "hasRequestedHand": true,
+    "hasOneItem": true,
+    "imageSize": {
+      "width": 96,
+      "height": 96
+    }
+  },
+  {
+    "size": 64,
+    "slot": "off_hand",
+    "method": "skel",
+    "description": "This pixel art character is a solid bright green mannequin. The bright green color is intentional (a chroma key) and must stay exactly the same bright green in every frame. Add only a wooden shield, held in the character's left hand, pointing down and slightly outward; exactly one held item, nothing in the right hand; the arms stay exactly as they are, drawn in its own natural colors (no bright green on the item), identical design in all frames. Cells in order: 1 cells rest facing south (front view). Keep every other pixel, the pose, the outline and the transparent background unchanged.",
+    "hasRequestedHand": true,
+    "hasOneItem": true,
+    "imageSize": {
+      "width": 96,
+      "height": 96
+    }
+  },
+  {
+    "size": 256,
+    "slot": "main_hand",
+    "method": "skel",
+    "description": "This pixel art character is a solid bright green mannequin. The bright green color is intentional (a chroma key) and must stay exactly the same bright green in every frame. Add only a steel sword, drawn in its own natural colors (no bright green on the item), identical design in all frames. Cells in order: 1 cells rest facing south (front view). Keep every other pixel, the pose, the outline and the transparent background unchanged.",
+    "hasRequestedHand": false,
+    "hasOneItem": false,
+    "imageSize": {
+      "width": 256,
+      "height": 256
+    }
+  },
+  {
+    "size": 256,
+    "slot": "off_hand",
+    "method": "skel",
+    "description": "This pixel art character is a solid bright green mannequin. The bright green color is intentional (a chroma key) and must stay exactly the same bright green in every frame. Add only a wooden shield, drawn in its own natural colors (no bright green on the item), identical design in all frames. Cells in order: 1 cells rest facing south (front view). Keep every other pixel, the pose, the outline and the transparent background unchanged.",
+    "hasRequestedHand": false,
+    "hasOneItem": false,
+    "imageSize": {
+      "width": 256,
+      "height": 256
+    }
+  }
+]
