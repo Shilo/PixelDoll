@@ -39,7 +39,8 @@ from them, [andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpa
 | Failure | Rule in AGENTS.md |
 |---|---|
 | Silent wrong assumptions, hidden confusion, no tradeoffs, sycophancy | Think before coding (ask only if a wrong guess is costly to undo) |
-| Over-engineering, speculative options, 1000 lines where 100 do | KISS and YAGNI (cut to the least code that solves it) |
+| Over-engineering, speculative options, 1000 lines where 100 do | KISS and YAGNI (remove what the task does not need) |
+| Compressed, unreadable code written to look short | Prettier in `npm run check` owns layout; KISS says less logic, not compressed code |
 | Imperative steps without a success check | Goal-driven (failing test or offline reproduction first, never paid) |
 | Migrations and legacy shims for data nobody has | No backward compatibility (preview app; ask first) |
 | Re-implementing an existing helper; copy-paste | DRY in app/ (reuse first, extract at the second caller) |
