@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
+  define: { __AGENT_API_BASE__: 'null' }, // as in every non-agent mode (vite.config.ts)
   test: {
     include: ['test/unit/**/*.test.ts'],
     environment: 'node',

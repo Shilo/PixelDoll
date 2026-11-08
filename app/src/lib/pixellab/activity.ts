@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store';
-import { errorText, isPolicy, paidRequestRejected } from './client.ts';
+import { API_BASE, errorText, isPolicy, paidRequestRejected } from './client.ts';
 
 export interface ActivityContext {
   label?: string; queueId?: string; queueTag?: string; activityScope?: string; background?: boolean;
@@ -53,7 +53,7 @@ export function sanitizeActivityValue(value: unknown): unknown {
 }
 export function sanitizeActivityUrl(value: string): string {
   try {
-    const url = new URL(value, 'https://api.pixellab.ai');
+    const url = new URL(value, API_BASE);
     url.username = ''; url.password = ''; url.hash = '';
     for (const key of [...url.searchParams.keys()]) if (!['limit', 'offset', 'states'].includes(key)) url.searchParams.set(key, '[redacted]');
     return value.startsWith('/') ? url.pathname + url.search : url.href;
@@ -82,8 +82,8 @@ function update(id: string, change: Partial<ApiCall>) {
 }
 export function beginActivityCall(method: string, url: string, body?: unknown, context: ActivityContext = {}, kind: ApiCall['kind'] = 'api'): string {
   const safeUrl = sanitizeActivityUrl(url);
-  const parsed = new URL(safeUrl, 'https://api.pixellab.ai');
-  const endpoint = parsed.origin === 'https://api.pixellab.ai' ? parsed.pathname.replace(/^\/v2(?=\/)/, '') + parsed.search : safeUrl;
+  const base = new URL(API_BASE), parsed = new URL(safeUrl, base);
+  const endpoint = parsed.origin === base.origin ? (parsed.pathname.startsWith(`${base.pathname}/`) ? parsed.pathname.slice(base.pathname.length) : parsed.pathname) + parsed.search : safeUrl;
   const free = method !== 'POST';
   const call: ApiCall = {
     label: context.label, queueId: context.queueId, queueTag: context.queueTag, activityScope: context.activityScope,
@@ -163,7 +163,7 @@ export function restoreActivityRequest(request: RestoredActivityRequest): string
   const existing = activityRequest(request.queueId);
   // The ledger is an aggregate, so it must never overwrite a locally captured per-attempt HTTP record.
   if (existing && !existing.restored) return existing.id;
-  const id = existing?.id ?? beginActivityCall(request.method, `https://api.pixellab.ai/v2${request.endpoint}`, request.body, request);
+  const id = existing?.id ?? beginActivityCall(request.method, `${API_BASE}${request.endpoint}`, request.body, request);
   const usage = usageOf(request.usage);
   if (usage) submissionUsage.set(id, usage);
   else submissionUsage.delete(id);

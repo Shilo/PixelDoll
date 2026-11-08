@@ -50,7 +50,7 @@ development**, generating images without a human pasting the token into the runn
 10. **Keyless automation stays keyless.** Test scripts that must not spend credits set a kill switch
     (`localStorage['pixeldoll.agentKey'] = 'off'`) before the app loads, even on the agent server.
 11. **Human token UX (production and normal dev):** the token is kept per tab by default (in memory or sessionStorage).
-    "Remember on this device" (localStorage) is opt-in. It is sent only as `Authorization: Bearer` to `https://api.pixellab.ai`, and never put
+    "Remember on this device" (localStorage) is opt-in. It is sent only as `Authorization: Bearer` to `https://api.pixellab.ai` (agent mode may use the local API server, see below), and never put
     in URLs, logs, exports, project files, job ledgers or provenance.
     Both apps use only `localStorage['pixellabApiKey']` for remembered keys. Do not read, migrate, write or remove older
     app-specific API-key entries. Forget removes the shared saved key and notifies cooperating open apps using the
@@ -151,6 +151,11 @@ if (import.meta.env.DEV && import.meta.env.MODE === 'agent' && window.top === wi
 ### `.claude/launch.json` (agent tooling)
 - `app-dev` → `npm --prefix app run dev` on :5173, for humans, no token.
 - `app-dev-agent` → `npm --prefix app run dev:agent` on :5199, for agents only.
+
+### Local API (`PIXELLAB_SECRET_DEV`)
+With `PIXELLAB_API_KEY_AGENT_DEV=${PIXELLAB_SECRET_DEV}`, `dev:agent` (read at startup) points `API_BASE` and the CSP at
+`http://localhost:8000/v2` (`agentApiBase`, agent-key.ts). Builds define null and keep only the public API; dist-guard.mjs
+rejects `__AGENT_API_BASE__` and `localhost:8000`.
 
 ### `AGENTS.md`: "Agent testing" section
 Tells every agent to use `dev:agent` / `app-dev-agent` to get the token. Humans never use it. Never print or commit the

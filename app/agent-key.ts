@@ -13,6 +13,10 @@ export function resolveAgentKey(source: string, env: NodeJS.ProcessEnv): string 
   return key
 }
 
+/** An agent token referencing PIXELLAB_SECRET_DEV targets a local API server; any other token keeps the public API. */
+export const LOCAL_API = 'http://localhost:8000/v2'
+export const agentApiBase = (source: string) => (parseEnv(source).PIXELLAB_API_KEY_AGENT_DEV?.trim() === '${PIXELLAB_SECRET_DEV}' ? LOCAL_API : undefined)
+
 // Request guard for the dev server's /__dev endpoints (vite.config.ts): same-origin requests from this machine only.
 // Loopback socket, Host = localhost, Sec-Fetch-Site = same-origin, and no proxy headers (HTTP-aware proxies and tunnels add
 // them). A raw TCP forward (ssh -L/-R, socat) looks exactly like a local request, so the real rule is in AGENTS.md: never

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { resolveAgentKey } from '../../agent-key.ts'
+import { agentApiBase, LOCAL_API, resolveAgentKey } from '../../agent-key.ts'
 
 test.each(['PIXELLAB_SECRET', 'CUSTOM_TOKEN_2', 'lowercase_token'])('an explicit reference can use any valid environment name: %s', name => {
   const env = { [name]: ' synthetic-token ' };
@@ -31,4 +31,11 @@ test('missing entries never acquire a key, and references never load sibling dot
 
 test.each(['0123456789abcdef0123456789abcdef', 'pixl_0123456789abcdef0123456789abcdef', 'CUSTOM_TOKEN', 'prefix${CUSTOM_TOKEN}'])('unquoted opaque literals are preserved, including a colliding environment name: %s', token => {
   expect(resolveAgentKey('PIXELLAB_API_KEY_AGENT_DEV='+token, { CUSTOM_TOKEN: 'different-synthetic-token' })).toBe(token);
+});
+
+test('only a PIXELLAB_SECRET_DEV agent token uses the local API', () => {
+  expect(agentApiBase('PIXELLAB_API_KEY_AGENT_DEV=${PIXELLAB_SECRET_DEV}\n')).toBe(LOCAL_API);
+  expect(agentApiBase('PIXELLAB_API_KEY_AGENT_DEV=" ${PIXELLAB_SECRET_DEV} "')).toBe(LOCAL_API);
+  for (const source of ['', 'PIXELLAB_API_KEY_AGENT_DEV=prefix${PIXELLAB_SECRET_DEV}', 'PIXELLAB_API_KEY_AGENT_DEV=${PIXELLAB_SECRET_DEV}suffix', 'PIXELLAB_API_KEY_AGENT_DEV=${PIXELLAB_SECRET}', 'PIXELLAB_API_KEY_AGENT_DEV=0123456789abcdef', 'OTHER=${PIXELLAB_SECRET_DEV}', '# PIXELLAB_API_KEY_AGENT_DEV=${PIXELLAB_SECRET_DEV}'])
+    expect(agentApiBase(source)).toBeUndefined();
 });

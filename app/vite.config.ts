@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'no
 import { resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, normalizePath, type Plugin } from 'vite'
-import { localSameOrigin, resolveAgentKey } from './agent-key.ts'
+import { agentApiBase, localSameOrigin, resolveAgentKey } from './agent-key.ts'
 import { appVersion } from './version.ts'
 import { randomUUID } from 'node:crypto'
 import { pwaBuild } from './pwa-build.ts'
@@ -47,16 +47,23 @@ function devTools(): Plugin {
 
 // AI-agent automation only (`npm run dev:agent` = `vite --mode agent`): serves PIXELLAB_API_KEY_AGENT_DEV from ../.env at
 // /__dev/pixellab-key. Not registered at all for `npm run dev` (humans paste their key like in production) or any build.
-// The key is read server-side per request, never through Vite's env (no VITE_ prefix, nothing inlined).
-function agentKey(): Plugin {
+// The key is read server-side per request, never through Vite's env (no VITE_ prefix, nothing inlined). A key referencing
+// PIXELLAB_SECRET_DEV (read at startup) switches the app and the CSP to a local API server (agentApiBase).
+const ENV_FILE = new URL('../.env', import.meta.url)
+const localApi = () => (existsSync(ENV_FILE) ? agentApiBase(readFileSync(ENV_FILE, 'utf8')) : undefined)
+function agentKey(apiBase: string | undefined): Plugin {
   return {
     name: 'pixeldoll-agent-key',
+    transformIndexHtml: (html) => (apiBase ? html.replace("connect-src 'self'", `connect-src 'self' ${new URL(apiBase).origin}`) : html),
     configureServer(server) {
       server.middlewares.use('/__dev/pixellab-key', (req, res) => {
         res.setHeader('cache-control', 'no-store')
         if (!localSameOrigin(req)) { res.statusCode = 403; return res.end() }
         try {
-          const key = resolveAgentKey(readFileSync(new URL('../.env', import.meta.url), 'utf8'), process.env)
+          const source = readFileSync(ENV_FILE, 'utf8')
+          // The API base is fixed at startup: never serve a key edited for the other server until a restart.
+          if (agentApiBase(source) !== apiBase) { server.config.logger.warn('The agent token changed servers: restart dev:agent.'); res.statusCode = 503; return res.end('The agent token changed servers: restart dev:agent.') }
+          const key = resolveAgentKey(source, process.env)
           res.statusCode = key ? 200 : 404
           res.end(key)
         } catch (error) {
@@ -89,12 +96,13 @@ export default defineConfig(({ command, mode }) => {
   if (command === 'build' && mode === 'agent') throw new Error('mode "agent" is dev-server only; never build with it')
   const { version, commit } = appVersion(fileURLToPath(new URL('.', import.meta.url)))
   const build = randomUUID()
+  const agent = command === 'serve' && mode === 'agent', apiBase = agent ? localApi() : undefined
   return {
     // The dev server may run uncommitted changes, so it never claims a released version.
-    define: { __APP_VERSION__: JSON.stringify(command === 'serve' ? `${version}-dev` : version), __APP_COMMIT__: JSON.stringify(commit), __APP_BUILD__: JSON.stringify(build) },
+    define: { __APP_VERSION__: JSON.stringify(command === 'serve' ? `${version}-dev` : version), __APP_COMMIT__: JSON.stringify(commit), __APP_BUILD__: JSON.stringify(build), __AGENT_API_BASE__: JSON.stringify(apiBase ?? null) },
     base: './', // ponytail: relative base so GitHub Pages subpath just works
     envDir: false, // never load .env files: nothing reaches import.meta.env, in any mode
-    plugins: [svelte(), devTools(), command === 'serve' && mode === 'agent' && agentKey(), command === 'build' && pwaBuild({ build, version, commit })],
+    plugins: [svelte(), devTools(), agent && agentKey(apiBase), command === 'build' && pwaBuild({ build, version, commit })],
     // Vite ignores only test-results/. Each agent's own TEST_OUTPUT_DIR (test-results-*, as in .gitignore) streams trace
     // files all run long; watched, they saturate the dev server's CPU and later dev-server specs time out.
     server: { watch: { ignored: ['**/test-results*/**'] } },

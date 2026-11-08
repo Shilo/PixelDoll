@@ -5,7 +5,7 @@ import { basename, join } from 'node:path';
 
 // Historical names are leak indicators, not a list of permitted environment references. resolveAgentKey covers any name.
 
-const MARKERS = ['resolveAgentKey', 'PIXELLAB_SECRET', '__dev', 'pixellab-key', 'PIXELLAB_API_KEY_AGENT_DEV', 'PIXELLAB_TOKEN_AGENT_DEV', 'PIXELLAB_API_KEY', 'API_KEY_OVERRIDE', 'DEV_API_KEY', 'devkey', 'pixeldoll.agentKey', 'agent-badge', 'sourceMappingURL', '#/selftest', 'Developer pages', 'Verifying the PixelDoll update'];
+const MARKERS = ['resolveAgentKey', 'PIXELLAB_SECRET', '__dev', 'pixellab-key', 'PIXELLAB_API_KEY_AGENT_DEV', '__AGENT_API_BASE__', 'localhost:8000', 'PIXELLAB_TOKEN_AGENT_DEV', 'PIXELLAB_API_KEY', 'API_KEY_OVERRIDE', 'DEV_API_KEY', 'devkey', 'pixeldoll.agentKey', 'agent-badge', 'sourceMappingURL', '#/selftest', 'Developer pages', 'Verifying the PixelDoll update'];
 const DEV_UI = ['Developer rigs', '8-dir held dress: every direction dressed once'];
 const bad = [];
 let startupPolicies = 0;
