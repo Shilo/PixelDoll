@@ -453,7 +453,7 @@ are preserved; use the character root's depth for positioning among scene object
   aseprite/   <name>.aseprite, README.txt          # B11: layered, zero-code path (§6.5)
 ```
 
-RPG Maker zips (§6.8) instead hold only `$<name>.png` (RPG Maker card) or `<name>.png` (RPG Maker XP card) per outfit at the
+RPG Maker zips (§6.8) instead hold only `$<name>.png` (MZ, MV, VX layout) or `<name>.png` (XP layout) per outfit at the
 root, `README.txt`, `CREDITS.txt` and the editable copy (§7): no layer sheets, `manifest.json` or baked sheets.
 
 Why per-animation sheets: an all-animation sheet passes 4096 px quickly (8 dirs × 12 anims × 64 px [R3]); per-animation sheets are
@@ -595,9 +595,11 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
   look) and `<character>_<outfit>` otherwise. Names are ASCII: accents are dropped (é → e), other characters become `_`, an
   empty outfit name falls back to its id, collisions get `_2`…, and Windows device names (CON, NUL…) get a trailing `_`. Research and sources:
   `docs/research/rpg-maker-export-2026-11-07.md`.
-- Two cards, one layout each, so a zip only holds what its engines read: **RPG Maker** (MZ, MV, VX Ace, VX share one file)
-  writes `$<name>.png`, 3 × 4 cells; **RPG Maker XP** (also Pokémon Essentials) writes `<name>.png`, 4 × 4 cells. A version
-  picker would only change the README's folder name. RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
+- One **RPG Maker** card ("MZ, MV, VX, XP") with a **Version** row shown under the Engines grid while the card is selected,
+  so a zip only holds what its engine reads: "MZ, MV, VX" (engine id `rpgmaker`, the default; MZ, MV, VX Ace and VX share one
+  file) writes `$<name>.png`, 3 × 4 cells; "XP" (`rpgmakerxp`, also Pokémon Essentials) writes `<name>.png`, 4 × 4 cells. The
+  stored engine id remembers the version. The row is a radiogroup of 44 px touch segments outside the card's label (a control
+  inside a radio label is invalid). RPG Maker exports cannot be combined with other engines in one call. Rows: south, west, east, north (west is the
   rig's mirrored or generated view; diagonals are dropped). The engines derive the cell from the image size, so the cell is
   native, never scaled: the art's bounds around the pivot, padded to an even width with the pivot at its center, from the
   highest opaque row (MV and MZ place balloons from the sprite height) down to the feet line (`bakedPivot.y`), or lower when art hangs below the feet (kept; more than 2 px adds a warning, since the character then

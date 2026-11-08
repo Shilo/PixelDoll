@@ -3,8 +3,8 @@
 Research date: 2026-11-07. Research only: no repo edits, no PixelLab calls.
 
 > **Implemented differently (2026-11-07, revised 2026-11-08):** the exporter (`app/src/lib/export/rpgmaker.ts`, manifest-spec
-> §6.8) has two cards: "RPG Maker" (MZ, MV, VX Ace, VX: `$<character>_<outfit>.png`) and "RPG Maker XP" (XP, Pokémon Essentials:
-> `<character>_<outfit>.png`), each writing only its sheets at the zip root, instead of a version choice and the §5 paths. Feet are
+> §6.8) has one "RPG Maker" card with a Version row: "MZ, MV, VX" (MZ, MV, VX Ace, VX: `$<character>_<outfit>.png`) or "XP"
+> (XP, Pokémon Essentials: `<character>_<outfit>.png`), each writing only its sheets at the zip root, instead of a version choice and the §5 paths. Feet are
 > anchored on the baked pivot's feet line rather than the lowest opaque pixel, so a weapon tip below the feet cannot lift the
 > character; art below the feet extends the cell (a warning above 2 px). Cells are trimmed to the art, top included. Steps are
 > picked by the signed lead of the left ankle along each view's facing, with managed template views taking the side view's

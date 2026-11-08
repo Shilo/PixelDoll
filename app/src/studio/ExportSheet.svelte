@@ -16,7 +16,11 @@
   import { moveLabel } from './model.ts'
   import { ChevronLeft, ChevronRight, Download, Settings2, TriangleAlert, X } from './icons.ts'
 
-  type Target = { id: Engine; name: string; sub: string; detail: string; icon?: string }
+  type Target = { id: Engine; name: string; sub: string; detail: string }
+  // One RPG Maker card; its two sheet layouts are a Version choice shown below the grid while the card is selected, kept as
+  // the stored engine id (rpgmaker or rpgmakerxp) so the choice persists like any format.
+  const RPG_XP = { id: 'rpgmakerxp', name: 'RPG Maker', sub: 'MZ, MV, VX, XP', detail: 'A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views.' } satisfies Target
+  const cardOf = (id: Engine): Engine => (id === 'rpgmakerxp' ? 'rpgmaker' : id)
   // Product order for this layered 2D workflow; asset formats are useful across engines.
   const GROUPS: { id: string; name: string; targets: Target[] }[] = [
     { id: 'engines', name: 'Engines and frameworks', targets: [
@@ -24,8 +28,7 @@
       { id: 'unity', name: 'Unity', sub: 'Prefab importer', detail: 'Unity Editor importer creates a layered prefab and animation assets. Requires the 2D Sprite package.' },
       { id: 'phaser', name: 'Phaser', sub: 'Atlas + runtime', detail: 'Phaser 3 / 4 atlases and a Container runtime for equipment, colors and synchronized playback.' },
       { id: 'gdevelop', name: 'GDevelop', sub: 'Editable project', detail: 'Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game.' },
-      { id: 'rpgmaker', name: 'RPG Maker', sub: 'MZ, MV, VX Ace, VX', detail: 'A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views.' },
-      { id: 'rpgmakerxp', name: 'RPG Maker XP', sub: 'XP, Pokémon Essentials', icon: 'rpgmaker', detail: 'A 4-frame walking sheet per outfit at your character’s own size, for RPG Maker XP and Pokémon Essentials. Copy the PNG files into Graphics/Characters. Needs front, side and back views.' },
+      { id: 'rpgmaker', name: 'RPG Maker', sub: 'MZ, MV, VX, XP', detail: 'A walking sheet per outfit at your character’s own size. Copy the PNG files into img/characters (MZ, MV) or Graphics/Characters (VX Ace, VX). Needs front, side and back views.' },
     ] },
     { id: 'assets', name: 'Assets', targets: [
       { id: 'aseprite', name: 'Aseprite', sub: 'Editable layers', detail: 'One layered .aseprite animation with tags, timing, pivot and your current look. Open in Aseprite 1.3 or later.' },
@@ -37,7 +40,7 @@
   let savedProjects = $state.raw<StoredProject[]>([])
   let formatChoice = $state<Engine | null>(null)
   const engine = $derived(formatChoice ?? preferences?.engine ?? 'godot')
-  const selected = $derived(ENGINES.find((target) => target.id === engine))
+  const selected = $derived(engine === 'rpgmakerxp' ? RPG_XP : ENGINES.find((target) => target.id === engine))
   let settings = $state(false)
   let pendingWrites = $state(0)
   const saving = $derived(pendingWrites > 0)
@@ -116,6 +119,9 @@
   }
   async function changeSetting(input: HTMLInputElement, change: ExportSettingChange) {
     return persistSettings(() => saveExportSetting(change), input, 'engine' in change ? change.engine : undefined)
+  }
+  function chooseEngine(id: Engine) {
+    if (id !== engine) void persistSettings(() => saveExportSetting({ engine: id }), undefined, id)
   }
   async function resetSettings(event: MouseEvent) {
     const trigger = event.currentTarget, hadFocus = document.activeElement === trigger
@@ -251,12 +257,21 @@
         <div class="export-targets">
           {#each group.targets as e (e.id)}
             <label class="export-target">
-              <span class="target-icon" aria-hidden="true" style:mask-image={`url("${assetUrl(`icons/exports/${e.icon ?? e.id}.svg`)}")`}></span>
+              <span class="target-icon" aria-hidden="true" style:mask-image={`url("${assetUrl(`icons/exports/${e.id}.svg`)}")`}></span>
               <span class="target-label"><span class="engine-name">{e.name}</span><span class="engine-sub">{e.sub}</span></span>
-              <input type="radio" name="export-format" value={e.id} checked={engine === e.id} disabled={!ready} onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })} aria-label={e.name} aria-describedby={engine === e.id ? 'export-description' : undefined} />
+              <input type="radio" name="export-format" value={e.id} checked={cardOf(engine) === e.id} disabled={!ready} onchange={(event) => changeSetting(event.currentTarget, { engine: e.id })} aria-label={e.name} aria-describedby={cardOf(engine) === e.id ? 'export-description' : undefined} />
             </label>
           {/each}
         </div>
+        {#if group.id === 'engines' && rpg}
+          <div class="rpg-version">
+            <span class="label" id="rpg-version-label">Version</span>
+            <div class="seg full" role="radiogroup" aria-labelledby="rpg-version-label">
+              <button type="button" role="radio" aria-checked={engine === 'rpgmaker'} aria-label="MZ, MV, VX Ace, VX" tabindex={engine === 'rpgmaker' ? 0 : -1} disabled={!ready} onclick={() => chooseEngine('rpgmaker')}>MZ, MV, VX</button>
+              <button type="button" role="radio" aria-checked={engine === 'rpgmakerxp'} aria-label="XP, Pokémon Essentials" tabindex={engine === 'rpgmakerxp' ? 0 : -1} disabled={!ready} onclick={() => chooseEngine('rpgmakerxp')}>XP</button>
+            </div>
+          </div>
+        {/if}
       </section>
     {/each}
   </fieldset>
@@ -314,6 +329,9 @@
   .export-summary dd { margin:0; overflow-wrap:anywhere; }
   .export-picker { border:0; padding:0; margin:0; min-width:0; display:flex; flex-direction:column; gap:16px; }
   .export-picker h3 { margin:0 0 8px; }
+  .rpg-version { display:flex; align-items:center; gap:12px; margin-top:8px; }
+  .rpg-version .label { flex:none; margin:0; }
+  .rpg-version .seg { flex:1; }
   .export-targets { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
   .export-target { display:grid; grid-template-columns:28px minmax(0, 1fr) 16px; align-items:center; gap:10px; padding:12px; min-height:68px; border:1px solid var(--line-strong); border-radius:var(--r-card); background:var(--bg); cursor:pointer; }
   .export-target:has(input:checked) { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); background:var(--accent-soft); }
