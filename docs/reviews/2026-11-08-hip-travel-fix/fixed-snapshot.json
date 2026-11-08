@@ -1,0 +1,12 @@
+{
+  "baseline": "c1024a0cfc8f74b6b94583d8c493ad6d893298ef",
+  "overlay": "Only owned QA sources, one manifest field and new tests",
+  "files": {
+    "app/src/lib/items/items.ts": "48f7b838d12b2091145d4ca14a63eb956f9e00c7867bd6925364b17ce26b55bf",
+    "app/src/lib/items/qa-summary.ts": "cabdfea7fd99dbeb21ccbba9de17f7a6f8d4231d18ae74a4d934a476063fbfff",
+    "app/src/lib/store/manifest.ts": "3d9b8c053106ac0e2ce2d907b30296498a93f1ea46a5f7cc376b974b51d3384b",
+    "app/src/studio/model.ts": "48339a7bcdd8c07042045e58bd922e290be76c1710650f0bb40c84943b0e52ea"
+  },
+  "dependencies": "Existing dependency junction; no install",
+  "excludes": "Other agents export edits, private .env and untracked files"
+}

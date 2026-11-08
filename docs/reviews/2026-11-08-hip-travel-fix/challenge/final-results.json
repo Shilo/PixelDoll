@@ -1,0 +1,769 @@
+{
+  "hashes": {
+    "app/src/lib/items/items.ts": "48f7b838d12b2091145d4ca14a63eb956f9e00c7867bd6925364b17ce26b55bf",
+    "app/src/lib/items/qa-summary.ts": "cabdfea7fd99dbeb21ccbba9de17f7a6f8d4231d18ae74a4d934a476063fbfff",
+    "app/src/lib/store/manifest.ts": "3d9b8c053106ac0e2ce2d907b30296498a93f1ea46a5f7cc376b974b51d3384b",
+    "app/src/studio/model.ts": "48339a7bcdd8c07042045e58bd922e290be76c1710650f0bb40c84943b0e52ea"
+  },
+  "classifierUnchanged": true,
+  "rows": [
+    {
+      "label": "original-0",
+      "id": "run",
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-0",
+      "id": "run",
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-0",
+      "id": "run",
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-0",
+      "id": "run",
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ],
+        "softCalls": [],
+        "motionReviewClips": 1
+      }
+    },
+    {
+      "label": "original-0",
+      "id": "dodge",
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-0",
+      "id": "dodge",
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-0",
+      "id": "dodge",
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-0",
+      "id": "dodge",
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-1",
+      "id": "run",
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-1",
+      "id": "run",
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-1",
+      "id": "run",
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-1",
+      "id": "run",
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ],
+        "softCalls": [],
+        "motionReviewClips": 1
+      }
+    },
+    {
+      "label": "original-1",
+      "id": "dodge",
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-1",
+      "id": "dodge",
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-1",
+      "id": "dodge",
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-1",
+      "id": "dodge",
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-2",
+      "id": "run",
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-2",
+      "id": "run",
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-2",
+      "id": "run",
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-2",
+      "id": "run",
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ],
+        "softCalls": [],
+        "motionReviewClips": 1
+      }
+    },
+    {
+      "label": "original-2",
+      "id": "dodge",
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-2",
+      "id": "dodge",
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-2",
+      "id": "dodge",
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "original-2",
+      "id": "dodge",
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "false-clear",
+      "id": "run",
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "false-clear",
+      "id": "run",
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "false-clear",
+      "id": "run",
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "false-clear",
+      "id": "run",
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ],
+        "softCalls": [],
+        "motionReviewClips": 1
+      }
+    },
+    {
+      "label": "false-clear",
+      "id": "dodge",
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "false-clear",
+      "id": "dodge",
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "false-clear",
+      "id": "dodge",
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    },
+    {
+      "label": "false-clear",
+      "id": "dodge",
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      },
+      "fixed": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": [],
+        "softCalls": [],
+        "motionReviewClips": 0
+      }
+    }
+  ],
+  "validAction": {
+    "following": {
+      "action": true,
+      "status": "pass",
+      "failures": [],
+      "warnings": [],
+      "softCalls": [],
+      "motionReviewClips": 0
+    },
+    "worldFixed": {
+      "action": true,
+      "status": "warn",
+      "failures": [],
+      "warnings": [
+        "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+      ],
+      "softCalls": [],
+      "motionReviewClips": 1
+    }
+  },
+  "summaryControls": {
+    "accepted": 1,
+    "two": 2,
+    "one": 1,
+    "none": 0,
+    "reasons": [
+      "Check the item's size and angle as it moves"
+    ]
+  },
+  "qualification": "Direct actual itemQa and summary/presentation helpers, JSON roundtrip only; not a live browser Keep/reload/recolor/export run."
+}

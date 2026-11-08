@@ -1,0 +1,82 @@
+{
+  "fixture": {
+    "tilt": -40,
+    "elbow": -76,
+    "label": "LEFT HIP",
+    "x": 0.25,
+    "y": 0.6750000000000003,
+    "beforeClean": false,
+    "beforeCorrupt": true,
+    "candidateCorrupt": true
+  },
+  "rows": [
+    {
+      "bad": false,
+      "flip": false,
+      "before": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "minAnchors": {
+        "action": false,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "bad": false,
+      "flip": true,
+      "before": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": []
+      },
+      "minAnchors": {
+        "action": false,
+        "status": "fail",
+        "failures": [
+          "G9 run/south: the item turns 180° against the hand between frames"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "bad": true,
+      "flip": false,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "minAnchors": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    },
+    {
+      "bad": true,
+      "flip": true,
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      },
+      "minAnchors": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "warnings": []
+      }
+    }
+  ]
+}

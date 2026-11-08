@@ -1,0 +1,7107 @@
+{
+  "baselinePin": "c1024a0c",
+  "baselineHash": "47bef0f67621e6e0b8faea8bbadd476454a0877add4aba9cc4c8579922dd18b9",
+  "candidateHash": "48f7b838d12b2091145d4ca14a63eb956f9e00c7867bd6925364b17ce26b55bf",
+  "count": 1080,
+  "changed": 176,
+  "changes": [
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 32,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 64,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "main_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/east: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G4 run/north: min area 0 % of median",
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/north: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "off_hand",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended",
+          "G8 run/west: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "south",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/south: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "east",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/east: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/east: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "north",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/north: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/north: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": {
+        "action": true,
+        "status": "pass",
+        "failures": [],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "warn",
+        "failures": [],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    },
+    {
+      "size": 128,
+      "slot": "torso_outer",
+      "dir": "west",
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": []
+      },
+      "after": {
+        "action": true,
+        "status": "fail",
+        "failures": [
+          "G4 run/west: min area 0 % of median"
+        ],
+        "soft": [],
+        "warnings": [
+          "G16 run/west: item size or angle changes while motion overrides a gait label; check that the change is intended"
+        ]
+      }
+    }
+  ],
+  "summary": [
+    {
+      "id": "run",
+      "motion": "rest",
+      "kind": "clean",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "rest",
+      "kind": "flip",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.144,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.144,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "fail",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "rest",
+      "kind": "size",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0.69,
+        "maxAreaCV": 0.308,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0.69,
+            "maxAreaCV": 0.308,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "fail",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "rest",
+      "kind": "empty-one",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0.447,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 5,
+          "L": 0,
+          "amb": 0,
+          "none": 1
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0.447,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 5,
+              "L": 0,
+              "amb": 0,
+              "none": 1
+            },
+            "status": "fail",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "rest",
+      "kind": "empty-all",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 0,
+          "L": 0,
+          "amb": 0,
+          "none": 6
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 0,
+              "L": 0,
+              "amb": 0,
+              "none": 6
+            },
+            "status": "fail",
+            "hand": "?"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "residual",
+      "kind": "clean",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.144,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.144,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "residual",
+      "kind": "flip",
+      "before": "pass",
+      "after": "warn",
+      "soft": [],
+      "warnings": [
+        "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.114,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "warn",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 45
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "motionReviewClips": 1,
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.114,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "warn",
+            "motionReviewClips": 1,
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "residual",
+      "kind": "size",
+      "before": "pass",
+      "after": "warn",
+      "soft": [],
+      "warnings": [
+        "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0.69,
+        "maxAreaCV": 0.4,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "warn",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          }
+        },
+        "motionReviewClips": 1,
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0.69,
+            "maxAreaCV": 0.4,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "warn",
+            "motionReviewClips": 1,
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+        "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0.447,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 5,
+          "L": 0,
+          "amb": 0,
+          "none": 1
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "motionReviewClips": 1,
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0.447,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 5,
+              "L": 0,
+              "amb": 0,
+              "none": 1
+            },
+            "status": "fail",
+            "motionReviewClips": 1,
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "residual",
+      "kind": "empty-all",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 0,
+          "L": 0,
+          "amb": 0,
+          "none": 6
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 0,
+              "L": 0,
+              "amb": 0,
+              "none": 6
+            },
+            "status": "fail",
+            "hand": "?"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "clear",
+      "kind": "clean",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.144,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.144,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "clear",
+      "kind": "flip",
+      "before": "pass",
+      "after": "warn",
+      "soft": [],
+      "warnings": [
+        "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.124,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "warn",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 46
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "motionReviewClips": 1,
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.124,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "warn",
+            "motionReviewClips": 1,
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "clear",
+      "kind": "size",
+      "before": "pass",
+      "after": "warn",
+      "soft": [],
+      "warnings": [
+        "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0.69,
+        "maxAreaCV": 0.4,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "warn",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          }
+        },
+        "motionReviewClips": 1,
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0.69,
+            "maxAreaCV": 0.4,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "warn",
+            "motionReviewClips": 1,
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G16 run/south: item size or angle changes while motion overrides a gait label; check that the change is intended",
+        "G8 run/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0.447,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 5,
+          "L": 0,
+          "amb": 0,
+          "none": 1
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "motionReviewClips": 1,
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0.447,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 5,
+              "L": 0,
+              "amb": 0,
+              "none": 1
+            },
+            "status": "fail",
+            "motionReviewClips": 1,
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "run",
+      "motion": "clear",
+      "kind": "empty-all",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 run/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 0,
+          "L": 0,
+          "amb": 0,
+          "none": 6
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "run/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "run/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          }
+        },
+        "clips": {
+          "run/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 0,
+              "L": 0,
+              "amb": 0,
+              "none": 6
+            },
+            "status": "fail",
+            "hand": "?"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "rest",
+      "kind": "clean",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "rest",
+      "kind": "flip",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.144,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.144,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "rest",
+      "kind": "size",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0.69,
+        "maxAreaCV": 0.308,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0.69,
+            "maxAreaCV": 0.308,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "rest",
+      "kind": "empty-one",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0.447,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 5,
+          "L": 0,
+          "amb": 0,
+          "none": 1
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0.447,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 5,
+              "L": 0,
+              "amb": 0,
+              "none": 1
+            },
+            "status": "fail",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "rest",
+      "kind": "empty-all",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 0,
+          "L": 0,
+          "amb": 0,
+          "none": 6
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 0,
+              "L": 0,
+              "amb": 0,
+              "none": 6
+            },
+            "status": "fail",
+            "hand": "?"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "residual",
+      "kind": "clean",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.144,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.144,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "residual",
+      "kind": "flip",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.114,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 45
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.114,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "residual",
+      "kind": "size",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0.69,
+        "maxAreaCV": 0.4,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0.69,
+            "maxAreaCV": 0.4,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "residual",
+      "kind": "empty-one",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0.447,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 5,
+          "L": 0,
+          "amb": 0,
+          "none": 1
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0.447,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 5,
+              "L": 0,
+              "amb": 0,
+              "none": 1
+            },
+            "status": "fail",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "residual",
+      "kind": "empty-all",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 0,
+          "L": 0,
+          "amb": 0,
+          "none": 6
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 0,
+              "L": 0,
+              "amb": 0,
+              "none": 6
+            },
+            "status": "fail",
+            "hand": "?"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "clear",
+      "kind": "clean",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.144,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.144,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "clear",
+      "kind": "flip",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 1,
+        "maxAreaCV": 0.124,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 46
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 1,
+            "maxAreaCV": 0.124,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "clear",
+      "kind": "size",
+      "before": "pass",
+      "after": "pass",
+      "soft": [],
+      "warnings": [],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0.69,
+        "maxAreaCV": 0.4,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 6,
+          "L": 0,
+          "amb": 0,
+          "none": 0
+        },
+        "rerolls": 0,
+        "status": "pass",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 48
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 18
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0.69,
+            "maxAreaCV": 0.4,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 6,
+              "L": 0,
+              "amb": 0,
+              "none": 0
+            },
+            "status": "pass",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "clear",
+      "kind": "empty-one",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 dodge/south: item is more than 6 px from both hands in 1 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0.447,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "handedness": "ok",
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 5,
+          "L": 0,
+          "amb": 0,
+          "none": 1
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 34
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0.447,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "handedness": "ok",
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 5,
+              "L": 0,
+              "amb": 0,
+              "none": 1
+            },
+            "status": "fail",
+            "hand": "r"
+          }
+        }
+      }
+    },
+    {
+      "id": "dodge",
+      "motion": "clear",
+      "kind": "empty-all",
+      "before": "fail",
+      "after": "fail",
+      "soft": [],
+      "warnings": [
+        "G8 dodge/south: item is more than 6 px from both hands in 6 of 6 frames; check its grip"
+      ],
+      "qa": {
+        "minKeyKept": 1,
+        "maxKeyOutside": 0,
+        "minAreaRatio": 0,
+        "maxAreaCV": 0,
+        "maxPaletteDist": 0,
+        "clipPx": 0,
+        "shiftedFrames": 0,
+        "strayPx": 0,
+        "grip": {
+          "R": 0,
+          "L": 0,
+          "amb": 0,
+          "none": 6
+        },
+        "rerolls": 0,
+        "status": "fail",
+        "cells": {
+          "dodge/south/0": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/1": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/2": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/3": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/4": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          },
+          "dodge/south/5": {
+            "route": "posed",
+            "provenance": 0,
+            "area": 0
+          }
+        },
+        "clips": {
+          "dodge/south": {
+            "minKeyKept": 1,
+            "maxKeyOutside": 0,
+            "minAreaRatio": 0,
+            "maxAreaCV": 0,
+            "maxPaletteDist": 0,
+            "clipPx": 0,
+            "shiftedFrames": 0,
+            "strayPx": 0,
+            "grip": {
+              "R": 0,
+              "L": 0,
+              "amb": 0,
+              "none": 6
+            },
+            "status": "fail",
+            "hand": "?"
+          }
+        }
+      }
+    }
+  ]
+}

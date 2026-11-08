@@ -1,0 +1,252 @@
+{
+  "pin": "c1024a0c",
+  "baselineHash": "47bef0f67621e6e0b8faea8bbadd476454a0877add4aba9cc4c8579922dd18b9",
+  "candidateHash": "e4471ad30a943c1d4298864243e30bf0c65b52ee4f5a4b0871469f1c7cd88913",
+  "candidate": "Externally supplied candidate module, identified by source hash",
+  "rowCount": 224,
+  "ordinaryChanges": [
+    {
+      "tag": "projected-c27man",
+      "id": "run",
+      "dir": "east",
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-c27man",
+      "id": "run",
+      "dir": "west",
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-body128",
+      "id": "run",
+      "dir": "east",
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-body128",
+      "id": "run",
+      "dir": "west",
+      "before": false,
+      "after": true
+    }
+  ],
+  "frameCount": 3740,
+  "frameChanges": [
+    {
+      "tag": "bench-A",
+      "id": "slash",
+      "dir": "south",
+      "frame": 3,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "bench-A",
+      "id": "slash",
+      "dir": "south",
+      "frame": 3,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "authored-A",
+      "id": "slash",
+      "dir": "south",
+      "frame": 3,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "authored-A",
+      "id": "slash",
+      "dir": "south",
+      "frame": 3,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "authored-B",
+      "id": "slash",
+      "dir": "east",
+      "frame": 3,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "authored-B",
+      "id": "slash",
+      "dir": "east",
+      "frame": 3,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-c27man",
+      "id": "run",
+      "dir": "east",
+      "frame": 0,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-c27man",
+      "id": "run",
+      "dir": "east",
+      "frame": 0,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-c27man",
+      "id": "run",
+      "dir": "west",
+      "frame": 0,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-c27man",
+      "id": "run",
+      "dir": "west",
+      "frame": 0,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-c27man",
+      "id": "death",
+      "dir": "west",
+      "frame": 5,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "run",
+      "dir": "south",
+      "frame": 9,
+      "swapHip": false,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "attack",
+      "dir": "east",
+      "frame": 5,
+      "swapHip": false,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "attack",
+      "dir": "east",
+      "frame": 5,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "death",
+      "dir": "east",
+      "frame": 5,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "death",
+      "dir": "east",
+      "frame": 5,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "death",
+      "dir": "west",
+      "frame": 5,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "death",
+      "dir": "west",
+      "frame": 5,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-body128",
+      "id": "run",
+      "dir": "east",
+      "frame": 0,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-body128",
+      "id": "run",
+      "dir": "east",
+      "frame": 0,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-body128",
+      "id": "run",
+      "dir": "west",
+      "frame": 0,
+      "swapHip": false,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-body128",
+      "id": "run",
+      "dir": "west",
+      "frame": 0,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    },
+    {
+      "tag": "projected-body128",
+      "id": "death",
+      "dir": "west",
+      "frame": 5,
+      "swapHip": true,
+      "before": false,
+      "after": true
+    }
+  ],
+  "counts": {
+    "stored": 17,
+    "authored": 135,
+    "projected": 72
+  }
+}

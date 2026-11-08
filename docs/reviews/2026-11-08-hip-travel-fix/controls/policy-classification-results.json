@@ -1,0 +1,15 @@
+{
+  "pin": "c1024a0c",
+  "baselineHash": "47bef0f67621e6e0b8faea8bbadd476454a0877add4aba9cc4c8579922dd18b9",
+  "candidateHash": "48f7b838d12b2091145d4ca14a63eb956f9e00c7867bd6925364b17ce26b55bf",
+  "candidate": "Externally supplied candidate module, identified by source hash",
+  "rowCount": 224,
+  "ordinaryChanges": [],
+  "frameCount": 3740,
+  "frameChanges": [],
+  "counts": {
+    "stored": 17,
+    "authored": 135,
+    "projected": 72
+  }
+}

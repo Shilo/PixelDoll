@@ -1,0 +1,268 @@
+{
+  "baseline": "c1024a0c",
+  "integrationBase": "aa222267",
+  "node": "v24.22.1",
+  "ownedTestedFiles": {
+    "app/src/lib/items/items.ts": "48f7b838d12b2091145d4ca14a63eb956f9e00c7867bd6925364b17ce26b55bf",
+    "app/src/lib/items/qa-summary.ts": "cabdfea7fd99dbeb21ccbba9de17f7a6f8d4231d18ae74a4d934a476063fbfff",
+    "app/src/studio/model.ts": "48339a7bcdd8c07042045e58bd922e290be76c1710650f0bb40c84943b0e52ea",
+    "app/test/e2e/studio.spec.ts": "dc8679284ffc72a1d33bfcb7090c7bb1cd8531262de891b2f9fc87043ce2db93",
+    "app/test/unit/motion-review.test.ts": "7e863d4c6dc1c7b295aa31525ac95919191ee009b1a5e7b588c662070597a39b",
+    "app/test/fixtures/motion-review.json": "cab007f60f8f7a07106ac2c4bf7faafef075412a2e0ee61488a65061fd9520ca"
+  },
+  "manifestTestedSha256": "cffbff2c86fc3e8f95b602a46ae5a3855966ed0d5f55c6c91ee1089b4851f3cb",
+  "classificationBlockSha256": "9bbb8bda8ff6088682fe95fe3d90607f2f6ed16a4c56f514eb7b73df0e171c14",
+  "classificationBlockByteIdentical": true,
+  "exits": {
+    "check": 0,
+    "unitInitial": 1,
+    "unit": 0,
+    "bench": 0,
+    "focused": 0,
+    "pairedRegression": 1,
+    "firstFullBrowser": 1,
+    "isolatedCrashReplay": 0,
+    "integrationCheck": 0,
+    "integrationUnitDefault": 1,
+    "integrationUnitOneWorker": 0,
+    "integrationBench": 0,
+    "integrationFullBrowser": 0
+  },
+  "logs": {
+    "check": {
+      "path": "app/test-results-hip-travel-check.log",
+      "sha256": "32fa0e82c36fb0da0dfe290d2feacdf3bf5030352b2a987c9b25d5cd47c5e0e1",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "svelte-check found 0 errors and 0 warnings"
+      ]
+    },
+    "unit-initial": {
+      "path": "app/test-results-hip-travel-unit-initial.log",
+      "sha256": "3e20b4a03618983862806ddecce65072cef3313af7411aa0452748fdd59b6665",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+        " Test Files  1 failed | 169 passed (170)",
+        "      Tests  1 failed | 2041 passed | 1 skipped (2043)",
+        "   Duration  13.72s (transform 16.43s, setup 0ms, import 40.78s, tests 76.43s, environment 11ms)"
+      ]
+    },
+    "unit": {
+      "path": "app/test-results-hip-travel-unit.log",
+      "sha256": "061225e4472012ee1100eb20bec43797bab94a660eea4d155871d51ef448cf3a",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        " Test Files  170 passed (170)",
+        "      Tests  2042 passed | 1 skipped (2043)",
+        "   Duration  13.69s (transform 15.93s, setup 0ms, import 39.98s, tests 74.73s, environment 10ms)"
+      ]
+    },
+    "bench": {
+      "path": "app/test-results-hip-travel-bench.log",
+      "sha256": "510dffac0dd0129d1e785fb56756e0eaa6078b085f05645138acdd916b4a10c1",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "a-helmet           ok | keep – exact – | drop 0.0 % (0/39) | fails 1 warn 0",
+        "a-cape             ok | keep – exact – | drop – | fails 2 warn 2",
+        "a-chest            ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-boots            ok | keep – exact – | drop – | fails 0 warn 32",
+        "a-hair             ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-sword96          ok | keep 89.6 % (43/48) exact 89.6 % (43/48) | drop – | fails 0 warn 3",
+        "a-axe96            ok | keep 91.7 % (44/48) exact 91.7 % (44/48) | drop – | fails 1 warn 1",
+        "a-jester-magenta   ok | keep 100.0 % (202/202) exact 0.0 % (0/202) | drop – | fails 3 warn 0",
+        "a-jester-blue      ok | keep 100.0 % (255/255) exact 100.0 % (255/255) | drop – | fails 0 warn 0",
+        "b-tunic            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-cloak            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-jester           ok | keep 9.4 % (620/6564) exact 0.0 % (0/6564) | drop – | fails 40 warn 0",
+        "b-jester-blue      ok | keep 100.0 % (7992/7992) exact 100.0 % (7992/7992) | drop – | fails 0 warn 0",
+        "n-cloak128         ok | keep – exact – | drop – | fails 1 warn 0",
+        "c-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-bow96            ok | keep 100.0 % (11/11) exact 45.5 % (5/11) | drop – | fails 1 warn 1",
+        "a-plume-azure      ok | keep 100.0 % (212/212) exact 100.0 % (212/212) | drop – | fails 0 warn 0",
+        "a-stripes-azure    ok | keep 100.0 % (152/152) exact 100.0 % (152/152) | drop – | fails 0 warn 0",
+        "a-stripes-magenta  ok | keep – exact – | drop – | fails 0 warn 0"
+      ]
+    },
+    "focused": {
+      "path": "app/test-results-hip-travel-focused.log",
+      "sha256": "785ba3a109f54f6e3dd1cdb8b8f32efc28b860bb5fc934282111dcd9d4ff481d",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": []
+    },
+    "regression": {
+      "path": "app/test-results-hip-travel-regression.log",
+      "sha256": "975f9d0752fc097fae2ef278496e4299e01773b076b68e80bac19d0bba89c33e",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": []
+    },
+    "browser": {
+      "path": "app/test-results-hip-travel-browser.log",
+      "sha256": "953e5212e99daaaa3a252aa8377ad072931e752326d01c6bc836d49c0ddee741",
+      "passingBrowserBodies": 247,
+      "failingBrowserBodies": 1,
+      "summaries": [
+        "Running 248 tests using 4 workers",
+        "  247 passed (6.4m)"
+      ]
+    },
+    "crash-replay": {
+      "path": "app/test-results-hip-travel-crash-replay.log",
+      "sha256": "dfd5f0cbae31ba98a73997f819ddf4d2e57fbe9225bfe50e94015eb43fa8cd9e",
+      "passingBrowserBodies": 1,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "  1 passed (8.5s)"
+      ]
+    },
+    "integration-check": {
+      "path": "app/test-results-hip-travel-integration-check.log",
+      "sha256": "80e2fb51c07ccbed6543540ba0c0d8d8e8dd0ee623d3f16201e8180f781288c8",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "svelte-check found 0 errors and 0 warnings"
+      ]
+    },
+    "integration-unit": {
+      "path": "app/test-results-hip-travel-integration-unit.log",
+      "sha256": "839e1a4153bddd7ef07d486996bdfa5da6fd74147b7ea9da9af234ef2259465f",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯",
+        "Error: Test timed out in 20000ms.",
+        " Test Files  1 failed | 169 passed (170)",
+        "      Tests  1 failed | 2045 passed | 1 skipped (2047)",
+        "   Duration  25.84s (transform 26.41s, setup 0ms, import 65.44s, tests 145.51s, environment 17ms)"
+      ]
+    },
+    "integration-unit-serial": {
+      "path": "app/test-results-hip-travel-integration-unit-serial.log",
+      "sha256": "c78691c99808aebd1a421a95e23b2598f6a18b297448c5583a8b4b06ddfbdcad",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        " Test Files  170 passed (170)",
+        "      Tests  2046 passed | 1 skipped (2047)",
+        "   Duration  105.00s (transform 9.10s, setup 0ms, import 22.03s, tests 57.68s, environment 9ms)"
+      ]
+    },
+    "integration-bench": {
+      "path": "app/test-results-hip-travel-integration-bench.log",
+      "sha256": "510dffac0dd0129d1e785fb56756e0eaa6078b085f05645138acdd916b4a10c1",
+      "passingBrowserBodies": 0,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "a-helmet           ok | keep – exact – | drop 0.0 % (0/39) | fails 1 warn 0",
+        "a-cape             ok | keep – exact – | drop – | fails 2 warn 2",
+        "a-chest            ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-boots            ok | keep – exact – | drop – | fails 0 warn 32",
+        "a-hair             ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-sword96          ok | keep 89.6 % (43/48) exact 89.6 % (43/48) | drop – | fails 0 warn 3",
+        "a-axe96            ok | keep 91.7 % (44/48) exact 91.7 % (44/48) | drop – | fails 1 warn 1",
+        "a-jester-magenta   ok | keep 100.0 % (202/202) exact 0.0 % (0/202) | drop – | fails 3 warn 0",
+        "a-jester-blue      ok | keep 100.0 % (255/255) exact 100.0 % (255/255) | drop – | fails 0 warn 0",
+        "b-tunic            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-cloak            ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "b-jester           ok | keep 9.4 % (620/6564) exact 0.0 % (0/6564) | drop – | fails 40 warn 0",
+        "b-jester-blue      ok | keep 100.0 % (7992/7992) exact 100.0 % (7992/7992) | drop – | fails 0 warn 0",
+        "n-cloak128         ok | keep – exact – | drop – | fails 1 warn 0",
+        "c-greathelm        ok | keep – exact – | drop – | fails 0 warn 0",
+        "a-bow96            ok | keep 100.0 % (11/11) exact 45.5 % (5/11) | drop – | fails 1 warn 1",
+        "a-plume-azure      ok | keep 100.0 % (212/212) exact 100.0 % (212/212) | drop – | fails 0 warn 0",
+        "a-stripes-azure    ok | keep 100.0 % (152/152) exact 100.0 % (152/152) | drop – | fails 0 warn 0",
+        "a-stripes-magenta  ok | keep – exact – | drop – | fails 0 warn 0"
+      ]
+    },
+    "integration-browser": {
+      "path": "app/test-results-hip-travel-integration-browser.log",
+      "sha256": "3a0060e3cda2838d78051e7a7e9f1b1009dbfc9c065eb2c60c90585471f738c9",
+      "passingBrowserBodies": 248,
+      "failingBrowserBodies": 0,
+      "summaries": [
+        "Running 248 tests using 2 workers",
+        "  248 passed (7.3m)"
+      ]
+    }
+  },
+  "pairedRegression": [
+    {
+      "path": "docs/reviews/2026-11-08-hip-travel-fix/temp.local/regression-before/motion-review.test.ts",
+      "tests": [
+        {
+          "title": "one wrong hip cannot silently waive a held-item reversal, and review never authorizes a retry",
+          "status": "failed"
+        },
+        {
+          "title": "clean art, declared actions and ordinary locomotion retain their policies",
+          "status": "passed"
+        },
+        {
+          "title": "unsigned turns, shape changes and size changes become review, never new hard failures",
+          "status": "failed"
+        },
+        {
+          "title": "a change only at the loop seam receives one durable review note",
+          "status": "failed"
+        },
+        {
+          "title": "size variation below the existing check limit does not create a motion review",
+          "status": "passed"
+        },
+        {
+          "title": "acceptance, JSON reload and replacement preserve only the current motion reviews",
+          "status": "failed"
+        },
+        {
+          "title": "the saved review reason survives an editable ZIP export and import",
+          "status": "failed"
+        }
+      ]
+    },
+    {
+      "path": "docs/reviews/2026-11-08-hip-travel-fix/temp.local/regression-after/motion-review.test.ts",
+      "tests": [
+        {
+          "title": "one wrong hip cannot silently waive a held-item reversal, and review never authorizes a retry",
+          "status": "passed"
+        },
+        {
+          "title": "clean art, declared actions and ordinary locomotion retain their policies",
+          "status": "passed"
+        },
+        {
+          "title": "unsigned turns, shape changes and size changes become review, never new hard failures",
+          "status": "passed"
+        },
+        {
+          "title": "a change only at the loop seam receives one durable review note",
+          "status": "passed"
+        },
+        {
+          "title": "size variation below the existing check limit does not create a motion review",
+          "status": "passed"
+        },
+        {
+          "title": "acceptance, JSON reload and replacement preserve only the current motion reviews",
+          "status": "passed"
+        },
+        {
+          "title": "the saved review reason survives an editable ZIP export and import",
+          "status": "passed"
+        }
+      ]
+    }
+  ],
+  "tracking": "https://github.com/users/Shilo/projects/7?pane=issue&itemId=297488640",
+  "scope": "Only owned QA policy/presentation/schema field and tests; classifier, requests, pixels and other agents work unchanged.",
+  "transport": "No real PixelLab calls. Node review preload, offline browser wrapper, keyless loopback servers and workspace TEMP/TMP."
+}

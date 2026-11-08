@@ -1,0 +1,7 @@
+import {readFileSync,writeFileSync}from'node:fs';import{fileURLToPath,pathToFileURL}from'node:url';
+import{before,rest,rig,angle,pelvis}from'./probe.mts';
+const here=fileURLToPath(new URL('./',import.meta.url)),median=await import(pathToFileURL(here+'temp.local/median/app/src/lib/items/items.ts').href),{hasAll}=await import(pathToFileURL(here+'temp.local/before/app/src/lib/rig/poses.ts').href);
+const upper=rest.filter((p:any)=>/NOSE|NECK|SHOULDER|ELBOW|ARM|EYE|EAR/.test(p.label)).map((p:any)=>p.label);
+const lean=(p:any[],deg:number)=>{const t=deg*Math.PI/180,c=Math.cos(t),s=Math.sin(t);return p.map(q=>{if(!upper.includes(q.label))return{...q};const dx=q.x-.5,dy=q.y-.625;return{...q,x:.5+dx*c-dy*s,y:.625+dx*s+dy*c};});};
+const changed:any[]=[];let cases=0;outer:for(const bend of[-35,-25,-15,15,25,35])for(let shoulder=-180;shoulder<=180;shoulder+=4)for(let elbow=-180;elbow<=180;elbow+=4){let p=angle(rest,'RIGHT SHOULDER',['RIGHT ELBOW','RIGHT ARM'],shoulder);p=angle(p,'RIGHT ELBOW',['RIGHT ARM'],elbow);p=lean(p,bend);for(const tilt of[-30,0,30]){const frame=pelvis(p,tilt);if(!hasAll(frame))continue;cases++;const r=rig(frame),b=before.decisiveAction(r,'run-slash','south'),m=median.decisiveAction(r,'run-slash','south');if(b!==m){changed.push({bend,shoulder,elbow,tilt,before:b,median:m,frame});if(changed.length===4)break outer;}}}
+writeFileSync(here+'median-stress-results.json',JSON.stringify({cases,changed},null,2)+'\n');console.log(JSON.stringify({cases,changes:changed.map(({frame,...r})=>r)}));

@@ -1,0 +1,13 @@
+import {readFileSync,writeFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {createHash} from 'node:crypto';
+import assert from 'node:assert/strict';
+const here=fileURLToPath(new URL('./',import.meta.url)),root=fileURLToPath(new URL('../../../../',import.meta.url));
+const path=process.argv[2];if(!path)throw new Error('Pass the complete candidate items.ts path');
+const before=execFileSync('git',['show','c1024a0c:app/src/lib/items/items.ts'],{cwd:root,encoding:'utf8'}),after=readFileSync(path,'utf8');
+const block=s=>s.slice(s.indexOf('export function decisiveAction('),s.indexOf('export const GATES',s.indexOf('export function decisiveAction(')));
+assert(before.includes('export function decisiveAction(')&&after.includes('export function decisiveAction('));assert.equal(block(before),block(after));
+const sha=s=>createHash('sha256').update(s).digest('hex');
+const result={baselinePin:'c1024a0c',candidateSourceSha256:sha(after),classificationBlockSha256:sha(block(after)),classifierAndNameRuleByteIdentical:true,scope:'decisiveAction and isAction, including existing thresholds and name fallback'};
+writeFileSync(here+'source-results.json',JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result));

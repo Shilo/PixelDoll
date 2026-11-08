@@ -1,0 +1,13 @@
+import{readFileSync,writeFileSync}from'node:fs';import{fileURLToPath,pathToFileURL}from'node:url';import assert from'node:assert/strict';
+import{before,candidate,rest}from'./probe.mts';
+const here=fileURLToPath(new URL('./',import.meta.url)),{makeImg}=await import(pathToFileURL(here+'temp.local/before/app/src/lib/image/png.ts').href),hit=JSON.parse(readFileSync(here+'false-clear-results.json','utf8')).hits[0];
+const pos=(p:any[],label:string)=>p.find(q=>q.label===label);
+function run(m:any,bad:boolean,flip:boolean,source:any=hit,id='run',worldAngle:number|null=null){const frame=source.frame??source.requested,frames=[rest,rest,frame,rest],measured=[rest,rest,bad?source.measured:frame,rest],rig:any={cell:{w:64,h:64},pivot:{x:32,y:60},baseItem:'body',baseHash:'sha256:test',directions:[{id:'south'}],rest:{south:{image:'sha256:test',keypoints:rest}},animations:[{id,cells:4,loop:false,frames:frames.map((_,cell)=>({cell,ms:100})),sources:{south:{route:'skeleton-v3',reference:'sha256:test',keypoints:frames,measured,provenance:[]}}}]};
+ const cells=frames.map((p:any[],i:number)=>{const wr=pos(p,'RIGHT ARM'),el=pos(p,'RIGHT ELBOW'),t=(worldAngle??(Math.atan2(wr.y-el.y,wr.x-el.x)-Math.PI/2))+(flip&&i===2?Math.PI:0),base=makeImg(64,64),layer=makeImg(64,64),mask=new Uint8Array(4096);for(let s=0;s<16;s+=.25)for(const o of[-.5,.5]){const x=Math.floor(wr.x*64+s*Math.sin(t)+o*Math.cos(t)),y=Math.floor(wr.y*64-s*Math.cos(t)+o*Math.sin(t));assert(x>=0&&x<64&&y>=0&&y<64);const q=y*64+x;mask[q]=1;layer.data.set(s>12?[235,170,35,255]:[130,80,40,255],q*4);}return{key:`${id}/south/${i}`,call:0,base,input:base,out:layer,layer,mask,area:mask.reduce((a,b)=>a+b,0),outBand:0,baseBand:0,specks:0,pinholes:0,shifted:false,offset:[0,0],stray:0,posed:true};});
+ const q=m.itemQa(rig,m.slotOf('main_hand'),'green',cells,0);return{action:m.isAction(`${id}/south`,rig),status:q.qa.status,failures:[...q.failCalls.values()].flat(),warnings:q.warnings,qa:q.qa,rig,softCalls:[...q.softCalls.values()].flat()};}
+const rows=[];for(const bad of[false,true])for(const flip of[false,true])rows.push({bad,flip,before:run(before,bad,flip),minAnchors:run(candidate,bad,flip)});
+assert(rows.find(x=>!x.bad&&x.flip)!.before.failures.some((s:any)=>s.startsWith('G9')));assert.equal(rows.find(x=>x.bad&&x.flip)!.minAnchors.status,'pass');
+const summary=(r:any)=>({action:r.action,status:r.status,failures:r.failures,warnings:r.warnings});
+const compact=rows.map(r=>({...r,before:summary(r.before),minAnchors:summary(r.minAnchors)}));
+writeFileSync(here+'false-clear-qa-results.json',JSON.stringify({fixture:{...hit,frame:undefined,measured:undefined},rows:compact},null,2)+'\n');console.log(JSON.stringify(compact));
+export{run,hit};

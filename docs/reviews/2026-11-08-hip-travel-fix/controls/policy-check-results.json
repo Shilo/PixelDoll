@@ -1,0 +1,22 @@
+{
+  "cases": 1080,
+  "changed": 176,
+  "candidateHash": "48f7b838d12b2091145d4ca14a63eb956f9e00c7867bd6925364b17ce26b55bf",
+  "allClassifierAndHardFailureAssertionsPassedInProbe": true,
+  "unchanged": [
+    "ordinary action names",
+    "clean equipment",
+    "normal rest motion",
+    "all-empty clips",
+    "unobservable short-item reversals",
+    "non-held item rotations"
+  ],
+  "reviewed": [
+    "residual hip-error reversal",
+    "residual size variation",
+    "strong gait-named action reversal",
+    "strong gait-named action size variation"
+  ],
+  "duplicateCountControl": "Each native review case retains exactly one total and one per-clip motionReviewClips count",
+  "retrySignalControl": "Native summary cases have no softCalls entries; this is not a queue-level paid-request test"
+}

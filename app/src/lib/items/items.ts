@@ -1087,7 +1087,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
 
   // per clip: presence, stability, placement, handedness
   const clips: ClipQa[] = [];
-  let heldLoopReviewClips = 0, heldHangReviewClips = 0;
+  let heldLoopReviewClips = 0, heldHangReviewClips = 0, motionReviewClips = 0;
   const byClip = new Map<string, CellOut[]>(), grip = { R: 0, L: 0, amb: 0, none: 0 };
   for (const c of cells) { const k = c.key.split('/').slice(0, 2).join('/'); (byClip.get(k) ?? (byClip.set(k, []), byClip.get(k)!)).push(c); }
   // wrists: the clip's requested keypoints (what the item was posed with, S5 gripSide), else the tracked hand anchors.
@@ -1100,6 +1100,16 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
   };
   for (const [clip, cs] of byClip) {
     const [a, d] = clip.split('/'), areas = cs.map((c) => c.area), med = median(areas);
+    const action = isAction(clip, rig), motionOverride = action && !isAction(clip);
+    let motionReviewed = false;
+    // Motion can override a gait label, but a bad joint can supply that evidence too. Review observable item changes
+    // instead of guessing which animation was intended or declaring valid action art broken. Never authorize a retry.
+    const reviewMotion = () => {
+      if (motionReviewed) return;
+      motionReviewed = true;
+      motionReviewClips++;
+      warnings.push(`G16 ${clip}: item size or angle changes while motion overrides a gait label; check that the change is intended`);
+    };
     const rawR = handTrack('hand_r', a, d), rawL = handTrack('hand_l', a, d);
     if (slot.class === 'held') {
       const observed = cs.filter(c => c.rawKeyOutside);
@@ -1150,17 +1160,18 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     else if (!med) (hidden.has(d) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(hidden.has(d) ? `G4 ${clip}: no item in this view, as in its dressed view; check that the view hides it` : `G4 ${clip}: item missing`);
     // S5: a held item swung behind the body in a back-view action is true occlusion -> review, not re-roll
     else if (minRatio < GATES.areaRatio && slot.class === 'held' && hiddenExplainsLoss()) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
-    else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && isAction(clip, rig) ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
+    else if (minRatio < GATES.areaRatio) (slot.class === 'held' && d.startsWith('north') && action ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G4 ${clip}: min area ${(minRatio * 100).toFixed(0)} % of median`);
     // a standard deviation under 2 px is drawing noise, not a lost part (round 5: earrings 5–10 px per frame read as CV 0.19)
-    if (cv > cvMax && cv * (areas.reduce((s, x) => s + x, 0) / areas.length) >= 2 && !isAction(clip, rig)) {
+    if (cv > cvMax && cv * (areas.reduce((s, x) => s + x, 0) / areas.length) >= 2 && (!action || motionOverride)) {
       const ref = cs.reduce((big, c) => c.area > big.area ? c : big), ri = +ref.key.split('/')[2];
       const visibility = wrist && cs.map((c) => heldVisibility(ref, c, wrist[ri], wrist[+c.key.split('/')[2]]));
       // The largest observed silhouette is only a reference, not an invented full shield. If hidden pixels explain
       // the area variation, stop paid G5 retries but retain an explicit review warning and the original QA metrics.
       if (visibility?.every((v) => v.compatible) && visibility.some((v) => v.hiddenB) && cvOf(cs.map((c, i) => c.area + visibility[i].hiddenB)) <= cvMax)
-        { if (!warnings.some((m) => m.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`); }
+        { if (!action && !warnings.some((m) => m.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`); }
       // A held flag waves and a flame flickers while the part in the hand stays the same: review, not a failure (2026-11-07
       // audit: a waving banner failed 6 of 6 clips, a flickering torch 4 of 6). A shield that shrinks changes at the grip too.
+      else if (motionOverride) reviewMotion();
       else (slot.class === 'held' && steadyGrip() ? (m: string) => warnings.push(m) : (m: string) => flag(cs[0].call, m))(`G5 ${clip}: area CV ${cv.toFixed(2)} > ${cvMax.toFixed(2)}`);
     }
     // placement: centroid spread relative to the slot anchor (info)
@@ -1203,7 +1214,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     // instead (a flip changes it, a swing does not). Near-round shields have no reliable axis: compare those
     // pairs by IoU, as on the anchor route, so a large silhouette change cannot slip through either.
     const fore = clipKeypoints(rig, a, d as DirectionName)?.map((f) => { const lab = slot.anchor === 'hand_l' ? 'LEFT' : 'RIGHT', e = kpAt(f, [`${lab} ELBOW`], rig.cell, 0)!, wr = kpAt(f, [`${lab} ARM`], rig.cell, 0)!; return Math.atan2(wr[1] - e[1], wr[0] - e[0]); });
-    const checkShape = slot.class === 'held' && !isAction(clip, rig);
+    const checkShape = slot.class === 'held' && (!action || motionOverride);
     // Hanging, physically: the item lies below the hand (centroid at least half its reach lower than the wrist) along a
     // near-vertical axis (within 25 degrees). A strapped shield or a bow held at its middle does not hang, so a shield
     // that fails to turn with the arm still fails G9 (2026-11-07: the saved east-walk shield control).
@@ -1255,8 +1266,11 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
         const visibility = wrist && heldVisibility(c, n, wrist[j], wrist[k]);
         if (visibility?.compatible && visibility.hiddenA + visibility.hiddenB > 0) { occluded = true; return; }
         if (seam && turn <= GATES.heldTurn && shapeIoU >= GATES.heldIoU) {
-          heldLoopReviewClips++;
-          warnings.push(`G9 ${clip}: the held item changes shape or angle when the move loops`);
+          if (motionOverride) reviewMotion();
+          else {
+            heldLoopReviewClips++;
+            warnings.push(`G9 ${clip}: the held item changes shape or angle when the move loops`);
+          }
         }
       }
       if (seam) return;
@@ -1266,10 +1280,15 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
     for (let i = 1; i < frames.length; i++) checkTransition(frames[i - 1], frames[i]);
     // The playback seam is useful to inspect but never a hard failure of the interior animation.
     if (animation?.loop && frames.length > 1) checkTransition(frames.at(-1)!, frames[0], true);
-    if (occluded && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
-    if (turn > GATES.heldTurn) flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
-    else if (hangs && ++heldHangReviewClips) warnings.push(`G9 ${clip}: the held item keeps its own angle while the hand swings; check that it should hang or sway`);
-    if (shapeIoU < GATES.heldIoU) flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
+    if (occluded && !action && !warnings.some((s) => s.startsWith(`Occlusion ${clip}:`))) warnings.push(`Occlusion ${clip}: the body may hide part of the item; inspect its size and shape before keeping it`);
+    if (turn > GATES.heldTurn) {
+      if (motionOverride) reviewMotion();
+      else flag(cs[0].call, `G9 ${clip}: the item turns ${turn.toFixed(0)}° against the hand between frames`);
+    } else if (hangs && !action && ++heldHangReviewClips) warnings.push(`G9 ${clip}: the held item keeps its own angle while the hand swings; check that it should hang or sway`);
+    if (shapeIoU < GATES.heldIoU) {
+      if (motionOverride) reviewMotion();
+      else flag(cs[0].call, `G9 ${clip}: shape jump (aligned IoU ${shapeIoU.toFixed(2)})`);
+    }
     clips.push({ clip, call: cs[0].call, median: med, cv: +cv.toFixed(3), baseCv: +baseCv.toFixed(3), minIoU: +minIoU.toFixed(2), minRatio: +minRatio.toFixed(2), hand, spread: +spread.toFixed(1) });
   }
   // G8: every clip holds the item in the same hand (majority over clips; the slot anchor names the expected one)
@@ -1312,6 +1331,7 @@ function evaluateQa(rig: Rig, slot: Slot, route: Route, cells: CellOut[], reroll
       ...(slot.class === 'held' && cells.some(c => c.rawKeyOutside) ? { rawKeyReviewFrames: cells.filter(c => c.rawKeyOutside).length } : {}),
       ...(heldLoopReviewClips ? { heldLoopReviewClips } : {}),
       ...(heldHangReviewClips ? { heldHangReviewClips } : {}),
+      ...(motionReviewClips ? { motionReviewClips } : {}),
     },
     clips, failCalls: fail, softCalls, warnings, paletteDist, splitExact,
   };

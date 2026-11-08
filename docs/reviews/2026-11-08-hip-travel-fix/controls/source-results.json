@@ -1,0 +1,7 @@
+{
+  "baselinePin": "c1024a0c",
+  "candidateSourceSha256": "48f7b838d12b2091145d4ca14a63eb956f9e00c7867bd6925364b17ce26b55bf",
+  "classificationBlockSha256": "9bbb8bda8ff6088682fe95fe3d90607f2f6ed16a4c56f514eb7b73df0e171c14",
+  "classifierAndNameRuleByteIdentical": true,
+  "scope": "decisiveAction and isAction, including existing thresholds and name fallback"
+}

@@ -175,6 +175,7 @@ export function plainReason(s: string): string {
   if (s.startsWith('G13 ')) return 'The waist band differs from the standing design; inspect the clothing';
   if (s.startsWith('G14 ')) return 'Some frames resemble the opposite view; inspect the torso';
   if (s.startsWith('G15 ')) return 'A detail of the design is missing or recolored in some frames';
+  if (s.startsWith('G16')) return "Check the item's size and angle as it moves";
   if (s.startsWith('G11 ')) return 'Some lower clothing is missing compared with the standing design';
   if (s.startsWith('G12 ')) return 'Footwear differs from the standing design; inspect the feet';
   if (s.startsWith('G2') || s.startsWith('G3')) return 'Some body pixels were changed by the model';
@@ -220,6 +221,7 @@ export function qaReasons(q: ItemQa, held: boolean, skeleton: boolean, rig?: Rig
   if (q.detailReviewFrames) r.push('G15 design detail');
   if (q.heldLoopReviewClips) r.push('The held item changes shape or angle when a move loops');
   if (q.heldHangReviewClips) r.push('The held item hangs or sways instead of turning with the hand; check that it should');
+  if (q.motionReviewClips) r.push(plainReason('G16'));
   if (q.unmeasured) return [...new Set(r.map(plainReason))];
   // Skeleton-posed drafts gate every cell, standing views included, at the posed limit (run.ts kOut); older routes by cell.
   const posed = (clip: string | null) => skeleton || Object.entries(q.cells).some(([k, c]) => (clip === null || k.startsWith(`${clip}/`)) && c.route === 'posed');

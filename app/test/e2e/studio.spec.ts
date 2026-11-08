@@ -1601,7 +1601,7 @@ test('accepted held-item review reasons survive actual reload without claiming a
     await s.copyDemo()
     const rec = await db.get('projects', s.doc.id), item = rec.manifest.items.find((it: { slot: string }) => it.slot === 'main_hand')
     const part = { minKeyKept: 1, maxKeyOutside: 0, minAreaRatio: 1, maxAreaCV: 0, maxPaletteDist: 0, clipPx: 0, status: 'accepted' }
-    item.qa = { ...part, rerolls: 0, cells: {}, handedness: 'ok', grip: { R: 4, L: 0, amb: 4, none: 4 }, clips: {
+    item.qa = { ...part, motionReviewClips: 1, rerolls: 0, cells: {}, handedness: 'ok', grip: { R: 4, L: 0, amb: 4, none: 4 }, clips: {
       'idle/west': { ...part, hand: '?', grip: { R: 0, L: 0, amb: 4, none: 0 } },
       'idle/north': { ...part, grip: { R: 0, L: 0, amb: 0, none: 0 } },
       'idle/east': { ...part, hand: '?', grip: { R: 0, L: 0, amb: 0, none: 4 } },
@@ -1618,6 +1618,7 @@ test('accepted held-item review reasons survive actual reload without claiming a
   await expect(pane.getByText('The grip side is unclear; check the intended hand (idle, west)', { exact: true })).toBeVisible()
   await expect(pane.getByText('Handedness could not be confirmed; inspect the intended hand (idle, north)', { exact: true })).toBeVisible()
   await expect(pane.getByText('The grip could not be confirmed; inspect the item at the hand', { exact: true })).toBeVisible()
+  await expect(pane.getByText("Check the item's size and angle as it moves", { exact: true })).toBeVisible()
   await expect(pane.getByText('The item switches hands', { exact: true })).toHaveCount(0)
   await expect(pane.getByText(/Hand positions are unavailable/)).toHaveCount(0)
   expect(requests).toEqual([])

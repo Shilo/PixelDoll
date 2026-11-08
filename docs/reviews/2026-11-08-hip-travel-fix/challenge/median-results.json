@@ -1,0 +1,48 @@
+{
+  "residual": [
+    {
+      "before": true,
+      "median": false
+    },
+    {
+      "before": true,
+      "median": false
+    },
+    {
+      "before": true,
+      "median": false
+    }
+  ],
+  "minCounterexample": [
+    {
+      "shoulder": -180,
+      "elbow": -54,
+      "tilt": -40,
+      "before": true,
+      "median": true
+    },
+    {
+      "shoulder": -180,
+      "elbow": -54,
+      "tilt": -30,
+      "before": true,
+      "median": true
+    },
+    {
+      "shoulder": -180,
+      "elbow": -54,
+      "tilt": -20,
+      "before": true,
+      "median": true
+    },
+    {
+      "shoulder": -180,
+      "elbow": -54,
+      "tilt": 20,
+      "before": true,
+      "median": true
+    }
+  ],
+  "cases": 41405,
+  "changes": []
+}

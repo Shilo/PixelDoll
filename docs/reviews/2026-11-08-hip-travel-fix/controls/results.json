@@ -1,0 +1,169 @@
+{
+  "pin": "c1024a0c",
+  "baselineHash": "47bef0f67621e6e0b8faea8bbadd476454a0877add4aba9cc4c8579922dd18b9",
+  "candidateHash": "073728858092d3c340bfc28e792845fece141a0148c658423db6cace884bd46d",
+  "candidate": "Per-joint minimum over midpoint and both individual-hip translations; same thresholds and all other checks unchanged",
+  "rowCount": 224,
+  "ordinaryChanges": [],
+  "frameCount": 3740,
+  "frameChanges": [
+    {
+      "tag": "authored-B",
+      "id": "slash",
+      "dir": "south-east",
+      "frame": 3,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "authored-B",
+      "id": "cast",
+      "dir": "west",
+      "frame": 4,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "authored-B",
+      "id": "slash",
+      "dir": "south-west",
+      "frame": 3,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "authored-C",
+      "id": "slash",
+      "dir": "east",
+      "frame": 3,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "authored-C",
+      "id": "cast",
+      "dir": "west",
+      "frame": 4,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "authored-N",
+      "id": "slash",
+      "dir": "south-east",
+      "frame": 3,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "authored-N",
+      "id": "slash",
+      "dir": "north-east",
+      "frame": 3,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "authored-N",
+      "id": "cast",
+      "dir": "west",
+      "frame": 4,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "authored-N",
+      "id": "slash",
+      "dir": "south-west",
+      "frame": 3,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-c27man",
+      "id": "death",
+      "dir": "east",
+      "frame": 5,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-c27man",
+      "id": "death",
+      "dir": "north",
+      "frame": 5,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "run",
+      "dir": "south",
+      "frame": 0,
+      "swapHip": false,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "run",
+      "dir": "south",
+      "frame": 11,
+      "swapHip": false,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-chibi",
+      "id": "attack",
+      "dir": "east",
+      "frame": 5,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-body128",
+      "id": "death",
+      "dir": "south",
+      "frame": 5,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-body128",
+      "id": "death",
+      "dir": "east",
+      "frame": 5,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    },
+    {
+      "tag": "projected-body128",
+      "id": "death",
+      "dir": "north",
+      "frame": 5,
+      "swapHip": true,
+      "before": true,
+      "after": false
+    }
+  ],
+  "counts": {
+    "stored": 17,
+    "authored": 135,
+    "projected": 72
+  }
+}

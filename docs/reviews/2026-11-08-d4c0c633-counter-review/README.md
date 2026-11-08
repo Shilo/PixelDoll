@@ -57,6 +57,8 @@ The gates reviewer independently reproduces actual reversed-item passes at `50ee
 
 This is a real older deterministic false negative, not harmless merely because it predates this commit. It does not refute the isolated N1 lean correction and was not introduced by R1's fix. Its error is large, its fixture synthetic, and the empty-body gate harness does not independently qualify source-body review for it. It remains uncorrected here; fixing it requires separately qualifying the travel/rise translation origin against genuine slashes, jumps and moving-pelvis actions. Do not copy the rigid-pivot rule into those metrics without those controls. This delivery claims a narrow R1 correction, not removal of every known joint-estimate ambiguity.
 
+**Follow-up:** the [hip-travel solution challenge](../2026-11-08-hip-travel-fix/README.md) subsequently rejects unsafe origin replacements and closes the tested silent item-check waivers with durable review notes. It preserves animation classification rather than claiming to repair every joint estimate.
+
 ## Validation, failures and skips
 
 Pinned Node 24.22.1, existing dependencies, no install. [prepare-snapshot.mjs](prepare-snapshot.mjs) exports tracked source and fixtures, excludes private `.env` and unrelated uncommitted files, and writes an offline Playwright wrapper inside ignored snapshots. `--fixed` overlays only the owned classifier function and regression test file. No worktree was reverted or stashed.

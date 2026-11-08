@@ -1,0 +1,12 @@
+{
+  "baseline": "c1024a0cfc8f74b6b94583d8c493ad6d893298ef",
+  "overlay": "None",
+  "files": {
+    "app/src/lib/items/items.ts": "47bef0f67621e6e0b8faea8bbadd476454a0877add4aba9cc4c8579922dd18b9",
+    "app/src/lib/items/qa-summary.ts": "34c5db2dbf0598e6c22c39bb82a5e414afe0dc2ceb4ae1814aab2502c96be0c4",
+    "app/src/lib/store/manifest.ts": "0c5c42c6073a2bad0eb5201af0d717d18a81a44a13ac5265f883fe8c16e4e7dd",
+    "app/src/studio/model.ts": "97b03464525906aa8d503f6f41ceb0c4fcf1935a73a1608c4eb61aa2f6793fef"
+  },
+  "dependencies": "Existing dependency junction; no install",
+  "excludes": "Other agents export edits, private .env and untracked files"
+}

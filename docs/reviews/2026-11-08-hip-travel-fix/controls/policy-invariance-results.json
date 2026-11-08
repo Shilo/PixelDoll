@@ -1,0 +1,9 @@
+{
+  "baselinePin": "c1024a0c",
+  "candidateHash": "48f7b838d12b2091145d4ca14a63eb956f9e00c7867bd6925364b17ce26b55bf",
+  "total": 260,
+  "skipped": 12,
+  "baselineChanges": [],
+  "candidateChanges": [],
+  "betweenImplementations": []
+}
