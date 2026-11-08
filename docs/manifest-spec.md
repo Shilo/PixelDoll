@@ -227,7 +227,7 @@ export interface Preset {
 export interface ExportInfo {
   exportedAt: string;
   layout: 'pixeldoll-sheets/1';
-  engines: ('generic' | 'godot' | 'unity' | 'phaser' | 'gdevelop' | 'aseprite')[];
+  engines: ('generic' | 'godot' | 'unity' | 'phaser' | 'gdevelop' | 'aseprite' | 'rpgmaker')[];
   pixelsPerUnit: number;                  // Unity; default = rig.cell.w
   baked?: string[];                       // preset ids with baked composites
   bakedCell?: { w: number; h: number };   // v1.3.1: cell of every baked sheet = union of all exported layers around the pivot
@@ -451,6 +451,8 @@ are preserved; use the character root's depth for positioning among scene object
   gdevelop/   game.json, Paperdoll.js, images/<registered-frame>.png, README.txt
   generic/    <item>_<layer>/<anim>_<dir>_strip<N>.png, README.txt
   aseprite/   <name>.aseprite, README.txt          # B11: layered, zero-code path (§6.5)
+  rpgmaker/   mz-mv/img/characters/$<name>.png, vx-ace-vx/Graphics/Characters/$<name>.png,
+              xp/Graphics/Characters/<name>.png, README.txt   # baked walking sheets per outfit (§6.8)
 ```
 
 Why per-animation sheets: an all-animation sheet passes 4096 px quickly (8 dirs × 12 anims × 64 px [R3]); per-animation sheets are
@@ -585,6 +587,26 @@ Verified [B11]: Aseprite 1.3.18 CLI (batch) reads the file; per-layer frames mat
 - Verified with GDevelop 5.6.285's released editor-core WASM importer, official HTML exporter and shipped GDJS/PIXI runtime
   in Chromium. The portable desktop executable could not launch here because of a crashpad error; desktop UI was not
   exercised. `app/scripts/verify-gdevelop-engine.mjs` reproduces the engine-core/export/runtime checks using a local release.
+
+### 6.8 RPG Maker: baked walking sheets
+
+- One composite per preset, whatever "Include dressed character sheets" says: `<character>` for the first preset (the current
+  look) and `<character>_<outfit>` otherwise. Names are ASCII: accents are dropped (é → e), other characters become `_`, an
+  empty outfit name falls back to its id, collisions get `_2`…, and Windows device names (CON, NUL…) get a trailing `_`. Research and sources:
+  `docs/research/rpg-maker-export-2026-11-07.md`.
+- MZ, MV, VX Ace, VX: `$<name>.png`, 3 × 4 cells; XP: `<name>.png`, 4 × 4 cells. Rows: south, west, east, north (west is the
+  rig's mirrored or generated view; diagonals are dropped). The engines derive the cell from the image size, so the cell is
+  native, never scaled: the art's bounds around the pivot, padded to an even width with the pivot at its center, from the
+  highest opaque row (MV and MZ place balloons from the sprite height) down to the feet line (`bakedPivot.y`), or lower when art hangs below the feet (kept; more than 2 px adds a warning, since the character then
+  stands that much higher; walk frames often dip a pixel or two).
+- Columns: MZ/MV/VX play 1, 2, 1, 0, so they are [stride A, standing, stride B]; XP plays 0, 1, 2, 3, so [standing, stride A,
+  passing, stride B]. Standing is the `default` move's frame; without one, the walk's passing frame, else the first move's
+  frame 0. Stride A is the walk frame with the widest ankle spread in that view's `measured` keypoints (else the requested
+  `keypoints`, else the first playlist frame); passing and stride B are the frames on screen a quarter and half a cycle later
+  by playlist time. West uses east's choice when it mirrors east. A view the walk lacks, or a character with no move named walk, repeats the standing frame
+  (with a warning). Characters without south, east, west and north views are refused.
+- Not supported: RPG Maker 2000/2003 (fixed 24 × 32 cells, indexed color), Unite (manual per-image registration; superseded),
+  console and handheld editions (no custom images).
 
 ## 7. Editable import copy
 

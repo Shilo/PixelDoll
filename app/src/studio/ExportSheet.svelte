@@ -22,6 +22,7 @@
       { id: 'unity', name: 'Unity', sub: 'Prefab importer', detail: 'Unity Editor importer creates a layered prefab and animation assets. Requires the 2D Sprite package.' },
       { id: 'phaser', name: 'Phaser', sub: 'Atlas + runtime', detail: 'Phaser 3 / 4 atlases and a Container runtime for equipment, colors and synchronized playback.' },
       { id: 'gdevelop', name: 'GDevelop', sub: 'Editable project', detail: 'Editable GDevelop project with Sprite layers, synchronized playback and equipment controls. Preview it or copy the objects and event into your game.' },
+      { id: 'rpgmaker', name: 'RPG Maker', sub: 'Walking sheets', detail: 'A walking character sheet per outfit for RPG Maker MZ, MV, VX Ace, VX and XP, at your character’s own size. Needs front, side and back views.' },
     ] },
     { id: 'assets', name: 'Assets', targets: [
       { id: 'aseprite', name: 'Aseprite', sub: 'Editable layers', detail: 'One layered .aseprite animation with tags, timing, pivot and your current look. Open in Aseprite 1.3 or later.' },
@@ -57,7 +58,8 @@
   const once = $derived(preferences?.playOnce ?? [])
   const playbackSummary = $derived(!once.length ? 'None' : once.length === names.length ? 'All' : once.map(animationLabel).join(', '))
   const outfits = $derived(m?.presets.filter(p => p.id !== 'current') ?? [])
-  const outfitSummary = $derived(!baked ? 'None' : outfits.length ? 'Current look + saved outfits' : 'Current look')
+  // RPG Maker sheets are always dressed composites, whatever the setting says
+  const outfitSummary = $derived(!baked && engine !== 'rpgmaker' ? 'None' : outfits.length ? 'Current look + saved outfits' : 'Current look')
   const items = $derived(m ? m.items.filter((i) => i.slot !== 'body') : [])
   const reviewItems = $derived(m ? m.items.filter((i) => i.designWarnings?.length || (i.qa && i.qa.status !== 'pass')).map((i) => i.name) : [])
   const PLAY_ONCE = 'Play animation once'

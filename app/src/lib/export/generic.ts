@@ -2,7 +2,7 @@
 // LPC-style credits (provenance trail).
 import type { Img } from '../image/png.ts';
 import { validateRig } from '../rig/rig.ts';
-import type { Engine, Item, Manifest, Project } from '../store/manifest.ts';
+import type { Engine, Item, Manifest, Preset, Project } from '../store/manifest.ts';
 import { bakedSheet, layerSheet, sheetPath, sheetRow } from './sheets.ts';
 import { moveDirs, recolor, storeVariants, variantOf, variantRampOf } from '../dress/dress.ts';
 import { bakedFrame, layerFrame, tuckedId, variantCovers } from '../compose/compose.ts';
@@ -264,10 +264,14 @@ Baked sheets in baked/ apply the outfit's colors and layer visibility; their cel
 Use nearest-neighbor filtering, whole-pixel positions and straight RGBA alpha. This is a PNG + JSON interchange format; engine playback needs integration.
 ` });
   const bf = bakedFrame(m);
-  const ids = new Set(m.items.map((it) => it.id));
-  const exported = { ...p, manifest: { ...p.manifest, materials: m.materials, items: p.manifest.items.filter((it) => ids.has(it.id)) } };
-  if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(recolor(exported, pr.variants), pr.items, a.id, bf) });
+  if (o.baked) for (const pr of m.presets) for (const a of rig.animations) files.push({ name: `baked/${pr.id}/${a.id}.png`, data: bakedSheet(outfitProject(p, m, pr), pr.items, a.id, bf) });
   return files;
+}
+
+/** The exported items in one outfit's colors, for baked composites. */
+export function outfitProject(p: Project, m: Manifest, preset: Preset): Project {
+  const ids = new Set(m.items.map((it) => it.id));
+  return recolor({ ...p, manifest: { ...p.manifest, materials: m.materials, items: p.manifest.items.filter((it) => ids.has(it.id)) } }, preset.variants);
 }
 
 export function selfTest() {

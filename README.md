@@ -12,7 +12,7 @@ with PixelLab AI and export them to any game engine. · [Open PixelDoll](https:/
 </p>
 
 Paper dolling for [PixelLab](https://pixellab.ai). Describe a pixel-art character, add hats, armor, hair and weapons as
-**separate frame-aligned layers**, recolor them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser, GDevelop** or any
+**separate frame-aligned layers**, recolor them, and export sprite sheets plus a manifest for **Godot, Unity, Phaser, GDevelop, RPG Maker** or any
 engine (PNG + JSON). Source artwork comes from PixelLab; PixelDoll extracts layers, cleans keyed pixels and applies exact
 color changes to turn PixelLab's one-image-per-call output into a
 consistent, layered, slot-based paperdoll: one base body, N directions, M moves, and a transparent layer per item on the same
@@ -110,6 +110,7 @@ move; rows = directions, columns = frames) and, optionally, `baked/` (finished c
 | Unity 6 | Editor importer + `unity/pixeldoll_unity.json` | Copy under `Assets/`; the importer builds sliced sheets, clips, a controller and a prefab in `unity/Generated/`. See `unity/README.txt`. |
 | Phaser 3.80+ / 4 | `phaser/PaperdollContainer.js` + TexturePacker-hash atlases | Copy into your assets, `loadPaperdoll(scene, dir)` then `new Paperdoll(...)`; serve over http. See `phaser/README.txt`. |
 | GDevelop | `gdevelop/game.json`, registered Sprite frames and an embedded controller event | Open the native project and Preview, or copy its Sprite objects and controller event into an existing project. See `gdevelop/README.txt`. |
+| RPG Maker MZ, MV, VX Ace, VX, XP | `rpgmaker/` walking sheets per outfit, one folder per version | Copy the folder for your version into the project and pick the image as a character graphic. See `rpgmaker/README.txt`. |
 | Aseprite | `aseprite/<character>.aseprite`: layered file, move/direction tags, frame timing and pivot slice | Open in Aseprite 1.3+; colors and visibility match the exported current look. |
 | PNG + JSON | `generic/` strips per layer, move and direction | Any engine: one sprite per layer, same grid and pivot, one clock. See `generic/README.txt`. |
 

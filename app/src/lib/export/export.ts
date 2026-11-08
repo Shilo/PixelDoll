@@ -10,6 +10,7 @@ import { godotFiles } from './godot.ts';
 import { phaserFiles } from './phaser.ts';
 import { unityFiles } from './unity.ts';
 import { gdevelopFiles } from './gdevelop.ts';
+import { rpgMakerFiles } from './rpgmaker.ts';
 import { projectEntries, type ImportedCharacter } from '../store/import.ts';
 
 export interface ExportOptions { engines: Engine[]; baked: boolean; pixelsPerUnit?: number; exportedAt?: string; projectData?: ImportedCharacter['extra'] }
@@ -55,6 +56,13 @@ export async function exportFiles(src: Project, o: ExportOptions): Promise<Expor
     try { files.push(...gdevelopFiles(m, sheets)); }
     catch (error) {
       if (!(error instanceof Error) || !error.message.startsWith('GDevelop: ')) throw error;
+      return { entries: [], warnings, errors: [error.message] };
+    }
+  }
+  if (o.engines.includes('rpgmaker')) {
+    try { const r = rpgMakerFiles(p, m); files.push(...r.files); warnings.push(...r.warnings); }
+    catch (error) {
+      if (!(error instanceof Error) || !error.message.startsWith('RPG Maker: ')) throw error;
       return { entries: [], warnings, errors: [error.message] };
     }
   }
